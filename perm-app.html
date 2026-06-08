@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>自由手艺人</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi6Ieq55Sx5omL6Im65Lq6Iiwic2hvcnRfbmFtZSI6IuiHqueUseaJi+iJuuS6uiIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMWExYTJlIiwidGhlbWVfY29sb3IiOiIjMWExYTJlIiwiaWNvbnMiOltdfQ==">
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface-light: #232342;
+  --text: #e8e8f0;
+  --text-secondary: #9a9ab8;
+  --accent: #d4a574;
+  --accent-glow: rgba(212, 165, 116, 0.25);
+  --danger: #e0556a;
+  --warning: #e0b055;
+  --border: #2a2a45;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Header ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition);
+  font-family: var(--font);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  width: 60%;
+  height: 2.5px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ── Main Content ── */
+.main {
+  padding: 16px;
+  min-height: calc(100vh - 180px);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Query Tab ── */
+.selector-group {
+  margin-bottom: 14px;
+}
+
+.selector-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 14px 40px 14px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font);
+  appearance: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.select-wrapper select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.query-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--accent), #b8864e);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: var(--transition);
+  letter-spacing: 1px;
+}
+
+.query-btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.query-btn:disabled {
+  opacity: 0.4;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* ── Result Cards ── */
+.result-area {
+  margin-top: 20px;
+}
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  overflow: hidden;
+  animation: cardIn 0.4s ease-out both;
+  box-shadow: var(--shadow);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-header {
+  padding: 12px 16px;
+  background: var(--surface-light);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon {
+  font-size: 22px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.card-body {
+  padding: 14px 16px;
+}
+
+.param-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+
+.param-row:last-child {
+  border-bottom: none;
+}
+
+.param-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.param-value {
+  font-weight: 600;
+  text-align: right;
+  margin-left: 12px;
+}
+
+.param-value.highlight {
+  color: var(--accent);
+}
+
+.param-value.warn {
+  color: var(--warning);
+}
+
+/* ── Rod Table ── */
+.rod-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.rod-table th {
+  background: var(--surface-light);
+  color: var(--accent);
+  padding: 8px 6px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 12px;
+}
+
+.rod-table td {
+  padding: 8px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.rod-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Warning Notice ── */
+.warning-notice {
+  background: rgba(224, 85, 106, 0.12);
+  border-left: 3px solid var(--danger);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--danger);
+  animation: cardIn 0.5s ease-out both;
+}
+
+/* ── General Tips ── */
+.tips-section {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  animation: cardIn 0.6s ease-out both;
+  box-shadow: var(--shadow);
+}
+
+.tips-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tips-list {
+  list-style: none;
+}
+
+.tips-list li {
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-left: 16px;
+  position: relative;
+}
+
+.tips-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+/* ── Calculator ── */
+.calc-toggle {
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0;
+  background: transparent;
+  border: 1px dashed #555;
+  border-radius: 10px;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.calc-toggle:active { border-color: var(--accent); color: var(--accent); }
+.calc-panel { margin-bottom: 16px; }
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 14px;
+}
+.calc-row:last-child { border-bottom: none; }
+.calc-row .label { color: #999; }
+.calc-row .value { color: var(--accent); font-weight: 600; }
+
+/* ── Knowledge Base Tab ── */
+.search-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 13px 40px 13px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+  transition: var(--transition);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.search-box input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.search-results-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+/* ── Accordion ── */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accordion-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.accordion-header {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.accordion-header:active {
+  background: var(--surface-light);
+}
+
+.accordion-arrow {
+  font-size: 12px;
+  color: var(--accent);
+  transition: var(--transition);
+}
+
+.accordion-item.open .accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+
+.accordion-item.open .accordion-body {
+  max-height: 2000px;
+}
+
+.accordion-content {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.accordion-content .kb-subtitle {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 10px 0 4px;
+  font-size: 14px;
+}
+
+.accordion-content .kb-subtitle:first-child {
+  margin-top: 0;
+}
+
+.accordion-content p {
+  margin: 4px 0;
+}
+
+.accordion-content .highlight {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.accordion-content .search-highlight {
+  background: rgba(212, 165, 116, 0.3);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.no-results .icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footer .dot {
+  color: var(--accent);
+  margin: 0 4px;
+}
+
+/* ── Floating Back to Top ── */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: var(--transition);
+  box-shadow: 0 4px 16px rgba(212, 165, 116, 0.35);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.back-to-top.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-light);
+  color: var(--text);
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <h1>💈 自由手艺人</h1>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Query Tab -->
+  <section class="tab-content active" id="tab-query">
+    <div class="selector-group">
+      <label>发质类型</label>
+      <div class="select-wrapper">
+        <select id="hair-type">
+          <option value="">请选择发质类型</option>
+        </select>
+      </div>
+    </div>
+    <div class="selector-group">
+      <label>烫发款式</label>
+      <div class="select-wrapper">
+        <select id="perm-style">
+          <option value="">请选择烫发款式</option>
+        </select>
+      </div>
+    </div>
+    <button class="query-btn" id="query-btn" disabled>🔍 查询方案</button>
+
+    <!-- 比例换算器 -->
+    <button class="calc-toggle" id="calc-toggle">🧮 配方换算</button>
+    <div class="calc-panel" id="calc-panel" style="display:none;">
+      <div class="result-card">
+        <div class="card-header">
+          <span class="card-icon">🧪</span>
+          <span class="card-title">药水调配比例换算</span>
+        </div>
+        <div class="card-body">
+          <div class="selector-group" style="margin-bottom:12px;">
+            <label>受损等级</label>
+            <div class="select-wrapper">
+              <select id="calc-level">
+                <option value="">选择受损等级</option>
+                <option value="5">5度以内（健康/轻微受损）</option>
+                <option value="6">6度（中度受损）</option>
+                <option value="7">7度（严重受损）</option>
+                <option value="7.5">7.5度（极度/植物染）</option>
+                <option value="8">8度（极度受损）</option>
+              </select>
+            </div>
+          </div>
+          <div class="selector-group" style="margin-bottom:12px;">
+            <label>药水用量（g）</label>
+            <input type="number" id="calc-amount" value="50" min="10" max="500" step="5" style="width:100%;padding:12px;background:#0f0f1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;">
+          </div>
+          <button class="query-btn" id="calc-btn" style="margin-top:4px;">📐 计算配比</button>
+          <div id="calc-result" style="margin-top:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-area" id="result-area"></div>
+  </section>
+
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <span class="dot">●</span> 数据仅供参考，以现场发质判断为准 <span class="dot">●</span>
+  <div style="margin-top:6px;font-size:11px;opacity:0.6;">店内: 192.168.3.250:8889</div>
+</footer>
+
+<!-- Back to top -->
+<button class="back-to-top" id="back-to-top">↑</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─────────────────────────────────────────
+   DATA STORE
+   ───────────────────────────────────────── */
+
+const HAIR_TYPES = [
+  { id: 'fine-healthy', label: '细软健康发（3度，未烫染）' },
+  { id: 'coarse-healthy', label: '粗硬健康发（3度，未烫染）' },
+  { id: 'moderate-damaged', label: '中度受损（5-6度，染过1-2次）' },
+  { id: 'severe-damaged', label: '重度受损（7度+，多次烫染）' },
+];
+
+const PERM_STYLES = [
+  { id: 'wool-perm', label: '羊毛卷' },
+  { id: 'french-wool-perm', label: '法式羊毛卷' },
+  { id: 'french-wave', label: '法式烫/大波浪' },
+  { id: 'wood-horse', label: '木马卷' },
+  { id: 'cloud-perm', label: '云朵卷' },
+  { id: 'egg-perm', label: '蛋蛋卷' },
+  { id: 'morgan-perm', label: '摩根烫' },
+];
+
+/* Each entry: { hairType, permStyle, soften, rods, warning } */
+const PERM_DATA = [
+  // 1. 细软健康发 + 羊毛卷
+  {
+    hairType: 'fine-healthy',
+    permStyle: 'wool-perm',
+    soften: {
+      pH: '7 ~ 8',
+      thio: '6 ~ 7%',
+      protein: '15 ~ 20g',
+      targetDegree: '65 ~ 75%',
+      penetration: false,
+      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '14 ~ 16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '14 ~ 16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: null,
+  },
+  // 2. 细软健康发 + 法式羊毛卷
+  {
+    hairType: 'fine-healthy',
+    permStyle: 'french-wool-perm',
+    soften: {
+      pH: '7 ~ 8',
+      thio: '6 ~ 7%',
+      protein: '15 ~ 20g',
+      targetDegree: '65 ~ 75%',
+      penetration: false,
+      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '14 ~ 16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '16 ~ 18号', technique: '缠绕', startFrom: '从发根', angle: '90 ~ 135°' },
+      { zone: '两侧', size: '16 ~ 18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '18 ~ 22号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: null,
+  },
+  // 3. 粗硬健康发 + 羊毛卷
+  {
+    hairType: 'coarse-healthy',
+    permStyle: 'wool-perm',
+    soften: {
+      pH: '9 ~ 9.5',
+      thio: '9%（不稀释）',
+      protein: '不加蛋白',
+      targetDegree: '80 ~ 85%',
+      penetration: true,
+      rinseSignal: '测试杠出现强力卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '18 ~ 20号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: null,
+  },
+  // 4. 粗硬健康发 + 法式烫/大波浪
+  {
+    hairType: 'coarse-healthy',
+    permStyle: 'french-wave',
+    soften: {
+      pH: '8 ~ 9',
+      thio: '7 ~ 9%',
+      protein: '不加蛋白',
+      targetDegree: '75 ~ 80%',
+      penetration: false,
+      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '24 ~ 28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '24 ~ 28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' },
+    ],
+    warning: null,
+  },
+  // 5. 中度受损 + 羊毛卷
+  {
+    hairType: 'moderate-damaged',
+    permStyle: 'wool-perm',
+    soften: {
+      pH: '6 ~ 7',
+      thio: '4 ~ 5%',
+      protein: '20 ~ 25g',
+      targetDegree: '60 ~ 70%',
+      penetration: false,
+      rinseSignal: '测试杠出现卷曲即可，勿过度软化'
+    },
+    rods: [
+      { zone: '头顶', size: '14 ~ 16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: '⚠️ 受损发慎烫羊毛卷！卷度过小容易造成二次损伤，建议先做护理再考虑。',
+  },
+  // 6. 重度受损 + 云朵卷
+  {
+    hairType: 'severe-damaged',
+    permStyle: 'cloud-perm',
+    soften: {
+      pH: '6',
+      thio: '2 ~ 3%',
+      protein: '多加蛋白',
+      targetDegree: '50 ~ 60%',
+      penetration: false,
+      rinseSignal: '测试杠微微卷曲即可冲水，宁软勿过'
+    },
+    rods: [
+      { zone: '头顶', size: '24 ~ 26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
+      { zone: '枕骨', size: '26 ~ 28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
+      { zone: '两侧', size: '26 ~ 28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
+      { zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' },
+    ],
+    warning: '💡 云朵卷对受损发最友好！大卷自然慵懒，不伤发质。建议全程低pH操作。',
+  },
+  // 7. 细软健康发 + 蛋蛋卷
+  {
+    hairType: 'fine-healthy',
+    permStyle: 'egg-perm',
+    soften: {
+      pH: '7 ~ 8',
+      thio: '6 ~ 7%',
+      protein: '15g',
+      targetDegree: '70 ~ 75%',
+      penetration: false,
+      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '20号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: null,
+  },
+  // 8. 粗硬健康发 + 木马卷
+  {
+    hairType: 'coarse-healthy',
+    permStyle: 'wood-horse',
+    soften: {
+      pH: '8 ~ 9',
+      thio: '7 ~ 9%',
+      protein: '不加蛋白',
+      targetDegree: '75 ~ 80%',
+      penetration: false,
+      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
+    },
+    rods: [
+      { zone: '头顶', size: '20 ~ 22号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '枕骨', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '两侧', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
+      { zone: '后颈', size: '24号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
+    ],
+    warning: null,
+  },
+  // 9. 摩根烫（所有发质共用）
+  {
+    hairType: '__all__',
+    permStyle: 'morgan-perm',
+    soften: {
+      pH: '冷烫药水（非热烫）',
+      thio: '按冷烫说明配比',
+      protein: '视发质添加',
+      targetDegree: '60 ~ 70%（仅发根段）',
+      penetration: false,
+      rinseSignal: '发根段卷曲即可冲水'
+    },
+    rods: [
+      { zone: '发根（全头）', size: '专用小杠 Φ1~2cm', technique: '冷烫卷杠', startFrom: '从发根', angle: '根部贴头皮起卷' },
+    ],
+    warning: '💡 摩根烫仅处理发根2~3cm区域，不烫发尾。适合细软塌发质，打造自然蓬松发根。',
+  },
+];
+
+/* Morgan perm applies to all hair types */
+(function expandMorgan() {
+  const morgan = PERM_DATA.find(d => d.hairType === '__all__' && d.permStyle === 'morgan-perm');
+  if (!morgan) return;
+  HAIR_TYPES.forEach(ht => {
+    if (PERM_DATA.some(d => d.hairType === ht.id && d.permStyle === 'morgan-perm')) return;
+    PERM_DATA.push({
+      ...morgan,
+      hairType: ht.id,
+      soften: { ...morgan.soften },
+      rods: morgan.rods.map(r => ({ ...r })),
+    });
+  });
+})();
+
+/* ─────────────────────────────────────────
+   APP LOGIC
+   ───────────────────────────────────────── */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // === DOM refs ===
+  const hairTypeSelect = document.getElementById('hair-type');
+  const permStyleSelect = document.getElementById('perm-style');
+  const queryBtn = document.getElementById('query-btn');
+  const resultArea = document.getElementById('result-area');
+  const backToTop = document.getElementById('back-to-top');
+  const toast = document.getElementById('toast');
+
+  // === Init selectors ===
+  HAIR_TYPES.forEach(ht => {
+    const opt = document.createElement('option');
+    opt.value = ht.id;
+    opt.textContent = ht.label;
+    hairTypeSelect.appendChild(opt);
+  });
+
+  PERM_STYLES.forEach(ps => {
+    const opt = document.createElement('option');
+    opt.value = ps.id;
+    opt.textContent = ps.label;
+    permStyleSelect.appendChild(opt);
+  });
+
+  // === Enable query button ===
+  function checkQueryReady() {
+    queryBtn.disabled = !(hairTypeSelect.value && permStyleSelect.value);
+  }
+  hairTypeSelect.addEventListener('change', checkQueryReady);
+  permStyleSelect.addEventListener('change', checkQueryReady);
+
+  // === Query ===
+  queryBtn.addEventListener('click', () => {
+    const hair = hairTypeSelect.value;
+    const style = permStyleSelect.value;
+    if (!hair || !style) return;
+
+    const result = PERM_DATA.find(d => d.hairType === hair && d.permStyle === style);
+    if (!result) {
+      showToast('暂无该组合的数据，请尝试其他搭配');
+      resultArea.innerHTML = '';
+      return;
+    }
+
+    renderResult(result);
+    resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  function renderResult(data) {
+    const s = data.soften;
+    const rods = data.rods;
+
+    let html = '';
+
+    // Soften card
+    html += `<div class="result-card" style="animation-delay:0s">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">软化方案</span>
+      </div>
+      <div class="card-body">
+        <div class="param-row"><span class="param-label">pH值</span><span class="param-value highlight">${s.pH}</span></div>
+        <div class="param-row"><span class="param-label">硫代浓度</span><span class="param-value highlight">${s.thio}</span></div>
+        <div class="param-row"><span class="param-label">蛋白用量</span><span class="param-value">${s.protein}</span></div>
+        <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
+        <div class="param-row"><span class="param-label">渗透式软化</span><span class="param-value ${s.penetration ? 'warn' : ''}">${s.penetration ? '⚠️ 必须' : '否'}</span></div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;max-width:180px;">${s.rinseSignal}</span></div>
+      </div>
+    </div>`;
+
+    // Rods card
+    html += `<div class="result-card" style="animation-delay:0.1s">
+      <div class="card-header">
+        <span class="card-icon">📐</span>
+        <span class="card-title">排杠方案</span>
+      </div>
+      <div class="card-body" style="padding:8px;">
+        <table class="rod-table">
+          <thead><tr><th>分区</th><th>杠号</th><th>手法</th><th>起点</th><th>提拉角</th></tr></thead>
+          <tbody>`;
+
+    rods.forEach(r => {
+      html += `<tr>
+        <td>${r.zone}</td>
+        <td>${r.size}</td>
+        <td>${r.technique}</td>
+        <td>${r.startFrom}</td>
+        <td>${r.angle}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
+
+    // Warning
+    if (data.warning) {
+      html += `<div class="warning-notice">${data.warning}</div>`;
+    }
+
+    // Tips
+    html += renderTips();
+
+    resultArea.innerHTML = html;
+  }
+
+  function renderTips() {
+    return `<div class="tips-section" style="animation-delay:0.2s">
+      <div class="tips-title">💡 通用提示</div>
+      <ul class="tips-list">
+        <li>受损发慎烫小卷款式（羊毛卷、芭比卷）</li>
+        <li>细软发头顶必须小杠从根起，否则不蓬松</li>
+        <li>后颈大杠收尾，避免炸毛</li>
+        <li>软化不是测软是测卷——上测试杠</li>
+        <li>吹干才显卷——热变性结晶湿看不见</li>
+      </ul>
+    </div>`;
+  }
+
+  // === Back to top ===
+  window.addEventListener('scroll', () => {
+    backToTop.classList.toggle('show', window.scrollY > 400);
+  });
+
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // === Calculator ===
+  const calcToggle = document.getElementById('calc-toggle');
+  const calcPanel = document.getElementById('calc-panel');
+  const calcBtn = document.getElementById('calc-btn');
+  const calcResult = document.getElementById('calc-result');
+
+  calcToggle.addEventListener('click', () => {
+    const show = calcPanel.style.display === 'none';
+    calcPanel.style.display = show ? 'block' : 'none';
+    calcToggle.textContent = show ? '🧮 收起换算' : '🧮 配方换算';
+    if (show) calcPanel.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  const FORMULAS = {
+    '5':  { base: 5, desc: '5度以内', 药水: 5, 蛋白: 1, 水: 1 },
+    '6':  { base: 5, desc: '6度',      药水: 5, 蛋白: 2, 水: 1 },
+    '7':  { base: 5, desc: '7度',      药水: 5, 蛋白: 2, 水: 2 },
+    '7.5':{ base: 5, desc: '7.5度',    药水: 5, 蛋白: 2, 醋: 2 },
+    '8':  { base: 3, desc: '8度',      药水: 3, 蛋白: 3, 醋: 3, 牛奶: 1.5, 雪碧: 1.5 },
+  };
+
+  calcBtn.addEventListener('click', () => {
+    const level = document.getElementById('calc-level').value;
+    const amount = parseFloat(document.getElementById('calc-amount').value) || 50;
+    if (!level) { showToast('请选择受损等级'); return; }
+
+    const f = FORMULAS[level];
+    const ratio = amount / f.base;
+    const items = [];
+    for (const [k, v] of Object.entries(f)) {
+      if (k === 'base' || k === 'desc') continue;
+      const val = (v * ratio).toFixed(1);
+      items.push({ label: k, value: val + 'g' });
+    }
+
+    let html = `<div style="padding:4px 0;color:#999;font-size:13px;">${f.desc} · 药水基准 ${amount}g · 倍率 ×${ratio.toFixed(1)}</div>`;
+    items.forEach(i => {
+      html += `<div class="calc-row"><span class="label">${i.label}</span><span class="value">${i.value}</span></div>`;
+    });
+    html += `<div style="margin-top:12px;padding:10px;background:#1a1a2e;border-radius:8px;font-size:12px;color:#999;">
+      💡 如有6度白醋替换普通醋；8-9度配方可做胶发还原<br>
+      调好后头发会<b style="color:var(--accent);">先硬再软</b>——松动即可烫发
+    </div>`;
+
+    calcResult.innerHTML = html;
+  });
+
+  // === Toast ===
+  function showToast(msg, duration = 2000) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, duration);
+  }
+
+  // === PWA Service Worker ===
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      const swCode = `
+        const CACHE = 'perm-app-v1';
+        const URLS = ['.'];
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(
+            caches.match(e.request).then(r => r || fetch(e.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(() => {});
+    });
+  }
+});
+</script>
+
+</body>
+</html>
