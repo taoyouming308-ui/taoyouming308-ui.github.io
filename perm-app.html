@@ -1,28 +1,32 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-version="23">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>自由手艺人</title>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi6Ieq55Sx5omL6Im65Lq6Iiwic2hvcnRfbmFtZSI6IuiHqueUseaJi+iJuuS6uiIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMWExYTJlIiwidGhlbWVfY29sb3IiOiIjMWExYTJlIiwiaWNvbnMiOltdfQ==">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>自由手艺人 · X</title>
+<link rel="apple-touch-icon" href="apple-icon.png">
+<link rel="manifest" href="manifest.json">
 <style>
 :root {
-  --bg: #0f0f1a;
-  --surface: #1a1a2e;
-  --surface-light: #232342;
-  --text: #e8e8f0;
-  --text-secondary: #9a9ab8;
-  --accent: #d4a574;
-  --accent-glow: rgba(212, 165, 116, 0.25);
-  --danger: #e0556a;
-  --warning: #e0b055;
-  --border: #2a2a45;
+  --bg: #000000;
+  --surface: #16181c;
+  --surface-light: #1d1f23;
+  --text: #e7e9ea;
+  --text-secondary: #71767b;
+  --accent: #e7e9ea;
+  --accent-glow: rgba(231, 233, 234, 0.12);
+  --danger: #f4212e;
+  --warning: #ffd700;
+  --border: #2f3336;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
@@ -47,7 +51,7 @@ body {
   top: 0;
   z-index: 100;
   background: var(--surface);
-  padding: 12px 16px 0;
+  padding: 14px 16px 6px;
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }
@@ -57,10 +61,7 @@ body {
   font-weight: 700;
   text-align: center;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .tabs {
@@ -158,10 +159,10 @@ body {
 .query-btn {
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, var(--accent), #b8864e);
+  background: #e7e9ea;
   border: none;
   border-radius: var(--radius);
-  color: #fff;
+  color: #000;
   font-size: 16px;
   font-weight: 700;
   font-family: var(--font);
@@ -228,7 +229,8 @@ body {
 .param-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   font-size: 14px;
@@ -247,6 +249,10 @@ body {
   font-weight: 600;
   text-align: right;
   margin-left: 12px;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
 }
 
 .param-value.highlight {
@@ -357,12 +363,15 @@ body {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #1a1a2e;
+  border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
 .calc-row:last-child { border-bottom: none; }
 .calc-row .label { color: #999; }
 .calc-row .value { color: var(--accent); font-weight: 600; }
+
+.preset-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(231,233,234,0.08) !important; }
+.preset-btn:active { background: rgba(231,233,234,0.14) !important; }
 
 /* ── Knowledge Base Tab ── */
 .search-box {
@@ -566,14 +575,119 @@ body {
 .toast.show {
   opacity: 1;
 }
+
 </style>
 </head>
 <body>
 
+<!-- WiFi检测锁：仅店内WiFi可查看 -->
+<div id="wifi-lock" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;padding:32px;">
+  <div>
+    <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+    <h2 style="color:var(--accent);margin-bottom:8px;">仅限店内网络</h2>
+    <p style="color:var(--text-secondary);font-size:14px;line-height:1.6;margin-bottom:24px;">
+      请连接「自由手艺人」店内 WiFi 后刷新
+    </p>
+    <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:8px;">
+      <p style="color:var(--text-secondary);font-size:12px;margin-bottom:12px;">管理员远程访问</p>
+      <input type="password" id="admin-pwd" placeholder="输入管理密码" style="width:100%;max-width:200px;padding:10px 14px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-align:center;margin-bottom:12px;">
+      <br>
+      <button onclick="unlockAdmin()" style="padding:10px 28px;background:var(--accent);color:var(--bg);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">🔓 解锁</button>
+      <div id="pwd-error" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;">密码错误</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 如果之前解锁过，直接放行
+if (localStorage.getItem('perm-admin-unlocked') === '1') {
+  document.getElementById('wifi-lock').style.display = 'none';
+  document.body.style.overflow = '';
+} else {
+  checkWiFi();
+}
+
+function checkWiFi() {
+  var lock = document.getElementById('wifi-lock');
+  lock.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  var unlocked = false;
+  function unlock() {
+    if (!unlocked) { unlocked = true; lock.style.display = 'none'; document.body.style.overflow = ''; }
+  }
+
+  // 方法1：WebRTC 获取本机IP（桌面端快）
+  var pc = new RTCPeerConnection({iceServers:[]});
+  pc.createDataChannel('');
+  pc.createOffer().then(function(o){pc.setLocalDescription(o)});
+  var webRTCdone = false;
+  pc.onicecandidate = function(e){
+    if (!e.candidate) { webRTCdone = true; try { pc.close(); } catch(e) {} return; }
+    var m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+    if (m) {
+      var parts = m[1].split('.');
+      if (parts[0]==='192' && parts[1]==='168' && parts[2]==='3') {
+        unlock();
+      }
+      webRTCdone = true;
+      try { pc.close(); } catch(e) {}
+    }
+  };
+
+  // 方法2：尝试访问店内服务器（手机端更可靠）
+  // 同时用 fetch 和 img 双路探测
+  setTimeout(function(){
+    // 2a: fetch探测（支持no-cors的浏览器）
+    var ctrl = new AbortController();
+    setTimeout(function(){ ctrl.abort(); }, 3000);
+    fetch('http://192.168.3.250:8899/', {mode:'no-cors',signal:ctrl.signal})
+      .then(function(){ unlock(); })
+      .catch(function(){});
+    // 2b: img探测（兜底旧浏览器）
+    var img = new Image();
+    var timer = setTimeout(function(){ img.src = ''; }, 4000);
+    img.onload = function(){ clearTimeout(timer); unlock(); };
+    img.onerror = function(){ clearTimeout(timer); };
+    img.src = 'http://192.168.3.250:8899/?' + Date.now();
+    // 2c: 路由器探测（兜底，路由器永远在线）
+    var img2 = new Image();
+    var timer2 = setTimeout(function(){ img2.src = ''; }, 3000);
+    img2.onload = function(){ clearTimeout(timer2); unlock(); };
+    img2.onerror = function(){ clearTimeout(timer2); };
+    img2.src = 'http://192.168.3.1/favicon.ico?' + Date.now();
+  }, 500);
+
+  // 8秒总超时 → 显示锁屏
+  setTimeout(function(){
+    try { pc.close(); } catch(e) {}
+    if (!unlocked) {
+      lock.style.display = 'flex';
+    }
+  }, 8000);
+}
+
+function unlockAdmin() {
+  if (document.getElementById('admin-pwd').value === 'tao19841206') {
+    document.getElementById('wifi-lock').style.display = 'none';
+    document.body.style.overflow = '';
+    localStorage.setItem('perm-admin-unlocked', '1');
+    document.getElementById('pwd-error').style.display = 'none';
+  } else {
+    document.getElementById('pwd-error').style.display = 'block';
+  }
+}
+</script>
+
 <!-- Header -->
 <header class="header">
-  <h1>💈 自由手艺人</h1>
+  <h1>自由手艺人</h1>
 </header>
+
+<!-- Tab Nav -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="query">🔍 查询方案</button>
+  <button class="tab-btn" data-tab="calc">🧮 自由换算</button>
+</nav>
 
 <!-- Main -->
 <main class="main">
@@ -598,48 +712,73 @@ body {
     </div>
     <button class="query-btn" id="query-btn" disabled>🔍 查询方案</button>
 
-    <!-- 比例换算器 -->
-    <button class="calc-toggle" id="calc-toggle">🧮 配方换算</button>
-    <div class="calc-panel" id="calc-panel" style="display:none;">
-      <div class="result-card">
-        <div class="card-header">
-          <span class="card-icon">🧪</span>
-          <span class="card-title">药水调配比例换算</span>
-        </div>
-        <div class="card-body">
-          <div class="selector-group" style="margin-bottom:12px;">
-            <label>受损等级</label>
-            <div class="select-wrapper">
-              <select id="calc-level">
-                <option value="">选择受损等级</option>
-                <option value="5">5度以内（健康/轻微受损）</option>
-                <option value="6">6度（中度受损）</option>
-                <option value="7">7度（严重受损）</option>
-                <option value="7.5">7.5度（极度/植物染）</option>
-                <option value="8">8度（极度受损）</option>
-              </select>
-            </div>
-          </div>
-          <div class="selector-group" style="margin-bottom:12px;">
-            <label>药水用量（g）</label>
-            <input type="number" id="calc-amount" value="50" min="10" max="500" step="5" style="width:100%;padding:12px;background:#0f0f1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;">
-          </div>
-          <button class="query-btn" id="calc-btn" style="margin-top:4px;">📐 计算配比</button>
-          <div id="calc-result" style="margin-top:16px;"></div>
-        </div>
-      </div>
-    </div>
-
     <div class="result-area" id="result-area"></div>
   </section>
 
+  <!-- Calc Tab -->
+  <section class="tab-content" id="tab-calc">
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">自由比例调配</span>
+      </div>
+      <div class="card-body">
+        <!-- 快速预设 -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <button class="preset-btn" data-tga="3" data-ca="0" style="flex:1;min-width:55px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">纯TGA</button>
+          <button class="preset-btn" data-tga="6" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">6:1</button>
+          <button class="preset-btn" data-tga="3" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">3:1</button>
+          <button class="preset-btn" data-tga="1" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">1:1</button>
+          <button class="preset-btn" data-tga="1" data-ca="10" style="flex:1;min-width:50px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">1:10</button>
+          <button class="preset-btn" data-tga="0" data-ca="1" style="flex:1;min-width:55px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">纯CA</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>TGA 份数</label>
+            <input type="number" id="calc-tga" value="1" min="0" max="50" step="0.5" style="width:100%;padding:12px;background:#0d0d0d;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:16px;text-align:center;">
+          </div>
+          <span style="color:var(--accent);font-size:20px;font-weight:700;margin-top:20px;">:</span>
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>CA 份数</label>
+            <input type="number" id="calc-ca" value="1" min="0" max="50" step="0.5" style="width:100%;padding:12px;background:#0d0d0d;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:16px;text-align:center;">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>总药水量（g）</label>
+            <input type="number" id="calc-amount" value="50" min="10" max="500" step="5" style="width:100%;padding:12px;background:#0d0d0d;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:16px;">
+          </div>
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>额外稀释（水/蛋白 g，可选）</label>
+            <input type="number" id="calc-extra" value="0" min="0" max="200" step="1" style="width:100%;padding:12px;background:#0d0d0d;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:16px;">
+          </div>
+        </div>
+        <button class="query-btn" id="calc-btn" style="margin-top:4px;width:100%;">📐 计算</button>
+        <div id="calc-result" style="margin-top:16px;"></div>
+        <!-- 固定配比参考表 -->
+        <div style="margin-top:20px;padding:12px;background:var(--surface-light);border-radius:8px;">
+          <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px;">📋 固定配比化学值参考</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px;">
+            <div style="color:var(--text-secondary);padding:4px 0;">配比</div><div style="color:var(--text-secondary);padding:4px 0;">PH</div><div style="color:var(--text-secondary);padding:4px 0;">硫代</div>
+            <div style="color:var(--text);">纯TGA</div><div style="color:var(--accent);">9.5</div><div style="color:var(--accent);">9.5%</div>
+            <div style="color:var(--text);">6:1</div><div style="color:var(--accent);">8.9</div><div style="color:var(--accent);">8.4%</div>
+            <div style="color:var(--text);">3:1</div><div style="color:var(--accent);">8.5</div><div style="color:var(--accent);">7.6%</div>
+            <div style="color:var(--text);">1.5:1</div><div style="color:var(--accent);">7.9</div><div style="color:var(--accent);">6.5%</div>
+            <div style="color:var(--text);">1:1</div><div style="color:var(--accent);">7.5</div><div style="color:var(--accent);">5.8%</div>
+            <div style="color:var(--text);">1:6</div><div style="color:var(--accent);">6.1</div><div style="color:var(--accent);">3.1%</div>
+            <div style="color:var(--text);">1:10~1:20</div><div style="color:var(--accent);">5.9</div><div style="color:var(--accent);">2.7%</div>
+            <div style="color:var(--text);">纯CA</div><div style="color:var(--accent);">5.5</div><div style="color:var(--accent);">2.0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
 </main>
 
 <!-- Footer -->
 <footer class="footer">
   <span class="dot">●</span> 数据仅供参考，以现场发质判断为准 <span class="dot">●</span>
-  <div style="margin-top:6px;font-size:11px;opacity:0.6;">店内: 192.168.3.250:8889</div>
 </footer>
 
 <!-- Back to top -->
@@ -654,217 +793,144 @@ body {
    ───────────────────────────────────────── */
 
 const HAIR_TYPES = [
-  { id: 'fine-healthy', label: '细软健康发（3度，未烫染）' },
-  { id: 'coarse-healthy', label: '粗硬健康发（3度，未烫染）' },
-  { id: 'moderate-damaged', label: '中度受损（5-6度，染过1-2次）' },
-  { id: 'severe-damaged', label: '重度受损（7度+，多次烫染）' },
+  { id: 'level-1-coarse', label: '1级·健康粗硬发（2-3度 | 粗硬、有韧性）' },
+  { id: 'level-1-fine', label: '1级·健康细软发（2-3度 | 细软、成型力弱）' },
+  { id: 'level-2-coarse', label: '2级·轻度受损粗硬（3-4度 | 偏粗、密齿梳顺）' },
+  { id: 'level-2-fine', label: '2级·轻度受损细软（3-4度 | 偏细、密齿梳顺）' },
+  { id: 'level-3', label: '3级·受损发（5-6度 | 密齿梳有卡顿）' },
+  { id: 'level-4', label: '4级·严重受损（6-7度 | 漂后手感好也属此类）' },
+  { id: 'level-5', label: '5级·极度受损（8-9度 | 软绵无支撑力）' },
+  { id: 'level-mix-1-3', label: '🔀 混合·发根1级 + 发尾3级' },
+  { id: 'level-mix-1-4', label: '🔀 混合·发根1级 + 发尾4-5级' },
+  { id: 'level-mix-2-4', label: '🔀 混合·发根2级 + 发尾4级' },
 ];
 
 const PERM_STYLES = [
-  { id: 'wool-perm', label: '羊毛卷' },
+  { id: 'wool-perm', label: '羊毛卷（最卷）' },
   { id: 'french-wool-perm', label: '法式羊毛卷' },
-  { id: 'french-wave', label: '法式烫/大波浪' },
-  { id: 'wood-horse', label: '木马卷' },
-  { id: 'cloud-perm', label: '云朵卷' },
-  { id: 'egg-perm', label: '蛋蛋卷' },
-  { id: 'morgan-perm', label: '摩根烫' },
+  { id: 'french-wave', label: '法式烫' },
+  { id: 'style-perm', label: '造型烫（自然）' },
+  { id: 'c-straight', label: 'C型拉直' },
 ];
 
-/* Each entry: { hairType, permStyle, soften, rods, warning } */
-const PERM_DATA = [
-  // 1. 细软健康发 + 羊毛卷
-  {
-    hairType: 'fine-healthy',
-    permStyle: 'wool-perm',
-    soften: {
-      pH: '7 ~ 8',
-      thio: '6 ~ 7%',
-      protein: '15 ~ 20g',
-      targetDegree: '65 ~ 75%',
-      penetration: false,
-      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '14 ~ 16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '14 ~ 16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: null,
-  },
-  // 2. 细软健康发 + 法式羊毛卷
-  {
-    hairType: 'fine-healthy',
-    permStyle: 'french-wool-perm',
-    soften: {
-      pH: '7 ~ 8',
-      thio: '6 ~ 7%',
-      protein: '15 ~ 20g',
-      targetDegree: '65 ~ 75%',
-      penetration: false,
-      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '14 ~ 16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '16 ~ 18号', technique: '缠绕', startFrom: '从发根', angle: '90 ~ 135°' },
-      { zone: '两侧', size: '16 ~ 18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '18 ~ 22号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: null,
-  },
-  // 3. 粗硬健康发 + 羊毛卷
-  {
-    hairType: 'coarse-healthy',
-    permStyle: 'wool-perm',
-    soften: {
-      pH: '9 ~ 9.5',
-      thio: '9%（不稀释）',
-      protein: '不加蛋白',
-      targetDegree: '80 ~ 85%',
-      penetration: true,
-      rinseSignal: '测试杠出现强力卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '18 ~ 20号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: null,
-  },
-  // 4. 粗硬健康发 + 法式烫/大波浪
-  {
-    hairType: 'coarse-healthy',
-    permStyle: 'french-wave',
-    soften: {
-      pH: '8 ~ 9',
-      thio: '7 ~ 9%',
-      protein: '不加蛋白',
-      targetDegree: '75 ~ 80%',
-      penetration: false,
-      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '24 ~ 28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '24 ~ 28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' },
-    ],
-    warning: null,
-  },
-  // 5. 中度受损 + 羊毛卷
-  {
-    hairType: 'moderate-damaged',
-    permStyle: 'wool-perm',
-    soften: {
-      pH: '6 ~ 7',
-      thio: '4 ~ 5%',
-      protein: '20 ~ 25g',
-      targetDegree: '60 ~ 70%',
-      penetration: false,
-      rinseSignal: '测试杠出现卷曲即可，勿过度软化'
-    },
-    rods: [
-      { zone: '头顶', size: '14 ~ 16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: '⚠️ 受损发慎烫羊毛卷！卷度过小容易造成二次损伤，建议先做护理再考虑。',
-  },
-  // 6. 重度受损 + 云朵卷
-  {
-    hairType: 'severe-damaged',
-    permStyle: 'cloud-perm',
-    soften: {
-      pH: '6',
-      thio: '2 ~ 3%',
-      protein: '多加蛋白',
-      targetDegree: '50 ~ 60%',
-      penetration: false,
-      rinseSignal: '测试杠微微卷曲即可冲水，宁软勿过'
-    },
-    rods: [
-      { zone: '头顶', size: '24 ~ 26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
-      { zone: '枕骨', size: '26 ~ 28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
-      { zone: '两侧', size: '26 ~ 28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },
-      { zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' },
-    ],
-    warning: '💡 云朵卷对受损发最友好！大卷自然慵懒，不伤发质。建议全程低pH操作。',
-  },
-  // 7. 细软健康发 + 蛋蛋卷
-  {
-    hairType: 'fine-healthy',
-    permStyle: 'egg-perm',
-    soften: {
-      pH: '7 ~ 8',
-      thio: '6 ~ 7%',
-      protein: '15g',
-      targetDegree: '70 ~ 75%',
-      penetration: false,
-      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '16 ~ 18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '18号', technique: '平卷', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '20号', technique: '平卷', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: null,
-  },
-  // 8. 粗硬健康发 + 木马卷
-  {
-    hairType: 'coarse-healthy',
-    permStyle: 'wood-horse',
-    soften: {
-      pH: '8 ~ 9',
-      thio: '7 ~ 9%',
-      protein: '不加蛋白',
-      targetDegree: '75 ~ 80%',
-      penetration: false,
-      rinseSignal: '测试杠出现明显卷曲，冲水至pH中性'
-    },
-    rods: [
-      { zone: '头顶', size: '20 ~ 22号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '枕骨', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '两侧', size: '22 ~ 24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },
-      { zone: '后颈', size: '24号', technique: '缠绕', startFrom: '从发尾', angle: '45 ~ 72°' },
-    ],
-    warning: null,
-  },
-  // 9. 摩根烫（所有发质共用）
-  {
-    hairType: '__all__',
-    permStyle: 'morgan-perm',
-    soften: {
-      pH: '冷烫药水（非热烫）',
-      thio: '按冷烫说明配比',
-      protein: '视发质添加',
-      targetDegree: '60 ~ 70%（仅发根段）',
-      penetration: false,
-      rinseSignal: '发根段卷曲即可冲水'
-    },
-    rods: [
-      { zone: '发根（全头）', size: '专用小杠 Φ1~2cm', technique: '冷烫卷杠', startFrom: '从发根', angle: '根部贴头皮起卷' },
-    ],
-    warning: '💡 摩根烫仅处理发根2~3cm区域，不烫发尾。适合细软塌发质，打造自然蓬松发根。',
-  },
-];
+/* ─────────────────────────────────────────
+   SUPABASE API - 从云端加载 PERM_DATA
+   ───────────────────────────────────────── */
+const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
 
-/* Morgan perm applies to all hair types */
-(function expandMorgan() {
-  const morgan = PERM_DATA.find(d => d.hairType === '__all__' && d.permStyle === 'morgan-perm');
-  if (!morgan) return;
-  HAIR_TYPES.forEach(ht => {
-    if (PERM_DATA.some(d => d.hairType === ht.id && d.permStyle === 'morgan-perm')) return;
-    PERM_DATA.push({
-      ...morgan,
-      hairType: ht.id,
-      soften: { ...morgan.soften },
-      rods: morgan.rods.map(r => ({ ...r })),
+let PERM_DATA_CACHE = [];
+let DATA_LOADING = false;
+let DATA_LOADED = false;
+
+async function loadPermData() {
+  if (DATA_LOADING) return;
+  DATA_LOADING = true;
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/perm_data?select=*`, {
+      headers: { 'apikey': SUPABASE_KEY }
     });
-  });
-})();
+    const rows = await resp.json();
+    // 转换为JS格式
+    PERM_DATA_CACHE = rows.map(r => ({
+      hairType: r.hair_type,
+      permStyle: r.style,
+      soften: r.soften_raw ? (typeof r.soften_raw === 'string' ? JSON.parse(r.soften_raw) : r.soften_raw) : { pH: r.soften_ph, thio: r.soften_thio },
+      rods: r.rod_sizes ? (typeof r.rod_sizes === 'string' ? JSON.parse(r.rod_sizes) : r.rod_sizes) : [],
+      warning: r.warning || null
+    }));
+    DATA_LOADED = true;
+    console.log(`Supabase: 加载 ${PERM_DATA_CACHE.length} 条方案`);
+  } catch(e) {
+    console.error('Supabase加载失败:', e);
+  }
+  DATA_LOADING = false;
+}
+
+// 兼容旧代码的 PERM_DATA 代理
+const PERM_DATA = new Proxy([], {
+  get(target, prop) {
+    if (DATA_LOADED) return PERM_DATA_CACHE[prop];
+    return target[prop];
+  }
+});
+
+// 页面加载时立即拉数据
+loadPermData();
+
+const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据备份 ===
+  { hairType: 'level-1-coarse', permStyle: 'wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '90 ~ 100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标90%+ > 刹车上限70%，至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'french-wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '80 ~ 90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标80-90% > 刹车上限70%，至80-90%', rinseSignal: '测试杠饱满卷圈、弹力下降时冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'french-wave', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70 ~ 80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标70% = 刹车上限70%，涂抹(可不再补涂)，到饱满卷圈80%即停', rinseSignal: '测试杠饱满卷圈（约80%）时冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'style-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯~饱满卷圈即可，宁软勿过' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'c-straight', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70%（特殊80~90%）', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位，发尾微卷即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '💡 自然卷/沙发/炸毛发质软化度提至80-90%。' },
+
+  // === 1级细软健康发 (PH 7-8, 纯TGA, 刹车上限50-60%) ===
+  { hairType: 'level-1-fine', permStyle: 'wool-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标90%+ >> 刹车上限50-60%，必须至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'french-wool-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标80-90% >> 刹车上限50-60%，细软发杠号取小', rinseSignal: '测试杠饱满卷圈、弹力下降时冲水' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90~135°' },{ zone: '两侧', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'french-wave', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标70% > 刹车上限50-60%，涂抹', rinseSignal: '测试杠饱满卷圈（约80%）冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'style-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% > 刹车上限50-60%，', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'c-straight', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70%（特殊80~90%）', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标70% > 刹车上限50-60%', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '💡 细软发需渗透式打底帮助PH破开毛鳞片。' },
+
+  // === 2级粗硬轻度受损 (PH 8, 6:1, 刹车上限60-70%) ===
+  { hairType: 'level-2-coarse', permStyle: 'wool-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标90%+ >> 刹车上限60-70%', rinseSignal: '测试杠卷圈清晰弹力下降冲水' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'french-wool-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标80-90% > 刹车上限60-70%', rinseSignal: '测试杠饱满卷圈弹力下降冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'french-wave', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% = 刹车上限70%，', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'style-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'c-straight', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // === 2级细软轻度受损 (PH 8, 6:1, 刹车上限60-70%) ===
+  { hairType: 'level-2-fine', permStyle: 'wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标90%+ >> 刹车上限60-70%，细软杠号取小', rinseSignal: '测试杠卷圈清晰弹力下降冲水' }, rods: [{ zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'french-wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。目标80-90% > 刹车上限60-70%', rinseSignal: '测试杠饱满卷圈弹力下降冲水' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90~135°' },{ zone: '两侧', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'french-wave', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% = 刹车上限70%，', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'style-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯即可' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'c-straight', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // === 3级受损发 (PH 7-8, 1:1, 刹车上限70-84%) ===
+  { hairType: 'level-3', permStyle: 'wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。⚠️ 受损发慎烫羊毛卷！必须先做护理。，全程测试杠，一旦松软立即冲水', rinseSignal: '卷圈清晰弹力尚存时立即冲水（宁软勿过）' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 受损发慎烫羊毛卷！务必先做护理，全程低PH低药性。测试杠一旦松软立即冲水。' },
+  { hairType: 'level-3', permStyle: 'french-wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。⚠️ 谨慎。刹车上限70-84%，打底药水更稀(3:1)', rinseSignal: '饱满卷圈弹力尚存时冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 受损发慎烫法式羊毛卷！打底药水比例3:1（更稀），先做护理。' },
+  { hairType: 'level-3', permStyle: 'french-wave', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70~80%', penetration: false, penetrationType: '', penetrationNote: '刹车上限70-84%够用，正常涂抹', rinseSignal: '明显S弯~饱满卷圈即可冲水' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '26~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-3', permStyle: 'style-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: 'S弯即可，宁软勿过' }, rods: [{ zone: '全头', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: null },
+  { hairType: 'level-3', permStyle: 'c-straight', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可，发尾微卷就停' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 受损发拉直时发尾不过度处理。软化到位即可，不追求高软化度。' },
+
+  // === 4级严重受损 (PH 6-7, 1:3~1:6, 刹车上限75-80%) ===
+  { hairType: 'level-4', permStyle: 'french-wave', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70~80%', penetration: false, penetrationType: '', penetrationNote: '刹车上限75-80%够用，低PH慢走', rinseSignal: '明显S弯即可冲水，宁软勿过' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '枕骨', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 严重受损发：低PH慢走、不补涂、S弯就停。' },
+  { hairType: 'level-4', permStyle: 'style-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '有松动感即可冲水' }, rods: [{ zone: '全头', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: '⚠️ 严重受损只建议造型烫/法式烫，避开羊毛卷/法式羊毛卷。' },
+  { hairType: 'level-4', permStyle: 'wool-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水。⚠️⚠️⚠️ 极度危险！刹车仅75-80%，远超上限。但打底必须极稀(3:1)，全程测试杠', rinseSignal: '卷圈清晰弹力尚存立即冲水（宁软一万倍勿过）' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫🚫🚫 严重受损发极不建议烫羊毛卷！发质崩溃风险极高。必须操作时：PH≤7、CA大量(1:10~1:20)、打底极稀、3分钟一测、卷圈一显即冲。先签免责。' },
+  { hairType: 'level-4', permStyle: 'french-wool-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '80~90%', penetration: true, penetrationType: 'light', penetrationNote: '⚠️ 危险！刹车75-80%，目标80-90%超上限。打底(3:1)10分→正式涂抹，全程紧盯测试杠', rinseSignal: '饱满卷圈弹力尚存立即冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫 严重受损发慎烫法式羊毛卷！卷圈一显即冲，不要追求完美卷度。先做深层护理。' },
+  { hairType: 'level-4', permStyle: 'c-straight', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可，发尾不过度' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 严重受损发拉直时发尾轻带过，勿夹死。软化不追求高软化度。' },
+
+  // === 5级极度受损 — 不建议热烫 ===
+  { hairType: 'level-5', permStyle: '__none__', soften: { pH: '—', tgaCa: '纯CA', thio: '—', targetDegree: '—', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '极度受损发不建议热烫。如需操作，PH5~6、纯CA或1:20，只做大卷。' }, rods: [], warning: '🚫 5级极度受损发不建议任何热烫操作。先做深层护理恢复发质。' },
+
+  // =======================================================================
+  // 混合发质 — CA 保护法（PH5.5 / TGA2%）
+  // 逻辑：受损区先涂CA → 全头一次涂健康药水 → CA自动降级受损区
+  // =======================================================================
+
+  // ── 混合·发根1级粗硬 + 发尾3级（根PH9/纯TGA · 尾CA后≈PH7~7.5/5~6%）──
+  { hairType: 'level-mix-1-3', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '90~100%', applyOrder: '① 受损区涂CA（PH5.5/TGA2%）→ ② 渗透式五步（详见下方）', rinseSignal: '测试杠卷圈清晰弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16~18号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 渗透式五步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。' },
+  { hairType: 'level-mix-1-3', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式五步', rinseSignal: '测试杠饱满卷圈弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70~80%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH9/3:1) → ③ 正常软化', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // ── 混合·发根1级粗硬 + 发尾4-5级（根PH9/纯TGA · 尾CA后≈PH7~7.5/5~6%）──
+  { hairType: 'level-mix-1-4', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH9/3:1) → ③ 正常软化（宁软勿过）', rinseSignal: '测试杠S弯即可，宁软勿过' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 发尾极度脆弱（4-5级）！CA必须涂足，药水勿揉搓，S弯即停。' },
+  { hairType: 'level-mix-1-4', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 低PH慢走', rinseSignal: '有松动感即可冲水' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: '⚠️ 8-9度发尾极度脆弱！指尖轻拍不揉搓。CA保护是关键。' },
+  { hairType: 'level-mix-1-4', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 发尾轻处理', rinseSignal: '整体软化到位即可，发尾不过度' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 发尾4-5级极度脆弱，拉直时发尾带过勿夹死。' },
+  { hairType: 'level-mix-1-4', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '90~100%', applyOrder: '① 受损区厚涂CA → ② 渗透式五步（发尾全程重点保护）', rinseSignal: '发根段卷圈清晰+发尾有卷就冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫🚫 发尾4-5级+羊毛卷极度危险！发尾CA必须涂足、不打底、不揉搓、3分钟一测。发尾有卷圈就停，切勿追求完美。先签免责。' },
+  { hairType: 'level-mix-1-4', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式五步', rinseSignal: '发根饱满卷圈+发尾有卷冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫 发尾4-5级慎烫法式羊毛卷！发尾CA保护+不揉搓+先停为赢。' },
+
+  // ── 混合·发根2级 + 发尾4级（根PH8/3:1 · 尾CA后≈PH6.5~7/4.5~5%）──
+  { hairType: 'level-mix-2-4', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '90~100%', applyOrder: '① 受损区涂CA → ② 渗透式五步', rinseSignal: '测试杠卷圈清晰弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 渗透式五步！发根2级用PH8，发尾CA保护自动降到PH6.5~7。' },
+  { hairType: 'level-mix-2-4', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式五步', rinseSignal: '测试杠饱满卷圈弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70~80%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH8/3:1) → ③ 正常软化', rinseSignal: '测试杠明显S弯~饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '测试杠S弯即可' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+];
+
+
 
 /* ─────────────────────────────────────────
    APP LOGIC
@@ -902,12 +968,18 @@ document.addEventListener('DOMContentLoaded', () => {
   permStyleSelect.addEventListener('change', checkQueryReady);
 
   // === Query ===
-  queryBtn.addEventListener('click', () => {
+  queryBtn.addEventListener('click', async () => {
     const hair = hairTypeSelect.value;
     const style = permStyleSelect.value;
     if (!hair || !style) return;
 
-    const result = PERM_DATA.find(d => d.hairType === hair && d.permStyle === style);
+    // 等待数据加载
+    if (!DATA_LOADED) {
+      showToast('数据加载中，请稍候再试...');
+      return;
+    }
+
+    const result = PERM_DATA_CACHE.find(d => d.hairType === hair && d.permStyle === style);
     if (!result) {
       showToast('暂无该组合的数据，请尝试其他搭配');
       resultArea.innerHTML = '';
@@ -921,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderResult(data) {
     const s = data.soften;
     const rods = data.rods;
+    const isMixed = s.mixed;
 
     let html = '';
 
@@ -928,17 +1001,70 @@ document.addEventListener('DOMContentLoaded', () => {
     html += `<div class="result-card" style="animation-delay:0s">
       <div class="card-header">
         <span class="card-icon">🧪</span>
-        <span class="card-title">软化方案</span>
+        <span class="card-title">${isMixed ? '分段软化方案 🔀' : '软化方案'}</span>
       </div>
-      <div class="card-body">
+      <div class="card-body">`;
+
+    if (isMixed && s.caProtect) {
+      html += `
+        <div class="param-row" style="color:var(--accent);font-weight:600;margin-bottom:8px;">🛡️ CA保护法：${s.applyOrder}</div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">▸ 健康发药水（全头）</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.mainDrug.pH}</b> · ${s.mainDrug.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.mainDrug.thio}</div>
+          </div>
+          <div style="flex:1;background:rgba(224,85,106,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;">▸ 受损区 ≈ CA混合后</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.endEffect.pH}</b> · ${s.endEffect.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">CA自动降级保护</div>
+          </div>
+        </div>
+        <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+
+    // 🔑 渗透式详细步骤
+    if (s.detailedSteps && s.detailedSteps.length) {
+      html += `<div style="margin-top:12px;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+        <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px;">📋 渗透式五步操作流程</div>`;
+      s.detailedSteps.forEach((step, i) => {
+        html += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:${i < s.detailedSteps.length - 1 ? '10px' : '0'};padding-bottom:${i < s.detailedSteps.length - 1 ? '8px' : '0'};border-bottom:${i < s.detailedSteps.length - 1 ? '1px solid var(--border)' : 'none'};">
+          <div style="flex-shrink:0;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--bg);font-weight:700;">${i+1}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;color:var(--text);font-weight:600;">${step.phase}：${step.action}</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${step.detail}</div>
+            ${step.time && step.time !== '—' ? `<div style="font-size:10px;color:var(--accent);margin-top:2px;">⏱ ${step.time}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    } else if (isMixed) {
+      html += `
+        <div class="param-row" style="color:var(--accent);font-weight:600;margin-bottom:8px;">📋 涂抹顺序：${s.applyOrder}</div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">▸ 发根段</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.root.pH}</b> · ${s.root.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.root.thio} · 目标 ${s.root.targetDegree}</div>
+          </div>
+          <div style="flex:1;background:rgba(224,85,106,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;">▸ 发尾段</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.end.pH}</b> · ${s.end.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.end.thio} · 目标 ${s.end.targetDegree}</div>
+          </div>
+        </div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+    } else {
+      html += `
         <div class="param-row"><span class="param-label">pH值</span><span class="param-value highlight">${s.pH}</span></div>
+        <div class="param-row"><span class="param-label">TGA:CA 配比</span><span class="param-value highlight">${s.tgaCa || '—'}</span></div>
         <div class="param-row"><span class="param-label">硫代浓度</span><span class="param-value highlight">${s.thio}</span></div>
         <div class="param-row"><span class="param-label">蛋白用量</span><span class="param-value">${s.protein}</span></div>
         <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
-        <div class="param-row"><span class="param-label">渗透式软化</span><span class="param-value ${s.penetration ? 'warn' : ''}">${s.penetration ? '⚠️ 必须' : '否'}</span></div>
-        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;max-width:180px;">${s.rinseSignal}</span></div>
-      </div>
-    </div>`;
+        <div class="param-row"><span class="param-label">软化流程</span><span class="param-value ${s.penetration ? 'warn' : ''}">${s.penetrationNote || (s.penetration ? '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水' : '正常涂抹')}</span></div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+    }
 
     // Rods card
     html += `<div class="result-card" style="animation-delay:0.1s">
@@ -963,6 +1089,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     html += `</tbody></table></div></div>`;
 
+    // 🔥 加热建议
+    const hairLevel = (data.hairType || '').includes('level-5') ? 5 :
+                      (data.hairType || '').includes('level-4') ? 4 :
+                      (data.hairType || '').includes('level-3') ? 3 :
+                      (data.hairType || '').includes('level-2') ? 2 :
+                      (data.hairType || '').includes('level-1') ? 1 : 0;
+    const heatInfo = hairLevel <= 1 ? {temp:'110~120℃',time:'15~18分',note:'健康发可高温快烤'} :
+                     hairLevel === 2 ? {temp:'110℃',time:'12~15分',note:'中度健康标准烤'} :
+                     hairLevel === 3 ? {temp:'100~110℃',time:'10~12分',note:'受损发减温减时'} :
+                     hairLevel === 4 ? {temp:'90~100℃',time:'8~10分',note:'严重受损低温慢烤'} :
+                                       {temp:'80~90℃',time:'5~8分',note:'极度脆弱，宁欠勿过'};
+    html += `<div class="result-card" style="animation-delay:0.15s">
+      <div class="card-header">
+        <span class="card-icon">🔥</span>
+        <span class="card-title">加热建议</span>
+      </div>
+      <div class="card-body">
+        <div class="param-row"><span class="param-label">烘干打底</span><span class="param-value">包棉 60℃ × 15分（去多余水分）</span></div>
+        <div class="param-row"><span class="param-label">正式加热</span><span class="param-value highlight">${heatInfo.temp} × ${heatInfo.time}</span></div>
+        <div class="param-row"><span class="param-label">注意</span><span class="param-value" style="font-size:12px;color:var(--warning);">${heatInfo.note}</span></div>
+        <div class="param-row"><span class="param-label">检查标准</span><span class="param-value" style="font-size:12px;">全部加干</span></div>
+      </div>
+    </div>`;
+
     // Warning
     if (data.warning) {
       html += `<div class="warning-notice">${data.warning}</div>`;
@@ -976,13 +1126,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderTips() {
     return `<div class="tips-section" style="animation-delay:0.2s">
-      <div class="tips-title">💡 通用提示</div>
+      <div class="tips-title">💡 核心法则</div>
       <ul class="tips-list">
-        <li>受损发慎烫小卷款式（羊毛卷、芭比卷）</li>
-        <li>细软发头顶必须小杠从根起，否则不蓬松</li>
-        <li>后颈大杠收尾，避免炸毛</li>
-        <li>软化不是测软是测卷——上测试杠</li>
-        <li>吹干才显卷——热变性结晶湿看不见</li>
+        <li><b>假性软化鉴别：</b>细软发摸软但有硬感 → 喷水冲掉药水 → 拉不动=假性，拉得动=真到位</li>
+        <li><b>软化核心：</b>张力强→去除 / 张力中→保留 / 张力弱→加强。用一种软化度套所有发质必翻车</li>
+        <li><b>渗透式三步：</b>①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1→10分→冲水</li>
+        <li><b>药卷三场景：</b>①发根蓬松→最后一遍涂药时发根上药就卷 ②难烫发质→提前上药卷抢变卷时间 ③质感造型烫→吹干+高温夹板+喷水再烫→卷度弹性好</li>
+        <li><b>混合发质：</b>受损区先涂CA → 全头一次涂对应等级药水 → CA自动降级受损区。如需高软化度，CA后接渗透式继续操作</li>
       </ul>
     </div>`;
   }
@@ -996,49 +1146,100 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  // === Tab Switching ===
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn, .tab-content').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      this.classList.add('active');
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    });
+  });
+
   // === Calculator ===
-  const calcToggle = document.getElementById('calc-toggle');
-  const calcPanel = document.getElementById('calc-panel');
+  // 固定配比化学值表（独立于方案，不受查询影响）
+  function getFixedChem(tga, ca) {
+    // 简化配比 → 匹配固定参考值
+    if (tga <= 0 && ca <= 0) return null;
+    if (ca === 0) return { ph: '9.5', thio: '9.5%' };  // 纯TGA
+    if (tga === 0) return { ph: '5.5', thio: '2.0%' };  // 纯CA
+    var r = tga / ca;
+    if (r >= 5.5 && r <= 6.5) return { ph: '8.9', thio: '8.4%' };
+    if (r >= 2.8 && r <= 3.2) return { ph: '8.5', thio: '7.6%' };
+    if (r >= 1.4 && r <= 1.6) return { ph: '7.9', thio: '6.5%' };
+    if (r >= 0.95 && r <= 1.05) return { ph: '7.5', thio: '5.8%' };
+    if (r >= 0.15 && r <= 0.18) return { ph: '6.1', thio: '3.1%' };  // ~1:6
+    if (r >= 0.05 && r <= 0.12) return { ph: '5.9', thio: '2.7%' };  // 1:10~1:20
+    return null; // 自定义配比
+  }
+
   const calcBtn = document.getElementById('calc-btn');
   const calcResult = document.getElementById('calc-result');
 
-  calcToggle.addEventListener('click', () => {
-    const show = calcPanel.style.display === 'none';
-    calcPanel.style.display = show ? 'block' : 'none';
-    calcToggle.textContent = show ? '🧮 收起换算' : '🧮 配方换算';
-    if (show) calcPanel.scrollIntoView({ behavior: 'smooth' });
+  // 快速预设按钮
+  document.querySelectorAll('.preset-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('calc-tga').value = this.dataset.tga;
+      document.getElementById('calc-ca').value = this.dataset.ca;
+      document.getElementById('calc-amount').value = 50;
+      document.getElementById('calc-extra').value = 0;
+      // 点击预设后自动计算
+      calcBtn.click();
+    });
   });
 
-  const FORMULAS = {
-    '5':  { base: 5, desc: '5度以内', 药水: 5, 蛋白: 1, 水: 1 },
-    '6':  { base: 5, desc: '6度',      药水: 5, 蛋白: 2, 水: 1 },
-    '7':  { base: 5, desc: '7度',      药水: 5, 蛋白: 2, 水: 2 },
-    '7.5':{ base: 5, desc: '7.5度',    药水: 5, 蛋白: 2, 醋: 2 },
-    '8':  { base: 3, desc: '8度',      药水: 3, 蛋白: 3, 醋: 3, 牛奶: 1.5, 雪碧: 1.5 },
-  };
-
   calcBtn.addEventListener('click', () => {
-    const level = document.getElementById('calc-level').value;
+    const tga = parseFloat(document.getElementById('calc-tga').value) || 0;
+    const ca = parseFloat(document.getElementById('calc-ca').value) || 0;
     const amount = parseFloat(document.getElementById('calc-amount').value) || 50;
-    if (!level) { showToast('请选择受损等级'); return; }
+    const extra = parseFloat(document.getElementById('calc-extra').value) || 0;
 
-    const f = FORMULAS[level];
-    const ratio = amount / f.base;
-    const items = [];
-    for (const [k, v] of Object.entries(f)) {
-      if (k === 'base' || k === 'desc') continue;
-      const val = (v * ratio).toFixed(1);
-      items.push({ label: k, value: val + 'g' });
+    if (tga <= 0 && ca <= 0) { showToast('请至少输入一份 TGA 或 CA'); return; }
+
+    const totalParts = tga + ca;
+    const tgaG = totalParts > 0 ? (tga / totalParts * amount) : 0;
+    const caG = totalParts > 0 ? (ca / totalParts * amount) : 0;
+    const total = amount + extra;
+
+    let html = '';
+    html += `<div style="padding:4px 0;color:#999;font-size:13px;margin-bottom:8px;">`;
+    html += `TGA:CA = <b style="color:var(--accent);">${tga}:${ca}</b>`;
+    if (totalParts > 0) {
+      const pct = (tga / totalParts * 100).toFixed(0);
+      html += ` · TGA占比 ${pct}%`;
     }
+    html += `</div>`;
 
-    let html = `<div style="padding:4px 0;color:#999;font-size:13px;">${f.desc} · 药水基准 ${amount}g · 倍率 ×${ratio.toFixed(1)}</div>`;
-    items.forEach(i => {
-      html += `<div class="calc-row"><span class="label">${i.label}</span><span class="value">${i.value}</span></div>`;
-    });
-    html += `<div style="margin-top:12px;padding:10px;background:#1a1a2e;border-radius:8px;font-size:12px;color:#999;">
-      💡 如有6度白醋替换普通醋；8-9度配方可做胶发还原<br>
-      调好后头发会<b style="color:var(--accent);">先硬再软</b>——松动即可烫发
-    </div>`;
+    html += `<div class="calc-row"><span class="label">TGA 用量</span><span class="value" style="color:var(--accent);">${tgaG.toFixed(1)} g</span></div>`;
+    html += `<div class="calc-row"><span class="label">CA 用量</span><span class="value" style="color:var(--danger);">${caG.toFixed(1)} g</span></div>`;
+    if (extra > 0) {
+      html += `<div class="calc-row"><span class="label">稀释液（水/蛋白）</span><span class="value">${extra.toFixed(0)} g</span></div>`;
+    }
+    html += `<div class="calc-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;"><span class="label">调配总量</span><span class="value" style="font-weight:700;">${total.toFixed(1)} g</span></div>`;
+
+    // PH/硫代：按固定配比表查询 + 真实稀释计算
+    const fixedRef = getFixedChem(tga, ca);
+    if (fixedRef) {
+      const origThio = parseFloat(fixedRef.thio);
+      if (extra > 0) {
+        const dilutedThio = (origThio * amount / total).toFixed(1);
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#999;">`;
+        html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b>`;
+        html += ` · 原硫代 <span style="color:var(--text-secondary);">${fixedRef.thio}</span>`;
+        html += ` → 稀释后 <b style="color:var(--accent);">${dilutedThio}%</b>`;
+        html += `<br>💡 ${amount.toFixed(0)}g药水 + ${extra.toFixed(0)}g水 → 总量${total.toFixed(0)}g，硫代稀释至${dilutedThio}%</div>`;
+      } else {
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#999;">`;
+        html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b> · 硫代 <b style="color:var(--accent);">${fixedRef.thio}</b>`;
+        html += `<br>💡 加水/蛋白稀释 → 降药性不降PH</div>`;
+      }
+    } else if (totalParts > 0) {
+      html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#666;">`;
+      html += `⚠️ 自定义配比，无预设PH/硫代数据`;
+      if (extra > 0) html += ` (已含稀释)`;
+      html += `</div>`;
+    }
 
     calcResult.innerHTML = html;
   });
@@ -1076,5 +1277,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<!-- 版本更新检测 -->
+<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite;}" onclick="location.reload()">
+  🔄 有新版本，点击刷新
+</div>
+<script>
+(function(){
+  var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
+  setInterval(function(){
+    fetch(location.href + '?_t=' + Date.now())
+      .then(function(r){return r.text()})
+      .then(function(t){
+        var m = t.match(/data-version="(\d+)"/);
+        if (m && parseInt(m[1]) > VER) {
+          document.getElementById('update-banner').style.display = 'block';
+        }
+      })
+      .catch(function(){});
+  }, 60000);
+})();
+</script>
 </body>
 </html>
