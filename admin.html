@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自由手艺人 · 后台管理</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,sans-serif; background:#000; color:#e5e5e5; min-height:100vh; }
+.login-box { max-width:360px; margin:15vh auto; background:#16181c; border:1px solid #333; border-radius:12px; padding:40px 30px; }
+.login-box h1 { font-size:20px; color:#fff; text-align:center; margin-bottom:24px; }
+.login-box input { width:100%; padding:12px; border:1px solid #333; border-radius:8px; background:#000; color:#fff; font-size:14px; margin-bottom:12px; }
+.login-box button { width:100%; padding:12px; background:#fff; color:#000; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; }
+.login-box .error { color:#e0556a; font-size:13px; margin-top:8px; text-align:center; }
+.header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:#16181c; border-bottom:1px solid #333; }
+.header h2 { font-size:16px; color:#fff; }
+.header button { padding:6px 16px; background:transparent; color:#e0556a; border:1px solid #e0556a; border-radius:6px; cursor:pointer; font-size:13px; }
+.tabs { display:flex; gap:0; padding:0 20px; background:#16181c; border-bottom:1px solid #333; }
+.tab { padding:10px 20px; color:#888; cursor:pointer; font-size:14px; border-bottom:2px solid transparent; }
+.tab.active { color:#fff; border-bottom-color:#fff; }
+.content { padding:20px; max-width:900px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px; }
+th { text-align:left; padding:8px; color:#888; border-bottom:1px solid #333; font-weight:400; }
+td { padding:8px; border-bottom:1px solid #222; }
+td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; margin-right:4px; }
+.btn-edit { background:transparent; color:#fff; border:1px solid #555; }
+.btn-del { background:transparent; color:#e0556a; border:1px solid #e0556a; }
+.btn-add { padding:8px 20px; background:#fff; color:#000; border:none; border-radius:6px; font-size:14px; cursor:pointer; margin-bottom:16px; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center; }
+.modal.show { display:flex; }
+.modal-box { background:#16181c; border:1px solid #333; border-radius:12px; padding:30px; width:420px; max-height:80vh; overflow-y:auto; }
+.modal-box h3 { font-size:16px; color:#fff; margin-bottom:16px; }
+.modal-box label { display:block; font-size:12px; color:#888; margin:10px 0 4px; }
+.modal-box input, .modal-box textarea { width:100%; padding:10px; border:1px solid #333; border-radius:6px; background:#000; color:#fff; font-size:13px; }
+.modal-box textarea { min-height:80px; resize:vertical; font-family:monospace; }
+.modal-box .btn-row { display:flex; gap:8px; margin-top:16px; }
+.modal-box .btn-row button { flex:1; padding:10px; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+.btn-save { background:#fff; color:#000; font-weight:600; }
+.btn-cancel { background:transparent; color:#888; border:1px solid #555!important; }
+#admin-panel { display:none; }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); padding:10px 24px; border-radius:8px; font-size:13px; z-index:200; }
+.toast.ok { background:#1a3a1a; color:#4ade80; }
+.toast.err { background:#3a1a1a; color:#e0556a; }
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login-page" class="login-box">
+  <h1>后台管理</h1>
+  <input type="text" id="login-user" placeholder="用户名" autocomplete="off">
+  <input type="password" id="login-pass" placeholder="密码">
+  <button onclick="doLogin()">登录</button>
+  <div class="error" id="login-error"></div>
+</div>
+
+<!-- 管理面板 -->
+<div id="admin-panel">
+  <div class="header">
+    <h2>自由手艺人 · 后台管理</h2>
+    <button onclick="doLogout()">退出</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('hair')">发质配置</div>
+    <div class="tab" onclick="switchTab('style')">款式管理</div>
+    <div class="tab" onclick="switchTab('perm')">烫发方案</div>
+  </div>
+  <div class="content">
+    <div id="tab-hair">
+      <button class="btn-add" onclick="openModal('hair')">+ 新增加</button>
+      <table><thead><tr><th>名称</th><th>TGA:CA</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-hair"></tbody></table>
+    </div>
+    <div id="tab-style" style="display:none">
+      <button class="btn-add" onclick="openModal('style')">+ 新增</button>
+      <table><thead><tr><th>名称</th><th>描述</th><th>操作</th></tr></thead>
+      <tbody id="table-style"></tbody></table>
+    </div>
+    <div id="tab-perm" style="display:none">
+      <button class="btn-add" onclick="openModal('perm')">+ 新增方案</button>
+      <table><thead><tr><th>发质</th><th>款式</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-perm"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal" id="modal">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+let currentTab = 'hair';
+let editId = null;
+
+// ─── 登录 ───
+async function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (!u || !p) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?username=eq.${u}&password_hash=eq.${p}`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    const rows = await r.json();
+    if (rows.length > 0) {
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      loadData('hair');
+    } else {
+      document.getElementById('login-error').textContent = '用户名或密码错误';
+    }
+  } catch(e) {
+    document.getElementById('login-error').textContent = '登录失败：' + e;
+  }
+}
+
+function doLogout() {
+  document.getElementById('login-page').style.display = '';
+  document.getElementById('admin-panel').style.display = 'none';
+}
+
+// ─── Tab切换 ───
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['hair','style','perm'][i] === tab);
+  });
+  document.querySelectorAll('#tab-hair, #tab-style, #tab-perm').forEach(d => d.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = '';
+  loadData(tab);
+}
+
+// ─── 数据加载 ───
+async function loadData(tab) {
+  let table, url;
+  if (tab === 'hair') {
+    table = 'hair_types';
+    url = `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id`;
+  } else if (tab === 'style') {
+    table = 'perm_styles';
+    url = `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id`;
+  } else {
+    table = 'perm_data';
+    url = `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id&limit=100`;
+  }
+  try {
+    const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
+    const rows = await r.json();
+    renderTable(tab, rows);
+  } catch(e) {
+    toast('加载失败: ' + e, 'err');
+  }
+}
+
+function renderTable(tab, rows) {
+  const tbody = document.getElementById('table-' + tab);
+  if (tab === 'hair') {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.name)}</td><td>${esc(r.tga_ca_ratio)}</td><td>${esc(r.base_ph)}</td><td>${esc(r.base_thio)}</td>
+      <td><button class="btn-edit" onclick="openModal('hair',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('hair_types',${r.id})">删除</button></td>
+    </tr>`).join('');
+  } else if (tab === 'style') {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.name)}</td><td>${esc(r.description||'')}</td>
+      <td><button class="btn-edit" onclick="openModal('style',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('perm_styles',${r.id})">删除</button></td>
+    </tr>`).join('');
+  } else {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.hair_type)}</td><td>${esc(r.style)}</td><td>${esc(r.soften_ph)}</td><td>${esc(r.soften_thio)}</td>
+      <td><button class="btn-edit" onclick="openModal('perm',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('perm_data',${r.id})">删除</button></td>
+    </tr>`).join('');
+  }
+}
+
+function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── 弹窗 ───
+async function openModal(tab, id) {
+  editId = id || null;
+  const box = document.getElementById('modal-box');
+  if (tab === 'hair') {
+    let data = { name:'', tga_ca_ratio:'', base_ph:'', base_thio:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/hair_types?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}发质</h3>
+      <label>名称</label><input id="f-name" value="${esc(data.name)}">
+      <label>TGA:CA配比</label><input id="f-ratio" value="${esc(data.tga_ca_ratio||'')}">
+      <label>基础PH</label><input id="f-ph" value="${esc(data.base_ph||'')}">
+      <label>基础硫代</label><input id="f-thio" value="${esc(data.base_thio||'')}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="saveHair(${id||0})">保存</button>
+      </div>`;
+  } else if (tab === 'style') {
+    let data = { name:'', description:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/perm_styles?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}款式</h3>
+      <label>名称</label><input id="f-name" value="${esc(data.name)}">
+      <label>描述</label><input id="f-desc" value="${esc(data.description||'')}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="saveStyle(${id||0})">保存</button>
+      </div>`;
+  } else {
+    let data = { hair_type:'', style:'', soften_ph:'', soften_thio:'', rod_sizes:'[]', technique:'', steps:'[]', soften_raw:'{}', warning:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/perm_data?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}烫发方案</h3>
+      <label>发质类型</label><input id="f-ht" value="${esc(data.hair_type)}">
+      <label>款式</label><input id="f-style" value="${esc(data.style)}">
+      <label>软化PH</label><input id="f-ph" value="${esc(data.soften_ph)}">
+      <label>硫代</label><input id="f-thio" value="${esc(data.soften_thio)}">
+      <label>杠号(JSON)</label><textarea id="f-rods">${esc(typeof data.rod_sizes==='string' ? data.rod_sizes : JSON.stringify(data.rod_sizes))}</textarea>
+      <label>手法</label><input id="f-tech" value="${esc(data.technique)}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="savePerm(${id||0})">保存</button>
+      </div>`;
+  }
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  editId = null;
+}
+
+// ─── 保存 ───
+async function saveHair(id) {
+  const data = {
+    name: document.getElementById('f-name').value,
+    tga_ca_ratio: document.getElementById('f-ratio').value,
+    base_ph: document.getElementById('f-ph').value,
+    base_thio: document.getElementById('f-thio').value
+  };
+  await upsert('hair_types', id, data);
+}
+
+async function saveStyle(id) {
+  const data = {
+    name: document.getElementById('f-name').value,
+    description: document.getElementById('f-desc').value
+  };
+  await upsert('perm_styles', id, data);
+}
+
+async function savePerm(id) {
+  const data = {
+    hair_type: document.getElementById('f-ht').value,
+    style: document.getElementById('f-style').value,
+    soften_ph: document.getElementById('f-ph').value,
+    soften_thio: document.getElementById('f-thio').value,
+    rod_sizes: document.getElementById('f-rods').value,
+    technique: document.getElementById('f-tech').value,
+    steps: [],
+    soften_raw: { pH: document.getElementById('f-ph').value, thio: document.getElementById('f-thio').value },
+    warning: ''
+  };
+  await upsert('perm_data', id, data);
+}
+
+async function upsert(table, id, data) {
+  try {
+    let r;
+    if (id) {
+      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(data)
+      });
+    } else {
+      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(data)
+      });
+    }
+    if (r.ok) {
+      toast('保存成功', 'ok');
+      closeModal();
+      loadData(currentTab);
+    } else {
+      const err = await r.text();
+      toast('保存失败: ' + err, 'err');
+    }
+  } catch(e) {
+    toast('保存失败: ' + e, 'err');
+  }
+}
+
+async function doDelete(table, id) {
+  if (!confirm('确定删除？')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    if (r.ok) {
+      toast('删除成功', 'ok');
+      loadData(currentTab);
+    } else {
+      toast('删除失败', 'err');
+    }
+  } catch(e) {
+    toast('删除失败: ' + e, 'err');
+  }
+}
+
+// ─── Toast ───
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+</script>
+</body>
+</html>
