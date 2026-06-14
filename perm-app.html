@@ -2092,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 优先调 AI 建议（店内网络通 plan_server）
     supabasePromise.then(function(rows){
       var lastService = (rows && rows.length > 0) ? (rows[0].notes || '') : '';
-      fetch('http://192.168.3.250:8890/api/ai-plan', {
+      fetch('https://parameter-technological-versus-illustrated.trycloudflare.com/api/ai-plan', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({phone: phone, last_service: lastService}),
