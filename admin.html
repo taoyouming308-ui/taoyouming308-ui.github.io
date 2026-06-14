@@ -611,26 +611,10 @@ async function rejectImage(id) {
 }
 
 // cloudflared隧道地址（重启后可能变化，届时需要更新）
-var CF_TUNNEL = 'https://fraser-tops-eds-removing.trycloudflare.com';
+
 
 async function deleteImage(id) {
   if (!confirm('确认删除？')) return;
-  // 1. 尝试 cloudflared 代理（服务端真实DELETE，100%可靠）
-  try {
-    const r = await fetch(CF_TUNNEL + '/api/delete_showcase', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id })
-    });
-    const data = await r.json().catch(()=>({}));
-    if (data.success) {
-      toast('已删除', 'ok');
-      loadImages();
-      updatePendingBadge();
-      return;
-    }
-  } catch(e) { /* 代理不通 */ }
-  // 2. 兜底：设 status=rejected（数据库约束只允许 pending/approved/rejected）
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
       method: 'PATCH',
@@ -672,17 +656,6 @@ async function loadCarousel() {
 }
 async function deleteCarousel(id) {
   if (!confirm('确认从轮播移除？')) return;
-  // 1. 尝试 cloudflared 代理
-  try {
-    const r = await fetch(CF_TUNNEL + '/api/delete_showcase', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id })
-    });
-    const data = await r.json().catch(()=>({}));
-    if (data.success) { toast('已移除', 'ok'); loadCarousel(); return; }
-  } catch(e) { /* 走兜底 */ }
-  // 2. 兜底 PATCH
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
       method: 'PATCH',
