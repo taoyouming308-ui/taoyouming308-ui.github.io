@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>自由手艺人 · 后台管理</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,sans-serif; background:#000; color:#e5e5e5; min-height:100vh; }
+.login-box { max-width:360px; margin:15vh auto; background:#16181c; border:1px solid #333; border-radius:12px; padding:40px 30px; }
+.login-box h1 { font-size:20px; color:#fff; text-align:center; margin-bottom:24px; }
+.login-box input { width:100%; padding:12px; border:1px solid #333; border-radius:8px; background:#000; color:#fff; font-size:14px; margin-bottom:12px; }
+.login-box button { width:100%; padding:12px; background:#fff; color:#000; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; }
+.login-box .error { color:#e0556a; font-size:13px; margin-top:8px; text-align:center; }
+.header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:#16181c; border-bottom:1px solid #333; }
+.header h2 { font-size:16px; color:#fff; }
+.header button { padding:6px 16px; background:transparent; color:#e0556a; border:1px solid #e0556a; border-radius:6px; cursor:pointer; font-size:13px; }
+.tabs { display:flex; gap:0; padding:0 20px; background:#16181c; border-bottom:1px solid #333; }
+.tab { padding:10px 16px; color:#888; cursor:pointer; font-size:14px; border-bottom:2px solid transparent; white-space:nowrap; }
+.tab.active { color:#fff; border-bottom-color:#fff; }
+.content { padding:20px; max-width:1000px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px; }
+th { text-align:left; padding:8px; color:#888; border-bottom:1px solid #333; font-weight:400; }
+td { padding:8px; border-bottom:1px solid #222; vertical-align:middle; }
+td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; margin-right:4px; }
+.btn-edit { background:transparent; color:#fff; border:1px solid #555; }
+.btn-del { background:transparent; color:#e0556a; border:1px solid #e0556a; }
+.btn-add { padding:8px 20px; background:#fff; color:#000; border:none; border-radius:6px; font-size:14px; cursor:pointer; margin-bottom:16px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; }
+.badge-admin { background:#3a1a1a; color:#e0556a; }
+.badge-staff { background:#1a2a3a; color:#60a5fa; }
+.status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:4px; }
+.status-active { background:#4ade80; }
+.status-inactive { background:#888; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center; }
+.modal.show { display:flex; }
+.modal-box { background:#16181c; border:1px solid #333; border-radius:12px; padding:30px; width:420px; max-height:80vh; overflow-y:auto; }
+.modal-box h3 { font-size:16px; color:#fff; margin-bottom:16px; }
+.modal-box label { display:block; font-size:12px; color:#888; margin:10px 0 4px; }
+.modal-box input, .modal-box textarea, .modal-box select { width:100%; padding:10px; border:1px solid #333; border-radius:6px; background:#000; color:#fff; font-size:13px; }
+.modal-box select { appearance:none; }
+.modal-box textarea { min-height:80px; resize:vertical; font-family:monospace; }
+.modal-box .btn-row { display:flex; gap:8px; margin-top:16px; }
+.modal-box .btn-row button { flex:1; padding:10px; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+.btn-save { background:#fff; color:#000; font-weight:600; }
+.btn-cancel { background:transparent; color:#888; border:1px solid #555!important; }
+#admin-panel { display:none; }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); padding:10px 24px; border-radius:8px; font-size:13px; z-index:200; }
+.toast.ok { background:#1a3a1a; color:#4ade80; }
+.toast.err { background:#3a1a1a; color:#e0556a; }
+.img-thumb { width:100%;max-width:360px;height:auto;min-height:200px;object-fit:contain;border-radius:8px;cursor:pointer;background:#111;display:block; }
+.img-thumb:hover { opacity:0.85; }
+.ai-summary { cursor:pointer; padding:4px 6px; border-radius:4px; background:rgba(250,204,21,0.05); transition:background 0.2s; }
+.ai-summary:hover { background:rgba(250,204,21,0.12); }
+.img-modal { display:none; position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:999;align-items:center;justify-content:center;padding:20px; }
+.img-modal.show { display:flex; }
+.img-modal img { max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain; }
+.img-modal .close-img { position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer; }
+.btn-approve { background:transparent; color:#4ade80; border:1px solid #4ade80; }
+.btn-reject { background:transparent; color:#facc15; border:1px solid #facc15; }
+</style>
+</head>
+<body>
+
+<div id="login-page" class="login-box">
+  <h1>后台管理</h1>
+  <input type="text" id="login-user" placeholder="用户名" autocomplete="off">
+  <input type="password" id="login-pass" placeholder="密码">
+  <button onclick="doLogin()">登录</button>
+  <div class="error" id="login-error"></div>
+</div>
+
+<div id="admin-panel">
+  <div class="header">
+    <h2>自由手艺人 · 后台管理</h2>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="location.reload()" style="padding:6px 10px;background:transparent;color:#888;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:13px;">↻</button>
+      <button onclick="doLogout()">退出</button>
+    </div>
+  </div>
+  <div class="pending-alert" id="pending-alert" style="display:none;padding:10px 20px;background:#2a1a0a;color:#facc15;font-size:13px;text-align:center;border-bottom:1px solid #442200;cursor:pointer;" onclick="switchTab('images')">
+    📸 有 <strong id="pending-count-text">0</strong> 张图片待审核，点击查看
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('staff')">员工管理</div>
+    <div class="tab" onclick="switchTab('hair')">发质配置</div>
+    <div class="tab" onclick="switchTab('style')">款式管理</div>
+    <div class="tab" onclick="switchTab('perm')">烫发方案</div>
+    <div class="tab" onclick="switchTab('images')">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
+  </div>
+  <div class="content">
+    <!-- 员工管理 -->
+    <div id="tab-staff">
+      <button class="btn-add" onclick="openModal('staff')">+ 新增员工</button>
+      <table><thead><tr><th>用户名</th><th>角色</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="table-staff"></tbody></table>
+    </div>
+    <div id="tab-hair" style="display:none">
+      <button class="btn-add" onclick="openModal('hair')">+ 新增加</button>
+      <table><thead><tr><th>名称</th><th>TGA:CA</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-hair"></tbody></table>
+    </div>
+    <div id="tab-style" style="display:none">
+      <button class="btn-add" onclick="openModal('style')">+ 新增</button>
+      <table><thead><tr><th>名称</th><th>描述</th><th>操作</th></tr></thead>
+      <tbody id="table-style"></tbody></table>
+    </div>
+    <div id="tab-perm" style="display:none">
+      <button class="btn-add" onclick="openModal('perm')">+ 新增方案</button>
+      <table><thead><tr><th>发质</th><th>款式</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-perm"></tbody></table>
+    </div>
+    <div id="tab-images" style="display:none">
+      <div style="font-size:12px;color:#888;margin-bottom:12px;">状态：
+        <select id="img-filter" onchange="loadImages()" style="background:#000;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;">
+          <option value="all" selected>全部</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr><th style="width:40px;">ID</th><th>预览</th><th>发型分析</th><th>上传者</th><th>状态</th><th>时间</th><th style="width:160px;">操作</th></tr>
+        </thead>
+        <tbody id="table-images"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<div class="img-modal" id="img-modal" onclick="closeImageModal()">
+  <img id="img-modal-src">
+  <button class="close-img" onclick="closeImageModal()">✕</button>
+</div>
+<script>
+const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+let currentTab = 'staff';
+let editId = null;
+
+// 自动恢复登录（除非主动退出）
+(function() {
+  const s = localStorage.getItem('perm_admin');
+  if (s) {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    loadData('staff');
+    updatePendingBadge();
+  }
+  // 提前请求通知权限（用户交互时可获得授权）
+  try { Notification.requestPermission(); } catch(e) {}
+})();
+
+async function doLogin() {
+  // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
+  try { Notification.requestPermission(); } catch(e) {}
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (!u || !p) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?username=eq.${u}&password_hash=eq.${p}`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    const rows = await r.json();
+    if (rows.length > 0) {
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: rows[0].role}));
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      loadData('staff');
+      updatePendingBadge();
+    } else {
+      document.getElementById('login-error').textContent = '用户名或密码错误';
+    }
+  } catch(e) {
+    document.getElementById('login-error').textContent = '登录失败：' + e;
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('perm_admin');
+  document.getElementById('login-page').style.display = '';
+  document.getElementById('admin-panel').style.display = 'none';
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['staff','hair','style','perm','images'][i] === tab);
+  });
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images').forEach(d => d.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = '';
+  if (tab === 'images') {
+    loadImages();
+  } else {
+    loadData(tab);
+  }
+}
+
+async function loadData(tab) {
+  let url;
+  if (tab === 'staff') {
+    url = `${SUPABASE_URL}/rest/v1/staff?select=*&order=id`;
+  } else if (tab === 'hair') {
+    url = `${SUPABASE_URL}/rest/v1/hair_types?select=*&order=id`;
+  } else if (tab === 'style') {
+    url = `${SUPABASE_URL}/rest/v1/perm_styles?select=*&order=id`;
+  } else {
+    url = `${SUPABASE_URL}/rest/v1/perm_data?select=*&order=id&limit=100`;
+  }
+  try {
+    const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
+    const rows = await r.json();
+    renderTable(tab, rows);
+  } catch(e) {
+    toast('加载失败: ' + e, 'err');
+  }
+}
+
+function renderTable(tab, rows) {
+  const tbody = document.getElementById('table-' + tab);
+  if (tab === 'staff') {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td><b>${esc(r.username)}</b></td>
+      <td><span class="badge ${r.role==='admin'?'badge-admin':'badge-staff'}">${esc(r.role)}</span></td>
+      <td>${esc(r.store||'')}</td>
+      <td><span class="status-dot ${r.active?'status-active':'status-inactive'}"></span>${r.active?'启用':'停用'}</td>
+      <td>${(r.created_at||'').substring(0,10)}</td>
+      <td><button class="btn-edit" onclick="openModal('staff',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('staff',${r.id})">删除</button></td>
+    </tr>`).join('');
+  } else if (tab === 'hair') {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.name)}</td><td>${esc(r.tga_ca_ratio)}</td><td>${esc(r.base_ph)}</td><td>${esc(r.base_thio)}</td>
+      <td><button class="btn-edit" onclick="openModal('hair',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('hair_types',${r.id})">删除</button></td>
+    </tr>`).join('');
+  } else if (tab === 'style') {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.name)}</td><td>${esc(r.description||'')}</td>
+      <td><button class="btn-edit" onclick="openModal('style',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('perm_styles',${r.id})">删除</button></td>
+    </tr>`).join('');
+  } else {
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.hair_type)}</td><td>${esc(r.style)}</td><td>${esc(r.soften_ph)}</td><td>${esc(r.soften_thio)}</td>
+      <td><button class="btn-edit" onclick="openModal('perm',${r.id})">编辑</button>
+      <button class="btn-del" onclick="doDelete('perm_data',${r.id})">删除</button></td>
+    </tr>`).join('');
+  }
+}
+
+function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function openModal(tab, id) {
+  editId = id || null;
+  const box = document.getElementById('modal-box');
+  
+  if (tab === 'staff') {
+    let data = { username:'', password_hash:'', role:'staff', store:'', active:true };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}员工</h3>
+      <label>用户名</label><input id="f-user" value="${esc(data.username)}" ${id?'readonly':''}>
+      <label>密码</label><input id="f-pass" type="text" placeholder="${id?'留空则不修改':'请输入密码'}">
+      <label>角色</label><select id="f-role"><option value="admin" ${data.role==='admin'?'selected':''}>管理员</option><option value="staff" ${data.role==='staff'?'selected':''}>员工</option></select>
+      <label>分店</label><input id="f-store" value="${esc(data.store||'')}" placeholder="如：自由手艺人">
+      <label>状态</label><select id="f-active"><option value="true" ${data.active!==false?'selected':''}>启用</option><option value="false" ${data.active===false?'selected':''}>停用</option></select>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="saveStaff(${id||0})">保存</button>
+      </div>`;
+  } else if (tab === 'hair') {
+    let data = { name:'', tga_ca_ratio:'', base_ph:'', base_thio:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/hair_types?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}发质</h3>
+      <label>名称</label><input id="f-name" value="${esc(data.name)}">
+      <label>TGA:CA配比</label><input id="f-ratio" value="${esc(data.tga_ca_ratio||'')}">
+      <label>基础PH</label><input id="f-ph" value="${esc(data.base_ph||'')}">
+      <label>基础硫代</label><input id="f-thio" value="${esc(data.base_thio||'')}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="saveHair(${id||0})">保存</button>
+      </div>`;
+  } else if (tab === 'style') {
+    let data = { name:'', description:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/perm_styles?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}款式</h3>
+      <label>名称</label><input id="f-name" value="${esc(data.name)}">
+      <label>描述</label><input id="f-desc" value="${esc(data.description||'')}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="saveStyle(${id||0})">保存</button>
+      </div>`;
+  } else {
+    let data = { hair_type:'', style:'', soften_ph:'', soften_thio:'', rod_sizes:'[]', technique:'', steps:'[]', soften_raw:'{}', warning:'' };
+    if (id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/perm_data?id=eq.${id}`, { headers: {'apikey': SUPABASE_KEY} });
+      const rows = await r.json();
+      if (rows[0]) data = rows[0];
+    }
+    box.innerHTML = `<h3>${id?'编辑':'新增'}烫发方案</h3>
+      <label>发质类型</label><input id="f-ht" value="${esc(data.hair_type)}">
+      <label>款式</label><input id="f-style" value="${esc(data.style)}">
+      <label>软化PH</label><input id="f-ph" value="${esc(data.soften_ph)}">
+      <label>硫代</label><input id="f-thio" value="${esc(data.soften_thio)}">
+      <label>杠号(JSON)</label><textarea id="f-rods">${esc(typeof data.rod_sizes==='string' ? data.rod_sizes : JSON.stringify(data.rod_sizes))}</textarea>
+      <label>手法</label><input id="f-tech" value="${esc(data.technique)}">
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-save" onclick="savePerm(${id||0})">保存</button>
+      </div>`;
+  }
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  editId = null;
+}
+
+async function saveStaff(id) {
+  const data = {
+    username: document.getElementById('f-user').value,
+    role: document.getElementById('f-role').value,
+    store: document.getElementById('f-store').value,
+    active: document.getElementById('f-active').value === 'true'
+  };
+  const pass = document.getElementById('f-pass').value;
+  if (!id && !pass) { toast('请输入密码', 'err'); return; }
+  if (pass) data.password_hash = pass;
+  await upsert('staff', id, data);
+}
+
+async function saveHair(id) {
+  await upsert('hair_types', id, {
+    name: document.getElementById('f-name').value,
+    tga_ca_ratio: document.getElementById('f-ratio').value,
+    base_ph: document.getElementById('f-ph').value,
+    base_thio: document.getElementById('f-thio').value
+  });
+}
+
+async function saveStyle(id) {
+  await upsert('perm_styles', id, {
+    name: document.getElementById('f-name').value,
+    description: document.getElementById('f-desc').value
+  });
+}
+
+async function savePerm(id) {
+  await upsert('perm_data', id, {
+    hair_type: document.getElementById('f-ht').value,
+    style: document.getElementById('f-style').value,
+    soften_ph: document.getElementById('f-ph').value,
+    soften_thio: document.getElementById('f-thio').value,
+    rod_sizes: document.getElementById('f-rods').value,
+    technique: document.getElementById('f-tech').value,
+    steps: [],
+    soften_raw: { pH: document.getElementById('f-ph').value, thio: document.getElementById('f-thio').value },
+    warning: ''
+  });
+}
+
+async function upsert(table, id, data) {
+  try {
+    let r;
+    if (id) {
+      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(data)
+      });
+    } else {
+      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(data)
+      });
+    }
+    if (r.ok) {
+      toast('保存成功', 'ok');
+      closeModal();
+      loadData(currentTab);
+    } else {
+      const err = await r.text();
+      toast('保存失败: ' + err, 'err');
+    }
+  } catch(e) {
+    toast('保存失败: ' + e, 'err');
+  }
+}
+
+async function doDelete(table, id) {
+  if (!confirm('确定删除？')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    if (r.ok) {
+      toast('删除成功', 'ok');
+      loadData(currentTab);
+    } else {
+      toast('删除失败', 'err');
+    }
+  } catch(e) {
+    toast('删除失败: ' + e, 'err');
+  }
+}
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+
+// === 图片审核 ===
+function openImageModal(url) {
+  document.getElementById('img-modal-src').src = url;
+  document.getElementById('img-modal').classList.add('show');
+}
+function closeImageModal() {
+  document.getElementById('img-modal').classList.remove('show');
+}
+
+// AI 分析详情弹窗
+var _aiData = {};
+function showAIAnalysis(id) {
+  var rows = document.querySelectorAll('#table-images tr');
+  for (var i = 0; i < rows.length; i++) {
+    var imgId = rows[i].querySelector('td')?.textContent;
+    if (imgId == id) {
+      break;
+    }
+  }
+  // 从 Supabase 拉详情
+  fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=ai_analysis&id=eq.${id}`, {
+    headers: { 'apikey': SUPABASE_KEY }
+  }).then(function(r){ return r.json(); })
+  .then(function(rows){
+    var ai = rows[0]?.ai_analysis || {};
+    if (!ai.style_name) { toast('暂无分析数据', 'err'); return; }
+    var c = ai.cut || {}, p = ai.perm || {}, col = ai.color || {}, s = ai.suit || {};
+    var box = document.getElementById('modal-box');
+    box.innerHTML = '<h3 style="color:#facc15;font-size:18px;">'+esc(ai.style_name)+'</h3>' +
+      '<div style="margin:12px 0;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;">' +
+      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">✂️ 裁剪技术</b>' +
+      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
+      '分区：'+esc(c.zones||'')+'<br>层次：'+esc(c.layers||'')+'<br>长度：'+esc(c.length||'')+'<br>要点：'+esc(c.key_points||'')+'</div></div>' +
+      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">🔥 烫发技术</b>' +
+      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
+      '是否需要：'+esc(p.need||'')+'<br>类型：'+esc(p.type||'')+'<br>卷度：'+esc(p.curl||'')+'<br>排杠：'+esc(p.rod||'')+'<br>软化：'+esc(p.soften||'')+'</div></div>' +
+      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">🎨 染发建议</b>' +
+      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
+      '色系：'+esc(col.tone||'')+'<br>方式：'+esc(col.method||'')+'</div></div>' +
+      '<div><b style="color:#888;font-size:11px;">👤 适合人群</b>' +
+      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
+      '脸型：'+esc(s.face||'')+'<br>风格：'+esc(s.style||'')+'<br>发质：'+esc(s.hair||'')+'<br>打理：'+esc(s.care||'')+'</div></div></div>' +
+      '<div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
+    document.getElementById('modal').classList.add('show');
+  }).catch(function(){ toast('加载失败', 'err'); });
+}
+
+// 待审核角标计数 + 桌面通知
+var _lastPendingCount = -1;
+function updatePendingBadge() {
+  fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id&status=eq.pending`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact' }
+  }).then(function(r) {
+    var count = parseInt(r.headers.get('content-range')?.split('/')[1] || '0', 10);
+    var badge = document.getElementById('badge-images');
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline';
+      document.title = '(' + count + ') 自由手艺人 · 后台管理';
+      try { navigator.setAppBadge(count); } catch(e) {}
+      // 桌面通知：新增或首次发现待审核时弹
+      if (count > _lastPendingCount) {
+        try {
+          Notification.requestPermission().then(function(perm) {
+            if (perm === 'granted') {
+              new Notification('📸 新图片待审核', {
+                body: count + ' 张图片等待审核，点击查看',
+                tag: 'perm-pending'
+              });
+            }
+          });
+        } catch(e) {}
+      }
+      // 页面内提示条
+      var alert = document.getElementById('pending-alert');
+      var txt = document.getElementById('pending-count-text');
+      if (count > 0) {
+        alert.style.display = 'block';
+        if (txt) txt.textContent = count;
+      } else {
+        alert.style.display = 'none';
+      }
+    } else {
+      badge.style.display = 'none';
+      document.title = '自由手艺人 · 后台管理';
+      try { navigator.clearAppBadge(); } catch(e) {}
+    }
+    _lastPendingCount = count;
+  }).catch(function(){});
+}
+
+async function loadImages() {
+  const filter = document.getElementById('img-filter').value;
+  let url = `${SUPABASE_URL}/rest/v1/showcase_images?select=*&order=created_at.desc`;
+  if (filter !== 'all') url += `&status=eq.${filter}`;
+  try {
+    const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
+    const rows = await r.json();
+    const tbody = document.getElementById('table-images');
+    tbody.innerHTML = rows.map(img => {
+      var ai = img.ai_analysis || {};
+      var aiHtml = '';
+      if (ai.style_name) {
+        aiHtml = '<div style="font-size:11px;line-height:1.5;" onclick="showAIAnalysis('+img.id+')" class="ai-summary">' +
+          '<b style="color:#facc15;">'+esc(ai.style_name)+'</b><br>' +
+          '<span style="color:#888;">裁剪:</span> '+esc((ai.cut||{}).zones||'').substring(0,20)+'…<br>' +
+          '<span style="color:#888;">烫发:</span> '+esc((ai.perm||{}).need||'')+'<br>' +
+          '<span style="color:#888;">染发:</span> '+esc((ai.color||{}).tone||'')+'<br>' +
+          '<span style="color:#888;">适合:</span> '+esc((ai.suit||{}).face||'')+
+        '</div>';
+      } else if (ai === null || Object.keys(ai).length === 0) {
+        aiHtml = '<span style="color:#555;font-size:11px;">分析中…</span>';
+      }
+      return `<tr>
+        <td style="color:#888;">${img.id}</td>
+        <td><img class="img-thumb" src="${esc(img.image_url)}" onclick="openImageModal('${esc(img.image_url)}')"></td>
+        <td style="max-width:200px;">${aiHtml}</td>
+        <td>${esc(img.uploaded_by)}</td>
+        <td><span class="badge ${img.status==='approved'?'badge-staff':img.status==='rejected'?'badge-admin':''}">${img.status==='pending'?'待审核':img.status==='approved'?'已通过':'已拒绝'}</span></td>
+        <td style="color:#888;font-size:11px;">${(img.created_at||'').substring(0,16)}</td>
+        <td>
+          ${img.status !== 'approved' ? '<button class="btn-approve" onclick="approveImage('+img.id+')">通过</button>' : ''}
+          ${img.status !== 'rejected' ? '<button class="btn-reject" onclick="rejectImage('+img.id+')">拒绝</button>' : ''}
+          <button class="btn-del" onclick="deleteImage('+img.id+')">删除</button>
+        </td>
+      </tr>`;
+    });
+  } catch(e) {
+    toast('加载失败: ' + e, 'err');
+  }
+}
+
+async function approveImage(id) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({status:'approved'})
+    });
+    toast('已通过', 'ok');
+    loadImages();
+    updatePendingBadge();
+  } catch(e) { toast('操作失败', 'err'); }
+}
+
+async function rejectImage(id) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({status:'rejected'})
+    });
+    toast('已拒绝', 'ok');
+    loadImages();
+    updatePendingBadge();
+  } catch(e) { toast('操作失败', 'err'); }
+}
+
+async function deleteImage(id, imageUrl) {
+  if (!confirm('确认删除？')) return;
+  try {
+    // 先删数据库记录
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    if (r.status === 204 || r.status === 200) {
+      toast('已删除', 'ok');
+      loadImages();
+      updatePendingBadge();
+    } else {
+      const body = await r.text().catch(()=>'');
+      console.log('Delete failed:', r.status, body);
+      toast('删除失败('+r.status+')', 'err');
+    }
+  } catch(e) { toast('删除失败: ' + e.message, 'err'); }
+}
+// 定时检查待审核数量
+setInterval(updatePendingBadge, 5000);
+
+// === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
+(function(){
+  var wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
+  function connectRealtime() {
+    try {
+      var ws = new WebSocket(wsUrl);
+      var ref = 0;
+      ws.onopen = function() {
+        ref++; ws.send(JSON.stringify([null, ''+ref, 'realtime:showcase_images', 'phx_join', {}]));
+        ref++; ws.send(JSON.stringify([null, ''+ref, 'realtime:showcase_images', 'postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'showcase_images'
+        }]));
+      };
+      ws.onmessage = function(e) {
+        try {
+          var m = JSON.parse(e.data);
+          if (m && m[3] === 'postgres_changes') { updatePendingBadge(); if (currentTab === 'images') loadImages(); }
+        } catch(ex) {}
+      };
+      ws.onclose = function() { setTimeout(connectRealtime, 3000); };
+      var hb = setInterval(function() {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify([null, null, 'phoenix', 'heartbeat', {}]));
+        else clearInterval(hb);
+      }, 30000);
+    } catch(e) {}
+  }
+  // 登录后才连接 Realtime
+  if (localStorage.getItem('perm_admin')) connectRealtime();
+  // 监听登录事件
+  var _login = doLogin;
+  window.doLogin = function() { connectRealtime(); return _login.apply(this, arguments); };
+})();
+</script>
+</body>
+</html>
