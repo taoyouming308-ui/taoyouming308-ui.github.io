@@ -1650,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 从 Supabase 加载已审核作品图（只取HTTP图片，base64太大无法渲染）
   (function loadCarousel(){
-    fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&status=eq.approved&limit=20', {
+    fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&status=eq.approved&category=neq.%E6%BC%82%E5%8F%91&limit=20', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
     .then(function(rows){
