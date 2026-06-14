@@ -73,7 +73,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <h1>后台管理</h1>
   <input type="text" id="login-user" placeholder="用户名" autocomplete="off">
   <input type="password" id="login-pass" placeholder="密码">
-  <button onclick="doLogin()">登录</button>
+  <button id="login-btn">登录</button>
   <div class="error" id="login-error"></div>
 </div>
 
@@ -81,46 +81,46 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div class="header">
     <h2>自由手艺人 · 后台管理</h2>
     <div style="display:flex;gap:6px;align-items:center;">
-      <button onclick="location.reload()" title="刷新" style="padding:6px 10px;background:transparent;color:#888;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:13px;">↻</button>
-      <button onclick="doLogout()">退出</button>
+      <button id="reload-btn" title="刷新" style="padding:6px 10px;background:transparent;color:#888;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:13px;">↻</button>
+      <button id="logout-btn">退出</button>
     </div>
   </div>
-  <div class="pending-alert" id="pending-alert" style="display:none;padding:10px 20px;background:#2a1a0a;color:#facc15;font-size:13px;text-align:center;border-bottom:1px solid #442200;cursor:pointer;" onclick="switchTab('images')">
+  <div class="pending-alert" id="pending-alert" style="display:none;padding:10px 20px;background:#2a1a0a;color:#facc15;font-size:13px;text-align:center;border-bottom:1px solid #442200;cursor:pointer;">
     📸 有 <strong id="pending-count-text">0</strong> 张图片待审核，点击查看
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('staff')">员工管理</div>
-    <div class="tab" onclick="switchTab('hair')">发质配置</div>
-    <div class="tab" onclick="switchTab('style')">款式管理</div>
-    <div class="tab" onclick="switchTab('perm')">烫发方案</div>
-    <div class="tab" onclick="switchTab('images')">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
-    <div class="tab" onclick="switchTab('carousel')">轮播管理</div>
+    <div class="tab active" data-tab="staff">员工管理</div>
+    <div class="tab" data-tab="hair">发质配置</div>
+    <div class="tab" data-tab="style">款式管理</div>
+    <div class="tab" data-tab="perm">烫发方案</div>
+    <div class="tab" data-tab="images">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
+    <div class="tab" data-tab="carousel">轮播管理</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
     <div id="tab-staff">
-      <button class="btn-add" onclick="openModal('staff')">+ 新增员工</button>
+      <button class="btn-add" data-open-modal="staff">+ 新增员工</button>
       <table><thead><tr><th>用户名</th><th>角色</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
       <tbody id="table-staff"></tbody></table>
     </div>
     <div id="tab-hair" style="display:none">
-      <button class="btn-add" onclick="openModal('hair')">+ 新增加</button>
+      <button class="btn-add" data-open-modal="hair">+ 新增加</button>
       <table><thead><tr><th>名称</th><th>TGA:CA</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
       <tbody id="table-hair"></tbody></table>
     </div>
     <div id="tab-style" style="display:none">
-      <button class="btn-add" onclick="openModal('style')">+ 新增</button>
+      <button class="btn-add" data-open-modal="style">+ 新增</button>
       <table><thead><tr><th>名称</th><th>描述</th><th>操作</th></tr></thead>
       <tbody id="table-style"></tbody></table>
     </div>
     <div id="tab-perm" style="display:none">
-      <button class="btn-add" onclick="openModal('perm')">+ 新增方案</button>
+      <button class="btn-add" data-open-modal="perm">+ 新增方案</button>
       <table><thead><tr><th>发质</th><th>款式</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
       <tbody id="table-perm"></tbody></table>
     </div>
     <div id="tab-images" style="display:none">
       <div style="font-size:12px;color:#888;margin-bottom:12px;">状态：
-        <select id="img-filter" onchange="loadImages()" style="background:#000;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;">
+        <select id="img-filter" style="background:#000;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;">
           <option value="all" selected>全部</option>
           <option value="pending">待审核</option>
           <option value="approved">已通过</option>
@@ -139,7 +139,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <div style="margin-bottom:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
         <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">轮播图 HTTP URL</label>
         <input type="url" id="car-url" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;margin-bottom:10px;">
-        <button class="btn-add" id="car-upload-btn" onclick="uploadCarousel()">保存</button>
+        <button class="btn-add" id="car-upload-btn">保存</button>
         <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
       </div>
       <table>
@@ -154,9 +154,9 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div class="modal-box" id="modal-box"></div>
 </div>
 
-<div class="img-modal" id="img-modal" onclick="closeImageModal()">
+<div class="img-modal" id="img-modal">
   <img id="img-modal-src">
-  <button class="close-img" onclick="closeImageModal()">✕</button>
+  <button class="close-img" id="close-img-btn">✕</button>
 </div>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
@@ -264,7 +264,33 @@ function stopPendingPolling() {
     loadData('staff');
     updatePendingBadge();
     startPendingPolling();
+    connectRealtime();
   }
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('reload-btn').addEventListener('click', function() {
+    location.reload();
+  });
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('pending-alert').addEventListener('click', function() {
+    switchTab('images');
+  });
+  document.querySelectorAll('[data-tab]').forEach(function(tabEl) {
+    tabEl.addEventListener('click', function() {
+      switchTab(tabEl.getAttribute('data-tab'));
+    });
+  });
+  document.querySelectorAll('[data-open-modal]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      openModal(btn.getAttribute('data-open-modal'));
+    });
+  });
+  document.getElementById('img-filter').addEventListener('change', loadImages);
+  document.getElementById('car-upload-btn').addEventListener('click', uploadCarousel);
+  document.getElementById('img-modal').addEventListener('click', closeImageModal);
+  document.getElementById('close-img-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    closeImageModal();
+  });
   document.getElementById('login-pass').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
   });
@@ -454,6 +480,11 @@ function makeSelect(id, options, selectedValue) {
   return select;
 }
 
+function copyExistingField(target, source, field) {
+  if (!source || !Object.prototype.hasOwnProperty.call(source, field)) return;
+  target[field] = source[field];
+}
+
 function appendModalButtons(box, saveText, saveHandler) {
   const row = el('div', { className: 'btn-row' });
   row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
@@ -590,6 +621,11 @@ async function savePerm(id) {
     rod_sizes: rodSizes,
     technique: document.getElementById('f-tech').value
   };
+  if (id) {
+    copyExistingField(data, editingPermOriginal, 'steps');
+    copyExistingField(data, editingPermOriginal, 'soften_raw');
+    copyExistingField(data, editingPermOriginal, 'warning');
+  }
   await upsert('perm_data', id, data);
 }
 
