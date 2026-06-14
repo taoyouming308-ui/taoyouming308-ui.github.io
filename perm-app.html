@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="98">
+<html lang="zh-CN" data-version="99">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -521,10 +521,10 @@ body {
   right: 20px;
   width: 42px;
   height: 42px;
-  background: var(--accent);
-  border: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 50%;
-  color: #fff;
+  color: var(--text);
   font-size: 18px;
   cursor: pointer;
   opacity: 0;
@@ -1098,9 +1098,35 @@ body {
         requestAnimationFrame(function(){ window._renderGrid(filter); });
       }).catch(function(){});
     }
-    // 页面加载后加载所有图片，每30秒自动刷新
-    setTimeout(loadShowcase, 500);
-    setInterval(loadShowcase, 5000);
+    // 展示页轮询：首次加载200ms后启动，30秒间隔
+    var _showcaseTimer = null;
+    function startShowcasePoll() {
+      if (_showcaseTimer) return;
+      loadShowcase();
+      _showcaseTimer = setInterval(loadShowcase, 30000);
+    }
+    function stopShowcasePoll() {
+      if (_showcaseTimer) { clearInterval(_showcaseTimer); _showcaseTimer = null; }
+    }
+    // 页面可见性变化时暂停/恢复
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) { stopShowcasePoll(); }
+      else if (document.getElementById('tab-showcase').classList.contains('active')) { startShowcasePoll(); }
+    });
+    // 展示页激活/隐藏时控制轮询
+    var _origShowcaseOF = window.openFeature;
+    // 通过 MutationObserver 检测展示页是否激活
+    var _showcaseObserver = new MutationObserver(function() {
+      if (document.getElementById('tab-showcase').classList.contains('active')) {
+        startShowcasePoll();
+      } else {
+        stopShowcasePoll();
+      }
+    });
+    setTimeout(function() {
+      var tab = document.getElementById('tab-showcase');
+      if (tab) _showcaseObserver.observe(tab, { attributes: true, attributeFilter: ['class'] });
+    }, 1000);
     </script>
 
     <script>
@@ -1127,7 +1153,11 @@ body {
     }
     function doUpload() {
       var file = document.getElementById('up-file').files[0];
-      if (!file) { alert('请选择图片'); return; }
+      if (!file) { showToast('请选择图片'); return; }
+      // 校验文件类型和大小
+      var allowedTypes = ['image/jpeg','image/png','image/webp','image/gif'];
+      if (allowedTypes.indexOf(file.type) === -1) { showToast('仅支持 JPG/PNG/WebP/GIF 格式'); document.getElementById('up-btn').disabled = false; return; }
+      if (file.size > 10 * 1024 * 1024) { showToast('图片超过10MB，请压缩后上传'); document.getElementById('up-btn').disabled = false; return; }
       var category = document.getElementById('up-category').value;
       var btn = document.getElementById('up-btn');
       var msg = document.getElementById('up-msg');
@@ -1149,6 +1179,12 @@ body {
         var base64 = c.toDataURL('image/jpeg', 0.7);
         URL.revokeObjectURL(url);
         doUploadBase64(base64, category, btn, msg);
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(url);
+        btn.disabled = false;
+        msg.textContent = '';
+        showToast('图片加载失败，请重试');
       };
       img.src = url;
     }
@@ -1307,6 +1343,16 @@ const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
 let PERM_DATA_CACHE = [];
 let DATA_LOADING = false;
 let DATA_LOADED = false;
+let DATA_ERROR = '';
+
+// 本地日期工具（修复UTC时区偏移）
+function getLocalDate(d) {
+  var y = d.getFullYear();
+  var m = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return y + '-' + m + '-' + day;
+}
+function getLocalDateStr() { return getLocalDate(new Date()); }
 
 async function loadPermData() {
   if (DATA_LOADING) return;
@@ -1318,16 +1364,24 @@ async function loadPermData() {
     if (!resp.ok) throw new Error('Supabase返回状态码 ' + resp.status);
     const rows = await resp.json();
     if (!Array.isArray(rows)) throw new Error('返回数据格式异常');
-    // 转换为JS格式
-    PERM_DATA_CACHE = rows.map(r => ({
-      hairType: r.hair_type,
-      permStyle: r.style,
-      soften: r.soften_raw ? (typeof r.soften_raw === 'string' ? JSON.parse(r.soften_raw) : r.soften_raw) : { pH: r.soften_ph, thio: r.soften_thio },
-      rods: r.rod_sizes ? (typeof r.rod_sizes === 'string' ? JSON.parse(r.rod_sizes) : r.rod_sizes) : [],
-      warning: r.warning || null
-    }));
+    // 转换为JS格式（逐条容错，单条损坏不影响其他）
+    var cache = [];
+    var errors = 0;
+    rows.forEach(function(r) {
+      try {
+        cache.push({
+          hairType: r.hair_type,
+          permStyle: r.style,
+          soften: r.soften_raw ? (typeof r.soften_raw === 'string' ? JSON.parse(r.soften_raw) : r.soften_raw) : { pH: r.soften_ph, thio: r.soften_thio },
+          rods: r.rod_sizes ? (typeof r.rod_sizes === 'string' ? JSON.parse(r.rod_sizes) : r.rod_sizes) : [],
+          warning: r.warning || null
+        });
+      } catch(e) { errors++; }
+    });
+    PERM_DATA_CACHE = cache;
     DATA_LOADED = true;
-    console.log(`Supabase: 加载 ${PERM_DATA_CACHE.length} 条方案`);
+    DATA_ERROR = errors > 0 ? '有' + errors + '条数据解析失败' : '';
+    console.log('Supabase: 加载 ' + PERM_DATA_CACHE.length + ' 条方案' + (DATA_ERROR ? ', ' + DATA_ERROR : ''));
   } catch(e) {
     console.error('Supabase加载失败:', e);
     // 降级：尝试从本地备份数据加载
@@ -1347,6 +1401,7 @@ async function loadPermData() {
       }
     } catch(e2) {
       console.error('降级加载也失败:', e2);
+      DATA_ERROR = '数据加载失败，请刷新重试';
     }
   }
   DATA_LOADING = false;
@@ -1600,7 +1655,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 等待数据加载
     if (!DATA_LOADED) {
-      showToast('数据加载中，请稍候再试...');
+      if (DATA_ERROR) {
+        showToast(DATA_ERROR + '，部分方案可能不可用');
+      } else {
+        showToast('数据加载中，请稍候再试...');
+      }
       return;
     }
 
@@ -1881,7 +1940,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===== 预约系统 =====
   var BOOKING_SHOP = '自由手艺人';
   var BOOKING_BARBER = localStorage.getItem('booking-barber') || '';
-  var BOOKING_DATE = new Date().toISOString().slice(0,10);
+  var BOOKING_DATE = getLocalDateStr();
   var BOOKING_INTERVAL = null;
   var BOOKINGS_CACHE = [];
 
@@ -1889,12 +1948,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderDateStrip() {
     var strip = document.getElementById('date-strip');
-    var today = new Date().toISOString().slice(0,10);
+    var today = getLocalDateStr();
     var html = '';
     for (var i = 0; i < 8; i++) {
       var d = new Date();
       d.setDate(d.getDate() + i);
-      var ds = d.toISOString().slice(0,10);
+      var ds = getLocalDate(d);
       var label = i === 0 ? '今天' : (i === 1 ? '明天' : ('周' + DOW[d.getDay()]));
       var sub = (d.getMonth()+1) + '/' + d.getDate();
       var on = ds === BOOKING_DATE ? ' on' : '';
@@ -1918,6 +1977,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showIdentityModal() {
+    // 防重复
+    var existing = document.getElementById('identity-modal');
+    if (existing) { existing.remove(); }
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'identity-modal';
@@ -2006,9 +2068,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(div);
 
     // 尝试本地API（店内WiFi直连美管加实时数据）
-    fetch('/api/plan?phone='+encodeURIComponent(phone), { signal: AbortSignal.timeout(5000) })
-    .then(function(r){ return r.json(); })
+    var ac = new AbortController();
+    var acTimer = setTimeout(function(){ ac.abort(); }, 5000);
+    fetch('/api/plan?phone='+encodeURIComponent(phone), { signal: ac.signal })
+    .then(function(r){ clearTimeout(acTimer); return r.json(); })
     .then(function(data){
+      clearTimeout(acTimer);
       if (data.error || !data.plan_text) throw new Error('no data');
       var p = data;
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
@@ -2276,7 +2341,7 @@ document.addEventListener('DOMContentLoaded', () => {
               '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
             return;
           }
-          var today = new Date().toISOString().slice(0,10);
+          var today = getLocalDateStr();
           var past = bookingRows.filter(function(b){ return b.date <= today; }).sort(function(a,b){ return a.date > b.date ? 1 : -1; });
           var future = bookingRows.filter(function(b){ return b.date > today; }).sort(function(a,b){ return a.date > b.date ? 1 : -1; });
           var totalPast = past.length;
@@ -2366,13 +2431,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function _isPhoneAnalyzed(phone) {
     _loadAnalyzed();
-    var today = new Date().toISOString().slice(0,10);
+    var today = getLocalDateStr();
     var rec = _analyzedPhones[phone];
     return rec && rec.date === today;
   }
   function _markPhoneAnalyzed(phone) {
     _loadAnalyzed();
-    var today = new Date().toISOString().slice(0,10);
+    var today = getLocalDateStr();
     _analyzedPhones[phone] = { date: today };
     try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) {}
   }
@@ -2452,9 +2517,16 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } catch(ex) {}
       };
+      ws.onopen = function() {
+        // WebSocket已连接，关掉轮询兜底
+        if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
+      };
       ws.onclose = function() {
-        // 断线后5秒自动重连
+        // 断线后5秒自动重连，同时启动轮询兜底
         setTimeout(initRealtime, 5000);
+        if (!BOOKING_INTERVAL && document.getElementById('tab-bookings').classList.contains('active')) {
+          BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
+        }
       };
       // 定时心跳（30秒）
       var hb = setInterval(function() {
@@ -2479,9 +2551,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // 首次进入时初始化 Realtime
       if (!_bookingChannel || _bookingChannel.readyState !== WebSocket.OPEN) {
         initRealtime();
+        // 如果WebSocket还没连上，先开5s轮询兜底
+        setTimeout(function(){
+          if (!_bookingChannel || _bookingChannel.readyState !== WebSocket.OPEN) {
+            if (!BOOKING_INTERVAL) BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
+          }
+        }, 2000);
       }
-      // 5s 轮询兜底（WebSocket 断线时自动接管）
-      BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
     }
   };
 
@@ -2513,7 +2589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(function(){});
   }
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
-  setInterval(function(){
+  function checkVersion() {
     fetch('version.json?_t=' + Date.now())
       .then(function(r){return r.json()})
       .then(function(d){
@@ -2522,7 +2598,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
       .catch(function(){});
-  }, 60000);
+  }
+  // 立即检测一次，之后每60秒轮询
+  checkVersion();
+  setInterval(checkVersion, 60000);
 })();
 </script>
 </body>
