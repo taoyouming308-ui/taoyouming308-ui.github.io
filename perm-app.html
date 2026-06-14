@@ -2319,14 +2319,16 @@ document.addEventListener('DOMContentLoaded', () => {
           var _already = _isPhoneAnalyzed(phone);
           htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
-        }).catch(function(){
+        }).catch(function(e){
+          console.log('[catch-b] bookings error:', e && e.message ? e.message : e);
           document.querySelector('#plan-modal .box').innerHTML =
-            '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败</div>'+
+            '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败(b)</div>'+
             '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
         });
-      }).catch(function(){
+      }).catch(function(e){
+        console.log('[catch-c] profiles error:', e && e.message ? e.message : e);
         document.querySelector('#plan-modal .box').innerHTML =
-          '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败</div>'+
+          '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败(c)</div>'+
           '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       });
     });
