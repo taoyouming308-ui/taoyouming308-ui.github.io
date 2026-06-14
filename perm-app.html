@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="104">
+<html lang="zh-CN" data-version="105">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2459,11 +2459,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var rec = _analyzedPhones[phone];
     return rec && rec.date === today;
   }
-  function _markPhoneAnalyzed(phone) {
+  function _markPhoneAnalyzed(phone, analysisText) {
     _loadAnalyzed();
     var today = getLocalDateStr();
-    _analyzedPhones[phone] = { date: today };
+    _analyzedPhones[phone] = { date: today, text: analysisText || '' };
     try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) { console.warn('AI分析状态保存失败:', e); }
+  }
+  function _getCachedAnalysis(phone) {
+    _loadAnalyzed();
+    var today = getLocalDateStr();
+    var rec = _analyzedPhones[phone];
+    if (rec && rec.date === today && rec.text) return rec.text;
+    return null;
   }
 
   // AI分析隧道URL — 从tunnel-url.json动态获取
@@ -2482,7 +2489,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderAiButton(phone, name) {
-    if (_isPhoneAnalyzed(phone)) return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
+    if (_isPhoneAnalyzed(phone)) {
+      var cached = _getCachedAnalysis(phone);
+      if (cached) {
+        return '<div class="ai-result" style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI分析建议</div><div style="font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;">'+esc(cached)+'</div></div>';
+      }
+      return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
+    }
     return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
   }
   function updateAiButtonsAvailability() {
@@ -2521,7 +2534,7 @@ document.addEventListener('DOMContentLoaded', () => {
           html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
           html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
           html += '</div>';
-          _markPhoneAnalyzed(phone);
+          _markPhoneAnalyzed(phone, analysis);
           box.innerHTML += html;
         } catch(e) {
           box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
