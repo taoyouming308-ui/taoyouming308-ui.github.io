@@ -31,7 +31,7 @@ td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;
 .btn-edit { background:transparent; color:#fff; border:1px solid #555; }
 .btn-del { background:transparent; color:var(--danger); border:1px solid var(--danger); }
 .btn-add { padding:8px 20px; background:#fff; color:#000; border:none; border-radius:6px; font-size:14px; cursor:pointer; margin-bottom:16px; }
-.btn-add:disabled, .btn-save:disabled, .login-box button:disabled { opacity:0.65; cursor:not-allowed; }
+button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabled { opacity:0.65; cursor:not-allowed; }
 .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; }
 .badge-admin { background:#3a1a1a; color:var(--danger); }
 .badge-staff { background:#1a2a3a; color:var(--info); }
@@ -190,6 +190,60 @@ async function ensureOk(r, fallback) {
   throw new Error(await restErrorMessage(r, fallback));
 }
 
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function clearNode(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function(key) {
+    const value = attrs[key];
+    if (value === undefined || value === null || value === false) return;
+    if (key === 'className') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key === 'htmlFor') node.htmlFor = value;
+    else if (key === 'style') node.setAttribute('style', value);
+    else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2).toLowerCase(), value);
+    else node.setAttribute(key, String(value));
+  });
+  (children || []).forEach(function(child) {
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  });
+  return node;
+}
+
+function appendCells(tr, values) {
+  values.forEach(function(value) {
+    const td = el('td');
+    if (value instanceof Node) td.appendChild(value);
+    else td.textContent = value ?? '';
+    tr.appendChild(td);
+  });
+}
+
+function appendEmptyRow(tbody, colspan) {
+  clearNode(tbody);
+  const tr = el('tr', { className: 'empty-row' });
+  tr.appendChild(el('td', { colspan: colspan, text: '暂无数据' }));
+  tbody.appendChild(tr);
+}
+
+function actionButton(text, className, handler) {
+  return el('button', { className: className, type: 'button', text: text, onclick: handler });
+}
+
+function setButtonBusy(btn, busy) {
+  if (btn) btn.disabled = !!busy;
+}
+
 function startPendingPolling() {
   if (!pendingBadgeTimer) pendingBadgeTimer = setInterval(updatePendingBadge, 5000);
 }
@@ -210,7 +264,6 @@ function stopPendingPolling() {
     loadData('staff');
     updatePendingBadge();
     startPendingPolling();
-    connectRealtime();
   }
   document.getElementById('login-pass').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
@@ -229,6 +282,7 @@ async function doLogin() {
   const p = document.getElementById('login-pass').value.trim();
   if (!u || !p) return;
   const btn = document.querySelector('#login-page button');
+  if (btn && btn.disabled) return;
   if (btn) btn.disabled = true;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,password_hash,role,active&username=eq.${encodeURIComponent(u)}&limit=1`, {
@@ -253,6 +307,7 @@ async function doLogin() {
     }
   } catch(e) {
     document.getElementById('login-error').textContent = '登录失败：' + e.message;
+    toast('登录失败: ' + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -306,60 +361,65 @@ async function loadData(tab) {
 function renderTable(tab, rows) {
   const tbody = document.getElementById('table-' + tab);
   rows = rows || [];
+  clearNode(tbody);
   if (tab === 'staff') {
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无数据</td></tr>';
+      appendEmptyRow(tbody, 6);
       return;
     }
-    tbody.innerHTML = rows.map(r => `<tr>
-      <td><b>${esc(r.username)}</b></td>
-      <td><span class="badge ${r.role==='admin'?'badge-admin':'badge-staff'}">${esc(r.role)}</span></td>
-      <td>${esc(r.store||'')}</td>
-      <td><span class="status-dot ${r.active?'status-active':'status-inactive'}"></span>${r.active?'启用':'停用'}</td>
-      <td>${(r.created_at||'').substring(0,10)}</td>
-      <td><button class="btn-edit" onclick="openModal('staff',${r.id})">编辑</button>
-      <button class="btn-del" onclick="doDelete('staff',${r.id})">删除</button></td>
-    </tr>`).join('');
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const name = el('b', { text: r.username });
+      const role = el('span', { className: 'badge ' + (r.role === 'admin' ? 'badge-admin' : 'badge-staff'), text: r.role });
+      const status = el('span');
+      status.appendChild(el('span', { className: 'status-dot ' + (r.active ? 'status-active' : 'status-inactive') }));
+      status.appendChild(document.createTextNode(r.active ? '启用' : '停用'));
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
+      appendCells(tr, [name, role, r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
+      tbody.appendChild(tr);
+    });
   } else if (tab === 'hair') {
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">暂无数据</td></tr>';
+      appendEmptyRow(tbody, 5);
       return;
     }
-    tbody.innerHTML = rows.map(r => `<tr>
-      <td>${esc(r.name)}</td><td>${esc(r.tga_ca_ratio)}</td><td>${esc(r.base_ph)}</td><td>${esc(r.base_thio)}</td>
-      <td><button class="btn-edit" onclick="openModal('hair',${r.id})">编辑</button>
-      <button class="btn-del" onclick="doDelete('hair_types',${r.id})">删除</button></td>
-    </tr>`).join('');
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('hair', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('hair_types', r.id, e.currentTarget); }));
+      appendCells(tr, [r.name, r.tga_ca_ratio, r.base_ph, r.base_thio, actions]);
+      tbody.appendChild(tr);
+    });
   } else if (tab === 'style') {
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="3">暂无数据</td></tr>';
+      appendEmptyRow(tbody, 3);
       return;
     }
-    tbody.innerHTML = rows.map(r => `<tr>
-      <td>${esc(r.name)}</td><td>${esc(r.description||'')}</td>
-      <td><button class="btn-edit" onclick="openModal('style',${r.id})">编辑</button>
-      <button class="btn-del" onclick="doDelete('perm_styles',${r.id})">删除</button></td>
-    </tr>`).join('');
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('style', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('perm_styles', r.id, e.currentTarget); }));
+      appendCells(tr, [r.name, r.description || '', actions]);
+      tbody.appendChild(tr);
+    });
   } else {
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">暂无数据</td></tr>';
+      appendEmptyRow(tbody, 5);
       return;
     }
-    tbody.innerHTML = rows.map(r => `<tr>
-      <td>${esc(r.hair_type)}</td><td>${esc(r.style)}</td><td>${esc(r.soften_ph)}</td><td>${esc(r.soften_thio)}</td>
-      <td><button class="btn-edit" onclick="openModal('perm',${r.id})">编辑</button>
-      <button class="btn-del" onclick="doDelete('perm_data',${r.id})">删除</button></td>
-    </tr>`).join('');
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('perm', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('perm_data', r.id, e.currentTarget); }));
+      appendCells(tr, [r.hair_type, r.style, r.soften_ph, r.soften_thio, actions]);
+      tbody.appendChild(tr);
+    });
   }
-}
-
-function esc(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 async function loadOne(table, id) {
@@ -369,10 +429,43 @@ async function loadOne(table, id) {
   return rows[0];
 }
 
+function appendField(box, labelText, field) {
+  box.appendChild(el('label', { text: labelText }));
+  box.appendChild(field);
+}
+
+function makeInput(id, value, attrs) {
+  return el('input', Object.assign({ id: id, value: value ?? '' }, attrs || {}));
+}
+
+function makeTextarea(id, value) {
+  const textarea = el('textarea', { id: id });
+  textarea.textContent = value ?? '';
+  return textarea;
+}
+
+function makeSelect(id, options, selectedValue) {
+  const select = el('select', { id: id });
+  options.forEach(function(option) {
+    const opt = el('option', { value: option.value, text: option.text });
+    if (String(option.value) === String(selectedValue)) opt.selected = true;
+    select.appendChild(opt);
+  });
+  return select;
+}
+
+function appendModalButtons(box, saveText, saveHandler) {
+  const row = el('div', { className: 'btn-row' });
+  row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
+  row.appendChild(actionButton(saveText || '保存', 'btn-save', saveHandler));
+  box.appendChild(row);
+}
+
 async function openModal(tab, id) {
   editId = id || null;
   editingPermOriginal = null;
   const box = document.getElementById('modal-box');
+  clearNode(box);
   
   if (tab === 'staff') {
     let data = { username:'', password_hash:'', role:'staff', store:'', active:true };
@@ -384,16 +477,13 @@ async function openModal(tab, id) {
         return;
       }
     }
-    box.innerHTML = `<h3>${id?'编辑':'新增'}员工</h3>
-      <label>用户名</label><input id="f-user" value="${esc(data.username)}" ${id?'readonly':''}>
-      <label>密码</label><input id="f-pass" type="text" placeholder="${id?'留空则不修改':'请输入密码'}">
-      <label>角色</label><select id="f-role"><option value="admin" ${data.role==='admin'?'selected':''}>管理员</option><option value="staff" ${data.role==='staff'?'selected':''}>员工</option></select>
-      <label>分店</label><input id="f-store" value="${esc(data.store||'')}" placeholder="如：自由手艺人">
-      <label>状态</label><select id="f-active"><option value="true" ${data.active!==false?'selected':''}>启用</option><option value="false" ${data.active===false?'selected':''}>停用</option></select>
-      <div class="btn-row">
-        <button class="btn-cancel" onclick="closeModal()">取消</button>
-        <button class="btn-save" onclick="saveStaff(${id||0})">保存</button>
-      </div>`;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '员工' }));
+    appendField(box, '用户名', makeInput('f-user', data.username, id ? { readonly: true } : {}));
+    appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
+    appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
+    appendField(box, '分店', makeInput('f-store', data.store || '', { placeholder: '如：自由手艺人' }));
+    appendField(box, '状态', makeSelect('f-active', [{ value: 'true', text: '启用' }, { value: 'false', text: '停用' }], data.active !== false ? 'true' : 'false'));
+    appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   } else if (tab === 'hair') {
     let data = { name:'', tga_ca_ratio:'', base_ph:'', base_thio:'' };
     if (id) {
@@ -404,15 +494,12 @@ async function openModal(tab, id) {
         return;
       }
     }
-    box.innerHTML = `<h3>${id?'编辑':'新增'}发质</h3>
-      <label>名称</label><input id="f-name" value="${esc(data.name)}">
-      <label>TGA:CA配比</label><input id="f-ratio" value="${esc(data.tga_ca_ratio||'')}">
-      <label>基础PH</label><input id="f-ph" value="${esc(data.base_ph||'')}">
-      <label>基础硫代</label><input id="f-thio" value="${esc(data.base_thio||'')}">
-      <div class="btn-row">
-        <button class="btn-cancel" onclick="closeModal()">取消</button>
-        <button class="btn-save" onclick="saveHair(${id||0})">保存</button>
-      </div>`;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '发质' }));
+    appendField(box, '名称', makeInput('f-name', data.name));
+    appendField(box, 'TGA:CA配比', makeInput('f-ratio', data.tga_ca_ratio || ''));
+    appendField(box, '基础PH', makeInput('f-ph', data.base_ph || ''));
+    appendField(box, '基础硫代', makeInput('f-thio', data.base_thio || ''));
+    appendModalButtons(box, '保存', function() { saveHair(id || 0); });
   } else if (tab === 'style') {
     let data = { name:'', description:'' };
     if (id) {
@@ -423,13 +510,10 @@ async function openModal(tab, id) {
         return;
       }
     }
-    box.innerHTML = `<h3>${id?'编辑':'新增'}款式</h3>
-      <label>名称</label><input id="f-name" value="${esc(data.name)}">
-      <label>描述</label><input id="f-desc" value="${esc(data.description||'')}">
-      <div class="btn-row">
-        <button class="btn-cancel" onclick="closeModal()">取消</button>
-        <button class="btn-save" onclick="saveStyle(${id||0})">保存</button>
-      </div>`;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '款式' }));
+    appendField(box, '名称', makeInput('f-name', data.name));
+    appendField(box, '描述', makeInput('f-desc', data.description || ''));
+    appendModalButtons(box, '保存', function() { saveStyle(id || 0); });
   } else {
     let data = { hair_type:'', style:'', soften_ph:'', soften_thio:'', rod_sizes:'[]', technique:'', steps:'[]', soften_raw:'{}', warning:'' };
     if (id) {
@@ -441,17 +525,14 @@ async function openModal(tab, id) {
       }
     }
     editingPermOriginal = data;
-    box.innerHTML = `<h3>${id?'编辑':'新增'}烫发方案</h3>
-      <label>发质类型</label><input id="f-ht" value="${esc(data.hair_type)}">
-      <label>款式</label><input id="f-style" value="${esc(data.style)}">
-      <label>软化PH</label><input id="f-ph" value="${esc(data.soften_ph)}">
-      <label>硫代</label><input id="f-thio" value="${esc(data.soften_thio)}">
-      <label>杠号(JSON)</label><textarea id="f-rods">${esc(typeof data.rod_sizes==='string' ? data.rod_sizes : JSON.stringify(data.rod_sizes))}</textarea>
-      <label>手法</label><input id="f-tech" value="${esc(data.technique)}">
-      <div class="btn-row">
-        <button class="btn-cancel" onclick="closeModal()">取消</button>
-        <button class="btn-save" onclick="savePerm(${id||0})">保存</button>
-      </div>`;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '烫发方案' }));
+    appendField(box, '发质类型', makeInput('f-ht', data.hair_type));
+    appendField(box, '款式', makeInput('f-style', data.style));
+    appendField(box, '软化PH', makeInput('f-ph', data.soften_ph));
+    appendField(box, '硫代', makeInput('f-thio', data.soften_thio));
+    appendField(box, '杠号(JSON)', makeTextarea('f-rods', typeof data.rod_sizes === 'string' ? data.rod_sizes : JSON.stringify(data.rod_sizes)));
+    appendField(box, '手法', makeInput('f-tech', data.technique));
+    appendModalButtons(box, '保存', function() { savePerm(id || 0); });
   }
   document.getElementById('modal').classList.add('show');
 }
@@ -509,11 +590,6 @@ async function savePerm(id) {
     rod_sizes: rodSizes,
     technique: document.getElementById('f-tech').value
   };
-  if (!id) {
-    data.steps = editingPermOriginal?.steps || [];
-    data.soften_raw = editingPermOriginal?.soften_raw || {};
-    data.warning = editingPermOriginal?.warning || '';
-  }
   await upsert('perm_data', id, data);
 }
 
@@ -546,8 +622,9 @@ async function upsert(table, id, data) {
   }
 }
 
-async function doDelete(table, id) {
+async function doDelete(table, id, btn) {
   if (!confirm('确定删除？')) return;
+  setButtonBusy(btn, true);
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
       method: 'DELETE',
@@ -558,6 +635,8 @@ async function doDelete(table, id) {
     loadData(currentTab);
   } catch(e) {
     toast('删除失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
   }
 }
 
@@ -580,6 +659,18 @@ function closeImageModal() {
 
 // AI 分析详情弹窗
 var _aiData = {};
+function appendAISection(parent, title, rows) {
+  const section = el('div', { style: 'margin-bottom:10px;' });
+  section.appendChild(el('b', { style: 'color:#888;font-size:11px;', text: title }));
+  const body = el('div', { style: 'font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;' });
+  rows.forEach(function(row, index) {
+    if (index > 0) body.appendChild(el('br'));
+    body.appendChild(document.createTextNode(row.label + '：' + (row.value || '')));
+  });
+  section.appendChild(body);
+  parent.appendChild(section);
+}
+
 function showAIAnalysis(id) {
   var rows = document.querySelectorAll('#table-images tr');
   for (var i = 0; i < rows.length; i++) {
@@ -598,21 +689,36 @@ function showAIAnalysis(id) {
     if (!ai.style_name) { toast('暂无分析数据', 'err'); return; }
     var c = ai.cut || {}, p = ai.perm || {}, col = ai.color || {}, s = ai.suit || {};
     var box = document.getElementById('modal-box');
-    box.innerHTML = '<h3 style="color:#facc15;font-size:18px;">'+esc(ai.style_name)+'</h3>' +
-      '<div style="margin:12px 0;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;">' +
-      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">✂️ 裁剪技术</b>' +
-      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
-      '分区：'+esc(c.zones||'')+'<br>层次：'+esc(c.layers||'')+'<br>长度：'+esc(c.length||'')+'<br>要点：'+esc(c.key_points||'')+'</div></div>' +
-      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">🔥 烫发技术</b>' +
-      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
-      '是否需要：'+esc(p.need||'')+'<br>类型：'+esc(p.type||'')+'<br>卷度：'+esc(p.curl||'')+'<br>排杠：'+esc(p.rod||'')+'<br>软化：'+esc(p.soften||'')+'</div></div>' +
-      '<div style="margin-bottom:10px;"><b style="color:#888;font-size:11px;">🎨 染发建议</b>' +
-      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
-      '色系：'+esc(col.tone||'')+'<br>方式：'+esc(col.method||'')+'</div></div>' +
-      '<div><b style="color:#888;font-size:11px;">👤 适合人群</b>' +
-      '<div style="font-size:12px;color:#ddd;margin-top:4px;line-height:1.6;">' +
-      '脸型：'+esc(s.face||'')+'<br>风格：'+esc(s.style||'')+'<br>发质：'+esc(s.hair||'')+'<br>打理：'+esc(s.care||'')+'</div></div></div>' +
-      '<div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
+    clearNode(box);
+    box.appendChild(el('h3', { style: 'color:#facc15;font-size:18px;', text: ai.style_name }));
+    var detail = el('div', { style: 'margin:12px 0;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;' });
+    appendAISection(detail, '✂️ 裁剪技术', [
+      { label: '分区', value: c.zones },
+      { label: '层次', value: c.layers },
+      { label: '长度', value: c.length },
+      { label: '要点', value: c.key_points }
+    ]);
+    appendAISection(detail, '🔥 烫发技术', [
+      { label: '是否需要', value: p.need },
+      { label: '类型', value: p.type },
+      { label: '卷度', value: p.curl },
+      { label: '排杠', value: p.rod },
+      { label: '软化', value: p.soften }
+    ]);
+    appendAISection(detail, '🎨 染发建议', [
+      { label: '色系', value: col.tone },
+      { label: '方式', value: col.method }
+    ]);
+    appendAISection(detail, '👤 适合人群', [
+      { label: '脸型', value: s.face },
+      { label: '风格', value: s.style },
+      { label: '发质', value: s.hair },
+      { label: '打理', value: s.care }
+    ]);
+    box.appendChild(detail);
+    const row = el('div', { className: 'btn-row' });
+    row.appendChild(actionButton('关闭', 'btn-cancel', closeModal));
+    box.appendChild(row);
     document.getElementById('modal').classList.add('show');
   }).catch(function(e){ toast('加载失败: ' + e.message, 'err'); });
 }
@@ -677,41 +783,58 @@ async function loadImages() {
     const rows = await r.json();
     const tbody = document.getElementById('table-images');
     const list = rows || [];
-    tbody.innerHTML = list.length === 0 ? '<tr class="empty-row"><td colspan="7">暂无数据</td></tr>' : list.map(img => {
-      var ai = img.ai_analysis || {};
-      var aiHtml = '';
-      var imageUrlArg = esc(JSON.stringify(img.image_url || ''));
+    clearNode(tbody);
+    if (list.length === 0) {
+      appendEmptyRow(tbody, 7);
+      return;
+    }
+    list.forEach(function(img) {
+      const tr = el('tr');
+      const idCell = el('td', { style: 'color:#888;', text: img.id });
+      const imgCell = el('td');
+      const preview = el('img', { className: 'img-thumb', src: img.image_url || '', onclick: function() { openImageModal(img.image_url || ''); } });
+      imgCell.appendChild(preview);
+      const aiCell = el('td', { style: 'max-width:200px;' });
+      const ai = img.ai_analysis || {};
       if (ai.style_name) {
-        aiHtml = '<div style="font-size:11px;line-height:1.5;" onclick="showAIAnalysis('+img.id+')" class="ai-summary">' +
-          '<b style="color:#facc15;">'+esc(ai.style_name)+'</b><br>' +
-          '<span style="color:#888;">裁剪:</span> '+esc((ai.cut||{}).zones||'').substring(0,20)+'…<br>' +
-          '<span style="color:#888;">烫发:</span> '+esc((ai.perm||{}).need||'')+'<br>' +
-          '<span style="color:#888;">染发:</span> '+esc((ai.color||{}).tone||'')+'<br>' +
-          '<span style="color:#888;">适合:</span> '+esc((ai.suit||{}).face||'')+
-        '</div>';
+        const summary = el('div', { className: 'ai-summary', style: 'font-size:11px;line-height:1.5;', onclick: function() { showAIAnalysis(img.id); } });
+        summary.appendChild(el('b', { style: 'color:#facc15;', text: ai.style_name }));
+        summary.appendChild(el('br'));
+        [
+          ['裁剪', ((ai.cut || {}).zones || '').substring(0, 20) + '…'],
+          ['烫发', (ai.perm || {}).need || ''],
+          ['染发', (ai.color || {}).tone || ''],
+          ['适合', (ai.suit || {}).face || '']
+        ].forEach(function(row, index) {
+          if (index > 0) summary.appendChild(el('br'));
+          summary.appendChild(el('span', { style: 'color:#888;', text: row[0] + ':' }));
+          summary.appendChild(document.createTextNode(' ' + row[1]));
+        });
+        aiCell.appendChild(summary);
       } else if (ai === null || Object.keys(ai).length === 0) {
-        aiHtml = '<span style="color:#555;font-size:11px;">分析中…</span>';
+        aiCell.appendChild(el('span', { style: 'color:#555;font-size:11px;', text: '分析中…' }));
       }
-      return `<tr>
-        <td style="color:#888;">${img.id}</td>
-        <td><img class="img-thumb" src="${esc(img.image_url)}" onclick="openImageModal(${imageUrlArg})"></td>
-        <td style="max-width:200px;">${aiHtml}</td>
-        <td>${esc(img.uploaded_by)}</td>
-        <td><span class="badge ${img.status==='approved'?'badge-staff':img.status==='rejected'?'badge-admin':''}">${img.status==='pending'?'待审核':img.status==='approved'?'已通过':'已拒绝'}</span></td>
-        <td style="color:#888;font-size:11px;">${(img.created_at||'').substring(0,16)}</td>
-        <td>
-          ${img.status !== 'approved' ? '<button class="btn-approve" onclick="approveImage('+img.id+')">通过</button>' : ''}
-          ${img.status !== 'rejected' ? '<button class="btn-reject" onclick="rejectImage('+img.id+')">拒绝</button>' : ''}
-          <button class="btn-del" onclick="deleteImage('+img.id+')">删除</button>
-        </td>
-      </tr>`;
+      const statusCell = el('td');
+      const statusClass = img.status === 'approved' ? 'badge-staff' : img.status === 'rejected' ? 'badge-admin' : '';
+      const statusText = img.status === 'pending' ? '待审核' : img.status === 'approved' ? '已通过' : '已拒绝';
+      statusCell.appendChild(el('span', { className: 'badge ' + statusClass, text: statusText }));
+      const timeCell = el('td', { style: 'color:#888;font-size:11px;', text: (img.created_at || '').substring(0, 16) });
+      const actions = el('td');
+      if (img.status !== 'approved') actions.appendChild(actionButton('通过', 'btn-approve', function(e) { approveImage(img.id, e.currentTarget); }));
+      if (img.status !== 'rejected') actions.appendChild(actionButton('拒绝', 'btn-reject', function(e) { rejectImage(img.id, e.currentTarget); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { deleteImage(img.id, e.currentTarget); }));
+      [idCell, imgCell, aiCell, el('td', { text: img.uploaded_by || '' }), statusCell, timeCell, actions].forEach(function(td) {
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
     });
   } catch(e) {
     toast('加载失败: ' + e.message, 'err');
   }
 }
 
-async function approveImage(id) {
+async function approveImage(id, btn) {
+  setButtonBusy(btn, true);
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -723,9 +846,11 @@ async function approveImage(id) {
     loadImages();
     updatePendingBadge();
   } catch(e) { toast('操作失败: ' + e.message, 'err'); }
+  finally { setButtonBusy(btn, false); }
 }
 
-async function rejectImage(id) {
+async function rejectImage(id, btn) {
+  setButtonBusy(btn, true);
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -737,13 +862,15 @@ async function rejectImage(id) {
     loadImages();
     updatePendingBadge();
   } catch(e) { toast('操作失败: ' + e.message, 'err'); }
+  finally { setButtonBusy(btn, false); }
 }
 
 // cloudflared隧道地址（重启后可能变化，届时需要更新）
 var CF_TUNNEL = 'https://fraser-tops-eds-removing.trycloudflare.com';
 
-async function deleteImage(id) {
+async function deleteImage(id, btn) {
   if (!confirm('确认删除？')) return;
+  setButtonBusy(btn, true);
   // 1. 尝试 cloudflared 代理（服务端真实DELETE，100%可靠）
   try {
     const r = await fetch(CF_TUNNEL + '/api/delete_showcase', {
@@ -773,6 +900,8 @@ async function deleteImage(id) {
     updatePendingBadge();
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
   }
 }
 // === 轮播管理 ===
@@ -785,21 +914,35 @@ async function loadCarousel() {
     const rows = await r.json();
     const tbody = document.getElementById('table-carousel');
     const list = rows || [];
-    tbody.innerHTML = list.length === 0
-      ? '<tr class="empty-row"><td colspan="4">暂无数据</td></tr>'
-      : list.map(img => `<tr>
-        <td><img src="${esc(img.image_url)}" style="width:60px;height:80px;object-fit:cover;border-radius:4px;"></td>
-        <td>${esc(img.category)}</td>
-        <td>${esc(img.uploaded_by)}</td>
-        <td><button class="btn-del" onclick="deleteCarousel(${img.id})">移除</button></td>
-      </tr>`).join('');
+    clearNode(tbody);
+    if (list.length === 0) {
+      appendEmptyRow(tbody, 4);
+      return;
+    }
+    list.forEach(function(img) {
+      const tr = el('tr');
+      const previewCell = el('td');
+      previewCell.appendChild(el('img', { src: img.image_url || '', style: 'width:60px;height:80px;object-fit:cover;border-radius:4px;' }));
+      tr.appendChild(previewCell);
+      tr.appendChild(el('td', { text: img.category || '' }));
+      tr.appendChild(el('td', { text: img.uploaded_by || '' }));
+      const actions = el('td');
+      actions.appendChild(actionButton('移除', 'btn-del', function(e) { deleteCarousel(img.id, e.currentTarget); }));
+      tr.appendChild(actions);
+      tbody.appendChild(tr);
+    });
   } catch(e) {
     toast('加载失败: ' + e.message, 'err');
-    document.getElementById('table-carousel').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e0556a;padding:40px;">加载失败：'+esc(e.message)+'</td></tr>';
+    const tbody = document.getElementById('table-carousel');
+    clearNode(tbody);
+    const tr = el('tr');
+    tr.appendChild(el('td', { colspan: 4, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
+    tbody.appendChild(tr);
   }
 }
-async function deleteCarousel(id) {
+async function deleteCarousel(id, btn) {
   if (!confirm('确认从轮播移除？')) return;
+  setButtonBusy(btn, true);
   // 1. 尝试 cloudflared 代理
   try {
     const r = await fetch(CF_TUNNEL + '/api/delete_showcase', {
@@ -823,6 +966,8 @@ async function deleteCarousel(id) {
     loadCarousel();
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
   }
 }
 async function uploadCarousel() {
