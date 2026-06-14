@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="112">
+<html lang="zh-CN" data-version="113">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,7 @@
 <title>自由手艺人 · X</title>
 <link rel="apple-touch-icon" href="apple-icon.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preload" as="image" href="https://taoyouming308-ui.github.io/img/short-hair.jpg">
 <style id="splash-css">
 /* ── 闪屏：页面未加载完成前立即显示 ── */
 #splash { position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center; }
@@ -597,10 +598,10 @@ body {
     .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
     .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
     .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; background:linear-gradient(145deg,#1a1a1a 0%,#2a2a2a 40%,#1a1a1a 100%); }
-    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.8s ease; }
-    .carousel-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#555; letter-spacing:2px; z-index:0; }
+    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
+    .hero-carousel img.active { z-index:1; }
+    .carousel-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#555; letter-spacing:2px; z-index:0; pointer-events:none; }
     .carousel-inner { position:relative; width:100%; height:100%; z-index:1; }
-    .hero-carousel img.active { opacity:1; z-index:1; }
     .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
     .carousel-dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); transition:all 0.35s; }
     .carousel-dots .dot.active { background:#fff; width:18px; border-radius:3px; }
@@ -1578,9 +1579,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (hero) hero.style.display = '';
-    // 图片不预先加active类：等加载完成再渐入
+    // 第一张立即active（直接显示），后续隐藏等轮播切换
     inner.innerHTML = urls.map(function(u,i){
-      return '<img src="'+u+'" data-idx="'+i+'" class="">';
+      return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
     }).join('');
     // 图片出现后隐藏占位文字
     var ph = document.querySelector('.carousel-placeholder');
@@ -1588,22 +1589,6 @@ document.addEventListener('DOMContentLoaded', () => {
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
-    // 等每个图片加载完成再渐入（先加载第一张，后续按顺序）
-    var imgs = inner.querySelectorAll('img');
-    var loadedCount = 0;
-    function fadeInNext() {
-      if (loadedCount >= imgs.length) return;
-      imgs[loadedCount].classList.add('active');
-      loadedCount++;
-    }
-    imgs.forEach(function(img){
-      if (img.complete) {
-        fadeInNext();
-      } else {
-        img.addEventListener('load', fadeInNext);
-        img.addEventListener('error', fadeInNext); // 加载失败也跳过
-      }
-    });
     if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
     if (urls.length > 1) {
       carouselTimer = setInterval(carouselNext, 5000);
@@ -2699,6 +2684,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ⚡ 闪屏消失：首页渲染完成，平滑过渡
   (function hideSplash(){
+    // 预加载首张轮播图（闪屏期间就开始下载）
+    var preloadImg = new Image();
+    preloadImg.src = 'https://taoyouming308-ui.github.io/img/short-hair.jpg';
     var s = document.getElementById('splash');
     if (!s) return;
     // 等一帧让首页渲染出来再淡出闪屏
