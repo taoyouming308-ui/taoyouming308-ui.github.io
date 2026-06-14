@@ -1988,7 +1988,18 @@ document.addEventListener('DOMContentLoaded', () => {
       var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
       var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
       var packages = p.card_packages || [];
-      var lastService = p.notes || '';
+      // 从service_history构建最近到店说明
+      var history = p.service_history || [];
+      var lastService = '';
+      if (history.length > 0) {
+        var last = history[history.length - 1];
+        lastService = (last.date || '') + (last.barber ? ' ' + last.barber : '');
+        // 如果有多条，取最近几次作为到店记录
+        var recentDates = history.slice(-3).map(function(h){ return h.date; }).filter(Boolean);
+        if (recentDates.length > 0) {
+          lastService += ' | 近几次到店: ' + recentDates.join(', ');
+        }
+      }
 
       // ===== 先渲染客户数据 =====
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
@@ -2028,7 +2039,22 @@ document.addEventListener('DOMContentLoaded', () => {
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       document.querySelector('#plan-modal .box').innerHTML = html;
 
-      // ===== 同时调 AI 生成个性化建议 =====
+      // ===== 缓存检查：同客户同一天不重复调AI =====
+      var cacheKey = 'ai_suggest_' + phone + '_' + new Date().toISOString().split('T')[0];
+      var cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          var cachedData = JSON.parse(cached);
+          var suggestionEl = document.getElementById('ai-suggestion');
+          if (suggestionEl && cachedData.plan_text) {
+            suggestionEl.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:6px;font-size:11px;color:var(--text-secondary);">💡 AI 接待建议</div>' +
+              (cachedData.plan_text || '').replace(/\n/g, '<br>');
+            return;
+          }
+        } catch(e) {}
+      }
+
+      // ===== 调 AI 生成个性化建议 =====
       fetch('https://parameter-technological-versus-illustrated.trycloudflare.com/api/ai-plan', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -2048,6 +2074,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (suggestionEl && data.plan_text) {
           suggestionEl.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:6px;font-size:11px;color:var(--text-secondary);">💡 AI 接待建议</div>' +
             (data.plan_text || '').replace(/\n/g, '<br>');
+          // 缓存到localStorage，同客户同一天不再重复调
+          try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch(e){}
         }
       })
       .catch(function(){
