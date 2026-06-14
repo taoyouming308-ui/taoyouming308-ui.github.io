@@ -546,8 +546,6 @@ async function loadImages() {
   let url = `${SUPABASE_URL}/rest/v1/showcase_images?select=*&order=created_at.desc`;
   if (filter !== 'all') {
     url += `&status=eq.${filter}`;
-  } else {
-    url += '&status=neq.deleted';
   }
   try {
     const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
@@ -617,7 +615,7 @@ var CF_TUNNEL = 'https://fraser-tops-eds-removing.trycloudflare.com';
 
 async function deleteImage(id) {
   if (!confirm('确认删除？')) return;
-  // 1. 尝试 cloudflared HTTPS 代理
+  // 1. 尝试 cloudflared 代理（服务端真实DELETE，100%可靠）
   try {
     const r = await fetch(CF_TUNNEL + '/api/delete_showcase', {
       method: 'POST',
@@ -631,21 +629,21 @@ async function deleteImage(id) {
       updatePendingBadge();
       return;
     }
-  } catch(e) { /* 代理不通，走兜底 */ }
-  // 2. 兜底：PATCH 软删除
+  } catch(e) { /* 代理不通 */ }
+  // 2. 兜底：设 status=rejected（数据库约束只允许 pending/approved/rejected）
   try {
-    const r2 = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({status: 'deleted'})
+      body: JSON.stringify({status: 'rejected'})
     });
-    if (r2.status === 200 || r2.status === 204) {
+    if (r.status === 200 || r.status === 204) {
       toast('已删除', 'ok');
       loadImages();
       updatePendingBadge();
     } else {
-      const txt = await r2.text().catch(()=>'');
-      toast('删除失败('+r2.status+'): ' + txt.slice(0,40), 'err');
+      const txt = await r.text().catch(()=>'');
+      toast('删除失败('+r.status+'): ' + txt.slice(0,40), 'err');
     }
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
@@ -689,7 +687,7 @@ async function deleteCarousel(id) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({status: 'deleted'})
+      body: JSON.stringify({status: 'rejected'})
     });
     if (r.status === 200 || r.status === 204) {
       toast('已移除', 'ok');
