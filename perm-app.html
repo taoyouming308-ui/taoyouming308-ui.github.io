@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="23">
+<html lang="zh-CN" data-version="90">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,6 +12,7 @@
 <title>自由手艺人 · X</title>
 <link rel="apple-touch-icon" href="apple-icon.png">
 <link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #000000;
@@ -20,7 +21,7 @@
   --text: #e7e9ea;
   --text-secondary: #71767b;
   --accent: #e7e9ea;
-  --accent-glow: rgba(231, 233, 234, 0.12);
+  --accent-glow: rgba(232, 233, 234, 0.12);
   --danger: #f4212e;
   --warning: #ffd700;
   --border: #2f3336;
@@ -28,7 +29,7 @@
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -54,6 +55,7 @@ body {
   padding: 14px 16px 6px;
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
+  display: none;
 }
 
 .header h1 {
@@ -370,8 +372,8 @@ body {
 .calc-row .label { color: #999; }
 .calc-row .value { color: var(--accent); font-weight: 600; }
 
-.preset-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(231,233,234,0.08) !important; }
-.preset-btn:active { background: rgba(231,233,234,0.14) !important; }
+.preset-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(232,233,234,0.08) !important; }
+.preset-btn:active { background: rgba(232,233,234,0.14) !important; }
 
 /* ── Knowledge Base Tab ── */
 .search-box {
@@ -512,21 +514,6 @@ body {
   margin-bottom: 12px;
 }
 
-/* ── Footer ── */
-.footer {
-  text-align: center;
-  padding: 16px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.footer .dot {
-  color: var(--accent);
-  margin: 0 4px;
-}
-
 /* ── Floating Back to Top ── */
 .back-to-top {
   position: fixed;
@@ -589,8 +576,9 @@ body {
       请连接「自由手艺人」店内 WiFi 后刷新
     </p>
     <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:8px;">
-      <p style="color:var(--text-secondary);font-size:12px;margin-bottom:12px;">管理员远程访问</p>
-      <input type="password" id="admin-pwd" placeholder="输入管理密码" style="width:100%;max-width:200px;padding:10px 14px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-align:center;margin-bottom:12px;">
+      <p style="color:var(--text-secondary);font-size:12px;margin-bottom:12px;">店外访问 / 员工登录</p>
+      <input type="text" id="staff-user" placeholder="账号" style="width:100%;max-width:200px;padding:10px 14px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-align:center;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;">
+      <input type="password" id="admin-pwd" placeholder="密码" style="width:100%;max-width:200px;padding:10px 14px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;text-align:center;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
       <br>
       <button onclick="unlockAdmin()" style="padding:10px 28px;background:var(--accent);color:var(--bg);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">🔓 解锁</button>
       <div id="pwd-error" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;">密码错误</div>
@@ -667,33 +655,115 @@ function checkWiFi() {
 }
 
 function unlockAdmin() {
-  if (document.getElementById('admin-pwd').value === 'tao19841206') {
-    document.getElementById('wifi-lock').style.display = 'none';
-    document.body.style.overflow = '';
-    localStorage.setItem('perm-admin-unlocked', '1');
-    document.getElementById('pwd-error').style.display = 'none';
-  } else {
-    document.getElementById('pwd-error').style.display = 'block';
+  var user = document.getElementById('staff-user').value.trim();
+  var pwd = document.getElementById('admin-pwd').value;
+  if (!pwd) return;
+  
+  // 管理员兜底（免账号）
+  if (!user && pwd === 'tao19841206') {
+    doUnlock();
+    return;
   }
+  
+  if (!user) { document.getElementById('pwd-error').style.display = 'block'; return; }
+  
+  // 查员工表
+  fetch('https://pdssrmpeiuwvxzsgschm.supabase.co/rest/v1/staff?username=eq.' + encodeURIComponent(user) + '&password_hash=eq.' + encodeURIComponent(pwd) + '&active=eq.true', {
+    headers: { 'apikey': 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t' }
+  }).then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (rows.length > 0) {
+      doUnlock();
+    } else {
+      document.getElementById('pwd-error').style.display = 'block';
+    }
+  }).catch(function(){
+    document.getElementById('pwd-error').style.display = 'block';
+  });
+}
+
+function doUnlock() {
+  document.getElementById('wifi-lock').style.display = 'none';
+  document.body.style.overflow = '';
+  localStorage.setItem('perm-admin-unlocked', '1');
+  document.getElementById('pwd-error').style.display = 'none';
 }
 </script>
 
 <!-- Header -->
-<header class="header">
-  <h1>自由手艺人</h1>
-</header>
+<header class="header"></header>
+
+<!-- 首页 -->
+<section id="home-page">
+  <style>
+    #home-page { padding:0; text-align:center; }
+    .hero-text { padding:70px 24px 36px; }
+    .hero-text h1 { font-size:28px; font-weight:700; color:var(--text); margin:0 0 4px; letter-spacing:1px; }
+    .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
+    .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
+    .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; }
+    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.8s ease; }
+    .hero-carousel img.active { opacity:1; z-index:1; }
+    .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
+    .carousel-dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); transition:all 0.35s; }
+    .carousel-dots .dot.active { background:#fff; width:18px; border-radius:3px; }
+    .home-links { padding:32px 24px 60px; display:flex; flex-direction:column; max-width:360px; margin:0 auto; }
+    .home-link { padding:18px 0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+    .home-link:last-child { border-bottom:none; }
+    .home-link:active { opacity:0.5; }
+    .home-link .title { font-size:17px; font-weight:500; color:var(--text); }
+    .home-link .arrow { font-size:18px; color:var(--text-secondary); opacity:0.3; }
+  </style>
+  <div class="hero-text">
+    <h1>自由手艺人</h1>
+    <div class="sub">Hair Design</div>
+    <div class="slogan">找到属于你的风格</div>
+  </div>
+  <div class="hero-carousel" onclick="openFeature('showcase')">
+    <div class="carousel-inner"></div>
+    <div class="carousel-dots" id="carousel-dots"></div>
+  </div>
+  <div class="home-links">
+    <div class="home-link" onclick="openFeature('plans')">
+      <span class="title">方案</span><span class="arrow">›</span>
+    </div>
+    <div class="home-link" onclick="openFeature('bookings')">
+      <span class="title">预约</span><span class="arrow">›</span>
+    </div>
+  </div>
+</section>
+
+<!-- App内容（默认隐藏） -->
+<div id="app-content" style="display:none;">
 
 <!-- Tab Nav -->
 <nav class="tab-nav">
-  <button class="tab-btn active" data-tab="query">🔍 查询方案</button>
-  <button class="tab-btn" data-tab="calc">🧮 自由换算</button>
+  <button class="tab-btn" onclick="goHome()" style="background:var(--bg);border:1px solid var(--border);padding:8px 16px;font-size:13px;color:var(--text-secondary);border-radius:8px;">← 首页</button>
 </nav>
 
 <!-- Main -->
 <main class="main">
 
   <!-- Query Tab -->
-  <section class="tab-content active" id="tab-query">
+  <!-- 方案二级页 -->
+  <section class="tab-content" id="tab-plans">
+    <style>
+      .plan-nav { display:flex; gap:0; margin-bottom:16px; border-bottom:1px solid var(--border); }
+      .plan-nav button { flex:1; padding:10px 0; background:none; border:none; color:var(--text-secondary); font-size:13px; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
+      .plan-nav button.on { color:var(--text); border-bottom-color:var(--text); }
+      .plan-nav .plan-refresh { margin-left:auto; align-self:center; padding:4px 2px 4px 8px; cursor:pointer; font-size:16px; color:var(--text-secondary); opacity:0.25; transition:opacity 0.2s; }
+      .plan-nav .plan-refresh:hover, .plan-nav .plan-refresh:active { opacity:0.7; }
+      .plan-page { display:none; }
+      .plan-page.active { display:block; }
+    </style>
+    <nav class="plan-nav" id="plan-nav">
+      <button class="on" onclick="switchPlan('query')">查询方案</button>
+      <button onclick="switchPlan('calc')">自由换算</button>
+      <button onclick="switchPlan('cold')">冷烫</button>
+      <span class="plan-refresh" onclick="location.reload(true)" title="刷新数据">↻</span>
+    </nav>
+
+  <section class="plan-page active" id="plan-query">
     <div class="selector-group">
       <label>发质类型</label>
       <div class="select-wrapper">
@@ -716,7 +786,7 @@ function unlockAdmin() {
   </section>
 
   <!-- Calc Tab -->
-  <section class="tab-content" id="tab-calc">
+  <section class="plan-page" id="plan-calc">
     <div class="result-card">
       <div class="card-header">
         <span class="card-icon">🧪</span>
@@ -774,12 +844,531 @@ function unlockAdmin() {
     </div>
   </section>
 
-</main>
+  <!-- Cold Perm Tab -->
+  <section class="plan-page" id="plan-cold">
+    <!-- 流程总图 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">🧊</span>
+        <span class="card-title">冷烫完整流程</span>
+      </div>
+      <div class="card-body">
+        <div style="background:rgba(212,165,116,0.06);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:2;text-align:center;">
+          <b>①</b> 发质判断＋软化（与热烫相同）<br>
+          ↓<br>
+          <b>②</b> 冲水 → 卷杠<br>
+          ↓<br>
+          <b>③</b> 上冷烫液 → 停留 1-2 分钟<br>
+          ↓<br>
+          <b>④</b> 冲干净冷烫液<br>
+          ↓<br>
+          <b>⑤</b> 冷烫专用加热器 15 分钟（外部加热，不插电到杠子）<br>
+          ↓<br>
+          <b>⑥</b> 确认效果 OK<br>
+          ↓<br>
+          <b>⑦</b> 定型 5 分钟 → 冲水完成
+        </div>
+      </div>
+    </div>
 
-<!-- Footer -->
-<footer class="footer">
-  <span class="dot">●</span> 数据仅供参考，以现场发质判断为准 <span class="dot">●</span>
-</footer>
+    <!-- 发质软化参数 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">📊</span>
+        <span class="card-title">各发质软化参数（冷烫与热烫通用）</span>
+      </div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">发质</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">PH</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">TGA:CA</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">药性</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV1</td><td style="padding:6px 8px;">8-9</td><td style="padding:6px 8px;">纯TGA</td><td style="padding:6px 8px;">10%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV1.5</td><td style="padding:6px 8px;">9</td><td style="padding:6px 8px;">6:1</td><td style="padding:6px 8px;">9%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV2</td><td style="padding:6px 8px;">8</td><td style="padding:6px 8px;">3:1</td><td style="padding:6px 8px;">8%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">2级轻度 LV2</td><td style="padding:6px 8px;">8</td><td style="padding:6px 8px;">3:1</td><td style="padding:6px 8px;">8%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">2级轻度 LV2.5</td><td style="padding:6px 8px;">7-8</td><td style="padding:6px 8px;">2:1 / 1.5:1</td><td style="padding:6px 8px;">7-7.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">3级受损 LV3</td><td style="padding:6px 8px;">7-8</td><td style="padding:6px 8px;">1:1</td><td style="padding:6px 8px;">6%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">3级受损 LV3.5</td><td style="padding:6px 8px;">6-7</td><td style="padding:6px 8px;">1:3</td><td style="padding:6px 8px;">5.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">4级严重 LV4</td><td style="padding:6px 8px;">6-7</td><td style="padding:6px 8px;">1:6</td><td style="padding:6px 8px;">4.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">4级严重 LV4.5</td><td style="padding:6px 8px;">6</td><td style="padding:6px 8px;">1:10 / 1:12</td><td style="padding:6px 8px;">3.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">5级极度 LV5</td><td style="padding:6px 8px;">5-6</td><td style="padding:6px 8px;">1:20</td><td style="padding:6px 8px;">2.8%</td></tr>
+              <tr><td style="padding:6px 8px;">5级极度 LV5.5</td><td style="padding:6px 8px;">5</td><td style="padding:6px 8px;">纯CA</td><td style="padding:6px 8px;">2.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;">口诀：粗硬猛冲 / 受损慢走</div>
+      </div>
+    </div>
+
+    <!-- 冷烫药水 pH / TGA 含量 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">冷烫药水 pH 值与巯基乙酸（TGA）含量</span>
+      </div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">发质等级</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">pH 范围</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">TGA 含量</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">适用场景</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:var(--danger);">受损发</td>
+                <td style="padding:6px 8px;">6.5 ~ 7.5</td>
+                <td style="padding:6px 8px;">3% ~ 5%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">漂后/多次烫染/发质脆弱</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:var(--warning);">普通发质</td>
+                <td style="padding:6px 8px;">7.5 ~ 8.5</td>
+                <td style="padding:6px 8px;">5% ~ 8%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">轻度烫染/日常打理</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:#4caf50;">健康发质</td>
+                <td style="padding:6px 8px;">8.5 ~ 9.5</td>
+                <td style="padding:6px 8px;">8% ~ 11%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">未烫染/原生健康发</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 8px;color:var(--accent);">抗拒发质</td>
+                <td style="padding:6px 8px;">9.0 ~ 9.8</td>
+                <td style="padding:6px 8px;">10% ~ 13%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">粗硬/极难软化/天然卷</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;">⚠️ 冷烫药水是卷杠后才上的，与热烫软化药水不同。选药水级别看发质受损度。</div>
+      </div>
+    </div>
+
+    <!-- 冷烫液 vs 冷烫膏 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">💧</span>
+        <span class="card-title">冷烫液 vs 冷烫膏</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+            <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:6px;">💧 冷烫液</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+              液体形态<br>
+              无需调配<br>
+              停留 1-2min 后 → <b>需要冲水</b>
+            </div>
+          </div>
+          <div style="flex:1;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+            <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:6px;">🧴 冷烫膏</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+              膏体形态<br>
+              上膏后正常加热<br>
+              加热 5-15min（现场观察）<br>
+              确认效果后 → <b>冲水</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 定型 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-icon">✅</span>
+        <span class="card-title">定型</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">
+          <b>定型剂</b>：过氧化氢（双氧水 2-5%）<br>
+          <b>停留时间</b>：5 分钟<br>
+          <b>操作</b>：上定型剂 → 停留5min → 冲水完成
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </section><!-- /tab-plans -->
+
+  <!-- 发型展示 Tab -->
+  <section class="tab-content" id="tab-showcase">
+    <style>
+      .showcase-img { width:100%; border-radius:10px; margin-bottom:16px; }
+      .showcase-card { background:var(--surface); border-radius:12px; padding:16px; margin-bottom:16px; border-left:3px solid var(--accent); }
+      .showcase-card.hidden { display:none; }
+      .showcase-card h3 { font-size:16px; margin:0 0 4px; color:var(--text); }
+      .showcase-card .sub { font-size:11px; color:var(--text-secondary); margin-bottom:12px; }
+      .showcase-card .ai-badge { margin-top:8px; padding:8px 10px; background:rgba(250,204,21,0.06); border-radius:8px; border-left:2px solid rgba(250,204,21,0.3); }
+      .showcase-card .ai-header { font-size:11px; color:var(--text-secondary); line-height:1.7; }
+      .showcase-card .ai-header:first-child { margin-top:0; }
+      .showcase-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; opacity:1; }
+      .showcase-item { background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; }
+      .showcase-item .label { font-size:10px; color:var(--text-secondary); margin-bottom:4px; }
+      .showcase-item .value { font-size:12px; color:var(--text); font-weight:600; }
+      .showcase-tip { font-size:11px; color:var(--accent); margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+      .filter-nav { display:flex; gap:6px; overflow-x:auto; padding:0 0 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .filter-nav::-webkit-scrollbar { display:none; }
+      .filter-btn { flex-shrink:0; padding:7px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); font-size:12px; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+      .filter-btn.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+      /* Pinterest瀑布流 */
+      .thumb-grid { column-count:2; column-gap:8px; padding:0 0 16px; }
+      .thumb-item { break-inside:avoid; margin-bottom:8px; cursor:pointer; border-radius:16px; overflow:hidden; background:var(--surface); animation:fadeIn 0.25s ease; }
+      @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+      .thumb-item img { width:100%; display:block; border-radius:16px 16px 0 0; }
+      .thumb-item .thumb-label { font-size:12px; color:var(--text); padding:8px 10px; font-weight:500; }
+      /* 上传按钮 */
+      .upload-fab { position:sticky; bottom:16px; display:flex; justify-content:center; padding:16px 0; }
+      .upload-fab button { width:48px;height:48px;border-radius:50%;background:var(--text);color:var(--bg);border:none;font-size:26px;font-weight:300;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;transition:0.2s; }
+      .upload-fab button:active { transform:scale(0.92); }
+      /* 上传二级页 */
+      .upload-page { position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9998;overflow-y:auto;display:none; }
+      .upload-page.show { display:block; }
+      .upload-page .up-header { display:flex;align-items:center;padding:16px;border-bottom:1px solid var(--border); }
+      .upload-page .up-header .back { font-size:18px;color:var(--text);cursor:pointer;padding:4px; }
+      .upload-page .up-header .title { flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--text); }
+      .upload-page .up-body { padding:20px 16px; }
+      .upload-page label { display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px; }
+      .upload-page select, .upload-page input[type=file] { width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:14px;margin-bottom:16px; }
+      .upload-page .preview { width:100%;max-height:300px;object-fit:contain;border-radius:8px;margin-bottom:16px;display:none;background:var(--surface); }
+      .upload-page .up-btn { width:100%;padding:14px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer; }
+      .upload-page .up-btn:disabled { opacity:0.4; }
+      .upload-page .up-msg { text-align:center;font-size:14px;padding:20px;color:var(--accent); }
+      /* 灯箱 */
+      .lightbox { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;overflow-y:auto;display:none; }
+      .lightbox.show { display:block; }
+      .lightbox .back-btn { position:fixed; top:16px;left:16px;width:44px;height:44px;border:none;background:transparent;color:transparent;cursor:pointer;z-index:10;font-size:0; }
+      .lightbox .back-btn::after { content:'←'; font-size:24px; color:rgba(255,255,255,0.5); position:absolute; top:8px; left:10px; }
+      .lightbox .lb-content { padding:40px 16px 40px; max-width:480px; margin:0 auto; }
+    </style>
+
+    <!-- 筛选导航 -->
+    <div class="filter-nav" id="filter-nav">
+      <button class="filter-btn on" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="超短发">超短发</button>
+      <button class="filter-btn" data-filter="短发">短发</button>
+      <button class="filter-btn" data-filter="锁骨发">锁骨发</button>
+      <button class="filter-btn" data-filter="中长发">中长发</button>
+      <button class="filter-btn" data-filter="高层次长发">高层次长发</button>
+      <button class="filter-btn" data-filter="造型烫">造型烫</button>
+      <button class="filter-btn" data-filter="法式卷">法式卷</button>
+      <button class="filter-btn" data-filter="羊毛卷">羊毛卷</button>
+      <button class="filter-btn" data-filter="漂发发色">漂发发色</button>
+    </div>
+
+    <!-- 缩略图网格 -->
+    <div class="thumb-grid" id="thumb-grid"></div>
+
+    <!-- 灯箱 -->
+    <div class="lightbox" id="lightbox">
+      <button class="back-btn" onclick="closeLightbox()" aria-label="返回"></button>
+      <div class="lb-content" id="lb-content"></div>
+    </div>
+
+    <!-- + 上传入口 -->
+    <div class="upload-fab"><button onclick="showUploadPage()">+</button></div>
+
+    <!-- 上传二级页 -->
+    <div class="upload-page" id="upload-page">
+      <div class="up-header">
+        <span class="back" onclick="hideUploadPage()">←</span>
+        <span class="title">上传发型图片</span>
+      </div>
+      <div class="up-body">
+        <label>选择分类</label>
+        <select id="up-category">
+          <option value="超短发">超短发</option>
+          <option value="短发" selected>短发</option>
+          <option value="锁骨发">锁骨发</option>
+          <option value="中长发">中长发</option>
+          <option value="高层次长发">高层次长发</option>
+          <option value="造型烫">造型烫</option>
+          <option value="法式卷">法式卷</option>
+          <option value="羊毛卷">羊毛卷</option>
+          <option value="漂发发色">漂发发色</option>
+        </select>
+        <label>选择图片</label>
+        <input type="file" id="up-file" accept="image/*" onchange="previewUpload()">
+        <img class="preview" id="up-preview">
+        <button class="up-btn" id="up-btn" onclick="doUpload()">提交审核</button>
+        <div class="up-msg" id="up-msg"></div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      var items = [];
+      var grid = document.getElementById('thumb-grid');
+
+      function renderGrid(filter) {
+        filter = filter || 'all';
+        var html = '';
+        items.forEach(function(item){
+          if (filter !== 'all' && item.tags.indexOf(filter) === -1) return;
+          html += '<div class="thumb-item" onclick="openLightbox('+item.index+')">';
+          html += '<img src="'+item.img+'" loading="lazy">';
+          html += '<div class="thumb-label">'+item.title.replace(/^[^\u4e00-\u9fa5]+/,'')+'</div>';
+          html += '</div>';
+        });
+        // 直接替换，用loading="lazy"避免闪屏
+        grid.innerHTML = html;
+      }
+
+      // 灯箱
+      window.openLightbox = function(idx) {
+        var lb = document.getElementById('lightbox');
+        var content = document.getElementById('lb-content');
+        content.innerHTML = items[idx].html;
+        lb.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      };
+      window.closeLightbox = function() {
+        document.getElementById('lightbox').classList.remove('show');
+        document.body.style.overflow = '';
+      };
+      document.getElementById('lightbox').addEventListener('click', closeLightbox);
+      document.getElementById('lb-content').addEventListener('click', function(e){
+        e.stopPropagation();
+      });
+
+      // 筛选按钮
+      var btns = document.querySelectorAll('#tab-showcase .filter-btn');
+      var activeFilter = 'all';
+      btns.forEach(function(b){
+        b.addEventListener('click', function(){
+          btns.forEach(function(x){ x.classList.remove('on'); });
+          b.classList.add('on');
+          activeFilter = b.getAttribute('data-filter');
+          renderGrid(activeFilter);
+        });
+      });
+
+      // 暴露方法给外部
+      window._showcaseItems = items;
+      window._renderGrid = renderGrid;
+      window._showcaseNextIndex = 0;
+    })();
+
+    // 从Supabase加载所有已通过图片（内置+用户上传）
+    var _catDesc = {
+      '超短发':'干练利落 · 凸显五官 | 适合脸型精致、风格个性的客人',
+      '短发':'清爽利落 · 日常百搭 | 适合各类脸型',
+      '锁骨发':'温柔气质 · 修饰脸型 | 优雅知性、打理方便',
+      '中长发':'柔美飘逸 · 百变造型 | 可披可扎、慵懒随性',
+      '高层次长发':'层次丰富 · 轻盈飘逸 | 适合发量多、想要减重感的客人',
+      '造型烫':'慵懒随性 · 纹理自然 | 自带氛围感、高级不挑人',
+      '法式卷':'优雅浪漫 · 法式慵懒 | 复古大气、修饰脸型一绝',
+      '羊毛卷':'俏皮复古 · 蓬松显发量 | 可爱减龄、个性十足',
+      '漂发发色':'潮流个性 · 色彩鲜明 | 适合追求前卫风格的客人'
+    };
+    var _lastShowcaseSig = '';
+    function loadShowcase() {
+      fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,ai_analysis,status&status=eq.approved&order=created_at.asc&limit=100', {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r){ return r.json(); }).then(function(rows){
+        if (!rows || !rows.length) return;
+        // 无变化不刷新
+        var sig = rows.map(function(r){return r.id+':'+(r.status||'')+':a'+(r.ai_analysis?1:0)}).join('|');
+        if (sig === window._lastShowcaseSig) return;
+        window._lastShowcaseSig = sig;
+
+        var items = window._showcaseItems;
+        if (!items) { console.log('showcase items not found'); return; }
+        items.length = 0;
+        var nextIdx = 0;
+        rows.forEach(function(img){
+          var tags = img.category || '发型作品';
+          var esc2 = function(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+          var ai = img.ai_analysis || {};
+          var styleName = ai.style_name || tags;
+          var aiDetail = '';
+          if (ai.style_name) {
+            var c = ai.cut || {}, p = ai.perm || {}, col = ai.color || {}, s = ai.suit || {};
+            var permLine = (img.category === '漂发发色')
+              ? '<div class="ai-header">🚫 烫发：漂发不宜烫发，建议日常造型打理</div>'
+              : '<div class="ai-header">🔥 烫发：' + esc2(p.need||'') + ' · ' + esc2(p.curl||'') + '</div>';
+            aiDetail = '<div class="ai-badge" onclick="event.stopPropagation()"><div class="ai-header">✂️ 裁剪：' + esc2(c.zones||'') + ' · ' + esc2(c.layers||'') + '</div>' +
+              permLine +
+              '<div class="ai-header">🎨 染发：' + esc2(col.tone||'') + ' · ' + esc2(col.method||'') + '</div>' +
+              '<div class="ai-header">👤 适合：' + esc2(s.face||'') + ' · ' + esc2(s.style||'') + ' · 打理' + esc2(s.care||'') + '</div></div>';
+          }
+          var desc = _catDesc[img.category] || (img.uploaded_by==='内置'?'内置展示图':'发型作品');
+          var titleIcon = (tags==='高层次长发'||tags==='中长发')?'💇':'✂️';
+          var html = '<div class="showcase-card" data-tags="'+tags+'">' +
+            '<img class="showcase-img" src="'+img.image_url+'" alt="'+tags+'" loading="lazy">' +
+            '<h3>'+titleIcon+' '+esc2(styleName)+'</h3>' +
+            (aiDetail ? aiDetail : '<div class="sub">'+desc+'</div>') + '</div>';
+          items.push({img: img.image_url, title: styleName, tags: tags, html: html, index: nextIdx++});
+        });
+        window._showcaseNextIndex = nextIdx;
+        var active = document.querySelector('#tab-showcase .filter-btn.on');
+        var filter = active ? active.getAttribute('data-filter') : 'all';
+        // 用 requestAnimationFrame 合并DOM更新，避免布局抖动
+        requestAnimationFrame(function(){ window._renderGrid(filter); });
+      }).catch(function(){});
+    }
+    // 页面加载后加载所有图片，每30秒自动刷新
+    setTimeout(loadShowcase, 500);
+    setInterval(loadShowcase, 5000);
+    </script>
+
+    <script>
+    // === 上传功能 ===
+
+    function showUploadPage() {
+      document.getElementById('upload-page').classList.add('show');
+      document.getElementById('up-msg').textContent = '';
+      document.getElementById('up-btn').disabled = false;
+    }
+    function hideUploadPage() {
+      document.getElementById('upload-page').classList.remove('show');
+    }
+    function previewUpload() {
+      var file = document.getElementById('up-file').files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.getElementById('up-preview');
+        img.src = e.target.result;
+        img.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function doUpload() {
+      var file = document.getElementById('up-file').files[0];
+      if (!file) { alert('请选择图片'); return; }
+      var category = document.getElementById('up-category').value;
+      var btn = document.getElementById('up-btn');
+      var msg = document.getElementById('up-msg');
+      btn.disabled = true;
+      msg.textContent = '压缩中...';
+
+      // 压缩图片到 max 600px
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function() {
+        var maxW = 600, maxH = 800;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = c.toDataURL('image/jpeg', 0.7);
+        URL.revokeObjectURL(url);
+        doUploadBase64(base64, category, btn, msg);
+      };
+      img.src = url;
+    }
+    function doUploadBase64(base64, category, btn, msg) {
+        fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            image_url: base64,
+            category: category,
+            title: category,
+            status: 'pending',
+            uploaded_by: '发型师',
+            created_at: new Date().toISOString()
+          })
+        }).then(function(r) {
+          if (r.status === 201 || r.status === 200 || r.status === 204) {
+            msg.textContent = '✅ 已提交，等待管理员审核';
+            msg.style.color = '#4ade80';
+            document.getElementById('up-file').value = '';
+            document.getElementById('up-preview').style.display = 'none';
+            btn.disabled = false;
+          } else {
+            msg.textContent = '❌ 上传失败 (' + r.status + ')';
+            msg.style.color = '#e0556a';
+            btn.disabled = false;
+          }
+        }).catch(function(e) {
+          msg.textContent = '❌ 网络错误: ' + e.message;
+          msg.style.color = '#e0556a';
+          btn.disabled = false;
+        });
+    }
+
+    // 展示Tab切换时加载已通过图片
+    setTimeout(loadShowcase, 1500);
+    </script>
+  </section>
+
+  <!-- 预约 Tab -->
+  <section class="tab-content" id="tab-bookings">
+    <style>
+      .booking-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
+      .booking-bar .shop-switch { font-size:12px; color:var(--text-secondary); cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+      .booking-bar .shop-switch.on { color:var(--accent); border-color:var(--accent); }
+      .booking-item { padding:14px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+      .booking-item .bi-left { flex:1; }
+      .booking-item .bi-name { font-size:15px; font-weight:600; color:var(--text); }
+      .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+      .booking-item .bi-time { font-size:14px; font-weight:600; color:var(--accent); text-align:right; }
+      .booking-item .bi-barber { font-size:11px; color:var(--text-secondary); text-align:right; }
+      .identity-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-radius:8px; margin-bottom:12px; font-size:13px; }
+      .identity-bar .switch-btn { color:var(--accent); cursor:pointer; font-size:12px; }
+      .identity-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
+      .identity-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:300px; width:90%; }
+      .identity-modal h3 { font-size:16px; margin-bottom:16px; color:var(--text); text-align:center; }
+      .identity-modal .opt { display:block; width:100%; padding:12px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
+      .identity-modal .opt:active { background:var(--surface-light); border-color:var(--accent); }
+      .booking-loading { text-align:center; padding:40px; color:var(--text-secondary); }
+      .booking-date-header { font-size:12px; color:var(--text-secondary); padding:16px 12px 6px; border-bottom:1px solid var(--border); font-weight:600; }
+      .date-strip { display:flex; gap:4px; padding:0 0 10px; overflow-x:auto; scrollbar-width:none; }
+      .date-strip::-webkit-scrollbar { display:none; }
+      .date-chip { flex-shrink:0; padding:6px 14px; border-radius:16px; font-size:12px; cursor:pointer; background:var(--bg); border:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
+      .date-chip.on { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
+      .date-chip .dow { font-size:10px; opacity:0.7; }
+      .bi-plan-btn { font-size:10px; color:var(--accent); background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:2px 8px; cursor:pointer; margin-left:8px; white-space:nowrap; }
+      .bi-plan-btn:hover { background:var(--accent); color:var(--bg); }
+      .plan-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
+      .plan-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:340px; width:90%; max-height:80vh; overflow-y:auto; }
+      .plan-modal h3 { font-size:16px; margin-bottom:8px; color:var(--text); }
+      .plan-modal .sub { font-size:12px; color:var(--text-secondary); margin-bottom:16px; }
+      .plan-modal .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-bottom:1px solid var(--border); }
+      .plan-modal .row .label { color:var(--text-secondary); }
+      .plan-modal .row .val { color:var(--text); font-weight:500; }
+      .plan-modal .suggestion { margin-top:16px; padding:12px; background:var(--bg); border-radius:8px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+      .plan-modal .close-btn { display:block; width:100%; padding:10px; margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
+      .plan-modal .loading { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
+      .plan-modal .no-data { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
+    </style>
+    <div class="identity-bar" id="identity-bar">
+      <span>👤 <b id="current-identity">全部发型师</b></span>
+      <span class="switch-btn" onclick="switchIdentity()">↻ 切换身份</span>
+    </div>
+    <div class="date-strip" id="date-strip"></div>
+    <div class="booking-bar">
+      <span class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</span>
+      <span class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</span>
+    </div>
+    <div id="booking-list"><div class="booking-loading">加载中...</div></div>
+  </section>
+
+</div><!-- /app-content -->
+
+</main>
 
 <!-- Back to top -->
 <button class="back-to-top" id="back-to-top">↑</button>
@@ -803,6 +1392,9 @@ const HAIR_TYPES = [
   { id: 'level-mix-1-3', label: '🔀 混合·发根1级 + 发尾3级' },
   { id: 'level-mix-1-4', label: '🔀 混合·发根1级 + 发尾4-5级' },
   { id: 'level-mix-2-4', label: '🔀 混合·发根2级 + 发尾4级' },
+  { id: '三段发质 发根1级+发中2级+发梢5级', label: '🔀 三段发质·根1级+中2级+梢5级' },
+  { id: '三段发质 发根2级+发中3级+发梢5级', label: '🔀 三段发质·根2级+中3级+梢5级' },
+  { id: '三段发质 发根1级+发中3级+发梢4级', label: '🔀 三段发质·根1级+中3级+梢4级' },
 ];
 
 const PERM_STYLES = [
@@ -930,13 +1522,40 @@ const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据�
   { hairType: 'level-mix-2-4', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
 ];
 
-
-
 /* ─────────────────────────────────────────
    APP LOGIC
    ───────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  // === 导航 ===
+  window.openFeature = function(tabName) {
+    document.getElementById('home-page').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    var content = document.getElementById('tab-' + tabName);
+    if (content) {
+      content.classList.add('active');
+      if (tabName === 'plans') switchPlan('query');
+      if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
+    }
+  };
+  window.goHome = function() {
+    document.getElementById('home-page').style.display = 'block';
+    document.getElementById('app-content').style.display = 'none';
+  };
+  window.switchPlan = function(name) {
+    var btns = document.querySelectorAll('#plan-nav button');
+    btns.forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.plan-page').forEach(function(p){ p.classList.remove('active'); });
+    btns.forEach(function(b){
+      if (b.textContent.indexOf(name) !== -1 || b.getAttribute('onclick').indexOf(name) !== -1) b.classList.add('on');
+    });
+    var page = document.getElementById('plan-' + name);
+    if (page) page.classList.add('active');
+  };
+  // 初始状态：首页显示
+  document.querySelector('.footer'); // noop, footer removed
   // === DOM refs ===
   const hairTypeSelect = document.getElementById('hair-type');
   const permStyleSelect = document.getElementById('perm-style');
@@ -944,6 +1563,93 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultArea = document.getElementById('result-area');
   const backToTop = document.getElementById('back-to-top');
   const toast = document.getElementById('toast');
+
+  // === 首页轮播初始化 ===
+  var carouselImgs = [];
+  var carouselIdx = 0;
+  var carouselTimer = null;
+  var carouselPaused = false;
+
+  var LOCAL_CAROUSEL = [
+    'https://taoyouming308-ui.github.io/img/showcase-long-hair.jpg',
+    'https://taoyouming308-ui.github.io/img/showcase-short-img_474868b0171d.jpg',
+    'https://taoyouming308-ui.github.io/img/showcase-short-hair.jpg',
+    'https://taoyouming308-ui.github.io/img/showcase-high-layer.jpg'
+  ];
+
+  function renderCarousel(urls) {
+    carouselImgs = urls;
+    carouselIdx = 0;
+    var inner = document.querySelector('.carousel-inner');
+    var dots = document.getElementById('carousel-dots');
+    if (!inner || !dots) return;
+    inner.innerHTML = urls.map(function(u,i){
+      return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
+    }).join('');
+    dots.innerHTML = urls.map(function(_,i){
+      return '<span class="dot'+(i===0?' active':'')+'"></span>';
+    }).join('');
+    if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    if (urls.length > 1) {
+      carouselTimer = setInterval(carouselNext, 5000);
+    }
+  }
+
+  function carouselNext() {
+    if (carouselPaused || carouselImgs.length < 2) return;
+    var imgs = document.querySelectorAll('.carousel-inner img');
+    var dots = document.querySelectorAll('.carousel-dots .dot');
+    if (!imgs.length) return;
+    imgs[carouselIdx].classList.remove('active');
+    if (dots[carouselIdx]) dots[carouselIdx].classList.remove('active');
+    carouselIdx = (carouselIdx + 1) % imgs.length;
+    imgs[carouselIdx].classList.add('active');
+    if (dots[carouselIdx]) dots[carouselIdx].classList.add('active');
+  }
+
+  // 手指滑动切换
+  (function(){
+    var hero = document.querySelector('.hero-carousel');
+    if (!hero) return;
+    var sx = 0, ex = 0;
+    hero.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; });
+    hero.addEventListener('touchend', function(e){
+      ex = e.changedTouches[0].clientX;
+      var diff = sx - ex;
+      if (Math.abs(diff) < 30) return;
+      carouselPaused = true;
+      if (diff > 0) carouselNext();
+      else {
+        var imgs = document.querySelectorAll('.carousel-inner img');
+        var dots = document.querySelectorAll('.carousel-dots .dot');
+        if (!imgs.length) return;
+        imgs[carouselIdx].classList.remove('active');
+        if (dots[carouselIdx]) dots[carouselIdx].classList.remove('active');
+        carouselIdx = (carouselIdx - 1 + imgs.length) % imgs.length;
+        imgs[carouselIdx].classList.add('active');
+        if (dots[carouselIdx]) dots[carouselIdx].classList.add('active');
+      }
+      setTimeout(function(){ carouselPaused = false; }, 3000);
+    });
+  })();
+
+  // 从 Supabase 加载已审核作品图（只取HTTP图片，base64太大无法渲染）
+  (function loadCarousel(){
+    fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&status=eq.approved&limit=20', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); })
+    .then(function(rows){
+      var urls = (rows || []).map(function(r){ return r.image_url; }).filter(function(u){
+        return u && u.indexOf('http') === 0;
+      });
+      if (urls.length < 3) {
+        urls = urls.concat(LOCAL_CAROUSEL.slice(0, 6 - urls.length));
+      }
+      renderCarousel(urls.slice(0, 8));
+    }).catch(function(){
+      renderCarousel(LOCAL_CAROUSEL);
+    });
+  })();
 
   // === Init selectors ===
   HAIR_TYPES.forEach(ht => {
@@ -979,14 +1685,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const result = PERM_DATA_CACHE.find(d => d.hairType === hair && d.permStyle === style);
-    if (!result) {
+    const results = PERM_DATA_CACHE.filter(d => d.hairType === hair && d.permStyle === style);
+    if (results.length === 0) {
       showToast('暂无该组合的数据，请尝试其他搭配');
       resultArea.innerHTML = '';
       return;
     }
 
-    renderResult(result);
+    let allHtml = '';
+    results.forEach((result, i) => {
+      if (i > 0) {
+        allHtml += '<div style="border-top:2px dashed var(--border);margin:20px 0;padding-top:8px;text-align:center;font-size:11px;color:var(--text-secondary);">—— 方案 ' + (i+1) + ' ——</div>';
+      }
+      allHtml += renderResult(result);
+    });
+    resultArea.innerHTML = allHtml;
     resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -1121,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tips
     html += renderTips();
 
-    resultArea.innerHTML = html;
+    return html;
   }
 
   function renderTips() {
@@ -1244,6 +1957,368 @@ document.addEventListener('DOMContentLoaded', () => {
     calcResult.innerHTML = html;
   });
 
+  // ===== 预约系统 =====
+  var BOOKING_SHOP = '自由手艺人';
+  var BOOKING_BARBER = localStorage.getItem('booking-barber') || '';
+  var BOOKING_DATE = new Date().toISOString().slice(0,10);
+  var BOOKING_INTERVAL = null;
+  var BOOKINGS_CACHE = [];
+
+  var DOW = ['日','一','二','三','四','五','六'];
+
+  function renderDateStrip() {
+    var strip = document.getElementById('date-strip');
+    var today = new Date().toISOString().slice(0,10);
+    var html = '';
+    for (var i = 0; i < 8; i++) {
+      var d = new Date();
+      d.setDate(d.getDate() + i);
+      var ds = d.toISOString().slice(0,10);
+      var label = i === 0 ? '今天' : (i === 1 ? '明天' : ('周' + DOW[d.getDay()]));
+      var sub = (d.getMonth()+1) + '/' + d.getDate();
+      var on = ds === BOOKING_DATE ? ' on' : '';
+      html += '<div class="date-chip'+on+'" onclick="pickDate(\''+ds+'\')"><div class="dow">'+label+'</div>'+sub+'</div>';
+    }
+    strip.innerHTML = html;
+  }
+
+  window.pickDate = function(ds) {
+    BOOKING_DATE = ds;
+    renderDateStrip();
+    loadBookings(true);
+  }
+
+  function checkIdentity() {
+    if (!BOOKING_BARBER) {
+      showIdentityModal();
+    } else {
+      document.getElementById('current-identity').textContent = BOOKING_BARBER;
+    }
+  }
+
+  function showIdentityModal() {
+    var div = document.createElement('div');
+    div.className = 'identity-modal';
+    div.id = 'identity-modal';
+    var barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
+    var opts = '';
+    barbers.forEach(function(b){
+      opts += '<button class="opt" onclick="selectIdentity(&quot;'+b+'&quot;)">'+b+'</button>';
+    });
+    div.innerHTML = '<div class="box"><h3>选择你的身份</h3>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button></div>';
+    document.body.appendChild(div);
+  }
+
+  window.selectIdentity = function(name) {
+    BOOKING_BARBER = name;
+    localStorage.setItem('booking-barber', name);
+    document.getElementById('current-identity').textContent = name || '全部发型师';
+    var modal = document.getElementById('identity-modal');
+    if (modal) modal.remove();
+    loadBookings();
+  };
+
+  window.switchIdentity = function() {
+    showIdentityModal();
+  };
+
+  window.switchShop = function(shop) {
+    BOOKING_SHOP = shop;
+    document.getElementById('shop-btn-ziyou').classList.toggle('on', shop === '自由手艺人');
+    document.getElementById('shop-btn-xiangli').classList.toggle('on', shop === '向里造型');
+    loadBookings();
+  };
+
+  function loadBookings(showLoading) {
+    var list = document.getElementById('booking-list');
+    if (!list) return;
+    if (showLoading !== false) {
+      list.innerHTML = '<div class="booking-loading">加载中...</div>';
+    }
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (BOOKING_BARBER) {
+        rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
+      }
+      BOOKINGS_CACHE = rows;
+      if (rows.length === 0) {
+        list.innerHTML = '<div class="no-results"><div class="icon">📭</div>暂无预约</div>';
+        return;
+      }
+      var html = '';
+      rows.forEach(function(r){
+        html += '<div class="booking-item">';
+        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+'</div></div>';
+        html += '<div style="display:flex;align-items:center;">';
+        html += '<div><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name)+'</div></div>';
+        if (r.customer_phone) {
+          html += '<span class="bi-plan-btn" onclick="showPlanModal(\''+esc(r.customer_phone)+'\',\''+esc(r.customer_name||'')+'\')">方案</span>';
+        }
+        html += '</div></div>';
+      });
+      list.innerHTML = html;
+    }).catch(function(e){
+      list.innerHTML = '<div class="no-results"><div class="icon">⚠️</div>加载失败，请刷新重试</div>';
+    });
+  }
+
+  function esc(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  // ===== 客户方案生成 =====
+  var BARBER_SPECIALTIES = {
+    '无名': '烫发/整体造型',
+    '娄云': '剪发/染发',
+    '陈鹏': '烫染全能',
+    '董小强': '男士剪发',
+    '木子': '长发设计/护理',
+    '大雄': '染发/潮流造型',
+    '杨帆': '烫发/护理'
+  };
+  var _profileCache = {};
+  window.showPlanModal = function(phone, name) {
+    var div = document.createElement('div');
+    div.className = 'plan-modal';
+    div.id = 'plan-modal';
+    div.innerHTML = '<div class="box"><h3>'+esc(name||'客户')+'</h3><div class="loading">🧠 AI 生成建议中...</div></div>';
+    document.body.appendChild(div);
+
+    // 查 Supabase 获取 last_service（上次项目）和客户数据，同时作为 fallback
+    var supabasePromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); });
+
+    // 优先调 AI 建议（店内网络通 plan_server）
+    supabasePromise.then(function(rows){
+      var lastService = (rows && rows.length > 0) ? (rows[0].notes || '') : '';
+      fetch('http://192.168.3.250:8890/api/ai-plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phone: phone, last_service: lastService}),
+        signal: AbortSignal.timeout(8000)
+      }).then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.plan_text && data.source === 'ai') {
+          var html = '<h3>'+esc(name||data.name||'客户')+'</h3>';
+          html += '<div class="suggestion" style="font-size:12px;">'+esc(data.plan_text).replace(/\n/g, '<br>')+'</div>';
+          html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+          document.querySelector('#plan-modal .box').innerHTML = html;
+          return;
+        }
+        // AI 返回了规则降级
+        renderRulePlan(rows, name, phone, data);
+      })
+      .catch(function(){
+        // AI 不通 → 规则引擎
+        renderRulePlan(rows, name, phone);
+      });
+    }).catch(function(){
+      // Supabase 也不通 → 显示提示
+      document.querySelector('#plan-modal .box').innerHTML = '<h3>'+esc(name||'客户')+'</h3><div class="suggestion" style="text-align:center;padding:30px;color:var(--text-secondary);">暂时无法获取建议<br><small>请连接店内网络后重试</small></div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
+    });
+  };
+
+  function renderRulePlan(rows, name, phone, planData) {
+    if (planData && planData.plan_text) {
+      // 直接使用规则引擎返回的结果
+      var html = '<h3>'+esc(name||planData.name||'客户')+'</h3>';
+      html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(planData.summary||'')+'</span></div>';
+      html += '<div class="row"><span class="label">到店</span><span class="val">'+planData.visits+'次</span></div>';
+      html += '<div class="row"><span class="label">均消</span><span class="val">¥'+planData.avg_fee.toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">近12月</span><span class="val">'+planData.freq_12m+'次 · ¥'+(planData.total_12m||0).toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+(planData.last_visit||'无')+'</span></div>';
+      if (planData.months_since_last > 0) {
+        html += '<div class="row"><span class="label">距上次</span><span class="val">'+planData.months_since_last+'个月</span></div>';
+      }
+      if (planData.active_treats && planData.active_treats.length > 0) {
+        html += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
+        for (var ti = 0; ti < planData.active_treats.length; ti++) {
+          var tp = planData.active_treats[ti];
+          var tn = tp.name || '套餐';
+          var tl = tp.left || 0;
+          var tt = tp.total || 0;
+          var tused = tt - tl;
+          var tpct = tt > 0 ? Math.round(tl / tt * 100) : 0;
+          var tbar = tpct > 50 ? 'var(--accent)' : (tpct > 20 ? '#e8a817' : '#e85050');
+          html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
+          html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
+          html += '<span>'+esc(tn)+'</span>';
+          html += '<span style="color:'+tbar+';font-weight:600;">剩'+tl+'/'+tt+'次</span>';
+          html += '</span></div>';
+          if (tt > 0) {
+            html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
+            html += '<div style="width:'+tpct+'%;height:100%;background:'+tbar+';border-radius:2px;"></div></div>';
+          }
+        }
+      }
+      html += '<div class="suggestion" style="font-size:12px;">'+(planData.plan_text||'').replace(/\n/g, '<br>')+'</div>';
+      html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+      document.querySelector('#plan-modal .box').innerHTML = html;
+      return;
+    }
+
+    // 客户不在 plan_server，用 Supabase 数据 + 精简规则
+    if (!rows || rows.length === 0) {
+      document.querySelector('#plan-modal .box').innerHTML = '<h3>'+esc(name||'客户')+'</h3><div class="suggestion" style="text-align:center;padding:30px;color:var(--text-secondary);">暂无客户数据</div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
+      return;
+    }
+    var p = rows[0];
+    var visits = p.total_visits || 0;
+    var consum = p.total_consumption || 0;
+    var lastDate = p.last_visit_date || '';
+    var lastDateStr = lastDate ? (''+lastDate).split(' ')[0] : '';
+    var monthsSince = 0;
+    if (lastDateStr) {
+      var parts = lastDateStr.split('-');
+      if (parts.length === 3) {
+        var ld = new Date(+parts[0], +parts[1]-1, +parts[2]);
+        var now = new Date();
+        monthsSince = (now.getFullYear() - ld.getFullYear()) * 12 + (now.getMonth() - ld.getMonth());
+      }
+    }
+    var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
+    var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
+    var packages = p.card_packages || [];
+    var sug = '👤 ' + (name||p.name||'客户') + ' · ' + customerType;
+    if (spendLabel) sug += ' / ' + spendLabel;
+    sug += '\n\n';
+    // 卡项消耗建议（精简版）
+    if (packages.length > 0) {
+      sug += '📦 卡项消耗建议：\n';
+      for (var ci = 0; ci < packages.length; ci++) {
+        var cp = packages[ci];
+        var cn = cp.name || cp.itemname || '';
+        var cl = cp.left || cp.leavetimes || 0;
+        var ct = cp.total || cp.sumtimes || 0;
+        if (cn) {
+          var used = ct - cl;
+          var pct = ct > 0 ? Math.round(cl / ct * 100) : 0;
+          if (cl <= 1) sug += '  ⚠️ ' + cn + '：仅剩' + cl + '次，必须优先安排！\n';
+          else if (pct <= 30) sug += '  🔴 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，建议尽快消耗防过期\n';
+          else if (pct <= 50) sug += '  🟡 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，可主动约客消耗\n';
+          else sug += '  🟢 ' + cn + '：已用' + used + '/' + ct + '次，时间充裕\n';
+        }
+      }
+      sug += '\n';
+    }
+    // 回访话术（精简版）
+    if (monthsSince >= 6) {
+      sug += '📞 ' + monthsSince + '个月没来了，建议直接打电话约回访\n\n';
+    } else if (monthsSince >= 3) {
+      sug += '📞 ' + monthsSince + '个月没来，烫发效果大概率没了，发微信约补烫\n\n';
+    } else if (lastDateStr) {
+      sug += '📞 客户最近有到店，到店后可推荐追加项目\n\n';
+    }
+    // 一句话指令
+    if (packages.length > 0) sug += '🎯 先消耗卡项 → 根据客户需求推荐合适项目';
+    else if (monthsSince >= 3) sug += '🎯 主动回访 → 邀约到店 → 推荐适合项目';
+    else sug += '🎯 了解客户本次需求 → 专业推荐 → 争取办卡锁客';
+
+    var htmlContent = '<h3>'+esc(name||p.name||'客户')+'</h3>';
+    htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
+    htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
+    if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
+    if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
+    htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
+    // 卡项展示
+    if (packages.length > 0) {
+      htmlContent += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
+      for (var ci2 = 0; ci2 < packages.length; ci2++) {
+        var cp2 = packages[ci2];
+        var cn2 = cp2.name || cp2.itemname || '套餐';
+        var cl2 = cp2.left || cp2.leavetimes || 0;
+        var ct2 = cp2.total || cp2.sumtimes || 0;
+        var used2 = ct2 - cl2;
+        var pct2 = ct2 > 0 ? Math.round(cl2 / ct2 * 100) : 0;
+        var barColor = pct2 > 50 ? 'var(--accent)' : (pct2 > 20 ? '#e8a817' : '#e85050');
+        htmlContent += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
+        htmlContent += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
+        htmlContent += '<span>'+esc(cn2)+'</span>';
+        htmlContent += '<span style="color:'+barColor+';font-weight:600;">剩'+cl2+'/'+ct2+'次</span>';
+        htmlContent += '</span></div>';
+        if (ct2 > 0) {
+          htmlContent += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
+          htmlContent += '<div style="width:'+pct2+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
+        }
+      }
+    }
+    // 上次项目
+    var lastService = p.notes || '';
+    if (lastService) {
+      htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
+    }
+    sug = sug.replace(/\n/g, '<br>');
+    htmlContent += '<div class="suggestion" style="font-size:12px;">'+sug+'</div>';
+    htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+    document.querySelector('#plan-modal .box').innerHTML = htmlContent;
+  }
+
+  window.closePlanModal = function() {
+    var m = document.getElementById('plan-modal');
+    if (m) m.remove();
+  };
+
+  // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
+  var _bookingChannel = null;
+  function initRealtime() {
+    if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
+    var wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
+    try {
+      var ws = new WebSocket(wsUrl);
+      var refCount = 0;
+      ws.onopen = function() {
+        refCount++;
+        // 加入 bookings 频道
+        ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'phx_join', {}]));
+        refCount++;
+        // 订阅 postgres_changes
+        ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'postgres_changes', {
+          event: '*', schema: 'public', table: 'bookings'
+        }]));
+      };
+      ws.onmessage = function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          if (msg && msg[3] === 'postgres_changes') {
+            // 有预约数据变更，立即刷新
+            loadBookings(false);
+          }
+        } catch(ex) {}
+      };
+      ws.onclose = function() {
+        // 断线后5秒自动重连
+        setTimeout(initRealtime, 5000);
+      };
+      // 定时心跳（30秒）
+      var hb = setInterval(function() {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify([null, null, 'phoenix', 'heartbeat', {}]));
+        } else {
+          clearInterval(hb);
+        }
+      }, 30000);
+      _bookingChannel = ws;
+    } catch(e) {
+      // WebSocket 连接失败，走 polling 兜底
+    }
+  }
+
+  // 预约页打开时：启动 Realtime + 保留 5s 轮询做兜底
+  var _origOpenFeature = window.openFeature;
+  window.openFeature = function(tabName) {
+    if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
+    _origOpenFeature(tabName);
+    if (tabName === 'bookings') {
+      // 首次进入时初始化 Realtime
+      if (!_bookingChannel || _bookingChannel.readyState !== WebSocket.OPEN) {
+        initRealtime();
+      }
+      // 5s 轮询兜底（WebSocket 断线时自动接管）
+      BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
+    }
+  };
+
   // === Toast ===
   function showToast(msg, duration = 2000) {
     toast.textContent = msg;
@@ -1254,18 +2329,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }, duration);
   }
 
-  // === PWA Service Worker ===
+  // === PWA Service Worker（网络优先，静默更新） ===
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
+      const CACHE_VER = document.documentElement.getAttribute('data-version') || '1';
       const swCode = `
-        const CACHE = 'perm-app-v1';
-        const URLS = ['.'];
+        const CACHE = 'perm-v' + '${CACHE_VER}';
         self.addEventListener('install', e => {
-          e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', e => {
+          e.waitUntil(
+            caches.keys().then(keys => Promise.all(
+              keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+            )).then(() => clients.claim())
+          );
         });
         self.addEventListener('fetch', e => {
           e.respondWith(
-            caches.match(e.request).then(r => r || fetch(e.request))
+            fetch(e.request).then(resp => {
+              if (resp.ok) {
+                const clone = resp.clone();
+                caches.open(CACHE).then(c => c.put(e.request, clone));
+              }
+              return resp;
+            }).catch(() => caches.match(e.request))
           );
         });
       `;
@@ -1277,19 +2365,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- 版本更新检测 -->
-<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite;}" onclick="location.reload()">
-  🔄 有新版本，点击刷新
+<!-- 版本更新提示 -->
+<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite" onclick="location.reload(true)">
+  🔄 有新版本，点此刷新
 </div>
 <script>
 (function(){
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
   setInterval(function(){
-    fetch(location.href + '?_t=' + Date.now())
-      .then(function(r){return r.text()})
-      .then(function(t){
-        var m = t.match(/data-version="(\d+)"/);
-        if (m && parseInt(m[1]) > VER) {
+    fetch('version.json?_t=' + Date.now())
+      .then(function(r){return r.json()})
+      .then(function(d){
+        if (d.version > VER) {
           document.getElementById('update-banner').style.display = 'block';
         }
       })
