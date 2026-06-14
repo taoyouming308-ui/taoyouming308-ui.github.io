@@ -90,6 +90,7 @@ td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;
     <div class="tab" onclick="switchTab('style')">款式管理</div>
     <div class="tab" onclick="switchTab('perm')">烫发方案</div>
     <div class="tab" onclick="switchTab('images')">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
+    <div class="tab" onclick="switchTab('carousel')">轮播管理</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -127,6 +128,18 @@ td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;
           <tr><th style="width:40px;">ID</th><th>预览</th><th>发型分析</th><th>上传者</th><th>状态</th><th>时间</th><th style="width:160px;">操作</th></tr>
         </thead>
         <tbody id="table-images"></tbody>
+      </table>
+    <div id="tab-carousel" style="display:none">
+      <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（仅显示已审核的HTTP图片，建议750×1000px）</div>
+      <div style="margin-bottom:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">上传新轮播图</label>
+        <input type="file" id="car-file" accept="image/*" style="width:100%;padding:10px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;margin-bottom:10px;">
+        <button class="btn-add" onclick="uploadCarousel()">上传</button>
+        <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
+      </div>
+      <table>
+        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>操作</th></tr></thead>
+        <tbody id="table-carousel"></tbody>
       </table>
     </div>
   </div>
@@ -193,12 +206,14 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
+  } else if (tab === 'carousel') {
+    loadCarousel();
   } else {
     loadData(tab);
   }
@@ -620,6 +635,100 @@ async function deleteImage(id) {
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
   }
+}
+// === 轮播管理 ===
+async function loadCarousel() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status&status=eq.approved&order=created_at.asc&limit=50`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    const rows = await r.json();
+    const tbody = document.getElementById('table-carousel');
+    const list = rows || [];
+    tbody.innerHTML = list.length === 0
+      ? '<tr><td colspan="4" style="text-align:center;color:#555;padding:40px;">暂无轮播图，上传后会自动显示</td></tr>'
+      : list.map(img => `<tr>
+        <td><img src="${esc(img.image_url)}" style="width:60px;height:80px;object-fit:cover;border-radius:4px;"></td>
+        <td>${esc(img.category)}</td>
+        <td>${esc(img.uploaded_by)}</td>
+        <td><button class="btn-del" onclick="deleteCarousel(${img.id})">移除</button></td>
+      </tr>`).join('');
+  } catch(e) {
+    document.getElementById('table-carousel').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e0556a;padding:40px;">加载失败：'+e.message+'</td></tr>';
+  }
+}
+async function deleteCarousel(id) {
+  if (!confirm('确认从轮播移除？')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      },
+      body: JSON.stringify({status: 'deleted'})
+    });
+    if (r.status === 200 || r.status === 204) {
+      toast('已移除', 'ok');
+      loadCarousel();
+    } else {
+      const txt = await r.text().catch(()=>'');
+      toast('失败('+r.status+'): ' + txt.slice(0,40), 'err');
+    }
+  } catch(e) {
+    toast('网络错误：' + e.message, 'err');
+  }
+}
+async function uploadCarousel() {
+  const file = document.getElementById('car-file').files[0];
+  if (!file) { toast('请选择图片', 'err'); return; }
+  const msg = document.getElementById('car-msg');
+  msg.textContent = '⏳ 压缩上传中...';
+  // 压缩图片
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = async function() {
+    let w = img.width, h = img.height;
+    const maxW = 750, maxH = 1000;
+    if (w > maxW) { h = h * maxW / w; w = maxW; }
+    if (h > maxH) { w = w * maxH / h; h = maxH; }
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const base64 = c.toDataURL('image/jpeg', 0.8);
+    URL.revokeObjectURL(url);
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          image_url: base64,
+          category: '轮播',
+          title: '轮播',
+          status: 'approved',
+          uploaded_by: '管理员',
+          created_at: new Date().toISOString()
+        })
+      });
+      if (r.status === 201 || r.status === 200 || r.status === 204) {
+        msg.textContent = '✅ 上传成功，已加入轮播';
+        document.getElementById('car-file').value = '';
+        loadCarousel();
+      } else {
+        const txt = await r.text().catch(()=>'');
+        msg.textContent = '❌ 上传失败('+r.status+'): ' + txt.slice(0,40);
+      }
+    } catch(e) {
+      msg.textContent = '❌ 网络错误: ' + e.message;
+    }
+  };
+  img.src = url;
 }
 // 定时检查待审核数量
 setInterval(updatePendingBadge, 5000);

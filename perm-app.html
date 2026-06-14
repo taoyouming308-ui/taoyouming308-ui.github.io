@@ -1655,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(function(r){ return r.json(); })
     .then(function(rows){
       var urls = (rows || []).map(function(r){ return r.image_url; }).filter(function(u){
-        return u && u.indexOf('http') === 0;
+        return u && (u.indexOf('http') === 0 || u.indexOf('data:image') === 0);
       });
       if (urls.length < 3) {
         urls = urls.concat(LOCAL_CAROUSEL.slice(0, 6 - urls.length));
