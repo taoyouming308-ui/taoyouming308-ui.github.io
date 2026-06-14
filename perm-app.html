@@ -1958,178 +1958,111 @@ document.addEventListener('DOMContentLoaded', () => {
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
-    div.innerHTML = '<div class="box"><h3>'+esc(name||'客户')+'</h3><div class="loading">🧠 AI 生成建议中...</div></div>';
+    div.innerHTML = '<div class="box"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div>';
     document.body.appendChild(div);
 
-    // 查 Supabase 获取 last_service（上次项目）和客户数据，同时作为 fallback
-    var supabasePromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*&limit=1', {
+    // 查 Supabase 获取客户数据
+    fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); });
-
-    // 优先调 AI 建议（店内网络通 plan_server）
-    supabasePromise.then(function(rows){
-      var lastService = (rows && rows.length > 0) ? (rows[0].notes || '') : '';
-      fetch('https://parameter-technological-versus-illustrated.trycloudflare.com/api/ai-plan', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({phone: phone, last_service: lastService}),
-        signal: AbortSignal.timeout(8000)
-      }).then(function(r){ return r.json(); })
-      .then(function(data){
-        if (data.plan_text && data.source === 'ai') {
-          var html = '<h3>'+esc(name||data.name||'客户')+'</h3>';
-          html += '<div class="suggestion" style="font-size:12px;">'+esc(data.plan_text).replace(/\n/g, '<br>')+'</div>';
-          html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-          document.querySelector('#plan-modal .box').innerHTML = html;
-          return;
-        }
-        // AI 返回了规则降级
-        renderRulePlan(rows, name, phone, data);
-      })
-      .catch(function(){
-        // AI 不通 → 规则引擎
-        renderRulePlan(rows, name, phone);
-      });
-    }).catch(function(){
-      // Supabase 也不通 → 显示提示
-      document.querySelector('#plan-modal .box').innerHTML = '<h3>'+esc(name||'客户')+'</h3><div class="suggestion" style="text-align:center;padding:30px;color:var(--text-secondary);">暂时无法获取建议<br><small>请连接店内网络后重试</small></div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
-    });
-  };
-
-  function renderRulePlan(rows, name, phone, planData) {
-    if (planData && planData.plan_text) {
-      // 直接使用规则引擎返回的结果
-      var html = '<h3>'+esc(name||planData.name||'客户')+'</h3>';
-      html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(planData.summary||'')+'</span></div>';
-      html += '<div class="row"><span class="label">到店</span><span class="val">'+planData.visits+'次</span></div>';
-      html += '<div class="row"><span class="label">均消</span><span class="val">¥'+planData.avg_fee.toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">近12月</span><span class="val">'+planData.freq_12m+'次 · ¥'+(planData.total_12m||0).toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+(planData.last_visit||'无')+'</span></div>';
-      if (planData.months_since_last > 0) {
-        html += '<div class="row"><span class="label">距上次</span><span class="val">'+planData.months_since_last+'个月</span></div>';
+    }).then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) {
+        document.querySelector('#plan-modal .box').innerHTML =
+          '<h3>'+esc(name||'客户')+'</h3><div style="text-align:center;padding:30px;color:var(--text-secondary);">暂无客户数据</div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
+        return;
       }
-      if (planData.active_treats && planData.active_treats.length > 0) {
+      var p = rows[0];
+      var visits = p.total_visits || 0;
+      var consum = p.total_consumption || 0;
+      var lastDate = p.last_visit_date || '';
+      var lastDateStr = lastDate ? (''+lastDate).split(' ')[0] : '';
+      var monthsSince = 0;
+      if (lastDateStr) {
+        var parts = lastDateStr.split('-');
+        if (parts.length === 3) {
+          var ld = new Date(+parts[0], +parts[1]-1, +parts[2]);
+          var now = new Date();
+          monthsSince = (now.getFullYear() - ld.getFullYear()) * 12 + (now.getMonth() - ld.getMonth());
+        }
+      }
+      var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
+      var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
+      var packages = p.card_packages || [];
+      var lastService = p.notes || '';
+
+      // ===== 先渲染客户数据 =====
+      var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
+      html += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+(spendLabel ? ' | '+esc(spendLabel) : '')+'</span></div>';
+      html += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
+      if (consum > 0) html += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
+      if (lastDateStr) html += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
+      html += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
+      // 卡项/套餐
+      if (packages.length > 0) {
         html += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
-        for (var ti = 0; ti < planData.active_treats.length; ti++) {
-          var tp = planData.active_treats[ti];
-          var tn = tp.name || '套餐';
-          var tl = tp.left || 0;
-          var tt = tp.total || 0;
-          var tused = tt - tl;
-          var tpct = tt > 0 ? Math.round(tl / tt * 100) : 0;
-          var tbar = tpct > 50 ? 'var(--accent)' : (tpct > 20 ? '#e8a817' : '#e85050');
+        for (var ci = 0; ci < packages.length; ci++) {
+          var cp = packages[ci];
+          var cn = cp.name || cp.itemname || '套餐';
+          var cl = cp.left || cp.leavetimes || 0;
+          var ct = cp.total || cp.sumtimes || 0;
+          var used = ct - cl;
+          var pct = ct > 0 ? Math.round(cl / ct * 100) : 0;
+          var barColor = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
           html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
           html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
-          html += '<span>'+esc(tn)+'</span>';
-          html += '<span style="color:'+tbar+';font-weight:600;">剩'+tl+'/'+tt+'次</span>';
+          html += '<span>'+esc(cn)+'</span>';
+          html += '<span style="color:'+barColor+';font-weight:600;">剩'+cl+'/'+ct+'次</span>';
           html += '</span></div>';
-          if (tt > 0) {
+          if (ct > 0) {
             html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
-            html += '<div style="width:'+tpct+'%;height:100%;background:'+tbar+';border-radius:2px;"></div></div>';
+            html += '<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
           }
         }
       }
-      html += '<div class="suggestion" style="font-size:12px;">'+(planData.plan_text||'').replace(/\n/g, '<br>')+'</div>';
+      // 上次项目
+      if (lastService) {
+        html += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
+      }
+      // AI 建议占位
+      html += '<div id="ai-suggestion" class="suggestion" style="font-size:12px;color:var(--text-secondary);">🤖 AI 正在根据客户数据分析建议...</div>';
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       document.querySelector('#plan-modal .box').innerHTML = html;
-      return;
-    }
 
-    // 客户不在 plan_server，用 Supabase 数据 + 精简规则
-    if (!rows || rows.length === 0) {
-      document.querySelector('#plan-modal .box').innerHTML = '<h3>'+esc(name||'客户')+'</h3><div class="suggestion" style="text-align:center;padding:30px;color:var(--text-secondary);">暂无客户数据</div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      return;
-    }
-    var p = rows[0];
-    var visits = p.total_visits || 0;
-    var consum = p.total_consumption || 0;
-    var lastDate = p.last_visit_date || '';
-    var lastDateStr = lastDate ? (''+lastDate).split(' ')[0] : '';
-    var monthsSince = 0;
-    if (lastDateStr) {
-      var parts = lastDateStr.split('-');
-      if (parts.length === 3) {
-        var ld = new Date(+parts[0], +parts[1]-1, +parts[2]);
-        var now = new Date();
-        monthsSince = (now.getFullYear() - ld.getFullYear()) * 12 + (now.getMonth() - ld.getMonth());
-      }
-    }
-    var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
-    var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
-    var packages = p.card_packages || [];
-    var sug = '👤 ' + (name||p.name||'客户') + ' · ' + customerType;
-    if (spendLabel) sug += ' / ' + spendLabel;
-    sug += '\n\n';
-    // 卡项消耗建议（精简版）
-    if (packages.length > 0) {
-      sug += '📦 卡项消耗建议：\n';
-      for (var ci = 0; ci < packages.length; ci++) {
-        var cp = packages[ci];
-        var cn = cp.name || cp.itemname || '';
-        var cl = cp.left || cp.leavetimes || 0;
-        var ct = cp.total || cp.sumtimes || 0;
-        if (cn) {
-          var used = ct - cl;
-          var pct = ct > 0 ? Math.round(cl / ct * 100) : 0;
-          if (cl <= 1) sug += '  ⚠️ ' + cn + '：仅剩' + cl + '次，必须优先安排！\n';
-          else if (pct <= 30) sug += '  🔴 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，建议尽快消耗防过期\n';
-          else if (pct <= 50) sug += '  🟡 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，可主动约客消耗\n';
-          else sug += '  🟢 ' + cn + '：已用' + used + '/' + ct + '次，时间充裕\n';
+      // ===== 同时调 AI 生成个性化建议 =====
+      fetch('https://parameter-technological-versus-illustrated.trycloudflare.com/api/ai-plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          phone: phone,
+          last_service: lastService,
+          visits: visits,
+          total_12m: consum,
+          avg_fee: consum > 0 && visits > 0 ? Math.round(consum / visits) : 0,
+          months_since: monthsSince,
+          packages: packages
+        }),
+        signal: AbortSignal.timeout(8000)
+      }).then(function(r){ return r.json(); })
+      .then(function(data){
+        var suggestionEl = document.getElementById('ai-suggestion');
+        if (suggestionEl && data.plan_text) {
+          suggestionEl.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:6px;font-size:11px;color:var(--text-secondary);">💡 AI 接待建议</div>' +
+            (data.plan_text || '').replace(/\n/g, '<br>');
         }
-      }
-      sug += '\n';
-    }
-    // 回访话术（精简版）
-    if (monthsSince >= 6) {
-      sug += '📞 ' + monthsSince + '个月没来了，建议直接打电话约回访\n\n';
-    } else if (monthsSince >= 3) {
-      sug += '📞 ' + monthsSince + '个月没来，烫发效果大概率没了，发微信约补烫\n\n';
-    } else if (lastDateStr) {
-      sug += '📞 客户最近有到店，到店后可推荐追加项目\n\n';
-    }
-    // 一句话指令
-    if (packages.length > 0) sug += '🎯 先消耗卡项 → 根据客户需求推荐合适项目';
-    else if (monthsSince >= 3) sug += '🎯 主动回访 → 邀约到店 → 推荐适合项目';
-    else sug += '🎯 了解客户本次需求 → 专业推荐 → 争取办卡锁客';
-
-    var htmlContent = '<h3>'+esc(name||p.name||'客户')+'</h3>';
-    htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
-    htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
-    if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
-    if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
-    htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
-    // 卡项展示
-    if (packages.length > 0) {
-      htmlContent += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
-      for (var ci2 = 0; ci2 < packages.length; ci2++) {
-        var cp2 = packages[ci2];
-        var cn2 = cp2.name || cp2.itemname || '套餐';
-        var cl2 = cp2.left || cp2.leavetimes || 0;
-        var ct2 = cp2.total || cp2.sumtimes || 0;
-        var used2 = ct2 - cl2;
-        var pct2 = ct2 > 0 ? Math.round(cl2 / ct2 * 100) : 0;
-        var barColor = pct2 > 50 ? 'var(--accent)' : (pct2 > 20 ? '#e8a817' : '#e85050');
-        htmlContent += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
-        htmlContent += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
-        htmlContent += '<span>'+esc(cn2)+'</span>';
-        htmlContent += '<span style="color:'+barColor+';font-weight:600;">剩'+cl2+'/'+ct2+'次</span>';
-        htmlContent += '</span></div>';
-        if (ct2 > 0) {
-          htmlContent += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
-          htmlContent += '<div style="width:'+pct2+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
+      })
+      .catch(function(){
+        var suggestionEl = document.getElementById('ai-suggestion');
+        if (suggestionEl) {
+          suggestionEl.innerHTML = '<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:6px;font-size:11px;color:var(--text-secondary);">💡 接待建议</div>' +
+            '根据客户情况灵活推荐，关注本次需求变化。';
         }
-      }
-    }
-    // 上次项目
-    var lastService = p.notes || '';
-    if (lastService) {
-      htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
-    }
-    sug = sug.replace(/\n/g, '<br>');
-    htmlContent += '<div class="suggestion" style="font-size:12px;">'+sug+'</div>';
-    htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-    document.querySelector('#plan-modal .box').innerHTML = htmlContent;
-  }
+      });
+    })
+    .catch(function(){
+      document.querySelector('#plan-modal .box').innerHTML =
+        '<h3>'+esc(name||'客户')+'</h3><div style="text-align:center;padding:30px;color:var(--text-secondary);">加载失败</div><button class="close-btn" onclick="closePlanModal()">关闭</button>';
+    });
+  };
 
   window.closePlanModal = function() {
     var m = document.getElementById('plan-modal');
