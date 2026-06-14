@@ -1988,18 +1988,6 @@ document.addEventListener('DOMContentLoaded', () => {
       var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
       var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
       var packages = p.card_packages || [];
-      // 从service_history构建最近到店说明
-      var history = p.service_history || [];
-      var lastService = '';
-      if (history.length > 0) {
-        var last = history[history.length - 1];
-        lastService = (last.date || '') + (last.barber ? ' ' + last.barber : '');
-        // 如果有多条，取最近几次作为到店记录
-        var recentDates = history.slice(-3).map(function(h){ return h.date; }).filter(Boolean);
-        if (recentDates.length > 0) {
-          lastService += ' | 近几次到店: ' + recentDates.join(', ');
-        }
-      }
 
       // ===== 先渲染客户数据 =====
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
@@ -2030,9 +2018,28 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-      // 上次项目
-      if (lastService) {
-        html += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
+      // 消费记录（上次项目 + 历史到店）
+      var lastNote = p.notes || '';
+      if (lastNote) {
+        html += '<div class="row" style="border-bottom:none;margin-top:4px;"><span class="label">📋 上次消费</span><span class="val" style="font-weight:400;">'+esc(lastNote)+'</span></div>';
+      }
+      // 历史到店记录
+      var history = p.service_history || [];
+      if (history.length > 0) {
+        html += '<div class="row" style="border-bottom:none;padding-bottom:2px;"><span class="label">🕐 到店记录</span></div>';
+        // 最多显示最近5次，从新到旧
+        var recent = history.slice(-5).reverse();
+        for (var hi = 0; hi < recent.length; hi++) {
+          var h = recent[hi];
+          var hDate = h.date || '';
+          var hBarber = h.barber || '';
+          var hShop = h.shop || '';
+          var hInfo = hDate;
+          if (hBarber) hInfo += ' ' + hBarber;
+          if (hShop && hShop != '自由手艺人') hInfo += ' (' + hShop + ')';
+          html += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:11px;">';
+          html += '<span class="val" style="font-weight:400;font-size:11px;">' + esc(hInfo) + '</span></div>';
+        }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       document.querySelector('#plan-modal .box').innerHTML = html;
