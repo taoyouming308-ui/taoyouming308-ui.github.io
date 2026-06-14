@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="100">
+<html lang="zh-CN" data-version="101">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -639,7 +639,7 @@ body {
       <button class="on" onclick="switchPlan('query')">查询方案</button>
       <button onclick="switchPlan('calc')">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
-      <span class="plan-refresh" onclick="location.reload(true)" title="刷新数据">↻</span>
+      <span class="plan-refresh" onclick="location.reload()" title="刷新数据">↻</span>
     </nav>
 
   <section class="plan-page active" id="plan-query">
@@ -659,7 +659,7 @@ body {
         </select>
       </div>
     </div>
-    <button class="query-btn" id="query-btn" disabled>🔍 查询方案</button>
+    <button class="query-btn" id="query-btn" disabled>数据加载中...</button>
 
     <div class="result-area" id="result-area"></div>
   </section>
@@ -1096,7 +1096,9 @@ body {
         var filter = active ? active.getAttribute('data-filter') : 'all';
         // 用 requestAnimationFrame 合并DOM更新，避免布局抖动
         requestAnimationFrame(function(){ window._renderGrid(filter); });
-      }).catch(function(){});
+      }).catch(function(e){
+        console.warn('展示作品加载失败:', e);
+      });
     }
     // 展示页轮询：首次加载200ms后启动，30秒间隔
     var _showcaseTimer = null;
@@ -1405,6 +1407,7 @@ async function loadPermData() {
     }
   }
   DATA_LOADING = false;
+  if (typeof window.updateQueryButtonState === 'function') window.updateQueryButtonState();
 }
 
 // 兼容旧代码的 PERM_DATA 代理
@@ -1620,7 +1623,8 @@ document.addEventListener('DOMContentLoaded', () => {
         urls = urls.concat(LOCAL_CAROUSEL.slice(0, 6 - urls.length));
       }
       renderCarousel(urls.slice(0, 8));
-    }).catch(function(){
+    }).catch(function(e){
+      console.warn('首页轮播加载失败:', e);
       renderCarousel(LOCAL_CAROUSEL);
     });
   })();
@@ -1641,11 +1645,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // === Enable query button ===
-  function checkQueryReady() {
-    queryBtn.disabled = !(hairTypeSelect.value && permStyleSelect.value);
-  }
-  hairTypeSelect.addEventListener('change', checkQueryReady);
-  permStyleSelect.addEventListener('change', checkQueryReady);
+  window.updateQueryButtonState = function() {
+    var waiting = DATA_LOADING || (!DATA_LOADED && !DATA_ERROR);
+    if (waiting) {
+      queryBtn.disabled = true;
+      queryBtn.textContent = '数据加载中...';
+      return;
+    }
+    queryBtn.textContent = '🔍 查询方案';
+    queryBtn.disabled = !(DATA_LOADED && hairTypeSelect.value && permStyleSelect.value);
+  };
+  hairTypeSelect.addEventListener('change', window.updateQueryButtonState);
+  permStyleSelect.addEventListener('change', window.updateQueryButtonState);
+  window.updateQueryButtonState();
 
   // === Query ===
   queryBtn.addEventListener('click', async () => {
@@ -2033,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var html = '';
       rows.forEach(function(r){
         html += '<div class="booking-item">';
-        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+'</div></div>';
+        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
         html += '<div style="display:flex;align-items:center;">';
         html += '<div><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name)+'</div></div>';
         if (r.customer_phone) {
@@ -2048,6 +2060,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function esc(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function maskPhone(phone) {
+    var s = String(phone || '');
+    return s.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2');
+  }
 
   // ===== 客户方案生成 =====
   var BARBER_SPECIALTIES = {
@@ -2108,9 +2124,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      var _already = _isPhoneAnalyzed(phone);
-      html += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
+      html += renderAiButton(phone, name);
       document.querySelector('#plan-modal .box').innerHTML = html;
+      updateAiButtonsAvailability();
     })
     .catch(function(e){
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
@@ -2330,8 +2346,9 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮（仅在店内WiFi可用） =====
           var _already = _isPhoneAnalyzed(phone);
-          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
+          htmlContent += renderAiButton(phone, name);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
+          updateAiButtonsAvailability();
           return;
         }
         // customer_profiles没找到 → 降级到预约记录
@@ -2386,8 +2403,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           var _already = _isPhoneAnalyzed(phone);
-          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
+          htmlContent += renderAiButton(phone, name);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
+          updateAiButtonsAvailability();
         }).catch(function(e){
           console.log('[catch-b] bookings error:', e && e.message ? e.message : e);
           document.querySelector('#plan-modal .box').innerHTML =
@@ -2443,55 +2461,99 @@ document.addEventListener('DOMContentLoaded', () => {
     _loadAnalyzed();
     var today = getLocalDateStr();
     _analyzedPhones[phone] = { date: today };
-    try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) {}
+    try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) { console.warn('AI分析状态保存失败:', e); }
+  }
+
+  var _aiStoreNetworkPromise = null;
+  function detectStoreNetwork() {
+    return new Promise(function(resolve) {
+      var RTCPeer = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+      if (!RTCPeer) { resolve(false); return; }
+      var done = false;
+      var pc = new RTCPeer({ iceServers: [] });
+      function finish(ok) { if (done) return; done = true; try { pc.close(); } catch(e) { console.warn('WebRTC关闭失败:', e); } resolve(ok); }
+      pc.createDataChannel('');
+      pc.onicecandidate = function(e) {
+        var c = e && e.candidate && e.candidate.candidate || '';
+        if (/192\.168\.3\.\d{1,3}/.test(c)) finish(true);
+      };
+      pc.createOffer().then(function(offer){ return pc.setLocalDescription(offer); }).catch(function(e){ console.warn('WebRTC内网检测失败:', e); finish(false); });
+      setTimeout(function(){ finish(false); }, 1500);
+    });
+  }
+  function isAiStoreNetwork() {
+    if (!_aiStoreNetworkPromise) _aiStoreNetworkPromise = detectStoreNetwork();
+    return _aiStoreNetworkPromise;
+  }
+  function renderAiButton(phone, name) {
+    if (_isPhoneAnalyzed(phone)) return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
+    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'" disabled>检测店内网络...</button>';
+  }
+  function updateAiButtonsAvailability() {
+    var btns = document.querySelectorAll('.ai-btn');
+    if (!btns.length) return;
+    isAiStoreNetwork().then(function(ok) {
+      btns.forEach(function(btn) {
+        if (ok) { btn.disabled = false; btn.textContent = '🤖 AI分析建议'; }
+        else { btn.outerHTML = '<div class="ai-result error" style="margin-top:8px;text-align:center;font-size:12px;">仅店内可用</div>'; }
+      });
+    }).catch(function(e){ console.warn('AI店内网络检测失败:', e); });
   }
 
   // AI分析建议：调店内plan_server → Codex分析消费记录
   window.runAiAnalysis = function(phone, name) {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
-    // 加加载状态
-    box.innerHTML += '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>';
-    var loadingEl = document.getElementById('ai-loading');
-    // 禁掉按钮防重复点击
-    var btns = box.querySelectorAll('button');
-    btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
-    var url = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone);
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.timeout = 95000;  // 95秒超时（Codex最长90秒）
-    xhr.onload = function() {
-      if (loadingEl) loadingEl.remove();
-      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-      try {
-        var data = JSON.parse(xhr.responseText);
-        if (data.error) {
-          box.innerHTML += '<div class="ai-result error">❌ ' + esc(data.error) + '</div>';
-          return;
-        }
-        var analysis = data.analysis || '无分析结果';
-        // 换行转<br>，👉加颜色
-        var html = '<div class="ai-result">';
-        html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
-        html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
-        html += '</div>';
-        _markPhoneAnalyzed(phone);
-        box.innerHTML += html;
-      } catch(e) {
-        box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
+    isAiStoreNetwork().then(function(ok) {
+      if (!ok) {
+        box.innerHTML += '<div class="ai-result error">仅店内可用</div>';
+        return;
       }
-    };
-    xhr.onerror = function() {
-      if (loadingEl) loadingEl.remove();
-      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-      box.innerHTML += '<div class="ai-result error">❌ AI分析暂不可用（仅店内WiFi）</div>';
-    };
-    xhr.ontimeout = function() {
-      if (loadingEl) loadingEl.remove();
-      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-      box.innerHTML += '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>';
-    };
-    xhr.send();
+      // 加加载状态
+      box.innerHTML += '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>';
+      var loadingEl = document.getElementById('ai-loading');
+      // 禁掉按钮防重复点击
+      var btns = box.querySelectorAll('button');
+      btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
+      var url = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone);
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.timeout = 95000;  // 95秒超时（Codex最长90秒）
+      xhr.onload = function() {
+        if (loadingEl) loadingEl.remove();
+        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+        try {
+          var data = JSON.parse(xhr.responseText);
+          if (data.error) {
+            box.innerHTML += '<div class="ai-result error">❌ ' + esc(data.error) + '</div>';
+            return;
+          }
+          var analysis = data.analysis || '无分析结果';
+          var html = '<div class="ai-result">';
+          html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
+          html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
+          html += '</div>';
+          _markPhoneAnalyzed(phone);
+          box.innerHTML += html;
+        } catch(e) {
+          box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
+        }
+      };
+      xhr.onerror = function() {
+        if (loadingEl) loadingEl.remove();
+        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+        box.innerHTML += '<div class="ai-result error">❌ AI分析暂不可用（仅店内WiFi）</div>';
+      };
+      xhr.ontimeout = function() {
+        if (loadingEl) loadingEl.remove();
+        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+        box.innerHTML += '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>';
+      };
+      xhr.send();
+    }).catch(function(e) {
+      console.warn('AI店内网络检测失败:', e);
+      box.innerHTML += '<div class="ai-result error">仅店内可用</div>';
+    });
   };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
@@ -2511,6 +2573,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'postgres_changes', {
           event: '*', schema: 'public', table: 'bookings'
         }]));
+        // WebSocket已连接，关掉轮询兜底
+        if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
       };
       ws.onmessage = function(e) {
         try {
@@ -2519,11 +2583,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 有预约数据变更，立即刷新
             loadBookings(false);
           }
-        } catch(ex) {}
-      };
-      ws.onopen = function() {
-        // WebSocket已连接，关掉轮询兜底
-        if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
+        } catch(ex) { console.warn('Realtime消息解析失败:', ex); }
       };
       ws.onclose = function() {
         // 断线后5秒自动重连，同时启动轮询兜底
@@ -2542,6 +2602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 30000);
       _bookingChannel = ws;
     } catch(e) {
+      console.warn('Realtime初始化失败:', e);
       // WebSocket 连接失败，走 polling 兜底
     }
   }
@@ -2581,7 +2642,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- 版本更新提示 -->
-<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite" onclick="location.reload(true)">
+<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite" onclick="location.reload()">
   🔄 有新版本，点此刷新
 </div>
 <script>
@@ -2590,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function(regs) {
       regs.forEach(function(reg) { reg.unregister(); });
-    }).catch(function(){});
+    }).catch(function(e){ console.warn('Service Worker清理失败:', e); });
   }
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
   function checkVersion() {
@@ -2601,7 +2662,7 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('update-banner').style.display = 'block';
         }
       })
-      .catch(function(){});
+      .catch(function(e){ console.warn('版本检测失败:', e); });
   }
   // 立即检测一次，之后每60秒轮询
   checkVersion();
