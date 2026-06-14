@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="115">
+<html lang="zh-CN" data-version="116">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,17 +12,6 @@
 <title>自由手艺人 · X</title>
 <link rel="apple-touch-icon" href="apple-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="preload" as="image" href="https://taoyouming308-ui.github.io/img/short-hair.jpg">
-<style id="splash-css">
-/* ── 闪屏：页面未加载完成前立即显示 ── */
-#splash { position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center; }
-#splash h1 { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif; font-size:24px;font-weight:700;color:#e7e9ea;letter-spacing:2px;margin:0 0 8px; }
-#splash .sp { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif; font-size:11px;color:#71767b;letter-spacing:4px;text-transform:uppercase; }
-#splash .bar { width:32px;height:2px;background:#2f3336;border-radius:1px;margin-top:24px;overflow:hidden; }
-#splash .bar-in { width:100%;height:100%;background:#e7e9ea;animation:splashBar 1.2s ease-in-out infinite;transform-origin:left; }
-@keyframes splashBar { 0%{transform:scaleX(0.15);} 50%{transform:scaleX(0.8);} 100%{transform:scaleX(0.15);} }
-#splash.hide { opacity:0;transition:opacity 0.35s ease;pointer-events:none; }
-</style>
 <style>
 :root {
   --bg: #000000;
@@ -577,15 +566,6 @@ body {
 </head>
 <body>
 
-<!-- ⚡ 闪屏：页面加载后自动消失 -->
-<div id="splash">
-  <h1>自由手艺人</h1>
-  <div class="sp">Hair Design</div>
-  <div class="bar"><div class="bar-in"></div></div>
-</div>
-
-<!-- WiFi锁已移除（2026-06-14） -->
-
 <!-- Header -->
 <header class="header"></header>
 
@@ -617,7 +597,7 @@ body {
     <div class="slogan">找到属于你的风格</div>
   </div>
   <div class="hero-carousel" onclick="openFeature('showcase')">
-    <div class="carousel-inner"></div>
+    <div class="carousel-inner"><img src="https://taoyouming308-ui.github.io/img/short-hair.jpg" data-idx="0" class="active"></div>
     <div class="carousel-dots" id="carousel-dots"></div>
   </div>
   <div class="home-links">
@@ -1577,36 +1557,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (hero) hero.style.display = '';
-    // 不直接插img：等图片加载完再放进去，避免浏览器默认占位符
-    inner.innerHTML = '';
+    // 更新现有图片（不改DOM结构，只换src）
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
-    // 逐张预加载，加载完再插入DOM
-    var loadedImgs = [];
-    function insertLoadedImgs() {
-      inner.innerHTML = '';
-      loadedImgs.forEach(function(url, i){
-        var img = document.createElement('img');
-        img.src = url;
-        img.setAttribute('data-idx', i);
-        img.className = i === 0 ? 'active' : '';
-        inner.appendChild(img);
-      });
-    }
+    // 逐张预加载，加载完替换src
     urls.forEach(function(url, i){
       var preloader = new Image();
       preloader.onload = function(){
-        loadedImgs.push(url);
-        if (loadedImgs.length === 1 || loadedImgs.length === urls.length) {
-          // 第一张加载完成或全部加载完，一次性插入
-          insertLoadedImgs();
+        var existing = inner.children[i];
+        if (existing && existing.tagName === 'IMG') {
+          existing.src = url;
+          if (i === 0) existing.className = 'active';
+        } else {
+          var img = document.createElement('img');
+          img.src = url;
+          img.setAttribute('data-idx', i);
+          img.className = i === 0 ? 'active' : '';
+          inner.appendChild(img);
         }
       };
       preloader.onerror = function(){
-        // 加载失败的图也放进去（跳过不卡住）
-        loadedImgs.push(url);
-        if (loadedImgs.length === urls.length) insertLoadedImgs();
+        // 加载失败：已有首图就留着，没有就不管
       };
       preloader.src = url;
     });
@@ -2701,23 +2673,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // === PWA：静默更新检测（无Service Worker，HTTP缓存已设no-cache）===
-  // 版本更新由下方 version.json 轮询 + update-banner 完成
-
-  // ⚡ 闪屏消失：首页渲染完成，平滑过渡
-  (function hideSplash(){
-    // 预加载首张轮播图（闪屏期间就开始下载）
-    var preloadImg = new Image();
-    preloadImg.src = 'https://taoyouming308-ui.github.io/img/short-hair.jpg';
-    var s = document.getElementById('splash');
-    if (!s) return;
-    // 等一帧让首页渲染出来再淡出闪屏
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        s.classList.add('hide');
-        setTimeout(function(){ s.style.display = 'none'; }, 350);
-      });
-    });
-  })();
 });
 </script>
 
