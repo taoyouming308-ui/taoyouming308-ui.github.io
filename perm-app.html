@@ -1274,89 +1274,42 @@ function doUnlock() {
       img.src = url;
     }
     function doUploadBase64(base64, category, btn, msg) {
-        // 先传到本地服务→存文件到GitHub→拿到图片URL
-        fetch('http://192.168.3.250:8890/api/upload_showcase', {
+        // 直接存到Supabase（base64格式，审核通过后管理员可下载原图）
+        msg.textContent = '⏳ 上传中...';
+        fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64, category: category, uploaded_by: '发型师' })
-        }).then(function(r){ return r.json(); }).then(function(resp){
-            if (resp.error || !resp.url) {
-                msg.textContent = '❌ 上传失败: ' + (resp.error||'未知错误');
-                msg.style.color = '#e0556a';
-                btn.disabled = false;
-                return;
-            }
-            var imageUrl = resp.url;
-            // 拿到URL后存到Supabase
-            fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': 'Bearer ' + SUPABASE_KEY,
-                    'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify({
-                    image_url: imageUrl,
-                    category: category,
-                    title: category,
-                    status: 'pending',
-                    uploaded_by: '发型师',
-                    created_at: new Date().toISOString()
-                })
-            }).then(function(r) {
-                if (r.status === 201 || r.status === 200 || r.status === 204) {
-                    msg.textContent = '✅ 已提交，等待管理员审核';
-                    msg.style.color = '#4ade80';
-                    document.getElementById('up-file').value = '';
-                    document.getElementById('up-preview').style.display = 'none';
-                } else {
-                    msg.textContent = '❌ 保存到数据库失败 (' + r.status + ')';
-                    msg.style.color = '#e0556a';
-                }
-                btn.disabled = false;
-            }).catch(function(e) {
-                msg.textContent = '❌ 数据库错误: ' + e.message;
-                msg.style.color = '#e0556a';
-                btn.disabled = false;
-            });
-        }).catch(function(e) {
-            // 本地服务不可用 → 降级到旧方式（存base64到Supabase）
-            msg.textContent = '⚠️ 上传中...';
-            fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_KEY,
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            image_url: base64,
-            category: category,
-            title: category,
-            status: 'pending',
-            uploaded_by: '发型师',
-            created_at: new Date().toISOString()
-          })
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+                image_url: base64,
+                category: category,
+                title: category,
+                status: 'pending',
+                uploaded_by: '发型师',
+                created_at: new Date().toISOString()
+            })
         }).then(function(r) {
-          if (r.status === 201 || r.status === 200 || r.status === 204) {
-            msg.textContent = '✅ 已提交，等待管理员审核';
-            msg.style.color = '#4ade80';
-            document.getElementById('up-file').value = '';
-            document.getElementById('up-preview').style.display = 'none';
-            btn.disabled = false;
-          } else {
-            msg.textContent = '❌ 上传失败 (' + r.status + ')';
+            if (r.status === 201 || r.status === 200 || r.status === 204) {
+                msg.textContent = '✅ 已提交，等待管理员审核';
+                msg.style.color = '#4ade80';
+                document.getElementById('up-file').value = '';
+                document.getElementById('up-preview').style.display = 'none';
+                btn.disabled = false;
+            } else {
+                r.text().then(function(t) {
+                    msg.textContent = '❌ 上传失败 (' + r.status + '): ' + t.slice(0,40);
+                    msg.style.color = '#e0556a';
+                    btn.disabled = false;
+                });
+            }
+        }).catch(function(e) {
+            msg.textContent = '❌ 网络错误: ' + e.message;
             msg.style.color = '#e0556a';
             btn.disabled = false;
-          }
-        }).catch(function(e) {
-          msg.textContent = '❌ 网络错误: ' + e.message;
-          msg.style.color = '#e0556a';
-          btn.disabled = false;
         });
-        });   // ← 关闭外层 .catch(function(e) {（第1323行）
     }
 
     // 暴露上传函数给 onclick
