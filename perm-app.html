@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="117">
+<html lang="zh-CN" data-version="118">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -578,11 +578,13 @@ body {
     .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
     .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
     .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; background:#000; }
-    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; }
-    .hero-carousel img.active { animation:heroFade 1.8s ease 0.2s forwards; }
+    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; visibility:hidden; border:0; color:transparent; background:#000; }
+    .hero-carousel img.active { visibility:visible; opacity:1; transition:opacity 0.55s ease; }
+    .hero-carousel img.initial-fade { animation:heroFade 1.8s ease 0.15s both; }
     @keyframes heroFade { from { opacity:0; } to { opacity:1; } }
     .carousel-inner { position:relative; width:100%; height:100%; }
-    .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
+    .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; opacity:0; transition:opacity 0.35s ease; }
+    .hero-carousel.is-ready .carousel-dots { opacity:1; }
     .carousel-dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); transition:all 0.35s; }
     .carousel-dots .dot.active { background:#fff; width:18px; border-radius:3px; }
     .home-links { padding:32px 24px 60px; display:flex; flex-direction:column; max-width:360px; margin:0 auto; }
@@ -597,8 +599,8 @@ body {
     <div class="sub">Hair Design</div>
     <div class="slogan">找到属于你的风格</div>
   </div>
-  <div class="hero-carousel" onclick="openFeature('showcase')">
-    <div class="carousel-inner"><img src="https://taoyouming308-ui.github.io/img/short-hair.jpg" data-idx="0" class="active"></div>
+  <div class="hero-carousel" onclick="openFeature('showcase')" aria-busy="true">
+    <div class="carousel-inner"></div>
     <div class="carousel-dots" id="carousel-dots"></div>
   </div>
   <div class="home-links">
@@ -1539,45 +1541,130 @@ document.addEventListener('DOMContentLoaded', () => {
   var carouselIdx = 0;
   var carouselTimer = null;
   var carouselPaused = false;
+  var carouselRenderToken = 0;
+  var carouselInitialShown = false;
 
   var LOCAL_CAROUSEL = [
     'https://taoyouming308-ui.github.io/img/short-hair.jpg'
   ];
 
+  function preloadCarouselImage(url) {
+    return new Promise(function(resolve, reject) {
+      var probe = new Image();
+      probe.decoding = 'async';
+      probe.onload = function() {
+        if (probe.decode) {
+          probe.decode().then(function(){ resolve(url); }).catch(function(){ resolve(url); });
+        } else {
+          resolve(url);
+        }
+      };
+      probe.onerror = function(){ reject(new Error('图片加载失败')); };
+      probe.src = url;
+      if (probe.complete && probe.naturalWidth > 0) probe.onload();
+    });
+  }
+
+  function preloadFirstAvailable(urls, start) {
+    start = start || 0;
+    if (start >= urls.length) return Promise.reject(new Error('轮播图片全部加载失败'));
+    return preloadCarouselImage(urls[start]).then(function(url) {
+      return { url: url, index: start };
+    }).catch(function() {
+      return preloadFirstAvailable(urls, start + 1);
+    });
+  }
+
+  function buildCarouselImage(url, idx) {
+    var img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.decoding = 'async';
+    img.draggable = false;
+    img.setAttribute('data-idx', idx);
+    return img;
+  }
+
+  function showCarouselImage(img, isInitial) {
+    if (!img) return;
+    img.classList.remove('initial-fade');
+    void img.offsetWidth;
+    if (isInitial) img.classList.add('initial-fade');
+    img.classList.add('active');
+  }
+
   function renderCarousel(urls) {
-    carouselImgs = urls;
-    carouselIdx = 0;
+    carouselRenderToken++;
+    var token = carouselRenderToken;
     var inner = document.querySelector('.carousel-inner');
     var dots = document.getElementById('carousel-dots');
     var hero = document.querySelector('.hero-carousel');
     if (!inner || !dots) return;
     if (!urls || urls.length === 0) {
+      carouselImgs = [];
+      carouselIdx = 0;
       inner.innerHTML = '';
       dots.innerHTML = '';
-      // 不隐藏轮播区：显示默认渐变背景
+      if (hero) {
+        hero.classList.remove('is-ready');
+        hero.setAttribute('aria-busy', 'true');
+      }
       return;
     }
-    if (hero) hero.style.display = '';
-    // 更新轮播图src（已有img标签直接换，没有就追加）
-    dots.innerHTML = urls.map(function(_,i){
-      return '<span class="dot'+(i===0?' active':'')+'"></span>';
-    }).join('');
-    urls.forEach(function(url, i){
-      var existing = inner.children[i];
-      if (existing && existing.tagName === 'IMG') {
-        existing.src = url;
-      } else {
-        var img = document.createElement('img');
-        img.src = url;
-        img.setAttribute('data-idx', i);
-        img.className = i === 0 ? 'active' : '';
-        inner.appendChild(img);
+    if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    if (hero) {
+      hero.style.display = '';
+      hero.setAttribute('aria-busy', 'true');
+    }
+
+    preloadFirstAvailable(urls).then(function(first) {
+      if (token !== carouselRenderToken) return;
+      var normalized = [first.url].concat(urls.filter(function(url, i) {
+        return i !== first.index && url !== first.url;
+      }));
+      carouselImgs = normalized;
+      carouselIdx = 0;
+
+      var firstImg = buildCarouselImage(normalized[0], 0);
+      inner.innerHTML = '';
+      inner.appendChild(firstImg);
+      dots.innerHTML = normalized.map(function(_, i) {
+        return '<span class="dot'+(i===0?' active':'')+'"></span>';
+      }).join('');
+
+      requestAnimationFrame(function() {
+        if (token !== carouselRenderToken) return;
+        showCarouselImage(firstImg, !carouselInitialShown);
+        carouselInitialShown = true;
+        if (hero) {
+          hero.classList.add('is-ready');
+          hero.setAttribute('aria-busy', 'false');
+        }
+      });
+
+      normalized.slice(1).forEach(function(url, i) {
+        preloadCarouselImage(url).then(function(loadedUrl) {
+          if (token !== carouselRenderToken) return;
+          var img = buildCarouselImage(loadedUrl, i + 1);
+          inner.appendChild(img);
+        }).catch(function() {});
+      });
+
+      if (normalized.length > 1) {
+        carouselTimer = setInterval(carouselNext, 5000);
+      }
+    }).catch(function(e) {
+      console.warn('首页轮播图片加载失败:', e);
+      if (token !== carouselRenderToken) return;
+      carouselImgs = [];
+      carouselIdx = 0;
+      inner.innerHTML = '';
+      dots.innerHTML = '';
+      if (hero) {
+        hero.classList.remove('is-ready');
+        hero.setAttribute('aria-busy', 'true');
       }
     });
-    if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
-    if (urls.length > 1) {
-      carouselTimer = setInterval(carouselNext, 5000);
-    }
   }
 
   function carouselNext() {
