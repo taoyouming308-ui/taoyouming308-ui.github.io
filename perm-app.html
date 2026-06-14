@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="116">
+<html lang="zh-CN" data-version="117">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -577,10 +577,11 @@ body {
     .hero-text h1 { font-size:28px; font-weight:700; color:var(--text); margin:0 0 4px; letter-spacing:1px; }
     .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
     .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
-    .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; }
-    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; }
-    .hero-carousel img.active { z-index:1; }
-    .carousel-inner { position:relative; width:100%; height:100%; z-index:1; }
+    .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; background:#000; }
+    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; }
+    .hero-carousel img.active { animation:heroFade 1.8s ease 0.2s forwards; }
+    @keyframes heroFade { from { opacity:0; } to { opacity:1; } }
+    .carousel-inner { position:relative; width:100%; height:100%; }
     .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
     .carousel-dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); transition:all 0.35s; }
     .carousel-dots .dot.active { background:#fff; width:18px; border-radius:3px; }
@@ -1557,30 +1558,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (hero) hero.style.display = '';
-    // 更新现有图片（不改DOM结构，只换src）
+    // 更新轮播图src（已有img标签直接换，没有就追加）
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
-    // 逐张预加载，加载完替换src
     urls.forEach(function(url, i){
-      var preloader = new Image();
-      preloader.onload = function(){
-        var existing = inner.children[i];
-        if (existing && existing.tagName === 'IMG') {
-          existing.src = url;
-          if (i === 0) existing.className = 'active';
-        } else {
-          var img = document.createElement('img');
-          img.src = url;
-          img.setAttribute('data-idx', i);
-          img.className = i === 0 ? 'active' : '';
-          inner.appendChild(img);
-        }
-      };
-      preloader.onerror = function(){
-        // 加载失败：已有首图就留着，没有就不管
-      };
-      preloader.src = url;
+      var existing = inner.children[i];
+      if (existing && existing.tagName === 'IMG') {
+        existing.src = url;
+      } else {
+        var img = document.createElement('img');
+        img.src = url;
+        img.setAttribute('data-idx', i);
+        img.className = i === 0 ? 'active' : '';
+        inner.appendChild(img);
+      }
     });
     if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
     if (urls.length > 1) {
