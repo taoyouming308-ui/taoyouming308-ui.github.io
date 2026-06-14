@@ -1360,6 +1360,11 @@ function doUnlock() {
       .plan-modal .row .val { color:var(--text); font-weight:500; }
       .plan-modal .suggestion { margin-top:16px; padding:12px; background:var(--bg); border-radius:8px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
       .plan-modal .close-btn { display:block; width:100%; padding:10px; margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
+      .plan-modal .ai-btn { display:block; width:100%; padding:10px; margin-top:8px; background:var(--surface); border:1px solid var(--accent); border-radius:8px; color:var(--accent); font-size:14px; cursor:pointer; text-align:center; transition:var(--transition); }
+      .plan-modal .ai-btn:hover { background:var(--accent-glow); }
+      .plan-modal .ai-btn:disabled { opacity:0.4; cursor:not-allowed; }
+      .plan-modal .ai-result { margin-top:12px; padding:12px; background:var(--surface-light); border-radius:8px; border-left:3px solid var(--accent); }
+      .plan-modal .ai-result.error { border-left-color:var(--danger); }
       .plan-modal .loading { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
       .plan-modal .no-data { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
     </style>
@@ -2137,6 +2142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+      html += '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||p.name||'')+'')">🤖 AI分析建议</button>';
       document.querySelector('#plan-modal .box').innerHTML = html;
     })
     .catch(function(e){
@@ -2351,6 +2357,8 @@ document.addEventListener('DOMContentLoaded', () => {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+          // ===== AI分析按钮（仅在店内WiFi可用） =====
+          htmlContent += '<button class="ai-btn" onclick="window.runAiAnalysis(\''+phone+'\',\''+esc(name||'')+'\')">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           return;
         }
@@ -2405,6 +2413,7 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+          htmlContent += '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||'')+'')">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
         }).catch(function(){
           document.querySelector('#plan-modal .box').innerHTML =
@@ -2422,6 +2431,53 @@ document.addEventListener('DOMContentLoaded', () => {
   window.closePlanModal = function() {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
+  };
+
+  // AI分析建议：调店内plan_server → Codex分析消费记录
+  window.runAiAnalysis = function(phone, name) {
+    var box = document.querySelector('#plan-modal .box');
+    if (!box) return;
+    // 加加载状态
+    box.innerHTML += '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>';
+    var loadingEl = document.getElementById('ai-loading');
+    // 禁掉按钮防重复点击
+    var btns = box.querySelectorAll('button');
+    btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
+    var url = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 95000;  // 95秒超时（Codex最长90秒）
+    xhr.onload = function() {
+      if (loadingEl) loadingEl.remove();
+      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.error) {
+          box.innerHTML += '<div class="ai-result error">❌ ' + esc(data.error) + '</div>';
+          return;
+        }
+        var analysis = data.analysis || '无分析结果';
+        // 换行转<br>，👉加颜色
+        var html = '<div class="ai-result">';
+        html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
+        html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
+        html += '</div>';
+        box.innerHTML += html;
+      } catch(e) {
+        box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
+      }
+    };
+    xhr.onerror = function() {
+      if (loadingEl) loadingEl.remove();
+      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+      box.innerHTML += '<div class="ai-result error">❌ AI分析暂不可用（仅店内WiFi）</div>';
+    };
+    xhr.ontimeout = function() {
+      if (loadingEl) loadingEl.remove();
+      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+      box.innerHTML += '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>';
+    };
+    xhr.send();
   };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
