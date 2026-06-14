@@ -2196,8 +2196,16 @@ document.addEventListener('DOMContentLoaded', () => {
           // ===== 旧逻辑 → 改为业绩导向建议 =====
           var sug = '';
 
-          // 客户画像（一句话）
-          var customerType = visits >= 10 ? '老客' : (visits >= 4 ? '常客' : (visits >= 2 ? '回头客' : '新客'));
+          // 客户画像（一句话）- 无到店次数但有消费金额时用消费级别判断
+          var customerType;
+          if (visits >= 10) customerType = '老客';
+          else if (visits >= 4) customerType = '常客';
+          else if (visits >= 2) customerType = '回头客';
+          else if (visits > 0) customerType = '新客';
+          else if (consum >= 10000) customerType = '高额老客';
+          else if (consum >= 3000) customerType = '消费老客';
+          else if (consum > 0) customerType = '消费客户';
+          else customerType = '新客';
           var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
           var activeLabel = lastDateStr ? (monthsSince === 0 ? '当月活跃' : (monthsSince >= 6 ? monthsSince + '个月未到店⚠️' : (monthsSince >= 3 ? monthsSince + '个月未到店' : ''))) : '';
           sug += '👤 ' + (name||p.name||'客户') + ' · ' + customerType;
