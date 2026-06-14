@@ -7,6 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>自由手艺人 · 后台管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,sans-serif; background:#000; color:#e5e5e5; min-height:100vh; }
@@ -143,6 +144,7 @@ td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentTab = 'staff';
 let editId = null;
 
@@ -412,18 +414,15 @@ async function upsert(table, id, data) {
 async function doDelete(table, id) {
   if (!confirm('确定删除？')) return;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
-    });
-    if (r.ok) {
+    const { error } = await sb.from(table).delete().eq('id', id);
+    if (error) {
+      toast('删除失败：' + error.message, 'err');
+    } else {
       toast('删除成功', 'ok');
       loadData(currentTab);
-    } else {
-      toast('删除失败', 'err');
     }
   } catch(e) {
-    toast('删除失败: ' + e, 'err');
+    toast('删除失败：' + e.message, 'err');
   }
 }
 
@@ -593,28 +592,19 @@ async function rejectImage(id) {
   } catch(e) { toast('操作失败', 'err'); }
 }
 
-async function deleteImage(id) {
+async function deleteImage(id, imageUrl) {
   if (!confirm('确认删除？')) return;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { 
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY, 
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Prefer': 'return=minimal' 
-      }
-    });
-    if (r.status === 204 || r.status === 200) {
+    const { error } = await sb.from('showcase_images').delete().eq('id', id);
+    if (error) {
+      toast('删除失败：' + error.message, 'err');
+    } else {
       toast('已删除', 'ok');
       loadImages();
       updatePendingBadge();
-    } else {
-      const body = await r.text().catch(()=>'');
-      toast('失败('+r.status+'): ' + body.slice(0,40), 'err');
     }
-  } catch(e) { 
-    toast('网络错误: ' + e.message, 'err'); 
+  } catch(e) {
+    toast('网络错误：' + e.message, 'err');
   }
 }
 // 定时检查待审核数量
