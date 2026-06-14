@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="107">
+<html lang="zh-CN" data-version="108">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2045,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       var html = '';
       rows.forEach(function(r){
         html += '<div class="booking-item">';
-        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
+        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+(r.notes ? '📝 '+esc(r.notes) : esc(r.time_label||''))+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
         html += '<div style="display:flex;align-items:center;">';
         html += '<div><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name)+'</div></div>';
         if (r.customer_phone) {
@@ -2096,7 +2096,6 @@ document.addEventListener('DOMContentLoaded', () => {
       html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
       html += '<div class="row"><span class="label">到店</span><span class="val">'+p.visits+'次</span></div>';
       html += '<div class="row"><span class="label">均消</span><span class="val">¥'+p.avg_fee.toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">客单价</span><span class="val">¥'+p.avg_fee.toFixed(0)+'</span></div>';
       html += '<div class="row"><span class="label">近12月</span><span class="val">'+p.freq_12m+'次 · ¥'+(p.total_12m||0).toFixed(0)+'</span></div>';
       html += '<div class="row"><span class="label">上次到店</span><span class="val">'+(p.last_visit||'无')+'</span></div>';
       if (p.months_since_last > 0) {
@@ -2287,8 +2286,8 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
           if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
-          var avgTicket = visits > 0 ? Math.round(consum / visits) : 0;
-          if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">客单价</span><span class="val">¥'+avgTicket+'</span></div>';
+          var avgTicket = visits > 0 ? Math.round(consum / visits) : (consum > 0 ? consum : 0);
+          if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">均消</span><span class="val">¥'+avgTicket+'</span></div>';
           if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
           // 最近到店记录
@@ -2405,6 +2404,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (nextDate) htmlContent += '<div class="row"><span class="label">下次预约</span><span class="val">'+nextDate+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
+          // 预约备注
+          var bookingNotes = [];
+          bookingRows.forEach(function(b){ if (b.notes) bookingNotes.push(b.notes); });
+          var uniqueNotes = bookingNotes.filter(function(v,i,a){ return a.indexOf(v)===i; });
+          if (uniqueNotes.length > 0) htmlContent += '<div class="row"><span class="label">📝 备注</span><span class="val" style="font-weight:400;">'+esc(uniqueNotes.join(' | '))+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           htmlContent += renderAiButton(phone, name, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
