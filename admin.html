@@ -135,15 +135,21 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="tab-carousel" style="display:none">
-      <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（仅显示已审核的HTTP图片，建议750×1000px）</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（建议750×1000px）</div>
       <div style="margin-bottom:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
-        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">轮播图 HTTP URL</label>
+        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">📎 上传本地图片（jpg/png）</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="file" id="car-file-input" accept="image/jpeg,image/png" style="flex:1;padding:8px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;">
+          <button class="btn-add" id="car-file-btn" style="white-space:nowrap;">上传</button>
+        </div>
+        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
+        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">🔗 轮播图 HTTP URL</label>
         <input type="url" id="car-url" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;margin-bottom:10px;">
         <button class="btn-add" id="car-upload-btn">保存</button>
         <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
       </div>
       <table>
-        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>操作</th></tr></thead>
+        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>排序</th><th>操作</th></tr></thead>
         <tbody id="table-carousel"></tbody>
       </table>
     </div>
@@ -286,6 +292,7 @@ function stopPendingPolling() {
   });
   document.getElementById('img-filter').addEventListener('change', loadImages);
   document.getElementById('car-upload-btn').addEventListener('click', uploadCarousel);
+  document.getElementById('car-file-btn').addEventListener('click', carouselFileUpload);
   document.getElementById('img-modal').addEventListener('click', closeImageModal);
   document.getElementById('close-img-btn').addEventListener('click', function(e) {
     e.stopPropagation();
@@ -921,27 +928,34 @@ async function deleteImage(id, btn) {
   }
 }
 // === 轮播管理 ===
+var _carouselList = [];
 async function loadCarousel() {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status&status=eq.approved&order=created_at.asc&limit=50`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status,sort_order&status=eq.approved&order=sort_order.asc.nullslast&limit=50`, {
       headers: { 'apikey': SUPABASE_KEY }
     });
     await ensureOk(r, '加载失败');
     const rows = await r.json();
+    _carouselList = rows || [];
     const tbody = document.getElementById('table-carousel');
-    const list = rows || [];
+    const list = _carouselList;
     clearNode(tbody);
     if (list.length === 0) {
-      appendEmptyRow(tbody, 4);
+      appendEmptyRow(tbody, 5);
       return;
     }
-    list.forEach(function(img) {
+    list.forEach(function(img, idx) {
       const tr = el('tr');
       const previewCell = el('td');
       previewCell.appendChild(el('img', { src: img.image_url || '', style: 'width:60px;height:80px;object-fit:cover;border-radius:4px;' }));
       tr.appendChild(previewCell);
       tr.appendChild(el('td', { text: img.category || '' }));
       tr.appendChild(el('td', { text: img.uploaded_by || '' }));
+      const sortCell = el('td', { style: 'white-space:nowrap;' });
+      sortCell.appendChild(actionButton('上移', 'btn-edit', function() { moveCarouselUp(img.id); }));
+      sortCell.appendChild(actionButton('下移', 'btn-edit', function() { moveCarouselDown(img.id); }));
+      sortCell.appendChild(actionButton('置顶', 'btn-edit', function() { moveCarouselTop(img.id); }));
+      tr.appendChild(sortCell);
       const actions = el('td');
       actions.appendChild(actionButton('移除', 'btn-del', function(e) { deleteCarousel(img.id, e.currentTarget); }));
       tr.appendChild(actions);
@@ -952,7 +966,7 @@ async function loadCarousel() {
     const tbody = document.getElementById('table-carousel');
     clearNode(tbody);
     const tr = el('tr');
-    tr.appendChild(el('td', { colspan: 4, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
+    tr.appendChild(el('td', { colspan: 5, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
     tbody.appendChild(tr);
   }
 }
@@ -1010,7 +1024,138 @@ async function uploadCarousel() {
     if (btn) btn.disabled = false;
   }
 }
-
+// === 轮播本地文件上传 ===
+async function carouselFileUpload() {
+  const fileInput = document.getElementById('car-file-input');
+  const file = fileInput.files[0];
+  if (!file) { toast('请先选择图片文件', 'err'); return; }
+  if (!['image/jpeg','image/png'].includes(file.type)) { toast('仅支持 JPG/PNG 格式', 'err'); return; }
+  const btn = document.getElementById('car-file-btn');
+  if (btn) btn.disabled = true;
+  const msg = document.getElementById('car-msg');
+  msg.textContent = '上传中...';
+  const ext = file.name.split('.').pop() || (file.type === 'image/png' ? 'png' : 'jpg');
+  const filename = 'carousel/' + Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
+  try {
+    const uploadR = await fetch(`${SUPABASE_URL}/storage/v1/object/showcase/${filename}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: file
+    });
+    await ensureOk(uploadR, '上传到存储失败');
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/showcase/${filename}`;
+    const insertR = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        image_url: publicUrl,
+        category: '轮播图',
+        status: 'pending',
+        uploaded_by: '管理员',
+        created_at: new Date().toISOString()
+      })
+    });
+    await ensureOk(insertR, '写入数据库失败');
+    msg.textContent = '上传成功，已加入待审核列表';
+    fileInput.value = '';
+    loadCarousel();
+  } catch(e) {
+    msg.textContent = '上传失败: ' + e.message;
+    toast('上传失败: ' + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+// === 轮播排序 ===
+function findCarouselIdx(id) {
+  for (var i = 0; i < _carouselList.length; i++) {
+    if (_carouselList[i].id === id) return i;
+  }
+  return -1;
+}
+async function moveCarouselUp(id) {
+  var idx = findCarouselIdx(id);
+  if (idx <= 0) { toast('已经是第一张', 'err'); return; }
+  var cur = _carouselList[idx];
+  var prev = _carouselList[idx - 1];
+  var curSort = cur.sort_order != null ? cur.sort_order : 0;
+  var prevSort = prev.sort_order != null ? prev.sort_order : 0;
+  setButtonBusy(document.querySelector('#table-carousel button'), true);
+  try {
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(cur.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
+        body: JSON.stringify({ sort_order: prevSort })
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(prev.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
+        body: JSON.stringify({ sort_order: curSort })
+      })
+    ]);
+    toast('上移成功', 'ok');
+    loadCarousel();
+  } catch(e) {
+    toast('排序失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(document.querySelector('#table-carousel button'), false);
+  }
+}
+async function moveCarouselDown(id) {
+  var idx = findCarouselIdx(id);
+  if (idx < 0 || idx >= _carouselList.length - 1) { toast('已经是最后一张', 'err'); return; }
+  var cur = _carouselList[idx];
+  var nxt = _carouselList[idx + 1];
+  var curSort = cur.sort_order != null ? cur.sort_order : 0;
+  var nxtSort = nxt.sort_order != null ? nxt.sort_order : 0;
+  setButtonBusy(document.querySelector('#table-carousel button'), true);
+  try {
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(cur.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
+        body: JSON.stringify({ sort_order: nxtSort })
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(nxt.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
+        body: JSON.stringify({ sort_order: curSort })
+      })
+    ]);
+    toast('下移成功', 'ok');
+    loadCarousel();
+  } catch(e) {
+    toast('排序失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(document.querySelector('#table-carousel button'), false);
+  }
+}
+async function moveCarouselTop(id) {
+  var idx = findCarouselIdx(id);
+  if (idx <= 0) { toast('已经是第一张', 'err'); return; }
+  var minSort = Infinity;
+  for (var i = 0; i < _carouselList.length; i++) {
+    if (_carouselList[i].sort_order != null && _carouselList[i].sort_order < minSort) {
+      minSort = _carouselList[i].sort_order;
+    }
+  }
+  var newSort = (minSort === Infinity ? 0 : minSort) - 1;
+  setButtonBusy(document.querySelector('#table-carousel button'), true);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
+      body: JSON.stringify({ sort_order: newSort })
+    });
+    toast('已置顶', 'ok');
+    loadCarousel();
+  } catch(e) {
+    toast('置顶失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(document.querySelector('#table-carousel button'), false);
+  }
+}
 // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
 function connectRealtime() {
   if (!localStorage.getItem('perm_admin')) return;
