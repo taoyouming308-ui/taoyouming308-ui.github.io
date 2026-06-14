@@ -1579,16 +1579,23 @@ document.addEventListener('DOMContentLoaded', () => {
   var carouselTimer = null;
   var carouselPaused = false;
 
-  var LOCAL_CAROUSEL = [
-    'https://taoyouming308-ui.github.io/img/bleach-showcase.jpg'
-  ];
+  var LOCAL_CAROUSEL = [];
 
   function renderCarousel(urls) {
     carouselImgs = urls;
     carouselIdx = 0;
     var inner = document.querySelector('.carousel-inner');
     var dots = document.getElementById('carousel-dots');
+    var hero = document.querySelector('.hero-carousel');
     if (!inner || !dots) return;
+    if (!urls || urls.length === 0) {
+      inner.innerHTML = '';
+      dots.innerHTML = '';
+      if (hero) hero.style.display = 'none';
+      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+      return;
+    }
+    if (hero) hero.style.display = '';
     inner.innerHTML = urls.map(function(u,i){
       return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
     }).join('');
