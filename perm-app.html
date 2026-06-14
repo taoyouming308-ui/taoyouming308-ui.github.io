@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="110">
+<html lang="zh-CN" data-version="111">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -596,8 +596,10 @@ body {
     .hero-text h1 { font-size:28px; font-weight:700; color:var(--text); margin:0 0 4px; letter-spacing:1px; }
     .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
     .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
-    .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; }
+    .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; background:linear-gradient(145deg,#1a1a1a 0%,#2a2a2a 40%,#1a1a1a 100%); }
     .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity 0.8s ease; }
+    .carousel-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:#555; letter-spacing:2px; z-index:0; }
+    .carousel-inner { position:relative; width:100%; height:100%; z-index:1; }
     .hero-carousel img.active { opacity:1; z-index:1; }
     .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
     .carousel-dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); transition:all 0.35s; }
@@ -615,6 +617,7 @@ body {
     <div class="slogan">找到属于你的风格</div>
   </div>
   <div class="hero-carousel" onclick="openFeature('showcase')">
+    <div class="carousel-placeholder">精选作品</div>
     <div class="carousel-inner"></div>
     <div class="carousel-dots" id="carousel-dots"></div>
   </div>
@@ -1571,14 +1574,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!urls || urls.length === 0) {
       inner.innerHTML = '';
       dots.innerHTML = '';
-      if (hero) hero.style.display = 'none';
-      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+      // 不隐藏轮播区：显示默认渐变背景
       return;
     }
     if (hero) hero.style.display = '';
     inner.innerHTML = urls.map(function(u,i){
       return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
     }).join('');
+    // 图片出现后隐藏占位文字
+    var ph = document.querySelector('.carousel-placeholder');
+    if (ph) ph.style.display = 'none';
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
@@ -1626,8 +1631,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
-  // 从 Supabase 加载已审核作品图（只取HTTP图片，base64太大无法渲染）
+  // 首页轮播：先显示本地图 → Supabase数据来了再升级
   (function loadCarousel(){
+    // 立即显示本地默认图
+    renderCarousel(LOCAL_CAROUSEL);
+    // 后台拉Supabase作品图，到了再升级
     fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&status=eq.approved&category=neq.%E6%BC%82%E5%8F%91&limit=20', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
