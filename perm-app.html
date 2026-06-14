@@ -1356,6 +1356,7 @@ function doUnlock() {
           msg.style.color = '#e0556a';
           btn.disabled = false;
         });
+        });   // ← 关闭外层 .catch(function(e) {（第1323行）
     }
 
     // 暴露上传函数给 onclick

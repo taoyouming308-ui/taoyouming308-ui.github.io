@@ -7,7 +7,6 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>自由手艺人 · 后台管理</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,sans-serif; background:#000; color:#e5e5e5; min-height:100vh; }
@@ -144,7 +143,6 @@ td button { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentTab = 'staff';
 let editId = null;
 
@@ -414,15 +412,18 @@ async function upsert(table, id, data) {
 async function doDelete(table, id) {
   if (!confirm('确定删除？')) return;
   try {
-    const { error } = await sb.from(table).delete().eq('id', id);
-    if (error) {
-      toast('删除失败：' + error.message, 'err');
-    } else {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    if (r.ok) {
       toast('删除成功', 'ok');
       loadData(currentTab);
+    } else {
+      toast('删除失败', 'err');
     }
   } catch(e) {
-    toast('删除失败：' + e.message, 'err');
+    toast('删除失败: ' + e, 'err');
   }
 }
 
@@ -528,7 +529,11 @@ function updatePendingBadge() {
 async function loadImages() {
   const filter = document.getElementById('img-filter').value;
   let url = `${SUPABASE_URL}/rest/v1/showcase_images?select=*&order=created_at.desc`;
-  if (filter !== 'all') url += `&status=eq.${filter}`;
+  if (filter !== 'all') {
+    url += `&status=eq.${filter}`;
+  } else {
+    url += '&status=neq.deleted';
+  }
   try {
     const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
     const rows = await r.json();
@@ -596,11 +601,13 @@ async function deleteImage(id) {
   if (!confirm('确认删除？')) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
-      method: 'DELETE',
+      method: 'PATCH',
       headers: {
+        'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
-        'Prefer': 'return=minimal'
-      }
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      },
+      body: JSON.stringify({status: 'deleted'})
     });
     if (r.status === 200 || r.status === 204) {
       toast('已删除', 'ok');
