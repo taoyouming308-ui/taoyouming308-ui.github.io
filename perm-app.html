@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="111">
+<html lang="zh-CN" data-version="112">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1578,8 +1578,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (hero) hero.style.display = '';
+    // 图片不预先加active类：等加载完成再渐入
     inner.innerHTML = urls.map(function(u,i){
-      return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
+      return '<img src="'+u+'" data-idx="'+i+'" class="">';
     }).join('');
     // 图片出现后隐藏占位文字
     var ph = document.querySelector('.carousel-placeholder');
@@ -1587,6 +1588,22 @@ document.addEventListener('DOMContentLoaded', () => {
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
+    // 等每个图片加载完成再渐入（先加载第一张，后续按顺序）
+    var imgs = inner.querySelectorAll('img');
+    var loadedCount = 0;
+    function fadeInNext() {
+      if (loadedCount >= imgs.length) return;
+      imgs[loadedCount].classList.add('active');
+      loadedCount++;
+    }
+    imgs.forEach(function(img){
+      if (img.complete) {
+        fadeInNext();
+      } else {
+        img.addEventListener('load', fadeInNext);
+        img.addEventListener('error', fadeInNext); // 加载失败也跳过
+      }
+    });
     if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
     if (urls.length > 1) {
       carouselTimer = setInterval(carouselNext, 5000);
