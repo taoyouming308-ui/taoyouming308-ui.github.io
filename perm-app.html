@@ -2416,7 +2416,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           var _already = _isPhoneAnalyzed(phone);
-          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" onclick="window.runAiAnalysis(\'+phone+\',\''+esc(name||'')+'')">🤖 AI分析建议</button>';
+          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" onclick="window.runAiAnalysis(\''+phone+'\',\''+esc(name||'')+'')">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
         }).catch(function(){
           document.querySelector('#plan-modal .box').innerHTML =
