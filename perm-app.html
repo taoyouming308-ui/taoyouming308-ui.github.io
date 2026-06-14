@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="109">
+<html lang="zh-CN" data-version="110">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2117,6 +2117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (p.months_since_last > 0) {
         html += '<div class="row"><span class="label">距上次</span><span class="val">'+p.months_since_last+'个月</span></div>';
       }
+      // 上次项目（从plan_server返回的notes或last_service）
+      var pNotes = p.notes || p.last_service || '';
+      if (pNotes) {
+        html += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(pNotes)+'</span></div>';
+      }
       // 卡项/套餐
       if (p.active_treats && p.active_treats.length > 0) {
         html += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
@@ -2304,6 +2309,13 @@ document.addEventListener('DOMContentLoaded', () => {
           if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
           var avgTicket = visits > 0 ? Math.round(consum / visits) : (consum > 0 ? consum : 0);
           if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">均消</span><span class="val">¥'+avgTicket+'</span></div>';
+          // 上次消费项目（从notes取）
+          var lastService = '';
+          var rowsWithNotes = (rows || []).filter(function(r){ return r.notes; });
+          if (rowsWithNotes.length > 0) lastService = rowsWithNotes[0].notes;
+          if (lastService) {
+            htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
+          }
           if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
           // 最近到店记录
@@ -2355,13 +2367,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 htmlContent += '<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
               }
             }
-          }
-          // 上次服务 — 从有notes的客户记录中取最新一条
-          var lastService = '';
-          var rowsWithNotes = (rows || []).filter(function(r){ return r.notes; });
-          if (rowsWithNotes.length > 0) lastService = rowsWithNotes[0].notes;
-          if (lastService) {
-            htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
