@@ -2018,27 +2018,33 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-      // 消费记录（上次项目 + 历史到店）
-      var lastNote = p.notes || '';
-      if (lastNote) {
-        html += '<div class="row" style="border-bottom:none;margin-top:4px;"><span class="label">📋 上次消费</span><span class="val" style="font-weight:400;">'+esc(lastNote)+'</span></div>';
-      }
-      // 历史到店记录
+      // 消费记录：近3次到店
       var history = p.service_history || [];
-      if (history.length > 0) {
-        html += '<div class="row" style="border-bottom:none;padding-bottom:2px;"><span class="label">🕐 到店记录</span></div>';
-        // 最多显示最近5次，从新到旧
-        var recent = history.slice(-5).reverse();
+      var lastNote = p.notes || '';
+      if (history.length > 0 || lastNote) {
+        html += '<div class="row" style="border-bottom:none;margin-top:4px;padding-bottom:2px;"><span class="label">📋 近3次消费</span></div>';
+        // 取最近3次，从新到旧
+        var recent = history.slice(-3).reverse();
+        // 如果没有service_history但有点notes，单独显示
+        if (recent.length === 0 && lastNote) {
+          html += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:11px;">';
+          html += '<span class="val" style="font-weight:400;font-size:11px;">🕐 最近 · ' + esc(lastNote) + '</span></div>';
+        }
         for (var hi = 0; hi < recent.length; hi++) {
           var h = recent[hi];
           var hDate = h.date || '';
           var hBarber = h.barber || '';
           var hShop = h.shop || '';
-          var hInfo = hDate;
-          if (hBarber) hInfo += ' ' + hBarber;
-          if (hShop && hShop != '自由手艺人') hInfo += ' (' + hShop + ')';
+          // 第一次（最新的）如果有notes就显示
+          var hDesc = '';
+          if (hi === 0 && lastNote) {
+            hDesc = ' · ' + lastNote;
+          } else if (hBarber) {
+            hDesc = ' · ' + hBarber;
+          }
+          if (hShop && hShop != '自由手艺人') hDesc += ' (' + hShop + ')';
           html += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:11px;">';
-          html += '<span class="val" style="font-weight:400;font-size:11px;">' + esc(hInfo) + '</span></div>';
+          html += '<span class="val" style="font-weight:400;font-size:11px;">🕐 ' + esc(hDate) + esc(hDesc) + '</span></div>';
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
