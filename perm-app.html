@@ -2142,7 +2142,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      html += '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||p.name||'')+'')">🤖 AI分析建议</button>';
+      var _already = _isPhoneAnalyzed(phone);
+      html += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||p.name||'')+'')">🤖 AI分析建议</button>';
       document.querySelector('#plan-modal .box').innerHTML = html;
     })
     .catch(function(e){
@@ -2358,7 +2359,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮（仅在店内WiFi可用） =====
-          htmlContent += '<button class="ai-btn" onclick="window.runAiAnalysis(\''+phone+'\',\''+esc(name||'')+'\')">🤖 AI分析建议</button>';
+          var _already = _isPhoneAnalyzed(phone);
+          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" onclick="window.runAiAnalysis(\''+phone+'\',\''+esc(name||'')+'\')">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           return;
         }
@@ -2413,7 +2415,8 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-          htmlContent += '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||'')+'')">🤖 AI分析建议</button>';
+          var _already = _isPhoneAnalyzed(phone);
+          htmlContent += _already ? '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>' : '<button class="ai-btn" onclick="window.runAiAnalysis('+phone+',''+esc(name||'')+'')">🤖 AI分析建议</button>';
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
         }).catch(function(){
           document.querySelector('#plan-modal .box').innerHTML =
@@ -2432,6 +2435,25 @@ document.addEventListener('DOMContentLoaded', () => {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
   };
+
+  // 每次预约只给一次分析，localStorage跟踪
+  var _analyzedPhones = null;
+  function _loadAnalyzed() {
+    if (_analyzedPhones) return;
+    try { _analyzedPhones = JSON.parse(localStorage.getItem('ai_analyzed') || '{}'); } catch(e) { _analyzedPhones = {}; }
+  }
+  function _isPhoneAnalyzed(phone) {
+    _loadAnalyzed();
+    var today = new Date().toISOString().slice(0,10);
+    var rec = _analyzedPhones[phone];
+    return rec && rec.date === today;
+  }
+  function _markPhoneAnalyzed(phone) {
+    _loadAnalyzed();
+    var today = new Date().toISOString().slice(0,10);
+    _analyzedPhones[phone] = { date: today };
+    try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) {}
+  }
 
   // AI分析建议：调店内plan_server → Codex分析消费记录
   window.runAiAnalysis = function(phone, name) {
@@ -2462,6 +2484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
         html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
         html += '</div>';
+        _markPhoneAnalyzed(phone);
         box.innerHTML += html;
       } catch(e) {
         box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
