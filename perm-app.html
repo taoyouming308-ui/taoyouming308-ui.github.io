@@ -2018,14 +2018,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       }
-      // 消费记录：近3次到店
+      // 消费记录：近4次到店（含项目+发型师）
       var history = p.service_history || [];
       var lastNote = p.notes || '';
       if (history.length > 0 || lastNote) {
-        html += '<div class="row" style="border-bottom:none;margin-top:4px;padding-bottom:2px;"><span class="label">📋 近3次消费</span></div>';
-        // 取最近3次，从新到旧
-        var recent = history.slice(-3).reverse();
-        // 如果没有service_history但有点notes，单独显示
+        html += '<div class="row" style="border-bottom:none;margin-top:4px;padding-bottom:2px;"><span class="label">📋 消费记录</span></div>';
+        // 取最近4次，从新到旧
+        var recent = history.slice(-4).reverse();
         if (recent.length === 0 && lastNote) {
           html += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:11px;">';
           html += '<span class="val" style="font-weight:400;font-size:11px;">🕐 最近 · ' + esc(lastNote) + '</span></div>';
@@ -2035,16 +2034,19 @@ document.addEventListener('DOMContentLoaded', () => {
           var hDate = h.date || '';
           var hBarber = h.barber || '';
           var hShop = h.shop || '';
-          // 第一次（最新的）如果有notes就显示
-          var hDesc = '';
+          // 项目名：最新的如果有notes就显示，其他只显示发型师
+          var hProject = '';
+          var hWho = '';
           if (hi === 0 && lastNote) {
-            hDesc = ' · ' + lastNote;
-          } else if (hBarber) {
-            hDesc = ' · ' + hBarber;
+            hProject = ' · ' + esc(lastNote);
           }
-          if (hShop && hShop != '自由手艺人') hDesc += ' (' + hShop + ')';
+          if (hBarber) {
+            hWho = ' 👤 ' + esc(hBarber);
+          }
+          var hExtra = '';
+          if (hShop && hShop != '自由手艺人') hExtra = ' (' + esc(hShop) + ')';
           html += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:11px;">';
-          html += '<span class="val" style="font-weight:400;font-size:11px;">🕐 ' + esc(hDate) + esc(hDesc) + '</span></div>';
+          html += '<span class="val" style="font-weight:400;font-size:11px;">🕐 ' + esc(hDate) + hProject + hWho + hExtra + '</span></div>';
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
