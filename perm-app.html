@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="101">
+<html lang="zh-CN" data-version="102">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2316,10 +2316,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
           // 卡项/套餐信息
-          if (p.card_packages && p.card_packages.length > 0) {
+          if (packages && packages.length > 0) {
             htmlContent += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
-            for (var ci = 0; ci < p.card_packages.length; ci++) {
-              var cp = p.card_packages[ci];
+            for (var ci = 0; ci < packages.length; ci++) {
+              var cp = packages[ci];
               var cName = cp.name || cp.itemname || '套餐';
               var cLeft = cp.left || cp.leavetimes || 0;
               var cTotal = cp.total || cp.sumtimes || 0;
@@ -2338,8 +2338,10 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
           }
-          // 上次服务
-          var lastService = p.notes || '';
+          // 上次服务 — 从有notes的客户记录中取最新一条
+          var lastService = '';
+          var rowsWithNotes = (rows || []).filter(function(r){ return r.notes; });
+          if (rowsWithNotes.length > 0) lastService = rowsWithNotes[0].notes;
           if (lastService) {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
