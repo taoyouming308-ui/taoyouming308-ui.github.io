@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="119">
+<html lang="zh-CN" data-version="120">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -578,10 +578,10 @@ body {
     .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
     .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
     .hero-carousel { width:100%; padding:0 16px; margin-bottom:8px; position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:16px; cursor:pointer; background:#000; }
-    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; visibility:hidden; border:0; color:transparent; background:#000; }
-    .hero-carousel img.active { visibility:visible; opacity:1; transition:opacity 0.55s ease; }
-    .hero-carousel img.initial-fade { animation:heroFade 0.6s ease 0s both; }
-    @keyframes heroFade { from { opacity:0; } to { opacity:1; } }
+    .hero-carousel img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0; visibility:hidden; border:0; color:transparent; background:#000; transition:opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hero-carousel img.is-visible { visibility:visible; }
+    .hero-carousel img.active { visibility:visible; opacity:1; }
+    .hero-carousel img.initial-fade { transition-duration:1s; transition-delay:0.12s; transition-timing-function:cubic-bezier(0.22, 0.61, 0.36, 1); }
     .carousel-inner { position:relative; width:100%; height:100%; }
     .carousel-dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; opacity:0; transition:opacity 0.35s ease; }
     .hero-carousel.is-ready .carousel-dots { opacity:1; }
@@ -1587,10 +1587,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showCarouselImage(img, isInitial) {
     if (!img) return;
-    img.classList.remove('initial-fade');
-    void img.offsetWidth;
+    img.classList.remove('active', 'initial-fade');
+    img.classList.add('is-visible');
     if (isInitial) img.classList.add('initial-fade');
-    img.classList.add('active');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        img.classList.add('active');
+      });
+    });
+  }
+
+  function hideCarouselImage(img) {
+    if (!img) return;
+    img.classList.remove('active', 'initial-fade');
+    setTimeout(function() {
+      if (!img.classList.contains('active')) img.classList.remove('is-visible');
+    }, 800);
   }
 
   function renderCarousel(urls) {
@@ -1672,10 +1684,10 @@ document.addEventListener('DOMContentLoaded', () => {
     var imgs = document.querySelectorAll('.carousel-inner img');
     var dots = document.querySelectorAll('.carousel-dots .dot');
     if (!imgs.length) return;
-    imgs[carouselIdx].classList.remove('active');
+    hideCarouselImage(imgs[carouselIdx]);
     if (dots[carouselIdx]) dots[carouselIdx].classList.remove('active');
     carouselIdx = (carouselIdx + 1) % imgs.length;
-    imgs[carouselIdx].classList.add('active');
+    showCarouselImage(imgs[carouselIdx], false);
     if (dots[carouselIdx]) dots[carouselIdx].classList.add('active');
   }
 
@@ -1695,10 +1707,10 @@ document.addEventListener('DOMContentLoaded', () => {
         var imgs = document.querySelectorAll('.carousel-inner img');
         var dots = document.querySelectorAll('.carousel-dots .dot');
         if (!imgs.length) return;
-        imgs[carouselIdx].classList.remove('active');
+        hideCarouselImage(imgs[carouselIdx]);
         if (dots[carouselIdx]) dots[carouselIdx].classList.remove('active');
         carouselIdx = (carouselIdx - 1 + imgs.length) % imgs.length;
-        imgs[carouselIdx].classList.add('active');
+        showCarouselImage(imgs[carouselIdx], false);
         if (dots[carouselIdx]) dots[carouselIdx].classList.add('active');
       }
       setTimeout(function(){ carouselPaused = false; }, 3000);
