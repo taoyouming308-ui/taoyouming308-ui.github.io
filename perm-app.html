@@ -1580,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
   var carouselPaused = false;
 
   var LOCAL_CAROUSEL = [
-    'https://taoyouming308-ui.github.io/img/bleach-showcase.jpg'
+    'https://taoyouming308-ui.github.io/img/short-hair.jpg'
   ];
 
   function renderCarousel(urls) {
@@ -2141,15 +2141,22 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(function(e){
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
-      fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*&limit=1', {
+      fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*', {
         headers: { 'apikey': SUPABASE_KEY }
       }).then(function(r){ return r.json(); })
       .then(function(rows){
         if (rows && rows.length > 0) {
-          var p = rows[0];
-          var visits = p.total_visits || 0;
-          var consum = p.total_consumption || 0;
-          var lastDate = p.last_visit_date || '';
+          // 合并两家店数据：累加消费金额、到店次数，取最近的到店日期
+          var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
+          rows.forEach(function(p){
+            totalVisits += p.total_visits || 0;
+            totalConsum += p.total_consumption || 0;
+            if ((p.total_consumption || 0) > maxConsum) maxConsum = p.total_consumption || 0;
+            var d = p.last_visit_date || '';
+            if (d && d > lastDate) lastDate = d;
+          });
+          var visits = totalVisits;
+          var consum = totalConsum;
           // 去除日期中的时间部分
           var lastDateStr = lastDate ? (''+lastDate).split(' ')[0] : '';
           // 计算距上次月数
