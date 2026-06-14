@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="114">
+<html lang="zh-CN" data-version="115">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1577,13 +1577,39 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (hero) hero.style.display = '';
-    // 第一张立即active（直接显示），后续隐藏等轮播切换
-    inner.innerHTML = urls.map(function(u,i){
-      return '<img src="'+u+'" data-idx="'+i+'" class="'+(i===0?'active':'')+'">';
-    }).join('');
+    // 不直接插img：等图片加载完再放进去，避免浏览器默认占位符
+    inner.innerHTML = '';
     dots.innerHTML = urls.map(function(_,i){
       return '<span class="dot'+(i===0?' active':'')+'"></span>';
     }).join('');
+    // 逐张预加载，加载完再插入DOM
+    var loadedImgs = [];
+    function insertLoadedImgs() {
+      inner.innerHTML = '';
+      loadedImgs.forEach(function(url, i){
+        var img = document.createElement('img');
+        img.src = url;
+        img.setAttribute('data-idx', i);
+        img.className = i === 0 ? 'active' : '';
+        inner.appendChild(img);
+      });
+    }
+    urls.forEach(function(url, i){
+      var preloader = new Image();
+      preloader.onload = function(){
+        loadedImgs.push(url);
+        if (loadedImgs.length === 1 || loadedImgs.length === urls.length) {
+          // 第一张加载完成或全部加载完，一次性插入
+          insertLoadedImgs();
+        }
+      };
+      preloader.onerror = function(){
+        // 加载失败的图也放进去（跳过不卡住）
+        loadedImgs.push(url);
+        if (loadedImgs.length === urls.length) insertLoadedImgs();
+      };
+      preloader.src = url;
+    });
     if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
     if (urls.length > 1) {
       carouselTimer = setInterval(carouselNext, 5000);
