@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="99">
+<html lang="zh-CN" data-version="100">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2157,13 +2157,15 @@ document.addEventListener('DOMContentLoaded', () => {
           else customerType = '新客';
           var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
           var activeLabel = lastDateStr ? (monthsSince === 0 ? '当月活跃' : (monthsSince >= 6 ? monthsSince + '个月未到店⚠️' : (monthsSince >= 3 ? monthsSince + '个月未到店' : ''))) : '';
-          sug += '👤 ' + (name||p.name||'客户') + ' · ' + customerType;
+          sug += '👤 ' + (name||'客户') + ' · ' + customerType;
           if (spendLabel) sug += ' / ' + spendLabel;
           if (activeLabel) sug += ' / ' + activeLabel;
           sug += '\n\n';
 
           // 卡项消耗建议
-          var packages = p.card_packages || [];
+          var packages = [];
+          var pRowsWithCards = (rows || []).filter(function(r){ return r.card_packages && r.card_packages.length > 0; });
+          if (pRowsWithCards.length > 0) packages = pRowsWithCards[0].card_packages;
           if (packages.length > 0) {
             sug += '📦 卡项消耗建议：\n';
             for (var ci = 0; ci < packages.length; ci++) {
@@ -2264,7 +2266,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (monthsSince >= 3) sug += '🎯 一句话指令：主动回访 → 换季换造型 → 办卡锁客';
           else sug += '🎯 一句话指令：优质服务 → 推荐当季热门 → 引导办卡';
 
-          var htmlContent = '<h3>'+esc(name||p.name||'客户')+'</h3>';
+          var htmlContent = '<h3>'+esc(name||'客户')+'</h3>';
           htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
           if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
@@ -2272,8 +2274,10 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
           // 最近到店记录
           var visitHistory = [];
-          if (p.service_history && p.service_history.length > 0) {
-            visitHistory = p.service_history;
+          // 从第一条有服务记录的客户数据获取
+          var serviceHistoryRows = (rows || []).filter(function(r){ return r.service_history && r.service_history.length > 0; });
+          if (serviceHistoryRows.length > 0) {
+            visitHistory = serviceHistoryRows[0].service_history;
           } else if (lastDateStr) {
             // 没有预约记录但有美管加最后到店日期
             visitHistory = [{'date': lastDateStr, 'time': '', 'barber': '', 'shop': '美管加'}];
