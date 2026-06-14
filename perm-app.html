@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="105">
+<html lang="zh-CN" data-version="106">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2049,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '<div style="display:flex;align-items:center;">';
         html += '<div><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name)+'</div></div>';
         if (r.customer_phone) {
-          html += '<span class="bi-plan-btn" data-phone="'+r.customer_phone+'" data-name="'+esc(r.customer_name||'')+'">方案</span>';
+          html += '<span class="bi-plan-btn" data-phone="'+r.customer_phone+'" data-name="'+esc(r.customer_name||'')+'" data-bdate="'+(r.date||'')+'">方案</span>';
         }
         html += '</div></div>';
       });
@@ -2076,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '杨帆': '烫发/护理'
   };
   var _profileCache = {};
-  window.showPlanModal = function(phone, name) {
+  window.showPlanModal = function(phone, name, bookingDate) {
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
@@ -2124,7 +2124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      html += renderAiButton(phone, name);
+      html += renderAiButton(phone, name, bookingDate);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
     })
@@ -2346,9 +2346,8 @@ document.addEventListener('DOMContentLoaded', () => {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-          // ===== AI分析按钮（仅在店内WiFi可用） =====
-          var _already = _isPhoneAnalyzed(phone);
-          htmlContent += renderAiButton(phone, name);
+          // ===== AI分析按钮 =====
+          htmlContent += renderAiButton(phone, name, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
           return;
@@ -2404,8 +2403,7 @@ document.addEventListener('DOMContentLoaded', () => {
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-          var _already = _isPhoneAnalyzed(phone);
-          htmlContent += renderAiButton(phone, name);
+          htmlContent += renderAiButton(phone, name, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
         }).catch(function(e){
@@ -2435,14 +2433,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target.classList.contains('bi-plan-btn')) {
       var phone = target.getAttribute('data-phone');
       var name = target.getAttribute('data-name') || '';
-      if (phone) showPlanModal(phone, name);
+      var bdate = target.getAttribute('data-bdate') || '';
+      if (phone) showPlanModal(phone, name, bdate);
       return;
     }
     // AI分析按钮
     if (target.classList.contains('ai-btn')) {
       var phone2 = target.getAttribute('data-phone');
       var name2 = target.getAttribute('data-name') || '';
-      if (phone2) runAiAnalysis(phone2, name2);
+      var bdate2 = target.getAttribute('data-bdate') || '';
+      if (phone2) runAiAnalysis(phone2, name2, bdate2);
       return;
     }
   });
@@ -2453,23 +2453,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (_analyzedPhones) return;
     try { _analyzedPhones = JSON.parse(localStorage.getItem('ai_analyzed') || '{}'); } catch(e) { _analyzedPhones = {}; }
   }
-  function _isPhoneAnalyzed(phone) {
+  function _isPhoneAnalyzed(phone, dateKey) {
     _loadAnalyzed();
-    var today = getLocalDateStr();
+    var key = dateKey || getLocalDateStr();
     var rec = _analyzedPhones[phone];
-    return rec && rec.date === today;
+    return rec && rec.date === key;
   }
-  function _markPhoneAnalyzed(phone, analysisText) {
+  function _markPhoneAnalyzed(phone, analysisText, dateKey) {
     _loadAnalyzed();
-    var today = getLocalDateStr();
-    _analyzedPhones[phone] = { date: today, text: analysisText || '' };
+    var key = dateKey || getLocalDateStr();
+    _analyzedPhones[phone] = { date: key, text: analysisText || '' };
     try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) { console.warn('AI分析状态保存失败:', e); }
   }
-  function _getCachedAnalysis(phone) {
+  function _getCachedAnalysis(phone, dateKey) {
     _loadAnalyzed();
-    var today = getLocalDateStr();
+    var key = dateKey || getLocalDateStr();
     var rec = _analyzedPhones[phone];
-    if (rec && rec.date === today && rec.text) return rec.text;
+    if (rec && rec.date === key && rec.text) return rec.text;
     return null;
   }
 
@@ -2488,22 +2488,22 @@ document.addEventListener('DOMContentLoaded', () => {
     return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) };
   }
 
-  function renderAiButton(phone, name) {
-    if (_isPhoneAnalyzed(phone)) {
-      var cached = _getCachedAnalysis(phone);
+  function renderAiButton(phone, name, dateKey) {
+    if (_isPhoneAnalyzed(phone, dateKey)) {
+      var cached = _getCachedAnalysis(phone, dateKey);
       if (cached) {
         return '<div class="ai-result" style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI分析建议</div><div style="font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;">'+esc(cached)+'</div></div>';
       }
       return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
     }
-    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'">🤖 AI分析建议</button>';
+    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'" data-bdate="'+(dateKey||'')+'">🤖 AI分析建议</button>';
   }
   function updateAiButtonsAvailability() {
     // 不限网络，始终可用
   }
 
   // AI分析建议：调plan_server（优先店内→兜底公网隧道）
-  window.runAiAnalysis = function(phone, name) {
+  window.runAiAnalysis = function(phone, name, bookingDate) {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
     // 加加载状态
@@ -2534,7 +2534,7 @@ document.addEventListener('DOMContentLoaded', () => {
           html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
           html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
           html += '</div>';
-          _markPhoneAnalyzed(phone, analysis);
+          _markPhoneAnalyzed(phone, analysis, bookingDate);
           box.innerHTML += html;
         } catch(e) {
           box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
