@@ -590,13 +590,13 @@ async function rejectImage(id) {
   } catch(e) { toast('操作失败', 'err'); }
 }
 
-async function deleteImage(id) {
+async function deleteImage(id, imageUrl) {
   if (!confirm('确认删除？')) return;
   try {
+    // 先删数据库记录
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
-      body: JSON.stringify({status:'rejected'})
+      method: 'DELETE',
+      headers: { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer': 'return=minimal' }
     });
     if (r.status === 204 || r.status === 200) {
       toast('已删除', 'ok');
