@@ -1358,6 +1358,12 @@ function doUnlock() {
         });
     }
 
+    // 暴露上传函数给 onclick
+    window.showUploadPage = showUploadPage;
+    window.hideUploadPage = hideUploadPage;
+    window.doUpload = doUpload;
+    window.previewUpload = previewUpload;
+
     // 展示Tab切换时加载已通过图片
     setTimeout(loadShowcase, 1500);
     </script>
