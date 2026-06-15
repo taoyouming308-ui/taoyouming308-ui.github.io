@@ -1315,6 +1315,7 @@ body {
     </style>
     <div class="identity-bar" id="identity-bar">
       <span>👤 <b id="current-identity">加载中...</b></span>
+      <span><a style="color:var(--text-secondary);cursor:pointer;font-size:12px;text-decoration:none;" onclick="logoutAccount()">退出</a></span>
     </div>
     <div class="date-strip" id="date-strip"></div>
     <div class="booking-bar">
@@ -2099,6 +2100,19 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('注册失败，请重试');
       if (btn) btn.disabled = false;
     }
+  };
+
+  window.logoutAccount = function(){
+    if (!confirm('确定退出当前账号？')) return;
+    localStorage.removeItem('booking-barber');
+    localStorage.removeItem('install_guide_done');
+    BOOKING_BARBER = '';
+    // 删除Supabase记录
+    fetch(SUPABASE_URL + '/rest/v1/barber_identities?device_id=eq.' + encodeURIComponent(DEVICE_ID), {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY }
+    }).catch(function(){});
+    location.reload();
   };
 
   window.switchShop = function(shop) {
