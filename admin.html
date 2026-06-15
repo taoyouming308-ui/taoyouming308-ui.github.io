@@ -95,6 +95,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="tab" data-tab="perm">烫发方案</div>
     <div class="tab" data-tab="images">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
     <div class="tab" data-tab="carousel">轮播管理</div>
+    <div class="tab" data-tab="identity">身份管理</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -151,6 +152,14 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <table>
         <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>排序</th><th>操作</th></tr></thead>
         <tbody id="table-carousel"></tbody>
+      </table>
+    </div>
+    <!-- 身份管理 -->
+    <div id="tab-identity" style="display:none">
+      <div style="font-size:12px;color:#888;margin-bottom:12px;">已注册的设备及其选定的发型师身份。点「修改」帮发型师更换身份。</div>
+      <table>
+        <thead><tr><th style="width:40px;">#</th><th>发型师</th><th>设备</th><th>注册时间</th><th style="width:140px;">操作</th></tr></thead>
+        <tbody id="table-identity"></tbody>
       </table>
     </div>
   </div>
@@ -357,14 +366,16 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','identity'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-identity').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
   } else if (tab === 'carousel') {
     loadCarousel();
+  } else if (tab === 'identity') {
+    loadIdentities();
   } else {
     loadData(tab);
   }
@@ -925,6 +936,72 @@ async function deleteImage(id, btn) {
     toast('网络错误：' + e.message, 'err');
   } finally {
     setButtonBusy(btn, false);
+  }
+}
+// === 身份管理 ===
+var BARBER_LIST = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
+async function loadIdentities() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/barber_identities?select=*&order=created_at.asc`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    await ensureOk(r, '加载失败');
+    const rows = await r.json();
+    const tbody = document.getElementById('table-identity');
+    clearNode(tbody);
+    if (!rows || rows.length === 0) {
+      appendEmptyRow(tbody, 5);
+      return;
+    }
+    rows.forEach(function(row, idx) {
+      const tr = el('tr');
+      tr.appendChild(el('td', { text: String(idx + 1) }));
+      tr.appendChild(el('td', { text: row.barber_name || '' }));
+      tr.appendChild(el('td', { style: 'font-size:11px;color:#666;', text: (row.device_id || '').slice(0,16) + '...' }));
+      tr.appendChild(el('td', { style: 'font-size:11px;color:#666;', text: row.created_at ? row.created_at.slice(0,10) : '' }));
+      const actions = el('td');
+      actions.appendChild(actionButton('修改', 'btn-edit', function() { showIdentityEdit(row); }));
+      tr.appendChild(actions);
+      tbody.appendChild(tr);
+    });
+  } catch(e) {
+    toast('加载失败: ' + e.message, 'err');
+    const tbody = document.getElementById('table-identity');
+    clearNode(tbody);
+    appendEmptyRow(tbody, 5);
+  }
+}
+function showIdentityEdit(row) {
+  var box = document.getElementById('modal-box');
+  var opts = BARBER_LIST.map(function(b){
+    return '<option value="'+b+'"'+(row.barber_name===b?' selected':'')+'>'+b+'</option>';
+  }).join('');
+  box.innerHTML =
+    '<h3>修改发型师身份</h3>' +
+    '<label>设备</label><input readonly style="font-size:11px;color:#666;" value="' + esc(row.device_id) + '">' +
+    '<label>当前身份</label><input readonly style="font-size:11px;" value="' + esc(row.barber_name) + '">' +
+    '<label>修改为</label><select id="edit-identity-select">' + opts + '</select>' +
+    '<div class="btn-row">' +
+    '  <button class="btn-save" onclick="saveIdentityEdit('+row.id+')">保存</button>' +
+    '  <button class="btn-cancel" onclick="closeModal()">取消</button>' +
+    '</div>';
+  document.getElementById('modal').classList.add('show');
+}
+async function saveIdentityEdit(id) {
+  var name = document.getElementById('edit-identity-select').value;
+  if (!name) { toast('请选择发型师', 'err'); return; }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/barber_identities?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ barber_name: name, updated_at: new Date().toISOString() })
+    });
+    await ensureOk(r, '修改失败');
+    toast('已更新，设备下次打开App自动同步', 'ok');
+    closeModal();
+    loadIdentities();
+  } catch(e) {
+    toast('修改失败: ' + e.message, 'err');
   }
 }
 // === 轮播管理 ===

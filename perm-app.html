@@ -1288,8 +1288,7 @@ body {
       .plan-modal .no-data { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
     </style>
     <div class="identity-bar" id="identity-bar">
-      <span>👤 <b id="current-identity">全部发型师</b></span>
-      <span class="switch-btn" onclick="switchIdentity()">↻ 切换身份</span>
+      <span>👤 <b id="current-identity">加载中...</b></span>
     </div>
     <div class="date-strip" id="date-strip"></div>
     <div class="booking-bar">
@@ -2077,10 +2076,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===== 预约系统 =====
   var BOOKING_SHOP = '自由手艺人';
-  var BOOKING_BARBER = localStorage.getItem('booking-barber') || '';
+  var BOOKING_BARBER = '';
   var BOOKING_DATE = getLocalDateStr();
   var BOOKING_INTERVAL = null;
   var BOOKINGS_CACHE = [];
+
+  // ★ 设备ID（每个手机唯一，存在localStorage）
+  var DEVICE_ID = localStorage.getItem('booking-device-id');
+  if (!DEVICE_ID) {
+    DEVICE_ID = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('booking-device-id', DEVICE_ID);
+  }
+
+  function checkIdentity() {
+    // 先从localStorage读缓存（秒显示）
+    var cached = localStorage.getItem('booking-barber');
+    if (cached) {
+      BOOKING_BARBER = cached;
+      document.getElementById('current-identity').textContent = cached || '全部发型师';
+    }
+    // 再从Supabase同步（看管理员有没有改过）
+    fetch(SUPABASE_URL + '/rest/v1/barber_identities?device_id=eq.' + encodeURIComponent(DEVICE_ID) + '&select=barber_name', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (rows && rows.length > 0 && rows[0].barber_name) {
+        var remoteName = rows[0].barber_name;
+        if (remoteName !== BOOKING_BARBER) {
+          // 管理员在后台改了 → 同步更新
+          BOOKING_BARBER = remoteName;
+          localStorage.setItem('booking-barber', remoteName);
+          document.getElementById('current-identity').textContent = remoteName;
+          if (typeof loadBookings === 'function') loadBookings(false);
+        }
+      } else if (!BOOKING_BARBER) {
+        // 无缓存 + Supabase无记录 → 弹窗选身份
+        showIdentityModal();
+      }
+    }).catch(function(){
+      // Supabase查不到 → 有缓存就用缓存，没有就弹窗
+      if (!BOOKING_BARBER) showIdentityModal();
+    });
+  }
 
   var DOW = ['日','一','二','三','四','五','六'];
 
@@ -2106,14 +2143,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBookings(true);
   }
 
-  function checkIdentity() {
-    if (!BOOKING_BARBER) {
-      showIdentityModal();
-    } else {
-      document.getElementById('current-identity').textContent = BOOKING_BARBER;
-    }
-  }
-
   function showIdentityModal() {
     // 防重复
     var existing = document.getElementById('identity-modal');
@@ -2126,7 +2155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     barbers.forEach(function(b){
       opts += '<button class="opt" onclick="selectIdentity(&quot;'+b+'&quot;)">'+b+'</button>';
     });
-    div.innerHTML = '<div class="box"><h3>选择你的身份</h3>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button></div>';
+    div.innerHTML = '<div class="box"><h3>选择你的身份</h3><div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px;">选好后不可自行更改，如需修改请联系店主</div>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button></div>';
     document.body.appendChild(div);
   }
 
@@ -2136,11 +2165,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('current-identity').textContent = name || '全部发型师';
     var modal = document.getElementById('identity-modal');
     if (modal) modal.remove();
+    // ★ 存到Supabase，管理员可在后台修改
+    if (name) {
+      fetch(SUPABASE_URL + '/rest/v1/barber_identities', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
+      }).catch(function(e){ console.warn('身份同步失败:', e); });
+    }
     loadBookings();
-  };
-
-  window.switchIdentity = function() {
-    showIdentityModal();
   };
 
   window.switchShop = function(shop) {
