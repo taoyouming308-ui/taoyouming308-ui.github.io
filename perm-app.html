@@ -1248,6 +1248,7 @@ body {
       .booking-bar .shop-switch { font-size:12px; color:var(--text-secondary); cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
       .booking-bar .shop-switch.on { color:var(--accent); border-color:var(--accent); }
       .booking-item { padding:14px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+      .booking-item.real-customer { background:rgba(112,128,144,0.12); border-left:3px solid rgba(112,128,144,0.5); }
       .booking-item .bi-left { flex:1; }
       .booking-item .bi-name { font-size:15px; font-weight:600; color:var(--text); }
       .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
@@ -2195,7 +2196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     var html = '';
     rows.forEach(function(r){
-      html += '<div class=\"booking-item\">';
+      var isReal = r.customer_name && r.customer_name !== '待定' && r.customer_name !== '未登记';
+      html += '<div class=\"booking-item' + (isReal ? ' real-customer' : '') + '\">';
       html += '<div class=\"bi-left\"><div class=\"bi-name\">'+esc(r.customer_name || '待定')+'</div><div class=\"bi-meta\">'+(r.notes ? '📝 '+esc(r.notes) : esc(r.time_label||''))+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
       html += '<div style=\"display:flex;align-items:center;\">';
       html += '<div><div class=\"bi-time\">'+esc(r.time_label||'')+'</div><div class=\"bi-barber\">'+esc(r.barber_name)+'</div></div>';
@@ -2204,12 +2206,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       html += '</div></div>';
     });
-    if (isOffline) {
-      // 缓存数据旁加个小标记
-      list.innerHTML = html;
-    } else {
-      list.innerHTML = html;
-    }
+    list.innerHTML = html;
   }
 
   function esc(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
