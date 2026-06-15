@@ -600,7 +600,7 @@ body {
     <div class="slogan">找到属于你的风格</div>
   </div>
   <div class="hero-carousel" onclick="openFeature('showcase')" aria-busy="true">
-    <div class="carousel-inner"><img class="active is-visible" src="https://taoyouming308-ui.github.io/img/showcase_48_%E8%B6%85%E7%9F%AD%E5%8F%91_2026-06-14T09-27-38.jpg" alt="" draggable="false"></div>
+    <div class="carousel-inner"></div>
     <div class="carousel-dots" id="carousel-dots"></div>
   </div>
   <div class="home-links">
@@ -1560,8 +1560,7 @@ document.addEventListener('DOMContentLoaded', () => {
   var carouselInitialShown = false;
 
   var LOCAL_CAROUSEL = [
-    'https://taoyouming308-ui.github.io/img/showcase_48_%E8%B6%85%E7%9F%AD%E5%8F%91_2026-06-14T09-27-38.jpg',
-    'https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg',
+    'https://taoyouming308-ui.github.io/img/bleach-showcase.jpg',
   ];
 
   function preloadCarouselImage(url) {
@@ -1733,8 +1732,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
-  // 首页轮播：HTML里已写死首图，直接等Supabase数据来升级
+  // 首页轮播：先显示本地图 → Supabase数据来了再升级
   (function loadCarousel(){
+    // 立即显示本地默认图
+    renderCarousel(LOCAL_CAROUSEL);
     fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&is_carousel=eq.true&limit=20', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
