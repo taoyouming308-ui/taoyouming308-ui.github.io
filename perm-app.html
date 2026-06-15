@@ -1360,6 +1360,16 @@ function getLocalDateStr() { return getLocalDate(new Date()); }
 async function loadPermData() {
   if (DATA_LOADING) return;
   DATA_LOADING = true;
+
+  // ★ 离线模式：先从localStorage加载缓存，保证即使网络慢也能立即查询
+  var localPermData = null;
+  try { localPermData = JSON.parse(localStorage.getItem('perm_data_offline')); } catch(e) {}
+  if (localPermData && Array.isArray(localPermData) && localPermData.length > 0) {
+    PERM_DATA_CACHE = localPermData;
+    DATA_LOADED = true;
+    console.log('离线缓存: 加载 ' + PERM_DATA_CACHE.length + ' 条方案');
+  }
+
   try {
     const resp = await fetch(`${SUPABASE_URL}/rest/v1/perm_data?select=*`, {
       headers: { 'apikey': SUPABASE_KEY }
@@ -1382,29 +1392,34 @@ async function loadPermData() {
       } catch(e) { errors++; }
     });
     PERM_DATA_CACHE = cache;
+    // ★ 保存到localStorage供离线使用
+    try { localStorage.setItem('perm_data_offline', JSON.stringify(cache)); } catch(e) {}
     DATA_LOADED = true;
     DATA_ERROR = errors > 0 ? '有' + errors + '条数据解析失败' : '';
     console.log('Supabase: 加载 ' + PERM_DATA_CACHE.length + ' 条方案' + (DATA_ERROR ? ', ' + DATA_ERROR : ''));
   } catch(e) {
     console.error('Supabase加载失败:', e);
-    // 降级：尝试从本地备份数据加载
-    try {
-      if (typeof OLD_PERM_DATA_DUMMY !== 'undefined' && Array.isArray(OLD_PERM_DATA_DUMMY) && OLD_PERM_DATA_DUMMY.length > 0) {
-        PERM_DATA_CACHE = OLD_PERM_DATA_DUMMY.map(function(r) {
-          return {
-            hairType: r.hairType,
-            permStyle: r.permStyle,
-            soften: r.soften || {},
-            rods: r.rods || [],
-            warning: r.warning || null
-          };
-        });
-        DATA_LOADED = true;
-        console.log('降级: 使用本地备份数据 ' + PERM_DATA_CACHE.length + ' 条');
+    // ★ 网络失败时：如果已有缓存（从localStorage加载的），保留不退
+    if (!DATA_LOADED) {
+      // 降级：尝试从本地备份数据加载
+      try {
+        if (typeof OLD_PERM_DATA_DUMMY !== 'undefined' && Array.isArray(OLD_PERM_DATA_DUMMY) && OLD_PERM_DATA_DUMMY.length > 0) {
+          PERM_DATA_CACHE = OLD_PERM_DATA_DUMMY.map(function(r) {
+            return {
+              hairType: r.hairType,
+              permStyle: r.permStyle,
+              soften: r.soften || {},
+              rods: r.rods || [],
+              warning: r.warning || null
+            };
+          });
+          DATA_LOADED = true;
+          console.log('降级: 使用本地备份数据 ' + PERM_DATA_CACHE.length + ' 条');
+        }
+      } catch(e2) {
+        console.error('降级加载也失败:', e2);
+        DATA_ERROR = '数据加载失败，请刷新重试';
       }
-    } catch(e2) {
-      console.error('降级加载也失败:', e2);
-      DATA_ERROR = '数据加载失败，请刷新重试';
     }
   }
   DATA_LOADING = false;
@@ -2137,9 +2152,22 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadBookings(showLoading) {
     var list = document.getElementById('booking-list');
     if (!list) return;
-    if (showLoading !== false) {
-      list.innerHTML = '<div class="booking-loading">加载中...</div>';
+
+    // ★ 离线模式：先从localStorage渲染缓存，再异步刷新
+    var cacheKey = 'booking_offline_' + BOOKING_SHOP + '_' + BOOKING_DATE;
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
+
+    if (showLoading === false && cached && cached.length > 0) {
+      // 轮询刷新时直接显示已缓存数据（不闪）
+      renderBookings(cached, list, false);
+    } else if (cached && cached.length > 0) {
+      // 首次加载：先显示缓存，后面刷新
+      renderBookings(cached, list, true);
+    } else if (showLoading !== false) {
+      list.innerHTML = '<div class=\"booking-loading\">加载中...</div>';
     }
+
     fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
@@ -2148,25 +2176,40 @@ document.addEventListener('DOMContentLoaded', () => {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
       BOOKINGS_CACHE = rows;
-      if (rows.length === 0) {
-        list.innerHTML = '<div class="no-results"><div class="icon">📭</div>暂无预约</div>';
-        return;
-      }
-      var html = '';
-      rows.forEach(function(r){
-        html += '<div class="booking-item">';
-        html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+(r.notes ? '📝 '+esc(r.notes) : esc(r.time_label||''))+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
-        html += '<div style="display:flex;align-items:center;">';
-        html += '<div><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name)+'</div></div>';
-        if (r.customer_phone) {
-          html += '<span class="bi-plan-btn" data-phone="'+r.customer_phone+'" data-name="'+esc(r.customer_name||'')+'" data-bdate="'+(r.date||'')+'">方案</span>';
-        }
-        html += '</div></div>';
-      });
-      list.innerHTML = html;
+      // ★ 保存到localStorage供离线使用
+      try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch(e) {}
+      renderBookings(rows, list, false);
     }).catch(function(e){
-      list.innerHTML = '<div class="no-results"><div class="icon">⚠️</div>加载失败，请刷新重试</div>';
+      // ★ 网络失败时：有缓存就保留，无缓存才显示错误
+      if (!cached || cached.length === 0) {
+        list.innerHTML = '<div class=\"no-results\"><div class=\"icon\">⚠️</div>网络离线，请检查连接</div>';
+      }
     });
+  }
+
+  // ★ 独立渲染函数，避免重复代码
+  function renderBookings(rows, list, isOffline) {
+    if (rows.length === 0) {
+      list.innerHTML = '<div class=\"no-results\"><div class=\"icon\">📭</div>暂无预约</div>';
+      return;
+    }
+    var html = '';
+    rows.forEach(function(r){
+      html += '<div class=\"booking-item\">';
+      html += '<div class=\"bi-left\"><div class=\"bi-name\">'+esc(r.customer_name || '待定')+'</div><div class=\"bi-meta\">'+(r.notes ? '📝 '+esc(r.notes) : esc(r.time_label||''))+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
+      html += '<div style=\"display:flex;align-items:center;\">';
+      html += '<div><div class=\"bi-time\">'+esc(r.time_label||'')+'</div><div class=\"bi-barber\">'+esc(r.barber_name)+'</div></div>';
+      if (r.customer_phone) {
+        html += '<span class=\"bi-plan-btn\" data-phone=\"'+r.customer_phone+'\" data-name=\"'+esc(r.customer_name||'')+'\" data-bdate=\"'+(r.date||'')+'\">方案</span>';
+      }
+      html += '</div></div>';
+    });
+    if (isOffline) {
+      // 缓存数据旁加个小标记
+      list.innerHTML = html;
+    } else {
+      list.innerHTML = html;
+    }
   }
 
   function esc(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
