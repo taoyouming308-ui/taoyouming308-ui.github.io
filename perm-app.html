@@ -1273,6 +1273,7 @@ body {
       .identity-bar .switch-btn { color:var(--accent); cursor:pointer; font-size:12px; }
       .identity-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
       .identity-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:300px; width:90%; }
+      .identity-modal .reg-form input { width:100%; margin-bottom:10px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:14px; box-sizing:border-box; }
       .identity-modal h3 { font-size:16px; margin-bottom:16px; color:var(--text); text-align:center; }
       .identity-modal .opt { display:block; width:100%; padding:12px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
       .identity-modal .opt:active { background:var(--surface-light); border-color:var(--accent); }
@@ -2006,7 +2007,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showIdentityModal() {
-    // 防重复
     var existing = document.getElementById('identity-modal');
     if (existing) { existing.remove(); }
     var div = document.createElement('div');
@@ -2017,8 +2017,21 @@ document.addEventListener('DOMContentLoaded', () => {
     barbers.forEach(function(b){
       opts += '<button class="opt" onclick="selectIdentity(&quot;'+b+'&quot;)">'+b+'</button>';
     });
-    div.innerHTML = '<div class="box"><h3>选择你的身份</h3><div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px;">选好后不可自行更改，如需修改请联系店主</div>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button></div>';
+    div.innerHTML = '<div class="box"><h3>选择你的身份</h3><div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px;">选好后不可自行更改，如需修改请联系店主</div>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button><button class="opt" id="register-btn" style="margin-top:10px;color:var(--accent);">📝 注册新员工</button></div>';
     document.body.appendChild(div);
+    document.getElementById('register-btn').onclick = function(){
+      var box = div.querySelector('.box');
+      box.innerHTML =
+        '<h3>注册新员工</h3>' +
+        '<div class="reg-form">' +
+          '<input name="reg-name" placeholder="姓名" required>' +
+          '<input name="reg-pass" type="password" placeholder="密码" required>' +
+          '<input name="reg-pass2" type="password" placeholder="重复密码" required>' +
+          '<button class="opt" id="reg-submit">提交注册</button>' +
+          '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '</div>';
+      document.getElementById('reg-submit').onclick = window.registerEmployee;
+    };
   }
 
   window.selectIdentity = function(name) {
@@ -2036,6 +2049,34 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(function(e){ console.warn('身份同步失败:', e); });
     }
     loadBookings();
+  };
+
+  window.registerEmployee = async function(){
+    var box = document.querySelector('#identity-modal .box');
+    if (!box) return;
+    var inputs = box.querySelectorAll('input');
+    var username = inputs[0].value.trim();
+    var pass = inputs[1].value;
+    var pass2 = inputs[2].value;
+    if (!username || !pass || !pass2) { alert('请完整填写'); return; }
+    if (pass !== pass2) { alert('两次密码不一致'); return; }
+    var btn = document.getElementById('reg-submit');
+    if (btn) btn.disabled = true;
+    try {
+      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
+        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', active:false })
+      });
+      if (!res.ok) throw new Error('提交失败');
+      alert('注册成功，等待店主审核');
+      var modal = document.getElementById('identity-modal');
+      if (modal) modal.remove();
+    } catch(e) {
+      alert('注册失败，请重试');
+      if (btn) btn.disabled = false;
+    }
   };
 
   window.switchShop = function(shop) {

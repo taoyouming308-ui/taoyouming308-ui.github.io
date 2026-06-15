@@ -95,7 +95,6 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="tab" data-tab="perm">烫发方案</div>
     <div class="tab" data-tab="images">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
     <div class="tab" data-tab="carousel">轮播管理</div>
-    <div class="tab" data-tab="identity">身份管理</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -136,31 +135,16 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="tab-carousel" style="display:none">
-      <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（建议750×1000px）</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（仅显示已审核的HTTP图片，建议750×1000px）</div>
       <div style="margin-bottom:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
-        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">📎 上传本地图片（jpg/png）</label>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <input type="file" id="car-file-input" accept="image/jpeg,image/png" style="flex:1;padding:8px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;">
-          <button class="btn-add" id="car-file-btn" style="white-space:nowrap;">上传</button>
-        </div>
-        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
-        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">🔗 轮播图 HTTP URL</label>
+        <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">轮播图 HTTP URL</label>
         <input type="url" id="car-url" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;border:1px solid #333;border-radius:6px;background:#000;color:#fff;font-size:13px;margin-bottom:10px;">
         <button class="btn-add" id="car-upload-btn">保存</button>
         <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
       </div>
-      <button class="btn-add" onclick="showAddFromShowcase()">📸 从展示库添加</button>
       <table>
-        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>排序</th><th>操作</th></tr></thead>
+        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>操作</th></tr></thead>
         <tbody id="table-carousel"></tbody>
-      </table>
-    </div>
-    <!-- 身份管理 -->
-    <div id="tab-identity" style="display:none">
-      <div style="font-size:12px;color:#888;margin-bottom:12px;">已注册的设备及其选定的发型师身份。点「修改」帮发型师更换身份。</div>
-      <table>
-        <thead><tr><th style="width:40px;">#</th><th>发型师</th><th>设备</th><th>注册时间</th><th style="width:140px;">操作</th></tr></thead>
-        <tbody id="table-identity"></tbody>
       </table>
     </div>
   </div>
@@ -302,7 +286,6 @@ function stopPendingPolling() {
   });
   document.getElementById('img-filter').addEventListener('change', loadImages);
   document.getElementById('car-upload-btn').addEventListener('click', uploadCarousel);
-  document.getElementById('car-file-btn').addEventListener('click', carouselFileUpload);
   document.getElementById('img-modal').addEventListener('click', closeImageModal);
   document.getElementById('close-img-btn').addEventListener('click', function(e) {
     e.stopPropagation();
@@ -315,12 +298,6 @@ function stopPendingPolling() {
     if (e.key === 'Enter') doLogin();
   });
 })();
-
-async function sha256(str) {
-  const enc = new TextEncoder().encode(str);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
 
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
@@ -340,22 +317,16 @@ async function doLogin() {
     await ensureOk(r, '登录失败');
     const rows = await r.json();
     const user = rows[0];
-    if (user && user.active !== false) {
-      // 哈希比对：密码明文不再存储和传输
-      const inputHash = 'sha256:' + await sha256(p);
-      if (user.password_hash === inputHash) {
-        localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
-        document.getElementById('login-page').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'block';
-        document.getElementById('login-error').textContent = '';
-        loadData('staff');
-        updatePendingBadge();
-        startPendingPolling();
-        connectRealtime();
-        return;
-      }
-    }
-    if (user && user.active === false) {
+    if (user && user.password_hash === p && user.active !== false) {
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('login-error').textContent = '';
+      loadData('staff');
+      updatePendingBadge();
+      startPendingPolling();
+      connectRealtime();
+    } else if (user && user.active === false) {
       document.getElementById('login-error').textContent = '账号已停用';
     } else {
       document.getElementById('login-error').textContent = '用户名或密码错误';
@@ -379,16 +350,14 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','identity'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-identity').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
   } else if (tab === 'carousel') {
     loadCarousel();
-  } else if (tab === 'identity') {
-    loadIdentities();
   } else {
     loadData(tab);
   }
@@ -424,19 +393,42 @@ function renderTable(tab, rows) {
       appendEmptyRow(tbody, 6);
       return;
     }
-    rows.forEach(function(r) {
-      const tr = el('tr');
-      const name = el('b', { text: r.username });
-      const role = el('span', { className: 'badge ' + (r.role === 'admin' ? 'badge-admin' : 'badge-staff'), text: r.role });
-      const status = el('span');
-      status.appendChild(el('span', { className: 'status-dot ' + (r.active ? 'status-active' : 'status-inactive') }));
-      status.appendChild(document.createTextNode(r.active ? '启用' : '停用'));
-      const actions = el('span');
-      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
-      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
-      appendCells(tr, [name, role, r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
-      tbody.appendChild(tr);
-    });
+    // 分开显示：在职 vs 待审核
+    var activeRows = rows.filter(function(r){ return r.active; });
+    var pendingRows = rows.filter(function(r){ return !r.active; });
+    if (pendingRows.length > 0) {
+      var sep = el('tr');
+      sep.innerHTML = '<td colspan="6" style="padding:12px 8px 4px;font-size:13px;color:var(--warning);border:none;">⏳ 待审核员工（'+pendingRows.length+'人）</td>';
+      tbody.appendChild(sep);
+      pendingRows.forEach(function(r) {
+        const tr = el('tr');
+        const name = el('b', { text: r.username });
+        const status = el('span', { text: '待审核', style: 'color:var(--warning);' });
+        const actions = el('span');
+        actions.appendChild(actionButton('通过', 'btn-edit', function(e) { approveStaff(r.id, e.currentTarget); }));
+        actions.appendChild(actionButton('拒绝', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
+        appendCells(tr, [name, '', '', status, (r.created_at || '').substring(0, 10), actions]);
+        tbody.appendChild(tr);
+      });
+    }
+    if (activeRows.length > 0) {
+      var sep2 = el('tr');
+      sep2.innerHTML = '<td colspan="6" style="padding:12px 8px 4px;font-size:13px;color:var(--text-secondary);border:none;">✅ 在职员工</td>';
+      tbody.appendChild(sep2);
+      activeRows.forEach(function(r) {
+        const tr = el('tr');
+        const name = el('b', { text: r.username });
+        const role = el('span', { className: 'badge ' + (r.role === 'admin' ? 'badge-admin' : 'badge-staff'), text: r.role });
+        const status = el('span');
+        status.appendChild(el('span', { className: 'status-dot status-active' }));
+        status.appendChild(document.createTextNode('启用'));
+        const actions = el('span');
+        actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
+        actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
+        appendCells(tr, [name, role, r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
+        tbody.appendChild(tr);
+      });
+    }
   } else if (tab === 'hair') {
     if (rows.length === 0) {
       appendEmptyRow(tbody, 5);
@@ -613,7 +605,7 @@ async function saveStaff(id) {
   };
   const pass = document.getElementById('f-pass').value;
   if (!id && !pass) { toast('请输入密码', 'err'); return; }
-  if (pass) data.password_hash = 'sha256:' + await sha256(pass);
+  if (pass) data.password_hash = pass;
   await upsert('staff', id, data);
 }
 
@@ -686,6 +678,23 @@ async function upsert(table, id, data) {
     toast('保存失败: ' + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+async function approveStaff(id, btn) {
+  setButtonBusy(btn, true);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ active: true })
+    });
+    if (!r.ok) throw new Error('审核失败');
+    toast('已通过审核');
+    loadData('staff');
+  } catch(e) {
+    toast('审核失败: '+e.message, 'err');
+    setButtonBusy(btn, false);
   }
 }
 
@@ -951,101 +960,28 @@ async function deleteImage(id, btn) {
     setButtonBusy(btn, false);
   }
 }
-// === 身份管理 ===
-var BARBER_LIST = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
-async function loadIdentities() {
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/barber_identities?select=*&order=created_at.asc`, {
-      headers: { 'apikey': SUPABASE_KEY }
-    });
-    await ensureOk(r, '加载失败');
-    const rows = await r.json();
-    const tbody = document.getElementById('table-identity');
-    clearNode(tbody);
-    if (!rows || rows.length === 0) {
-      appendEmptyRow(tbody, 5);
-      return;
-    }
-    rows.forEach(function(row, idx) {
-      const tr = el('tr');
-      tr.appendChild(el('td', { text: String(idx + 1) }));
-      tr.appendChild(el('td', { text: row.barber_name || '' }));
-      tr.appendChild(el('td', { style: 'font-size:11px;color:#666;', text: (row.device_id || '').slice(0,16) + '...' }));
-      tr.appendChild(el('td', { style: 'font-size:11px;color:#666;', text: row.created_at ? row.created_at.slice(0,10) : '' }));
-      const actions = el('td');
-      actions.appendChild(actionButton('修改', 'btn-edit', function() { showIdentityEdit(row); }));
-      tr.appendChild(actions);
-      tbody.appendChild(tr);
-    });
-  } catch(e) {
-    toast('加载失败: ' + e.message, 'err');
-    const tbody = document.getElementById('table-identity');
-    clearNode(tbody);
-    appendEmptyRow(tbody, 5);
-  }
-}
-function showIdentityEdit(row) {
-  var box = document.getElementById('modal-box');
-  var opts = BARBER_LIST.map(function(b){
-    return '<option value="'+b+'"'+(row.barber_name===b?' selected':'')+'>'+b+'</option>';
-  }).join('');
-  box.innerHTML =
-    '<h3>修改发型师身份</h3>' +
-    '<label>设备</label><input readonly style="font-size:11px;color:#666;" value="' + esc(row.device_id) + '">' +
-    '<label>当前身份</label><input readonly style="font-size:11px;" value="' + esc(row.barber_name) + '">' +
-    '<label>修改为</label><select id="edit-identity-select">' + opts + '</select>' +
-    '<div class="btn-row">' +
-    '  <button class="btn-save" onclick="saveIdentityEdit('+row.id+')">保存</button>' +
-    '  <button class="btn-cancel" onclick="closeModal()">取消</button>' +
-    '</div>';
-  document.getElementById('modal').classList.add('show');
-}
-async function saveIdentityEdit(id) {
-  var name = document.getElementById('edit-identity-select').value;
-  if (!name) { toast('请选择发型师', 'err'); return; }
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/barber_identities?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({ barber_name: name, updated_at: new Date().toISOString() })
-    });
-    await ensureOk(r, '修改失败');
-    toast('已更新，设备下次打开App自动同步', 'ok');
-    closeModal();
-    loadIdentities();
-  } catch(e) {
-    toast('修改失败: ' + e.message, 'err');
-  }
-}
 // === 轮播管理 ===
-var _carouselList = [];
 async function loadCarousel() {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,is_carousel,sort_order&is_carousel=eq.true&order=sort_order.asc.nullslast&limit=50`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status&status=eq.approved&order=created_at.asc&limit=50`, {
       headers: { 'apikey': SUPABASE_KEY }
     });
     await ensureOk(r, '加载失败');
     const rows = await r.json();
-    _carouselList = rows || [];
     const tbody = document.getElementById('table-carousel');
-    const list = _carouselList;
+    const list = rows || [];
     clearNode(tbody);
     if (list.length === 0) {
-      appendEmptyRow(tbody, 5);
+      appendEmptyRow(tbody, 4);
       return;
     }
-    list.forEach(function(img, idx) {
+    list.forEach(function(img) {
       const tr = el('tr');
       const previewCell = el('td');
       previewCell.appendChild(el('img', { src: img.image_url || '', style: 'width:60px;height:80px;object-fit:cover;border-radius:4px;' }));
       tr.appendChild(previewCell);
       tr.appendChild(el('td', { text: img.category || '' }));
       tr.appendChild(el('td', { text: img.uploaded_by || '' }));
-      const sortCell = el('td', { style: 'white-space:nowrap;' });
-      sortCell.appendChild(actionButton('上移', 'btn-edit', function() { moveCarouselUp(img.id); }));
-      sortCell.appendChild(actionButton('下移', 'btn-edit', function() { moveCarouselDown(img.id); }));
-      sortCell.appendChild(actionButton('置顶', 'btn-edit', function() { moveCarouselTop(img.id); }));
-      tr.appendChild(sortCell);
       const actions = el('td');
       actions.appendChild(actionButton('移除', 'btn-del', function(e) { deleteCarousel(img.id, e.currentTarget); }));
       tr.appendChild(actions);
@@ -1056,7 +992,7 @@ async function loadCarousel() {
     const tbody = document.getElementById('table-carousel');
     clearNode(tbody);
     const tr = el('tr');
-    tr.appendChild(el('td', { colspan: 5, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
+    tr.appendChild(el('td', { colspan: 4, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
     tbody.appendChild(tr);
   }
 }
@@ -1067,10 +1003,10 @@ async function deleteCarousel(id, btn) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({is_carousel: false})
+      body: JSON.stringify({status: 'rejected'})
     });
     await ensureOk(r, '移除失败');
-    toast('已从轮播移除', 'ok');
+    toast('已拒绝', 'ok');
     loadCarousel();
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
@@ -1099,7 +1035,6 @@ async function uploadCarousel() {
         category: '轮播',
         title: '轮播',
         status: 'approved',
-        is_carousel: true,
         uploaded_by: '管理员',
         created_at: new Date().toISOString()
       })
@@ -1115,180 +1050,7 @@ async function uploadCarousel() {
     if (btn) btn.disabled = false;
   }
 }
-// === 从展示库添加到轮播 ===
-async function showAddFromShowcase() {
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category&status=eq.approved&is_carousel=neq.true&limit=50`, {
-      headers: { 'apikey': SUPABASE_KEY }
-    });
-    await ensureOk(r, '加载失败');
-    const rows = await r.json();
-    var box = document.getElementById('modal-box');
-    if (!rows || rows.length === 0) {
-      box.innerHTML = '<h3>从展示库添加</h3><div style="text-align:center;padding:30px;color:#888;">暂无可用展示图片</div><div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
-      document.getElementById('modal').classList.add('show');
-      return;
-    }
-    var html = '<h3>从展示库添加</h3><div style="font-size:12px;color:#888;margin-bottom:12px;">选择要加入轮播的展示图片</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
-    rows.forEach(function(img) {
-      html += '<div style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;" onclick="addToCarousel('+img.id+',this)">';
-      html += '<img src="'+esc(img.image_url)+'" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;">';
-      html += '<div style="font-size:10px;color:#888;padding:4px;text-align:center;">'+esc(img.category||'')+'</div></div>';
-    });
-    html += '</div><div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
-    box.innerHTML = html;
-    document.getElementById('modal').classList.add('show');
-  } catch(e) {
-    toast('加载展示库失败: ' + e.message, 'err');
-  }
-}
-async function addToCarousel(id, el) {
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({ is_carousel: true })
-    });
-    await ensureOk(r, '添加失败');
-    el.style.borderColor = '#4ade80';
-    el.style.opacity = '0.5';
-    toast('已加入轮播', 'ok');
-  } catch(e) {
-    toast('添加失败: ' + e.message, 'err');
-  }
-}
-// === 轮播本地文件上传 ===
-async function carouselFileUpload() {
-  const fileInput = document.getElementById('car-file-input');
-  const file = fileInput.files[0];
-  if (!file) { toast('请先选择图片文件', 'err'); return; }
-  if (!['image/jpeg','image/png'].includes(file.type)) { toast('仅支持 JPG/PNG 格式', 'err'); return; }
-  const btn = document.getElementById('car-file-btn');
-  if (btn) btn.disabled = true;
-  const msg = document.getElementById('car-msg');
-  msg.textContent = '上传中...';
-  const ext = file.name.split('.').pop() || (file.type === 'image/png' ? 'png' : 'jpg');
-  const filename = 'carousel/' + Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.' + ext;
-  try {
-    const uploadR = await fetch(`${SUPABASE_URL}/storage/v1/object/showcase/${filename}`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
-      body: file
-    });
-    await ensureOk(uploadR, '上传到存储失败');
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/showcase/${filename}`;
-    const insertR = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({
-        image_url: publicUrl,
-        category: '轮播图',
-        status: 'pending',
-        uploaded_by: '管理员',
-        created_at: new Date().toISOString()
-      })
-    });
-    await ensureOk(insertR, '写入数据库失败');
-    msg.textContent = '上传成功，已加入待审核列表';
-    fileInput.value = '';
-    loadCarousel();
-  } catch(e) {
-    msg.textContent = '上传失败: ' + e.message;
-    toast('上传失败: ' + e.message, 'err');
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-// === 轮播排序 ===
-function findCarouselIdx(id) {
-  for (var i = 0; i < _carouselList.length; i++) {
-    if (_carouselList[i].id === id) return i;
-  }
-  return -1;
-}
-async function moveCarouselUp(id) {
-  var idx = findCarouselIdx(id);
-  if (idx <= 0) { toast('已经是第一张', 'err'); return; }
-  var cur = _carouselList[idx];
-  var prev = _carouselList[idx - 1];
-  var curSort = cur.sort_order != null ? cur.sort_order : 0;
-  var prevSort = prev.sort_order != null ? prev.sort_order : 0;
-  setButtonBusy(document.querySelector('#table-carousel button'), true);
-  try {
-    await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(cur.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
-        body: JSON.stringify({ sort_order: prevSort })
-      }),
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(prev.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
-        body: JSON.stringify({ sort_order: curSort })
-      })
-    ]);
-    toast('上移成功', 'ok');
-    loadCarousel();
-  } catch(e) {
-    toast('排序失败: ' + e.message, 'err');
-  } finally {
-    setButtonBusy(document.querySelector('#table-carousel button'), false);
-  }
-}
-async function moveCarouselDown(id) {
-  var idx = findCarouselIdx(id);
-  if (idx < 0 || idx >= _carouselList.length - 1) { toast('已经是最后一张', 'err'); return; }
-  var cur = _carouselList[idx];
-  var nxt = _carouselList[idx + 1];
-  var curSort = cur.sort_order != null ? cur.sort_order : 0;
-  var nxtSort = nxt.sort_order != null ? nxt.sort_order : 0;
-  setButtonBusy(document.querySelector('#table-carousel button'), true);
-  try {
-    await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(cur.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
-        body: JSON.stringify({ sort_order: nxtSort })
-      }),
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(nxt.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
-        body: JSON.stringify({ sort_order: curSort })
-      })
-    ]);
-    toast('下移成功', 'ok');
-    loadCarousel();
-  } catch(e) {
-    toast('排序失败: ' + e.message, 'err');
-  } finally {
-    setButtonBusy(document.querySelector('#table-carousel button'), false);
-  }
-}
-async function moveCarouselTop(id) {
-  var idx = findCarouselIdx(id);
-  if (idx <= 0) { toast('已经是第一张', 'err'); return; }
-  var minSort = Infinity;
-  for (var i = 0; i < _carouselList.length; i++) {
-    if (_carouselList[i].sort_order != null && _carouselList[i].sort_order < minSort) {
-      minSort = _carouselList[i].sort_order;
-    }
-  }
-  var newSort = (minSort === Infinity ? 0 : minSort) - 1;
-  setButtonBusy(document.querySelector('#table-carousel button'), true);
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY },
-      body: JSON.stringify({ sort_order: newSort })
-    });
-    toast('已置顶', 'ok');
-    loadCarousel();
-  } catch(e) {
-    toast('置顶失败: ' + e.message, 'err');
-  } finally {
-    setButtonBusy(document.querySelector('#table-carousel button'), false);
-  }
-}
+
 // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
 function connectRealtime() {
   if (!localStorage.getItem('perm_admin')) return;
