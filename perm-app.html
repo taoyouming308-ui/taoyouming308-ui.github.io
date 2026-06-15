@@ -1732,11 +1732,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
-  // 首页轮播：先显示本地图 → Supabase数据来了再升级
+  // 首页轮播：HTML里已写死首图，直接等Supabase数据来升级
   (function loadCarousel(){
-    // 立即显示本地默认图
-    renderCarousel(LOCAL_CAROUSEL);
-    // 后台拉Supabase作品图，到了再升级
     fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&is_carousel=eq.true&limit=20', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
