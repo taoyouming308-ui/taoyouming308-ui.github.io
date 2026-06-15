@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="122">
+<html lang="zh-CN" data-version="126">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2034,11 +2034,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       var rows = await r.json();
       if (rows && rows.length > 0 && rows[0].active !== false) {
-        BOOKING_BARBER = rows[0].username;
-        localStorage.setItem('booking-barber', BOOKING_BARBER);
-        document.getElementById('current-identity').textContent = BOOKING_BARBER;
+        // 登录成功 → 弹出选名字页面，不直接绑定
         document.getElementById('identity-modal').remove();
-        loadBookings();
+        showBarberPicker();
       } else {
         errEl.textContent = '姓名或密码错误，或账号未通过审核';
         errEl.style.display = '';
@@ -2048,6 +2046,35 @@ document.addEventListener('DOMContentLoaded', () => {
       errEl.style.display = '';
     }
     if (btn) btn.disabled = false;
+  };
+
+  window.showBarberPicker = async function(){
+    var existing = document.getElementById('barber-picker-modal');
+    if (existing) existing.remove();
+    // 拉取所有 active 发型师作为可选身份
+    var barbers = [];
+    try {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&role=eq.staff&order=username.asc', {
+        headers: { 'apikey': SUPABASE_KEY }
+      });
+      var rows = await r.json();
+      if (rows && rows.length > 0) {
+        barbers = rows.map(function(r){ return r.username; });
+      }
+    } catch(e) { /* 兜底 */ }
+    if (barbers.length === 0) {
+      barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
+    }
+    var div = document.createElement('div');
+    div.className = 'identity-modal';
+    div.id = 'barber-picker-modal';
+    var html = '<div class="box"><h3>选择你的身份</h3><div style="max-height:400px;overflow-y:auto;">';
+    barbers.forEach(function(b){
+      html += '<button class="opt" onclick="selectIdentity(\''+b+'\')">'+b+'</button>';
+    });
+    html += '</div></div>';
+    div.innerHTML = html;
+    document.body.appendChild(div);
   };
 
   window.showRegisterForm = function(){
