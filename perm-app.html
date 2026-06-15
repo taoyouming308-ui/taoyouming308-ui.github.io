@@ -2844,34 +2844,9 @@ if (document.readyState === 'loading') {
       regs.forEach(function(reg) { reg.unregister(); });
     }).catch(function(e){ console.warn('Service Worker清理失败:', e); });
   }
-  // ★ 自动缓存清除：版本号变了就强制取最新
+  // ★ 记录当前版本（不自动刷新，避免CDN缓存导致的刷新循环）
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
-  var LAST_VER = parseInt(localStorage.getItem('app-version') || '0');
-  if (VER > LAST_VER && LAST_VER > 0) {
-    // 发现新版本 → 缓存旧版本信息，硬跳到新版本URL（绕过缓存）
-    localStorage.setItem('app-version', VER);
-    // 用时间戳做cache buster，确保浏览器拿新文件
-    var fresh = window.location.href.split('?')[0] + '?_t=' + Date.now();
-    window.location.replace(fresh);
-    return;
-  }
   localStorage.setItem('app-version', VER);
-  // ★ version.json 轮询兜底（每60秒检测一次）
-  function checkVersion() {
-    fetch('version.json?_t=' + Date.now())
-      .then(function(r){return r.json()})
-      .then(function(d){
-        if (d.version > VER) {
-          VER = d.version;
-          localStorage.setItem('app-version', VER);
-          var fresh = window.location.href.split('?')[0] + '?_t=' + Date.now();
-          window.location.replace(fresh);
-        }
-      })
-      .catch(function(e){ console.warn('版本检测失败:', e); });
-  }
-  checkVersion();
-  setInterval(checkVersion, 60000);
 })();
 </script>
 </body>
