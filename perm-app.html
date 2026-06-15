@@ -1737,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 立即显示本地默认图
     renderCarousel(LOCAL_CAROUSEL);
     // 后台拉Supabase作品图，到了再升级
-    fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&status=eq.approved&category=neq.%E6%BC%82%E5%8F%91&limit=20', {
+    fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=image_url&is_carousel=eq.true&limit=20', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.json(); })
     .then(function(rows){

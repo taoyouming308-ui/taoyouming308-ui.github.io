@@ -149,6 +149,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <button class="btn-add" id="car-upload-btn">保存</button>
         <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
       </div>
+      <button class="btn-add" onclick="showAddFromShowcase()">📸 从展示库添加</button>
       <table>
         <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>排序</th><th>操作</th></tr></thead>
         <tbody id="table-carousel"></tbody>
@@ -1020,7 +1021,7 @@ async function saveIdentityEdit(id) {
 var _carouselList = [];
 async function loadCarousel() {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status,sort_order&status=eq.approved&order=sort_order.asc.nullslast&limit=50`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,is_carousel,sort_order&is_carousel=eq.true&order=sort_order.asc.nullslast&limit=50`, {
       headers: { 'apikey': SUPABASE_KEY }
     });
     await ensureOk(r, '加载失败');
@@ -1066,10 +1067,10 @@ async function deleteCarousel(id, btn) {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({status: 'rejected'})
+      body: JSON.stringify({is_carousel: false})
     });
     await ensureOk(r, '移除失败');
-    toast('已拒绝', 'ok');
+    toast('已从轮播移除', 'ok');
     loadCarousel();
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
@@ -1098,6 +1099,7 @@ async function uploadCarousel() {
         category: '轮播',
         title: '轮播',
         status: 'approved',
+        is_carousel: true,
         uploaded_by: '管理员',
         created_at: new Date().toISOString()
       })
@@ -1111,6 +1113,48 @@ async function uploadCarousel() {
     toast('保存失败: ' + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+// === 从展示库添加到轮播 ===
+async function showAddFromShowcase() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category&status=eq.approved&is_carousel=neq.true&limit=50`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    await ensureOk(r, '加载失败');
+    const rows = await r.json();
+    var box = document.getElementById('modal-box');
+    if (!rows || rows.length === 0) {
+      box.innerHTML = '<h3>从展示库添加</h3><div style="text-align:center;padding:30px;color:#888;">暂无可用展示图片</div><div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
+      document.getElementById('modal').classList.add('show');
+      return;
+    }
+    var html = '<h3>从展示库添加</h3><div style="font-size:12px;color:#888;margin-bottom:12px;">选择要加入轮播的展示图片</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
+    rows.forEach(function(img) {
+      html += '<div style="cursor:pointer;border:2px solid transparent;border-radius:8px;overflow:hidden;" onclick="addToCarousel('+img.id+',this)">';
+      html += '<img src="'+esc(img.image_url)+'" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;">';
+      html += '<div style="font-size:10px;color:#888;padding:4px;text-align:center;">'+esc(img.category||'')+'</div></div>';
+    });
+    html += '</div><div class="btn-row"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>';
+    box.innerHTML = html;
+    document.getElementById('modal').classList.add('show');
+  } catch(e) {
+    toast('加载展示库失败: ' + e.message, 'err');
+  }
+}
+async function addToCarousel(id, el) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ is_carousel: true })
+    });
+    await ensureOk(r, '添加失败');
+    el.style.borderColor = '#4ade80';
+    el.style.opacity = '0.5';
+    toast('已加入轮播', 'ok');
+  } catch(e) {
+    toast('添加失败: ' + e.message, 'err');
   }
 }
 // === 轮播本地文件上传 ===
