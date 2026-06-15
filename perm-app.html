@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="127">
+<html lang="zh-CN" data-version="128">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2014,8 +2014,23 @@ document.addEventListener('DOMContentLoaded', () => {
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'identity-modal';
-    div.innerHTML = '<div class="box" id="login-box-main"><h3>员工登录</h3><div class="reg-form"><input id="login-name" placeholder="姓名" required><input id="login-pass" type="password" placeholder="密码" required><button class="opt" id="login-submit-btn">登录</button><button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showRegisterForm()">📝 注册新员工</button><div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
+    div.innerHTML = '<div class="box" id="login-box-main"><h3 style="margin-bottom:20px;">自由手艺人</h3><div class="reg-form"><button class="opt" id="show-login-btn">登录</button><button class="opt" style="color:var(--accent);" id="show-register-btn">注册新员工</button><div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
     document.body.appendChild(div);
+    document.getElementById('show-login-btn').onclick = showLoginForm;
+    document.getElementById('show-register-btn').onclick = function(){ showRegisterForm(); };
+  }
+
+  function showLoginForm() {
+    var box = document.getElementById('login-box-main');
+    if (!box) return;
+    box.innerHTML =
+      '<h3>员工登录</h3><div class="reg-form">' +
+        '<input id="login-name" placeholder="姓名" required>' +
+        '<input id="login-pass" type="password" placeholder="密码" required>' +
+        '<button class="opt" id="login-submit-btn">登录</button>' +
+        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '<div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
+      '</div>';
     document.getElementById('login-submit-btn').onclick = doAppLogin;
     document.getElementById('login-pass').onkeydown = function(e){ if(e.key==='Enter') doAppLogin(); };
   }
@@ -2087,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '<input id="reg-pass" type="password" placeholder="密码" required>' +
         '<input id="reg-pass2" type="password" placeholder="重复密码" required>' +
         '<button class="opt" id="reg-submit-btn">提交注册</button>' +
-        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回登录</button>' +
+        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
         '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
       '</div>';
     document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
