@@ -315,6 +315,12 @@ function stopPendingPolling() {
   });
 })();
 
+async function sha256(str) {
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
   try {
@@ -333,16 +339,22 @@ async function doLogin() {
     await ensureOk(r, '登录失败');
     const rows = await r.json();
     const user = rows[0];
-    if (user && user.password_hash === p && user.active !== false) {
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
-      document.getElementById('login-page').style.display = 'none';
-      document.getElementById('admin-panel').style.display = 'block';
-      document.getElementById('login-error').textContent = '';
-      loadData('staff');
-      updatePendingBadge();
-      startPendingPolling();
-      connectRealtime();
-    } else if (user && user.active === false) {
+    if (user && user.active !== false) {
+      // 哈希比对：密码明文不再存储和传输
+      const inputHash = 'sha256:' + await sha256(p);
+      if (user.password_hash === inputHash) {
+        localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('login-error').textContent = '';
+        loadData('staff');
+        updatePendingBadge();
+        startPendingPolling();
+        connectRealtime();
+        return;
+      }
+    }
+    if (user && user.active === false) {
       document.getElementById('login-error').textContent = '账号已停用';
     } else {
       document.getElementById('login-error').textContent = '用户名或密码错误';
@@ -600,7 +612,7 @@ async function saveStaff(id) {
   };
   const pass = document.getElementById('f-pass').value;
   if (!id && !pass) { toast('请输入密码', 'err'); return; }
-  if (pass) data.password_hash = pass;
+  if (pass) data.password_hash = 'sha256:' + await sha256(pass);
   await upsert('staff', id, data);
 }
 
