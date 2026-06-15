@@ -232,11 +232,12 @@ body {
 
 <script>
 const API_BASE = 'https://headquarters-brunswick-honolulu-liberal.trycloudflare.com';
-// 回退到店内本地服务器
 const LOCAL_API = 'http://192.168.3.250:8890';
+const API_TIMEOUT = 8000;
 let currentScenario = '';
 let messages = [];
 let serverOnline = false;
+let serverCheckDone = false;
 let conversationId = null;
 let isListening = false;
 let recognition = null;
@@ -264,24 +265,25 @@ async function loadScenarios() {
       选一个场景开始练习<br>
       和AI顾客对话结束后会获得评分和改进建议
     </div>
-  `;
-
+    </div>
+    <div class="server-status" id="serverStatus">● 连接中...</div>
   checkServer();
 }
 
 async function checkServer() {
   const indicator = document.getElementById('serverStatus');
-  // 尝试隧道
+  serverCheckDone = false;
   try {
-    let r = await fetch(API_BASE + '/api/health', {method:'GET', signal:AbortSignal.timeout(5000)});
-    if (r.ok) { serverOnline = true; indicator.textContent = '● 已连接(外网)'; indicator.style.color = '#00ba7c'; return; }
+    let r = await fetch(API_BASE + '/api/health', {method:'GET', signal:AbortSignal.timeout(API_TIMEOUT)});
+    if (r.ok) { serverOnline = true; serverCheckDone = true; indicator.textContent = '● 已连接'; indicator.style.color = '#00ba7c'; return; }
   } catch(e) {}
-  // 尝试本地
   try {
     let r = await fetch(LOCAL_API + '/api/health', {method:'GET', signal:AbortSignal.timeout(3000)});
-    if (r.ok) { serverOnline = true; indicator.textContent = '● 已连接(店内)'; indicator.style.color = '#00ba7c'; return; }
+    if (r.ok) { serverOnline = true; serverCheckDone = true; indicator.textContent = '● 已连接(店内)'; indicator.style.color = '#00ba7c'; return; }
   } catch(e) {}
-  indicator.textContent = '○ 服务器未连接，功能不可用';
+  serverCheckDone = true;
+  serverOnline = false;
+  indicator.textContent = '○ 服务器离线，暂不支持对话练习';
   indicator.style.color = '#f4212e';
 }
 
@@ -308,7 +310,25 @@ async function startChat(scenarioId) {
 
   showPage('chatPage');
 
-  // AI顾客先开口
+  // 先检测服务器
+  if (!serverCheckDone) {
+    try {
+      let r = await fetch(API_BASE + '/api/health', {method:'GET', signal:AbortSignal.timeout(API_TIMEOUT)});
+      if (r.ok) { serverOnline = true; }
+    } catch(e) {}
+    serverCheckDone = true;
+  }
+
+  if (!serverOnline) {
+    document.getElementById('chatMessages').innerHTML =
+      '<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);font-size:15px;">' +
+      '⚠️ 服务器离线，暂时无法对话练习<br><br>' +
+      '<span style="font-size:13px;">请稍后再试，或确认网络连接正常</span><br><br>' +
+      '<button onclick="backToScenarios()" style="padding:10px 28px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;font-family:var(--font);">返回</button>' +
+      '</div>';
+    return;
+  }
+
   addMessage('customer', '你好～', true);
   document.getElementById('chatInput').disabled = false;
   document.getElementById('chatInput').focus();
