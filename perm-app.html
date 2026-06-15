@@ -1975,34 +1975,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function checkIdentity() {
-    // 先从localStorage读缓存（秒显示）
     var cached = localStorage.getItem('booking-barber');
     if (cached) {
       BOOKING_BARBER = cached;
-      document.getElementById('current-identity').textContent = cached || '全部发型师';
+      document.getElementById('current-identity').textContent = cached;
+    } else {
+      showIdentityModal();
     }
-    // 再从Supabase同步（看管理员有没有改过）
-    fetch(SUPABASE_URL + '/rest/v1/barber_identities?device_id=eq.' + encodeURIComponent(DEVICE_ID) + '&select=barber_name', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); })
-    .then(function(rows){
-      if (rows && rows.length > 0 && rows[0].barber_name) {
-        var remoteName = rows[0].barber_name;
-        if (remoteName !== BOOKING_BARBER) {
-          // 管理员在后台改了 → 同步更新
-          BOOKING_BARBER = remoteName;
-          localStorage.setItem('booking-barber', remoteName);
-          document.getElementById('current-identity').textContent = remoteName;
-          if (typeof loadBookings === 'function') loadBookings(false);
-        }
-      } else if (!BOOKING_BARBER) {
-        // 无缓存 + Supabase无记录 → 弹窗选身份
-        showIdentityModal();
-      }
-    }).catch(function(){
-      // Supabase查不到 → 有缓存就用缓存，没有就弹窗
-      if (!BOOKING_BARBER) showIdentityModal();
-    });
   }
 
   var DOW = ['日','一','二','三','四','五','六'];
@@ -2035,27 +2014,59 @@ document.addEventListener('DOMContentLoaded', () => {
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'identity-modal';
-    var barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
-    var opts = '';
-    barbers.forEach(function(b){
-      opts += '<button class="opt" onclick="selectIdentity(&quot;'+b+'&quot;)">'+b+'</button>';
-    });
-    div.innerHTML = '<div class="box"><h3>选择你的身份</h3><div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px;">选好后不可自行更改，如需修改请联系店主</div>'+opts+'<button class="opt" style="color:var(--text-secondary);" onclick="selectIdentity(&quot;&quot;)">🔓 查看全部</button><button class="opt" id="register-btn" style="margin-top:10px;color:var(--accent);">📝 注册新员工</button></div>';
+    div.innerHTML = '<div class="box" id="login-box-main"><h3>员工登录</h3><div class="reg-form"><input id="login-name" placeholder="姓名" required><input id="login-pass" type="password" placeholder="密码" required><button class="opt" id="login-submit-btn">登录</button><button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showRegisterForm()">📝 注册新员工</button><div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
     document.body.appendChild(div);
-    document.getElementById('register-btn').onclick = function(){
-      var box = div.querySelector('.box');
-      box.innerHTML =
-        '<h3>注册新员工</h3>' +
-        '<div class="reg-form">' +
-          '<input name="reg-name" placeholder="姓名" required>' +
-          '<input name="reg-pass" type="password" placeholder="密码" required>' +
-          '<input name="reg-pass2" type="password" placeholder="重复密码" required>' +
-          '<button class="opt" id="reg-submit">提交注册</button>' +
-          '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
-        '</div>';
-      document.getElementById('reg-submit').onclick = window.registerEmployee;
-    };
+    document.getElementById('login-submit-btn').onclick = doAppLogin;
+    document.getElementById('login-pass').onkeydown = function(e){ if(e.key==='Enter') doAppLogin(); };
   }
+
+  window.doAppLogin = async function(){
+    var name = document.getElementById('login-name').value.trim();
+    var pass = document.getElementById('login-pass').value;
+    var errEl = document.getElementById('login-error');
+    if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
+    var btn = document.getElementById('login-submit-btn');
+    if (btn) btn.disabled = true;
+    try {
+      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
+        headers: { 'apikey': SUPABASE_KEY }
+      });
+      var rows = await r.json();
+      if (rows && rows.length > 0 && rows[0].active !== false) {
+        BOOKING_BARBER = rows[0].username;
+        localStorage.setItem('booking-barber', BOOKING_BARBER);
+        document.getElementById('current-identity').textContent = BOOKING_BARBER;
+        document.getElementById('identity-modal').remove();
+        loadBookings();
+      } else {
+        errEl.textContent = '姓名或密码错误，或账号未通过审核';
+        errEl.style.display = '';
+      }
+    } catch(e) {
+      errEl.textContent = '登录失败，请重试';
+      errEl.style.display = '';
+    }
+    if (btn) btn.disabled = false;
+  };
+
+  window.showRegisterForm = function(){
+    var box = document.getElementById('login-box-main');
+    if (!box) return;
+    box.innerHTML =
+      '<h3>注册新员工</h3>' +
+      '<div class="reg-form">' +
+        '<input id="reg-name" placeholder="姓名" required>' +
+        '<input id="reg-pass" type="password" placeholder="密码" required>' +
+        '<input id="reg-pass2" type="password" placeholder="重复密码" required>' +
+        '<button class="opt" id="reg-submit-btn">提交注册</button>' +
+        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回登录</button>' +
+        '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
+      '</div>';
+    document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
+  };
+
+  window.selectIdentity = function(name) {
 
   window.selectIdentity = function(name) {
     BOOKING_BARBER = name;
@@ -2075,15 +2086,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.registerEmployee = async function(){
-    var box = document.querySelector('#identity-modal .box');
-    if (!box) return;
-    var inputs = box.querySelectorAll('input');
-    var username = inputs[0].value.trim();
-    var pass = inputs[1].value;
-    var pass2 = inputs[2].value;
-    if (!username || !pass || !pass2) { alert('请完整填写'); return; }
-    if (pass !== pass2) { alert('两次密码不一致'); return; }
-    var btn = document.getElementById('reg-submit');
+    var username = document.getElementById('reg-name').value.trim();
+    var pass = document.getElementById('reg-pass').value;
+    var pass2 = document.getElementById('reg-pass2').value;
+    var errEl = document.getElementById('reg-error');
+    if (!username || !pass || !pass2) { errEl.textContent='请完整填写'; errEl.style.display=''; return; }
+    if (pass !== pass2) { errEl.textContent='两次密码不一致'; errEl.style.display=''; return; }
+    var btn = document.getElementById('reg-submit-btn');
     if (btn) btn.disabled = true;
     try {
       var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
@@ -2094,10 +2103,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (!res.ok) throw new Error('提交失败');
       alert('注册成功，等待店主审核');
-      var modal = document.getElementById('identity-modal');
-      if (modal) modal.remove();
+      document.getElementById('identity-modal').remove();
     } catch(e) {
-      alert('注册失败，请重试');
+      errEl.textContent='注册失败，请重试'; errEl.style.display='';
       if (btn) btn.disabled = false;
     }
   };
@@ -2107,11 +2115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('booking-barber');
     localStorage.removeItem('install_guide_done');
     BOOKING_BARBER = '';
-    // 删除Supabase记录
-    fetch(SUPABASE_URL + '/rest/v1/barber_identities?device_id=eq.' + encodeURIComponent(DEVICE_ID), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY }
-    }).catch(function(){});
     location.reload();
   };
 
