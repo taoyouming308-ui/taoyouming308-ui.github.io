@@ -583,6 +583,17 @@ body {
     .carousel-box img { width:100%; height:100%; object-fit:cover; display:none; }
     .carousel-box img.active { display:block; }
 
+    /* 安装引导 */
+    #install-guide { position:fixed; z-index:9999; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    #install-guide .ig-mask { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); }
+    #install-guide .ig-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:30px 28px 20px; max-width:300px; width:85%; text-align:center; z-index:1; }
+    #install-guide .ig-arrow { margin-bottom:8px; }
+    #install-guide .ig-title { font-size:18px; font-weight:600; color:var(--text); margin-bottom:16px; }
+    #install-guide .ig-step { font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:4px; }
+    #install-guide .ig-step b { color:var(--text); }
+    #install-guide .ig-icon { font-size:40px; margin-bottom:10px; }
+    #install-guide .ig-close { display:inline-block; margin-top:18px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
+
     .home-links { padding:32px 24px 60px; display:flex; flex-direction:column; max-width:360px; margin:0 auto; }
     .home-link { padding:18px 0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
     .home-link:last-child { border-bottom:none; }
@@ -1565,6 +1576,44 @@ document.addEventListener('DOMContentLoaded', () => {
       idx = (idx + 1) % imgs.length;
       imgs[idx].classList.add('active');
     }, 4000);
+  })();
+
+  // === 安装引导（仅首次提示）===
+  (function(){
+    // 已安装或已关闭过，跳过
+    if (window.navigator.standalone || localStorage.getItem('install_guide_done')) return;
+    
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var isAndroid = /Android/.test(navigator.userAgent);
+    if (!isIOS && !isAndroid) return;
+    
+    // 延迟弹出，等页面加载完
+    setTimeout(function(){
+      var overlay = document.createElement('div');
+      overlay.id = 'install-guide';
+      overlay.innerHTML = 
+        '<div class="ig-mask"></div>' +
+        (isIOS ? 
+          '<div class="ig-box">' +
+            '<div class="ig-arrow"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2v14m0 0l-4-4m4 4l4-4M6 20h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>' +
+            '<div class="ig-title">添加到主屏幕</div>' +
+            '<div class="ig-step">1. 点击底部 <b>分享</b> 按钮</div>' +
+            '<div class="ig-step">2. 选择 <b>添加到主屏幕</b></div>' +
+            '<div class="ig-close" onclick="closeInstallGuide()">知道了</div>' +
+          '</div>' :
+          '<div class="ig-box">' +
+            '<div class="ig-icon">📱</div>' +
+            '<div class="ig-title">安装App</div>' +
+            '<div class="ig-step">点击浏览器菜单 → <b>添加到主屏幕</b></div>' +
+            '<div class="ig-close" onclick="closeInstallGuide()">知道了</div>' +
+          '</div>');
+      document.body.appendChild(overlay);
+    }, 2000);
+    
+    window.closeInstallGuide = function(){
+      document.getElementById('install-guide').remove();
+      localStorage.setItem('install_guide_done', '1');
+    };
   })();
 
   // === Init selectors ===
