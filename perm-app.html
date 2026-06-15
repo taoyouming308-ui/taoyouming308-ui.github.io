@@ -594,6 +594,16 @@ body {
     #install-guide .ig-icon { font-size:40px; margin-bottom:10px; }
     #install-guide .ig-close { display:inline-block; margin-top:18px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
 
+    /* 微信/QQ 浏览器引导 */
+    #wx-guide { position:fixed; z-index:99999; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    #wx-guide .wx-mask { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); }
+    #wx-guide .wx-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px 28px 20px; max-width:320px; width:85%; text-align:center; z-index:1; }
+    #wx-guide .wx-icon { font-size:48px; margin-bottom:12px; }
+    #wx-guide .wx-title { font-size:18px; font-weight:600; color:var(--text); margin-bottom:12px; }
+    #wx-guide .wx-desc { font-size:14px; color:var(--text-secondary); line-height:1.8; margin-bottom:10px; }
+    #wx-guide .wx-desc b { color:var(--accent); }
+    #wx-guide .wx-close { display:inline-block; margin-top:14px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
+
     .home-links { padding:32px 24px 60px; display:flex; flex-direction:column; max-width:360px; margin:0 auto; }
     .home-link { padding:18px 0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
     .home-link:last-child { border-bottom:none; }
@@ -1581,6 +1591,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === 安装引导（仅首次提示）===
   (function(){
+    // 检测微信/QQ内置浏览器
+    var ua = navigator.userAgent;
+    var isWechat = /MicroMessenger/i.test(ua);
+    var isQQ = /QQ/i.test(ua) && !/MQQBrowser/i.test(ua);
+    if (isWechat || isQQ) {
+      var ov = document.createElement('div');
+      ov.id = 'wx-guide';
+      ov.innerHTML = '<div class="wx-mask"></div><div class="wx-box"><div class="wx-icon">'+(isWechat?'💬':'💻')+'</div><div class="wx-title">请在浏览器中打开</div><div class="wx-desc">'+(isWechat?'微信':'QQ')+'内无法添加到桌面，请点击右上角 <b>···</b> 选择 <b>在Safari中打开</b>（iPhone）或 <b>在浏览器中打开</b>（安卓）</div><div class="wx-close" onclick="this.parentElement.parentElement.remove()">我知道了</div></div>';
+      document.body.appendChild(ov);
+      return;
+    }
+    
     // 已安装或已关闭过，跳过
     if (window.navigator.standalone || localStorage.getItem('install_guide_done')) return;
     
