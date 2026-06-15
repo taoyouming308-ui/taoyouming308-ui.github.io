@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="129">
+<html lang="zh-CN" data-version="130">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1541,6 +1541,8 @@ const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据�
    ───────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DCL fired');
+  try {
 
   // ★ 打开App时先检查身份，未登录则弹窗覆盖首页
   checkIdentity();
@@ -2822,6 +2824,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // === PWA：静默更新检测（无Service Worker，HTTP缓存已设no-cache）===
+  } catch(e) { console.error('DCL error:', e); }
 });
 </script>
 
