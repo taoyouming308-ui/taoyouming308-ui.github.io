@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI陪练 · 自由手艺人</title>
+<style>
+:root {
+  --bg: #000000;
+  --surface: #16181c;
+  --surface-light: #1d1f23;
+  --text: #e7e9ea;
+  --text-secondary: #71767b;
+  --accent: #e7e9ea;
+  --border: #2f3336;
+  --danger: #f4212e;
+  --success: #00ba7c;
+  --warning: #ffd700;
+  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+/* Header */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 { font-size: 18px; font-weight: 700; text-align: center; }
+.header .sub { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 2px; }
+
+/* Page containers */
+.page { display: none; min-height: calc(100vh - 56px); }
+.page.active { display: flex; flex-direction: column; }
+
+/* ── 场景选择 ── */
+.scenario-grid {
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  flex: 1;
+}
+.scenario-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scenario-card:active { background: var(--surface-light); transform: scale(0.98); }
+.scenario-card .name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.scenario-card .desc { font-size: 13px; color: var(--text-secondary); }
+
+/* ── 对话页 ── */
+.chat-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.chat-header .back-btn {
+  background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 4px 8px;
+}
+.chat-header .scenario-name { font-size: 14px; font-weight: 600; flex: 1; }
+.chat-header .end-btn {
+  background: none; border: 1px solid var(--danger); color: var(--danger);
+  font-size: 12px; padding: 4px 12px; border-radius: 16px; cursor: pointer;
+  font-family: var(--font);
+}
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.msg {
+  max-width: 85%; padding: 10px 14px; border-radius: 16px;
+  font-size: 15px; line-height: 1.5; word-break: break-word;
+}
+.msg.customer {
+  align-self: flex-start;
+  background: var(--surface);
+  border-bottom-left-radius: 4px;
+}
+.msg.customer::before {
+  content: '💇‍♀️ '; font-size: 14px;
+}
+.msg.stylist {
+  align-self: flex-end;
+  background: #1d4ed8;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.msg.stylist::before {
+  content: '✂️ '; font-size: 14px;
+}
+.msg.typing {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.chat-input-bar {
+  display: flex; gap: 8px; padding: 10px 16px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.chat-input-bar textarea {
+  flex: 1; border: 1px solid var(--border); border-radius: 20px;
+  background: var(--bg); color: var(--text);
+  padding: 10px 16px; font-size: 15px; font-family: var(--font);
+  resize: none; outline: none; min-height: 40px; max-height: 100px;
+}
+.chat-input-bar textarea:focus { border-color: var(--text); }
+.chat-input-bar .send-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--text); color: var(--bg); border: none;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── 评分页 ── */
+.score-page { padding: 16px; }
+.total-score {
+  text-align: center; padding: 24px 0 16px;
+}
+.total-score .number { font-size: 56px; font-weight: 800; color: var(--accent); }
+.total-score .label { font-size: 14px; color: var(--text-secondary); }
+
+.score-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.score-item { }
+.score-item .label-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+.score-item .bar-bg { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.score-item .bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.6s; }
+
+.attitude-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;
+}
+.attitude-row .arrow { color: var(--text); font-size: 18px; }
+.attitude-row .val { color: var(--success); font-weight: 600; }
+.prob { color: var(--success); font-weight: 600; }
+
+.section-title { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: var(--text); }
+.strength-box {
+  background: var(--surface); border-radius: 10px; padding: 12px;
+  font-size: 14px; color: var(--success); margin-bottom: 8px;
+}
+.improvement-item {
+  background: var(--surface); border-radius: 10px; padding: 12px;
+  font-size: 14px; color: var(--text); margin-bottom: 6px;
+  border-left: 3px solid var(--danger);
+}
+
+.action-btns { display: flex; gap: 10px; margin-top: 16px; }
+.action-btns button {
+  flex: 1; padding: 12px; border-radius: 24px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--font);
+}
+.btn-primary { background: var(--text); color: var(--bg); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-back-home { background: var(--surface); color: var(--text-secondary); }
+
+/* 服务器状态指示 */
+.server-status {
+  position: fixed; bottom: 4px; right: 8px;
+  font-size: 10px; color: var(--text-secondary); opacity: 0.5;
+}
+
+/* 语音按钮 */
+.voice-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.voice-btn.listening { border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+/* 录音loading */
+.recording-hint { text-align: center; font-size: 12px; color: var(--danger); padding: 4px; }
+
+@media (max-width: 480px) {
+  body { max-width: 100%; }
+  .header { padding: 10px 12px; }
+  .scenario-grid { padding: 12px; }
+  .chat-messages { padding: 8px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AI 陪练</h1>
+  <div class="sub">真实顾客对话模拟 · 练口才 · 练专业 · 练自信</div>
+</div>
+
+<!-- 场景选择页 -->
+<div id="scenarioPage" class="page active">
+  <div class="scenario-grid" id="scenarioList"></div>
+  <div class="server-status" id="serverStatus">● 连接中...</div>
+</div>
+
+<!-- 对话页 -->
+<div id="chatPage" class="page">
+  <div class="chat-header">
+    <button class="back-btn" onclick="backToScenarios()">←</button>
+    <span class="scenario-name" id="chatScenarioName"></span>
+    <button class="end-btn" onclick="endConversation()">结束对话</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div id="recordingHint" class="recording-hint" style="display:none">🎙️ 录音中...</div>
+  <div class="chat-input-bar">
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+    <textarea id="chatInput" rows="1" placeholder="输入你的回答..." onkeydown="if(event.key=='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+    <button class="send-btn" onclick="sendMessage()">→</button>
+  </div>
+</div>
+
+<!-- 评分页 -->
+<div id="scorePage" class="page">
+  <div class="score-page" id="scoreContent"></div>
+</div>
+
+<script>
+const API_BASE = 'https://headquarters-brunswick-honolulu-liberal.trycloudflare.com';
+// 回退到店内本地服务器
+const LOCAL_API = 'http://192.168.3.250:8890';
+let currentScenario = '';
+let messages = [];
+let serverOnline = false;
+let conversationId = null;
+let isListening = false;
+let recognition = null;
+let totalTurns = 0;
+
+// 加载场景
+async function loadScenarios() {
+  const list = document.getElementById('scenarioList');
+  // 默认场景
+  const defaults = [
+    {id:'price_sensitive', name:'嫌贵型顾客', desc:'觉得烫发染发太贵，想砍价，需要你说服'},
+    {id:'damage_worried', name:'怕伤发质型顾客', desc:'上次烫染伤发了，心有余悸，需要专业知识安抚'},
+    {id:'undecided', name:'纠结型顾客', desc:'想改变但不知道做什么，需要你引导推荐'},
+    {id:'recommendation_seeker', name:'让发型师推荐的顾客', desc:'"你帮我推荐吧我不懂"——信任你但要求高'},
+    {id:'already_done_elsewhere', name:'做坏了来补救的顾客', desc:'在别家做坏了，沮丧焦虑，需要专业诊断和方案'}
+  ];
+
+  list.innerHTML = defaults.map(s => `
+    <div class="scenario-card" onclick="startChat('${s.id}')">
+      <div class="name">${s.name}</div>
+      <div class="desc">${s.desc}</div>
+    </div>
+  `).join('') + `
+    <div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;border-top:1px solid var(--border);margin-top:12px;">
+      选一个场景开始练习<br>
+      和AI顾客对话结束后会获得评分和改进建议
+    </div>
+  `;
+
+  checkServer();
+}
+
+async function checkServer() {
+  const indicator = document.getElementById('serverStatus');
+  // 尝试隧道
+  try {
+    let r = await fetch(API_BASE + '/api/health', {method:'GET', signal:AbortSignal.timeout(5000)});
+    if (r.ok) { serverOnline = true; indicator.textContent = '● 已连接(外网)'; indicator.style.color = '#00ba7c'; return; }
+  } catch(e) {}
+  // 尝试本地
+  try {
+    let r = await fetch(LOCAL_API + '/api/health', {method:'GET', signal:AbortSignal.timeout(3000)});
+    if (r.ok) { serverOnline = true; indicator.textContent = '● 已连接(店内)'; indicator.style.color = '#00ba7c'; return; }
+  } catch(e) {}
+  indicator.textContent = '○ 服务器未连接，功能不可用';
+  indicator.style.color = '#f4212e';
+}
+
+function getApiBase() {
+  return serverOnline ? API_BASE : LOCAL_API;
+}
+
+// 开始对话
+async function startChat(scenarioId) {
+  currentScenario = scenarioId;
+  messages = [];
+  totalTurns = 0;
+  conversationId = Date.now().toString();
+
+  const names = {
+    price_sensitive:'嫌贵型顾客', damage_worried:'怕伤发质型顾客',
+    undecided:'纠结型顾客', recommendation_seeker:'让发型师推荐的顾客',
+    already_done_elsewhere:'做坏了来补救的顾客'
+  };
+  document.getElementById('chatScenarioName').textContent = names[scenarioId] || '顾客';
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').disabled = true;
+
+  showPage('chatPage');
+
+  // AI顾客先开口
+  addMessage('customer', '你好～', true);
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('chatInput').focus();
+
+  // 获取AI开场白
+  try {
+    const r = await fetch(getApiBase() + '/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        scenario: scenarioId,
+        messages: [{"role":"user","content":"你好，欢迎光临！有什么可以帮你的吗？"}]
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+    const data = await r.json();
+    if (data.reply) {
+      removeTyping();
+      addMessage('customer', data.reply);
+      messages.push({role:'assistant', content:data.reply});
+    }
+  } catch(e) {
+    removeTyping();
+    document.getElementById('chatMessages').innerHTML +=
+      '<div style="text-align:center;color:var(--danger);font-size:13px;padding:10px;">⚠️ 连接服务器失败，稍后再试</div>';
+    document.getElementById('chatInput').disabled = true;
+  }
+}
+
+function addMessage(role, text, isTyping=false) {
+  const div = document.createElement('div');
+  div.className = isTyping ? 'msg customer typing' : 'msg ' + role;
+  div.textContent = text;
+  div.id = isTyping ? 'typingMsg' : '';
+  document.getElementById('chatMessages').appendChild(div);
+  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingMsg');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || document.getElementById('chatInput').disabled) return;
+
+  input.value = '';
+  addMessage('stylist', text);
+  messages.push({role:'user', content:text});
+  totalTurns++;
+  document.getElementById('chatInput').disabled = true;
+
+  // AI回复
+  addMessage('customer', '...', true);
+  try {
+    const conversation = [
+      {role:"system", content:"你扮演顾客回应发型师。"},
+      ...messages.map(m => ({role:m.role, content:m.content}))
+    ];
+
+    const r = await fetch(getApiBase() + '/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        scenario: currentScenario,
+        messages: conversation
+      }),
+      signal: AbortSignal.timeout(20000)
+    });
+    const data = await r.json();
+    removeTyping();
+    if (data.reply) {
+      addMessage('customer', data.reply);
+      messages.push({role:'assistant', content:data.reply});
+    }
+  } catch(e) {
+    removeTyping();
+    addMessage('customer', '（抱歉，我走神了，你刚才说什么？）');
+  }
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('chatInput').focus();
+}
+
+async function endConversation() {
+  if (messages.length < 2) {
+    backToScenarios();
+    return;
+  }
+  document.getElementById('chatInput').disabled = true;
+  showPage('scorePage');
+  document.getElementById('scoreContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);">🧠 正在分析对话表现...</div>';
+
+  try {
+    const r = await fetch(getApiBase() + '/api/score', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        scenario: currentScenario,
+        messages: messages
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await r.json();
+    renderScore(data);
+  } catch(e) {
+    document.getElementById('scoreContent').innerHTML = `
+      <div style="text-align:center;padding:40px;">
+        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+        <div style="color:var(--text-secondary);margin-bottom:16px;">评分生成失败，服务器连接异常</div>
+        <button class="btn-secondary" onclick="backToScenarios()" style="padding:12px 24px;border-radius:24px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);cursor:pointer;">返回首页</button>
+      </div>`;
+  }
+}
+
+function renderScore(data) {
+  const s = data.scores || {};
+  const total = data.total_score || Math.round(
+    ((s.专业度||0) + (s.共情力||0) + (s.引导能力||0) + (s.应变能力||0) + (s.自然度||0)) / 5 * 10
+  );
+
+  let html = `
+    <div class="total-score">
+      <div class="number">${total}</div>
+      <div class="label">综合评分</div>
+    </div>
+    <div class="score-bars">
+      ${['专业度','共情力','引导能力','应变能力','自然度'].map(k => `
+        <div class="score-item">
+          <div class="label-row"><span>${k}</span><span>${s[k]||0}/10</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${(s[k]||0)*10}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="attitude-row">
+      <span>态度变化:</span>
+      <span class="val">${data.initial_attitude||'未知'}</span>
+      <span class="arrow">→</span>
+      <span class="val">${data.final_attitude||'未知'}</span>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <span style="font-size:14px;color:var(--text-secondary);">成交可能性: </span>
+      <span class="prob">${data['成交可能性']||'中'}</span>
+    </div>
+    <div class="section-title">👍 做得好的</div>
+    <div class="strength-box">${data.strength||'继续加油！'}</div>
+    <div class="section-title">💡 改进建议</div>
+    ${(data.improvements||['暂无建议']).map(i => `<div class="improvement-item">${i}</div>`).join('')}
+    <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);text-align:center;">
+      本次训练对话 ${totalTurns} 轮
+    </div>
+    <div class="action-btns">
+      <button class="btn-primary" onclick="retrySame()">再来一次</button>
+      <button class="btn-secondary" onclick="backToScenarios()">换场景</button>
+    </div>
+  `;
+  document.getElementById('scoreContent').innerHTML = html;
+}
+
+function retrySame() {
+  showPage('scenarioPage');
+  setTimeout(() => startChat(currentScenario), 300);
+}
+
+function backToScenarios() {
+  document.getElementById('scenarioPage').classList.add('active');
+  document.getElementById('chatPage').classList.remove('active');
+  document.getElementById('scorePage').classList.remove('active');
+}
+
+function showPage(id) {
+  ['scenarioPage','chatPage','scorePage'].forEach(p => {
+    document.getElementById(p).classList.toggle('active', p === id);
+  });
+}
+
+// 语音输入
+function toggleVoice() {
+  const btn = document.getElementById('voiceBtn');
+  if (isListening) {
+    if (recognition) recognition.stop();
+    isListening = false;
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    document.getElementById('recordingHint').style.display = 'none';
+    return;
+  }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('当前浏览器不支持语音输入');
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    btn.classList.add('listening');
+    btn.textContent = '⏹';
+    document.getElementById('recordingHint').style.display = 'block';
+  };
+
+  recognition.onresult = (ev) => {
+    const text = ev.results[0][0].transcript;
+    document.getElementById('chatInput').value = text;
+    setTimeout(() => sendMessage(), 500);
+  };
+
+  recognition.onerror = () => {
+    isListening = false;
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    document.getElementById('recordingHint').style.display = 'none';
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    document.getElementById('recordingHint').style.display = 'none';
+  };
+
+  recognition.start();
+}
+
+// 启动
+loadScenarios();
+</script>
+</body>
+</html>
