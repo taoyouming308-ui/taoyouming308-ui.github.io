@@ -2011,7 +2011,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBookings(true);
   }
 
-  function showIdentityModal() {
+  window.showIdentityModal = function() {
     var existing = document.getElementById('identity-modal');
     if (existing) { existing.remove(); }
     var div = document.createElement('div');
