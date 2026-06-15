@@ -1,0 +1,21 @@
+{
+  "name": "自由手艺人",
+  "short_name": "自由手艺人",
+  "description": "自由手艺人·发型设计",
+  "start_url": "perm-app.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "apple-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

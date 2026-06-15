@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="128">
+<html lang="zh-CN" data-version="129">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1541,6 +1541,9 @@ const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据�
    ───────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  // ★ 打开App时先检查身份，未登录则弹窗覆盖首页
+  checkIdentity();
 
   // === 导航 ===
   window.openFeature = function(tabName) {
