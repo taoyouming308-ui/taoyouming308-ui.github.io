@@ -2237,17 +2237,23 @@ function initApp() {
       html += '<div class="booking-item' + (isReal ? ' real-customer' : '') + '">';
       html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div>';
 
-      var serviceName = r.service_name || '';
-      var serviceClass = '';
-      if (serviceName.indexOf('剪发') !== -1) serviceClass = ' cut';
-      else if (serviceName.indexOf('烫发') !== -1) serviceClass = ' perm';
-      else if (serviceName.indexOf('染发') !== -1) serviceClass = ' color';
-      else if (serviceName.indexOf('护理') !== -1) serviceClass = ' care';
-
-      if (serviceName || r.notes) {
+      var serviceRaw = r.service_name || '';
+      if (serviceRaw || r.notes) {
         html += '<div class="bi-service-row">';
-        if (serviceName) html += '<span class="bi-service-tag'+serviceClass+'">'+esc(serviceName)+'</span>';
-        if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
+        if (serviceRaw) {
+          var services = serviceRaw.split('、');
+          for (var si=0; si<services.length; si++) {
+            var sv = services[si].replace(/^预约/, '').trim();
+            if (!sv) continue;
+            var cls = '';
+            if (sv.indexOf('剪发') !== -1) cls = ' cut';
+            else if (sv.indexOf('烫发') !== -1) cls = ' perm';
+            else if (sv.indexOf('染发') !== -1) cls = ' color';
+            else if (sv.indexOf('护理') !== -1) cls = ' care';
+            html += '<span class="bi-service-tag'+cls+'">'+sv+'</span>';
+          }
+        }
+        if (r.notes) html += '<span class="bi-note">📝 '+r.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>';
         html += '</div>';
       }
       html += '<div style=\"display:flex;align-items:center;\">';
