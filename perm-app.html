@@ -2079,7 +2079,7 @@ function initApp() {
         barbers = rows.map(function(r){ return r.username; });
       }
     } catch(e) { /* 兜底 */ }
-    if (barbers.length === 0) {
+    if (barbers.length < 3) {
       barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
     }
     var div = document.createElement('div');
