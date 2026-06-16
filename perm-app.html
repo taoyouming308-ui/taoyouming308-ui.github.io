@@ -932,6 +932,7 @@ body {
       .thumb-grid { column-count:2; column-gap:8px; padding:0 0 16px; }
       .thumb-item { break-inside:avoid; margin-bottom:8px; cursor:pointer; border-radius:16px; overflow:hidden; background:var(--surface); animation:fadeIn 0.25s ease; }
       @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.05);opacity:0.8;} }
       .thumb-item img { width:100%; display:block; border-radius:16px 16px 0 0; }
       .thumb-item .thumb-label { font-size:12px; color:var(--text); padding:8px 10px; font-weight:500; }
       /* 上传按钮 */
@@ -1111,7 +1112,7 @@ body {
           }
           var desc = _catDesc[img.category] || (img.uploaded_by==='内置'?'内置展示图':'发型作品');
           var titleIcon = (tags==='高层次长发'||tags==='中长发')?'💇':'✂️';
-          var html = '<div class="showcase-card" data-tags="'+tags+'">' +
+          var html = '<div class="showcase-card" data-tags="'+escAttr(tags)+'">' +
             '<img class="showcase-img" src="'+img.image_url+'" alt="'+tags+'" loading="lazy">' +
             '<h3>'+titleIcon+' '+esc2(styleName)+'</h3>' +
             (aiDetail ? aiDetail : '<div class="sub">'+desc+'</div>') + '</div>';
@@ -2227,6 +2228,7 @@ function initApp() {
   }
 
   function esc(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function escAttr(s) { return (s||'').replace(/\"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function maskPhone(phone) {
     var s = String(phone || '');
     return s.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2');
@@ -2261,9 +2263,9 @@ function initApp() {
       var p = data;
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
       html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
-      html += '<div class="row"><span class="label">到店</span><span class="val">'+p.visits+'次</span></div>';
-      html += '<div class="row"><span class="label">均消</span><span class="val">¥'+p.avg_fee.toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">近12月</span><span class="val">'+p.freq_12m+'次 · ¥'+(p.total_12m||0).toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">到店</span><span class="val">'+Number(p.visits||0)+'次</span></div>';
+      html += '<div class="row"><span class="label">均消</span><span class="val">¥'+Number(p.avg_fee||0).toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
       html += '<div class="row"><span class="label">上次到店</span><span class="val">'+(p.last_visit||'无')+'</span></div>';
       if (p.months_since_last > 0) {
         html += '<div class="row"><span class="label">距上次</span><span class="val">'+p.months_since_last+'个月</span></div>';
@@ -2458,7 +2460,7 @@ function initApp() {
           htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
           if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
-          var avgTicket = visits > 0 ? Math.round(consum / visits) : (consum > 0 ? consum : 0);
+          var avgTicket = visits > 0 ? Math.round(consum / visits) : 0;
           if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">均消</span><span class="val">¥'+avgTicket+'</span></div>';
           // 上次消费项目（从notes取）
           var lastService = '';
