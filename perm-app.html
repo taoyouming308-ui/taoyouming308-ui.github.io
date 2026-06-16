@@ -1243,7 +1243,7 @@ body {
                 category: category,
                 title: category,
                 status: 'pending',
-                uploaded_by: '发型师',
+                uploaded_by: localStorage.getItem('booking-barber') || BOOKING_BARBER || '发型师',
                 created_at: new Date().toISOString()
             })
         }).then(function(r) {
