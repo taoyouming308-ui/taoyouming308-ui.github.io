@@ -28,7 +28,7 @@
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1286,14 +1286,15 @@ body {
       .booking-bar .shop-switch.on { color:var(--accent); border-color:var(--accent); }
       .booking-item { padding:14px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
       .booking-item.real-customer { background:rgba(112,128,144,0.12); border-left:3px solid rgba(112,128,144,0.5); }
-      .booking-item .bi-left { flex:1; }
+      .booking-item .bi-left { flex:1; min-width:0; }
+      .booking-item .bi-right { flex-shrink:0; margin-left:10px; }
       .booking-item .bi-name { font-size:15px; font-weight:600; color:var(--text); }
       .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
       .booking-item .bi-time { font-size:14px; font-weight:600; color:var(--accent); text-align:right; }
       .booking-item .bi-barber { font-size:11px; color:var(--text-secondary); text-align:right; }
       .booking-item .bi-service-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:18px; }
       .booking-item .bi-service-tag { font-size:11px; line-height:16px; padding:1px 7px; border-radius:8px; color:#fff; background:rgba(148,163,184,0.22); border:1px solid rgba(148,163,184,0.35); white-space:nowrap; }
-      .booking-item .bi-service-tag.cut { color:var(--text); background:rgba(255,255,255,0.72); border-color:rgba(148,163,184,0.45); }
+      .booking-item .bi-service-tag.cut { color:#111827; background:rgba(255,255,255,0.72); border-color:rgba(148,163,184,0.45); }
       .booking-item .bi-service-tag.perm { background:#f97316; border-color:#f97316; }
       .booking-item .bi-service-tag.color { background:#a855f7; border-color:#a855f7; }
       .booking-item .bi-service-tag.care { background:#22c55e; border-color:#22c55e; }
@@ -2241,7 +2242,7 @@ function initApp() {
       if (serviceRaw || r.notes) {
         html += '<div class="bi-service-row">';
         if (serviceRaw) {
-          var services = serviceRaw.split('、');
+          var services = String(serviceRaw).split(/[、,，/／|｜\n\r]+/);
           for (var si=0; si<services.length; si++) {
             var sv = services[si].replace(/^预约/, '').trim();
             if (!sv) continue;
@@ -2250,16 +2251,16 @@ function initApp() {
             else if (sv.indexOf('烫发') !== -1) cls = ' perm';
             else if (sv.indexOf('染发') !== -1) cls = ' color';
             else if (sv.indexOf('护理') !== -1) cls = ' care';
-            html += '<span class="bi-service-tag'+cls+'">'+sv+'</span>';
+            html += '<span class="bi-service-tag'+cls+'\">'+esc(sv)+'</span>';
           }
         }
-        if (r.notes) html += '<span class="bi-note">📝 '+r.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>';
+        if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
         html += '</div>';
       }
-      html += '<div style=\"display:flex;align-items:center;\">';
-      html += '<div><div class=\"bi-time\">'+esc(r.time_label||'')+'</div><div class=\"bi-barber\">'+esc(r.barber_name)+'</div></div>';
+      html += '</div>';
+      html += '<div class="bi-right"><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name||'')+'</div>';
       if (r.customer_phone) {
-        html += '<span class="bi-plan-btn" data-phone="'+r.customer_phone+'" data-name="'+esc(r.customer_name||'')+'" data-bdate="'+(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
+        html += '<span class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
       }
       html += '</div></div>';
     });
