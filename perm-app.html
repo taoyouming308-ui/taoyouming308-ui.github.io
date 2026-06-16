@@ -1291,6 +1291,13 @@ body {
       .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
       .booking-item .bi-time { font-size:14px; font-weight:600; color:var(--accent); text-align:right; }
       .booking-item .bi-barber { font-size:11px; color:var(--text-secondary); text-align:right; }
+      .booking-item .bi-service-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:18px; }
+      .booking-item .bi-service-tag { font-size:11px; line-height:16px; padding:1px 7px; border-radius:8px; color:#fff; background:rgba(148,163,184,0.22); border:1px solid rgba(148,163,184,0.35); white-space:nowrap; }
+      .booking-item .bi-service-tag.cut { color:var(--text); background:rgba(255,255,255,0.72); border-color:rgba(148,163,184,0.45); }
+      .booking-item .bi-service-tag.perm { background:#f97316; border-color:#f97316; }
+      .booking-item .bi-service-tag.color { background:#a855f7; border-color:#a855f7; }
+      .booking-item .bi-service-tag.care { background:#22c55e; border-color:#22c55e; }
+      .booking-item .bi-note { font-size:12px; color:var(--text-secondary); line-height:18px; }
       .identity-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-radius:8px; margin-bottom:12px; font-size:13px; }
       .identity-bar .switch-btn { color:var(--accent); cursor:pointer; font-size:12px; }
       .identity-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
@@ -2227,8 +2234,22 @@ function initApp() {
     var html = '';
     rows.forEach(function(r){
       var isReal = r.customer_name && r.customer_name !== '待定' && r.customer_name !== '未登记';
-      html += '<div class=\"booking-item' + (isReal ? ' real-customer' : '') + '\">';
-      html += '<div class=\"bi-left\"><div class=\"bi-name\">'+esc(r.customer_name || '待定')+'</div><div class=\"bi-meta\">'+(r.notes ? '📝 '+esc(r.notes) : esc(r.time_label||''))+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div></div>';
+      html += '<div class="booking-item' + (isReal ? ' real-customer' : '') + '">';
+      html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div>';
+
+      var serviceName = r.service_name || '';
+      var serviceClass = '';
+      if (serviceName.indexOf('剪发') !== -1) serviceClass = ' cut';
+      else if (serviceName.indexOf('烫发') !== -1) serviceClass = ' perm';
+      else if (serviceName.indexOf('染发') !== -1) serviceClass = ' color';
+      else if (serviceName.indexOf('护理') !== -1) serviceClass = ' care';
+
+      if (serviceName || r.notes) {
+        html += '<div class="bi-service-row">';
+        if (serviceName) html += '<span class="bi-service-tag'+serviceClass+'">'+esc(serviceName)+'</span>';
+        if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
+        html += '</div>';
+      }
       html += '<div style=\"display:flex;align-items:center;\">';
       html += '<div><div class=\"bi-time\">'+esc(r.time_label||'')+'</div><div class=\"bi-barber\">'+esc(r.barber_name)+'</div></div>';
       if (r.customer_phone) {
