@@ -2846,6 +2846,10 @@ if (document.readyState === 'loading') {
 </div>
 <script>
 (function(){
+  // ★ reset_ai=1 清空分析缓存
+  if (location.search.indexOf('reset_ai=1') >= 0) {
+    try { localStorage.removeItem('ai_analyzed'); } catch(e) {}
+  }
   // 清理旧Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function(regs) {
