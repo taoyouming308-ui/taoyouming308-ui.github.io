@@ -624,9 +624,9 @@ body {
     我们用专业技术，让每一次设计都更稳定、更适合、更有品质。
   </div>
   <div class="carousel-box" onclick="openFeature('showcase')">
-    <img class="active" src="https://taoyouming308-ui.github.io/img/showcase_45_短发_2026-06-14T09-25-44.jpg" alt="">
-    <img src="https://taoyouming308-ui.github.io/img/showcase_47_短发_2026-06-14T09-26-59.jpg" alt="">
-    <img src="https://taoyouming308-ui.github.io/img/showcase_46_短发_2026-06-14T09-26-49.jpg" alt="">
+    <img class="active" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
+    <img src="https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg" alt="">
+    <img src="https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg" alt="">
   </div>
   <div class="home-links">
     <div class="home-link" onclick="openFeature('plans')">
@@ -1097,6 +1097,15 @@ body {
         rows.forEach(function(img){
           var tags = img.category || '发型作品';
           var esc2 = function(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+          // 处理URL：base64图片按原样显示，https图片确保URL编码
+          var imgUrl = img.image_url || '';
+          if (imgUrl.indexOf('data:') !== 0 && imgUrl.indexOf('http') === 0) {
+            // HTTPS URL：对路径中的中文做URL编码
+            var parts = imgUrl.split('/');
+            imgUrl = parts.map(function(p, i){
+              return (i > 2 && /[^\x00-\x7F]/.test(p)) ? encodeURIComponent(p) : p;
+            }).join('/');
+          }
           var ai = img.ai_analysis || {};
           var styleName = ai.style_name || tags;
           var aiDetail = '';
@@ -1113,7 +1122,7 @@ body {
           var desc = _catDesc[img.category] || (img.uploaded_by==='内置'?'内置展示图':'发型作品');
           var titleIcon = (tags==='高层次长发'||tags==='中长发')?'💇':'✂️';
           var html = '<div class="showcase-card" data-tags="'+escAttr(tags)+'">' +
-            '<img class="showcase-img" src="'+img.image_url+'" alt="'+tags+'" loading="lazy">' +
+            '<img class="showcase-img" src="'+imgUrl+'" alt="'+tags+'" loading="lazy">' +
             '<h3>'+titleIcon+' '+esc2(styleName)+'</h3>' +
             (aiDetail ? aiDetail : '<div class="sub">'+desc+'</div>') + '</div>';
           items.push({img: img.image_url, title: styleName, tags: tags, html: html, index: nextIdx++});
@@ -1555,6 +1564,7 @@ function initApp() {
       content.classList.add('active');
       if (tabName === 'plans') switchPlan('query');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
+      if (tabName === 'showcase') { startShowcasePoll(); }
     }
   };
   window.goHome = function() {
