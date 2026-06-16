@@ -2114,7 +2114,7 @@ function initApp() {
     BOOKING_BARBER = name;
     localStorage.setItem('booking-barber', name);
     document.getElementById('current-identity').textContent = name || '全部发型师';
-    var modal = document.getElementById('identity-modal');
+    var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
     if (modal) modal.remove();
     // ★ 存到Supabase，管理员可在后台修改
     if (name) {
