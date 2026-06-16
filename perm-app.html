@@ -2220,7 +2220,7 @@ function initApp() {
       html += '<div style=\"display:flex;align-items:center;\">';
       html += '<div><div class=\"bi-time\">'+esc(r.time_label||'')+'</div><div class=\"bi-barber\">'+esc(r.barber_name)+'</div></div>';
       if (r.customer_phone) {
-        html += '<span class=\"bi-plan-btn\" data-phone=\"'+r.customer_phone+'\" data-name=\"'+esc(r.customer_name||'')+'\" data-bdate=\"'+(r.date||'')+'\">方案</span>';
+        html += '<span class="bi-plan-btn" data-phone="'+r.customer_phone+'" data-name="'+esc(r.customer_name||'')+'" data-bdate="'+(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
       }
       html += '</div></div>';
     });
@@ -2245,7 +2245,7 @@ function initApp() {
     '杨帆': '烫发/护理'
   };
   var _profileCache = {};
-  window.showPlanModal = function(phone, name, bookingDate) {
+  window.showPlanModal = function(phone, name, barberName, bookingDate) {
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
@@ -2298,7 +2298,7 @@ function initApp() {
         }
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      html += renderAiButton(phone, name, bookingDate);
+      html += renderAiButton(phone, name, barberName, bookingDate);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
     })
@@ -2523,7 +2523,7 @@ function initApp() {
           }
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
-          htmlContent += renderAiButton(phone, name, bookingDate);
+          htmlContent += renderAiButton(phone, name, barberName, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
           return;
@@ -2584,7 +2584,7 @@ function initApp() {
           var uniqueNotes = bookingNotes.filter(function(v,i,a){ return a.indexOf(v)===i; });
           if (uniqueNotes.length > 0) htmlContent += '<div class="row"><span class="label">📝 备注</span><span class="val" style="font-weight:400;">'+esc(uniqueNotes.join(' | '))+'</span></div>';
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-          htmlContent += renderAiButton(phone, name, bookingDate);
+          htmlContent += renderAiButton(phone, name, barberName, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
         }).catch(function(e){
@@ -2614,16 +2614,18 @@ function initApp() {
     if (target.classList.contains('bi-plan-btn')) {
       var phone = target.getAttribute('data-phone');
       var name = target.getAttribute('data-name') || '';
+      var barber = target.getAttribute('data-barber') || '';
       var bdate = target.getAttribute('data-bdate') || '';
-      if (phone) showPlanModal(phone, name, bdate);
+      if (phone) showPlanModal(phone, name, barber, bdate);
       return;
     }
     // AI分析按钮
     if (target.classList.contains('ai-btn')) {
       var phone2 = target.getAttribute('data-phone');
       var name2 = target.getAttribute('data-name') || '';
+      var barber2 = target.getAttribute('data-barber') || '';
       var bdate2 = target.getAttribute('data-bdate') || '';
-      if (phone2) runAiAnalysis(phone2, name2, bdate2);
+      if (phone2) runAiAnalysis(phone2, name2, barber2, bdate2);
       return;
     }
   });
@@ -2663,13 +2665,14 @@ function initApp() {
       .catch(function(e){ console.warn('获取隧道URL失败:', e); });
   })();
 
-  function getAiUrl(phone) {
-    var localUrl = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone);
+  function getAiUrl(phone, barberName) {
+    var barberParam = barberName ? '&barber=' + encodeURIComponent(barberName) : '';
+    var localUrl = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam;
     var tunnelBase = AI_TUNNEL_URL || 'https://prompt-earth-boat-refuse.trycloudflare.com';
-    return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) };
+    return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam };
   }
 
-  function renderAiButton(phone, name, dateKey) {
+  function renderAiButton(phone, name, barberName, dateKey) {
     if (_isPhoneAnalyzed(phone, dateKey)) {
       var cached = _getCachedAnalysis(phone, dateKey);
       if (cached) {
@@ -2677,14 +2680,14 @@ function initApp() {
       }
       return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
     }
-    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'" data-bdate="'+(dateKey||'')+'">🤖 AI分析建议</button>';
+    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'" data-bdate="'+(dateKey||'')+'" data-barber="'+escAttr(barberName||'')+'">🤖 AI分析建议</button>';
   }
   function updateAiButtonsAvailability() {
     // 不限网络，始终可用
   }
 
   // AI分析建议：调plan_server（优先店内→兜底公网隧道）
-  window.runAiAnalysis = function(phone, name, bookingDate) {
+  window.runAiAnalysis = function(phone, name, barberName, bookingDate) {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
     // 加加载状态
@@ -2694,7 +2697,7 @@ function initApp() {
     var btns = box.querySelectorAll('button');
     btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
     // 先试本地（店内快），不行走隧道
-    var urls = getAiUrl(phone);
+    var urls = getAiUrl(phone, barberName);
     var url = urls.local;
     var tunnelUrl = urls.tunnel;
     function doRequest() {
@@ -2716,6 +2719,9 @@ function initApp() {
           html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
           html += '</div>';
           _markPhoneAnalyzed(phone, analysis, bookingDate);
+          // 移除AI按钮，防止重复点击
+          var aiBtn = box.querySelector('.ai-btn');
+          if (aiBtn) aiBtn.remove();
           box.innerHTML += html;
         } catch(e) {
           box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
