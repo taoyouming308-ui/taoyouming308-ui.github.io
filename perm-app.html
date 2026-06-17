@@ -604,13 +604,22 @@ body {
     #wx-guide .wx-desc b { color:var(--accent); }
     #wx-guide .wx-close { display:inline-block; margin-top:14px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
 
-    .home-links { padding:32px 24px 60px; display:flex; flex-direction:column; max-width:360px; margin:0 auto; }
-    .home-link { padding:18px 0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
-    .home-link:last-child { border-bottom:none; }
-    .home-link:active { opacity:0.5; }
-    .home-link .title { font-size:17px; font-weight:500; color:var(--text); }
-    .home-link .arrow { font-size:18px; color:var(--text-secondary); opacity:0.3; }
+    .home-menu-btn { position:fixed; bottom:24px; left:20px; z-index:10020; width:40px; height:40px; border:0; background:transparent; color:#e7e9ea; font-size:24px; line-height:40px; padding:0; cursor:pointer; }
+    .home-drawer-mask { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.6); opacity:0; visibility:hidden; transition:opacity 0.3s ease, visibility 0.3s ease; }
+    .home-drawer { position:fixed; top:0; left:0; width:240px; height:100%; z-index:10030; background:#16181c; transform:translateX(-100%); transition:transform 0.3s ease; box-shadow:8px 0 24px rgba(0,0,0,0.35); }
+    .home-drawer.open { transform:translateX(0); }
+    .home-drawer-mask.open { opacity:1; visibility:visible; }
+    .home-drawer-close { width:100%; padding:16px; border:0; border-bottom:1px solid #2f3336; background:transparent; color:#e7e9ea; font-size:24px; text-align:left; cursor:pointer; }
+    .home-drawer-item { width:100%; padding:16px; border:0; border-bottom:1px solid #2f3336; background:transparent; color:#e7e9ea; font-size:16px; text-align:left; cursor:pointer; }
+    .home-drawer-item:active, .home-menu-btn:active, .home-drawer-close:active { opacity:0.6; }
   </style>
+  <button class="home-menu-btn" type="button" onclick="openHomeDrawer()" aria-label="打开菜单">☰</button>
+  <div id="home-drawer-mask" class="home-drawer-mask" onclick="closeHomeDrawer()"></div>
+  <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
+    <button class="home-drawer-close" type="button" onclick="closeHomeDrawer()" aria-label="关闭菜单">×</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">✂️ 方案</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">📅 预约</button>
+  </aside>
   <div class="hero-text">
     <h1>自由手艺人</h1>
     <div class="sub">Hair Design</div>
@@ -627,17 +636,6 @@ body {
     <img class="active" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
     <img src="https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg" alt="">
     <img src="https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg" alt="">
-  </div>
-  <div class="home-links">
-    <div class="home-link" onclick="openFeature('plans')">
-      <span class="title">方案</span><span class="arrow">›</span>
-    </div>
-    <div class="home-link" onclick="openFeature('showcase')">
-      <span class="title">发型展示</span><span class="arrow">›</span>
-    </div>
-    <div class="home-link" onclick="openFeature('bookings')" style="border-bottom: none;">
-      <span class="title">预约</span><span class="arrow">›</span>
-    </div>
   </div>
 </section>
 
@@ -1584,6 +1582,22 @@ function initApp() {
   window.goHome = function() {
     document.getElementById('home-page').style.display = 'block';
     document.getElementById('app-content').style.display = 'none';
+  };
+  window.openHomeDrawer = function() {
+    var drawer = document.getElementById('home-drawer');
+    var mask = document.getElementById('home-drawer-mask');
+    if (drawer) drawer.classList.add('open');
+    if (mask) mask.classList.add('open');
+  };
+  window.closeHomeDrawer = function() {
+    var drawer = document.getElementById('home-drawer');
+    var mask = document.getElementById('home-drawer-mask');
+    if (drawer) drawer.classList.remove('open');
+    if (mask) mask.classList.remove('open');
+  };
+  window.openHomeDrawerFeature = function(tabName) {
+    closeHomeDrawer();
+    openFeature(tabName);
   };
   window.switchPlan = function(name) {
     var btns = document.querySelectorAll('#plan-nav button');
