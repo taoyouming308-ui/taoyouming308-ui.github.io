@@ -606,20 +606,22 @@ body {
 
     .home-menu-btn { position:fixed; bottom:24px; left:20px; z-index:10020; width:40px; height:40px; border:0; background:transparent; color:#e7e9ea; font-size:24px; line-height:40px; padding:0; cursor:pointer; }
     .home-drawer-mask { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.6); opacity:0; visibility:hidden; transition:opacity 0.3s ease, visibility 0.3s ease; }
-    .home-drawer { position:fixed; top:0; left:0; width:240px; height:100%; z-index:10030; background:rgba(22,24,28,0.88); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transform:translateX(-100%); transition:transform 0.3s ease; box-shadow:8px 0 24px rgba(0,0,0,0.35); display:flex; flex-direction:column; }
+    .home-drawer { position:fixed; left:16px; bottom:80px; width:200px; z-index:10030; background:rgba(0,0,0,0); transform:translateX(-120%); transition:transform 0.3s ease; display:flex; flex-direction:column; gap:0; border-radius:16px; overflow:hidden; }
     .home-drawer.open { transform:translateX(0); }
     .home-drawer-mask.open { opacity:1; visibility:visible; }
-    .home-drawer-close { width:100%; padding:16px; border:0; border-top:1px solid #2f3336; background:transparent; color:#e7e9ea; font-size:24px; text-align:left; cursor:pointer; }
-    .home-drawer-item { width:100%; padding:16px; border:0; border-bottom:1px solid #2f3336; background:transparent; color:#e7e9ea; font-size:16px; text-align:left; cursor:pointer; }
-    .home-drawer-item:active, .home-menu-btn:active, .home-drawer-close:active { opacity:0.6; }
+    .home-drawer-item { width:100%; padding:14px 20px; border:0; background:rgba(22,24,28,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#e7e9ea; font-size:16px; text-align:left; cursor:pointer; }
+    .home-drawer-item:first-child { border-radius:16px 16px 0 0; }
+    .home-drawer-item:last-child { border-radius:0 0 16px 16px; }
+    .home-drawer-item:only-child { border-radius:16px; }
+    .home-drawer-item + .home-drawer-item { border-top:1px solid rgba(47,51,54,0.5); }
+    .home-drawer-item:active { opacity:0.6; }
+    .home-menu-btn:active { opacity:0.6; }
   </style>
   <button class="home-menu-btn" type="button" onclick="openHomeDrawer()" aria-label="打开菜单">☰</button>
   <div id="home-drawer-mask" class="home-drawer-mask" onclick="closeHomeDrawer()"></div>
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
-    <div style="flex:1"></div>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">✂️ 方案</button>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">📅 预约</button>
-    <button class="home-drawer-close" type="button" onclick="closeHomeDrawer()" aria-label="关闭菜单">×</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
   </aside>
   <div class="hero-text">
     <h1>自由手艺人</h1>
