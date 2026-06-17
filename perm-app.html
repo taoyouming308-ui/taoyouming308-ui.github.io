@@ -632,6 +632,12 @@ body {
     <div class="home-link" onclick="openFeature('plans')">
       <span class="title">方案</span><span class="arrow">›</span>
     </div>
+    <div class="home-link" onclick="openFeature('showcase')">
+      <span class="title">发型展示</span><span class="arrow">›</span>
+    </div>
+    <div class="home-link" onclick="openFeature('analysis')">
+      <span class="title">📋 染烫分析</span><span class="arrow">›</span>
+    </div>
     <div class="home-link" onclick="openFeature('bookings')" style="border-bottom: none;">
       <span class="title">预约</span><span class="arrow">›</span>
     </div>
@@ -665,6 +671,8 @@ body {
       <button class="on" onclick="switchPlan('query')">查询方案</button>
       <button onclick="switchPlan('calc')">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
+      <button onclick="openFeature('showcase')">发型展示</button>
+      <button onclick="openFeature('analysis')">📋 染烫分析</button>
       <span class="plan-refresh" onclick="location.reload()" title="刷新数据">↻</span>
     </nav>
 
@@ -907,6 +915,177 @@ body {
   </section>
 
   </section><!-- /tab-plans -->
+
+  <!-- 染烫分析 Tab -->
+  <section class="tab-content" id="tab-analysis">
+    <style>
+      #tab-analysis .analysis-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+      #tab-analysis .analysis-head h2 { font-size:20px; font-weight:700; color:var(--text); }
+      #tab-analysis .analysis-note { font-size:11px; color:var(--text-secondary); }
+      #tab-analysis .analysis-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:14px; overflow:hidden; }
+      #tab-analysis .analysis-card-title { padding:12px 14px; background:var(--surface-light); border-bottom:1px solid var(--border); font-size:14px; font-weight:700; color:var(--text); }
+      #tab-analysis .analysis-card-body { padding:14px; }
+      #tab-analysis .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      #tab-analysis .form-grid.single { grid-template-columns:1fr; }
+      #tab-analysis .field { min-width:0; }
+      #tab-analysis .field.full { grid-column:1 / -1; }
+      #tab-analysis label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+      #tab-analysis input,
+      #tab-analysis select,
+      #tab-analysis textarea { width:100%; padding:12px; background:#050505; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-family:var(--font); outline:none; }
+      #tab-analysis textarea { min-height:88px; resize:vertical; line-height:1.6; }
+      #tab-analysis input:focus,
+      #tab-analysis select:focus,
+      #tab-analysis textarea:focus { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-glow); }
+      #tab-analysis .name-row { display:grid; grid-template-columns:1fr 88px; gap:8px; }
+      #tab-analysis .score-table { display:grid; gap:10px; }
+      #tab-analysis .score-row { display:grid; grid-template-columns:42px 1fr; gap:8px; align-items:center; }
+      #tab-analysis .score-label { font-size:13px; color:var(--text-secondary); font-weight:700; }
+      #tab-analysis .score-options { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+      #tab-analysis .score-btn,
+      #tab-analysis .chip-radio span { display:flex; align-items:center; justify-content:center; min-height:38px; padding:8px 6px; background:#050505; border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s; text-align:center; }
+      #tab-analysis .score-btn.on,
+      #tab-analysis .chip-radio input:checked + span { background:var(--text); color:var(--bg); border-color:var(--text); }
+      #tab-analysis .chip-group { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+      #tab-analysis .chip-group.two { grid-template-columns:repeat(2, 1fr); }
+      #tab-analysis .chip-radio input { display:none; }
+      #tab-analysis .total-card { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; background:#050505; border:1px solid var(--border); border-radius:10px; }
+      #tab-analysis .total-num { font-size:30px; font-weight:800; color:var(--text); line-height:1; }
+      #tab-analysis .total-text { flex:1; text-align:right; font-size:15px; font-weight:800; }
+      #tab-analysis .total-text.low { color:var(--danger); }
+      #tab-analysis .total-text.mid { color:var(--text); }
+      #tab-analysis .total-text.high { color:#4ade80; }
+      #tab-analysis .quick-card { padding:12px; background:#050505; border-left:3px solid var(--text); border-radius:8px; color:var(--text); font-size:13px; line-height:1.8; }
+      #tab-analysis .analysis-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0 8px; }
+      #tab-analysis .outline-btn { width:100%; padding:14px; background:#050505; border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:15px; font-weight:700; font-family:var(--font); cursor:pointer; }
+      #tab-analysis .outline-btn.danger { color:var(--danger); }
+      @media (max-width:380px) {
+        #tab-analysis .form-grid { grid-template-columns:1fr; }
+        #tab-analysis .score-row { grid-template-columns:1fr; }
+      }
+      @media print {
+        body { max-width:none; background:#fff; color:#000; }
+        #home-page, .tab-nav, #update-banner, #back-to-top, #toast { display:none !important; }
+        #app-content, #tab-analysis, #tab-analysis.tab-content { display:block !important; }
+        .tab-content:not(#tab-analysis) { display:none !important; }
+        #tab-analysis .analysis-card, #tab-analysis input, #tab-analysis select, #tab-analysis textarea, #tab-analysis .quick-card, #tab-analysis .total-card { background:#fff !important; color:#000 !important; border-color:#999 !important; }
+        #tab-analysis .analysis-card-title { background:#eee !important; color:#000 !important; }
+        #tab-analysis .analysis-actions { display:none !important; }
+      }
+    </style>
+    <div class="analysis-head">
+      <h2>📋 染烫分析</h2>
+      <div class="analysis-note">自动保存</div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">客户信息</div>
+      <div class="analysis-card-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>姓名</label>
+            <div class="name-row">
+              <input data-pa="customerName" type="text" placeholder="客户姓名">
+              <select data-pa="customerSuffix">
+                <option value="小姐">小姐</option>
+                <option value="先生">先生</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>电话</label><input data-pa="phone" type="tel" placeholder="手机号"></div>
+          <div class="field"><label>发型师</label><input data-pa="barber" type="text" placeholder="发型师"></div>
+          <div class="field"><label>助理</label><input data-pa="assistant" type="text" placeholder="助理"></div>
+          <div class="field"><label>操作日期</label><input data-pa="workDate" type="date"></div>
+          <div class="field full"><label>时间范围</label><input data-pa="timeRange" type="text" placeholder="例：10:30-13:00"></div>
+          <div class="field full"><label>补充</label><textarea data-pa="notes" placeholder="其他需要记录的信息"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">发质状态</div>
+      <div class="analysis-card-body">
+        <div class="form-grid">
+          <div class="field full"><label>发质类型</label><select data-pa="hairType" id="analysis-hair-type"><option value="">请选择发质类型</option></select></div>
+          <div class="field"><label>新生发</label><input data-pa="newGrowth" type="text" placeholder="例：1级/5cm"></div>
+          <div class="field"><label>发中</label><input data-pa="midHair" type="text" placeholder="例：2级"></div>
+          <div class="field"><label>发梢</label><input data-pa="hairEnds" type="text" placeholder="例：4级"></div>
+          <div class="field"><label>白发比例</label><input data-pa="grayRatio" type="text" placeholder="例：30%"></div>
+          <div class="field"><label>目标色</label><input data-pa="targetColor" type="text" placeholder="例：6/77"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">烫发款式</div>
+      <div class="analysis-card-body">
+        <div class="field"><label>款式选择</label><select data-pa="permStyle" id="analysis-perm-style"><option value="">请选择烫发款式</option></select></div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">干发判断评分</div>
+      <div class="analysis-card-body score-table">
+        <div class="score-row"><div class="score-label">体</div><div class="score-options"><button type="button" class="score-btn" data-score-name="body" data-score="8">粗 8</button><button type="button" class="score-btn" data-score-name="body" data-score="5">中 5</button><button type="button" class="score-btn" data-score-name="body" data-score="2">细 2</button></div></div>
+        <div class="score-row"><div class="score-label">性</div><div class="score-options"><button type="button" class="score-btn" data-score-name="nature" data-score="8">干 8</button><button type="button" class="score-btn" data-score-name="nature" data-score="5">中 5</button><button type="button" class="score-btn" data-score-name="nature" data-score="2">油 2</button></div></div>
+        <div class="score-row"><div class="score-label">型</div><div class="score-options"><button type="button" class="score-btn" data-score-name="shape" data-score="8">毛躁 8</button><button type="button" class="score-btn" data-score-name="shape" data-score="5">自然 5</button><button type="button" class="score-btn" data-score-name="shape" data-score="2">顺直 2</button></div></div>
+        <div class="score-row"><div class="score-label">量</div><div class="score-options"><button type="button" class="score-btn" data-score-name="amount" data-score="8">多 8</button><button type="button" class="score-btn" data-score-name="amount" data-score="5">中 5</button><button type="button" class="score-btn" data-score-name="amount" data-score="2">少 2</button></div></div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">湿发判断评分</div>
+      <div class="analysis-card-body score-table">
+        <div class="score-row"><div class="score-label">人为因素</div><div class="score-options"><button type="button" class="score-btn" data-score-name="humanFactor" data-score="8">极度 8</button><button type="button" class="score-btn" data-score-name="humanFactor" data-score="6">中度 6</button><button type="button" class="score-btn" data-score-name="humanFactor" data-score="2">健康 2</button></div></div>
+        <div class="total-card">
+          <div><div class="analysis-note">总分</div><div class="total-num" id="analysis-total">0</div></div>
+          <div class="total-text mid" id="analysis-conclusion">请选择评分</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">操作记录</div>
+      <div class="analysis-card-body">
+        <div class="form-grid">
+          <div class="field full"><label>卷芯类型 / 4区号杠</label><input data-pa="rodZones" type="text" placeholder="头顶/两侧/枕骨/后颈号杠"></div>
+          <div class="field"><label>加热时间</label><input data-pa="heatTime" type="text" placeholder="例：15分钟"></div>
+          <div class="field"><label>药水存放分钟</label><input data-pa="drugMinutes" type="number" min="0" placeholder="分钟"></div>
+          <div class="field full"><label>烫塑原理</label><div class="chip-group two"><label class="chip-radio"><input data-pa="permPrinciple" type="radio" name="pa-perm-principle" value="直接"><span>直接</span></label><label class="chip-radio"><input data-pa="permPrinciple" type="radio" name="pa-perm-principle" value="软化"><span>软化</span></label></div></div>
+          <div class="field full"><label>药水存放</label><div class="chip-group two"><label class="chip-radio"><input data-pa="drugStorage" type="radio" name="pa-drug-storage" value="有"><span>有</span></label><label class="chip-radio"><input data-pa="drugStorage" type="radio" name="pa-drug-storage" value="否"><span>否</span></label></div></div>
+          <div class="field"><label>上卷芯时间至</label><input data-pa="rodTimeTo" type="time"></div>
+          <div class="field"><label>定型时间至</label><input data-pa="settingTimeTo" type="time"></div>
+          <div class="field full"><label>冲水</label><div class="chip-group two"><label class="chip-radio"><input data-pa="rinse" type="radio" name="pa-rinse" value="有"><span>有</span></label><label class="chip-radio"><input data-pa="rinse" type="radio" name="pa-rinse" value="否"><span>否</span></label></div></div>
+          <div class="field full"><label>施放详述</label><textarea data-pa="operationDetail" placeholder="药水、软化、上杠、加热等操作细节"></textarea></div>
+          <div class="field full"><label>发型师总结</label><textarea data-pa="barberSummary" placeholder="本次操作总结"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">回访</div>
+      <div class="analysis-card-body">
+        <div class="form-grid">
+          <div class="field"><label>回访时间</label><input data-pa="followDate" type="date"></div>
+          <div class="field"><label>前台签名</label><input data-pa="frontDeskSign" type="text" placeholder="签名"></div>
+          <div class="field full"><label>回馈</label><div class="chip-group"><label class="chip-radio"><input data-pa="feedback" type="radio" name="pa-feedback" value="A"><span>A</span></label><label class="chip-radio"><input data-pa="feedback" type="radio" name="pa-feedback" value="B"><span>B</span></label><label class="chip-radio"><input data-pa="feedback" type="radio" name="pa-feedback" value="FG"><span>FG</span></label></div></div>
+          <div class="field full"><label>效果评定</label><textarea data-pa="effectReview" placeholder="效果、客诉、调整建议"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-card-title">软化流程速查</div>
+      <div class="analysis-card-body">
+        <div class="quick-card">软化流程：①2:1稀释10分→拆杠 ②正式药水15分→拆杠 ③需更高1:1注10分→冲水 目标90%+＞刹车70%</div>
+      </div>
+    </div>
+
+    <div class="analysis-actions">
+      <button type="button" class="outline-btn" onclick="window.print()">打印</button>
+      <button type="button" class="outline-btn danger" id="analysis-reset">重置</button>
+    </div>
+  </section>
 
   <!-- 发型展示 Tab -->
   <section class="tab-content" id="tab-showcase">
@@ -1677,6 +1856,122 @@ function initApp() {
     opt.textContent = ps.label;
     permStyleSelect.appendChild(opt);
   });
+
+  // === 染烫分析表 ===
+  (function initPermAnalysis() {
+    var root = document.getElementById('tab-analysis');
+    if (!root) return;
+    var storageKey = 'perm_analysis_form';
+    var scoreNames = ['body', 'nature', 'shape', 'amount', 'humanFactor'];
+    var data = {};
+
+    function readStore() {
+      try { data = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; }
+      catch(e) { data = {}; }
+    }
+
+    function writeStore() {
+      try { localStorage.setItem(storageKey, JSON.stringify(data)); }
+      catch(e) { console.warn('染烫分析保存失败:', e); }
+    }
+
+    function fillSelect(select, rows, placeholder) {
+      if (!select || select.options.length > 1) return;
+      rows.forEach(function(row) {
+        var opt = document.createElement('option');
+        opt.value = row.id;
+        opt.textContent = row.label;
+        select.appendChild(opt);
+      });
+      if (placeholder) select.options[0].textContent = placeholder;
+    }
+
+    function setFieldValue(el, value) {
+      if (el.type === 'radio') {
+        el.checked = el.value === value;
+      } else {
+        el.value = value == null ? '' : value;
+      }
+    }
+
+    function saveField(el) {
+      var key = el.getAttribute('data-pa');
+      if (!key) return;
+      if (el.type === 'radio') {
+        if (el.checked) data[key] = el.value;
+      } else {
+        data[key] = el.value;
+      }
+      writeStore();
+    }
+
+    function paintScores() {
+      scoreNames.forEach(function(name) {
+        root.querySelectorAll('.score-btn[data-score-name="' + name + '"]').forEach(function(btn) {
+          btn.classList.toggle('on', String(data[name] || '') === String(btn.getAttribute('data-score')));
+        });
+      });
+    }
+
+    function calcScore() {
+      var total = 0;
+      scoreNames.forEach(function(name) { total += Number(data[name] || 0); });
+      var totalEl = document.getElementById('analysis-total');
+      var conclusionEl = document.getElementById('analysis-conclusion');
+      if (totalEl) totalEl.textContent = total;
+      if (!conclusionEl) return;
+      conclusionEl.classList.remove('low', 'mid', 'high');
+      if (total === 0) {
+        conclusionEl.textContent = '请选择评分';
+        conclusionEl.classList.add('mid');
+      } else if (total <= 12) {
+        conclusionEl.textContent = '不容易烫卷';
+        conclusionEl.classList.add('low');
+      } else if (total <= 24) {
+        conclusionEl.textContent = '运气好';
+        conclusionEl.classList.add('mid');
+      } else {
+        conclusionEl.textContent = '容易烫太卷';
+        conclusionEl.classList.add('high');
+      }
+    }
+
+    fillSelect(document.getElementById('analysis-hair-type'), HAIR_TYPES, '请选择发质类型');
+    fillSelect(document.getElementById('analysis-perm-style'), PERM_STYLES, '请选择烫发款式');
+    readStore();
+    if (!data.workDate) data.workDate = getLocalDateStr();
+    if (!data.customerSuffix) data.customerSuffix = '小姐';
+    root.querySelectorAll('[data-pa]').forEach(function(el) {
+      var key = el.getAttribute('data-pa');
+      setFieldValue(el, data[key]);
+      el.addEventListener('input', function() { saveField(el); });
+      el.addEventListener('change', function() { saveField(el); });
+    });
+    root.querySelectorAll('.score-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        data[btn.getAttribute('data-score-name')] = btn.getAttribute('data-score');
+        writeStore();
+        paintScores();
+        calcScore();
+      });
+    });
+    var resetBtn = document.getElementById('analysis-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function() {
+        if (!confirm('确定清空染烫分析表？')) return;
+        localStorage.removeItem(storageKey);
+        data = { workDate: getLocalDateStr(), customerSuffix: '小姐' };
+        root.querySelectorAll('[data-pa]').forEach(function(el) {
+          setFieldValue(el, data[el.getAttribute('data-pa')]);
+        });
+        paintScores();
+        calcScore();
+      });
+    }
+    paintScores();
+    calcScore();
+    writeStore();
+  })();
 
   // === Enable query button ===
   window.updateQueryButtonState = function() {
