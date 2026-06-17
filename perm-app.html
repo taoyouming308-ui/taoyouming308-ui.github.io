@@ -46,57 +46,9 @@ body {
 }
 
 /* ── Header ── */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--surface);
-  padding: 14px 16px 6px;
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  display: none;
-}
-
-.header h1 {
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 10px;
-  color: #ffffff;
-}
-
 .tabs {
   display: flex;
   gap: 0;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 10px 0;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  position: relative;
-  transition: var(--transition);
-  font-family: var(--font);
-}
-
-.tab-btn.active {
-  color: var(--accent);
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  width: 60%;
-  height: 2.5px;
-  background: var(--accent);
-  border-radius: 2px;
 }
 
 /* ── Main Content ── */
@@ -567,8 +519,6 @@ body {
 <body>
 
 <!-- Header -->
-<header class="header"></header>
-
 <!-- 首页 -->
 <section id="home-page">
   <style>
@@ -1020,28 +970,39 @@ body {
     <script>
     (function(){
       // 本地HTML转义函数（属性安全）
-      function escAttr(s) { return (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function esc(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function escAttr(s) { return esc(s); }
       var items = [];
       var grid = document.getElementById('thumb-grid');
 
       function renderGrid(filter) {
         filter = filter || 'all';
-        var html = '';
+        var frag = document.createDocumentFragment();
         items.forEach(function(item){
           if (filter !== 'all' && item.tags.indexOf(filter) === -1) return;
-          html += '<div class="thumb-item" onclick="openLightbox('+item.index+')">';
-          html += '<img src="'+item.img+'" loading="lazy">';
-          html += '<div class="thumb-label">'+item.title.replace(/^[^\u4e00-\u9fa5]+/,'')+'</div>';
-          html += '</div>';
+          var thumb = document.createElement('div');
+          thumb.className = 'thumb-item';
+          thumb.addEventListener('click', function(){ window.openLightbox(item.index); });
+          var img = document.createElement('img');
+          img.src = item.img || '';
+          img.loading = 'lazy';
+          var label = document.createElement('div');
+          label.className = 'thumb-label';
+          label.textContent = String(item.title || '').replace(/^[^\u4e00-\u9fa5]+/,'');
+          thumb.appendChild(img);
+          thumb.appendChild(label);
+          frag.appendChild(thumb);
         });
         // 直接替换，用loading="lazy"避免闪屏
-        grid.innerHTML = html;
+        grid.textContent = '';
+        grid.appendChild(frag);
       }
 
       // 灯箱
       window.openLightbox = function(idx) {
         var lb = document.getElementById('lightbox');
         var content = document.getElementById('lb-content');
+        if (!items[idx]) return;
         content.innerHTML = items[idx].html;
         lb.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -1085,11 +1046,11 @@ body {
       '羊毛卷':'俏皮复古 · 蓬松显发量 | 可爱减龄、个性十足',
       '漂发发色':'潮流个性 · 色彩鲜明 | 适合追求前卫风格的客人'
     };
-    var _lastShowcaseSig = '';
+    window._lastShowcaseSig = window._lastShowcaseSig || '';
     function loadShowcase() {
       fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,ai_analysis,status&status=eq.approved&order=created_at.asc&limit=100', {
         headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ return r.json(); }).then(function(rows){
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(rows){
         if (!rows || !rows.length) return;
         // 无变化不刷新
         var sig = rows.map(function(r){return r.id+':'+(r.status||'')+':a'+(r.ai_analysis?1:0)}).join('|');
@@ -1102,7 +1063,6 @@ body {
         var nextIdx = 0;
         rows.forEach(function(img){
           var tags = img.category || '发型作品';
-          var esc2 = function(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
           // 处理URL：base64图片按原样显示，https图片确保URL编码
           var imgUrl = img.image_url || '';
           if (imgUrl.indexOf('data:') !== 0 && imgUrl.indexOf('http') === 0) {
@@ -1119,25 +1079,26 @@ body {
             var c = ai.cut || {}, p = ai.perm || {}, col = ai.color || {}, s = ai.suit || {};
             var permLine = (img.category === '漂发发色')
               ? '<div class="ai-header">🚫 烫发：漂发不宜烫发，建议日常造型打理</div>'
-              : '<div class="ai-header">🔥 烫发：' + esc2(p.need||'') + ' · ' + esc2(p.curl||'') + '</div>';
-            aiDetail = '<div class="ai-badge" onclick="event.stopPropagation()"><div class="ai-header">✂️ 裁剪：' + esc2(c.zones||'') + ' · ' + esc2(c.layers||'') + '</div>' +
+              : '<div class="ai-header">🔥 烫发：' + esc(p.need||'') + ' · ' + esc(p.curl||'') + '</div>';
+            aiDetail = '<div class="ai-badge" onclick="event.stopPropagation()"><div class="ai-header">✂️ 裁剪：' + esc(c.zones||'') + ' · ' + esc(c.layers||'') + '</div>' +
               permLine +
-              '<div class="ai-header">🎨 染发：' + esc2(col.tone||'') + ' · ' + esc2(col.method||'') + '</div>' +
-              '<div class="ai-header">👤 适合：' + esc2(s.face||'') + ' · ' + esc2(s.style||'') + ' · 打理' + esc2(s.care||'') + '</div></div>';
+              '<div class="ai-header">🎨 染发：' + esc(col.tone||'') + ' · ' + esc(col.method||'') + '</div>' +
+              '<div class="ai-header">👤 适合：' + esc(s.face||'') + ' · ' + esc(s.style||'') + ' · 打理' + esc(s.care||'') + '</div></div>';
           }
           var desc = _catDesc[img.category] || (img.uploaded_by==='内置'?'内置展示图':'发型作品');
           var titleIcon = (tags==='高层次长发'||tags==='中长发')?'💇':'✂️';
           var html = '<div class="showcase-card" data-tags="'+escAttr(tags)+'">' +
-            '<img class="showcase-img" src="'+imgUrl+'" alt="'+tags+'" loading="lazy">' +
-            '<h3>'+titleIcon+' '+esc2(styleName)+'</h3>' +
-            (aiDetail ? aiDetail : '<div class="sub">'+desc+'</div>') + '</div>';
-          items.push({img: img.image_url, title: styleName, tags: tags, html: html, index: nextIdx++});
+            '<img class="showcase-img" src="'+escAttr(imgUrl)+'" alt="'+escAttr(tags)+'" loading="lazy">' +
+            '<h3>'+titleIcon+' '+esc(styleName)+'</h3>' +
+            (aiDetail ? aiDetail : '<div class="sub">'+esc(desc)+'</div>') + '</div>';
+          items.push({img: imgUrl, title: styleName, tags: String(tags), html: html, index: nextIdx++});
         });
         window._showcaseNextIndex = nextIdx;
         var active = document.querySelector('#tab-showcase .filter-btn.on');
         var filter = active ? active.getAttribute('data-filter') : 'all';
         // 用 requestAnimationFrame 合并DOM更新，避免布局抖动
-        requestAnimationFrame(function(){ window._renderGrid(filter); });
+        var raf = window.requestAnimationFrame || function(cb){ return setTimeout(cb, 16); };
+        raf(function(){ window._renderGrid(filter); });
       }).catch(function(e){
         console.warn('展示作品加载失败:', e);
       });
@@ -1155,21 +1116,24 @@ body {
     // 页面可见性变化时暂停/恢复
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) { stopShowcasePoll(); }
-      else if (document.getElementById('tab-showcase').classList.contains('active')) { startShowcasePoll(); }
+      else {
+        var tab = document.getElementById('tab-showcase');
+        if (tab && tab.classList.contains('active')) { startShowcasePoll(); }
+      }
     });
     // 展示页激活/隐藏时控制轮询
     var _origShowcaseOF = window.openFeature;
     // 通过 MutationObserver 检测展示页是否激活
-    var _showcaseObserver = new MutationObserver(function() {
+    var _showcaseObserver = window.MutationObserver ? new MutationObserver(function() {
       if (document.getElementById('tab-showcase').classList.contains('active')) {
         startShowcasePoll();
       } else {
         stopShowcasePoll();
       }
-    });
+    }) : null;
     setTimeout(function() {
       var tab = document.getElementById('tab-showcase');
-      if (tab) _showcaseObserver.observe(tab, { attributes: true, attributeFilter: ['class'] });
+      if (tab && _showcaseObserver) _showcaseObserver.observe(tab, { attributes: true, attributeFilter: ['class'] });
     }, 1000);
     </script>
 
@@ -1199,8 +1163,8 @@ body {
       var file = document.getElementById('up-file').files[0];
       if (!file) { showToast('请选择图片'); return; }
       // 校验文件类型和大小
-      var allowedTypes = ['image/jpeg','image/png','image/webp','image/gif'];
-      if (allowedTypes.indexOf(file.type) === -1) { showToast('仅支持 JPG/PNG/WebP/GIF 格式'); document.getElementById('up-btn').disabled = false; return; }
+      var allowedTypes = ['image/jpeg','image/png','image/webp'];
+      if (allowedTypes.indexOf(file.type) === -1) { showToast('仅支持 JPG/PNG/WebP 格式'); document.getElementById('up-btn').disabled = false; return; }
       if (file.size > 10 * 1024 * 1024) { showToast('图片超过10MB，请压缩后上传'); document.getElementById('up-btn').disabled = false; return; }
       var category = document.getElementById('up-category').value;
       var btn = document.getElementById('up-btn');
@@ -1233,7 +1197,7 @@ body {
       img.src = url;
     }
     function doUploadBase64(base64, category, btn, msg) {
-        // 直接存到Supabase（base64格式，审核通过后管理员可下载原图）
+        // 直接存到Supabase（base64格式，审核通过后管理员可下载原图）；后续可迁移到对象存储，只在DB保留URL。
         msg.textContent = '⏳ 上传中...';
         fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
             method: 'POST',
@@ -1251,6 +1215,7 @@ body {
                 created_at: new Date().toISOString()
             })
         }).then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
             if (r.status === 201 || r.status === 200 || r.status === 204) {
                 msg.textContent = '✅ 已提交，等待管理员审核';
                 msg.style.color = '#4ade80';
@@ -1606,7 +1571,8 @@ function initApp() {
     btns.forEach(function(b){ b.classList.remove('on'); });
     document.querySelectorAll('.plan-page').forEach(function(p){ p.classList.remove('active'); });
     btns.forEach(function(b){
-      if (b.textContent.indexOf(name) !== -1 || b.getAttribute('onclick').indexOf(name) !== -1) b.classList.add('on');
+      var handler = b.getAttribute('onclick') || '';
+      if (b.textContent.indexOf(name) !== -1 || handler.indexOf(name) !== -1) b.classList.add('on');
     });
     var page = document.getElementById('plan-' + name);
     if (page) page.classList.add('active');
@@ -1626,11 +1592,24 @@ function initApp() {
     var imgs = document.querySelectorAll('.carousel-box img');
     if (imgs.length < 2) return;
     var idx = 0;
-    setInterval(function(){
-      imgs[idx].classList.remove('active');
-      idx = (idx + 1) % imgs.length;
-      imgs[idx].classList.add('active');
-    }, 4000);
+    var carouselTimer = null;
+    function startCarousel() {
+      if (carouselTimer) return;
+      carouselTimer = setInterval(function(){
+        if (document.hidden) return;
+        imgs[idx].classList.remove('active');
+        idx = (idx + 1) % imgs.length;
+        imgs[idx].classList.add('active');
+      }, 4000);
+    }
+    function stopCarousel() {
+      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    }
+    document.addEventListener('visibilitychange', function(){
+      if (document.hidden) stopCarousel();
+      else startCarousel();
+    });
+    startCarousel();
   })();
 
   // === 安装引导（仅首次提示）===
@@ -1748,9 +1727,27 @@ function initApp() {
   });
 
   function renderResult(data) {
+    function escapePlanValue(v) {
+      if (v == null) return v;
+      if (typeof v === 'string') return esc(v);
+      if (Array.isArray(v)) return v.map(escapePlanValue);
+      if (typeof v === 'object') {
+        var out = {};
+        Object.keys(v).forEach(function(k){ out[k] = escapePlanValue(v[k]); });
+        return out;
+      }
+      return v;
+    }
+    data = escapePlanValue(data || {});
+    if (!data.soften) data.soften = {};
+    if (!data.rods || !Array.isArray(data.rods)) data.rods = [];
     const s = data.soften;
+    s.mainDrug = s.mainDrug || {};
+    s.endEffect = s.endEffect || {};
+    s.root = s.root || {};
+    s.end = s.end || {};
     const rods = data.rods;
-    const isMixed = s.mixed;
+    const isMixed = !!s.mixed;
 
     let html = '';
 
@@ -1903,19 +1900,6 @@ function initApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // === Tab Switching ===
-  document.querySelectorAll('.tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (!this.dataset.tab) return;
-      document.querySelectorAll('.tab-btn, .tab-content').forEach(function(el) {
-        el.classList.remove('active');
-      });
-      this.classList.add('active');
-      var tab = document.getElementById('tab-' + this.dataset.tab);
-      if (tab) tab.classList.add('active');
-    });
-  });
-
   // === Calculator ===
   // 固定配比化学值表（独立于方案，不受查询影响）
   function getFixedChem(tga, ca) {
@@ -2057,7 +2041,7 @@ function initApp() {
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'identity-modal';
-    div.innerHTML = '<div class="box" id="login-box-main"><h3 style="margin-bottom:20px;">自由手艺人</h3><div class="reg-form"><button class="opt" id="show-login-btn">登录</button><button class="opt" style="color:var(--accent);" id="show-register-btn">注册新员工</button><div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
+    div.innerHTML = '<div class="box" id="login-box-main"><h3 style="margin-bottom:20px;">自由手艺人</h3><div class="reg-form"><button class="opt" id="show-login-btn">登录</button><button class="opt" style="color:var(--accent);" id="show-register-btn">注册新员工</button><div id="identity-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
     document.body.appendChild(div);
     document.getElementById('show-login-btn').onclick = showLoginForm;
     document.getElementById('show-register-btn').onclick = function(){ showRegisterForm(); };
@@ -2083,13 +2067,20 @@ function initApp() {
     var pass = document.getElementById('login-pass').value;
     var errEl = document.getElementById('login-error');
     if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
+    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
+      errEl.textContent = '当前浏览器不支持安全登录，请升级浏览器或使用 Safari/Chrome';
+      errEl.style.display = '';
+      return;
+    }
     var btn = document.getElementById('login-submit-btn');
     if (btn) btn.disabled = true;
     try {
       var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
       var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
         headers: { 'apikey': SUPABASE_KEY }
       });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       var rows = await r.json();
       if (rows && rows.length > 0 && rows[0].active !== false) {
         // 登录成功 → 弹出选名字页面，不直接绑定
@@ -2115,6 +2106,7 @@ function initApp() {
       var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&role=eq.staff&order=username.asc', {
         headers: { 'apikey': SUPABASE_KEY }
       });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       var rows = await r.json();
       if (rows && rows.length > 0) {
         barbers = rows.map(function(r){ return r.username; });
@@ -2126,13 +2118,23 @@ function initApp() {
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'barber-picker-modal';
-    var html = '<div class="box"><h3>选择你的身份</h3><div style="max-height:400px;overflow-y:auto;">';
-    barbers.forEach(function(b){
-      html += '<button class="opt" onclick="selectIdentity(\''+b+'\')">'+b+'</button>';
-    });
-    html += '</div></div>';
+    var html = '<div class="box"><h3>选择你的身份</h3><div id="barber-picker-list" style="max-height:400px;overflow-y:auto;"></div></div>';
     div.innerHTML = html;
     document.body.appendChild(div);
+    var list = document.getElementById('barber-picker-list');
+    list.addEventListener('click', function(e){
+      var btn = e.target.closest('button[data-name]');
+      if (!btn || !list.contains(btn)) return;
+      selectIdentity(btn.getAttribute('data-name') || '');
+    });
+    barbers.forEach(function(b){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.type = 'button';
+      btn.setAttribute('data-name', b || '');
+      btn.textContent = b || '';
+      list.appendChild(btn);
+    });
   };
 
   window.showRegisterForm = function(){
@@ -2163,7 +2165,8 @@ function initApp() {
         method: 'POST',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
         body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
-      }).catch(function(e){ console.warn('身份同步失败:', e); });
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); })
+      .catch(function(e){ console.warn('身份同步失败:', e); });
     }
     loadBookings();
   };
@@ -2175,6 +2178,11 @@ function initApp() {
     var errEl = document.getElementById('reg-error');
     if (!username || !pass || !pass2) { errEl.textContent='请完整填写'; errEl.style.display=''; return; }
     if (pass !== pass2) { errEl.textContent='两次密码不一致'; errEl.style.display=''; return; }
+    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
+      errEl.textContent = '当前浏览器不支持安全注册，请升级浏览器或使用 Safari/Chrome';
+      errEl.style.display = '';
+      return;
+    }
     var btn = document.getElementById('reg-submit-btn');
     if (btn) btn.disabled = true;
     try {
@@ -2213,7 +2221,8 @@ function initApp() {
     if (!list) return;
 
     // ★ 离线模式：先从localStorage渲染缓存，再异步刷新
-    var cacheKey = 'booking_offline_' + BOOKING_SHOP + '_' + BOOKING_DATE;
+    var shopName = BOOKING_SHOP;
+    var cacheKey = 'bookings_cache_' + shopName + '_' + (BOOKING_BARBER || 'all');
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
 
@@ -2229,8 +2238,9 @@ function initApp() {
 
     fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
       headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); })
+    }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(rows){
+      rows = Array.isArray(rows) ? rows : [];
       if (BOOKING_BARBER) {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
@@ -2287,8 +2297,8 @@ function initApp() {
     list.innerHTML = html;
   }
 
-  window.escAttr = function(s) { return (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  window.esc = function(s) { var d=document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  window.esc = function(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  window.escAttr = function(s) { return esc(s); }
   function maskPhone(phone) {
     var s = String(phone || '');
     return s.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2');
@@ -2306,6 +2316,8 @@ function initApp() {
   };
   var _profileCache = {};
   window.showPlanModal = function(phone, name, barberName, bookingDate) {
+    var old = document.getElementById('plan-modal');
+    if (old) old.remove();
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
@@ -2313,12 +2325,14 @@ function initApp() {
     document.body.appendChild(div);
 
     // 尝试本地API（店内WiFi直连美管加实时数据）
-    var ac = new AbortController();
-    var acTimer = setTimeout(function(){ ac.abort(); }, 5000);
-    fetch('/api/plan?phone='+encodeURIComponent(phone), { signal: ac.signal })
-    .then(function(r){ clearTimeout(acTimer); return r.json(); })
+    var supportsAbort = typeof AbortController !== 'undefined';
+    var ac = supportsAbort ? new AbortController() : null;
+    var acTimer = supportsAbort ? setTimeout(function(){ ac.abort(); }, 5000) : null;
+    var fetchOptions = supportsAbort ? { signal: ac.signal } : {};
+    fetch('/api/plan?phone='+encodeURIComponent(phone), fetchOptions)
+    .then(function(r){ if (acTimer) clearTimeout(acTimer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data){
-      clearTimeout(acTimer);
+      if (acTimer) clearTimeout(acTimer);
       if (data.error || !data.plan_text) throw new Error('no data');
       var p = data;
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
@@ -2326,9 +2340,9 @@ function initApp() {
       html += '<div class="row"><span class="label">到店</span><span class="val">'+Number(p.visits||0)+'次</span></div>';
       html += '<div class="row"><span class="label">均消</span><span class="val">¥'+Number(p.avg_fee||0).toFixed(0)+'</span></div>';
       html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+(p.last_visit||'无')+'</span></div>';
+      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+esc(p.last_visit||'无')+'</span></div>';
       if (p.months_since_last > 0) {
-        html += '<div class="row"><span class="label">距上次</span><span class="val">'+p.months_since_last+'个月</span></div>';
+        html += '<div class="row"><span class="label">距上次</span><span class="val">'+esc(p.months_since_last)+'个月</span></div>';
       }
       // 上次项目（从plan_server返回的notes或last_service）
       var pNotes = p.notes || p.last_service || '';
@@ -2349,7 +2363,7 @@ function initApp() {
           html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
           html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
           html += '<span>'+esc(tn)+'</span>';
-          html += '<span style="color:'+tbar+';font-weight:600;">剩'+tl+'/'+tt+'次</span>';
+          html += '<span style="color:'+tbar+';font-weight:600;">剩'+esc(tl)+'/'+esc(tt)+'次</span>';
           html += '</span></div>';
           if (tt > 0) {
             html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
@@ -2366,8 +2380,9 @@ function initApp() {
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
       fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*', {
         headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ return r.json(); })
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(rows){
+        rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
           // 合并两家店数据：累加消费金额、到店次数，取最近的到店日期
           var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
@@ -2407,9 +2422,9 @@ function initApp() {
           else customerType = '新客';
           var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
           var activeLabel = lastDateStr ? (monthsSince === 0 ? '当月活跃' : (monthsSince >= 6 ? monthsSince + '个月未到店⚠️' : (monthsSince >= 3 ? monthsSince + '个月未到店' : ''))) : '';
-          sug += '👤 ' + (name||'客户') + ' · ' + customerType;
-          if (spendLabel) sug += ' / ' + spendLabel;
-          if (activeLabel) sug += ' / ' + activeLabel;
+          sug += '👤 ' + esc(name||'客户') + ' · ' + esc(customerType);
+          if (spendLabel) sug += ' / ' + esc(spendLabel);
+          if (activeLabel) sug += ' / ' + esc(activeLabel);
           sug += '\n\n';
 
           // 卡项消耗建议
@@ -2426,10 +2441,10 @@ function initApp() {
               if (cn) {
                 var used = ct - cl;
                 var pct = ct > 0 ? Math.round(cl / ct * 100) : 0;
-                if (cl <= 1) sug += '  ⚠️ ' + cn + '：仅剩' + cl + '次，必须优先安排！\n';
-                else if (pct <= 30) sug += '  🔴 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，建议尽快消耗防过期\n';
-                else if (pct <= 50) sug += '  🟡 ' + cn + '：已用' + used + '/' + ct + '次，剩' + cl + '次，可主动约客消耗\n';
-                else sug += '  🟢 ' + cn + '：已用' + used + '/' + ct + '次，时间充裕\n';
+                if (cl <= 1) sug += '  ⚠️ ' + esc(cn) + '：仅剩' + esc(cl) + '次，必须优先安排！\n';
+                else if (pct <= 30) sug += '  🔴 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，剩' + esc(cl) + '次，建议尽快消耗防过期\n';
+                else if (pct <= 50) sug += '  🟡 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，剩' + esc(cl) + '次，可主动约客消耗\n';
+                else sug += '  🟢 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，时间充裕\n';
               }
             }
             // 组合推荐
@@ -2443,16 +2458,18 @@ function initApp() {
             if (hasCut && hasDye) combos.push('剪+染 = 单次最高业绩');
             if (hasCare && hasPerm) combos.push('烫前护理 = +¥100-300');
             if (hasCare && hasDye) combos.push('染前护理 = 提升品质+客单价');
-            if (combos.length > 0) sug += '  💡 组合推荐：' + combos.join(' ｜ ') + '\n';
+            if (combos.length > 0) sug += '  💡 组合推荐：' + esc(combos.join(' ｜ ')) + '\n';
 
             // 约客话术
             var minPkg = packages.reduce(function(a,b){ 
               var al = a.left||a.leavetimes||0, bl = b.left||b.leavetimes||0;
-              return (al/a.total||1) < (bl/b.total||1) ? a : b;
+              var at = a.total||a.sumtimes||0, bt = b.total||b.sumtimes||0;
+              var ar = (al && at) ? al / at : 1, br = (bl && bt) ? bl / bt : 1;
+              return ar < br ? a : b;
             });
             var minName = minPkg.name||minPkg.itemname||'套餐';
             var minLeft = minPkg.left||minPkg.leavetimes||0;
-            sug += '  📞 主动约客："' + minName + '还剩' + minLeft + '次，趁有空过来用掉"\n';
+            sug += '  📞 主动约客："' + esc(minName) + '还剩' + esc(minLeft) + '次，趁有空过来用掉"\n';
             sug += '\n';
           }
 
@@ -2463,7 +2480,7 @@ function initApp() {
             var treatHook = '';
             if (packages.length > 0) {
               var minP = packages.reduce(function(a,b){ return ((a.left||0) < (b.left||0)) ? a : b; });
-              treatHook = '你那个' + (minP.name||minP.itemname||'') + '还剩' + (minP.left||0) + '次，';
+              treatHook = '你那个' + esc(minP.name||minP.itemname||'') + '还剩' + esc(minP.left||0) + '次，';
             }
             sug += '📞 补烫回访：' + monthsSince + '个月没来，烫发效果大概率没了。发微信："姐，换季了，' + treatHook + '这周末有空过来我给你重新设计一下发型"\n';
           } else if (monthsSince >= 1) {
@@ -2491,7 +2508,7 @@ function initApp() {
             season = '🍂 秋季热门'; recService = '蛋卷烫 / 木马卷（蓬松有型）';
             recLine = '推荐推' + recService + '，话术："姐，秋天到了，烫个蛋卷头蓬松有型，穿高领毛衣特别好看"';
           }
-          sug += season + '：' + recService + '\n' + recLine + '\n\n';
+          sug += esc(season) + '：' + esc(recService) + '\n' + esc(recLine) + '\n\n';
 
           // 针对性业绩建议
           if (visits >= 5 && consum < 1000) {
@@ -2529,7 +2546,7 @@ function initApp() {
           if (lastService) {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
-          if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+lastDateStr+'</span></div>';
+          if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+esc(lastDateStr)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
           // 最近到店记录
           var visitHistory = [];
@@ -2572,7 +2589,7 @@ function initApp() {
               htmlContent += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
               htmlContent += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
               htmlContent += '<span>'+esc(cName)+'</span>';
-              htmlContent += '<span style="color:'+barColor+';font-weight:600;">剩'+cLeft+'/'+cTotal+'次</span>';
+              htmlContent += '<span style="color:'+barColor+';font-weight:600;">剩'+esc(cLeft)+'/'+esc(cTotal)+'次</span>';
               htmlContent += '</span></div>';
               // 进度条
               if (cTotal > 0) {
@@ -2591,8 +2608,9 @@ function initApp() {
         // customer_profiles没找到 → 降级到预约记录
         fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&customer_phone=eq.' + encodeURIComponent(phone) + '&order=date.asc', {
           headers: { 'apikey': SUPABASE_KEY }
-        }).then(function(r){ return r.json(); })
+        }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function(bookingRows){
+          bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
             document.querySelector('#plan-modal .box').innerHTML =
               '<h3>'+esc(name||'客户')+'</h3><div class="no-data">暂无历史数据</div>'+
@@ -2624,9 +2642,9 @@ function initApp() {
           if (monthsSince >= 6) sug += '⚠️ ' + monthsSince + '个月未到店，流失风险高！';
           else if (monthsSince >= 3) sug += '⏰ ' + monthsSince + '个月未到店，接近补烫周期。';
           else if (lastDate) sug += '✅ 近期刚来过，可关注追加效果。';
-          if (mainBarber && barberSpecialty) sug += '💇 常找 ' + mainBarber + '（' + barberSpecialty + '）—— 优先安排。';
-          else if (barbers.length > 0) sug += '💇 找过：' + barbers.join('、') + '。';
-          if (totalFuture > 0 && nextDate) sug += '📅 已有预约（' + nextDate + '），提前准备。';
+          if (mainBarber && barberSpecialty) sug += '💇 常找 ' + esc(mainBarber) + '（' + esc(barberSpecialty) + '）—— 优先安排。';
+          else if (barbers.length > 0) sug += '💇 找过：' + esc(barbers.join('、')) + '。';
+          if (totalFuture > 0 && nextDate) sug += '📅 已有预约（' + esc(nextDate) + '），提前准备。';
           sug += '💡 ';
           if (totalPast >= 5 && monthsSince < 3) sug += '优质老客，保持服务水准。';
           else if (totalPast <= 2 && monthsSince < 3) sug += '新客成长关键期，重点建立信任。';
@@ -2634,10 +2652,10 @@ function initApp() {
           var htmlContent = '<h3>'+esc(name||'客户')+'</h3>';
           htmlContent += '<div class="row"><span class="label">历史到店</span><span class="val">'+totalPast+'次</span></div>';
           if (totalFuture > 0) htmlContent += '<div class="row"><span class="label">待赴约</span><span class="val">'+totalFuture+'次</span></div>';
-          if (lastDate) htmlContent += '<div class="row"><span class="label">最近到店</span><span class="val">'+lastDate+'</span></div>';
-          if (nextDate) htmlContent += '<div class="row"><span class="label">下次预约</span><span class="val">'+nextDate+'</span></div>';
+          if (lastDate) htmlContent += '<div class="row"><span class="label">最近到店</span><span class="val">'+esc(lastDate)+'</span></div>';
+          if (nextDate) htmlContent += '<div class="row"><span class="label">下次预约</span><span class="val">'+esc(nextDate)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
-          if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+barbers.join('、')+'</span></div>';
+          if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+esc(barbers.join('、'))+'</span></div>';
           // 预约备注
           var bookingNotes = [];
           bookingRows.forEach(function(b){ if (b.notes) bookingNotes.push(b.notes); });
@@ -2720,7 +2738,7 @@ function initApp() {
   var AI_TUNNEL_URL = null;
   (function() {
     fetch('tunnel-url.json?_t=' + Date.now())
-      .then(function(r){ return r.json(); })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){ AI_TUNNEL_URL = d.url; })
       .catch(function(e){ console.warn('获取隧道URL失败:', e); });
   })();
@@ -2740,7 +2758,7 @@ function initApp() {
       }
       return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
     }
-    return '<button class="ai-btn" data-phone="'+phone+'" data-name="'+esc(name||'')+'" data-bdate="'+(dateKey||'')+'" data-barber="'+escAttr(barberName||'')+'">🤖 AI分析建议</button>';
+    return '<button class="ai-btn" data-phone="'+escAttr(phone||'')+'" data-name="'+escAttr(name||'')+'" data-bdate="'+escAttr(dateKey||'')+'" data-barber="'+escAttr(barberName||'')+'">🤖 AI分析建议</button>';
   }
   function updateAiButtonsAvailability() {
     // 不限网络，始终可用
@@ -2751,7 +2769,7 @@ function initApp() {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
     // 加加载状态
-    box.innerHTML += '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>';
+    box.insertAdjacentHTML('beforeend', '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>');
     var loadingEl = document.getElementById('ai-loading');
     // 禁掉按钮防重复点击
     var btns = box.querySelectorAll('button');
@@ -2762,15 +2780,34 @@ function initApp() {
     var tunnelUrl = urls.tunnel;
     function doRequest() {
       var xhr = new XMLHttpRequest();
+      var done = false;
+      var timeoutMs = url === urls.local ? 12000 : 95000;
+      var timeoutTimer = setTimeout(function() {
+        if (done) return;
+        done = true;
+        try { xhr.abort(); } catch(e) {}
+        if (url === urls.local) {
+          url = tunnelUrl;
+          doRequest();
+          return;
+        }
+        if (loadingEl) loadingEl.remove();
+        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>');
+      }, timeoutMs);
       xhr.open('GET', url, true);
-      xhr.timeout = 95000;
+      xhr.timeout = 0;
       xhr.onload = function() {
+        if (done) return;
+        done = true;
+        clearTimeout(timeoutTimer);
         if (loadingEl) loadingEl.remove();
         btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
         try {
+          if (xhr.status < 200 || xhr.status >= 300) throw new Error('HTTP ' + xhr.status);
           var data = JSON.parse(xhr.responseText);
           if (data.error) {
-            box.innerHTML += '<div class="ai-result error">❌ ' + esc(data.error) + '</div>';
+            box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ ' + esc(data.error) + '</div>');
             return;
           }
           var analysis = data.analysis || '无分析结果';
@@ -2782,12 +2819,15 @@ function initApp() {
           // 移除AI按钮，防止重复点击
           var aiBtn = box.querySelector('.ai-btn');
           if (aiBtn) aiBtn.remove();
-          box.innerHTML += html;
+          box.insertAdjacentHTML('beforeend', html);
         } catch(e) {
-          box.innerHTML += '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>';
+          box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>');
         }
       };
       xhr.onerror = function() {
+        if (done) return;
+        done = true;
+        clearTimeout(timeoutTimer);
         // 本地失败 → 换隧道重试
         if (url === urls.local) {
           url = tunnelUrl;
@@ -2796,12 +2836,20 @@ function initApp() {
         }
         if (loadingEl) loadingEl.remove();
         btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-        box.innerHTML += '<div class="ai-result error">❌ 无法连接AI分析服务</div>';
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 无法连接AI分析服务</div>');
       };
       xhr.ontimeout = function() {
+        if (done) return;
+        done = true;
+        clearTimeout(timeoutTimer);
+        if (url === urls.local) {
+          url = tunnelUrl;
+          doRequest();
+          return;
+        }
         if (loadingEl) loadingEl.remove();
         btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-        box.innerHTML += '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>';
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>');
       };
       xhr.send();
     }
@@ -2809,14 +2857,30 @@ function initApp() {
   };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
+  // 这里手写的是Supabase Realtime使用的Phoenix消息格式；如后续引入supabase-js，应优先改用官方channel API。
   var _bookingChannel = null;
+  var _bookingReconnectTimer = null;
+  var _bookingReconnectAttempts = 0;
+  function isBookingPageActive() {
+    var tab = document.getElementById('tab-bookings');
+    return !!(tab && tab.classList.contains('active'));
+  }
+  function closeRealtime() {
+    if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
+    if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
+    if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
+    _bookingReconnectAttempts = 0;
+  }
   function initRealtime() {
+    if (!isBookingPageActive()) return;
+    if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
     if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
     var wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
     try {
       var ws = new WebSocket(wsUrl);
       var refCount = 0;
       ws.onopen = function() {
+        _bookingReconnectAttempts = 0;
         refCount++;
         // 加入 bookings 频道
         ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'phx_join', {}]));
@@ -2838,9 +2902,19 @@ function initApp() {
         } catch(ex) { console.warn('Realtime消息解析失败:', ex); }
       };
       ws.onclose = function() {
-        // 断线后5秒自动重连，同时启动轮询兜底
-        setTimeout(initRealtime, 5000);
-        if (!BOOKING_INTERVAL && document.getElementById('tab-bookings').classList.contains('active')) {
+        if (_bookingChannel === ws) _bookingChannel = null;
+        else return;
+        if (!isBookingPageActive()) return;
+        if (_bookingReconnectAttempts >= 5) return;
+        // 断线后按退避重连：1s → 2s → 4s → 8s → 16s → 停止。
+        var delay = Math.pow(2, _bookingReconnectAttempts) * 1000;
+        _bookingReconnectAttempts++;
+        _bookingReconnectTimer = setTimeout(function(){
+          _bookingReconnectTimer = null;
+          if (!isBookingPageActive()) return;
+          initRealtime();
+        }, delay);
+        if (!BOOKING_INTERVAL && isBookingPageActive()) {
           BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
         }
       };
@@ -2856,6 +2930,9 @@ function initApp() {
     } catch(e) {
       console.warn('Realtime初始化失败:', e);
       // WebSocket 连接失败，走 polling 兜底
+      if (!BOOKING_INTERVAL && isBookingPageActive()) {
+        BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
+      }
     }
   }
 
@@ -2875,6 +2952,8 @@ function initApp() {
           }
         }, 2000);
       }
+    } else {
+      closeRealtime();
     }
   };
 
