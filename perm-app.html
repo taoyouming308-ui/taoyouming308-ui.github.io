@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="136">
+<html lang="zh-CN" data-version="137">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -571,6 +571,7 @@ body {
   <div id="home-drawer-mask" class="home-drawer-mask" onclick="closeHomeDrawer()"></div>
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('content')">内容</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
   </aside>
   <div class="hero-text">
@@ -1314,6 +1315,107 @@ body {
     <div id="booking-list"><div class="booking-loading">加载中...</div></div>
   </section>
 
+  <!-- 内容 Tab -->
+  <section class="tab-content" id="tab-content">
+    <style>
+    .c-nav { display:flex; gap:0; margin-bottom:14px; border-bottom:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .c-nav button { flex:1; min-width:56px; padding:10px 2px; background:none; border:none; color:var(--text-secondary); font-size:12px; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all .15s; }
+    .c-nav button.on { color:var(--text); border-bottom-color:var(--text); }
+    .c-sub { display:none; }
+    .c-sub.active { display:block; }
+    .c-label { display:block; font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
+    .c-inp, .c-sel { width:100%; padding:12px; background:var(--surface); border:1.5px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-family:var(--font); appearance:none; }
+    .c-inp:focus, .c-sel:focus { outline:none; border-color:var(--text); }
+    .c-textarea { width:100%; padding:12px; background:var(--surface); border:1.5px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-family:var(--font); min-height:80px; resize:vertical; }
+    .c-btn { width:100%; padding:14px 0; border:0; border-radius:8px; background:var(--text); color:var(--bg); font-size:15px; font-weight:600; cursor:pointer; margin:10px 0; }
+    .c-btn:active { opacity:.7; }
+    .c-btn-sm { display:inline-block; padding:6px 14px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text-secondary); font-size:12px; cursor:pointer; margin-right:6px; }
+    .c-card { padding:16px; background:var(--surface); border-radius:12px; margin:10px 0; }
+    .c-card h3 { font-size:15px; font-weight:600; margin-bottom:8px; }
+    .c-card p { font-size:14px; line-height:1.7; color:var(--text-secondary); white-space:pre-wrap; }
+    .c-tag { display:inline-block; padding:3px 10px; border-radius:12px; background:rgba(148,163,184,.15); font-size:12px; margin:3px; color:var(--text); }
+    .c-empty { text-align:center; padding:40px 0; color:var(--text-secondary); font-size:14px; }
+    .c-loading { text-align:center; padding:20px; color:var(--text-secondary); font-size:13px; }
+    .c-title-list li { padding:12px; border-bottom:1px solid var(--border); font-size:14px; line-height:1.5; }
+    .c-title-list li:last-child { border-bottom:none; }
+    .c-script-block { margin-bottom:16px; }
+    .c-script-block h4 { font-size:13px; color:var(--accent); margin-bottom:4px; }
+    .c-script-block p { font-size:13px; line-height:1.7; color:var(--text-secondary); }
+    .c-flex { display:flex; gap:8px; }
+    .c-flex .c-inp { flex:1; }
+    .c-item { padding:14px; border-bottom:1px solid var(--border); }
+    .c-item h4 { font-size:14px; font-weight:600; }
+    .c-item p { font-size:13px; color:var(--text-secondary); margin-top:4px; }
+    .c-item .c-tag-sm { display:inline-block; padding:2px 8px; background:rgba(148,163,184,.2); border-radius:10px; font-size:11px; margin:2px; }
+    .c-modal-overlay { position:fixed; inset:0; z-index:20000; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .c-modal { width:100%; max-width:420px; max-height:80vh; overflow-y:auto; background:var(--surface); border-radius:16px; padding:20px; }
+    .c-modal h3 { font-size:16px; font-weight:600; margin-bottom:12px; }
+    .c-close { position:fixed; top:20px; right:20px; z-index:20001; width:36px; height:36px; border:0; border-radius:50%; background:rgba(255,255,255,.15); color:#fff; font-size:20px; cursor:pointer; }
+    .c-server-badge { font-size:11px; color:var(--text-secondary); text-align:center; padding:6px; margin:4px 0; border:1px dashed var(--border); border-radius:6px; }
+    .c-server-badge.online { border-color:rgba(34,197,94,.4); color:#22c55e; }
+    .c-server-badge.offline { border-color:rgba(244,33,46,.3); color:#f4212e; }
+    </style>
+
+    <nav class="c-nav" id="content-nav">
+      <button class="on" onclick="switchContentTab('generate')">文案生成</button>
+      <button onclick="switchContentTab('titles')">标题生成</button>
+      <button onclick="switchContentTab('shooting')">拍摄库</button>
+      <button onclick="switchContentTab('library')">文案库</button>
+      <button onclick="switchContentTab('script')">拍摄脚本</button>
+    </nav>
+
+    <!-- 1. 文案生成 -->
+    <div class="c-sub active" id="cg-generate">
+      <label class="c-label">发型类型</label>
+      <select class="c-sel" id="cg-hair"><option>剪发</option><option>烫发</option><option>染发</option><option>羊毛卷</option><option>法式卷</option><option>造型烫</option><option>层次剪</option><option selected>烫发</option></select>
+      <label class="c-label" style="margin-top:10px">顾客痛点</label>
+      <select class="c-sel" id="cg-pain"><option>头发塌</option><option>发量少</option><option>脸大</option><option>显老</option><option>没层次</option><option>发质受损</option><option selected>头发塌</option></select>
+      <label class="c-label" style="margin-top:10px">风格偏好（可选）</label>
+      <input class="c-inp" id="cg-style" placeholder="例：高级感、杭州同城" value="杭州发型师、真实专业">
+      <button class="c-btn" id="cg-btn" onclick="contentGenerate('copy')">🎯 生成文案</button>
+      <div id="cg-result"></div>
+    </div>
+
+    <!-- 2. 标题生成 -->
+    <div class="c-sub" id="cg-titles">
+      <label class="c-label">发型类型</label>
+      <select class="c-sel" id="ct-hair"><option>剪发</option><option>烫发</option><option>染发</option><option>羊毛卷</option><option>法式卷</option><option>造型烫</option><option>层次剪</option><option selected>羊毛卷</option></select>
+      <label class="c-label" style="margin-top:10px">顾客痛点</label>
+      <select class="c-sel" id="ct-pain"><option>头发塌</option><option>发量少</option><option>脸大</option><option>显老</option><option>没层次</option><option>发质受损</option><option selected>脸大显胖</option></select>
+      <button class="c-btn" onclick="contentGenerate('titles')">🎯 生成标题</button>
+      <div id="ct-result"></div>
+    </div>
+
+    <!-- 3. 拍摄库 -->
+    <div class="c-sub" id="cg-shooting">
+      <button class="c-btn" onclick="showAddShooting()">+ 新增拍摄方式</button>
+      <div id="cs-list"></div>
+    </div>
+
+    <!-- 4. 文案库 -->
+    <div class="c-sub" id="cg-library">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input class="c-inp" id="cl-search" placeholder="搜索文案..." oninput="loadContentLibrary()">
+      </div>
+      <div id="cl-tabs" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="c-btn-sm" onclick="filterLibrary('all')" style="background:var(--text);color:var(--bg)">全部</button>
+        <button class="c-btn-sm" onclick="filterLibrary('copy')">文案</button>
+        <button class="c-btn-sm" onclick="filterLibrary('titles')">标题</button>
+      </div>
+      <div id="cl-list"></div>
+    </div>
+
+    <!-- 5. 拍摄脚本 -->
+    <div class="c-sub" id="cg-script">
+      <label class="c-label">发型类型</label>
+      <select class="c-sel" id="cs-hair"><option>剪发</option><option>烫发</option><option>染发</option><option>羊毛卷</option><option>法式卷</option><option>造型烫</option><option>层次剪</option><option selected>羊毛卷</option></select>
+      <label class="c-label" style="margin-top:10px">顾客痛点</label>
+      <select class="c-sel" id="cs-pain"><option>头发塌</option><option>发量少</option><option>脸大</option><option>显老</option><option>没层次</option><option>发质受损</option><option selected>脸大显胖</option></select>
+      <button class="c-btn" onclick="contentGenerate('script')">🎬 生成拍摄脚本</button>
+      <div id="csr-result"></div>
+    </div>
+  </section>
+
 </div><!-- /app-content -->
 
 </main>
@@ -1544,6 +1646,7 @@ function initApp() {
       if (tabName === 'plans') switchPlan('query');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
+      if (tabName === 'content') { /* content tab loads on demand */ }
     }
   };
   window.goHome = function() {
@@ -2969,7 +3072,379 @@ function initApp() {
 
   // === PWA：静默更新检测（无Service Worker，HTTP缓存已设no-cache）===
   // ★ 最后检查身份，确保所有函数已定义
+  // === 内容智能体 ===
+  var CONTENT_API_URL = localStorage.getItem('content_api_url') || '';
+  var CONTENT_CACHE = {};
+
+  // 启动时从Supabase读取服务器地址
+  (function(){
+    fetch(SUPABASE_URL+'/rest/v1/content_settings?id=eq.2&select=default_style', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data && data.length && data[0].default_style) {
+        var url = data[0].default_style.replace(/\/+$/, '');
+        if (url.indexOf('https://') === 0 && !localStorage.getItem('content_api_url')) {
+          CONTENT_API_URL = url;
+          localStorage.setItem('content_api_url', url);
+        }
+      }
+    })
+    .catch(function(){});
+  })();
+
+  window.switchContentTab = function(name) {
+    var btns = document.querySelectorAll('#content-nav button');
+    btns.forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.c-sub').forEach(function(p){ p.classList.remove('active'); });
+    btns.forEach(function(b){
+      if (b.getAttribute('onclick').indexOf("'"+name+"'")>=0) b.classList.add('on');
+    });
+    var el = document.getElementById('cg-'+name);
+    if (el) el.classList.add('active');
+    if (name === 'shooting') loadShootingMethods();
+    if (name === 'library') loadContentLibrary();
+  };
+
+  function getContentApiUrl() {
+    if (CONTENT_API_URL) return CONTENT_API_URL;
+    var store = localStorage.getItem('content_api_url');
+    if (store) { CONTENT_API_URL = store; return store; }
+    return '';
+  }
+
+  window.contentGenerate = function(type) {
+    var btn, resultEl, url = '/generate-'+type;
+    var hairEl, painEl, styleEl;
+
+    if (type === 'copy') {
+      hairEl = document.getElementById('cg-hair');
+      painEl = document.getElementById('cg-pain');
+      styleEl = document.getElementById('cg-style');
+      btn = document.getElementById('cg-btn');
+      resultEl = document.getElementById('cg-result');
+    } else if (type === 'titles') {
+      hairEl = document.getElementById('ct-hair');
+      painEl = document.getElementById('ct-pain');
+      resultEl = document.getElementById('ct-result');
+      btn = resultEl.previousElementSibling;
+    } else if (type === 'script') {
+      hairEl = document.getElementById('cs-hair');
+      painEl = document.getElementById('cs-pain');
+      resultEl = document.getElementById('csr-result');
+      btn = resultEl.previousElementSibling;
+    }
+    if (!hairEl || !painEl || !btn || !resultEl) return;
+
+    var apiUrl = getContentApiUrl();
+    if (!apiUrl) {
+      resultEl.innerHTML = '<div class="c-card"><h3>⚠️ 服务器未连接</h3><p>请先在设置中配置服务器地址，或启动本地后端。</p><div style="margin-top:8px"><input class="c-inp" id="api-url-input" placeholder="输入服务器URL" style="margin-bottom:6px"><button class="c-btn-sm" onclick="setApiUrl()">保存</button></div></div>';
+      return;
+    }
+
+    var data = { hair_type: hairEl.value, pain_point: painEl.value };
+    if (type === 'copy' && styleEl) data.style_tags = styleEl.value;
+
+    btn.textContent = '生成中...';
+    btn.disabled = true;
+
+    fetch(apiUrl + url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      btn.textContent = '🎯 生成'+(type==='script'?'拍摄脚本':(type==='titles'?'标题':'文案'));
+      btn.disabled = false;
+      if (type === 'copy') renderCopyResult(res, resultEl);
+      else if (type === 'titles') renderTitleResult(res, resultEl, hairEl.value, painEl.value);
+      else if (type === 'script') renderScriptResult(res, resultEl);
+    })
+    .catch(function(err){
+      btn.textContent = '🎯 生成'+(type==='script'?'拍摄脚本':(type==='titles'?'标题':'文案'));
+      btn.disabled = false;
+      resultEl.innerHTML = '<div class="c-card"><h3>❌ 生成失败</h3><p>'+err.message+'</p><p style="font-size:12px;margin-top:8px">请确认后端服务器已启动。</p></div>';
+    });
+  };
+
+  function renderCopyResult(res, el) {
+    if (res.error) {
+      el.innerHTML = '<div class="c-card"><h3>❌ 生成失败</h3><p>'+res.error+'</p></div>';
+      return;
+    }
+    var html = '<div class="c-card">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center"><h3>📝 '+escHtml(res.xhs_title||'')+'</h3><span class="c-btn-sm" onclick="saveGeneratedCopy(\''+escJson(JSON.stringify(res))+'\')">💾 保存</span></div>';
+    html += '<div style="margin-top:8px"><p>'+escHtml(res.xhs_body||'').replace(/\n/g,'<br>')+'</p></div>';
+    html += '</div>';
+    html += '<div class="c-card"><h3>📱 朋友圈</h3><p>'+escHtml(res.friend_circle||'').replace(/\n/g,'<br>')+'</p></div>';
+    if (res.tags && res.tags.length) {
+      html += '<div class="c-card">';
+      res.tags.forEach(function(t){ html += '<span class="c-tag">'+escHtml(t)+'</span>'; });
+      html += '</div>';
+    }
+    el.innerHTML = html;
+    CONTENT_CACHE.lastCopy = res;
+  }
+
+  function renderTitleResult(res, el, hairType, painPoint) {
+    if (res.error) {
+      el.innerHTML = '<div class="c-card"><h3>❌ 生成失败</h3><p>'+res.error+'</p></div>';
+      return;
+    }
+    var titles = res.titles || res;
+    if (!Array.isArray(titles)) titles = [titles];
+    var html = '<div class="c-card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>🎯 10条标题</h3><span class="c-btn-sm" onclick="saveGeneratedTitles()">💾 全部保存</span></div>';
+    html += '<ol class="c-title-list" style="margin-top:8px;padding-left:18px">';
+    titles.forEach(function(t){
+      if (typeof t === 'string') html += '<li>'+escHtml(t)+'</li>';
+    });
+    html += '</ol></div>';
+    el.innerHTML = html;
+    CONTENT_CACHE.lastTitles = { titles: titles, hair_type: hairType, pain_point: painPoint };
+  }
+
+  function renderScriptResult(res, el) {
+    if (res.error) {
+      el.innerHTML = '<div class="c-card"><h3>❌ 生成失败</h3><p>'+res.error+'</p></div>';
+      return;
+    }
+    var html = '';
+    ['15s','30s','60s'].forEach(function(dur){
+      var scenes = res[dur];
+      if (!scenes || !scenes.length) return;
+      html += '<div class="c-card"><h3>⏱ '+dur+' 版本</h3>';
+      scenes.forEach(function(s){
+        html += '<div class="c-script-block"><h4>第'+s.second+'秒</h4>';
+        if (s.frame) html += '<p><b>镜头：</b>'+escHtml(s.frame)+'</p>';
+        if (s.voiceover) html += '<p><b>旁白：</b>'+escHtml(s.voiceover)+'</p>';
+        if (s.action) html += '<p><b>动作：</b>'+escHtml(s.action)+'</p>';
+        if (s.transition) html += '<p><b>转场：</b>'+escHtml(s.transition)+'</p>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    el.innerHTML = html || '<div class="c-card"><p>生成失败，请重试</p></div>';
+  }
+
+  window.saveGeneratedCopy = function(jsonStr) {
+    var d;
+    try { d = JSON.parse(jsonStr); } catch(e) { d = CONTENT_CACHE.lastCopy; }
+    if (!d || !d.xhs_title) { showToast('没有可保存的内容'); return; }
+    var hairEl = document.getElementById('cg-hair');
+    var painEl = document.getElementById('cg-pain');
+    fetch(SUPABASE_URL+'/rest/v1/content_articles', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        hair_type: hairEl ? hairEl.value : '',
+        pain_point: painEl ? painEl.value : '',
+        style_tags: (document.getElementById('cg-style')||{}).value || '',
+        xhs_title: d.xhs_title || '',
+        xhs_body: d.xhs_body || '',
+        friend_circle: d.friend_circle || '',
+        tags: d.tags || []
+      })
+    }).then(function(){ showToast('✅ 已保存到文案库'); }).catch(function(){ showToast('保存失败'); });
+  };
+
+  window.saveGeneratedTitles = function() {
+    var d = CONTENT_CACHE.lastTitles;
+    if (!d || !d.titles) { showToast('没有可保存的标题'); return; }
+    var titles = d.titles.filter(function(t){ return typeof t === 'string'; });
+    fetch(SUPABASE_URL+'/rest/v1/content_titles', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        titles: titles,
+        hair_type: d.hair_type || '',
+        pain_point: d.pain_point || '',
+        style_tags: ''
+      })
+    }).then(function(){ showToast('✅ 标题已保存'); }).catch(function(){ showToast('保存失败'); });
+  };
+
+  // === 拍摄库 ===
+  window.showAddShooting = function() {
+    var overlay = document.createElement('div');
+    overlay.className = 'c-modal-overlay';
+    overlay.innerHTML = '<div class="c-modal"><h3>📸 新增拍摄方式</h3>'+
+      '<label class="c-label">分类</label><select class="c-sel" id="cs-cat"><option>剪发</option><option>烫发</option><option>染发</option><option selected>改造前后对比</option><option>顾客反馈</option></select>'+
+      '<label class="c-label" style="margin-top:8px">标题</label><input class="c-inp" id="cs-title" placeholder="给这个拍摄方式起个名字">'+
+      '<label class="c-label" style="margin-top:8px">视频开头</label><textarea class="c-textarea" id="cs-intro" placeholder="怎么开场..." rows="2"></textarea>'+
+      '<label class="c-label" style="margin-top:8px">拍摄角度</label><input class="c-inp" id="cs-angle" placeholder="例：侧面45度俯拍">'+
+      '<label class="c-label" style="margin-top:8px">动作设计</label><input class="c-inp" id="cs-action" placeholder="例：先展示before→转头→展示after">'+
+      '<label class="c-label" style="margin-top:8px">文案结构</label><input class="c-inp" id="cs-copy" placeholder="例：痛点→过程→结果">'+
+      '<label class="c-label" style="margin-top:8px">适合发型</label><input class="c-inp" id="cs-hairtype" placeholder="例：羊毛卷、层次剪">'+
+      '<button class="c-btn" onclick="saveShooting(this)">保存</button></div>';
+    overlay.onclick = function(e){ if (e.target === overlay) document.body.removeChild(overlay); };
+    document.body.appendChild(overlay);
+  };
+
+  window.saveShooting = function(btn) {
+    var data = {
+      category: document.getElementById('cs-cat').value,
+      title: document.getElementById('cs-title').value,
+      intro: document.getElementById('cs-intro').value,
+      angle: document.getElementById('cs-angle').value,
+      action: document.getElementById('cs-action').value,
+      copy_structure: document.getElementById('cs-copy').value,
+      suitable_hair: document.getElementById('cs-hairtype').value
+    };
+    if (!data.title) { showToast('请输入标题'); return; }
+    fetch(SUPABASE_URL+'/rest/v1/shooting_methods', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
+      body: JSON.stringify(data)
+    }).then(function(){
+      showToast('✅ 已保存');
+      var overlay = btn.closest('.c-modal-overlay');
+      if (overlay) document.body.removeChild(overlay);
+      loadShootingMethods();
+    }).catch(function(){ showToast('保存失败'); });
+  };
+
+  function loadShootingMethods() {
+    var list = document.getElementById('cs-list');
+    if (!list) return;
+    list.innerHTML = '<div class="c-loading">加载中...</div>';
+    fetch(SUPABASE_URL+'/rest/v1/shooting_methods?select=*&order=created_at.desc&limit=50', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data || !data.length) {
+        list.innerHTML = '<div class="c-empty">还没有拍摄方式，点击上方新增</div>';
+        return;
+      }
+      var html = '';
+      data.forEach(function(item){
+        html += '<div class="c-item">';
+        html += '<h4>'+escHtml(item.title||'')+'</h4>';
+        html += '<p>分类：<span class="c-tag-sm">'+escHtml(item.category||'')+'</span></p>';
+        if (item.intro) html += '<p style="margin-top:4px">🎬 '+escHtml(item.intro)+'</p>';
+        if (item.angle) html += '<p>📷 角度：'+escHtml(item.angle)+'</p>';
+        if (item.action) html += '<p>💃 动作：'+escHtml(item.action)+'</p>';
+        if (item.suitable_hair) html += '<p>💇 适合：'+escHtml(item.suitable_hair)+'</p>';
+        html += '</div>';
+      });
+      list.innerHTML = html;
+    })
+    .catch(function(){
+      list.innerHTML = '<div class="c-empty">加载失败</div>';
+    });
+  }
+
+  // === 文案库 ===
+  var LIBRARY_FILTER = 'all';
+  window.filterLibrary = function(type) {
+    LIBRARY_FILTER = type;
+    var btns = document.querySelectorAll('#cl-tabs button');
+    btns.forEach(function(b){
+      b.style.background = '';
+      b.style.color = '';
+    });
+    btns.forEach(function(b){
+      if (b.getAttribute('onclick').indexOf("'"+type+"'")>=0) {
+        b.style.background = 'var(--text)';
+        b.style.color = 'var(--bg)';
+      }
+    });
+    loadContentLibrary();
+  };
+
+  function loadContentLibrary() {
+    var list = document.getElementById('cl-list');
+    if (!list) return;
+    var search = (document.getElementById('cl-search')||{}).value || '';
+    list.innerHTML = '<div class="c-loading">加载中...</div>';
+
+    if (LIBRARY_FILTER === 'all' || LIBRARY_FILTER === 'copy') {
+      fetch(SUPABASE_URL+'/rest/v1/content_articles?select=*&order=created_at.desc&limit=20', {
+        headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(articles){
+        if (LIBRARY_FILTER === 'titles') {
+          loadTitleLibrary(list, search);
+          return;
+        }
+        var html = '';
+        var filtered = articles;
+        if (search) filtered = articles.filter(function(a){ return (a.xhs_title||'').indexOf(search)>=0 || (a.xhs_body||'').indexOf(search)>=0; });
+        filtered.forEach(function(a){
+          html += '<div class="c-item">';
+          html += '<h4>'+escHtml(a.xhs_title||'(无标题)')+'</h4>';
+          if (a.hair_type) html += '<p><span class="c-tag-sm">'+escHtml(a.hair_type)+'</span> <span class="c-tag-sm">'+escHtml(a.pain_point||'')+'</span></p>';
+          html += '<p style="margin-top:4px;font-size:12px;color:var(--text-secondary);max-height:50px;overflow:hidden">'+escHtml((a.xhs_body||'').substring(0,120))+'</p>';
+          html += '</div>';
+        });
+        if (filtered.length === 0) html = '<div class="c-empty">暂无文案</div>';
+        if (LIBRARY_FILTER === 'all') html += '<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"></div>';
+        list.innerHTML = html;
+        if (LIBRARY_FILTER === 'all') loadTitleLibrary(list, search);
+      })
+      .catch(function(){ list.innerHTML = '<div class="c-empty">加载失败</div>'; });
+    } else {
+      loadTitleLibrary(list, search);
+    }
+  }
+
+  function loadTitleLibrary(listEl, search) {
+    fetch(SUPABASE_URL+'/rest/v1/content_titles?select=*&order=created_at.desc&limit=20', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var previous = listEl.innerHTML;
+      var html = '';
+      var filtered = data;
+      if (search) filtered = data.filter(function(a){
+        return (a.titles||[]).some(function(t){ return (t||'').indexOf(search)>=0; });
+      });
+      filtered.forEach(function(item){
+        var titles = item.titles || [];
+        if (typeof titles === 'string') { try { titles = JSON.parse(titles); } catch(e) { titles = [titles]; } }
+        if (!Array.isArray(titles)) titles = [];
+        html += '<div class="c-item">';
+        html += '<h4>📌 标题集</h4>';
+        if (item.hair_type) html += '<p><span class="c-tag-sm">'+escHtml(item.hair_type)+'</span> <span class="c-tag-sm">'+escHtml(item.pain_point||'')+'</span></p>';
+        html += '<ol style="margin-top:4px;padding-left:16px;font-size:12px;color:var(--text-secondary);max-height:80px;overflow:hidden">';
+        titles.slice(0,5).forEach(function(t){ html += '<li>'+escHtml(t)+'</li>'; });
+        if (titles.length > 5) html += '<li>…共'+titles.length+'条</li>';
+        html += '</ol></div>';
+      });
+      if (html) {
+        listEl.innerHTML = previous + html;
+      } else if (LIBRARY_FILTER !== 'all') {
+        listEl.innerHTML = '<div class="c-empty">暂无标题</div>';
+      }
+    })
+    .catch(function(){});
+  }
+
+  window.setApiUrl = function() {
+    var inp = document.getElementById('api-url-input');
+    if (!inp || !inp.value) return;
+    CONTENT_API_URL = inp.value.replace(/\/+$/, '');
+    localStorage.setItem('content_api_url', CONTENT_API_URL);
+    showToast('✅ 服务器地址已保存');
+    document.getElementById('cg-result').innerHTML = '';
+  };
+
+  function escHtml(s) {
+    if (typeof s !== 'string') return String(s||'');
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escJson(s) {
+    return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  // ★ 最后检查身份，确保所有函数已定义
   checkIdentity();
+
+  // === 结束 initApp ===
   } catch(e) { console.error('init error:', e); }
 }
 if (document.readyState === 'loading') {
