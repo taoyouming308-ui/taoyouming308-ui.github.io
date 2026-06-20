@@ -2357,7 +2357,7 @@ function initApp() {
         for (var ti = 0; ti < p.active_treats.length; ti++) {
           var tp = p.active_treats[ti];
           var tn = tp.name || '套餐';
-          var tl = tp.left || 0;
+          var tl = tp.left || tp.remaining || 0;
           var tt = tp.total || 0;
           var tused = tt - tl;
           var tpct = tt > 0 ? Math.round(tl / tt * 100) : 0;
@@ -2438,7 +2438,7 @@ function initApp() {
             for (var ci = 0; ci < packages.length; ci++) {
               var cp = packages[ci];
               var cn = cp.name || cp.itemname || '';
-              var cl = cp.left || cp.leavetimes || 0;
+              var cl = cp.left || cp.remaining || cp.leavetimes || 0;
               var ct = cp.total || cp.sumtimes || 0;
               if (cn) {
                 var used = ct - cl;
@@ -2464,13 +2464,13 @@ function initApp() {
 
             // 约客话术
             var minPkg = packages.reduce(function(a,b){ 
-              var al = a.left||a.leavetimes||0, bl = b.left||b.leavetimes||0;
+              var al = a.left||a.remaining||a.leavetimes||0, bl = b.left||b.remaining||b.leavetimes||0;
               var at = a.total||a.sumtimes||0, bt = b.total||b.sumtimes||0;
               var ar = (al && at) ? al / at : 1, br = (bl && bt) ? bl / bt : 1;
               return ar < br ? a : b;
             });
             var minName = minPkg.name||minPkg.itemname||'套餐';
-            var minLeft = minPkg.left||minPkg.leavetimes||0;
+            var minLeft = minPkg.left||minPkg.remaining||minPkg.leavetimes||0;
             sug += '  📞 主动约客："' + esc(minName) + '还剩' + esc(minLeft) + '次，趁有空过来用掉"\n';
             sug += '\n';
           }
@@ -2481,8 +2481,8 @@ function initApp() {
           } else if (monthsSince >= 3) {
             var treatHook = '';
             if (packages.length > 0) {
-              var minP = packages.reduce(function(a,b){ return ((a.left||0) < (b.left||0)) ? a : b; });
-              treatHook = '你那个' + esc(minP.name||minP.itemname||'') + '还剩' + esc(minP.left||0) + '次，';
+              var minP = packages.reduce(function(a,b){ return ((a.remaining||a.left||0) < (b.remaining||b.left||0)) ? a : b; });
+              treatHook = '你那个' + esc(minP.name||minP.itemname||'') + '还剩' + esc(minP.remaining||minP.left||0) + '次，';
             }
             sug += '📞 补烫回访：' + monthsSince + '个月没来，烫发效果大概率没了。发微信："姐，换季了，' + treatHook + '这周末有空过来我给你重新设计一下发型"\n';
           } else if (monthsSince >= 1) {
@@ -2583,7 +2583,7 @@ function initApp() {
             for (var ci = 0; ci < packages.length; ci++) {
               var cp = packages[ci];
               var cName = cp.name || cp.itemname || '套餐';
-              var cLeft = cp.left || cp.leavetimes || 0;
+              var cLeft = cp.left || cp.remaining || cp.leavetimes || 0;
               var cTotal = cp.total || cp.sumtimes || 0;
               var used = cTotal - cLeft;
               var pct = cTotal > 0 ? Math.round(cLeft / cTotal * 100) : 0;
