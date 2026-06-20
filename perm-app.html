@@ -3234,35 +3234,39 @@ function initApp() {
     if (!d || !d.xhs_title) { showToast('没有可保存的内容'); return; }
     var hairEl = document.getElementById('cg-hair');
     var painEl = document.getElementById('cg-pain');
-    fetch(SUPABASE_URL+'/rest/v1/content_articles', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
-      body: JSON.stringify({
-        hair_type: hairEl ? hairEl.value : '',
-        pain_point: painEl ? painEl.value : '',
-        style_tags: (document.getElementById('cg-style')||{}).value || '',
-        xhs_title: d.xhs_title || '',
-        xhs_body: d.xhs_body || '',
-        friend_circle: d.friend_circle || '',
-        tags: d.tags || []
-      })
-    }).then(function(){ showToast('✅ 已保存到文案库'); }).catch(function(){ showToast('保存失败'); });
+    var item = {
+      id: Date.now(),
+      hair_type: hairEl ? hairEl.value : '',
+      pain_point: painEl ? painEl.value : '',
+      style_tags: (document.getElementById('cg-style')||{}).value || '',
+      xhs_title: d.xhs_title || '',
+      xhs_body: d.xhs_body || '',
+      friend_circle: d.friend_circle || '',
+      tags: d.tags || [],
+      created_at: new Date().toISOString()
+    };
+    var saved = JSON.parse(localStorage.getItem('content_copy_saved') || '[]');
+    saved.unshift(item);
+    localStorage.setItem('content_copy_saved', JSON.stringify(saved));
+    showToast('✅ 已保存到文案库');
   };
 
   window.saveGeneratedTitles = function() {
     var d = CONTENT_CACHE.lastTitles;
     if (!d || !d.titles) { showToast('没有可保存的标题'); return; }
     var titles = d.titles.filter(function(t){ return typeof t === 'string'; });
-    fetch(SUPABASE_URL+'/rest/v1/content_titles', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
-      body: JSON.stringify({
-        titles: titles,
-        hair_type: d.hair_type || '',
-        pain_point: d.pain_point || '',
-        style_tags: ''
-      })
-    }).then(function(){ showToast('✅ 标题已保存'); }).catch(function(){ showToast('保存失败'); });
+    var item = {
+      id: Date.now(),
+      titles: titles,
+      hair_type: d.hair_type || '',
+      pain_point: d.pain_point || '',
+      style_tags: '',
+      created_at: new Date().toISOString()
+    };
+    var saved = JSON.parse(localStorage.getItem('content_titles_saved') || '[]');
+    saved.unshift(item);
+    localStorage.setItem('content_titles_saved', JSON.stringify(saved));
+    showToast('✅ 标题已保存');
   };
 
   // === 拍摄库 ===
@@ -3284,57 +3288,47 @@ function initApp() {
 
   window.saveShooting = function(btn) {
     var data = {
+      id: Date.now(),
       category: document.getElementById('cs-cat').value,
       title: document.getElementById('cs-title').value,
       intro: document.getElementById('cs-intro').value,
       angle: document.getElementById('cs-angle').value,
       action: document.getElementById('cs-action').value,
       copy_structure: document.getElementById('cs-copy').value,
-      suitable_hair: document.getElementById('cs-hairtype').value
+      suitable_hair: document.getElementById('cs-hairtype').value,
+      created_at: new Date().toISOString()
     };
     if (!data.title) { showToast('请输入标题'); return; }
-    fetch(SUPABASE_URL+'/rest/v1/shooting_methods', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
-      body: JSON.stringify(data)
-    }).then(function(){
-      showToast('✅ 已保存');
-      var overlay = btn.closest('.c-modal-overlay');
-      if (overlay) document.body.removeChild(overlay);
-      loadShootingMethods();
-    }).catch(function(){ showToast('保存失败'); });
+    var saved = JSON.parse(localStorage.getItem('content_shooting_saved') || '[]');
+    saved.unshift(data);
+    localStorage.setItem('content_shooting_saved', JSON.stringify(saved));
+    showToast('✅ 已保存');
+    var overlay = btn.closest('.c-modal-overlay');
+    if (overlay) document.body.removeChild(overlay);
+    loadShootingMethods();
   };
 
   function loadShootingMethods() {
     var list = document.getElementById('cs-list');
     if (!list) return;
-    list.innerHTML = '<div class="c-loading">加载中...</div>';
-    fetch(SUPABASE_URL+'/rest/v1/shooting_methods?select=*&order=created_at.desc&limit=50', {
-      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if (!data || !data.length) {
-        list.innerHTML = '<div class="c-empty">还没有拍摄方式，点击上方新增</div>';
-        return;
-      }
-      var html = '';
-      data.forEach(function(item){
-        html += '<div class="c-item">';
-        html += '<h4>'+escHtml(item.title||'')+'</h4>';
-        html += '<p>分类：<span class="c-tag-sm">'+escHtml(item.category||'')+'</span></p>';
-        if (item.intro) html += '<p style="margin-top:4px">🎬 '+escHtml(item.intro)+'</p>';
-        if (item.angle) html += '<p>📷 角度：'+escHtml(item.angle)+'</p>';
-        if (item.action) html += '<p>💃 动作：'+escHtml(item.action)+'</p>';
-        if (item.suitable_hair) html += '<p>💇 适合：'+escHtml(item.suitable_hair)+'</p>';
-        html += '</div>';
-      });
-      list.innerHTML = html;
-    })
-    .catch(function(){
-      list.innerHTML = '<div class="c-empty">加载失败</div>';
+    var data = JSON.parse(localStorage.getItem('content_shooting_saved') || '[]');
+    if (!data || !data.length) {
+      list.innerHTML = '<div class="c-empty">还没有拍摄方式，点击上方新增</div>';
+      return;
+    }
+    var html = '';
+    data.forEach(function(item){
+      html += '<div class="c-item">';
+      html += '<h4>'+escHtml(item.title||'')+'</h4>';
+      html += '<p>分类：<span class="c-tag-sm">'+escHtml(item.category||'')+'</span></p>';
+      if (item.intro) html += '<p style="margin-top:4px">🎬 '+escHtml(item.intro)+'</p>';
+      if (item.angle) html += '<p>📷 角度：'+escHtml(item.angle)+'</p>';
+      if (item.action) html += '<p>💃 动作：'+escHtml(item.action)+'</p>';
+      if (item.suitable_hair) html += '<p>💇 适合：'+escHtml(item.suitable_hair)+'</p>';
+      html += '</div>';
     });
-  }
+    list.innerHTML = html;
+  };
 
   // === 文案库 ===
   var LIBRARY_FILTER = 'all';
@@ -3358,70 +3352,42 @@ function initApp() {
     var list = document.getElementById('cl-list');
     if (!list) return;
     var search = (document.getElementById('cl-search')||{}).value || '';
-    list.innerHTML = '<div class="c-loading">加载中...</div>';
-
+    
+    var html = '';
+    
     if (LIBRARY_FILTER === 'all' || LIBRARY_FILTER === 'copy') {
-      fetch(SUPABASE_URL+'/rest/v1/content_articles?select=*&order=created_at.desc&limit=20', {
-        headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-      })
-      .then(function(r){ return r.json(); })
-      .then(function(articles){
-        if (LIBRARY_FILTER === 'titles') {
-          loadTitleLibrary(list, search);
-          return;
-        }
-        var html = '';
-        var filtered = articles;
-        if (search) filtered = articles.filter(function(a){ return (a.xhs_title||'').indexOf(search)>=0 || (a.xhs_body||'').indexOf(search)>=0; });
-        filtered.forEach(function(a){
-          html += '<div class="c-item">';
-          html += '<h4>'+escHtml(a.xhs_title||'(无标题)')+'</h4>';
-          if (a.hair_type) html += '<p><span class="c-tag-sm">'+escHtml(a.hair_type)+'</span> <span class="c-tag-sm">'+escHtml(a.pain_point||'')+'</span></p>';
-          html += '<p style="margin-top:4px;font-size:12px;color:var(--text-secondary);max-height:50px;overflow:hidden">'+escHtml((a.xhs_body||'').substring(0,120))+'</p>';
-          html += '</div>';
-        });
-        if (filtered.length === 0) html = '<div class="c-empty">暂无文案</div>';
-        if (LIBRARY_FILTER === 'all') html += '<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"></div>';
-        list.innerHTML = html;
-        if (LIBRARY_FILTER === 'all') loadTitleLibrary(list, search);
-      })
-      .catch(function(){ list.innerHTML = '<div class="c-empty">加载失败</div>'; });
-    } else {
-      loadTitleLibrary(list, search);
-    }
-  }
-
-  function loadTitleLibrary(listEl, search) {
-    fetch(SUPABASE_URL+'/rest/v1/content_titles?select=*&order=created_at.desc&limit=20', {
-      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var previous = listEl.innerHTML;
-      var html = '';
-      var filtered = data;
-      if (search) filtered = data.filter(function(a){
-        return (a.titles||[]).some(function(t){ return (t||'').indexOf(search)>=0; });
+      var articles = JSON.parse(localStorage.getItem('content_copy_saved') || '[]');
+      if (search) articles = articles.filter(function(a){ return (a.xhs_title||'').indexOf(search)>=0 || (a.xhs_body||'').indexOf(search)>=0; });
+      articles.forEach(function(a){
+        html += '<div class="c-item">';
+        html += '<h4>'+escHtml(a.xhs_title||'(无标题)')+'</h4>';
+        if (a.hair_type) html += '<p><span class="c-tag-sm">'+escHtml(a.hair_type)+'</span> <span class="c-tag-sm">'+escHtml(a.pain_point||'')+'</span></p>';
+        html += '<p style="margin-top:4px;font-size:12px;color:var(--text-secondary);max-height:50px;overflow:hidden">'+escHtml((a.xhs_body||'').substring(0,120))+'</p>';
+        html += '</div>';
       });
-      filtered.forEach(function(item){
-        var titles = item.titles || [];
-        if (typeof titles === 'string') { try { titles = JSON.parse(titles); } catch(e) { titles = [titles]; } }
-        if (!Array.isArray(titles)) titles = [];
+      if (articles.length === 0 && LIBRARY_FILTER === 'copy') html = '<div class="c-empty">暂无文案</div>';
+      if (LIBRARY_FILTER === 'all') html += '<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px"></div>';
+    }
+    
+    if (LIBRARY_FILTER === 'all' || LIBRARY_FILTER === 'titles') {
+      var titles = JSON.parse(localStorage.getItem('content_titles_saved') || '[]');
+      if (search) titles = titles.filter(function(item){
+        return (item.titles||[]).some(function(t){ return (t||'').indexOf(search)>=0; });
+      });
+      titles.forEach(function(item){
+        var t = item.titles || [];
         html += '<div class="c-item">';
         html += '<h4>📌 标题集</h4>';
         if (item.hair_type) html += '<p><span class="c-tag-sm">'+escHtml(item.hair_type)+'</span> <span class="c-tag-sm">'+escHtml(item.pain_point||'')+'</span></p>';
         html += '<ol style="margin-top:4px;padding-left:16px;font-size:12px;color:var(--text-secondary);max-height:80px;overflow:hidden">';
-        titles.slice(0,5).forEach(function(t){ html += '<li>'+escHtml(t)+'</li>'; });
-        if (titles.length > 5) html += '<li>…共'+titles.length+'条</li>';
+        t.slice(0,5).forEach(function(tl){ html += '<li>'+escHtml(tl)+'</li>'; });
+        if (t.length > 5) html += '<li>…共'+t.length+'条</li>';
         html += '</ol></div>';
       });
-      if (html) {
-        listEl.innerHTML = previous + html;
-      } else if (LIBRARY_FILTER !== 'all') {
-        listEl.innerHTML = '<div class="c-empty">暂无标题</div>';
-      }
-    })
-    .catch(function(){});
+    }
+    
+    if (!html) html = '<div class="c-empty">暂无内容</div>';
+    list.innerHTML = html;
   }
 
   window.setApiUrl = function() {
