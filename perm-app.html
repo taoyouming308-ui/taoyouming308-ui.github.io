@@ -2751,7 +2751,12 @@ function initApp() {
     // 发质拍照分析按钮（点击触发拍照）
     if (target.classList.contains('hair-capture-btn')) {
       var phone3 = target.getAttribute('data-phone');
-      if (phone3) runHairAnalysis(phone3);
+      runHairAnalysis(phone3 || '', 'camera');
+      return;
+    }
+    // 相册按钮
+    if (target.id === 'hair-album-btn') {
+      runHairAnalysis('', 'album');
       return;
     }
   });
