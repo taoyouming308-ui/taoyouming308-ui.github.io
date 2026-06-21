@@ -100,7 +100,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <!-- 员工管理 -->
     <div id="tab-staff">
       <button class="btn-add" data-open-modal="staff">+ 新增员工</button>
-      <table><thead><tr><th>用户名</th><th>角色</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <table><thead><tr><th>用户名</th><th>角色</th><th>职位</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
       <tbody id="table-staff"></tbody></table>
     </div>
     <div id="tab-hair" style="display:none">
@@ -398,7 +398,7 @@ function renderTable(tab, rows) {
     var pendingRows = rows.filter(function(r){ return !r.active; });
     if (pendingRows.length > 0) {
       var sep = el('tr');
-      sep.innerHTML = '<td colspan="6" style="padding:12px 8px 4px;font-size:13px;color:var(--warning);border:none;">⏳ 待审核员工（'+pendingRows.length+'人）</td>';
+      sep.innerHTML = '<td colspan="7" style="padding:12px 8px 4px;font-size:13px;color:var(--warning);border:none;">⏳ 待审核员工（'+pendingRows.length+'人）</td>';
       tbody.appendChild(sep);
       pendingRows.forEach(function(r) {
         const tr = el('tr');
@@ -407,13 +407,13 @@ function renderTable(tab, rows) {
         const actions = el('span');
         actions.appendChild(actionButton('通过', 'btn-edit', function(e) { approveStaff(r.id, e.currentTarget); }));
         actions.appendChild(actionButton('拒绝', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
-        appendCells(tr, [name, '', '', status, (r.created_at || '').substring(0, 10), actions]);
+        appendCells(tr, [name, '', r.position || '', r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
         tbody.appendChild(tr);
       });
     }
     if (activeRows.length > 0) {
       var sep2 = el('tr');
-      sep2.innerHTML = '<td colspan="6" style="padding:12px 8px 4px;font-size:13px;color:var(--text-secondary);border:none;">✅ 在职员工</td>';
+      sep2.innerHTML = '<td colspan="7" style="padding:12px 8px 4px;font-size:13px;color:var(--text-secondary);border:none;">✅ 在职员工</td>';
       tbody.appendChild(sep2);
       activeRows.forEach(function(r) {
         const tr = el('tr');
@@ -425,7 +425,7 @@ function renderTable(tab, rows) {
         const actions = el('span');
         actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
         actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
-        appendCells(tr, [name, role, r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
+        appendCells(tr, [name, role, r.position || '', r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
         tbody.appendChild(tr);
       });
     }
@@ -535,7 +535,17 @@ async function openModal(tab, id) {
     appendField(box, '用户名', makeInput('f-user', data.username, id ? { readonly: true } : {}));
     appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
     appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
-    appendField(box, '分店', makeInput('f-store', data.store || '', { placeholder: '如：自由手艺人' }));
+    appendField(box, '职位', makeSelect('f-position', [
+      { value: '发型师', text: '发型师' },
+      { value: '技师', text: '技师' },
+      { value: '助理', text: '助理' },
+      { value: '前台', text: '前台' },
+      { value: '店长', text: '店长' }
+    ], data.position || '发型师'));
+    appendField(box, '分店', makeSelect('f-store', [
+      { value: '自由手艺人', text: '自由手艺人' },
+      { value: '向里造型', text: '向里造型' }
+    ], data.store || '自由手艺人'));
     appendField(box, '状态', makeSelect('f-active', [{ value: 'true', text: '启用' }, { value: 'false', text: '停用' }], data.active !== false ? 'true' : 'false'));
     appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   } else if (tab === 'hair') {
@@ -600,6 +610,7 @@ async function saveStaff(id) {
   const data = {
     username: document.getElementById('f-user').value,
     role: document.getElementById('f-role').value,
+    position: document.getElementById('f-position').value,
     store: document.getElementById('f-store').value,
     active: document.getElementById('f-active').value === 'true'
   };
