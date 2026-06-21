@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="161">
+<html lang="zh-CN" data-version="162">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3979,14 +3979,33 @@ function initApp() {
     };
   };
 
-  // 根据three_section数据自动匹配发质类型下拉
+  // 最新AI诊断结果缓存（供autoMatchHairType使用）
+  var _lastAiDiagnosis = null;
+
+  // 根据AI诊断或表单数据自动匹配发质类型下拉
   window.autoMatchHairType = function() {
-    var fd = (typeof getHairFormData === 'function') ? getHairFormData() : null;
-    if (!fd || !fd.three_section) return;
-    var ts = fd.three_section;
-    var rl = ts.root.level || 0;
-    var ml = ts.mid.level || 0;
-    var el = ts.end.level || 0;
+    var rl, ml, el, rcf, mcf, ecf;
+
+    // 优先使用AI诊断结果
+    if (_lastAiDiagnosis && _lastAiDiagnosis.root && _lastAiDiagnosis.root.level) {
+      rl = parseInt(_lastAiDiagnosis.root.level);
+      ml = parseInt(_lastAiDiagnosis.mid.level);
+      el = parseInt(_lastAiDiagnosis.end.level);
+      rcf = _lastAiDiagnosis.root.coarse_fine || 'coarse';
+      mcf = _lastAiDiagnosis.mid.coarse_fine || 'coarse';
+      ecf = _lastAiDiagnosis.end.coarse_fine || 'coarse';
+    } else {
+      // 兜底：用表单数据
+      var fd = (typeof getHairFormData === 'function') ? getHairFormData() : null;
+      if (!fd || !fd.three_section) return;
+      var ts = fd.three_section;
+      rl = ts.root.level || 0;
+      ml = ts.mid.level || 0;
+      el = ts.end.level || 0;
+      rcf = ts.root.coarse_fine || 'coarse';
+      mcf = ts.mid.coarse_fine || 'coarse';
+      ecf = ts.end.coarse_fine || 'coarse';
+    }
     if (!rl) return; // 至少需要发根等级
 
     var matchedId = '';
@@ -3996,11 +4015,9 @@ function initApp() {
     if (rl === ml && ml === el && rl > 0) {
       // 三段一致
       if (rl === 1) {
-        var cf = ts.root.coarse_fine || 'coarse';
-        matchedId = 'level-1-' + cf;
+        matchedId = 'level-1-' + (rcf === 'fine' ? 'fine' : 'coarse');
       } else if (rl === 2) {
-        var cf = ts.root.coarse_fine || 'coarse';
-        matchedId = 'level-2-' + cf;
+        matchedId = 'level-2-' + (rcf === 'fine' ? 'fine' : 'coarse');
       } else {
         matchedId = 'level-' + rl;
       }
@@ -4019,7 +4036,7 @@ function initApp() {
     } else {
       // fallback: 用发尾等级
       var fallbackLevel = el || rl;
-      var fallbackCf = ts.end.coarse_fine || ts.root.coarse_fine || 'coarse';
+      var fallbackCf = ecf || rcf || 'coarse';
       if (fallbackLevel === 1) matchedId = 'level-1-' + fallbackCf;
       else if (fallbackLevel === 2) matchedId = 'level-2-' + fallbackCf;
       else matchedId = 'level-' + fallbackLevel;
@@ -4121,8 +4138,13 @@ function initApp() {
           function showHairResultInner(data) {
             // 兼容新旧格式
             if (data.analysis) data = data.analysis;
-            if (data.ai_diagnosis) data = data.ai_diagnosis;
-            var refer = data.stylist_reference ? data : null;
+            var _stylistRef = data.stylist_reference || null;
+            if (data.ai_diagnosis) {
+              // 保存AI诊断结果，供autoMatchHairType优先使用
+              _lastAiDiagnosis = data.ai_diagnosis;
+              data = data.ai_diagnosis;
+            }
+            var refer = _stylistRef ? {stylist_reference: _stylistRef} : null;
 
             var overall = data.overall_level || '';
             var root = data.root || {};
