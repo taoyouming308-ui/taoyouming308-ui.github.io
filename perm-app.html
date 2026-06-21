@@ -2415,9 +2415,14 @@ function initApp() {
       var p = data;
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
       html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
-      html += '<div class="row"><span class="label">到店</span><span class="val">'+Number(p.visits||0)+'次</span></div>';
-      html += '<div class="row"><span class="label">均消</span><span class="val">¥'+Number(p.avg_fee||0).toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">近12月到店</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">到店</span><span class="val">'+((p.visits||0) > 0 ? (p.visits||0)+'次' : '未知')+'</span></div>';
+      html += '<div class="row"><span class="label">均消</span><span class="val">'+((p.avg_fee||0)>0 ? '¥'+(p.avg_fee||0).toFixed(0) : '未知')+'</span></div>';
+      // 总消费优先用 total_consumption（现金页路径有），兜底用 total_12m
+      var totalConsumption = (p.total_consumption || 0) > 0 ? p.total_consumption : (p.total_12m || 0);
+      html += '<div class="row"><span class="label">总消费</span><span class="val">¥'+(Number(totalConsumption||0)).toFixed(0)+'</span></div>';
+      if (p.freq_12m > 0) {
+        html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
+      }
       html += '<div class="row"><span class="label">上次到店</span><span class="val">'+esc(p.last_visit||'无')+'</span></div>';
       if (p.months_since_last > 0) {
         html += '<div class="row"><span class="label">距上次</span><span class="val">'+esc(p.months_since_last)+'个月</span></div>';
