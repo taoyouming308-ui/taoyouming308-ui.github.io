@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="154">
+<html lang="zh-CN" data-version="155">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3909,7 +3909,7 @@ function initApp() {
             var LOCAL_API = 'http://192.168.3.250:8890/api/hair-analysis';
             var xhr = new XMLHttpRequest();
             xhr.open('POST', LOCAL_API, true);
-            xhr.timeout = 45000;  // 45秒超时
+            xhr.timeout = 15000;  // 15秒超时
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.onload = function() {
               if (xhr.status === 200) {
