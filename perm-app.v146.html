@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="147">
+<html lang="zh-CN" data-version="146">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2262,19 +2262,6 @@ function initApp() {
         '<input id="reg-name" placeholder="姓名" required>' +
         '<input id="reg-pass" type="password" placeholder="密码" required>' +
         '<input id="reg-pass2" type="password" placeholder="重复密码" required>' +
-        '<select id="reg-store" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:var(--font);">' +
-          '<option value="">选择门店</option>' +
-          '<option value="自由手艺人">自由手艺人</option>' +
-          '<option value="向里造型">向里造型</option>' +
-        '</select>' +
-        '<select id="reg-position" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:var(--font);">' +
-          '<option value="">选择职位</option>' +
-          '<option value="发型师">发型师</option>' +
-          '<option value="技师">技师</option>' +
-          '<option value="助理">助理</option>' +
-          '<option value="前台">前台</option>' +
-          '<option value="店长">店长</option>' +
-        '</select>' +
         '<button class="opt" id="reg-submit-btn">提交注册</button>' +
         '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
         '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
@@ -2316,13 +2303,10 @@ function initApp() {
     if (btn) btn.disabled = true;
     try {
       var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      var store = document.getElementById('reg-store').value;
-      var position = document.getElementById('reg-position').value;
-      if (!store || !position) { errEl.textContent='请选择门店和职位'; errEl.style.display=''; if (btn) btn.disabled = false; return; }
       var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
-        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', store:store, position:position, active:false })
+        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', active:false })
       });
       if (!res.ok) throw new Error('提交失败');
       alert('注册成功，等待店主审核');
@@ -3526,35 +3510,14 @@ function initApp() {
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
-    // 技师下拉（从Supabase拉取所有active员工）
+    // 技师下拉（手动选择）
     html += '<select id="hair-form-tech" style="padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<option value="">技师</option>';
-    // 先放兜底列表，再异步从Supabase更新
-    var fallbackTechs = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','晓伟','十一','哈维','向里造型','永宝','自由手艺人','郭小康','陈浩'];
-    for (var ti = 0; ti < fallbackTechs.length; ti++) {
-      html += '<option value="'+fallbackTechs[ti]+'">'+fallbackTechs[ti]+'</option>';
+    var techs = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','晓伟','十一','哈维','向里造型','永宝','自由手艺人','郭小康','陈浩'];
+    for (var ti = 0; ti < techs.length; ti++) {
+      html += '<option value="'+techs[ti]+'">'+techs[ti]+'</option>';
     }
     html += '</select>';
-    // 异步从Supabase拉取最新员工列表，更新下拉框
-    setTimeout(function(){
-      var sel = document.getElementById('hair-form-tech');
-      if (!sel) return;
-      fetch(SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc', {
-        headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ return r.json(); }).then(function(rows){
-        if (!rows || rows.length === 0) return;
-        sel.innerHTML = '<option value="">技师</option>';
-        for (var i = 0; i < rows.length; i++) {
-          var label = rows[i].username;
-          if (rows[i].store) label += ' · ' + rows[i].store;
-          if (rows[i].position) label += ' (' + rows[i].position + ')';
-          var opt = document.createElement('option');
-          opt.value = rows[i].username;
-          opt.textContent = label;
-          sel.appendChild(opt);
-        }
-      }).catch(function(){});
-    }, 500);
     html += '</div></div>';
 
     // ===== 步骤2: 发质诊断（核心区域，参考图2的左右分栏） =====
