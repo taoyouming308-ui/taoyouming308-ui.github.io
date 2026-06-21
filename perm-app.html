@@ -2916,45 +2916,55 @@ function initApp() {
     if (existing) existing.remove();
 
     var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
-    html += '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;">📸 发质分析</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;">📋 发质分析表</div>';
 
-    // 初始状态：拍照按钮
+    // ===== 主表单卡片：先显示完整表格，拍照只是其中一行 =====
+    var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
+
+    // 客户信息
+    html += '<div class="param-row"><span class="param-label">顾客</span><input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">手机</span><input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="手机号" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">发型师</span><span style="flex:1;color:var(--text-secondary);font-size:13px;">'+escAttr(currentBarber||'未登录')+'</span></div>';
+
+    // 分隔
+    html += '<div style="border-top:1px solid var(--border);margin:8px 0;"></div>';
+
+    // ===== 拍照区（嵌入表单内部） =====
     html += '<div id="hair-init">';
-    html += '<div style="display:flex;gap:10px;">';
-    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--accent);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照</button>';
-    html += '<button id="hair-album-btn" style="flex:1;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
-    html += '</div>';
-    html += '</div>';
+    html += '<div class="param-row"><span class="param-label">拍照</span>';
+    html += '<div style="flex:1;display:flex;gap:8px;">';
+    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:10px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius-sm);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照</button>';
+    html += '<button id="hair-album-btn" style="flex:1;padding:10px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
+    html += '</div></div>';
 
     // 两个隐藏的file input：拍照（相机）和相册
     html += '<input type="file" id="hair-file-camera" accept="image/*" capture="environment" style="display:none;">';
     html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
+    html += '</div>';
 
     // 加载状态（初始隐藏）
-    html += '<div id="hair-loading" style="display:none;text-align:center;padding:20px 0;">';
-    html += '<div style="font-size:13px;color:var(--text-secondary);">🔍 正在分析发质...</div>';
+    html += '<div id="hair-loading" style="display:none;text-align:center;padding:12px 0;">';
+    html += '<div style="font-size:12px;color:var(--text-secondary);">🔍 正在分析发质...</div>';
     html += '</div>';
 
-    // 分析结果区（初始隐藏）
+    // AI结果区（初始隐藏）
     html += '<div id="hair-result" style="display:none;">';
-    // 缩略图
-    html += '<div id="hair-thumb" style="margin-bottom:10px;"></div>';
-    // AI结果
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI判断</div>';
-    html += '<div id="hair-ai-level" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>';
-    // 分段展示
-    html += '<div id="hair-ai-sections" style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;"></div>';
-    html += '<div id="hair-ai-desc" style="font-size:12px;color:var(--text-secondary);line-height:1.5;"></div>';
-    html += '<div id="hair-ai-details" style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6;"></div>';
-    html += '<div id="hair-ai-suggestions" style="font-size:11px;color:var(--accent);margin-top:6px;line-height:1.6;"></div>';
-    html += '</div>';
-    // 发型师确认区
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">✂️ 发型师确认</div>';
+    html += '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">';
+    html += '<div id="hair-thumb" style="flex-shrink:0;"></div>';
+    html += '<div style="flex:1;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;">';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">🤖 AI分析结果</div>';
+    html += '<div id="hair-ai-level" style="font-size:15px;font-weight:700;margin-bottom:2px;"></div>';
+    html += '<div id="hair-ai-sections" style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:2px;"></div>';
+    html += '<div id="hair-ai-desc" style="font-size:11px;color:var(--text-secondary);line-height:1.4;"></div>';
+    html += '<div id="hair-ai-details" style="font-size:10px;color:var(--text-secondary);margin-top:4px;line-height:1.5;"></div>';
+    html += '<div id="hair-ai-suggestions" style="font-size:10px;color:var(--accent);margin-top:4px;line-height:1.5;"></div>';
+    html += '</div></div>';
+
+    // 发型师确认
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-    html += '<span style="font-size:12px;color:var(--text-secondary);flex-shrink:0;">等级:</span>';
-    html += '<select id="hair-stylist-level" style="flex:1;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);">';
+    html += '<span style="font-size:11px;color:var(--text-secondary);flex-shrink:0;">发型师确认等级:</span>';
+    html += '<select id="hair-stylist-level" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-family:var(--font);">';
     for (var li = 1; li <= 5; li++) {
       var label = li+'级';
       if (li === 1) label += '·健康';
@@ -2966,20 +2976,13 @@ function initApp() {
     }
     html += '</select>';
     html += '</div>';
-    html += '<div style="margin-bottom:8px;">';
-    html += '<textarea id="hair-stylist-notes" placeholder="补充备注（可选）" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;min-height:50px;box-sizing:border-box;"></textarea>';
+    html += '<textarea id="hair-stylist-notes" placeholder="补充备注（可选）" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:36px;box-sizing:border-box;"></textarea>';
     html += '</div>';
 
-    // ===== 发质分析表（客户信息 + 配方） =====
-    var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
-    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">📋 发质分析表</div>';
-    // 客户信息
-    html += '<div class="param-row"><span class="param-label">顾客</span><input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
-    html += '<div class="param-row"><span class="param-label">手机</span><input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="手机号" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
-    html += '<div class="param-row"><span class="param-label">发型师</span><span style="flex:1;color:var(--text-secondary);font-size:13px;">'+escAttr(currentBarber||'未登录')+'</span></div>';
+    // 分隔
     html += '<div style="border-top:1px solid var(--border);margin:8px 0;"></div>';
-    // 配方
+
+    // ===== 配方字段 =====
     html += '<div class="param-row"><span class="param-label">类型</span><select id="hair-form-type" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"><option value="热烫">热烫</option><option value="冷烫">冷烫</option><option value="染发">染发</option></select></div>';
     html += '<div class="param-row"><span class="param-label">药水</span><input id="hair-form-brand" placeholder="品牌/型号" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
     html += '<div class="param-row"><span class="param-label">TGA:CA</span><input id="hair-form-ratio" placeholder="例：6:1" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
@@ -2992,9 +2995,6 @@ function initApp() {
     html += '</div>';
 
     html += '<button id="hair-save-btn" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 确认保存</button>';
-    html += '</div>';
-    html += '</div>';
-
     html += '</div>';
     return html;
   };
