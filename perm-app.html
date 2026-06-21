@@ -2364,7 +2364,7 @@ function initApp() {
       // 首次加载：先显示缓存，后面刷新
       renderBookings(cached, list, true);
     } else if (showLoading !== false) {
-      list.innerHTML = '<div class=\"booking-loading\">加载中...</div>';
+      list.innerHTML = '<div class="booking-loading">加载中...</div>';
     }
 
     fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
@@ -2382,7 +2382,7 @@ function initApp() {
     }).catch(function(e){
       // ★ 网络失败时：有缓存就保留，无缓存才显示错误
       if (!cached || cached.length === 0) {
-        list.innerHTML = '<div class=\"no-results\"><div class=\"icon\">⚠️</div>网络离线，请检查连接</div>';
+        list.innerHTML = '<div class="no-results"><div class="icon">⚠️</div>网络离线，请检查连接</div>';
       }
     });
   }
@@ -2390,7 +2390,7 @@ function initApp() {
   // ★ 独立渲染函数，避免重复代码
   function renderBookings(rows, list, isOffline) {
     if (rows.length === 0) {
-      list.innerHTML = '<div class=\"no-results\"><div class=\"icon\">📭</div>暂无预约</div>';
+      list.innerHTML = '<div class="no-results"><div class="icon">📭</div>暂无预约</div>';
       return;
     }
     var html = '';
@@ -2412,7 +2412,7 @@ function initApp() {
             else if (sv.indexOf('烫发') !== -1) cls = ' perm';
             else if (sv.indexOf('染发') !== -1) cls = ' color';
             else if (sv.indexOf('护理') !== -1) cls = ' care';
-            html += '<span class="bi-service-tag'+cls+'\">'+esc(sv)+'</span>';
+            html += '<span class="bi-service-tag'+cls+'">'+esc(sv)+'</span>';
           }
         }
         if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
