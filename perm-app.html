@@ -3382,6 +3382,58 @@ function initApp() {
     }
   };
 
+  // ===== 从预约选择客户 =====
+  window.showBookingPicker = function() {
+    // 获取今天的预约
+    var today = new Date();
+    var dateKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name&reservation_time=gte.' + dateKey + '&reservation_time=lt.' + dateKey + 'T23:59:59&order=reservation_time.asc', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!rows || rows.length === 0) {
+        alert('今天暂无预约');
+        return;
+      }
+      // 去重
+      var seen = {};
+      var unique = [];
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r.customer_name || r.customer_name === '未登记') continue;
+        var key = r.customer_phone || r.customer_name;
+        if (seen[key]) continue;
+        seen[key] = true;
+        unique.push(r);
+      }
+      if (unique.length === 0) { alert('今天暂无已登记客户'); return; }
+      
+      // 显示选择弹窗
+      var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;" onclick="this.remove()">';
+      html += '<div style="background:var(--surface);border-radius:var(--radius);padding:16px;max-width:320px;width:90%;max-height:70vh;overflow-y:auto;" onclick="event.stopPropagation()">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;">选择预约客户</div>';
+      for (var i = 0; i < unique.length; i++) {
+        var r = unique[i];
+        html += '<div onclick="pickBookingCustomer(\''+escAttr(r.customer_name)+'\',\''+escAttr(r.customer_phone||'')+'\');this.closest(\'[onclick]\').remove();" style="padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;">';
+        html += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + esc(r.customer_name) + '</div>';
+        html += '<div style="font-size:11px;color:var(--text-secondary);">' + esc(r.customer_phone||'') + ' · ' + esc(r.barber_name||'') + '</div>';
+        html += '</div>';
+      }
+      html += '<button onclick="this.closest(\'[onclick]\').remove();" style="width:100%;padding:8px;margin-top:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">取消</button>';
+      html += '</div></div>';
+      var div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div.firstElementChild);
+    }).catch(function() { alert('加载预约失败'); });
+  };
+
+  window.pickBookingCustomer = function(name, phone) {
+    var nameEl = document.getElementById('hair-form-name');
+    var phoneEl = document.getElementById('hair-form-phone');
+    if (nameEl) nameEl.value = name;
+    if (phoneEl) phoneEl.value = phone;
+  };
+
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name) {
     var containerId = 'hair-analysis-section';
@@ -3401,6 +3453,7 @@ function initApp() {
     html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
     html += '<input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;min-width:100px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="电话" style="flex:1;min-width:120px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
+    html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
     // 技师下拉（手动选择）
