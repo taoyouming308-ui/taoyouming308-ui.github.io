@@ -2341,7 +2341,7 @@ function initApp() {
       html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
       html += '<div class="row"><span class="label">到店</span><span class="val">'+Number(p.visits||0)+'次</span></div>';
       html += '<div class="row"><span class="label">均消</span><span class="val">¥'+Number(p.avg_fee||0).toFixed(0)+'</span></div>';
-      html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
+      html += '<div class="row"><span class="label">近12月到店</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
       html += '<div class="row"><span class="label">上次到店</span><span class="val">'+esc(p.last_visit||'无')+'</span></div>';
       if (p.months_since_last > 0) {
         html += '<div class="row"><span class="label">距上次</span><span class="val">'+esc(p.months_since_last)+'个月</span></div>';
@@ -2538,7 +2538,7 @@ function initApp() {
           var htmlContent = '<h3>'+esc(name||'客户')+'</h3>';
           htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
-          if (consum > 0) htmlContent += '<div class="row"><span class="label">近12月消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
+          if (consum > 0) htmlContent += '<div class="row"><span class="label">共计消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
           var avgTicket = visits > 0 ? Math.round(consum / visits) : 0;
           if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">均消</span><span class="val">¥'+avgTicket+'</span></div>';
           // 上次消费项目（从notes取）
