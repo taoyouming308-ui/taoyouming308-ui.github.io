@@ -535,13 +535,19 @@ async function openModal(tab, id) {
     appendField(box, '用户名', makeInput('f-user', data.username, id ? { readonly: true } : {}));
     appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
     appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
-    appendField(box, '职位', makeSelect('f-position', [
-      { value: '发型师', text: '发型师' },
-      { value: '技师', text: '技师' },
-      { value: '助理', text: '助理' },
-      { value: '前台', text: '前台' },
-      { value: '店长', text: '店长' }
-    ], data.position || '发型师'));
+    appendField(box, '职位（可多选）', function(){
+      var div = el('div', { className: 'pos-check-group', style: 'display:flex;flex-wrap:wrap;gap:8px;' });
+      var vals = (data.position || '发型师').split(',').map(function(v){ return v.trim(); });
+      ['发型师','技师','助理','前台','店长'].forEach(function(p){
+        var label = el('label', { style: 'display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;' });
+        var cb = el('input', { type: 'checkbox', value: p });
+        if (vals.indexOf(p) !== -1) cb.checked = true;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(p));
+        div.appendChild(label);
+      });
+      return div;
+    }());
     appendField(box, '分店', makeSelect('f-store', [
       { value: '自由手艺人', text: '自由手艺人' },
       { value: '向里造型', text: '向里造型' }
@@ -610,7 +616,7 @@ async function saveStaff(id) {
   const data = {
     username: document.getElementById('f-user').value,
     role: document.getElementById('f-role').value,
-    position: document.getElementById('f-position').value,
+    position: Array.from(document.querySelectorAll('.pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(','),
     store: document.getElementById('f-store').value,
     active: document.getElementById('f-active').value === 'true'
   };

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="147">
+<html lang="zh-CN" data-version="148">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2267,14 +2267,13 @@ function initApp() {
           '<option value="自由手艺人">自由手艺人</option>' +
           '<option value="向里造型">向里造型</option>' +
         '</select>' +
-        '<select id="reg-position" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:var(--font);">' +
-          '<option value="">选择职位</option>' +
-          '<option value="发型师">发型师</option>' +
-          '<option value="技师">技师</option>' +
-          '<option value="助理">助理</option>' +
-          '<option value="前台">前台</option>' +
-          '<option value="店长">店长</option>' +
-        '</select>' +
+        '<div class="pos-check-group" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="发型师" checked> 发型师</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="技师"> 技师</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="助理"> 助理</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="前台"> 前台</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="店长"> 店长</label>' +
+        '</div>' +
         '<button class="opt" id="reg-submit-btn">提交注册</button>' +
         '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
         '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
@@ -2317,7 +2316,7 @@ function initApp() {
     try {
       var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
       var store = document.getElementById('reg-store').value;
-      var position = document.getElementById('reg-position').value;
+      var position = Array.from(document.querySelectorAll('#login-box-main .pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(',');
       if (!store || !position) { errEl.textContent='请选择门店和职位'; errEl.style.display=''; if (btn) btn.disabled = false; return; }
       var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
         method: 'POST',
