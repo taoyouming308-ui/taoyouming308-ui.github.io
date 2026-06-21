@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="151">
+<html lang="zh-CN" data-version="152">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3644,34 +3644,33 @@ function initApp() {
     html += '</div>';
     html += '</div>';
 
-    // ===== 步骤3: 药水方案（参考图2的配比联动） =====
+    // ===== 步骤3: 查询方案（替代原药水方案） =====
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤3 · 药水方案</div>';
-    var styles = [
-      {v:'wool', label:'羊毛卷(最蓬)', detail:'同级药水:水=2:1稀释→10分→拆杠'},
-      {v:'french-wool', label:'法式羊毛卷', detail:'正式药水→15分→拆杠'},
-      {v:'style-wave', label:'造型烫(自然)', detail:'同级药水:水=1:1→10分→冲水'},
-      {v:'straight', label:'型拉直', detail:'目标90%+>刹车上限70%'}
-    ];
-    html += '<div id="hair-formula-select">';
-    for (var si = 0; si < styles.length; si++) {
-      var st = styles[si];
-      html += '<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:var(--text);cursor:pointer;">';
-      html += '<input type="radio" name="hair-formula" value="'+st.v+'" style="accent-color:var(--accent);">';
-      html += '<span style="font-weight:600;flex-shrink:0;">'+st.label+'</span>';
-      html += '<span style="color:var(--text-secondary);font-size:10px;">'+st.detail+'</span>';
-      html += '</label>';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤3 · 查询方案</div>';
+    // 发质类型
+    html += '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;display:block;">发质类型</label>';
+    html += '<select id="hair-q-hair-type" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
+    html += '<option value="">请选择发质类型</option>';
+    if (typeof HAIR_TYPES !== 'undefined' && HAIR_TYPES.length) {
+      for (var hi = 0; hi < HAIR_TYPES.length; hi++) {
+        html += '<option value="'+escAttr(HAIR_TYPES[hi].id)+'">'+esc(HAIR_TYPES[hi].label)+'</option>';
+      }
     }
-    html += '</div>';
-    // 药水配比
-    html += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">';
-    html += '<input id="hair-form-brand" placeholder="药水品牌" style="flex:1;min-width:80px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-ratio" placeholder="TGA:CA 例6:1" style="width:100px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-ph" placeholder="PH" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-soften" placeholder="软化度" style="width:70px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '</div>';
-    // 稀释备注
-    html += '<textarea id="hair-stylist-notes" placeholder="稀释/操作备注" style="width:100%;margin-top:6px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:30px;box-sizing:border-box;"></textarea>';
+    html += '</select></div>';
+    // 烫发款式
+    html += '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;display:block;">烫发款式</label>';
+    html += '<select id="hair-q-style" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
+    html += '<option value="">请选择烫发款式</option>';
+    if (typeof PERM_STYLES !== 'undefined' && PERM_STYLES.length) {
+      for (var si = 0; si < PERM_STYLES.length; si++) {
+        html += '<option value="'+escAttr(PERM_STYLES[si].id)+'">'+esc(PERM_STYLES[si].label)+'</option>';
+      }
+    }
+    html += '</select></div>';
+    // 查询按钮
+    html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询方案</button>';
+    // 结果区域
+    html += '<div id="hair-q-result" style="margin-top:10px;"></div>';
     html += '</div>';
 
     // ===== 步骤4: 烫发参数（参考图1/2/3的卷芯区） =====
@@ -3757,6 +3756,29 @@ function initApp() {
     html += '</div>';
 
     html += '</div>';
+
+    // 查询方案函数
+    window.hairQueryPlan = function() {
+      var hair = document.getElementById('hair-q-hair-type');
+      var style = document.getElementById('hair-q-style');
+      if (!hair || !style) return;
+      var h = hair.value, s = style.value;
+      if (!h || !s) return;
+      var results = (typeof PERM_DATA_CACHE !== 'undefined' ? PERM_DATA_CACHE : []).filter(function(d){ return d.hairType === h && d.permStyle === s; });
+      var area = document.getElementById('hair-q-result');
+      if (!area) return;
+      if (results.length === 0) {
+        area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">暂无匹配方案</div>';
+        return;
+      }
+      var allHtml = '';
+      results.forEach(function(result, i){
+        if (i > 0) allHtml += '<div style="border-top:2px dashed var(--border);margin:12px 0;padding-top:8px;text-align:center;font-size:11px;color:var(--text-secondary);">—— 方案 '+(i+1)+' ——</div>';
+        allHtml += renderResult(result);
+      });
+      area.innerHTML = allHtml;
+    };
+
     return html;
   };
 
