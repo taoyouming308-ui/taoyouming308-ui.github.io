@@ -2915,11 +2915,15 @@ function initApp() {
 
     // 初始状态：拍照按钮
     html += '<div id="hair-init">';
-    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="width:100%;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--accent);font-size:15px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">📷 拍照分析</button>';
+    html += '<div style="display:flex;gap:10px;">';
+    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--accent);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照</button>';
+    html += '<button id="hair-album-btn" style="flex:1;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
+    html += '</div>';
     html += '</div>';
 
-    // 隐藏的file input（用于调相机/相册）
-    html += '<input type="file" id="hair-file-input" accept="image/*" capture="environment" style="display:none;">';
+    // 两个隐藏的file input：拍照（相机）和相册
+    html += '<input type="file" id="hair-file-camera" accept="image/*" capture="environment" style="display:none;">';
+    html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
 
     // 加载状态（初始隐藏）
     html += '<div id="hair-loading" style="display:none;text-align:center;padding:20px 0;">';
@@ -2934,6 +2938,8 @@ function initApp() {
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
     html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI判断</div>';
     html += '<div id="hair-ai-level" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>';
+    // 分段展示
+    html += '<div id="hair-ai-sections" style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:4px;"></div>';
     html += '<div id="hair-ai-desc" style="font-size:12px;color:var(--text-secondary);line-height:1.5;"></div>';
     html += '<div id="hair-ai-details" style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6;"></div>';
     html += '<div id="hair-ai-suggestions" style="font-size:11px;color:var(--accent);margin-top:6px;line-height:1.6;"></div>';
@@ -2958,6 +2964,28 @@ function initApp() {
     html += '<div style="margin-bottom:8px;">';
     html += '<textarea id="hair-stylist-notes" placeholder="补充备注（可选）" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;min-height:50px;box-sizing:border-box;"></textarea>';
     html += '</div>';
+
+    // ===== 发质分析表（客户信息 + 配方） =====
+    var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">📋 发质分析表</div>';
+    // 客户信息
+    html += '<div class="param-row"><span class="param-label">顾客</span><input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">手机</span><input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="手机号" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">发型师</span><span style="flex:1;color:var(--text-secondary);font-size:13px;">'+escAttr(currentBarber||'未登录')+'</span></div>';
+    html += '<div style="border-top:1px solid var(--border);margin:8px 0;"></div>';
+    // 配方
+    html += '<div class="param-row"><span class="param-label">类型</span><select id="hair-form-type" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"><option value="热烫">热烫</option><option value="冷烫">冷烫</option><option value="染发">染发</option></select></div>';
+    html += '<div class="param-row"><span class="param-label">药水</span><input id="hair-form-brand" placeholder="品牌/型号" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">TGA:CA</span><input id="hair-form-ratio" placeholder="例：6:1" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">PH</span><input id="hair-form-ph" placeholder="例：8.5" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">软化度</span><input id="hair-form-soften" placeholder="例：80%" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">杠号/分区</span><textarea id="hair-form-rods" placeholder="例：头顶16号/枕骨18号/两侧18号" rows="2" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;"></textarea></div>';
+    html += '<div class="param-row"><span class="param-label">停留</span><input id="hair-form-time" placeholder="例：15分钟" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row"><span class="param-label">加热</span><input id="hair-form-heat" placeholder="例：120°C/15分" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);"></div>';
+    html += '<div class="param-row" style="border-bottom:none;"><span class="param-label">备注</span><textarea id="hair-form-notes2" placeholder="其他备注" rows="2" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;"></textarea></div>';
+    html += '</div>';
+
     html += '<button id="hair-save-btn" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 确认保存</button>';
     html += '</div>';
     html += '</div>';
@@ -2967,14 +2995,17 @@ function initApp() {
   };
 
   // 执行发质拍照分析
-  window.runHairAnalysis = function(phone) {
+  window.runHairAnalysis = function(phone, source) {
     var initEl = document.getElementById('hair-init');
     var loadingEl = document.getElementById('hair-loading');
     var resultEl = document.getElementById('hair-result');
-    var fileInput = document.getElementById('hair-file-input');
+    // source='camera'或'album'
+    var inputId = source === 'album' ? 'hair-file-album' : 'hair-file-camera';
+    var fileInput = document.getElementById(inputId);
     if (!fileInput || !initEl || !loadingEl || !resultEl) return;
 
     // 触发文件选择
+    fileInput.value = '';
     fileInput.click();
     // 监听文件选择
     fileInput.onchange = function() {
@@ -3045,14 +3076,46 @@ function initApp() {
                 }
                 var rec = records[0];
                 if (rec.status === 'completed') {
-                  // 显示AI分析结果
+                  // 显示AI分析结果（三段式）
                   var data = rec.ai_analysis || {};
                   var level = rec.ai_damage_level || data.damage_level || 3;
                   var levelTexts = ['','健康发质','轻微受损','中等受损','严重受损','极严重受损'];
                   var levelEl = document.getElementById('hair-ai-level');
                   if (levelEl) {
-                    var colorInfo = data.color_level ? ' · 色度'+data.color_level+'度' : '';
-                    levelEl.textContent = '🤖 AI判断: '+level+'级·'+levelTexts[level]+colorInfo;
+                    var overallInfo = data.overall ? ': '+data.overall.description : '';
+                    levelEl.textContent = '🎯 '+level+'级·'+levelTexts[level]+overallInfo;
+                  }
+                  // 三段详细展示
+                  var sectionsEl = document.getElementById('hair-ai-sections');
+                  if (sectionsEl) {
+                    var sectionHtml = '';
+                    if (data.is_mixed && data.root && data.mid && data.end) {
+                      var parts = [
+                        ['发根', data.root],
+                        ['发中', data.mid],
+                        ['发尾', data.end]
+                      ];
+                      for (var si = 0; si < parts.length; si++) {
+                        var label = parts[si][0];
+                        var info = parts[si][1];
+                        var dl = info.damage_level || '?';
+                        var cl = info.color_level ? ' 色度'+info.color_level+'°' : '';
+                        var de = info.description ? ' · '+info.description : '';
+                        var color = dl >= 4 ? 'var(--danger)' : (dl >= 3 ? '#e8a817' : 'var(--accent)');
+                        sectionHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+                        sectionHtml += '<span style="color:var(--text-secondary);width:32px;">'+label+'</span>';
+                        sectionHtml += '<span style="color:'+color+';font-weight:600;">'+dl+'级'+cl+'</span>';
+                        sectionHtml += '<span style="color:var(--text-secondary);font-size:11px;">'+esc(de)+'</span>';
+                        sectionHtml += '</div>';
+                      }
+                    } else {
+                      // 单段发质
+                      var d = level;
+                      var cl = data.root ? data.root.color_level : data.color_level || '';
+                      var color = d >= 4 ? 'var(--danger)' : (d >= 3 ? '#e8a817' : 'var(--accent)');
+                      sectionHtml = '<div style="color:'+color+';font-weight:600;">全头统一：'+d+'级·'+levelTexts[d]+(cl?' 色度'+cl+'°':'')+'</div>';
+                    }
+                    sectionsEl.innerHTML = sectionHtml;
                   }
                   var descEl = document.getElementById('hair-ai-desc');
                   var descText = data.damage_description || data.description || '';
@@ -3084,10 +3147,32 @@ function initApp() {
                       if (saveBtn._saved) return;
                       var sLevel = parseInt(document.getElementById('hair-stylist-level').value);
                       var sNotes = document.getElementById('hair-stylist-notes').value;
+                      // 收集发质分析表字段
+                      var formData = {
+                        name: (document.getElementById('hair-form-name')||{}).value || '',
+                        phone: (document.getElementById('hair-form-phone')||{}).value || '',
+                        barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
+                        permType: (document.getElementById('hair-form-type')||{}).value || '',
+                        brand: (document.getElementById('hair-form-brand')||{}).value || '',
+                        ratio: (document.getElementById('hair-form-ratio')||{}).value || '',
+                        ph: (document.getElementById('hair-form-ph')||{}).value || '',
+                        softenDegree: (document.getElementById('hair-form-soften')||{}).value || '',
+                        rods: (document.getElementById('hair-form-rods')||{}).value || '',
+                        processTime: (document.getElementById('hair-form-time')||{}).value || '',
+                        heat: (document.getElementById('hair-form-heat')||{}).value || '',
+                        formNotes: (document.getElementById('hair-form-notes2')||{}).value || ''
+                      };
+                      // 合并到 ai_analysis（保留原有AI结果）
+                      var mergedAnalysis = JSON.parse(JSON.stringify(data));
+                      mergedAnalysis.formData = formData;
+                      mergedAnalysis.stylist_level = sLevel;
+                      mergedAnalysis.stylist_notes = sNotes;
                       fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + saveBtn._queueId, {
                         method: 'PATCH',
                         headers: _supabaseHeaders,
                         body: JSON.stringify({
+                          ai_analysis: mergedAnalysis,
+                          ai_damage_level: sLevel,
                           stylist_damage_level: sLevel,
                           stylist_notes: sNotes,
                           corrected: sLevel !== level
