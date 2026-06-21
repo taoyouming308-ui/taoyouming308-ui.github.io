@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="159">
+<html lang="zh-CN" data-version="161">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3724,14 +3724,15 @@ function initApp() {
     html += '<div id="hair-thumb" style="display:none;"></div>';
 
     html += '<div id="hair-ai-result-box" style="background:var(--surface-light);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;">🤖 AI验证结果</div>';
-    // ① 一致性
-    html += '<div id="hair-consistency" style="font-size:13px;font-weight:700;margin-bottom:4px;"></div>';
-    html += '<div id="hair-consistency-note" style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;"></div>';
-    // ② 照片观察
-    html += '<div id="hair-visual-obs" style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;"></div>';
-    // ③ AI建议
-    html += '<div id="hair-ai-suggestions" style="font-size:11px;color:var(--accent);"></div>';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI发质诊断</div>';
+    // ① 整体等级（大号）
+    html += '<div id="hair-ai-overall" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>';
+    // ② 三段诊断
+    html += '<div id="hair-ai-diagnosis" style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.6;"></div>';
+    // ③ 照片可见特征
+    html += '<div id="hair-ai-features" style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;"></div>';
+    // ④ 与发型师对比（小字）
+    html += '<div id="hair-ai-reference" style="font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border);padding-top:4px;margin-top:4px;"></div>';
     html += '</div>';
 
     html += '</div>'; // end hair-result
@@ -4118,49 +4119,66 @@ function initApp() {
           }
 
           function showHairResultInner(data) {
-            // 兼容：data可能是完整resp（含.analysis）或纯analysis对象
+            // 兼容新旧格式
             if (data.analysis) data = data.analysis;
+            if (data.ai_diagnosis) data = data.ai_diagnosis;
+            var refer = data.stylist_reference ? data : null;
 
-            // ① 一致性
-            var consistEl = document.getElementById('hair-consistency');
-            var consistNoteEl = document.getElementById('hair-consistency-note');
-            if (consistEl) {
-              var consist = data.consistency || '';
+            var overall = data.overall_level || '';
+            var root = data.root || {};
+            var mid = data.mid || {};
+            var end = data.end || {};
+            var features = data.visual_features || [];
+
+            var levelTexts = ['无法判断','健康','轻度受损','受损','严重受损','极度受损'];
+            var cfTexts = {coarse:'粗硬',fine:'细软'};
+
+            // ① 整体等级
+            var overallEl = document.getElementById('hair-ai-overall');
+            if (overallEl) {
+              var levelDesc = levelTexts[parseInt(overall)] || '';
+              overallEl.innerHTML = '📊 '+overall+'级 · '+levelDesc;
+            }
+
+            // ② 三段诊断
+            var diagEl = document.getElementById('hair-ai-diagnosis');
+            if (diagEl) {
+              var parts = [];
+              if (root.level) {
+                parts.push('<b>发根</b> '+root.level+'级 '+ (cfTexts[root.coarse_fine]||'') +' — '+(root.description||''));
+              }
+              if (mid.level) {
+                parts.push('<b>发中</b> '+mid.level+'级 '+ (cfTexts[mid.coarse_fine]||'') +' — '+(mid.description||''));
+              }
+              if (end.level) {
+                parts.push('<b>发尾</b> '+end.level+'级 '+ (cfTexts[end.coarse_fine]||'') +' — '+(end.description||''));
+              }
+              diagEl.innerHTML = parts.join('<br>');
+            }
+
+            // ③ 照片特征
+            var featEl = document.getElementById('hair-ai-features');
+            if (featEl) {
+              if (features.length > 0) {
+                featEl.innerHTML = '📸 '+features.join(' | ');
+              } else {
+                featEl.innerHTML = '';
+              }
+            }
+
+            // ④ 与发型师对比
+            var refEl = document.getElementById('hair-ai-reference');
+            if (refEl && refer && refer.stylist_reference) {
+              var sr = refer.stylist_reference;
               var icon = '❌';
-              var cls = 'consistency-fail';
-              if (consist === '一致' || consist === 'pass') { icon = '✅'; cls = 'consistency-pass'; }
-              else if (consist === '基本一致' || consist === 'warn') { icon = '⚠️'; cls = 'consistency-warn'; }
-              consistEl.innerHTML = '<span class="'+cls+'">'+icon+' '+esc(consist)+'</span>';
-            }
-            if (consistNoteEl && data.consistency_note) {
-              consistNoteEl.textContent = data.consistency_note;
+              if (sr.consistency && sr.consistency.indexOf('一致') >= 0) icon = '✅';
+              else if (sr.consistency && sr.consistency.indexOf('基本一致') >= 0) icon = '⚠️';
+              refEl.innerHTML = icon+' '+esc(sr.consistency||'')+'<br>'+esc(sr.note||'');
+            } else if (refEl) {
+              refEl.innerHTML = '';
             }
 
-            // ② 照片观察
-            var visEl = document.getElementById('hair-visual-obs');
-            if (visEl) {
-              var obs = data.visual_observations || [];
-              if (obs.length > 0) {
-                visEl.innerHTML = '<span style="font-weight:600;">📸 照片观察：</span><br>• '+obs.join('<br>• ');
-              } else if (data.overall_summary) {
-                visEl.innerHTML = '<span style="font-weight:600;">📸 照片观察：</span> '+esc(data.overall_summary);
-              } else {
-                visEl.innerHTML = '';
-              }
-            }
-
-            // ③ AI建议
-            var sugEl = document.getElementById('hair-ai-suggestions');
-            if (sugEl) {
-              var sugs = data.suggestions || [];
-              if (sugs.length > 0) {
-                sugEl.innerHTML = '💡 建议:<br>• '+sugs.join('<br>• ');
-              } else {
-                sugEl.innerHTML = '';
-              }
-            }
-
-            // ★ 根据三段数据自动匹配发质类型（不依赖AI返回）
+            // ★ 根据AI诊断自动匹配发质类型
             autoMatchHairType();
           }
 
