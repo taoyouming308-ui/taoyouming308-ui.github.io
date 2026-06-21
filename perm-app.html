@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="148">
+<html lang="zh-CN" data-version="149">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3525,16 +3525,11 @@ function initApp() {
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
-    // 技师下拉（从Supabase拉取所有active员工）
+    // 技师下拉（从Supabase拉取，只显示职位包含技师的员工）
     html += '<select id="hair-form-tech" style="padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<option value="">技师</option>';
-    // 先放兜底列表，再异步从Supabase更新
-    var fallbackTechs = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','晓伟','十一','哈维','向里造型','永宝','自由手艺人','郭小康','陈浩'];
-    for (var ti = 0; ti < fallbackTechs.length; ti++) {
-      html += '<option value="'+fallbackTechs[ti]+'">'+fallbackTechs[ti]+'</option>';
-    }
     html += '</select>';
-    // 异步从Supabase拉取最新员工列表，更新下拉框
+    // 异步从Supabase拉取技师列表
     setTimeout(function(){
       var sel = document.getElementById('hair-form-tech');
       if (!sel) return;
@@ -3542,13 +3537,15 @@ function initApp() {
         headers: { 'apikey': SUPABASE_KEY }
       }).then(function(r){ return r.json(); }).then(function(rows){
         if (!rows || rows.length === 0) return;
+        // 只保留职位包含"技师"的员工
+        var techs = rows.filter(function(r){ return r.position && r.position.indexOf('技师') !== -1; });
         sel.innerHTML = '<option value="">技师</option>';
-        for (var i = 0; i < rows.length; i++) {
-          var label = rows[i].username;
-          if (rows[i].store) label += ' · ' + rows[i].store;
-          if (rows[i].position) label += ' (' + rows[i].position + ')';
+        for (var i = 0; i < techs.length; i++) {
+          var label = techs[i].username;
+          if (techs[i].store) label += ' · ' + techs[i].store;
+          if (techs[i].position) label += ' (' + techs[i].position + ')';
           var opt = document.createElement('option');
-          opt.value = rows[i].username;
+          opt.value = techs[i].username;
           opt.textContent = label;
           sel.appendChild(opt);
         }
