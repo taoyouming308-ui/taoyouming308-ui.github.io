@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="143">
+<html lang="zh-CN" data-version="142">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3393,9 +3393,7 @@ function initApp() {
     var today = new Date();
     var dateKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     
-    var barber = BOOKING_BARBER || '';
-    var barberFilter = barber ? '&barber_name=eq.' + encodeURIComponent(barber) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name&date=eq.' + dateKey + barberFilter + '&order=reservation_time.asc', {
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name&date=eq.' + dateKey + '&order=reservation_time.asc', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
