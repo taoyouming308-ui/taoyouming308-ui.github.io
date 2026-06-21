@@ -572,6 +572,7 @@ body {
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')">发质分析</button>
   </aside>
   <div class="hero-text">
     <h1>自由手艺人</h1>
@@ -1564,8 +1565,53 @@ function initApp() {
     if (drawer) drawer.classList.remove('open');
     if (mask) mask.classList.remove('open');
   };
+  window.showHairAnalysisPage = function(phone) {
+    // 弹出一个全屏模态框显示发质分析
+    var name = '客户';
+    var existing = document.getElementById('hair-analysis-modal');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'hair-analysis-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    overlay.innerHTML =
+      '<div style="max-width:500px;margin:0 auto;padding:20px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+          '<div style="font-size:16px;font-weight:700;color:var(--accent);">📸 发质分析 — '+esc(name)+'</div>' +
+          '<button onclick="this.closest(\'#hair-analysis-modal\').remove()" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+        '</div>' +
+        renderHairAnalysis(phone, name) +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    // 绑定拍照按钮事件
+    setTimeout(function(){
+      var btn = overlay.querySelector('.hair-capture-btn');
+      if (btn) btn.onclick = function(){ runHairAnalysis(phone); };
+    }, 100);
+  };
+
   window.openHomeDrawerFeature = function(tabName) {
     closeHomeDrawer();
+    if (tabName === 'hair') {
+      // 发质分析：先输手机号
+      var phone = prompt('请输入客户手机号：');
+      if (!phone || phone.length < 5) return;
+      // 打开方案页并自动触发发质分析
+      openFeature('bookings');
+      setTimeout(function(){
+        // 找到对应的预约行触发方案弹窗
+        var rows = window._bookingRows || [];
+        var match = rows.filter(function(r){ return r.customer_phone === phone; });
+        if (match.length > 0) {
+          showPlanModal(match[0]);
+        } else {
+          // 不在预约列表里，直接显示分析页
+          showHairAnalysisPage(phone);
+        }
+      }, 500);
+      return;
+    }
     openFeature(tabName);
   };
   window.switchPlan = function(name) {
