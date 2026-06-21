@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="156">
+<html lang="zh-CN" data-version="157">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3580,19 +3580,19 @@ function initApp() {
     html += '<div id="hair-ai-suggestions" style="font-size:11px;color:var(--accent);margin-top:4px;"></div>';
     html += '</div>';
 
-    // 发质类型下拉（从HAIR_TYPES加载）
+    html += '</div>'; // end hair-result
+
+    // 发质类型下拉（始终可见，手动选择或AI自动匹配）
     html += '<div style="margin-bottom:4px;">';
     html += '<label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">发质类型 <span id="hair-auto-match-msg" style="font-size:10px;color:var(--accent);font-weight:400;"></span></label>';
     html += '<select id="hair-diagnosis-type" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
-    html += '<option value="">请选择发质类型</option>';
+    html += '<option value="">请选择发质类型（可手动选或AI拍照自动匹配）</option>';
     if (typeof HAIR_TYPES !== 'undefined' && HAIR_TYPES.length) {
       for (var hi = 0; hi < HAIR_TYPES.length; hi++) {
         html += '<option value="'+escAttr(HAIR_TYPES[hi].id)+'">'+esc(HAIR_TYPES[hi].label)+'</option>';
       }
     }
     html += '</select></div>';
-
-    html += '</div>'; // end hair-result
     html += '</div>';
 
     // ===== 步骤3: 查询方案 =====
