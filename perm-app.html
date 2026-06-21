@@ -1534,7 +1534,7 @@ const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据�
 
 function initApp() {
   console.log('initApp');
-  try {
+
 
   // === 导航 ===
   window.openFeature = function(tabName) {
@@ -3661,29 +3661,114 @@ function initApp() {
             thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">';
           }
 
-          // ★ 改为 Supabase 中转方案：上传 → 轮询结果
-          var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+          // ★ 启动：先试本地API，失败走队列
+          tryLocalAPI();
 
-          // 1. 插入 hair_analysis_queue
-          fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
-            method: 'POST',
-            headers: _supabaseHeaders,
-            body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending' })
-          })
-          .then(function(rsp) {
-            if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
-            return rsp.json();
-          })
-          .then(function(rows) {
-            if (!rows || rows.length === 0) throw new Error('上传无返回');
-            var queueId = rows[0].id;
-            // ★ 保存queueId到localStorage（黑屏/回来继续查）
-            localStorage.setItem('_pendingHairQueueId', queueId);
-            // 2. 轮询结果
+          // ★ 显示本地API结果
+          function showHairResult(resp, phone, imageData) {
+            var data = resp.analysis || resp;
+            var level = resp.damage_level || 3;
+            var levelTexts = ['','健康发质','轻微受损','中等受损','严重受损','极严重受损'];
+            var levelEl = document.getElementById('hair-ai-level');
+            if (levelEl) {
+              var overallInfo = data.overall ? ': '+data.overall.description : '';
+              levelEl.textContent = '🎯 '+level+'级·'+levelTexts[level]+overallInfo;
+            }
+            var sectionsEl = document.getElementById('hair-ai-sections');
+            if (sectionsEl) {
+              var sectionHtml = '';
+              if (data.is_mixed && data.root && data.mid && data.end) {
+                var parts = [['发根',data.root],['发中',data.mid],['发尾',data.end]];
+                for (var si = 0; si < parts.length; si++) {
+                  var label = parts[si][0], info = parts[si][1];
+                  var dl = info.damage_level||'?', cl = info.color_level?' 色度'+info.color_level+'°':'';
+                  var de = info.description?' · '+info.description:'';
+                  var color = dl >= 4 ? 'var(--danger)' : (dl >= 3 ? '#e8a817' : 'var(--accent)');
+                  sectionHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+                  sectionHtml += '<span style="color:var(--text-secondary);width:32px;">'+label+'</span>';
+                  sectionHtml += '<span style="color:'+color+';font-weight:600;">'+dl+'级'+cl+'</span>';
+                  sectionHtml += '<span style="color:var(--text-secondary);font-size:11px;">'+esc(de)+'</span></div>';
+                }
+              } else {
+                var color = level >= 4 ? 'var(--danger)' : (level >= 3 ? '#e8a817' : 'var(--accent)');
+                sectionHtml = '<div style="color:'+color+';font-weight:600;">全头统一：'+level+'级·'+levelTexts[level]+'</div>';
+              }
+              sectionsEl.innerHTML = sectionHtml;
+            }
+            var descEl = document.getElementById('hair-ai-desc');
+            var descText = data.damage_description || data.description || '';
+            if (descEl && descText) descEl.textContent = descText;
+            var detailsEl = document.getElementById('hair-ai-details');
+            if (detailsEl && data.details) {
+              var d = data.details;
+              var lines = [];
+              if (d['光泽度']) lines.push('光泽度: '+d['光泽度']);
+              if (d['毛躁程度']) lines.push('毛躁程度: '+d['毛躁程度']);
+              if (d['分叉情况']) lines.push('分叉情况: '+d['分叉情况']);
+              detailsEl.textContent = lines.join(' | ');
+            }
+            var sugEl = document.getElementById('hair-ai-suggestions');
+            if (sugEl && data.suggestions && data.suggestions.length > 0) {
+              sugEl.innerHTML = '💡 建议:<br>• '+data.suggestions.join('<br>• ');
+            }
+            var stylistSelect = document.getElementById('hair-stylist-level');
+            if (stylistSelect) stylistSelect.value = String(level);
+          }
+
+          function tryLocalAPI() {
+            // 尝试本地API（店内WiFi直调Mac）
+            var LOCAL_API = 'http://192.168.3.250:8890/api/hair-analysis';
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', LOCAL_API, true);
+            xhr.timeout = 45000;  // 45秒超时
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                try {
+                  var resp = JSON.parse(xhr.responseText);
+                  localStorage.removeItem('_pendingHairQueueId');
+                  loadingEl.style.display = 'none';
+                  resultEl.style.display = 'block';
+                  showHairResult(resp, phone, compressed);
+                  return;
+                } catch(e) {}
+              }
+              fallbackToQueue();
+            };
+            xhr.onerror = function() { fallbackToQueue(); };
+            xhr.ontimeout = function() { fallbackToQueue(); };
+            xhr.send(JSON.stringify({ phone: phone || '', image: compressed }));
+          }
+
+          function fallbackToQueue() {
+            // 兜底：走Supabase队列
+            var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+            fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+              method: 'POST',
+              headers: _supabaseHeaders,
+              body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending' })
+            })
+            .then(function(rsp) {
+              if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
+              return rsp.json();
+            })
+            .then(function(rows) {
+              if (!rows || rows.length === 0) throw new Error('上传无返回');
+              var queueId = rows[0].id;
+              localStorage.setItem('_pendingHairQueueId', queueId);
+              pollQueue(queueId);
+            })
+            .catch(function(err) {
+              loadingEl.style.display = 'none';
+              resultEl.style.display = 'block';
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 上传失败: ' + esc(err.message) + '</div>';
+            });
+          }
+
+          function pollQueue(queueId) {
             var pollStart = Date.now();
-            var POLL_TIMEOUT = 120000; // 最多等120秒
-            var POLL_INTERVAL = 2000;  // 每2秒查一次
-            var pollTimer;
+            var POLL_TIMEOUT = 120000;
+            var POLL_INTERVAL = 2000;
 
             function doPoll() {
               fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + queueId + '&select=status,ai_damage_level,ai_analysis,error_message', {
@@ -3693,15 +3778,13 @@ function initApp() {
               .then(function(records) {
                 loadingEl.style.display = 'none';
                 resultEl.style.display = 'block';
-
                 if (!records || records.length === 0) {
                   resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 记录不存在</div>';
                   return;
                 }
                 var rec = records[0];
                 if (rec.status === 'completed') {
-                // 清除待处理标记
-                localStorage.removeItem('_pendingHairQueueId');
+                  localStorage.removeItem('_pendingHairQueueId');
                   // 显示AI分析结果（三段式）
                   var data = rec.ai_analysis || {};
                   var level = rec.ai_damage_level || data.damage_level || 3;
@@ -3781,18 +3864,8 @@ function initApp() {
               });
             }
             doPoll();
-          })
-          .catch(function(err) {
-            loadingEl.style.display = 'none';
-            resultEl.style.display = 'block';
-            resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 上传失败: ' + esc(err.message) + '</div>';
-          });
+          }
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-  };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
   // 这里手写的是Supabase Realtime使用的Phoenix消息格式；如后续引入supabase-js，应优先改用官方channel API。
@@ -3910,7 +3983,6 @@ function initApp() {
   checkIdentity();
 
   // === 结束 initApp ===
-  } catch(e) { console.error('init error:', e); }
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
