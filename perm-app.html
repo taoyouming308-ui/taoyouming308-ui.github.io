@@ -2375,6 +2375,7 @@ function initApp() {
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       html += renderAiButton(phone, name, barberName, bookingDate);
+      html += renderHairAnalysis(phone, name);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
     })
@@ -2609,6 +2610,7 @@ function initApp() {
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
+          htmlContent += renderHairAnalysis(phone, name);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
           return;
@@ -2712,6 +2714,12 @@ function initApp() {
       var barber2 = target.getAttribute('data-barber') || '';
       var bdate2 = target.getAttribute('data-bdate') || '';
       if (phone2) runAiAnalysis(phone2, name2, barber2, bdate2);
+      return;
+    }
+    // 发质拍照分析按钮（点击触发拍照）
+    if (target.classList.contains('hair-capture-btn')) {
+      var phone3 = target.getAttribute('data-phone');
+      if (phone3) runHairAnalysis(phone3);
       return;
     }
   });
@@ -2862,6 +2870,202 @@ function initApp() {
       xhr.send();
     }
     doRequest();
+  };
+
+  // ===== 发质拍照分析 =====
+  window.renderHairAnalysis = function(phone, name) {
+    var containerId = 'hair-analysis-section';
+    var existing = document.getElementById(containerId);
+    if (existing) existing.remove();
+
+    var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;">📸 发质分析</div>';
+
+    // 初始状态：拍照按钮
+    html += '<div id="hair-init">';
+    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="width:100%;padding:14px;background:var(--surface-light);border:1.5px dashed var(--border);border-radius:var(--radius);color:var(--accent);font-size:15px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">📷 拍照分析</button>';
+    html += '</div>';
+
+    // 隐藏的file input（用于调相机/相册）
+    html += '<input type="file" id="hair-file-input" accept="image/*" capture="environment" style="display:none;">';
+
+    // 加载状态（初始隐藏）
+    html += '<div id="hair-loading" style="display:none;text-align:center;padding:20px 0;">';
+    html += '<div style="font-size:13px;color:var(--text-secondary);">🔍 正在分析发质...</div>';
+    html += '</div>';
+
+    // 分析结果区（初始隐藏）
+    html += '<div id="hair-result" style="display:none;">';
+    // 缩略图
+    html += '<div id="hair-thumb" style="margin-bottom:10px;"></div>';
+    // AI结果
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI判断</div>';
+    html += '<div id="hair-ai-level" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>';
+    html += '<div id="hair-ai-desc" style="font-size:12px;color:var(--text-secondary);line-height:1.5;"></div>';
+    html += '<div id="hair-ai-details" style="font-size:11px;color:var(--text-secondary);margin-top:6px;line-height:1.6;"></div>';
+    html += '<div id="hair-ai-suggestions" style="font-size:11px;color:var(--accent);margin-top:6px;line-height:1.6;"></div>';
+    html += '</div>';
+    // 发型师确认区
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">';
+    html += '<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">✂️ 发型师确认</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+    html += '<span style="font-size:12px;color:var(--text-secondary);flex-shrink:0;">等级:</span>';
+    html += '<select id="hair-stylist-level" style="flex:1;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);">';
+    for (var li = 1; li <= 5; li++) {
+      var label = li+'级';
+      if (li === 1) label += '·健康';
+      else if (li === 2) label += '·轻微受损';
+      else if (li === 3) label += '·中等受损';
+      else if (li === 4) label += '·严重受损';
+      else if (li === 5) label += '·极严重';
+      html += '<option value="'+li+'">'+label+'</option>';
+    }
+    html += '</select>';
+    html += '</div>';
+    html += '<div style="margin-bottom:8px;">';
+    html += '<textarea id="hair-stylist-notes" placeholder="补充备注（可选）" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font);resize:vertical;min-height:50px;box-sizing:border-box;"></textarea>';
+    html += '</div>';
+    html += '<button id="hair-save-btn" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 确认保存</button>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  };
+
+  // 执行发质拍照分析
+  window.runHairAnalysis = function(phone) {
+    var initEl = document.getElementById('hair-init');
+    var loadingEl = document.getElementById('hair-loading');
+    var resultEl = document.getElementById('hair-result');
+    var fileInput = document.getElementById('hair-file-input');
+    if (!fileInput || !initEl || !loadingEl || !resultEl) return;
+
+    // 触发文件选择
+    fileInput.click();
+    // 监听文件选择
+    fileInput.onchange = function() {
+      var file = fileInput.files[0];
+      if (!file) return;
+
+      // 显示缩略图 + 加载中
+      initEl.style.display = 'none';
+      loadingEl.style.display = 'block';
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64Data = e.target.result;
+        // 显示缩略图
+        var thumbDiv = document.getElementById('hair-thumb');
+        if (thumbDiv) {
+          thumbDiv.innerHTML = '<img src="'+escAttr(base64Data)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">';
+        }
+
+        // 调plan_server分析
+        var planServerUrl = 'http://192.168.3.250:8890/api/hair-analysis';
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', planServerUrl, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.timeout = 120000; // 2分钟超时
+        xhr.onload = function() {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.error) {
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ '+esc(data.error)+'</div>';
+              return;
+            }
+            // 显示AI分析结果
+            var levelTexts = ['','健康发质','轻微受损','中等受损','严重受损','极严重受损'];
+            var level = data.damage_level || 3;
+            var levelEl = document.getElementById('hair-ai-level');
+            if (levelEl) levelEl.textContent = '🤖 AI判断: '+level+'级·'+levelTexts[level];
+
+            var descEl = document.getElementById('hair-ai-desc');
+            if (descEl && data.damage_description) descEl.textContent = data.damage_description;
+
+            var detailsEl = document.getElementById('hair-ai-details');
+            if (detailsEl && data.details) {
+              var d = data.details;
+              var detailLines = [];
+              if (d['光泽度']) detailLines.push('光泽度: '+d['光泽度']);
+              if (d['毛躁程度']) detailLines.push('毛躁程度: '+d['毛躁程度']);
+              if (d['分叉情况']) detailLines.push('分叉情况: '+d['分叉情况']);
+              detailsEl.textContent = detailLines.join(' | ');
+            }
+
+            var sugEl = document.getElementById('hair-ai-suggestions');
+            if (sugEl && data.suggestions && data.suggestions.length > 0) {
+              sugEl.innerHTML = '💡 建议:<br>• '+data.suggestions.join('<br>• ');
+            }
+
+            // 自动填充发型师等级下拉
+            var stylistSelect = document.getElementById('hair-stylist-level');
+            if (stylistSelect) stylistSelect.value = String(level);
+
+            // 保存按钮事件
+            var saveBtn = document.getElementById('hair-save-btn');
+            if (saveBtn) {
+              saveBtn._phone = phone;
+              saveBtn._aiLevel = level;
+              saveBtn._saved = false;
+              saveBtn.onclick = function() {
+                if (saveBtn._saved) return;
+                var sLevel = parseInt(document.getElementById('hair-stylist-level').value);
+                var sNotes = document.getElementById('hair-stylist-notes').value;
+                var isCorrected = sLevel !== level;
+                var saveData = {
+                  phone: phone,
+                  ai_level: level,
+                  stylist_level: sLevel,
+                  stylist_notes: sNotes,
+                  corrected: isCorrected
+                };
+                var saveXhr = new XMLHttpRequest();
+                saveXhr.open('POST', 'http://192.168.3.250:8890/api/save-hair-analysis', true);
+                saveXhr.setRequestHeader('Content-Type', 'application/json');
+                saveXhr.timeout = 15000;
+                saveXhr.onload = function() {
+                  try {
+                    var res = JSON.parse(saveXhr.responseText);
+                    if (res.success) {
+                      saveBtn.textContent = '✅ 已保存';
+                      saveBtn.style.background = 'var(--success, #2ecc71)';
+                      saveBtn._saved = true;
+                      saveBtn.disabled = true;
+                    } else {
+                      saveBtn.textContent = '❌ 保存失败，重试';
+                    }
+                  } catch(e) {
+                    saveBtn.textContent = '❌ 保存失败，重试';
+                  }
+                };
+                saveXhr.onerror = function() {
+                  saveBtn.textContent = '❌ 连接失败，重试';
+                };
+                saveXhr.send(JSON.stringify(saveData));
+              };
+            }
+          } catch(e) {
+            resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 解析失败: '+esc(e.message)+'</div>';
+          }
+        };
+        xhr.onerror = function() {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 无法连接分析服务（请确保连接了店内WiFi）</div>';
+        };
+        xhr.ontimeout = function() {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">⏱️ 分析超时，请重试</div>';
+        };
+        xhr.send(JSON.stringify({phone: phone, image: base64Data}));
+      };
+      reader.readAsDataURL(file);
+    };
   };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
