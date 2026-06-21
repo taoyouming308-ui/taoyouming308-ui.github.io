@@ -3027,10 +3027,14 @@ function initApp() {
             var levelTexts = ['','健康发质','轻微受损','中等受损','严重受损','极严重受损'];
             var level = data.damage_level || 3;
             var levelEl = document.getElementById('hair-ai-level');
-            if (levelEl) levelEl.textContent = '🤖 AI判断: '+level+'级·'+levelTexts[level];
+            if (levelEl) {
+              var colorInfo = data.color_level ? ' · 色度'+data.color_level+'度' : '';
+              levelEl.textContent = '🤖 AI判断: '+level+'级·'+levelTexts[level]+colorInfo;
+            }
 
             var descEl = document.getElementById('hair-ai-desc');
-            if (descEl && data.damage_description) descEl.textContent = data.damage_description;
+            var descText = data.damage_description || data.description || '';
+            if (descEl && descText) descEl.textContent = descText;
 
             var detailsEl = document.getElementById('hair-ai-details');
             if (detailsEl && data.details) {
