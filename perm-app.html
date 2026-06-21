@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="157">
+<html lang="zh-CN" data-version="158">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3796,7 +3796,7 @@ function initApp() {
         var img = new Image();
         img.onload = function() {
           var canvas = document.createElement('canvas');
-          var MAX_SIZE = 800;
+          var MAX_SIZE = 600;
           var w = img.width, h = img.height;
           if (w > MAX_SIZE || h > MAX_SIZE) {
             if (w > h) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
@@ -3805,7 +3805,7 @@ function initApp() {
           canvas.width = w; canvas.height = h;
           var ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          var compressed = canvas.toDataURL('image/jpeg', 0.7);
+          var compressed = canvas.toDataURL('image/jpeg', 0.5);
 
           // 显示缩略图
           var thumbDiv = document.getElementById('hair-thumb');
