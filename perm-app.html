@@ -2987,15 +2987,29 @@ function initApp() {
 
       var reader = new FileReader();
       reader.onload = function(e) {
-        var base64Data = e.target.result;
-        // 显示缩略图
-        var thumbDiv = document.getElementById('hair-thumb');
-        if (thumbDiv) {
-          thumbDiv.innerHTML = '<img src="'+escAttr(base64Data)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">';
-        }
+        // 压缩图片：最长边800px，JPEG质量0.7
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var MAX_SIZE = 800;
+          var w = img.width, h = img.height;
+          if (w > MAX_SIZE || h > MAX_SIZE) {
+            if (w > h) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
+            else { w = w * MAX_SIZE / h; h = MAX_SIZE; }
+          }
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var compressed = canvas.toDataURL('image/jpeg', 0.7);
 
-        // 调plan_server分析
-    var planServerUrl = AI_TUNNEL_URL ? AI_TUNNEL_URL + '/api/hair-analysis' : 'http://192.168.3.250:8890/api/hair-analysis';
+          // 显示缩略图
+          var thumbDiv = document.getElementById('hair-thumb');
+          if (thumbDiv) {
+            thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">';
+          }
+
+          // 调plan_server分析
+          var planServerUrl = AI_TUNNEL_URL ? AI_TUNNEL_URL + '/api/hair-analysis' : 'http://192.168.3.250:8890/api/hair-analysis';
         var xhr = new XMLHttpRequest();
         xhr.open('POST', planServerUrl, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
@@ -3095,10 +3109,11 @@ function initApp() {
           resultEl.style.display = 'block';
           resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">⏱️ 分析超时，请重试</div>';
         };
-        xhr.send(JSON.stringify({phone: phone, image: base64Data}));
+        xhr.send(JSON.stringify({phone: phone, image: compressed}));
       };
-      reader.readAsDataURL(file);
+      img.src = e.target.result;
     };
+    reader.readAsDataURL(file);
   };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
