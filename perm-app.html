@@ -4318,7 +4318,7 @@ function initApp() {
           function pollQueue(queueId) {
             var pollStart = Date.now();
             var POLL_TIMEOUT = 120000;
-            var POLL_INTERVAL = 2000;
+            var POLL_INTERVAL = 500;
 
             function doPoll() {
               fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + queueId + '&select=status,ai_damage_level,ai_analysis,error_message', {
