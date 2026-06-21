@@ -2794,7 +2794,7 @@ function initApp() {
   function getAiUrl(phone, barberName) {
     var barberParam = barberName ? '&barber=' + encodeURIComponent(barberName) : '';
     var localUrl = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam;
-    var tunnelBase = AI_TUNNEL_URL || 'https://prompt-earth-boat-refuse.trycloudflare.com';
+    var tunnelBase = AI_TUNNEL_URL || 'https://integrating-paso-cindy-disclose.trycloudflare.com';
     return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam };
   }
 
