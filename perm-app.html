@@ -1577,7 +1577,7 @@ function initApp() {
       '<div style="max-width:500px;margin:0 auto;padding:20px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
           '<div style="font-size:16px;font-weight:700;color:var(--accent);">📸 发质拍照分析</div>' +
-          '<button onclick="this.closest(\'#hair-analysis-modal\').remove()" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+          '<button onclick="autoSaveHairForm();this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
       '</div>';
@@ -2921,7 +2921,22 @@ function initApp() {
 
   var _editingHairId = null;  // 正在编辑的记录ID，null=新建
 
-  window.saveHairRecordLocal = function() {
+  // ===== 自动保存表单（关闭时静默保存） =====
+  window.autoSaveHairForm = function() {
+    var nameEl = document.getElementById('hair-form-name');
+    if (!nameEl) return;  // 表单不存在
+    var name = nameEl.value.trim();
+    if (!name) return;  // 没填名字不自动保存
+
+    // 调用保存函数（静默，不改按钮状态）
+    var _oldEditingId = _editingHairId;
+    window.saveHairRecordLocal(true);  // true=静默模式
+    _editingHairId = _oldEditingId;
+  };
+
+  // 修改 saveHairRecordLocal 支持静默参数
+  var _origSave = window.saveHairRecordLocal;
+  window.saveHairRecordLocal = function(silent) {
     // 收集所有表单字段
     var record = {
       id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
@@ -2998,12 +3013,14 @@ function initApp() {
     }
     saveHairRecords(records);
 
-    // 反馈
-    var btn = document.getElementById('hair-save-btn');
-    if (btn) {
-      btn.textContent = '✅ 已保存到本地';
-      btn.style.background = 'var(--success, #2ecc71)';
-      btn.disabled = true;
+    // 反馈（静默模式不改变按钮）
+    if (!silent) {
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = '✅ 已保存到本地';
+        btn.style.background = 'var(--success, #2ecc71)';
+        btn.disabled = true;
+      }
     }
     // 刷新待上传列表
     if (window.renderPendingRecords) window.renderPendingRecords();
