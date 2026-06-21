@@ -4263,7 +4263,6 @@ function initApp() {
 
           function supabaseHairAnalysis(phone, compressed) {
             // 直接写Supabase队列（不依赖本地IP，店内店外都能用）
-            var formData = getHairFormData();
             var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
             fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
               method: 'POST',
@@ -4271,8 +4270,6 @@ function initApp() {
               body: JSON.stringify({
                 phone: phone || '',
                 raw_photo: compressed,
-                base_info: formData.base_info || {},
-                three_section: formData.three_section || {},
                 status: 'pending'
               })
             })
