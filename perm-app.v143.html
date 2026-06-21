@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="144">
+<html lang="zh-CN" data-version="143">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3400,15 +3400,6 @@ function initApp() {
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
         alert('今天暂无预约');
-        return;
-      }
-      // 只显示当前发型师自己的预约（双重保险：服务端已过滤，客户端再筛一次）
-      var barberName = BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
-      if (barberName) {
-        rows = rows.filter(function(r){ return r.barber_name === barberName; });
-      }
-      if (rows.length === 0) {
-        alert('今天暂无你的预约');
         return;
       }
       // 去重
