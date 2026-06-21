@@ -3026,7 +3026,7 @@ function initApp() {
             var queueId = rows[0].id;
             // 2. 轮询结果
             var pollStart = Date.now();
-            var POLL_TIMEOUT = 60000; // 最多等60秒
+            var POLL_TIMEOUT = 120000; // 最多等120秒
             var POLL_INTERVAL = 2000;  // 每2秒查一次
             var pollTimer;
 
