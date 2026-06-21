@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="164">
+<html lang="zh-CN" data-version="165">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4015,36 +4015,47 @@ function initApp() {
     var matchedLabel = '';
     var level = el || rl;
 
-    if (rl === ml && ml === el && rl > 0) {
-      // 三段一致
-      if (rl === 1) {
-        matchedId = 'level-1-' + (rcf === 'fine' ? 'fine' : 'coarse');
-      } else if (rl === 2) {
-        matchedId = 'level-2-' + (rcf === 'fine' ? 'fine' : 'coarse');
-      } else {
-        matchedId = 'level-' + rl;
-      }
-    } else if (rl === 1 && ml === 2 && el === 5) {
+    // ① 优先匹配特定的三段发质（根/中/尾各不同且有专属方案）
+    if (rl === 1 && ml === 2 && el === 5) {
       matchedId = '三段发质 发根1级+发中2级+发梢5级';
     } else if (rl === 2 && ml === 3 && el === 5) {
       matchedId = '三段发质 发根2级+发中3级+发梢5级';
     } else if (rl === 1 && ml === 3 && el === 4) {
       matchedId = '三段发质 发根1级+发中3级+发梢4级';
-    } else if (rl === 1 && el === 3) {
-      matchedId = 'level-mix-1-3';
-    } else if (rl === 1 && (el === 4 || el === 5)) {
-      matchedId = 'level-mix-1-4';
-    } else if (rl === 2 && el === 4) {
-      matchedId = 'level-mix-2-4';
-    } else if (rl === 2 && el === 5) {
-      matchedId = 'level-mix-2-5';
+    } else if (rl === ml && ml === el && rl > 0) {
+      // ② 三段一致 → 简单等级
+      if (rl === 1) matchedId = 'level-1-' + (rcf === 'fine' ? 'fine' : 'coarse');
+      else if (rl === 2) matchedId = 'level-2-' + (rcf === 'fine' ? 'fine' : 'coarse');
+      else matchedId = 'level-' + rl;
+    } else if (rl !== el || rl !== ml) {
+      // ③ 三段不一致 → 找混合类型或兜底
+      // 先试精确的 mix-{rl}-{el}
+      var tryMix = 'level-mix-' + rl + '-' + el;
+      var foundInTypes = false;
+      if (typeof HAIR_TYPES !== 'undefined') {
+        for (var ti = 0; ti < HAIR_TYPES.length; ti++) {
+          if (HAIR_TYPES[ti].id === tryMix) { foundInTypes = true; break; }
+        }
+      }
+      if (foundInTypes) {
+        matchedId = tryMix;
+      } else {
+        // 没有精确匹配 → 找最接近的：用发尾等级，但保留混合标记
+        var bestLevel = Math.max(rl, ml, el);
+        if (bestLevel <= 2) {
+          var cf = ecf || rcf || 'coarse';
+          matchedId = 'level-' + bestLevel + (bestLevel <= 2 ? '-' + cf : '');
+        } else {
+          matchedId = 'level-' + bestLevel;
+        }
+      }
     } else {
-      // fallback: 用发尾等级
-      var fallbackLevel = el || rl;
-      var fallbackCf = ecf || rcf || 'coarse';
-      if (fallbackLevel === 1) matchedId = 'level-1-' + fallbackCf;
-      else if (fallbackLevel === 2) matchedId = 'level-2-' + fallbackCf;
-      else matchedId = 'level-' + fallbackLevel;
+      // ④ 兜底
+      var fbLevel = el || rl;
+      var fbCf = ecf || rcf || 'coarse';
+      if (fbLevel === 1) matchedId = 'level-1-' + fbCf;
+      else if (fbLevel === 2) matchedId = 'level-2-' + fbCf;
+      else matchedId = 'level-' + fbLevel;
     }
 
     // 查找label
