@@ -3931,16 +3931,12 @@ function initApp() {
         c.onclick = function(e) {
           var row = c.parentElement;
           if (!row) return;
-          // toggle模式：已选中再点取消，未选中则同行radio
-          if (c.classList.contains('active')) {
-            c.classList.remove('active');
-          } else {
-            var siblings = row.querySelectorAll('.chip');
-            for (var si = 0; si < siblings.length; si++) {
-              siblings[si].classList.remove('active');
-            }
-            c.classList.add('active');
+          // radio模式：同行取消其他active
+          var siblings = row.querySelectorAll('.chip');
+          for (var si = 0; si < siblings.length; si++) {
+            siblings[si].classList.remove('active');
           }
+          c.classList.add('active');
           // 自动匹配发质类型
           if (typeof autoMatchHairType === 'function') autoMatchHairType();
         };
