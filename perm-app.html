@@ -1566,8 +1566,7 @@ function initApp() {
     if (mask) mask.classList.remove('open');
   };
   window.showHairAnalysisPage = function(phone) {
-    // 弹出一个全屏模态框显示发质分析
-    var name = '客户';
+    // 弹出一个全屏模态框显示发质分析，不需要手机号
     var existing = document.getElementById('hair-analysis-modal');
     if (existing) existing.remove();
 
@@ -1577,39 +1576,26 @@ function initApp() {
     overlay.innerHTML =
       '<div style="max-width:500px;margin:0 auto;padding:20px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
-          '<div style="font-size:16px;font-weight:700;color:var(--accent);">📸 发质分析 — '+esc(name)+'</div>' +
+          '<div style="font-size:16px;font-weight:700;color:var(--accent);">📸 发质拍照分析</div>' +
           '<button onclick="this.closest(\'#hair-analysis-modal\').remove()" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
-        renderHairAnalysis(phone, name) +
+        '<div id="hair-quick-area"></div>' +
       '</div>';
     document.body.appendChild(overlay);
 
-    // 绑定拍照按钮事件
+    // 直接渲染分析UI（phone传空，不绑客户）
+    var area = document.getElementById('hair-quick-area');
+    if (area) area.innerHTML = renderHairAnalysis('', '');
     setTimeout(function(){
       var btn = overlay.querySelector('.hair-capture-btn');
-      if (btn) btn.onclick = function(){ runHairAnalysis(phone); };
+      if (btn) btn.onclick = function(){ runHairAnalysis(''); };
     }, 100);
   };
 
   window.openHomeDrawerFeature = function(tabName) {
     closeHomeDrawer();
     if (tabName === 'hair') {
-      // 发质分析：先输手机号
-      var phone = prompt('请输入客户手机号：');
-      if (!phone || phone.length < 5) return;
-      // 打开方案页并自动触发发质分析
-      openFeature('bookings');
-      setTimeout(function(){
-        // 找到对应的预约行触发方案弹窗
-        var rows = window._bookingRows || [];
-        var match = rows.filter(function(r){ return r.customer_phone === phone; });
-        if (match.length > 0) {
-          showPlanModal(match[0]);
-        } else {
-          // 不在预约列表里，直接显示分析页
-          showHairAnalysisPage(phone);
-        }
-      }, 500);
+      showHairAnalysisPage();
       return;
     }
     openFeature(tabName);
