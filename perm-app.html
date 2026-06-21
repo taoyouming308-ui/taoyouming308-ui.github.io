@@ -2919,6 +2919,8 @@ function initApp() {
     localStorage.setItem('hair_records', JSON.stringify(records));
   }
 
+  var _editingHairId = null;  // 正在编辑的记录ID，null=新建
+
   window.saveHairRecordLocal = function() {
     // 收集所有表单字段
     var record = {
@@ -2978,7 +2980,22 @@ function initApp() {
     record.rinse = record.rinse ? record.rinse.value : '';
 
     var records = getHairRecords();
-    records.unshift(record);  // 最新在最前
+    if (_editingHairId) {
+      // 更新已有记录
+      for (var i = 0; i < records.length; i++) {
+        if (records[i].id === _editingHairId) {
+          record.id = _editingHairId;
+          record.createdAt = records[i].createdAt;
+          record.status = records[i].status;
+          record.synced = records[i].synced;
+          records[i] = record;
+          break;
+        }
+      }
+      _editingHairId = null;
+    } else {
+      records.unshift(record);  // 最新在最前
+    }
     saveHairRecords(records);
 
     // 反馈
@@ -2991,6 +3008,82 @@ function initApp() {
     // 刷新待上传列表
     if (window.renderPendingRecords) window.renderPendingRecords();
   };
+
+  // ===== 加载已有记录到表单（编辑模式） =====
+  window.loadHairRecord = function(id) {
+    var records = getHairRecords();
+    var rec = null;
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].id === id) { rec = records[i]; break; }
+    }
+    if (!rec) return;
+
+    _editingHairId = id;
+
+    // 填入各字段
+    setVal('hair-form-name', rec.customerName);
+    setVal('hair-form-phone', rec.customerPhone);
+    setVal('hair-form-tech', rec.technician);
+    setVal('hair-stylist-level', rec.stylistLevel);
+    setVal('hair-form-gray', rec.grayPercent);
+    setVal('hair-form-target', rec.targetColor);
+    setVal('hair-form-brand', rec.brand);
+    setVal('hair-form-ratio', rec.ratio);
+    setVal('hair-form-ph', rec.ph);
+    setVal('hair-form-soften', rec.soften);
+    setVal('hair-stylist-notes', rec.techNotes);
+    setVal('hair-form-rods-top', rec.rodsTop);
+    setVal('hair-form-rods-back', rec.rodsBack);
+    setVal('hair-form-rods-side', rec.rodsSide);
+    setVal('hair-form-rods-bang', rec.rodsBang);
+    setVal('hair-form-rods-heat', rec.rodsHeat);
+    setVal('hair-form-dwell-natural', rec.dwellNatural);
+    setVal('hair-form-dwell-heat', rec.dwellHeat);
+    setVal('hair-form-roll-start', rec.rollStart);
+    setVal('hair-form-roll-end', rec.rollEnd);
+    setVal('hair-form-set-start', rec.setStart);
+    setVal('hair-form-set-end', rec.setEnd);
+    setVal('hair-form-notes2', rec.notes);
+    setVal('hair-form-eval', rec.eval);
+    setVal('hair-form-sign', rec.sign);
+    setVal('hair-form-follow-date', rec.followDate);
+    setVal('hair-form-follow-msg', rec.followMsg);
+
+    // radio
+    selectRadio('hair-level-thick', rec.hairLevelThick);
+    selectRadio('hair-level-thin', rec.hairLevelThin);
+    selectRadio('hair-formula', rec.formula);
+    selectRadio('hair-rod-method', rec.rodMethod);
+    selectRadio('hair-dwell', rec.dwellType);
+    selectRadio('hair-rinse', rec.rinse);
+    setChecked('hair-form-creative', rec.creative);
+
+    // 恢复保存按钮
+    var btn = document.getElementById('hair-save-btn');
+    if (btn) {
+      btn.textContent = '✅ 保存到本地';
+      btn.style.background = '';
+      btn.disabled = false;
+    }
+
+    // 滚动到顶部
+    var modal = document.getElementById('hair-analysis-modal');
+    if (modal) modal.scrollTop = 0;
+  };
+
+  function setVal(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = val || '';
+  }
+  function setChecked(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.checked = !!val;
+  }
+  function selectRadio(name, val) {
+    if (!val) return;
+    var el = document.querySelector('input[name="'+name+'"][value="'+val+'"]');
+    if (el) el.checked = true;
+  }
 
   // ===== 渲染待上传记录列表 =====
   window.renderPendingRecords = function() {
@@ -3019,9 +3112,10 @@ function initApp() {
 
       // 操作按钮
       html += '<div style="display:flex;gap:4px;margin-top:4px;">';
+      html += '<button onclick="loadHairRecord(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️编辑</button>';
       html += '<button onclick="deleteHairRecord(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--danger);cursor:pointer;font-family:var(--font);">删除</button>';
       if (rec.status !== '已完成') {
-        html += '<button onclick="markHairDone(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">回访完成</button>';
+        html += '<button onclick="markHairDone(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
       }
       if (!rec.synced) {
         html += '<button onclick="syncHairRecord(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--accent);border:none;border-radius:4px;color:var(--bg);cursor:pointer;font-family:var(--font);">☁️上传</button>';
