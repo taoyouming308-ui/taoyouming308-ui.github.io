@@ -4335,45 +4335,21 @@ function initApp() {
                 var rec = records[0];
                 if (rec.status === 'completed') {
                   localStorage.removeItem('_pendingHairQueueId');
-                  // 显示AI验证结果（新格式）
+                  // 把ai_diagnosis数据提到顶层，调showHairResult完整渲染
                   var data = rec.ai_analysis || {};
-                  // ① 一致性
-                  var consistEl = document.getElementById('hair-consistency');
-                  var consistNoteEl = document.getElementById('hair-consistency-note');
-                  if (consistEl) {
-                    var consist = data.consistency || '';
-                    var icon = '❌';
-                    var cls = 'consistency-fail';
-                    if (consist === '一致' || consist === 'pass') { icon = '✅'; cls = 'consistency-pass'; }
-                    else if (consist === '基本一致' || consist === 'warn') { icon = '⚠️'; cls = 'consistency-warn'; }
-                    consistEl.innerHTML = '<span class="'+cls+'">'+icon+' '+esc(consist)+'</span>';
-                  }
-                  if (consistNoteEl && data.consistency_note) {
-                    consistNoteEl.textContent = data.consistency_note;
-                  }
-                  // ② 照片观察
-                  var visEl = document.getElementById('hair-visual-obs');
-                  if (visEl) {
-                    var obs = data.visual_observations || [];
-                    if (obs.length > 0) {
-                      visEl.innerHTML = '<span style="font-weight:600;">📸 照片观察：</span><br>• '+obs.join('<br>• ');
-                    } else if (data.overall_summary) {
-                      visEl.innerHTML = '<span style="font-weight:600;">📸 照片观察：</span> '+esc(data.overall_summary);
-                    } else {
-                      visEl.innerHTML = '';
-                    }
-                  }
-                  // ③ AI建议
-                  var sugEl = document.getElementById('hair-ai-suggestions');
-                  if (sugEl) {
-                    var sugs = data.suggestions || [];
-                    if (sugs.length > 0) {
-                      sugEl.innerHTML = '💡 建议:<br>• '+sugs.join('<br>• ');
-                    } else {
-                      sugEl.innerHTML = '';
-                    }
-                  }
-                  // 根据三段数据自动匹配发质类型
+                  var diag = data.ai_diagnosis || {};
+                  var displayData = {
+                    overall_level: diag.overall_level || '',
+                    root: diag.root || {},
+                    mid: diag.mid || {},
+                    end: diag.end || {},
+                    visual_features: diag.visual_features || [],
+                    ai_diagnosis: diag,
+                    stylist_reference: data.stylist_reference || {},
+                    consistency: data.consistency || '',
+                    consistency_note: data.consistency_note || '',
+                  };
+                  showHairResult(displayData, '', '');
                   autoMatchHairType();
                 } else if (rec.status === 'failed') {
                   resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 分析失败: ' + esc(rec.error_message || '未知错误') + '</div>';
