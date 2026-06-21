@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="163">
+<html lang="zh-CN" data-version="164">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1385,6 +1385,7 @@ const HAIR_TYPES = [
   { id: 'level-mix-1-3', label: '🔀 混合·发根1级 + 发尾3级' },
   { id: 'level-mix-1-4', label: '🔀 混合·发根1级 + 发尾4-5级' },
   { id: 'level-mix-2-4', label: '🔀 混合·发根2级 + 发尾4级' },
+  { id: 'level-mix-2-5', label: '🔀 混合·发根2级 + 发尾5级' },
   { id: '三段发质 发根1级+发中2级+发梢5级', label: '🔀 三段发质·根1级+中2级+梢5级' },
   { id: '三段发质 发根2级+发中3级+发梢5级', label: '🔀 三段发质·根2级+中3级+梢5级' },
   { id: '三段发质 发根1级+发中3级+发梢4级', label: '🔀 三段发质·根1级+中3级+梢4级' },
@@ -4035,6 +4036,8 @@ function initApp() {
       matchedId = 'level-mix-1-4';
     } else if (rl === 2 && el === 4) {
       matchedId = 'level-mix-2-4';
+    } else if (rl === 2 && el === 5) {
+      matchedId = 'level-mix-2-5';
     } else {
       // fallback: 用发尾等级
       var fallbackLevel = el || rl;
