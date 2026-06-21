@@ -1816,7 +1816,7 @@ function initApp() {
         <div class="param-row"><span class="param-label">pH值</span><span class="param-value highlight">${s.pH}</span></div>
         <div class="param-row"><span class="param-label">TGA:CA 配比</span><span class="param-value highlight">${s.tgaCa || '—'}</span></div>
         <div class="param-row"><span class="param-label">硫代浓度</span><span class="param-value highlight">${s.thio}</span></div>
-        <div class="param-row"><span class="param-label">蛋白用量</span><span class="param-value">${s.protein || '—'}</span></div>
+        <div class="param-row"><span class="param-label">蛋白用量</span><span class="param-value">${s.protein || '无'}</span></div>
         <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
         <div class="param-row"><span class="param-label">软化流程</span><span class="param-value ${s.penetration ? 'warn' : ''}">${s.penetrationNote || (s.penetration ? '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水' : '正常涂抹')}</span></div>
         <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
@@ -2549,7 +2549,7 @@ function initApp() {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
           if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+esc(lastDateStr)+'</span></div>';
-          htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
+          if (lastDateStr) htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
           // 最近到店记录
           var visitHistory = [];
           // 从第一条有服务记录的客户数据获取
