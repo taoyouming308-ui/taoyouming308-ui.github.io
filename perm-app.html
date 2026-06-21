@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="162">
+<html lang="zh-CN" data-version="163">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3099,10 +3099,10 @@ function initApp() {
       diagnosisType: (document.getElementById('hair-diagnosis-type')||{}).value || '',
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
       threeSection: (typeof getHairFormData === 'function') ? getHairFormData().three_section : {},
-      aiConsistency: ((document.getElementById('hair-consistency')||{}).textContent || '').replace(/<[^>]+>/g,''),
-      aiConsistencyNote: (document.getElementById('hair-consistency-note')||{}).textContent || '',
-      aiVisualObs: (document.getElementById('hair-visual-obs')||{}).textContent || '',
-      aiSuggestions: (document.getElementById('hair-ai-suggestions')||{}).textContent || '',
+      aiOverall: ((document.getElementById('hair-ai-overall')||{}).innerHTML || '').replace(/<[^>]+>/g,''),
+      aiDiagnosisText: ((document.getElementById('hair-ai-diagnosis')||{}).innerHTML || ''),
+      aiFeatures: (document.getElementById('hair-ai-features')||{}).textContent || '',
+      aiReference: ((document.getElementById('hair-ai-reference')||{}).innerHTML || ''),
       // 烫发参数（步骤4）
       rodsTop: (document.getElementById('hair-form-rods-top')||{}).value || '',
       rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
@@ -3401,14 +3401,16 @@ function initApp() {
       restoreChips('split_ends', data.threeSection.split_ends);
     }
     // 恢复AI验证结果显示
-    var consistEl = document.getElementById('hair-consistency');
-    if (consistEl && data.aiConsistency) consistEl.textContent = data.aiConsistency;
-    var consistNoteEl = document.getElementById('hair-consistency-note');
-    if (consistNoteEl && data.aiConsistencyNote) consistNoteEl.textContent = data.aiConsistencyNote;
-    var visEl = document.getElementById('hair-visual-obs');
-    if (visEl && data.aiVisualObs) visEl.textContent = data.aiVisualObs;
-    var sugEl = document.getElementById('hair-ai-suggestions');
-    if (sugEl && data.aiSuggestions) sugEl.innerHTML = '💡 建议:<br>• ' + data.aiSuggestions.replace(/💡\s*建议:\s*/,'').replace(/•\s*/g,'<br>• ');
+    var overallEl = document.getElementById('hair-ai-overall');
+    if (overallEl && data.aiOverall) overallEl.innerHTML = data.aiOverall;
+    var diagEl = document.getElementById('hair-ai-diagnosis');
+    if (diagEl && data.aiDiagnosisText) diagEl.innerHTML = data.aiDiagnosisText;
+    var featEl = document.getElementById('hair-ai-features');
+    if (featEl && data.aiFeatures) featEl.textContent = data.aiFeatures;
+    var refEl = document.getElementById('hair-ai-reference');
+    if (refEl && data.aiReference) refEl.innerHTML = data.aiReference;
+    // 自动匹配发质类型
+    if (typeof autoMatchHairType === 'function') autoMatchHairType();
     // 烫发参数（步骤4）
     setVal('hair-form-rods-top', data.rodsTop);
     setVal('hair-form-rods-back', data.rodsBack);
@@ -3433,7 +3435,7 @@ function initApp() {
     setChecked('hair-form-creative', data.creative);
     // 显示AI结果框
     var resultBox = document.getElementById('hair-result');
-    if (resultBox && (data.aiConsistency || data.diagnosisType)) resultBox.style.display = 'block';
+    if (resultBox && (data.aiOverall || data.diagnosisType)) resultBox.style.display = 'block';
     var btn = document.getElementById('hair-save-btn');
     if (btn) {
       btn.textContent = '✅ 保存到本地';
