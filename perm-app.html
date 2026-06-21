@@ -4257,35 +4257,40 @@ function initApp() {
           }
 
           function tryLocalAPI() {
-            // 尝试本地API（店内WiFi直调Mac）
-            var LOCAL_API = 'http://192.168.3.250:8890/api/hair-analysis';
-            // 收集表单数据
+            // 直接走Supabase队列（本地API已废弃，用户在店内店外都能用）
+            supabaseHairAnalysis(phone, compressed);
+          }
+
+          function supabaseHairAnalysis(phone, compressed) {
+            // 直接写Supabase队列（不依赖本地IP，店内店外都能用）
             var formData = getHairFormData();
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', LOCAL_API, true);
-            xhr.timeout = 15000;
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onload = function() {
-              if (xhr.status === 200) {
-                try {
-                  var resp = JSON.parse(xhr.responseText);
-                  localStorage.removeItem('_pendingHairQueueId');
-                  loadingEl.style.display = 'none';
-                  resultEl.style.display = 'block';
-                  showHairResult(resp, phone, compressed);
-                  return;
-                } catch(e) {}
-              }
-              fallbackToQueue();
-            };
-            xhr.onerror = function() { fallbackToQueue(); };
-            xhr.ontimeout = function() { fallbackToQueue(); };
-            xhr.send(JSON.stringify({
-              phone: phone || '',
-              image: compressed,
-              base_info: formData.base_info || {},
-              three_section: formData.three_section || {}
-            }));
+            var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+            fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+              method: 'POST',
+              headers: _supabaseHeaders,
+              body: JSON.stringify({
+                phone: phone || '',
+                raw_photo: compressed,
+                base_info: formData.base_info || {},
+                three_section: formData.three_section || {},
+                status: 'pending'
+              })
+            })
+            .then(function(rsp) {
+              if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
+              return rsp.json();
+            })
+            .then(function(rows) {
+              if (!rows || rows.length === 0) throw new Error('上传无返回');
+              var queueId = rows[0].id;
+              localStorage.setItem('_pendingHairQueueId', queueId);
+              pollQueue(queueId);
+            })
+            .catch(function(err) {
+              loadingEl.style.display = 'none';
+              resultEl.style.display = 'block';
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 上传失败: ' + esc(err.message) + '</div>';
+            });
           }
 
           function fallbackToQueue() {
