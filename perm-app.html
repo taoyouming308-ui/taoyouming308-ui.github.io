@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="155">
+<html lang="zh-CN" data-version="156">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3048,20 +3048,12 @@ function initApp() {
       barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
       customerName: (document.getElementById('hair-form-name')||{}).value || '',
       customerPhone: (document.getElementById('hair-form-phone')||{}).value || '',
-      // 发质诊断
-      hairLevelThick: document.querySelector('input[name="hair-level-thick"]:checked'),
-      hairLevelThin: document.querySelector('input[name="hair-level-thin"]:checked'),
-      stylistLevel: (document.getElementById('hair-stylist-level')||{}).value || '',
-      grayPercent: (document.getElementById('hair-form-gray')||{}).value || '',
-      targetColor: (document.getElementById('hair-form-target')||{}).value || '',
-      // 药水方案
-      formula: document.querySelector('input[name="hair-formula"]:checked'),
-      brand: (document.getElementById('hair-form-brand')||{}).value || '',
-      ratio: (document.getElementById('hair-form-ratio')||{}).value || '',
-      ph: (document.getElementById('hair-form-ph')||{}).value || '',
-      soften: (document.getElementById('hair-form-soften')||{}).value || '',
-      techNotes: (document.getElementById('hair-stylist-notes')||{}).value || '',
-      // 烫发参数
+      // 发质诊断（新：下拉选择+AI结果）
+      diagnosisType: (document.getElementById('hair-diagnosis-type')||{}).value || '',
+      aiLevel: ((document.getElementById('hair-ai-level')||{}).textContent || '').replace('🎯 ',''),
+      aiDetails: (document.getElementById('hair-ai-details')||{}).textContent || '',
+      aiDesc: (document.getElementById('hair-ai-desc')||{}).textContent || '',
+      // 烫发参数（步骤4）
       rodsTop: (document.getElementById('hair-form-rods-top')||{}).value || '',
       rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
       rodsSide: (document.getElementById('hair-form-rods-side')||{}).value || '',
@@ -3078,7 +3070,7 @@ function initApp() {
       setEnd: (document.getElementById('hair-form-set-end')||{}).value || '',
       rinse: document.querySelector('input[name="hair-rinse"]:checked'),
       notes: (document.getElementById('hair-form-notes2')||{}).value || '',
-      // 效果评定
+      // 效果评定（步骤5）
       eval: (document.getElementById('hair-form-eval')||{}).value || '',
       sign: (document.getElementById('hair-form-sign')||{}).value || '',
       followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
@@ -3089,9 +3081,6 @@ function initApp() {
     };
 
     // 简化：把radio的值转成字符串
-    record.hairLevelThick = record.hairLevelThick ? record.hairLevelThick.value : '';
-    record.hairLevelThin = record.hairLevelThin ? record.hairLevelThin.value : '';
-    record.formula = record.formula ? record.formula.value : '';
     record.rodMethod = record.rodMethod ? record.rodMethod.value : '';
     record.dwellType = record.dwellType ? record.dwellType.value : '';
     record.rinse = record.rinse ? record.rinse.value : '';
@@ -3343,14 +3332,17 @@ function initApp() {
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
     setVal('hair-form-tech', data.technician);
-    setVal('hair-stylist-level', data.stylistLevel);
-    setVal('hair-form-gray', data.grayPercent);
-    setVal('hair-form-target', data.targetColor);
-    setVal('hair-form-brand', data.brand);
-    setVal('hair-form-ratio', data.ratio);
-    setVal('hair-form-ph', data.ph);
-    setVal('hair-form-soften', data.soften);
-    setVal('hair-stylist-notes', data.techNotes);
+    setVal('hair-diagnosis-type', data.diagnosisType);
+    // 恢复AI结果显示
+    var aiLevelEl = document.getElementById('hair-ai-level');
+    if (aiLevelEl && data.aiLevel) aiLevelEl.textContent = '🎯 ' + data.aiLevel;
+    var aiDetailsEl = document.getElementById('hair-ai-details');
+    if (aiDetailsEl && data.aiDetails) aiDetailsEl.textContent = data.aiDetails;
+    var aiDescEl = document.getElementById('hair-ai-desc');
+    if (aiDescEl && data.aiDesc) aiDescEl.textContent = data.aiDesc;
+    var autoMsg = document.getElementById('hair-auto-match-msg');
+    if (autoMsg && data.diagnosisType) autoMsg.textContent = '（已加载）';
+    // 烫发参数（步骤4）
     setVal('hair-form-rods-top', data.rodsTop);
     setVal('hair-form-rods-back', data.rodsBack);
     setVal('hair-form-rods-side', data.rodsSide);
@@ -3363,17 +3355,18 @@ function initApp() {
     setVal('hair-form-set-start', data.setStart);
     setVal('hair-form-set-end', data.setEnd);
     setVal('hair-form-notes2', data.notes);
+    // 效果评定（步骤5）
     setVal('hair-form-eval', data.eval);
     setVal('hair-form-sign', data.sign);
     setVal('hair-form-follow-date', data.followDate);
     setVal('hair-form-follow-msg', data.followMsg);
-    selectRadio('hair-level-thick', data.hairLevelThick);
-    selectRadio('hair-level-thin', data.hairLevelThin);
-    selectRadio('hair-formula', data.formula);
     selectRadio('hair-rod-method', data.rodMethod);
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
     setChecked('hair-form-creative', data.creative);
+    // 显示AI结果框
+    var resultBox = document.getElementById('hair-result');
+    if (resultBox && (data.aiLevel || data.diagnosisType)) resultBox.style.display = 'block';
     var btn = document.getElementById('hair-save-btn');
     if (btn) {
       btn.textContent = '✅ 保存到本地';
