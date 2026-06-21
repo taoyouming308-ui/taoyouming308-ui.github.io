@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="150">
+<html lang="zh-CN" data-version="151">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3548,12 +3548,9 @@ function initApp() {
         var techs = rows.filter(function(r){ return r.position && r.position.indexOf('技师') !== -1; });
         sel.innerHTML = '<option value="">技师</option>';
         for (var i = 0; i < techs.length; i++) {
-          var label = techs[i].username;
-          if (techs[i].store) label += ' · ' + techs[i].store;
-          if (techs[i].position) label += ' (' + techs[i].position + ')';
           var opt = document.createElement('option');
           opt.value = techs[i].username;
-          opt.textContent = label;
+          opt.textContent = techs[i].username;
           sel.appendChild(opt);
         }
       }).catch(function(){});
