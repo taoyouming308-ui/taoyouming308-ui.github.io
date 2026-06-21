@@ -2995,7 +2995,7 @@ function initApp() {
         }
 
         // 调plan_server分析
-        var planServerUrl = 'http://192.168.3.250:8890/api/hair-analysis';
+    var planServerUrl = AI_TUNNEL_URL ? AI_TUNNEL_URL + '/api/hair-analysis' : 'http://192.168.3.250:8890/api/hair-analysis';
         var xhr = new XMLHttpRequest();
         xhr.open('POST', planServerUrl, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
@@ -3056,7 +3056,8 @@ function initApp() {
                   corrected: isCorrected
                 };
                 var saveXhr = new XMLHttpRequest();
-                saveXhr.open('POST', 'http://192.168.3.250:8890/api/save-hair-analysis', true);
+                var saveUrl = AI_TUNNEL_URL ? AI_TUNNEL_URL + '/api/save-hair-analysis' : 'http://192.168.3.250:8890/api/save-hair-analysis';
+                saveXhr.open('POST', saveUrl, true);
                 saveXhr.setRequestHeader('Content-Type', 'application/json');
                 saveXhr.timeout = 15000;
                 saveXhr.onload = function() {
