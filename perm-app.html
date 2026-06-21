@@ -3924,6 +3924,10 @@ function initApp() {
             doPoll();
           }
       };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // === Supabase Realtime 实时订阅（数据写入即推送，零延迟）===
   // 这里手写的是Supabase Realtime使用的Phoenix消息格式；如后续引入supabase-js，应优先改用官方channel API。
