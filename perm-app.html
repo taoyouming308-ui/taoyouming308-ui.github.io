@@ -2432,7 +2432,13 @@ function initApp() {
           // 卡项消耗建议
           var packages = [];
           var pRowsWithCards = (rows || []).filter(function(r){ return r.card_packages && r.card_packages.length > 0; });
-          if (pRowsWithCards.length > 0) packages = pRowsWithCards[0].card_packages;
+          if (pRowsWithCards.length > 0) {
+            packages = pRowsWithCards[0].card_packages || [];
+            // 只显示还有剩余次数的套餐（过滤已用完的）
+            packages = packages.filter(function(c){
+              return (c.left || c.remaining || c.leavetimes || 0) > 0;
+            });
+          }
           if (packages.length > 0) {
             sug += '📦 卡项消耗建议：\n';
             for (var ci = 0; ci < packages.length; ci++) {
