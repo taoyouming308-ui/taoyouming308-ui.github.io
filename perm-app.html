@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="152">
+<html lang="zh-CN" data-version="153">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1573,6 +1573,8 @@ function initApp() {
     var overlay = document.createElement('div');
     overlay.id = 'hair-analysis-modal';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    // 阻止touch事件穿透到document的下拉刷新
+    overlay.addEventListener('touchmove', function(e){ e.stopPropagation(); }, { passive: true });
     overlay.innerHTML =
       '<div style="max-width:500px;margin:0 auto;padding:20px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
