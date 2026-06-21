@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="149">
+<html lang="zh-CN" data-version="150">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3529,12 +3529,19 @@ function initApp() {
     html += '<select id="hair-form-tech" style="padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<option value="">技师</option>';
     html += '</select>';
-    // 异步从Supabase拉取技师列表
+    // 异步从Supabase拉取技师列表（按门店过滤）
     setTimeout(function(){
       var sel = document.getElementById('hair-form-tech');
       if (!sel) return;
-      fetch(SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc', {
+      // 先查当前发型师所属门店
+      fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(currentBarber) + '&limit=1', {
         headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r){ return r.json(); }).then(function(me){
+        var myStore = (me && me[0] && me[0].store) || '';
+        // 再按门店拉技师
+        var url = SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc';
+        if (myStore) url += '&store=eq.' + encodeURIComponent(myStore);
+        return fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
       }).then(function(r){ return r.json(); }).then(function(rows){
         if (!rows || rows.length === 0) return;
         // 只保留职位包含"技师"的员工
