@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="184">
+<html lang="zh-CN" data-version="185">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3190,18 +3190,12 @@ function initApp() {
       rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
       rodsSide: (document.getElementById('hair-form-rods-side')||{}).value || '',
       rodsBang: (document.getElementById('hair-form-rods-bang')||{}).value || '',
-      rodsHeat: (document.getElementById('hair-form-rods-heat')||{}).value || '',
       rodMethod: document.querySelector('input[name="hair-rod-method"]:checked'),
       creative: (document.getElementById('hair-form-creative')||{}).checked || false,
       dwellType: document.querySelector('input[name="hair-dwell"]:checked'),
       dwellNatural: (document.getElementById('hair-form-dwell-natural')||{}).value || '',
       dwellHeat: (document.getElementById('hair-form-dwell-heat')||{}).value || '',
-      rollStart: (document.getElementById('hair-form-roll-start')||{}).value || '',
-      rollEnd: (document.getElementById('hair-form-roll-end')||{}).value || '',
-      setStart: (document.getElementById('hair-form-set-start')||{}).value || '',
-      setEnd: (document.getElementById('hair-form-set-end')||{}).value || '',
       rinse: document.querySelector('input[name="hair-rinse"]:checked'),
-      notes: (document.getElementById('hair-form-notes2')||{}).value || '',
       // 服务类型
       serviceType: document.querySelector('input[name="hair-service-type"]:checked'),
       // 染发参数
@@ -3219,7 +3213,6 @@ function initApp() {
       colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
       // 效果评定（步骤5）
       eval: (document.getElementById('hair-form-eval')||{}).value || '',
-      sign: (document.getElementById('hair-form-sign')||{}).value || '',
       followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
       followMsg: (document.getElementById('hair-form-follow-msg')||{}).value || '',
       // 状态
@@ -3335,16 +3328,9 @@ function initApp() {
     setVal('hair-form-rods-back', rec.rodsBack);
     setVal('hair-form-rods-side', rec.rodsSide);
     setVal('hair-form-rods-bang', rec.rodsBang);
-    setVal('hair-form-rods-heat', rec.rodsHeat);
     setVal('hair-form-dwell-natural', rec.dwellNatural);
     setVal('hair-form-dwell-heat', rec.dwellHeat);
-    setVal('hair-form-roll-start', rec.rollStart);
-    setVal('hair-form-roll-end', rec.rollEnd);
-    setVal('hair-form-set-start', rec.setStart);
-    setVal('hair-form-set-end', rec.setEnd);
-    setVal('hair-form-notes2', rec.notes);
     setVal('hair-form-eval', rec.eval);
-    setVal('hair-form-sign', rec.sign);
     setVal('hair-form-follow-date', rec.followDate);
     setVal('hair-form-follow-msg', rec.followMsg);
 
@@ -3532,17 +3518,10 @@ function initApp() {
     setVal('hair-form-rods-back', data.rodsBack);
     setVal('hair-form-rods-side', data.rodsSide);
     setVal('hair-form-rods-bang', data.rodsBang);
-    setVal('hair-form-rods-heat', data.rodsHeat);
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
-    setVal('hair-form-roll-start', data.rollStart);
-    setVal('hair-form-roll-end', data.rollEnd);
-    setVal('hair-form-set-start', data.setStart);
-    setVal('hair-form-set-end', data.setEnd);
-    setVal('hair-form-notes2', data.notes);
     // 效果评定（步骤5）
     setVal('hair-form-eval', data.eval);
-    setVal('hair-form-sign', data.sign);
     setVal('hair-form-follow-date', data.followDate);
     setVal('hair-form-follow-msg', data.followMsg);
     selectRadio('hair-rod-method', data.rodMethod);
@@ -3904,7 +3883,6 @@ function initApp() {
     html += '<input id="hair-form-rods-back" placeholder="后区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<input id="hair-form-rods-side" placeholder="侧区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<input id="hair-form-rods-bang" placeholder="刘海号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-rods-heat" placeholder="加热分" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
     // 上杠方式
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">';
@@ -3920,18 +3898,6 @@ function initApp() {
     html += '<input id="hair-form-dwell-natural" placeholder="分" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;padding:6px 0;"><input type="radio" name="hair-dwell" value="heat" style="accent-color:var(--accent);"> 加热</label>';
     html += '<input id="hair-form-dwell-heat" placeholder="分" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '</div>';
-    // 时间记录
-    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">时间</span>';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">上卷</span>';
-    html += '<input id="hair-form-roll-start" placeholder="始" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">→</span>';
-    html += '<input id="hair-form-roll-end" placeholder="终" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">定型</span>';
-    html += '<input id="hair-form-set-start" placeholder="始" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">→</span>';
-    html += '<input id="hair-form-set-end" placeholder="终" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
     // 冲水
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
@@ -3980,7 +3946,6 @@ function initApp() {
     html += '<span class="chip" data-value="root_first">发根</span>';
     html += '<span class="chip" data-value="mid">发中</span>';
     html += '<span class="chip" data-value="end_first">发尾</span>';
-    html += '<span class="chip" data-value="all">全头一次</span>';
     html += '</div></div>';
     html += '<input type="hidden" id="hair-apply-order-value" value="">';
     html += '</div>'; // end flex container
@@ -4000,8 +3965,6 @@ function initApp() {
     html += '<textarea id="hair-form-color-notes" placeholder="配方/品牌/色号备注" rows="2" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>';
     html += '</div>'; // end hair-color-params
 
-    // 通用施放详述
-    html += '<textarea id="hair-form-notes2" placeholder="施放详述" rows="1" style="width:100%;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:28px;box-sizing:border-box;margin-top:6px;"></textarea>';
     html += '</div>';
 
     // ===== 步骤5: 总结（参考图1的完整闭环） =====
@@ -4009,7 +3972,6 @@ function initApp() {
     html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤5 · 效果评定</div>';
     html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">';
     html += '<input id="hair-form-eval" placeholder="发型师效果评定" style="flex:1;min-width:120px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-sign" placeholder="前台签名" style="flex:1;min-width:80px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
     html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">回访</span>';
@@ -4140,17 +4102,17 @@ function initApp() {
     if (!container) return;
     var chips = Array.from(container.querySelectorAll('.chip'));
     var order = [];
-    var labels = {root_first:'发根', mid:'发中', end_first:'发尾', all:'全头一次'};
+    var labels = {root_first:'发根', mid:'发中', end_first:'发尾'};
     function render() {
       chips.forEach(function(ch) {
         var val = ch.getAttribute('data-value');
         var idx = order.indexOf(val);
-        if (idx >= 0 && val !== 'all') {
+        if (idx >= 0) {
           ch.textContent = (idx + 1) + '.' + labels[val];
           ch.classList.add('active');
         } else {
           ch.textContent = labels[val] || val;
-          if (idx === -1) ch.classList.remove('active');
+          ch.classList.remove('active');
         }
       });
       document.getElementById('hair-apply-order-value').value = JSON.stringify(order);
@@ -4158,21 +4120,11 @@ function initApp() {
     chips.forEach(function(c) {
       c.onclick = function() {
         var val = c.getAttribute('data-value');
-        // 全头一次：点击则独占
-        if (val === 'all') {
-          order = ['all'];
-          render();
-          return;
-        }
-        // 如果之前是全头一次独占，清除
-        if (order.length === 1 && order[0] === 'all') {
-          order = [];
-        }
         var idx = order.indexOf(val);
         if (idx >= 0) {
-          order.splice(idx, 1); // 取消选中
+          order.splice(idx, 1);
         } else {
-          order.push(val); // 追加到末尾
+          order.push(val);
         }
         render();
       };
