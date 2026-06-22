@@ -1322,89 +1322,114 @@ function viewCustAnalyses(phone, name) {
         var sp = {'none':'无','few':'少量','many':'明显','severe':'严重'};
         function _v(v,m){ return v ? (m && m[v] ? m[v] : v) : '—'; }
 
-        html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">';
-        // 头部：日期+状态
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
-        html += '<span style="font-size:11px;color:#888;">' + date + '　' + (rec.barber ? '<span style="color:var(--accent);">' + esc(rec.barber) + '</span>' : '') + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">#' + (rec.id ? rec.id.substring(0,8) : '—') + '</span>';
+        html += '<div style="background:#000;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:14px;">';
+        // 头部：日期+发型师
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">';
+        html += '<span style="font-size:11px;color:#555;letter-spacing:0.5px;">' + date + '</span>';
+        html += '<span style="font-size:11px;color:#fff;">' + esc(rec.barber||'') + '</span>';
         html += '</div>';
-        // 完整表格
-        function _tr(l,v){
-          return '<tr><td style="color:var(--text-secondary);width:80px;padding:2px 6px 2px 0;font-size:12px;vertical-align:top;white-space:nowrap;">'+l+'</td><td style="color:var(--text);padding:2px 0;font-size:12px;word-break:break-word;">'+(v||'—')+'</td></tr>';
+
+        // 辅助：小节标题（左竖线）
+        function _sec(title) {
+          return '<div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:10px;"><div style="width:3px;height:14px;background:#fff;border-radius:2px;"></div><span style="font-size:12px;color:#fff;font-weight:600;letter-spacing:1px;">' + title + '</span></div>';
         }
-        html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+        // 辅助：数据行
+        function _rl(l, v) {
+          return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px solid #1a1a1a;"><span style="font-size:11px;color:#666;">' + l + '</span><span style="font-size:12px;color:#fff;text-align:right;">' + (v||'—') + '</span></div>';
+        }
+        // 辅助：标签徽章
+        function _tag(t, c) {
+          return '<span style="display:inline-block;padding:1px 8px;background:' + (c||'#222') + ';color:#fff;font-size:10px;border-radius:4px;margin-right:4px;">' + t + '</span>';
+        }
 
         // --- 客户信息 ---
-        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">📋 客户信息</td></tr>';
-        html += _tr('姓名',rec.customerName)+_tr('电话',rec.customerPhone)+_tr('发型师',rec.barber)+_tr('技师',rec.technician)+_tr('日期',rec.date);
+        html += _sec('客户信息');
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">';
+        html += _rl('姓名', rec.customerName) + _rl('电话', rec.customerPhone);
+        html += _rl('发型师', rec.barber) + _rl('技师', rec.technician);
+        html += _rl('日期', rec.date);
+        html += '</div>';
 
         // --- 基础信息 ---
-        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">💇 基础信息</td></tr>';
-        html += _tr('发根色度',_v(bi.color_level_root,cm))+_tr('发中色度',_v(bi.color_level_mid,cm))+_tr('发尾色度',_v(bi.color_level_end,cm));
-        html += _tr('漂发',_v(bi.bleached,bm))+_tr('染发',_v(bi.dyed,dm))+_tr('上次烫发',_v(bi.last_perm,pm))+_tr('手感',_v(bi.feel,fm));
+        html += _sec('基础信息');
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">';
+        html += _rl('发根色度', _v(bi.color_level_root, cm)) + _rl('发中色度', _v(bi.color_level_mid, cm));
+        html += _rl('发尾色度', _v(bi.color_level_end, cm)) + _rl('漂发', _v(bi.bleached, bm));
+        html += _rl('染发', _v(bi.dyed, dm)) + _rl('上次烫发', _v(bi.last_perm, pm));
+        html += _rl('手感', _v(bi.feel, fm));
+        html += '</div>';
 
         // --- 三段发质诊断 ---
-        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🔬 三段发质诊断</td></tr>';
+        html += _sec('三段发质诊断');
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">';
         var pnames = {root:'发根',mid:'发中',end:'发尾'};
         for (var pk in pnames) {
           var p = ts[pk] || {};
-          html += _tr(pnames[pk], _v(p.level,ll) + ' ' + (lc[p.coarse_fine]||''));
+          var lvlStr = _v(p.level, ll) + (p.coarse_fine ? ' · ' + (lc[p.coarse_fine]||p.coarse_fine) : '');
+          html += _rl(pnames[pk], lvlStr);
         }
-        html += _tr('发尾分叉',_v(ts.split_ends,sp));
-        html += _tr('综合诊断','<span style="color:#e8a817;">' + esc(rec.diagnosisType||'—') + '</span>');
+        html += _rl('发尾分叉', _v(ts.split_ends, sp));
+        html += '<div style="grid-column:1/-1;padding:6px 0 0;"><span style="color:#f0b429;font-size:12px;">综合诊断：' + esc(rec.diagnosisType||'—') + '</span></div>';
+        html += '</div>';
 
         // --- AI验证 ---
         if (rec.aiOverall || rec.aiDiagnosisText || rec.aiReference) {
-          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🤖 AI验证结果</td></tr>';
-          html += _tr('整体等级',_v(rec.aiOverall,{'1':'1级','2':'2级','3':'3级','4':'4级','5':'5级'}));
-          if (rec.aiDiagnosisText) html += _tr('诊断说明',rec.aiDiagnosisText.replace(/<[^>]+>/g,'').trim());
-          if (rec.aiReference) html += _tr('一致性对比',rec.aiReference.replace(/<[^>]+>/g,'').trim());
+          html += _sec('AI验证结果');
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">';
+          html += _rl('整体等级', _v(rec.aiOverall,{'1':'1级','2':'2级','3':'3级','4':'4级','5':'5级'}));
+          html += '</div>';
+          if (rec.aiDiagnosisText) html += '<div style="font-size:11px;color:#999;padding:4px 0;border-bottom:1px solid #1a1a1a;">' + esc(rec.aiDiagnosisText.replace(/<[^>]+>/g,'').trim().substring(0,80)) + '</div>';
+          if (rec.aiReference) html += '<div style="font-size:11px;color:#666;padding:4px 0;">' + esc(rec.aiReference.replace(/<[^>]+>/g,'').trim().substring(0,80)) + '</div>';
         }
 
         // --- 烫发方案 ---
         if (rec.rodsTop || rec.rodsBack || rec.rodsSide || rec.rodsBang) {
-          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🔥 烫发方案</td></tr>';
-          html += _tr('排杠','顶'+(rec.rodsTop||'—')+' 后'+(rec.rodsBack||'—')+' 侧'+(rec.rodsSide||'—')+' 刘海'+(rec.rodsBang||'—'));
-          if (rec.planResultHTML) html += _tr('方案',rec.planResultHTML.replace(/<[^>]+>/g,'').trim());
+          html += _sec('烫发方案');
+          var rods = '顶'+(rec.rodsTop||'—')+' 后'+(rec.rodsBack||'—')+' 侧'+(rec.rodsSide||'—')+' 刘海'+(rec.rodsBang||'—');
+          html += _rl('排杠', rods);
+          if (rec.planResultHTML) html += '<div style="font-size:11px;color:#999;padding:4px 0;border-bottom:1px solid #1a1a1a;">' + esc(rec.planResultHTML.replace(/<[^>]+>/g,'').trim().substring(0,100)) + '</div>';
         }
 
         // --- 染发参数 ---
         if (rec.developer || rec.mixRatio || rec.applyOrder || rec.colorNotes) {
-          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🎨 染发参数</td></tr>';
-          html += _tr('双氧水',rec.developer)+_tr('比例',rec.mixRatio)+_tr('涂抹顺序',rec.applyOrder)+_tr('配方备注',rec.colorNotes);
+          html += _sec('染发参数');
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;">';
+          html += _rl('双氧水', rec.developer) + _rl('比例', rec.mixRatio);
+          html += _rl('涂抹顺序', rec.applyOrder) + _rl('配方备注', rec.colorNotes);
+          html += '</div>';
         }
 
         // --- 回馈评定（ABC+截图上传） ---
-        html += '</table>';
-        html += '<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">';
-        html += '<div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:8px;">⭐ 回馈评定</div>';
-        // A/B/C 单选
+        html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #2a2a2a;">';
+        html += '<div style="font-size:12px;color:#fff;font-weight:600;letter-spacing:1px;margin-bottom:12px;">回馈评定</div>';
+        // A/B/C 单选 - 高级感按钮
         var savedRating = rec.feedbackRating || '';
-        html += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
-        ['效果好','一般','需优化'].forEach(function(lbl,i){
-          var val = ['A','B','C'][i];
-          var checked = savedRating === val ? ' checked' : '';
-          html += '<label style="flex:1;padding:6px 0;text-align:center;border-radius:6px;cursor:pointer;font-size:12px;background:' + (checked ? '#2a3a1a' : 'var(--bg)') + ';border:1px solid ' + (checked ? 'var(--success)' : 'var(--border)') + ';color:' + (checked ? 'var(--success)' : 'var(--text)') + ';">';
-          html += '<input type="radio" name="fb-' + r.id + '" value="' + val + '"' + checked + ' onchange="this.parentElement.style.background=\\'#2a3a1a\\';this.parentElement.style.borderColor=\\'var(--success)\\';this.parentElement.style.color=\\'var(--success)\\';"> ';
-          html += val + ' ' + lbl;
+        html += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
+        [['A','效果好','#2a6e3b'],['B','一般','#7a6a2a'],['C','需优化','#8a3a3a']].forEach(function(item){
+          var val = item[0], lbl = item[1], selBg = item[2];
+          var checked = savedRating === val;
+          html += '<label data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-' + r.id + '" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#111') + ';border:1px solid ' + (checked ? '#fff' : '#333') + ';color:' + (checked ? '#fff' : '#888') + ';transition:all 0.15s;" onclick="selectFbRating(this)">';
+          html += '<span style="font-size:14px;font-weight:700;">' + val + '</span><br><span style="font-size:10px;">' + lbl + '</span>';
           html += '</label>';
         });
+        // 隐藏的radio（用于保存时取值）
+        html += '<input type="radio" name="fb-' + r.id + '" value="' + savedRating + '"' + (savedRating?' checked':'') + ' style="display:none;">';
         html += '</div>';
-        // 聊天截图上传
+        // 聊天截图
         var ssBase64 = rec.chatScreenshot || '';
-        html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">💬 聊天截图</div>';
+        html += '<div style="font-size:11px;color:#666;margin-bottom:6px;">聊天截图</div>';
         if (ssBase64 && ssBase64.length > 20) {
-          html += '<div style="position:relative;display:inline-block;margin-bottom:6px;">';
-          html += '<img src="' + ssBase64 + '" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);object-fit:cover;">';
-          html += '<button onclick="removeFbScreenshot(' + r.id + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:12px;cursor:pointer;line-height:20px;text-align:center;padding:0;">✕</button>';
+          html += '<div style="position:relative;display:inline-block;margin-bottom:8px;">';
+          html += '<img src="' + ssBase64 + '" style="max-width:180px;max-height:140px;border-radius:6px;border:1px solid #333;object-fit:cover;">';
+          html += '<button onclick="removeFbScreenshot(' + r.id + ')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#e0556a;color:#fff;border:none;font-size:10px;cursor:pointer;line-height:18px;text-align:center;padding:0;opacity:0.9;">✕</button>';
           html += '</div>';
         }
-        html += '<div style="display:flex;gap:6px;align-items:center;">';
-        html += '<label style="flex:1;padding:8px 12px;background:var(--bg);border:1px dashed var(--border);border-radius:6px;cursor:pointer;text-align:center;font-size:12px;color:var(--text-secondary);">📷 选择截图<input type="file" accept="image/*" onchange="uploadFbScreenshot(' + r.id + ',this)" style="display:none;"></label>';
-        html += '<button onclick="saveFbRating(' + r.id + ',\'' + phone + '\')" class="btn-save" style="white-space:nowrap;padding:8px 16px;font-size:12px;border:none;border-radius:6px;background:#fff;color:#000;cursor:pointer;font-weight:600;">保存</button>';
+        html += '<div style="display:flex;gap:8px;align-items:center;">';
+        html += '<label style="flex:1;padding:10px 12px;background:#0a0a0a;border:1px dashed #333;border-radius:8px;cursor:pointer;text-align:center;font-size:12px;color:#666;transition:border-color 0.2s;">⬆ 上传截图<input type="file" accept="image/*" onchange="uploadFbScreenshot(' + r.id + ',this)" style="display:none;"></label>';
+        html += '<button onclick="saveFbRating(' + r.id + ')" style="padding:10px 20px;border:none;border-radius:8px;background:#fff;color:#000;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">保存</button>';
         html += '</div>';
-        html += '</div>';
-        html += '</div>';
+        html += '</div>'; // 回馈区结束
+        html += '</div>'; // 卡片结束
       });
       html += '</div>';
     }
@@ -1417,8 +1442,28 @@ function viewCustAnalyses(phone, name) {
   });
 }
 
+// ===== 回馈ABC：点击切换高亮 =====
+function selectFbRating(el) {
+  var bg = el.getAttribute('data-bg');
+  var name = el.getAttribute('data-name');
+  var val = el.getAttribute('data-val');
+  // 重置同一组所有按钮样式
+  el.parentElement.querySelectorAll('label').forEach(function(e){
+    e.style.background = '#111';
+    e.style.borderColor = '#333';
+    e.style.color = '#888';
+  });
+  // 高亮当前
+  el.style.background = bg;
+  el.style.borderColor = '#fff';
+  el.style.color = '#fff';
+  // 选中隐藏radio
+  var radio = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
+  if (radio) radio.checked = true;
+}
+
 // ===== 回馈ABC保存 + 截图上传 =====
-function saveFbRating(id, phone) {
+function saveFbRating(id) {
   var rating = document.querySelector('input[name="fb-' + id + '"]:checked');
   if (!rating) { showToast('请选择一个评定等级'); return; }
   var val = rating.value;
