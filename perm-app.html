@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="183">
+<html lang="zh-CN" data-version="184">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3976,8 +3976,9 @@ function initApp() {
     // 涂抹顺序
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">涂抹</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="root_first" style="accent-color:var(--accent);"> 先发根</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="end_first" style="accent-color:var(--accent);"> 先发尾</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="root_first" style="accent-color:var(--accent);"> 1.先发根</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="mid" style="accent-color:var(--accent);"> 2.发中</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="end_first" style="accent-color:var(--accent);"> 3.先发尾</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="all" style="accent-color:var(--accent);"> 全头一次</label>';
     html += '</div>';
     // 停放时间+加热
