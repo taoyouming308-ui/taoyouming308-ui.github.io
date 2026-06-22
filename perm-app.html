@@ -4242,9 +4242,11 @@ function initApp() {
     // 加载状态（隐藏）
     html += '<div id="hair-loading" style="display:none;text-align:center;padding:6px 0;"><span style="font-size:11px;color:var(--text-secondary);">🔍 AI验证中...</span></div>';
 
+    // 拍照缩略图（分析过程中一直显示在外面）
+    html += '<div id="hair-thumb" style="display:none;text-align:center;margin-bottom:6px;"></div>';
+
     // AI验证结果展示区
     html += '<div id="hair-result" style="display:none;">';
-    html += '<div id="hair-thumb" style="display:none;"></div>';
 
     html += '<div id="hair-ai-result-box" style="background:var(--surface-light);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px;">';
     html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI发质诊断</div>';
@@ -4721,7 +4723,8 @@ function initApp() {
           // 显示缩略图
           var thumbDiv = document.getElementById('hair-thumb');
           if (thumbDiv) {
-            thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">';
+            thumbDiv.style.display = 'block';
+            thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:100%;max-width:280px;height:auto;border-radius:8px;border:1px solid var(--border);margin:0 auto;">';
           }
 
           // ★ 启动：先试本地API，失败走队列
