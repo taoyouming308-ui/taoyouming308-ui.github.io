@@ -4770,7 +4770,7 @@ function initApp() {
               thumbDiv.style.display = 'block';
               thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:100%;max-width:280px;height:auto;border-radius:8px;border:1px solid var(--border);margin:0 auto;">';
             }
-            tryLocalAPI();
+            tryLocalAPI(compressed);
           };
           img.src = imgUrl;
         })(file);
@@ -4807,7 +4807,7 @@ function initApp() {
           }
 
           // ★ 启动：先试本地API，失败走队列
-          tryLocalAPI();
+          tryLocalAPI(compressed);
 
           // ★ 显示本地API结果（新格式适配）
           function showHairResult(resp, phone, imageData) {
@@ -4937,9 +4937,10 @@ function initApp() {
             refEl.innerHTML = '📊 你 vs AI<br>' + diffs.join('<br>');
           };
 
-          function tryLocalAPI() {
+          function tryLocalAPI(_compressed) {
             // 直接走Supabase队列（本地API已废弃，用户在店内店外都能用）
-            supabaseHairAnalysis(phone, compressed);
+            var imgData = _compressed || compressed;
+            supabaseHairAnalysis(phone, imgData);
           }
 
           function supabaseHairAnalysis(phone, compressed) {
