@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="175">
+<html lang="zh-CN" data-version="174">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3370,7 +3370,7 @@ function initApp() {
       return;
     }
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载我的任务...</div>';
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=eq.record_saved&order=created_at.desc&limit=50', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?technician=eq.' + encodeURIComponent(barber) + '&order=created_at.desc&limit=50', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
@@ -3380,23 +3380,22 @@ function initApp() {
       var html = '';
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
-        var data = (r.ai_analysis && r.ai_analysis.record) || {};
-        var isDone = r.status === 'completed' || r.status === 'record_saved_done';
+        var data = r.record_data || {};
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + esc(data.customerName||'') + '</span>';
         html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(data.technician||'') + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        html += '<span>' + esc(r.phone||data.customerPhone||'') + '</span>';
-        var sc = isDone ? 'var(--success)' : '#e8a817';
-        html += '<span style="margin-left:auto;color:'+sc+';">' + (isDone ? '已完成' : '待回访') + '</span>';
+        html += '<span>' + esc(data.customerPhone||'') + '</span>';
+        var sc = r.status === '已完成' ? 'var(--success)' : '#e8a817';
+        html += '<span style="margin-left:auto;color:'+sc+';">' + esc(r.status) + '</span>';
         html += '</div>';
         // 操作：技师可编辑，不可删除
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
-        html += '<button onclick="loadCloudRecord(\''+r.phone+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️编辑</button>';
-        if (!isDone) {
-          html += '<button onclick="markCloudDone(\''+r.phone+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
+        html += '<button onclick="loadCloudRecord(\''+r.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️编辑</button>';
+        if (r.status !== '已完成') {
+          html += '<button onclick="markCloudDone(\''+r.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
         }
         html += '</div></div>';
       }
@@ -3406,19 +3405,19 @@ function initApp() {
     });
   };
 
-  window.loadCloudRecord = function(phone) {
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level&phone=eq.' + encodeURIComponent(phone) + '&status=eq.record_saved&limit=1&order=created_at.desc', {
+  window.loadCloudRecord = function(id) {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(id), {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
-      var rec = (rows[0].ai_analysis && rows[0].ai_analysis.record) || {};
+      var rec = rows[0].record_data || {};
       // 加载到表单
       if (window.loadHairRecordData) window.loadHairRecordData(rec);
     }).catch(function(){});
   };
 
-  window.markCloudDone = function(phone) {
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?phone=eq.' + encodeURIComponent(phone) + '&status=eq.record_saved', {
+  window.markCloudDone = function(id) {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(id), {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: '已完成' })
@@ -3541,21 +3540,16 @@ function initApp() {
     for (var i = 0; i < records.length; i++) {
       if (records[i].id === id) {
         var rec = records[i];
-        // 用hair_analysis_queue表存储（唯一可写入的表），加上source标记区分
-        fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+        fetch(SUPABASE_URL + '/rest/v1/hair_records', {
           method: 'POST',
           headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
           body: JSON.stringify({
-            phone: rec.customerPhone || rec.phone || 'unknown',
-            raw_photo: 'SAVED_RECORD',
-            ai_analysis: { source: 'hair_record', record: rec },
-            status: 'record_saved',
-            stylist_damage_level: parseInt(rec.damageLevel) || 0
+            id: rec.id, customer_name: rec.customerName, customer_phone: rec.customerPhone,
+            technician: rec.technician, barber: rec.barber, status: rec.status, record_data: rec
           })
         }).then(function(r) {
           if (r.ok) { rec.synced = true; saveHairRecords(records); window.renderPendingRecords(); alert('☁️ 已上传'); }
-          else { r.text().then(function(t){ alert('❌ 上传失败: '+t.slice(0,80)); }); }
-        }).catch(function(){ alert('❌ 上传失败，网络错误'); });
+        }).catch(function(){ alert('❌ 上传失败'); });
         break;
       }
     }
