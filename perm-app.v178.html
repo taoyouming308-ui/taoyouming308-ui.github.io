@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="179">
+<html lang="zh-CN" data-version="178">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3894,10 +3894,27 @@ function initApp() {
     // ===== 步骤3: 服务类型选择 =====
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
     html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤3 · 服务类型</div>';
-    html += '<div style="display:flex;gap:8px;margin-bottom:4px;">';
+    html += '<div style="display:flex;gap:8px;margin-bottom:8px;">';
     html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="perm" checked onchange="toggleServiceType()" style="accent-color:var(--accent);"> 烫发</label>';
     html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="color" onchange="toggleServiceType()" style="accent-color:var(--accent);"> 染发</label>';
     html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="both" onchange="toggleServiceType()" style="accent-color:var(--accent);"> 烫染</label>';
+    html += '</div>';
+
+    // 烫发方案（服务类型为perm或both时显示）
+    html += '<div id="hair-perm-plan-section">';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">烫发方案</div>';
+    html += '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;display:block;">烫发款式</label>';
+    html += '<select id="hair-q-style" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
+    html += '<option value="">请选择烫发款式</option>';
+    if (typeof PERM_STYLES !== 'undefined' && PERM_STYLES.length) {
+      for (var si = 0; si < PERM_STYLES.length; si++) {
+        html += '<option value="'+escAttr(PERM_STYLES[si].id)+'">'+esc(PERM_STYLES[si].label)+'</option>';
+      }
+    }
+    html += '</select></div>';
+    html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">💡 发质类型来自步骤2的AI诊断或手动选择</div>';
+    html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询烫发方案</button>';
+    html += '<div id="hair-q-result" style="margin-top:10px;"></div>';
     html += '</div>';
     html += '</div>';
 
@@ -4874,8 +4891,10 @@ function initApp() {
     var selected = document.querySelector('input[name="hair-service-type"]:checked');
     if (!selected) return;
     var val = selected.value;
+    var permPlan = document.getElementById('hair-perm-plan-section');
     var permParams = document.getElementById('hair-perm-params');
     var colorParams = document.getElementById('hair-color-params');
+    if (permPlan) permPlan.style.display = (val === 'perm' || val === 'both') ? '' : 'none';
     if (permParams) permParams.style.display = (val === 'perm' || val === 'both') ? '' : 'none';
     if (colorParams) colorParams.style.display = (val === 'color' || val === 'both') ? '' : 'none';
   };
