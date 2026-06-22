@@ -4477,6 +4477,8 @@ function initApp() {
           }
 
           function supabaseHairAnalysis(phone, compressed) {
+            // 收集发型师已填写的表单数据
+            var formData = (typeof getHairFormData === 'function') ? getHairFormData() : {};
             // 直接写Supabase队列（不依赖本地IP，店内店外都能用）
             var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
             fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
@@ -4485,7 +4487,9 @@ function initApp() {
               body: JSON.stringify({
                 phone: phone || '',
                 raw_photo: compressed,
-                status: 'pending'
+                status: 'pending',
+                base_info: formData.base_info || {},
+                three_section: formData.three_section || {}
               })
             })
             .then(function(rsp) {
@@ -4507,11 +4511,15 @@ function initApp() {
 
           function fallbackToQueue() {
             // 兜底：走Supabase队列
+            var formData = (typeof getHairFormData === 'function') ? getHairFormData() : {};
             var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
             fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
               method: 'POST',
               headers: _supabaseHeaders,
-              body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending' })
+              body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending',
+                base_info: formData.base_info || {},
+                three_section: formData.three_section || {}
+              })
             })
             .then(function(rsp) {
               if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
