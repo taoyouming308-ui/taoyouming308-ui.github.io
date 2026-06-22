@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="201">
+<html lang="zh-CN" data-version="202">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3642,14 +3642,98 @@ function initApp() {
 
     var textBlock = lines.join('\\n');
 
-    // 显示文字版快照
+    // 显示文字版快照（HTML表格渲染，保证对齐）
     var formSection = document.getElementById('hair-analysis-section');
     if (!formSection) return;
     formSection.style.display = '';
-    formSection.innerHTML =
-      '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 发质分析记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（文字版·已保存）</span></div>' +
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--text);font-family:monospace;">' + esc(textBlock) + '</div>' +
-      '<button onclick="hideHairRecordSummary()" style="width:100%;margin-top:10px;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">← 返回列表</button>';
+
+    function _tr(l, v) {
+      return '<tr><td style="color:#71767b;width:72px;padding:3px 0;font-size:12px;vertical-align:top;white-space:nowrap;">' + l + '</td><td style="color:#e7e9ea;padding:3px 0 3px 8px;font-size:12px;word-break:break-word;">' + (v || '—') + '</td></tr>';
+    }
+    function _sct(title) {
+      return '<tr><td colspan="2" style="color:#e7e9ea;font-size:11px;font-weight:700;padding:10px 0 4px;border-bottom:1px solid #2f3336;">' + title + '</td></tr>';
+    }
+
+    var h = '';
+    h += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 发质分析记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（文字版·已保存）</span></div>';
+    h += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:monospace;">';
+    h += '<table style="width:100%;border-collapse:collapse;">';
+
+    // 标题行
+    h += '<tr><td colspan="2" style="text-align:center;font-size:14px;font-weight:700;color:#e7e9ea;padding:4px 0 0;letter-spacing:2px;">发质分析记录表</td></tr>';
+    h += '<tr><td colspan="2" style="text-align:center;font-size:9px;color:#71767b;padding:0 0 8px;letter-spacing:1px;">HAIR ANALYSIS REPORT</td></tr>';
+    h += '<tr><td colspan="2" style="border-top:1px solid #2f3336;padding:0;"></td></tr>';
+
+    // 客户信息
+    h += _sct('━━━ 客户信息 ━━━━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('姓名', rec.customerName);
+    h += _tr('电话', rec.customerPhone);
+    h += _tr('发型师', rec.barber);
+    h += _tr('技师', rec.technician);
+    h += _tr('日期', rec.date);
+
+    // 基础信息
+    h += _sct('━━━ 基础信息 ━━━━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('发根色度', val(bi.color_level_root, cm));
+    h += _tr('发中色度', val(bi.color_level_mid, cm));
+    h += _tr('发尾色度', val(bi.color_level_end, cm));
+    h += _tr('漂发', val(bi.bleached, bm));
+    h += _tr('染发', val(bi.dyed, dm));
+    h += _tr('上次烫发', val(bi.last_perm, pm));
+    h += _tr('手感', val(bi.feel, fm));
+
+    // 三段发质诊断
+    h += _sct('━━━ 三段发质诊断 ━━━━━━━━━━━━━━━━━━━');
+    var parts = {root:'发根', mid:'发中', end:'发尾'};
+    for (var pk in parts) {
+      var p = ts[pk] || {};
+      h += _tr(parts[pk], val(p.level, ll) + '  ' + (lc[p.coarse_fine] || ''));
+    }
+    h += _tr('发尾分叉', val(ts.split_ends, sp));
+    h += '<tr><td colspan="2" style="border-top:1px dashed #2f3336;padding:0;"></td></tr>';
+    h += _tr('综合诊断', '<span style="color:#e8a817;">' + (rec.diagnosisType || '—') + '</span>');
+
+    // AI验证结果
+    h += _sct('━━━ AI验证结果 ━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('整体等级', val(rec.aiOverall, {'1':'1级','2':'2级','3':'3级','4':'4级','5':'5级'}));
+    if (rec.aiDiagnosisText) {
+      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      h += _tr('诊断说明', diagClean || '—');
+    }
+    if (rec.aiReference) {
+      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      h += _tr('一致性', refClean);
+    }
+
+    // 烫发方案
+    h += _sct('━━━ 烫发方案 ━━━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('排杠', '顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    h += _tr('加热方式', '第一次60°C 15分钟');
+    h += '<tr><td style="color:#71767b;width:72px;padding:1px 0;font-size:12px;"></td><td style="color:#e7e9ea;padding:1px 0 1px 8px;font-size:12px;">第二次  □健康110°C  □受损100°C</td></tr>';
+    h += '<tr><td style="color:#71767b;width:72px;padding:1px 0;font-size:12px;"></td><td style="color:#f4212e;padding:1px 0 3px 8px;font-size:12px;font-weight:600;">加热到全干</td></tr>';
+
+    // 染发参数
+    h += _sct('━━━ 染发参数 ━━━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('双氧水', rec.developer || '—');
+    h += _tr('比例', rec.mixRatio || '—');
+    h += _tr('涂抹顺序', rec.applyOrder || '—');
+    h += _tr('停放', (rec.colorDwell || '—') + (rec.colorHeat ? '  □加热' : ''));
+    h += _tr('染前处理', (rec.scalpProtect ? '□头皮隔离 ' : '') + (rec.endProtect ? '□发尾保护' : '') || '—');
+    h += _tr('配方备注', rec.colorNotes || '—');
+
+    // 效果评定
+    h += _sct('━━━ 效果评定 ━━━━━━━━━━━━━━━━━━━━━━');
+    h += _tr('效果', rec.eval || '—');
+    h += _tr('回访', (rec.followDate || '') + (rec.followDate && rec.followMsg ? '  ' : '') + (rec.followMsg || ''));
+
+    // 底部
+    h += '<tr><td colspan="2" style="border-top:1px solid #2f3336;padding:0;"></td></tr>';
+    h += '<tr><td colspan="2" style="text-align:center;font-size:9px;color:#71767b;padding:6px 0 2px;">记录编号：' + (rec.id || '—') + '　　创建时间：' + (rec.createdAt ? rec.createdAt.slice(0,16).replace('T',' ') : (rec.date || '—')) + '</td></tr>';
+
+    h += '</table></div>';
+    h += '<button onclick="hideHairRecordSummary()" style="width:100%;margin-top:10px;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">← 返回列表</button>';
+
+    formSection.innerHTML = h;
     formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
