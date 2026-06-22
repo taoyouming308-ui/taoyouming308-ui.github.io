@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="202">
+<html lang="zh-CN" data-version="203">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4125,17 +4125,12 @@ function initApp() {
 
     html += '</div>'; // end hair-result
 
-    // 发质类型下拉（放在区块C下面，AI验证完成后自动匹配，可手动改）
+    // 发质类型 → 自动生成描述文本（精确反映三段诊断）
     html += '<div style="margin-top:8px;margin-bottom:4px;">';
-    html += '<label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">发质类型 <span id="hair-auto-match-msg" style="font-size:10px;color:var(--accent);font-weight:400;"></span></label>';
-    html += '<select id="hair-diagnosis-type" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
-    html += '<option value="">请选择发质类型</option>';
-    if (typeof HAIR_TYPES !== 'undefined' && HAIR_TYPES.length) {
-      for (var hi = 0; hi < HAIR_TYPES.length; hi++) {
-        html += '<option value="'+escAttr(HAIR_TYPES[hi].id)+'">'+esc(HAIR_TYPES[hi].label)+'</option>';
-      }
-    }
-    html += '</select></div>';
+    html += '<label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">综合诊断 <span id="hair-auto-match-msg" style="font-size:10px;color:var(--accent);font-weight:400;"></span></label>';
+    html += '<div id="hair-diagnosis-text" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:13px;font-family:var(--font);">—</div>';
+    html += '<input type="hidden" id="hair-diagnosis-type" value="">';
+    html += '</div>';
     html += '</div>';
 
     // ===== 步骤3: 烫发方案（无切换，一直显示） =====
@@ -4429,7 +4424,7 @@ function initApp() {
   // 最新AI诊断结果缓存（供autoMatchHairType使用）
   var _lastAiDiagnosis = null;
 
-  // 根据AI诊断或表单数据自动匹配发质类型下拉
+  // 根据三段诊断自动生成综合描述文本
   window.autoMatchHairType = function() {
     var rl, ml, el, rcf, mcf, ecf;
 
@@ -4442,7 +4437,6 @@ function initApp() {
       mcf = _lastAiDiagnosis.mid.coarse_fine || 'coarse';
       ecf = _lastAiDiagnosis.end.coarse_fine || 'coarse';
     } else {
-      // 兜底：用表单数据
       var fd = (typeof getHairFormData === 'function') ? getHairFormData() : null;
       if (!fd || !fd.three_section) return;
       var ts = fd.three_section;
@@ -4453,72 +4447,52 @@ function initApp() {
       mcf = ts.mid.coarse_fine || 'coarse';
       ecf = ts.end.coarse_fine || 'coarse';
     }
-    if (!rl) return; // 至少需要发根等级
+    if (!rl && !ml && !el) return;
 
-    var matchedId = '';
-    var matchedLabel = '';
-    var level = el || rl;
+    rl = parseInt(rl) || 0;
+    ml = parseInt(ml) || 0;
+    el = parseInt(el) || 0;
 
-    // ① 优先匹配特定的三段发质（根/中/尾各不同且有专属方案）
-    if (rl === 1 && ml === 2 && el === 5) {
-      matchedId = '三段发质 发根1级+发中2级+发梢5级';
-    } else if (rl === 2 && ml === 3 && el === 5) {
-      matchedId = '三段发质 发根2级+发中3级+发梢5级';
-    } else if (rl === 1 && ml === 3 && el === 4) {
-      matchedId = '三段发质 发根1级+发中3级+发梢4级';
-    } else if (rl === ml && ml === el && rl > 0) {
-      // ② 三段一致 → 简单等级
-      if (rl === 1) matchedId = 'level-1-' + (rcf === 'fine' ? 'fine' : 'coarse');
-      else if (rl === 2) matchedId = 'level-2-' + (rcf === 'fine' ? 'fine' : 'coarse');
-      else matchedId = 'level-' + rl;
-    } else if (rl !== el || rl !== ml) {
-      // ③ 三段不一致 → 找混合类型或兜底
-      // 先试精确的 mix-{rl}-{el}
-      var tryMix = 'level-mix-' + rl + '-' + el;
-      var foundInTypes = false;
-      if (typeof HAIR_TYPES !== 'undefined') {
-        for (var ti = 0; ti < HAIR_TYPES.length; ti++) {
-          if (HAIR_TYPES[ti].id === tryMix) { foundInTypes = true; break; }
-        }
-      }
-      if (foundInTypes) {
-        matchedId = tryMix;
+    var ll = {1:'1级·健康',2:'2级·轻损',3:'3级·受损',4:'4级·严重',5:'5级·极度'};
+    var cf = {coarse:'粗硬',fine:'细软'};
+
+    // 生成描述文本
+    var desc = '';
+    if (rl > 0 && ml > 0 && el > 0) {
+      // 三段全有 → 精确显示
+      if (rl === ml && ml === el) {
+        desc = ll[rl] || (rl + '级');
       } else {
-        // 没有精确匹配 → 找最接近的：用发尾等级，但保留混合标记
-        var bestLevel = Math.max(rl, ml, el);
-        if (bestLevel <= 2) {
-          var cf = ecf || rcf || 'coarse';
-          matchedId = 'level-' + bestLevel + (bestLevel <= 2 ? '-' + cf : '');
-        } else {
-          matchedId = 'level-' + bestLevel;
-        }
+        desc = '混合·发根' + (ll[rl] || rl+'级') + ' + 发中' + (ll[ml] || ml+'级') + ' + 发尾' + (ll[el] || el+'级');
+      }
+    } else if (rl > 0 && el > 0) {
+      if (rl === el) {
+        desc = ll[rl] || (rl + '级');
+      } else {
+        desc = '混合·发根' + (ll[rl] || rl+'级') + ' + 发尾' + (ll[el] || el+'级');
       }
     } else {
-      // ④ 兜底
-      var fbLevel = el || rl;
-      var fbCf = ecf || rcf || 'coarse';
-      if (fbLevel === 1) matchedId = 'level-1-' + fbCf;
-      else if (fbLevel === 2) matchedId = 'level-2-' + fbCf;
-      else matchedId = 'level-' + fbLevel;
+      var maxLv = Math.max(rl, ml, el);
+      desc = ll[maxLv] || (maxLv + '级');
     }
 
-    // 查找label
-    if (matchedId && typeof HAIR_TYPES !== 'undefined') {
-      for (var hti = 0; hti < HAIR_TYPES.length; hti++) {
-        if (HAIR_TYPES[hti].id === matchedId) {
-          matchedLabel = HAIR_TYPES[hti].label;
-          break;
-        }
-      }
-    }
-    var diagnosisSelect = document.getElementById('hair-diagnosis-type');
-    if (diagnosisSelect && matchedId) {
-      diagnosisSelect.value = matchedId;
-      var msgEl = document.getElementById('hair-auto-match-msg');
-      if (msgEl && matchedLabel) {
-        msgEl.textContent = '✅ 已自动匹配：'+matchedLabel;
-      }
-    }
+    // 显示描述文本
+    var textEl = document.getElementById('hair-diagnosis-text');
+    if (textEl) textEl.textContent = desc;
+
+    // hidden input保留最严重等级（方案匹配用）
+    var bestLevel = Math.max(rl, ml, el);
+    var bestCf = ecf || rcf || 'coarse';
+    var matchedId = '';
+    if (bestLevel === 1) matchedId = 'level-1-' + bestCf;
+    else if (bestLevel === 2) matchedId = 'level-2-' + bestCf;
+    else matchedId = 'level-' + bestLevel;
+    var hiddenEl = document.getElementById('hair-diagnosis-type');
+    if (hiddenEl) hiddenEl.value = matchedId;
+
+    // 更新匹配提示
+    var msgEl = document.getElementById('hair-auto-match-msg');
+    if (msgEl) msgEl.textContent = '✓ 自动匹配';
   };
 
   // 恢复chip选中状态
