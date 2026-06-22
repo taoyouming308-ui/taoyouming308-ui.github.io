@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="177">
+<html lang="zh-CN" data-version="176">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3175,21 +3175,6 @@ function initApp() {
       setEnd: (document.getElementById('hair-form-set-end')||{}).value || '',
       rinse: document.querySelector('input[name="hair-rinse"]:checked'),
       notes: (document.getElementById('hair-form-notes2')||{}).value || '',
-      // 服务类型
-      serviceType: document.querySelector('input[name="hair-service-type"]:checked'),
-      // 染发参数
-      targetColor: (document.getElementById('hair-form-target-color')||{}).value || '',
-      tone: (document.getElementById('hair-form-tone')||{}).value || '',
-      toneOther: (document.getElementById('hair-form-tone-other')||{}).value || '',
-      developer: document.querySelector('input[name="hair-developer"]:checked'),
-      mixRatio: document.querySelector('input[name="hair-mix-ratio"]:checked'),
-      applyOrder: document.querySelector('input[name="hair-apply-order"]:checked'),
-      colorDwell: (document.getElementById('hair-form-color-dwell')||{}).value || '',
-      colorHeat: (document.getElementById('hair-form-color-heat')||{}).checked || false,
-      colorHeatTemp: (document.getElementById('hair-form-color-heat-temp')||{}).value || '',
-      scalpProtect: (document.getElementById('hair-form-scalp-protect')||{}).checked || false,
-      endProtect: (document.getElementById('hair-form-end-protect')||{}).checked || false,
-      colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
       // 效果评定（步骤5）
       eval: (document.getElementById('hair-form-eval')||{}).value || '',
       sign: (document.getElementById('hair-form-sign')||{}).value || '',
@@ -3204,10 +3189,6 @@ function initApp() {
     record.rodMethod = record.rodMethod ? record.rodMethod.value : '';
     record.dwellType = record.dwellType ? record.dwellType.value : '';
     record.rinse = record.rinse ? record.rinse.value : '';
-    record.serviceType = record.serviceType ? record.serviceType.value : 'perm';
-    record.developer = record.developer ? record.developer.value : '';
-    record.mixRatio = record.mixRatio ? record.mixRatio.value : '';
-    record.applyOrder = record.applyOrder ? record.applyOrder.value : '';
 
     var records = getHairRecords();
     if (_editingHairId) {
@@ -3846,18 +3827,10 @@ function initApp() {
     html += '</select></div>';
     html += '</div>';
 
-    // ===== 步骤3: 服务类型选择 =====
+    // ===== 步骤3: 查询方案 =====
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤3 · 服务类型</div>';
-    html += '<div style="display:flex;gap:8px;margin-bottom:8px;">';
-    html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="perm" checked onchange="toggleServiceType()" style="accent-color:var(--accent);"> 烫发</label>';
-    html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="color" onchange="toggleServiceType()" style="accent-color:var(--accent);"> 染发</label>';
-    html += '<label style="font-size:12px;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="radio" name="hair-service-type" value="both" onchange="toggleServiceType()" style="accent-color:var(--accent);"> 烫染</label>';
-    html += '</div>';
-
-    // 烫发方案（服务类型为perm或both时显示）
-    html += '<div id="hair-perm-plan-section">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">烫发方案</div>';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤3 · 查询方案</div>';
+    // 烫发款式
     html += '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;display:block;">烫发款式</label>';
     html += '<select id="hair-q-style" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<option value="">请选择烫发款式</option>';
@@ -3867,20 +3840,19 @@ function initApp() {
       }
     }
     html += '</select></div>';
+    // 提示：发质类型来自步骤2
     html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">💡 发质类型来自步骤2的AI诊断或手动选择</div>';
-    html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询烫发方案</button>';
+    // 查询按钮
+    html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询方案</button>';
+    // 结果区域
     html += '<div id="hair-q-result" style="margin-top:10px;"></div>';
     html += '</div>';
-    html += '</div>';
 
-    // ===== 步骤4: 操作参数（烫发+染发） =====
+    // ===== 步骤4: 烫发参数（参考图1/2/3的卷芯区） =====
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤4 · 操作参数</div>';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤4 · 烫发参数</div>';
 
-    // ── 烫发参数区（服务类型含烫发时显示） ──
-    html += '<div id="hair-perm-params">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">🔄 烫发参数</div>';
-    // 卷芯
+    // 卷芯 - 一行排列
     html += '<div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;flex-shrink:0;">卷芯</span>';
     html += '<input id="hair-form-rods-top" placeholder="顶区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
@@ -3889,14 +3861,16 @@ function initApp() {
     html += '<input id="hair-form-rods-bang" placeholder="刘海号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '<input id="hair-form-rods-heat" placeholder="加热分" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
-    // 上杠方式
+
+    // 上杠方式 + 创意设计
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">上杠方式</span>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rod-method" value="direct" style="accent-color:var(--accent);"> 直接上杠</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rod-method" value="soften" style="accent-color:var(--accent);"> 软化上杠</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;margin-left:auto;"><input type="checkbox" id="hair-form-creative" style="accent-color:var(--accent);"> 创意设计</label>';
     html += '</div>';
-    // 停放时间
+
+    // 停放时间 + 时间记录
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">停放</span>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;padding:6px 0;"><input type="radio" name="hair-dwell" value="natural" style="accent-color:var(--accent);"> 自然</label>';
@@ -3904,6 +3878,7 @@ function initApp() {
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;padding:6px 0;"><input type="radio" name="hair-dwell" value="heat" style="accent-color:var(--accent);"> 加热</label>';
     html += '<input id="hair-form-dwell-heat" placeholder="分" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
+
     // 时间记录
     html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">时间</span>';
@@ -3916,72 +3891,14 @@ function initApp() {
     html += '<span style="font-size:11px;color:var(--text-secondary);">→</span>';
     html += '<input id="hair-form-set-end" placeholder="终" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
+
     // 冲水
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">冲水</span>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rinse" value="yes" style="accent-color:var(--accent);"> 有</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rinse" value="no" style="accent-color:var(--accent);"> 否</label>';
+    html += '<textarea id="hair-form-notes2" placeholder="施放详述" rows="1" style="flex:1;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:28px;box-sizing:border-box;"></textarea>';
     html += '</div>';
-    html += '</div>'; // end hair-perm-params
-
-    // ── 染发参数区（服务类型含染发时显示） ──
-    html += '<div id="hair-color-params" style="display:none;">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">🎨 染发参数</div>';
-    // 目标色度
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">目标色度</span>';
-    html += '<select id="hair-form-target-color" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<option value="">选择</option><option value="1-2">1-2度(自然黑)</option><option value="3">3度(深棕黑)</option><option value="4">4度(深棕)</option><option value="5">5度(棕)</option><option value="6">6度(浅棕)</option><option value="7">7度(黄棕)</option><option value="8">8度(浅黄)</option><option value="9">9度(极浅)</option>';
-    html += '</select>';
-    html += '</div>';
-    // 目标色调
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">色调</span>';
-    html += '<select id="hair-form-tone" style="flex:2;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<option value="">选择</option><option value="自然棕">自然棕</option><option value="亚麻棕">亚麻棕</option><option value="冷棕">冷棕</option><option value="巧克力棕">巧克力棕</option><option value="灰棕">灰棕</option><option value="灰">灰</option><option value="紫">紫</option><option value="红">红/酒红</option><option value="橙">橙/铜</option><option value="蓝">蓝/蓝黑</option><option value="绿">绿</option><option value="粉">粉</option><option value="奶茶">奶茶</option><option value="米色">米色</option><option value="其他">其他</option>';
-    html += '</select>';
-    html += '<input id="hair-form-tone-other" placeholder="自定义" style="width:60px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);display:none;">';
-    html += '</div>';
-    // 双氧水
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">双氧水</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-developer" value="3" style="accent-color:var(--accent);"> 3%</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-developer" value="6" style="accent-color:var(--accent);"> 6%</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-developer" value="9" style="accent-color:var(--accent);"> 9%</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-developer" value="12" style="accent-color:var(--accent);"> 12%</label>';
-    html += '</div>';
-    // 比例
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">比例</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-mix-ratio" value="1:1" style="accent-color:var(--accent);"> 1:1</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-mix-ratio" value="1:1.5" style="accent-color:var(--accent);"> 1:1.5</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-mix-ratio" value="1:2" style="accent-color:var(--accent);"> 1:2</label>';
-    html += '</div>';
-    // 涂抹顺序
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">涂抹</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="root_first" style="accent-color:var(--accent);"> 先发根</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="end_first" style="accent-color:var(--accent);"> 先发尾</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="all" style="accent-color:var(--accent);"> 全头一次</label>';
-    html += '</div>';
-    // 停放时间+加热
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">停放</span>';
-    html += '<input id="hair-form-color-dwell" placeholder="分钟" style="width:60px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-form-color-heat" style="accent-color:var(--accent);"> 加热</label>';
-    html += '<input id="hair-form-color-heat-temp" placeholder="温度" style="width:50px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '</div>';
-    // 染前处理 + 配方备注
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">染前</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-form-scalp-protect" style="accent-color:var(--accent);"> 头皮隔离</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-form-end-protect" style="accent-color:var(--accent);"> 发尾保护</label>';
-    html += '</div>';
-    html += '<textarea id="hair-form-color-notes" placeholder="配方/品牌/色号备注" rows="2" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>';
-    html += '</div>'; // end hair-color-params
-
-    // 通用施放详述
-    html += '<textarea id="hair-form-notes2" placeholder="施放详述" rows="1" style="width:100%;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:28px;box-sizing:border-box;margin-top:6px;"></textarea>';
     html += '</div>';
 
     // ===== 步骤5: 总结（参考图1的完整闭环） =====
@@ -4840,26 +4757,6 @@ function initApp() {
     document.getElementById('profile-search-box').style.display = '';
     document.getElementById('profile-detail').style.display = 'none';
   };
-
-  // 服务类型切换（显示/隐藏烫发和染发参数区）
-  window.toggleServiceType = function() {
-    var selected = document.querySelector('input[name="hair-service-type"]:checked');
-    if (!selected) return;
-    var val = selected.value;
-    var permPlan = document.getElementById('hair-perm-plan-section');
-    var permParams = document.getElementById('hair-perm-params');
-    var colorParams = document.getElementById('hair-color-params');
-    if (permPlan) permPlan.style.display = (val === 'perm' || val === 'both') ? '' : 'none';
-    if (permParams) permParams.style.display = (val === 'perm' || val === 'both') ? '' : 'none';
-    if (colorParams) colorParams.style.display = (val === 'color' || val === 'both') ? '' : 'none';
-  };
-  // 色调选择"其他"时显示自定义输入框
-  document.addEventListener('change', function(e) {
-    if (e.target && e.target.id === 'hair-form-tone') {
-      var otherInput = document.getElementById('hair-form-tone-other');
-      if (otherInput) otherInput.style.display = (e.target.value === '其他') ? '' : 'none';
-    }
-  });
 
   // ★ 最后检查身份，确保所有函数已定义
   checkIdentity();
