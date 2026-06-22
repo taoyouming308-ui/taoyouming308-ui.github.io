@@ -4690,27 +4690,26 @@ function initApp() {
       initEl.style.display = 'none';
       loadingEl.style.display = 'block';
 
-      var imgUrl = URL.createObjectURL(file);
-      var img = new Image();
-      img.onerror = function() {
-        URL.revokeObjectURL(imgUrl);
-        loadingEl.style.display = 'none';
-        resultEl.style.display = 'block';
-        resultEl.innerHTML = '<div style=\"color:var(--danger);padding:16px;text-align:center;\">❌ 图片加载失败，请重试</div>';
-      };
-      img.onload = function() {
-        URL.revokeObjectURL(imgUrl);
-        var canvas = document.createElement('canvas');
-        var MAX_SIZE = 400;
-        var w = img.width, h = img.height;
-        if (w > MAX_SIZE || h > MAX_SIZE) {
-          if (w > h) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
-          else { w = w * MAX_SIZE / h; h = MAX_SIZE; }
-        }
-        canvas.width = w; canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        var compressed = canvas.toDataURL('image/jpeg', 0.4);
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onerror = function() {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div style=\"color:var(--danger);padding:16px;text-align:center;\">❌ 图片加载失败，请重试</div>';
+        };
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var MAX_SIZE = 300;
+          var w = img.width, h = img.height;
+          if (w > MAX_SIZE || h > MAX_SIZE) {
+            if (w > h) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
+            else { w = w * MAX_SIZE / h; h = MAX_SIZE; }
+          }
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var compressed = canvas.toDataURL('image/jpeg', 0.3);
 
           // 显示缩略图
           var thumbDiv = document.getElementById('hair-thumb');
