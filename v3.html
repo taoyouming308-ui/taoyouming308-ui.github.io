@@ -5034,27 +5034,13 @@ function initApp() {
   var _bookingHeartbeat = null;
   }
 
-  // 预约页打开时：启动 Realtime + 保留 5s 轮询做兜底
+  // 预约页打开时启动5s轮询
   var _origOpenFeature = window.openFeature;
   window.openFeature = function(tabName) {
-    if (tabName === 'bookings' && _bookingChannel && _bookingChannel.readyState === WebSocket.OPEN) {
-      _origOpenFeature(tabName); return;
-    }
     if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
     _origOpenFeature(tabName);
     if (tabName === 'bookings') {
-      // 首次进入时初始化 Realtime
-      if (!_bookingChannel || _bookingChannel.readyState !== WebSocket.OPEN) {
-        initRealtime();
-        // 如果WebSocket还没连上，先开5s轮询兜底
-        setTimeout(function(){
-          if (!_bookingChannel || _bookingChannel.readyState !== WebSocket.OPEN) {
-            if (!BOOKING_INTERVAL) BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
-          }
-        }, 2000);
-      }
-    } else {
-      closeRealtime();
+      BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
     }
   };
 
