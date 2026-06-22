@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="178">
+<html lang="zh-CN" data-version="177">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -614,6 +614,7 @@ body {
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('profiles')">客户档案</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')">发质分析</button>
   </aside>
   <div class="hero-text">
@@ -904,6 +905,22 @@ body {
   </section>
 
   </section><!-- /tab-plans -->
+
+<!-- 客户档案 Tab -->
+  <section class="tab-content" id="tab-profiles">
+    <div style="padding:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px;">📋 客户档案</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;">发质分析记录·按客户归总</div>
+      <div id="profile-search-box" style="margin-bottom:10px;">
+        <input id="profile-search-input" type="text" placeholder="搜索客户姓名或电话..." oninput="filterProfileList()"
+          style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);box-sizing:border-box;">
+      </div>
+      <div id="profile-loading" style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">☁️ 加载中...</div>
+      <div id="profile-list"></div>
+      <div id="profile-detail" style="display:none;"></div>
+      <div id="profile-version" style="text-align:center;padding:8px 0 4px;font-size:9px;color:var(--text-secondary);opacity:0.5;"></div>
+    </div>
+  </section>
 
   <!-- 发型展示 Tab -->
   <section class="tab-content" id="tab-showcase">
@@ -1631,6 +1648,7 @@ function initApp() {
       if (tabName === 'plans') switchPlan('query');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
+      if (tabName === 'profiles') { loadCustomerProfiles(); }
     }
   };
   window.goHome = function() {
@@ -2595,12 +2613,9 @@ function initApp() {
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       html += renderAiButton(phone, name, barberName, bookingDate);
-      html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
       html += renderHairAnalysis(phone, name);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
-      // 加载客户历史档案
-      renderCustomerHistory(phone, name);
     })
     .catch(function(e){
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
@@ -2833,11 +2848,9 @@ function initApp() {
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
-          htmlContent += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
           htmlContent += renderHairAnalysis(phone, name);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
-          renderCustomerHistory(phone, name);
           return;
         }
         // customer_profiles没找到 → 降级到预约记录
@@ -2918,64 +2931,6 @@ function initApp() {
   window.closePlanModal = function() {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
-  };
-
-  // 客户历史档案（在方案弹窗内加载）
-  window.renderCustomerHistory = function(phone, name) {
-    var container = document.getElementById('plan-customer-history');
-    if (!container) return;
-    container.innerHTML = '<div style="text-align:center;padding:6px;"><button onclick="toggleCustomerHistory(\''+phone+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;padding:6px 12px;cursor:pointer;font-family:var(--font);width:100%;">📋 查看历史档案</button></div>';
-  };
-
-  window.toggleCustomerHistory = function(phone) {
-    var container = document.getElementById('plan-customer-history');
-    if (!container) return;
-    // 如果已加载内容，切换显示
-    var content = container.querySelector('.history-content');
-    if (content) {
-      content.style.display = content.style.display === 'none' ? '' : 'none';
-      return;
-    }
-    container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载历史记录...</div>';
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&phone=eq.' + encodeURIComponent(phone) + '&status=in.(record_saved,completed)&order=created_at.desc&limit=20', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
-      if (!rows || rows.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:6px;"><button onclick="toggleCustomerHistory(\''+phone+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;padding:6px 12px;cursor:pointer;font-family:var(--font);width:100%;">📋 查看历史档案</button><div style="font-size:10px;color:var(--text-secondary);text-align:center;padding:4px;">暂无历史记录</div></div>';
-        return;
-      }
-      var html = '<div class="history-content" style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px;">';
-      html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">📋 历史档案 ('+rows.length+'条)</div>';
-      for (var i = 0; i < rows.length; i++) {
-        var r = rows[i];
-        var rec = (r.ai_analysis && r.ai_analysis.record) || {};
-        var dateStr = rec.date || (r.created_at || '').slice(0, 10) || '未知';
-        html += '<div style="font-size:10px;color:var(--text);padding:4px 0;border-bottom:'+(i<rows.length-1?'1px solid var(--border)':'none')+';">';
-        html += '<span style="font-weight:600;">'+dateStr+'</span>';
-        if (rec.technician) html += ' · '+esc(rec.technician);
-        // 服务类型
-        var st = rec.serviceType || '';
-        if (st === 'color') html += ' 🎨染发';
-        else if (st === 'both') html += ' 🔄烫染';
-        else html += ' 🔄烫发';
-        // 三段诊断
-        var ts = rec.threeSection || {};
-        if (ts.root && ts.mid && ts.end) {
-          html += '<br><span style="color:var(--text-secondary);">发质: 根'+ts.root.level+'/'+ts.mid.level+'/'+ts.end.level+'级</span>';
-        }
-        // 染发参数
-        if (rec.targetColor || rec.tone) {
-          html += ' 🎨'+esc(rec.targetColor||'')+'/'+esc(rec.tone||rec.toneOther||'');
-          if (rec.developer) html += ' '+rec.developer+'%';
-        }
-        html += '</div>';
-      }
-      html += '</div>';
-      html += '<div style="text-align:center;padding:2px;"><button onclick="toggleCustomerHistory(\''+phone+'\')" style="background:none;border:none;color:var(--text-secondary);font-size:10px;cursor:pointer;font-family:var(--font);padding:4px;">收起</button></div>';
-      container.innerHTML = html;
-    }).catch(function(){
-      container.innerHTML = '<div style="text-align:center;padding:6px;"><button onclick="toggleCustomerHistory(\''+phone+'\')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;padding:6px 12px;cursor:pointer;font-family:var(--font);width:100%;">📋 查看历史档案</button></div>';
-    });
   };
 
   // 事件委托：处理 data-phone 的按钮点击（避免onclick引号问题）
