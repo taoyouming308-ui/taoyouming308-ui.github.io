@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="192">
+<html lang="zh-CN" data-version="193">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3810,7 +3810,7 @@ function initApp() {
 
     // 发根色度
     html += '<div class="chip-label">发根色度</div><div class="chip-row" data-group="color_level_root">';
-    var _colorChips = [['1-3(自然黑)','1-3'],['4-5(深棕)','4-5'],['6-7(浅棕)','6-7'],['8-9(漂浅)','8-9']];
+    var _colorChips = [['2-3度','2-3'],['3-4度','3-4'],['5-6度','5-6'],['6-7度','6-7'],['8-9度','8-9']];
     for (var ci=0;ci<_colorChips.length;ci++) {
       html += '<span class="chip" data-value="'+_colorChips[ci][1]+'">'+_colorChips[ci][0]+'</span>';
     }
@@ -4539,7 +4539,7 @@ function initApp() {
             // 色度对比（三段各自显示）
             var base = fd.base_info;
             if (base) {
-              var colorMap = {'1-3':'1-3度','4-5':'4-5度','6-7':'6-7度','8-9':'8-9度'};
+              var colorMap = {'2-3':'2-3度','3-4':'3-4度','5-6':'5-6度','6-7':'6-7度','8-9':'8-9度'};
               if (base.color_level_root) diffs.unshift('发根色度: ' + (colorMap[base.color_level_root] || base.color_level_root));
               if (base.color_level_mid) diffs.unshift('发中色度: ' + (colorMap[base.color_level_mid] || base.color_level_mid));
               if (base.color_level_end) diffs.unshift('发尾色度: ' + (colorMap[base.color_level_end] || base.color_level_end));
