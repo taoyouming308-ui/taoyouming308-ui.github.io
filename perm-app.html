@@ -1846,41 +1846,44 @@ function initApp() {
     };
   })();
 
-  // === Init selectors ===
-  HAIR_TYPES.forEach(ht => {
-    const opt = document.createElement('option');
-    opt.value = ht.id;
-    opt.textContent = ht.label;
-    hairTypeSelect.appendChild(opt);
-  });
-
-  PERM_STYLES.forEach(ps => {
-    const opt = document.createElement('option');
-    opt.value = ps.id;
-    opt.textContent = ps.label;
-    permStyleSelect.appendChild(opt);
-  });
+  // === Init selectors (仅在旧查询页面存在时，兼容移除后首页不报错) ===
+  if (hairTypeSelect) {
+    HAIR_TYPES.forEach(ht => {
+      const opt = document.createElement('option');
+      opt.value = ht.id;
+      opt.textContent = ht.label;
+      hairTypeSelect.appendChild(opt);
+    });
+  }
+  if (permStyleSelect) {
+    PERM_STYLES.forEach(ps => {
+      const opt = document.createElement('option');
+      opt.value = ps.id;
+      opt.textContent = ps.label;
+      permStyleSelect.appendChild(opt);
+    });
+  }
 
   // === Enable query button ===
   window.updateQueryButtonState = function() {
     var waiting = DATA_LOADING || (!DATA_LOADED && !DATA_ERROR);
     if (waiting) {
-      queryBtn.disabled = true;
-      queryBtn.textContent = '数据加载中...';
+      if (queryBtn) { queryBtn.disabled = true; queryBtn.textContent = '数据加载中...'; }
       return;
     }
-    queryBtn.textContent = '🔍 查询方案';
-    queryBtn.disabled = !(DATA_LOADED && hairTypeSelect.value && permStyleSelect.value);
+    if (queryBtn) queryBtn.textContent = '🔍 查询方案';
+    if (queryBtn) queryBtn.disabled = !(DATA_LOADED && hairTypeSelect && hairTypeSelect.value && permStyleSelect && permStyleSelect.value);
   };
-  hairTypeSelect.addEventListener('change', window.updateQueryButtonState);
-  permStyleSelect.addEventListener('change', window.updateQueryButtonState);
+  if (hairTypeSelect) hairTypeSelect.addEventListener('change', window.updateQueryButtonState);
+  if (permStyleSelect) permStyleSelect.addEventListener('change', window.updateQueryButtonState);
   window.updateQueryButtonState();
 
-  // === Query ===
-  queryBtn.addEventListener('click', async () => {
-    const hair = hairTypeSelect.value;
-    const style = permStyleSelect.value;
-    if (!hair || !style) return;
+  // === Query (仅在旧查询页面存在时注册) ===
+  if (queryBtn) {
+    queryBtn.addEventListener('click', async () => {
+      const hair = hairTypeSelect.value;
+      const style = permStyleSelect.value;
+      if (!hair || !style) return;
 
     // 等待数据加载
     if (!DATA_LOADED) {
@@ -1907,8 +1910,9 @@ function initApp() {
       allHtml += renderResult(result);
     });
     resultArea.innerHTML = allHtml;
-    resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   function renderResult(data) {
     function escapePlanValue(v) {
