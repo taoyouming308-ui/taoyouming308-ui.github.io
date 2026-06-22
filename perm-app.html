@@ -4487,9 +4487,7 @@ function initApp() {
               body: JSON.stringify({
                 phone: phone || '',
                 raw_photo: compressed,
-                status: 'pending',
-                base_info: formData.base_info || {},
-                three_section: formData.three_section || {}
+                status: 'pending'
               })
             })
             .then(function(rsp) {
@@ -4516,10 +4514,7 @@ function initApp() {
             fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
               method: 'POST',
               headers: _supabaseHeaders,
-              body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending',
-                base_info: formData.base_info || {},
-                three_section: formData.three_section || {}
-              })
+              body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending' })
             })
             .then(function(rsp) {
               if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
