@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="180">
+<html lang="zh-CN" data-version="181">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -659,33 +659,10 @@ body {
       .plan-page.active { display:block; }
     </style>
     <nav class="plan-nav" id="plan-nav">
-      <button class="on" onclick="switchPlan('query')">查询方案</button>
-      <button onclick="switchPlan('calc')">自由换算</button>
+      <button onclick="switchPlan('calc')" class="on">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
       <span class="plan-refresh" onclick="location.reload()" title="刷新数据">↻</span>
     </nav>
-
-  <section class="plan-page active" id="plan-query">
-    <div class="selector-group">
-      <label>发质类型</label>
-      <div class="select-wrapper">
-        <select id="hair-type">
-          <option value="">请选择发质类型</option>
-        </select>
-      </div>
-    </div>
-    <div class="selector-group">
-      <label>烫发款式</label>
-      <div class="select-wrapper">
-        <select id="perm-style">
-          <option value="">请选择烫发款式</option>
-        </select>
-      </div>
-    </div>
-    <button class="query-btn" id="query-btn" disabled>数据加载中...</button>
-
-    <div class="result-area" id="result-area"></div>
-  </section>
 
   <!-- Calc Tab -->
   <section class="plan-page" id="plan-calc">
@@ -1628,7 +1605,7 @@ function initApp() {
     var content = document.getElementById('tab-' + tabName);
     if (content) {
       content.classList.add('active');
-      if (tabName === 'plans') switchPlan('query');
+      if (tabName === 'plans') switchPlan('calc');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
     }
