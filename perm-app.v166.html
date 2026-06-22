@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="173">
+<html lang="zh-CN" data-version="166">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3901,15 +3901,12 @@ function initApp() {
     html += '</div>';
 
     // 我的任务（技师端）
-    html += '<div style="margin-top:12px;">' +
-    '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">☁️ 我的任务</div>' +
-    '<div id="hair-tasks-list"></div>' +
-    '</div>';
+    html += '<div style="margin-top:12px;">';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">☁️ 我的任务</div>';
+    html += '<div id="hair-tasks-list"></div>';
+    html += '</div>';
 
-    // 版本号
-    html += '<div style="text-align:center;padding:8px 0 4px;font-size:9px;color:var(--text-secondary);opacity:0.5;">v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1) + '</div>';
-
-    html += '</div>'; // end outer container
+    html += '</div>';
 
     // 查询方案函数
     window.hairQueryPlan = function() {
