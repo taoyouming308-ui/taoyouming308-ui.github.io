@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="203">
+<html lang="zh-CN" data-version="204">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4260,21 +4260,46 @@ function initApp() {
 
     // 查询方案函数
     window.hairQueryPlan = function() {
-      // 从步骤2的hair-diagnosis-type读取发质类型
-      var diagnosisSelect = document.getElementById('hair-diagnosis-type');
       var style = document.getElementById('hair-q-style');
-      if (!diagnosisSelect || !style) return;
-      var h = diagnosisSelect.value, s = style.value;
-      if (!h || !s) {
+      if (!style) return;
+      var s = style.value;
+      if (!s) {
         var area = document.getElementById('hair-q-result');
-        if (area) area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">请先选择发质类型和烫发款式</div>';
+        if (area) area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">请先选择烫发款式</div>';
+        return;
+      }
+      var area = document.getElementById('hair-q-result');
+      if (!area) return;
+      // ★ 优先使用三段数据 → 智能推算
+      var ts = window._lastThreeSection;
+      if (!ts || !ts.root || !ts.root.level) {
+        var fd = (typeof getHairFormData === 'function') ? getHairFormData() : null;
+        if (fd && fd.three_section && fd.three_section.root && fd.three_section.root.level) {
+          ts = fd.three_section;
+        }
+      }
+      if (ts && ts.root && ts.root.level) {
+        var rl = parseInt(ts.root.level) || 0;
+        var ml = parseInt(ts.mid ? ts.mid.level : 0) || 0;
+        var el = parseInt(ts.end ? ts.end.level : 0) || 0;
+        var rcf = ts.root.coarse_fine || 'coarse';
+        var mcf = (ts.mid ? ts.mid.coarse_fine : '') || 'coarse';
+        var ecf = (ts.end ? ts.end.coarse_fine : '') || 'coarse';
+        if (rl || ml || el) {
+          area.innerHTML = window.calculateThreeSectionPlan(rl, ml, el, rcf, mcf, ecf, s);
+          return;
+        }
+      }
+      // ★ 无三段数据 → 回退查表
+      var diagnosisSelect = document.getElementById('hair-diagnosis-type');
+      if (!diagnosisSelect) return;
+      var h = diagnosisSelect.value;
+      if (!h) {
+        area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">请先完成发质诊断</div>';
         return;
       }
       var results = (typeof PERM_DATA_CACHE !== 'undefined' ? PERM_DATA_CACHE : []).filter(function(d){ return d.hairType === h && d.permStyle === s; });
-      var area = document.getElementById('hair-q-result');
-      if (!area) return;
       if (results.length === 0) {
-        // ★ 无精确匹配，尝试现场生成近似方案
         var approx = window.generateApproxPlan(h, s);
         if (approx) {
           area.innerHTML = '<div style="padding:8px;text-align:center;color:var(--warning);font-size:12px;font-weight:600;background:rgba(232,168,23,0.1);border-radius:6px;margin-bottom:8px;">⚠️ 无精确匹配方案，以下为近似方案参考</div>' + approx;
@@ -4321,6 +4346,56 @@ function initApp() {
       var adapted = JSON.parse(JSON.stringify(best));
       adapted.hairType = hairTypeId;
       return renderResult(adapted);
+    };
+
+    // === 三段发质智能推算引擎 ===
+    window.calculateThreeSectionPlan = function(rootLv, midLv, endLv, rootCf, midCf, endCf, styleId) {
+      var pHRef = {}; pHRef[1]={coarse:9.5,fine:8.9}; pHRef[2]={coarse:7.9,fine:7.5};
+      pHRef[3]={coarse:7.5,fine:7.5}; pHRef[4]={coarse:5.9,fine:5.9}; pHRef[5]={coarse:5.0,fine:5.0};
+      var thRef = {}; thRef[1]={coarse:9.5,fine:8.4}; thRef[2]={coarse:6.5,fine:5.8};
+      thRef[3]={coarse:5.8,fine:5.8}; thRef[4]={coarse:2.7,fine:2.7}; thRef[5]={coarse:1.5,fine:1.5};
+      var styleMap = {};
+      if(typeof PERM_STYLES!=='undefined') for(var si=0;si<PERM_STYLES.length;si++) styleMap[PERM_STYLES[si].id]=PERM_STYLES[si].label;
+      var sName = styleMap[styleId] || styleId || '\u2014';
+      rootLv=parseInt(rootLv)||0; midLv=parseInt(midLv)||0; endLv=parseInt(endLv)||0;
+      if(!rootLv&&!midLv&&!endLv) return '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">\u8bf7\u5148\u5b8c\u6210\u53d1\u8d28\u8bca\u65ad</div>';
+      if(!rootLv) rootLv=midLv||endLv; if(!midLv) midLv=Math.round((rootLv+endLv)/2); if(!endLv) endLv=midLv||rootLv;
+      var maxLv=Math.max(rootLv,midLv,endLv), minLv=Math.min(rootLv,midLv,endLv), range=maxLv-minLv;
+      var total=rootLv+midLv+endLv, wR=rootLv/total, wM=midLv/total, wE=endLv/total;
+      var phR=(pHRef[rootLv]||{})[rootCf]||(pHRef[rootLv]||{}).coarse||7.0;
+      var phM=(pHRef[midLv]||{})[midCf]||(pHRef[midLv]||{}).coarse||7.0;
+      var phE=(pHRef[endLv]||{})[endCf]||(pHRef[endLv]||{}).coarse||7.0;
+      var finalPH=Math.min(phR*wR+phM*wM+phE*wE, (pHRef[maxLv]||{}).coarse+0.3);
+      finalPH=Math.round(finalPH*10)/10;
+      var thR=(thRef[rootLv]||{})[rootCf]||(thRef[rootLv]||{}).coarse||5.0;
+      var thM=(thRef[midLv]||{})[midCf]||(thRef[midLv]||{}).coarse||5.0;
+      var thE=(thRef[endLv]||{})[endCf]||(thRef[endLv]||{}).coarse||5.0;
+      var finalThio=Math.round((thR*wR+thM*wM+thE*wE)*10)/10;
+      var caP=Math.max(0,Math.min(10,Math.round((9.5-finalThio)/7.5*10)));
+      var ratio=(10-caP)+':'+caP;
+      var needCA=range>=2||maxLv>=4;
+      var steps=[];
+      if(needCA) steps.push('\u2460 CA\u7eaf\u6db2(pH5.5/\u786b\u4ee32%)\u5168\u5934\u9884\u5904\u74065\u5206\u2192\u51b2\u6c34');
+      steps.push('\u2461 \u540c\u7ea7\u836f\u6c34:\u6c34=2:1\u7a00\u91ca\u2192\u5237\u53d1\u6839\u219210\u5206\u2192\u62c6\u6760');
+      steps.push('\u2462 \u6b63\u5f0f\u836f\u6c34\u5237\u53d1\u6839+\u6b8b\u818f\u62d6\u53d1\u4e2d\u219215\u5206\u2192\u62c6\u6760');
+      if(maxLv<=2) steps.push('\u2463 \u9700\u66f4\u9ad8\u2192\u540c\u7ea7\u836f\u6c34:\u6c34=1:1\u6ce8\u219210\u5206\u2192\u51b2\u6c34');
+      if(maxLv>=4) steps.push('\u26a0\ufe0f \u6781\u5ea6\u53d7\u635f\u00b7\u76d1\u63a7\u987a\u5e8f\uff1a\u53d1\u68a2\u2192\u53d1\u4e2d\u2192\u53d1\u6839\uff0c\u5148\u5230\u5148\u51b2');
+      var stepHtml=steps.join('<br>');
+      var rodNote=(endLv-rootLv>=2)?('\u26a0\ufe0f \u53d1\u68a2\u6bd4\u53d1\u6839\u91cd'+(endLv-rootLv)+'\u7ea7 \u2192 \u53d1\u68a2\u52a02\u53f7+\u4f4e\u89d2\u5ea6\u4ece\u53d1\u5c3e\u8d77\u5377'):'\u5168\u5934\u7edf\u4e00\u6760\u53f7';
+      var ct={coarse:'\u7c97\u786c',fine:'\u7ec6\u8f6f'};
+      var h='<div class="result-card" style="animation-delay:0s"><div class="card-header"><span class="card-icon">\u2697\ufe0f</span><span class="card-title">\u4e09\u6bb5\u667a\u80fd\u63a8\u7b97\u65b9\u6848 \u00b7 '+sName+'</span></div><div class="card-body">';
+      h+='<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;padding:8px;background:rgba(80,160,255,0.06);border-radius:6px;">\U0001f4ca <b>\u4e09\u6bb5\u8bca\u65ad</b>\uff1a\u53d1\u6839'+rootLv+'\u7ea7'+(ct[rootCf]||'')+' + \u53d1\u4e2d'+midLv+'\u7ea7'+(ct[midCf]||'')+' + \u53d1\u5c3e'+endLv+'\u7ea7'+(ct[endCf]||'')+'</div>';
+      h+='<div class="param-row"><span class="param-label">PH\u503c</span><span class="param-value highlight">'+finalPH+'</span></div>';
+      h+='<div class="param-row"><span class="param-label">TGA:CA</span><span class="param-value highlight">'+ratio+'</span></div>';
+      h+='<div class="param-row"><span class="param-label">\u786b\u4ee3\u6d53\u5ea6</span><span class="param-value">'+finalThio+'%</span></div>';
+      if(needCA) h+='<div style="margin-top:8px;padding:8px;background:rgba(80,160,255,0.08);border-radius:6px;font-size:12px;color:var(--accent);">\U0001f6e1\ufe0f <b>\u5efa\u8baeCA\u9884\u5904\u7406</b>\uff1a\u4e09\u6bb5\u5dee\u5f02\u22652\u7ea7\u6216\u4e25\u91cd\u53d7\u635f\uff0c\u5148CA\u7eaf\u6db2\u5168\u59345\u5206\u949f\u62c9\u5e73\u5438\u6536\u901f\u5ea6</div>';
+      h+='<div style="margin-top:10px;padding:8px;background:rgba(212,165,116,0.06);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">\U0001f4cb \u629b\u62b9\u7b56\u7565</div><div style="font-size:12px;color:var(--text);line-height:1.7;">\U0001f7e2 \u53d1\u6839\uff1a\u818f\u72b6\u836f\u6c34\u91cd\u70b9\u5237<br>\U0001f7e1 \u53d1\u4e2d\uff1a\u6b8b\u818f\u8f7b\u62d6\uff0c\u4e0d\u8865\u836f<br>\U0001f534 \u53d1\u68a2\uff1a\u4e0d\u78b0\u836f\u6c34\uff08\u4ec5\u9760CA\u9884\u5904\u7406\u643a\u5e26\u76842%\u786b\u4ee3\u5fae\u5207\uff09</div></div>';
+      h+='<div style="margin-top:10px;padding:8px;background:rgba(212,165,116,0.06);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">\U0001f4cb \u6e17\u900f\u5f0f\u8f6f\u5316\u64cd\u4f5c</div><div style="font-size:12px;color:var(--text);line-height:1.7;">'+stepHtml+'</div></div>';
+      h+='<div style="margin-top:10px;padding:8px;background:rgba(80,160,255,0.04);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">\U0001f4ca \u76d1\u63a7\u987a\u5e8f</div><div style="font-size:12px;color:var(--text);line-height:1.7;">\u2460 \u5148\u770b<b>\u53d1\u68a2</b>\u2192\u5230\u4f4d\u5373\u51b2\uff08\u6700\u8106\u5f31\uff09<br>\u2461 \u518d\u770b<b>\u53d1\u4e2d</b>\u2192\u5230\u4f4d\u5373\u51b2<br>\u2462 \u6700\u540e\u770b<b>\u53d1\u6839</b>\u2192\u5230\u4f4d\u5373\u51b2</div></div>';
+      h+='<div style="margin-top:10px;padding:8px;background:rgba(80,160,255,0.04);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">\U0001f527 \u6760\u53f7\u5efa\u8bae</div><div style="font-size:12px;color:var(--text);">'+rodNote+'</div></div>';
+      if(maxLv>=4) h+='<div style="margin-top:10px;padding:8px;background:rgba(224,85,106,0.08);border-radius:6px;font-size:12px;color:var(--danger);">\u26a0\ufe0f \u6781\u5ea6\u53d7\u635f\u00b7\u5b89\u5168\u63d0\u793a\uff1a\u5efa\u8bae\u5148\u505aCA\u9884\u5904\u7406+\u86cb\u767d\u586b\u5145\u540e\u518d\u70eb</div>';
+      h+='</div></div>';
+      return h;
     };
 
     return html;
@@ -4423,6 +4498,8 @@ function initApp() {
 
   // 最新AI诊断结果缓存（供autoMatchHairType使用）
   var _lastAiDiagnosis = null;
+  // 三段发质数据缓存（供智能推算引擎使用）
+  var _lastThreeSection = null;
 
   // 根据三段诊断自动生成综合描述文本
   window.autoMatchHairType = function() {
@@ -4492,7 +4569,14 @@ function initApp() {
 
     // 更新匹配提示
     var msgEl = document.getElementById('hair-auto-match-msg');
-    if (msgEl) msgEl.textContent = '✓ 自动匹配';
+    if (msgEl) msgEl.textContent = '\u2713 \u81ea\u52a8\u5339\u914d';
+
+    // \u2605 \u4fdd\u5b58\u4e09\u6bb5\u6570\u636e\u4f9b\u667a\u80fd\u63a8\u7b97\u5f15\u64ce\u4f7f\u7528
+    _lastThreeSection = {
+      root: {level: rl, coarse_fine: rcf},
+      mid: {level: ml, coarse_fine: mcf},
+      end: {level: el, coarse_fine: ecf}
+    };
   };
 
   // 恢复chip选中状态
