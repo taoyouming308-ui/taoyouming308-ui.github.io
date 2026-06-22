@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="197">
+<html lang="zh-CN" data-version="198">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3984,8 +3984,15 @@ function initApp() {
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;margin-left:auto;"><input type="checkbox" id="hair-form-creative" style="accent-color:var(--accent);"> 创意设计</label>';
     html += '</div>';
     // 停放和冲水已移除，替换为加热说明
-    html += '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:8px 0 6px;">加热方式</div>';
-    html += '<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;font-weight:600;">加热到全干</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
+    html += '<span style="font-size:11px;color:var(--text-secondary);">🔥 第一次加热60°C 15分钟</span>';
+    html += '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
+    html += '<span style="font-size:11px;color:var(--text-secondary);">第二次</span>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 健康发质110°C</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 受损发质100°C</label>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:0 8px;font-weight:600;">加热到全干</div>';
     html += '</div>'; // end hair-perm-params
 
     // ── 染发参数区（一直显示，不隐藏） ──
