@@ -4698,6 +4698,42 @@ function initApp() {
       initEl.style.display = 'none';
       loadingEl.style.display = 'block';
 
+      // ★ 拍照照片太大时用URL.createObjectURL（省内存，不把整个图片读到内存）
+      if (source === 'camera' && file.size > 2 * 1024 * 1024) {
+        (function(file) {
+          var imgUrl = URL.createObjectURL(file);
+          var img = new Image();
+          img.onerror = function() {
+            URL.revokeObjectURL(imgUrl);
+            loadingEl.style.display = 'none';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = '<div style="color:var(--danger);padding:16px;text-align:center;">❌ 图片加载失败</div>';
+          };
+          img.onload = function() {
+            URL.revokeObjectURL(imgUrl);
+            var canvas = document.createElement('canvas');
+            var M = 200;
+            var w = img.width, h = img.height;
+            if (w > M || h > M) {
+              if (w > h) { h = h * M / w; w = M; }
+              else { w = w * M / h; h = M; }
+            }
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var compressed = canvas.toDataURL('image/jpeg', 0.25);
+            var thumbDiv = document.getElementById('hair-thumb');
+            if (thumbDiv) {
+              thumbDiv.style.display = 'block';
+              thumbDiv.innerHTML = '<img src="'+escAttr(compressed)+'" style="width:100%;max-width:280px;height:auto;border-radius:8px;border:1px solid var(--border);margin:0 auto;">';
+            }
+            tryLocalAPI();
+          };
+          img.src = imgUrl;
+        })(file);
+        return;
+      }
+
       var reader = new FileReader();
       reader.onload = function(e) {
         // 压缩图片：最长边800px，JPEG质量0.7
@@ -4996,82 +5032,6 @@ function initApp() {
   var _bookingReconnectTimer = null;
   var _bookingReconnectAttempts = 0;
   var _bookingHeartbeat = null;
-  function isBookingPageActive() {
-    var tab = document.getElementById('tab-bookings');
-    return !!(tab && tab.classList.contains('active'));
-  }
-  function closeRealtime() {
-    if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
-    if (_bookingHeartbeat) { clearInterval(_bookingHeartbeat); _bookingHeartbeat = null; }
-    if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
-    if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
-    _bookingReconnectAttempts = 0;
-  }
-  function initRealtime() {
-    if (!isBookingPageActive()) return;
-    if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
-    if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
-    // ★ 轮询做主力：打开预约页立即启动5秒轮询
-    if (!BOOKING_INTERVAL) {
-      BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
-    }
-    // ★ WebSocket做辅助：能连上就订阅，连不上也不影响
-    var wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
-    try {
-      var ws = new WebSocket(wsUrl);
-      var refCount = 0;
-      ws.onopen = function() {
-        _bookingReconnectAttempts = 0;
-        refCount++;
-        ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'phx_join', {}]));
-        refCount++;
-        ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'postgres_changes', {
-          event: '*', schema: 'public', table: 'bookings'
-        }]));
-      };
-      ws.onmessage = function(e) {
-        try {
-          var msg = JSON.parse(e.data);
-          if (msg && msg[3] === 'postgres_changes') {
-            // 有预约数据变更，立即刷新
-            loadBookings(false);
-          }
-        } catch(ex) { console.warn('Realtime消息解析失败:', ex); }
-      };
-      ws.onclose = function() {
-        if (_bookingChannel === ws) _bookingChannel = null;
-        else return;
-        if (!isBookingPageActive()) return;
-        if (_bookingReconnectAttempts >= 5) return;
-        // 断线后按退避重连：1s → 2s → 4s → 8s → 16s → 停止。
-        var delay = Math.pow(2, _bookingReconnectAttempts) * 1000;
-        _bookingReconnectAttempts++;
-        _bookingReconnectTimer = setTimeout(function(){
-          _bookingReconnectTimer = null;
-          if (!isBookingPageActive()) return;
-          initRealtime();
-        }, delay);
-        if (!BOOKING_INTERVAL && isBookingPageActive()) {
-          BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
-        }
-      };
-      // 定时心跳（30秒）
-      var hb = setInterval(function() {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify([null, null, 'phoenix', 'heartbeat', {}]));
-        } else {
-          clearInterval(hb);
-        }
-      }, 30000);
-      _bookingHeartbeat = hb;
-      _bookingChannel = ws;
-    } catch(e) {
-      console.warn('Realtime初始化失败:', e);
-      // WebSocket 连接失败，走 polling 兜底
-      if (!BOOKING_INTERVAL && isBookingPageActive()) {
-        BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
-      }
-    }
   }
 
   // 预约页打开时：启动 Realtime + 保留 5s 轮询做兜底
@@ -5305,7 +5265,6 @@ function initApp() {
   checkIdentity();
 
   // === 结束 initApp ===
-}
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
