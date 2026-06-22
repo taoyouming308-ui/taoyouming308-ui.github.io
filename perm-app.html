@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="202">
+<html lang="zh-CN" data-version="202fix">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4871,6 +4871,11 @@ function initApp() {
     if (!isBookingPageActive()) return;
     if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
     if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
+    // ★ 轮询做主力：打开预约页立即启动5秒轮询
+    if (!BOOKING_INTERVAL) {
+      BOOKING_INTERVAL = setInterval(function(){ loadBookings(false); }, 5000);
+    }
+    // ★ WebSocket做辅助：能连上就订阅，连不上也不影响
     var wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_KEY + '&vsn=1.0.0';
     try {
       var ws = new WebSocket(wsUrl);
@@ -4878,15 +4883,11 @@ function initApp() {
       ws.onopen = function() {
         _bookingReconnectAttempts = 0;
         refCount++;
-        // 加入 bookings 频道
         ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'phx_join', {}]));
         refCount++;
-        // 订阅 postgres_changes
         ws.send(JSON.stringify([null, ''+refCount, 'realtime:bookings', 'postgres_changes', {
           event: '*', schema: 'public', table: 'bookings'
         }]));
-        // WebSocket已连接，关掉轮询兜底
-        if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
       };
       ws.onmessage = function(e) {
         try {
