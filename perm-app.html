@@ -1652,6 +1652,7 @@ function initApp() {
     setTimeout(function(){
       // 初始化chip选择器
       if (window.initHairChips) window.initHairChips();
+      if (window.initApplyOrderChips) window.initApplyOrderChips();
       var btn = overlay.querySelector('.hair-capture-btn');
       if (btn) btn.onclick = function(){ runHairAnalysis(''); };
       // 渲染本地记录
@@ -3209,7 +3210,7 @@ function initApp() {
       toneOther: (document.getElementById('hair-form-tone-other')||{}).value || '',
       developer: document.querySelector('input[name="hair-developer"]:checked'),
       mixRatio: document.querySelector('input[name="hair-mix-ratio"]:checked'),
-      applyOrder: document.querySelector('input[name="hair-apply-order"]:checked'),
+      applyOrder: (document.getElementById('hair-apply-order-value')||{}).value || '',
       colorDwell: (document.getElementById('hair-form-color-dwell')||{}).value || '',
       colorHeat: (document.getElementById('hair-form-color-heat')||{}).checked || false,
       colorHeatTemp: (document.getElementById('hair-form-color-heat-temp')||{}).value || '',
@@ -3233,7 +3234,7 @@ function initApp() {
     record.serviceType = 'both';
     record.developer = record.developer ? record.developer.value : '';
     record.mixRatio = record.mixRatio ? record.mixRatio.value : '';
-    record.applyOrder = record.applyOrder ? record.applyOrder.value : '';
+    // applyOrder已是隐藏input的字符串值，不再转换
 
     var records = getHairRecords();
     if (_editingHairId) {
@@ -3973,14 +3974,16 @@ function initApp() {
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-mix-ratio" value="1:1.5" style="accent-color:var(--accent);"> 1:1.5</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-mix-ratio" value="1:2" style="accent-color:var(--accent);"> 1:2</label>';
     html += '</div>';
-    // 涂抹顺序
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">涂抹</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="root_first" style="accent-color:var(--accent);"> 1.先发根</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="mid" style="accent-color:var(--accent);"> 2.发中</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="end_first" style="accent-color:var(--accent);"> 3.先发尾</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-apply-order" value="all" style="accent-color:var(--accent);"> 全头一次</label>';
-    html += '</div>';
+    // 涂抹顺序（按点击顺序编号）
+    html += '<div style="margin-top:6px;"><div class="chip-label">涂抹顺序（按点击顺序编号）</div>';
+    html += '<div class="chip-row" id="hair-apply-chips">';
+    html += '<span class="chip" data-value="root_first">发根</span>';
+    html += '<span class="chip" data-value="mid">发中</span>';
+    html += '<span class="chip" data-value="end_first">发尾</span>';
+    html += '<span class="chip" data-value="all">全头一次</span>';
+    html += '</div></div>';
+    html += '<input type="hidden" id="hair-apply-order-value" value="">';
+    html += '</div>'; // end flex container
     // 停放时间+加热
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">停放</span>';
@@ -4129,6 +4132,51 @@ function initApp() {
         };
       })(chips[ci]);
     }
+  };
+
+  // 涂抹顺序Chip（按点击顺序编号，支持多选）
+  window.initApplyOrderChips = function() {
+    var container = document.getElementById('hair-apply-chips');
+    if (!container) return;
+    var chips = Array.from(container.querySelectorAll('.chip'));
+    var order = [];
+    var labels = {root_first:'发根', mid:'发中', end_first:'发尾', all:'全头一次'};
+    function render() {
+      chips.forEach(function(ch) {
+        var val = ch.getAttribute('data-value');
+        var idx = order.indexOf(val);
+        if (idx >= 0 && val !== 'all') {
+          ch.textContent = (idx + 1) + '.' + labels[val];
+          ch.classList.add('active');
+        } else {
+          ch.textContent = labels[val] || val;
+          if (idx === -1) ch.classList.remove('active');
+        }
+      });
+      document.getElementById('hair-apply-order-value').value = JSON.stringify(order);
+    }
+    chips.forEach(function(c) {
+      c.onclick = function() {
+        var val = c.getAttribute('data-value');
+        // 全头一次：点击则独占
+        if (val === 'all') {
+          order = ['all'];
+          render();
+          return;
+        }
+        // 如果之前是全头一次独占，清除
+        if (order.length === 1 && order[0] === 'all') {
+          order = [];
+        }
+        var idx = order.indexOf(val);
+        if (idx >= 0) {
+          order.splice(idx, 1); // 取消选中
+        } else {
+          order.push(val); // 追加到末尾
+        }
+        render();
+      };
+    });
   };
 
   // 收集chip数据
