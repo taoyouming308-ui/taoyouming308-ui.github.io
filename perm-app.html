@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="204">
+<html lang="zh-CN" data-version="205">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4384,7 +4384,7 @@ function initApp() {
       var ratio=(10-caP)+':'+caP;
       var needCA=range>=2||maxLv>=4;
       var steps=[];
-      if(needCA) steps.push('\u2460 CA\u7eaf\u6db2(pH5.5/\u786b\u4ee32%)\u5168\u5934\u9884\u5904\u74065\u5206\u2192\u51b2\u6c34');
+      if(needCA) steps.push('\u2460 CA\u7eaf\u6db2(pH5.5/\u786b\u4ee32%)\u5168\u5934\u9884\u5904\u74065\u5206\u949f\u2192\u51b2\u6c34');
       steps.push('\u2461 \u540c\u7ea7\u836f\u6c34:\u6c34=2:1\u7a00\u91ca\u2192\u5237\u53d1\u6839\u219210\u5206\u2192\u62c6\u6760');
       steps.push('\u2462 \u6b63\u5f0f\u836f\u6c34\u5237\u53d1\u6839+\u6b8b\u818f\u62d6\u53d1\u4e2d\u219215\u5206\u2192\u62c6\u6760');
       if(maxLv<=2) steps.push('\u2463 \u9700\u66f4\u9ad8\u2192\u540c\u7ea7\u836f\u6c34:\u6c34=1:1\u6ce8\u219210\u5206\u2192\u51b2\u6c34');
@@ -4392,17 +4392,23 @@ function initApp() {
       var stepHtml=steps.join('<br>');
       var rodNote=(endLv-rootLv>=2)?('\u26a0\ufe0f \u53d1\u68a2\u6bd4\u53d1\u6839\u91cd'+(endLv-rootLv)+'\u7ea7 \u2192 \u53d1\u68a2\u52a02\u53f7+\u4f4e\u89d2\u5ea6\u4ece\u53d1\u5c3e\u8d77\u5377'):'\u5168\u5934\u7edf\u4e00\u6760\u53f7';
       var ct={coarse:'\u7c97\u786c',fine:'\u7ec6\u8f6f'};
-      var h='<div class="result-card" style="animation-delay:0s"><div class="card-header"><span class="card-icon">\u2697\ufe0f</span><span class="card-title">\u4e09\u6bb5\u667a\u80fd\u63a8\u7b97\u65b9\u6848 \u00b7 '+sName+'</span></div><div class="card-body">';
-      h+='<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;padding:8px;background:rgba(80,160,255,0.06);border-radius:6px;">\U0001f4ca <b>\u4e09\u6bb5\u8bca\u65ad</b>\uff1a\u53d1\u6839'+rootLv+'\u7ea7'+(ct[rootCf]||'')+' + \u53d1\u4e2d'+midLv+'\u7ea7'+(ct[midCf]||'')+' + \u53d1\u5c3e'+endLv+'\u7ea7'+(ct[endCf]||'')+'</div>';
+      var h='<div class="result-card"><div class="card-header"><span class="card-icon">\u2697\ufe0f</span><span class="card-title">\u4e09\u6bb5\u667a\u80fd\u63a8\u7b97\u65b9\u6848 \u00b7 '+sName+'</span></div><div class="card-body">';
+      h+='<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;padding:8px;background:rgba(80,160,255,0.06);border-radius:8px;">\U0001f4ca <b>\u4e09\u6bb5\u8bca\u65ad</b>\uff1a\u53d1\u6839'+rootLv+'\u7ea7'+(ct[rootCf]||'')+' + \u53d1\u4e2d'+midLv+'\u7ea7'+(ct[midCf]||'')+' + \u53d1\u5c3e'+endLv+'\u7ea7'+(ct[endCf]||'')+'</div>';
+      // \u836f\u6c34\u53c2\u6570
       h+='<div class="param-row"><span class="param-label">PH\u503c</span><span class="param-value highlight">'+finalPH+'</span></div>';
       h+='<div class="param-row"><span class="param-label">TGA:CA</span><span class="param-value highlight">'+ratio+'</span></div>';
       h+='<div class="param-row"><span class="param-label">\u786b\u4ee3\u6d53\u5ea6</span><span class="param-value">'+finalThio+'%</span></div>';
-      if(needCA) h+='<div style="margin-top:8px;padding:8px;background:rgba(80,160,255,0.08);border-radius:6px;font-size:12px;color:var(--accent);">\U0001f6e1\ufe0f <b>\u5efa\u8baeCA\u9884\u5904\u7406</b>\uff1a\u4e09\u6bb5\u5dee\u5f02\u22652\u7ea7\u6216\u4e25\u91cd\u53d7\u635f\uff0c\u5148CA\u7eaf\u6db2\u5168\u59345\u5206\u949f\u62c9\u5e73\u5438\u6536\u901f\u5ea6</div>';
-      h+='<div style="margin-top:10px;padding:8px;background:rgba(212,165,116,0.06);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">\U0001f4cb \u629b\u62b9\u7b56\u7565</div><div style="font-size:12px;color:var(--text);line-height:1.7;">\U0001f7e2 \u53d1\u6839\uff1a\u818f\u72b6\u836f\u6c34\u91cd\u70b9\u5237<br>\U0001f7e1 \u53d1\u4e2d\uff1a\u6b8b\u818f\u8f7b\u62d6\uff0c\u4e0d\u8865\u836f<br>\U0001f534 \u53d1\u68a2\uff1a\u4e0d\u78b0\u836f\u6c34\uff08\u4ec5\u9760CA\u9884\u5904\u7406\u643a\u5e26\u76842%\u786b\u4ee3\u5fae\u5207\uff09</div></div>';
-      h+='<div style="margin-top:10px;padding:8px;background:rgba(212,165,116,0.06);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">\U0001f4cb \u6e17\u900f\u5f0f\u8f6f\u5316\u64cd\u4f5c</div><div style="font-size:12px;color:var(--text);line-height:1.7;">'+stepHtml+'</div></div>';
-      h+='<div style="margin-top:10px;padding:8px;background:rgba(80,160,255,0.04);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">\U0001f4ca \u76d1\u63a7\u987a\u5e8f</div><div style="font-size:12px;color:var(--text);line-height:1.7;">\u2460 \u5148\u770b<b>\u53d1\u68a2</b>\u2192\u5230\u4f4d\u5373\u51b2\uff08\u6700\u8106\u5f31\uff09<br>\u2461 \u518d\u770b<b>\u53d1\u4e2d</b>\u2192\u5230\u4f4d\u5373\u51b2<br>\u2462 \u6700\u540e\u770b<b>\u53d1\u6839</b>\u2192\u5230\u4f4d\u5373\u51b2</div></div>';
-      h+='<div style="margin-top:10px;padding:8px;background:rgba(80,160,255,0.04);border-radius:6px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">\U0001f527 \u6760\u53f7\u5efa\u8bae</div><div style="font-size:12px;color:var(--text);">'+rodNote+'</div></div>';
-      if(maxLv>=4) h+='<div style="margin-top:10px;padding:8px;background:rgba(224,85,106,0.08);border-radius:6px;font-size:12px;color:var(--danger);">\u26a0\ufe0f \u6781\u5ea6\u53d7\u635f\u00b7\u5b89\u5168\u63d0\u793a\uff1a\u5efa\u8bae\u5148\u505aCA\u9884\u5904\u7406+\u86cb\u767d\u586b\u5145\u540e\u518d\u70eb</div>';
+      if(needCA) h+='<div style="margin-top:10px;color:var(--accent);font-weight:600;font-size:12px;padding:8px;background:rgba(80,160,255,0.08);border-radius:8px;">\U0001f6e1\ufe0f CA\u4fdd\u62a4\u6cd5\uff1a\u4e09\u6bb5\u5dee\u5f02\u22652\u7ea7\uff0c\u5148CA\u7eaf\u6db2\u5168\u59345\u5206\u949f\u62c9\u5e73\u5438\u6536\u901f\u5ea6</div>';
+      // \u629b\u62b9\u7b56\u7565
+      h+='<div style="display:flex;gap:10px;margin-top:12px;"><div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;"><div style="font-size:11px;color:var(--accent);margin-bottom:4px;">\u25b8 \u53d1\u6839\uff08\u91cd\u70b9\uff09</div><div style="font-size:13px;color:var(--text);">\u818f\u72b6\u836f\u6c34\u91cd\u70b9\u5237</div></div>';
+      h+='<div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;"><div style="font-size:11px;color:var(--warning);margin-bottom:4px;">\u25b8 \u53d1\u4e2d\uff08\u8f7b\u62d6\uff09</div><div style="font-size:13px;color:var(--text);">\u6b8b\u818f\u8f7b\u62d6\uff0c\u4e0d\u8865\u836f</div></div>';
+      h+='<div style="flex:1;background:rgba(224,85,106,0.08);border-radius:8px;padding:10px;"><div style="font-size:11px;color:var(--danger);margin-bottom:4px;">\u25b8 \u53d1\u68a2\uff08\u4e0d\u78b0\uff09</div><div style="font-size:13px;color:var(--text);">\u4e0d\u78b0\u836f\u6c34\uff0c\u9760CA\u643a\u5e26\u76842%\u786b\u4ee3\u5fae\u5207</div></div></div>';
+      // \u6e17\u900f\u5f0f\u8f6f\u5316
+      h+='<div style="margin-top:12px;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;"><div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px;">\U0001f4cb \u6e17\u900f\u5f0f\u4e09\u6b65\u64cd\u4f5c\u6d41\u7a0b</div><div style="font-size:12px;color:var(--text);line-height:1.7;">'+stepHtml+'</div></div>';
+      // \u76d1\u63a7\u987a\u5e8f
+      h+='<div style="margin-top:8px;background:rgba(80,160,255,0.04);border-radius:8px;padding:12px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">\U0001f4ca \u76d1\u63a7\u987a\u5e8f\uff08\u5148\u5230\u5148\u51b2\uff09</div><div style="font-size:12px;color:var(--text);line-height:1.7;">\u2460 \u53d1\u68a2 \u2192 \u2461 \u53d1\u4e2d \u2192 \u2462 \u53d1\u6839</div></div>';
+      h+='<div class="param-row" style="margin-top:8px;"><span class="param-label">\u6760\u53f7\u5efa\u8bae</span><span class="param-value">'+rodNote+'</span></div>';
+      if(maxLv>=4) h+='<div style="margin-top:10px;padding:10px;background:rgba(224,85,106,0.08);border-radius:8px;font-size:12px;color:var(--danger);font-weight:600;">\u26a0\ufe0f \u6781\u5ea6\u53d7\u635f\uff1a\u5efa\u8bae\u5148\u505aCA\u9884\u5904\u7406+\u86cb\u767d\u586b\u5145\u540e\u518d\u70eb</div>';
       h+='</div></div>';
       return h;
     };
