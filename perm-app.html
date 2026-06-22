@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="195">
+<html lang="zh-CN" data-version="196">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3983,20 +3983,16 @@ function initApp() {
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rod-method" value="soften" style="accent-color:var(--accent);"> 软化上杠</label>';
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;margin-left:auto;"><input type="checkbox" id="hair-form-creative" style="accent-color:var(--accent);"> 创意设计</label>';
     html += '</div>';
-    // 停放时间
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">停放</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;padding:6px 0;"><input type="radio" name="hair-dwell" value="natural" style="accent-color:var(--accent);"> 自然</label>';
-    html += '<input id="hair-form-dwell-natural" placeholder="分" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;padding:6px 0;"><input type="radio" name="hair-dwell" value="heat" style="accent-color:var(--accent);"> 加热</label>';
-    html += '<input id="hair-form-dwell-heat" placeholder="分" style="width:50px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    // 停放和冲水已移除，替换为加热说明
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
+    html += '<span style="font-size:11px;color:var(--text-secondary);">🔥 第一次加热60°C 15分钟</span>';
     html += '</div>';
-    // 冲水
-    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">冲水</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rinse" value="yes" style="accent-color:var(--accent);"> 有</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="radio" name="hair-rinse" value="no" style="accent-color:var(--accent);"> 否</label>';
+    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
+    html += '<span style="font-size:11px;color:var(--text-secondary);">第二次</span>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 健康发质110°C</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 受损发质100°C</label>';
     html += '</div>';
+    html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;padding:0 8px;">加热到全干</div>';
     html += '</div>'; // end hair-perm-params
 
     // ── 染发参数区（一直显示，不隐藏） ──
