@@ -2905,7 +2905,7 @@ function initApp() {
     if (m) m.remove();
   };
 
-  // 只读展示已有发质分析记录
+  // 只读展示已有发质分析记录（文字版快照，不可编辑）
   window.renderHairRecordReadOnly = function(phone, name) {
     var records = [];
     try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
@@ -2913,17 +2913,61 @@ function initApp() {
     for (var i = 0; i < records.length; i++) {
       if (records[i].customerPhone === phone) { found = records[i]; break; }
     }
-    if (!found) return renderHairAnalysis(phone, name);
+    if (!found) return ''; // 无记录不显示表单
+
+    var r = found;
+    // 生成文字版快照
+    var lines = [];
+    lines.push('📋 烫发记录表（已保存）');
+    lines.push('─────────────────');
+    if (r.customerName) lines.push('姓名：' + r.customerName);
+    if (r.customerPhone) lines.push('电话：' + r.customerPhone);
+    if (r.technician) lines.push('技师：' + r.technician);
+    if (r.barber) lines.push('发型师：' + r.barber);
+    if (r.date) lines.push('日期：' + r.date);
+    if (r.diagnosisType) lines.push('发质类型：' + r.diagnosisType);
+
+    // AI分析结果
+    var aiText = '';
+    if (r.aiOverall) aiText += r.aiOverall + ' ';
+    if (r.aiDiagnosisText) {
+      var cleanDiag = r.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      if (cleanDiag) aiText += cleanDiag;
+    }
+    if (aiText) lines.push('AI分析：' + aiText);
+
+    // 三段诊断（从threeSection/baseInfo读取）
+    if (r.threeSection && typeof r.threeSection === 'object') {
+      var ts = r.threeSection;
+      if (ts.root && ts.root.level) lines.push('发根：' + ts.root.level + '级 ' + (ts.root.coarse_fine||''));
+      if (ts.mid && ts.mid.level) lines.push('发中：' + ts.mid.level + '级 ' + (ts.mid.coarse_fine||''));
+      if (ts.end && ts.end.level) lines.push('发尾：' + ts.end.level + '级 ' + (ts.end.coarse_fine||''));
+      if (ts.split_ends) lines.push('发尾分叉：' + ({none:'无',few:'少量',many:'明显',severe:'严重'}[ts.split_ends] || ts.split_ends));
+    }
+    if (r.baseInfo && typeof r.baseInfo === 'object') {
+      var bi = r.baseInfo;
+      if (bi.bleached) lines.push('漂发：' + ({no:'没漂',once:'1次',twice:'2次','3plus':'3次+'}[bi.bleached] || bi.bleached));
+      if (bi.dyed) lines.push('染发：' + ({no:'没染',dark:'深色',light:'浅色',special:'特殊色'}[bi.dyed] || bi.dyed));
+      if (bi.last_perm) lines.push('上次烫发：' + ({lt1m:'<1个月','1-3m':'1-3个月','3-6m':'3-6个月',gt6m:'6个月+',never:'没烫过'}[bi.last_perm] || bi.last_perm));
+      if (bi.feel) lines.push('手感：' + ({smooth:'顺滑有弹性',slight_rough:'轻微粗糙',rough:'明显粗糙',mushy:'软绵无弹性'}[bi.feel] || bi.feel));
+    }
+    if (r.eval) lines.push('效果评定：' + r.eval);
+    if (r.followMsg) lines.push('回馈：' + r.followMsg);
+
+    var textBlock = lines.join('\\n');
+
+    // 显示为白色文字块（纯文字，没有任何输入框/按钮）
     var html = '<div class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
-    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（已保存，只读）</span></div>';
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;font-size:12px;line-height:1.8;">';
-    html += '<div><span style="color:var(--text-secondary);">姓名：</span>'+esc(found.customerName||'')+'</div>';
-    html += '<div><span style="color:var(--text-secondary);">电话：</span>'+esc(found.customerPhone||'')+'</div>';
-    html += '<div><span style="color:var(--text-secondary);">技师：</span>'+esc(found.technician||'')+'</div>';
-    html += '<div><span style="color:var(--text-secondary);">日期：</span>'+esc(found.date||'')+'</div>';
-    if (found.diagnosisType) html += '<div><span style="color:var(--text-secondary);">发质类型：</span>'+esc(found.diagnosisType)+'</div>';
-    if (found.planResultHTML) html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'+found.planResultHTML+'</div>';
-    html += '</div></div>';
+    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（已保存）</span></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);">' + esc(textBlock) + '</div>';
+
+    // 如果有方案结果，也展示
+    if (r.planResultHTML) {
+      html += '<div style="margin-top:8px;font-size:12px;color:var(--text-secondary);font-weight:600;">🧾 烫发方案</div>';
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:4px;font-size:12px;line-height:1.6;color:var(--text);">' + r.planResultHTML + '</div>';
+    }
+
+    html += '</div>';
     return html;
   };
 
