@@ -31,6 +31,20 @@
   --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
+/* ── 发质分析页高级黑底白字 ── */
+.hair-analysis { background: #000 !important; }
+.hair-analysis * { --surface: #000 !important; --surface-light: #0a0a0a !important; --border: #222 !important; --text-secondary: #666 !important; }
+.hair-analysis .ha-card { background:#000; border:1px solid #222; border-radius:10px; padding:16px; margin-bottom:12px; }
+.hair-analysis .ha-step { font-size:11px; color:#555; letter-spacing:1px; margin-bottom:10px; font-weight:600; }
+.hair-analysis .ha-title { display:flex; align-items:center; gap:8px; margin-top:14px; margin-bottom:10px; }
+.hair-analysis .ha-title::before { content:''; width:3px; height:13px; background:#fff; border-radius:2px; flex-shrink:0; }
+.hair-analysis .ha-title span { font-size:12px; color:#fff; font-weight:600; letter-spacing:0.5px; }
+.hair-analysis .chip-label { font-size:11px; color:#666; margin-bottom:4px; margin-top:8px; }
+.hair-analysis .chip { background:#0a0a0a; border:1px solid #2a2a2a; color:#999; }
+.hair-analysis .chip.selected { background:#1a1a1a; border-color:#fff; color:#fff; }
+.hair-analysis input, .hair-analysis select { background:#0a0a0a !important; border:1px solid #2a2a2a !important; color:#fff !important; }
+.hair-analysis .ha-btn { background:#fff; color:#000; border:none; border-radius:8px; padding:10px 20px; font-size:12px; font-weight:600; cursor:pointer; }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -4082,17 +4096,12 @@ function initApp() {
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
 
-    var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
-    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表</div>';
-
+    var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;padding-top:14px;">';
+    html += '<div class="ha-card"><div class="ha-step">步骤1 · 客户信息</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
     var today = new Date();
     var dateStr = today.getFullYear()+'.'+(today.getMonth()+1)+'.'+today.getDate();
-
-    // ===== 步骤1: 客户信息 =====
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤1 · 客户信息</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
     html += '<input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;min-width:100px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="电话" style="flex:1;min-width:120px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
@@ -4131,11 +4140,10 @@ function initApp() {
     html += '</div></div>';
 
     // ===== 步骤2: 发质诊断（三段式填写+拍照AI验证） =====
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤2 · 发质诊断（三段式填写+AI验证）</div>';
+    html += '<div class="ha-card"><div class="ha-step">步骤2 · 发质诊断（三段式填写+AI验证）</div>';
 
     // ── 区块A：基础信息 ──
-    html += '<div class="section-title-sm">基础信息</div>';
+    html += '<div class="ha-title"><span>基础信息</span></div>';
 
     // 发根色度
     html += '<div class="chip-label">发根色度</div><div class="chip-row" data-group="color_level_root">';
@@ -4190,7 +4198,7 @@ function initApp() {
     html += '</div>';
 
     // ── 区块B：三段发质诊断 ──
-    html += '<div style="margin-top:10px;"><div class="section-title-sm">三段发质诊断</div></div>';
+    html += '<div style="margin-top:10px;"><div class="ha-title"><span>三段发质诊断</span></div></div>';
 
     // 发根
     html += '<div class="chip-label">发根</div><div class="chip-row" data-group="root_level">';
@@ -4231,7 +4239,7 @@ function initApp() {
     html += '</div>';
 
     // ── 区块C：拍照 + AI验证 ──
-    html += '<div style="margin-top:10px;"><div class="section-title-sm">拍照+AI验证</div></div>';
+    html += '<div style="margin-top:10px;"><div class="ha-title"><span>拍照 + AI验证</span></div></div>';
     html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
     html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照AI验证</button>';
     html += '<button id="hair-album-btn" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
@@ -4290,11 +4298,10 @@ function initApp() {
     html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">💡 发质类型来自步骤2的AI诊断或手动选择</div>';
     html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询烫发方案</button>';
     html += '<div id="hair-q-result" style="margin-top:10px;"></div>';
-    html += '</div>';
+    html += '</div>'; // 步骤3 ha-card 关闭
 
     // ===== 步骤4: 操作参数（烫发+染发） =====
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤4 · 操作参数</div>';
+    html += '<div class="ha-card"><div class="ha-step">步骤4 · 操作参数</div>';
 
     // ── 烫发参数区（服务类型含烫发时显示） ──
     html += '<div id="hair-perm-params">';
