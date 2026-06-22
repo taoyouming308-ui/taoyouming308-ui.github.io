@@ -2488,14 +2488,149 @@ function initApp() {
         html += '</div>';
       }
       html += '</div>';
+      var _isDyePerm = (function(){var _t=(r.service_name||'')+' '+(r.notes||'');return _t.indexOf('烫')!==-1||_t.indexOf('染')!==-1;})();
       html += '<div class="bi-right"><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name||'')+'</div>';
       if (r.customer_phone) {
         html += '<span class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
+        if (_isDyePerm) {
+          html += '<span class="bi-hair-tag" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" style="font-size:10px;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;cursor:pointer;background:rgba(255,80,80,0.2);color:#ff5050;font-weight:600;">🔥烫染</span>';
+        }
       }
       html += '</div></div>';
     });
     list.innerHTML = html;
+    if (window.loadHairTagStatuses) window.loadHairTagStatuses();
   }
+
+  // ===== 烫染标记：异步查询 hair_analysis_queue 状态 =====
+  window.loadHairTagStatuses = function() {
+    var tags = document.querySelectorAll('.bi-hair-tag');
+    if (tags.length === 0) return;
+    var phones = [];
+    var phoneSet = {};
+    tags.forEach(function(t){
+      var p = t.getAttribute('data-phone');
+      if (p && !phoneSet[p]) { phones.push(p); phoneSet[p] = true; }
+    });
+    if (phones.length === 0) return;
+    var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,status&or=('+orParts+')&order=created_at.desc&limit='+phones.length, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      if (!rows || rows.length === 0) return;
+      var statusMap = {};
+      rows.forEach(function(row){
+        var p = row.phone;
+        if (!statusMap[p]) {
+          statusMap[p] = row.status;
+        } else {
+          if (row.status === 'pending' && statusMap[p] !== 'pending') {
+            statusMap[p] = 'pending';
+          }
+        }
+      });
+      tags.forEach(function(t){
+        var phone = t.getAttribute('data-phone');
+        var name = t.getAttribute('data-name') || '';
+        var barber = t.getAttribute('data-barber') || '';
+        var bdate = t.getAttribute('data-bdate') || '';
+        var st = statusMap[phone];
+        if (st === 'pending') {
+          t.textContent = '\uD83D\uDCCB\u5F85\u5206\u6790';
+          t.style.background = 'rgba(232,168,23,0.2)';
+          t.style.color = '#e8a817';
+          t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate); };
+        } else if (st === 'record_saved' || st === 'completed') {
+          t.textContent = '\u2705\u5DF2\u5206\u6790';
+          t.style.background = 'rgba(46,204,113,0.2)';
+          t.style.color = '#2ecc71';
+          t.onclick = function(){ window.showHairRecordByPhone(phone); };
+        } else {
+          t.textContent = '\uD83D\uDD25\u70EB\u67D3';
+          t.style.background = 'rgba(255,80,80,0.2)';
+          t.style.color = '#ff5050';
+          t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate); };
+        }
+      });
+    }).catch(function(){});
+  };
+
+  window.openHairAnalysisForBooking = function(name, phone, barber, bdate) {
+    window.showHairAnalysisPage(phone);
+    setTimeout(function(){
+      var nameEl = document.getElementById('hair-form-name');
+      var phoneEl = document.getElementById('hair-form-phone');
+      if (nameEl) nameEl.value = name || '';
+      if (phoneEl) phoneEl.value = phone || '';
+    }, 200);
+  };
+
+  window.showHairRecordByPhone = function(phone) {
+    var records = window.getHairRecords ? window.getHairRecords() : [];
+    var found = null;
+    for (var i = 0; i < records.length; i++) {
+      if ((records[i].customerPhone === phone || records[i].phone === phone) && records[i].synced) {
+        found = records[i]; break;
+      }
+    }
+    if (found) {
+      if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
+      return;
+    }
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,status&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
+      var row = rows[0];
+      var rec = (row.ai_analysis && row.ai_analysis.record) || {};
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        if (rec.customerName) {
+          var ne = document.getElementById('hair-form-name');
+          if (ne) ne.value = rec.customerName;
+        }
+        if (rec.customerPhone || phone) {
+          var pe = document.getElementById('hair-form-phone');
+          if (pe) pe.value = rec.customerPhone || phone;
+        }
+        if (window.loadHairRecordData) window.loadHairRecordData(rec);
+      }, 200);
+    }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
+  };
+
+  window.createAndOpenHairTask = function(name, phone, barber, bdate) {
+    var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        phone: phone || '',
+        customer_name: name || '',
+        barber_name: barber || currentBarber,
+        shop_name: BOOKING_SHOP || '\u81EA\u7531\u624B\u827A\u4EBA',
+        booking_date: bdate || '',
+        source: 'booking_tag',
+        status: 'pending'
+      })
+    }).then(function(){
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        var nameEl = document.getElementById('hair-form-name');
+        var phoneEl = document.getElementById('hair-form-phone');
+        if (nameEl) nameEl.value = name || '';
+        if (phoneEl) phoneEl.value = phone || '';
+        if (window.loadHairTagStatuses) window.loadHairTagStatuses();
+      }, 200);
+    }).catch(function(){
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        var nameEl = document.getElementById('hair-form-name');
+        var phoneEl = document.getElementById('hair-form-phone');
+        if (nameEl) nameEl.value = name || '';
+        if (phoneEl) phoneEl.value = phone || '';
+      }, 200);
+    });
+  };
 
   window.esc = function(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   window.escAttr = function(s) { return esc(s); }

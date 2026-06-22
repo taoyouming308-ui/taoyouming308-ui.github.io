@@ -97,6 +97,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="tab" data-tab="carousel">轮播管理</div>
     <div class="tab" data-tab="customers">顾客档案</div>
     <div class="tab" data-tab="followups">回访管理</div>
+    <div class="tab" data-tab="assessment">月度考核</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -194,6 +195,33 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
   <table><thead><tr><th>客户</th><th>手机号</th><th>发型师</th><th>最后到店</th><th>距今天数</th><th>最近回访</th><th>操作</th></tr></thead>
   <tbody id="table-followups"></tbody></table>
+</div>
+
+<!-- 月度考核 -->
+<div id="tab-assessment" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <select id="ass-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
+    <button onclick="loadAssessment()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
+  </div>
+  <div id="ass-summary" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:#fff;" id="ass-total">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">烫染客户</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--info);" id="ass-analyzed">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">已分析</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--accent);" id="ass-rate">0%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">分析完成率</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--success);" id="ass-followed">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">已回访</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--accent);" id="ass-fu-rate">0%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">回访率</div></div>
+  </div>
+  <table><thead><tr><th>门店</th><th>发型师</th><th>烫染客户</th><th>已分析</th><th>分析完成率</th><th>待分析</th><th>已回访</th><th>回访率</th></tr></thead>
+  <tbody id="table-assessment"></tbody></table>
 </div>
 
 <div class="modal" id="modal">
@@ -396,9 +424,9 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups','assessment'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups, #tab-assessment').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
@@ -408,6 +436,8 @@ function switchTab(tab) {
     loadCustomers();
   } else if (tab === 'followups') {
     loadFollowups();
+  } else if (tab === 'assessment') {
+    loadAssessment();
   } else {
     loadData(tab);
   }
@@ -1513,7 +1543,7 @@ function initCustAndFu() {
   .then(function(r){ return r.json(); })
   .then(function(rows){
     if (!rows) return;
-    ['cust-barber-filter','fu-barber-filter'].forEach(function(id){
+    ['cust-barber-filter','fu-barber-filter','ass-barber-filter'].forEach(function(id){
       var sel = document.getElementById(id);
       if (!sel) return;
       rows.forEach(function(r){
@@ -1526,6 +1556,110 @@ function initCustAndFu() {
   })
   .catch(function(){});
 }
+
+// ===== 月度考核 =====
+window.loadAssessment = async function() {
+  var barber = (document.getElementById('ass-barber-filter')||{}).value || '';
+  var tbody = document.getElementById('table-assessment');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+
+  // 本月1号到今天
+  var now = new Date();
+  var monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&barber_name=neq.&created_at=gte.' + monthStr;
+
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">本月暂无烫染客户数据</td></tr>';
+        document.getElementById('ass-total').textContent = '0';
+        document.getElementById('ass-analyzed').textContent = '0';
+        document.getElementById('ass-rate').textContent = '0%';
+        document.getElementById('ass-followed').textContent = '0';
+        document.getElementById('ass-fu-rate').textContent = '0%';
+        return;
+      }
+
+      // 按发型师分组统计
+      var stats = {};
+      rows.forEach(function(r){
+        var key = (r.barber_name || '未知') + '|' + (r.shop_name || '');
+        if (!stats[key]) stats[key] = { barber_name: r.barber_name || '未知', shop_name: r.shop_name || '', total: 0, completed: 0, pending: 0, followed_up: 0 };
+        stats[key].total++;
+        if (r.status === 'record_saved' || r.status === 'completed') stats[key].completed++;
+        if (r.status === 'pending') stats[key].pending++;
+        if (r.status === 'completed') stats[key].followed_up++;
+      });
+
+      // 转数组并排序（完成率降序）
+      var list = Object.keys(stats).map(function(k){ return stats[k]; });
+      list.sort(function(a,b){
+        var aRate = a.total > 0 ? a.completed / a.total : 0;
+        var bRate = b.total > 0 ? b.completed / b.total : 0;
+        return bRate - aRate;
+      });
+
+      // 如果有发型师筛选
+      if (barber) {
+        list = list.filter(function(s){ return s.barber_name === barber; });
+      }
+
+      // 汇总统计
+      var totalTasks = 0, totalCompleted = 0, totalFollowed = 0;
+      list.forEach(function(s){
+        totalTasks += s.total;
+        totalCompleted += s.completed;
+        totalFollowed += s.followed_up;
+      });
+      var totalRate = totalTasks > 0 ? Math.round(totalCompleted / totalTasks * 100) : 0;
+      var totalFuRate = totalCompleted > 0 ? Math.round(totalFollowed / totalCompleted * 100) : 0;
+
+      document.getElementById('ass-total').textContent = totalTasks;
+      document.getElementById('ass-analyzed').textContent = totalCompleted;
+      document.getElementById('ass-rate').textContent = totalRate + '%';
+      document.getElementById('ass-followed').textContent = totalFollowed;
+      document.getElementById('ass-fu-rate').textContent = totalFuRate + '%';
+
+      // 渲染表格
+      var html = '';
+      list.forEach(function(s){
+        var rate = s.total > 0 ? Math.round(s.completed / s.total * 100) : 0;
+        var fuRate = s.completed > 0 ? Math.round(s.followed_up / s.completed * 100) : 0;
+        var rowClass = rate < 30 ? 'style="background:rgba(224,85,106,0.08);"' : rate > 80 ? 'style="background:rgba(74,222,128,0.06);"' : '';
+
+        html += '<tr ' + rowClass + '>';
+        html += '<td>' + esc(s.shop_name || '—') + '</td>';
+        html += '<td>' + esc(s.barber_name) + '</td>';
+        html += '<td>' + s.total + '</td>';
+        html += '<td>' + s.completed + '</td>';
+        html += '<td>';
+        // 进度条
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
+        html += '<div style="flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden;">';
+        html += '<div style="width:' + rate + '%;height:100%;background:' + (rate < 30 ? 'var(--danger)' : rate > 80 ? 'var(--success)' : 'var(--accent)') + ';border-radius:4px;transition:width 0.3s;"></div>';
+        html += '</div>';
+        html += '<span style="font-size:11px;color:' + (rate < 30 ? 'var(--danger)' : rate > 80 ? 'var(--success)' : 'var(--accent)') + ';font-weight:600;">' + rate + '%</span>';
+        html += '</div>';
+        html += '</td>';
+        html += '<td style="color:' + (s.pending > 0 ? 'var(--danger)' : '#888') + ';">' + s.pending + '</td>';
+        html += '<td>' + s.followed_up + '</td>';
+        html += '<td style="font-size:11px;color:' + (fuRate < 50 ? 'var(--danger)' : 'var(--success)') + ';">' + fuRate + '%</td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
+    })
+    .catch(function(){
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+      document.getElementById('ass-total').textContent = '—';
+      document.getElementById('ass-analyzed').textContent = '—';
+      document.getElementById('ass-rate').textContent = '—';
+      document.getElementById('ass-followed').textContent = '—';
+      document.getElementById('ass-fu-rate').textContent = '—';
+    });
+};
 
 // 初始化
 initCustAndFu();
