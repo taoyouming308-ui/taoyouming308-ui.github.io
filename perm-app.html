@@ -3188,14 +3188,10 @@ function initApp() {
     // 发质拍照分析按钮（点击触发拍照）
     if (target.classList.contains('hair-capture-btn')) {
       var phone3 = target.getAttribute('data-phone');
-      runHairAnalysis(phone3 || '', 'camera');
+      runHairAnalysis(phone3 || '');
       return;
     }
-    // 相册按钮
-    if (target.id === 'hair-album-btn') {
-      runHairAnalysis('', 'album');
-      return;
-    }
+
   });
 
   // 每次预约只给一次分析，localStorage跟踪
@@ -4233,10 +4229,8 @@ function initApp() {
     // ── 区块C：拍照 + AI验证 ──
     html += '<div style="margin-top:10px;"><div class="section-title-sm">拍照+AI验证</div></div>';
     html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
-    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照AI验证</button>';
-    html += '<button id="hair-album-btn" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
-    html += '<input type="file" id="hair-file-camera" accept="image/*" capture="environment" style="display:none;">';
-    html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
+    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照/选照片</button>';
+    html += '<input type="file" id="hair-file-input" accept="image/*" style="display:none;">';
     html += '</div>';
 
     // 加载状态（隐藏）
@@ -4677,13 +4671,11 @@ function initApp() {
   };
 
   // 执行发质拍照分析
-  window.runHairAnalysis = function(phone, source) {
+  window.runHairAnalysis = function(phone) {
     var initEl = document.getElementById('hair-init');
     var loadingEl = document.getElementById('hair-loading');
     var resultEl = document.getElementById('hair-result');
-    // source='camera'或'album'
-    var inputId = source === 'album' ? 'hair-file-album' : 'hair-file-camera';
-    var fileInput = document.getElementById(inputId);
+    var fileInput = document.getElementById('hair-file-input');
     if (!fileInput || !initEl || !loadingEl || !resultEl) return;
 
     // 触发文件选择
