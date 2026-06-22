@@ -3191,6 +3191,20 @@ function initApp() {
     }
     saveHairRecords(records);
 
+    // ★ 反馈实战数据：把发型师最终选择的发质类型写回队列
+    var _qid = localStorage.getItem('_pendingHairQueueId');
+    if (_qid && record.diagnosisType) {
+      var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
+      fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + _qid, {
+        method: 'PATCH',
+        headers: _supabaseHeaders,
+        body: JSON.stringify({
+          stylist_damage_level: record.diagnosisType,
+          corrected: true
+        })
+      }).catch(function(){});
+    }
+
     // 反馈（静默模式不改变按钮）
     if (!silent) {
       var btn = document.getElementById('hair-save-btn');
