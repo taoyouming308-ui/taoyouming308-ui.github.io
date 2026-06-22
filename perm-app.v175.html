@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="176">
+<html lang="zh-CN" data-version="175">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -614,7 +614,6 @@ body {
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('profiles')">客户档案</button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')">发质分析</button>
   </aside>
   <div class="hero-text">
@@ -905,22 +904,6 @@ body {
   </section>
 
   </section><!-- /tab-plans -->
-
-<!-- 客户档案 Tab -->
-  <section class="tab-content" id="tab-profiles">
-    <div style="padding:16px;">
-      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px;">📋 客户档案</div>
-      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;">发质分析记录·按客户归总</div>
-      <div id="profile-search-box" style="margin-bottom:10px;">
-        <input id="profile-search-input" type="text" placeholder="搜索客户姓名或电话..." oninput="filterProfileList()"
-          style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);box-sizing:border-box;">
-      </div>
-      <div id="profile-loading" style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">☁️ 加载中...</div>
-      <div id="profile-list"></div>
-      <div id="profile-detail" style="display:none;"></div>
-      <div id="profile-version" style="text-align:center;padding:8px 0 4px;font-size:9px;color:var(--text-secondary);opacity:0.5;"></div>
-    </div>
-  </section>
 
   <!-- 发型展示 Tab -->
   <section class="tab-content" id="tab-showcase">
@@ -1648,7 +1631,6 @@ function initApp() {
       if (tabName === 'plans') switchPlan('query');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
-      if (tabName === 'profiles') { loadCustomerProfiles(); }
     }
   };
   window.goHome = function() {
@@ -4580,183 +4562,6 @@ function initApp() {
     }, duration);
   }
 
-
-  // === 客户档案 ===
-  window.loadCustomerProfiles = function() {
-    var loadingEl = document.getElementById('profile-loading');
-    var listEl = document.getElementById('profile-list');
-    var detailEl = document.getElementById('profile-detail');
-    var versionEl = document.getElementById('profile-version');
-    if (loadingEl) loadingEl.style.display = 'block';
-    if (listEl) listEl.innerHTML = '';
-    if (detailEl) detailEl.style.display = 'none';
-    if (versionEl) versionEl.textContent = 'v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1);
-
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc&limit=100', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (!rows || rows.length === 0) {
-        if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">暂无客户档案</div>';
-        return;
-      }
-      // 按手机号归总
-      var groups = {};
-      for (var i = 0; i < rows.length; i++) {
-        var r = rows[i];
-        var rec = (r.ai_analysis && r.ai_analysis.record) || {};
-        var phone = r.phone || rec.customerPhone || 'unknown';
-        if (!groups[phone]) groups[phone] = { phone: phone, name: rec.customerName || '未知', records: [] };
-        groups[phone].records.push({ row: r, rec: rec });
-      }
-      window._profileGroups = groups;
-      renderProfileList(groups);
-    }).catch(function() {
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px;">❌ 加载失败</div>';
-    });
-  };
-
-  function renderProfileList(groups) {
-    var listEl = document.getElementById('profile-list');
-    if (!listEl) return;
-    var keys = Object.keys(groups);
-    if (keys.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">暂无客户档案</div>';
-      return;
-    }
-    var html = '';
-    for (var ki = 0; ki < keys.length; ki++) {
-      var g = groups[keys[ki]];
-      var lastRec = g.records[0];
-      var dateStr = lastRec.rec.date || (lastRec.row.created_at || '').slice(0, 10);
-      var lastTech = lastRec.rec.technician || '';
-      // 诊断摘要
-      var diagSummary = '';
-      var ts = lastRec.rec.threeSection;
-      if (ts && ts.root && ts.mid && ts.end) {
-        diagSummary = '根' + ts.root.level + '/' + ts.mid.level + '/' + ts.end.level;
-      }
-      var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
-      html += '<div class="profile-card" onclick="showCustomerProfile(\'' + g.phone.replace(/'/g,"\\'") + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;">';
-      html += '<span style="font-size:14px;font-weight:600;color:var(--text);">' + esc(name) + '</span>';
-      html += '<span style="font-size:11px;color:var(--text-secondary);">' + esc(g.phone) + '</span>';
-      html += '</div>';
-      html += '<span style="font-size:10px;color:var(--accent);background:var(--surface-light);padding:2px 8px;border-radius:10px;">' + g.records.length + '次</span>';
-      html += '</div>';
-      html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">';
-      if (diagSummary) html += diagSummary + ' · ';
-      html += dateStr;
-      if (lastTech) html += ' · ' + esc(lastTech);
-      html += '</div></div>';
-    }
-    listEl.innerHTML = html;
-  }
-
-  window.filterProfileList = function() {
-    var q = (document.getElementById('profile-search-input').value || '').trim().toLowerCase();
-    var groups = window._profileGroups;
-    if (!groups) return;
-    if (!q) {
-      renderProfileList(groups);
-      return;
-    }
-    var filtered = {};
-    var keys = Object.keys(groups);
-    for (var ki = 0; ki < keys.length; ki++) {
-      var g = groups[keys[ki]];
-      var name = (g.name || '').toLowerCase();
-      var phone = (g.phone || '');
-      if (name.indexOf(q) !== -1 || phone.indexOf(q) !== -1) {
-        filtered[keys[ki]] = g;
-      }
-    }
-    renderProfileList(filtered);
-  };
-
-  window.showCustomerProfile = function(phone) {
-    var groups = window._profileGroups;
-    if (!groups || !groups[phone]) return;
-    var g = groups[phone];
-    document.getElementById('profile-list').style.display = 'none';
-    document.getElementById('profile-search-box').style.display = 'none';
-    var detailEl = document.getElementById('profile-detail');
-    detailEl.style.display = 'block';
-
-    var name = g.name === '未知' ? (g.records[0].rec.customerName || '未知') : g.name;
-    var html = '<div style="margin-bottom:12px;">';
-    html += '<button onclick="backToProfileList()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 0;font-family:var(--font);">← 返回列表</button>';
-    html += '</div>';
-    html += '<div style="font-size:16px;font-weight:700;color:var(--accent);">' + esc(name) + '</div>';
-    html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">' + esc(phone) + ' · ' + g.records.length + '条记录</div>';
-
-    for (var ri = 0; ri < g.records.length; ri++) {
-      var item = g.records[ri];
-      var rec = item.rec;
-      var dateStr = rec.date || (item.row.created_at || '').slice(0, 10) || '未知日期';
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-      html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + dateStr + '</span>';
-      html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(rec.technician || '') + '</span>';
-      html += '</div>';
-
-      // 基础信息
-      var bi = rec.baseInfo || {};
-      if (bi.color_level || bi.dyed || bi.bleached) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px;">';
-        var parts = [];
-        if (bi.color_level) parts.push('底色' + bi.color_level);
-        if (bi.dyed) parts.push({no:'没染',dark:'深色染',light:'浅色染',special:'特殊染'}[bi.dyed] || bi.dyed);
-        if (bi.bleached) parts.push({'no':'没漂','once':'漂1次','twice':'漂2次','3plus':'漂3次+'}[bi.bleached] || bi.bleached);
-        if (bi.feel) parts.push({smooth:'顺滑',slight_rough:'微粗',rough:'粗糙',mushy:'软绵'}[bi.feel] || bi.feel);
-        html += parts.join(' · ');
-        html += '</div>';
-      }
-
-      // 三段诊断
-      var ts = rec.threeSection || {};
-      if (ts.root && ts.mid && ts.end) {
-        html += '<div style="font-size:11px;color:var(--text);margin-bottom:4px;">';
-        html += '<span style="color:var(--text-secondary);">发根</span> ' + ts.root.level + '级 ';
-        html += '<span style="color:var(--text-secondary);">发中</span> ' + ts.mid.level + '级 ';
-        html += '<span style="color:var(--text-secondary);">发尾</span> ' + ts.end.level + '级';
-        if (ts.split_ends) html += ' 分叉:' + {none:'无',few:'少量',many:'明显',severe:'严重'}[ts.split_ends] || ts.split_ends;
-        html += '</div>';
-      }
-
-      // AI对比结果
-      var aiRef = rec.aiReference || '';
-      if (aiRef) {
-        html += '<div style="font-size:10px;color:var(--accent);background:var(--surface-light);border-radius:4px;padding:6px;margin-top:4px;">';
-        html += aiRef;
-        html += '</div>';
-      }
-
-      // 烫发参数
-      if (rec.rodsTop || rec.rodsBack || rec.rodsSide) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">';
-        html += '卷芯 ' + (rec.rodsTop||'') + '/' + (rec.rodsBack||'') + '/' + (rec.rodsSide||'') + (rec.rodsBang ? '/' + rec.rodsBang : '');
-        if (rec.rodMethod) html += ' · ' + ({soften:'软化上杠',direct:'直接上杠'}[rec.rodMethod] || rec.rodMethod);
-        html += '</div>';
-      }
-
-      // 效果评定
-      if (rec.eval) {
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">评定: ' + esc(rec.eval) + ' · ' + esc(rec.status || '待回访') + '</div>';
-      }
-
-      html += '</div>';
-    }
-    detailEl.innerHTML = html;
-  };
-
-  window.backToProfileList = function() {
-    document.getElementById('profile-list').style.display = '';
-    document.getElementById('profile-search-box').style.display = '';
-    document.getElementById('profile-detail').style.display = 'none';
-  };
 
   // ★ 最后检查身份，确保所有函数已定义
   checkIdentity();
