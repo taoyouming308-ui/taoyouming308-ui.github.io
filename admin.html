@@ -1292,10 +1292,10 @@ function loadCustomers() {
     });
 }
 
-// ===== 查看客户发质分析记录（完整表） =====
+// ===== 查看客户发质分析记录（完整表+回馈ABC+截图上传） =====
 function viewCustAnalyses(phone, name) {
   if (!phone) return;
-  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=id,created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
@@ -1374,15 +1374,37 @@ function viewCustAnalyses(phone, name) {
           html += _tr('双氧水',rec.developer)+_tr('比例',rec.mixRatio)+_tr('涂抹顺序',rec.applyOrder)+_tr('配方备注',rec.colorNotes);
         }
 
-        // --- 效果评定 ---
-        if (rec.eval || rec.followDate || rec.followMsg) {
-          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">⭐ 效果评定</td></tr>';
-          html += _tr('效果',rec.eval);
-          if (rec.followDate || rec.followMsg) html += _tr('回访',(rec.followDate||'')+((rec.followDate&&rec.followMsg)?' ':'')+(rec.followMsg||''));
+        // --- 回馈评定（ABC+截图上传） ---
+        html += '</table>';
+        html += '<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">';
+        html += '<div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:8px;">⭐ 回馈评定</div>';
+        // A/B/C 单选
+        var savedRating = rec.feedbackRating || '';
+        html += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
+        ['效果好','一般','需优化'].forEach(function(lbl,i){
+          var val = ['A','B','C'][i];
+          var checked = savedRating === val ? ' checked' : '';
+          html += '<label style="flex:1;padding:6px 0;text-align:center;border-radius:6px;cursor:pointer;font-size:12px;background:' + (checked ? '#2a3a1a' : 'var(--bg)') + ';border:1px solid ' + (checked ? 'var(--success)' : 'var(--border)') + ';color:' + (checked ? 'var(--success)' : 'var(--text)') + ';">';
+          html += '<input type="radio" name="fb-' + r.id + '" value="' + val + '"' + checked + ' onchange="this.parentElement.style.background=\\'#2a3a1a\\';this.parentElement.style.borderColor=\\'var(--success)\\';this.parentElement.style.color=\\'var(--success)\\';"> ';
+          html += val + ' ' + lbl;
+          html += '</label>';
+        });
+        html += '</div>';
+        // 聊天截图上传
+        var ssBase64 = rec.chatScreenshot || '';
+        html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">💬 聊天截图</div>';
+        if (ssBase64 && ssBase64.length > 20) {
+          html += '<div style="position:relative;display:inline-block;margin-bottom:6px;">';
+          html += '<img src="' + ssBase64 + '" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);object-fit:cover;">';
+          html += '<button onclick="removeFbScreenshot(' + r.id + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:none;font-size:12px;cursor:pointer;line-height:20px;text-align:center;padding:0;">✕</button>';
+          html += '</div>';
         }
-
-        html += '</table></div>';
-
+        html += '<div style="display:flex;gap:6px;align-items:center;">';
+        html += '<label style="flex:1;padding:8px 12px;background:var(--bg);border:1px dashed var(--border);border-radius:6px;cursor:pointer;text-align:center;font-size:12px;color:var(--text-secondary);">📷 选择截图<input type="file" accept="image/*" onchange="uploadFbScreenshot(' + r.id + ',this)" style="display:none;"></label>';
+        html += '<button onclick="saveFbRating(' + r.id + ',\'' + phone + '\')" class="btn-save" style="white-space:nowrap;padding:8px 16px;font-size:12px;border:none;border-radius:6px;background:#fff;color:#000;cursor:pointer;font-weight:600;">保存</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
       });
       html += '</div>';
     }
@@ -1393,6 +1415,87 @@ function viewCustAnalyses(phone, name) {
   .catch(function(){
     showModal('<div class="modal-box"><h3>加载失败</h3><div class="btn-row"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel">关闭</button></div></div>');
   });
+}
+
+// ===== 回馈ABC保存 + 截图上传 =====
+function saveFbRating(id, phone) {
+  var rating = document.querySelector('input[name="fb-' + id + '"]:checked');
+  if (!rating) { showToast('请选择一个评定等级'); return; }
+  var val = rating.value;
+
+  // 读取当前ai_analysis，更新feedbackRating
+  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id + '&select=ai_analysis', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (!rows || !rows[0]) { showToast('未找到记录', true); return; }
+    var aa = rows[0].ai_analysis || {};
+    if (!aa.record) aa.record = {};
+    aa.record.feedbackRating = val;
+    return fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ai_analysis: aa })
+    });
+  })
+  .then(function(){ showToast('回馈已保存 A:' + val); })
+  .catch(function(){ showToast('保存失败', true); });
+}
+
+function uploadFbScreenshot(id, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('截图太大，请压缩到5MB以内', true); return; }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result;
+
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id + '&select=ai_analysis', {
+      headers: { 'apikey': SUPABASE_KEY }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || !rows[0]) { showToast('未找到记录', true); return; }
+      var aa = rows[0].ai_analysis || {};
+      if (!aa.record) aa.record = {};
+      aa.record.chatScreenshot = base64;
+      return fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_analysis: aa })
+      });
+    })
+    .then(function(){
+      showToast('截图已保存');
+      // 刷新当前弹窗
+      var phone = document.querySelector('.modal-box h3') ? '' : '';
+      location.reload();
+    })
+    .catch(function(){ showToast('上传失败', true); });
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeFbScreenshot(id) {
+  if (!confirm('删除聊天截图？')) return;
+  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id + '&select=ai_analysis', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (!rows || !rows[0]) { showToast('未找到记录', true); return; }
+    var aa = rows[0].ai_analysis || {};
+    if (aa.record) delete aa.record.chatScreenshot;
+    return fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ai_analysis: aa })
+    });
+  })
+  .then(function(){ showToast('截图已删除'); location.reload(); })
+  .catch(function(){ showToast('删除失败', true); });
 }
 
 // ===== 回访管理 =====
