@@ -1672,8 +1672,17 @@ function initApp() {
           if (initEl && loadingEl && resultEl) {
             initEl.style.display = 'none';
             loadingEl.style.display = 'block';
+            var pollStart = Date.now();
+            var POLL_TIMEOUT = 120000;
             // 重新轮询
             var pollFn = function() {
+              if (Date.now() - pollStart > POLL_TIMEOUT) {
+                // 超时→清除pending标记，显示初始状态
+                localStorage.removeItem('_pendingHairQueueId');
+                loadingEl.style.display = 'none';
+                initEl.style.display = 'block';
+                return;
+              }
               fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + pendingId + '&select=status,ai_damage_level,ai_analysis,error_message', {
                 headers: { 'apikey': SUPABASE_KEY }
               }).then(function(r) { return r.json(); }).then(function(rows2) {
