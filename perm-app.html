@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="194">
+<html lang="zh-CN" data-version="195">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4002,21 +4002,7 @@ function initApp() {
     // ── 染发参数区（一直显示，不隐藏） ──
     html += '<div id="hair-color-params">';
     html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">🎨 染发参数</div>';
-    // 目标色度
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">目标色度</span>';
-    html += '<select id="hair-form-target-color" style="flex:1;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<option value="">选择</option><option value="1-2">1-2度(自然黑)</option><option value="3">3度(深棕黑)</option><option value="4">4度(深棕)</option><option value="5">5度(棕)</option><option value="6">6度(浅棕)</option><option value="7">7度(黄棕)</option><option value="8">8度(浅黄)</option><option value="9">9度(极浅)</option>';
-    html += '</select>';
-    html += '</div>';
-    // 目标色调
-    html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);">色调</span>';
-    html += '<select id="hair-form-tone" style="flex:2;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<option value="">选择</option><option value="自然棕">自然棕</option><option value="亚麻棕">亚麻棕</option><option value="冷棕">冷棕</option><option value="巧克力棕">巧克力棕</option><option value="灰棕">灰棕</option><option value="灰">灰</option><option value="紫">紫</option><option value="红">红/酒红</option><option value="橙">橙/铜</option><option value="蓝">蓝/蓝黑</option><option value="绿">绿</option><option value="粉">粉</option><option value="奶茶">奶茶</option><option value="米色">米色</option><option value="其他">其他</option>';
-    html += '</select>';
-    html += '<input id="hair-form-tone-other" placeholder="自定义" style="width:60px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);display:none;">';
-    html += '</div>';
+    // 目标色度和色调已移除（用户要求）
     // 双氧水
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">双氧水</span>';
