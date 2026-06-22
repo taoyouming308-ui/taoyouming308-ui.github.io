@@ -95,6 +95,8 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="tab" data-tab="perm">烫发方案</div>
     <div class="tab" data-tab="images">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
     <div class="tab" data-tab="carousel">轮播管理</div>
+    <div class="tab" data-tab="customers">顾客档案</div>
+    <div class="tab" data-tab="followups">回访管理</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -148,6 +150,50 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
   </div>
+</div>
+
+<!-- 顾客档案 -->
+<div id="tab-customers" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <input id="cust-search" placeholder="搜索姓名/手机号" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+    <select id="cust-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
+    <select id="cust-visit-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+      <option value="">到店时间</option><option value="7d">近7天</option><option value="30d">近30天</option>
+      <option value="60d">近60天</option><option value="90d">近90天</option><option value="over90">超过90天未到</option>
+    </select>
+    <button onclick="loadCustomers()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">🔍 查询</button>
+  </div>
+  <div id="cust-stats" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+  <table><thead><tr><th>手机号</th><th>姓名</th><th>发型师</th><th>到店</th><th>消费</th><th>最后到店</th><th>分析</th><th>回访</th><th>操作</th></tr></thead>
+  <tbody id="table-customers"></tbody></table>
+</div>
+
+<!-- 回访管理 -->
+<div id="tab-followups" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <select id="fu-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
+    <select id="fu-status-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+      <option value="">全部</option><option value="over30">超过30天未回访</option><option value="over60">超过60天未回访</option>
+      <option value="today">今日回访</option><option value="week">本周回访</option>
+    </select>
+    <button onclick="loadFollowups()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
+  </div>
+  <div id="fu-summary" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:#fff;" id="fu-total">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">总客户</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--info);" id="fu-today">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">今日回访</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--danger);" id="fu-overdue">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">超30天未回访</div></div>
+    <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--accent);" id="fu-this-week">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">本周回访</div></div>
+  </div>
+  <table><thead><tr><th>客户</th><th>手机号</th><th>发型师</th><th>最后到店</th><th>距今天数</th><th>最近回访</th><th>操作</th></tr></thead>
+  <tbody id="table-followups"></tbody></table>
 </div>
 
 <div class="modal" id="modal">
@@ -350,14 +396,18 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
   } else if (tab === 'carousel') {
     loadCarousel();
+  } else if (tab === 'customers') {
+    loadCustomers();
+  } else if (tab === 'followups') {
+    loadFollowups();
   } else {
     loadData(tab);
   }
@@ -1123,6 +1173,362 @@ function stopRealtime() {
     realtimeWs = null;
   }
 }
+
+// ===== 通用弹窗 =====
+function showModal(html) {
+  var m = document.getElementById('modal');
+  if (!m) return;
+  var box = m.querySelector('.modal-box');
+  if (box) {
+    box.outerHTML = html;
+  } else {
+    m.innerHTML = html;
+  }
+  m.classList.add('show');
+}
+
+// ===== 顾客档案 =====
+function loadCustomers() {
+  var search = (document.getElementById('cust-search')||{}).value || '';
+  var barber = (document.getElementById('cust-barber-filter')||{}).value || '';
+  var visit = (document.getElementById('cust-visit-filter')||{}).value || '';
+  var tbody = document.getElementById('table-customers');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+
+  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=200';
+  if (search) { url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,name.ilike.%25' + encodeURIComponent(search) + '%25)'; }
+  if (barber) { url += '&barber_name=eq.' + encodeURIComponent(barber); }
+
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
+
+      // 按到店时间过滤
+      var now = new Date();
+      var filtered = rows.filter(function(r){
+        if (!visit || visit === '') return true;
+        var lv = r.last_visit_date ? new Date(r.last_visit_date) : null;
+        if (!lv) return false;
+        var days = (now - lv) / (1000*60*60*24);
+        if (visit === '7d') return days <= 7;
+        if (visit === '30d') return days <= 30;
+        if (visit === '60d') return days <= 60;
+        if (visit === '90d') return days <= 90;
+        if (visit === 'over90') return days > 90;
+        return true;
+      });
+
+      // 统计发质分析数和回访数（从notes提取）
+      var html = '';
+      filtered.forEach(function(r){
+        var phone = r.phone || '';
+        var name = r.name || '—';
+        var barberName = r.barber_name || '—';
+        var visits = r.total_visits || 0;
+        var consumption = r.total_consumption || 0;
+        var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : '—';
+        var daysSince = r.last_visit_date ? Math.floor((now - new Date(r.last_visit_date)) / (1000*60*60*24)) : '—';
+
+        // 从notes解析回访记录
+        var followUps = [];
+        try {
+          var notes = JSON.parse(r.notes || '{}');
+          if (notes.follow_ups) followUps = notes.follow_ups;
+        } catch(e) {}
+        var fuCount = followUps.length;
+        var lastFu = followUps.length > 0 ? followUps[followUps.length-1].date : '—';
+
+        html += '<tr>';
+        html += '<td style="font-family:monospace;font-size:11px;">' + phone + '</td>';
+        html += '<td>' + esc(name) + '</td>';
+        html += '<td>' + esc(barberName) + '</td>';
+        html += '<td>' + visits + '</td>';
+        html += '<td>' + (consumption > 0 ? '¥' + consumption.toLocaleString() : '—') + '</td>';
+        html += '<td style="font-size:11px;">' + lastVisit + '</td>';
+        html += '<td><a href="#" onclick="event.preventDefault();viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="color:var(--info);">查看</a></td>';
+        html += '<td style="font-size:11px;">' + fuCount + '次' + (lastFu !== '—' ? '<br><span style="color:#666;">最后' + lastFu + '</span>' : '') + '</td>';
+        html += '<td style="white-space:nowrap;">';
+        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
+        html += '<button onclick="viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">详情</button>';
+        html += '</td></tr>';
+      });
+      tbody.innerHTML = html;
+      document.getElementById('cust-stats').textContent = '共 ' + filtered.length + ' 位客户';
+    })
+    .catch(function(){
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+    });
+}
+
+// ===== 查看客户发质分析记录 =====
+function viewCustAnalyses(phone, name) {
+  if (!phone) return;
+  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    var html = '<div class="modal-box" style="max-width:600px;">';
+    html += '<h3>' + esc(name || phone) + ' · 发质分析记录</h3>';
+    if (!rows || rows.length === 0) {
+      html += '<p style="color:#888;font-size:13px;">暂无分析记录</p>';
+    } else {
+      html += '<div style="max-height:400px;overflow-y:auto;">';
+      rows.forEach(function(r){
+        var date = r.created_at ? r.created_at.substring(0,10) : '—';
+        var diag = (r.ai_analysis && r.ai_analysis.ai_diagnosis) || {};
+        var root = diag.root || {};
+        var mid = diag.mid || {};
+        var end = diag.end || {};
+        html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;">';
+        html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">' + date + '</div>';
+        html += '<div style="font-size:12px;">';
+        if (root.level) html += '发根' + root.level + '级 ';
+        if (mid.level) html += '发中' + mid.level + '级 ';
+        if (end.level) html += '发尾' + end.level + '级';
+        html += '</div>';
+        if (r.stylist_damage_level) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + r.stylist_damage_level + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '<div class="btn-row"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel" style="flex:1;">关闭</button></div>';
+    html += '</div>';
+    showModal(html);
+  })
+  .catch(function(){
+    showModal('<div class="modal-box"><h3>加载失败</h3><div class="btn-row"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel">关闭</button></div></div>');
+  });
+}
+
+// ===== 回访管理 =====
+function loadFollowups() {
+  var barber = (document.getElementById('fu-barber-filter')||{}).value || '';
+  var filter = (document.getElementById('fu-status-filter')||{}).value || '';
+  var tbody = document.getElementById('table-followups');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+
+  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=500';
+  if (barber) url += '&barber_name=eq.' + encodeURIComponent(barber);
+
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
+
+      var now = new Date();
+      var todayStr = now.toISOString().substring(0,10);
+      var weekAgo = new Date(now - 7*24*60*60*1000).toISOString().substring(0,10);
+
+      // 为每个客户计算回访状态
+      var enriched = rows.map(function(r){
+        var followUps = [];
+        try { var notes = JSON.parse(r.notes || '{}'); if (notes.follow_ups) followUps = notes.follow_ups; } catch(e) {}
+        var lastFu = followUps.length > 0 ? followUps[followUps.length-1] : null;
+        var lastFuDate = lastFu ? lastFu.date : null;
+        var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : null;
+        var daysSinceVisit = lastVisit ? Math.floor((now - new Date(lastVisit)) / (1000*60*60*24)) : 999;
+        var daysSinceFu = lastFuDate ? Math.floor((now - new Date(lastFuDate)) / (1000*60*60*24)) : 999;
+        var fuToday = lastFuDate === todayStr;
+        var fuThisWeek = lastFuDate && lastFuDate >= weekAgo;
+        return { row: r, followUps: followUps, lastFu: lastFu, lastFuDate: lastFuDate,
+          daysSinceVisit: daysSinceVisit, daysSinceFu: daysSinceFu,
+          fuToday: fuToday, fuThisWeek: fuThisWeek };
+      });
+
+      // 按筛选条件过滤
+      var filtered = enriched;
+      if (filter === 'over30') filtered = enriched.filter(function(e){ return e.daysSinceFu >= 30 || !e.lastFuDate; });
+      else if (filter === 'over60') filtered = enriched.filter(function(e){ return e.daysSinceFu >= 60 || !e.lastFuDate; });
+      else if (filter === 'today') filtered = enriched.filter(function(e){ return e.fuToday; });
+      else if (filter === 'week') filtered = enriched.filter(function(e){ return e.fuThisWeek; });
+
+      // 统计卡片
+      var totalCust = rows.length;
+      var todayCount = enriched.filter(function(e){ return e.fuToday; }).length;
+      var overdueCount = enriched.filter(function(e){ return e.daysSinceFu >= 30 || !e.lastFuDate; }).length;
+      var weekCount = enriched.filter(function(e){ return e.fuThisWeek; }).length;
+      document.getElementById('fu-total').textContent = totalCust;
+      document.getElementById('fu-today').textContent = todayCount;
+      document.getElementById('fu-overdue').textContent = overdueCount;
+      document.getElementById('fu-this-week').textContent = weekCount;
+
+      var html = '';
+      filtered.forEach(function(e){
+        var r = e.row;
+        var phone = r.phone || '';
+        var name = r.name || '—';
+        var barberName = r.barber_name || '—';
+        var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : '—';
+        var daysStr = e.daysSinceVisit >= 999 ? '—' : e.daysSinceVisit + '天';
+        var fuStatus = '';
+        if (e.lastFuDate) {
+          fuStatus = e.lastFuDate + ' (' + e.daysSinceFu + '天前)';
+        } else {
+          fuStatus = '<span style="color:var(--danger);">从未回访</span>';
+        }
+        var rowClass = (e.daysSinceFu >= 30 || !e.lastFuDate) ? 'style="background:rgba(224,85,106,0.04);"' : '';
+
+        html += '<tr ' + rowClass + '>';
+        html += '<td>' + esc(name) + '</td>';
+        html += '<td style="font-family:monospace;font-size:11px;">' + phone + '</td>';
+        html += '<td>' + esc(barberName) + '</td>';
+        html += '<td style="font-size:11px;">' + lastVisit + '</td>';
+        html += '<td>' + daysStr + '</td>';
+        html += '<td style="font-size:11px;">' + fuStatus + '</td>';
+        html += '<td>';
+        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
+        html += '</td></tr>';
+      });
+      tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
+    })
+    .catch(function(){
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+      document.getElementById('fu-total').textContent = '—';
+    });
+}
+
+// ===== 记录回访弹窗 =====
+var _fuPhone = '';
+var _fuName = '';
+function showFollowUpModal(phone, name) {
+  _fuPhone = phone;
+  _fuName = name;
+  // 查询历史回访记录
+  var historyHtml = '';
+  if (phone) {
+    fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(phone), {
+      headers: { 'apikey': SUPABASE_KEY }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (rows && rows[0]) {
+        try {
+          var notes = JSON.parse(rows[0].notes || '{}');
+          if (notes.follow_ups && notes.follow_ups.length > 0) {
+            historyHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">';
+            historyHtml += '<div style="font-size:12px;color:#888;margin-bottom:6px;">历史回访记录</div>';
+            notes.follow_ups.slice().reverse().forEach(function(fu){
+              historyHtml += '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-soft);">';
+              historyHtml += '<span style="color:#888;">' + (fu.date||'') + ' | ' + esc(fu.barber||'') + '</span><br>';
+              historyHtml += esc(fu.content || '');
+              historyHtml += '</div>';
+            });
+            historyHtml += '</div>';
+          }
+        } catch(e) {}
+      }
+      // 更新弹窗内容
+      var box = document.querySelector('#fu-modal .modal-box');
+      if (box) {
+        var histEl = box.querySelector('.fu-history');
+        if (histEl) histEl.innerHTML = historyHtml;
+      }
+    })
+    .catch(function(){});
+  }
+
+  var html = '<div class="modal-box">';
+  html += '<h3>📞 回访 · ' + esc(name || phone) + '</h3>';
+  html += '<label>回访内容</label>';
+  html += '<textarea id="fu-content" placeholder="输入回访内容..." style="min-height:100px;"></textarea>';
+  html += '<label>下次回访（可选）</label>';
+  html += '<input type="date" id="fu-next">';
+  html += '<div class="fu-history"></div>';
+  html += '<div class="btn-row">';
+  html += '<button onclick="saveFollowUp()" class="btn-save">保存</button>';
+  html += '<button onclick="document.getElementById(\'fu-modal\').classList.remove(\'show\')" class="btn-cancel">取消</button>';
+  html += '</div></div>';
+
+  var modal = document.getElementById('fu-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'fu-modal';
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = html;
+  // 设置默认日期
+  var nextInput = document.getElementById('fu-next');
+  if (nextInput) {
+    var d = new Date();
+    d.setDate(d.getDate() + 30);
+    nextInput.value = d.toISOString().substring(0,10);
+  }
+  modal.classList.add('show');
+}
+
+function saveFollowUp() {
+  var content = document.getElementById('fu-content');
+  var next = document.getElementById('fu-next');
+  if (!_fuPhone || !content || !content.value.trim()) return;
+  var now = new Date();
+  var dateStr = now.toISOString().substring(0,10);
+  
+  // 获取当前发型师
+  var barber = localStorage.getItem('fu-barber') || '管理员';
+
+  // 先取现有notes
+  fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(_fuPhone), {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    var notes = {};
+    try { notes = JSON.parse((rows && rows[0] && rows[0].notes) || '{}'); } catch(e) {}
+    if (!notes.follow_ups) notes.follow_ups = [];
+    notes.follow_ups.push({
+      date: dateStr,
+      barber: barber,
+      content: content.value.trim(),
+      next: next ? next.value : ''
+    });
+    // 写回
+    return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(_fuPhone), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: JSON.stringify(notes) })
+    });
+  })
+  .then(function(){
+    showToast('回访记录已保存', 'ok');
+    document.getElementById('fu-modal').classList.remove('show');
+    // 刷新当前列表
+    if (document.getElementById('tab-customers').style.display !== 'none') loadCustomers();
+    if (document.getElementById('tab-followups').style.display !== 'none') loadFollowups();
+  })
+  .catch(function(){
+    showToast('保存失败', 'err');
+  });
+}
+
+// ===== 初始化（发型师下拉） =====
+function initCustAndFu() {
+  fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&order=username.asc', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (!rows) return;
+    ['cust-barber-filter','fu-barber-filter'].forEach(function(id){
+      var sel = document.getElementById(id);
+      if (!sel) return;
+      rows.forEach(function(r){
+        var opt = document.createElement('option');
+        opt.value = r.username;
+        opt.textContent = r.username;
+        sel.appendChild(opt);
+      });
+    });
+  })
+  .catch(function(){});
+}
+
+// 初始化
+initCustAndFu();
 </script>
 </body>
 </html>
