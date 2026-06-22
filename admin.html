@@ -1292,7 +1292,7 @@ function loadCustomers() {
     });
 }
 
-// ===== 查看客户发质分析记录 =====
+// ===== 查看客户发质分析记录（完整表） =====
 function viewCustAnalyses(phone, name) {
   if (!phone) return;
   fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
@@ -1300,27 +1300,89 @@ function viewCustAnalyses(phone, name) {
   })
   .then(function(r){ return r.json(); })
   .then(function(rows){
-    var html = '<div class="modal-box" style="max-width:600px;">';
+    var html = '<div class="modal-box" style="max-width:700px;">';
     html += '<h3>' + esc(name || phone) + ' · 发质分析记录</h3>';
     if (!rows || rows.length === 0) {
       html += '<p style="color:#888;font-size:13px;">暂无分析记录</p>';
     } else {
-      html += '<div style="max-height:400px;overflow-y:auto;">';
+      html += '<div style="max-height:500px;overflow-y:auto;">';
       rows.forEach(function(r){
+        var rec = (r.ai_analysis && r.ai_analysis.record) || {};
         var date = r.created_at ? r.created_at.substring(0,10) : '—';
-        var diag = (r.ai_analysis && r.ai_analysis.ai_diagnosis) || {};
-        var root = diag.root || {};
-        var mid = diag.mid || {};
-        var end = diag.end || {};
-        html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;">';
-        html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">' + date + '</div>';
-        html += '<div style="font-size:12px;">';
-        if (root.level) html += '发根' + root.level + '级 ';
-        if (mid.level) html += '发中' + mid.level + '级 ';
-        if (end.level) html += '发尾' + end.level + '级';
+        var bi = rec.baseInfo || {};
+        var ts = rec.threeSection || {};
+        // 映射表
+        var cm = {'2-3':'2-3(自然黑)','3-4':'3-4(深棕)','5-6':'5-6(棕色)','6-7':'6-7(棕黄)','8-9':'8-9(漂浅)'};
+        var bm = {'no':'没漂','once':'1次','twice':'2次','3plus':'3次+'};
+        var dm = {'no':'没染','dark':'深色','light':'浅色','special':'特殊色'};
+        var pm = {'lt1m':'<1月','1-3m':'1-3月','3-6m':'3-6月','gt6m':'6月+','never':'没烫过'};
+        var fm = {'smooth':'顺滑有弹性','slight_rough':'轻微粗糙','rough':'明显粗糙','mushy':'软绵无弹性'};
+        var ll = {'1':'1级·健康','2':'2级·轻损','3':'3级·受损','4':'4级·严重','5':'5级·极度'};
+        var lc = {'coarse':'粗硬','fine':'细软'};
+        var sp = {'none':'无','few':'少量','many':'明显','severe':'严重'};
+        function _v(v,m){ return v ? (m && m[v] ? m[v] : v) : '—'; }
+
+        html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">';
+        // 头部：日期+状态
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+        html += '<span style="font-size:11px;color:#888;">' + date + '　' + (rec.barber ? '<span style="color:var(--accent);">' + esc(rec.barber) + '</span>' : '') + '</span>';
+        html += '<span style="font-size:10px;color:var(--text-secondary);">#' + (rec.id ? rec.id.substring(0,8) : '—') + '</span>';
         html += '</div>';
-        if (r.stylist_damage_level) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + r.stylist_damage_level + '</div>';
-        html += '</div>';
+        // 完整表格
+        function _tr(l,v){
+          return '<tr><td style="color:var(--text-secondary);width:80px;padding:2px 6px 2px 0;font-size:12px;vertical-align:top;white-space:nowrap;">'+l+'</td><td style="color:var(--text);padding:2px 0;font-size:12px;word-break:break-word;">'+(v||'—')+'</td></tr>';
+        }
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+
+        // --- 客户信息 ---
+        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">📋 客户信息</td></tr>';
+        html += _tr('姓名',rec.customerName)+_tr('电话',rec.customerPhone)+_tr('发型师',rec.barber)+_tr('技师',rec.technician)+_tr('日期',rec.date);
+
+        // --- 基础信息 ---
+        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">💇 基础信息</td></tr>';
+        html += _tr('发根色度',_v(bi.color_level_root,cm))+_tr('发中色度',_v(bi.color_level_mid,cm))+_tr('发尾色度',_v(bi.color_level_end,cm));
+        html += _tr('漂发',_v(bi.bleached,bm))+_tr('染发',_v(bi.dyed,dm))+_tr('上次烫发',_v(bi.last_perm,pm))+_tr('手感',_v(bi.feel,fm));
+
+        // --- 三段发质诊断 ---
+        html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🔬 三段发质诊断</td></tr>';
+        var pnames = {root:'发根',mid:'发中',end:'发尾'};
+        for (var pk in pnames) {
+          var p = ts[pk] || {};
+          html += _tr(pnames[pk], _v(p.level,ll) + ' ' + (lc[p.coarse_fine]||''));
+        }
+        html += _tr('发尾分叉',_v(ts.split_ends,sp));
+        html += _tr('综合诊断','<span style="color:#e8a817;">' + esc(rec.diagnosisType||'—') + '</span>');
+
+        // --- AI验证 ---
+        if (rec.aiOverall || rec.aiDiagnosisText || rec.aiReference) {
+          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🤖 AI验证结果</td></tr>';
+          html += _tr('整体等级',_v(rec.aiOverall,{'1':'1级','2':'2级','3':'3级','4':'4级','5':'5级'}));
+          if (rec.aiDiagnosisText) html += _tr('诊断说明',rec.aiDiagnosisText.replace(/<[^>]+>/g,'').trim());
+          if (rec.aiReference) html += _tr('一致性对比',rec.aiReference.replace(/<[^>]+>/g,'').trim());
+        }
+
+        // --- 烫发方案 ---
+        if (rec.rodsTop || rec.rodsBack || rec.rodsSide || rec.rodsBang) {
+          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🔥 烫发方案</td></tr>';
+          html += _tr('排杠','顶'+(rec.rodsTop||'—')+' 后'+(rec.rodsBack||'—')+' 侧'+(rec.rodsSide||'—')+' 刘海'+(rec.rodsBang||'—'));
+          if (rec.planResultHTML) html += _tr('方案',rec.planResultHTML.replace(/<[^>]+>/g,'').trim());
+        }
+
+        // --- 染发参数 ---
+        if (rec.developer || rec.mixRatio || rec.applyOrder || rec.colorNotes) {
+          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">🎨 染发参数</td></tr>';
+          html += _tr('双氧水',rec.developer)+_tr('比例',rec.mixRatio)+_tr('涂抹顺序',rec.applyOrder)+_tr('配方备注',rec.colorNotes);
+        }
+
+        // --- 效果评定 ---
+        if (rec.eval || rec.followDate || rec.followMsg) {
+          html += '<tr><td colspan="2" style="color:var(--accent);font-size:11px;font-weight:700;padding:6px 0 3px;border-bottom:1px solid var(--border);">⭐ 效果评定</td></tr>';
+          html += _tr('效果',rec.eval);
+          if (rec.followDate || rec.followMsg) html += _tr('回访',(rec.followDate||'')+((rec.followDate&&rec.followMsg)?' ':'')+(rec.followMsg||''));
+        }
+
+        html += '</table></div>';
+
       });
       html += '</div>';
     }
