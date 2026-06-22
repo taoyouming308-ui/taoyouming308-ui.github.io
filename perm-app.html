@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="186">
+<html lang="zh-CN" data-version="187">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3185,7 +3185,9 @@ function initApp() {
       aiDiagnosisText: ((document.getElementById('hair-ai-diagnosis')||{}).innerHTML || ''),
       aiFeatures: (document.getElementById('hair-ai-features')||{}).textContent || '',
       aiReference: ((document.getElementById('hair-ai-reference')||{}).innerHTML || ''),
-      // 烫发参数（步骤4）
+      // 查询烫发方案结果（分段软化方案卡片等）
+      planResultHTML: ((document.getElementById('hair-q-result')||{}).innerHTML || ''),
+      // 烫发方案（步骤4）
       rodsTop: (document.getElementById('hair-form-rods-top')||{}).value || '',
       rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
       rodsSide: (document.getElementById('hair-form-rods-side')||{}).value || '',
