@@ -45,6 +45,17 @@
 .hair-analysis input, .hair-analysis select { background:#0a0a0a !important; border:1px solid #2a2a2a !important; color:#fff !important; }
 .hair-analysis .ha-btn { background:#fff; color:#000; border:none; border-radius:8px; padding:10px 20px; font-size:12px; font-weight:600; cursor:pointer; }
 
+/* ── 自由换算 + 冷烫页面黑底白字 ── */
+.plan-page { background:#000 !important; }
+.plan-page .result-card { background:#000; border:1px solid #222; box-shadow:none; }
+.plan-page .card-header { background:#0a0a0a; border-bottom:1px solid #222; }
+.plan-page .card-title { color:#fff; }
+.plan-page .card-body { color:#e7e9ea; }
+.plan-page select, .plan-page input, .plan-page .preset-btn { background:#0a0a0a !important; border-color:#2a2a2a !important; color:#fff !important; }
+.plan-page table th { color:#666 !important; }
+.plan-page table td { color:#e7e9ea !important; border-bottom:1px solid #1a1a1a !important; }
+.plan-page .param-row { border-bottom:1px solid #1a1a1a; }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -3432,9 +3443,9 @@ function initApp() {
       endProtect: (document.getElementById('hair-form-end-protect')||{}).checked || false,
       colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
       // 效果评定（步骤5）
-      eval: (document.getElementById('hair-form-eval')||{}).value || '',
+      feedbackRating: document.querySelector('input[name="fb-hair"]:checked'),
+      chatScreenshot: localStorage.getItem('_hairFbScreenshot') || '',
       followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
-      followMsg: (document.getElementById('hair-form-follow-msg')||{}).value || '',
       // 状态
       status: '待回访',
       synced: false
@@ -3447,6 +3458,9 @@ function initApp() {
     record.serviceType = 'both';
     record.developer = record.developer ? record.developer.value : '';
     record.mixRatio = record.mixRatio ? record.mixRatio.value : '';
+    record.feedbackRating = record.feedbackRating ? record.feedbackRating.value : '';
+    // 保存后清除截图缓存
+    localStorage.removeItem('_hairFbScreenshot');
     // applyOrder已是隐藏input的字符串值，不再转换
 
     var records = getHairRecords();
@@ -3943,10 +3957,17 @@ function initApp() {
     setVal('hair-form-rods-bang', data.rodsBang);
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
-    // 效果评定（步骤5）
-    setVal('hair-form-eval', data.eval);
+    // 效果评定（步骤5）- ABC回馈 + 截图
+    if (data.feedbackRating) {
+      var fbLabel = document.querySelector('label[data-val="' + data.feedbackRating + '"][data-name="fb-hair"]');
+      if (fbLabel) { fbLabel.click(); }
+    }
+    if (data.chatScreenshot && data.chatScreenshot.length > 20) {
+      localStorage.setItem('_hairFbScreenshot', data.chatScreenshot);
+      var prevImg = document.getElementById('hair-fb-preview');
+      if (prevImg) prevImg.src = data.chatScreenshot;
+    }
     setVal('hair-form-follow-date', data.followDate);
-    setVal('hair-form-follow-msg', data.followMsg);
     selectRadio('hair-rod-method', data.rodMethod);
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
@@ -4374,16 +4395,31 @@ function initApp() {
 
     html += '</div>';
 
-    // ===== 步骤5: 总结（参考图1的完整闭环） =====
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">步骤5 · 效果评定</div>';
-    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">';
-    html += '<input id="hair-form-eval" placeholder="发型师效果评定" style="flex:1;min-width:120px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    // ===== 步骤5: 效果评定 =====
+    html += '<div class="ha-card"><div class="ha-step">步骤5 · 效果评定</div>';
+    // A/B/C 单选（新建时默认空，编辑时由loadHairRecordData回填）
+    var savedFbRating = '';
+    html += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
+    [['A','效果好','#2a6e3b'],['B','一般','#7a6a2a'],['C','需优化','#8a3a3a']].forEach(function(item){
+      var val = item[0], lbl = item[1], selBg = item[2];
+      var checked = savedFbRating === val;
+      html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#0a0a0a') + ';border:1px solid ' + (checked ? '#fff' : '#2a2a2a') + ';color:' + (checked ? '#fff' : '#888') + ';transition:all 0.15s;" onclick="selectAppFbRating(this)">';
+      html += '<span style="font-size:14px;font-weight:700;">' + val + '</span><br><span style="font-size:10px;">' + lbl + '</span>';
+      html += '</label>';
+    });
+    html += '<input type="radio" name="fb-hair" value="' + savedFbRating + '"' + (savedFbRating?' checked':'') + ' style="display:none;">';
     html += '</div>';
-    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-    html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">回访</span>';
-    html += '<input id="hair-form-follow-date" placeholder="日期" style="width:80px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-follow-msg" placeholder="回馈信息" style="flex:1;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    // 聊天截图
+    var savedSsBase64 = '';
+    if (savedSsBase64 && savedSsBase64.length > 20) {
+      html += '<div style="position:relative;display:inline-block;margin-bottom:8px;">';
+      html += '<img id="hair-fb-preview" src="' + savedSsBase64 + '" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid #333;object-fit:cover;">';
+      html += '</div>';
+    }
+    html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">';
+    html += '<label style="flex:1;padding:8px 10px;background:#0a0a0a;border:1px dashed #2a2a2a;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;color:#666;">⬆ 聊天截图<input type="file" accept="image/*" onchange="uploadAppFbScreenshot(this)" style="display:none;" id="hair-fb-upload"></label>';
+    html += '<span style="font-size:11px;color:#666;">回访日期</span>';
+    html += '<input id="hair-form-follow-date" value="'+escAttr(rec.followDate||'')+'" placeholder="日期" style="width:80px;padding:6px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:11px;font-family:var(--font);">';
     html += '</div>';
     html += '</div>';
 
@@ -5264,6 +5300,43 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
+
+// ===== 发质分析ABC回馈 + 截图上传 =====
+window.selectAppFbRating = function(el) {
+  var bg = el.getAttribute('data-bg');
+  var name = el.getAttribute('data-name');
+  var val = el.getAttribute('data-val');
+  el.parentElement.querySelectorAll('label').forEach(function(e){
+    e.style.background = '#0a0a0a';
+    e.style.borderColor = '#2a2a2a';
+    e.style.color = '#888';
+  });
+  el.style.background = bg;
+  el.style.borderColor = '#fff';
+  el.style.color = '#fff';
+  var radio = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
+  if (radio) radio.checked = true;
+};
+window.uploadAppFbScreenshot = function(inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { alert('截图太大，请压缩到5MB以内'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    // 存到localStorage，在保存时一并提交
+    localStorage.setItem('_hairFbScreenshot', dataUrl);
+    // 显示预览
+    var img = document.getElementById('hair-fb-preview') || document.createElement('img');
+    img.id = 'hair-fb-preview';
+    img.src = dataUrl;
+    img.style.cssText = 'max-width:160px;max-height:120px;border-radius:6px;border:1px solid #333;object-fit:cover;';
+    // 确保预览在正确位置
+    var uploadLabel = inputEl.parentElement;
+    uploadLabel.parentElement.insertBefore(img, uploadLabel);
+  };
+  reader.readAsDataURL(file);
+};
 </script>
 
 <!-- 版本更新提示 -->
