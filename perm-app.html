@@ -4350,6 +4350,8 @@ function initApp() {
             }
             c.classList.add('active');
           }
+          // ★ 手动改了chip→清除AI缓存，让匹配用当前chip数据
+          _lastAiDiagnosis = null;
           // 自动匹配发质类型
           if (typeof autoMatchHairType === 'function') autoMatchHairType();
           // 刷新与AI的对比结果
