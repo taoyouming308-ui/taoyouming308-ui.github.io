@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="203c">
+<html lang="zh-CN" data-version="202fix">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1655,9 +1655,7 @@ function initApp() {
       if (window.initHairChips) window.initHairChips();
       if (window.initApplyOrderChips) window.initApplyOrderChips();
       var btn = overlay.querySelector('.hair-capture-btn');
-      if (btn) btn.onclick = function(){ runHairAnalysis('', 'camera'); };
-      var albumBtn = document.querySelector('.hair-album-btn');
-      if (albumBtn) albumBtn.onclick = function(){ runHairAnalysis('', 'album'); };
+      if (btn) btn.onclick = function(){ runHairAnalysis(''); };
       // 渲染本地记录
       if (window.renderPendingRecords) window.renderPendingRecords();
       // 渲染我的任务
@@ -3193,7 +3191,11 @@ function initApp() {
       runHairAnalysis(phone3 || '', 'camera');
       return;
     }
-
+    // 相册按钮
+    if (target.id === 'hair-album-btn') {
+      runHairAnalysis('', 'album');
+      return;
+    }
   });
 
   // 每次预约只给一次分析，localStorage跟踪
@@ -4231,8 +4233,8 @@ function initApp() {
     // ── 区块C：拍照 + AI验证 ──
     html += '<div style="margin-top:10px;"><div class="section-title-sm">拍照+AI验证</div></div>';
     html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
-    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照</button>';
-    html += '<button class="hair-album-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
+    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照AI验证</button>';
+    html += '<button id="hair-album-btn" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
     html += '<input type="file" id="hair-file-camera" accept="image/*" capture="environment" style="display:none;">';
     html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
     html += '</div>';
@@ -4679,6 +4681,7 @@ function initApp() {
     var initEl = document.getElementById('hair-init');
     var loadingEl = document.getElementById('hair-loading');
     var resultEl = document.getElementById('hair-result');
+    // source='camera'或'album'
     var inputId = source === 'album' ? 'hair-file-album' : 'hair-file-camera';
     var fileInput = document.getElementById(inputId);
     if (!fileInput || !initEl || !loadingEl || !resultEl) return;
@@ -4697,6 +4700,7 @@ function initApp() {
 
       var reader = new FileReader();
       reader.onload = function(e) {
+        // 压缩图片：最长边800px，JPEG质量0.7
         var img = new Image();
         img.onerror = function() {
           loadingEl.style.display = 'none';
@@ -4705,7 +4709,7 @@ function initApp() {
         };
         img.onload = function() {
           var canvas = document.createElement('canvas');
-          var MAX_SIZE = 300;
+          var MAX_SIZE = 600;
           var w = img.width, h = img.height;
           if (w > MAX_SIZE || h > MAX_SIZE) {
             if (w > h) { h = h * MAX_SIZE / w; w = MAX_SIZE; }
@@ -4714,7 +4718,7 @@ function initApp() {
           canvas.width = w; canvas.height = h;
           var ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          var compressed = canvas.toDataURL('image/jpeg', 0.3);
+          var compressed = canvas.toDataURL('image/jpeg', 0.5);
 
           // 显示缩略图
           var thumbDiv = document.getElementById('hair-thumb');
@@ -5302,13 +5306,13 @@ function initApp() {
 
   // === 结束 initApp ===
 }
+}
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
   initApp();
 }
-
-}</script>
+</script>
 
 <!-- 版本更新提示 -->
 <div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99998;background:var(--accent);color:var(--bg);padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.5);cursor:pointer;animation:pulse 2s infinite" onclick="location.reload()">
