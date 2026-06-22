@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="189">
+<html lang="zh-CN" data-version="190">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1145,7 +1145,8 @@ body {
     var _origShowcaseOF = window.openFeature;
     // 通过 MutationObserver 检测展示页是否激活
     var _showcaseObserver = window.MutationObserver ? new MutationObserver(function() {
-      if (document.getElementById('tab-showcase').classList.contains('active')) {
+      var tab = document.getElementById('tab-showcase');
+      if (tab && tab.classList.contains('active')) {
         startShowcasePoll();
       } else {
         stopShowcasePoll();
@@ -2526,12 +2527,14 @@ function initApp() {
     // 尝试本地API（店内WiFi直连美管加实时数据）
     var supportsAbort = typeof AbortController !== 'undefined';
     var ac = supportsAbort ? new AbortController() : null;
-    var acTimer = supportsAbort ? setTimeout(function(){ ac.abort(); }, 5000) : null;
+    var _planModalAborted = false;
+    var acTimer = supportsAbort ? setTimeout(function(){ _planModalAborted = true; ac.abort(); }, 5000) : null;
     var fetchOptions = supportsAbort ? { signal: ac.signal } : {};
     fetch('/api/plan?phone='+encodeURIComponent(phone), fetchOptions)
     .then(function(r){ if (acTimer) clearTimeout(acTimer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data){
       if (acTimer) clearTimeout(acTimer);
+      if (_planModalAborted) return;
       if (data.error || !data.plan_text) throw new Error('no data');
       var p = data;
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
@@ -2578,7 +2581,7 @@ function initApp() {
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       html += renderAiButton(phone, name, barberName, bookingDate);
       html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
-      html += renderHairAnalysis(phone, name);
+      html += renderHairRecordReadOnly(phone, name);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
       // 加载客户历史档案
@@ -2816,7 +2819,7 @@ function initApp() {
           // ===== AI分析按钮 =====
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
           htmlContent += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
-          htmlContent += renderHairAnalysis(phone, name);
+          htmlContent += renderHairRecordReadOnly(phone, name);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
           updateAiButtonsAvailability();
           renderCustomerHistory(phone, name);
@@ -2900,6 +2903,28 @@ function initApp() {
   window.closePlanModal = function() {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
+  };
+
+  // 只读展示已有发质分析记录
+  window.renderHairRecordReadOnly = function(phone, name) {
+    var records = [];
+    try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
+    var found = null;
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].customerPhone === phone) { found = records[i]; break; }
+    }
+    if (!found) return renderHairAnalysis(phone, name);
+    var html = '<div class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
+    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（已保存，只读）</span></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;font-size:12px;line-height:1.8;">';
+    html += '<div><span style="color:var(--text-secondary);">姓名：</span>'+esc(found.customerName||'')+'</div>';
+    html += '<div><span style="color:var(--text-secondary);">电话：</span>'+esc(found.customerPhone||'')+'</div>';
+    html += '<div><span style="color:var(--text-secondary);">技师：</span>'+esc(found.technician||'')+'</div>';
+    html += '<div><span style="color:var(--text-secondary);">日期：</span>'+esc(found.date||'')+'</div>';
+    if (found.diagnosisType) html += '<div><span style="color:var(--text-secondary);">发质类型：</span>'+esc(found.diagnosisType)+'</div>';
+    if (found.planResultHTML) html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'+found.planResultHTML+'</div>';
+    html += '</div></div>';
+    return html;
   };
 
   // 客户历史档案（在方案弹窗内加载）
@@ -4323,6 +4348,11 @@ function initApp() {
       reader.onload = function(e) {
         // 压缩图片：最长边800px，JPEG质量0.7
         var img = new Image();
+        img.onerror = function() {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div style=\"color:var(--danger);padding:16px;text-align:center;\">❌ 图片加载失败，请重试</div>';
+        };
         img.onload = function() {
           var canvas = document.createElement('canvas');
           var MAX_SIZE = 600;
@@ -4544,6 +4574,7 @@ function initApp() {
             var pollStart = Date.now();
             var POLL_TIMEOUT = 120000;
             var POLL_INTERVAL = 500;
+            var pollTimer;
 
             function doPoll() {
               fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + queueId + '&select=status,ai_damage_level,ai_analysis,error_message', {
@@ -4559,6 +4590,7 @@ function initApp() {
                 }
                 var rec = records[0];
                 if (rec.status === 'completed') {
+                  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
                   localStorage.removeItem('_pendingHairQueueId');
                   // 把ai_diagnosis数据提到顶层，调showHairResult完整渲染
                   var data = rec.ai_analysis || {};
@@ -4608,12 +4640,14 @@ function initApp() {
   var _bookingChannel = null;
   var _bookingReconnectTimer = null;
   var _bookingReconnectAttempts = 0;
+  var _bookingHeartbeat = null;
   function isBookingPageActive() {
     var tab = document.getElementById('tab-bookings');
     return !!(tab && tab.classList.contains('active'));
   }
   function closeRealtime() {
     if (_bookingReconnectTimer) { clearTimeout(_bookingReconnectTimer); _bookingReconnectTimer = null; }
+    if (_bookingHeartbeat) { clearInterval(_bookingHeartbeat); _bookingHeartbeat = null; }
     if (_bookingChannel) { try { _bookingChannel.close(); } catch(e){} _bookingChannel = null; }
     if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
     _bookingReconnectAttempts = 0;
@@ -4673,6 +4707,7 @@ function initApp() {
           clearInterval(hb);
         }
       }, 30000);
+      _bookingHeartbeat = hb;
       _bookingChannel = ws;
     } catch(e) {
       console.warn('Realtime初始化失败:', e);
@@ -4686,6 +4721,9 @@ function initApp() {
   // 预约页打开时：启动 Realtime + 保留 5s 轮询做兜底
   var _origOpenFeature = window.openFeature;
   window.openFeature = function(tabName) {
+    if (tabName === 'bookings' && _bookingChannel && _bookingChannel.readyState === WebSocket.OPEN) {
+      _origOpenFeature(tabName); return;
+    }
     if (BOOKING_INTERVAL) { clearInterval(BOOKING_INTERVAL); BOOKING_INTERVAL = null; }
     _origOpenFeature(tabName);
     if (tabName === 'bookings') {
@@ -4705,7 +4743,7 @@ function initApp() {
   };
 
   // === Toast ===
-  function showToast(msg, duration = 2000) {
+  window.showToast = function(msg, duration = 2000) {
     toast.textContent = msg;
     toast.classList.add('show');
     clearTimeout(toast._timeout);
@@ -4911,7 +4949,6 @@ function initApp() {
   checkIdentity();
 
   // === 结束 initApp ===
-}
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
