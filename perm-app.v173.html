@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="174">
+<html lang="zh-CN" data-version="173">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4000,8 +4000,6 @@ function initApp() {
           }
           // 自动匹配发质类型
           if (typeof autoMatchHairType === 'function') autoMatchHairType();
-          // 刷新与AI的对比结果
-          if (window.refreshHairComparison) window.refreshHairComparison();
         };
       })(chips[ci]);
     }
@@ -4213,8 +4211,6 @@ function initApp() {
             if (data.ai_diagnosis) {
               // 保存AI诊断结果，供autoMatchHairType优先使用
               _lastAiDiagnosis = data.ai_diagnosis;
-              // 保存完整原始数据，供动态对比用
-              window._lastHairAiRaw = data;
               data = data.ai_diagnosis;
             }
             var refer = _stylistRef ? {stylist_reference: _stylistRef} : null;
@@ -4276,52 +4272,6 @@ function initApp() {
             // ★ 根据AI诊断自动匹配发质类型
             autoMatchHairType();
           }
-
-          // 当发型师填写/修改chip后，刷新与AI的对比结果
-          window.refreshHairComparison = function() {
-            var refEl = document.getElementById('hair-ai-reference');
-            if (!refEl) return;
-            var raw = window._lastHairAiRaw;
-            if (!raw || !raw.ai_diagnosis) { refEl.innerHTML = ''; return; }
-            var diag = raw.ai_diagnosis;
-            // 读取当前表单的chip数据
-            var fd = (typeof getHairFormData === 'function') ? getHairFormData() : null;
-            if (!fd || !fd.three_section) {
-              refEl.innerHTML = '<span style="color:var(--text-secondary);">✏️ 填完三段诊断后自动出现对比</span>';
-              return;
-            }
-            var ts = fd.three_section;
-            var levelTexts = ['-','健康','轻度受损','受损','严重受损','极度受损'];
-            var diffs = [];
-            // 发根对比
-            var rl = parseInt(ts.root.level);
-            var al = parseInt(diag.root && diag.root.level);
-            if (rl && al) {
-              diffs.push('发根: 你选' + rl + '级' + levelTexts[rl] + ' vs AI看' + al + '级' + levelTexts[al]);
-            }
-            var ml = parseInt(ts.mid.level);
-            var am = parseInt(diag.mid && diag.mid.level);
-            if (ml && am) {
-              diffs.push('发中: 你选' + ml + '级' + levelTexts[ml] + ' vs AI看' + am + '级' + levelTexts[am]);
-            }
-            var el = parseInt(ts.end.level);
-            var ae = parseInt(diag.end && diag.end.level);
-            if (el && ae) {
-              diffs.push('发尾: 你选' + el + '级' + levelTexts[el] + ' vs AI看' + ae + '级' + levelTexts[ae]);
-            }
-            if (diffs.length === 0) {
-              refEl.innerHTML = '';
-              return;
-            }
-            // 粗硬细软对比（仅基础信息有）
-            var base = fd.base_info;
-            if (base && base.color_level) {
-              var colorMap = {'1-3':'1-3度','4-5':'4-5度','6-7':'6-7度','8-9':'8-9度'};
-              var formColor = colorMap[base.color_level] || base.color_level;
-              diffs.unshift('底色: ' + formColor);
-            }
-            refEl.innerHTML = '📊 你 vs AI<br>' + diffs.join('<br>');
-          };
 
           function tryLocalAPI() {
             // 直接走Supabase队列（本地API已废弃，用户在店内店外都能用）
