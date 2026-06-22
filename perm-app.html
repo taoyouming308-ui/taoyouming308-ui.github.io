@@ -4419,7 +4419,7 @@ function initApp() {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">';
     html += '<label style="flex:1;padding:8px 10px;background:#0a0a0a;border:1px dashed #2a2a2a;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;color:#666;">⬆ 聊天截图<input type="file" accept="image/*" onchange="uploadAppFbScreenshot(this)" style="display:none;" id="hair-fb-upload"></label>';
     html += '<span style="font-size:11px;color:#666;">回访日期</span>';
-    html += '<input id="hair-form-follow-date" value="" placeholder="日期" style="width:80px;padding:6px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:11px;font-family:var(--font);">';
+    html += '<input id="hair-form-follow-date" value="'+escAttr(rec.followDate||'')+'" placeholder="日期" style="width:80px;padding:6px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:11px;font-family:var(--font);">';
     html += '</div>';
     html += '</div>';
 
@@ -4742,6 +4742,102 @@ function initApp() {
       loadingEl.style.display = 'block';
 
       // ★ 拍照照片太大时用URL.createObjectURL（省内存，不把整个图片读到内存）
+      // 这两个函数必须在onchange层级定义，相机路径（IIFE）才能访问到
+      function tryLocalAPI(_compressed) {
+        var imgData = _compressed || '';
+        supabaseHairAnalysis(phone, imgData);
+      }
+      function supabaseHairAnalysis(phone, compressed) {
+        var formData = (typeof getHairFormData === 'function') ? getHairFormData() : {};
+        var _supabaseHeaders = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+        fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+          method: 'POST',
+          headers: _supabaseHeaders,
+          body: JSON.stringify({
+            phone: phone || '',
+            raw_photo: compressed,
+            status: 'pending',
+            base_info: formData.base_info || {},
+            three_section: formData.three_section || {}
+          })
+        })
+        .then(function(rsp) {
+          if (!rsp.ok) throw new Error('上传失败 HTTP ' + rsp.status);
+          return rsp.json();
+        })
+        .then(function(rows) {
+          if (!rows || rows.length === 0) throw new Error('上传无返回');
+          var queueId = rows[0].id;
+          localStorage.setItem('_pendingHairQueueId', queueId);
+          pollQueue(queueId);
+        })
+        .catch(function(err) {
+          loadingEl.style.display = 'none';
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 上传失败: ' + esc(err.message) + '</div>';
+        });
+      }
+      function pollQueue(queueId) {
+        var pollStart = Date.now();
+        var POLL_TIMEOUT = 120000;
+        var POLL_INTERVAL = 500;
+        var pollTimer;
+        function doPoll() {
+          fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + queueId + '&select=status,ai_damage_level,ai_analysis,error_message', {
+            headers: { 'apikey': SUPABASE_KEY }
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(records) {
+            loadingEl.style.display = 'none';
+            resultEl.style.display = 'block';
+            if (!records || records.length === 0) {
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 记录不存在</div>';
+              return;
+            }
+            var rec = records[0];
+            if (rec.status === 'completed') {
+              if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+              localStorage.removeItem('_pendingHairQueueId');
+              var data = rec.ai_analysis || {};
+              var diag = data.ai_diagnosis || {};
+              var displayData = {
+                overall_level: diag.overall_level || '',
+                root: diag.root || {},
+                mid: diag.mid || {},
+                end: diag.end || {},
+                visual_features: diag.visual_features || [],
+                ai_diagnosis: diag,
+                stylist_reference: data.stylist_reference || {},
+                consistency: data.consistency || '',
+                consistency_note: data.consistency_note || '',
+              };
+              showHairResult(displayData, '', '');
+              autoMatchHairType();
+            } else if (rec.status === 'failed') {
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 分析失败: ' + esc(rec.error_message || '未知错误') + '</div>';
+            } else if (rec.status === 'pending' || rec.status === 'processing') {
+              if (Date.now() - pollStart > POLL_TIMEOUT) {
+                resultEl.innerHTML = '<div style="color:var(--warning);font-size:13px;text-align:center;padding:16px;">⏱️ 分析超时（超过60秒），请稍后重试</div>';
+                return;
+              }
+              loadingEl.style.display = 'block';
+              resultEl.style.display = 'none';
+              pollTimer = setTimeout(doPoll, POLL_INTERVAL);
+            } else {
+              resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">⚠️ 未知状态: ' + esc(rec.status || '') + '</div>';
+            }
+          })
+          .catch(function(err) {
+            loadingEl.style.display = 'none';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;text-align:center;padding:16px;">❌ 查询失败: ' + esc(err.message) + '</div>';
+            if (Date.now() - pollStart < 30000) {
+              pollTimer = setTimeout(doPoll, 2000);
+            }
+          });
+        }
+        setTimeout(doPoll, 500);
+      }
       if (source === 'camera' && file.size > 2 * 1024 * 1024) {
         (function(file) {
           var imgUrl = URL.createObjectURL(file);
