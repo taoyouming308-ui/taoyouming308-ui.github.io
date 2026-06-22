@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="200">
+<html lang="zh-CN" data-version="201">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3557,83 +3557,99 @@ function initApp() {
     }
     if (!rec) return;
 
-    // 构建文字版快照内容
-    var lines = [];
-    lines.push('📋 烫发记录表');
-    lines.push('═══════════════════════');
-    lines.push('客户: ' + (rec.customerName || '未填') + '  ' + (rec.customerPhone || ''));
-    lines.push('发型师: ' + (rec.barber || '') + '  技师: ' + (rec.technician || '') + '  日期: ' + (rec.date || ''));
-    lines.push('');
-
-    // 基础信息
     var bi = rec.baseInfo || {};
-    if (bi.color_level_root || bi.color_level_mid || bi.color_level_end) {
-      var cm = {'2-3':'2-3','3-4':'3-4','5-6':'5-6','6-7':'6-7','8-9':'8-9'};
-      lines.push('▎发根色度: ' + (cm[bi.color_level_root] || bi.color_level_root || '未填'));
-      lines.push('▎发中色度: ' + (cm[bi.color_level_mid] || bi.color_level_mid || '未填'));
-      lines.push('▎发尾色度: ' + (cm[bi.color_level_end] || bi.color_level_end || '未填'));
-    }
-    var bm = {'no':'没漂','once':'1次','twice':'2次','3plus':'3次+'};
-    if (bi.bleached) lines.push('▎漂发: ' + (bm[bi.bleached] || bi.bleached));
-    var dm = {'no':'没染','dark':'深色','light':'浅色','special':'特殊色'};
-    if (bi.dyed) lines.push('▎染发: ' + (dm[bi.dyed] || bi.dyed));
-    var pm = {'lt1m':'<1个月','1-3m':'1-3个月','3-6m':'3-6个月','gt6m':'6个月+','never':'没烫过'};
-    if (bi.last_perm) lines.push('▎上次烫发: ' + (pm[bi.last_perm] || bi.last_perm));
-    var fm = {'smooth':'顺滑有弹性','slight_rough':'轻微粗糙','rough':'明显粗糙','mushy':'软绵无弹性'};
-    if (bi.feel) lines.push('▎手感: ' + (fm[bi.feel] || bi.feel));
-    lines.push('');
-
-    // 三段诊断
     var ts = rec.threeSection || {};
-    var ll = {'1':'1级健康','2':'2级轻损','3':'3级受损','4':'4级严重','5':'5级极度'};
-    var cf = {'coarse':'粗硬','fine':'细软'};
-    for (var _k in {root:'发根',mid:'发中',end:'发尾'}) {
-      var p = ts[_k];
-      if (p && p.level) {
-        lines.push('▎' + {root:'发根',mid:'发中',end:'发尾'}[_k] + ': ' + (ll[p.level] || p.level+'级') + ' ' + (cf[p.coarse_fine] || ''));
-      }
-    }
+
+    // 映射表
+    var cm = {'2-3':'2-3(自然黑)','3-4':'3-4(深棕)','5-6':'5-6(棕色)','6-7':'6-7(棕黄)','8-9':'8-9(漂浅)'};
+    var bm = {'no':'没漂','once':'1次','twice':'2次','3plus':'3次+'};
+    var dm = {'no':'没染','dark':'深色','light':'浅色','special':'特殊色'};
+    var pm = {'lt1m':'<1个月','1-3m':'1-3个月','3-6m':'3-6个月','gt6m':'6个月+','never':'没烫过'};
+    var fm = {'smooth':'顺滑有弹性','slight_rough':'轻微粗糙','rough':'明显粗糙','mushy':'软绵无弹性'};
+    var ll = {'1':'1级·健康','2':'2级·轻损','3':'3级·受损','4':'4级·严重','5':'5级·极度'};
+    var lc = {'coarse':'粗硬','fine':'细软'};
     var sp = {'none':'无','few':'少量','many':'明显','severe':'严重'};
-    if (ts.split_ends) lines.push('▎发尾分叉: ' + (sp[ts.split_ends] || ts.split_ends));
-    lines.push('');
 
-    // AI诊断
-    if (rec.aiOverall) lines.push('▎AI整体: ' + rec.aiOverall);
+    function val(v, m) { return v ? (m[v] || v) : '—'; }
+
+    var lines = [];
+    lines.push('╔══════════════════════════════════════╗');
+    lines.push('║          发质分析记录表               ║');
+    lines.push('║       Hair Analysis Report           ║');
+    lines.push('╚══════════════════════════════════════╝');
+    lines.push('');
+    lines.push('━━━ 客户信息 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 姓名：' + (rec.customerName || '—') + '    电话：' + (rec.customerPhone || '—'));
+    lines.push(' 发型师：' + (rec.barber || '—') + '    技师：' + (rec.technician || '—'));
+    lines.push(' 日期：' + (rec.date || '—'));
+    lines.push('');
+    lines.push('━━━ 基础信息 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 发根色度：' + val(bi.color_level_root, cm) + '    发中色度：' + val(bi.color_level_mid, cm) + '    发尾色度：' + val(bi.color_level_end, cm));
+    lines.push(' 漂发：' + val(bi.bleached, bm));
+    lines.push(' 染发：' + val(bi.dyed, dm));
+    lines.push(' 上次烫发：' + val(bi.last_perm, pm));
+    lines.push(' 手感：' + val(bi.feel, fm));
+    lines.push('');
+    lines.push('━━━ 三段发质诊断 ━━━━━━━━━━━━━━━━━━━━━━━');
+    var parts = {root:'发根', mid:'发中', end:'发尾'};
+    for (var pk in parts) {
+      var p = ts[pk] || {};
+      lines.push(' ' + parts[pk] + '：' + val(p.level, ll) + '    ' + (lc[p.coarse_fine] || '—'));
+    }
+    lines.push(' 发尾分叉：' + val(ts.split_ends, sp));
+    lines.push('');
+    lines.push(' 综合诊断：' + (rec.diagnosisType || '—') + '    发质类型：' + (rec.diagnosisType ? rec.diagnosisType : '—'));
+    lines.push('');
+    lines.push('━━━ AI验证结果 ━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 整体等级：' + (rec.aiOverall || '—'));
     if (rec.aiDiagnosisText) {
-      var clean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
-      if (clean) lines.push('▎AI诊断: ' + clean);
+      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      lines.push(' 诊断说明：' + (diagClean || '—'));
+    }
+    if (rec.aiReference) {
+      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      lines.push(' 与发型师一致性：' + (refClean || '—'));
     }
     lines.push('');
+    lines.push('━━━ 烫发方案 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    // 烫发参数（卷芯）
-    if (rec.rodsTop || rec.rodsBack || rec.rodsSide || rec.rodsBang) {
-      lines.push('▎卷芯: 顶'+(rec.rodsTop||'')+' 后'+(rec.rodsBack||'')+' 侧'+(rec.rodsSide||'')+' 刘海'+(rec.rodsBang||''));
-    }
-
-    // 烫发方案（如果有）
+    // 从planResultHTML提取方案信息
     if (rec.planResultHTML) {
       var planText = rec.planResultHTML.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
-      if (planText) {
-        lines.push('▎烫发方案: ' + planText);
-      }
+      lines.push(' ▸ 方案：' + (planText || '—'));
     }
-
-    // 效果评定
-    if (rec.eval) lines.push('▎效果: ' + rec.eval);
-    if (rec.followMsg) lines.push('▎回馈: ' + rec.followMsg);
-    lines.push('═══════════════════════');
+    lines.push(' ▸ 排杠：顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    lines.push(' ▸ 加热方式：第一次60°C 15分钟');
+    lines.push('             第二次  □健康110°C  □受损100°C');
+    lines.push('             加热到全干');
+    lines.push('');
+    lines.push('━━━ 操作参数 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 烫发参数：');
+    lines.push(' ▸ 卷芯：顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    lines.push(' 染发参数：');
+    lines.push(' ▸ 双氧水：' + (rec.developer || '—'));
+    lines.push(' ▸ 比例：' + (rec.mixRatio || '—'));
+    lines.push(' ▸ 涂抹顺序：' + (rec.applyOrder || '—'));
+    lines.push(' ▸ 配方备注：' + (rec.colorNotes || '—'));
+    lines.push('');
+    lines.push('━━━ 效果评定 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 发型师评定：' + (rec.eval || '—'));
+    lines.push(' 回访日期：' + (rec.followDate || '—') + '    回馈：' + (rec.followMsg || '—'));
+    lines.push('');
+    lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    lines.push(' 记录编号：' + (rec.id || '—'));
+    lines.push(' 创建时间：' + (rec.createdAt ? rec.createdAt.slice(0,16).replace('T',' ') : (rec.date || '—')));
 
     var textBlock = lines.join('\\n');
 
-    // 显示文字版快照（替换表单区域）
+    // 显示文字版快照
     var formSection = document.getElementById('hair-analysis-section');
     if (!formSection) return;
-    formSection.style.display = '';  // 确保可见
+    formSection.style.display = '';
     formSection.innerHTML =
-      '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（文字版·已保存）</span></div>' +
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);">' + esc(textBlock) + '</div>' +
+      '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 发质分析记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（文字版·已保存）</span></div>' +
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--text);font-family:monospace;">' + esc(textBlock) + '</div>' +
       '<button onclick="hideHairRecordSummary()" style="width:100%;margin-top:10px;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">← 返回列表</button>';
-    // 滚动到表单区
     formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
