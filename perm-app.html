@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="243">
+<html lang="zh-CN" data-version="242">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3662,9 +3662,6 @@ function initApp() {
         btn.disabled = true;
       }
     }
-    // 刷新待上传列表
-    if (window.renderPendingRecords) window.renderPendingRecords();
-
     // 同步到云端（技师手机能看见）- 非静默才同步
     if (!silent) {
       fetch(SUPABASE_URL + '/rest/v1/hair_records', {
@@ -3681,12 +3678,9 @@ function initApp() {
         })
       }).catch(function(){});  // 静默失败，不影响本地
 
-      // ★ 保存完自动回到列表：隐藏表单，只显示记录列表
-      var formSection = document.getElementById('hair-analysis-section');
-      if (formSection) formSection.style.display = 'none';
-      var listEl = document.getElementById('hair-pending-list');
-      var modal = document.getElementById('hair-analysis-modal');
-      if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // ★ 保存完刷新列表，不隐藏表单
+      if (window.renderPendingRecords) window.renderPendingRecords();
+      if (window.renderMyTasks) window.renderMyTasks();
       // 重置编辑状态
       _editingHairId = null;
     }
