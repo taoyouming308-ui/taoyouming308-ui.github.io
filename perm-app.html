@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="233">
+<html lang="zh-CN" data-version="234">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5606,6 +5606,14 @@ window.uploadAppFbScreenshot = function(inputEl) {
   }
   // ★ 版本更新检测（对比localStorage记录的版本）
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
+  // 缓存爆破：URL带版本号，让CDN和浏览器每次都拉最新版
+  if (location.search.indexOf('_v=' + VER) === -1) {
+    // 只做一次跳转，避免循环
+    var q = '?_v=' + VER;
+    if (location.hash) q += location.hash;
+    location.replace(location.pathname + q);
+    return; // 停止执行后续代码，等重定向完成
+  }
   var OLD_VER = parseInt(localStorage.getItem('app-version')) || 0;
   if (OLD_VER > 0 && VER > OLD_VER) {
     // 检测到新版本，在页面右下角显示刷新提示
