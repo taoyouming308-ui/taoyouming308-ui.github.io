@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="226">
+<html lang="zh-CN" data-version="227">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -228,7 +228,6 @@ body {
   min-height: 100vh;
   max-width: 480px;
   margin: 0 auto;
-  padding-top: 12px;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -1851,7 +1850,7 @@ function initApp() {
       '</div>';
     overlay.insertAdjacentHTML('beforeend',
       '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">← 首页</button>' +
-      '<button onclick="sessionStorage.setItem(\'_curPage\',\'hair\');location.reload();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
+      '<button onclick="var _a=document.getElementById(\'hair-quick-area\');if(_a){_a.innerHTML=window.renderHairAnalysis(\'\',\'\');setTimeout(function(){if(window.initHairChips)window.initHairChips();if(window.initApplyOrderChips)window.initApplyOrderChips();if(window.renderPendingRecords)window.renderPendingRecords();if(window.renderMyTasks)window.renderMyTasks();},100);}" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
     document.body.appendChild(overlay);
     // body变白背景
     document.body.classList.add('hair-modal-open');
