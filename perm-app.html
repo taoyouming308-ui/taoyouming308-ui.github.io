@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="228">
+<html lang="zh-CN" data-version="229">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -150,7 +150,6 @@
 #tab-plans .plan-nav { border-bottom:1px solid #e5e5e5 !important; }
 #tab-plans .plan-nav button { color:#8e8e93 !important; }
 #tab-plans .plan-nav button.on { color:#000000 !important; border-bottom-color:#000000 !important; }
-#tab-plans .plan-nav .plan-refresh { color:#8e8e93 !important; }
 #tab-plans .main { padding:0 !important; }
 #tab-plans .home-btn-bottom { color:#000000 !important; }
 
@@ -849,7 +848,6 @@ body {
     <nav class="plan-nav" id="plan-nav">
       <button onclick="switchPlan('calc')" class="on">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
-      <span class="plan-refresh" onclick="window.refreshCurrentTab()" title="刷新数据">↻</span>
     </nav>
 
   <!-- Calc Tab -->
@@ -1850,7 +1848,7 @@ function initApp() {
       '</div>';
     overlay.insertAdjacentHTML('beforeend',
       '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">← 首页</button>' +
-      '<button onclick="var _a=document.getElementById(\'hair-quick-area\');if(_a){_a.innerHTML=window.renderHairAnalysis(\'\',\'\');setTimeout(function(){if(window.initHairChips)window.initHairChips();if(window.initApplyOrderChips)window.initApplyOrderChips();if(window.renderPendingRecords)window.renderPendingRecords();if(window.renderMyTasks)window.renderMyTasks();},100);}" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
+      '<button onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
     document.body.appendChild(overlay);
     // body变白背景
     document.body.classList.add('hair-modal-open');
@@ -1931,27 +1929,6 @@ function initApp() {
     });
     var page = document.getElementById('plan-' + name);
     if (page) page.classList.add('active');
-  };
-  // 刷新按钮：只刷新当前tab数据，不重载页面
-  window.refreshCurrentTab = function() {
-    var activeContent = document.querySelector('.tab-content.active');
-    if (activeContent) {
-      var id = activeContent.id;
-      if (id === 'tab-bookings') {
-        if (window.renderDateStrip) renderDateStrip();
-        if (window.checkIdentity) checkIdentity();
-        loadBookings(true);
-      } else if (id === 'tab-plans') {
-        var activePlan = document.querySelector('.plan-page.active');
-        if (activePlan) {
-          var pid = activePlan.id;
-          if (pid === 'plan-calc') switchPlan('calc');
-          else if (pid === 'plan-cold') switchPlan('cold');
-        }
-      } else if (id === 'tab-showcase' && window.startShowcasePoll) {
-        startShowcasePoll();
-      }
-    }
   };
   // 初始状态：首页显示
   document.querySelector('.footer'); // noop, footer removed
