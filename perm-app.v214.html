@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="215">
+<html lang="zh-CN" data-version="214">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,62 +154,11 @@
 #tab-plans .main { padding:0 !important; }
 #tab-plans .home-btn-bottom { color:#000000 !important; }
 
-/* body白底模式 — 方案tab + 预约tab + 顾客方案弹窗 全屏白底 */
+/* body白底模式 — 方案tab全屏白底不露黑 */
 body.plan-white-mode { background:#ffffff !important; color:#000000 !important; }
 body.plan-white-mode .main { background:#ffffff !important; }
 body.plan-white-mode #app-content { background:#ffffff !important; }
 body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
-
-/* ── 预约页白底 ── */
-body.plan-white-mode #tab-bookings { background:#ffffff !important; }
-body.plan-white-mode .booking-bar { border-bottom-color:#e5e5e5; }
-body.plan-white-mode .booking-bar .shop-switch { color:#333; border-color:#d1d5db; background:#ffffff; }
-body.plan-white-mode .booking-bar .shop-switch.on { color:#000000; border-color:#000000; }
-body.plan-white-mode .booking-item { border-bottom-color:#e5e5e5; background:#ffffff; }
-body.plan-white-mode .booking-item.real-customer { background:#f8f9fa; border-left-color:#94a3b8; }
-body.plan-white-mode .booking-item .bi-name { color:#000000; }
-body.plan-white-mode .booking-item .bi-meta { color:#8e8e93; }
-body.plan-white-mode .booking-item .bi-time { color:#000000; }
-body.plan-white-mode .booking-item .bi-barber { color:#8e8e93; }
-body.plan-white-mode .booking-item .bi-note { color:#555; }
-body.plan-white-mode .booking-item .bi-service-tag.cut { color:#111827; background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.12); }
-body.plan-white-mode .bi-plan-btn { color:#333; background:#ffffff; border-color:#d1d5db; }
-body.plan-white-mode .bi-plan-btn:hover { background:#333; color:#fff; }
-body.plan-white-mode .booking-loading { color:#8e8e93; }
-body.plan-white-mode .booking-date-header { color:#8e8e93; border-bottom-color:#e5e5e5; }
-body.plan-white-mode .date-strip { }
-body.plan-white-mode .date-chip { background:#ffffff; border-color:#d1d5db; color:#8e8e93; }
-body.plan-white-mode .date-chip.on { background:#000000; color:#ffffff; border-color:#000000; }
-body.plan-white-mode .identity-bar { background:#f5f5f5; color:#000000; }
-body.plan-white-mode .identity-bar .switch-btn { color:#007AFF; }
-
-/* ── 身份选择弹窗白底 ── */
-body.plan-white-mode .identity-modal { background:rgba(0,0,0,0.4); }
-body.plan-white-mode .identity-modal .box { background:#ffffff; }
-body.plan-white-mode .identity-modal h3 { color:#000000; }
-body.plan-white-mode .identity-modal .opt { background:#ffffff; border-color:#d1d5db; color:#333; }
-body.plan-white-mode .identity-modal .opt:active { background:#f5f5f5; border-color:#000; }
-body.plan-white-mode .identity-modal .reg-form input { background:#ffffff; border-color:#d1d5db; color:#000; }
-
-/* ── 顾客方案弹窗白底 ── */
-body.plan-white-mode .plan-modal { background:rgba(0,0,0,0.4); }
-body.plan-white-mode .plan-modal .box { background:#ffffff; }
-body.plan-white-mode .plan-modal h3 { color:#000000; }
-body.plan-white-mode .plan-modal .sub { color:#8e8e93; }
-body.plan-white-mode .plan-modal .row { border-bottom-color:#e5e5e5; }
-body.plan-white-mode .plan-modal .row .label { color:#8e8e93; }
-body.plan-white-mode .plan-modal .row .val { color:#000000; }
-body.plan-white-mode .plan-modal .suggestion { background:#f5f5f5; color:#000; }
-body.plan-white-mode .plan-modal .close-btn { background:#ffffff; border-color:#d1d5db; color:#333; }
-body.plan-white-mode .plan-modal .ai-btn { background:#ffffff; border-color:#333; color:#333; }
-body.plan-white-mode .plan-modal .ai-btn:hover { background:#f5f5f5; }
-body.plan-white-mode .plan-modal .ai-result { background:#f5f5f5; border-left-color:#333; }
-body.plan-white-mode .plan-modal .loading { color:#8e8e93; }
-body.plan-white-mode .plan-modal .no-data { color:#8e8e93; }
-body.plan-white-mode .plan-modal .bi-history-item { border-bottom-color:#e5e5e5; }
-body.plan-white-mode .plan-modal .bi-history-date { color:#8e8e93; }
-body.plan-white-mode .plan-modal .bi-history-detail { color:#555; }
-body.plan-white-mode .plan-modal .bi-no-history { color:#8e8e93; }
 
 /* 发质分析弹窗 — 全屏白底 */
 body.hair-modal-open { background:#ffffff !important; }
@@ -1791,8 +1740,8 @@ function initApp() {
     var content = document.getElementById('tab-' + tabName);
     if (content) {
       content.classList.add('active');
-      // 方案tab + 预约tab — 白底，其他恢复暗底
-      document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings');
+      // 方案tab切换白底，其他恢复暗底
+      document.body.classList.toggle('plan-white-mode', tabName === 'plans');
       if (tabName === 'plans') switchPlan('calc');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
