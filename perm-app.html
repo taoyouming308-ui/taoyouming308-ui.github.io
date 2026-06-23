@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="247">
+<html lang="zh-CN" data-version="248">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4179,21 +4179,90 @@ function initApp() {
     }).catch(function(){});
   };
 
+  // ===== 构建上传数据（从本地记录格式转为后端展示格式）=====
+  function _buildHairAnalysisPayload(rec) {
+    if (!rec) return {};
+    // 基础记录字段
+    var record = {};
+    if (rec.customerName) record.customerName = rec.customerName;
+    if (rec.customerPhone) record.customerPhone = rec.customerPhone;
+    if (rec.technician) record.technician = rec.technician;
+    if (rec.barber) record.barber = rec.barber;
+    if (rec.serviceType) record.serviceType = rec.serviceType;
+    if (rec.rodMethod) record.rodMethod = rec.rodMethod;
+    if (rec.feedbackRating) record.feedbackRating = rec.feedbackRating;
+    if (rec.followDate) record.followDate = rec.followDate;
+    if (rec.targetColor) record.targetColor = rec.targetColor;
+    if (rec.colorType) record.colorType = rec.colorType;
+    if (rec.permType) record.permType = rec.permType;
+    if (rec.formula) record.formula = rec.formula;
+    // 基础信息（字段名转换：camelCase→snake_case）
+    if (rec.baseInfo) {
+      var bi = rec.baseInfo;
+      record.base_info = {};
+      if (bi.color_level_root || bi.color_level) record.base_info.color_level = bi.color_level_root || bi.color_level;
+      if (bi.color_level_mid) record.base_info.mid_color = bi.color_level_mid;
+      if (bi.color_level_end) record.base_info.end_color = bi.color_level_end;
+      if (bi.bleached) record.base_info.bleached = bi.bleached;
+      if (bi.dyed) record.base_info.dyed = bi.dyed;
+      if (bi.last_perm) record.base_info.last_perm = bi.last_perm;
+      if (bi.feel) record.base_info.feel = bi.feel;
+    }
+    
+    // 三段发质诊断
+    var diag = {};
+    if (rec.threeSection) {
+      var ts = rec.threeSection;
+      if (ts.root) diag.root = { level: ts.root.level, coarse_fine: ts.root.coarse_fine || '', description: '' };
+      if (ts.mid) diag.mid = { level: ts.mid.level, coarse_fine: ts.mid.coarse_fine || '', description: '' };
+      if (ts.end) diag.end = { level: ts.end.level, coarse_fine: ts.end.coarse_fine || '', description: '' };
+      // 从三段数据算整体等级（取最高段）
+      var levels = [ts.root && ts.root.level, ts.mid && ts.mid.level, ts.end && ts.end.level].filter(function(v){ return v > 0; });
+      if (levels.length) {
+        diag.overall_level = Math.max.apply(null, levels);
+      }
+    }
+    // 如果有AI总体等级，覆盖
+    if (rec.aiOverall) {
+      var parsed = parseInt(rec.aiOverall);
+      if (parsed > 0) diag.overall_level = parsed;
+    }
+    if (rec.aiDiagnosisText) diag.description = rec.aiDiagnosisText;
+    if (rec.aiFeatures) {
+      diag.visual_features = rec.aiFeatures.split(/[·,，\s]+/).filter(function(s){ return s.trim(); });
+    }
+    
+    // stylist_reference
+    var ref = {};
+    ref.consistency = '—';
+    if (rec.aiReference) ref.note = rec.aiReference;
+    
+    // 整套ai_analysis
+    var payload = {
+      source: 'hair_record',
+      record: record,
+      ai_diagnosis: diag,
+      stylist_reference: ref
+    };
+    return payload;
+  }
+
   window.syncHairRecord = function(id) {
     var records = getHairRecords();
     for (var i = 0; i < records.length; i++) {
       if (records[i].id === id) {
         var rec = records[i];
-        // 用hair_analysis_queue表存储（唯一可写入的表），加上source标记区分
+        var payload = _buildHairAnalysisPayload(rec);
+        // 发到hair_analysis_queue
         fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
           method: 'POST',
           headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
           body: JSON.stringify({
             phone: rec.customerPhone || rec.phone || 'unknown',
             raw_photo: 'SAVED_RECORD',
-            ai_analysis: { source: 'hair_record', record: rec },
+            ai_analysis: payload,
             status: 'record_saved',
-            stylist_damage_level: parseInt(rec.damageLevel) || 0
+            stylist_damage_level: rec.diagnosisType || ''
           })
         }).then(function(r) {
           if (r.ok) { rec.synced = true; saveHairRecords(records); window.renderPendingRecords(); alert('☁️ 已上传'); }
@@ -4217,16 +4286,16 @@ function initApp() {
     }
     if (!rec) { alert('❌ 未找到记录'); return; }
     
-    // 用 syncHairRecord 的逻辑上传
+    var payload = _buildHairAnalysisPayload(rec);
     fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({
         phone: rec.customerPhone || rec.phone || 'unknown',
         raw_photo: 'SAVED_RECORD',
-        ai_analysis: { source: 'hair_record', record: rec },
+        ai_analysis: payload,
         status: 'record_saved',
-        stylist_damage_level: parseInt(rec.damageLevel) || 0
+        stylist_damage_level: rec.diagnosisType || ''
       })
     }).then(function(r) {
       if (r.ok) {
