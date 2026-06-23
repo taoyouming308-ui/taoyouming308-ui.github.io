@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="242">
+<html lang="zh-CN" data-version="243">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3618,6 +3618,7 @@ function initApp() {
     // 不把截图base64存记录里（单独存localStorage），避免撑爆
 
     var records = getHairRecords();
+    var found = false;
     if (_editingHairId) {
       // 更新已有记录
       for (var i = 0; i < records.length; i++) {
@@ -3627,12 +3628,14 @@ function initApp() {
           record.status = records[i].status;
           record.synced = records[i].synced;
           records[i] = record;
+          found = true;
           break;
         }
       }
       _editingHairId = null;
-    } else {
-      records.unshift(record);  // 最新在最前
+    }
+    if (!found) {
+      records.unshift(record);  // 新建或在本地找不到时追加
     }
     saveHairRecords(records);
 
@@ -3719,7 +3722,7 @@ function initApp() {
     setVal('hair-form-dwell-natural', rec.dwellNatural);
     setVal('hair-form-dwell-heat', rec.dwellHeat);
     setVal('hair-form-eval', rec.eval);
-    setVal('hair-form-follow-date', rec.followDate);
+    setVal('hair-form-follow-date', rec.followDate || getLocalDateStr());
     setVal('hair-form-follow-msg', rec.followMsg);
 
     // radio
@@ -4138,6 +4141,8 @@ function initApp() {
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
     setChecked('hair-form-creative', data.creative);
+    setVal('hair-form-follow-date', data.followDate || getLocalDateStr());
+    setVal('hair-form-follow-msg', data.followMsg);
     // 显示AI结果框
     var resultBox = document.getElementById('hair-result');
     if (resultBox && (data.aiOverall || data.diagnosisType)) resultBox.style.display = 'block';
