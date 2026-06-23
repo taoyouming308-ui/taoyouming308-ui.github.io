@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="217">
+<html lang="zh-CN" data-version="218">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1847,10 +1847,9 @@ function initApp() {
           '<button onclick="autoSaveHairForm();closeHairAnalysisModal();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
-        '<div style="margin-top:24px;text-align:left;">' +
-          '<button onclick="closeHairAnalysisModal();" style="display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:6px 0;">← 返回首页</button>' +
-        '</div>' +
       '</div>';
+    overlay.innerHTML +=
+      '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.12);color:#555;font-size:13px;cursor:pointer;padding:8px 14px;border-radius:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);">← 首页</button>';
     document.body.appendChild(overlay);
     // body变白背景
     document.body.classList.add('hair-modal-open');
@@ -1862,8 +1861,7 @@ function initApp() {
       // 初始化chip选择器
       if (window.initHairChips) window.initHairChips();
       if (window.initApplyOrderChips) window.initApplyOrderChips();
-      var btn = overlay.querySelector('.hair-capture-btn');
-      if (btn) btn.onclick = function(){ runHairAnalysis(''); };
+      // 相册按钮（已移除拍照AI验证按钮）
       // 渲染本地记录
       if (window.renderPendingRecords) window.renderPendingRecords();
       // 渲染我的任务
@@ -4389,8 +4387,8 @@ function initApp() {
     }, 500);
     html += '</div></div>';
 
-    // ===== 步骤2: 发质诊断（三段式填写+拍照AI验证） =====
-    html += '<div class="ha-card"><div class="ha-step">步骤2 · 发质诊断（三段式填写+AI验证）</div>';
+    // ===== 步骤2: 发质诊断（三段式填写+上传照片） =====
+    html += '<div class="ha-card"><div class="ha-step">步骤2 · 发质诊断（三段式填写+上传照片）</div>';
 
     // ── 区块A：基础信息 ──
     html += '<div class="ha-title"><span>基础信息</span></div>';
@@ -4489,11 +4487,9 @@ function initApp() {
     html += '</div>';
 
     // ── 区块C：拍照 + AI验证 ──
-    html += '<div style="margin-top:10px;"><div class="ha-title"><span>拍照 + AI验证</span></div></div>';
+    html += '<div style="margin-top:10px;"><div class="ha-title"><span>上传照片分析</span></div></div>';
     html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
-    html += '<button class="hair-capture-btn" data-phone="'+escAttr(phone||'')+'" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📷 拍照AI验证</button>';
-    html += '<button id="hair-album-btn" style="flex:1;padding:6px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 相册</button>';
-    html += '<input type="file" id="hair-file-camera" accept="image/*" capture="environment" style="display:none;">';
+    html += '<button id="hair-album-btn" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 从相册选择照片</button>';
     html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
     html += '</div>';
 
