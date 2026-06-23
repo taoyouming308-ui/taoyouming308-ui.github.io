@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="214">
+<html lang="zh-CN" data-version="213">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1771,20 +1771,16 @@ function initApp() {
     var existing = document.getElementById('hair-analysis-modal');
     if (existing) existing.remove();
 
-    // 顶部状态栏变白
-    var themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta) themeMeta.content = '#ffffff';
-
     var overlay = document.createElement('div');
     overlay.id = 'hair-analysis-modal';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,0px);';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;';
     // 阻止touch事件穿透到document的下拉刷新
     overlay.addEventListener('touchmove', function(e){ e.stopPropagation(); }, { passive: true });
     overlay.innerHTML =
-      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#ffffff;">' +
+      '<div style="max-width:500px;margin:0 auto;padding:20px;background:#ffffff;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
           '<div style="font-size:16px;font-weight:700;color:#000000;">📸 发质拍照分析</div>' +
-          '<button onclick="autoSaveHairForm();document.body.classList.remove(\'hair-modal-open\');var _tm=document.querySelector(\'meta[name="theme-color"]\');if(_tm)_tm.content=\'#000000\';this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+          '<button onclick="autoSaveHairForm();document.body.classList.remove(\'hair-modal-open\');this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
       '</div>';
