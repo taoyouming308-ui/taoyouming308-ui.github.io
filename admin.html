@@ -273,6 +273,11 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
       <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📋 护理记录明细</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+        <select id="care-detail-store" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;" onchange="populateCareDetailBarbers(this.value)">
+          <option value="">全部门店</option>
+          <option value="自由手艺人">自由手艺人</option>
+          <option value="向里造型">向里造型</option>
+        </select>
         <select id="care-detail-barber" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
           <option value="">全部发型师</option>
         </select>
@@ -2031,7 +2036,8 @@ window.loadCareProducts = function() {
   // 加载月度统计
   loadCareMonthlyStats();
   // 初始化发型师下拉
-  populateCareDetailBarbers();
+  var initialStore = (document.getElementById('care-detail-store')||{}).value || '';
+  populateCareDetailBarbers(initialStore);
 };
 
 function openCareProductModal(editBrand, editProduct) {
@@ -2266,32 +2272,36 @@ window._staffStoreCache = {};
 })();
 
 // ===== 护理记录明细 =====
-function populateCareDetailBarbers() {
+function populateCareDetailBarbers(storeFilter) {
   var sel = document.getElementById('care-detail-barber');
   if (!sel) return;
   sel.innerHTML = '<option value="">全部发型师</option>';
-  // 从staff表获取发型师列表
-  fetch(SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username', {
-    headers: { 'apikey': SUPABASE_KEY }
-  }).then(function(r){ return r.json(); }).then(function(rows){
-    if (rows && rows.length) {
-      var names = {};
-      for (var i = 0; i < rows.length; i++) {
-        if (!names[rows[i].username]) {
-          names[rows[i].username] = true;
-          var opt = document.createElement('option');
-          opt.value = rows[i].username;
-          opt.textContent = rows[i].username + (rows[i].store ? ' (' + rows[i].store + ')' : '');
-          sel.appendChild(opt);
+  storeFilter = storeFilter || '';
+  // 从staff表获取发型师列表，按门店过滤
+  var url = SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username';
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); }).then(function(rows){
+      if (rows && rows.length) {
+        var names = {};
+        for (var i = 0; i < rows.length; i++) {
+          if (!names[rows[i].username]) {
+            names[rows[i].username] = true;
+            // 如果选了门店，只显示该门店的发型师
+            if (storeFilter && rows[i].store !== storeFilter) continue;
+            var opt = document.createElement('option');
+            opt.value = rows[i].username;
+            opt.textContent = rows[i].username;
+            sel.appendChild(opt);
+          }
         }
       }
-    }
-  }).catch(function(){});
+    }).catch(function(){});
 }
 
 window.loadCareDetailRecords = function() {
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
   var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
+  var filterStore = (document.getElementById('care-detail-store')||{}).value || '';
   var filterBarber = (document.getElementById('care-detail-barber')||{}).value || '';
   var container = document.getElementById('care-detail-records');
   if (!container) return;
@@ -2322,6 +2332,11 @@ window.loadCareDetailRecords = function() {
         if (!careUsage || careUsage.length === 0) continue;
         var barber = rec.barber || r.barber || '未知';
         if (filterBarber && barber !== filterBarber) continue;
+        // 按门店过滤
+        if (filterStore) {
+          var barberStore = window._staffStoreCache && window._staffStoreCache[barber] || '';
+          if (barberStore !== filterStore) continue;
+        }
         var customer = r.customer_name || rec.customerName || '未填写';
         var phone = r.customer_phone || rec.customerPhone || '';
         for (var ci = 0; ci < careUsage.length; ci++) {
