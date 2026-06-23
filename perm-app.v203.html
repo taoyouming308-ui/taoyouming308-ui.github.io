@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="204">
+<html lang="zh-CN" data-version="203">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,95 +31,19 @@
   --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
-/* ── 发质分析页白底黑字 ChatGPT风格 ── */
-.hair-analysis {
-  --bg: #ffffff !important;
-  --surface: #ffffff !important;
-  --surface-light: #f5f5f5 !important;
-  --border: #e5e5e5 !important;
-  --text: #1a1a1a !important;
-  --text-secondary: #8e8e93 !important;
-  --accent: #1a1a1a !important;
-  --accent-glow: rgba(0,0,0,0.04) !important;
-  --danger: #dc3545 !important;
-  --warning: #f59e0b !important;
-  --shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
-  background: #ffffff !important;
-}
-.hair-analysis .ha-card {
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.hair-analysis .ha-step {
-  font-size: 11px;
-  color: #8e8e93;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-.hair-analysis .ha-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  margin-bottom: 10px;
-}
-.hair-analysis .ha-title::before {
-  content: '';
-  width: 3px;
-  height: 13px;
-  background: #1a1a1a;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.hair-analysis .ha-title span {
-  font-size: 12px;
-  color: #1a1a1a;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-.hair-analysis .chip-label {
-  font-size: 11px;
-  color: #8e8e93;
-  margin-bottom: 4px;
-  margin-top: 8px;
-}
-.hair-analysis .chip {
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
-  color: #555;
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.hair-analysis .chip.selected {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
-  color: #ffffff;
-}
-.hair-analysis input,
-.hair-analysis select {
-  background: #f5f5f5 !important;
-  border: 1px solid #e5e5e5 !important;
-  color: #1a1a1a !important;
-  border-radius: 8px !important;
-}
-.hair-analysis .ha-btn {
-  background: #1a1a1a;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
+/* ── 发质分析页高级黑底白字 ── */
+.hair-analysis { background: #000 !important; }
+.hair-analysis * { --surface: #000 !important; --surface-light: #0a0a0a !important; --border: #222 !important; --text-secondary: #666 !important; }
+.hair-analysis .ha-card { background:#000; border:1px solid #222; border-radius:10px; padding:16px; margin-bottom:12px; }
+.hair-analysis .ha-step { font-size:11px; color:#555; letter-spacing:1px; margin-bottom:10px; font-weight:600; }
+.hair-analysis .ha-title { display:flex; align-items:center; gap:8px; margin-top:14px; margin-bottom:10px; }
+.hair-analysis .ha-title::before { content:''; width:3px; height:13px; background:#fff; border-radius:2px; flex-shrink:0; }
+.hair-analysis .ha-title span { font-size:12px; color:#fff; font-weight:600; letter-spacing:0.5px; }
+.hair-analysis .chip-label { font-size:11px; color:#666; margin-bottom:4px; margin-top:8px; }
+.hair-analysis .chip { background:#0a0a0a; border:1px solid #2a2a2a; color:#999; }
+.hair-analysis .chip.selected { background:#1a1a1a; border-color:#fff; color:#fff; }
+.hair-analysis input, .hair-analysis select { background:#0a0a0a !important; border:1px solid #2a2a2a !important; color:#fff !important; }
+.hair-analysis .ha-btn { background:#fff; color:#000; border:none; border-radius:8px; padding:10px 20px; font-size:12px; font-weight:600; cursor:pointer; }
 
 /* ── 自由换算 + 冷烫页面黑底白字 ── */
 .plan-page { background:#000 !important; }
@@ -1735,7 +1659,7 @@ function initApp() {
 
     var overlay = document.createElement('div');
     overlay.id = 'hair-analysis-modal';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;';
     // 阻止touch事件穿透到document的下拉刷新
     overlay.addEventListener('touchmove', function(e){ e.stopPropagation(); }, { passive: true });
     overlay.innerHTML =
@@ -4479,7 +4403,7 @@ function initApp() {
     [['A','效果好','#2a6e3b'],['B','一般','#7a6a2a'],['C','需优化','#8a3a3a']].forEach(function(item){
       var val = item[0], lbl = item[1], selBg = item[2];
       var checked = savedFbRating === val;
-      html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#f5f5f5') + ';border:1px solid ' + (checked ? '#fff' : '#e5e5e5') + ';color:' + (checked ? '#fff' : '#666') + ';transition:all 0.15s;" onclick="selectAppFbRating(this)">';
+      html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#0a0a0a') + ';border:1px solid ' + (checked ? '#fff' : '#2a2a2a') + ';color:' + (checked ? '#fff' : '#888') + ';transition:all 0.15s;" onclick="selectAppFbRating(this)">';
       html += '<span style="font-size:14px;font-weight:700;">' + val + '</span><br><span style="font-size:10px;">' + lbl + '</span>';
       html += '</label>';
     });
@@ -4489,13 +4413,13 @@ function initApp() {
     var savedSsBase64 = '';
     if (savedSsBase64 && savedSsBase64.length > 20) {
       html += '<div style="position:relative;display:inline-block;margin-bottom:8px;">';
-      html += '<img id="hair-fb-preview" src="' + savedSsBase64 + '" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid #e5e5e5;object-fit:cover;">';
+      html += '<img id="hair-fb-preview" src="' + savedSsBase64 + '" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid #333;object-fit:cover;">';
       html += '</div>';
     }
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">';
-    html += '<label style="flex:1;padding:8px 10px;background:#f5f5f5;border:1px dashed #ddd;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;color:#999;">⬆ 聊天截图<input type="file" accept="image/*" onchange="uploadAppFbScreenshot(this)" style="display:none;" id="hair-fb-upload"></label>';
+    html += '<label style="flex:1;padding:8px 10px;background:#0a0a0a;border:1px dashed #2a2a2a;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;color:#666;">⬆ 聊天截图<input type="file" accept="image/*" onchange="uploadAppFbScreenshot(this)" style="display:none;" id="hair-fb-upload"></label>';
     html += '<span style="font-size:11px;color:#666;">回访日期</span>';
-    html += '<input id="hair-form-follow-date" value="'+escAttr(rec.followDate||'')+'" placeholder="日期" style="width:80px;padding:6px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;color:#1a1a1a;font-size:11px;font-family:var(--font);">';
+    html += '<input id="hair-form-follow-date" value="" placeholder="日期" style="width:80px;padding:6px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:11px;font-family:var(--font);">';
     html += '</div>';
     html += '</div>';
 
