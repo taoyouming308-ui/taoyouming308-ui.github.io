@@ -3789,6 +3789,9 @@ function initApp() {
       // 操作按钮
       html += '<div style="display:flex;gap:4px;margin-top:4px;">';
       html += '<button onclick="showHairRecordSummary(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">📄查看</button>';
+      if (!rec.synced) {
+        html += '<button onclick="loadHairRecord(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️编辑</button>';
+      }
       html += '<button onclick="deleteHairRecord(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--danger);cursor:pointer;font-family:var(--font);">删除</button>';
       if (rec.status !== '已完成') {
         html += '<button onclick="markHairDone(\''+rec.id+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
@@ -3833,9 +3836,8 @@ function initApp() {
         var sc = isDone ? 'var(--success)' : '#e8a817';
         html += '<span style="margin-left:auto;color:'+sc+';">' + (isDone ? '已完成' : '待回访') + '</span>';
         html += '</div>';
-        // 操作：技师可编辑，不可删除
+        // 上传后的记录不可编辑，仅显示状态
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
-        html += '<button onclick="loadCloudRecord(\''+r.phone+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️编辑</button>';
         if (!isDone) {
           html += '<button onclick="markCloudDone(\''+r.phone+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
         }
