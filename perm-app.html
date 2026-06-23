@@ -849,7 +849,7 @@ body {
     <nav class="plan-nav" id="plan-nav">
       <button onclick="switchPlan('calc')" class="on">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
-      <span class="plan-refresh" onclick="location.reload()" title="刷新数据">↻</span>
+      <span class="plan-refresh" onclick="window.refreshCurrentTab()" title="刷新数据">↻</span>
     </nav>
 
   <!-- Calc Tab -->
@@ -1931,6 +1931,27 @@ function initApp() {
     });
     var page = document.getElementById('plan-' + name);
     if (page) page.classList.add('active');
+  };
+  // 刷新按钮：只刷新当前tab数据，不重载页面
+  window.refreshCurrentTab = function() {
+    var activeContent = document.querySelector('.tab-content.active');
+    if (activeContent) {
+      var id = activeContent.id;
+      if (id === 'tab-bookings') {
+        if (window.renderDateStrip) renderDateStrip();
+        if (window.checkIdentity) checkIdentity();
+        loadBookings(true);
+      } else if (id === 'tab-plans') {
+        var activePlan = document.querySelector('.plan-page.active');
+        if (activePlan) {
+          var pid = activePlan.id;
+          if (pid === 'plan-calc') switchPlan('calc');
+          else if (pid === 'plan-cold') switchPlan('cold');
+        }
+      } else if (id === 'tab-showcase' && window.startShowcasePoll) {
+        startShowcasePoll();
+      }
+    }
   };
   // 初始状态：首页显示
   document.querySelector('.footer'); // noop, footer removed
