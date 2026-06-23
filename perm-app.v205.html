@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="206">
+<html lang="zh-CN" data-version="205">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,9 +37,9 @@
   --surface: #ffffff !important;
   --surface-light: #f5f5f5 !important;
   --border: #e5e5e5 !important;
-  --text: #000000 !important;
+  --text: #1a1a1a !important;
   --text-secondary: #8e8e93 !important;
-  --accent: #000000 !important;
+  --accent: #1a1a1a !important;
   --accent-glow: rgba(0,0,0,0.04) !important;
   --danger: #dc3545 !important;
   --warning: #f59e0b !important;
@@ -72,13 +72,13 @@
   content: '';
   width: 3px;
   height: 13px;
-  background: #000000;
+  background: #1a1a1a;
   border-radius: 2px;
   flex-shrink: 0;
 }
 .hair-analysis .ha-title span {
   font-size: 12px;
-  color: #000000;
+  color: #1a1a1a;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -91,7 +91,7 @@
 .hair-analysis .chip {
   background: #f5f5f5;
   border: 1px solid #e5e5e5;
-  color: #333;
+  color: #555;
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 12px;
@@ -99,19 +99,19 @@
   transition: all 0.15s;
 }
 .hair-analysis .chip.selected {
-  background: #000000;
-  border-color: #000000;
+  background: #1a1a1a;
+  border-color: #1a1a1a;
   color: #ffffff;
 }
 .hair-analysis input,
 .hair-analysis select {
   background: #f5f5f5 !important;
   border: 1px solid #e5e5e5 !important;
-  color: #000000 !important;
+  color: #1a1a1a !important;
   border-radius: 8px !important;
 }
 .hair-analysis .ha-btn {
-  background: #000000;
+  background: #1a1a1a;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -125,9 +125,9 @@
 .plan-page {
   --surface-light: #f5f5f5 !important;
   --border: #e5e5e5 !important;
-  --text: #000000 !important;
+  --text: #1a1a1a !important;
   --text-secondary: #8e8e93 !important;
-  --accent: #000000 !important;
+  --accent: #1a1a1a !important;
   --bg: #ffffff !important;
   --danger: #dc3545 !important;
   --warning: #f59e0b !important;
@@ -136,13 +136,13 @@
 }
 .plan-page .result-card { background:#ffffff; border:1px solid #e5e5e5; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
 .plan-page .card-header { background:#f5f5f5; border-bottom:1px solid #e5e5e5; padding:12px 16px; border-radius:12px 12px 0 0; }
-.plan-page .card-title { color:#000000; font-weight:600; font-size:14px; }
-.plan-page .card-body { color:#000000; padding:16px; }
-.plan-page select, .plan-page input, .plan-page .preset-btn { background:#f5f5f5 !important; border:1px solid #e5e5e5 !important; color:#000000 !important; border-radius:8px !important; padding:8px 12px !important; font-size:13px !important; }
+.plan-page .card-title { color:#1a1a1a; font-weight:600; font-size:14px; }
+.plan-page .card-body { color:#1a1a1a; padding:16px; }
+.plan-page select, .plan-page input, .plan-page .preset-btn { background:#f5f5f5 !important; border:1px solid #e5e5e5 !important; color:#1a1a1a !important; border-radius:8px !important; padding:8px 12px !important; font-size:13px !important; }
 .plan-page table th { color:#8e8e93 !important; font-weight:600; font-size:11px; border-bottom:1px solid #e5e5e5; }
-.plan-page table td { color:#000000 !important; border-bottom:1px solid #e5e5e5 !important; padding:8px; font-size:12px; }
+.plan-page table td { color:#1a1a1a !important; border-bottom:1px solid #e5e5e5 !important; padding:8px; font-size:12px; }
 .plan-page .param-row { border-bottom:1px solid #e5e5e5; padding:8px 0; }
-.plan-page .query-btn { background:#000000 !important; color:#ffffff !important; border:none !important; border-radius:8px !important; padding:10px !important; font-size:13px !important; font-weight:600 !important; cursor:pointer !important; }
+.plan-page .query-btn { background:#1a1a1a !important; color:#ffffff !important; border:none !important; border-radius:8px !important; padding:10px !important; font-size:13px !important; font-weight:600 !important; cursor:pointer !important; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -4508,7 +4508,7 @@ function initApp() {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">';
     html += '<label style="flex:1;padding:8px 10px;background:#f5f5f5;border:1px dashed #ddd;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;color:#999;">⬆ 聊天截图<input type="file" accept="image/*" onchange="uploadAppFbScreenshot(this)" style="display:none;" id="hair-fb-upload"></label>';
     html += '<span style="font-size:11px;color:#666;">回访日期</span>';
-    html += '<input id="hair-form-follow-date" value="'+escAttr(rec.followDate||'')+'" placeholder="日期" style="width:80px;padding:6px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;color:#000000;font-size:11px;font-family:var(--font);">';
+    html += '<input id="hair-form-follow-date" value="'+escAttr(rec.followDate||'')+'" placeholder="日期" style="width:80px;padding:6px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;color:#1a1a1a;font-size:11px;font-family:var(--font);">';
     html += '</div>';
     html += '</div>';
 
