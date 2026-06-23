@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="211">
+<html lang="zh-CN" data-version="210">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -162,7 +162,6 @@ body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
 
 /* 发质分析弹窗 — 全屏白底 */
 body.hair-modal-open { background:#ffffff !important; }
-body.hair-modal-open #hair-analysis-modal { background:#ffffff; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -4506,6 +4505,8 @@ function initApp() {
     html += '</div>';
     html += '<textarea id="hair-form-color-notes" placeholder="配方/品牌/色号备注" rows="2" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>';
     html += '</div>'; // end hair-color-params
+
+    html += '</div>';
 
     // ===== 步骤5: 效果评定 =====
     html += '<div class="ha-card"><div class="ha-step">步骤5 · 效果评定</div>';
