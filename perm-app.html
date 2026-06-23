@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="241">
+<html lang="zh-CN" data-version="242">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3601,7 +3601,6 @@ function initApp() {
       colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
       // 效果评定（步骤5）
       feedbackRating: document.querySelector('input[name="fb-hair"]:checked'),
-      chatScreenshot: localStorage.getItem('_hairFbScreenshot') || '',
       followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
       // 状态
       status: '待回访',
@@ -3616,9 +3615,7 @@ function initApp() {
     record.developer = record.developer ? record.developer.value : '';
     record.mixRatio = record.mixRatio ? record.mixRatio.value : '';
     record.feedbackRating = record.feedbackRating ? record.feedbackRating.value : '';
-    // 保存后清除截图缓存
-    localStorage.removeItem('_hairFbScreenshot');
-    // applyOrder已是隐藏input的字符串值，不再转换
+    // 不把截图base64存记录里（单独存localStorage），避免撑爆
 
     var records = getHairRecords();
     if (_editingHairId) {
@@ -4130,10 +4127,11 @@ function initApp() {
       var fbLabel = document.querySelector('label[data-val="' + data.feedbackRating + '"][data-name="fb-hair"]');
       if (fbLabel) { fbLabel.click(); }
     }
-    if (data.chatScreenshot && data.chatScreenshot.length > 20) {
-      localStorage.setItem('_hairFbScreenshot', data.chatScreenshot);
+    // 聊天截图单独存在localStorage，没有存记录里
+    var _screenshot = localStorage.getItem('_hairFbScreenshot');
+    if (_screenshot && _screenshot.length > 20) {
       var prevImg = document.getElementById('hair-fb-preview');
-      if (prevImg) prevImg.src = data.chatScreenshot;
+      if (prevImg) prevImg.src = _screenshot;
     }
     setVal('hair-form-follow-date', data.followDate);
     selectRadio('hair-rod-method', data.rodMethod);
