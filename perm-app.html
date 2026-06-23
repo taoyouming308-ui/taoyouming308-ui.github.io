@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="242">
+<html lang="zh-CN" data-version="245">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5608,7 +5608,7 @@ window.uploadAppFbScreenshot = function(inputEl) {
     x.onload = function() {
       if (x.status === 200) {
         var sv = parseInt(x.responseText.trim()) || 0;
-        if (sv > 0 && sv !== VER) {
+        if (sv > 0 && sv > VER) {
           // 服务器有更新版本 → 强制跳转
           localStorage.setItem('app-version', sv);
           var q = '?_v=' + sv;
