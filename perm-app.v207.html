@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="208">
+<html lang="zh-CN" data-version="207">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -152,12 +152,6 @@
 #tab-plans .plan-nav .plan-refresh { color:#8e8e93 !important; }
 #tab-plans .main { padding:0 !important; }
 #tab-plans .home-btn-bottom { color:#000000 !important; }
-
-/* body白底模式 — 方案tab全屏白底不露黑 */
-body.plan-white-mode { background:#ffffff !important; color:#000000 !important; }
-body.plan-white-mode .main { background:#ffffff !important; }
-body.plan-white-mode #app-content { background:#ffffff !important; }
-body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1734,8 +1728,6 @@ function initApp() {
     var content = document.getElementById('tab-' + tabName);
     if (content) {
       content.classList.add('active');
-      // 方案tab切换白底，其他恢复暗底
-      document.body.classList.toggle('plan-white-mode', tabName === 'plans');
       if (tabName === 'plans') switchPlan('calc');
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
@@ -1744,7 +1736,6 @@ function initApp() {
   window.goHome = function() {
     document.getElementById('home-page').style.display = 'block';
     document.getElementById('app-content').style.display = 'none';
-    document.body.classList.remove('plan-white-mode');
   };
   window.openHomeDrawer = function() {
     var drawer = document.getElementById('home-drawer');
