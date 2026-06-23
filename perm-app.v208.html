@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="209">
+<html lang="zh-CN" data-version="208">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -158,9 +158,6 @@ body.plan-white-mode { background:#ffffff !important; color:#000000 !important; 
 body.plan-white-mode .main { background:#ffffff !important; }
 body.plan-white-mode #app-content { background:#ffffff !important; }
 body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
-
-/* 发质分析弹窗 — 全屏白底 */
-body.hair-modal-open { background:#ffffff !important; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1772,16 +1769,14 @@ function initApp() {
     // 阻止touch事件穿透到document的下拉刷新
     overlay.addEventListener('touchmove', function(e){ e.stopPropagation(); }, { passive: true });
     overlay.innerHTML =
-      '<div style="max-width:500px;margin:0 auto;padding:20px;background:#ffffff;">' +
+      '<div style="max-width:500px;margin:0 auto;padding:20px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
-          '<div style="font-size:16px;font-weight:700;color:#000000;">📸 发质拍照分析</div>' +
-          '<button onclick="autoSaveHairForm();document.body.classList.remove(\'hair-modal-open\');this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+          '<div style="font-size:16px;font-weight:700;color:var(--accent);">📸 发质拍照分析</div>' +
+          '<button onclick="autoSaveHairForm();this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
       '</div>';
     document.body.appendChild(overlay);
-    // body变白背景
-    document.body.classList.add('hair-modal-open');
 
     // 直接渲染分析UI（phone传空，不绑客户）
     var area = document.getElementById('hair-quick-area');
