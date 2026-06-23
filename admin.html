@@ -1261,7 +1261,7 @@ window.loadHairAnalyses = async function() {
         } catch(e) {}
         var summary = esc(overallLevel || '') + (consistency ? ' / ' + esc(String(consistency).substring(0,30)) : '');
         if (!overallLevel && !consistency) summary = '—';
-        var time = r.created_at ? r.created_at.substring(0,16) : '—';
+        var time = r.created_at ? (r.created_at.substring(0,10) + ' ' + r.created_at.substring(11,16)) : '—';
         var statusMap = { 'completed': '已完成', 'record_saved': '已保存' };
         var statusText = statusMap[r.status] || r.status || '—';
 
