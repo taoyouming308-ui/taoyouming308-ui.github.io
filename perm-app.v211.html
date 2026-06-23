@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="212">
+<html lang="zh-CN" data-version="211">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1733,7 +1733,6 @@ function initApp() {
 
   // === 导航 ===
   window.openFeature = function(tabName) {
-    sessionStorage.setItem('_curPage', tabName);
     document.getElementById('home-page').style.display = 'none';
     document.getElementById('app-content').style.display = 'block';
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1748,7 +1747,6 @@ function initApp() {
     }
   };
   window.goHome = function() {
-    sessionStorage.removeItem('_curPage');
     document.getElementById('home-page').style.display = 'block';
     document.getElementById('app-content').style.display = 'none';
     document.body.classList.remove('plan-white-mode');
@@ -1766,7 +1764,6 @@ function initApp() {
     if (mask) mask.classList.remove('open');
   };
   window.showHairAnalysisPage = function(phone) {
-    sessionStorage.setItem('_curPage', 'hair');
     // 弹出一个全屏模态框显示发质分析，不需要手机号
     var existing = document.getElementById('hair-analysis-modal');
     if (existing) existing.remove();
@@ -1937,19 +1934,6 @@ function initApp() {
       startY = 0;
       pulling = false;
     }, { passive: true });
-  })();
-
-  // === 刷新后恢复之前的页面 ===
-  (function(){
-    var saved = sessionStorage.getItem('_curPage');
-    if (saved) {
-      sessionStorage.removeItem('_curPage'); // 用完清除，避免无限循环
-      if (saved === 'hair') {
-        showHairAnalysisPage();
-      } else if (saved === 'plans' || saved === 'bookings' || saved === 'showcase') {
-        openFeature(saved);
-      }
-    }
   })();
 
   // === 安装引导（仅首次提示）===
