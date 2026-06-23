@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="249">
+<html lang="zh-CN" data-version="251">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -97,20 +97,48 @@
   min-width: 40px;
   font-weight: 500;
 }
-.care-item input {
-  width: 60px;
-  padding: 4px 6px;
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
-  color: #000;
-  font-size: 12px;
-  font-family: var(--font);
-  text-align: right;
+.care-item input[type="range"] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e5e5e5;
+  border-radius: 3px;
+  outline: none;
+  margin: 0 4px;
 }
-.care-item .unit {
+.care-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #000;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+.care-item input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #000;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+.care-slider-value {
+  min-width: 36px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  font-variant-numeric: tabular-nums;
+}
+.care-slider-unit {
   font-size: 10px;
   color: #8e8e93;
+  min-width: 12px;
 }
 .hair-analysis .ha-card {
   background: #ffffff;
@@ -4480,6 +4508,12 @@ function initApp() {
     }
   };
 
+  // ===== 护理记录滑块实时更新 =====
+  window.updateCareSliderValue = function(el) {
+    var valEl = document.getElementById('val-' + el.id);
+    if (valEl) valEl.textContent = el.value;
+  };
+
   // ===== 收集护理用量数据 =====
   window.collectCareUsage = function() {
     var careBrands = [
@@ -4822,8 +4856,9 @@ function initApp() {
         }
         html += '<div class="care-item">';
         html += '<label>' + esc(prod) + '</label>';
-        html += '<input type="number" min="0" step="1" value="' + savedVal + '" placeholder="0" id="' + brandKey + '-' + prod + '">';
-        html += '<span class="unit">g</span>';
+        html += '<input type="range" min="0" max="500" step="5" value="' + (savedVal || '0') + '" id="' + brandKey + '-' + prod + '" oninput="updateCareSliderValue(this)">';
+        html += '<span class="care-slider-value" id="val-' + brandKey + '-' + prod + '">' + (savedVal || '0') + '</span>';
+        html += '<span class="care-slider-unit">g</span>';
         html += '</div>';
       }
       html += '</div></div>';
