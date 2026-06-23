@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="248">
+<html lang="zh-CN" data-version="249">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -46,6 +46,71 @@
   --shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
   background: #ffffff !important;
   color: #000000 !important;
+}
+/* ── 护理记录折叠面板 ── */
+.care-section {
+  margin-bottom: 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.care-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  user-select: none;
+}
+.care-header:hover {
+  background: #ebebeb;
+}
+.care-header .care-arrow {
+  font-size: 10px;
+  color: #8e8e93;
+  transition: transform 0.2s;
+}
+.care-header .care-arrow.open {
+  transform: rotate(90deg);
+}
+.care-body {
+  padding: 10px 12px;
+  display: none;
+  background: #ffffff;
+}
+.care-body.open {
+  display: block;
+}
+.care-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #000;
+}
+.care-item label {
+  min-width: 40px;
+  font-weight: 500;
+}
+.care-item input {
+  width: 60px;
+  padding: 4px 6px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  color: #000;
+  font-size: 12px;
+  font-family: var(--font);
+  text-align: right;
+}
+.care-item .unit {
+  font-size: 10px;
+  color: #8e8e93;
 }
 .hair-analysis .ha-card {
   background: #ffffff;
@@ -3268,6 +3333,27 @@ function initApp() {
       html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:4px;font-size:12px;line-height:1.6;color:var(--text);">' + r.planResultHTML + '</div>';
     }
 
+    // 护理记录展示
+    if (r.careUsage && r.careUsage.length > 0) {
+      html += '<div style="margin-top:8px;">';
+      html += '<div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:4px;">🧴 护理记录</div>';
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-size:11px;line-height:1.6;color:var(--text);">';
+      var _careBrands = ['欧拉裴','歌薇酸性护理','歌薇上色水'];
+      for (var ci = 0; ci < _careBrands.length; ci++) {
+        var _brand = _careBrands[ci];
+        var _items = [];
+        for (var cj = 0; cj < r.careUsage.length; cj++) {
+          if (r.careUsage[cj].brand === _brand) {
+            _items.push(r.careUsage[cj].product + ' ' + r.careUsage[cj].grams + 'g');
+          }
+        }
+        if (_items.length > 0) {
+          html += '<div style="margin-bottom:4px;"><span style="font-weight:600;">' + _brand + '</span> ' + _items.join('、') + '</div>';
+        }
+      }
+      html += '</div></div>';
+    }
+
     html += '</div>';
     return html;
   };
@@ -3586,6 +3672,8 @@ function initApp() {
       // 效果评定（步骤5）
       feedbackRating: document.querySelector('input[name="fb-hair"]:checked'),
       followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
+      // 护理记录
+      careUsage: (typeof window.collectCareUsage === 'function') ? window.collectCareUsage() : [],
       // 状态
       status: '待回访',
       synced: false
@@ -4380,6 +4468,42 @@ function initApp() {
     if (phoneEl) phoneEl.value = phone;
   };
 
+  // ===== 护理记录折叠面板切换 =====
+  window.toggleCareSection = function(id) {
+    var body = document.getElementById(id);
+    if (!body) return;
+    body.classList.toggle('open');
+    var header = body.previousElementSibling;
+    if (header) {
+      var arrow = header.querySelector('.care-arrow');
+      if (arrow) arrow.classList.toggle('open');
+    }
+  };
+
+  // ===== 收集护理用量数据 =====
+  window.collectCareUsage = function() {
+    var careBrands = [
+      { brand: '欧拉裴', products: ['1号','2号','4号','5号'] },
+      { brand: '歌薇酸性护理', products: ['2A','4NN','5NN','6A','6B','6KG','6SB','7NA','7RO','7RR','CLEAR','PASTEL','6BP','pmix'] },
+      { brand: '歌薇上色水', products: ['水蓝色','水红色'] }
+    ];
+    var usage = [];
+    for (var cb = 0; cb < careBrands.length; cb++) {
+      var b = careBrands[cb];
+      for (var pi = 0; pi < b.products.length; pi++) {
+        var prod = b.products[pi];
+        var el = document.getElementById('care-' + b.brand + '-' + prod);
+        if (el) {
+          var val = el.value.trim();
+          if (val !== '' && parseFloat(val) > 0) {
+            usage.push({ brand: b.brand, product: prod, grams: val });
+          }
+        }
+      }
+    }
+    return usage;
+  };
+
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name, existingRec) {
     var containerId = 'hair-analysis-section';
@@ -4660,6 +4784,51 @@ function initApp() {
     html += '</div>';
     html += '<textarea id="hair-form-color-notes" placeholder="配方/品牌/色号备注" rows="2" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;box-sizing:border-box;"></textarea>';
     html += '</div>'; // end hair-color-params
+
+    // ===== 步骤4.5: 护理记录 =====
+    html += '<div class="ha-card"><div class="ha-step">步骤4.5 · 护理记录</div>';
+    html += '<div style="font-size:10px;color:#8e8e93;margin-bottom:8px;">记录本次护发产品用量（克），点击展开品牌分类</div>';
+
+    // 品牌数据
+    var careBrands = [
+      { brand: '欧拉裴', products: ['1号','2号','4号','5号'] },
+      { brand: '歌薇酸性护理', products: ['2A','4NN','5NN','6A','6B','6KG','6SB','7NA','7RO','7RR','CLEAR','PASTEL','6BP','pmix'] },
+      { brand: '歌薇上色水', products: ['水蓝色','水红色'] }
+    ];
+    for (var cb = 0; cb < careBrands.length; cb++) {
+      var b = careBrands[cb];
+      var brandKey = 'care-' + b.brand;
+      var isOpen = false;
+      // 编辑模式下检查是否已有数据
+      if (rec.careUsage && rec.careUsage.length) {
+        for (var cui = 0; cui < rec.careUsage.length; cui++) {
+          if (rec.careUsage[cui].brand === b.brand) { isOpen = true; break; }
+        }
+      }
+      html += '<div class="care-section">';
+      html += '<div class="care-header" onclick="toggleCareSection(\'' + brandKey + '\')">';
+      html += '<span>' + esc(b.brand) + '</span>';
+      html += '<span class="care-arrow' + (isOpen ? ' open' : '') + '">▶</span>';
+      html += '</div>';
+      html += '<div class="care-body' + (isOpen ? ' open' : '') + '" id="' + brandKey + '">';
+      for (var pi = 0; pi < b.products.length; pi++) {
+        var prod = b.products[pi];
+        var savedVal = '';
+        if (rec.careUsage && rec.careUsage.length) {
+          for (var cui2 = 0; cui2 < rec.careUsage.length; cui2++) {
+            var cu = rec.careUsage[cui2];
+            if (cu.brand === b.brand && cu.product === prod) { savedVal = cu.grams; break; }
+          }
+        }
+        html += '<div class="care-item">';
+        html += '<label>' + esc(prod) + '</label>';
+        html += '<input type="number" min="0" step="1" value="' + savedVal + '" placeholder="0" id="' + brandKey + '-' + prod + '">';
+        html += '<span class="unit">g</span>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>'; // end ha-card
 
     // ===== 步骤5: 效果评定 =====
     html += '<div class="ha-card"><div class="ha-step">步骤5 · 效果评定</div>';
