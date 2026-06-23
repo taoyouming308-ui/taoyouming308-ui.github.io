@@ -5615,28 +5615,54 @@ window.uploadAppFbScreenshot = function(inputEl) {
       regs.forEach(function(reg) { reg.unregister(); });
     }).catch(function(e){ console.warn('Service Worker清理失败:', e); });
   }
-  // ★ 版本更新检测（对比localStorage记录的版本）
+  // ★ 版本更新检测
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
-  // 缓存爆破：URL带版本号，让CDN和浏览器每次都拉最新版
-  if (location.search.indexOf('_v=' + VER) === -1) {
-    // 只做一次跳转，避免循环
-    var q = '?_v=' + VER;
-    if (location.hash) q += location.hash;
-    location.replace(location.pathname + q);
-    return; // 停止执行后续代码，等重定向完成
-  }
-  var OLD_VER = parseInt(localStorage.getItem('app-version')) || 0;
-  if (OLD_VER > 0 && VER > OLD_VER) {
-    // 检测到新版本，在页面右下角显示刷新提示
-    var tip = document.createElement('div');
-    tip.style.cssText = 'position:fixed;bottom:80px;right:12px;z-index:999999;background:var(--accent);color:var(--bg);padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
-    tip.textContent = '✨ v' + VER + ' 已更新';
-    tip.onclick = function() { localStorage.setItem('app-version', VER); location.reload(true); };
-    document.body.appendChild(tip);
-    // 8秒后自动消失
-    setTimeout(function(){ tip.style.opacity = '0'; tip.style.transition = 'opacity 0.5s'; setTimeout(function(){ tip.remove(); }, 500); }, 8000);
-  }
-  localStorage.setItem('app-version', VER);
+  
+  // 先从服务器拉最新版本号，跳过CDN缓存
+  var _checkVersion = function() {
+    var x = new XMLHttpRequest();
+    x.open('GET', 'version.txt?_t=' + Date.now(), true);
+    x.onload = function() {
+      if (x.status === 200) {
+        var sv = parseInt(x.responseText.trim()) || 0;
+        if (sv > 0 && sv !== VER) {
+          // 服务器有更新版本 → 强制跳转
+          localStorage.setItem('app-version', sv);
+          var q = '?_v=' + sv;
+          if (location.hash) q += location.hash;
+          location.replace(location.pathname + q);
+          return;
+        }
+      }
+      // 版本一致或无法获取 → 正常继续
+      _onVersionReady();
+    };
+    x.onerror = function() { _onVersionReady(); };
+    x.send();
+  };
+  
+  var _onVersionReady = function() {
+    // 缓存爆破：URL带版本号，让CDN和浏览器每次都拉最新版
+    if (location.search.indexOf('_v=' + VER) === -1) {
+      var q = '?_v=' + VER;
+      if (location.hash) q += location.hash;
+      location.replace(location.pathname + q);
+      return;
+    }
+    var OLD_VER = parseInt(localStorage.getItem('app-version')) || 0;
+    if (OLD_VER > 0 && VER > OLD_VER) {
+      var tip = document.createElement('div');
+      tip.style.cssText = 'position:fixed;bottom:80px;right:12px;z-index:999999;background:var(--accent);color:var(--bg);padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+      tip.textContent = '✨ v' + VER + ' 已更新';
+      tip.onclick = function() { localStorage.setItem('app-version', VER); location.reload(true); };
+      document.body.appendChild(tip);
+      setTimeout(function() { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 8000);
+    }
+    localStorage.setItem('app-version', VER);
+  };
+  
+  // 立即执行版本检查
+  _checkVersion();
 })();
 </script>
 </body>
