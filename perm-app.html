@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="222">
+<html lang="zh-CN" data-version="223">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1965,76 +1965,11 @@ function initApp() {
     });
     startCarousel();
 
-    // 下拉刷新 —— 只在首页和子页面内容滚动到顶时才触发
-    var startY = 0;
-    var pulling = false;
-    var refreshIndicator = null;
-    function getActiveScrollContainer() {
-      // 发质分析弹窗 — 不用监听，它有独立 touchmove stopPropagation
-      if (document.getElementById('hair-analysis-modal')) return null;
-      // 首页
-      var hp = document.getElementById('home-page');
-      if (hp && hp.style.display !== 'none') return window;
-      // 子页面 — 找当前可见的滚动容器
-      var activeTab = document.querySelector('.tab-content.active');
-      if (activeTab) {
-        var scrollable = activeTab.querySelector('[style*="overflow"]') || activeTab;
-        // 检查是否真的在内部滚动
-        if (scrollable.scrollHeight > scrollable.clientHeight) return scrollable;
-        return window;
-      }
-      return window;
-    }
-    document.addEventListener('touchstart', function(e) {
-      var container = getActiveScrollContainer();
-      if (!container) return; // 发质分析弹窗，忽略
-      if (container === window && window.scrollY > 0) return;
-      if (container !== window && container.scrollTop > 0) return;
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-    document.addEventListener('touchmove', function(e) {
-      if (startY === 0) return;
-      var container = getActiveScrollContainer();
-      if (!container) { startY = 0; return; }
-      var dy = e.touches[0].clientY - startY;
-      // 再次确认还在顶部
-      if (container === window && window.scrollY > 0) { startY = 0; return; }
-      if (container !== window && container.scrollTop > 0) { startY = 0; return; }
-      if (dy > 0) {
-        if (!refreshIndicator) {
-          refreshIndicator = document.createElement('div');
-          refreshIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;text-align:center;padding:12px;color:var(--text-secondary);font-size:13px;background:var(--bg);transition:opacity 0.2s;';
-          refreshIndicator.textContent = '↓ 下拉刷新';
-          document.body.appendChild(refreshIndicator);
-        }
-        if (dy > 80) {
-          refreshIndicator.textContent = '🔄 松开刷新';
-          pulling = true;
-        } else {
-          refreshIndicator.textContent = '↓ 下拉刷新';
-          pulling = false;
-        }
-      }
-    }, { passive: true });
-    document.addEventListener('touchend', function() {
-      if (pulling) {
-        if (refreshIndicator) refreshIndicator.textContent = '⏳ 刷新中...';
-        // 保存当前页面状态再刷新
-        var hp = document.getElementById('home-page');
-        if (hp && hp.style.display === 'none') {
-          var activeTab = document.querySelector('.tab-content.active');
-          if (activeTab && activeTab.id) {
-            sessionStorage.setItem('_curPage', activeTab.id.replace('tab-', ''));
-          }
-        }
-        location.reload();
-      } else {
-        if (refreshIndicator) { refreshIndicator.remove(); refreshIndicator = null; }
-      }
-      startY = 0;
-      pulling = false;
-    }, { passive: true });
-  })();
+    // 下拉刷新已禁用 — 有sessionStorage保存页面状态，不需要手动刷新
+    // 保留空IIFE占位，避免删除后影响其他代码的行号
+    (function(){
+      // pull-to-refresh disabled
+    })();
 
   // === 刷新后恢复之前的页面 ===
   (function(){
