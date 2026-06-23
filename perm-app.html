@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="234">
+<html lang="zh-CN" data-version="235">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -147,7 +147,7 @@
 
 /* ── 方案tab容器（含导航栏）白底黑字 ── */
 #tab-plans { background:#ffffff !important; }
-#tab-plans .plan-nav { border-bottom:1px solid #e5e5e5 !important; margin-top:12px !important; }
+#tab-plans .plan-nav { border-bottom:1px solid #e5e5e5 !important; margin-top:20px !important; }
 #tab-plans .plan-nav button { color:#8e8e93 !important; }
 #tab-plans .plan-nav button.on { color:#000000 !important; border-bottom-color:#000000 !important; }
 #tab-plans .main { padding:0 !important; }
@@ -843,7 +843,7 @@ body {
       .plan-nav .plan-refresh { margin-left:auto; align-self:center; padding:4px 2px 4px 8px; cursor:pointer; font-size:16px; color:var(--text-secondary); opacity:0.25; transition:opacity 0.2s; }
       .plan-nav .plan-refresh:hover, .plan-nav .plan-refresh:active { opacity:0.7; }
       .plan-page { display:none; }
-      .plan-page.active { display:block; padding-top:12px; }
+      .plan-page.active { display:block; padding-top:20px; }
     </style>
     <nav class="plan-nav" id="plan-nav">
       <button onclick="switchPlan('calc')" class="on">自由换算</button>
@@ -1078,7 +1078,7 @@ body {
       .showcase-item .label { font-size:10px; color:var(--text-secondary); margin-bottom:4px; }
       .showcase-item .value { font-size:12px; color:var(--text); font-weight:600; }
       .showcase-tip { font-size:11px; color:var(--accent); margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
-      .filter-nav { display:flex; gap:6px; overflow-x:auto; padding:12px 0 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .filter-nav { display:flex; gap:6px; overflow-x:auto; padding:20px 0 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
       .filter-nav::-webkit-scrollbar { display:none; }
       .filter-btn { flex-shrink:0; padding:7px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); font-size:12px; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
       .filter-btn.on { background:var(--text); color:var(--bg); border-color:var(--text); }
