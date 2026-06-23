@@ -1315,66 +1315,152 @@ window.viewHairAnalysis = async function(id) {
     var rec = ai.record || {};
     var diag = ai.ai_diagnosis || {};
     var ref = ai.stylist_reference || {};
-    var html = '<div class="modal-box" style="max-width:600px;">';
-    html += '<h3>发质分析详情</h3>';
-    html += '<div style="font-size:12px;line-height:1.8;">';
-    html += '<div style="display:grid;grid-template-columns:1fr 2fr;gap:4px 12px;">';
-    html += '<span style="color:#888;">手机号</span><span>' + esc(r.phone||'—') + '</span>';
-    html += '<span style="color:#888;">客户名</span><span>' + esc(rec.customerName||'—') + '</span>';
-    html += '<span style="color:#888;">技师</span><span>' + esc(rec.technician||'—') + '</span>';
-    html += '<span style="color:#888;">发型师</span><span>' + esc(rec.barber||'—') + '</span>';
-    html += '<span style="color:#888;">诊断等级</span><span>' + esc(r.stylist_damage_level||'—') + '</span>';
-    html += '<span style="color:#888;">AI等级</span><span>' + esc(diag.overall_level||'—') + '</span>';
-    html += '<span style="color:#888;">一致性</span><span>' + esc(ref.consistency||'—') + '</span>';
-    // 状态翻译
-    var statusMap = { 'completed': '已完成', 'record_saved': '已保存', 'pending': '待处理', 'processing': '处理中', 'failed': '失败' };
-    html += '<span style="color:#888;">状态</span><span class="badge badge-staff">' + esc(statusMap[r.status] || r.status||'—') + '</span>';
-    // 时间格式化
-    var timeStr = r.created_at || '';
-    if (timeStr) {
-      try { var d = new Date(timeStr); timeStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } catch(e){}
-    }
-    html += '<span style="color:#888;">时间</span><span style="font-size:11px;">' + timeStr + '</span>';
-    // 三段发质
-    if (diag.root && diag.root.level) {
-      html += '<span style="color:#888;">发根</span><span>' + esc('Lv' + diag.root.level + ' ' + (diag.root.coarse_fine||'') + ' · ' + (diag.root.description||'')) + '</span>';
-    }
-    if (diag.mid && diag.mid.level) {
-      html += '<span style="color:#888;">发中</span><span>' + esc('Lv' + diag.mid.level + ' ' + (diag.mid.coarse_fine||'') + ' · ' + (diag.mid.description||'')) + '</span>';
-    }
-    if (diag.end && diag.end.level) {
-      html += '<span style="color:#888;">发尾</span><span>' + esc('Lv' + diag.end.level + ' ' + (diag.end.coarse_fine||'') + ' · ' + (diag.end.description||'')) + '</span>';
-    }
-    // 发型师填写的基础信息
-    if (rec.base_info) {
-      var bi = rec.base_info;
-      html += '<span style="color:#888;">底色</span><span>' + esc(bi.color_level||'') + '</span>';
-      html += '<span style="color:#888;">漂/染</span><span>' + esc((bi.bleached||'') + ' / ' + (bi.dyed||'')) + '</span>';
-      html += '<span style="color:#888;">烫过</span><span>' + esc(bi.last_perm||'') + '</span>';
-      html += '<span style="color:#888;">手感</span><span>' + esc(bi.feel||'') + '</span>';
-    }
-    // 服务信息
+    var bi = rec.base_info || {};
+    var ts = r.three_section || {};
+    
+    // 格式化时间
+    var fmtTime = function(t) {
+      if (!t) return '—';
+      try { var d = new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } catch(e){ return t.substring(0,16); }
+    };
+    
+    // 服务类型翻译
     var svcMap = { 'both': '烫染', 'perm': '烫发', 'color': '染发' };
-    if (rec.serviceType) {
-      html += '<span style="color:#888;">服务类型</span><span>' + esc(svcMap[rec.serviceType] || rec.serviceType) + '</span>';
-    }
-    if (rec.permType) html += '<span style="color:#888;">烫发类型</span><span>' + esc(rec.permType) + '</span>';
-    if (rec.rodMethod) html += '<span style="color:#888;">排杠手法</span><span>' + esc(rec.rodMethod) + '</span>';
-    if (rec.colorType) html += '<span style="color:#888;">染发类型</span><span>' + esc(rec.colorType) + '</span>';
-    if (rec.targetColor) html += '<span style="color:#888;">目标色</span><span>' + esc(rec.targetColor) + '</span>';
-    if (rec.formula) html += '<span style="color:#888;">配方</span><span>' + esc(rec.formula) + '</span>';
+    var statusMap = { 'completed': '已完成', 'record_saved': '已保存', 'pending': '待处理', 'processing': '处理中', 'failed': '失败' };
+    
+    // 等级颜色
+    var lvlColor = function(lv) {
+      if (lv == 1) return '#4ade80';
+      if (lv == 2) return '#60a5fa';
+      if (lv == 3) return '#facc15';
+      if (lv == 4) return '#fb923c';
+      if (lv == 5) return '#e0556a';
+      return '#888';
+    };
+    
+    // 等级文字
+    var lvlText = function(lv) {
+      var m = { 1:'健康', 2:'轻损', 3:'受损', 4:'严重', 5:'极度' };
+      return m[lv] || '';
+    };
+    
+    var html = '<div class="modal-box" style="max-width:640px;padding:20px 16px;">';
+    
+    // ===== 标题 =====
+    html += '<div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">';
+    html += '<div style="font-size:15px;font-weight:700;color:#fff;">发质分析记录表</div>';
+    html += '<div style="font-size:9px;color:#666;margin-top:2px;">Hair Analysis Report</div>';
     html += '</div>';
-    // AI备注
+    
+    // ===== 客户信息 =====
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">客户信息</div>';
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+    html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">姓名</td><td style="padding:2px 4px;color:#fff;">' + esc(rec.customerName || '—') + '</td>';
+    html += '<td style="color:#888;width:60px;padding:2px 4px;">电话</td><td style="padding:2px 4px;font-family:monospace;font-size:11px;">' + esc(r.phone||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">发型师</td><td style="padding:2px 4px;">' + esc(rec.barber||'—') + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">技师</td><td style="padding:2px 4px;">' + esc(rec.technician||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">日期</td><td style="padding:2px 4px;">' + fmtTime(r.created_at) + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">编号</td><td style="padding:2px 4px;font-family:monospace;font-size:11px;color:#888;">#' + (r.id||'—') + '</td></tr>';
+    html += '</table>';
+    html += '</div>';
+    
+    // ===== 基础信息 =====
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">基础信息</div>';
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+    html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根色度</td><td style="padding:2px 4px;">' + esc(bi.root_color||bi.color_level||'—') + '</td>';
+    html += '<td style="color:#888;width:60px;padding:2px 4px;">发中色度</td><td style="padding:2px 4px;">' + esc(bi.mid_color||'—') + '</td>';
+    html += '<td style="color:#888;width:60px;padding:2px 4px;">发尾色度</td><td style="padding:2px 4px;">' + esc(bi.end_color||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">漂发</td><td style="padding:2px 4px;">' + esc(bi.bleached||'—') + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">染发</td><td style="padding:2px 4px;">' + esc(bi.dyed||'—') + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">手感</td><td style="padding:2px 4px;">' + esc(bi.feel||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">上次烫发</td><td colspan="3" style="padding:2px 4px;">' + esc(bi.last_perm||'—') + '</td></tr>';
+    html += '</table>';
+    html += '</div>';
+    
+    // ===== 三段发质诊断 =====
+    var rootDiag = diag.root || {};
+    var midDiag = diag.mid || {};
+    var endDiag = diag.end || {};
+    var rLv = rootDiag.level;
+    var mLv = midDiag.level;
+    var eLv = endDiag.level;
+    var hasDiag = rLv || mLv || eLv;
+    
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">三段发质诊断（AI分析）</div>';
+    if (hasDiag) {
+      html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+      html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(rLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (rLv||'—') + '</span> ' + esc(lvlText(rLv)) + ' · ' + esc(rootDiag.coarse_fine||'') + (rootDiag.description ? ' · ' + esc(rootDiag.description) : '') + '</td></tr>';
+      html += '<tr><td style="color:#888;padding:2px 4px;">发中</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(mLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (mLv||'—') + '</span> ' + esc(lvlText(mLv)) + ' · ' + esc(midDiag.coarse_fine||'') + (midDiag.description ? ' · ' + esc(midDiag.description) : '') + '</td></tr>';
+      html += '<tr><td style="color:#888;padding:2px 4px;">发尾</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(eLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (eLv||'—') + '</span> ' + esc(lvlText(eLv)) + ' · ' + esc(endDiag.coarse_fine||'') + (endDiag.description ? ' · ' + esc(endDiag.description) : '') + '</td></tr>';
+      // 视觉特征
+      var vf = diag.visual_features;
+      if (vf && vf.length) {
+        html += '<tr><td style="color:#888;padding:2px 4px;">视觉特征</td><td colspan="3" style="padding:2px 4px;font-size:11px;color:#aaa;">' + esc(vf.join(' · ')) + '</td></tr>';
+      }
+      html += '</table>';
+    } else {
+      html += '<div style="font-size:12px;color:#555;padding:4px;">暂无AI分析数据</div>';
+    }
+    // 发型师诊断
+    if (r.stylist_damage_level) {
+      html += '<div style="margin-top:4px;font-size:11px;color:#facc15;">发型师诊断: ' + esc(r.stylist_damage_level) + '</div>';
+    }
+    html += '</div>';
+    
+    // ===== AI验证结果 =====
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">AI验证结果</div>';
+    var overallLv = diag.overall_level;
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+    html += '<tr><td style="color:#888;width:68px;padding:2px 4px;">整体等级</td><td style="padding:2px 4px;">';
+    if (overallLv) {
+      html += '<span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:' + lvlColor(overallLv) + ';color:#000;font-weight:700;font-size:12px;margin-right:4px;">' + esc(overallLv) + '</span> ' + esc(lvlText(overallLv));
+    } else {
+      html += '—';
+    }
+    html += '</td></tr>';
+    var consistency = ref.consistency || '';
+    if (consistency) {
+      var conColor = '#888';
+      if (consistency.indexOf('一致') !== -1 || consistency.indexOf('agree') !== -1) conColor = '#4ade80';
+      else if (consistency.indexOf('基本一致') !== -1) conColor = '#facc15';
+      else conColor = '#e0556a';
+      html += '<tr><td style="color:#888;padding:2px 4px;">一致性</td><td style="padding:2px 4px;"><span style="color:' + conColor + ';">' + esc(consistency) + '</span></td></tr>';
+    }
     if (ref.note) {
-      html += '<div style="margin-top:12px;padding:8px;background:rgba(250,204,21,0.05);border-radius:6px;font-size:11px;color:#aaa;">AI备注：' + esc(ref.note) + '</div>';
+      html += '<tr><td style="color:#888;padding:2px 4px;">诊断说明</td><td style="padding:2px 4px;font-size:11px;color:#aaa;line-height:1.5;">' + esc(ref.note) + '</td></tr>';
     }
-    // 视觉特征
-    var vf = diag.visual_features;
-    if (vf && vf.length) {
-      html += '<div style="margin-top:8px;font-size:11px;color:#888;">视觉特征：' + esc(vf.join(' · ')) + '</div>';
-    }
+    html += '</table>';
     html += '</div>';
-    html += '<div class="btn-row" style="margin-top:16px;"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel" style="flex:1;">关闭</button></div>';
+    
+    // ===== 烫发方案 =====
+    var hasPerm = rec.permType || rec.rodMethod || rec.serviceType;
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">烫发方案</div>';
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+    html += '<tr><td style="color:#888;width:68px;padding:2px 4px;">服务类型</td><td style="padding:2px 4px;">' + esc(svcMap[rec.serviceType] || rec.serviceType||'—') + '</td>';
+    html += '<td style="color:#888;width:68px;padding:2px 4px;">烫发类型</td><td style="padding:2px 4px;">' + esc(rec.permType||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">排杠手法</td><td colspan="3" style="padding:2px 4px;">' + esc(rec.rodMethod||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">染发类型</td><td style="padding:2px 4px;">' + esc(rec.colorType||'—') + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">目标色</td><td style="padding:2px 4px;">' + esc(rec.targetColor||'—') + '</td></tr>';
+    if (rec.formula) {
+      html += '<tr><td style="color:#888;padding:2px 4px;">配方</td><td colspan="3" style="padding:2px 4px;font-family:monospace;font-size:11px;color:#facc15;">' + esc(rec.formula) + '</td></tr>';
+    }
+    html += '</table>';
+    html += '</div>';
+    
+    // ===== 状态 =====
+    html += '<div style="margin-bottom:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">';
+    html += '<span><span style="color:#888;">状态</span> <span class="badge badge-staff">' + esc(statusMap[r.status] || r.status||'—') + '</span></span>';
+    html += '<span style="color:#888;">创建时间 <span style="color:#aaa;">' + fmtTime(r.created_at) + '</span></span>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '<div class="btn-row" style="margin-top:12px;"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel" style="flex:1;">关闭</button></div>';
     html += '</div>';
     showModal(html);
   })
