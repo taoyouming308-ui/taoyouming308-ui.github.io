@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="216">
+<html lang="zh-CN" data-version="217">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1808,6 +1808,13 @@ function initApp() {
     document.getElementById('app-content').style.display = 'none';
     document.body.classList.remove('plan-white-mode');
   };
+  window.closeHairAnalysisModal = function() {
+    document.body.classList.remove('hair-modal-open');
+    var _tm = document.querySelector('meta[name="theme-color"]');
+    if (_tm) _tm.content = '#000000';
+    var m = document.getElementById('hair-analysis-modal');
+    if (m) m.remove();
+  };
   window.openHomeDrawer = function() {
     var drawer = document.getElementById('home-drawer');
     var mask = document.getElementById('home-drawer-mask');
@@ -1832,16 +1839,17 @@ function initApp() {
 
     var overlay = document.createElement('div');
     overlay.id = 'hair-analysis-modal';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,0px);';
-    // 阻止touch事件穿透到document的下拉刷新
-    overlay.addEventListener('touchmove', function(e){ e.stopPropagation(); }, { passive: true });
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,44px);';
     overlay.innerHTML =
-      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#ffffff;">' +
+      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#ffffff;min-height:100vh;box-sizing:border-box;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
           '<div style="font-size:16px;font-weight:700;color:#000000;">📸 发质拍照分析</div>' +
-          '<button onclick="autoSaveHairForm();document.body.classList.remove(\'hair-modal-open\');var _tm=document.querySelector(\'meta[name="theme-color"]\');if(_tm)_tm.content=\'#000000\';this.closest(\'#hair-analysis-modal\').remove();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+          '<button onclick="autoSaveHairForm();closeHairAnalysisModal();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
+        '<div style="margin-top:24px;text-align:left;">' +
+          '<button onclick="closeHairAnalysisModal();" style="display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:6px 0;">← 返回首页</button>' +
+        '</div>' +
       '</div>';
     document.body.appendChild(overlay);
     // body变白背景
