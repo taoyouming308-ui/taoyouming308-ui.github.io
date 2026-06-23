@@ -98,6 +98,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="tab" data-tab="customers">顾客档案</div>
     <div class="tab" data-tab="followups">回访管理</div>
     <div class="tab" data-tab="assessment">月度考核</div>
+    <div class="tab" data-tab="hair-analysis">发质分析</div>
   </div>
   <div class="content">
     <!-- 员工管理 -->
@@ -222,6 +223,19 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
   <table><thead><tr><th>门店</th><th>发型师</th><th>烫染客户</th><th>已分析</th><th>分析完成率</th><th>待分析</th><th>已回访</th><th>回访率</th></tr></thead>
   <tbody id="table-assessment"></tbody></table>
+</div>
+
+<!-- 发质分析 -->
+<div id="tab-hair-analysis" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <input id="ha-search" placeholder="搜索手机号/客户名" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+    <button onclick="loadHairAnalyses()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
+    <span id="ha-count" style="font-size:12px;color:var(--muted);"></span>
+  </div>
+  <table>
+    <thead><tr><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody id="table-hair-analysis"></tbody>
+  </table>
 </div>
 
 <div class="modal" id="modal">
@@ -371,6 +385,10 @@ function stopPendingPolling() {
   document.getElementById('login-user').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') doLogin();
   });
+  // 发质分析搜索支持回车
+  document.getElementById('ha-search').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') loadHairAnalyses();
+  });
 })();
 
 async function doLogin() {
@@ -424,9 +442,9 @@ function doLogout() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups','assessment'][i] === tab);
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups','assessment','hair-analysis'][i] === tab);
   });
-  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups, #tab-assessment').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups, #tab-assessment, #tab-hair-analysis').forEach(d => d.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
   if (tab === 'images') {
     loadImages();
@@ -438,6 +456,8 @@ function switchTab(tab) {
     loadFollowups();
   } else if (tab === 'assessment') {
     loadAssessment();
+  } else if (tab === 'hair-analysis') {
+    loadHairAnalyses();
   } else {
     loadData(tab);
   }
@@ -1203,6 +1223,84 @@ function stopRealtime() {
     realtimeWs = null;
   }
 }
+
+// ===== 发质分析管理 =====
+window.loadHairAnalyses = async function() {
+  var search = (document.getElementById('ha-search')||{}).value || '';
+  var tbody = document.getElementById('table-hair-analysis');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=in.(completed,record_saved)&order=created_at.desc&limit=200';
+  if (search) {
+    url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,ai_analysis->record->>customerName.ilike.%25' + encodeURIComponent(search) + '%25)';
+  }
+
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>';
+        document.getElementById('ha-count').textContent = '共 0 条';
+        return;
+      }
+      document.getElementById('ha-count').textContent = '共 ' + rows.length + ' 条';
+      var html = '';
+      rows.forEach(function(r){
+        var phone = r.phone || '—';
+        var ai = r.ai_analysis || {};
+        var record = ai.record || {};
+        var custName = record.customerName || '—';
+        var technician = record.technician || '—';
+        var diag = ai.ai_diagnosis || {};
+        var overallLevel = diag.overall_level || '—';
+        var consistency = '';
+        try {
+          var ref = ai.stylist_reference || {};
+          consistency = ref.consistency || '';
+        } catch(e) {}
+        var summary = esc(overallLevel || '') + (consistency ? ' / ' + esc(String(consistency).substring(0,30)) : '');
+        if (!overallLevel && !consistency) summary = '—';
+        var time = r.created_at ? r.created_at.substring(0,16) : '—';
+        var statusMap = { 'completed': '已完成', 'record_saved': '已保存' };
+        var statusText = statusMap[r.status] || r.status || '—';
+
+        html += '<tr>';
+        html += '<td style="font-family:monospace;font-size:11px;">' + esc(phone) + '</td>';
+        html += '<td>' + esc(custName) + '</td>';
+        html += '<td>' + esc(technician) + '</td>';
+        html += '<td>' + esc(r.stylist_damage_level || '—') + '</td>';
+        html += '<td style="font-size:11px;color:#aaa;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + summary + '">' + summary + '</td>';
+        html += '<td style="font-size:11px;color:#888;">' + time + '</td>';
+        html += '<td><span class="badge badge-staff">' + esc(statusText) + '</span></td>';
+        html += '<td>';
+        html += '<button onclick="deleteHairAnalysis(' + r.id + ',this)" class="btn-del">删除</button>';
+        html += '</td></tr>';
+      });
+      tbody.innerHTML = html;
+    })
+    .catch(function(){
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+    });
+};
+
+window.deleteHairAnalysis = async function(id, btn) {
+  if (!confirm('确定删除该条发质分析记录？')) return;
+  setButtonBusy(btn, true);
+  try {
+    var r = await fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    await ensureOk(r, '删除失败');
+    toast('删除成功', 'ok');
+    loadHairAnalyses();
+  } catch(e) {
+    toast('删除失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
+  }
+};
 
 // ===== 通用弹窗 =====
 function showModal(html) {
