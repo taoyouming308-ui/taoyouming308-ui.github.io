@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="219">
+<html lang="zh-CN" data-version="220">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1841,9 +1841,9 @@ function initApp() {
     overlay.id = 'hair-analysis-modal';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,44px);';
     overlay.innerHTML =
-      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#ffffff;min-height:100vh;box-sizing:border-box;">' +
+      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(70px + env(safe-area-inset-bottom,0px));background:#ffffff;min-height:100vh;box-sizing:border-box;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
-          '<div style="font-size:16px;font-weight:700;color:#000000;">📸 发质拍照分析</div>' +
+          '<div style="font-size:16px;font-weight:700;color:#000000;">发质分析</div>' +
           '<button onclick="autoSaveHairForm();closeHairAnalysisModal();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
