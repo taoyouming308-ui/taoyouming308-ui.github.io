@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="251">
+<html lang="zh-CN" data-version="253">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -47,98 +47,121 @@
   background: #ffffff !important;
   color: #000000 !important;
 }
-/* ── 护理记录折叠面板 ── */
-.care-section {
-  margin-bottom: 8px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  overflow: hidden;
+/* ── 护理记录：品牌tab + 下拉选择 + 添加列表 ── */
+.care-tab-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
-.care-header {
+.care-tab-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.care-tab-btn.active {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+.care-tab-btn:hover:not(.active) {
+  background: #f0f0f0;
+}
+.care-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.care-select-row select {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  color: #000;
+  font-size: 13px;
+  font-family: inherit;
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+.care-select-row input[type="number"] {
+  width: 70px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  color: #000;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: center;
+}
+.care-add-btn {
+  padding: 8px 16px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.care-add-btn:disabled {
+  background: #cccccc;
+  color: #888888;
+  cursor: not-allowed;
+}
+.care-added-list {
+  margin-top: 8px;
+}
+.care-added-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
   background: #f5f5f5;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: #000;
-  user-select: none;
-}
-.care-header:hover {
-  background: #ebebeb;
-}
-.care-header .care-arrow {
-  font-size: 10px;
-  color: #8e8e93;
-  transition: transform 0.2s;
-}
-.care-header .care-arrow.open {
-  transform: rotate(90deg);
-}
-.care-body {
-  padding: 10px 12px;
-  display: none;
-  background: #ffffff;
-}
-.care-body.open {
-  display: block;
-}
-.care-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  border-radius: 8px;
+  padding: 8px 12px;
   margin-bottom: 6px;
   font-size: 12px;
   color: #000;
 }
-.care-item label {
-  min-width: 40px;
+.care-added-item-name {
   font-weight: 500;
 }
-.care-item input[type="range"] {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #e5e5e5;
-  border-radius: 3px;
-  outline: none;
-  margin: 0 4px;
+.care-added-item-grams {
+  font-weight: 700;
+  margin-left: 8px;
 }
-.care-item input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #000;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+.care-added-item-del {
+  font-size: 14px;
+  color: #999;
   cursor: pointer;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
-.care-item input[type="range"]::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #000;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  cursor: pointer;
+.care-added-item-del:hover {
+  color: #e00;
+  background: #ffe0e0;
 }
-.care-slider-value {
-  min-width: 36px;
+.care-total-row {
   text-align: right;
   font-size: 13px;
   font-weight: 700;
   color: #000;
-  font-variant-numeric: tabular-nums;
-}
-.care-slider-unit {
-  font-size: 10px;
-  color: #8e8e93;
-  min-width: 12px;
+  padding: 6px 12px;
+  margin-top: 4px;
 }
 .hair-analysis .ha-card {
   background: #ffffff;
@@ -1916,7 +1939,7 @@ function initApp() {
       '</div>';
     overlay.insertAdjacentHTML('beforeend',
       '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">← 首页</button>' +
-      '<button onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
+      '<button onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
     document.body.appendChild(overlay);
     // body变白背景
     document.body.classList.add('hair-modal-open');
@@ -1928,6 +1951,8 @@ function initApp() {
       // 初始化chip选择器
       if (window.initHairChips) window.initHairChips();
       if (window.initApplyOrderChips) window.initApplyOrderChips();
+      // 初始化护理记录已添加列表
+      if (window.initCareSection) window.initCareSection();
       // 相册按钮（已移除拍照AI验证按钮）
       // 渲染本地记录
       if (window.renderPendingRecords) window.renderPendingRecords();
@@ -4496,47 +4521,110 @@ function initApp() {
     if (phoneEl) phoneEl.value = phone;
   };
 
-  // ===== 护理记录折叠面板切换 =====
-  window.toggleCareSection = function(id) {
-    var body = document.getElementById(id);
-    if (!body) return;
-    body.classList.toggle('open');
-    var header = body.previousElementSibling;
-    if (header) {
-      var arrow = header.querySelector('.care-arrow');
-      if (arrow) arrow.classList.toggle('open');
+  // ===== 护理记录：品牌tab + 下拉选择 + 添加列表 =====
+  var allCareProducts = [
+    { brand: '欧拉裴', products: ['1号','2号','4号','5号'] },
+    { brand: '歌薇酸性护理', products: ['2A','4NN','5NN','6A','6B','6KG','6SB','7NA','7RO','7RR','CLEAR','PASTEL','6BP','pmix'] },
+    { brand: '歌薇上色水', products: ['水蓝色','水红色'] }
+  ];
+  var currentCareBrand = allCareProducts[0].brand;
+  // 护理记录数据存储（由renderHairAnalysis初始化为rec.careUsage || []）
+  var _careUsageData = [];
+
+  window.switchCareBrand = function(brand) {
+    currentCareBrand = brand;
+    // 更新tab按钮高亮
+    var btns = document.querySelectorAll('.care-tab-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.remove('active');
+      if (btns[i].getAttribute('data-brand') === brand) {
+        btns[i].classList.add('active');
+      }
     }
+    // 更新色号下拉选项
+    var sel = document.getElementById('care-product-select');
+    if (!sel) return;
+    sel.innerHTML = '';
+    var emptyOpt = document.createElement('option');
+    emptyOpt.value = '';
+    emptyOpt.textContent = '选择色号';
+    sel.appendChild(emptyOpt);
+    for (var bi = 0; bi < allCareProducts.length; bi++) {
+      if (allCareProducts[bi].brand === brand) {
+        var prods = allCareProducts[bi].products;
+        for (var pi = 0; pi < prods.length; pi++) {
+          var opt = document.createElement('option');
+          opt.value = prods[pi];
+          opt.textContent = prods[pi];
+          sel.appendChild(opt);
+        }
+        break;
+      }
+    }
+    sel.value = '';
+    // 更新添加按钮状态
+    updateAddBtnState();
   };
 
-  // ===== 护理记录滑块实时更新 =====
-  window.updateCareSliderValue = function(el) {
-    var valEl = document.getElementById('val-' + el.id);
-    if (valEl) valEl.textContent = el.value;
+  function updateAddBtnState() {
+    var sel = document.getElementById('care-product-select');
+    var grams = document.getElementById('care-grams-input');
+    var btn = document.getElementById('care-add-btn');
+    if (!btn || !sel || !grams) return;
+    btn.disabled = !(sel.value && grams.value && parseFloat(grams.value) > 0);
+  }
+
+  window.addCareRecord = function() {
+    var sel = document.getElementById('care-product-select');
+    var grams = document.getElementById('care-grams-input');
+    if (!sel || !grams) return;
+    var product = sel.value;
+    var gramVal = grams.value;
+    if (!product || !gramVal || parseFloat(gramVal) <= 0) return;
+    _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal });
+    // 清空并重置
+    sel.value = '';
+    grams.value = '';
+    updateAddBtnState();
+    renderCareAddedList();
+  };
+
+  window.removeCareRecord = function(idx) {
+    _careUsageData.splice(idx, 1);
+    renderCareAddedList();
+  };
+
+  window.renderCareAddedList = function() {
+    var listEl = document.getElementById('care-added-list');
+    if (!listEl) return;
+    var html = '';
+    var total = 0;
+    for (var i = 0; i < _careUsageData.length; i++) {
+      var item = _careUsageData[i];
+      total += parseFloat(item.grams) || 0;
+      html += '<div class="care-added-item">';
+      html += '<div><span class="care-added-item-name">' + esc(item.brand) + ' ' + esc(item.product) + '</span></div>';
+      html += '<div><span class="care-added-item-grams">' + esc(item.grams) + 'g</span>';
+      html += '<span class="care-added-item-del" onclick="removeCareRecord(' + i + ')">✕</span></div>';
+      html += '</div>';
+    }
+    html += '<div class="care-total-row">合计: ' + total + 'g</div>';
+    listEl.innerHTML = html;
+  };
+
+  // ===== 初始化护理记录（供caller在插入DOM后调用）=====
+  window.initCareSection = function() {
+    // 已添加列表渲染（编辑模式时回填已有记录）
+    renderCareAddedList();
   };
 
   // ===== 收集护理用量数据 =====
   window.collectCareUsage = function() {
-    var careBrands = [
-      { brand: '欧拉裴', products: ['1号','2号','4号','5号'] },
-      { brand: '歌薇酸性护理', products: ['2A','4NN','5NN','6A','6B','6KG','6SB','7NA','7RO','7RR','CLEAR','PASTEL','6BP','pmix'] },
-      { brand: '歌薇上色水', products: ['水蓝色','水红色'] }
-    ];
-    var usage = [];
-    for (var cb = 0; cb < careBrands.length; cb++) {
-      var b = careBrands[cb];
-      for (var pi = 0; pi < b.products.length; pi++) {
-        var prod = b.products[pi];
-        var el = document.getElementById('care-' + b.brand + '-' + prod);
-        if (el) {
-          var val = el.value.trim();
-          if (val !== '' && parseFloat(val) > 0) {
-            usage.push({ brand: b.brand, product: prod, grams: val });
-          }
-        }
-      }
-    }
-    return usage;
+    return _careUsageData;
   };
+  function initCareUsage(arr) {
+    _careUsageData = arr || [];
+  }
 
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name, existingRec) {
@@ -4544,6 +4632,8 @@ function initApp() {
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
     var rec = existingRec || {};
+    // 初始化护理记录数据（编辑模式时回填已有记录）
+    initCareUsage(rec.careUsage);
 
     var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;padding-top:14px;">';
     html += '<div class="ha-card"><div class="ha-step">步骤1 · 客户信息</div>';
@@ -4821,48 +4911,33 @@ function initApp() {
 
     // ===== 步骤4.5: 护理记录 =====
     html += '<div class="ha-card"><div class="ha-step">步骤4.5 · 护理记录</div>';
-    html += '<div style="font-size:10px;color:#8e8e93;margin-bottom:8px;">记录本次护发产品用量（克），点击展开品牌分类</div>';
+    html += '<div style="font-size:10px;color:#8e8e93;margin-bottom:8px;">选择品牌和色号，添加护发产品用量</div>';
 
-    // 品牌数据
-    var careBrands = [
-      { brand: '欧拉裴', products: ['1号','2号','4号','5号'] },
-      { brand: '歌薇酸性护理', products: ['2A','4NN','5NN','6A','6B','6KG','6SB','7NA','7RO','7RR','CLEAR','PASTEL','6BP','pmix'] },
-      { brand: '歌薇上色水', products: ['水蓝色','水红色'] }
-    ];
-    for (var cb = 0; cb < careBrands.length; cb++) {
-      var b = careBrands[cb];
-      var brandKey = 'care-' + b.brand;
-      var isOpen = false;
-      // 编辑模式下检查是否已有数据
-      if (rec.careUsage && rec.careUsage.length) {
-        for (var cui = 0; cui < rec.careUsage.length; cui++) {
-          if (rec.careUsage[cui].brand === b.brand) { isOpen = true; break; }
-        }
-      }
-      html += '<div class="care-section">';
-      html += '<div class="care-header" onclick="toggleCareSection(\'' + brandKey + '\')">';
-      html += '<span>' + esc(b.brand) + '</span>';
-      html += '<span class="care-arrow' + (isOpen ? ' open' : '') + '">▶</span>';
-      html += '</div>';
-      html += '<div class="care-body' + (isOpen ? ' open' : '') + '" id="' + brandKey + '">';
-      for (var pi = 0; pi < b.products.length; pi++) {
-        var prod = b.products[pi];
-        var savedVal = '';
-        if (rec.careUsage && rec.careUsage.length) {
-          for (var cui2 = 0; cui2 < rec.careUsage.length; cui2++) {
-            var cu = rec.careUsage[cui2];
-            if (cu.brand === b.brand && cu.product === prod) { savedVal = cu.grams; break; }
-          }
-        }
-        html += '<div class="care-item">';
-        html += '<label>' + esc(prod) + '</label>';
-        html += '<input type="range" min="0" max="500" step="5" value="' + (savedVal || '0') + '" id="' + brandKey + '-' + prod + '" oninput="updateCareSliderValue(this)">';
-        html += '<span class="care-slider-value" id="val-' + brandKey + '-' + prod + '">' + (savedVal || '0') + '</span>';
-        html += '<span class="care-slider-unit">g</span>';
-        html += '</div>';
-      }
-      html += '</div></div>';
+    // 品牌tab
+    html += '<div class="care-tab-bar">';
+    for (var cbi = 0; cbi < allCareProducts.length; cbi++) {
+      var b = allCareProducts[cbi];
+      var activeCls = (cbi === 0) ? ' active' : '';
+      html += '<button type="button" class="care-tab-btn' + activeCls + '" data-brand="' + b.brand + '" onclick="switchCareBrand(\'' + b.brand + '\')">' + esc(b.brand) + '</button>';
     }
+    html += '</div>';
+
+    // 色号下拉 + 用量输入 + 添加按钮
+    html += '<div class="care-select-row">';
+    html += '<select id="care-product-select" onchange="updateAddBtnState()">';
+    html += '<option value="">选择色号</option>';
+    var firstBrand = allCareProducts[0];
+    for (var ppi = 0; ppi < firstBrand.products.length; ppi++) {
+      html += '<option value="' + escAttr(firstBrand.products[ppi]) + '">' + esc(firstBrand.products[ppi]) + '</option>';
+    }
+    html += '</select>';
+    html += '<input type="number" id="care-grams-input" placeholder="克数" min="0" step="1" oninput="updateAddBtnState()">';
+    html += '<button type="button" id="care-add-btn" class="care-add-btn" onclick="addCareRecord()" disabled>➕ 添加</button>';
+    html += '</div>';
+
+    // 已添加列表容器
+    html += '<div id="care-added-list" class="care-added-list"></div>';
+
     html += '</div>'; // end ha-card
 
     // ===== 步骤5: 效果评定 =====
