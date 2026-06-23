@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="253">
+<html lang="zh-CN" data-version="254">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4566,7 +4566,7 @@ function initApp() {
     updateAddBtnState();
   };
 
-  function updateAddBtnState() {
+  window.updateAddBtnState = function() {
     var sel = document.getElementById('care-product-select');
     var grams = document.getElementById('care-grams-input');
     var btn = document.getElementById('care-add-btn');
