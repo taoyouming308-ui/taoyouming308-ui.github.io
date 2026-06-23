@@ -124,7 +124,6 @@
 
 /* ── 自由换算 + 冷烫页面白底黑字 ChatGPT风格 ── */
 .plan-page {
-  --surface: #ffffff !important;
   --surface-light: #f5f5f5 !important;
   --border: #e5e5e5 !important;
   --text: #000000 !important;
@@ -550,7 +549,7 @@ body {
   font-size: 14px;
 }
 .calc-row:last-child { border-bottom: none; }
-.calc-row .label { color: var(--text-secondary); }
+.calc-row .label { color: #999; }
 .calc-row .value { color: var(--accent); font-weight: 600; }
 
 .preset-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(232,233,234,0.08) !important; }
@@ -2312,7 +2311,7 @@ function initApp() {
     const total = amount + extra;
 
     let html = '';
-    html += `<div style="padding:4px 0;color:var(--text-secondary);font-size:13px;margin-bottom:8px;">`;
+    html += `<div style="padding:4px 0;color:#999;font-size:13px;margin-bottom:8px;">`;
     html += `TGA:CA = <b style="color:var(--accent);">${tga}:${ca}</b>`;
     if (totalParts > 0) {
       const pct = (tga / totalParts * 100).toFixed(0);
@@ -2333,18 +2332,18 @@ function initApp() {
       const origThio = parseFloat(fixedRef.thio);
       if (extra > 0) {
         const dilutedThio = (origThio * amount / total).toFixed(1);
-        html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#999;">`;
         html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b>`;
         html += ` · 原硫代 <span style="color:var(--text-secondary);">${fixedRef.thio}</span>`;
         html += ` → 稀释后 <b style="color:var(--accent);">${dilutedThio}%</b>`;
         html += `<br>💡 ${amount.toFixed(0)}g药水 + ${extra.toFixed(0)}g水 → 总量${total.toFixed(0)}g，硫代稀释至${dilutedThio}%</div>`;
       } else {
-        html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#999;">`;
         html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b> · 硫代 <b style="color:var(--accent);">${fixedRef.thio}</b>`;
         html += `<br>💡 加水/蛋白稀释 → 降药性不降PH</div>`;
       }
     } else if (totalParts > 0) {
-      html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+      html += `<div style="margin-top:12px;padding:10px;background:var(--surface);border-radius:8px;font-size:12px;color:#666;">`;
       html += `⚠️ 自定义配比，无预设PH/硫代数据`;
       if (extra > 0) html += ` (已含稀释)`;
       html += `</div>`;
