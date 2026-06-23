@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="220">
+<html lang="zh-CN" data-version="221">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4489,7 +4489,7 @@ function initApp() {
     // ── 区块C：拍照 + AI验证 ──
     html += '<div style="margin-top:10px;"><div class="ha-title"><span>上传照片分析</span></div></div>';
     html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
-    html += '<button id="hair-album-btn" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">🖼️ 从相册选择照片</button>';
+    html += '<button id="hair-album-btn" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">从相册选择照片</button>';
     html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
     html += '</div>';
 
@@ -4541,7 +4541,7 @@ function initApp() {
       }
     }
     html += '</select></div>';
-    html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">💡 发质类型来自步骤2的AI诊断或手动选择</div>';
+    html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">发质类型来自步骤2的诊断或手动选择</div>';
     html += '<button onclick="window.hairQueryPlan()" style="width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">🔍 查询烫发方案</button>';
     html += '<div id="hair-q-result" style="margin-top:10px;"></div>';
     html += '</div>'; // 步骤3 ha-card 关闭
@@ -4551,7 +4551,7 @@ function initApp() {
 
     // ── 烫发参数区（服务类型含烫发时显示） ──
     html += '<div id="hair-perm-params">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">🔄 烫发参数</div>';
+    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">烫发参数</div>';
     // 卷芯
     html += '<div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;flex-shrink:0;">卷芯</span>';
@@ -4576,7 +4576,7 @@ function initApp() {
 
     // ── 染发参数区（一直显示，不隐藏） ──
     html += '<div id="hair-color-params">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">🎨 染发参数</div>';
+    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">染发参数</div>';
     // 目标色度和色调已移除（用户要求）
     // 双氧水
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
