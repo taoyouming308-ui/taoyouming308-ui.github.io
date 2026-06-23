@@ -270,6 +270,16 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="care-stat-summary" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+      <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📋 护理记录明细</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+        <select id="care-detail-barber" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
+          <option value="">全部发型师</option>
+        </select>
+        <button onclick="loadCareDetailRecords()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:12px;">查询明细</button>
+      </div>
+      <div id="care-detail-records" style="font-size:11px;color:var(--muted);">请选择月份后点击查询</div>
+    </div>
   </div>
 </div>
 
@@ -2020,6 +2030,8 @@ window.loadCareProducts = function() {
   initCareMonthSelects();
   // 加载月度统计
   loadCareMonthlyStats();
+  // 初始化发型师下拉
+  populateCareDetailBarbers();
 };
 
 function openCareProductModal(editBrand, editProduct) {
@@ -2252,6 +2264,102 @@ window._staffStoreCache = {};
     }
   }).catch(function(){});
 })();
+
+// ===== 护理记录明细 =====
+function populateCareDetailBarbers() {
+  var sel = document.getElementById('care-detail-barber');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">全部发型师</option>';
+  // 从staff表获取发型师列表
+  fetch(SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username', {
+    headers: { 'apikey': SUPABASE_KEY }
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if (rows && rows.length) {
+      var names = {};
+      for (var i = 0; i < rows.length; i++) {
+        if (!names[rows[i].username]) {
+          names[rows[i].username] = true;
+          var opt = document.createElement('option');
+          opt.value = rows[i].username;
+          opt.textContent = rows[i].username + (rows[i].store ? ' (' + rows[i].store + ')' : '');
+          sel.appendChild(opt);
+        }
+      }
+    }
+  }).catch(function(){});
+}
+
+window.loadCareDetailRecords = function() {
+  var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
+  var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
+  var filterBarber = (document.getElementById('care-detail-barber')||{}).value || '';
+  var container = document.getElementById('care-detail-records');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:#555;">加载中...</div>';
+
+  var fromDate = year + '-' + String(month).padStart(2, '0') + '-01';
+  var toDate = parseInt(month) === 12
+    ? (parseInt(year) + 1) + '-01-01'
+    : year + '-' + String(parseInt(month) + 1).padStart(2, '0') + '-01';
+
+  var url = SUPABASE_URL + '/rest/v1/hair_records?select=barber,technician,customer_name,customer_phone,record_data&order=created_at.desc&limit=1000';
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if (!rows || rows.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#555;">暂无数据</div>';
+        return;
+      }
+
+      var list = [];
+      for (var ri = 0; ri < rows.length; ri++) {
+        var r = rows[ri];
+        var rec = r.record_data || {};
+        var createdAt = rec.createdAt || '';
+        if (createdAt < fromDate || createdAt >= toDate) continue;
+        var careUsage = rec.careUsage || [];
+        if (!careUsage || careUsage.length === 0) continue;
+        var barber = rec.barber || r.barber || '未知';
+        if (filterBarber && barber !== filterBarber) continue;
+        var customer = r.customer_name || rec.customerName || '未填写';
+        var phone = r.customer_phone || rec.customerPhone || '';
+        for (var ci = 0; ci < careUsage.length; ci++) {
+          list.push({
+            date: (rec.date || createdAt.slice(0,10)),
+            barber: barber,
+            technician: rec.technician || r.technician || '',
+            customer: customer,
+            phone: phone,
+            brand: careUsage[ci].brand,
+            product: careUsage[ci].product,
+            grams: careUsage[ci].grams
+          });
+        }
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:20px;color:#555;">该月暂无护理记录</div>';
+        return;
+      }
+
+      list.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+
+      var html = '<table style="font-size:11px;"><thead><tr><th>日期</th><th>客户</th><th>发型师</th><th>技师</th><th>品牌</th><th>产品/色号</th><th>用量(g)</th></tr></thead><tbody>';
+      var totalG = 0;
+      for (var li = 0; li < list.length; li++) {
+        var d = list[li];
+        html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td></tr>';
+        totalG += parseFloat(d.grams) || 0;
+      }
+      html += '</tbody></table>';
+      html += '<div style="margin-top:8px;font-size:12px;color:var(--muted);">共计 ' + list.length + ' 条记录 · 合计 ' + totalG.toFixed(1) + 'g</div>';
+      container.innerHTML = html;
+    })
+    .catch(function(e){
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">加载失败: ' + e.message + '</div>';
+    });
+};
 
 // 初始化
 initCustAndFu();
