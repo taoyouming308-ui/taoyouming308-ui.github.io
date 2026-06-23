@@ -1326,8 +1326,15 @@ window.viewHairAnalysis = async function(id) {
     html += '<span style="color:#888;">诊断等级</span><span>' + esc(r.stylist_damage_level||'—') + '</span>';
     html += '<span style="color:#888;">AI等级</span><span>' + esc(diag.overall_level||'—') + '</span>';
     html += '<span style="color:#888;">一致性</span><span>' + esc(ref.consistency||'—') + '</span>';
-    html += '<span style="color:#888;">状态</span><span>' + esc(r.status||'—') + '</span>';
-    html += '<span style="color:#888;">时间</span><span style="font-size:11px;">' + esc(r.created_at||'—') + '</span>';
+    // 状态翻译
+    var statusMap = { 'completed': '已完成', 'record_saved': '已保存', 'pending': '待处理', 'processing': '处理中', 'failed': '失败' };
+    html += '<span style="color:#888;">状态</span><span class="badge badge-staff">' + esc(statusMap[r.status] || r.status||'—') + '</span>';
+    // 时间格式化
+    var timeStr = r.created_at || '';
+    if (timeStr) {
+      try { var d = new Date(timeStr); timeStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } catch(e){}
+    }
+    html += '<span style="color:#888;">时间</span><span style="font-size:11px;">' + timeStr + '</span>';
     // 三段发质
     if (diag.root && diag.root.level) {
       html += '<span style="color:#888;">发根</span><span>' + esc('Lv' + diag.root.level + ' ' + (diag.root.coarse_fine||'') + ' · ' + (diag.root.description||'')) + '</span>';
@@ -1347,8 +1354,9 @@ window.viewHairAnalysis = async function(id) {
       html += '<span style="color:#888;">手感</span><span>' + esc(bi.feel||'') + '</span>';
     }
     // 服务信息
+    var svcMap = { 'both': '烫染', 'perm': '烫发', 'color': '染发' };
     if (rec.serviceType) {
-      html += '<span style="color:#888;">服务类型</span><span>' + esc(rec.serviceType||'') + '</span>';
+      html += '<span style="color:#888;">服务类型</span><span>' + esc(svcMap[rec.serviceType] || rec.serviceType) + '</span>';
     }
     if (rec.permType) html += '<span style="color:#888;">烫发类型</span><span>' + esc(rec.permType) + '</span>';
     if (rec.rodMethod) html += '<span style="color:#888;">排杠手法</span><span>' + esc(rec.rodMethod) + '</span>';
