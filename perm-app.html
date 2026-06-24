@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="260">
+<html lang="zh-CN" data-version="261">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4408,7 +4408,11 @@ function initApp() {
     if (resultBox && (data.aiOverall || data.diagnosisType)) resultBox.style.display = 'block';
     var btn = document.getElementById('hair-save-btn');
     if (btn) {
-      if (_editingHairId) {
+      if (_cloudEditingId) {
+        btn.textContent = '✅ 提交';
+        btn.style.background = '#2ecc71';
+        btn.onclick = function(){ window.saveHairRecordLocal(); };
+      } else if (_editingHairId) {
         btn.textContent = '☁️ 上传';
         btn.style.background = '';
         btn.onclick = window.saveAndUploadHairRecord;
