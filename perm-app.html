@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="271">
+<html lang="zh-CN" data-version="272">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4531,11 +4531,22 @@ function initApp() {
     if (resultBox && (data.aiOverall || data.diagnosisType)) resultBox.style.display = 'block';
     var btn = document.getElementById('hair-save-btn');
     if (btn) {
+      // 判断当前用户身份：是技师还是发型师
+      var _currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+      var _isTech = data.technician && data.technician.indexOf(_currentBarber) !== -1;
+      var _isStylist = data.barber === _currentBarber;
+      
       if (_cloudEditingId && _followUpMode) {
         btn.textContent = '✅ 回访完成';
         btn.style.background = '#2ecc71';
         btn.onclick = function(){ window.saveHairRecordLocal(); };
-      } else if (_cloudEditingId) {
+      } else if (_cloudEditingId && _isTech) {
+        // 技师回传 → 保存到云端
+        btn.textContent = '✅ 已回传';
+        btn.style.background = '#2ecc71';
+        btn.onclick = function(){ window.saveHairRecordLocal(); };
+      } else if (_cloudEditingId && _isStylist) {
+        // 发型师上传档案
         btn.textContent = '📁 上传档案';
         btn.style.background = '#2ecc71';
         btn.onclick = window.saveAndUploadHairArchive;
