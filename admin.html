@@ -263,14 +263,31 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     </div>
   </div>
 
+  <!-- 明细记录（放最上面，紧跟在概览卡片后面） -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📋 明细记录</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+      <select id="care-detail-store" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;" onchange="populateCareDetailBarbers(this.value)">
+        <option value="">全部门店</option>
+        <option value="自由手艺人">自由手艺人</option>
+        <option value="向里造型">向里造型</option>
+      </select>
+      <select id="care-detail-barber" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
+        <option value="">全部发型师</option>
+      </select>
+      <button onclick="loadCareDetailRecords()" style="padding:8px 20px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">查询</button>
+    </div>
+    <div id="care-detail-records" style="font-size:12px;color:var(--muted);"></div>
+  </div>
+
   <!-- 产品管理 -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-size:14px;font-weight:600;color:#fff;">📦 护理产品</div>
       <button class="btn-add" onclick="openCareProductModal()" style="margin-bottom:0;padding:6px 14px;font-size:12px;">+ 新增</button>
     </div>
     <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:8px;" id="care-product-count"></span>
-    <div style="max-height:200px;overflow-y:auto;">
+    <div style="max-height:180px;overflow-y:auto;">
       <table style="font-size:12px;">
         <thead><tr><th style="position:sticky;top:0;background:var(--surface);z-index:1;">品牌</th><th>产品/色号</th><th style="width:80px;">操作</th></tr></thead>
         <tbody id="table-care-products"></tbody>
@@ -279,9 +296,9 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
 
   <!-- 月度护理用量统计 -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
-    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">📊 月度统计</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📊 月度统计</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-store" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
@@ -298,23 +315,6 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="care-stat-summary" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
-  </div>
-
-  <!-- 护理记录明细 -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
-    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">📋 明细记录</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-      <select id="care-detail-store" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;" onchange="populateCareDetailBarbers(this.value)">
-        <option value="">全部门店</option>
-        <option value="自由手艺人">自由手艺人</option>
-        <option value="向里造型">向里造型</option>
-      </select>
-      <select id="care-detail-barber" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
-        <option value="">全部发型师</option>
-      </select>
-      <button onclick="loadCareDetailRecords()" style="padding:8px 20px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">查询</button>
-    </div>
-    <div id="care-detail-records" style="font-size:12px;color:var(--muted);"></div>
   </div>
 </div>
 
