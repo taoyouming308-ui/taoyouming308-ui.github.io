@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="277">
+<html lang="zh-CN" data-version="278">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3871,14 +3871,38 @@ function initApp() {
         }
       }
       
+      // 合并新旧数据，防止表单不存在的字段被空值覆盖
+      // 新record（表单采集到的数据）覆盖到旧云端数据上
+      var _mergedData = _cloudRecordData ? JSON.parse(JSON.stringify(_cloudRecordData)) : {};
+      for (var _mk in record) {
+        if (record.hasOwnProperty(_mk)) {
+          _mergedData[_mk] = record[_mk];
+        }
+      }
+      // 对于新record中为空但云端旧数据有值的字段，保留旧值（表单中可能没有对应的输入框）
+      var _preserveFields = ['rodMethod','dwellType','rinse','dwellNatural','dwellHeat','creative',
+        'feedbackRating','followMsg','applyOrder','serviceType',
+        'targetColor','tone','toneOther','developer','mixRatio',
+        'colorDwell','colorHeat','colorHeatTemp','scalpProtect','endProtect','colorNotes',
+        'planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference'];
+      if (_cloudRecordData) {
+        for (var _pi = 0; _pi < _preserveFields.length; _pi++) {
+          var _f = _preserveFields[_pi];
+          // 新record为空（''/null/undefined/false），旧数据有值 → 保留旧值
+          if (!_mergedData[_f] && _cloudRecordData[_f]) {
+            _mergedData[_f] = _cloudRecordData[_f];
+          }
+        }
+      }
+      
       // 直接 PATCH 云端记录，不存本地
-      record.status = isFollowUp ? '回访完成' : '待回访完成';
+      _mergedData.status = isFollowUp ? '回访完成' : '待回访完成';
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: '技师已完成',
-          record_data: record
+          record_data: _mergedData
         })
       }).catch(function(){ alert('❌ 云端同步失败，请检查网络'); });
       // 更新按钮状态
@@ -4471,6 +4495,8 @@ function initApp() {
   var _followUpMode = false;
   // ★ 云端记录原始编号（用于保存时保持seq不变）
   var _cloudRecordSeq = null;
+  // ★ 云端记录原始数据备份（用于合并保存，防止空白字段覆盖已有数据）
+  var _cloudRecordData = null;
 
   window.loadHairRecordData = function(data) {
     if (!data) return;
@@ -4482,6 +4508,12 @@ function initApp() {
       _cloudRecordSeq = data.seq;
     } else if (!_cloudEditingId) {
       _cloudRecordSeq = null;
+    }
+    // 保存云端记录完整数据备份（用于合并保存，防止空白字段覆盖已有数据）
+    if (_cloudEditingId) {
+      _cloudRecordData = JSON.parse(JSON.stringify(data));
+    } else {
+      _cloudRecordData = null;
     }
     // 云端编辑时隐藏「我的任务」
     var taskSection = document.getElementById('hair-tasks-section');
@@ -5097,6 +5129,7 @@ function initApp() {
     _cloudEditingId = null;
     _followUpMode = false;
     _cloudRecordSeq = null;
+    _cloudRecordData = null;
     var containerId = 'hair-analysis-section';
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
