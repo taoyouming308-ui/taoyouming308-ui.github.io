@@ -1907,16 +1907,24 @@ window.viewHairAnalysis = async function(id) {
     html += '</div>';
     
     // ===== 基础信息 =====
+    // 基础信息映射表
+    var _bm = {'no':'没漂','once':'1次','twice':'2次','3plus':'3次+'};
+    var _dm = {'no':'没染','dark':'深色','light':'浅色','special':'特殊色'};
+    var _fm = {'smooth':'顺滑有弹性','slight_rough':'轻微粗糙','rough':'明显粗糙','mushy':'软绵无弹性'};
+    var _pm = {'lt1m':'<1个月','1-3m':'1-3个月','3-6m':'3-6个月','gt6m':'6个月+','never':'没烫过','once':'1次','twice':'2次','3plus':'3次+'};
+    var _cm = {'2-3':'2-3(自然黑)','3-4':'3-4(深棕)','5-6':'5-6(棕色)','6-7':'6-7(棕黄)','8-9':'8-9(漂浅)'};
+    var _lc = {'coarse':'粗硬','fine':'细软'};
+    var _fn2 = function(v, m) { return v ? (m[v] || v) : '—'; };
     html += '<div style="margin-bottom:10px;">';
     html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">基础信息</div>';
     html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-    html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根色度</td><td style="padding:2px 4px;">' + esc(bi.root_color||bi.color_level||'—') + '</td>';
-    html += '<td style="color:#888;width:60px;padding:2px 4px;">发中色度</td><td style="padding:2px 4px;">' + esc(bi.mid_color||'—') + '</td>';
-    html += '<td style="color:#888;width:60px;padding:2px 4px;">发尾色度</td><td style="padding:2px 4px;">' + esc(bi.end_color||'—') + '</td></tr>';
-    html += '<tr><td style="color:#888;padding:2px 4px;">漂发</td><td style="padding:2px 4px;">' + esc(bi.bleached||'—') + '</td>';
-    html += '<td style="color:#888;padding:2px 4px;">染发</td><td style="padding:2px 4px;">' + esc(bi.dyed||'—') + '</td>';
-    html += '<td style="color:#888;padding:2px 4px;">手感</td><td style="padding:2px 4px;">' + esc(bi.feel||'—') + '</td></tr>';
-    html += '<tr><td style="color:#888;padding:2px 4px;">上次烫发</td><td colspan="3" style="padding:2px 4px;">' + esc(bi.last_perm||'—') + '</td></tr>';
+    html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根色度</td><td style="padding:2px 4px;">' + _fn2(bi.root_color||bi.color_level,_cm) + '</td>';
+    html += '<td style="color:#888;width:60px;padding:2px 4px;">发中色度</td><td style="padding:2px 4px;">' + _fn2(bi.mid_color,_cm) + '</td>';
+    html += '<td style="color:#888;width:60px;padding:2px 4px;">发尾色度</td><td style="padding:2px 4px;">' + _fn2(bi.end_color,_cm) + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">漂发</td><td style="padding:2px 4px;">' + _fn2(bi.bleached,_bm) + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">染发</td><td style="padding:2px 4px;">' + _fn2(bi.dyed,_dm) + '</td>';
+    html += '<td style="color:#888;padding:2px 4px;">手感</td><td style="padding:2px 4px;">' + _fn2(bi.feel,_fm) + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">上次烫发</td><td colspan="3" style="padding:2px 4px;">' + _fn2(bi.last_perm,_pm) + '</td></tr>';
     html += '</table>';
     html += '</div>';
     
@@ -1933,9 +1941,9 @@ window.viewHairAnalysis = async function(id) {
     html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">三段发质诊断（AI分析）</div>';
     if (hasDiag) {
       html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-      html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(rLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (rLv||'—') + '</span> ' + esc(lvlText(rLv)) + ' · ' + esc(rootDiag.coarse_fine||'') + (rootDiag.description ? ' · ' + esc(rootDiag.description) : '') + '</td></tr>';
-      html += '<tr><td style="color:#888;padding:2px 4px;">发中</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(mLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (mLv||'—') + '</span> ' + esc(lvlText(mLv)) + ' · ' + esc(midDiag.coarse_fine||'') + (midDiag.description ? ' · ' + esc(midDiag.description) : '') + '</td></tr>';
-      html += '<tr><td style="color:#888;padding:2px 4px;">发尾</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(eLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (eLv||'—') + '</span> ' + esc(lvlText(eLv)) + ' · ' + esc(endDiag.coarse_fine||'') + (endDiag.description ? ' · ' + esc(endDiag.description) : '') + '</td></tr>';
+      html += '<tr><td style="color:#888;width:60px;padding:2px 4px;">发根</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(rLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (rLv||'—') + '</span> ' + esc(lvlText(rLv)) + ' · ' + _fn2(rootDiag.coarse_fine,_lc) + (rootDiag.description ? ' · ' + esc(rootDiag.description) : '') + '</td></tr>';
+      html += '<tr><td style="color:#888;padding:2px 4px;">发中</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(mLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (mLv||'—') + '</span> ' + esc(lvlText(mLv)) + ' · ' + _fn2(midDiag.coarse_fine,_lc) + (midDiag.description ? ' · ' + esc(midDiag.description) : '') + '</td></tr>';
+      html += '<tr><td style="color:#888;padding:2px 4px;">发尾</td><td style="padding:2px 4px;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:' + lvlColor(eLv) + ';color:#000;font-weight:700;font-size:11px;margin-right:4px;">' + (eLv||'—') + '</span> ' + esc(lvlText(eLv)) + ' · ' + _fn2(endDiag.coarse_fine,_lc) + (endDiag.description ? ' · ' + esc(endDiag.description) : '') + '</td></tr>';
       // 视觉特征
       var vf = diag.visual_features;
       if (vf && vf.length) {
@@ -1979,12 +1987,15 @@ window.viewHairAnalysis = async function(id) {
     
     // ===== 烫发方案 =====
     var hasPerm = rec.permType || rec.rodMethod || rec.serviceType;
+    var _ps = {'wool-perm':'羊毛卷','french-wool-perm':'法式羊毛卷','french-wave':'法式卷','style-perm':'造型烫','c-straight':'C型拉直','__none__':'不建议'};
+    var _rm = {'flat-wrap':'平卷','winding':'缠绕','twist':'半扭转','straight':'拉直','wrap':'平卷缠绕'};
+    var _ct = {'permanent':'烫发液','cream':'膏状药水'};
     html += '<div style="margin-bottom:10px;">';
     html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">烫发方案</div>';
     html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
     html += '<tr><td style="color:#888;width:68px;padding:2px 4px;">服务类型</td><td style="padding:2px 4px;">' + esc(svcMap[rec.serviceType] || rec.serviceType||'—') + '</td>';
-    html += '<td style="color:#888;width:68px;padding:2px 4px;">烫发类型</td><td style="padding:2px 4px;">' + esc(rec.permType||'—') + '</td></tr>';
-    html += '<tr><td style="color:#888;padding:2px 4px;">排杠手法</td><td colspan="3" style="padding:2px 4px;">' + esc(rec.rodMethod||'—') + '</td></tr>';
+    html += '<td style="color:#888;width:68px;padding:2px 4px;">款式</td><td style="padding:2px 4px;">' + _fn2(rec.permType,_ps) + '</td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">排杠手法</td><td colspan="3" style="padding:2px 4px;">' + _fn2(rec.rodMethod,_rm) + '</td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">染发类型</td><td style="padding:2px 4px;">' + esc(rec.colorType||'—') + '</td>';
     html += '<td style="color:#888;padding:2px 4px;">目标色</td><td style="padding:2px 4px;">' + esc(rec.targetColor||'—') + '</td></tr>';
     if (rec.formula) {
