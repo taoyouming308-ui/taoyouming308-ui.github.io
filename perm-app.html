@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="259">
+<html lang="zh-CN" data-version="260">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3798,19 +3798,40 @@ function initApp() {
     }
     // 同步到云端 - 非静默才同步 hair_records
     if (!silent) {
-      var hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records', {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({
-          id: record.id,
-          customer_name: record.customerName,
-          customer_phone: record.customerPhone,
-          technician: record.technician,
-          barber: record.barber,
-          status: record.status,
-          record_data: record
-        })
-      }).catch(function(){});
+      // ★ 判断是不是云端记录（技师点编辑进来的）
+      var isCloudRecord = _cloudEditingId ? true : false;
+      var cloudId = _cloudEditingId || '';
+      // 用完重置
+      _cloudEditingId = null;
+      
+      var hrPromise;
+      if (isCloudRecord && cloudId) {
+        // 云端记录 → PATCH 更新 + 设置状态为已完成（锁定，不可再编辑）
+        record.status = '已完成';
+        hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
+          method: 'PATCH',
+          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: '已完成',
+            record_data: record
+          })
+        }).catch(function(){});
+      } else {
+        // 普通保存 → POST 新记录
+        hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records', {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            id: record.id,
+            customer_name: record.customerName,
+            customer_phone: record.customerPhone,
+            technician: record.technician,
+            barber: record.barber,
+            status: record.status,
+            record_data: record
+          })
+        }).catch(function(){});
+      }
 
       // ★ 保存完刷新列表，不隐藏表单
       if (window.renderPendingRecords) window.renderPendingRecords();
@@ -4071,7 +4092,10 @@ function initApp() {
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
         if (!isDone) {
-          html += '<button onclick="markCloudDone(\''+escAttr(phone)+'\',\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
+          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑填写</button>';
+          html += '<button onclick="markCloudDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
+        } else {
+          html += '<span style="font-size:10px;color:var(--success);">✅ 已填写完成</span>';
         }
         html += '</div></div>';
       }
@@ -4081,28 +4105,33 @@ function initApp() {
     });
   };
 
-  window.loadCloudRecord = function(phone) {
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level&phone=eq.' + encodeURIComponent(phone) + '&status=eq.record_saved&limit=1&order=created_at.desc', {
+  window.loadCloudRecord = function(recordId) {
+    if (!recordId) return;
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
-      var rec = (rows[0].ai_analysis && rows[0].ai_analysis.record) || {};
+      var rec = (rows[0].record_data) || {};
+      // 标记得这条记录是云端的，保存时更新 hair_records
+      rec._isCloudRecord = true;
+      rec._cloudRecordId = recordId;
       // 加载到表单
       if (window.loadHairRecordData) window.loadHairRecordData(rec);
+      // 滚动到表单位置
+      var formEl = document.getElementById('hair-analysis-section');
+      if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function(){});
   };
 
-  window.markCloudDone = function(phone, recordId) {
-    // 用 id 更新 hair_records 状态
-    if (recordId) {
-      fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId), {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: '已完成' })
-      }).then(function() {
-        if (window.renderMyTasks) window.renderMyTasks();
-      }).catch(function(){});
-    }
+  window.markCloudDone = function(recordId) {
+    if (!recordId) return;
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: '已完成' })
+    }).then(function() {
+      if (window.renderMyTasks) window.renderMyTasks();
+    }).catch(function(){});
   };
 
   // ===== 展示文字版快照（代替编辑表单） =====
@@ -4300,9 +4329,14 @@ function initApp() {
   };
 
   // 从云端记录填充表单（公用）
+  // ★ 云端记录编辑标记（技师编辑时使用）
+  var _cloudEditingId = null;
+
   window.loadHairRecordData = function(data) {
     if (!data) return;
     _editingHairId = data.id || 'cloud_' + Date.now();
+    // 记录云端记录ID（如果有）
+    _cloudEditingId = data._cloudRecordId || (data._isCloudRecord ? data.id : null);
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
     if (window.restoreTechChips) window.restoreTechChips(data.technician);
@@ -5088,8 +5122,10 @@ function initApp() {
     html += '</div>';
     html += '</div>';
 
-    // 保存/上传按钮 - 已有记录显示上传，新建记录显示保存
-    if (_editingHairId) {
+    // 保存/上传按钮 - 云端编辑显示提交，已有记录显示上传，新建显示保存
+    if (_cloudEditingId) {
+      html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--success,#2ecc71);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 提交</button>';
+    } else if (_editingHairId) {
       html += '<button id="hair-save-btn" onclick="window.saveAndUploadHairRecord()" style="width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">☁️ 上传</button>';
     } else {
       html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 保存到本地</button>';
