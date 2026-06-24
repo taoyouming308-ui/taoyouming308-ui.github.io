@@ -254,7 +254,11 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <button onclick="loadHairRecordList()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
         <span id="hr-count" style="font-size:12px;color:var(--muted);"></span>
       </div>
-      <div id="hair-records-container" style="max-height:480px;overflow-y:auto;"></div>
+      <div style="max-height:480px;overflow-y:auto;">
+        <table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>发型师</th><th>技师</th><th>三段诊断</th><th>烫发方案</th><th>评定</th><th>状态</th><th>停留</th><th>时间</th><th>操作</th></tr></thead>
+          <tbody id="table-hair-records"></tbody>
+        </table>
+      </div>
     </div>
   </div>
   
@@ -1481,11 +1485,11 @@ window.showBarberDetail = function(barberName) {
 
 // ===== 发质分析表明细列表 =====
 window.loadHairRecordList = function() {
-  var container = document.getElementById('hair-records-container');
-  if (!container) return;
+  var tbody = document.getElementById('table-hair-records');
+  if (!tbody) return;
   var search = (document.getElementById('hr-search')||{}).value || '';
   var statusFilter = (document.getElementById('hr-status-filter')||{}).value || '';
-  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
+  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
 
   var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=50';
   if (statusFilter) url += '&status=eq.' + encodeURIComponent(statusFilter);
@@ -1494,7 +1498,7 @@ window.loadHairRecordList = function() {
   .then(function(r){ return r.json(); })
   .then(function(rows){
     if (!rows || rows.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">暂无数据</div>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">暂无数据</td></tr>';
       document.getElementById('hr-count').textContent = '共 0 条';
       return;
     }
@@ -1528,69 +1532,48 @@ window.loadHairRecordList = function() {
       var overdue = r.status !== '已完成' && typeof days === 'string' && days.indexOf('天') > 0 && parseInt(days) >= 2;
       var statusColor = r.status === '已完成' ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c';
       
-      // 卡片开始
-      html += '<div style="background:var(--bg);border:1px solid ' + (overdue ? 'rgba(231,76,60,0.4)' : 'var(--border)') + ';border-radius:8px;padding:12px;margin-bottom:10px;">';
-      
-      // 顶部：客户名 + 状态标签
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-      html += '<div><span style="font-size:14px;font-weight:700;color:#fff;">' + esc(r.customer_name || '—') + '</span>';
-      html += '<span style="font-size:11px;color:var(--muted);margin-left:8px;">' + esc(r.customer_phone || '') + '</span></div>';
-      html += '<span style="font-size:11px;padding:3px 10px;border-radius:10px;background:' + statusColor + '20;color:' + statusColor + ';border:1px solid ' + statusColor + '40;font-weight:600;">' + statusText + '</span>';
-      html += '</div>';
-      
-      // 基本信息行
-      html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">';
-      html += '<span>👤 发型师：<span style="color:#aaa;">' + esc(r.barber || '—') + '</span></span>';
-      html += '<span>🔧 技师：<span style="color:#aaa;">' + esc(tech) + '</span></span>';
-      html += '<span>📅 ' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</span>';
-      html += '<span style="color:' + (overdue ? '#e74c3c;font-weight:600' : '#aaa') + ';">⏱ ' + days + '</span>';
-      html += '<span style="color:var(--muted);font-family:monospace;font-size:10px;">#' + (r.id ? r.id.substring(0,8) : '—') + '</span>';
-      html += '</div>';
-      
-      // 发质诊断
+      // 三段诊断摘要
+      var diagSum = '—';
       if (rd && rd.threeSection) {
-        html += '<div style="margin-bottom:6px;padding-left:8px;border-left:2px solid #555;">';
-        html += '<div style="font-size:10px;color:#888;margin-bottom:3px;">📋 三段发质诊断</div>';
-        html += '<div style="font-size:11px;display:flex;gap:8px;flex-wrap:wrap;">';
+        var parts = [];
         ['root','mid','end'].forEach(function(pk){
           var pn = {root:'根',mid:'中',end:'尾'}[pk];
           var p = rd.threeSection[pk] || {};
-          var lv = lvlMap[p.level] || (p.level ? p.level+'级' : '—');
-          var cf = {coarse:'粗硬',fine:'细软'}[p.coarse_fine] || p.coarse_fine || '';
-          html += '<span style="background:var(--surface-light);padding:2px 6px;border-radius:3px;">' + pn + lv + (cf ? '/'+cf : '') + '</span>';
+          if (p.level) parts.push(pn + p.level + '级');
         });
-        html += '</div></div>';
+        if (parts.length > 0) diagSum = parts.join(' ');
       }
       
-      // 染烫方案
-      if (rd && (rd.permStyle || rd.rodMethod || rd.serviceType)) {
-        html += '<div style="margin-bottom:6px;padding-left:8px;border-left:2px solid #555;">';
-        html += '<div style="font-size:10px;color:#888;margin-bottom:2px;">💇 烫发方案</div>';
-        html += '<div style="font-size:11px;color:#aaa;">';
-        if (rd.permStyle) html += '<span style="margin-right:8px;">款式：' + esc(rd.permStyle) + '</span>';
-        if (rd.rodMethod) html += '<span style="margin-right:8px;">手法：' + esc(rd.rodMethod) + '</span>';
-        if (rd.rodsTop) html += '<span>排杠：顶' + esc(rd.rodsTop) + ' 后' + esc(rd.rodsBack||'—') + ' 侧' + esc(rd.rodsSide||'—') + '</span>';
-        html += '</div></div>';
+      // 烫发方案摘要
+      var permSum = '—';
+      if (rd) {
+        var pps = [];
+        if (rd.permStyle) pps.push(rd.permStyle);
+        if (rd.rodMethod) pps.push(rd.rodMethod);
+        if (pps.length > 0) permSum = pps.join('/');
       }
       
       // 效果评定
-      if (rd && rd.feedbackRating) {
-        html += '<div style="margin-bottom:6px;padding-left:8px;border-left:2px solid var(--success);">';
-        html += '<span style="font-size:11px;color:#888;">⭐ 评定：</span>';
-        html += '<span style="font-size:14px;font-weight:700;color:var(--success);">' + esc(rd.feedbackRating) + '</span>';
-        if (rd.followMsg) html += '<span style="font-size:10px;color:#888;margin-left:6px;">' + esc(rd.followMsg) + '</span>';
-        html += '</div>';
-      }
+      var rating = rd && rd.feedbackRating ? rd.feedbackRating : '—';
       
-      // 底部操作
-      html += '<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">';
-      html += '<button onclick="viewHairRecordDetail(\'' + r.id.replace(/'/g,"\\'") + '\')" style="flex:1;padding:5px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--info);cursor:pointer;font-size:11px;">📄 查看完整详情</button>';
-      html += '</div></div>';
+      html += '<tr' + (overdue ? ' style="background:rgba(231,76,60,0.06);"' : '') + '>';
+      html += '<td style="font-weight:600;">' + esc(r.customer_name || '—') + '</td>';
+      html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
+      html += '<td style="font-size:11px;">' + esc(r.barber || '—') + '</td>';
+      html += '<td style="font-size:11px;">' + esc(tech) + '</td>';
+      html += '<td style="font-size:11px;color:#aaa;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(diagSum) + '">' + esc(diagSum) + '</td>';
+      html += '<td style="font-size:11px;color:#aaa;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(permSum) + '">' + esc(permSum) + '</td>';
+      html += '<td style="font-size:13px;font-weight:600;color:' + (rating !== '—' ? 'var(--success)' : 'var(--muted)') + ';">' + esc(rating) + '</td>';
+      html += '<td style="color:' + statusColor + ';font-size:11px;">' + statusText + '</td>';
+      html += '<td style="color:' + (overdue ? '#e74c3c;font-weight:600' : 'var(--muted)') + ';font-size:11px;">' + days + '</td>';
+      html += '<td style="font-size:11px;color:var(--muted);">' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</td>';
+      html += '<td><button onclick="viewHairRecordDetail(\'' + r.id.replace(/'/g,"\\'") + '\')" style="padding:2px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:3px;cursor:pointer;font-size:11px;">查看</button></td>';
+      html += '</tr>';
     });
-    container.innerHTML = html;
+    tbody.innerHTML = html;
   })
   .catch(function(){
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px;">加载失败</div>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
   });
 };
 
