@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="258">
+<html lang="zh-CN" data-version="259">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4030,17 +4030,22 @@ function initApp() {
       return;
     }
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载我的任务...</div>';
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=eq.record_saved&order=created_at.desc&limit=50', {
+    // 从 hair_records 表查询（技师或发型师相关的记录）
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data&order=created_at.desc&limit=50', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无指派任务</div>';
+        container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无记录</div>';
         return;
       }
       // 只显示本人相关的记录（自己是技师或发型师）
       rows = rows.filter(function(r) {
-        var rec = (r.ai_analysis && r.ai_analysis.record) || {};
-        return rec.technician === barber || rec.barber === barber;
+        // 技师可能多选（逗号分隔），逐个匹配
+        var techs = (r.technician || '').split(',');
+        for (var ti = 0; ti < techs.length; ti++) {
+          if (techs[ti].trim() === barber) return true;
+        }
+        return r.barber === barber;
       });
       if (rows.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无你的任务</div>';
@@ -4049,22 +4054,24 @@ function initApp() {
       var html = '';
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
-        var data = (r.ai_analysis && r.ai_analysis.record) || {};
-        var isDone = r.status === 'completed' || r.status === 'record_saved_done';
+        var rec = r.record_data || {};
+        var isDone = r.status === '已完成' || r.status === 'completed';
+        var customerName = r.customer_name || rec.customerName || '未填写';
+        var phone = r.customer_phone || rec.customerPhone || '';
+        var technician = r.technician || rec.technician || '';
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + esc(data.customerName||'') + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(data.technician||'') + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + esc(customerName) + '</span>';
+        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(technician) + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        html += '<span>' + esc(r.phone||data.customerPhone||'') + '</span>';
+        html += '<span>' + esc(phone) + '</span>';
         var sc = isDone ? 'var(--success)' : '#e8a817';
         html += '<span style="margin-left:auto;color:'+sc+';">' + (isDone ? '已完成' : '待回访') + '</span>';
         html += '</div>';
-        // 上传后的记录不可编辑，仅显示状态
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
         if (!isDone) {
-          html += '<button onclick="markCloudDone(\''+r.phone+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
+          html += '<button onclick="markCloudDone(\''+escAttr(phone)+'\',\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
         }
         html += '</div></div>';
       }
@@ -4085,14 +4092,17 @@ function initApp() {
     }).catch(function(){});
   };
 
-  window.markCloudDone = function(phone) {
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?phone=eq.' + encodeURIComponent(phone) + '&status=eq.record_saved', {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: '已完成' })
-    }).then(function() {
-      if (window.renderMyTasks) window.renderMyTasks();
-    }).catch(function(){});
+  window.markCloudDone = function(phone, recordId) {
+    // 用 id 更新 hair_records 状态
+    if (recordId) {
+      fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId), {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: '已完成' })
+      }).then(function() {
+        if (window.renderMyTasks) window.renderMyTasks();
+      }).catch(function(){});
+    }
   };
 
   // ===== 展示文字版快照（代替编辑表单） =====
