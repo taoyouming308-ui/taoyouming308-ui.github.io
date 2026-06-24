@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="267">
+<html lang="zh-CN" data-version="268">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3793,6 +3793,35 @@ function initApp() {
     }
     saveHairRecords(records);
 
+    // ★ 新建记录且选了技师 → 自动创建云端记录，让技师能在「我的任务」看到
+    if (!found && record.technician && record.customerName && !_cloudEditingId) {
+      var newRec = JSON.parse(JSON.stringify(record));
+      fetch(SUPABASE_URL + '/rest/v1/hair_records', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          id: newRec.id,
+          customer_name: newRec.customerName,
+          customer_phone: newRec.customerPhone || '',
+          technician: newRec.technician,
+          barber: newRec.barber,
+          status: '待回访',
+          record_data: newRec
+        })
+      }).then(function(r) {
+        if (r.ok) {
+          // 标记本地记录已同步
+          var list = getHairRecords();
+          for (var _i = 0; _i < list.length; _i++) {
+            if (list[_i].id === newRec.id) { list[_i].synced = true; break; }
+          }
+          saveHairRecords(list);
+          if (window.renderPendingRecords) window.renderPendingRecords();
+          if (window.renderMyTasks) window.renderMyTasks();
+        }
+      }).catch(function(){});
+    }
+
     // ★ 如果是云端记录，跳过本地保存流程，直接同步云端
     if (_cloudEditingId) {
       var cloudId = _cloudEditingId;
@@ -3825,7 +3854,7 @@ function initApp() {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: '已完成',
+          status: '技师已完成',
           record_data: record
         })
       }).catch(function(){});
@@ -4153,7 +4182,7 @@ function initApp() {
         var isStylist = (r.barber === barber);
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + esc(customerName) + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + (rec.seq ? '#'+String(rec.seq).padStart(3,'0')+' ' : '') + esc(customerName) + '</span>';
         html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(technician) + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
@@ -4161,16 +4190,16 @@ function initApp() {
         var statusColor = '#e8a817';
         var statusText = '待回访';
         if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
-        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '技师已完成'; }
+        else if (status === '回访完成' || status === '已完成' || status === '技师已完成') { statusColor = 'var(--success)'; statusText = '技师已完成'; }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
         if (status === '待回访' && isTech) {
           // 技师编辑
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑填写</button>';
-        } else if (status === '待回访完成' && isStylist) {
-          // 发型师回访完成 → 加载到表单，需要填写评定+截图
-          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--success);cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
+        } else if (status === '技师已完成' && isStylist) {
+          // 发型师打开技师回传的单子，上传档案
+          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--success);cursor:pointer;font-family:var(--font);">📁 上传档案</button>';
         } else if (status === '待回访' && isStylist) {
           // 发型师直接完成（不用技师）
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">直接完成</button>';
