@@ -3380,7 +3380,7 @@ function initApp() {
     if (r.eval) lines.push('效果评定：' + r.eval);
     if (r.followMsg) lines.push('回馈：' + r.followMsg);
 
-    var textBlock = lines.join('\\n');
+    var textBlock = lines.join('\n');
 
     // 显示为白色文字块（纯文字，没有任何输入框/按钮）
     var html = '<div class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
@@ -4441,7 +4441,7 @@ function initApp() {
     lines.push(' 记录编号：' + (rec.id || '—'));
     lines.push(' 创建时间：' + (rec.createdAt ? rec.createdAt.slice(0,16).replace('T',' ') : (rec.date || '—')));
 
-    var textBlock = lines.join('\\n');
+    var textBlock = lines.join('\n');
 
     // 显示文字版快照（HTML表格渲染，保证对齐）
     var formSection = document.getElementById('hair-analysis-section');
