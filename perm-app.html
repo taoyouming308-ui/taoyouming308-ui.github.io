@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="279">
+<html lang="zh-CN" data-version="280">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4596,6 +4596,11 @@ function initApp() {
     if (typeof autoMatchHairType === 'function') autoMatchHairType();
     // 烫发款式恢复
     setVal('hair-q-style', data.permStyle);
+    // 恢复烫发方案查询结果（planResultHTML → #hair-q-result）
+    var planDiv = document.getElementById('hair-q-result');
+    if (planDiv && data.planResultHTML) {
+      planDiv.innerHTML = data.planResultHTML;
+    }
     // 烫发参数（步骤4）
     setVal('hair-form-rods-top', data.rodsTop);
     setVal('hair-form-rods-back', data.rodsBack);
