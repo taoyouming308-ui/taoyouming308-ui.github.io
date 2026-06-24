@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="255">
+<html lang="zh-CN" data-version="256">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3787,9 +3787,9 @@ function initApp() {
         btn.disabled = true;
       }
     }
-    // 同步到云端（技师手机能看见）- 非静默才同步
+    // 同步到云端 - 非静默才同步 hair_records
     if (!silent) {
-      fetch(SUPABASE_URL + '/rest/v1/hair_records', {
+      var hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records', {
         method: 'POST',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({
@@ -3801,46 +3801,74 @@ function initApp() {
           status: record.status,
           record_data: record
         })
-      }).catch(function(){});  // 静默失败，不影响本地
+      }).catch(function(){});
 
       // ★ 保存完刷新列表，不隐藏表单
       if (window.renderPendingRecords) window.renderPendingRecords();
       if (window.renderMyTasks) window.renderMyTasks();
       // 重置编辑状态
       _editingHairId = null;
-    }
 
-    // ★ 把护理用量（careUsage）逐条写入 care_records 表
-    var careArray = record.careUsage;
-    if (careArray && careArray.length > 0) {
-      var today = new Date().toISOString().slice(0, 10);
-      var shopName = '';
-      if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
-        shopName = window._staffStoreCache[record.barber] || '';
+      // ★ 等 hair_records 写完（外键约束），再写 care_records
+      var careArray = record.careUsage;
+      if (careArray && careArray.length > 0) {
+        var today = new Date().toISOString().slice(0, 10);
+        var shopName = '';
+        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
+          shopName = window._staffStoreCache[record.barber] || '';
+        }
+        hrPromise.then(function() {
+          var carePromises = [];
+          for (var ci = 0; ci < careArray.length; ci++) {
+            var cu = careArray[ci];
+            if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') continue;
+            carePromises.push(
+              fetch(SUPABASE_URL + '/rest/v1/care_records', {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                body: JSON.stringify({
+                  hair_record_id: record.id,
+                  barber: record.barber,
+                  shop_name: shopName,
+                  brand: cu.brand,
+                  product: cu.product,
+                  grams: parseFloat(cu.grams),
+                  record_date: today
+                })
+              })
+            );
+          }
+          if (carePromises.length > 0) {
+            Promise.all(carePromises).catch(function(){});
+          }
+        });
       }
-      var carePromises = [];
-      for (var ci = 0; ci < careArray.length; ci++) {
-        var cu = careArray[ci];
-        if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') continue;
-        var careBody = {
-          hair_record_id: record.id,
-          barber: record.barber,
-          shop_name: shopName,
-          brand: cu.brand,
-          product: cu.product,
-          grams: parseFloat(cu.grams),
-          record_date: today
-        };
-        carePromises.push(
+    } else {
+      // 静默模式：也写 care_records（可能 hair_records 已有，外键不会失败）
+      var careArray2 = record.careUsage;
+      if (careArray2 && careArray2.length > 0) {
+        var today2 = new Date().toISOString().slice(0, 10);
+        var shopName2 = '';
+        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
+          shopName2 = window._staffStoreCache[record.barber] || '';
+        }
+        for (var ci2 = 0; ci2 < careArray2.length; ci2++) {
+          var cu2 = careArray2[ci2];
+          if (!cu2 || !cu2.brand || !cu2.product || cu2.grams === undefined || cu2.grams === '') continue;
           fetch(SUPABASE_URL + '/rest/v1/care_records', {
             method: 'POST',
             headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify(careBody)
-          })
-        );
-      }
-      if (carePromises.length > 0) {
-        Promise.all(carePromises).catch(function(){});
+            body: JSON.stringify({
+              hair_record_id: record.id,
+              barber: record.barber,
+              shop_name: shopName2,
+              brand: cu2.brand,
+              product: cu2.product,
+              grams: parseFloat(cu2.grams),
+              record_date: today2
+            })
+          }).catch(function(){});
+        }
       }
     }
   };
