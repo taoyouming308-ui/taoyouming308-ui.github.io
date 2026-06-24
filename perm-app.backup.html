@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-version="281">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>自由手艺人 · X</title>
+<link rel="apple-touch-icon" href="apple-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg: #000000;
+  --surface: #16181c;
+  --surface-light: #1d1f23;
+  --text: #e7e9ea;
+  --text-secondary: #71767b;
+  --accent: #e7e9ea;
+  --accent-glow: rgba(232, 233, 234, 0.12);
+  --danger: #f4212e;
+  --warning: #ffd700;
+  --border: #2f3336;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  --transition: 0s none;
+  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+/* ── 发质分析页白底黑字 ChatGPT风格 ── */
+.hair-analysis {
+  --bg: #ffffff !important;
+  --surface: #ffffff !important;
+  --surface-light: #f5f5f5 !important;
+  --border: #e5e5e5 !important;
+  --text: #000000 !important;
+  --text-secondary: #8e8e93 !important;
+  --accent: #000000 !important;
+  --accent-glow: rgba(0,0,0,0.04) !important;
+  --danger: #dc3545 !important;
+  --warning: #f59e0b !important;
+  --shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+/* ── 护理记录：品牌tab + 下拉选择 + 添加列表 ── */
+.care-tab-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.care-tab-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.care-tab-btn.active {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+.care-tab-btn:hover:not(.active) {
+  background: #f0f0f0;
+}
+.care-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.care-select-row select {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  color: #000;
+  font-size: 13px;
+  font-family: inherit;
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+.care-select-row input[type="number"] {
+  width: 70px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  color: #000;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: center;
+}
+.care-add-btn {
+  padding: 8px 16px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.care-add-btn:disabled {
+  background: #cccccc;
+  color: #888888;
+  cursor: not-allowed;
+}
+.care-added-list {
+  margin-top: 8px;
+}
+.care-added-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #000;
+}
+.care-added-item-name {
+  font-weight: 500;
+}
+.care-added-item-grams {
+  font-weight: 700;
+  margin-left: 8px;
+}
+.care-added-item-del {
+  font-size: 14px;
+  color: #999;
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.care-added-item-del:hover {
+  color: #e00;
+  background: #ffe0e0;
+}
+.care-total-row {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  padding: 6px 12px;
+  margin-top: 4px;
+}
+.hair-analysis .ha-card {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.hair-analysis .ha-step {
+  font-size: 11px;
+  color: #8e8e93;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.hair-analysis .ha-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+.hair-analysis .ha-title::before {
+  content: '';
+  width: 3px;
+  height: 13px;
+  background: #000000;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.hair-analysis .ha-title span {
+  font-size: 12px;
+  color: #000000;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.hair-analysis .chip-label {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+.hair-analysis .chip {
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  color: #333;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.hair-analysis .chip.selected {
+  background: #007AFF;
+  border-color: #007AFF;
+  color: #ffffff;
+}
+.hair-analysis input,
+.hair-analysis select {
+  background: #f5f5f5 !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #000000 !important;
+  border-radius: 8px !important;
+}
+.hair-analysis .ha-btn {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── 自由换算 + 冷烫页面白底黑字 ChatGPT风格 ── */
+.plan-page {
+  --surface: #ffffff !important;
+  --surface-light: #f5f5f5 !important;
+  --border: #e5e5e5 !important;
+  --text: #000000 !important;
+  --text-secondary: #8e8e93 !important;
+  --accent: #000000 !important;
+  --bg: #ffffff !important;
+  --danger: #dc3545 !important;
+  --warning: #f59e0b !important;
+  --success: #2ecc71 !important;
+  background: #ffffff !important;
+}
+.plan-page .result-card { background:#ffffff; border:1px solid #e5e5e5; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.plan-page .card-header { background:#f5f5f5; border-bottom:1px solid #e5e5e5; padding:12px 16px; border-radius:12px 12px 0 0; }
+.plan-page .card-title { color:#000000; font-weight:600; font-size:14px; }
+.plan-page .card-body { color:#000000; padding:16px; }
+.plan-page select, .plan-page input, .plan-page .preset-btn { background:#f5f5f5 !important; border:1px solid #e5e5e5 !important; color:#000000 !important; border-radius:8px !important; padding:8px 12px !important; font-size:13px !important; }
+.plan-page table th { color:#8e8e93 !important; font-weight:600; font-size:11px; border-bottom:1px solid #e5e5e5; }
+.plan-page table td { color:#000000 !important; border-bottom:1px solid #e5e5e5 !important; padding:8px; font-size:12px; }
+.plan-page .param-row { border-bottom:1px solid #e5e5e5; padding:8px 0; }
+.plan-page .query-btn { background:#000000 !important; color:#ffffff !important; border:none !important; border-radius:8px !important; padding:10px !important; font-size:13px !important; font-weight:600 !important; cursor:pointer !important; }
+
+/* ── 方案tab容器（含导航栏）白底黑字 ── */
+#tab-plans { background:#ffffff !important; }
+#tab-plans .plan-nav { border-bottom:1px solid #e5e5e5 !important; margin-top:32px !important; }
+#tab-plans .plan-nav button { color:#8e8e93 !important; }
+#tab-plans .plan-nav button.on { color:#000000 !important; border-bottom-color:#000000 !important; }
+#tab-plans .main { padding:0 !important; }
+#tab-plans .home-btn-bottom { color:#000000 !important; }
+
+/* body白底模式 — 方案tab + 预约tab + 顾客方案弹窗 全屏白底 */
+body.plan-white-mode { background:#ffffff !important; color:#000000 !important; }
+body.plan-white-mode .main { background:#ffffff !important; }
+body.plan-white-mode #app-content { background:#ffffff !important; }
+body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
+
+/* ── 预约页白底 ── */
+body.plan-white-mode #tab-bookings { background:#ffffff !important; }
+body.plan-white-mode .booking-bar { border-bottom-color:#e5e5e5; }
+body.plan-white-mode .booking-bar .shop-switch { color:#333; border-color:#d1d5db; background:#ffffff; }
+body.plan-white-mode .booking-bar .shop-switch.on { color:#000000; border-color:#000000; }
+body.plan-white-mode .booking-item { border-bottom-color:#e5e5e5; background:#ffffff; }
+body.plan-white-mode .booking-item.real-customer { background:#f8f9fa; border-left-color:#94a3b8; }
+body.plan-white-mode .booking-item .bi-name { color:#000000; }
+body.plan-white-mode .booking-item .bi-meta { color:#8e8e93; }
+body.plan-white-mode .booking-item .bi-time { color:#000000; }
+body.plan-white-mode .booking-item .bi-barber { color:#8e8e93; }
+body.plan-white-mode .booking-item .bi-note { color:#555; }
+body.plan-white-mode .booking-item .bi-service-tag.cut { color:#111827; background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.12); }
+body.plan-white-mode .bi-plan-btn { color:#333; background:#ffffff; border-color:#d1d5db; }
+body.plan-white-mode .bi-plan-btn:hover { background:#333; color:#fff; }
+body.plan-white-mode .booking-loading { color:#8e8e93; }
+body.plan-white-mode .booking-date-header { color:#8e8e93; border-bottom-color:#e5e5e5; }
+body.plan-white-mode .date-strip { }
+body.plan-white-mode .date-chip { background:#ffffff; border-color:#d1d5db; color:#8e8e93; }
+body.plan-white-mode .date-chip.on { background:#000000; color:#ffffff; border-color:#000000; }
+body.plan-white-mode .identity-bar { background:#f5f5f5; color:#000000; }
+body.plan-white-mode .identity-bar .switch-btn { color:#007AFF; }
+
+/* ── 身份选择弹窗白底 ── */
+body.plan-white-mode .identity-modal { background:rgba(0,0,0,0.4); }
+body.plan-white-mode .identity-modal .box { background:#ffffff; }
+body.plan-white-mode .identity-modal h3 { color:#000000; }
+body.plan-white-mode .identity-modal .opt { background:#ffffff; border-color:#d1d5db; color:#333; }
+body.plan-white-mode .identity-modal .opt:active { background:#f5f5f5; border-color:#000; }
+body.plan-white-mode .identity-modal .reg-form input { background:#ffffff; border-color:#d1d5db; color:#000; }
+
+/* ── 顾客方案弹窗白底 ── */
+body.plan-white-mode .plan-modal { background:rgba(0,0,0,0.4); }
+body.plan-white-mode .plan-modal .box { background:#ffffff; }
+body.plan-white-mode .plan-modal h3 { color:#000000; }
+body.plan-white-mode .plan-modal .sub { color:#8e8e93; }
+body.plan-white-mode .plan-modal .row { border-bottom-color:#e5e5e5; }
+body.plan-white-mode .plan-modal .row .label { color:#8e8e93; }
+body.plan-white-mode .plan-modal .row .val { color:#000000; }
+body.plan-white-mode .plan-modal .suggestion { background:#f5f5f5; color:#000; }
+body.plan-white-mode .plan-modal .close-btn { background:#ffffff; border-color:#d1d5db; color:#333; }
+body.plan-white-mode .plan-modal .ai-btn { background:#ffffff; border-color:#333; color:#333; }
+body.plan-white-mode .plan-modal .ai-btn:hover { background:#f5f5f5; }
+body.plan-white-mode .plan-modal .ai-result { background:#f5f5f5; border-left-color:#333; }
+body.plan-white-mode .plan-modal .loading { color:#8e8e93; }
+body.plan-white-mode .plan-modal .no-data { color:#8e8e93; }
+body.plan-white-mode .plan-modal .bi-history-item { border-bottom-color:#e5e5e5; }
+body.plan-white-mode .plan-modal .bi-history-date { color:#8e8e93; }
+body.plan-white-mode .plan-modal .bi-history-detail { color:#555; }
+body.plan-white-mode .plan-modal .bi-no-history { color:#8e8e93; }
+body.plan-white-mode .plan-modal .ai-result,
+body.plan-white-mode .plan-modal .ai-result * { color:#000000 !important; }
+body.plan-white-mode .plan-modal .ai-result > div:first-child { color:#000000 !important; }
+body.plan-white-mode #ai-loading { color:#8e8e93 !important; }
+
+/* 发质分析弹窗 — 全屏白底 */
+body.hair-modal-open { background:#ffffff !important; }
+body.hair-modal-open #hair-analysis-modal { background:#ffffff; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  padding-top: 38px;
+  min-height: calc(100vh - 38px);
+  max-width: 480px;
+  margin: 0 auto;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* 不强制GPU合成 — iOS Safari上translateZ(0)反而导致闪屏 */
+}
+
+/* ── Header ── */
+.tabs {
+  display: flex;
+  gap: 0;
+}
+
+/* ── Main Content ── */
+.main {
+  padding: 16px;
+  min-height: calc(100vh - 180px);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Query Tab ── */
+.selector-group {
+  margin-bottom: 14px;
+}
+
+.selector-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 14px 40px 14px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font);
+  appearance: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.select-wrapper select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ── Chip Selector ── */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.chip {
+  padding: 6px 12px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.chip.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.chip-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.section-title-sm {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.consistency-pass { color: #2ecc71; }
+.consistency-warn { color: var(--warning); }
+.consistency-fail { color: var(--danger); }
+
+.select-wrapper::after {
+  content: '▾';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.query-btn {
+  width: 100%;
+  padding: 15px;
+  background: #e7e9ea;
+  border: none;
+  border-radius: var(--radius);
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: var(--transition);
+  letter-spacing: 1px;
+}
+
+.query-btn:active {
+  opacity: 0.9;
+}
+
+.query-btn:disabled {
+  opacity: 0.4;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* ── Result Cards ── */
+.result-area {
+  margin-top: 20px;
+}
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  padding: 12px 16px;
+  background: var(--surface-light);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon {
+  font-size: 22px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.card-body {
+  padding: 14px 16px;
+}
+
+.param-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+
+.param-row:last-child {
+  border-bottom: none;
+}
+
+.param-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.param-value {
+  font-weight: 600;
+  text-align: right;
+  margin-left: 12px;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+.param-value.highlight {
+  color: var(--accent);
+}
+
+.param-value.warn {
+  color: var(--warning);
+}
+
+/* ── Rod Table ── */
+.rod-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.rod-table th {
+  background: var(--surface-light);
+  color: var(--accent);
+  padding: 8px 6px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 12px;
+}
+
+.rod-table td {
+  padding: 8px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.rod-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Warning Notice ── */
+.warning-notice {
+  background: rgba(224, 85, 106, 0.12);
+  border-left: 3px solid var(--danger);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* ── General Tips ── */
+.tips-section {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+.tips-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tips-list {
+  list-style: none;
+}
+
+.tips-list li {
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-left: 16px;
+  position: relative;
+}
+
+.tips-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+/* ── Calculator ── */
+.calc-toggle {
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0;
+  background: transparent;
+  border: 1px dashed #555;
+  border-radius: 10px;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+}
+.calc-toggle:active { border-color: var(--accent); color: var(--accent); }
+.calc-panel { margin-bottom: 16px; }
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.calc-row:last-child { border-bottom: none; }
+.calc-row .label { color: var(--text-secondary); }
+.calc-row .value { color: var(--accent); font-weight: 600; }
+
+.preset-btn:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: rgba(232,233,234,0.08) !important; }
+.preset-btn:active { background: rgba(232,233,234,0.14) !important; }
+
+/* ── Knowledge Base Tab ── */
+.search-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 13px 40px 13px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+  transition: var(--transition);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.search-box input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.search-results-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+/* ── Accordion ── */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accordion-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.accordion-header {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.accordion-header:active {
+  background: var(--surface-light);
+}
+
+.accordion-arrow {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.accordion-item.open .accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+}
+
+.accordion-item.open .accordion-body {
+  max-height: 2000px;
+}
+
+.accordion-content {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.accordion-content .kb-subtitle {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 10px 0 4px;
+  font-size: 14px;
+}
+
+.accordion-content .kb-subtitle:first-child {
+  margin-top: 0;
+}
+
+.accordion-content p {
+  margin: 4px 0;
+}
+
+.accordion-content .highlight {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.accordion-content .search-highlight {
+  background: rgba(212, 165, 116, 0.3);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.no-results .icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+/* ── Floating Back to Top ── */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.back-to-top.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-light);
+  color: var(--text);
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 200;
+  opacity: 0;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<!-- 首页 -->
+<section id="home-page">
+  <style>
+    #home-page { padding:12px 0 0; text-align:center; }
+    .hero-text { padding:40px 24px 24px; }
+    .hero-text h1 { font-size:28px; font-weight:700; color:var(--text); margin:0 0 4px; letter-spacing:1px; }
+    .hero-text .sub { font-size:12px; color:var(--text-secondary); letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; }
+    .hero-text .slogan { font-size:15px; color:var(--text-secondary); font-weight:300; }
+    .brand-text { padding:0 32px 16px; font-size:13px; line-height:1.7; color:var(--text-secondary); text-align:center; }
+    .brand-text em { font-style:normal; color:var(--text); font-weight:500; }
+    .carousel-box { margin:0 16px 4px; border-radius:16px; overflow:hidden; position:relative; background:#000; aspect-ratio:3/4; }
+    .carousel-box img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; opacity:0; pointer-events:none; }
+    .carousel-box img.active { opacity:1; pointer-events:auto; }
+
+    /* 安装引导 */
+    #install-guide { position:fixed; z-index:9999; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    #install-guide .ig-mask { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); }
+    #install-guide .ig-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:30px 28px 20px; max-width:300px; width:85%; text-align:center; z-index:1; }
+    #install-guide .ig-arrow { margin-bottom:8px; }
+    #install-guide .ig-title { font-size:18px; font-weight:600; color:var(--text); margin-bottom:16px; }
+    #install-guide .ig-step { font-size:14px; color:var(--text-secondary); line-height:1.7; margin-bottom:4px; }
+    #install-guide .ig-step b { color:var(--text); }
+    #install-guide .ig-icon { font-size:40px; margin-bottom:10px; }
+    #install-guide .ig-close { display:inline-block; margin-top:18px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
+
+    /* 微信/QQ 浏览器引导 */
+    #wx-guide { position:fixed; z-index:99999; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    #wx-guide .wx-mask { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); }
+    #wx-guide .wx-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px 28px 20px; max-width:320px; width:85%; text-align:center; z-index:1; }
+    #wx-guide .wx-icon { font-size:48px; margin-bottom:12px; }
+    #wx-guide .wx-title { font-size:18px; font-weight:600; color:var(--text); margin-bottom:12px; }
+    #wx-guide .wx-desc { font-size:14px; color:var(--text-secondary); line-height:1.8; margin-bottom:10px; }
+    #wx-guide .wx-desc b { color:var(--accent); }
+    #wx-guide .wx-close { display:inline-block; margin-top:14px; padding:10px 36px; border:1px solid var(--text); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; }
+
+    .home-menu-btn { position:fixed; bottom:44px; left:20px; z-index:10020; width:40px; height:40px; border:0; background:transparent; color:#e7e9ea; font-size:24px; line-height:40px; padding:0; cursor:pointer; }
+    .home-drawer-mask { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.6); opacity:0; visibility:hidden; }
+    .home-drawer { position:fixed; left:16px; bottom:120px; width:200px; z-index:10030; background:rgba(0,0,0,0); transform:translateX(-120%); display:flex; flex-direction:column; gap:0; border-radius:16px; overflow:hidden; }
+    .home-drawer.open { transform:translateX(0); }
+    .home-drawer-mask.open { opacity:1; visibility:visible; }
+    .home-drawer-item { width:100%; padding:14px 20px; border:0; background:transparent; color:#e7e9ea; font-size:16px; text-align:left; cursor:pointer; }
+    .home-drawer-item:first-child { border-radius:16px 16px 0 0; }
+    .home-drawer-item:last-child { border-radius:0 0 16px 16px; }
+    .home-drawer-item:only-child { border-radius:16px; }
+    .home-drawer-item + .home-drawer-item { border-top:1px solid rgba(47,51,54,0.5); }
+    .home-drawer-item:active { opacity:0.6; }
+    .home-menu-btn:active { opacity:0.6; }
+  </style>
+  <button class="home-menu-btn" type="button" onclick="openHomeDrawer()" aria-label="打开菜单">☰</button>
+  <div id="home-drawer-mask" class="home-drawer-mask" onclick="closeHomeDrawer()"></div>
+  <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')">发质分析</button>
+  </aside>
+  <div class="hero-text">
+    <h1>自由手艺人</h1>
+    <div class="sub">Hair Design</div>
+    <div class="slogan">找到属于你的风格</div>
+  </div>
+  <div class="brand-text">
+    技术，是一切发型设计的基础。<br>
+    好看的发型，不只是审美判断，更需要扎实的技术落地。<br>
+    从发质判断、层次结构、软化控制，到最终的线条与质感，每一步都决定着发型的完成度。<br>
+    审美决定上限，<em>技术决定下限</em>。<br>
+    我们用专业技术，让每一次设计都更稳定、更适合、更有品质。
+  </div>
+  <div class="carousel-box" onclick="openFeature('showcase')">
+    <img class="active" loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
+    <img loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg" alt="">
+    <img loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg" alt="">
+  </div>
+</section>
+
+<!-- App内容（默认隐藏） -->
+<div id="app-content" style="display:none;">
+
+<!-- Tab Nav -->
+<nav class="tab-nav">
+  <button class="home-btn-bottom" onclick="goHome()" style="position:fixed;bottom:44px;left:20px;z-index:10020;background:transparent;border:none;color:#e7e9ea;font-size:16px;padding:8px 4px;cursor:pointer;">← 首页</button>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Query Tab -->
+  <!-- 方案二级页 -->
+  <section class="tab-content" id="tab-plans">
+    <style>
+      .plan-nav { display:flex; gap:0; margin-bottom:16px; border-bottom:1px solid var(--border); }
+      .plan-nav button { flex:1; padding:10px 0; background:none; border:none; color:var(--text-secondary); font-size:13px; cursor:pointer; border-bottom:2px solid transparent; }
+      .plan-nav button.on { color:var(--text); border-bottom-color:var(--text); }
+      .plan-nav .plan-refresh { margin-left:auto; align-self:center; padding:4px 2px 4px 8px; cursor:pointer; font-size:16px; color:var(--text-secondary); opacity:0.25; }
+      .plan-nav .plan-refresh:hover, .plan-nav .plan-refresh:active { opacity:0.7; }
+      .plan-page { display:none; }
+      .plan-page.active { display:block; padding-top:32px; }
+    </style>
+    <nav class="plan-nav" id="plan-nav">
+      <button onclick="switchPlan('calc')" class="on">自由换算</button>
+      <button onclick="switchPlan('cold')">冷烫</button>
+    </nav>
+
+  <!-- Calc Tab -->
+  <section class="plan-page" id="plan-calc">
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">自由比例调配</span>
+      </div>
+      <div class="card-body">
+        <!-- 快速预设 -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <button class="preset-btn" data-tga="3" data-ca="0" style="flex:1;min-width:55px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">纯TGA</button>
+          <button class="preset-btn" data-tga="6" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">6:1</button>
+          <button class="preset-btn" data-tga="3" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">3:1</button>
+          <button class="preset-btn" data-tga="1" data-ca="1" style="flex:1;min-width:45px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">1:1</button>
+          <button class="preset-btn" data-tga="1" data-ca="10" style="flex:1;min-width:50px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">1:10</button>
+          <button class="preset-btn" data-tga="0" data-ca="1" style="flex:1;min-width:55px;padding:8px 4px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:var(--font);">纯CA</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>TGA 份数</label>
+            <input type="number" id="calc-tga" value="1" min="0" max="50" step="0.5" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;text-align:center;">
+          </div>
+          <span style="color:var(--accent);font-size:20px;font-weight:700;margin-top:20px;">:</span>
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>CA 份数</label>
+            <input type="number" id="calc-ca" value="1" min="0" max="50" step="0.5" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;text-align:center;">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>总药水量（g）</label>
+            <input type="number" id="calc-amount" value="50" min="10" max="500" step="5" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;">
+          </div>
+          <div class="selector-group" style="flex:1;margin-bottom:0;">
+            <label>额外稀释（水/蛋白 g，可选）</label>
+            <input type="number" id="calc-extra" value="0" min="0" max="200" step="1" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;">
+          </div>
+        </div>
+        <button class="query-btn" id="calc-btn" style="margin-top:4px;width:100%;">📐 计算</button>
+        <div id="calc-result" style="margin-top:16px;"></div>
+        <!-- 固定配比参考表 -->
+        <div style="margin-top:20px;padding:12px;background:var(--surface-light);border-radius:8px;">
+          <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px;">📋 固定配比化学值参考</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px;">
+            <div style="color:var(--text-secondary);padding:4px 0;">配比</div><div style="color:var(--text-secondary);padding:4px 0;">PH</div><div style="color:var(--text-secondary);padding:4px 0;">硫代</div>
+            <div style="color:var(--text);">纯TGA</div><div style="color:var(--accent);">9.5</div><div style="color:var(--accent);">9.5%</div>
+            <div style="color:var(--text);">6:1</div><div style="color:var(--accent);">8.9</div><div style="color:var(--accent);">8.4%</div>
+            <div style="color:var(--text);">3:1</div><div style="color:var(--accent);">8.5</div><div style="color:var(--accent);">7.6%</div>
+            <div style="color:var(--text);">1.5:1</div><div style="color:var(--accent);">7.9</div><div style="color:var(--accent);">6.5%</div>
+            <div style="color:var(--text);">1:1</div><div style="color:var(--accent);">7.5</div><div style="color:var(--accent);">5.8%</div>
+            <div style="color:var(--text);">1:6</div><div style="color:var(--accent);">6.1</div><div style="color:var(--accent);">3.1%</div>
+            <div style="color:var(--text);">1:10~1:20</div><div style="color:var(--accent);">5.9</div><div style="color:var(--accent);">2.7%</div>
+            <div style="color:var(--text);">纯CA</div><div style="color:var(--accent);">5.5</div><div style="color:var(--accent);">2.0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cold Perm Tab -->
+  <section class="plan-page" id="plan-cold">
+    <!-- 流程总图 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">冷烫完整流程</span>
+      </div>
+      <div class="card-body">
+        <div style="background:rgba(212,165,116,0.06);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:2;text-align:center;">
+          <b>①</b> 发质判断＋软化（与热烫相同）<br>
+          ↓<br>
+          <b>②</b> 冲水 → 卷杠<br>
+          ↓<br>
+          <b>③</b> 上冷烫液 → 停留 1-2 分钟<br>
+          ↓<br>
+          <b>④</b> 冲干净冷烫液<br>
+          ↓<br>
+          <b>⑤</b> 冷烫专用加热器 15 分钟（外部加热，不插电到杠子）<br>
+          ↓<br>
+          <b>⑥</b> 确认效果 OK<br>
+          ↓<br>
+          <b>⑦</b> 定型 5 分钟 → 冲水完成
+        </div>
+      </div>
+    </div>
+
+    <!-- 发质软化参数 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">各发质软化参数（冷烫与热烫通用）</span>
+      </div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">发质</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">PH</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">TGA:CA</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">药性</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV1</td><td style="padding:6px 8px;">8-9</td><td style="padding:6px 8px;">纯TGA</td><td style="padding:6px 8px;">10%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV1.5</td><td style="padding:6px 8px;">9</td><td style="padding:6px 8px;">6:1</td><td style="padding:6px 8px;">9%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">1级健康 LV2</td><td style="padding:6px 8px;">8</td><td style="padding:6px 8px;">3:1</td><td style="padding:6px 8px;">8%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">2级轻度 LV2</td><td style="padding:6px 8px;">8</td><td style="padding:6px 8px;">3:1</td><td style="padding:6px 8px;">8%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">2级轻度 LV2.5</td><td style="padding:6px 8px;">7-8</td><td style="padding:6px 8px;">2:1 / 1.5:1</td><td style="padding:6px 8px;">7-7.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">3级受损 LV3</td><td style="padding:6px 8px;">7-8</td><td style="padding:6px 8px;">1:1</td><td style="padding:6px 8px;">6%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">3级受损 LV3.5</td><td style="padding:6px 8px;">6-7</td><td style="padding:6px 8px;">1:3</td><td style="padding:6px 8px;">5.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">4级严重 LV4</td><td style="padding:6px 8px;">6-7</td><td style="padding:6px 8px;">1:6</td><td style="padding:6px 8px;">4.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">4级严重 LV4.5</td><td style="padding:6px 8px;">6</td><td style="padding:6px 8px;">1:10 / 1:12</td><td style="padding:6px 8px;">3.5%</td></tr>
+              <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 8px;">5级极度 LV5</td><td style="padding:6px 8px;">5-6</td><td style="padding:6px 8px;">1:20</td><td style="padding:6px 8px;">2.8%</td></tr>
+              <tr><td style="padding:6px 8px;">5级极度 LV5.5</td><td style="padding:6px 8px;">5</td><td style="padding:6px 8px;">纯CA</td><td style="padding:6px 8px;">2.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;">口诀：粗硬猛冲 / 受损慢走</div>
+      </div>
+    </div>
+
+    <!-- 冷烫药水 pH / TGA 含量 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">冷烫药水 pH 值与巯基乙酸（TGA）含量</span>
+      </div>
+      <div class="card-body">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">发质等级</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">pH 范围</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">TGA 含量</th>
+                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);">适用场景</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:var(--danger);">受损发</td>
+                <td style="padding:6px 8px;">6.5 ~ 7.5</td>
+                <td style="padding:6px 8px;">3% ~ 5%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">漂后/多次烫染/发质脆弱</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:var(--warning);">普通发质</td>
+                <td style="padding:6px 8px;">7.5 ~ 8.5</td>
+                <td style="padding:6px 8px;">5% ~ 8%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">轻度烫染/日常打理</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:#4caf50;">健康发质</td>
+                <td style="padding:6px 8px;">8.5 ~ 9.5</td>
+                <td style="padding:6px 8px;">8% ~ 11%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">未烫染/原生健康发</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 8px;color:var(--accent);">抗拒发质</td>
+                <td style="padding:6px 8px;">9.0 ~ 9.8</td>
+                <td style="padding:6px 8px;">10% ~ 13%</td>
+                <td style="padding:6px 8px;font-size:11px;color:var(--text-secondary);">粗硬/极难软化/天然卷</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;">⚠️ 冷烫药水是卷杠后才上的，与热烫软化药水不同。选药水级别看发质受损度。</div>
+      </div>
+    </div>
+
+    <!-- 冷烫液 vs 冷烫膏 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">冷烫液 vs 冷烫膏</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+            <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:6px;">💧 冷烫液</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+              液体形态<br>
+              无需调配<br>
+              停留 1-2min 后 → <b>需要冲水</b>
+            </div>
+          </div>
+          <div style="flex:1;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+            <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:6px;">🧴 冷烫膏</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+              膏体形态<br>
+              上膏后正常加热<br>
+              加热 5-15min（现场观察）<br>
+              确认效果后 → <b>冲水</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 定型 -->
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">定型</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">
+          <b>定型剂</b>：过氧化氢（双氧水 2-5%）<br>
+          <b>停留时间</b>：5 分钟<br>
+          <b>操作</b>：上定型剂 → 停留5min → 冲水完成
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </section><!-- /tab-plans -->
+
+  <!-- 发型展示 Tab -->
+  <section class="tab-content" id="tab-showcase">
+    <style>
+      .showcase-img { width:100%; border-radius:10px; margin-bottom:16px; }
+      .showcase-card { background:var(--surface); border-radius:12px; padding:16px; margin-bottom:16px; border-left:3px solid var(--accent); }
+      .showcase-card.hidden { display:none; }
+      .showcase-card h3 { font-size:16px; margin:0 0 4px; color:var(--text); }
+      .showcase-card .sub { font-size:11px; color:var(--text-secondary); margin-bottom:12px; }
+      .showcase-card .ai-badge { margin-top:8px; padding:8px 10px; background:rgba(250,204,21,0.06); border-radius:8px; border-left:2px solid rgba(250,204,21,0.3); }
+      .showcase-card .ai-header { font-size:11px; color:var(--text-secondary); line-height:1.7; }
+      .showcase-card .ai-header:first-child { margin-top:0; }
+      .showcase-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; opacity:1; }
+      .showcase-item { background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; }
+      .showcase-item .label { font-size:10px; color:var(--text-secondary); margin-bottom:4px; }
+      .showcase-item .value { font-size:12px; color:var(--text); font-weight:600; }
+      .showcase-tip { font-size:11px; color:var(--accent); margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+      .filter-nav { display:flex; gap:6px; overflow-x:auto; padding:44px 0 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .filter-nav::-webkit-scrollbar { display:none; }
+      .filter-btn { flex-shrink:0; padding:7px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); font-size:12px; cursor:pointer; white-space:nowrap; }
+      .filter-btn.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+      /* Pinterest瀑布流 */
+      .thumb-grid { column-count:2; column-gap:8px; padding:0 0 16px; }
+      .thumb-item { break-inside:avoid; margin-bottom:8px; cursor:pointer; border-radius:16px; overflow:hidden; background:var(--surface); }
+      .thumb-item img { width:100%; display:block; border-radius:16px 16px 0 0; }
+      .thumb-item .thumb-label { font-size:12px; color:var(--text); padding:8px 10px; font-weight:500; }
+      /* 上传按钮 */
+      .upload-fab { position:sticky; bottom:16px; display:flex; justify-content:center; padding:16px 0; }
+      .upload-fab button { width:48px;height:48px;border-radius:50%;background:var(--text);color:var(--bg);border:none;font-size:26px;font-weight:300;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center; }
+      .upload-fab button:active { transform:scale(0.92); }
+      /* 上传二级页 */
+      .upload-page { position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9998;overflow-y:auto;display:none; }
+      .upload-page.show { display:block; }
+      .upload-page .up-header { display:flex;align-items:center;padding:16px;border-bottom:1px solid var(--border); }
+      .upload-page .up-header .back { font-size:18px;color:var(--text);cursor:pointer;padding:4px; }
+      .upload-page .up-header .title { flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--text); }
+      .upload-page .up-body { padding:20px 16px; }
+      .upload-page label { display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px; }
+      .upload-page select, .upload-page input[type=file] { width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:14px;margin-bottom:16px; }
+      .upload-page .preview { width:100%;max-height:300px;object-fit:contain;border-radius:8px;margin-bottom:16px;display:none;background:var(--surface); }
+      .upload-page .up-btn { width:100%;padding:14px;background:var(--text);color:var(--bg);border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer; }
+      .upload-page .up-btn:disabled { opacity:0.4; }
+      .upload-page .up-msg { text-align:center;font-size:14px;padding:20px;color:var(--accent); }
+      /* 灯箱 */
+      .lightbox { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;overflow-y:auto;display:none; }
+      .lightbox.show { display:block; }
+      .lightbox .back-btn { position:fixed; top:max(16px, env(safe-area-inset-top));left:16px;width:48px;height:48px;border:none;background:transparent;color:#fff;font-size:28px;cursor:pointer;z-index:10030;border-radius:50%;display:flex;align-items:center;justify-content:center; }
+      .lightbox .back-btn:active { background:rgba(255,255,255,0.2); }
+      .lightbox .lb-content { padding:40px 16px 40px; max-width:480px; margin:0 auto; }
+    </style>
+
+    <!-- 筛选导航 -->
+    <div class="filter-nav" id="filter-nav">
+      <button class="filter-btn on" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="超短发">超短发</button>
+      <button class="filter-btn" data-filter="短发">短发</button>
+      <button class="filter-btn" data-filter="锁骨发">锁骨发</button>
+      <button class="filter-btn" data-filter="中长发">中长发</button>
+      <button class="filter-btn" data-filter="高层次长发">高层次长发</button>
+      <button class="filter-btn" data-filter="造型烫">造型烫</button>
+      <button class="filter-btn" data-filter="法式卷">法式卷</button>
+      <button class="filter-btn" data-filter="羊毛卷">羊毛卷</button>
+      <button class="filter-btn" data-filter="漂发发色">漂发发色</button>
+    </div>
+
+    <!-- 缩略图网格 -->
+    <div class="thumb-grid" id="thumb-grid"></div>
+
+    <!-- 灯箱 -->
+    <div class="lightbox" id="lightbox">
+      <button class="back-btn" onclick="closeLightbox()" aria-label="返回">←</button>
+      <div class="lb-content" id="lb-content"></div>
+    </div>
+
+    <!-- + 上传入口 -->
+    <div class="upload-fab"><button onclick="showUploadPage()">+</button></div>
+
+    <!-- 上传二级页 -->
+    <div class="upload-page" id="upload-page">
+      <div class="up-header">
+        <span class="back" onclick="hideUploadPage()">←</span>
+        <span class="title">上传发型图片</span>
+      </div>
+      <div class="up-body">
+        <label>选择分类</label>
+        <select id="up-category">
+          <option value="超短发">超短发</option>
+          <option value="短发" selected>短发</option>
+          <option value="锁骨发">锁骨发</option>
+          <option value="中长发">中长发</option>
+          <option value="高层次长发">高层次长发</option>
+          <option value="造型烫">造型烫</option>
+          <option value="法式卷">法式卷</option>
+          <option value="羊毛卷">羊毛卷</option>
+          <option value="漂发发色">漂发发色</option>
+        </select>
+        <label>选择图片</label>
+        <input type="file" id="up-file" accept="image/*" onchange="previewUpload()">
+        <img class="preview" id="up-preview">
+        <button class="up-btn" id="up-btn" onclick="doUpload()">提交审核</button>
+        <div class="up-msg" id="up-msg"></div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      // 本地HTML转义函数（属性安全）
+      function esc(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function escAttr(s) { return esc(s); }
+      var items = [];
+      var grid = document.getElementById('thumb-grid');
+
+      function renderGrid(filter) {
+        filter = filter || 'all';
+        var frag = document.createDocumentFragment();
+        items.forEach(function(item){
+          if (filter !== 'all' && item.tags.indexOf(filter) === -1) return;
+          var thumb = document.createElement('div');
+          thumb.className = 'thumb-item';
+          thumb.addEventListener('click', function(){ window.openLightbox(item.index); });
+          var img = document.createElement('img');
+          img.src = item.img || '';
+          img.loading = 'lazy';
+          var label = document.createElement('div');
+          label.className = 'thumb-label';
+          label.textContent = String(item.title || '').replace(/^[^\u4e00-\u9fa5]+/,'');
+          thumb.appendChild(img);
+          thumb.appendChild(label);
+          frag.appendChild(thumb);
+        });
+        // 直接替换，用loading="lazy"避免闪屏
+        grid.textContent = '';
+        grid.appendChild(frag);
+      }
+
+      // 灯箱
+      window.openLightbox = function(idx) {
+        var lb = document.getElementById('lightbox');
+        var content = document.getElementById('lb-content');
+        if (!items[idx]) return;
+        content.innerHTML = items[idx].html;
+        lb.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      };
+      window.closeLightbox = function() {
+        document.getElementById('lightbox').classList.remove('show');
+        document.body.style.overflow = '';
+      };
+      document.getElementById('lightbox').addEventListener('click', closeLightbox);
+      document.getElementById('lb-content').addEventListener('click', function(e){
+        e.stopPropagation();
+      });
+
+      // 筛选按钮
+      var btns = document.querySelectorAll('#tab-showcase .filter-btn');
+      var activeFilter = 'all';
+      btns.forEach(function(b){
+        b.addEventListener('click', function(){
+          btns.forEach(function(x){ x.classList.remove('on'); });
+          b.classList.add('on');
+          activeFilter = b.getAttribute('data-filter');
+          renderGrid(activeFilter);
+        });
+      });
+
+      // 暴露方法给外部
+      window._showcaseItems = items;
+      window._renderGrid = renderGrid;
+      window._showcaseNextIndex = 0;
+    })();
+
+    // 从Supabase加载所有已通过图片（内置+用户上传）
+    var _catDesc = {
+      '超短发':'干练利落 · 凸显五官 | 适合脸型精致、风格个性的客人',
+      '短发':'清爽利落 · 日常百搭 | 适合各类脸型',
+      '锁骨发':'温柔气质 · 修饰脸型 | 优雅知性、打理方便',
+      '中长发':'柔美飘逸 · 百变造型 | 可披可扎、慵懒随性',
+      '高层次长发':'层次丰富 · 轻盈飘逸 | 适合发量多、想要减重感的客人',
+      '造型烫':'慵懒随性 · 纹理自然 | 自带氛围感、高级不挑人',
+      '法式卷':'优雅浪漫 · 法式慵懒 | 复古大气、修饰脸型一绝',
+      '羊毛卷':'俏皮复古 · 蓬松显发量 | 可爱减龄、个性十足',
+      '漂发发色':'潮流个性 · 色彩鲜明 | 适合追求前卫风格的客人'
+    };
+    window._lastShowcaseSig = window._lastShowcaseSig || '';
+    function loadShowcase() {
+      fetch(SUPABASE_URL + '/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,ai_analysis,status&status=eq.approved&order=created_at.asc&limit=100', {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(rows){
+        if (!rows || !rows.length) return;
+        // 无变化不刷新
+        var sig = rows.map(function(r){return r.id+':'+(r.status||'')+':a'+(r.ai_analysis?1:0)}).join('|');
+        if (sig === window._lastShowcaseSig) return;
+        window._lastShowcaseSig = sig;
+
+        var items = window._showcaseItems;
+        if (!items) { console.log('showcase items not found'); return; }
+        items.length = 0;
+        var nextIdx = 0;
+        rows.forEach(function(img){
+          var tags = img.category || '发型作品';
+          // 处理URL：base64图片按原样显示，https图片确保URL编码
+          var imgUrl = img.image_url || '';
+          if (imgUrl.indexOf('data:') !== 0 && imgUrl.indexOf('http') === 0) {
+            // HTTPS URL：对路径中的中文做URL编码
+            var parts = imgUrl.split('/');
+            imgUrl = parts.map(function(p, i){
+              return (i > 2 && /[^\x00-\x7F]/.test(p)) ? encodeURIComponent(p) : p;
+            }).join('/');
+          }
+          var ai = img.ai_analysis || {};
+          var styleName = ai.style_name || tags;
+          var aiDetail = '';
+          if (ai.style_name) {
+            var c = ai.cut || {}, p = ai.perm || {}, col = ai.color || {}, s = ai.suit || {};
+            var permLine = (img.category === '漂发发色')
+              ? '<div class="ai-header">🚫 烫发：漂发不宜烫发，建议日常造型打理</div>'
+              : '<div class="ai-header">🔥 烫发：' + esc(p.need||'') + ' · ' + esc(p.curl||'') + '</div>';
+            aiDetail = '<div class="ai-badge" onclick="event.stopPropagation()"><div class="ai-header">✂️ 裁剪：' + esc(c.zones||'') + ' · ' + esc(c.layers||'') + '</div>' +
+              permLine +
+              '<div class="ai-header">🎨 染发：' + esc(col.tone||'') + ' · ' + esc(col.method||'') + '</div>' +
+              '<div class="ai-header">👤 适合：' + esc(s.face||'') + ' · ' + esc(s.style||'') + ' · 打理' + esc(s.care||'') + '</div></div>';
+          }
+          var desc = _catDesc[img.category] || (img.uploaded_by==='内置'?'内置展示图':'发型作品');
+          var titleIcon = (tags==='高层次长发'||tags==='中长发')?'💇':'✂️';
+          var html = '<div class="showcase-card" data-tags="'+escAttr(tags)+'">' +
+            '<img class="showcase-img" src="'+escAttr(imgUrl)+'" alt="'+escAttr(tags)+'" loading="lazy">' +
+            '<h3>'+titleIcon+' '+esc(styleName)+'</h3>' +
+            (aiDetail ? aiDetail : '<div class="sub">'+esc(desc)+'</div>') + '</div>';
+          items.push({img: imgUrl, title: styleName, tags: String(tags), html: html, index: nextIdx++});
+        });
+        window._showcaseNextIndex = nextIdx;
+        var active = document.querySelector('#tab-showcase .filter-btn.on');
+        var filter = active ? active.getAttribute('data-filter') : 'all';
+        // 用 requestAnimationFrame 合并DOM更新，避免布局抖动
+        var raf = window.requestAnimationFrame || function(cb){ return setTimeout(cb, 16); };
+        raf(function(){ window._renderGrid(filter); });
+      }).catch(function(e){
+        console.warn('展示作品加载失败:', e);
+      });
+    }
+    // 展示页轮询：首次加载200ms后启动，30秒间隔
+    var _showcaseTimer = null;
+    function startShowcasePoll() {
+      if (_showcaseTimer) return;
+      loadShowcase();
+      _showcaseTimer = setInterval(loadShowcase, 30000);
+    }
+    function stopShowcasePoll() {
+      if (_showcaseTimer) { clearInterval(_showcaseTimer); _showcaseTimer = null; }
+    }
+    // 页面可见性变化时暂停/恢复
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) { stopShowcasePoll(); }
+      else {
+        var tab = document.getElementById('tab-showcase');
+        if (tab && tab.classList.contains('active')) { startShowcasePoll(); }
+      }
+    });
+    // 展示页激活/隐藏时控制轮询
+    var _origShowcaseOF = window.openFeature;
+    // 通过 MutationObserver 检测展示页是否激活
+    var _showcaseObserver = window.MutationObserver ? new MutationObserver(function() {
+      var tab = document.getElementById('tab-showcase');
+      if (tab && tab.classList.contains('active')) {
+        startShowcasePoll();
+      } else {
+        stopShowcasePoll();
+      }
+    }) : null;
+    setTimeout(function() {
+      var tab = document.getElementById('tab-showcase');
+      if (tab && _showcaseObserver) _showcaseObserver.observe(tab, { attributes: true, attributeFilter: ['class'] });
+    }, 1000);
+    </script>
+
+    <script>
+    // === 上传功能 ===
+
+    function showUploadPage() {
+      document.getElementById('upload-page').classList.add('show');
+      document.getElementById('up-msg').textContent = '';
+      document.getElementById('up-btn').disabled = false;
+    }
+    function hideUploadPage() {
+      document.getElementById('upload-page').classList.remove('show');
+    }
+    function previewUpload() {
+      var file = document.getElementById('up-file').files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.getElementById('up-preview');
+        img.src = e.target.result;
+        img.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function doUpload() {
+      var file = document.getElementById('up-file').files[0];
+      if (!file) { showToast('请选择图片'); return; }
+      // 校验文件类型和大小
+      var allowedTypes = ['image/jpeg','image/png','image/webp'];
+      if (allowedTypes.indexOf(file.type) === -1) { showToast('仅支持 JPG/PNG/WebP 格式'); document.getElementById('up-btn').disabled = false; return; }
+      if (file.size > 10 * 1024 * 1024) { showToast('图片超过10MB，请压缩后上传'); document.getElementById('up-btn').disabled = false; return; }
+      var category = document.getElementById('up-category').value;
+      var btn = document.getElementById('up-btn');
+      var msg = document.getElementById('up-msg');
+      btn.disabled = true;
+      msg.textContent = '压缩中...';
+
+      // 压缩图片到 max 600px
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function() {
+        var maxW = 600, maxH = 800;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = c.toDataURL('image/jpeg', 0.7);
+        URL.revokeObjectURL(url);
+        doUploadBase64(base64, category, btn, msg);
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(url);
+        btn.disabled = false;
+        msg.textContent = '';
+        showToast('图片加载失败，请重试');
+      };
+      img.src = url;
+    }
+    function doUploadBase64(base64, category, btn, msg) {
+        // 直接存到Supabase（base64格式，审核通过后管理员可下载原图）；后续可迁移到对象存储，只在DB保留URL。
+        msg.textContent = '⏳ 上传中...';
+        fetch(SUPABASE_URL + '/rest/v1/showcase_images', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+                image_url: base64,
+                category: category,
+                title: category,
+                status: 'pending',
+                uploaded_by: localStorage.getItem('booking-barber') || BOOKING_BARBER || '发型师',
+                created_at: new Date().toISOString()
+            })
+        }).then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (r.status === 201 || r.status === 200 || r.status === 204) {
+                msg.textContent = '✅ 已提交，等待管理员审核';
+                msg.style.color = '#4ade80';
+                document.getElementById('up-file').value = '';
+                document.getElementById('up-preview').style.display = 'none';
+                btn.disabled = false;
+            } else {
+                r.text().then(function(t) {
+                    msg.textContent = '❌ 上传失败 (' + r.status + '): ' + t.slice(0,40);
+                    msg.style.color = '#e0556a';
+                    btn.disabled = false;
+                });
+            }
+        }).catch(function(e) {
+            msg.textContent = '❌ 网络错误: ' + e.message;
+            msg.style.color = '#e0556a';
+            btn.disabled = false;
+        });
+    }
+
+    // 暴露上传函数给 onclick
+    window.showUploadPage = showUploadPage;
+    window.hideUploadPage = hideUploadPage;
+    window.doUpload = doUpload;
+    window.previewUpload = previewUpload;
+
+    // 展示Tab切换时加载已通过图片
+    setTimeout(loadShowcase, 1500);
+    </script>
+  </section>
+
+  <!-- 预约 Tab -->
+  <section class="tab-content" id="tab-bookings">
+    <style>
+      .booking-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
+      .booking-bar .shop-switch { font-size:12px; color:var(--text-secondary); cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+      .booking-bar .shop-switch.on { color:var(--accent); border-color:var(--accent); }
+      .booking-item { padding:14px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+      .booking-item.real-customer { background:rgba(112,128,144,0.12); border-left:3px solid rgba(112,128,144,0.5); }
+      .booking-item .bi-left { flex:1; min-width:0; }
+      .booking-item .bi-right { flex-shrink:0; margin-left:10px; }
+      .booking-item .bi-name { font-size:15px; font-weight:600; color:var(--text); }
+      .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+      .booking-item .bi-time { font-size:14px; font-weight:600; color:var(--accent); text-align:right; }
+      .booking-item .bi-barber { font-size:11px; color:var(--text-secondary); text-align:right; }
+      .booking-item .bi-service-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:18px; }
+      .booking-item .bi-service-tag { font-size:11px; line-height:16px; padding:1px 7px; border-radius:8px; color:#fff; background:rgba(148,163,184,0.22); border:1px solid rgba(148,163,184,0.35); white-space:nowrap; }
+      .booking-item .bi-service-tag.cut { color:#111827; background:rgba(255,255,255,0.72); border-color:rgba(148,163,184,0.45); }
+      .booking-item .bi-service-tag.perm { background:#f97316; border-color:#f97316; }
+      .booking-item .bi-service-tag.color { background:#a855f7; border-color:#a855f7; }
+      .booking-item .bi-service-tag.care { background:#22c55e; border-color:#22c55e; }
+      .booking-item .bi-note { font-size:12px; color:var(--text-secondary); line-height:18px; }
+      .identity-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-radius:8px; margin-bottom:12px; font-size:13px; }
+      .identity-bar .switch-btn { color:var(--accent); cursor:pointer; font-size:12px; }
+      .identity-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
+      .identity-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:300px; width:90%; }
+      .identity-modal .reg-form input { width:100%; margin-bottom:10px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:14px; box-sizing:border-box; }
+      .identity-modal h3 { font-size:16px; margin-bottom:16px; color:var(--text); text-align:center; }
+      .identity-modal .opt { display:block; width:100%; padding:12px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
+      .identity-modal .opt:active { background:var(--surface-light); border-color:var(--accent); }
+      .booking-loading { text-align:center; padding:40px; color:var(--text-secondary); }
+      .booking-date-header { font-size:12px; color:var(--text-secondary); padding:16px 12px 6px; border-bottom:1px solid var(--border); font-weight:600; }
+      .date-strip { display:flex; gap:4px; padding:0 0 10px; overflow-x:auto; scrollbar-width:none; }
+      .date-strip::-webkit-scrollbar { display:none; }
+      .date-chip { flex-shrink:0; padding:6px 14px; border-radius:16px; font-size:12px; cursor:pointer; background:var(--bg); border:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
+      .date-chip.on { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
+      .date-chip .dow { font-size:10px; opacity:0.7; }
+      .bi-plan-btn { font-size:10px; color:var(--accent); background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:2px 8px; cursor:pointer; margin-left:8px; white-space:nowrap; }
+      .bi-plan-btn:hover { background:var(--accent); color:var(--bg); }
+      .plan-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10030;display:flex;align-items:center;justify-content:center; }
+      .plan-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:340px; width:90%; max-height:80vh; overflow-y:auto; }
+      .plan-modal h3 { font-size:16px; margin-bottom:8px; color:var(--text); }
+      .plan-modal .sub { font-size:12px; color:var(--text-secondary); margin-bottom:16px; }
+      .plan-modal .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-bottom:1px solid var(--border); }
+      .plan-modal .row .label { color:var(--text-secondary); }
+      .plan-modal .row .val { color:var(--text); font-weight:500; }
+      .plan-modal .suggestion { margin-top:16px; padding:12px; background:var(--bg); border-radius:8px; font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap; }
+      .plan-modal .close-btn { display:block; width:100%; padding:10px; margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
+      .plan-modal .ai-btn { display:block; width:100%; padding:10px; margin-top:8px; background:var(--surface); border:1px solid var(--accent); border-radius:8px; color:var(--accent); font-size:14px; cursor:pointer; text-align:center; transition:var(--transition); }
+      .plan-modal .ai-btn:hover { background:var(--accent-glow); }
+      .plan-modal .ai-btn:disabled { opacity:0.4; cursor:not-allowed; }
+      .plan-modal .ai-result { margin-top:12px; padding:12px; background:var(--surface-light); border-radius:8px; border-left:3px solid var(--accent); }
+      .plan-modal .ai-result.error { border-left-color:var(--danger); }
+      .plan-modal .loading { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
+      .plan-modal .no-data { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
+    </style>
+    <div class="identity-bar" id="identity-bar">
+      <span>👤 <b id="current-identity">加载中...</b></span>
+      <span><a style="color:var(--text-secondary);cursor:pointer;font-size:12px;text-decoration:none;" onclick="logoutAccount()">退出</a></span>
+    </div>
+    <div class="date-strip" id="date-strip"></div>
+    <div class="booking-bar">
+      <span class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</span>
+      <span class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</span>
+    </div>
+    <div id="booking-list"><div class="booking-loading">加载中...</div></div>
+  </section>
+
+  <!-- 内容 Tab（已删除） -->
+
+</div><!-- /app-content -->
+
+</main>
+
+<!-- Back to top -->
+<button class="back-to-top" id="back-to-top">↑</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─────────────────────────────────────────
+   DATA STORE
+   ───────────────────────────────────────── */
+
+const HAIR_TYPES = [
+  { id: 'level-1-coarse', label: '1级·健康粗硬发（2-3度 | 粗硬、有韧性）' },
+  { id: 'level-1-fine', label: '1级·健康细软发（2-3度 | 细软、成型力弱）' },
+  { id: 'level-2-coarse', label: '2级·轻度受损粗硬（3-4度 | 偏粗、密齿梳顺）' },
+  { id: 'level-2-fine', label: '2级·轻度受损细软（3-4度 | 偏细、密齿梳顺）' },
+  { id: 'level-3', label: '3级·受损发（5-6度 | 密齿梳有卡顿）' },
+  { id: 'level-4', label: '4级·严重受损（6-7度 | 漂后手感好也属此类）' },
+  { id: 'level-5', label: '5级·极度受损（8-9度 | 软绵无支撑力）' },
+  { id: 'level-mix-1-2', label: '🔀 混合·发根1级 + 发尾2级' },
+  { id: 'level-mix-1-3', label: '🔀 混合·发根1级 + 发尾3级' },
+  { id: 'level-mix-1-4', label: '🔀 混合·发根1级 + 发尾4-5级' },
+  { id: 'level-mix-1-5', label: '🔀 混合·发根1级 + 发尾5级' },
+  { id: 'level-mix-2-3', label: '🔀 混合·发根2级 + 发尾3级' },
+  { id: 'level-mix-2-4', label: '🔀 混合·发根2级 + 发尾4级' },
+  { id: 'level-mix-2-5', label: '🔀 混合·发根2级 + 发尾5级' },
+  { id: 'level-mix-3-4', label: '🔀 混合·发根3级 + 发尾4级' },
+  { id: 'level-mix-3-5', label: '🔀 混合·发根3级 + 发尾5级' },
+  { id: 'level-mix-4-5', label: '🔀 混合·发根4级 + 发尾5级' },
+  { id: '三段发质 发根1级+发中2级+发梢5级', label: '🔀 三段发质·根1级+中2级+梢5级' },
+  { id: '三段发质 发根2级+发中3级+发梢5级', label: '🔀 三段发质·根2级+中3级+梢5级' },
+  { id: '三段发质 发根1级+发中3级+发梢4级', label: '🔀 三段发质·根1级+中3级+梢4级' },
+];
+
+const PERM_STYLES = [
+  { id: 'wool-perm', label: '羊毛卷（最卷）' },
+  { id: 'french-wool-perm', label: '法式羊毛卷' },
+  { id: 'french-wave', label: '法式烫' },
+  { id: 'style-perm', label: '造型烫（自然）' },
+  { id: 'c-straight', label: 'C型拉直' },
+];
+
+/* ─────────────────────────────────────────
+   SUPABASE API - 从云端加载 PERM_DATA
+   ───────────────────────────────────────── */
+const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+
+let PERM_DATA_CACHE = [];
+let DATA_LOADING = false;
+let DATA_LOADED = false;
+let DATA_ERROR = '';
+
+// 本地日期工具（修复UTC时区偏移）
+function getLocalDate(d) {
+  var y = d.getFullYear();
+  var m = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return y + '-' + m + '-' + day;
+}
+function getLocalDateStr() { return getLocalDate(new Date()); }
+
+async function loadPermData() {
+  if (DATA_LOADING) return;
+  DATA_LOADING = true;
+
+  // ★ 离线模式：先从localStorage加载缓存，保证即使网络慢也能立即查询
+  var localPermData = null;
+  try { localPermData = JSON.parse(localStorage.getItem('perm_data_offline')); } catch(e) {}
+  if (localPermData && Array.isArray(localPermData) && localPermData.length > 0) {
+    PERM_DATA_CACHE = localPermData;
+    DATA_LOADED = true;
+    console.log('离线缓存: 加载 ' + PERM_DATA_CACHE.length + ' 条方案');
+  }
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/perm_data?select=*`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    if (!resp.ok) throw new Error('Supabase返回状态码 ' + resp.status);
+    const rows = await resp.json();
+    if (!Array.isArray(rows)) throw new Error('返回数据格式异常');
+    // 转换为JS格式（逐条容错，单条损坏不影响其他）
+    var cache = [];
+    var errors = 0;
+    rows.forEach(function(r) {
+      try {
+        cache.push({
+          hairType: r.hair_type,
+          permStyle: r.style,
+          soften: r.soften_raw ? (typeof r.soften_raw === 'string' ? JSON.parse(r.soften_raw) : r.soften_raw) : { pH: r.soften_ph, thio: r.soften_thio },
+          rods: r.rod_sizes ? (typeof r.rod_sizes === 'string' ? JSON.parse(r.rod_sizes) : r.rod_sizes) : [],
+          warning: r.warning || null
+        });
+      } catch(e) { errors++; }
+    });
+    PERM_DATA_CACHE = cache;
+    // ★ 保存到localStorage供离线使用
+    try { localStorage.setItem('perm_data_offline', JSON.stringify(cache)); } catch(e) {}
+    DATA_LOADED = true;
+    DATA_ERROR = errors > 0 ? '有' + errors + '条数据解析失败' : '';
+    console.log('Supabase: 加载 ' + PERM_DATA_CACHE.length + ' 条方案' + (DATA_ERROR ? ', ' + DATA_ERROR : ''));
+  } catch(e) {
+    console.error('Supabase加载失败:', e);
+    // ★ 网络失败时：如果已有缓存（从localStorage加载的），保留不退
+    if (!DATA_LOADED) {
+      // 降级：尝试从本地备份数据加载
+      try {
+        if (typeof OLD_PERM_DATA_DUMMY !== 'undefined' && Array.isArray(OLD_PERM_DATA_DUMMY) && OLD_PERM_DATA_DUMMY.length > 0) {
+          PERM_DATA_CACHE = OLD_PERM_DATA_DUMMY.map(function(r) {
+            return {
+              hairType: r.hairType,
+              permStyle: r.permStyle,
+              soften: r.soften || {},
+              rods: r.rods || [],
+              warning: r.warning || null
+            };
+          });
+          DATA_LOADED = true;
+          console.log('降级: 使用本地备份数据 ' + PERM_DATA_CACHE.length + ' 条');
+        }
+      } catch(e2) {
+        console.error('降级加载也失败:', e2);
+        DATA_ERROR = '数据加载失败，请刷新重试';
+      }
+    }
+  }
+  DATA_LOADING = false;
+  if (typeof window.updateQueryButtonState === 'function') window.updateQueryButtonState();
+}
+
+// 兼容旧代码的 PERM_DATA 代理
+const PERM_DATA = new Proxy([], {
+  get(target, prop) {
+    if (DATA_LOADED) return PERM_DATA_CACHE[prop];
+    return target[prop];
+  }
+});
+
+// 页面加载时立即拉数据
+loadPermData();
+
+const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据备份 ===
+  { hairType: 'level-1-coarse', permStyle: 'wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '90 ~ 100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ > 刹车上限70%，至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'french-wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '80 ~ 90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标80-90% > 刹车上限70%，至80-90%', rinseSignal: '测试杠饱满卷圈、弹力下降时冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'french-wave', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70 ~ 80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标70% = 刹车上限70%，涂抹(可不再补涂)，到饱满卷圈80%即停', rinseSignal: '测试杠饱满卷圈（约80%）时冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'style-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯~饱满卷圈即可，宁软勿过' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-1-coarse', permStyle: 'c-straight', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '70%（特殊80~90%）', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位，发尾微卷即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '💡 自然卷/沙发/炸毛发质软化度提至80-90%。' },
+
+  // === 1级细软健康发 (PH 7-8, 纯TGA, 刹车上限50-60%) ===
+  { hairType: 'level-1-fine', permStyle: 'wool-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ >> 刹车上限50-60%，必须至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'french-wool-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标80-90% >> 刹车上限50-60%，细软发杠号取小', rinseSignal: '测试杠饱满卷圈、弹力下降时冲水' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90~135°' },{ zone: '两侧', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'french-wave', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标70% > 刹车上限50-60%，涂抹', rinseSignal: '测试杠饱满卷圈（约80%）冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'style-perm', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% > 刹车上限50-60%，', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-1-fine', permStyle: 'c-straight', soften: { pH: '8.9', tgaCa: '6:1', thio: '8.4%', targetDegree: '70%（特殊80~90%）', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标70% > 刹车上限50-60%', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '💡 细软发需渗透式打底帮助PH破开毛鳞片。' },
+
+  // === 2级粗硬轻度受损 (PH 8, 6:1, 刹车上限60-70%) ===
+  { hairType: 'level-2-coarse', permStyle: 'wool-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ >> 刹车上限60-70%', rinseSignal: '测试杠卷圈清晰弹力下降冲水' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'french-wool-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标80-90% > 刹车上限60-70%', rinseSignal: '测试杠饱满卷圈弹力下降冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18~20号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'french-wave', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% = 刹车上限70%，', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'style-perm', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-2-coarse', permStyle: 'c-straight', soften: { pH: '7.9', tgaCa: '1.5:1', thio: '6.5%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // === 2级细软轻度受损 (PH 8, 6:1, 刹车上限60-70%) ===
+  { hairType: 'level-2-fine', permStyle: 'wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ >> 刹车上限60-70%，细软杠号取小', rinseSignal: '测试杠卷圈清晰弹力下降冲水' }, rods: [{ zone: '头顶', size: '14号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'french-wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标80-90% > 刹车上限60-70%', rinseSignal: '测试杠饱满卷圈弹力下降冲水' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90~135°' },{ zone: '两侧', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~22号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'french-wave', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70~80%', penetration: true, penetrationType: 'light', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠（轻量无需第三步）。目标70% = 刹车上限70%，', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'style-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '测试杠S弯即可' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-2-fine', permStyle: 'c-straight', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // === 3级受损发 (PH 7-8, 1:1, 刹车上限70-84%) ===
+  { hairType: 'level-3', permStyle: 'wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。⚠️ 受损发慎烫羊毛卷！必须先做护理。，全程测试杠，一旦松软立即冲水', rinseSignal: '卷圈清晰弹力尚存时立即冲水（宁软勿过）' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 受损发慎烫羊毛卷！务必先做护理，全程低PH低药性。测试杠一旦松软立即冲水。' },
+  { hairType: 'level-3', permStyle: 'french-wool-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '80~90%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。⚠️ 谨慎。刹车上限70-84%，打底药水更稀(3:1)', rinseSignal: '饱满卷圈弹力尚存时冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 受损发慎烫法式羊毛卷！打底药水比例3:1（更稀），先做护理。' },
+  { hairType: 'level-3', permStyle: 'french-wave', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70~80%', penetration: false, penetrationType: '', penetrationNote: '刹车上限70-84%够用，正常涂抹', rinseSignal: '明显S弯~饱满卷圈即可冲水' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '26~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: null },
+  { hairType: 'level-3', permStyle: 'style-perm', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: 'S弯即可，宁软勿过' }, rods: [{ zone: '全头', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: null },
+  { hairType: 'level-3', permStyle: 'c-straight', soften: { pH: '7.5', tgaCa: '1:1', thio: '5.8%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可，发尾微卷就停' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 受损发拉直时发尾不过度处理。软化到位即可，不追求高软化度。' },
+
+  // === 4级严重受损 (PH 6-7, 1:3~1:6, 刹车上限75-80%) ===
+  { hairType: 'level-4', permStyle: 'french-wave', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70~80%', penetration: false, penetrationType: '', penetrationNote: '刹车上限75-80%够用，低PH慢走', rinseSignal: '明显S弯即可冲水，宁软勿过' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '枕骨', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 严重受损发：低PH慢走、不补涂、S弯就停。' },
+  { hairType: 'level-4', permStyle: 'style-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '有松动感即可冲水' }, rods: [{ zone: '全头', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: '⚠️ 严重受损只建议造型烫/法式烫，避开羊毛卷/法式羊毛卷。' },
+  { hairType: 'level-4', permStyle: 'wool-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '90~100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。⚠️⚠️⚠️ 极度危险！刹车仅75-80%，远超上限。但打底必须极稀(3:1)，全程测试杠', rinseSignal: '卷圈清晰弹力尚存立即冲水（宁软一万倍勿过）' }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫🚫🚫 严重受损发极不建议烫羊毛卷！发质崩溃风险极高。必须操作时：PH≤7、CA大量(1:10~1:20)、打底极稀、3分钟一测、卷圈一显即冲。先签免责。' },
+  { hairType: 'level-4', permStyle: 'french-wool-perm', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '80~90%', penetration: true, penetrationType: 'light', penetrationNote: '⚠️ 危险！刹车75-80%，目标80-90%超上限。打底(3:1)10分→正式涂抹，全程紧盯测试杠', rinseSignal: '饱满卷圈弹力尚存立即冲水' }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫 严重受损发慎烫法式羊毛卷！卷圈一显即冲，不要追求完美卷度。先做深层护理。' },
+  { hairType: 'level-4', permStyle: 'c-straight', soften: { pH: '5.9', tgaCa: '1:10~1:20', thio: '2.7%', targetDegree: '70%', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '整体软化到位即可，发尾不过度' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 严重受损发拉直时发尾轻带过，勿夹死。软化不追求高软化度。' },
+
+  // === 5级极度受损 — 不建议热烫 ===
+  { hairType: 'level-5', permStyle: '__none__', soften: { pH: '—', tgaCa: '纯CA', thio: '—', targetDegree: '—', penetration: false, penetrationType: '', penetrationNote: '', rinseSignal: '极度受损发不建议热烫。如需操作，PH5~6、纯CA或1:20，只做大卷。' }, rods: [], warning: '🚫 5级极度受损发不建议任何热烫操作。先做深层护理恢复发质。' },
+
+  // =======================================================================
+  // 混合发质 — CA 保护法（PH5.5 / TGA2%）
+  // 逻辑：受损区先涂CA → 全头一次涂健康药水 → CA自动降级受损区
+  // =======================================================================
+
+  // ── 混合·发根1级粗硬 + 发尾3级（根PH9/纯TGA · 尾CA后≈PH7~7.5/5~6%）──
+  { hairType: 'level-mix-1-3', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '90~100%', applyOrder: '① 受损区涂CA（PH5.5/TGA2%）→ ② 渗透式三步（详见下方）', rinseSignal: '测试杠卷圈清晰弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16~18号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。' },
+  { hairType: 'level-mix-1-3', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式三步', rinseSignal: '测试杠饱满卷圈弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70~80%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH9/3:1) → ③ 正常软化', rinseSignal: '测试杠饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '测试杠S弯~饱满卷圈即可' }, rods: [{ zone: '全头', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-mix-1-3', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+
+  // ── 混合·发根1级粗硬 + 发尾4-5级（根PH9/纯TGA · 尾CA后≈PH7~7.5/5~6%）──
+  { hairType: 'level-mix-1-4', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH9/3:1) → ③ 正常软化（宁软勿过）', rinseSignal: '测试杠S弯即可，宁软勿过' }, rods: [{ zone: '头顶', size: '24~26号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '28号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 发尾极度脆弱（4-5级）！CA必须涂足，药水勿揉搓，S弯即停。' },
+  { hairType: 'level-mix-1-4', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 低PH慢走', rinseSignal: '有松动感即可冲水' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72°' }], warning: '⚠️ 8-9度发尾极度脆弱！指尖轻拍不揉搓。CA保护是关键。' },
+  { hairType: 'level-mix-1-4', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 发尾轻处理', rinseSignal: '整体软化到位即可，发尾不过度' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: '⚠️ 发尾4-5级极度脆弱，拉直时发尾带过勿夹死。' },
+  { hairType: 'level-mix-1-4', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '90~100%', applyOrder: '① 受损区厚涂CA → ② 渗透式三步（发尾全程重点保护）', rinseSignal: '发根段卷圈清晰+发尾有卷就冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫🚫 发尾4-5级+羊毛卷极度危险！发尾CA必须涂足、不打底、不揉搓、3分钟一测。发尾有卷圈就停，切勿追求完美。先签免责。' },
+  { hairType: 'level-mix-1-4', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%' }, endEffect: { pH: '≈7~7.5', tgaCa: '纯TGA' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式三步', rinseSignal: '发根饱满卷圈+发尾有卷冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发尾', angle: '72°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45°' }], warning: '🚫 发尾4-5级慎烫法式羊毛卷！发尾CA保护+不揉搓+先停为赢。' },
+
+  // ── 混合·发根2级 + 发尾4级（根PH8/3:1 · 尾CA后≈PH6.5~7/4.5~5%）──
+  { hairType: 'level-mix-2-4', permStyle: 'wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '90~100%', applyOrder: '① 受损区涂CA → ② 渗透式三步', rinseSignal: '测试杠卷圈清晰弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '14~16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '16~18号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: '⚠️ 渗透式三步！发根2级用PH8，发尾CA保护自动降到PH6.5~7。' },
+  { hairType: 'level-mix-2-4', permStyle: 'french-wool-perm', soften: { mixed: true, caProtect: true, penetration: true, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '80~90%', applyOrder: '① 受损区涂CA → ② 渗透式三步', rinseSignal: '测试杠饱满卷圈弹力下降冲水', detailedSteps: [{phase:'🛡️ Step 1', action:'受损区CA保护', detail:'发中~发尾均匀涂抹CA，不涂发根', time:'—'},{phase:'🔑 Step 2', action:'打底渗透', detail:'药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟', time:'停放10分钟'},{phase:'📐 Step 2.5', action:'拆测试杠判断', detail:'看卷度，决定PH和药性是否合适', time:'—'},{phase:'🧪 Step 3', action:'正式软化', detail:'同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少', time:'停放~15分钟'},{phase:'✅ Step 4', action:'拆测试杠验证', detail:'达到80%+→第五步补涂；已够→冲水', time:'—'},{phase:'🔁 Step 5', action:'补涂追目标', detail:'同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠', time:'10分钟至达标冲水'}] }, rods: [{ zone: '头顶', size: '16~18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '18号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'french-wave', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70~80%', applyOrder: '① 受损区涂CA → ② 全头一次涂药(PH8/3:1) → ③ 正常软化', rinseSignal: '测试杠明显S弯~饱满卷圈冲水' }, rods: [{ zone: '头顶', size: '22~24号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '24~28号', technique: '缠绕', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '24~28号', technique: '缠绕', startFrom: '从发尾', angle: '45~72°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'style-perm', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '测试杠S弯即可' }, rods: [{ zone: '全头', size: '26~28号', technique: '缠绕', startFrom: '从发尾', angle: '72~90°' }], warning: null },
+  { hairType: 'level-mix-2-4', permStyle: 'c-straight', soften: { mixed: true, caProtect: true, penetration: false, mainDrug: { pH: '8.9', tgaCa: '6:1', thio: '8.4%' }, endEffect: { pH: '≈6.5~7', tgaCa: '6:1' }, targetDegree: '70%', applyOrder: '① 受损区涂CA → ② 全头一次涂药 → ③ 正常软化', rinseSignal: '整体软化到位即可' }, rods: [{ zone: '发根~发中', size: '直板/大杠28+', technique: '拉直', startFrom: '从发根', angle: '0°' },{ zone: '发尾5~8cm', size: '28~30号', technique: '缠绕一圈', startFrom: '从发尾', angle: '45°' }], warning: null },
+{"hairType": "level-mix-1-2", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈8~8.5", "tgaCa": "6:1"}, "targetDegree": "80~90%", "applyOrder": "① 全头一次涂药(PH9.5/纯TGA) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠饱满卷圈冲水"}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "16~18号", "technique": "平卷", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-1-2", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈8~8.5", "tgaCa": "6:1"}, "targetDegree": "70~80%", "applyOrder": "① 全头一次涂药(PH9.5/纯TGA) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠饱满卷圈冲水"}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-1-2", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈8~8.5", "tgaCa": "6:1"}, "targetDegree": "70~80%", "applyOrder": "① 全头一次涂药(PH9.5/纯TGA) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-1-2", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈8~8.5", "tgaCa": "6:1"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH9.5/纯TGA) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72~90°"}], "warning": null},
+  {"hairType": "level-mix-1-2", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈8~8.5", "tgaCa": "6:1"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH9.5/纯TGA) → ② 正常软化（发尾轻带）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "28~30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "45°"}], "warning": null},
+  {"hairType": "level-mix-1-5", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 受损区涂CA（PH9.5/纯TGA）→ ② 渗透式三步", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-1-5", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 受损区涂CA（PH9.5/纯TGA）→ ② 渗透式三步", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+法式羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-1-5", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH9.5/纯TGA) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "24~26号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-1-5", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH9.5/纯TGA) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-1-5", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "9.5", "tgaCa": "纯TGA", "thio": "9.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH9.5/纯TGA) → ③ 正常软化（无需渗透式）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "30°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-2-3", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": true, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 全头涂药(PH8.9/6:1) → ② 渗透式三步（无需CA保护，尾级仅3级）", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "16~18号", "technique": "平卷", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-2-3", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": true, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 全头涂药(PH8.9/6:1) → ② 渗透式三步（无需CA保护，尾级仅3级）", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-2-3", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 全头一次涂药(PH8.9/6:1) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-2-3", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH8.9/6:1) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72~90°"}], "warning": null},
+  {"hairType": "level-mix-2-3", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH8.9/6:1) → ② 正常软化（发尾轻带）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "28~30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "45°"}], "warning": null},
+  {"hairType": "level-mix-2-5", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 受损区涂CA（PH8.9/6:1）→ ② 渗透式三步", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-2-5", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 受损区涂CA（PH8.9/6:1）→ ② 渗透式三步", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+法式羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-2-5", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.9/6:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "24~26号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-2-5", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.9/6:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-2-5", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.9", "tgaCa": "6:1", "thio": "8.4%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.9/6:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "30°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-3-4", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": true, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 全头涂药(PH8.0/2:1) → ② 渗透式三步（无需CA保护，尾级仅4级）", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "16号", "technique": "平卷", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "16~18号", "technique": "平卷", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-3-4", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": false, "penetration": true, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 全头涂药(PH8.0/2:1) → ② 渗透式三步（无需CA保护，尾级仅4级）", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-3-4", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 全头一次涂药(PH8.0/2:1) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "两侧", "size": "24号", "technique": "缠绕", "startFrom": "从发根", "angle": "90°"}, {"zone": "后颈", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45~72°"}], "warning": null},
+  {"hairType": "level-mix-3-4", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH8.0/2:1) → ② 正常软化（发尾轻带）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "24~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72~90°"}], "warning": null},
+  {"hairType": "level-mix-3-4", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": false, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈7~7.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 全头一次涂药(PH8.0/2:1) → ② 正常软化（发尾轻带）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "28~30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "45°"}], "warning": null},
+  {"hairType": "level-mix-3-5", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 受损区涂CA（PH8.0/2:1）→ ② 渗透式三步", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-3-5", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 受损区涂CA（PH8.0/2:1）→ ② 渗透式三步", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+法式羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-3-5", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.0/2:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "24~26号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-3-5", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.0/2:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-3-5", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "8.0", "tgaCa": "2:1", "thio": "7.5%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH8.0/2:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "30°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-4-5", "permStyle": "wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "7.0", "tgaCa": "1:1", "thio": "6.0%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "90~100%", "applyOrder": "① 受损区涂CA（PH7.0/1:1）→ ② 渗透式三步", "rinseSignal": "测试杠卷圈清晰弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "14~16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "16号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-4-5", "permStyle": "french-wool-perm", "soften": {"mixed": true, "caProtect": true, "penetration": true, "mainDrug": {"pH": "7.0", "tgaCa": "1:1", "thio": "6.0%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "80~90%", "applyOrder": "① 受损区涂CA（PH7.0/1:1）→ ② 渗透式三步", "rinseSignal": "测试杠饱满卷圈弹力下降冲水", "detailedSteps": [{"phase": "🛡️ Step 1", "action": "受损区CA保护", "detail": "发中~发尾均匀涂抹CA，不涂发根", "time": "—"}, {"phase": "🔑 Step 2", "action": "打底渗透", "detail": "药水:水=2:1稀释后均匀涂抹，健康发质部分停放10分钟", "time": "停放10分钟"}, {"phase": "📐 Step 2.5", "action": "拆测试杠判断", "detail": "看卷度，决定PH和药性是否合适", "time": "—"}, {"phase": "🧪 Step 3", "action": "正式软化", "detail": "同级浓度药水均匀涂抹健康部分(或全头)，受损发质量少", "time": "停放~15分钟"}, {"phase": "✅ Step 4", "action": "拆测试杠验证", "detail": "达到80%+→第五步补涂；已够→冲水", "time": "—"}, {"phase": "🔁 Step 5", "action": "补涂追目标", "detail": "同级药水:水=1:1均匀涂抹健康部分(或全头)，受损发质量少，需卷测试杠", "time": "10分钟至达标冲水"}]}, "rods": [{"zone": "头顶", "size": "16~18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "18号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "18~20号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 渗透式三步！先CA保护后打底→正式→验证→补涂。每一步都拆测试杠。 ⚠️ 发尾5级极度脆弱+法式羊毛卷高风险！ 发尾CA必须涂足、不打底、不揉搓、3分钟一测。 发尾有卷圈就停，切勿追求完美。先签免责。"},
+  {"hairType": "level-mix-4-5", "permStyle": "french-wave", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "7.0", "tgaCa": "1:1", "thio": "6.0%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70~80%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH7.0/1:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠明显S弯冲水"}, "rods": [{"zone": "头顶", "size": "22~24号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "两侧", "size": "24~26号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}, {"zone": "后颈", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "45°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-4-5", "permStyle": "style-perm", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "7.0", "tgaCa": "1:1", "thio": "6.0%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH7.0/1:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "测试杠S弯即可"}, "rods": [{"zone": "全头", "size": "26~28号", "technique": "缠绕", "startFrom": "从发尾", "angle": "72°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"},
+  {"hairType": "level-mix-4-5", "permStyle": "c-straight", "soften": {"mixed": true, "caProtect": true, "penetration": false, "mainDrug": {"pH": "7.0", "tgaCa": "1:1", "thio": "6.0%"}, "endEffect": {"pH": "≈5.5~6.5", "tgaCa": "纯TGA"}, "targetDegree": "70%", "applyOrder": "① 受损区涂CA → ② 全头一次涂药(PH7.0/1:1) → ③ 正常软化（无需渗透式）", "rinseSignal": "整体软化到位即可"}, "rods": [{"zone": "发根~发中", "size": "直板/大杠28+", "technique": "拉直", "startFrom": "从发根", "angle": "0°"}, {"zone": "发尾5~8cm", "size": "30号", "technique": "缠绕一圈", "startFrom": "从发尾", "angle": "30°"}], "warning": "⚠️ 发尾5级极度脆弱！ CA必须涂足，药水勿揉搓，S弯即停。"}
+];
+
+/* ─────────────────────────────────────────
+   APP LOGIC
+   ───────────────────────────────────────── */
+
+function initApp() {
+  console.log('initApp');
+
+
+  // === 导航 ===
+  window.openFeature = function(tabName) {
+    sessionStorage.setItem('_curPage', tabName);
+    document.getElementById('home-page').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    var content = document.getElementById('tab-' + tabName);
+    if (content) {
+      content.classList.add('active');
+      // 方案tab + 预约tab — 白底，其他恢复暗底
+      document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings');
+      if (tabName === 'plans') switchPlan('calc');
+      if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
+      if (tabName === 'showcase') { startShowcasePoll(); }
+    }
+  };
+  window.goHome = function() {
+    sessionStorage.removeItem('_curPage');
+    document.getElementById('home-page').style.display = 'block';
+    document.getElementById('app-content').style.display = 'none';
+    document.body.classList.remove('plan-white-mode');
+  };
+  window.closeHairAnalysisModal = function() {
+    document.body.classList.remove('hair-modal-open');
+    var _tm = document.querySelector('meta[name="theme-color"]');
+    if (_tm) _tm.content = '#000000';
+    var m = document.getElementById('hair-analysis-modal');
+    if (m) m.remove();
+  };
+  window.openHomeDrawer = function() {
+    var drawer = document.getElementById('home-drawer');
+    var mask = document.getElementById('home-drawer-mask');
+    if (drawer) drawer.classList.add('open');
+    if (mask) mask.classList.add('open');
+  };
+  window.closeHomeDrawer = function() {
+    var drawer = document.getElementById('home-drawer');
+    var mask = document.getElementById('home-drawer-mask');
+    if (drawer) drawer.classList.remove('open');
+    if (mask) mask.classList.remove('open');
+  };
+  window.showHairAnalysisPage = function(phone) {
+    sessionStorage.setItem('_curPage', 'hair');
+    // 弹出一个全屏模态框显示发质分析，不需要手机号
+    var existing = document.getElementById('hair-analysis-modal');
+    if (existing) existing.remove();
+
+    // 顶部状态栏变白
+    var themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = '#ffffff';
+
+    var overlay = document.createElement('div');
+    overlay.id = 'hair-analysis-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,44px);';
+    overlay.innerHTML =
+      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(70px + env(safe-area-inset-bottom,0px));background:#ffffff;min-height:100vh;box-sizing:border-box;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+          '<div style="font-size:16px;font-weight:700;color:#000000;">发质分析</div>' +
+          '<button onclick="autoSaveHairForm();closeHairAnalysisModal();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+        '</div>' +
+        '<div id="hair-quick-area"></div>' +
+      '</div>';
+    overlay.insertAdjacentHTML('beforeend',
+      '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">← 首页</button>' +
+      '<button onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
+    document.body.appendChild(overlay);
+    // body变白背景
+    document.body.classList.add('hair-modal-open');
+
+    // 直接渲染分析UI（phone传空，不绑客户）
+    var area = document.getElementById('hair-quick-area');
+    if (area) area.innerHTML = renderHairAnalysis('', '');
+    setTimeout(function(){
+      // 初始化chip选择器
+      if (window.initHairChips) window.initHairChips();
+      if (window.initApplyOrderChips) window.initApplyOrderChips();
+      // 初始化护理记录已添加列表
+      if (window.initCareSection) window.initCareSection();
+      // 相册按钮（已移除拍照AI验证按钮）
+      // 渲染本地记录
+      if (window.renderPendingRecords) window.renderPendingRecords();
+      // 渲染我的任务
+      if (window.renderMyTasks) window.renderMyTasks();
+      // ★ 黑屏后回来：检查是否有待处理的分析
+      var pendingId = localStorage.getItem('_pendingHairQueueId');
+      if (pendingId) {
+        var area2 = document.getElementById('hair-quick-area');
+        if (area2) {
+          // 显示加载状态
+          var initEl = document.getElementById('hair-init');
+          var loadingEl = document.getElementById('hair-loading');
+          var resultEl = document.getElementById('hair-result');
+          if (initEl && loadingEl && resultEl) {
+            initEl.style.display = 'none';
+            loadingEl.style.display = 'block';
+            // 重新轮询
+            var pollFn = function() {
+              fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + pendingId + '&select=status,ai_damage_level,ai_analysis,error_message', {
+                headers: { 'apikey': SUPABASE_KEY }
+              }).then(function(r) { return r.json(); }).then(function(rows2) {
+                if (!rows2 || rows2.length === 0) return;
+                var rec2 = rows2[0];
+                if (rec2.status === 'completed') {
+                  localStorage.removeItem('_pendingHairQueueId');
+                  loadingEl.style.display = 'none';
+                  resultEl.style.display = 'block';
+                  // 触发显示结果
+                  if (window._showHairResult) {
+                    window._showHairResult(rec2);
+                  } else if (window.autoMatchHairType) {
+                    autoMatchHairType();
+                  }
+                } else if (rec2.status === 'failed') {
+                  localStorage.removeItem('_pendingHairQueueId');
+                  loadingEl.style.display = 'none';
+                  resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;padding:16px;text-align:center;">❌ 分析失败</div>';
+                  resultEl.style.display = 'block';
+                } else {
+                  setTimeout(pollFn, 3000);  // 3秒后再试
+                }
+              }).catch(function(){ setTimeout(pollFn, 5000); });
+            };
+            setTimeout(pollFn, 1000);
+          }
+        }
+      }
+    }, 100);
+  };
+
+  window.openHomeDrawerFeature = function(tabName) {
+    closeHomeDrawer();
+    if (tabName === 'hair') {
+      showHairAnalysisPage();
+      return;
+    }
+    openFeature(tabName);
+  };
+  window.switchPlan = function(name) {
+    var btns = document.querySelectorAll('#plan-nav button');
+    btns.forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.plan-page').forEach(function(p){ p.classList.remove('active'); });
+    btns.forEach(function(b){
+      var handler = b.getAttribute('onclick') || '';
+      if (b.textContent.indexOf(name) !== -1 || handler.indexOf(name) !== -1) b.classList.add('on');
+    });
+    var page = document.getElementById('plan-' + name);
+    if (page) page.classList.add('active');
+  };
+  // 初始状态：首页显示
+  document.querySelector('.footer'); // noop, footer removed
+  // === DOM refs ===
+  const hairTypeSelect = document.getElementById('hair-type');
+  const permStyleSelect = document.getElementById('perm-style');
+  const queryBtn = document.getElementById('query-btn');
+  const resultArea = document.getElementById('result-area');
+  const backToTop = document.getElementById('back-to-top');
+  const toast = document.getElementById('toast');
+
+  // === 首页轮播 + 下拉刷新 ===
+  (function(){
+    var imgs = document.querySelectorAll('.carousel-box img');
+    if (imgs.length < 2) return;
+    var idx = 0;
+    var carouselTimer = null;
+    function startCarousel() {
+      if (carouselTimer) return;
+      carouselTimer = setInterval(function(){
+        if (document.hidden) return;
+        imgs[idx].classList.remove('active');
+        idx = (idx + 1) % imgs.length;
+        imgs[idx].classList.add('active');
+      }, 8000);
+    }
+    function stopCarousel() {
+      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    }
+    document.addEventListener('visibilitychange', function(){
+      if (document.hidden) stopCarousel();
+      else startCarousel();
+    });
+    startCarousel();
+
+    // 下拉刷新已禁用 — 有sessionStorage保存页面状态，不需要手动刷新
+    // 保留空IIFE占位，避免删除后影响其他代码的行号
+    (function(){
+      // pull-to-refresh disabled
+    })();
+  })();  // 轮播 IIFE 闭合
+
+  // === 刷新后恢复之前的页面 ===
+  (function(){
+    var saved = sessionStorage.getItem('_curPage');
+    if (saved) {
+      sessionStorage.removeItem('_curPage'); // 用完清除，避免无限循环
+      if (saved === 'hair') {
+        showHairAnalysisPage();
+      } else if (saved === 'plans' || saved === 'bookings' || saved === 'showcase') {
+        openFeature(saved);
+      }
+    }
+  })();
+
+  // === 安装引导（仅首次提示）===
+  (function(){
+    // 检测微信/QQ内置浏览器
+    var ua = navigator.userAgent;
+    var isWechat = /MicroMessenger/i.test(ua);
+    var isQQ = /QQ/i.test(ua) && !/MQQBrowser/i.test(ua);
+    if (isWechat || isQQ) {
+      var ov = document.createElement('div');
+      ov.id = 'wx-guide';
+      ov.innerHTML = '<div class="wx-mask"></div><div class="wx-box"><div class="wx-icon">'+(isWechat?'💬':'💻')+'</div><div class="wx-title">请在浏览器中打开</div><div class="wx-desc">'+(isWechat?'微信':'QQ')+'内无法添加到桌面，请点击右上角 <b>···</b> 选择 <b>在Safari中打开</b>（iPhone）或 <b>在浏览器中打开</b>（安卓）</div><div class="wx-close" onclick="this.parentElement.parentElement.remove()">我知道了</div></div>';
+      document.body.appendChild(ov);
+      return;
+    }
+    
+    // 已安装或已关闭过，跳过
+    if (window.navigator.standalone || localStorage.getItem('install_guide_done')) return;
+    
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var isAndroid = /Android/.test(navigator.userAgent);
+    if (!isIOS && !isAndroid) return;
+    
+    // 延迟弹出，等页面加载完
+    setTimeout(function(){
+      var overlay = document.createElement('div');
+      overlay.id = 'install-guide';
+      overlay.innerHTML = 
+        '<div class="ig-mask"></div>' +
+        (isIOS ? 
+          '<div class="ig-box">' +
+            '<div class="ig-arrow"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 2v14m0 0l-4-4m4 4l4-4M6 20h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>' +
+            '<div class="ig-title">添加到主屏幕</div>' +
+            '<div class="ig-step">1. 点击底部 <b>分享</b> 按钮</div>' +
+            '<div class="ig-step">2. 选择 <b>添加到主屏幕</b></div>' +
+            '<div class="ig-close" onclick="closeInstallGuide()">知道了</div>' +
+          '</div>' :
+          '<div class="ig-box">' +
+            '<div class="ig-icon">📱</div>' +
+            '<div class="ig-title">安装App</div>' +
+            '<div class="ig-step">点击浏览器菜单 → <b>添加到主屏幕</b></div>' +
+            '<div class="ig-close" onclick="closeInstallGuide()">知道了</div>' +
+          '</div>');
+      document.body.appendChild(overlay);
+    }, 2000);
+    
+    window.closeInstallGuide = function(){
+      document.getElementById('install-guide').remove();
+      localStorage.setItem('install_guide_done', '1');
+    };
+  })();
+
+  // === Init selectors (仅在旧查询页面存在时，兼容移除后首页不报错) ===
+  if (hairTypeSelect) {
+    HAIR_TYPES.forEach(ht => {
+      const opt = document.createElement('option');
+      opt.value = ht.id;
+      opt.textContent = ht.label;
+      hairTypeSelect.appendChild(opt);
+    });
+  }
+  if (permStyleSelect) {
+    PERM_STYLES.forEach(ps => {
+      const opt = document.createElement('option');
+      opt.value = ps.id;
+      opt.textContent = ps.label;
+      permStyleSelect.appendChild(opt);
+    });
+  }
+
+  // === Enable query button ===
+  window.updateQueryButtonState = function() {
+    var waiting = DATA_LOADING || (!DATA_LOADED && !DATA_ERROR);
+    if (waiting) {
+      if (queryBtn) { queryBtn.disabled = true; queryBtn.textContent = '数据加载中...'; }
+      return;
+    }
+    if (queryBtn) queryBtn.textContent = '🔍 查询方案';
+    if (queryBtn) queryBtn.disabled = !(DATA_LOADED && hairTypeSelect && hairTypeSelect.value && permStyleSelect && permStyleSelect.value);
+  };
+  if (hairTypeSelect) hairTypeSelect.addEventListener('change', window.updateQueryButtonState);
+  if (permStyleSelect) permStyleSelect.addEventListener('change', window.updateQueryButtonState);
+  window.updateQueryButtonState();
+
+  // === Query (仅在旧查询页面存在时注册) ===
+  if (queryBtn) {
+    queryBtn.addEventListener('click', async () => {
+      const hair = hairTypeSelect.value;
+      const style = permStyleSelect.value;
+      if (!hair || !style) return;
+
+    // 等待数据加载
+    if (!DATA_LOADED) {
+      if (DATA_ERROR) {
+        showToast(DATA_ERROR + '，部分方案可能不可用');
+      } else {
+        showToast('数据加载中，请稍候再试...');
+      }
+      return;
+    }
+
+    const results = PERM_DATA_CACHE.filter(d => d.hairType === hair && d.permStyle === style);
+    if (results.length === 0) {
+      showToast('暂无该组合的数据，请尝试其他搭配');
+      resultArea.innerHTML = '';
+      return;
+    }
+
+    let allHtml = '';
+    results.forEach((result, i) => {
+      if (i > 0) {
+        allHtml += '<div style="border-top:2px dashed var(--border);margin:20px 0;padding-top:8px;text-align:center;font-size:11px;color:var(--text-secondary);">—— 方案 ' + (i+1) + ' ——</div>';
+      }
+      allHtml += renderResult(result);
+    });
+    resultArea.innerHTML = allHtml;
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function renderResult(data) {
+    function escapePlanValue(v) {
+      if (v == null) return v;
+      if (typeof v === 'string') return esc(v);
+      if (Array.isArray(v)) return v.map(escapePlanValue);
+      if (typeof v === 'object') {
+        var out = {};
+        Object.keys(v).forEach(function(k){ out[k] = escapePlanValue(v[k]); });
+        return out;
+      }
+      return v;
+    }
+    data = escapePlanValue(data || {});
+    if (!data.soften) data.soften = {};
+    if (!data.rods || !Array.isArray(data.rods)) data.rods = [];
+    const s = data.soften;
+    s.mainDrug = s.mainDrug || {};
+    s.endEffect = s.endEffect || {};
+    s.root = s.root || {};
+    s.end = s.end || {};
+    const rods = data.rods;
+    const isMixed = !!s.mixed;
+
+    let html = '';
+
+    // Soften card
+    html += `<div class="result-card" style="animation-delay:0s">
+      <div class="card-header">
+        <span class="card-icon">🧪</span>
+        <span class="card-title">${isMixed ? '分段软化方案 🔀' : '软化方案'}</span>
+      </div>
+      <div class="card-body">`;
+
+    if (isMixed && s.caProtect) {
+      html += `
+        <div class="param-row" style="color:var(--accent);font-weight:600;margin-bottom:8px;">🛡️ CA保护法：${s.applyOrder}</div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">▸ 健康发药水（全头）</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.mainDrug.pH}</b> · ${s.mainDrug.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.mainDrug.thio}</div>
+          </div>
+          <div style="flex:1;background:rgba(224,85,106,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;">▸ 受损区 ≈ CA混合后</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.endEffect.pH}</b> · ${s.endEffect.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">CA自动降级保护</div>
+          </div>
+        </div>
+        <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+
+    // 🔑 渗透式详细步骤
+    if (s.detailedSteps && s.detailedSteps.length) {
+      html += `<div style="margin-top:12px;background:rgba(212,165,116,0.06);border-radius:8px;padding:12px;">
+        <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:10px;">📋 渗透式三步操作流程</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.7;">
+          ①同级药水:水=2:1稀释→10分→拆杠<br>
+          ②正式药水→15分→拆杠<br>
+          ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水
+        </div>
+      </div>`;
+    }
+    } else if (isMixed) {
+      html += `
+        <div class="param-row" style="color:var(--accent);font-weight:600;margin-bottom:8px;">📋 涂抹顺序：${s.applyOrder}</div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="flex:1;background:rgba(212,165,116,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">▸ 发根段</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.root.pH}</b> · ${s.root.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.root.thio} · 目标 ${s.root.targetDegree}</div>
+          </div>
+          <div style="flex:1;background:rgba(224,85,106,0.08);border-radius:8px;padding:10px;">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;">▸ 发尾段</div>
+            <div style="font-size:13px;color:var(--text);"><b>PH ${s.end.pH}</b> · ${s.end.tgaCa}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">硫代 ${s.end.thio} · 目标 ${s.end.targetDegree}</div>
+          </div>
+        </div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+    } else {
+      html += `
+        <div class="param-row"><span class="param-label">pH值</span><span class="param-value highlight">${s.pH}</span></div>
+        <div class="param-row"><span class="param-label">TGA:CA 配比</span><span class="param-value highlight">${s.tgaCa || '—'}</span></div>
+        <div class="param-row"><span class="param-label">硫代浓度</span><span class="param-value highlight">${s.thio}</span></div>
+        <div class="param-row"><span class="param-label">蛋白用量</span><span class="param-value">${s.protein || '无'}</span></div>
+        <div class="param-row"><span class="param-label">目标软化度</span><span class="param-value highlight">${s.targetDegree}</span></div>
+        <div class="param-row"><span class="param-label">软化流程</span><span class="param-value ${s.penetration ? 'warn' : ''}">${s.penetrationNote || (s.penetration ? '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水' : '正常涂抹')}</span></div>
+        <div class="param-row"><span class="param-label">冲水信号</span><span class="param-value" style="font-size:12px;">${s.rinseSignal}</span></div>`;
+    }
+
+    // Rods card
+    html += `<div class="result-card" style="animation-delay:0.1s">
+      <div class="card-header">
+        <span class="card-icon">📐</span>
+        <span class="card-title">排杠方案</span>
+      </div>
+      <div class="card-body" style="padding:8px;">
+        <table class="rod-table">
+          <thead><tr><th>分区</th><th>杠号</th><th>手法</th><th>起点</th><th>提拉角</th></tr></thead>
+          <tbody>`;
+
+    rods.forEach(r => {
+      html += `<tr>
+        <td>${r.zone}</td>
+        <td>${r.size}</td>
+        <td>${r.technique}</td>
+        <td>${r.startFrom}</td>
+        <td>${r.angle}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
+
+    // 🔥 加热建议
+    const hairLevel = (data.hairType || '').includes('level-5') ? 5 :
+                      (data.hairType || '').includes('level-4') ? 4 :
+                      (data.hairType || '').includes('level-3') ? 3 :
+                      (data.hairType || '').includes('level-2') ? 2 :
+                      (data.hairType || '').includes('level-1') ? 1 : 0;
+    const heatInfo = hairLevel <= 1 ? {temp:'110~120℃',time:'15~18分',note:'健康发可高温快烤'} :
+                     hairLevel === 2 ? {temp:'110℃',time:'12~15分',note:'中度健康标准烤'} :
+                     hairLevel === 3 ? {temp:'100~110℃',time:'10~12分',note:'受损发减温减时'} :
+                     hairLevel === 4 ? {temp:'90~100℃',time:'8~10分',note:'严重受损低温慢烤'} :
+                                       {temp:'80~90℃',time:'5~8分',note:'极度脆弱，宁欠勿过'};
+    html += `<div class="result-card" style="animation-delay:0.15s">
+      <div class="card-header">
+        <span class="card-icon">🔥</span>
+        <span class="card-title">加热建议</span>
+      </div>
+      <div class="card-body">
+        <div class="param-row"><span class="param-label">烘干打底</span><span class="param-value">包棉 60℃ × 15分（去多余水分）</span></div>
+        <div class="param-row"><span class="param-label">正式加热</span><span class="param-value highlight">${heatInfo.temp} × ${heatInfo.time}</span></div>
+        <div class="param-row"><span class="param-label">注意</span><span class="param-value" style="font-size:12px;color:var(--warning);">${heatInfo.note}</span></div>
+        <div class="param-row"><span class="param-label">检查标准</span><span class="param-value" style="font-size:12px;">全部加干</span></div>
+      </div>
+    </div>`;
+
+    // Warning
+    if (data.warning) {
+      html += `<div class="warning-notice">${data.warning}</div>`;
+    }
+
+    // Tips
+    html += renderTips();
+
+    return html;
+  }
+
+  function renderTips() {
+    return `<div class="tips-section" style="animation-delay:0.2s">
+      <div class="tips-title">💡 核心法则</div>
+      <ul class="tips-list">
+        <li><b>假性软化鉴别：</b>细软发摸软但有硬感 → 喷水冲掉药水 → 拉不动=假性，拉得动=真到位</li>
+        <li><b>软化核心：</b>张力强→去除 / 张力中→保留 / 张力弱→加强。用一种软化度套所有发质必翻车</li>
+        <li><b>渗透式三步：</b>①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水</li>
+        <li><b>药卷三场景：</b>①发根蓬松→最后一遍涂药时发根上药就卷 ②难烫发质→提前上药卷抢变卷时间 ③质感造型烫→吹干+高温夹板+喷水再烫→卷度弹性好</li>
+        <li><b>混合发质：</b>受损区先涂CA → 全头一次涂对应等级药水 → CA自动降级受损区。如需高软化度，CA后接渗透式继续操作</li>
+      </ul>
+    </div>`;
+  }
+
+  // === Back to top ===
+  window.addEventListener('scroll', () => {
+    backToTop.classList.toggle('show', window.scrollY > 400);
+  });
+
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // === Calculator ===
+  // 固定配比化学值表（独立于方案，不受查询影响）
+  function getFixedChem(tga, ca) {
+    // 简化配比 → 匹配固定参考值
+    if (tga <= 0 && ca <= 0) return null;
+    if (ca === 0) return { ph: '9.5', thio: '9.5%' };  // 纯TGA
+    if (tga === 0) return { ph: '5.5', thio: '2.0%' };  // 纯CA
+    var r = tga / ca;
+    if (r >= 5.5 && r <= 6.5) return { ph: '8.9', thio: '8.4%' };
+    if (r >= 2.8 && r <= 3.2) return { ph: '8.5', thio: '7.6%' };
+    if (r >= 1.4 && r <= 1.6) return { ph: '7.9', thio: '6.5%' };
+    if (r >= 0.95 && r <= 1.05) return { ph: '7.5', thio: '5.8%' };
+    if (r >= 0.15 && r <= 0.18) return { ph: '6.1', thio: '3.1%' };  // ~1:6
+    if (r >= 0.05 && r <= 0.12) return { ph: '5.9', thio: '2.7%' };  // 1:10~1:20
+    return null; // 自定义配比
+  }
+
+  const calcBtn = document.getElementById('calc-btn');
+  const calcResult = document.getElementById('calc-result');
+
+  // 快速预设按钮
+  document.querySelectorAll('.preset-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('calc-tga').value = this.dataset.tga;
+      document.getElementById('calc-ca').value = this.dataset.ca;
+      document.getElementById('calc-amount').value = 50;
+      document.getElementById('calc-extra').value = 0;
+      // 点击预设后自动计算
+      calcBtn.click();
+    });
+  });
+
+  calcBtn.addEventListener('click', () => {
+    const tga = parseFloat(document.getElementById('calc-tga').value) || 0;
+    const ca = parseFloat(document.getElementById('calc-ca').value) || 0;
+    const amount = parseFloat(document.getElementById('calc-amount').value) || 50;
+    const extra = parseFloat(document.getElementById('calc-extra').value) || 0;
+
+    if (tga <= 0 && ca <= 0) { showToast('请至少输入一份 TGA 或 CA'); return; }
+
+    const totalParts = tga + ca;
+    const tgaG = totalParts > 0 ? (tga / totalParts * amount) : 0;
+    const caG = totalParts > 0 ? (ca / totalParts * amount) : 0;
+    const total = amount + extra;
+
+    let html = '';
+    html += `<div style="padding:4px 0;color:var(--text-secondary);font-size:13px;margin-bottom:8px;">`;
+    html += `TGA:CA = <b style="color:var(--accent);">${tga}:${ca}</b>`;
+    if (totalParts > 0) {
+      const pct = (tga / totalParts * 100).toFixed(0);
+      html += ` · TGA占比 ${pct}%`;
+    }
+    html += `</div>`;
+
+    html += `<div class="calc-row"><span class="label">TGA 用量</span><span class="value" style="color:var(--accent);">${tgaG.toFixed(1)} g</span></div>`;
+    html += `<div class="calc-row"><span class="label">CA 用量</span><span class="value" style="color:var(--danger);">${caG.toFixed(1)} g</span></div>`;
+    if (extra > 0) {
+      html += `<div class="calc-row"><span class="label">稀释液（水/蛋白）</span><span class="value">${extra.toFixed(0)} g</span></div>`;
+    }
+    html += `<div class="calc-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;"><span class="label">调配总量</span><span class="value" style="font-weight:700;">${total.toFixed(1)} g</span></div>`;
+
+    // PH/硫代：按固定配比表查询 + 真实稀释计算
+    const fixedRef = getFixedChem(tga, ca);
+    if (fixedRef) {
+      const origThio = parseFloat(fixedRef.thio);
+      if (extra > 0) {
+        const dilutedThio = (origThio * amount / total).toFixed(1);
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+        html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b>`;
+        html += ` · 原硫代 <span style="color:var(--text-secondary);">${fixedRef.thio}</span>`;
+        html += ` → 稀释后 <b style="color:var(--accent);">${dilutedThio}%</b>`;
+        html += `<br>💡 ${amount.toFixed(0)}g药水 + ${extra.toFixed(0)}g水 → 总量${total.toFixed(0)}g，硫代稀释至${dilutedThio}%</div>`;
+      } else {
+        html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+        html += `📊 PH <b style="color:var(--accent);">${fixedRef.ph}</b> · 硫代 <b style="color:var(--accent);">${fixedRef.thio}</b>`;
+        html += `<br>💡 加水/蛋白稀释 → 降药性不降PH</div>`;
+      }
+    } else if (totalParts > 0) {
+      html += `<div style="margin-top:12px;padding:10px;background:var(--surface-light);border-radius:8px;font-size:12px;color:var(--text-secondary);">`;
+      html += `⚠️ 自定义配比，无预设PH/硫代数据`;
+      if (extra > 0) html += ` (已含稀释)`;
+      html += `</div>`;
+    }
+
+    calcResult.innerHTML = html;
+  });
+
+  // ===== 预约系统 =====
+  var BOOKING_SHOP = '自由手艺人';
+  var BOOKING_BARBER = '';
+  var BOOKING_DATE = getLocalDateStr();
+  var BOOKING_INTERVAL = null;
+  var BOOKINGS_CACHE = [];
+
+  // ★ 设备ID（每个手机唯一，存在localStorage）
+  var DEVICE_ID = localStorage.getItem('booking-device-id');
+  if (!DEVICE_ID) {
+    DEVICE_ID = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('booking-device-id', DEVICE_ID);
+  }
+
+  function checkIdentity() {
+    var cached = localStorage.getItem('booking-barber');
+    if (cached) {
+      BOOKING_BARBER = cached;
+      document.getElementById('current-identity').textContent = cached;
+    } else {
+      showIdentityModal();
+    }
+  }
+
+  var DOW = ['日','一','二','三','四','五','六'];
+
+  function renderDateStrip() {
+    var strip = document.getElementById('date-strip');
+    var today = getLocalDateStr();
+    var html = '';
+    for (var i = 0; i < 8; i++) {
+      var d = new Date();
+      d.setDate(d.getDate() + i);
+      var ds = getLocalDate(d);
+      var label = i === 0 ? '今天' : (i === 1 ? '明天' : ('周' + DOW[d.getDay()]));
+      var sub = (d.getMonth()+1) + '/' + d.getDate();
+      var on = ds === BOOKING_DATE ? ' on' : '';
+      html += '<div class="date-chip'+on+'" onclick="pickDate(\''+ds+'\')"><div class="dow">'+label+'</div>'+sub+'</div>';
+    }
+    strip.innerHTML = html;
+  }
+
+  window.pickDate = function(ds) {
+    BOOKING_DATE = ds;
+    renderDateStrip();
+    loadBookings(true);
+  }
+
+  window.showIdentityModal = function() {
+    var existing = document.getElementById('identity-modal');
+    if (existing) { existing.remove(); }
+    var div = document.createElement('div');
+    div.className = 'identity-modal';
+    div.id = 'identity-modal';
+    div.innerHTML = '<div class="box" id="login-box-main"><h3 style="margin-bottom:20px;">自由手艺人</h3><div class="reg-form"><button class="opt" id="show-login-btn">登录</button><button class="opt" style="color:var(--accent);" id="show-register-btn">注册新员工</button><div id="identity-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
+    document.body.appendChild(div);
+    document.getElementById('show-login-btn').onclick = showLoginForm;
+    document.getElementById('show-register-btn').onclick = function(){ showRegisterForm(); };
+  }
+
+  function showLoginForm() {
+    var box = document.getElementById('login-box-main');
+    if (!box) return;
+    box.innerHTML =
+      '<h3>员工登录</h3><div class="reg-form">' +
+        '<input id="login-name" placeholder="姓名" required>' +
+        '<input id="login-pass" type="password" placeholder="密码" required>' +
+        '<button class="opt" id="login-submit-btn">登录</button>' +
+        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '<div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
+      '</div>';
+    document.getElementById('login-submit-btn').onclick = doAppLogin;
+    document.getElementById('login-pass').onkeydown = function(e){ if(e.key==='Enter') doAppLogin(); };
+  }
+
+  window.doAppLogin = async function(){
+    var name = document.getElementById('login-name').value.trim();
+    var pass = document.getElementById('login-pass').value;
+    var errEl = document.getElementById('login-error');
+    if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
+    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
+      errEl.textContent = '当前浏览器不支持安全登录，请升级浏览器或使用 Safari/Chrome';
+      errEl.style.display = '';
+      return;
+    }
+    var btn = document.getElementById('login-submit-btn');
+    if (btn) btn.disabled = true;
+    try {
+      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
+      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
+        headers: { 'apikey': SUPABASE_KEY }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var rows = await r.json();
+      if (rows && rows.length > 0 && rows[0].active !== false) {
+        // 登录成功 → 弹出选名字页面，不直接绑定
+        document.getElementById('identity-modal').remove();
+        showBarberPicker();
+      } else {
+        errEl.textContent = '姓名或密码错误，或账号未通过审核';
+        errEl.style.display = '';
+      }
+    } catch(e) {
+      errEl.textContent = '登录失败，请重试';
+      errEl.style.display = '';
+    }
+    if (btn) btn.disabled = false;
+  };
+
+  window.showBarberPicker = async function(){
+    var existing = document.getElementById('barber-picker-modal');
+    if (existing) existing.remove();
+    // 拉取所有 active 发型师作为可选身份
+    var barbers = [];
+    try {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&role=eq.staff&order=username.asc', {
+        headers: { 'apikey': SUPABASE_KEY }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var rows = await r.json();
+      if (rows && rows.length > 0) {
+        barbers = rows.map(function(r){ return r.username; });
+      }
+    } catch(e) { /* 兜底 */ }
+    if (barbers.length < 3) {
+      barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
+    }
+    var div = document.createElement('div');
+    div.className = 'identity-modal';
+    div.id = 'barber-picker-modal';
+    var html = '<div class="box"><h3>选择你的身份</h3><div id="barber-picker-list" style="max-height:400px;overflow-y:auto;"></div></div>';
+    div.innerHTML = html;
+    document.body.appendChild(div);
+    var list = document.getElementById('barber-picker-list');
+    list.addEventListener('click', function(e){
+      var btn = e.target.closest('button[data-name]');
+      if (!btn || !list.contains(btn)) return;
+      selectIdentity(btn.getAttribute('data-name') || '');
+    });
+    barbers.forEach(function(b){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.type = 'button';
+      btn.setAttribute('data-name', b || '');
+      btn.textContent = b || '';
+      list.appendChild(btn);
+    });
+  };
+
+  window.showRegisterForm = function(){
+    var box = document.getElementById('login-box-main');
+    if (!box) return;
+    box.innerHTML =
+      '<h3>注册新员工</h3>' +
+      '<div class="reg-form">' +
+        '<input id="reg-name" placeholder="姓名" required>' +
+        '<input id="reg-pass" type="password" placeholder="密码" required>' +
+        '<input id="reg-pass2" type="password" placeholder="重复密码" required>' +
+        '<select id="reg-store" style="width:100%;padding:12px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:var(--font);">' +
+          '<option value="">选择门店</option>' +
+          '<option value="自由手艺人">自由手艺人</option>' +
+          '<option value="向里造型">向里造型</option>' +
+        '</select>' +
+        '<div class="pos-check-group" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 0;max-width:320px;">' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="发型师" checked> 发型师</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="技师"> 技师</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="助理"> 助理</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="前台"> 前台</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="店长"> 店长</label>' +
+        '</div>' +
+        '<button class="opt" id="reg-submit-btn">提交注册</button>' +
+        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
+      '</div>';
+    document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
+  };
+
+  window.selectIdentity = function(name) {
+    BOOKING_BARBER = name;
+    localStorage.setItem('booking-barber', name);
+    document.getElementById('current-identity').textContent = name || '全部发型师';
+    var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
+    if (modal) modal.remove();
+    // ★ 存到Supabase，管理员可在后台修改
+    if (name) {
+      fetch(SUPABASE_URL + '/rest/v1/barber_identities', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); })
+      .catch(function(e){ console.warn('身份同步失败:', e); });
+    }
+    loadBookings();
+  };
+
+  window.registerEmployee = async function(){
+    var username = document.getElementById('reg-name').value.trim();
+    var pass = document.getElementById('reg-pass').value;
+    var pass2 = document.getElementById('reg-pass2').value;
+    var errEl = document.getElementById('reg-error');
+    if (!username || !pass || !pass2) { errEl.textContent='请完整填写'; errEl.style.display=''; return; }
+    if (pass !== pass2) { errEl.textContent='两次密码不一致'; errEl.style.display=''; return; }
+    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
+      errEl.textContent = '当前浏览器不支持安全注册，请升级浏览器或使用 Safari/Chrome';
+      errEl.style.display = '';
+      return;
+    }
+    var btn = document.getElementById('reg-submit-btn');
+    if (btn) btn.disabled = true;
+    try {
+      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var store = document.getElementById('reg-store').value;
+      var position = Array.from(document.querySelectorAll('#login-box-main .pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(',');
+      if (!store || !position) { errEl.textContent='请选择门店和职位'; errEl.style.display=''; if (btn) btn.disabled = false; return; }
+      var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
+        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', store:store, position:position, active:false })
+      });
+      if (!res.ok) {
+        var errBody = '';
+        try { var _errJson = await res.json(); errBody = _errJson.message || ''; } catch(e) {}
+        if (res.status === 409 && errBody.indexOf('username') !== -1) {
+          throw new Error('用户名已存在');
+        }
+        throw new Error('提交失败: ' + (errBody || res.status));
+      }
+      alert('注册成功，等待店主审核');
+      document.getElementById('identity-modal').remove();
+    } catch(e) {
+      errEl.textContent=e.message||'注册失败，请重试'; errEl.style.display='';
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  window.logoutAccount = function(){
+    if (!confirm('确定退出当前账号？')) return;
+    localStorage.removeItem('booking-barber');
+    localStorage.removeItem('install_guide_done');
+    BOOKING_BARBER = '';
+    location.reload();
+  };
+
+  window.switchShop = function(shop) {
+    BOOKING_SHOP = shop;
+    document.getElementById('shop-btn-ziyou').classList.toggle('on', shop === '自由手艺人');
+    document.getElementById('shop-btn-xiangli').classList.toggle('on', shop === '向里造型');
+    loadBookings();
+  };
+
+  function loadBookings(showLoading) {
+    var list = document.getElementById('booking-list');
+    if (!list) return;
+
+    // ★ 离线模式：先从localStorage渲染缓存，再异步刷新
+    var shopName = BOOKING_SHOP;
+    var cacheKey = 'bookings_cache_' + shopName + '_' + (BOOKING_BARBER || 'all');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
+
+    if (showLoading === false && cached && cached.length > 0) {
+      // 轮询刷新时直接显示已缓存数据（不闪）
+      renderBookings(cached, list, false);
+    } else if (cached && cached.length > 0) {
+      // 首次加载：先显示缓存，后面刷新
+      renderBookings(cached, list, true);
+    } else if (showLoading !== false) {
+      list.innerHTML = '<div class="booking-loading">加载中...</div>';
+    }
+
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(rows){
+      rows = Array.isArray(rows) ? rows : [];
+      if (BOOKING_BARBER) {
+        rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
+      }
+      // ★ 数据签名：只有数据变了才更新DOM，避免每5秒闪屏
+      var sig = rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.time_label||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')}).join('|');
+      if (sig === window._bookingSig) { return; }
+      window._bookingSig = sig;
+
+      BOOKINGS_CACHE = rows;
+      // ★ 保存到localStorage供离线使用
+      try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch(e) {}
+      renderBookings(rows, list, false);
+    }).catch(function(e){
+      // ★ 网络失败时：有缓存就保留，无缓存才显示错误
+      if (!cached || cached.length === 0) {
+        list.innerHTML = '<div class="no-results"><div class="icon">⚠️</div>网络离线，请检查连接</div>';
+      }
+    });
+  }
+
+  // ★ 独立渲染函数，避免重复代码
+  function renderBookings(rows, list, isOffline) {
+    if (rows.length === 0) {
+      list.innerHTML = '<div class="no-results"><div class="icon">📭</div>暂无预约</div>';
+      return;
+    }
+    var html = '';
+    rows.forEach(function(r){
+      var isReal = r.customer_name && r.customer_name !== '待定' && r.customer_name !== '未登记';
+      html += '<div class="booking-item' + (isReal ? ' real-customer' : '') + '">';
+      html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div>';
+
+      var serviceRaw = r.service_name || '';
+      if (serviceRaw || r.notes) {
+        html += '<div class="bi-service-row">';
+        if (serviceRaw) {
+          var services = String(serviceRaw).split(/[、,，/／|｜\n\r]+/);
+          for (var si=0; si<services.length; si++) {
+            var sv = services[si].replace(/^预约/, '').trim();
+            if (!sv) continue;
+            var cls = '';
+            if (sv.indexOf('剪发') !== -1) cls = ' cut';
+            else if (sv.indexOf('烫发') !== -1) cls = ' perm';
+            else if (sv.indexOf('染发') !== -1) cls = ' color';
+            else if (sv.indexOf('护理') !== -1) cls = ' care';
+            html += '<span class="bi-service-tag'+cls+'">'+esc(sv)+'</span>';
+          }
+        }
+        if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+      var _isDyePerm = (function(){var _t=(r.service_name||'')+' '+(r.notes||'');return _t.indexOf('烫')!==-1||_t.indexOf('染')!==-1;})();
+      html += '<div class="bi-right"><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name||'')+'</div>';
+      if (r.customer_phone) {
+        html += '<span class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
+        if (_isDyePerm) {
+          html += '<span class="bi-hair-tag" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" style="font-size:10px;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;cursor:pointer;background:rgba(255,80,80,0.2);color:#ff5050;font-weight:600;">🔥烫染</span>';
+        }
+      }
+      html += '</div></div>';
+    });
+    list.innerHTML = html;
+    if (window.loadHairTagStatuses) window.loadHairTagStatuses();
+  }
+
+  // ===== 烫染标记：异步查询 hair_analysis_queue 状态 =====
+  window.loadHairTagStatuses = function() {
+    var tags = document.querySelectorAll('.bi-hair-tag');
+    if (tags.length === 0) return;
+    var phones = [];
+    var phoneSet = {};
+    tags.forEach(function(t){
+      var p = t.getAttribute('data-phone');
+      if (p && !phoneSet[p]) { phones.push(p); phoneSet[p] = true; }
+    });
+    if (phones.length === 0) return;
+    var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,status&or=('+orParts+')&order=created_at.desc&limit='+phones.length, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      if (!rows || rows.length === 0) return;
+      var statusMap = {};
+      rows.forEach(function(row){
+        var p = row.phone;
+        if (!statusMap[p]) {
+          statusMap[p] = row.status;
+        } else {
+          if (row.status === 'pending' && statusMap[p] !== 'pending') {
+            statusMap[p] = 'pending';
+          }
+        }
+      });
+      tags.forEach(function(t){
+        var phone = t.getAttribute('data-phone');
+        var name = t.getAttribute('data-name') || '';
+        var barber = t.getAttribute('data-barber') || '';
+        var bdate = t.getAttribute('data-bdate') || '';
+        var st = statusMap[phone];
+        if (st === 'pending') {
+          t.textContent = '\uD83D\uDCCB\u5F85\u5206\u6790';
+          t.style.background = 'rgba(232,168,23,0.2)';
+          t.style.color = '#e8a817';
+          t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate); };
+        } else if (st === 'record_saved' || st === 'completed') {
+          t.textContent = '\u2705\u5DF2\u5206\u6790';
+          t.style.background = 'rgba(46,204,113,0.2)';
+          t.style.color = '#2ecc71';
+          t.onclick = function(){ window.showHairRecordByPhone(phone); };
+        } else {
+          t.textContent = '\uD83D\uDD25\u70EB\u67D3';
+          t.style.background = 'rgba(255,80,80,0.2)';
+          t.style.color = '#ff5050';
+          t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate); };
+        }
+      });
+    }).catch(function(){});
+  };
+
+  window.openHairAnalysisForBooking = function(name, phone, barber, bdate) {
+    window.showHairAnalysisPage(phone);
+    setTimeout(function(){
+      var nameEl = document.getElementById('hair-form-name');
+      var phoneEl = document.getElementById('hair-form-phone');
+      if (nameEl) nameEl.value = name || '';
+      if (phoneEl) phoneEl.value = phone || '';
+    }, 200);
+  };
+
+  window.showHairRecordByPhone = function(phone) {
+    var records = window.getHairRecords ? window.getHairRecords() : [];
+    var found = null;
+    for (var i = 0; i < records.length; i++) {
+      if ((records[i].customerPhone === phone || records[i].phone === phone) && records[i].synced) {
+        found = records[i]; break;
+      }
+    }
+    if (found) {
+      if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
+      return;
+    }
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,status&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
+      var row = rows[0];
+      var rec = (row.ai_analysis && row.ai_analysis.record) || {};
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        if (rec.customerName) {
+          var ne = document.getElementById('hair-form-name');
+          if (ne) ne.value = rec.customerName;
+        }
+        if (rec.customerPhone || phone) {
+          var pe = document.getElementById('hair-form-phone');
+          if (pe) pe.value = rec.customerPhone || phone;
+        }
+        if (window.loadHairRecordData) window.loadHairRecordData(rec);
+      }, 200);
+    }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
+  };
+
+  window.createAndOpenHairTask = function(name, phone, barber, bdate) {
+    var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        phone: phone || '',
+        customer_name: name || '',
+        barber_name: barber || currentBarber,
+        shop_name: BOOKING_SHOP || '\u81EA\u7531\u624B\u827A\u4EBA',
+        booking_date: bdate || '',
+        source: 'booking_tag',
+        status: 'pending'
+      })
+    }).then(function(){
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        var nameEl = document.getElementById('hair-form-name');
+        var phoneEl = document.getElementById('hair-form-phone');
+        if (nameEl) nameEl.value = name || '';
+        if (phoneEl) phoneEl.value = phone || '';
+        if (window.loadHairTagStatuses) window.loadHairTagStatuses();
+      }, 200);
+    }).catch(function(){
+      window.showHairAnalysisPage(phone);
+      setTimeout(function(){
+        var nameEl = document.getElementById('hair-form-name');
+        var phoneEl = document.getElementById('hair-form-phone');
+        if (nameEl) nameEl.value = name || '';
+        if (phoneEl) phoneEl.value = phone || '';
+      }, 200);
+    });
+  };
+
+  window.esc = function(s) { return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  window.escAttr = function(s) { return esc(s); }
+  function maskPhone(phone) {
+    var s = String(phone || '');
+    return s.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2');
+  }
+
+  // ===== 客户方案生成 =====
+  var BARBER_SPECIALTIES = {
+    '无名': '烫发/整体造型',
+    '娄云': '剪发/染发',
+    '陈鹏': '烫染全能',
+    '董小强': '男士剪发',
+    '木子': '长发设计/护理',
+    '大雄': '染发/潮流造型',
+    '杨帆': '烫发/护理'
+  };
+  var _profileCache = {};
+  window.showPlanModal = function(phone, name, barberName, bookingDate) {
+    var old = document.getElementById('plan-modal');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.className = 'plan-modal';
+    div.id = 'plan-modal';
+    div.innerHTML = '<div class="box"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div>';
+    document.body.appendChild(div);
+
+    // 尝试本地API（店内WiFi直连美管加实时数据）
+    var supportsAbort = typeof AbortController !== 'undefined';
+    var ac = supportsAbort ? new AbortController() : null;
+    var _planModalAborted = false;
+    var acTimer = supportsAbort ? setTimeout(function(){ _planModalAborted = true; ac.abort(); }, 5000) : null;
+    var fetchOptions = supportsAbort ? { signal: ac.signal } : {};
+    fetch('/api/plan?phone='+encodeURIComponent(phone), fetchOptions)
+    .then(function(r){ if (acTimer) clearTimeout(acTimer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      if (acTimer) clearTimeout(acTimer);
+      if (_planModalAborted) return;
+      if (data.error || !data.plan_text) throw new Error('no data');
+      var p = data;
+      var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
+      html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
+      html += '<div class="row"><span class="label">到店</span><span class="val">'+((p.visits||0) > 0 ? (p.visits||0)+'次' : '未知')+'</span></div>';
+      html += '<div class="row"><span class="label">均消</span><span class="val">'+((p.avg_fee||0)>0 ? '¥'+(p.avg_fee||0).toFixed(0) : '未知')+'</span></div>';
+      // 总消费优先用 total_consumption（现金页路径有），兜底用 total_12m
+      var totalConsumption = (p.total_consumption || 0) > 0 ? p.total_consumption : (p.total_12m || 0);
+      html += '<div class="row"><span class="label">总消费</span><span class="val">¥'+(Number(totalConsumption||0)).toFixed(0)+'</span></div>';
+      if (p.freq_12m > 0) {
+        html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
+      }
+      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+esc(p.last_visit||'无')+'</span></div>';
+      if (p.months_since_last > 0) {
+        html += '<div class="row"><span class="label">距上次</span><span class="val">'+esc(p.months_since_last)+'个月</span></div>';
+      }
+      // 上次项目（从plan_server返回的notes或last_service）
+      var pNotes = p.notes || p.last_service || '';
+      if (pNotes) {
+        html += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(pNotes)+'</span></div>';
+      }
+      // 卡项/套餐
+      if (p.active_treats && p.active_treats.length > 0) {
+        html += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
+        for (var ti = 0; ti < p.active_treats.length; ti++) {
+          var tp = p.active_treats[ti];
+          var tn = tp.name || '套餐';
+          var tl = tp.left || tp.remaining || 0;
+          var tt = tp.total || 0;
+          var tused = tt - tl;
+          var tpct = tt > 0 ? Math.round(tl / tt * 100) : 0;
+          var tbar = tpct > 50 ? 'var(--accent)' : (tpct > 20 ? '#e8a817' : '#e85050');
+          html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
+          html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
+          html += '<span>'+esc(tn)+'</span>';
+          html += '<span style="color:'+tbar+';font-weight:600;">剩'+esc(tl)+'/'+esc(tt)+'次</span>';
+          html += '</span></div>';
+          if (tt > 0) {
+            html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
+            html += '<div style="width:'+tpct+'%;height:100%;background:'+tbar+';border-radius:2px;"></div></div>';
+          }
+        }
+      }
+      html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+      html += renderAiButton(phone, name, barberName, bookingDate);
+      html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
+      html += renderHairRecordReadOnly(phone, name);
+      document.querySelector('#plan-modal .box').innerHTML = html;
+      updateAiButtonsAvailability();
+      // 加载客户历史档案
+      renderCustomerHistory(phone, name);
+    })
+    .catch(function(e){
+      // 优先查Supabase customer_profiles（有完整的美管加消费数据）
+      fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*', {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(rows){
+        rows = Array.isArray(rows) ? rows : [];
+        if (rows && rows.length > 0) {
+          // 合并两家店数据：累加消费金额、到店次数，取最近的到店日期
+          var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
+          rows.forEach(function(p){
+            totalVisits += p.total_visits || 0;
+            totalConsum += p.total_consumption || 0;
+            if ((p.total_consumption || 0) > maxConsum) maxConsum = p.total_consumption || 0;
+            var d = p.last_visit_date || '';
+            if (d && d > lastDate) lastDate = d;
+          });
+          var visits = totalVisits;
+          var consum = totalConsum;
+          // 去除日期中的时间部分
+          var lastDateStr = lastDate ? (''+lastDate).split(' ')[0] : '';
+          // 计算距上次月数
+          var monthsSince = 0;
+          if (lastDateStr) {
+            var parts = lastDateStr.split('-');
+            if (parts.length === 3) {
+              var ld = new Date(+parts[0], +parts[1]-1, +parts[2]);
+              var now = new Date();
+              monthsSince = (now.getFullYear() - ld.getFullYear()) * 12 + (now.getMonth() - ld.getMonth());
+            }
+          }
+          // ===== 旧逻辑 → 改为业绩导向建议 =====
+          var sug = '';
+
+          // 客户画像（一句话）- 无到店次数但有消费金额时用消费级别判断
+          var customerType;
+          if (visits >= 10) customerType = '老客';
+          else if (visits >= 4) customerType = '常客';
+          else if (visits >= 2) customerType = '回头客';
+          else if (visits > 0) customerType = '新客';
+          else if (consum >= 10000) customerType = '高额老客';
+          else if (consum >= 3000) customerType = '消费老客';
+          else if (consum > 0) customerType = '消费客户';
+          else customerType = '新客';
+          var spendLabel = consum >= 3000 ? '高消费' : (consum >= 1000 ? '中等消费' : (consum > 0 ? '基础消费' : ''));
+          var activeLabel = lastDateStr ? (monthsSince === 0 ? '当月活跃' : (monthsSince >= 6 ? monthsSince + '个月未到店⚠️' : (monthsSince >= 3 ? monthsSince + '个月未到店' : ''))) : '';
+          sug += '👤 ' + esc(name||'客户') + ' · ' + esc(customerType);
+          if (spendLabel) sug += ' / ' + esc(spendLabel);
+          if (activeLabel) sug += ' / ' + esc(activeLabel);
+          sug += '\n\n';
+
+          // 卡项消耗建议
+          var packages = [];
+          var pRowsWithCards = (rows || []).filter(function(r){ return r.card_packages && r.card_packages.length > 0; });
+          if (pRowsWithCards.length > 0) {
+            packages = pRowsWithCards[0].card_packages || [];
+            // 只显示还有剩余次数的套餐（过滤已用完的）
+            packages = packages.filter(function(c){
+              return (c.left || c.remaining || c.leavetimes || 0) > 0;
+            });
+          }
+          if (packages.length > 0) {
+            sug += '📦 卡项消耗建议：\n';
+            for (var ci = 0; ci < packages.length; ci++) {
+              var cp = packages[ci];
+              var cn = cp.name || cp.itemname || '';
+              var cl = cp.left || cp.remaining || cp.leavetimes || 0;
+              var ct = cp.total || cp.sumtimes || 0;
+              if (cn) {
+                var used = ct - cl;
+                var pct = ct > 0 ? Math.round(cl / ct * 100) : 0;
+                if (cl <= 1) sug += '  ⚠️ ' + esc(cn) + '：仅剩' + esc(cl) + '次，必须优先安排！\n';
+                else if (pct <= 30) sug += '  🔴 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，剩' + esc(cl) + '次，建议尽快消耗防过期\n';
+                else if (pct <= 50) sug += '  🟡 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，剩' + esc(cl) + '次，可主动约客消耗\n';
+                else sug += '  🟢 ' + esc(cn) + '：已用' + esc(used) + '/' + esc(ct) + '次，时间充裕\n';
+              }
+            }
+            // 组合推荐
+            var names = packages.map(function(c){ return (c.name||'').toLowerCase(); });
+            var hasCare = names.some(function(n){ return n.indexOf('护理')>-1||n.indexOf('护')>-1; });
+            var hasDye = names.some(function(n){ return n.indexOf('染')>-1; });
+            var hasCut = names.some(function(n){ return n.indexOf('剪')>-1; });
+            var hasPerm = names.some(function(n){ return n.indexOf('烫')>-1; });
+            var combos = [];
+            if (hasCut && hasPerm) combos.push('剪+烫 = 单次最高业绩');
+            if (hasCut && hasDye) combos.push('剪+染 = 单次最高业绩');
+            if (hasCare && hasPerm) combos.push('烫前护理 = +¥100-300');
+            if (hasCare && hasDye) combos.push('染前护理 = 提升品质+客单价');
+            if (combos.length > 0) sug += '  💡 组合推荐：' + esc(combos.join(' ｜ ')) + '\n';
+
+            // 约客话术
+            var minPkg = packages.reduce(function(a,b){ 
+              var al = a.left||a.remaining||a.leavetimes||0, bl = b.left||b.remaining||b.leavetimes||0;
+              var at = a.total||a.sumtimes||0, bt = b.total||b.sumtimes||0;
+              var ar = (al && at) ? al / at : 1, br = (bl && bt) ? bl / bt : 1;
+              return ar < br ? a : b;
+            });
+            var minName = minPkg.name||minPkg.itemname||'套餐';
+            var minLeft = minPkg.left||minPkg.remaining||minPkg.leavetimes||0;
+            sug += '  📞 主动约客："' + esc(minName) + '还剩' + esc(minLeft) + '次，趁有空过来用掉"\n';
+            sug += '\n';
+          }
+
+          // 距上次到店 → 回访话术
+          if (monthsSince >= 6) {
+            sug += '📞 流失预警：' + monthsSince + '个月没来了！老客流失最大的原因是「没人约」。直接打电话："姐，好久没见你了，最近店里上了新品羊毛卷，趁换季过来换个造型，我特地给你留了时间"\n';
+          } else if (monthsSince >= 3) {
+            var treatHook = '';
+            if (packages.length > 0) {
+              var minP = packages.reduce(function(a,b){ return ((a.remaining||a.left||0) < (b.remaining||b.left||0)) ? a : b; });
+              treatHook = '你那�
