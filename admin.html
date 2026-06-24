@@ -2381,14 +2381,10 @@ window.loadCareDetailRecords = function() {
     var hrIds = Object.keys(hrIdSet);
 
     // 第二步：批量拉取 hair_records 获取客户信息
-    // 用 or(id=eq.X,id=eq.Y,...) 的方式
+    // 用 id=in.(X,Y,Z) 的方式
     var hrUrl = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician&limit=5000';
     if (hrIds.length > 0) {
-      var orParts = [];
-      for (var hi = 0; hi < hrIds.length; hi++) {
-        orParts.push('id=eq.' + encodeURIComponent(hrIds[hi]));
-      }
-      hrUrl += '&or=(' + orParts.join(',') + ')';
+      hrUrl += '&id=in.(' + hrIds.map(function(id){ return encodeURIComponent(id); }).join(',') + ')';
     }
 
     return fetch(hrUrl, { headers: { 'apikey': SUPABASE_KEY } })
