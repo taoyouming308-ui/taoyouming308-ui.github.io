@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="291">
+<html lang="zh-CN" data-version="292">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2859,11 +2859,11 @@ function initApp() {
   window.showHairRecordByPhone = function(phone) {
     var records = window.getHairRecords ? window.getHairRecords() : [];
     var found = null;
-    for (var i = 0; i < records.length; i++) {
-      if ((records[i].customerPhone === phone || records[i].phone === phone) && records[i].synced) {
-        found = records[i]; break;
-      }
+  for (var i = 0; i < records.length; i++) {
+    if (hairRecordMatchesCustomer(records[i], phone, '')) {
+      found = records[i]; break;
     }
+  }
     if (found) {
       if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
       return;
@@ -3335,10 +3335,7 @@ function initApp() {
   window.renderHairRecordReadOnly = function(phone, name) {
     var records = [];
     try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
-    var found = null;
-    for (var i = 0; i < records.length; i++) {
-      if (records[i].customerPhone === phone) { found = records[i]; break; }
-    }
+    var found = findLatestHairRecordForCustomer(records, phone, name);
     if (!found) return ''; // 无记录不显示表单
 
     var r = found;
@@ -3680,6 +3677,43 @@ function initApp() {
     localStorage.setItem('hair_records', JSON.stringify(records));
   }
 
+  
+  function normalizeHairCustomerPhone(value) {
+    return String(value || '').replace(/D/g, '');
+  }
+  function normalizeHairCustomerName(value) {
+    return String(value || '').replace(/s+/g, '').trim();
+  }
+  function hairRecordMatchesCustomer(record, phone, name) {
+    if (!record) return false;
+    var targetPhone = normalizeHairCustomerPhone(phone);
+    var targetName = normalizeHairCustomerName(name);
+    var fields = record.formFields || {};
+    var phones = [record.customerPhone, record.phone, record.customer_phone, record.bookingPhone, fields['hair-form-phone'], fields.phone];
+    for (var i = 0; i < phones.length; i++) {
+      var recordPhone = normalizeHairCustomerPhone(phones[i]);
+      if (targetPhone && recordPhone && recordPhone === targetPhone) return true;
+    }
+    var names = [record.customerName, record.name, record.customer_name, record.bookingName, fields['hair-form-name'], fields.name];
+    for (var j = 0; j < names.length; j++) {
+      var recordName = normalizeHairCustomerName(names[j]);
+      if (targetName && recordName && recordName === targetName) return true;
+    }
+    return false;
+  }
+  function findLatestHairRecordForCustomer(records, phone, name) {
+    var found = null;
+    for (var i = 0; i < records.length; i++) {
+      var rec = records[i];
+      if (!hairRecordMatchesCustomer(rec, phone, name)) continue;
+      if (!found) { found = rec; continue; }
+      var recTime = new Date(rec.createdAt || rec.date || 0).getTime() || 0;
+      var foundTime = new Date(found.createdAt || found.date || 0).getTime() || 0;
+      if (recTime > foundTime || (recTime === foundTime && ((rec.seq || 0) > (found.seq || 0)))) found = rec;
+    }
+    return found;
+  }
+
   var _editingHairId = null;  // 正在编辑的记录ID，null=新建
 
   // ===== 自动保存表单（关闭时静默保存） =====
@@ -3780,6 +3814,9 @@ function initApp() {
       // ── 向后兼容字段名（供 loadHairRecordData 使用） ──
       customerName: F['hair-form-name'] || '',
       customerPhone: F['hair-form-phone'] || '',
+    customerPhoneNormalized: normalizeHairCustomerPhone(F['hair-form-phone'] || ''),
+    customerNameNormalized: normalizeHairCustomerName(F['hair-form-name'] || ''),
+    customerKey: normalizeHairCustomerPhone(F['hair-form-phone'] || '') || normalizeHairCustomerName(F['hair-form-name'] || ''),
       diagnosisType: F['hair-diagnosis-type'] || '',
       rodsTop: F['hair-form-rods-top'] || '',
       rodsBack: F['hair-form-rods-back'] || '',
