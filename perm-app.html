@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="270">
+<html lang="zh-CN" data-version="271">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4484,6 +4484,11 @@ function initApp() {
       restoreChips('end_level', String(data.threeSection.end.level));
       restoreChips('end_cf', data.threeSection.end.coarse_fine);
       restoreChips('split_ends', data.threeSection.split_ends);
+    }
+    // 恢复护理记录数据
+    if (data.careUsage && Array.isArray(data.careUsage) && typeof initCareUsage === 'function') {
+      initCareUsage(data.careUsage);
+      if (typeof renderCareAddedList === 'function') renderCareAddedList();
     }
     // 恢复AI验证结果显示
     var overallEl = document.getElementById('hair-ai-overall');
