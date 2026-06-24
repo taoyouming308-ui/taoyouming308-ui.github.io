@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="280">
+<html lang="zh-CN" data-version="279">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4631,6 +4631,13 @@ function initApp() {
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
     setChecked('hair-form-creative', data.creative);
+    // 染发参数恢复
+    selectRadio('hair-developer', data.developer);
+    selectRadio('hair-mix-ratio', data.mixRatio);
+    // 备注框和染前复选框恢复
+    setVal('hair-form-color-notes', data.colorNotes);
+    setChecked('hair-form-scalp-protect', data.scalpProtect);
+    setChecked('hair-form-end-protect', data.endProtect);
     setVal('hair-form-follow-date', data.followDate || getLocalDateStr());
     setVal('hair-form-follow-msg', data.followMsg);
     // 显示AI结果框
