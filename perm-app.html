@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="278">
+<html lang="zh-CN" data-version="279">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3695,14 +3695,52 @@ function initApp() {
     _editingHairId = _oldEditingId;
   };
 
+  // ===== 自动收集所有表单字段（无需逐个硬编码ID）=====
+  window.collectHairFormFields = function() {
+    var values = {};
+    var container = document.getElementById('hair-analysis-section');
+    if (!container) return values;
+    // ① 收集所有带 id 的 input（非radio/file）、select、textarea
+    var inputs = container.querySelectorAll('input[id]:not([type="radio"]):not([type="file"]), select[id], textarea[id]');
+    for (var i = 0; i < inputs.length; i++) {
+      var el = inputs[i];
+      var tag = el.tagName.toLowerCase();
+      var type = (el.getAttribute('type') || 'text').toLowerCase();
+      if (tag === 'select' || tag === 'textarea') {
+        values[el.id] = el.value;
+      } else if (type === 'checkbox') {
+        values[el.id] = !!el.checked;
+      } else {
+        values[el.id] = el.value || '';
+      }
+    }
+    // ② 收集 radio 分组（按 name 分组，取 checked 的值）
+    var radios = container.querySelectorAll('input[type="radio"][name]');
+    var seenNames = {};
+    for (var i = 0; i < radios.length; i++) {
+      var r = radios[i];
+      if (!seenNames[r.name]) {
+        seenNames[r.name] = true;
+        var checked = container.querySelector('input[type="radio"][name="' + r.name.replace(/"/g, '\\"') + '"]:checked');
+        values[r.name] = checked ? checked.value : '';
+      }
+    }
+    return values;
+  };
+
   // 修改 saveHairRecordLocal 支持静默参数
   var _origSave = window.saveHairRecordLocal;
   window.saveHairRecordLocal = function(silent) {
     // 云端编辑标记（在record构建前保存，因为后续_cloudEditingId可能被清空）
     var _isCloudEdit = !!_cloudEditingId;
 
-    // 收集所有表单字段
+    // ★ 自动收集所有表单字段（input/select/textarea/radio/checkbox）
+    //    任何新增带 id 的输入元素都会被自动记录到 record.formFields 中
+    var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
+
+    // 构建 record（元数据 + 特殊字段 + 向后兼容字段 + 自动收集字段）
     var record = {
+      // ── 元数据 ──
       id: (function(){
         if (_isCloudEdit) return _cloudEditingId;
         return Date.now() + '_' + Math.random().toString(36).slice(2,6);
@@ -3715,6 +3753,7 @@ function initApp() {
       })(),
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
+      // ── 特殊字段（非标准 input/select/textarea） ──
       technician: (function(){
         var container = document.getElementById('hair-form-tech-container');
         if (!container) return '';
@@ -3726,64 +3765,53 @@ function initApp() {
         return names.join(',');
       })(),
       barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
-      customerName: (document.getElementById('hair-form-name')||{}).value || '',
-      customerPhone: (document.getElementById('hair-form-phone')||{}).value || '',
-      // 发质诊断（三段式chip + AI验证结果）
-      diagnosisType: (document.getElementById('hair-diagnosis-type')||{}).value || '',
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
       threeSection: (typeof getHairFormData === 'function') ? getHairFormData().three_section : {},
       aiOverall: ((document.getElementById('hair-ai-overall')||{}).innerHTML || '').replace(/<[^>]+>/g,''),
       aiDiagnosisText: ((document.getElementById('hair-ai-diagnosis')||{}).innerHTML || ''),
       aiFeatures: (document.getElementById('hair-ai-features')||{}).textContent || '',
       aiReference: ((document.getElementById('hair-ai-reference')||{}).innerHTML || ''),
-      // 查询烫发方案结果（分段软化方案卡片等）
       planResultHTML: ((document.getElementById('hair-q-result')||{}).innerHTML || ''),
-      // 烫发方案（步骤4）
-      rodsTop: (document.getElementById('hair-form-rods-top')||{}).value || '',
-      rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
-      rodsSide: (document.getElementById('hair-form-rods-side')||{}).value || '',
-      rodsBang: (document.getElementById('hair-form-rods-bang')||{}).value || '',
-      rodMethod: document.querySelector('input[name="hair-rod-method"]:checked'),
-      creative: (document.getElementById('hair-form-creative')||{}).checked || false,
-      dwellType: document.querySelector('input[name="hair-dwell"]:checked'),
-      dwellNatural: (document.getElementById('hair-form-dwell-natural')||{}).value || '',
-      dwellHeat: (document.getElementById('hair-form-dwell-heat')||{}).value || '',
-      rinse: document.querySelector('input[name="hair-rinse"]:checked'),
-      // 服务类型
-      serviceType: document.querySelector('input[name="hair-service-type"]:checked'),
-      // 染发参数
-      targetColor: (document.getElementById('hair-form-target-color')||{}).value || '',
-      tone: (document.getElementById('hair-form-tone')||{}).value || '',
-      toneOther: (document.getElementById('hair-form-tone-other')||{}).value || '',
-      developer: document.querySelector('input[name="hair-developer"]:checked'),
-      mixRatio: document.querySelector('input[name="hair-mix-ratio"]:checked'),
-      applyOrder: (document.getElementById('hair-apply-order-value')||{}).value || '',
-      colorDwell: (document.getElementById('hair-form-color-dwell')||{}).value || '',
-      colorHeat: (document.getElementById('hair-form-color-heat')||{}).checked || false,
-      colorHeatTemp: (document.getElementById('hair-form-color-heat-temp')||{}).value || '',
-      scalpProtect: (document.getElementById('hair-form-scalp-protect')||{}).checked || false,
-      endProtect: (document.getElementById('hair-form-end-protect')||{}).checked || false,
-      colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
-      // 效果评定（步骤5）
-      feedbackRating: document.querySelector('input[name="fb-hair"]:checked'),
-      followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
-      followMsg: (document.getElementById('hair-form-follow-msg')||{}).value || '',
-      // 护理记录
       careUsage: (typeof window.collectCareUsage === 'function') ? window.collectCareUsage() : [],
-      // 状态
+      serviceType: 'both',
+      // ── 自动收集的所有标准表单字段（id→值 / name→值） ──
+      //    未来新增字段无需修改保存代码，自动出现在此
+      formFields: F,
+      // ── 向后兼容字段名（供 loadHairRecordData 使用） ──
+      customerName: F['hair-form-name'] || '',
+      customerPhone: F['hair-form-phone'] || '',
+      diagnosisType: F['hair-diagnosis-type'] || '',
+      rodsTop: F['hair-form-rods-top'] || '',
+      rodsBack: F['hair-form-rods-back'] || '',
+      rodsSide: F['hair-form-rods-side'] || '',
+      rodsBang: F['hair-form-rods-bang'] || '',
+      rodMethod: F['hair-rod-method'] || '',
+      creative: F['hair-form-creative'] || false,
+      dwellType: F['hair-dwell'] || '',
+      dwellNatural: F['hair-form-dwell-natural'] || '',
+      dwellHeat: F['hair-form-dwell-heat'] || '',
+      rinse: F['hair-rinse'] || '',
+      permStyle: F['hair-q-style'] || '',
+      secondHeatHealthy: F['hair-second-heat-healthy'] || false,
+      secondHeatDamaged: F['hair-second-heat-damaged'] || false,
+      targetColor: F['hair-form-target-color'] || '',
+      tone: F['hair-form-tone'] || '',
+      toneOther: F['hair-form-tone-other'] || '',
+      developer: F['hair-developer'] || '',
+      mixRatio: F['hair-mix-ratio'] || '',
+      applyOrder: F['hair-apply-order-value'] || '',
+      colorDwell: F['hair-form-color-dwell'] || '',
+      colorHeat: F['hair-form-color-heat'] || false,
+      colorHeatTemp: F['hair-form-color-heat-temp'] || '',
+      scalpProtect: F['hair-form-scalp-protect'] || false,
+      endProtect: F['hair-form-end-protect'] || false,
+      colorNotes: F['hair-form-color-notes'] || '',
+      feedbackRating: F['fb-hair'] || '',
+      followDate: F['hair-form-follow-date'] || '',
+      followMsg: F['hair-form-follow-msg'] || '',
       status: '待回访',
       synced: false
     };
-
-    // 简化：把radio的值转成字符串
-    record.rodMethod = record.rodMethod ? record.rodMethod.value : '';
-    record.dwellType = record.dwellType ? record.dwellType.value : '';
-    record.rinse = record.rinse ? record.rinse.value : '';
-    record.serviceType = 'both';
-    record.developer = record.developer ? record.developer.value : '';
-    record.mixRatio = record.mixRatio ? record.mixRatio.value : '';
-    record.feedbackRating = record.feedbackRating ? record.feedbackRating.value : '';
-    // 不把截图base64存记录里（单独存localStorage），避免撑爆
 
     // ★ 云端记录不存本地，防止本地列表出现重复编号
     if (!_isCloudEdit) {
@@ -4566,6 +4594,8 @@ function initApp() {
     if (refEl && data.aiReference) refEl.innerHTML = data.aiReference;
     // 自动匹配发质类型
     if (typeof autoMatchHairType === 'function') autoMatchHairType();
+    // 烫发款式恢复
+    setVal('hair-q-style', data.permStyle);
     // 烫发参数（步骤4）
     setVal('hair-form-rods-top', data.rodsTop);
     setVal('hair-form-rods-back', data.rodsBack);
@@ -4577,6 +4607,9 @@ function initApp() {
     setChecked('hair-form-color-heat', data.colorHeat);
     setVal('hair-form-color-heat-temp', data.colorHeatTemp);
     setVal('hair-form-color-dwell', data.colorDwell);
+    // 第二次加热复选框恢复
+    setChecked('hair-second-heat-healthy', data.secondHeatHealthy);
+    setChecked('hair-second-heat-damaged', data.secondHeatDamaged);
     // 效果评定（步骤5）- ABC回馈 + 截图
     if (data.feedbackRating) {
       var fbLabel = document.querySelector('label[data-val="' + data.feedbackRating + '"][data-name="fb-hair"]');
@@ -4862,6 +4895,9 @@ function initApp() {
     var cloudId = _cloudEditingId;
 
     // 收集所有表单字段（同 saveHairRecordLocal 逻辑）
+    // ★ 自动收集所有表单字段
+    var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
+
     var record = {
       id: cloudId,
       createdAt: new Date().toISOString(),
@@ -4877,9 +4913,6 @@ function initApp() {
         return names.join(',');
       })(),
       barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
-      customerName: (document.getElementById('hair-form-name')||{}).value || '',
-      customerPhone: (document.getElementById('hair-form-phone')||{}).value || '',
-      diagnosisType: (document.getElementById('hair-diagnosis-type')||{}).value || '',
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
       threeSection: (typeof getHairFormData === 'function') ? getHairFormData().three_section : {},
       aiOverall: ((document.getElementById('hair-ai-overall')||{}).innerHTML || '').replace(/<[^>]+>/g,''),
@@ -4887,33 +4920,40 @@ function initApp() {
       aiFeatures: (document.getElementById('hair-ai-features')||{}).textContent || '',
       aiReference: ((document.getElementById('hair-ai-reference')||{}).innerHTML || ''),
       planResultHTML: ((document.getElementById('hair-q-result')||{}).innerHTML || ''),
-      rodsTop: (document.getElementById('hair-form-rods-top')||{}).value || '',
-      rodsBack: (document.getElementById('hair-form-rods-back')||{}).value || '',
-      rodsSide: (document.getElementById('hair-form-rods-side')||{}).value || '',
-      rodsBang: (document.getElementById('hair-form-rods-bang')||{}).value || '',
-      rodMethod: (document.querySelector('input[name="hair-rod-method"]:checked')||{}).value || '',
-      creative: (document.getElementById('hair-form-creative')||{}).checked || false,
-      dwellType: (document.querySelector('input[name="hair-dwell"]:checked')||{}).value || '',
-      dwellNatural: (document.getElementById('hair-form-dwell-natural')||{}).value || '',
-      dwellHeat: (document.getElementById('hair-form-dwell-heat')||{}).value || '',
-      rinse: (document.querySelector('input[name="hair-rinse"]:checked')||{}).value || '',
-      serviceType: 'both',
-      targetColor: (document.getElementById('hair-form-target-color')||{}).value || '',
-      tone: (document.getElementById('hair-form-tone')||{}).value || '',
-      toneOther: (document.getElementById('hair-form-tone-other')||{}).value || '',
-      developer: (document.querySelector('input[name="hair-developer"]:checked')||{}).value || '',
-      mixRatio: (document.querySelector('input[name="hair-mix-ratio"]:checked')||{}).value || '',
-      applyOrder: (document.getElementById('hair-apply-order-value')||{}).value || '',
-      colorDwell: (document.getElementById('hair-form-color-dwell')||{}).value || '',
-      colorHeat: (document.getElementById('hair-form-color-heat')||{}).checked || false,
-      colorHeatTemp: (document.getElementById('hair-form-color-heat-temp')||{}).value || '',
-      scalpProtect: (document.getElementById('hair-form-scalp-protect')||{}).checked || false,
-      endProtect: (document.getElementById('hair-form-end-protect')||{}).checked || false,
-      colorNotes: (document.getElementById('hair-form-color-notes')||{}).value || '',
-      feedbackRating: (document.querySelector('input[name="fb-hair"]:checked')||{}).value || '',
-      followDate: (document.getElementById('hair-form-follow-date')||{}).value || '',
-      followMsg: (document.getElementById('hair-form-follow-msg')||{}).value || '',
       careUsage: (typeof window.collectCareUsage === 'function') ? window.collectCareUsage() : [],
+      serviceType: 'both',
+      formFields: F,
+      customerName: F['hair-form-name'] || '',
+      customerPhone: F['hair-form-phone'] || '',
+      diagnosisType: F['hair-diagnosis-type'] || '',
+      rodsTop: F['hair-form-rods-top'] || '',
+      rodsBack: F['hair-form-rods-back'] || '',
+      rodsSide: F['hair-form-rods-side'] || '',
+      rodsBang: F['hair-form-rods-bang'] || '',
+      rodMethod: F['hair-rod-method'] || '',
+      creative: F['hair-form-creative'] || false,
+      dwellType: F['hair-dwell'] || '',
+      dwellNatural: F['hair-form-dwell-natural'] || '',
+      dwellHeat: F['hair-form-dwell-heat'] || '',
+      rinse: F['hair-rinse'] || '',
+      permStyle: F['hair-q-style'] || '',
+      secondHeatHealthy: F['hair-second-heat-healthy'] || false,
+      secondHeatDamaged: F['hair-second-heat-damaged'] || false,
+      targetColor: F['hair-form-target-color'] || '',
+      tone: F['hair-form-tone'] || '',
+      toneOther: F['hair-form-tone-other'] || '',
+      developer: F['hair-developer'] || '',
+      mixRatio: F['hair-mix-ratio'] || '',
+      applyOrder: F['hair-apply-order-value'] || '',
+      colorDwell: F['hair-form-color-dwell'] || '',
+      colorHeat: F['hair-form-color-heat'] || false,
+      colorHeatTemp: F['hair-form-color-heat-temp'] || '',
+      scalpProtect: F['hair-form-scalp-protect'] || false,
+      endProtect: F['hair-form-end-protect'] || false,
+      colorNotes: F['hair-form-color-notes'] || '',
+      feedbackRating: F['fb-hair'] || '',
+      followDate: F['hair-form-follow-date'] || '',
+      followMsg: F['hair-form-follow-msg'] || '',
       status: '已完成',
       synced: false
     };
@@ -5374,8 +5414,8 @@ function initApp() {
     html += '</div>';
     html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">第二次</span>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 健康发质110°C</label>';
-    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:var(--accent);"> 受损发质100°C</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-second-heat-healthy" value="healthy_110" style="accent-color:var(--accent);"> 健康发质110°C</label>';
+    html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-second-heat-damaged" value="damaged_100" style="accent-color:var(--accent);"> 受损发质100°C</label>';
     html += '</div>';
     html += '<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:0 8px;font-weight:600;">加热到全干</div>';
     html += '</div>'; // end hair-perm-params
