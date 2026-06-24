@@ -65,6 +65,12 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 .btn-approve { background:transparent; color:var(--success); border:1px solid var(--success); }
 .btn-reject { background:transparent; color:var(--accent); border:1px solid var(--accent); }
 .empty-row td { text-align:center; color:#555; padding:40px; }
+/* 护理管理表格美化 */
+#tab-care table tbody tr:nth-child(even) { background:rgba(255,255,255,0.03); }
+#tab-care table tbody tr:hover { background:rgba(255,255,255,0.06); }
+#tab-care table td { font-size:11px; }
+#tab-care .care-detail-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.03); }
+#tab-care .care-detail-table tbody tr:hover { background:rgba(255,255,255,0.06); }
 </style>
 </head>
 <body>
@@ -241,50 +247,74 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 
 <!-- 护理管理 -->
 <div id="tab-care" style="display:none">
-  <div style="margin-bottom:16px;">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="btn-add" onclick="openCareProductModal()">+ 新增护理产品</button>
-      <span style="font-size:12px;color:var(--muted);margin-left:8px;" id="care-product-count"></span>
+  <!-- 顶部概览卡片 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:#fff;" id="care-total-records">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">本月记录</div>
     </div>
-    <table>
-      <thead><tr><th>品牌</th><th>产品/色号</th><th>操作</th></tr></thead>
-      <tbody id="table-care-products"></tbody>
-    </table>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);" id="care-total-grams">0g</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">护理用量合计</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:var(--success);" id="care-total-barbers">0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">使用发型师</div>
+    </div>
   </div>
-  <div style="border-top:1px solid var(--border);padding-top:16px;">
-    <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:12px;">📊 月度护理用量统计</div>
+
+  <!-- 产品管理 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:600;color:#fff;">📦 护理产品</div>
+      <button class="btn-add" onclick="openCareProductModal()" style="margin-bottom:0;padding:6px 14px;font-size:12px;">+ 新增</button>
+    </div>
+    <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:8px;" id="care-product-count"></span>
+    <div style="max-height:200px;overflow-y:auto;">
+      <table style="font-size:12px;">
+        <thead><tr><th style="position:sticky;top:0;background:var(--surface);z-index:1;">品牌</th><th>产品/色号</th><th style="width:80px;">操作</th></tr></thead>
+        <tbody id="table-care-products"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 月度护理用量统计 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">📊 月度统计</div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-      <select id="care-month-year" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
-      <select id="care-month-month" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
-      <select id="care-month-store" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+      <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
+      <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
+      <select id="care-month-store" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
         <option value="">全部门店</option>
         <option value="自由手艺人">自由手艺人</option>
         <option value="向里造型">向里造型</option>
       </select>
-      <button onclick="loadCareMonthlyStats()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">查询</button>
+      <button onclick="loadCareMonthlyStats()" style="padding:8px 20px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">查询</button>
     </div>
-    <div id="care-stat-table-wrap" style="overflow-x:auto;">
-      <table id="care-stat-table" style="font-size:11px;">
+    <div id="care-stat-table-wrap" style="overflow-x:auto;border:1px solid var(--border-soft);border-radius:8px;">
+      <table id="care-stat-table" style="font-size:11px;margin-bottom:0;">
         <thead id="care-stat-thead"></thead>
         <tbody id="care-stat-tbody"></tbody>
       </table>
     </div>
-    <div id="care-stat-summary" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
-    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-      <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📋 护理记录明细</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
-        <select id="care-detail-store" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;" onchange="populateCareDetailBarbers(this.value)">
-          <option value="">全部门店</option>
-          <option value="自由手艺人">自由手艺人</option>
-          <option value="向里造型">向里造型</option>
-        </select>
-        <select id="care-detail-barber" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
-          <option value="">全部发型师</option>
-        </select>
-        <button onclick="loadCareDetailRecords()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:12px;">查询明细</button>
-      </div>
-      <div id="care-detail-records" style="font-size:11px;color:var(--muted);">请选择月份后点击查询</div>
+    <div id="care-stat-summary" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+  </div>
+
+  <!-- 护理记录明细 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
+    <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">📋 明细记录</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <select id="care-detail-store" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;" onchange="populateCareDetailBarbers(this.value)">
+        <option value="">全部门店</option>
+        <option value="自由手艺人">自由手艺人</option>
+        <option value="向里造型">向里造型</option>
+      </select>
+      <select id="care-detail-barber" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:12px;">
+        <option value="">全部发型师</option>
+      </select>
+      <button onclick="loadCareDetailRecords()" style="padding:8px 20px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">查询</button>
     </div>
+    <div id="care-detail-records" style="font-size:12px;color:var(--muted);"></div>
   </div>
 </div>
 
@@ -2208,6 +2238,20 @@ window.loadCareMonthlyStats = function() {
       }
     }
 
+    // ★ 更新顶部概览卡片
+    var totalRecords = careRows.length;
+    var totalGrams = 0;
+    var barberCount = Object.keys(stats).length;
+    for (var si = 0; si < careRows.length; si++) {
+      totalGrams += parseFloat(careRows[si].grams) || 0;
+    }
+    var recEl = document.getElementById('care-total-records');
+    if (recEl) recEl.textContent = totalRecords;
+    var gramEl = document.getElementById('care-total-grams');
+    if (gramEl) gramEl.textContent = totalGrams.toFixed(1) + 'g';
+    var barberEl = document.getElementById('care-total-barbers');
+    if (barberEl) barberEl.textContent = barberCount;
+
     // 构建表头
     var headerHtml = '<tr><th>门店</th><th>发型师</th>';
     for (var ai = 0; ai < allProducts.length; ai++) {
@@ -2221,6 +2265,10 @@ window.loadCareMonthlyStats = function() {
     if (keys.length === 0) {
       tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 3) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
       document.getElementById('care-stat-summary').textContent = '该月暂无记录';
+      ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+      });
       return;
     }
 
@@ -2248,6 +2296,10 @@ window.loadCareMonthlyStats = function() {
     thead.innerHTML = '';
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:30px;">加载失败: ' + e.message + '</td></tr>';
     document.getElementById('care-stat-summary').textContent = '加载失败';
+    ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+    });
   });
 };
 
@@ -2372,14 +2424,14 @@ window.loadCareDetailRecords = function() {
           return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
         });
 
-        var html = '<table style="font-size:11px;"><thead><tr><th>日期</th><th>客户</th><th>发型师</th><th>技师</th><th>品牌</th><th>产品/色号</th><th>用量(g)</th></tr></thead><tbody>';
+        var html = '<div style="border:1px solid var(--border-soft);border-radius:8px;overflow-x:auto;"><table class="care-detail-table" style="font-size:11px;margin-bottom:0;"><thead><tr><th>日期</th><th>客户</th><th>发型师</th><th>技师</th><th>品牌</th><th>产品/色号</th><th>用量(g)</th></tr></thead><tbody>';
         var totalG = 0;
         for (var li = 0; li < list.length; li++) {
           var d = list[li];
           html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td></tr>';
           totalG += parseFloat(d.grams) || 0;
         }
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         html += '<div style="margin-top:8px;font-size:12px;color:var(--muted);">共计 ' + list.length + ' 条记录 · 合计 ' + totalG.toFixed(1) + 'g</div>';
         container.innerHTML = html;
       });
