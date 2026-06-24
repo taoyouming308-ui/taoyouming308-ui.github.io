@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="263">
+<html lang="zh-CN" data-version="264">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3776,9 +3776,31 @@ function initApp() {
     // ★ 如果是云端记录，跳过本地保存流程，直接同步云端
     if (_cloudEditingId) {
       var cloudId = _cloudEditingId;
+      var isFollowUp = _followUpMode;
       _cloudEditingId = null;
+      _followUpMode = false;
+      
+      // 回访完成模式：必须有效果评定和聊天截图
+      if (isFollowUp) {
+        var fbRating = document.querySelector('input[name="fb-hair"]:checked');
+        var fbPreview = document.getElementById('hair-fb-preview');
+        var hasScreenshot = fbPreview && fbPreview.src && fbPreview.src.length > 50;
+        if (!fbRating) {
+          alert('请先选择效果评定（A/B/C）');
+          _cloudEditingId = cloudId;
+          _followUpMode = true;
+          return;
+        }
+        if (!hasScreenshot) {
+          alert('请上传聊天截图');
+          _cloudEditingId = cloudId;
+          _followUpMode = true;
+          return;
+        }
+      }
+      
       // 直接 PATCH 云端记录，不存本地
-      record.status = '待回访完成';
+      record.status = isFollowUp ? '回访完成' : '待回访完成';
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -4112,11 +4134,11 @@ function initApp() {
           // 技师编辑
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑填写</button>';
         } else if (status === '待回访完成' && isStylist) {
-          // 发型师回访完成
-          html += '<button onclick="markFollowUpDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--success);cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
+          // 发型师回访完成 → 加载到表单，需要填写评定+截图
+          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--success);cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
         } else if (status === '待回访' && isStylist) {
-          // 发型师直接标记完成（不用技师）
-          html += '<button onclick="markFollowUpDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">直接完成</button>';
+          // 发型师直接完成（不用技师）
+          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">直接完成</button>';
         }
         if (status === '回访完成' || status === '已完成') {
           html += '<span style="font-size:10px;color:var(--success);">✅ 已回访</span>';
@@ -4129,17 +4151,16 @@ function initApp() {
     });
   };
 
-  window.loadCloudRecord = function(recordId) {
+  window.loadCloudRecord = function(recordId, followUp) {
     if (!recordId) return;
+    _followUpMode = followUp === true;
     fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
       var rec = (rows[0].record_data) || {};
-      // 标记得这条记录是云端的，保存时更新 hair_records
       rec._isCloudRecord = true;
       rec._cloudRecordId = recordId;
-      // 加载到表单
       if (window.loadHairRecordData) window.loadHairRecordData(rec);
       // 滚动到表单位置
       var formEl = document.getElementById('hair-analysis-section');
@@ -4355,6 +4376,8 @@ function initApp() {
   // 从云端记录填充表单（公用）
   // ★ 云端记录编辑标记（技师编辑时使用）
   var _cloudEditingId = null;
+  // ★ 回访完成模式（发型师填写评定+截图后标记完成）
+  var _followUpMode = false;
 
   window.loadHairRecordData = function(data) {
     if (!data) return;
@@ -4437,8 +4460,12 @@ function initApp() {
     if (resultBox && (data.aiOverall || data.diagnosisType)) resultBox.style.display = 'block';
     var btn = document.getElementById('hair-save-btn');
     if (btn) {
-      if (_cloudEditingId) {
-        btn.textContent = '✅ 提交';
+      if (_cloudEditingId && _followUpMode) {
+        btn.textContent = '✅ 回访完成';
+        btn.style.background = '#2ecc71';
+        btn.onclick = function(){ window.saveHairRecordLocal(); };
+      } else if (_cloudEditingId) {
+        btn.textContent = '✅ 已回传';
         btn.style.background = '#2ecc71';
         btn.onclick = function(){ window.saveHairRecordLocal(); };
       } else if (_editingHairId) {
@@ -4804,6 +4831,7 @@ function initApp() {
   window.renderHairAnalysis = function(phone, name, existingRec) {
     // 重置云端编辑状态（新建表单时）
     _cloudEditingId = null;
+    _followUpMode = false;
     var containerId = 'hair-analysis-section';
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
@@ -5158,9 +5186,9 @@ function initApp() {
     html += '</div>';
 
     // 保存/上传按钮 - 云端编辑显示提交，已有记录显示上传，新建显示保存
-    if (_cloudEditingId) {
-      html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--success,#2ecc71);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 提交</button>';
-    } else if (_editingHairId) {
+    if (_cloudEditingId && _followUpMode) {
+      html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--success,#2ecc71);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
+    } else if (_cloudEditingId) {
       html += '<button id="hair-save-btn" onclick="window.saveAndUploadHairRecord()" style="width:100%;padding:12px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">☁️ 上传</button>';
     } else {
       html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 保存到本地</button>';
