@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="282">
+<html lang="zh-CN" data-version="281">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4256,21 +4256,41 @@ function initApp() {
         var techList = (r.technician || '').split(',');
         var isTech = false;
         for (var ti = 0; ti < techList.length; ti++) {
-          if (techList[ti].trim() === barber) { isTech = true; break; }
-        }
-        var isStylist = (r.barber === barber);
-        html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">#' + String(rec.seq || (i+1)).padStart(3, '0') + ' ' + esc(customerName) + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(technician) + '</span>';
-        html += '</div>';
-        html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        html += '<span>' + esc(phone) + '</span>';
-        var statusColor = '#e8a817';
-        var statusText = '待回访';
-        if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
-        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '已完成'; }
-        else if (status === '技师已完成') { statusColor = 'var(--success)'; statusText = '已回传'; }
+          var isStylist = (r.barber === barber);
+          html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+          html += '<span style="font-size:12px;font-weight:600;color:var(--text);">#' + String(rec.seq || (i+1)).padStart(3, '0') + ' ' + esc(customerName) + '</span>';
+          html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(technician) + '</span>';
+          html += '</div>';
+          // 显示日期时间
+          var _dt = r.created_at || rec.createdAt || rec.date || '';
+          var _timeStr = '';
+          if (_dt) {
+            if (_dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
+              _timeStr = _dt;
+            } else {
+              try {
+                var _d = new Date(_dt);
+                if (!isNaN(_d.getTime())) {
+                  var _mo = String(_d.getMonth()+1).padStart(2,'0');
+                  var _dd = String(_d.getDate()).padStart(2,'0');
+                  var _hh = String(_d.getHours()).padStart(2,'0');
+                  var _mm = String(_d.getMinutes()).padStart(2,'0');
+                  _timeStr = _d.getFullYear() + '.' + _mo + '.' + _dd + ' ' + _hh + ':' + _mm;
+                }
+              } catch(e){}
+            }
+          }
+          if (_timeStr) {
+            html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + _timeStr + '</div>';
+          }
+          html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
+          html += '<span>' + esc(phone) + '</span>';
+          var statusColor = '#e8a817';
+          var statusText = '待回访';
+          if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
+          else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '已完成'; }
+          else if (status === '技师已完成') { statusColor = 'var(--success)'; statusText = '已回传'; }
         if (status === '待回访' && isTech) { statusText = '未回传'; }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
