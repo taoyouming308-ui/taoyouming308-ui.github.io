@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="275">
+<html lang="zh-CN" data-version="276">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2615,12 +2615,12 @@ function initApp() {
           '<option value="自由手艺人">自由手艺人</option>' +
           '<option value="向里造型">向里造型</option>' +
         '</select>' +
-        '<div class="pos-check-group" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">' +
-          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="发型师" checked> 发型师</label>' +
-          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="技师"> 技师</label>' +
-          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="助理"> 助理</label>' +
-          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="前台"> 前台</label>' +
-          '<label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;"><input type="checkbox" value="店长"> 店长</label>' +
+        '<div class="pos-check-group" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 0;max-width:320px;">' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="发型师" checked> 发型师</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="技师"> 技师</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="助理"> 助理</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="前台"> 前台</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="店长"> 店长</label>' +
         '</div>' +
         '<button class="opt" id="reg-submit-btn">提交注册</button>' +
         '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +

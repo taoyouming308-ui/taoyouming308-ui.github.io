@@ -718,10 +718,10 @@ async function openModal(tab, id) {
     appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
     appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
     appendField(box, '职位（可多选）', function(){
-      var div = el('div', { className: 'pos-check-group', style: 'display:flex;flex-wrap:wrap;gap:8px;' });
+      var div = el('div', { className: 'pos-check-group', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:320px;' });
       var vals = (data.position || '发型师').split(',').map(function(v){ return v.trim(); });
       ['发型师','技师','助理','前台','店长'].forEach(function(p){
-        var label = el('label', { style: 'display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer;' });
+        var label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:6px 8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;transition:all 0.15s;' });
         var cb = el('input', { type: 'checkbox', value: p });
         if (vals.indexOf(p) !== -1) cb.checked = true;
         label.appendChild(cb);
