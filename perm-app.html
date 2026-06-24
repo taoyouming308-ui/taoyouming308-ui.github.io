@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="254">
+<html lang="zh-CN" data-version="255">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3808,6 +3808,40 @@ function initApp() {
       if (window.renderMyTasks) window.renderMyTasks();
       // 重置编辑状态
       _editingHairId = null;
+    }
+
+    // ★ 把护理用量（careUsage）逐条写入 care_records 表
+    var careArray = record.careUsage;
+    if (careArray && careArray.length > 0) {
+      var today = new Date().toISOString().slice(0, 10);
+      var shopName = '';
+      if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
+        shopName = window._staffStoreCache[record.barber] || '';
+      }
+      var carePromises = [];
+      for (var ci = 0; ci < careArray.length; ci++) {
+        var cu = careArray[ci];
+        if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') continue;
+        var careBody = {
+          hair_record_id: record.id,
+          barber: record.barber,
+          shop_name: shopName,
+          brand: cu.brand,
+          product: cu.product,
+          grams: parseFloat(cu.grams),
+          record_date: today
+        };
+        carePromises.push(
+          fetch(SUPABASE_URL + '/rest/v1/care_records', {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify(careBody)
+          })
+        );
+      }
+      if (carePromises.length > 0) {
+        Promise.all(carePromises).catch(function(){});
+      }
     }
   };
 
