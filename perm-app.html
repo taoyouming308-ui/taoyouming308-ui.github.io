@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="281">
+<html lang="zh-CN" data-version="282">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3932,16 +3932,18 @@ function initApp() {
           status: '技师已完成',
           record_data: _mergedData
         })
+      }).then(function(r) {
+        if (r.ok) {
+          // PATCH成功后才刷新按钮和任务列表
+          var btn = document.getElementById('hair-save-btn');
+          if (btn) {
+            btn.textContent = _isCloudEdit ? '✅ 已回传' : '✅ 档案已上传';
+            btn.style.background = 'var(--success, #2ecc71)';
+            btn.disabled = true;
+          }
+          if (window.renderMyTasks) window.renderMyTasks();
+        }
       }).catch(function(){ alert('❌ 云端同步失败，请检查网络'); });
-      // 更新按钮状态
-      var btn = document.getElementById('hair-save-btn');
-      if (btn) {
-        btn.textContent = '✅ 已回传';
-        btn.style.background = 'var(--success, #2ecc71)';
-        btn.disabled = true;
-      }
-      // 刷新我的任务
-      if (window.renderMyTasks) window.renderMyTasks();
       // 重置编辑状态
       _editingHairId = null;
       return;
@@ -4608,6 +4610,10 @@ function initApp() {
     setVal('hair-form-rods-bang', data.rodsBang);
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
+    // 涂抹顺序恢复
+    if (data.applyOrder && typeof window.restoreApplyOrder === 'function') {
+      window.restoreApplyOrder(data.applyOrder);
+    }
     // 加热板块数据恢复
     setChecked('hair-form-color-heat', data.colorHeat);
     setVal('hair-form-color-heat-temp', data.colorHeatTemp);
@@ -5680,6 +5686,17 @@ function initApp() {
       });
       document.getElementById('hair-apply-order-value').value = JSON.stringify(order);
     }
+    // 注册恢复函数，供 loadHairRecordData 调用
+    window.restoreApplyOrder = function(jsonStr) {
+      try {
+        var arr = JSON.parse(jsonStr);
+        if (Array.isArray(arr)) {
+          order.length = 0;
+          for (var ri = 0; ri < arr.length; ri++) { order.push(arr[ri]); }
+          render();
+        }
+      } catch(e) {}
+    };
     chips.forEach(function(c) {
       c.onclick = function() {
         var val = c.getAttribute('data-value');
