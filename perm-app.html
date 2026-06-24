@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="284">
+<html lang="zh-CN" data-version="285">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4321,11 +4321,14 @@ function initApp() {
   window.loadCloudRecord = function(recordId, followUp) {
     if (!recordId) return;
     _followUpMode = followUp === true;
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
       var rec = (rows[0].record_data) || {};
+      // 用SQL层的barber/technician覆盖JSON数据，确保角色判断正确
+      if (rows[0].barber) rec.barber = rows[0].barber;
+      if (rows[0].technician) rec.technician = rows[0].technician;
       rec._isCloudRecord = true;
       rec._cloudRecordId = recordId;
       if (window.loadHairRecordData) window.loadHairRecordData(rec);
