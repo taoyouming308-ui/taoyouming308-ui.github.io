@@ -234,15 +234,24 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 
 <!-- 发质分析 -->
 <div id="tab-hair-analysis" style="display:none">
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-    <input id="ha-search" placeholder="搜索手机号/客户名" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
-    <button onclick="loadHairAnalyses()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
-    <span id="ha-count" style="font-size:12px;color:var(--muted);"></span>
+  <!-- 发质分析表完成统计（从 hair_records 表） -->
+  <div id="hair-record-stats" style="margin-bottom:16px;">
+    <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>
   </div>
-  <table>
-    <thead><tr><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
-    <tbody id="table-hair-analysis"></tbody>
-  </table>
+  
+  <!-- AI分析记录（从 hair_analysis_queue 表） -->
+  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;">📷 AI拍照分析记录</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <input id="ha-search" placeholder="搜索手机号/客户名" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+      <button onclick="loadHairAnalyses()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
+      <span id="ha-count" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+    <table>
+      <thead><tr><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="table-hair-analysis"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- 护理管理 -->
@@ -537,6 +546,7 @@ function switchTab(tab) {
   } else if (tab === 'assessment') {
     loadAssessment();
   } else if (tab === 'hair-analysis') {
+    loadHairRecordStats();
     loadHairAnalyses();
   } else if (tab === 'care') {
     loadCareProducts();
@@ -1305,6 +1315,146 @@ function stopRealtime() {
     realtimeWs = null;
   }
 }
+
+// ===== 发质分析表完成统计（按发型师分组） =====
+window.loadHairRecordStats = function() {
+  var container = document.getElementById('hair-record-stats');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
+
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&limit=500', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (!rows || rows.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">暂无发质分析表数据</div>';
+      return;
+    }
+
+    var now = new Date();
+    // 按发型师分组
+    var stats = {};
+    rows.forEach(function(r){
+      var barber = r.barber || '未分配';
+      if (!stats[barber]) stats[barber] = { barber: barber, total: 0, completed: 0, technicianDone: 0, pending: 0, items: [] };
+      stats[barber].total++;
+      stats[barber].items.push(r);
+      if (r.status === '已完成') stats[barber].completed++;
+      else if (r.status === '技师已完成') stats[barber].technicianDone++;
+      else stats[barber].pending++;
+    });
+
+    var list = Object.keys(stats).map(function(k){ return stats[k]; });
+    // 按完成率升序（完成率低的排前面）
+    list.sort(function(a,b){
+      var aRate = a.total > 0 ? a.completed / a.total : 0;
+      var bRate = b.total > 0 ? b.completed / b.total : 0;
+      return aRate - bRate;
+    });
+
+    var totalAll = 0, completedAll = 0, pendingAll = 0;
+    list.forEach(function(s){
+      totalAll += s.total; completedAll += s.completed; pendingAll += s.pending + s.technicianDone;
+    });
+    var rateAll = totalAll > 0 ? Math.round(completedAll / totalAll * 100) : 0;
+
+    // 顶部汇总卡片
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#fff;">'+totalAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">总发质分析表</div></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#2ecc71;">'+completedAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">已完成</div></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(pendingAll>0?'#e8a817':'#fff')+';">'+pendingAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">未完成</div></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(rateAll<50?'#e74c3c':rateAll<80?'#e8a817':'#2ecc71')+';">'+rateAll+'%</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">完成率</div></div>';
+    html += '</div>';
+
+    // 按发型师统计表
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">';
+    html += '<div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📊 发型师完成统计</div>';
+    html += '<table style="font-size:12px;"><thead><tr><th>发型师</th><th>门店</th><th>烫染客户</th><th>已完成</th><th>技师已填</th><th>待回访</th><th>完成率</th><th>操作</th></tr></thead><tbody>';
+
+    list.forEach(function(s){
+      var pendingCount = s.pending + s.technicianDone;
+      var rate = s.total > 0 ? Math.round(s.completed / s.total * 100) : 0;
+      var rateColor = rate >= 80 ? '#2ecc71' : rate >= 50 ? '#e8a817' : '#e74c3c';
+      var rateIcon = rate >= 80 ? '🟢' : rate >= 50 ? '🟡' : '🔴';
+      var barberEsc = esc(s.barber);
+      html += '<tr>';
+      html += '<td style="font-weight:600;">' + barberEsc + '</td>';
+      html += '<td style="color:var(--muted);font-size:11px;">—</td>';
+      html += '<td>' + s.total + '</td>';
+      html += '<td style="color:#2ecc71;">' + s.completed + '</td>';
+      html += '<td style="color:#e8a817;">' + s.technicianDone + '</td>';
+      html += '<td style="color:' + (s.pending > 0 ? '#e74c3c' : 'var(--muted)') + ';">' + s.pending + '</td>';
+      html += '<td style="color:' + rateColor + ';font-weight:600;">' + rateIcon + ' ' + rate + '%</td>';
+      html += '<td><button onclick="showBarberDetail(\'' + barberEsc.replace(/'/g,"\\'") + '\')" style="padding:3px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">未完成明细</button></td>';
+      html += '</tr>';
+    });
+
+    // 合计行
+    var totalRate = totalAll > 0 ? Math.round(completedAll / totalAll * 100) : 0;
+    var totalRateColor = totalRate >= 80 ? '#2ecc71' : totalRate >= 50 ? '#e8a817' : '#e74c3c';
+    html += '<tr style="border-top:2px solid var(--border);font-weight:600;"><td>合计</td><td></td><td>'+totalAll+'</td><td style="color:#2ecc71;">'+completedAll+'</td><td style="color:#e8a817;">'+pendingAll+'</td><td></td><td style="color:'+totalRateColor+';">'+totalRate+'%</td><td></td></tr>';
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  })
+  .catch(function(){
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px;">加载失败</div>';
+  });
+};
+
+// 弹窗显示某个发型师的未完成明细
+window.showBarberDetail = function(barberName) {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&limit=100', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
+    if (!rows || rows.length === 0) {
+      toast('该发型师没有未完成的记录', 'ok');
+      return;
+    }
+    var now = new Date();
+    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '待回访完成': '待回访完成' };
+    var html = '<div class="modal-box" style="max-width:650px;">';
+    html += '<h3>' + esc(barberName) + ' · 未完成明细</h3>';
+    html += '<p style="font-size:12px;color:var(--muted);margin-bottom:10px;">共 ' + rows.length + ' 条未完成</p>';
+    html += '<div style="max-height:400px;overflow-y:auto;">';
+    html += '<table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>技师</th><th>状态</th><th>停留</th><th>创建时间</th></tr></thead><tbody>';
+
+    rows.forEach(function(r){
+      var statusText = statusMap[r.status] || r.status || '—';
+      var tech = r.technician || '—';
+      // 计算停留天数
+      var days = '—';
+      if (r.created_at) {
+        try {
+          var cd = new Date(r.created_at);
+          if (!isNaN(cd.getTime())) {
+            days = Math.floor((now - cd) / (1000*60*60*24));
+            if (days < 1) days = '今天';
+            else days = days + '天';
+          }
+        } catch(e){}
+      }
+      var overdue = typeof days === 'string' && days !== '—' && !isNaN(parseInt(days)) && parseInt(days) >= 2;
+      html += '<tr' + (overdue ? ' style="background:rgba(231,76,60,0.08);"' : '') + '>';
+      html += '<td>' + esc(r.customer_name || '—') + '</td>';
+      html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
+      html += '<td>' + esc(tech) + '</td>';
+      html += '<td style="color:' + (r.status === '待回访' ? '#e74c3c' : '#e8a817') + ';">' + statusText + '</td>';
+      html += '<td style="color:' + (overdue ? '#e74c3c;font-weight:600' : 'var(--muted)') + ';">' + days + '</td>';
+      html += '<td style="font-size:11px;color:var(--muted);">' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    html += '<div class="btn-row" style="margin-top:12px;"><button onclick="this.closest(\'.modal\').classList.remove(\'show\')" class="btn-cancel" style="flex:1;">关闭</button></div>';
+    html += '</div>';
+    showModal(html);
+  })
+  .catch(function(){ toast('加载失败', 'err'); });
+};
 
 // ===== 发质分析管理 =====
 window.loadHairAnalyses = async function() {
