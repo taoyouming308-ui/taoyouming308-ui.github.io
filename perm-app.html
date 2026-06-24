@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="257">
+<html lang="zh-CN" data-version="258">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3814,8 +3814,22 @@ function initApp() {
       if (careArray && careArray.length > 0) {
         var today = new Date().toISOString().slice(0, 10);
         var shopName = '';
+        // 查发型师所属门店
         if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
           shopName = window._staffStoreCache[record.barber] || '';
+        }
+        if (!shopName && record.barber) {
+          // 缓存未就绪，从Supabase拉
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
+            xhr.setRequestHeader('apikey', SUPABASE_KEY);
+            xhr.send();
+            if (xhr.status === 200) {
+              var rows = JSON.parse(xhr.responseText);
+              if (rows && rows[0] && rows[0].store) shopName = rows[0].store;
+            }
+          } catch(e) {}
         }
         hrPromise.then(function() {
           var carePromises = [];
@@ -3851,6 +3865,18 @@ function initApp() {
         var shopName2 = '';
         if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
           shopName2 = window._staffStoreCache[record.barber] || '';
+        }
+        if (!shopName2 && record.barber) {
+          try {
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
+            xhr2.setRequestHeader('apikey', SUPABASE_KEY);
+            xhr2.send();
+            if (xhr2.status === 200) {
+              var rows2 = JSON.parse(xhr2.responseText);
+              if (rows2 && rows2[0] && rows2[0].store) shopName2 = rows2[0].store;
+            }
+          } catch(e) {}
         }
         for (var ci2 = 0; ci2 < careArray2.length; ci2++) {
           var cu2 = careArray2[ci2];
