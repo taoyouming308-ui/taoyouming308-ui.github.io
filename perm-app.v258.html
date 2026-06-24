@@ -3682,16 +3682,7 @@ function initApp() {
       id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
-      technician: (function(){
-        var container = document.getElementById('hair-form-tech-container');
-        if (!container) return '';
-        var chips = container.querySelectorAll('.chip.active');
-        var names = [];
-        for (var ti = 0; ti < chips.length; ti++) {
-          names.push(chips[ti].getAttribute('data-value') || chips[ti].textContent || '');
-        }
-        return names.join(',');
-      })(),
+      technician: (document.getElementById('hair-form-tech')||{}).value || '',
       barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
       customerName: (document.getElementById('hair-form-name')||{}).value || '',
       customerPhone: (document.getElementById('hair-form-phone')||{}).value || '',
@@ -3922,7 +3913,7 @@ function initApp() {
     // 填入各字段
     setVal('hair-form-name', rec.customerName);
     setVal('hair-form-phone', rec.customerPhone);
-    if (window.restoreTechChips) window.restoreTechChips(rec.technician);
+    setVal('hair-form-tech', rec.technician);
     setVal('hair-stylist-level', rec.stylistLevel);
     setVal('hair-form-gray', rec.grayPercent);
     setVal('hair-form-target', rec.targetColor);
@@ -4295,7 +4286,7 @@ function initApp() {
     _editingHairId = data.id || 'cloud_' + Date.now();
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
-    if (window.restoreTechChips) window.restoreTechChips(data.technician);
+    setVal('hair-form-tech', data.technician);
     setVal('hair-diagnosis-type', data.diagnosisType);
     // 恢复chip选择
     if (data.baseInfo) {
@@ -4743,15 +4734,14 @@ function initApp() {
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
-    // 技师chip多选（从Supabase拉取，只显示职位包含技师的员工，toggle模式可多选）
-    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">';
-    html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-right:4px;">技师</label>';
-    html += '<div id="hair-form-tech-container" style="display:flex;flex-wrap:wrap;gap:4px;"></div>';
-    html += '</div>';
+    // 技师下拉（从Supabase拉取，只显示职位包含技师的员工）
+    html += '<select id="hair-form-tech" style="padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<option value="">技师</option>';
+    html += '</select>';
     // 异步从Supabase拉取技师列表（按门店过滤）
     setTimeout(function(){
-      var container = document.getElementById('hair-form-tech-container');
-      if (!container) return;
+      var sel = document.getElementById('hair-form-tech');
+      if (!sel) return;
       // 先查当前发型师所属门店
       fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(currentBarber) + '&limit=1', {
         headers: { 'apikey': SUPABASE_KEY }
@@ -4765,24 +4755,12 @@ function initApp() {
         if (!rows || rows.length === 0) return;
         // 只保留职位包含"技师"的员工
         var techs = rows.filter(function(r){ return r.position && r.position.indexOf('技师') !== -1; });
-        container.innerHTML = '';
+        sel.innerHTML = '<option value="">技师</option>';
         for (var i = 0; i < techs.length; i++) {
-          (function(name){
-            var chip = document.createElement('span');
-            chip.className = 'chip';
-            chip.setAttribute('data-value', name);
-            chip.textContent = name;
-            chip.onclick = function(){
-              this.classList.toggle('active');
-            };
-            container.appendChild(chip);
-          })(techs[i].username);
-        }
-        // 恢复之前缓存的技师选中状态
-        if (window._pendingTechRestore) {
-          var val = window._pendingTechRestore;
-          window._pendingTechRestore = null;
-          if (window.restoreTechChips) window.restoreTechChips(val);
+          var opt = document.createElement('option');
+          opt.value = techs[i].username;
+          opt.textContent = techs[i].username;
+          sel.appendChild(opt);
         }
       }).catch(function(){});
     }, 500);
@@ -5371,34 +5349,6 @@ function initApp() {
     var valStr = String(value);
     for (var ci = 0; ci < chips.length; ci++) {
       if (chips[ci].getAttribute('data-value') === valStr) {
-        chips[ci].classList.add('active');
-      } else {
-        chips[ci].classList.remove('active');
-      }
-    }
-  };
-
-  // 恢复技师chip多选选中状态（支持逗号分隔多个技师名）
-  window.restoreTechChips = function(value) {
-    if (!value) return;
-    var container = document.getElementById('hair-form-tech-container');
-    if (!container) {
-      // chip还没渲染完，缓存起来等渲染后再恢复
-      window._pendingTechRestore = value;
-      return;
-    }
-    var names = String(value).split(',');
-    var chips = container.querySelectorAll('.chip');
-    for (var ci = 0; ci < chips.length; ci++) {
-      var chipVal = chips[ci].getAttribute('data-value') || chips[ci].textContent || '';
-      var found = false;
-      for (var ni = 0; ni < names.length; ni++) {
-        if (names[ni].trim() === chipVal) {
-          found = true;
-          break;
-        }
-      }
-      if (found) {
         chips[ci].classList.add('active');
       } else {
         chips[ci].classList.remove('active');
