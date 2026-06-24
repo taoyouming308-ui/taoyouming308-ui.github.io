@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="264">
+<html lang="zh-CN" data-version="265">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4126,7 +4126,7 @@ function initApp() {
         var statusColor = '#e8a817';
         var statusText = '待回访';
         if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
-        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '已回访'; }
+        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '技师已完成'; }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
@@ -4141,7 +4141,7 @@ function initApp() {
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">直接完成</button>';
         }
         if (status === '回访完成' || status === '已完成') {
-          html += '<span style="font-size:10px;color:var(--success);">✅ 已回访</span>';
+          html += '<span style="font-size:10px;color:var(--success);">✅ 技师已完成</span>';
         }
         html += '</div></div>';
       }
