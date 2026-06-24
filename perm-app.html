@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="261">
+<html lang="zh-CN" data-version="262">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3773,6 +3773,34 @@ function initApp() {
     }
     saveHairRecords(records);
 
+    // ★ 如果是云端记录，跳过本地保存流程，直接同步云端
+    if (_cloudEditingId) {
+      var cloudId = _cloudEditingId;
+      _cloudEditingId = null;
+      // 直接 PATCH 云端记录，不存本地
+      record.status = '已完成';
+      fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: '已完成',
+          record_data: record
+        })
+      }).catch(function(){});
+      // 更新按钮状态
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = '✅ 已提交';
+        btn.style.background = 'var(--success, #2ecc71)';
+        btn.disabled = true;
+      }
+      // 刷新我的任务
+      if (window.renderMyTasks) window.renderMyTasks();
+      // 重置编辑状态
+      _editingHairId = null;
+      return;
+    }
+
     // ★ 反馈实战数据：把发型师最终选择的发质类型写回队列
     var _qid = localStorage.getItem('_pendingHairQueueId');
     if (_qid && record.diagnosisType) {
@@ -3796,42 +3824,21 @@ function initApp() {
         btn.disabled = true;
       }
     }
-    // 同步到云端 - 非静默才同步 hair_records
+    // 同步到云端 - 非静默才同步 hair_records（仅非云端记录走这里）
     if (!silent) {
-      // ★ 判断是不是云端记录（技师点编辑进来的）
-      var isCloudRecord = _cloudEditingId ? true : false;
-      var cloudId = _cloudEditingId || '';
-      // 用完重置
-      _cloudEditingId = null;
-      
-      var hrPromise;
-      if (isCloudRecord && cloudId) {
-        // 云端记录 → PATCH 更新 + 设置状态为已完成（锁定，不可再编辑）
-        record.status = '已完成';
-        hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
-          method: 'PATCH',
-          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: '已完成',
-            record_data: record
-          })
-        }).catch(function(){});
-      } else {
-        // 普通保存 → POST 新记录
-        hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records', {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({
-            id: record.id,
-            customer_name: record.customerName,
-            customer_phone: record.customerPhone,
-            technician: record.technician,
-            barber: record.barber,
-            status: record.status,
-            record_data: record
-          })
-        }).catch(function(){});
-      }
+      var hrPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          id: record.id,
+          customer_name: record.customerName,
+          customer_phone: record.customerPhone,
+          technician: record.technician,
+          barber: record.barber,
+          status: record.status,
+          record_data: record
+        })
+      }).catch(function(){});
 
       // ★ 保存完刷新列表，不隐藏表单
       if (window.renderPendingRecords) window.renderPendingRecords();
@@ -4337,6 +4344,11 @@ function initApp() {
     _editingHairId = data.id || 'cloud_' + Date.now();
     // 记录云端记录ID（如果有）
     _cloudEditingId = data._cloudRecordId || (data._isCloudRecord ? data.id : null);
+    // 云端编辑时隐藏「我的任务」
+    var taskSection = document.getElementById('hair-tasks-section');
+    if (taskSection) {
+      taskSection.style.display = _cloudEditingId ? 'none' : '';
+    }
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
     if (window.restoreTechChips) window.restoreTechChips(data.technician);
@@ -4773,6 +4785,8 @@ function initApp() {
 
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name, existingRec) {
+    // 重置云端编辑状态（新建表单时）
+    _cloudEditingId = null;
     var containerId = 'hair-analysis-section';
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
@@ -5141,8 +5155,8 @@ function initApp() {
     html += '<div id="hair-pending-list"></div>';
     html += '</div>';
 
-    // 我的任务（技师端）
-    html += '<div style="margin-top:12px;">' +
+    // 我的任务（技师端）- 云端编辑时隐藏
+    html += '<div id="hair-tasks-section" style="margin-top:12px;">' +
     '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">☁️ 我的任务</div>' +
     '<div id="hair-tasks-list"></div>' +
     '</div>';
