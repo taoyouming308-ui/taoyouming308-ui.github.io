@@ -3698,17 +3698,10 @@ function initApp() {
   // 修改 saveHairRecordLocal 支持静默参数
   var _origSave = window.saveHairRecordLocal;
   window.saveHairRecordLocal = function(silent) {
-    // 云端编辑标记（在record构建前保存，因为后续_cloudEditingId可能被清空）
-    var _isCloudEdit = !!_cloudEditingId;
-
     // 收集所有表单字段
     var record = {
-      id: (function(){
-        if (_isCloudEdit) return _cloudEditingId;
-        return Date.now() + '_' + Math.random().toString(36).slice(2,6);
-      })(),
+      id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
       seq: (function(){
-        if (_isCloudEdit && typeof _cloudRecordSeq === 'number') return _cloudRecordSeq;
         var c = parseInt(localStorage.getItem('_hairRecordSeqCounter') || '0', 10) + 1;
         localStorage.setItem('_hairRecordSeqCounter', String(c));
         return c;
@@ -3785,8 +3778,6 @@ function initApp() {
     record.feedbackRating = record.feedbackRating ? record.feedbackRating.value : '';
     // 不把截图base64存记录里（单独存localStorage），避免撑爆
 
-    // ★ 云端记录不存本地，防止本地列表出现重复编号
-    if (!_isCloudEdit) {
     var records = getHairRecords();
     var found = false;
     if (_editingHairId) {
@@ -3843,7 +3834,6 @@ function initApp() {
         }
       }).catch(function(){});
     }
-    } // end if !_isCloudEdit
 
     // ★ 如果是云端记录，跳过本地保存流程，直接同步云端
     if (_cloudEditingId) {
@@ -4469,20 +4459,12 @@ function initApp() {
   var _cloudEditingId = null;
   // ★ 回访完成模式（发型师填写评定+截图后标记完成）
   var _followUpMode = false;
-  // ★ 云端记录原始编号（用于保存时保持seq不变）
-  var _cloudRecordSeq = null;
 
   window.loadHairRecordData = function(data) {
     if (!data) return;
     _editingHairId = data.id || 'cloud_' + Date.now();
     // 记录云端记录ID（如果有）
     _cloudEditingId = data._cloudRecordId || (data._isCloudRecord ? data.id : null);
-    // 保存云端记录的原始编号，保存时保持seq不变
-    if (_cloudEditingId && data.seq && typeof data.seq === 'number') {
-      _cloudRecordSeq = data.seq;
-    } else if (!_cloudEditingId) {
-      _cloudRecordSeq = null;
-    }
     // 云端编辑时隐藏「我的任务」
     var taskSection = document.getElementById('hair-tasks-section');
     if (taskSection) {
@@ -5096,7 +5078,6 @@ function initApp() {
     // 重置云端编辑状态（新建表单时）
     _cloudEditingId = null;
     _followUpMode = false;
-    _cloudRecordSeq = null;
     var containerId = 'hair-analysis-section';
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
