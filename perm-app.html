@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="273">
+<html lang="zh-CN" data-version="274">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4198,7 +4198,9 @@ function initApp() {
         var statusColor = '#e8a817';
         var statusText = '待回访';
         if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
-        else if (status === '回访完成' || status === '已完成' || status === '技师已完成') { statusColor = 'var(--success)'; statusText = '技师已完成'; }
+        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '已完成'; }
+        else if (status === '技师已完成') { statusColor = 'var(--success)'; statusText = '已回传'; }
+        if (status === '待回访' && isTech) { statusText = '未回传'; }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
@@ -4514,6 +4516,10 @@ function initApp() {
     setVal('hair-form-rods-bang', data.rodsBang);
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
+    // 加热板块数据恢复
+    setChecked('hair-form-color-heat', data.colorHeat);
+    setVal('hair-form-color-heat-temp', data.colorHeatTemp);
+    setVal('hair-form-color-dwell', data.colorDwell);
     // 效果评定（步骤5）- ABC回馈 + 截图
     if (data.feedbackRating) {
       var fbLabel = document.querySelector('label[data-val="' + data.feedbackRating + '"][data-name="fb-hair"]');
@@ -4548,8 +4554,8 @@ function initApp() {
         btn.onclick = function(){ window.saveHairRecordLocal(); };
       } else if (_cloudEditingId && _isTech) {
         // 技师回传 → 保存到云端
-        btn.textContent = '✅ 已回传';
-        btn.style.background = '#2ecc71';
+        btn.textContent = '⬆️ 未回传';
+        btn.style.background = '#666';
         btn.onclick = function(){ window.saveHairRecordLocal(); };
       } else if (_cloudEditingId && _isStylist) {
         // 发型师上传档案
