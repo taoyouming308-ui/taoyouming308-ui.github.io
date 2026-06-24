@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="262">
+<html lang="zh-CN" data-version="263">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3778,7 +3778,7 @@ function initApp() {
       var cloudId = _cloudEditingId;
       _cloudEditingId = null;
       // 直接 PATCH 云端记录，不存本地
-      record.status = '已完成';
+      record.status = '待回访完成';
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -3790,7 +3790,7 @@ function initApp() {
       // 更新按钮状态
       var btn = document.getElementById('hair-save-btn');
       if (btn) {
-        btn.textContent = '✅ 已提交';
+        btn.textContent = '✅ 已回传';
         btn.style.background = 'var(--success, #2ecc71)';
         btn.disabled = true;
       }
@@ -4083,10 +4083,17 @@ function initApp() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         var rec = r.record_data || {};
-        var isDone = r.status === '已完成' || r.status === 'completed';
+        var status = r.status || '待回访';
         var customerName = r.customer_name || rec.customerName || '未填写';
         var phone = r.customer_phone || rec.customerPhone || '';
         var technician = r.technician || rec.technician || '';
+        // 判断当前用户身份：技师 or 发型师
+        var techList = (r.technician || '').split(',');
+        var isTech = false;
+        for (var ti = 0; ti < techList.length; ti++) {
+          if (techList[ti].trim() === barber) { isTech = true; break; }
+        }
+        var isStylist = (r.barber === barber);
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + esc(customerName) + '</span>';
@@ -4094,15 +4101,25 @@ function initApp() {
         html += '</div>';
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
         html += '<span>' + esc(phone) + '</span>';
-        var sc = isDone ? 'var(--success)' : '#e8a817';
-        html += '<span style="margin-left:auto;color:'+sc+';">' + (isDone ? '已完成' : '待回访') + '</span>';
+        var statusColor = '#e8a817';
+        var statusText = '待回访';
+        if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
+        else if (status === '回访完成' || status === '已完成') { statusColor = 'var(--success)'; statusText = '已回访'; }
+        html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
-        if (!isDone) {
+        if (status === '待回访' && isTech) {
+          // 技师编辑
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑填写</button>';
-          html += '<button onclick="markCloudDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">回访完成</button>';
-        } else {
-          html += '<span style="font-size:10px;color:var(--success);">✅ 已填写完成</span>';
+        } else if (status === '待回访完成' && isStylist) {
+          // 发型师回访完成
+          html += '<button onclick="markFollowUpDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--success);cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
+        } else if (status === '待回访' && isStylist) {
+          // 发型师直接标记完成（不用技师）
+          html += '<button onclick="markFollowUpDone(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);cursor:pointer;font-family:var(--font);">直接完成</button>';
+        }
+        if (status === '回访完成' || status === '已完成') {
+          html += '<span style="font-size:10px;color:var(--success);">✅ 已回访</span>';
         }
         html += '</div></div>';
       }
@@ -4130,12 +4147,12 @@ function initApp() {
     }).catch(function(){});
   };
 
-  window.markCloudDone = function(recordId) {
+  window.markFollowUpDone = function(recordId) {
     if (!recordId) return;
     fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId), {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: '已完成' })
+      body: JSON.stringify({ status: '回访完成' })
     }).then(function() {
       if (window.renderMyTasks) window.renderMyTasks();
     }).catch(function(){});
