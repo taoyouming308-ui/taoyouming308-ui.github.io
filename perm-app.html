@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="274">
+<html lang="zh-CN" data-version="275">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2671,11 +2671,18 @@ function initApp() {
         headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
         body: JSON.stringify({ username:username, password_hash:hash, role:'staff', store:store, position:position, active:false })
       });
-      if (!res.ok) throw new Error('提交失败');
+      if (!res.ok) {
+        var errBody = '';
+        try { var _errJson = await res.json(); errBody = _errJson.message || ''; } catch(e) {}
+        if (res.status === 409 && errBody.indexOf('username') !== -1) {
+          throw new Error('用户名已存在');
+        }
+        throw new Error('提交失败: ' + (errBody || res.status));
+      }
       alert('注册成功，等待店主审核');
       document.getElementById('identity-modal').remove();
     } catch(e) {
-      errEl.textContent='注册失败，请重试'; errEl.style.display='';
+      errEl.textContent=e.message||'注册失败，请重试'; errEl.style.display='';
       if (btn) btn.disabled = false;
     }
   };
