@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="299">
+<html lang="zh-CN" data-version="300">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3328,18 +3328,18 @@ function initApp() {
       }
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       html += renderAiButton(phone, name, barberName, bookingDate);
+      html += '<div id="plan-profile-extra" style="margin-top:8px;"></div>';
       html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
       html += renderHairRecordReadOnly(phone, name);
       document.querySelector('#plan-modal .box').innerHTML = html;
       updateAiButtonsAvailability();
+      hydratePlanProfileExtra(phone, name);
       // 加载客户历史档案
       renderCustomerHistory(phone, name);
     })
     .catch(function(e){
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
-      fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*', {
-        headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      fetchCustomerProfileRows(phone, name)
       .then(function(rows){
         rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
@@ -3387,15 +3387,7 @@ function initApp() {
           sug += '\n\n';
 
           // 卡项消耗建议
-          var packages = [];
-          var pRowsWithCards = (rows || []).filter(function(r){ return r.card_packages && r.card_packages.length > 0; });
-          if (pRowsWithCards.length > 0) {
-            packages = pRowsWithCards[0].card_packages || [];
-            // 只显示还有剩余次数的套餐（过滤已用完的）
-            packages = packages.filter(function(c){
-              return (c.left || c.remaining || c.leavetimes || 0) > 0;
-            });
-          }
+          var packages = collectCustomerPackages(rows, false);
           if (packages.length > 0) {
             sug += '📦 卡项消耗建议：\n';
             for (var ci = 0; ci < packages.length; ci++) {
@@ -3513,16 +3505,9 @@ function initApp() {
           }
           if (lastDateStr) htmlContent += '<div class="row"><span class="label">最后到店</span><span class="val">'+esc(lastDateStr)+'</span></div>';
           if (lastDateStr) htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+(monthsSince > 0 ? monthsSince+'个月' : '当月')+'</span></div>';
-          // 最近到店记录
-          var visitHistory = [];
-          // 从第一条有服务记录的客户数据获取
-          var serviceHistoryRows = (rows || []).filter(function(r){ return r.service_history && r.service_history.length > 0; });
-          if (serviceHistoryRows.length > 0) {
-            visitHistory = serviceHistoryRows[0].service_history;
-          } else if (lastDateStr) {
-            // 没有预约记录但有美管加最后到店日期
-            visitHistory = [{'date': lastDateStr, 'time': '', 'barber': '', 'shop': '美管加'}];
-          }
+          // 最近消费/到店记录（合并多门店）
+          var visitHistory = collectCustomerServiceHistory(rows);
+          if (!visitHistory.length && lastDateStr) visitHistory = [{'date': lastDateStr, 'time': '', 'barber': '', 'shop': '美管加'}];
           if (visitHistory.length > 0) {
             var showCount = Math.min(visitHistory.length, 3);
             var last3 = visitHistory.slice(visitHistory.length - showCount);
@@ -3540,29 +3525,7 @@ function initApp() {
               htmlContent += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:12px;color:var(--text-secondary);"><span class="val" style="font-weight:400;">↳ '+esc(label)+'</span></div>';
             }
           }
-          // 卡项/套餐信息
-          if (packages && packages.length > 0) {
-            htmlContent += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
-            for (var ci = 0; ci < packages.length; ci++) {
-              var cp = packages[ci];
-              var cName = cp.name || cp.itemname || '套餐';
-              var cLeft = cp.left || cp.remaining || cp.leavetimes || 0;
-              var cTotal = cp.total || cp.sumtimes || 0;
-              var used = cTotal - cLeft;
-              var pct = cTotal > 0 ? Math.round(cLeft / cTotal * 100) : 0;
-              var barColor = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
-              htmlContent += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
-              htmlContent += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
-              htmlContent += '<span>'+esc(cName)+'</span>';
-              htmlContent += '<span style="color:'+barColor+';font-weight:600;">剩'+esc(cLeft)+'/'+esc(cTotal)+'次</span>';
-              htmlContent += '</span></div>';
-              // 进度条
-              if (cTotal > 0) {
-                htmlContent += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
-                htmlContent += '<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
-              }
-            }
-          }
+          htmlContent += renderCustomerPackageRows(packages);
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
@@ -3652,6 +3615,21 @@ function initApp() {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
   };
+
+  function hydratePlanProfileExtra(phone, name) {
+    var holder = document.getElementById('plan-profile-extra');
+    if (!holder) return;
+    fetchCustomerProfileRows(phone, name).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      if (!rows.length) { holder.innerHTML = ''; return; }
+      var html = '';
+      html += hairArchiveSection('完整消费记录', renderCustomerConsumptionArchive(rows));
+      html += hairArchiveSection('剩余套餐项目', renderCustomerPackagesArchive(rows));
+      holder.innerHTML = html;
+    }).catch(function() {
+      holder.innerHTML = '';
+    });
+  }
 
   function hairArchiveSection(title, body) {
     if (!body) return '';
@@ -4124,8 +4102,275 @@ function initApp() {
         var tb = new Date(b.createdAt || b.date || 0).getTime() || 0;
         return tb - ta;
       });
-      return list;
+      return enrichHairRecordsWithCareRows(list);
     });
+  }
+
+  function parseHairArrayField(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+    if (typeof value === 'string') {
+      try {
+        var parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch(e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  function customerProfileMatches(row, phone, name) {
+    row = row || {};
+    var targetPhone = normalizeHairCustomerPhone(phone);
+    var rowPhone = normalizeHairCustomerPhone(row.phone || row.customer_phone || '');
+    if (targetPhone && rowPhone && targetPhone === rowPhone) return true;
+    if (targetPhone && rowPhone) return false;
+    var targetName = normalizeHairCustomerName(name);
+    var rowName = normalizeHairCustomerName(row.name || row.customer_name || '');
+    return !!(targetName && rowName && targetName === rowName);
+  }
+
+  function fetchCustomerProfileRows(phone, name, limit) {
+    limit = limit || 500;
+    var normPhone = normalizeHairCustomerPhone(phone);
+    var clauses = [];
+    if (phone) clauses.push('phone.eq.' + encodeURIComponent(phone));
+    if (normPhone && normPhone !== phone) clauses.push('phone.eq.' + encodeURIComponent(normPhone));
+    if (normPhone) clauses.push('phone.ilike.%25' + encodeURIComponent(normPhone) + '%25');
+    if (name) clauses.push('name.ilike.%25' + encodeURIComponent(name) + '%25');
+    var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=' + limit;
+    if (clauses.length > 0) url += '&or=(' + clauses.join(',') + ')';
+    return fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+      .then(function(r) { if (!r.ok) return []; return r.json(); })
+      .then(function(rows) {
+        rows = Array.isArray(rows) ? rows : [];
+        var matched = rows.filter(function(row) { return customerProfileMatches(row, phone, name); });
+        if (matched.length || (!phone && !name)) return matched;
+        return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=' + limit, {
+          headers: { 'apikey': SUPABASE_KEY }
+        }).then(function(r) { if (!r.ok) return []; return r.json(); })
+          .then(function(allRows) {
+            allRows = Array.isArray(allRows) ? allRows : [];
+            return allRows.filter(function(row) { return customerProfileMatches(row, phone, name); });
+          }).catch(function(){ return []; });
+      }).catch(function(){ return []; });
+  }
+
+  function collectCustomerPackages(profileRows, includeUsed) {
+    var list = [];
+    var seen = {};
+    (profileRows || []).forEach(function(row) {
+      var packages = parseHairArrayField(row.card_packages);
+      packages.forEach(function(pkg) {
+        pkg = pkg || {};
+        var left = Number(pkg.left != null ? pkg.left : (pkg.remaining != null ? pkg.remaining : pkg.leavetimes)) || 0;
+        var total = Number(pkg.total != null ? pkg.total : pkg.sumtimes) || 0;
+        if (!includeUsed && left <= 0) return;
+        var name = pkg.name || pkg.itemname || '套餐';
+        var shop = row.shop_name || pkg.shop || '';
+        var key = [shop, name, left, total].join('|');
+        if (seen[key]) return;
+        seen[key] = true;
+        list.push({ name: name, left: left, remaining: left, leavetimes: left, total: total, sumtimes: total, shop: shop });
+      });
+    });
+    list.sort(function(a, b) {
+      var ar = a.total > 0 ? a.left / a.total : 1;
+      var br = b.total > 0 ? b.left / b.total : 1;
+      return ar - br;
+    });
+    return list;
+  }
+
+  function collectCustomerServiceHistory(profileRows) {
+    var list = [];
+    var seen = {};
+    (profileRows || []).forEach(function(row) {
+      var history = parseHairArrayField(row.service_history);
+      if (!history.length && row.last_visit_date) {
+        history = [{ date: String(row.last_visit_date).slice(0, 10), time: String(row.last_visit_date).slice(11, 16), barber: row.barber_name || '', shop: row.shop_name || '' }];
+      }
+      history.forEach(function(item) {
+        item = item || {};
+        var date = item.date || String(row.last_visit_date || '').slice(0, 10);
+        var time = item.time || '';
+        var barber = item.barber || row.barber_name || '';
+        var shop = item.shop || row.shop_name || '';
+        var key = [date, time, barber, shop].join('|');
+        if (!date || seen[key]) return;
+        seen[key] = true;
+        list.push({ date: date, time: time, barber: barber, shop: shop });
+      });
+    });
+    list.sort(function(a, b) {
+      return String((b.date || '') + ' ' + (b.time || '')).localeCompare(String((a.date || '') + ' ' + (a.time || '')));
+    });
+    return list;
+  }
+
+  function summarizeCustomerProfiles(profileRows) {
+    var summary = { visits: 0, consumption: 0, lastVisit: '', avgTicket: 0, notes: [] };
+    var seenNotes = {};
+    (profileRows || []).forEach(function(row) {
+      summary.visits += Number(row.total_visits || 0) || 0;
+      summary.consumption += Number(row.total_consumption || 0) || 0;
+      var last = row.last_visit_date ? String(row.last_visit_date).slice(0, 16) : '';
+      if (last && last > summary.lastVisit) summary.lastVisit = last;
+      if (row.notes && !seenNotes[row.notes]) {
+        seenNotes[row.notes] = true;
+        summary.notes.push(row.notes);
+      }
+    });
+    summary.avgTicket = summary.visits > 0 ? Math.round(summary.consumption / summary.visits) : 0;
+    return summary;
+  }
+
+  function renderCustomerPackageRows(packages) {
+    packages = packages || [];
+    if (!packages.length) return '';
+    var html = '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 剩余套餐</span></div>';
+    packages.forEach(function(cp) {
+      var cName = cp.name || cp.itemname || '套餐';
+      var cLeft = Number(cp.left != null ? cp.left : (cp.remaining != null ? cp.remaining : cp.leavetimes)) || 0;
+      var cTotal = Number(cp.total != null ? cp.total : cp.sumtimes) || 0;
+      var pct = cTotal > 0 ? Math.round(cLeft / cTotal * 100) : 0;
+      var barColor = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
+      var shopText = cp.shop ? ' · ' + cp.shop : '';
+      html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
+      html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;gap:8px;">';
+      html += '<span>'+esc(cName + shopText)+'</span>';
+      html += '<span style="color:'+barColor+';font-weight:600;white-space:nowrap;">剩'+esc(cLeft)+'/'+esc(cTotal)+'次</span>';
+      html += '</span></div>';
+      if (cTotal > 0) {
+        html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
+        html += '<div style="width:'+Math.max(0, Math.min(100, pct))+'%;height:100%;background:'+barColor+';border-radius:2px;"></div></div>';
+      }
+    });
+    return html;
+  }
+
+  function renderCustomerConsumptionArchive(profileRows) {
+    profileRows = profileRows || [];
+    if (!profileRows.length) return '';
+    var summary = summarizeCustomerProfiles(profileRows);
+    var history = collectCustomerServiceHistory(profileRows);
+    var rows = [];
+    if (summary.visits > 0) rows.push(['到店次数', summary.visits + '次']);
+    if (summary.consumption > 0) rows.push(['总消费', '¥' + Math.round(summary.consumption)]);
+    if (summary.avgTicket > 0) rows.push(['均消', '¥' + summary.avgTicket]);
+    if (summary.lastVisit) rows.push(['最后到店', summary.lastVisit]);
+    if (summary.notes.length) rows.push(['备注', summary.notes.join(' / ')]);
+    var html = rows.length ? hairArchiveInfoRows(rows) : '';
+    if (history.length) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin:8px 0 4px;">消费/到店记录</div>';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
+      history.slice(0, 12).forEach(function(h) {
+        var label = (h.date || '') + (h.time ? ' ' + h.time : '');
+        var right = [h.barber, h.shop].filter(Boolean).join(' · ');
+        html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(label) + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--text-secondary);">' + esc(right || '—') + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    return html;
+  }
+
+  function renderCustomerPackagesArchive(profileRows) {
+    var packages = collectCustomerPackages(profileRows, false);
+    if (!packages.length) return '';
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
+    packages.forEach(function(pkg) {
+      var pct = pkg.total > 0 ? Math.round(pkg.left / pkg.total * 100) : 0;
+      var color = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
+      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.name || '套餐') + (pkg.shop ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(pkg.shop) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function fetchCareRecordsByHairIds(ids) {
+    ids = (ids || []).filter(Boolean);
+    if (!ids.length) return Promise.resolve([]);
+    var seen = {};
+    ids = ids.filter(function(id) { if (seen[id]) return false; seen[id] = true; return true; });
+    var url = SUPABASE_URL + '/rest/v1/care_records?select=hair_record_id,brand,product,grams,record_date&hair_record_id=in.(' + ids.map(encodeURIComponent).join(',') + ')&limit=1000';
+    return fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+      .then(function(r) { if (!r.ok) return []; return r.json(); })
+      .catch(function(){ return []; });
+  }
+
+  function mergeCareRowsIntoHairRecords(list, careRows) {
+    var byId = {};
+    (careRows || []).forEach(function(row) {
+      var id = row.hair_record_id || row.record_id || '';
+      if (!id) return;
+      if (!byId[id]) byId[id] = [];
+      var key = [row.brand || '', row.product || '', row.grams || '', row.record_date || ''].join('|');
+      var exists = byId[id].some(function(x) { return x._key === key; });
+      if (!exists) byId[id].push({ brand: row.brand || '', product: row.product || '', grams: row.grams || '', recordDate: row.record_date || '', _key: key });
+    });
+    (list || []).forEach(function(rec) {
+      var id = rec._cloudRecordId || rec.id;
+      if (byId[id] && byId[id].length) {
+        rec.careUsage = byId[id].map(function(x) { return { brand: x.brand, product: x.product, grams: x.grams, recordDate: x.recordDate }; });
+      }
+    });
+    return list;
+  }
+
+  function enrichHairRecordsWithCareRows(list) {
+    list = Array.isArray(list) ? list : [];
+    var ids = list.map(function(rec) { return rec._cloudRecordId || rec.id; }).filter(Boolean);
+    return fetchCareRecordsByHairIds(ids).then(function(careRows) {
+      return mergeCareRowsIntoHairRecords(list, careRows);
+    });
+  }
+
+  function getCareRecordShopName(barber) {
+    if (!barber) return Promise.resolve('');
+    if (window._staffStoreCache && window._staffStoreCache[barber]) return Promise.resolve(window._staffStoreCache[barber] || '');
+    return fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(barber) + '&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) { if (!r.ok) return []; return r.json(); })
+      .then(function(rows) { return (rows && rows[0] && rows[0].store) || ''; })
+      .catch(function(){ return ''; });
+  }
+
+  function syncCareRecordsForHairRecord(record) {
+    record = record || {};
+    if (!record.id) return Promise.resolve();
+    var careArray = Array.isArray(record.careUsage) ? record.careUsage : [];
+    var headers = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
+    return getCareRecordShopName(record.barber || '').then(function(shopName) {
+      return fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(record.id), {
+        method: 'DELETE',
+        headers: headers
+      }).catch(function(){});
+    }).then(function() {
+      if (!careArray.length) return;
+      return getCareRecordShopName(record.barber || '').then(function(shopName) {
+        var today = new Date().toISOString().slice(0, 10);
+        var rows = [];
+        careArray.forEach(function(cu) {
+          if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') return;
+          rows.push({
+            hair_record_id: record.id,
+            barber: record.barber || '',
+            shop_name: shopName || '',
+            brand: cu.brand,
+            product: cu.product,
+            grams: parseFloat(cu.grams) || 0,
+            record_date: today
+          });
+        });
+        if (!rows.length) return;
+        return fetch(SUPABASE_URL + '/rest/v1/care_records', {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify(rows)
+        });
+      });
+    }).catch(function(){});
   }
 
   var _editingHairId = null;  // 正在编辑的记录ID，null=新建
@@ -4387,8 +4632,9 @@ function initApp() {
           status: '技师已完成',
           record_data: _mergedData
         })
-      }).then(function(r) {
+        }).then(function(r) {
         if (r.ok) {
+          syncCareRecordsForHairRecord(_mergedData);
           // PATCH成功后才刷新按钮和任务列表
           var btn = document.getElementById('hair-save-btn');
           if (btn) {
@@ -5546,6 +5792,7 @@ function initApp() {
         _cloudEditingId = cloudId;
         _editingHairId = cloudId;
         _cloudRecordData = JSON.parse(JSON.stringify(record));
+        syncCareRecordsForHairRecord(record);
         var btn = document.getElementById('hair-save-btn');
         if (btn) {
           btn.textContent = '✅ 已保存，可继续修改';
@@ -6940,48 +7187,74 @@ function initApp() {
       if (!r.ok) return [];
       return r.json();
     }).catch(function(){ return []; });
+    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=500', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) return [];
+      return r.json();
+    }).catch(function(){ return []; });
 
-    Promise.all([hairRecordsPromise, legacyQueuePromise]).then(function(results) {
+    Promise.all([hairRecordsPromise, legacyQueuePromise, customerProfilesPromise]).then(function(results) {
       var hairRows = Array.isArray(results[0]) ? results[0] : [];
       var queueRows = Array.isArray(results[1]) ? results[1] : [];
+      var customerRows = Array.isArray(results[2]) ? results[2] : [];
       if (loadingEl) loadingEl.style.display = 'none';
-      if (hairRows.length === 0 && queueRows.length === 0) {
+      if (hairRows.length === 0 && queueRows.length === 0 && customerRows.length === 0) {
         if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">暂无客户档案</div>';
         return;
       }
       // 按手机号归总
       var groups = {};
+      function ensureProfileGroup(phone, name) {
+        var normPhone = normalizeHairCustomerPhone(phone || '');
+        var normName = normalizeHairCustomerName(name || '');
+        var key = normPhone || (normName ? 'name:' + normName : 'unknown');
+        var displayPhone = normPhone || phone || '';
+        var displayName = name || '未知';
+        if (!groups[key]) groups[key] = { key: key, phone: displayPhone, name: displayName, records: [], profileRows: [], _ids: {} };
+        if (!groups[key].phone && displayPhone) groups[key].phone = displayPhone;
+        if ((groups[key].name === '未知' || !groups[key].name) && displayName !== '未知') groups[key].name = displayName;
+        return groups[key];
+      }
+      function addCustomerProfileRow(row) {
+        row = row || {};
+        var g = ensureProfileGroup(row.phone || '', row.name || '');
+        g.profileRows.push(row);
+      }
       function addProfileRecord(row, rec, source) {
         rec = rec || {};
         var phone = normalizeHairCustomerPhone(row.customer_phone || row.phone || rec.customerPhone || rec.phone || '');
-        if (!phone) phone = row.customer_phone || row.phone || rec.customerPhone || rec.phone || 'unknown';
+        if (!phone) phone = row.customer_phone || row.phone || rec.customerPhone || rec.phone || '';
         var name = row.customer_name || rec.customerName || rec.name || '未知';
-        if (!groups[phone]) groups[phone] = { phone: phone, name: name, records: [], _ids: {} };
-        var rid = (source || '') + ':' + (row.id || rec.id || row.created_at || groups[phone].records.length);
-        if (groups[phone]._ids[rid]) return;
-        groups[phone]._ids[rid] = true;
-        groups[phone].records.push({ row: row, rec: rec, source: source });
-        if (groups[phone].name === '未知' && name !== '未知') groups[phone].name = name;
+        var g = ensureProfileGroup(phone, name);
+        var rid = (source || '') + ':' + (row.id || rec.id || row.created_at || g.records.length);
+        if (g._ids[rid]) return;
+        g._ids[rid] = true;
+        g.records.push({ row: row, rec: rec, source: source });
+        if (g.name === '未知' && name !== '未知') g.name = name;
       }
-      for (var i = 0; i < hairRows.length; i++) {
-        var hrow = hairRows[i];
-        addProfileRecord(hrow, normalizeHairCloudRecord(hrow), 'hair_records');
-      }
-      for (var qi = 0; qi < queueRows.length; qi++) {
-        var r = queueRows[qi];
-        var rec = (r.ai_analysis && r.ai_analysis.record) || {};
-        addProfileRecord(r, rec, 'hair_analysis_queue');
-      }
-      var keysForSort = Object.keys(groups);
-      for (var gi = 0; gi < keysForSort.length; gi++) {
-        groups[keysForSort[gi]].records.sort(function(a, b) {
-          var ta = new Date((a.rec && a.rec.createdAt) || a.row.created_at || a.rec.date || 0).getTime() || 0;
-          var tb = new Date((b.rec && b.rec.createdAt) || b.row.created_at || b.rec.date || 0).getTime() || 0;
-          return tb - ta;
-        });
-      }
-      window._profileGroups = groups;
-      renderProfileList(groups);
+      for (var pi = 0; pi < customerRows.length; pi++) addCustomerProfileRow(customerRows[pi]);
+      var normalizedHairRows = hairRows.map(normalizeHairCloudRecord);
+      enrichHairRecordsWithCareRows(normalizedHairRows).then(function(enrichedHairRows) {
+        for (var i = 0; i < enrichedHairRows.length; i++) {
+          addProfileRecord(hairRows[i] || {}, enrichedHairRows[i], 'hair_records');
+        }
+        for (var qi = 0; qi < queueRows.length; qi++) {
+          var r = queueRows[qi];
+          var rec = (r.ai_analysis && r.ai_analysis.record) || {};
+          addProfileRecord(r, rec, 'hair_analysis_queue');
+        }
+        var keysForSort = Object.keys(groups);
+        for (var gi = 0; gi < keysForSort.length; gi++) {
+          groups[keysForSort[gi]].records.sort(function(a, b) {
+            var ta = new Date((a.rec && a.rec.createdAt) || a.row.created_at || a.rec.date || 0).getTime() || 0;
+            var tb = new Date((b.rec && b.rec.createdAt) || b.row.created_at || b.rec.date || 0).getTime() || 0;
+            return tb - ta;
+          });
+        }
+        window._profileGroups = groups;
+        renderProfileList(groups);
+      });
     }).catch(function() {
       if (loadingEl) loadingEl.style.display = 'none';
       if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px;">❌ 加载失败</div>';
@@ -6999,9 +7272,11 @@ function initApp() {
     var html = '';
     for (var ki = 0; ki < keys.length; ki++) {
       var g = groups[keys[ki]];
-      var lastRec = g.records[0];
-      var dateStr = lastRec.rec.date || (lastRec.row.created_at || '').slice(0, 10);
-      var lastTech = lastRec.rec.technician || '';
+      var lastRec = g.records[0] || { rec: {}, row: {} };
+      var profileSummary = summarizeCustomerProfiles(g.profileRows || []);
+      var packages = collectCustomerPackages(g.profileRows || [], false);
+      var dateStr = lastRec.rec.date || (lastRec.row.created_at || '').slice(0, 10) || (profileSummary.lastVisit || '').slice(0, 10);
+      var lastTech = lastRec.rec.technician || ((g.profileRows && g.profileRows[0] && g.profileRows[0].barber_name) || '');
       // 诊断摘要
       var diagSummary = '';
       var ts = lastRec.rec.threeSection;
@@ -7009,17 +7284,21 @@ function initApp() {
         diagSummary = '根' + ts.root.level + '/' + ts.mid.level + '/' + ts.end.level;
       }
       var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
-      html += '<div class="profile-card" onclick="showCustomerProfile(\'' + g.phone.replace(/'/g,"\\'") + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;">';
+      var badgeText = g.records.length > 0 ? (g.records.length + '表') : '消费档案';
+      html += '<div class="profile-card" onclick="showCustomerProfile(\'' + escAttr(g.key || g.phone || '') + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
       html += '<div style="display:flex;align-items:center;gap:8px;">';
       html += '<span style="font-size:14px;font-weight:600;color:var(--text);">' + esc(name) + '</span>';
-      html += '<span style="font-size:11px;color:var(--text-secondary);">' + esc(g.phone) + '</span>';
+      if (g.phone) html += '<span style="font-size:11px;color:var(--text-secondary);">' + esc(g.phone) + '</span>';
       html += '</div>';
-      html += '<span style="font-size:10px;color:var(--accent);background:var(--surface-light);padding:2px 8px;border-radius:10px;">' + g.records.length + '次</span>';
+      html += '<span style="font-size:10px;color:var(--accent);background:var(--surface-light);padding:2px 8px;border-radius:10px;">' + esc(badgeText) + '</span>';
       html += '</div>';
       html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">';
       if (diagSummary) html += diagSummary + ' · ';
-      html += dateStr;
+      if (dateStr) html += esc(dateStr);
+      if (profileSummary.visits > 0) html += (dateStr ? ' · ' : '') + '到店' + profileSummary.visits + '次';
+      if (profileSummary.consumption > 0) html += ' · ¥' + Math.round(profileSummary.consumption);
+      if (packages.length > 0) html += ' · 套餐' + packages.length + '项';
       if (lastTech) html += ' · ' + esc(lastTech);
       html += '</div></div>';
     }
@@ -7056,12 +7335,21 @@ function initApp() {
     var detailEl = document.getElementById('profile-detail');
     detailEl.style.display = 'block';
 
-    var name = g.name === '未知' ? (g.records[0].rec.customerName || '未知') : g.name;
+    var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
     var html = '<div style="margin-bottom:12px;">';
     html += '<button onclick="backToProfileList()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 0;font-family:var(--font);">← 返回列表</button>';
     html += '</div>';
     html += '<div style="font-size:16px;font-weight:700;color:var(--accent);">' + esc(name) + '</div>';
-    html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">' + esc(phone) + ' · ' + g.records.length + '条记录</div>';
+    html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">' + esc(g.phone || '') + (g.phone ? ' · ' : '') + g.records.length + '条发质记录</div>';
+
+    var consumptionArchive = renderCustomerConsumptionArchive(g.profileRows || []);
+    var packagesArchive = renderCustomerPackagesArchive(g.profileRows || []);
+    html += hairArchiveSection('消费记录', consumptionArchive);
+    html += hairArchiveSection('剩余套餐项目', packagesArchive);
+
+    if (g.records.length === 0) {
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;color:var(--text-secondary);">暂无发质分析记录</div>';
+    }
 
     for (var ri = 0; ri < g.records.length; ri++) {
       var item = g.records[ri];
@@ -7119,6 +7407,9 @@ function initApp() {
         if (rec.rodMethod) html += ' · ' + ({soften:'软化上杠',direct:'直接上杠'}[rec.rodMethod] || rec.rodMethod);
         html += '</div>';
       }
+
+      html += hairArchiveSection('染发参数', renderHairColorArchive(rec));
+      html += hairArchiveSection('护理记录', renderHairCareArchive(rec));
 
       // 效果评定
       if (rec.eval) {
