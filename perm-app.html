@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="292">
+<html lang="zh-CN" data-version="293">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2793,7 +2793,7 @@ function initApp() {
     if (window.loadHairTagStatuses) window.loadHairTagStatuses();
   }
 
-  // ===== 烫染标记：异步查询 hair_analysis_queue 状态 =====
+  // ===== 烫染标记：优先查询 hair_records，旧 hair_analysis_queue 只做兜底 =====
   window.loadHairTagStatuses = function() {
     var tags = document.querySelectorAll('.bi-hair-tag');
     if (tags.length === 0) return;
@@ -2804,14 +2804,27 @@ function initApp() {
       if (p && !phoneSet[p]) { phones.push(p); phoneSet[p] = true; }
     });
     if (phones.length === 0) return;
-    var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,status&or=('+orParts+')&order=created_at.desc&limit='+phones.length, {
+    var normalizedPhoneSet = {};
+    phones.forEach(function(p){ normalizedPhoneSet[normalizeHairCustomerPhone(p)] = true; });
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); }).then(function(rows){
-      if (!rows || rows.length === 0) return;
+    }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+    var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
+    var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,status&or=('+orParts+')&order=created_at.desc&limit='+phones.length, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+    Promise.all([hairRecordsPromise, queuePromise]).then(function(results){
+      var hairRows = Array.isArray(results[0]) ? results[0] : [];
+      var rows = Array.isArray(results[1]) ? results[1] : [];
       var statusMap = {};
+      hairRows.forEach(function(row){
+        var rec = normalizeHairCloudRecord(row);
+        var p = normalizeHairCustomerPhone(rec.customerPhone);
+        if (p && normalizedPhoneSet[p]) statusMap[p] = 'record_saved';
+      });
       rows.forEach(function(row){
-        var p = row.phone;
+        var p = normalizeHairCustomerPhone(row.phone);
+        if (statusMap[p] === 'record_saved' || statusMap[p] === 'completed') return;
         if (!statusMap[p]) {
           statusMap[p] = row.status;
         } else {
@@ -2825,7 +2838,7 @@ function initApp() {
         var name = t.getAttribute('data-name') || '';
         var barber = t.getAttribute('data-barber') || '';
         var bdate = t.getAttribute('data-bdate') || '';
-        var st = statusMap[phone];
+        var st = statusMap[normalizeHairCustomerPhone(phone)];
         if (st === 'pending') {
           t.textContent = '\uD83D\uDCCB\u5F85\u5206\u6790';
           t.style.background = 'rgba(232,168,23,0.2)';
@@ -2857,36 +2870,48 @@ function initApp() {
   };
 
   window.showHairRecordByPhone = function(phone) {
-    var records = window.getHairRecords ? window.getHairRecords() : [];
-    var found = null;
-  for (var i = 0; i < records.length; i++) {
-    if (hairRecordMatchesCustomer(records[i], phone, '')) {
-      found = records[i]; break;
-    }
-  }
-    if (found) {
-      if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
-      return;
-    }
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,status&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); }).then(function(rows){
-      if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
-      var row = rows[0];
-      var rec = (row.ai_analysis && row.ai_analysis.record) || {};
+    function openRecord(rec) {
       window.showHairAnalysisPage(phone);
       setTimeout(function(){
-        if (rec.customerName) {
-          var ne = document.getElementById('hair-form-name');
-          if (ne) ne.value = rec.customerName;
-        }
-        if (rec.customerPhone || phone) {
-          var pe = document.getElementById('hair-form-phone');
-          if (pe) pe.value = rec.customerPhone || phone;
-        }
         if (window.loadHairRecordData) window.loadHairRecordData(rec);
       }, 200);
-    }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
+    }
+    function openLegacyRecord() {
+      var records = window.getHairRecords ? window.getHairRecords() : [];
+      var found = findLatestHairRecordForCustomer(records, phone, '');
+      if (found) {
+        if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
+        return;
+      }
+      fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,status&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=1', {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r){ return r.json(); }).then(function(rows){
+        if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
+        var row = rows[0];
+        var rec = (row.ai_analysis && row.ai_analysis.record) || {};
+        window.showHairAnalysisPage(phone);
+        setTimeout(function(){
+          if (rec.customerName) {
+            var ne = document.getElementById('hair-form-name');
+            if (ne) ne.value = rec.customerName;
+          }
+          if (rec.customerPhone || phone) {
+            var pe = document.getElementById('hair-form-phone');
+            if (pe) pe.value = rec.customerPhone || phone;
+          }
+          if (window.loadHairRecordData) window.loadHairRecordData(rec);
+        }, 200);
+      }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
+    }
+    fetchHairRecordsForCustomer(phone, '', 100).then(function(list) {
+      if (list && list.length > 0) {
+        openRecord(list[0]);
+        return;
+      }
+      openLegacyRecord();
+    }).catch(function(){
+      openLegacyRecord();
+    });
   };
 
   window.createAndOpenHairTask = function(name, phone, barber, bdate) {
@@ -3331,14 +3356,8 @@ function initApp() {
     if (m) m.remove();
   };
 
-  // 只读展示已有发质分析记录（文字版快照，不可编辑）
-  window.renderHairRecordReadOnly = function(phone, name) {
-    var records = [];
-    try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
-    var found = findLatestHairRecordForCustomer(records, phone, name);
-    if (!found) return ''; // 无记录不显示表单
-
-    var r = found;
+  function renderHairRecordReadOnlyCard(r, sourceLabel) {
+    if (!r) return '';
     // 生成文字版快照
     var lines = [];
     lines.push('📋 烫发记录表（已保存）');
@@ -3381,7 +3400,7 @@ function initApp() {
 
     // 显示为白色文字块（纯文字，没有任何输入框/按钮）
     var html = '<div class="hair-analysis" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">';
-    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（已保存）</span></div>';
+    html += '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:12px;">📋 烫发记录表 <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">（' + esc(sourceLabel || '已保存') + '）</span></div>';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);">' + esc(textBlock) + '</div>';
 
     // 如果有方案结果，也展示
@@ -3413,6 +3432,30 @@ function initApp() {
 
     html += '</div>';
     return html;
+  }
+  function hydrateHairRecordReadOnly(phone, name, holderId, localFound) {
+    fetchHairRecordsForCustomer(phone, name, 100).then(function(list) {
+      var holder = document.getElementById(holderId);
+      if (!holder) return;
+      var cloudFound = findLatestHairRecordForCustomer(list, phone, name);
+      if (cloudFound) {
+        holder.innerHTML = renderHairRecordReadOnlyCard(cloudFound, '云端同步');
+      } else if (!localFound) {
+        holder.innerHTML = '';
+      }
+    }).catch(function() {
+      var holder = document.getElementById(holderId);
+      if (holder && !localFound) holder.innerHTML = '';
+    });
+  }
+  // 只读展示已有发质分析记录：云端 hair_records 优先，本地只做兜底缓存
+  window.renderHairRecordReadOnly = function(phone, name) {
+    var records = [];
+    try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
+    var found = findLatestHairRecordForCustomer(records, phone, name);
+    var holderId = 'hair-record-readonly-' + Math.random().toString(36).slice(2);
+    setTimeout(function(){ hydrateHairRecordReadOnly(phone, name, holderId, !!found); }, 0);
+    return '<div id="' + holderId + '">' + (found ? renderHairRecordReadOnlyCard(found, '本地缓存') : '') + '</div>';
   };
 
   // 客户历史档案（在方案弹窗内加载）
@@ -3679,22 +3722,45 @@ function initApp() {
 
   
   function normalizeHairCustomerPhone(value) {
-    return String(value || '').replace(/D/g, '');
+    var digits = String(value || '').replace(/\D/g, '');
+    return digits.length > 11 ? digits.slice(-11) : digits;
   }
   function normalizeHairCustomerName(value) {
-    return String(value || '').replace(/s+/g, '').trim();
+    return String(value || '').replace(/\s+/g, '').trim().toLowerCase();
+  }
+  function normalizeHairCloudRecord(row) {
+    row = row || {};
+    var data = row.record_data || {};
+    if (typeof data !== 'object' || Array.isArray(data)) data = {};
+    var rec = JSON.parse(JSON.stringify(data));
+    rec.id = row.id || rec.id;
+    rec.customerName = row.customer_name || rec.customerName || rec.name || '';
+    rec.customerPhone = row.customer_phone || rec.customerPhone || rec.phone || '';
+    rec.technician = row.technician || rec.technician || '';
+    rec.barber = row.barber || rec.barber || '';
+    rec.status = row.status || rec.status || '';
+    rec.createdAt = row.created_at || rec.createdAt || rec.created_at || '';
+    rec.customerPhoneNormalized = normalizeHairCustomerPhone(rec.customerPhone);
+    rec.customerNameNormalized = normalizeHairCustomerName(rec.customerName);
+    rec.customerKey = rec.customerPhoneNormalized || rec.customerNameNormalized;
+    rec._isCloudRecord = true;
+    rec._cloudRecordId = row.id || rec.id;
+    return rec;
   }
   function hairRecordMatchesCustomer(record, phone, name) {
     if (!record) return false;
     var targetPhone = normalizeHairCustomerPhone(phone);
     var targetName = normalizeHairCustomerName(name);
     var fields = record.formFields || {};
-    var phones = [record.customerPhone, record.phone, record.customer_phone, record.bookingPhone, fields['hair-form-phone'], fields.phone];
+    var phones = [record.customerPhoneNormalized, record.customerPhone, record.phone, record.customer_phone, record.bookingPhone, fields['hair-form-phone'], fields.phone];
+    var recordHasPhone = false;
     for (var i = 0; i < phones.length; i++) {
       var recordPhone = normalizeHairCustomerPhone(phones[i]);
+      if (recordPhone) recordHasPhone = true;
       if (targetPhone && recordPhone && recordPhone === targetPhone) return true;
     }
-    var names = [record.customerName, record.name, record.customer_name, record.bookingName, fields['hair-form-name'], fields.name];
+    if (targetPhone && recordHasPhone) return false;
+    var names = [record.customerNameNormalized, record.customerName, record.name, record.customer_name, record.bookingName, fields['hair-form-name'], fields.name];
     for (var j = 0; j < names.length; j++) {
       var recordName = normalizeHairCustomerName(names[j]);
       if (targetName && recordName && recordName === targetName) return true;
@@ -3707,11 +3773,31 @@ function initApp() {
       var rec = records[i];
       if (!hairRecordMatchesCustomer(rec, phone, name)) continue;
       if (!found) { found = rec; continue; }
-      var recTime = new Date(rec.createdAt || rec.date || 0).getTime() || 0;
-      var foundTime = new Date(found.createdAt || found.date || 0).getTime() || 0;
+      var recTime = new Date(rec.createdAt || rec.created_at || rec.date || 0).getTime() || 0;
+      var foundTime = new Date(found.createdAt || found.created_at || found.date || 0).getTime() || 0;
       if (recTime > foundTime || (recTime === foundTime && ((rec.seq || 0) > (found.seq || 0)))) found = rec;
     }
     return found;
+  }
+  function fetchHairRecordsForCustomer(phone, name, limit) {
+    limit = limit || 100;
+    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=' + limit, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      var list = rows.map(normalizeHairCloudRecord).filter(function(rec) {
+        return hairRecordMatchesCustomer(rec, phone, name);
+      });
+      list.sort(function(a, b) {
+        var ta = new Date(a.createdAt || a.date || 0).getTime() || 0;
+        var tb = new Date(b.createdAt || b.date || 0).getTime() || 0;
+        return tb - ta;
+      });
+      return list;
+    });
   }
 
   var _editingHairId = null;  // 正在编辑的记录ID，null=新建
@@ -5005,6 +5091,9 @@ function initApp() {
       formFields: F,
       customerName: F['hair-form-name'] || '',
       customerPhone: F['hair-form-phone'] || '',
+      customerPhoneNormalized: normalizeHairCustomerPhone(F['hair-form-phone'] || ''),
+      customerNameNormalized: normalizeHairCustomerName(F['hair-form-name'] || ''),
+      customerKey: normalizeHairCustomerPhone(F['hair-form-phone'] || '') || normalizeHairCustomerName(F['hair-form-name'] || ''),
       diagnosisType: F['hair-diagnosis-type'] || '',
       rodsTop: F['hair-form-rods-top'] || '',
       rodsBack: F['hair-form-rods-back'] || '',
@@ -6431,22 +6520,57 @@ function initApp() {
     if (detailEl) detailEl.style.display = 'none';
     if (versionEl) versionEl.textContent = 'v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1);
 
-    fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc&limit=100', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
+    }).then(function(r) {
+      if (!r.ok) return [];
+      return r.json();
+    }).catch(function(){ return []; });
+    var legacyQueuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc&limit=100', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) return [];
+      return r.json();
+    }).catch(function(){ return []; });
+
+    Promise.all([hairRecordsPromise, legacyQueuePromise]).then(function(results) {
+      var hairRows = Array.isArray(results[0]) ? results[0] : [];
+      var queueRows = Array.isArray(results[1]) ? results[1] : [];
       if (loadingEl) loadingEl.style.display = 'none';
-      if (!rows || rows.length === 0) {
+      if (hairRows.length === 0 && queueRows.length === 0) {
         if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">暂无客户档案</div>';
         return;
       }
       // 按手机号归总
       var groups = {};
-      for (var i = 0; i < rows.length; i++) {
-        var r = rows[i];
+      function addProfileRecord(row, rec, source) {
+        rec = rec || {};
+        var phone = normalizeHairCustomerPhone(row.customer_phone || row.phone || rec.customerPhone || rec.phone || '');
+        if (!phone) phone = row.customer_phone || row.phone || rec.customerPhone || rec.phone || 'unknown';
+        var name = row.customer_name || rec.customerName || rec.name || '未知';
+        if (!groups[phone]) groups[phone] = { phone: phone, name: name, records: [], _ids: {} };
+        var rid = (source || '') + ':' + (row.id || rec.id || row.created_at || groups[phone].records.length);
+        if (groups[phone]._ids[rid]) return;
+        groups[phone]._ids[rid] = true;
+        groups[phone].records.push({ row: row, rec: rec, source: source });
+        if (groups[phone].name === '未知' && name !== '未知') groups[phone].name = name;
+      }
+      for (var i = 0; i < hairRows.length; i++) {
+        var hrow = hairRows[i];
+        addProfileRecord(hrow, normalizeHairCloudRecord(hrow), 'hair_records');
+      }
+      for (var qi = 0; qi < queueRows.length; qi++) {
+        var r = queueRows[qi];
         var rec = (r.ai_analysis && r.ai_analysis.record) || {};
-        var phone = r.phone || rec.customerPhone || 'unknown';
-        if (!groups[phone]) groups[phone] = { phone: phone, name: rec.customerName || '未知', records: [] };
-        groups[phone].records.push({ row: r, rec: rec });
+        addProfileRecord(r, rec, 'hair_analysis_queue');
+      }
+      var keysForSort = Object.keys(groups);
+      for (var gi = 0; gi < keysForSort.length; gi++) {
+        groups[keysForSort[gi]].records.sort(function(a, b) {
+          var ta = new Date((a.rec && a.rec.createdAt) || a.row.created_at || a.rec.date || 0).getTime() || 0;
+          var tb = new Date((b.rec && b.rec.createdAt) || b.row.created_at || b.rec.date || 0).getTime() || 0;
+          return tb - ta;
+        });
       }
       window._profileGroups = groups;
       renderProfileList(groups);
