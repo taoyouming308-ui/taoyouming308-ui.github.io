@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="294">
+<html lang="zh-CN" data-version="295">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2218,6 +2218,48 @@ function initApp() {
     return map[z] || z;
   }
 
+  var HAIR_ROD_ZONE_CONFIG = [
+    { zone: '头顶区', inputId: 'hair-form-rods-top', aliases: ['头顶区', '顶区', '头顶', '顶'] },
+    { zone: '枕骨区', inputId: 'hair-form-rods-back', aliases: ['枕骨区', '后区', '枕骨', '后'] },
+    { zone: '两侧区', inputId: 'hair-form-rods-side', aliases: ['两侧区', '侧区', '两侧', '侧'] },
+    { zone: '刘海区', inputId: 'hair-form-rods-bang', aliases: ['刘海区', '刘海'] },
+    { zone: '后颈区', inputId: 'hair-form-rods-nape', aliases: ['后颈区', '后颈'] }
+  ];
+
+  function isStandardHairRodZone(zone) {
+    zone = normalizeHairRodZoneLabel(zone);
+    for (var i = 0; i < HAIR_ROD_ZONE_CONFIG.length; i++) {
+      if (HAIR_ROD_ZONE_CONFIG[i].zone === zone) return true;
+    }
+    return false;
+  }
+
+  function normalizeHairRodsForDisplay(rods) {
+    var byZone = {};
+    var extras = [];
+    rods = Array.isArray(rods) ? rods : [];
+    rods.forEach(function(r) {
+      r = r || {};
+      var row = {
+        zone: normalizeHairRodZoneLabel(r.zone),
+        size: r.size || '',
+        technique: r.technique || '',
+        startFrom: r.startFrom || '',
+        angle: r.angle || ''
+      };
+      if (isStandardHairRodZone(row.zone)) {
+        if (!byZone[row.zone]) byZone[row.zone] = row;
+      } else if (row.zone) {
+        extras.push(row);
+      }
+    });
+
+    var out = HAIR_ROD_ZONE_CONFIG.map(function(cfg) {
+      return byZone[cfg.zone] || { zone: cfg.zone, size: '', technique: '', startFrom: '', angle: '' };
+    });
+    return out.concat(extras);
+  }
+
   function renderResult(data) {
     function escapePlanValue(v) {
       if (v == null) return v;
@@ -2238,16 +2280,7 @@ function initApp() {
     s.endEffect = s.endEffect || {};
     s.root = s.root || {};
     s.end = s.end || {};
-    const rods = data.rods.map(function(r) {
-      r = r || {};
-      return {
-        zone: normalizeHairRodZoneLabel(r.zone),
-        size: r.size || '',
-        technique: r.technique || '',
-        startFrom: r.startFrom || '',
-        angle: r.angle || ''
-      };
-    });
+    const rods = normalizeHairRodsForDisplay(data.rods);
     const isMixed = !!s.mixed;
 
     let html = '';
@@ -2328,12 +2361,12 @@ function initApp() {
           <tbody>`;
 
     rods.forEach(r => {
-      html += `<tr>
-        <td>${r.zone}</td>
-        <td>${r.size}</td>
-        <td>${r.technique}</td>
-        <td>${r.startFrom}</td>
-        <td>${r.angle}</td>
+      html += `<tr data-rod-zone="${escAttr(r.zone)}">
+        <td data-rod-zone-label>${r.zone}</td>
+        <td data-rod-size>${r.size || '—'}</td>
+        <td>${r.technique || '—'}</td>
+        <td>${r.startFrom || '—'}</td>
+        <td>${r.angle || '—'}</td>
       </tr>`;
     });
 
@@ -2374,8 +2407,75 @@ function initApp() {
     return html;
   }
 
+  function setupHairRodFormSync() {
+    for (var i = 0; i < HAIR_ROD_ZONE_CONFIG.length; i++) {
+      var el = document.getElementById(HAIR_ROD_ZONE_CONFIG[i].inputId);
+      if (!el || el.dataset.rodPlanBound === '1') continue;
+      el.dataset.rodPlanBound = '1';
+      el.addEventListener('input', function() {
+        if (this.dataset.applyingRodPlan !== '1') this.dataset.rodAutoFilled = '0';
+        syncHairRodPlanFromForm();
+      });
+      el.addEventListener('change', syncHairRodPlanFromForm);
+    }
+  }
+
+  function findRodPlanRow(tbody, zone) {
+    var rows = tbody ? tbody.querySelectorAll('tr') : [];
+    zone = normalizeHairRodZoneLabel(zone);
+    for (var i = 0; i < rows.length; i++) {
+      var rowZone = rows[i].getAttribute('data-rod-zone');
+      var labelCell = rows[i].querySelector('[data-rod-zone-label]') || rows[i].children[0];
+      var label = rowZone || (labelCell ? labelCell.textContent : '');
+      if (normalizeHairRodZoneLabel(label) === zone) return rows[i];
+    }
+    return null;
+  }
+
+  function ensureHairRodPlanRows() {
+    var tables = document.querySelectorAll('#hair-q-result table.rod-table');
+    for (var ti = 0; ti < tables.length; ti++) {
+      var tbody = tables[ti].querySelector('tbody');
+      if (!tbody) continue;
+      for (var zi = 0; zi < HAIR_ROD_ZONE_CONFIG.length; zi++) {
+        var zone = HAIR_ROD_ZONE_CONFIG[zi].zone;
+        var row = findRodPlanRow(tbody, zone);
+        if (!row) {
+          row = document.createElement('tr');
+          row.innerHTML = '<td data-rod-zone-label></td><td data-rod-size>—</td><td>—</td><td>—</td><td>—</td>';
+          tbody.appendChild(row);
+        }
+        row.setAttribute('data-rod-zone', zone);
+        var cells = row.children;
+        if (cells[0]) {
+          cells[0].setAttribute('data-rod-zone-label', '');
+          cells[0].textContent = zone;
+        }
+        if (cells[1]) cells[1].setAttribute('data-rod-size', '');
+      }
+    }
+  }
+
+  function syncHairRodPlanFromForm() {
+    var area = document.getElementById('hair-q-result');
+    if (!area) return;
+    ensureHairRodPlanRows();
+    for (var i = 0; i < HAIR_ROD_ZONE_CONFIG.length; i++) {
+      var cfg = HAIR_ROD_ZONE_CONFIG[i];
+      var el = document.getElementById(cfg.inputId);
+      var val = el ? String(el.value || '').trim() : '';
+      var rows = area.querySelectorAll('tr[data-rod-zone="' + cfg.zone + '"]');
+      for (var ri = 0; ri < rows.length; ri++) {
+        var cell = rows[ri].querySelector('[data-rod-size]') || rows[ri].children[1];
+        if (cell) cell.textContent = val || '—';
+      }
+    }
+  }
+
   function applyRodPlanToHairForm(rods) {
     if (!rods || !rods.length) return;
+    setupHairRodFormSync();
+    rods = normalizeHairRodsForDisplay(rods);
     var byZone = {};
     rods.forEach(function(r) {
       if (!r) return;
@@ -2384,18 +2484,9 @@ function initApp() {
       if (zone && size && !byZone[zone]) byZone[zone] = size;
     });
 
-    function bindRodManualTracking(el) {
-      if (!el || el.dataset.rodPlanBound === '1') return;
-      el.dataset.rodPlanBound = '1';
-      el.addEventListener('input', function() {
-        if (el.dataset.applyingRodPlan !== '1') el.dataset.rodAutoFilled = '0';
-      });
-    }
-
     function fillRod(id, zones) {
       var el = document.getElementById(id);
       if (!el) return;
-      bindRodManualTracking(el);
       if (el.value && el.dataset.rodAutoFilled !== '1') return;
       for (var i = 0; i < zones.length; i++) {
         var val = byZone[normalizeHairRodZoneLabel(zones[i])];
@@ -2409,6 +2500,14 @@ function initApp() {
           return;
         }
       }
+      if (el.dataset.rodAutoFilled === '1') {
+        el.dataset.applyingRodPlan = '1';
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dataset.applyingRodPlan = '0';
+        el.dataset.rodAutoFilled = '1';
+      }
     }
 
     fillRod('hair-form-rods-top', ['头顶区', '顶区', '头顶']);
@@ -2416,6 +2515,7 @@ function initApp() {
     fillRod('hair-form-rods-side', ['两侧区', '侧区', '两侧']);
     fillRod('hair-form-rods-bang', ['刘海区', '刘海']);
     fillRod('hair-form-rods-nape', ['后颈区', '后颈']);
+    syncHairRodPlanFromForm();
   }
 
   function renderTips() {
@@ -3930,6 +4030,8 @@ function initApp() {
     // 云端编辑标记（在record构建前保存，因为后续_cloudEditingId可能被清空）
     var _isCloudEdit = !!_cloudEditingId;
 
+    if (typeof syncHairRodPlanFromForm === 'function') syncHairRodPlanFromForm();
+
     // ★ 自动收集所有表单字段（input/select/textarea/radio/checkbox）
     //    任何新增带 id 的输入元素都会被自动记录到 record.formFields 中
     var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
@@ -4835,6 +4937,8 @@ function initApp() {
     setVal('hair-form-rods-side', data.rodsSide);
     setVal('hair-form-rods-bang', data.rodsBang);
     setVal('hair-form-rods-nape', data.rodsNape);
+    if (typeof setupHairRodFormSync === 'function') setupHairRodFormSync();
+    if (typeof syncHairRodPlanFromForm === 'function') syncHairRodPlanFromForm();
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
     // 涂抹顺序恢复
@@ -5138,6 +5242,8 @@ function initApp() {
       return;
     }
     var cloudId = _cloudEditingId;
+
+    if (typeof syncHairRodPlanFromForm === 'function') syncHairRodPlanFromForm();
 
     // 收集所有表单字段（同 saveHairRecordLocal 逻辑）
     // ★ 自动收集所有表单字段
