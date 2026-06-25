@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="293">
+<html lang="zh-CN" data-version="294">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2195,6 +2195,29 @@ function initApp() {
     });
   }
 
+  function normalizeHairRodZoneLabel(zone) {
+    var z = String(zone || '').trim();
+    var map = {
+      '顶': '头顶区',
+      '顶区': '头顶区',
+      '头顶': '头顶区',
+      '头顶区': '头顶区',
+      '后': '枕骨区',
+      '后区': '枕骨区',
+      '枕骨': '枕骨区',
+      '枕骨区': '枕骨区',
+      '侧': '两侧区',
+      '侧区': '两侧区',
+      '两侧': '两侧区',
+      '两侧区': '两侧区',
+      '刘海': '刘海区',
+      '刘海区': '刘海区',
+      '后颈': '后颈区',
+      '后颈区': '后颈区'
+    };
+    return map[z] || z;
+  }
+
   function renderResult(data) {
     function escapePlanValue(v) {
       if (v == null) return v;
@@ -2215,7 +2238,16 @@ function initApp() {
     s.endEffect = s.endEffect || {};
     s.root = s.root || {};
     s.end = s.end || {};
-    const rods = data.rods;
+    const rods = data.rods.map(function(r) {
+      r = r || {};
+      return {
+        zone: normalizeHairRodZoneLabel(r.zone),
+        size: r.size || '',
+        technique: r.technique || '',
+        startFrom: r.startFrom || '',
+        angle: r.angle || ''
+      };
+    });
     const isMixed = !!s.mixed;
 
     let html = '';
@@ -2340,6 +2372,50 @@ function initApp() {
     html += renderTips();
 
     return html;
+  }
+
+  function applyRodPlanToHairForm(rods) {
+    if (!rods || !rods.length) return;
+    var byZone = {};
+    rods.forEach(function(r) {
+      if (!r) return;
+      var zone = normalizeHairRodZoneLabel(r.zone);
+      var size = r.size || '';
+      if (zone && size && !byZone[zone]) byZone[zone] = size;
+    });
+
+    function bindRodManualTracking(el) {
+      if (!el || el.dataset.rodPlanBound === '1') return;
+      el.dataset.rodPlanBound = '1';
+      el.addEventListener('input', function() {
+        if (el.dataset.applyingRodPlan !== '1') el.dataset.rodAutoFilled = '0';
+      });
+    }
+
+    function fillRod(id, zones) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      bindRodManualTracking(el);
+      if (el.value && el.dataset.rodAutoFilled !== '1') return;
+      for (var i = 0; i < zones.length; i++) {
+        var val = byZone[normalizeHairRodZoneLabel(zones[i])];
+        if (val) {
+          el.dataset.applyingRodPlan = '1';
+          el.value = val;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dataset.applyingRodPlan = '0';
+          el.dataset.rodAutoFilled = '1';
+          return;
+        }
+      }
+    }
+
+    fillRod('hair-form-rods-top', ['头顶区', '顶区', '头顶']);
+    fillRod('hair-form-rods-back', ['枕骨区', '后区', '枕骨']);
+    fillRod('hair-form-rods-side', ['两侧区', '侧区', '两侧']);
+    fillRod('hair-form-rods-bang', ['刘海区', '刘海']);
+    fillRod('hair-form-rods-nape', ['后颈区', '后颈']);
   }
 
   function renderTips() {
@@ -3908,6 +3984,7 @@ function initApp() {
       rodsBack: F['hair-form-rods-back'] || '',
       rodsSide: F['hair-form-rods-side'] || '',
       rodsBang: F['hair-form-rods-bang'] || '',
+      rodsNape: F['hair-form-rods-nape'] || '',
       rodMethod: F['hair-rod-method'] || '',
       creative: F['hair-form-creative'] || false,
       dwellType: F['hair-dwell'] || '',
@@ -4234,6 +4311,7 @@ function initApp() {
     setVal('hair-form-rods-back', rec.rodsBack);
     setVal('hair-form-rods-side', rec.rodsSide);
     setVal('hair-form-rods-bang', rec.rodsBang);
+    setVal('hair-form-rods-nape', rec.rodsNape);
     setVal('hair-form-dwell-natural', rec.dwellNatural);
     setVal('hair-form-dwell-heat', rec.dwellHeat);
     setVal('hair-form-eval', rec.eval);
@@ -4542,14 +4620,14 @@ function initApp() {
       var planText = rec.planResultHTML.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
       lines.push(' ▸ 方案：' + (planText || '—'));
     }
-    lines.push(' ▸ 排杠：顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    lines.push(' ▸ 排杠：头顶区' + (rec.rodsTop || '—') + '  枕骨区' + (rec.rodsBack || '—') + '  两侧区' + (rec.rodsSide || '—') + '  刘海区' + (rec.rodsBang || '—') + '  后颈区' + (rec.rodsNape || '—'));
     lines.push(' ▸ 加热方式：第一次60°C 15分钟');
     lines.push('             第二次  □健康110°C  □受损100°C');
     lines.push('             加热到全干');
     lines.push('');
     lines.push('━━━ 操作参数 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push(' 烫发参数：');
-    lines.push(' ▸ 卷芯：顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    lines.push(' ▸ 卷芯：头顶区' + (rec.rodsTop || '—') + '  枕骨区' + (rec.rodsBack || '—') + '  两侧区' + (rec.rodsSide || '—') + '  刘海区' + (rec.rodsBang || '—') + '  后颈区' + (rec.rodsNape || '—'));
     lines.push(' 染发参数：');
     lines.push(' ▸ 双氧水：' + (rec.developer || '—'));
     lines.push(' ▸ 比例：' + (rec.mixRatio || '—'));
@@ -4631,7 +4709,7 @@ function initApp() {
 
     // 烫发方案
     h += _sct('━━━ 烫发方案 ━━━━━━━━━━━━━━━━━━━━━━');
-    h += _tr('排杠', '顶' + (rec.rodsTop || '—') + '  后' + (rec.rodsBack || '—') + '  侧' + (rec.rodsSide || '—') + '  刘海' + (rec.rodsBang || '—'));
+    h += _tr('排杠', '头顶区' + (rec.rodsTop || '—') + '  枕骨区' + (rec.rodsBack || '—') + '  两侧区' + (rec.rodsSide || '—') + '  刘海区' + (rec.rodsBang || '—') + '  后颈区' + (rec.rodsNape || '—'));
     h += _tr('加热方式', '第一次60°C 15分钟');
     h += '<tr><td style="color:#71767b;width:72px;padding:1px 0;font-size:12px;"></td><td style="color:#e7e9ea;padding:1px 0 1px 8px;font-size:12px;">第二次  □健康110°C  □受损100°C</td></tr>';
     h += '<tr><td style="color:#71767b;width:72px;padding:1px 0;font-size:12px;"></td><td style="color:#f4212e;padding:1px 0 3px 8px;font-size:12px;font-weight:600;">加热到全干</td></tr>';
@@ -4756,6 +4834,7 @@ function initApp() {
     setVal('hair-form-rods-back', data.rodsBack);
     setVal('hair-form-rods-side', data.rodsSide);
     setVal('hair-form-rods-bang', data.rodsBang);
+    setVal('hair-form-rods-nape', data.rodsNape);
     setVal('hair-form-dwell-natural', data.dwellNatural);
     setVal('hair-form-dwell-heat', data.dwellHeat);
     // 涂抹顺序恢复
@@ -5099,6 +5178,7 @@ function initApp() {
       rodsBack: F['hair-form-rods-back'] || '',
       rodsSide: F['hair-form-rods-side'] || '',
       rodsBang: F['hair-form-rods-bang'] || '',
+      rodsNape: F['hair-form-rods-nape'] || '',
       rodMethod: F['hair-rod-method'] || '',
       creative: F['hair-form-creative'] || false,
       dwellType: F['hair-dwell'] || '',
@@ -5570,10 +5650,11 @@ function initApp() {
     // 卷芯
     html += '<div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;flex-shrink:0;">卷芯</span>';
-    html += '<input id="hair-form-rods-top" placeholder="顶区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-rods-back" placeholder="后区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-rods-side" placeholder="侧区号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
-    html += '<input id="hair-form-rods-bang" placeholder="刘海号" style="width:60px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<input id="hair-form-rods-top" placeholder="头顶区号" style="width:68px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<input id="hair-form-rods-back" placeholder="枕骨区号" style="width:68px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<input id="hair-form-rods-side" placeholder="两侧区号" style="width:68px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<input id="hair-form-rods-bang" placeholder="刘海区号" style="width:68px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
+    html += '<input id="hair-form-rods-nape" placeholder="后颈区号" style="width:68px;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);">';
     html += '</div>';
     // 上杠方式已移除，替换为加热方式标题
     html += '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:8px 0 6px;">加热方式</div>';
@@ -5738,6 +5819,7 @@ function initApp() {
         var approx = window.generateApproxPlan(h, s);
         if (approx) {
           area.innerHTML = '<div style="padding:8px;text-align:center;color:var(--warning);font-size:12px;font-weight:600;background:rgba(232,168,23,0.1);border-radius:6px;margin-bottom:8px;">⚠️ 无精确匹配方案，以下为近似方案参考</div>' + approx;
+          if (window._hairLastApproxPlan && typeof applyRodPlanToHairForm === 'function') applyRodPlanToHairForm(window._hairLastApproxPlan.rods);
         } else {
           area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">暂无匹配方案</div>';
         }
@@ -5749,6 +5831,7 @@ function initApp() {
         allHtml += renderResult(result);
       });
       area.innerHTML = allHtml;
+      if (typeof applyRodPlanToHairForm === 'function') applyRodPlanToHairForm(results[0].rods);
     };
 
     // ★ 现场生成近似方案（无精确匹配时降级使用）
@@ -5780,6 +5863,7 @@ function initApp() {
       // 修改best的hairType为当前选中的
       var adapted = JSON.parse(JSON.stringify(best));
       adapted.hairType = hairTypeId;
+      window._hairLastApproxPlan = adapted;
       return renderResult(adapted);
     };
 
@@ -6705,9 +6789,9 @@ function initApp() {
       }
 
       // 烫发参数
-      if (rec.rodsTop || rec.rodsBack || rec.rodsSide) {
+      if (rec.rodsTop || rec.rodsBack || rec.rodsSide || rec.rodsBang || rec.rodsNape) {
         html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">';
-        html += '卷芯 ' + (rec.rodsTop||'') + '/' + (rec.rodsBack||'') + '/' + (rec.rodsSide||'') + (rec.rodsBang ? '/' + rec.rodsBang : '');
+        html += '卷芯 头顶区' + (rec.rodsTop||'—') + ' / 枕骨区' + (rec.rodsBack||'—') + ' / 两侧区' + (rec.rodsSide||'—') + ' / 刘海区' + (rec.rodsBang||'—') + ' / 后颈区' + (rec.rodsNape||'—');
         if (rec.rodMethod) html += ' · ' + ({soften:'软化上杠',direct:'直接上杠'}[rec.rodMethod] || rec.rodMethod);
         html += '</div>';
       }

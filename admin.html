@@ -1714,14 +1714,14 @@ window.viewHairRecordDetail = function(recordId) {
       }
       
       // 烫发方案
-      if (rd.serviceType || rd.permStyle || rd.rodMethod || rd.rodsTop) {
+      if (rd.serviceType || rd.permStyle || rd.rodMethod || rd.rodsTop || rd.rodsBack || rd.rodsSide || rd.rodsBang || rd.rodsNape) {
         html += '<div style="margin-bottom:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">';
         html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">烫发方案</div>';
         html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
         if (rd.serviceType) html += '<tr><td style="color:#888;padding:2px 4px;width:70px;">服务类型</td><td style="padding:2px 4px;">'+_fn(rd.serviceType,_sv)+'</td></tr>';
         if (rd.permStyle) html += '<tr><td style="color:#888;padding:2px 4px;">款式</td><td style="padding:2px 4px;">'+_fn(rd.permStyle,_ps)+'</td></tr>';
         if (rd.rodMethod) html += '<tr><td style="color:#888;padding:2px 4px;">手法</td><td style="padding:2px 4px;">'+_fn(rd.rodMethod,_rm)+'</td></tr>';
-        if (rd.rodsTop) html += '<tr><td style="color:#888;padding:2px 4px;">排杠</td><td style="padding:2px 4px;">顶'+esc(rd.rodsTop||'—')+' 后'+esc(rd.rodsBack||'—')+' 侧'+esc(rd.rodsSide||'—')+' 刘海'+esc(rd.rodsBang||'—')+'</td></tr>';
+        if (rd.rodsTop || rd.rodsBack || rd.rodsSide || rd.rodsBang || rd.rodsNape) html += '<tr><td style="color:#888;padding:2px 4px;">排杠</td><td style="padding:2px 4px;">头顶区'+esc(rd.rodsTop||'—')+' 枕骨区'+esc(rd.rodsBack||'—')+' 两侧区'+esc(rd.rodsSide||'—')+' 刘海区'+esc(rd.rodsBang||'—')+' 后颈区'+esc(rd.rodsNape||'—')+'</td></tr>';
         if (rd.applyOrder) html += '<tr><td style="color:#888;padding:2px 4px;">涂抹顺序</td><td style="padding:2px 4px;color:#facc15;">'+(Array.isArray(rd.applyOrder)?rd.applyOrder.map(function(v){return _fn(v,_ao)}).join(' → '):_fn(rd.applyOrder,_ao))+'</td></tr>';
         if (rd.dwellNatural) html += '<tr><td style="color:#888;padding:2px 4px;">自然停放</td><td style="padding:2px 4px;">'+esc(rd.dwellNatural)+'</td></tr>';
         if (rd.dwellHeat) html += '<tr><td style="color:#888;padding:2px 4px;">加热停放</td><td style="padding:2px 4px;">'+esc(rd.dwellHeat)+'</td></tr>';
@@ -1783,7 +1783,7 @@ window.viewHairRecordDetail = function(recordId) {
       }
       
       // 兜底：其他未在以上分类中展示的字段
-      var _covered = ['baseInfo','threeSection','aiOverall','aiDiagnosisText','aiReference','serviceType','permStyle','rodMethod','rodsTop','rodsBack','rodsSide','rodsBang','applyOrder','dwellNatural','dwellHeat','dwellType','rinse','creamType','softenType','heatType','rinseMethod','gelType','careUsage','feedbackRating','followMsg','followDate','diagnosisType','planResultHTML','careRecords','colorType','targetColor','developer','mixRatio','formula','colorHeat','colorHeatTemp','colorDwell','scalpProtect','endProtect','colorNotes','secondHeatHealthy','secondHeatDamaged','barber','technician','photo','_cloudRecordId','_isCloudRecord'];
+      var _covered = ['baseInfo','threeSection','aiOverall','aiDiagnosisText','aiReference','serviceType','permStyle','rodMethod','rodsTop','rodsBack','rodsSide','rodsBang','rodsNape','applyOrder','dwellNatural','dwellHeat','dwellType','rinse','creamType','softenType','heatType','rinseMethod','gelType','careUsage','feedbackRating','followMsg','followDate','diagnosisType','planResultHTML','careRecords','colorType','targetColor','developer','mixRatio','formula','colorHeat','colorHeatTemp','colorDwell','scalpProtect','endProtect','colorNotes','secondHeatHealthy','secondHeatDamaged','barber','technician','photo','_cloudRecordId','_isCloudRecord'];
       var _extraKeys = [];
       for (var _k in rd) {
         if (rd.hasOwnProperty(_k) && _covered.indexOf(_k) === -1) {
