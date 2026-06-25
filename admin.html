@@ -398,6 +398,32 @@ function esc(s) {
     .replace(/>/g, '&gt;');
 }
 
+function adminHairTypeLabel(value) {
+  var map = {
+    'level-1-coarse': '1级·健康粗硬发（2-3度 | 粗硬、有韧性）',
+    'level-1-fine': '1级·健康细软发（2-3度 | 细软、成型力弱）',
+    'level-2-coarse': '2级·轻度受损粗硬（3-4度 | 偏粗、密齿梳顺）',
+    'level-2-fine': '2级·轻度受损细软（3-4度 | 偏细、密齿梳顺）',
+    'level-3': '3级·受损发（5-6度 | 密齿梳有卡顿）',
+    'level-4': '4级·严重受损（6-7度 | 漂后手感好也属此类）',
+    'level-5': '5级·极度受损（8-9度 | 软绵无支撑力）',
+    'level-mix-1-2': '混合·发根1级 + 发尾2级',
+    'level-mix-1-3': '混合·发根1级 + 发尾3级',
+    'level-mix-1-4': '混合·发根1级 + 发尾4-5级',
+    'level-mix-1-5': '混合·发根1级 + 发尾5级',
+    'level-mix-2-3': '混合·发根2级 + 发尾3级',
+    'level-mix-2-4': '混合·发根2级 + 发尾4级',
+    'level-mix-2-5': '混合·发根2级 + 发尾5级',
+    'level-mix-3-4': '混合·发根3级 + 发尾4级',
+    'level-mix-3-5': '混合·发根3级 + 发尾5级',
+    'level-mix-4-5': '混合·发根4级 + 发尾5级',
+    '三段发质 发根1级+发中2级+发梢5级': '三段发质·根1级+中2级+梢5级',
+    '三段发质 发根2级+发中3级+发梢5级': '三段发质·根2级+中3级+梢5级',
+    '三段发质 发根1级+发中3级+发梢4级': '三段发质·根1级+中3级+梢4级'
+  };
+  return value ? (map[value] || value) : '';
+}
+
 function normalizeAdminPhone(value) {
   var digits = String(value || '').replace(/\D/g, '');
   return digits.length > 11 ? digits.slice(-11) : digits;
@@ -1821,7 +1847,7 @@ window.viewHairRecordDetail = function(recordId) {
         });
         if (ts.split_ends) html += '<tr><td style="color:#888;padding:2px 4px;">发尾分叉</td><td style="padding:2px 4px;">'+_fn(ts.split_ends,_sp)+'</td></tr>';
         html += '</table>';
-        if (rd.diagnosisType) html += '<div style="margin-top:6px;font-size:11px;color:#888;">综合诊断：<span style="color:var(--accent);font-weight:600;">'+esc(rd.diagnosisType)+'</span></div>';
+        if (rd.diagnosisType) html += '<div style="margin-top:6px;font-size:11px;color:#888;">综合诊断：<span style="color:var(--accent);font-weight:600;">'+esc(adminHairTypeLabel(rd.diagnosisType))+'</span></div>';
         html += '</div>';
       }
       
@@ -2328,7 +2354,7 @@ function viewCustAnalyses(phone, name) {
         if (end.level) html += '发尾' + end.level + '级';
         if (!root.level && !mid.level && !end.level) html += '暂无三段诊断';
         html += '</div>';
-        if (rec.diagnosisType) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + esc(rec.diagnosisType) + '</div>';
+        if (rec.diagnosisType) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + esc(adminHairTypeLabel(rec.diagnosisType)) + '</div>';
         if (rec.status) html += '<div style="font-size:11px;color:#888;">状态: ' + esc(rec.status) + '</div>';
         var rodTable = renderAdminRodTable(rec);
         if (rodTable) {
