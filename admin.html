@@ -398,6 +398,51 @@ function esc(s) {
     .replace(/>/g, '&gt;');
 }
 
+function normalizeAdminPhone(value) {
+  var digits = String(value || '').replace(/\D/g, '');
+  return digits.length > 11 ? digits.slice(-11) : digits;
+}
+
+function normalizeAdminHairRecord(row) {
+  row = row || {};
+  var data = row.record_data || {};
+  if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
+  var rec = JSON.parse(JSON.stringify(data));
+  rec.id = row.id || rec.id;
+  rec.customerName = row.customer_name || rec.customerName || rec.name || '';
+  rec.customerPhone = row.customer_phone || rec.customerPhone || rec.phone || '';
+  rec.technician = row.technician || rec.technician || '';
+  rec.barber = row.barber || rec.barber || '';
+  rec.status = row.status || rec.status || '';
+  rec.createdAt = row.created_at || rec.createdAt || rec.created_at || '';
+  rec.source = 'hair_records';
+  return rec;
+}
+
+function normalizeQueueHairRecord(row) {
+  row = row || {};
+  var analysis = row.ai_analysis || {};
+  var rec = analysis.record || {};
+  var diag = analysis.ai_diagnosis || {};
+  return {
+    id: row.id || '',
+    customerName: rec.customerName || rec.name || '',
+    customerPhone: row.phone || rec.customerPhone || rec.phone || '',
+    technician: rec.technician || '',
+    barber: rec.barber || row.barber_name || '',
+    status: row.status || '',
+    createdAt: row.created_at || '',
+    diagnosisType: row.stylist_damage_level || rec.diagnosisType || '',
+    threeSection: {
+      root: rec.threeSection && rec.threeSection.root ? rec.threeSection.root : diag.root,
+      mid: rec.threeSection && rec.threeSection.mid ? rec.threeSection.mid : diag.mid,
+      end: rec.threeSection && rec.threeSection.end ? rec.threeSection.end : diag.end,
+      split_ends: rec.threeSection && rec.threeSection.split_ends
+    },
+    source: 'hair_analysis_queue'
+  };
+}
+
 function clearNode(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
@@ -2112,31 +2157,70 @@ function loadCustomers() {
 // ===== 查看客户发质分析记录 =====
 function viewCustAnalyses(phone, name) {
   if (!phone) return;
-  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
+  var normalizedPhone = normalizeAdminPhone(phone);
+  var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=200', {
     headers: { 'apikey': SUPABASE_KEY }
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(rows){
+  }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+  var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=id,phone,created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
+    headers: { 'apikey': SUPABASE_KEY }
+  }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+
+  Promise.all([hairRecordsPromise, queuePromise])
+  .then(function(results){
+    var hairRows = Array.isArray(results[0]) ? results[0] : [];
+    var queueRows = Array.isArray(results[1]) ? results[1] : [];
+    var records = [];
+    var seen = {};
+    hairRows.forEach(function(row) {
+      var rec = normalizeAdminHairRecord(row);
+      if (normalizeAdminPhone(rec.customerPhone) !== normalizedPhone) return;
+      var key = 'hr:' + (rec.id || rec.createdAt || records.length);
+      if (seen[key]) return;
+      seen[key] = true;
+      records.push(rec);
+    });
+    queueRows.forEach(function(row) {
+      var rec = normalizeQueueHairRecord(row);
+      if (normalizeAdminPhone(rec.customerPhone) !== normalizedPhone) return;
+      var key = 'q:' + (rec.id || rec.createdAt || records.length);
+      if (seen[key]) return;
+      seen[key] = true;
+      records.push(rec);
+    });
+    records.sort(function(a, b) {
+      var ta = new Date(a.createdAt || 0).getTime() || 0;
+      var tb = new Date(b.createdAt || 0).getTime() || 0;
+      return tb - ta;
+    });
+
     var html = '<div class="modal-box" style="max-width:600px;">';
     html += '<h3>' + esc(name || phone) + ' · 发质分析记录</h3>';
-    if (!rows || rows.length === 0) {
+    if (!records || records.length === 0) {
       html += '<p style="color:#888;font-size:13px;">暂无分析记录</p>';
     } else {
       html += '<div style="max-height:400px;overflow-y:auto;">';
-      rows.forEach(function(r){
-        var date = r.created_at ? r.created_at.substring(0,10) : '—';
-        var diag = (r.ai_analysis && r.ai_analysis.ai_diagnosis) || {};
-        var root = diag.root || {};
-        var mid = diag.mid || {};
-        var end = diag.end || {};
+      records.forEach(function(rec){
+        var date = rec.createdAt ? rec.createdAt.substring(0,10) : '—';
+        var ts = rec.threeSection || {};
+        var root = ts.root || {};
+        var mid = ts.mid || {};
+        var end = ts.end || {};
         html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;">';
-        html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">' + date + '</div>';
+        html += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#888;margin-bottom:4px;">';
+        html += '<span>' + date + '</span>';
+        html += '<span>' + (rec.source === 'hair_records' ? '发质分析表' : 'AI旧记录') + '</span>';
+        html += '</div>';
+        if (rec.barber || rec.technician) {
+          html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">发型师: ' + esc(rec.barber || '—') + '　技师: ' + esc(rec.technician || '—') + '</div>';
+        }
         html += '<div style="font-size:12px;">';
         if (root.level) html += '发根' + root.level + '级 ';
         if (mid.level) html += '发中' + mid.level + '级 ';
         if (end.level) html += '发尾' + end.level + '级';
+        if (!root.level && !mid.level && !end.level) html += '暂无三段诊断';
         html += '</div>';
-        if (r.stylist_damage_level) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + r.stylist_damage_level + '</div>';
+        if (rec.diagnosisType) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + esc(rec.diagnosisType) + '</div>';
+        if (rec.status) html += '<div style="font-size:11px;color:#888;">状态: ' + esc(rec.status) + '</div>';
         html += '</div>';
       });
       html += '</div>';
