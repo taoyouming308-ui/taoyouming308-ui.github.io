@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="300">
+<html lang="zh-CN" data-version="301">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3663,6 +3663,20 @@ function initApp() {
   function hairApplyOrderText(v) {
     var map = {root_first:'发根', root_only:'发根', mid:'发中', end_first:'发尾', all:'全头', part:'分区'};
     if (Array.isArray(v)) return v.map(function(x){ return map[x] || x; }).join(' → ');
+    if (typeof v === 'string') {
+      var text = v.trim();
+      if (!text) return '—';
+      if ((text.charAt(0) === '[' && text.charAt(text.length - 1) === ']') || text.indexOf('","') !== -1) {
+        try {
+          var parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) return hairApplyOrderText(parsed);
+        } catch(e) {}
+      }
+      if (text.indexOf(',') !== -1 && !/[\u4e00-\u9fa5]/.test(text)) {
+        return text.split(',').map(function(x){ x = x.trim().replace(/^["']|["']$/g, ''); return map[x] || x; }).filter(Boolean).join(' → ') || '—';
+      }
+      return map[text] || text;
+    }
     return map[v] || v || '—';
   }
 
@@ -5184,7 +5198,7 @@ function initApp() {
     lines.push(' 染发参数：');
     lines.push(' ▸ 双氧水：' + (rec.developer || '—'));
     lines.push(' ▸ 比例：' + (rec.mixRatio || '—'));
-    lines.push(' ▸ 涂抹顺序：' + (rec.applyOrder || '—'));
+    lines.push(' ▸ 涂抹顺序：' + hairApplyOrderText(rec.applyOrder));
     lines.push(' ▸ 配方备注：' + (rec.colorNotes || '—'));
     lines.push('');
     lines.push('━━━ 效果评定 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -5271,7 +5285,7 @@ function initApp() {
     h += _sct('━━━ 染发参数 ━━━━━━━━━━━━━━━━━━━━━━');
     h += _tr('双氧水', rec.developer || '—');
     h += _tr('比例', rec.mixRatio || '—');
-    h += _tr('涂抹顺序', rec.applyOrder || '—');
+    h += _tr('涂抹顺序', hairApplyOrderText(rec.applyOrder));
     h += _tr('停放', (rec.colorDwell || '—') + (rec.colorHeat ? '  □加热' : ''));
     h += _tr('染前处理', (rec.scalpProtect ? '□头皮隔离 ' : '') + (rec.endProtect ? '□发尾保护' : '') || '—');
     h += _tr('配方备注', rec.colorNotes || '—');
