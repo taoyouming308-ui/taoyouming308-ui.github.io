@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="305">
+<html lang="zh-CN" data-version="306">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4493,6 +4493,83 @@ function initApp() {
     return fields['hair-form-technician'] || fields.technician || ((_cloudRecordData && _cloudRecordData.technician) || '');
   }
 
+  function recordBarberValueFromFields(fields) {
+    var el = document.getElementById('hair-form-barber');
+    fields = fields || {};
+    return (el && el.value) || fields['hair-form-barber'] || fields.barber || ((_cloudRecordData && _cloudRecordData.barber) || localStorage.getItem('booking-barber') || BOOKING_BARBER || '');
+  }
+
+  window.populateHairBarberSelect = function(selectedName) {
+    var sel = document.getElementById('hair-form-barber');
+    if (!sel) return;
+    selectedName = selectedName || sel.value || localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    var fallback = selectedName || localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    sel.innerHTML = fallback ? '<option value="' + escAttr(fallback) + '">' + esc(fallback) + '</option>' : '<option value="">选择发型师</option>';
+    sel.value = fallback;
+    fetch(SUPABASE_URL + '/rest/v1/staff?select=username,position,store&active=eq.true&order=username.asc', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      rows = Array.isArray(rows) ? rows : [];
+      var seen = {};
+      var names = rows.filter(function(row) {
+        return row && row.username && (!row.position || row.position.indexOf('发型师') !== -1);
+      }).map(function(row){ return row.username; });
+      if (fallback) names.unshift(fallback);
+      if (!names.length) names = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
+      sel.innerHTML = '<option value="">选择发型师</option>';
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i] || '';
+        if (!name || seen[name]) continue;
+        seen[name] = true;
+        var opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      }
+      sel.value = selectedName || fallback || '';
+      if (!sel.value && fallback) sel.value = fallback;
+    }).catch(function(){});
+  };
+
+  window.loadHairAssistantOptionsForBarber = function(barberName, keepSelection) {
+    var container = document.getElementById('hair-form-tech-container');
+    if (!container) return;
+    barberName = barberName || recordBarberValueFromFields({}) || '';
+    var selectedTech = keepSelection ? (window._pendingTechRestore || recordTechValueFromFields({})) : '';
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">加载中...</span>';
+    fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(barberName) + '&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r){ return r.json(); }).then(function(me){
+      var myStore = (me && me[0] && me[0].store) || '';
+      var url = SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc';
+      if (myStore) url += '&store=eq.' + encodeURIComponent(myStore);
+      return fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      rows = Array.isArray(rows) ? rows : [];
+      var techs = rows.filter(function(row){ return row.position && (row.position.indexOf('助理') !== -1 || row.position.indexOf('技师') !== -1); });
+      container.innerHTML = '';
+      for (var i = 0; i < techs.length; i++) {
+        (function(name){
+          var chip = document.createElement('span');
+          chip.className = 'chip';
+          chip.setAttribute('data-value', name);
+          chip.textContent = name;
+          chip.onclick = function(){ this.classList.toggle('active'); };
+          container.appendChild(chip);
+        })(techs[i].username);
+      }
+      if (selectedTech) {
+        window._pendingTechRestore = selectedTech;
+        if (window.restoreTechChips) window.restoreTechChips(selectedTech);
+      } else {
+        window._pendingTechRestore = null;
+      }
+      if (!techs.length) container.innerHTML = '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">暂无助理</span>';
+    }).catch(function(){
+      container.innerHTML = '<span style="font-size:11px;color:var(--danger);padding:6px 0;">助理加载失败</span>';
+    });
+  };
+
   var _editingHairId = null;  // 正在编辑的记录ID，null=新建
 
   // ===== 自动保存表单（关闭时静默保存） =====
@@ -4579,7 +4656,7 @@ function initApp() {
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       // ── 特殊字段（非标准 input/select/textarea） ──
       technician: recordTechValueFromFields(F),
-      barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
+      barber: recordBarberValueFromFields(F),
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
       threeSection: (typeof getHairFormData === 'function') ? getHairFormData().three_section : {},
       aiOverall: ((document.getElementById('hair-ai-overall')||{}).innerHTML || '').replace(/<[^>]+>/g,''),
@@ -5450,7 +5527,11 @@ function initApp() {
     }
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
-    if (window.restoreTechChips) window.restoreTechChips(data.technician);
+    setVal('hair-form-barber', data.barber || localStorage.getItem('booking-barber') || BOOKING_BARBER || '');
+    if (window.populateHairBarberSelect) window.populateHairBarberSelect(data.barber || '');
+    if (data.technician) window._pendingTechRestore = data.technician;
+    if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(data.barber || '', true);
+    else if (window.restoreTechChips) window.restoreTechChips(data.technician);
     setVal('hair-diagnosis-type', data.diagnosisType);
     // 恢复chip选择
     if (data.baseInfo) {
@@ -5845,7 +5926,7 @@ function initApp() {
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       technician: recordTechValueFromFields(F),
-      barber: localStorage.getItem('booking-barber') || BOOKING_BARBER || '',
+      barber: recordBarberValueFromFields(F),
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
       threeSection: (typeof getHairFormData === 'function') ? getHairFormData().three_section : {},
       aiOverall: ((document.getElementById('hair-ai-overall')||{}).innerHTML || '').replace(/<[^>]+>/g,''),
@@ -5983,7 +6064,7 @@ function initApp() {
     var list = document.getElementById('hair-booking-picker-list');
     if (!list) return;
     list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">加载中...</div>';
-    var barberName = BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
+    var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
     var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
     fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + barberFilter + '&order=reservation_time.asc', {
       headers: { 'apikey': SUPABASE_KEY }
@@ -6157,55 +6238,26 @@ function initApp() {
     html += '<div class="ha-card"><div class="ha-step">步骤1 · 客户信息</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    var selectedBarber = rec.barber || currentBarber || '';
     var today = new Date();
     var dateStr = today.getFullYear()+'.'+(today.getMonth()+1)+'.'+today.getDate();
     html += '<input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;min-width:100px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="电话" style="flex:1;min-width:120px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
-    html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
+    html += '<div style="display:flex;align-items:center;gap:4px;flex:1;min-width:150px;">';
+    html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);">发型师</label>';
+    html += '<select id="hair-form-barber" onchange="loadHairAssistantOptionsForBarber(this.value,false)" style="flex:1;min-width:0;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
+    html += '<option value="' + escAttr(selectedBarber) + '">' + esc(selectedBarber || '选择发型师') + '</option>';
+    html += '</select></div>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
     // 助理/技师chip多选（从Supabase拉取，toggle模式可多选）
     html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">';
     html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-right:4px;">助理</label>';
     html += '<div id="hair-form-tech-container" style="display:flex;flex-wrap:wrap;gap:4px;"></div>';
     html += '</div>';
-    // 异步从Supabase拉取助理/技师列表（按门店过滤）
     setTimeout(function(){
-      var container = document.getElementById('hair-form-tech-container');
-      if (!container) return;
-      // 先查当前发型师所属门店
-      fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(currentBarber) + '&limit=1', {
-        headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ return r.json(); }).then(function(me){
-        var myStore = (me && me[0] && me[0].store) || '';
-        // 再按门店拉技师
-        var url = SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc';
-        if (myStore) url += '&store=eq.' + encodeURIComponent(myStore);
-        return fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
-      }).then(function(r){ return r.json(); }).then(function(rows){
-        if (!rows || rows.length === 0) return;
-        // 只保留职位包含"助理"或"技师"的员工
-        var techs = rows.filter(function(r){ return r.position && (r.position.indexOf('助理') !== -1 || r.position.indexOf('技师') !== -1); });
-        container.innerHTML = '';
-        for (var i = 0; i < techs.length; i++) {
-          (function(name){
-            var chip = document.createElement('span');
-            chip.className = 'chip';
-            chip.setAttribute('data-value', name);
-            chip.textContent = name;
-            chip.onclick = function(){
-              this.classList.toggle('active');
-            };
-            container.appendChild(chip);
-          })(techs[i].username);
-        }
-        // 恢复之前缓存的技师选中状态
-        if (window._pendingTechRestore) {
-          var val = window._pendingTechRestore;
-          window._pendingTechRestore = null;
-          if (window.restoreTechChips) window.restoreTechChips(val);
-        }
-      }).catch(function(){});
+      if (window.populateHairBarberSelect) window.populateHairBarberSelect(selectedBarber);
+      if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(selectedBarber, true);
     }, 500);
     html += '</div></div>';
 
