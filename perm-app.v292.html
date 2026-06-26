@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="293">
+<html lang="zh-CN" data-version="292">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3880,13 +3880,19 @@ function initApp() {
       _cloudEditingId = null;
       _followUpMode = false;
       
-      // 回访完成模式：效果评定和聊天截图至少填一个
+      // 回访完成模式：必须有效果评定和聊天截图
       if (isFollowUp) {
         var fbRating = document.querySelector('input[name="fb-hair"]:checked');
         var fbPreview = document.getElementById('hair-fb-preview');
         var hasScreenshot = fbPreview && fbPreview.src && fbPreview.src.length > 50;
-        if (!fbRating && !hasScreenshot) {
-          alert('请选择效果评定 或 上传聊天截图');
+        if (!fbRating) {
+          alert('请先选择效果评定（A/B/C）');
+          _cloudEditingId = cloudId;
+          _followUpMode = true;
+          return;
+        }
+        if (!hasScreenshot) {
+          alert('请上传聊天截图');
           _cloudEditingId = cloudId;
           _followUpMode = true;
           return;
