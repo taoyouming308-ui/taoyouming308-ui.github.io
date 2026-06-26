@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="310">
+<html lang="zh-CN" data-version="311">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5958,7 +5958,14 @@ function initApp() {
     var previousArchiveStatus = (_cloudRecordData && _cloudRecordData.status) || '';
     var hasAssignedAssistant = !!recordTechValueFromFields(F);
     var assistantReturned = previousArchiveStatus === '技师已完成' || previousArchiveStatus === '待回访完成';
-    var archiveStatus = (hasAssignedAssistant && !assistantReturned && previousArchiveStatus !== '已完成' && previousArchiveStatus !== '回访完成') ? '待回访' : '已完成';
+    var hasFollowUpResult = !!(F['fb-hair'] || String(F['hair-form-follow-msg'] || '').trim() || ((localStorage.getItem('_hairFbScreenshot') || '').length > 20));
+    var alreadyFinished = previousArchiveStatus === '已完成' || previousArchiveStatus === '回访完成';
+    var archiveStatus = '已完成';
+    if (hasFollowUpResult || previousArchiveStatus === '回访完成') {
+      archiveStatus = '回访完成';
+    } else if (hasAssignedAssistant && !assistantReturned && !alreadyFinished) {
+      archiveStatus = '待回访';
+    }
 
     var record = {
       id: cloudId,
@@ -6031,7 +6038,7 @@ function initApp() {
         var records = getHairRecords();
         for (var i = 0; i < records.length; i++) {
           if (records[i].id === cloudId) {
-            records[i].status = '已完成';
+            records[i].status = archiveStatus;
             records[i].synced = true;
             break;
           }
@@ -6046,7 +6053,7 @@ function initApp() {
         syncCareRecordsForHairRecord(record);
         var btn = document.getElementById('hair-save-btn');
         if (btn) {
-          btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : '✅ 已保存，可继续修改';
+          btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
           btn.style.background = 'var(--success, #2ecc71)';
           btn.disabled = false;
           btn.onclick = window.saveAndUploadHairArchive;
