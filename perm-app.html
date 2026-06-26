@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="309">
+<html lang="zh-CN" data-version="310">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4794,19 +4794,13 @@ function initApp() {
       _cloudEditingId = null;
       _followUpMode = false;
       
-      // 回访完成模式：必须有效果评定和聊天截图
+      // 回访完成模式：效果评定或聊天截图至少有一个
       if (isFollowUp) {
         var fbRating = document.querySelector('input[name="fb-hair"]:checked');
         var fbPreview = document.getElementById('hair-fb-preview');
         var hasScreenshot = fbPreview && fbPreview.src && fbPreview.src.length > 50;
-        if (!fbRating) {
-          alert('请先选择效果评定（A/B/C）');
-          _cloudEditingId = cloudId;
-          _followUpMode = true;
-          return;
-        }
-        if (!hasScreenshot) {
-          alert('请上传聊天截图');
+        if (!fbRating && !hasScreenshot) {
+          alert('请先选择效果评定（A/B/C）或上传聊天截图');
           _cloudEditingId = cloudId;
           _followUpMode = true;
           return;
@@ -4844,7 +4838,9 @@ function initApp() {
         if (_cloudTechs[_cti].trim() === _currentUserForCloudSave) { _cloudSaveAsAssistant = true; break; }
       }
       var _cloudSaveAsStylist = ((_cloudRecordData && _cloudRecordData.barber) || record.barber || '') === _currentUserForCloudSave;
-      var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : ((_cloudRecordData && _cloudRecordData.status) || record.status || '待回访'));
+      var _oldCloudStatus = ((_cloudRecordData && _cloudRecordData.status) || record.status || '待回访');
+      var _stylistFinalSave = _cloudSaveAsStylist && (_oldCloudStatus === '技师已完成' || _oldCloudStatus === '待回访完成');
+      var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : (_stylistFinalSave ? '已完成' : _oldCloudStatus));
       // 直接 PATCH 云端记录，不存本地。助理保存后回到发型师任务里。
       _mergedData.status = _nextCloudStatus;
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
@@ -5108,6 +5104,9 @@ function initApp() {
     var visibleDays = 30;
     return t >= Date.now() - visibleDays * 24 * 60 * 60 * 1000;
   }
+  function hairTaskNeedsStylistFollowup(status) {
+    return status !== '回访完成' && status !== '已完成';
+  }
 
   // ===== 渲染待上传记录列表 =====
   window.renderPendingRecords = function() {
@@ -5223,6 +5222,7 @@ function initApp() {
           if (techList[ti].trim() === barber) { isTech = true; break; }
         }
         var isStylist = (stylist === barber);
+        var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status);
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + formatHairRecordSeq(rec) + ' ' + esc(person.name) + '</span>';
@@ -5252,6 +5252,9 @@ function initApp() {
         }
         html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(person.phone || '无电话') + '</div>';
         html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + esc(person.line2) + '</div>';
+        if (needsStylistFollowup) {
+          html += '<div style="font-size:11px;color:#e85050;font-weight:800;margin-top:3px;">未评定未回访</div>';
+        }
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
         var statusColor = '#e8a817';
         var statusText = '待回访';
@@ -5270,6 +5273,9 @@ function initApp() {
         if (isStylist) {
           // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑</button>';
+          if (needsStylistFollowup) {
+            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:#e85050;border:1px solid #e85050;border-radius:4px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:700;">回访完成</button>';
+          }
           html += '<span style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-align:center;">已入档案不可删</span>';
         } else if (isTech && status !== '回访完成') {
           // 助理只要被指派就可以进入填写/继续修改，保存后回传给发型师
