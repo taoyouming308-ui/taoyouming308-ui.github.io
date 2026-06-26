@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="316">
+<html lang="zh-CN" data-version="317">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3076,7 +3076,7 @@ function initApp() {
         html += '</div>';
       }
       html += '</div>';
-      var _isDyePerm = (function(){var _t=(r.service_name||'')+' '+(r.notes||'');return _t.indexOf('烫')!==-1||_t.indexOf('染')!==-1;})();
+      var _isDyePerm = bookingNeedsHairAnalysis(r);
       html += '<div class="bi-right"><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name||'')+'</div>';
       if (r.customer_phone) {
         html += '<span class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
@@ -3088,6 +3088,13 @@ function initApp() {
     });
     list.innerHTML = html;
     if (window.loadHairTagStatuses) window.loadHairTagStatuses();
+  }
+
+  function bookingNeedsHairAnalysis(row) {
+    row = row || {};
+    var text = String((row.service_name || '') + ' ' + (row.notes || '')).trim();
+    if (!text) return false;
+    return /烫|染|漂|护理|拉直|卷/.test(text);
   }
 
   // ===== 烫染标记：优先查询 hair_records，旧 hair_analysis_queue 只做兜底 =====
@@ -4635,6 +4642,58 @@ function initApp() {
     return values;
   };
 
+  function nonEmptyHairValue(value) {
+    if (value === true) return true;
+    if (value === false || value === null || value === undefined) return false;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      var s = value.replace(/<[^>]+>/g, '').trim();
+      return !!s && s !== '—' && s !== '-' && s !== '0';
+    }
+    return false;
+  }
+
+  function hairRecordHasMeaningfulContent(record) {
+    record = record || {};
+    var keys = [
+      'diagnosisType','rodsTop','rodsBack','rodsSide','rodsBang','rodsNape',
+      'rodMethod','dwellType','dwellNatural','dwellHeat','rinse','permStyle',
+      'targetColor','tone','toneOther','developer','mixRatio','applyOrder',
+      'colorDwell','colorHeatTemp','colorNotes','feedbackRating','followMsg',
+      'planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference'
+    ];
+    for (var i = 0; i < keys.length; i++) {
+      if (nonEmptyHairValue(record[keys[i]])) return true;
+    }
+    var boolKeys = ['creative','secondHeatHealthy','secondHeatDamaged','colorHeat','scalpProtect','endProtect'];
+    for (var bi = 0; bi < boolKeys.length; bi++) {
+      if (record[boolKeys[bi]] === true) return true;
+    }
+    var base = record.baseInfo || {};
+    for (var bk in base) {
+      if (base.hasOwnProperty(bk) && nonEmptyHairValue(base[bk])) return true;
+    }
+    var sections = record.threeSection || {};
+    var sectionKeys = ['root','mid','end'];
+    for (var si = 0; si < sectionKeys.length; si++) {
+      var part = sections[sectionKeys[si]] || {};
+      if (nonEmptyHairValue(part.level) || nonEmptyHairValue(part.coarse_fine)) return true;
+    }
+    if (nonEmptyHairValue(sections.split_ends)) return true;
+    var rods = Array.isArray(record.rodDetails) ? record.rodDetails : [];
+    for (var ri = 0; ri < rods.length; ri++) {
+      var rod = rods[ri] || {};
+      if (nonEmptyHairValue(rod.size) || nonEmptyHairValue(rod.technique) ||
+          nonEmptyHairValue(rod.startFrom) || nonEmptyHairValue(rod.angle)) return true;
+    }
+    var care = Array.isArray(record.careUsage) ? record.careUsage : [];
+    for (var ci = 0; ci < care.length; ci++) {
+      var cu = care[ci] || {};
+      if (nonEmptyHairValue(cu.brand) || nonEmptyHairValue(cu.product) || nonEmptyHairValue(cu.grams)) return true;
+    }
+    return false;
+  }
+
   // 修改 saveHairRecordLocal 支持静默参数
   var _origSave = window.saveHairRecordLocal;
   window.saveHairRecordLocal = function(silent) {
@@ -4726,6 +4785,14 @@ function initApp() {
       status: '待回访',
       synced: false
     };
+    var _recordHasMeaningfulContent = hairRecordHasMeaningfulContent(record);
+    if (silent && !_isCloudEdit && !_editingHairId && !_recordHasMeaningfulContent) {
+      return;
+    }
+    if (!silent && !_isCloudEdit && !_editingHairId && !_recordHasMeaningfulContent && !record.technician) {
+      alert('请先填写发质、烫染或护理内容；如果要派给助理填写，请先选择助理');
+      return;
+    }
 
     // ★ 云端记录不存本地，防止本地列表出现重复编号
     if (!_isCloudEdit) {
@@ -4753,7 +4820,7 @@ function initApp() {
     saveHairRecords(records);
 
     // ★ 新建记录且选了技师 → 自动创建云端记录，让技师能在「我的任务」看到
-    if (!found && record.technician && record.customerName && !_cloudEditingId) {
+    if (!silent && !found && record.technician && record.customerName && !_cloudEditingId) {
       // 立即标记为已同步，让本地列表隐藏该记录（乐观更新）
       record.synced = true;
       saveHairRecords(records);
@@ -4840,6 +4907,12 @@ function initApp() {
       var _cloudSaveAsStylist = ((_cloudRecordData && _cloudRecordData.barber) || record.barber || '') === _currentUserForCloudSave;
       var _oldCloudStatus = ((_cloudRecordData && _cloudRecordData.status) || record.status || '待回访');
       var _stylistFinalSave = _cloudSaveAsStylist && (_oldCloudStatus === '技师已完成' || _oldCloudStatus === '待回访完成');
+      if (_cloudSaveAsAssistant && !_cloudSaveAsStylist && !isFollowUp && !hairRecordHasMeaningfulContent(_mergedData)) {
+        alert('请先填写发质、烫染或护理内容后再回传发型师');
+        _cloudEditingId = cloudId;
+        _followUpMode = false;
+        return;
+      }
       var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : (_stylistFinalSave ? '已完成' : _oldCloudStatus));
       // 直接 PATCH 云端记录，不存本地。助理保存后回到发型师任务里。
       _mergedData.status = _nextCloudStatus;
@@ -6030,6 +6103,10 @@ function initApp() {
       status: archiveStatus,
       synced: false
     };
+    if (!hairRecordHasMeaningfulContent(record)) {
+      alert('这张发质分析表还没有实际发质、烫染或护理内容，不能归档');
+      return;
+    }
 
     // PATCH 云端记录，标记已完成
     fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
@@ -6130,13 +6207,14 @@ function initApp() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         if (!r.customer_name || r.customer_name === '未登记') continue;
+        if (!bookingNeedsHairAnalysis(r)) continue;
         var key = (r.customer_phone || r.customer_name) + '|' + (r.time_label || r.reservation_time || '');
         if (seen[key]) continue;
         seen[key] = true;
         unique.push(r);
       }
       if (!unique.length) {
-        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无已登记预约</div>';
+        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无烫染/护理预约</div>';
         return;
       }
       var html = '';

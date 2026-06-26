@@ -5,8 +5,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v316
-- Last synchronized base checked: `8b4d3fc v316 review Meiguanjia sync and improve profile reads`
+- App version: v317
+- Last synchronized base checked: `6fe1047 Add shared agent sync handoff`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -14,6 +14,12 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v317 prevents pure haircut appointments from entering the hair-analysis booking picker/task path.
+- v317 prevents silent close/autosave from creating empty `hair_records` tasks.
+- v317 prevents assistants from returning an empty cloud hair form as `技师已完成`.
+- v317 prevents empty hair forms from being archived as customer records.
+- v317 adds admin deletion for `hair_records` from the backend hair-analysis record list, deleting linked `care_records` first.
+- Investigated sample `宋奕 / 15858274326 / #012 / hair_records id 1782448281615_3cp3`: the booking source is `预约剪发`, while the cloud hair record has mostly empty analysis/perm/dye/care fields and was marked `技师已完成`.
 - Added this shared Codex/Hermes handoff baton and `scripts/check-agent-sync-status.js`.
 - Added the baton check to `.githooks/pre-push`, `AGENTS.md`, `CLAUDE.md`, `PUBLISH_RULES.md`, `AI_COLLABORATION_RULES.md`, and `HERMES_HANDOFF.md`.
 - v316 reviewed Meiguanjia synchronization risk areas.
@@ -24,6 +30,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-26: `node scripts/check-version-sync.js` passed at v317.
+- 2026-06-26: `node scripts/smoke-test-app.js` passed at v317.
+- 2026-06-26: `node scripts/check-agent-sync-status.js` passed at v317.
+- 2026-06-26: `admin.html` script syntax check passed.
 - 2026-06-26: `node scripts/check-version-sync.js` passed at v316.
 - 2026-06-26: `node scripts/smoke-test-app.js` passed.
 - 2026-06-26: `node scripts/check-agent-sync-status.js` passed.
@@ -37,6 +47,7 @@ Every meaningful change must update this file before commit/push.
 - Ensure sync writers never overwrite existing package/history arrays with empty arrays when an external request partially fails.
 - Improve customer archive display only after confirming the source data mapping.
 - Keep hair-analysis task status rules from `HERMES_HANDOFF.md`; do not reintroduce `已回传` as a stylist final state.
+- Use backend admin deletion for confirmed erroneous `hair_records`; do not delete production records from scripts unless the row id, phone, name, and current status have been verified.
 
 ## Required Checks Before Editing
 

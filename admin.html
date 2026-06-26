@@ -1567,7 +1567,11 @@ window.loadHairRecordList = function() {
       html += '<td style="color:' + statusColor + ';font-size:11px;">' + statusText + '</td>';
       html += '<td style="color:' + (overdue ? '#e74c3c;font-weight:600' : 'var(--muted)') + ';font-size:11px;">' + days + '</td>';
       html += '<td style="font-size:11px;color:var(--muted);">' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</td>';
-      html += '<td><button onclick="viewHairRecordDetail(\'' + r.id.replace(/'/g,"\\'") + '\')" style="padding:2px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:3px;cursor:pointer;font-size:11px;">查看</button></td>';
+      var safeId = String(r.id || '').replace(/'/g,"\\'");
+      html += '<td>';
+      html += '<button onclick="viewHairRecordDetail(\'' + safeId + '\')" style="padding:2px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:3px;cursor:pointer;font-size:11px;margin-right:4px;">查看</button>';
+      html += '<button onclick="deleteHairRecordAdmin(\'' + safeId + '\',this)" class="btn-del" style="padding:2px 8px;font-size:11px;">删除</button>';
+      html += '</td>';
       html += '</tr>';
     });
     tbody.innerHTML = html;
@@ -1575,6 +1579,32 @@ window.loadHairRecordList = function() {
   .catch(function(){
     tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
   });
+};
+
+window.deleteHairRecordAdmin = async function(recordId, btn) {
+  if (!recordId) return;
+  var msg = '确定删除这条发质分析表？\n\n会同时删除它关联的护理用量记录。客户档案里将不再显示这张表。';
+  if (!confirm(msg)) return;
+  setButtonBusy(btn, true);
+  try {
+    var careRes = await fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(recordId), {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    await ensureOk(careRes, '删除关联护理记录失败');
+    var recordRes = await fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId), {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    await ensureOk(recordRes, '删除发质分析表失败');
+    toast('已删除发质分析表', 'ok');
+    loadHairRecordList();
+    if (typeof loadHairRecordStats === 'function') loadHairRecordStats();
+  } catch(e) {
+    toast('删除失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
+  }
 };
 
 // ===== 查看发质分析表完整详情 =====
