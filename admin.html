@@ -1775,7 +1775,7 @@ window.loadHairAnalyses = async function() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=in.(completed,record_saved)&order=created_at.desc&limit=200';
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=neq.deleted&order=created_at.desc&limit=200';
   if (search) {
     url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,ai_analysis->record->>customerName.ilike.%25' + encodeURIComponent(search) + '%25)';
   }
