@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="321">
+<html lang="zh-CN" data-version="318">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6310,13 +6310,12 @@ function initApp() {
     var product = sel.value;
     var gramVal = grams.value;
     if (!product || !gramVal || parseFloat(gramVal) <= 0) return;
-    var _barberName = (document.getElementById('hair-form-barber') || {}).value || localStorage.getItem('booking-barber') || BOOKING_BARBER || '未知';
-    _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName });
+    _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal });
     // 同步推送护理用量到出库队列（自动出库用）
     fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName, status: 'pending', created_at: new Date().toISOString() })
+      body: JSON.stringify({ brand: currentCareBrand, product: product, grams: gramVal, status: 'pending', created_at: new Date().toISOString() })
     }).catch(function(e){ console.warn('[出库队列推送失败]', e); });
     // 清空并重置
     sel.value = '';
@@ -7862,8 +7861,8 @@ window.uploadAppFbScreenshot = function(inputEl) {
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
   var STORED_VER = parseInt(localStorage.getItem('app-version')) || 0;
   var MAX_VER = Math.max(VER, STORED_VER, parseInt(localStorage.getItem('app-max-version')) || 0);
-  var buildVersionUrl = function(v) {
-    var q = '?_v=' + v;
+  var buildVersionUrl = function(v, guarded) {
+    var q = '?_v=' + v + (guarded ? '&downgrade_guard=1' : '');
     if (location.hash) q += location.hash;
     return location.pathname + q;
   };
@@ -7876,16 +7875,12 @@ window.uploadAppFbScreenshot = function(inputEl) {
     banner.onclick = function() {
       localStorage.setItem('app-version', v);
       localStorage.setItem('app-max-version', v);
-      location.href = buildVersionUrl(v);
+      location.href = buildVersionUrl(v, false);
     };
   };
-  // ── 降级保护（v321修复无限跳转闪屏）──
-  // 如果当前版本比本地记住的低，说明部署降级了。此时不跳转，只把本地的版本记录降下来。
-  if (VER < MAX_VER) {
-    console.warn('版本降级:', VER, '<', MAX_VER, '，重置本地缓存');
-    localStorage.setItem('app-version', VER);
-    localStorage.setItem('app-max-version', VER);
-    MAX_VER = VER;
+  if (VER < MAX_VER && location.search.indexOf('downgrade_guard=1') === -1) {
+    location.replace(buildVersionUrl(MAX_VER, true));
+    return;
   }
   
   // 先从服务器拉最新版本号，跳过CDN缓存
@@ -7917,7 +7912,7 @@ window.uploadAppFbScreenshot = function(inputEl) {
   var _onVersionReady = function() {
     // 缓存爆破：URL带版本号，让CDN和浏览器每次都拉最新版
     if (location.search.indexOf('_v=' + VER) === -1) {
-      location.replace(buildVersionUrl(VER));
+      location.replace(buildVersionUrl(VER, false));
       return;
     }
     var OLD_VER = Math.max(parseInt(localStorage.getItem('app-version')) || 0, parseInt(localStorage.getItem('app-max-version')) || 0);
