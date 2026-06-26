@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="312">
+<html lang="zh-CN" data-version="313">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4856,7 +4856,7 @@ function initApp() {
           // PATCH成功后才刷新按钮和任务列表
           var btn = document.getElementById('hair-save-btn');
           if (btn) {
-            btn.textContent = _isCloudEdit ? '✅ 已保存' : '✅ 档案已上传';
+            btn.textContent = isFollowUp ? '✅ 回访完成，已归档' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '✅ 已回传发型师' : (_isCloudEdit ? '✅ 已保存' : '✅ 档案已上传'));
             btn.style.background = 'var(--success, #2ecc71)';
             btn.disabled = true;
           }
@@ -5104,8 +5104,17 @@ function initApp() {
     var visibleDays = 30;
     return t >= Date.now() - visibleDays * 24 * 60 * 60 * 1000;
   }
-  function hairTaskNeedsStylistFollowup(status) {
-    return status !== '回访完成' && status !== '已完成';
+  function hairTaskHasFollowup(status, rec) {
+    rec = rec || {};
+    return status === '回访完成' || rec.status === '回访完成';
+  }
+  function hairTaskAssistantReturned(status, rec) {
+    rec = rec || {};
+    return status === '技师已完成' || status === '待回访完成' ||
+      rec.status === '技师已完成' || rec.status === '待回访完成';
+  }
+  function hairTaskNeedsStylistFollowup(status, rec) {
+    return !hairTaskHasFollowup(status, rec);
   }
 
   // ===== 渲染待上传记录列表 =====
@@ -5222,11 +5231,14 @@ function initApp() {
           if (techList[ti].trim() === barber) { isTech = true; break; }
         }
         var isStylist = (stylist === barber);
-        var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status);
+        var hasFollowup = hairTaskHasFollowup(status, rec);
+        var assistantReturned = hairTaskAssistantReturned(status, rec);
+        var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
+        var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + formatHairRecordSeq(rec) + ' ' + esc(person.name) + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(status) + '</span>';
+        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(primaryStatusText) + '</span>';
         html += '</div>';
         // 显示日期时间
         var _dt = r.created_at || rec.createdAt || rec.date || '';
@@ -5258,14 +5270,13 @@ function initApp() {
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
         var statusColor = '#e8a817';
         var statusText = '待回访';
-        if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
-        else if (status === '回访完成') { statusColor = 'var(--success)'; statusText = '回访完成'; }
+        if (hasFollowup) { statusColor = 'var(--success)'; statusText = '回访完成'; }
+        else if (assistantReturned) { statusColor = 'var(--success)'; statusText = isStylist ? '待保存档案' : '已回传发型师'; }
         else if (status === '已完成') { statusColor = 'var(--success)'; statusText = '已保存'; }
-        else if (status === '技师已完成') { statusColor = 'var(--success)'; statusText = isStylist ? '待保存档案' : '已回传发型师'; }
-        if (isStylist && technician && status === '待回访') { statusText = '待助理填写'; }
-        if (isTech && !isStylist && status !== '回访完成') {
-          statusColor = status === '技师已完成' ? 'var(--success)' : '#e89217';
-          statusText = status === '技师已完成' ? '已回传发型师' : '待填写';
+        else if (isStylist && technician) { statusText = '待助理填写'; }
+        if (isTech && !isStylist && !hasFollowup) {
+          statusColor = assistantReturned ? 'var(--success)' : '#e89217';
+          statusText = assistantReturned ? '已回传发型师' : '待填写';
         }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
@@ -5274,15 +5285,15 @@ function initApp() {
           // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑</button>';
           if (needsStylistFollowup) {
-            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:#e85050;border:1px solid #e85050;border-radius:4px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:700;">回访完成</button>';
+            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:#e85050;border:1px solid #e85050;border-radius:4px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:700;">填写回访</button>';
           }
           html += '<span style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-align:center;">已入档案不可删</span>';
-        } else if (isTech && status !== '回访完成') {
+        } else if (isTech && !hasFollowup) {
           // 助理只要被指派就可以进入填写/继续修改，保存后回传给发型师
-          var techBtnText = status === '技师已完成' ? '✏️ 继续修改' : '✏️ 编辑填写';
+          var techBtnText = assistantReturned ? '✏️ 继续修改' : '✏️ 编辑填写';
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">' + techBtnText + '</button>';
         }
-        if (!isStylist && status === '回访完成') {
+        if (!isStylist && hasFollowup) {
           html += '<span style="font-size:10px;color:var(--success);">✅ 已完成</span>';
         }
         html += '</div></div>';
@@ -5680,7 +5691,7 @@ function initApp() {
       var _isStylist = data.barber === _currentBarber;
       
       if (_cloudEditingId && _followUpMode) {
-        btn.textContent = '✅ 回访完成';
+        btn.textContent = '✅ 保存回访';
         btn.style.background = '#2ecc71';
         btn.onclick = function(){ window.saveHairRecordLocal(); };
       } else if (_cloudEditingId && _isStylist) {
@@ -5958,14 +5969,10 @@ function initApp() {
     var previousArchiveStatus = (_cloudRecordData && _cloudRecordData.status) || '';
     var hasAssignedAssistant = !!recordTechValueFromFields(F);
     var assistantReturned = previousArchiveStatus === '技师已完成' || previousArchiveStatus === '待回访完成';
-    var hasFollowUpResult = !!(F['fb-hair'] || String(F['hair-form-follow-msg'] || '').trim() || ((localStorage.getItem('_hairFbScreenshot') || '').length > 20));
-    var alreadyFinished = previousArchiveStatus === '已完成' || previousArchiveStatus === '回访完成';
-    var archiveStatus = '已完成';
-    if (hasFollowUpResult || previousArchiveStatus === '回访完成') {
-      archiveStatus = '回访完成';
-    } else if (hasAssignedAssistant && !assistantReturned && !alreadyFinished) {
-      archiveStatus = '待回访';
-    }
+    var alreadyFollowed = previousArchiveStatus === '回访完成';
+    var alreadyArchived = previousArchiveStatus === '已完成' || alreadyFollowed;
+    var archiveStatus = alreadyFollowed ? '回访完成' : '已完成';
+    if (hasAssignedAssistant && !assistantReturned && !alreadyArchived) archiveStatus = '待回访';
 
     var record = {
       id: cloudId,
@@ -6608,7 +6615,7 @@ function initApp() {
 
     // 保存按钮 - 云端编辑保存原记录，新建保存本地记录
     if (_cloudEditingId && _followUpMode) {
-      html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--success,#2ecc71);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 回访完成</button>';
+      html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--success,#2ecc71);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 保存回访</button>';
     } else if (_cloudEditingId) {
       html += '<button id="hair-save-btn" onclick="window.saveAndUploadHairArchive()" style="width:100%;padding:12px;background:#2ecc71;color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">💾 保存档案</button>';
     } else {
