@@ -2890,11 +2890,11 @@ window.loadCareDetailRecords = function() {
           return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
         });
 
-        var html = '<div style="border:1px solid var(--border-soft);border-radius:8px;overflow-x:auto;"><table class="care-detail-table" style="font-size:11px;margin-bottom:0;"><thead><tr><th>日期</th><th>客户</th><th>发型师</th><th>技师</th><th>品牌</th><th>产品/色号</th><th>用量(g)</th></tr></thead><tbody>';
+        var html = '<div style="border:1px solid var(--border-soft);border-radius:8px;overflow-x:auto;"><table class="care-detail-table" style="font-size:11px;margin-bottom:0;"><thead><tr><th>日期</th><th>客户</th><th>发型师</th><th>技师</th><th>品牌</th><th>产品/色号</th><th>用量(g)</th><th style="width:60px;">操作</th></tr></thead><tbody>';
         var totalG = 0;
         for (var li = 0; li < list.length; li++) {
           var d = list[li];
-          html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td></tr>';
+          html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td><td><button onclick="editCareRecord(\'' + filtered[li].id + '\',\'' + escAttr(d.brand) + '\',\'' + escAttr(d.product) + '\',\'' + d.grams + '\')" style="padding:2px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">编辑</button></td></tr>';
           totalG += parseFloat(d.grams) || 0;
         }
         html += '</tbody></table></div>';
@@ -2906,6 +2906,50 @@ window.loadCareDetailRecords = function() {
     container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">加载失败: ' + e.message + '</div>';
   });
 };
+
+function escAttr(s) { return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+window.editCareRecord = function(id, brand, product, grams) {
+  var box = document.getElementById('modal-box');
+  if (!box) return;
+  clearNode(box);
+  box.appendChild(el('h3', { text: '编辑护理记录' }));
+  appendField(box, '品牌', makeInput('care-edit-brand', brand));
+  appendField(box, '产品/色号', makeInput('care-edit-product', product));
+  appendField(box, '用量(g)', makeInput('care-edit-grams', String(grams), { type: 'number', step: '0.1' }));
+  var hid = el('input', { type: 'hidden', id: 'care-edit-id', value: id });
+  box.appendChild(hid);
+  var row = el('div', { className: 'btn-row' });
+  row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
+  row.appendChild(actionButton('保存', 'btn-save', saveCareRecord));
+  box.appendChild(row);
+  document.getElementById('modal').classList.add('show');
+};
+
+function saveCareRecord() {
+  var id = (document.getElementById('care-edit-id')||{}).value;
+  var brand = (document.getElementById('care-edit-brand')||{}).value || '';
+  var product = (document.getElementById('care-edit-product')||{}).value || '';
+  var grams = parseFloat((document.getElementById('care-edit-grams')||{}).value) || 0;
+  if (!brand || !product) { toast('品牌和产品不能为空', 'err'); return; }
+  var btn = document.querySelector('#modal .btn-save');
+  if (btn) btn.disabled = true;
+  fetch(SUPABASE_URL + '/rest/v1/care_records?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ brand: brand, product: product, grams: grams })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('保存失败 (' + r.status + ')');
+    toast('修改成功', 'ok');
+    closeModal();
+    loadCareDetailRecords();
+  })
+  .catch(function(e) {
+    toast('保存失败: ' + e.message, 'err');
+    if (btn) btn.disabled = false;
+  });
+}
 
 // 初始化
 initCustAndFu();
