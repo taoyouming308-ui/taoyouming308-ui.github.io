@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="306">
+<html lang="zh-CN" data-version="307">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4511,20 +4511,49 @@ function initApp() {
     }).then(function(r){ return r.json(); }).then(function(rows){
       rows = Array.isArray(rows) ? rows : [];
       var seen = {};
-      var names = rows.filter(function(row) {
+      var grouped = {};
+      var storeOrder = ['自由手艺人', '向里造型'];
+      rows.filter(function(row) {
         return row && row.username && (!row.position || row.position.indexOf('发型师') !== -1);
-      }).map(function(row){ return row.username; });
-      if (fallback) names.unshift(fallback);
-      if (!names.length) names = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
+      }).forEach(function(row) {
+        var store = row.store || '其他/未分门店';
+        if (!grouped[store]) grouped[store] = [];
+        grouped[store].push(row.username);
+        if (storeOrder.indexOf(store) === -1) storeOrder.push(store);
+      });
+      if (fallback) {
+        var fallbackStore = '当前选择';
+        for (var fr = 0; fr < rows.length; fr++) {
+          if (rows[fr] && rows[fr].username === fallback && rows[fr].store) {
+            fallbackStore = rows[fr].store;
+            break;
+          }
+        }
+        if (!grouped[fallbackStore]) grouped[fallbackStore] = [];
+        grouped[fallbackStore].unshift(fallback);
+        if (storeOrder.indexOf(fallbackStore) === -1) storeOrder.unshift(fallbackStore);
+      }
+      if (!rows.length) {
+        grouped['自由手艺人'] = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
+        grouped['向里造型'] = ['向里造型','十一','哈维','晓伟','郭小康','陈浩'];
+      }
       sel.innerHTML = '<option value="">选择发型师</option>';
-      for (var i = 0; i < names.length; i++) {
-        var name = names[i] || '';
-        if (!name || seen[name]) continue;
-        seen[name] = true;
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
+      for (var si = 0; si < storeOrder.length; si++) {
+        var storeName = storeOrder[si];
+        var names = grouped[storeName] || [];
+        if (!names.length) continue;
+        var group = document.createElement('optgroup');
+        group.label = storeName;
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i] || '';
+          if (!name || seen[name]) continue;
+          seen[name] = true;
+          var opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          group.appendChild(opt);
+        }
+        if (group.children.length) sel.appendChild(group);
       }
       sel.value = selectedName || fallback || '';
       if (!sel.value && fallback) sel.value = fallback;
