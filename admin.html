@@ -398,200 +398,6 @@ function esc(s) {
     .replace(/>/g, '&gt;');
 }
 
-function adminHairTypeLabel(value) {
-  var map = {
-    'level-1-coarse': '1级·健康粗硬发（2-3度 | 粗硬、有韧性）',
-    'level-1-fine': '1级·健康细软发（2-3度 | 细软、成型力弱）',
-    'level-2-coarse': '2级·轻度受损粗硬（3-4度 | 偏粗、密齿梳顺）',
-    'level-2-fine': '2级·轻度受损细软（3-4度 | 偏细、密齿梳顺）',
-    'level-3': '3级·受损发（5-6度 | 密齿梳有卡顿）',
-    'level-4': '4级·严重受损（6-7度 | 漂后手感好也属此类）',
-    'level-5': '5级·极度受损（8-9度 | 软绵无支撑力）',
-    'level-mix-1-2': '混合·发根1级 + 发尾2级',
-    'level-mix-1-3': '混合·发根1级 + 发尾3级',
-    'level-mix-1-4': '混合·发根1级 + 发尾4-5级',
-    'level-mix-1-5': '混合·发根1级 + 发尾5级',
-    'level-mix-2-3': '混合·发根2级 + 发尾3级',
-    'level-mix-2-4': '混合·发根2级 + 发尾4级',
-    'level-mix-2-5': '混合·发根2级 + 发尾5级',
-    'level-mix-3-4': '混合·发根3级 + 发尾4级',
-    'level-mix-3-5': '混合·发根3级 + 发尾5级',
-    'level-mix-4-5': '混合·发根4级 + 发尾5级',
-    '三段发质 发根1级+发中2级+发梢5级': '三段发质·根1级+中2级+梢5级',
-    '三段发质 发根2级+发中3级+发梢5级': '三段发质·根2级+中3级+梢5级',
-    '三段发质 发根1级+发中3级+发梢4级': '三段发质·根1级+中3级+梢4级'
-  };
-  return value ? (map[value] || value) : '';
-}
-
-function normalizeAdminPhone(value) {
-  var digits = String(value || '').replace(/\D/g, '');
-  return digits.length > 11 ? digits.slice(-11) : digits;
-}
-
-function normalizeAdminHairRecord(row) {
-  row = row || {};
-  var data = row.record_data || {};
-  if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
-  var rec = JSON.parse(JSON.stringify(data));
-  rec.id = row.id || rec.id;
-  rec.customerName = row.customer_name || rec.customerName || rec.name || '';
-  rec.customerPhone = row.customer_phone || rec.customerPhone || rec.phone || '';
-  rec.technician = row.technician || rec.technician || '';
-  rec.barber = row.barber || rec.barber || '';
-  rec.status = row.status || rec.status || '';
-  rec.createdAt = row.created_at || rec.createdAt || rec.created_at || '';
-  rec.source = 'hair_records';
-  return rec;
-}
-
-function normalizeQueueHairRecord(row) {
-  row = row || {};
-  var analysis = row.ai_analysis || {};
-  var rec = analysis.record || {};
-  var diag = analysis.ai_diagnosis || {};
-  return {
-    id: row.id || '',
-    customerName: rec.customerName || rec.name || '',
-    customerPhone: row.phone || rec.customerPhone || rec.phone || '',
-    technician: rec.technician || '',
-    barber: rec.barber || row.barber_name || '',
-    status: row.status || '',
-    createdAt: row.created_at || '',
-    diagnosisType: row.stylist_damage_level || rec.diagnosisType || '',
-    serviceType: rec.serviceType || '',
-    permStyle: rec.permStyle || '',
-    formFields: rec.formFields || {},
-    rodDetails: rec.rodDetails || [],
-    rodsTop: rec.rodsTop || '',
-    rodsBack: rec.rodsBack || '',
-    rodsSide: rec.rodsSide || '',
-    rodsBang: rec.rodsBang || '',
-    rodsNape: rec.rodsNape || '',
-    developer: rec.developer || '',
-    mixRatio: rec.mixRatio || '',
-    applyOrder: rec.applyOrder || '',
-    colorDwell: rec.colorDwell || '',
-    colorHeat: rec.colorHeat || false,
-    colorHeatTemp: rec.colorHeatTemp || '',
-    scalpProtect: rec.scalpProtect || false,
-    endProtect: rec.endProtect || false,
-    colorNotes: rec.colorNotes || '',
-    careUsage: rec.careUsage || [],
-    threeSection: {
-      root: rec.threeSection && rec.threeSection.root ? rec.threeSection.root : diag.root,
-      mid: rec.threeSection && rec.threeSection.mid ? rec.threeSection.mid : diag.mid,
-      end: rec.threeSection && rec.threeSection.end ? rec.threeSection.end : diag.end,
-      split_ends: rec.threeSection && rec.threeSection.split_ends
-    },
-    source: 'hair_analysis_queue'
-  };
-}
-
-var ADMIN_HAIR_ROD_ZONES = [
-  { key: 'top', zone: '头顶区', aliases: ['头顶区', '顶区', '头顶', '顶'] },
-  { key: 'back', zone: '枕骨区', aliases: ['枕骨区', '后区', '枕骨', '后'] },
-  { key: 'side', zone: '两侧区', aliases: ['两侧区', '侧区', '两侧', '侧'] },
-  { key: 'bang', zone: '刘海区', aliases: ['刘海区', '刘海'] },
-  { key: 'nape', zone: '后颈区', aliases: ['后颈区', '后颈'] }
-];
-
-function normalizeAdminRodZone(zone) {
-  zone = String(zone || '').trim();
-  var map = {'顶':'头顶区','顶区':'头顶区','头顶':'头顶区','头顶区':'头顶区','后':'枕骨区','后区':'枕骨区','枕骨':'枕骨区','枕骨区':'枕骨区','侧':'两侧区','侧区':'两侧区','两侧':'两侧区','两侧区':'两侧区','刘海':'刘海区','刘海区':'刘海区','后颈':'后颈区','后颈区':'后颈区'};
-  return map[zone] || zone;
-}
-
-function getAdminHairRodDetails(rec) {
-  rec = rec || {};
-  var byZone = {};
-  if (Array.isArray(rec.rodDetails)) {
-    rec.rodDetails.forEach(function(r) {
-      if (!r) return;
-      var zone = normalizeAdminRodZone(r.zone);
-      if (!zone) return;
-      byZone[zone] = {
-        zone: zone,
-        size: r.size || '',
-        technique: r.technique || '',
-        startFrom: r.startFrom || r.start || '',
-        angle: r.angle || ''
-      };
-    });
-  }
-  var fields = rec.formFields || {};
-  var oldSize = {
-    top: rec.rodsTop || fields['hair-form-rods-top'] || '',
-    back: rec.rodsBack || fields['hair-form-rods-back'] || '',
-    side: rec.rodsSide || fields['hair-form-rods-side'] || '',
-    bang: rec.rodsBang || fields['hair-form-rods-bang'] || '',
-    nape: rec.rodsNape || fields['hair-form-rods-nape'] || ''
-  };
-  return ADMIN_HAIR_ROD_ZONES.map(function(cfg) {
-    var row = byZone[cfg.zone] || { zone: cfg.zone, size: '', technique: '', startFrom: '', angle: '' };
-    row.size = row.size || oldSize[cfg.key] || '';
-    row.technique = row.technique || fields['hair-form-rod-technique-' + cfg.key] || '';
-    row.startFrom = row.startFrom || fields['hair-form-rod-start-' + cfg.key] || '';
-    row.angle = row.angle || fields['hair-form-rod-angle-' + cfg.key] || '';
-    return row;
-  });
-}
-
-function renderAdminRodTable(rec) {
-  var rows = getAdminHairRodDetails(rec);
-  var hasAny = rows.some(function(r){ return r.size || r.technique || r.startFrom || r.angle; });
-  if (!hasAny) return '';
-  var html = '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px;">';
-  html += '<thead><tr style="color:#888;"><th style="text-align:left;padding:3px;border-bottom:1px solid var(--border);">分区</th><th style="text-align:left;padding:3px;border-bottom:1px solid var(--border);">杠号</th><th style="text-align:left;padding:3px;border-bottom:1px solid var(--border);">手法</th><th style="text-align:left;padding:3px;border-bottom:1px solid var(--border);">起点</th><th style="text-align:left;padding:3px;border-bottom:1px solid var(--border);">提拉角</th></tr></thead><tbody>';
-  rows.forEach(function(r) {
-    html += '<tr><td style="padding:3px;border-bottom:1px solid var(--border);">'+esc(r.zone)+'</td><td style="padding:3px;border-bottom:1px solid var(--border);">'+esc(r.size||'—')+'</td><td style="padding:3px;border-bottom:1px solid var(--border);">'+esc(r.technique||'—')+'</td><td style="padding:3px;border-bottom:1px solid var(--border);">'+esc(r.startFrom||'—')+'</td><td style="padding:3px;border-bottom:1px solid var(--border);">'+esc(r.angle||'—')+'</td></tr>';
-  });
-  html += '</tbody></table>';
-  return html;
-}
-
-function adminApplyOrderText(v) {
-  var map = {root_first:'发根', root_only:'发根', mid:'发中', end_first:'发尾', all:'全头', part:'分区'};
-  if (Array.isArray(v)) return v.map(function(x){ return map[x] || x; }).join(' → ');
-  return map[v] || v || '—';
-}
-
-function renderAdminColorTable(rec) {
-  var has = rec && (rec.developer || rec.mixRatio || rec.applyOrder || rec.colorDwell || rec.colorHeat || rec.colorHeatTemp || rec.scalpProtect || rec.endProtect || rec.colorNotes || rec.formula || rec.targetColor || rec.colorType);
-  if (!has) return '';
-  var pre = [];
-  if (rec.scalpProtect) pre.push('头皮隔离');
-  if (rec.endProtect) pre.push('发尾保护');
-  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-  if (rec.colorType) html += '<tr><td style="color:#888;padding:2px 4px;width:70px;">染发类型</td><td style="padding:2px 4px;">'+esc(rec.colorType)+'</td></tr>';
-  if (rec.targetColor) html += '<tr><td style="color:#888;padding:2px 4px;">目标色</td><td style="padding:2px 4px;">'+esc(rec.targetColor)+'</td></tr>';
-  if (rec.developer) html += '<tr><td style="color:#888;padding:2px 4px;">双氧水</td><td style="padding:2px 4px;">'+esc(rec.developer)+'%</td></tr>';
-  if (rec.mixRatio) html += '<tr><td style="color:#888;padding:2px 4px;">比例</td><td style="padding:2px 4px;">'+esc(rec.mixRatio)+'</td></tr>';
-  if (rec.applyOrder) html += '<tr><td style="color:#888;padding:2px 4px;">涂抹顺序</td><td style="padding:2px 4px;color:#facc15;">'+esc(adminApplyOrderText(rec.applyOrder))+'</td></tr>';
-  if (rec.colorDwell || rec.colorHeat || rec.colorHeatTemp) html += '<tr><td style="color:#888;padding:2px 4px;">停放/加热</td><td style="padding:2px 4px;">'+esc((rec.colorDwell ? rec.colorDwell + '分钟' : '—') + ' / ' + (rec.colorHeat ? '加热' : '不加热') + (rec.colorHeatTemp ? ' ' + rec.colorHeatTemp + '℃' : ''))+'</td></tr>';
-  if (pre.length) html += '<tr><td style="color:#888;padding:2px 4px;">染前处理</td><td style="padding:2px 4px;">'+esc(pre.join('、'))+'</td></tr>';
-  if (rec.formula) html += '<tr><td style="color:#888;padding:2px 4px;">配方</td><td style="padding:2px 4px;font-family:monospace;font-size:11px;color:#facc15;">'+esc(rec.formula)+'</td></tr>';
-  if (rec.colorNotes) html += '<tr><td style="color:#888;padding:2px 4px;">备注</td><td style="padding:2px 4px;font-size:11px;color:#aaa;">'+esc(rec.colorNotes)+'</td></tr>';
-  html += '</table>';
-  return html;
-}
-
-function renderAdminCareTable(rec) {
-  var care = rec && Array.isArray(rec.careUsage) ? rec.careUsage : [];
-  if (!care.length) return '';
-  var total = 0;
-  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-  care.forEach(function(cu, ci){
-    var brand = cu.brand || cu.brandName || '';
-    var product = cu.product || cu.productName || cu.color || '';
-    var grams = parseFloat(cu.grams || cu.amount || 0) || 0;
-    total += grams;
-    html += '<tr><td style="padding:2px 4px;'+(ci>0?'border-top:1px solid var(--border);':'')+'">'+(ci+1)+'. '+esc(brand)+' '+esc(product)+' <span style="color:#facc15;">'+grams+'g</span></td></tr>';
-  });
-  html += '</table><div style="text-align:right;font-size:12px;font-weight:700;margin-top:4px;">合计: '+total+'g</div>';
-  return html;
-}
-
 function clearNode(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
@@ -942,7 +748,7 @@ async function openModal(tab, id) {
       }
     }
     box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '员工' }));
-    appendField(box, '用户名', makeInput('f-user', data.username, id ? { readonly: true } : {}));
+    appendField(box, '用户名', makeInput('f-user', data.username));
     appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
     appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
     appendField(box, '职位（可多选）', function(){
@@ -1847,7 +1653,7 @@ window.viewHairRecordDetail = function(recordId) {
         });
         if (ts.split_ends) html += '<tr><td style="color:#888;padding:2px 4px;">发尾分叉</td><td style="padding:2px 4px;">'+_fn(ts.split_ends,_sp)+'</td></tr>';
         html += '</table>';
-        if (rd.diagnosisType) html += '<div style="margin-top:6px;font-size:11px;color:#888;">综合诊断：<span style="color:var(--accent);font-weight:600;">'+esc(adminHairTypeLabel(rd.diagnosisType))+'</span></div>';
+        if (rd.diagnosisType) html += '<div style="margin-top:6px;font-size:11px;color:#888;">综合诊断：<span style="color:var(--accent);font-weight:600;">'+esc(rd.diagnosisType)+'</span></div>';
         html += '</div>';
       }
       
@@ -1863,15 +1669,14 @@ window.viewHairRecordDetail = function(recordId) {
       }
       
       // 烫发方案
-      if (rd.serviceType || rd.permStyle || rd.rodMethod || rd.rodDetails || rd.rodsTop || rd.rodsBack || rd.rodsSide || rd.rodsBang || rd.rodsNape) {
+      if (rd.serviceType || rd.permStyle || rd.rodMethod || rd.rodsTop) {
         html += '<div style="margin-bottom:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">';
         html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">烫发方案</div>';
         html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
         if (rd.serviceType) html += '<tr><td style="color:#888;padding:2px 4px;width:70px;">服务类型</td><td style="padding:2px 4px;">'+_fn(rd.serviceType,_sv)+'</td></tr>';
         if (rd.permStyle) html += '<tr><td style="color:#888;padding:2px 4px;">款式</td><td style="padding:2px 4px;">'+_fn(rd.permStyle,_ps)+'</td></tr>';
         if (rd.rodMethod) html += '<tr><td style="color:#888;padding:2px 4px;">手法</td><td style="padding:2px 4px;">'+_fn(rd.rodMethod,_rm)+'</td></tr>';
-        var _rodTable = renderAdminRodTable(rd);
-        if (_rodTable) html += '<tr><td style="color:#888;padding:2px 4px;vertical-align:top;">排杠</td><td style="padding:2px 4px;">'+_rodTable+'</td></tr>';
+        if (rd.rodsTop) html += '<tr><td style="color:#888;padding:2px 4px;">排杠</td><td style="padding:2px 4px;">顶'+esc(rd.rodsTop||'—')+' 后'+esc(rd.rodsBack||'—')+' 侧'+esc(rd.rodsSide||'—')+' 刘海'+esc(rd.rodsBang||'—')+'</td></tr>';
         if (rd.applyOrder) html += '<tr><td style="color:#888;padding:2px 4px;">涂抹顺序</td><td style="padding:2px 4px;color:#facc15;">'+(Array.isArray(rd.applyOrder)?rd.applyOrder.map(function(v){return _fn(v,_ao)}).join(' → '):_fn(rd.applyOrder,_ao))+'</td></tr>';
         if (rd.dwellNatural) html += '<tr><td style="color:#888;padding:2px 4px;">自然停放</td><td style="padding:2px 4px;">'+esc(rd.dwellNatural)+'</td></tr>';
         if (rd.dwellHeat) html += '<tr><td style="color:#888;padding:2px 4px;">加热停放</td><td style="padding:2px 4px;">'+esc(rd.dwellHeat)+'</td></tr>';
@@ -1886,25 +1691,40 @@ window.viewHairRecordDetail = function(recordId) {
       }
       
       // 染发参数（如果有）
-      if (rd.colorType || rd.targetColor || rd.developer || rd.mixRatio || rd.applyOrder || rd.colorDwell || rd.colorHeat || rd.colorHeatTemp || rd.scalpProtect || rd.endProtect || rd.colorNotes || rd.formula) {
+      if (rd.colorType || rd.targetColor || rd.developer || rd.mixRatio) {
         html += '<div style="margin-bottom:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">';
         html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">染发参数</div>';
-        html += renderAdminColorTable(rd);
+        html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+        if (rd.colorType) html += '<tr><td style="color:#888;padding:2px 4px;width:70px;">染发类型</td><td style="padding:2px 4px;">'+esc(rd.colorType)+'</td></tr>';
+        if (rd.targetColor) html += '<tr><td style="color:#888;padding:2px 4px;">目标色</td><td style="padding:2px 4px;">'+esc(rd.targetColor)+'</td></tr>';
+        if (rd.developer) html += '<tr><td style="color:#888;padding:2px 4px;">双氧水</td><td style="padding:2px 4px;">'+esc(rd.developer)+'</td></tr>';
+        if (rd.mixRatio) html += '<tr><td style="color:#888;padding:2px 4px;">比例</td><td style="padding:2px 4px;">'+esc(rd.mixRatio)+'</td></tr>';
+        if (rd.formula) html += '<tr><td style="color:#888;padding:2px 4px;">配方</td><td style="padding:2px 4px;font-family:monospace;font-size:11px;color:#facc15;">'+esc(rd.formula)+'</td></tr>';
+        if (rd.colorHeat) html += '<tr><td style="color:#888;padding:2px 4px;">加热</td><td style="padding:2px 4px;">'+esc(rd.colorHeat)+(rd.colorHeatTemp?' '+rd.colorHeatTemp+'°C':'')+(rd.colorDwell?' '+rd.colorDwell+'分':'')+'</td></tr>';
+        if (rd.scalpProtect) html += '<tr><td style="color:#888;padding:2px 4px;">头皮隔离</td><td style="padding:2px 4px;">✅</td></tr>';
+        if (rd.endProtect) html += '<tr><td style="color:#888;padding:2px 4px;">发尾保护</td><td style="padding:2px 4px;">✅</td></tr>';
+        if (rd.colorNotes) html += '<tr><td style="color:#888;padding:2px 4px;">备注</td><td style="padding:2px 4px;font-size:11px;color:#aaa;">'+esc(rd.colorNotes)+'</td></tr>';
         if (rd.secondHeatHealthy || rd.secondHeatDamaged) {
           var sh = [];
           if (rd.secondHeatHealthy) sh.push('健康发');
           if (rd.secondHeatDamaged) sh.push('受损发');
-          html += '<div style="font-size:12px;color:#888;margin-top:4px;">第二次加热：'+esc(sh.join('/'))+'</div>';
+          html += '<tr><td style="color:#888;padding:2px 4px;">第二次加热</td><td style="padding:2px 4px;">'+sh.join('/')+'</td></tr>';
         }
-        html += '</div>';
+        html += '</table></div>';
       }
       
       // 护理记录
       if (rd.careUsage && Array.isArray(rd.careUsage) && rd.careUsage.length > 0) {
         html += '<div style="margin-bottom:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;">';
         html += '<div style="font-size:11px;color:#888;margin-bottom:6px;padding-left:6px;border-left:2px solid #555;">护理记录</div>';
-        html += renderAdminCareTable(rd);
-        html += '</div>';
+        html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+        rd.careUsage.forEach(function(cu, ci){
+          var brand = cu.brand || cu.brandName || '';
+          var product = cu.product || cu.productName || cu.color || '';
+          var grams = cu.grams || cu.amount || 0;
+          html += '<tr><td style="padding:2px 4px;'+(ci>0?'border-top:1px solid var(--border);':'')+'">'+(ci+1)+'. '+esc(brand)+' '+esc(product)+' <span style="color:#facc15;">'+grams+'g</span></td></tr>';
+        });
+        html += '</table></div>';
       }
       
       // 效果评定
@@ -1918,7 +1738,7 @@ window.viewHairRecordDetail = function(recordId) {
       }
       
       // 兜底：其他未在以上分类中展示的字段
-      var _covered = ['baseInfo','threeSection','aiOverall','aiDiagnosisText','aiReference','serviceType','permStyle','rodMethod','rodDetails','rodsTop','rodsBack','rodsSide','rodsBang','rodsNape','applyOrder','dwellNatural','dwellHeat','dwellType','rinse','creamType','softenType','heatType','rinseMethod','gelType','careUsage','feedbackRating','followMsg','followDate','diagnosisType','planResultHTML','careRecords','colorType','targetColor','developer','mixRatio','formula','colorHeat','colorHeatTemp','colorDwell','scalpProtect','endProtect','colorNotes','secondHeatHealthy','secondHeatDamaged','barber','technician','photo','formFields','_cloudRecordId','_isCloudRecord'];
+      var _covered = ['baseInfo','threeSection','aiOverall','aiDiagnosisText','aiReference','serviceType','permStyle','rodMethod','rodsTop','rodsBack','rodsSide','rodsBang','applyOrder','dwellNatural','dwellHeat','dwellType','rinse','creamType','softenType','heatType','rinseMethod','gelType','careUsage','feedbackRating','followMsg','followDate','diagnosisType','planResultHTML','careRecords','colorType','targetColor','developer','mixRatio','formula','colorHeat','colorHeatTemp','colorDwell','scalpProtect','endProtect','colorNotes','secondHeatHealthy','secondHeatDamaged','barber','technician','photo','_cloudRecordId','_isCloudRecord'];
       var _extraKeys = [];
       for (var _k in rd) {
         if (rd.hasOwnProperty(_k) && _covered.indexOf(_k) === -1) {
@@ -2292,85 +2112,31 @@ function loadCustomers() {
 // ===== 查看客户发质分析记录 =====
 function viewCustAnalyses(phone, name) {
   if (!phone) return;
-  var normalizedPhone = normalizeAdminPhone(phone);
-  var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=200', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
     headers: { 'apikey': SUPABASE_KEY }
-  }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-  var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=id,phone,created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
-    headers: { 'apikey': SUPABASE_KEY }
-  }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-
-  Promise.all([hairRecordsPromise, queuePromise])
-  .then(function(results){
-    var hairRows = Array.isArray(results[0]) ? results[0] : [];
-    var queueRows = Array.isArray(results[1]) ? results[1] : [];
-    var records = [];
-    var seen = {};
-    hairRows.forEach(function(row) {
-      var rec = normalizeAdminHairRecord(row);
-      if (normalizeAdminPhone(rec.customerPhone) !== normalizedPhone) return;
-      var key = 'hr:' + (rec.id || rec.createdAt || records.length);
-      if (seen[key]) return;
-      seen[key] = true;
-      records.push(rec);
-    });
-    queueRows.forEach(function(row) {
-      var rec = normalizeQueueHairRecord(row);
-      if (normalizeAdminPhone(rec.customerPhone) !== normalizedPhone) return;
-      var key = 'q:' + (rec.id || rec.createdAt || records.length);
-      if (seen[key]) return;
-      seen[key] = true;
-      records.push(rec);
-    });
-    records.sort(function(a, b) {
-      var ta = new Date(a.createdAt || 0).getTime() || 0;
-      var tb = new Date(b.createdAt || 0).getTime() || 0;
-      return tb - ta;
-    });
-
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
     var html = '<div class="modal-box" style="max-width:600px;">';
     html += '<h3>' + esc(name || phone) + ' · 发质分析记录</h3>';
-    if (!records || records.length === 0) {
+    if (!rows || rows.length === 0) {
       html += '<p style="color:#888;font-size:13px;">暂无分析记录</p>';
     } else {
       html += '<div style="max-height:400px;overflow-y:auto;">';
-      records.forEach(function(rec){
-        var date = rec.createdAt ? rec.createdAt.substring(0,10) : '—';
-        var ts = rec.threeSection || {};
-        var root = ts.root || {};
-        var mid = ts.mid || {};
-        var end = ts.end || {};
+      rows.forEach(function(r){
+        var date = r.created_at ? r.created_at.substring(0,10) : '—';
+        var diag = (r.ai_analysis && r.ai_analysis.ai_diagnosis) || {};
+        var root = diag.root || {};
+        var mid = diag.mid || {};
+        var end = diag.end || {};
         html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;">';
-        html += '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#888;margin-bottom:4px;">';
-        html += '<span>' + date + '</span>';
-        html += '<span>' + (rec.source === 'hair_records' ? '发质分析表' : 'AI旧记录') + '</span>';
-        html += '</div>';
-        if (rec.barber || rec.technician) {
-          html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">发型师: ' + esc(rec.barber || '—') + '　技师: ' + esc(rec.technician || '—') + '</div>';
-        }
+        html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">' + date + '</div>';
         html += '<div style="font-size:12px;">';
         if (root.level) html += '发根' + root.level + '级 ';
         if (mid.level) html += '发中' + mid.level + '级 ';
         if (end.level) html += '发尾' + end.level + '级';
-        if (!root.level && !mid.level && !end.level) html += '暂无三段诊断';
         html += '</div>';
-        if (rec.diagnosisType) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + esc(adminHairTypeLabel(rec.diagnosisType)) + '</div>';
-        if (rec.status) html += '<div style="font-size:11px;color:#888;">状态: ' + esc(rec.status) + '</div>';
-        var rodTable = renderAdminRodTable(rec);
-        if (rodTable) {
-          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">';
-          html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">完整排杠方案</div>' + rodTable + '</div>';
-        }
-        var colorTable = renderAdminColorTable(rec);
-        if (colorTable) {
-          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">';
-          html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">染发参数</div>' + colorTable + '</div>';
-        }
-        var careTable = renderAdminCareTable(rec);
-        if (careTable) {
-          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">';
-          html += '<div style="font-size:11px;color:#888;margin-bottom:4px;">护理记录</div>' + careTable + '</div>';
-        }
+        if (r.stylist_damage_level) html += '<div style="font-size:11px;color:var(--accent);">发型师诊断: ' + r.stylist_damage_level + '</div>';
         html += '</div>';
       });
       html += '</div>';
