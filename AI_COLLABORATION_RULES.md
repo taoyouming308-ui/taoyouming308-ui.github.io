@@ -43,6 +43,10 @@ git push origin main:master
 
 10. For Meiguanjia sync work, treat external API behavior as unstable. Verify by observing real Network requests or existing integration code before changing mapping logic.
 
+11. Updates must not interrupt normal use. Never force-refresh active users; show an update prompt and let them refresh when safe.
+
+12. Rollbacks must be forward-only. Restore stable code under a higher version number instead of publishing an older version.
+
 ## Ownership
 
 - GitHub `github/main` is the live GitHub Pages source.
@@ -55,6 +59,7 @@ Before telling the user the work is done, verify:
 
 ```sh
 node scripts/check-version-sync.js
+node scripts/smoke-test-app.js
 git status --short
 git log -1 --oneline --decorate
 ```

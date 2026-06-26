@@ -29,6 +29,7 @@ The repo now has:
 - `.githooks/pre-push`
 - `PUBLISH_RULES.md`
 - `AI_COLLABORATION_RULES.md`
+- `NO_DOWNTIME_UPDATE_RULES.md`
 
 Run:
 
@@ -38,6 +39,8 @@ node scripts/check-version-sync.js
 ```
 
 The hook fetches both remotes and rejects pushes if local `HEAD` does not include both remote heads.
+
+Updates must not interrupt active salon work. The app should prompt for refresh instead of forcing a refresh. If a release is bad, use `scripts/rollback-forward.js` to publish stable code as a higher version.
 
 ## Hair Analysis Workflow
 
@@ -130,6 +133,7 @@ git fetch github main
 git fetch origin master
 git status --short --branch
 node scripts/check-version-sync.js
+node scripts/smoke-test-app.js
 ```
 
 Before publishing:

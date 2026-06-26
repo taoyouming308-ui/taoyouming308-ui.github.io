@@ -7,6 +7,7 @@ Read first:
 - `AI_COLLABORATION_RULES.md`
 - `HERMES_HANDOFF.md`
 - `AGENTS.md`
+- `NO_DOWNTIME_UPDATE_RULES.md`
 
 Before changing or publishing:
 
@@ -17,6 +18,8 @@ Before changing or publishing:
 5. Never push a lower version than the current online version.
 6. Push the same commit to both remotes when Gitee is used by another editor.
 7. Never force-push or overwrite another assistant's work to resolve conflicts.
+8. Do not force-refresh users during normal work; the app must show an update prompt instead.
+9. If a release breaks usage, rollback forward with a higher version number.
 
 Recommended commands:
 
@@ -24,6 +27,7 @@ Recommended commands:
 git fetch github main
 git fetch origin master
 node scripts/check-version-sync.js
+node scripts/smoke-test-app.js
 git push github main
 git push origin main:master
 ```

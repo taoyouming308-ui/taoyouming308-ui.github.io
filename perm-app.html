@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="314">
+<html lang="zh-CN" data-version="315">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7779,6 +7779,18 @@ window.uploadAppFbScreenshot = function(inputEl) {
     if (location.hash) q += location.hash;
     return location.pathname + q;
   };
+  var showUpdatePrompt = function(v) {
+    localStorage.setItem('app-max-version', Math.max(MAX_VER, v));
+    var banner = document.getElementById('update-banner');
+    if (!banner) return;
+    banner.textContent = '🔄 有新版本 v' + v + '，点此刷新';
+    banner.style.display = 'block';
+    banner.onclick = function() {
+      localStorage.setItem('app-version', v);
+      localStorage.setItem('app-max-version', v);
+      location.href = buildVersionUrl(v, false);
+    };
+  };
   if (VER < MAX_VER && location.search.indexOf('downgrade_guard=1') === -1) {
     location.replace(buildVersionUrl(MAX_VER, true));
     return;
@@ -7797,10 +7809,9 @@ window.uploadAppFbScreenshot = function(inputEl) {
           return;
         }
         if (sv > 0 && sv > VER) {
-          // 服务器有更新版本 → 强制跳转
-          localStorage.setItem('app-version', sv);
-          localStorage.setItem('app-max-version', Math.max(MAX_VER, sv));
-          location.replace(buildVersionUrl(sv, false));
+          // 服务器有更新版本：只提示，不强制刷新，避免打断正在填写的客户/发质档案。
+          showUpdatePrompt(sv);
+          _onVersionReady();
           return;
         }
       }
@@ -7826,7 +7837,7 @@ window.uploadAppFbScreenshot = function(inputEl) {
       document.body.appendChild(tip);
       setTimeout(function() { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 8000);
     }
-    localStorage.setItem('app-version', Math.max(OLD_VER, VER));
+    localStorage.setItem('app-version', VER);
     localStorage.setItem('app-max-version', Math.max(OLD_VER, VER));
   };
   
