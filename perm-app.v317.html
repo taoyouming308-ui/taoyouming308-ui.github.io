@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="318">
+<html lang="zh-CN" data-version="317">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5353,10 +5353,6 @@ function initApp() {
         }
         html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
         html += '</div>';
-        // ★ 红色提醒：技师已完成，但发型师未回访/评定
-        if (status === '技师已完成' && isStylist) {
-          html += '<div style="color:var(--danger,#e0556a);font-size:11px;font-weight:600;margin-top:2px;">⚠️ 未评定，回访客户</div>';
-        }
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
         if (isStylist) {
           // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
@@ -7811,8 +7807,8 @@ window.selectAppFbRating = function(el) {
   el.style.background = bg;
   el.style.borderColor = '#fff';
   el.style.color = '#fff';
-  var radio = document.querySelector('input[name="' + name + '"]');
-  if (radio) { radio.value = val; radio.checked = true; }
+  var radio = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
+  if (radio) radio.checked = true;
 };
 window.uploadAppFbScreenshot = function(inputEl) {
   var file = inputEl.files && inputEl.files[0];
