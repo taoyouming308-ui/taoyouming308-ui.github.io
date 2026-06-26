@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="291">
+<html lang="zh-CN" data-version="292">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6603,8 +6603,8 @@ window.selectAppFbRating = function(el) {
   el.style.background = bg;
   el.style.borderColor = '#fff';
   el.style.color = '#fff';
-  var radio = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
-  if (radio) radio.checked = true;
+  var radio = document.querySelector('input[name="' + name + '"]');
+  if (radio) { radio.value = val; radio.checked = true; }
 };
 window.uploadAppFbScreenshot = function(inputEl) {
   var file = inputEl.files && inputEl.files[0];
