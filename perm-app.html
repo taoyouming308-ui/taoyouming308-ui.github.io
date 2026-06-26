@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="303">
+<html lang="zh-CN" data-version="304">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5139,9 +5139,9 @@ function initApp() {
         html += '</div>';
         html += '<div style="display:flex;gap:4px;margin-top:4px;">';
         if (isStylist) {
-          // 发型师操作云端原记录：编辑会 PATCH 当前 id，删除会移除当前 id，不新建订单
+          // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑</button>';
-          html += '<button onclick="deleteCloudHairRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--danger);cursor:pointer;font-family:var(--font);">删除</button>';
+          html += '<span style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-align:center;">已入档案不可删</span>';
         } else if (status === '待回访' && isTech) {
           // 技师编辑
           html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑填写</button>';
@@ -5192,39 +5192,9 @@ function initApp() {
 
   window.deleteCloudHairRecord = function(recordId) {
     if (!recordId) return;
-    if (!confirm('确定删除这条发质分析表？删除后客户档案和后台也不会再显示这条记录。')) return;
-    var headers = { 'apikey': SUPABASE_KEY };
-    var careUrl = SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(recordId);
-    var recordUrl = SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(recordId);
-
-    fetch(careUrl, { method: 'DELETE', headers: headers }).catch(function(){})
-      .then(function() {
-        return fetch(recordUrl, { method: 'DELETE', headers: headers });
-      }).then(function(r) {
-        if (!r.ok) {
-          return r.text().then(function(t) { throw new Error(t || ('HTTP ' + r.status)); });
-        }
-        var records = getHairRecords().filter(function(rec) { return rec.id !== recordId; });
-        saveHairRecords(records);
-        if (_cloudEditingId === recordId) {
-          _cloudEditingId = null;
-          _editingHairId = null;
-          _followUpMode = false;
-          _cloudRecordSeq = null;
-          _cloudRecordData = null;
-          var formEl = document.getElementById('hair-analysis-section');
-          if (formEl) formEl.remove();
-          var taskSection = document.getElementById('hair-tasks-section');
-          if (taskSection) taskSection.style.display = '';
-        }
-        if (window.renderPendingRecords) window.renderPendingRecords();
-        if (window.renderMyTasks) window.renderMyTasks();
-        if (document.getElementById('profile-list') && window.loadCustomerProfiles) window.loadCustomerProfiles();
-        if (window.showToast) window.showToast('已删除发质分析表');
-        else alert('已删除发质分析表');
-      }).catch(function(err) {
-        alert('❌ 删除失败: ' + String(err && err.message ? err.message : err).slice(0, 120));
-      });
+    var msg = '这条发质分析表已经上传到客户档案，不允许删除；需要调整请点编辑后保存修改。';
+    if (window.showToast) window.showToast(msg);
+    else alert(msg);
   };
 
   // ===== 展示文字版快照（代替编辑表单） =====
@@ -5657,13 +5627,20 @@ function initApp() {
   // ===== 本地记录管理 =====
   window.deleteHairRecord = function(id) {
     var records = getHairRecords();
+    var target = null;
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].id === id) { target = records[i]; break; }
+    }
+    if (!target) return;
+    if (target.synced || target._isCloudRecord || target._cloudRecordId) {
+      var msg = '这条发质分析表已经上传到客户档案，不允许删除；需要调整请点编辑后保存修改。';
+      if (window.showToast) window.showToast(msg);
+      else alert(msg);
+      return;
+    }
     records = records.filter(function(r) { return r.id !== id; });
     saveHairRecords(records);
     window.renderPendingRecords();
-    // 也删云端
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE', headers: { 'apikey': SUPABASE_KEY }
-    }).catch(function(){});
   };
 
   window.markHairDone = function(id) {
