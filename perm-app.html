@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="301">
+<html lang="zh-CN" data-version="302">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3647,6 +3647,32 @@ function initApp() {
     return html;
   }
 
+  function hairRecordPersonText(rec) {
+    rec = rec || {};
+    var name = rec.customerName || rec.name || rec.customer_name || '未填写';
+    var phone = rec.customerPhone || rec.phone || rec.customer_phone || '';
+    var barber = rec.barber || localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    var assistant = rec.technician || rec.assistant || '';
+    return {
+      name: name,
+      phone: phone,
+      barber: barber,
+      assistant: assistant,
+      line1: name + (phone ? ' · ' + phone : ''),
+      line2: '发型师：' + (barber || '—') + ' · 助理：' + (assistant || '—')
+    };
+  }
+
+  function renderHairSaveMeta(rec) {
+    var el = document.getElementById('hair-save-meta');
+    if (!el) return;
+    var info = hairRecordPersonText(rec || {});
+    el.innerHTML = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;font-size:11px;line-height:1.7;color:var(--text-secondary);">' +
+      '<div style="font-weight:700;color:var(--text);">' + esc(info.line1) + '</div>' +
+      '<div>' + esc(info.line2) + '</div>' +
+      '</div>';
+  }
+
   function renderHairRodArchiveTable(rec) {
     var rows = getHairRodDetailsFromRecord(rec);
     var hasAny = rows.some(function(r) { return r.size || r.technique || r.startFrom || r.angle; });
@@ -3723,7 +3749,7 @@ function initApp() {
     var baseRows = [
       ['姓名', r.customerName || '—'],
       ['电话', r.customerPhone || '—'],
-      ['技师', r.technician || '—'],
+      ['助理', r.technician || '—'],
       ['发型师', r.barber || '—'],
       ['日期', r.date || (r.createdAt || '').slice(0,10) || '—'],
       ['发质类型', hairTypeLabel(r.diagnosisType) || '—']
@@ -4656,6 +4682,7 @@ function initApp() {
             btn.style.background = 'var(--success, #2ecc71)';
             btn.disabled = true;
           }
+          renderHairSaveMeta(_mergedData);
           if (window.renderMyTasks) window.renderMyTasks();
         }
       }).catch(function(){ alert('❌ 云端同步失败，请检查网络'); });
@@ -4687,6 +4714,7 @@ function initApp() {
         btn.disabled = false;
         btn.onclick = function(){ window.saveHairRecordLocal(); };
       }
+      renderHairSaveMeta(record);
     }
     // 同步到云端 - 非静默才同步 hair_records（仅非云端记录走这里）
     if (!silent) {
@@ -4899,14 +4927,16 @@ function initApp() {
     var html = '';
     for (var ri = 0; ri < records.length; ri++) {
       var rec = records[ri];
+      var recInfo = hairRecordPersonText(rec);
       var seqStr = '#' + String(rec.seq || (ri+1)).padStart(3, '0');
       html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-      html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + seqStr + ' ' + esc(rec.customerName||'未填写') + '</span>';
-      html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(rec.date) + ' | ' + esc(rec.technician||'无技师') + '</span>';
+      html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + seqStr + ' ' + esc(recInfo.name) + '</span>';
+      html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(rec.date || '') + '</span>';
       html += '</div>';
+      html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px;">' + esc(recInfo.phone || '无电话') + '</div>';
+      html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:3px;">' + esc(recInfo.line2) + '</div>';
       html += '<div style="display:flex;gap:6px;font-size:10px;color:var(--text-secondary);">';
-      html += '<span>' + esc(rec.phone || rec.customerPhone || '') + '</span>';
       // 状态颜色：待回访→橙色，技师已完成→绿色，已完成→灰色
       var statusStyles = {
         '待回访': { color: '#e8a817', text: '待回访' },
@@ -4963,12 +4993,13 @@ function initApp() {
       }
       // 只显示本人相关的记录（自己是技师或发型师）
       rows = rows.filter(function(r) {
+        var rec = r.record_data || {};
         // 技师可能多选（逗号分隔），逐个匹配
-        var techs = (r.technician || '').split(',');
+        var techs = (r.technician || rec.technician || '').split(',');
         for (var ti = 0; ti < techs.length; ti++) {
           if (techs[ti].trim() === barber) return true;
         }
-        return r.barber === barber;
+        return (r.barber || rec.barber || '') === barber;
       });
       if (rows.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无你的任务</div>';
@@ -4982,17 +5013,19 @@ function initApp() {
         var customerName = r.customer_name || rec.customerName || '未填写';
         var phone = r.customer_phone || rec.customerPhone || '';
         var technician = r.technician || rec.technician || '';
+        var stylist = r.barber || rec.barber || '';
+        var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
         // 判断当前用户身份：技师 or 发型师
-        var techList = (r.technician || '').split(',');
+        var techList = (technician || '').split(',');
         var isTech = false;
         for (var ti = 0; ti < techList.length; ti++) {
           if (techList[ti].trim() === barber) { isTech = true; break; }
         }
-        var isStylist = (r.barber === barber);
+        var isStylist = (stylist === barber);
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">#' + String(rec.seq || (i+1)).padStart(3, '0') + ' ' + esc(customerName) + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(technician) + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">#' + String(rec.seq || (i+1)).padStart(3, '0') + ' ' + esc(person.name) + '</span>';
+        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(status) + '</span>';
         html += '</div>';
         // 显示日期时间
         var _dt = r.created_at || rec.createdAt || rec.date || '';
@@ -5016,8 +5049,9 @@ function initApp() {
         if (_timeStr) {
           html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + _timeStr + '</div>';
         }
+        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(person.phone || '无电话') + '</div>';
+        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + esc(person.line2) + '</div>';
         html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        html += '<span>' + esc(phone) + '</span>';
         var statusColor = '#e8a817';
         var statusText = '待回访';
         if (status === '待回访完成') { statusColor = '#e89217'; statusText = '待回访完成'; }
@@ -5149,7 +5183,7 @@ function initApp() {
     lines.push('');
     lines.push('━━━ 客户信息 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push(' 姓名：' + (rec.customerName || '—') + '    电话：' + (rec.customerPhone || '—'));
-    lines.push(' 发型师：' + (rec.barber || '—') + '    技师：' + (rec.technician || '—'));
+    lines.push(' 发型师：' + (rec.barber || '—') + '    助理：' + (rec.technician || '—'));
     lines.push(' 日期：' + (rec.date || '—'));
     lines.push('');
     lines.push('━━━ 基础信息 ━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -5238,7 +5272,7 @@ function initApp() {
     h += _tr('姓名', rec.customerName);
     h += _tr('电话', rec.customerPhone);
     h += _tr('发型师', rec.barber);
-    h += _tr('技师', rec.technician);
+    h += _tr('助理', rec.technician);
     h += _tr('日期', rec.date);
 
     // 基础信息
@@ -5483,6 +5517,7 @@ function initApp() {
       }
       btn.disabled = false;
     }
+    renderHairSaveMeta(data);
     var modal = document.getElementById('hair-analysis-modal');
     if (modal) modal.scrollTop = 0;
   };
@@ -5692,6 +5727,7 @@ function initApp() {
           btn.style.background = 'var(--success, #2ecc71)';
           btn.disabled = true;
         }
+        renderHairSaveMeta(rec);
         if (window.renderPendingRecords) window.renderPendingRecords();
         if (window.renderMyTasks) window.renderMyTasks();
         alert('☁️ 已上传');
@@ -5814,6 +5850,7 @@ function initApp() {
           btn.disabled = false;
           btn.onclick = window.saveAndUploadHairArchive;
         }
+        renderHairSaveMeta(record);
         if (window.renderPendingRecords) window.renderPendingRecords();
         if (window.renderMyTasks) window.renderMyTasks();
       } else {
@@ -5824,58 +5861,90 @@ function initApp() {
 
   // ===== 从预约选择客户 =====
   window.showBookingPicker = function() {
-    // 获取今天的预约
-    var today = new Date();
-    var dateKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    
-    var barber = BOOKING_BARBER || '';
-    var barberFilter = barber ? '&barber_name=eq.' + encodeURIComponent(barber) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name&date=eq.' + dateKey + barberFilter + '&order=reservation_time.asc', {
+    var old = document.getElementById('hair-booking-picker-modal');
+    if (old) old.remove();
+    var dateKey = localStorage.getItem('hair-booking-picker-date') || BOOKING_DATE || getLocalDateStr();
+    var wrap = document.createElement('div');
+    wrap.id = 'hair-booking-picker-modal';
+    wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
+    wrap.onclick = function(){ wrap.remove(); };
+    wrap.innerHTML =
+      '<div style="background:var(--surface);border-radius:var(--radius);padding:16px;max-width:360px;width:92%;max-height:78vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">' +
+          '<div style="font-size:14px;font-weight:700;color:var(--accent);">选择预约客户</div>' +
+          '<button type="button" onclick="event.currentTarget.closest(&quot;#hair-booking-picker-modal&quot;).remove()" style="border:0;background:transparent;color:var(--text-secondary);font-size:18px;cursor:pointer;">×</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">' +
+          '<button type="button" onclick="shiftHairBookingPickerDate(-1)" style="width:34px;height:34px;border:1px solid var(--border);border-radius:6px;background:var(--surface-light);color:var(--text);font-size:16px;">‹</button>' +
+          '<input id="hair-booking-picker-date" type="date" value="' + escAttr(dateKey) + '" onchange="loadHairBookingPickerDate(this.value)" style="flex:1;min-width:0;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">' +
+          '<button type="button" onclick="shiftHairBookingPickerDate(1)" style="width:34px;height:34px;border:1px solid var(--border);border-radius:6px;background:var(--surface-light);color:var(--text);font-size:16px;">›</button>' +
+        '</div>' +
+        '<div id="hair-booking-picker-list"><div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">加载中...</div></div>' +
+        '<button type="button" onclick="event.currentTarget.closest(&quot;#hair-booking-picker-modal&quot;).remove()" style="width:100%;padding:8px;margin-top:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">取消</button>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    window.loadHairBookingPickerDate(dateKey);
+  };
+
+  window.shiftHairBookingPickerDate = function(delta) {
+    var input = document.getElementById('hair-booking-picker-date');
+    var base = (input && input.value) || getLocalDateStr();
+    var d = new Date(base + 'T00:00:00');
+    if (isNaN(d.getTime())) d = new Date();
+    d.setDate(d.getDate() + delta);
+    var dateKey = getLocalDate(d);
+    if (input) input.value = dateKey;
+    window.loadHairBookingPickerDate(dateKey);
+  };
+
+  window.loadHairBookingPickerDate = function(dateKey) {
+    dateKey = dateKey || getLocalDateStr();
+    localStorage.setItem('hair-booking-picker-date', dateKey);
+    var list = document.getElementById('hair-booking-picker-list');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">加载中...</div>';
+    var barberName = BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
+    var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + barberFilter + '&order=reservation_time.asc', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
-      if (!rows || rows.length === 0) {
-        alert('今天暂无预约');
-        return;
-      }
-      // 只显示当前发型师自己的预约（双重保险：服务端已过滤，客户端再筛一次）
-      var barberName = BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
-      if (barberName) {
-        rows = rows.filter(function(r){ return r.barber_name === barberName; });
-      }
-      if (rows.length === 0) {
-        alert('今天暂无你的预约');
-        return;
-      }
-      // 去重
+      rows = Array.isArray(rows) ? rows : [];
+      if (barberName) rows = rows.filter(function(r){ return r.barber_name === barberName; });
       var seen = {};
       var unique = [];
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         if (!r.customer_name || r.customer_name === '未登记') continue;
-        var key = r.customer_phone || r.customer_name;
+        var key = (r.customer_phone || r.customer_name) + '|' + (r.time_label || r.reservation_time || '');
         if (seen[key]) continue;
         seen[key] = true;
         unique.push(r);
       }
-      if (unique.length === 0) { alert('今天暂无已登记客户'); return; }
-      
-      // 显示选择弹窗
-      var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;" onclick="this.remove()">';
-      html += '<div style="background:var(--surface);border-radius:var(--radius);padding:16px;max-width:320px;width:90%;max-height:70vh;overflow-y:auto;" onclick="event.stopPropagation()">';
-      html += '<div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;">选择预约客户</div>';
+      if (!unique.length) {
+        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无已登记预约</div>';
+        return;
+      }
+      var html = '';
       for (var i = 0; i < unique.length; i++) {
         var r = unique[i];
-        html += '<div onclick="pickBookingCustomer(\''+escAttr(r.customer_name)+'\',\''+escAttr(r.customer_phone||'')+'\');this.closest(\'[onclick]\').remove();" style="padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;">';
+        var meta = [r.time_label || '', r.customer_phone || '', r.barber_name || ''].filter(Boolean).join(' · ');
+        var service = [r.service_name || '', r.notes || ''].filter(Boolean).join(' / ');
+        html += '<button type="button" data-name="'+escAttr(r.customer_name||'')+'" data-phone="'+escAttr(r.customer_phone||'')+'" onclick="pickBookingCustomerFromNode(this)" style="display:block;width:100%;text-align:left;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--font);">';
         html += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + esc(r.customer_name) + '</div>';
-        html += '<div style="font-size:11px;color:var(--text-secondary);">' + esc(r.customer_phone||'') + ' · ' + esc(r.barber_name||'') + '</div>';
-        html += '</div>';
+        html += '<div style="font-size:11px;color:var(--text-secondary);">' + esc(meta || dateKey) + '</div>';
+        if (service) html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(service) + '</div>';
+        html += '</button>';
       }
-      html += '<button onclick="this.closest(\'[onclick]\').remove();" style="width:100%;padding:8px;margin-top:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font);">取消</button>';
-      html += '</div></div>';
-      var div = document.createElement('div');
-      div.innerHTML = html;
-      document.body.appendChild(div.firstElementChild);
-    }).catch(function() { alert('加载预约失败'); });
+      list.innerHTML = html;
+    }).catch(function() {
+      list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">加载预约失败</div>';
+    });
+  };
+
+  window.pickBookingCustomerFromNode = function(node) {
+    window.pickBookingCustomer(node.getAttribute('data-name') || '', node.getAttribute('data-phone') || '');
+    var modal = document.getElementById('hair-booking-picker-modal');
+    if (modal) modal.remove();
   };
 
   window.pickBookingCustomer = function(name, phone) {
@@ -6015,12 +6084,12 @@ function initApp() {
     html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">发型师 '+escAttr(currentBarber)+'</span>';
     html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
-    // 技师chip多选（从Supabase拉取，只显示职位包含技师的员工，toggle模式可多选）
+    // 助理/技师chip多选（从Supabase拉取，toggle模式可多选）
     html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">';
-    html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-right:4px;">技师</label>';
+    html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-right:4px;">助理</label>';
     html += '<div id="hair-form-tech-container" style="display:flex;flex-wrap:wrap;gap:4px;"></div>';
     html += '</div>';
-    // 异步从Supabase拉取技师列表（按门店过滤）
+    // 异步从Supabase拉取助理/技师列表（按门店过滤）
     setTimeout(function(){
       var container = document.getElementById('hair-form-tech-container');
       if (!container) return;
@@ -6035,8 +6104,8 @@ function initApp() {
         return fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
       }).then(function(r){ return r.json(); }).then(function(rows){
         if (!rows || rows.length === 0) return;
-        // 只保留职位包含"技师"的员工
-        var techs = rows.filter(function(r){ return r.position && r.position.indexOf('技师') !== -1; });
+        // 只保留职位包含"助理"或"技师"的员工
+        var techs = rows.filter(function(r){ return r.position && (r.position.indexOf('助理') !== -1 || r.position.indexOf('技师') !== -1); });
         container.innerHTML = '';
         for (var i = 0; i < techs.length; i++) {
           (function(name){
@@ -6366,6 +6435,7 @@ function initApp() {
     } else {
       html += '<button id="hair-save-btn" onclick="window.saveHairRecordLocal()" style="width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);">✅ 保存到本地</button>';
     }
+    html += '<div id="hair-save-meta"></div>';
 
     // 待上传记录列表
     html += '<div style="margin-top:12px;">';
