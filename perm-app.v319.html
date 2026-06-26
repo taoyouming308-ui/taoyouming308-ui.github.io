@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="318">
+<html lang="zh-CN" data-version="319">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6311,12 +6311,6 @@ function initApp() {
     var gramVal = grams.value;
     if (!product || !gramVal || parseFloat(gramVal) <= 0) return;
     _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal });
-    // 同步推送护理用量到出库队列（自动出库用）
-    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ brand: currentCareBrand, product: product, grams: gramVal, status: 'pending', created_at: new Date().toISOString() })
-    }).catch(function(e){ console.warn('[出库队列推送失败]', e); });
     // 清空并重置
     sel.value = '';
     grams.value = '';
