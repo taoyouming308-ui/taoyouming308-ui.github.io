@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="315">
+<html lang="zh-CN" data-version="316">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3005,7 +3005,7 @@ function initApp() {
 
     // ★ 离线模式：先从localStorage渲染缓存，再异步刷新
     var shopName = BOOKING_SHOP;
-    var cacheKey = 'bookings_cache_' + shopName + '_' + (BOOKING_BARBER || 'all');
+    var cacheKey = 'bookings_cache_' + shopName + '_' + BOOKING_DATE + '_' + (BOOKING_BARBER || 'all');
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
 
@@ -3028,7 +3028,7 @@ function initApp() {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
       // ★ 数据签名：只有数据变了才更新DOM，避免每5秒闪屏
-      var sig = rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.time_label||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')}).join('|');
+      var sig = BOOKING_SHOP + ':' + BOOKING_DATE + ':' + (BOOKING_BARBER || 'all') + '|' + rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.customer_phone||'')+':'+(r.time_label||'')+':'+(r.reservation_time||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')}).join('|');
       if (sig === window._bookingSig) { return; }
       window._bookingSig = sig;
 
@@ -4237,7 +4237,7 @@ function initApp() {
   }
 
   function fetchCustomerProfileRows(phone, name, limit) {
-    limit = limit || 500;
+    limit = limit || 1000;
     var normPhone = normalizeHairCustomerPhone(phone);
     var clauses = [];
     if (phone) clauses.push('phone.eq.' + encodeURIComponent(phone));
@@ -7457,7 +7457,7 @@ function initApp() {
       if (!r.ok) return [];
       return r.json();
     }).catch(function(){ return []; });
-    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=500', {
+    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=1000', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) return [];

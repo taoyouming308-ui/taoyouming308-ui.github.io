@@ -6,6 +6,7 @@ Codex, Hermes, and other AI coding agents must read these files before editing:
 2. `PUBLISH_RULES.md`
 3. `HERMES_HANDOFF.md`
 4. `NO_DOWNTIME_UPDATE_RULES.md`
+5. `MEIGUANJIA_SYNC_REVIEW.md`
 
 Mandatory start command:
 

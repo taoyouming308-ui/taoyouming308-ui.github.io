@@ -6,6 +6,7 @@ Before editing this app, read:
 - `PUBLISH_RULES.md`
 - `HERMES_HANDOFF.md`
 - `NO_DOWNTIME_UPDATE_RULES.md`
+- `MEIGUANJIA_SYNC_REVIEW.md`
 
 Run:
 

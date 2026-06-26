@@ -30,6 +30,7 @@ The repo now has:
 - `PUBLISH_RULES.md`
 - `AI_COLLABORATION_RULES.md`
 - `NO_DOWNTIME_UPDATE_RULES.md`
+- `MEIGUANJIA_SYNC_REVIEW.md`
 
 Run:
 
@@ -123,6 +124,12 @@ For any sync issue, collect a concrete example first:
 - endpoint/table involved
 
 Then fix mapping or refresh logic.
+
+For sync optimization details and the read-only audit script, read `MEIGUANJIA_SYNC_REVIEW.md` and run:
+
+```sh
+node scripts/audit-meiguanjia-sync.js
+```
 
 ## Safe Editing Checklist
 
