@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="302">
+<html lang="zh-CN" data-version="303">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4045,18 +4045,83 @@ function initApp() {
   };
 
   // ===== 本地保存烫发记录（localStorage） =====
+  function parseHairRecordSeq(value) {
+    var n = parseInt(value, 10);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  function ensureHairSeqCounterAtLeast(value) {
+    var n = parseHairRecordSeq(value);
+    if (!n) return;
+    var current = parseHairRecordSeq(localStorage.getItem('_hairRecordSeqCounter'));
+    if (n > current) localStorage.setItem('_hairRecordSeqCounter', String(n));
+  }
+  function readHairSeqMap() {
+    try {
+      var map = JSON.parse(localStorage.getItem('_hairRecordSeqMap') || '{}');
+      return map && typeof map === 'object' && !Array.isArray(map) ? map : {};
+    } catch(e) {
+      return {};
+    }
+  }
+  function writeHairSeqMap(map) {
+    try { localStorage.setItem('_hairRecordSeqMap', JSON.stringify(map || {})); } catch(e) {}
+  }
+  function hairRecordSeqKey(rec) {
+    rec = rec || {};
+    return rec._cloudRecordId || rec.id || rec.recordId || '';
+  }
+  function rememberHairRecordSeq(rec, seq) {
+    seq = parseHairRecordSeq(seq);
+    if (!seq) return;
+    ensureHairSeqCounterAtLeast(seq);
+    var key = hairRecordSeqKey(rec);
+    if (!key) return;
+    var map = readHairSeqMap();
+    if (parseHairRecordSeq(map[key]) === seq) return;
+    map[key] = seq;
+    writeHairSeqMap(map);
+  }
+  function nextHairRecordSeq() {
+    var current = parseHairRecordSeq(localStorage.getItem('_hairRecordSeqCounter'));
+    var next = current + 1;
+    localStorage.setItem('_hairRecordSeqCounter', String(next));
+    return next;
+  }
+  function stableHairRecordSeq(rec) {
+    rec = rec || {};
+    var seq = parseHairRecordSeq(rec.seq);
+    if (seq) {
+      rec.seq = seq;
+      rememberHairRecordSeq(rec, seq);
+      return seq;
+    }
+    var key = hairRecordSeqKey(rec);
+    if (key) {
+      var mapSeq = parseHairRecordSeq(readHairSeqMap()[key]);
+      if (mapSeq) {
+        rec.seq = mapSeq;
+        rememberHairRecordSeq(rec, mapSeq);
+        return mapSeq;
+      }
+    }
+    seq = nextHairRecordSeq();
+    rec.seq = seq;
+    rememberHairRecordSeq(rec, seq);
+    return seq;
+  }
+  function formatHairRecordSeq(rec) {
+    return '#' + String(stableHairRecordSeq(rec)).padStart(3, '0');
+  }
+
   function getHairRecords() {
     try {
       var records = JSON.parse(localStorage.getItem('hair_records') || '[]');
       // 迁移：为没有 seq 的旧记录补上编号
       var needSave = false;
       for (var i = 0; i < records.length; i++) {
-        if (!records[i].seq) {
-          var counter = parseInt(localStorage.getItem('_hairRecordSeqCounter') || '0', 10) + 1;
-          localStorage.setItem('_hairRecordSeqCounter', String(counter));
-          records[i].seq = counter;
-          needSave = true;
-        }
+        var before = parseHairRecordSeq(records[i].seq);
+        var after = stableHairRecordSeq(records[i]);
+        if (!before || before !== after) needSave = true;
       }
       if (needSave) localStorage.setItem('hair_records', JSON.stringify(records));
       return records;
@@ -4481,10 +4546,19 @@ function initApp() {
         return Date.now() + '_' + Math.random().toString(36).slice(2,6);
       })(),
       seq: (function(){
-        if (_isCloudEdit && typeof _cloudRecordSeq === 'number') return _cloudRecordSeq;
-        var c = parseInt(localStorage.getItem('_hairRecordSeqCounter') || '0', 10) + 1;
-        localStorage.setItem('_hairRecordSeqCounter', String(c));
-        return c;
+        if (_isCloudEdit) {
+          var cloudSeed = _cloudRecordData || { id: _cloudEditingId, _cloudRecordId: _cloudEditingId, seq: _cloudRecordSeq };
+          var cloudSeq = stableHairRecordSeq(cloudSeed);
+          _cloudRecordSeq = cloudSeq;
+          return cloudSeq;
+        }
+        if (_editingHairId) {
+          var existingRecords = getHairRecords();
+          for (var si = 0; si < existingRecords.length; si++) {
+            if (existingRecords[si].id === _editingHairId) return stableHairRecordSeq(existingRecords[si]);
+          }
+        }
+        return nextHairRecordSeq();
       })(),
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
@@ -4928,7 +5002,7 @@ function initApp() {
     for (var ri = 0; ri < records.length; ri++) {
       var rec = records[ri];
       var recInfo = hairRecordPersonText(rec);
-      var seqStr = '#' + String(rec.seq || (ri+1)).padStart(3, '0');
+      var seqStr = formatHairRecordSeq(rec);
       html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
       html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + seqStr + ' ' + esc(recInfo.name) + '</span>';
@@ -5009,6 +5083,8 @@ function initApp() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         var rec = r.record_data || {};
+        rec.id = rec.id || r.id;
+        rec._cloudRecordId = rec._cloudRecordId || r.id;
         var status = r.status || '待回访';
         var customerName = r.customer_name || rec.customerName || '未填写';
         var phone = r.customer_phone || rec.customerPhone || '';
@@ -5024,7 +5100,7 @@ function initApp() {
         var isStylist = (stylist === barber);
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">#' + String(rec.seq || (i+1)).padStart(3, '0') + ' ' + esc(person.name) + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + formatHairRecordSeq(rec) + ' ' + esc(person.name) + '</span>';
         html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(status) + '</span>';
         html += '</div>';
         // 显示日期时间
@@ -5361,8 +5437,14 @@ function initApp() {
     // 记录云端记录ID（如果有）
     _cloudEditingId = data._cloudRecordId || (data._isCloudRecord ? data.id : null);
     // 保存云端记录的原始编号，保存时保持seq不变
-    if (_cloudEditingId && data.seq && typeof data.seq === 'number') {
-      _cloudRecordSeq = data.seq;
+    var loadedSeq = parseHairRecordSeq(data.seq);
+    if (_cloudEditingId && loadedSeq) {
+      data.seq = loadedSeq;
+      _cloudRecordSeq = loadedSeq;
+      rememberHairRecordSeq(data, loadedSeq);
+    } else if (_cloudEditingId) {
+      data._cloudRecordId = data._cloudRecordId || _cloudEditingId;
+      _cloudRecordSeq = stableHairRecordSeq(data);
     } else if (!_cloudEditingId) {
       _cloudRecordSeq = null;
     }
@@ -5750,9 +5832,15 @@ function initApp() {
     // 收集所有表单字段（同 saveHairRecordLocal 逻辑）
     // ★ 自动收集所有表单字段
     var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
+    var archiveSeqSeed = _cloudRecordData || { id: cloudId, _cloudRecordId: cloudId, seq: _cloudRecordSeq };
+    archiveSeqSeed.id = archiveSeqSeed.id || cloudId;
+    archiveSeqSeed._cloudRecordId = archiveSeqSeed._cloudRecordId || cloudId;
+    var archiveSeq = stableHairRecordSeq(archiveSeqSeed);
+    _cloudRecordSeq = archiveSeq;
 
     var record = {
       id: cloudId,
+      seq: archiveSeq,
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       technician: (function(){
