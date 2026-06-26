@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="311">
+<html lang="zh-CN" data-version="312">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6588,9 +6588,9 @@ function initApp() {
       var checked = savedFbRating === val;
       html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#f5f5f5') + ';border:1px solid ' + (checked ? '#fff' : '#e5e5e5') + ';color:' + (checked ? '#fff' : '#666') + ';" onclick="selectAppFbRating(this)">';
       html += '<span style="font-size:14px;font-weight:700;">' + val + '</span><br><span style="font-size:10px;">' + lbl + '</span>';
+      html += '<input type="radio" name="fb-hair" value="' + val + '"' + (checked ? ' checked' : '') + ' style="display:none;">';
       html += '</label>';
     });
-    html += '<input type="radio" name="fb-hair" value="' + savedFbRating + '"' + (savedFbRating?' checked':'') + ' style="display:none;">';
     html += '</div>';
     // 聊天截图
     var savedSsBase64 = '';
