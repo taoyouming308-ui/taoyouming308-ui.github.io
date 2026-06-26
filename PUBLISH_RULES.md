@@ -8,6 +8,7 @@ Read first:
 - `HERMES_HANDOFF.md`
 - `AGENTS.md`
 - `NO_DOWNTIME_UPDATE_RULES.md`
+- `AGENT_SYNC_STATUS.md`
 
 Before changing or publishing:
 
@@ -20,6 +21,7 @@ Before changing or publishing:
 7. Never force-push or overwrite another assistant's work to resolve conflicts.
 8. Do not force-refresh users during normal work; the app must show an update prompt instead.
 9. If a release breaks usage, rollback forward with a higher version number.
+10. Update `AGENT_SYNC_STATUS.md` before publishing meaningful work.
 
 Recommended commands:
 
@@ -28,6 +30,7 @@ git fetch github main
 git fetch origin master
 node scripts/check-version-sync.js
 node scripts/smoke-test-app.js
+node scripts/check-agent-sync-status.js
 git push github main
 git push origin main:master
 ```

@@ -3,3 +3,4 @@ git fetch github main >/dev/null 2>&1 || exit 1
 git fetch origin master >/dev/null 2>&1 || exit 1
 node scripts/check-version-sync.js || exit 1
 node scripts/smoke-test-app.js || exit 1
+node scripts/check-agent-sync-status.js || exit 1

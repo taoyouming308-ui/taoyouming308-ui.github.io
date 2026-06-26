@@ -31,12 +31,14 @@ The repo now has:
 - `AI_COLLABORATION_RULES.md`
 - `NO_DOWNTIME_UPDATE_RULES.md`
 - `MEIGUANJIA_SYNC_REVIEW.md`
+- `AGENT_SYNC_STATUS.md`
 
 Run:
 
 ```sh
 git config core.hooksPath .githooks
 node scripts/check-version-sync.js
+node scripts/check-agent-sync-status.js
 ```
 
 The hook fetches both remotes and rejects pushes if local `HEAD` does not include both remote heads.
@@ -131,6 +133,10 @@ For sync optimization details and the read-only audit script, read `MEIGUANJIA_S
 node scripts/audit-meiguanjia-sync.js
 ```
 
+## Codex/Hermes Handoff Baton
+
+Before editing, read `AGENT_SYNC_STATUS.md`. Before committing or publishing any meaningful change, update it with the new version, what changed, what remains open, inspected examples, and checks run. Do not rely on chat history alone for handoff.
+
 ## Safe Editing Checklist
 
 Before editing:
@@ -141,12 +147,14 @@ git fetch origin master
 git status --short --branch
 node scripts/check-version-sync.js
 node scripts/smoke-test-app.js
+node scripts/check-agent-sync-status.js
 ```
 
 Before publishing:
 
 ```sh
 node scripts/check-version-sync.js
+node scripts/check-agent-sync-status.js
 git push github main
 git push origin main:master
 ```

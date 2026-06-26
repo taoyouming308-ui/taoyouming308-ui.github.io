@@ -26,6 +26,7 @@ git status --short --branch
 
 ```sh
 node scripts/check-version-sync.js
+node scripts/check-agent-sync-status.js
 ```
 
 6. Push the same commit to both remotes:
@@ -47,6 +48,8 @@ git push origin main:master
 
 12. Rollbacks must be forward-only. Restore stable code under a higher version number instead of publishing an older version.
 
+13. `AGENT_SYNC_STATUS.md` is the live baton between Codex and Hermes. Every meaningful change must update it before commit/push.
+
 ## Ownership
 
 - GitHub `github/main` is the live GitHub Pages source.
@@ -60,6 +63,7 @@ Before telling the user the work is done, verify:
 ```sh
 node scripts/check-version-sync.js
 node scripts/smoke-test-app.js
+node scripts/check-agent-sync-status.js
 git status --short
 git log -1 --oneline --decorate
 ```
