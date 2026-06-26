@@ -19,6 +19,15 @@ function gitShow(ref, path) {
   }
 }
 
+function gitOk(args) {
+  try {
+    cp.execFileSync('git', args, { stdio: 'ignore' });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function parseIntStrict(value, label) {
   const n = parseInt(String(value || '').trim(), 10);
   if (!Number.isFinite(n) || n <= 0) fail(`invalid ${label}: ${value}`);
@@ -44,6 +53,10 @@ if (htmlVersion !== txtVersion || txtVersion !== jsonVersion) {
 
 const remoteRefs = ['github/main', 'origin/master'];
 for (const ref of remoteRefs) {
+  if (!gitOk(['rev-parse', '--verify', '--quiet', ref])) continue;
+  if (!gitOk(['merge-base', '--is-ancestor', ref, 'HEAD'])) {
+    fail(`HEAD does not include latest ${ref}. Fetch and merge/rebase before publishing.`);
+  }
   const remoteTxt = gitShow(ref, 'version.txt');
   const remoteHtml = gitShow(ref, 'perm-app.html');
   const remoteHtmlMatch = remoteHtml.match(/<html[^>]*data-version="(\d+)"/);

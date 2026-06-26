@@ -2,12 +2,21 @@
 
 This app is deployed from GitHub Pages and may also be edited from the Gitee mirror.
 
+Read first:
+
+- `AI_COLLABORATION_RULES.md`
+- `HERMES_HANDOFF.md`
+- `AGENTS.md`
+
 Before changing or publishing:
 
 1. Pull the latest GitHub version first.
-2. Keep `perm-app.html` `data-version`, `version.txt`, and `version.json` identical.
-3. Never push a lower version than the current online version.
-4. Push the same commit to both remotes when Gitee is used by another editor.
+2. Pull the latest Gitee version too.
+3. Confirm local `HEAD` includes both remote heads.
+4. Keep `perm-app.html` `data-version`, `version.txt`, and `version.json` identical.
+5. Never push a lower version than the current online version.
+6. Push the same commit to both remotes when Gitee is used by another editor.
+7. Never force-push or overwrite another assistant's work to resolve conflicts.
 
 Recommended commands:
 
