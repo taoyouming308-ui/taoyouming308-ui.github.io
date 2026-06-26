@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="323">
+<html lang="zh-CN" data-version="324">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -842,19 +842,34 @@ body {
   opacity: 1;
 }
 
-/* ── 我的任务：分组 + 卡片排版 ── */
+/* ── 我的任务：极简黑白配色 + 待处理优先区 ── */
+.hair-tasks-section {
+  padding-top: 12px;
+}
+/* ── 待处理区 ── */
+.ht-pending-section {
+  margin-bottom: 20px;
+}
+.ht-pending-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  padding: 4px 0 8px 0;
+}
+.ht-pending-divider {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 0 0 12px 0;
+}
+/* ── 日期分组 ── */
 .hair-tasks-group {
   margin-bottom: 16px;
 }
-.hair-tasks-group:last-child {
-  margin-bottom: 0;
-}
-.hair-tasks-group-header {
+.ht-group-header {
   font-size: 13px;
-  font-weight: 700;
-  color: #1a1a1a;
-  padding: 8px 0 8px 10px;
-  border-left: 2px solid #007AFF;
+  font-weight: 600;
+  color: #000;
+  padding: 4px 0 8px 0;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -863,21 +878,31 @@ body {
   transition: opacity 0.2s;
   margin-bottom: 6px;
 }
-.hair-tasks-group-header:hover {
+.ht-group-header:hover {
   opacity: 0.7;
 }
-.hair-tasks-group-header:active {
+.ht-group-header:active {
   opacity: 0.5;
 }
-.hair-tasks-group-badge {
+.ht-group-count {
   font-size: 11px;
-  background: #f0f0f0;
   color: #8e8e93;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
+  font-weight: 400;
   white-space: nowrap;
-  margin-right: 2px;
+}
+.ht-group-arrow {
+  font-size: 10px;
+  color: #8e8e93;
+  margin-left: 6px;
+  transition: transform 0.2s;
+}
+.ht-group-header.expanded .ht-group-arrow {
+  transform: rotate(90deg);
+}
+.ht-group-divider {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 0 0 10px 0;
 }
 .hair-tasks-group-body {
   overflow: hidden;
@@ -889,29 +914,42 @@ body {
 .hair-tasks-group-body.expanded {
   max-height: 2000px;
 }
+/* ── 卡片 ── */
 .hair-task-card {
   background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
   margin-bottom: 8px;
-  overflow: hidden;
 }
 .hair-task-card:last-child {
   margin-bottom: 0;
 }
 .hair-task-card-inner {
-  padding: 10px 12px;
-  border-left: 3px solid transparent;
+  padding: 12px 14px;
 }
-.hair-task-card.status-pending .hair-task-card-inner { border-left-color: #FF9500; }
-.hair-task-card.status-tech-done .hair-task-card-inner { border-left-color: #007AFF; }
-.hair-task-card.status-followup-done .hair-task-card-inner { border-left-color: #34C759; }
-.hair-task-card.status-saved .hair-task-card-inner { border-left-color: #8E8E93; }
+/* 状态圆点 */
+.ht-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.ht-status-text {
+  font-size: 12px;
+  color: #8e8e93;
+}
+.ht-status-dot.pending { background: #FF9500; }
+.ht-status-dot.tech-done { background: #007AFF; }
+.ht-status-dot.followup-done { background: #34C759; }
+.ht-status-dot.saved { background: #8E8E93; }
+/* 卡片行 */
 .hair-task-card-row1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .hair-task-card-seq {
   font-size: 10px;
@@ -929,23 +967,10 @@ body {
   text-overflow: ellipsis;
   min-width: 0;
 }
-.hair-task-card-status-pill {
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-.hair-task-card-status-pill.pending { background: #FFF3E0; color: #FF9500; }
-.hair-task-card-status-pill.tech-done { background: #E3F2FF; color: #007AFF; }
-.hair-task-card-status-pill.followup-done { background: #E8F5E9; color: #34C759; }
-.hair-task-card-status-pill.saved { background: #F5F5F5; color: #8E8E93; }
 .hair-task-card-row2 {
   font-size: 11px;
   color: #8e8e93;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 .hair-task-card-row3 {
   font-size: 11px;
@@ -964,19 +989,20 @@ body {
   gap: 4px;
   margin-top: 6px;
 }
+/* 按钮 —— 极简风格 */
 .hair-task-card-btn {
   flex: 1;
-  padding: 6px 4px;
-  font-size: 10px;
+  padding: 4px 12px;
+  font-size: 11px;
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--font);
-  font-weight: 600;
+  font-weight: 500;
   text-align: center;
-  border: 1px solid #e0e0e0;
-  background: #f5f5f5;
-  color: #333;
-  transition: background 0.15s;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  transition: opacity 0.15s;
 }
 .hair-task-card-btn.primary {
   background: #000;
@@ -984,9 +1010,9 @@ body {
   border-color: #000;
 }
 .hair-task-card-btn.danger {
-  background: #e85050;
-  color: #fff;
-  border-color: #e85050;
+  background: #fff;
+  color: #dc3545;
+  border-color: #dc3545;
 }
 .hair-task-card-btn:active { opacity: 0.7; }
 .hair-task-card-info {
@@ -5477,137 +5503,171 @@ function initApp() {
         } catch(e) {}
         return '';
       }
-      // ── 分组逻辑 ──
-      var today = new Date();
-      today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      var yesterday = new Date(today.getTime() - 86400000);
-      var cutoff = new Date(today.getTime() - 3 * 86400000); // 3天前
-      var groupOrder = ['today', 'yesterday']; // 日期组按desc排序后追加
-      var groups = {}; // key -> { label, items[], expanded }
-      var dateGroupKeys = []; // 收集具体日期key用于排序
+      // ── 拆分 pending / done ──
+      var pendingRows = [];
+      var doneRows = [];
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
-        var dt = r.created_at || (r.record_data || {}).createdAt || (r.record_data || {}).date || '';
-        var taskDate = parseTaskDate(dt);
-        var groupKey;
-        if (!taskDate) {
-          groupKey = 'older';
-        } else if (taskDate.getTime() === today.getTime()) {
-          groupKey = 'today';
-        } else if (taskDate.getTime() === yesterday.getTime()) {
-          groupKey = 'yesterday';
-        } else if (taskDate.getTime() < cutoff.getTime()) {
-          groupKey = 'older';
+        var rec = r.record_data || {};
+        var st = r.status || '';
+        var hasFollowup = hairTaskHasFollowup(st, rec);
+        if (hasFollowup || st === '已完成' || st === '回访完成' || st === '已保存') {
+          doneRows.push(r);
         } else {
-          groupKey = 'date_' + taskDate.getTime();
-          if (dateGroupKeys.indexOf(groupKey) === -1) dateGroupKeys.push(groupKey);
+          pendingRows.push(r);
         }
-        if (!groups[groupKey]) {
-          var label;
-          if (groupKey === 'today') label = '📅 今天';
-          else if (groupKey === 'yesterday') label = '📅 昨天 ' + (yesterday.getMonth()+1) + '月' + yesterday.getDate() + '日';
-          else if (groupKey === 'older') label = '📅 更早';
-          else {
-            var td = new Date(parseInt(groupKey.split('_')[1]));
-            label = '📅 ' + (td.getMonth()+1) + '月' + td.getDate() + '日';
-          }
-          groups[groupKey] = { label: label, items: [], expanded: (groupKey === 'today') };
-        }
-        groups[groupKey].items.push(r);
       }
-      // 排序日期组（降序）
-      dateGroupKeys.sort(function(a, b) { return parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]); });
-      var finalGroupKeys = ['today', 'yesterday'].concat(dateGroupKeys);
-      if (groups['older']) finalGroupKeys.push('older');
-      // ── 渲染 HTML ──
-      var html = '';
-      for (var gi = 0; gi < finalGroupKeys.length; gi++) {
-        var gk = finalGroupKeys[gi];
-        var group = groups[gk];
-        if (!group || group.items.length === 0) continue;
-        var groupId = 'htg-' + gi + '-' + Date.now();
-        html += '<div class="hair-tasks-group">';
-        html += '<div class="hair-tasks-group-header" onclick="var b=document.getElementById(\''+groupId+'-body\');if(b){if(b.classList.contains(\'collapsed\')){b.classList.remove(\'collapsed\');b.classList.add(\'expanded\');}else{b.classList.remove(\'expanded\');b.classList.add(\'collapsed\');}}">';
-        html += '<span>' + group.label + '</span>';
-        html += '<span class="hair-tasks-group-badge">' + group.items.length + '条</span>';
-        html += '</div>';
-        var bodyClass = group.expanded ? 'hair-tasks-group-body expanded' : 'hair-tasks-group-body collapsed';
-        html += '<div class="' + bodyClass + '" id="' + groupId + '-body">';
-        for (var ii = 0; ii < group.items.length; ii++) {
-          var r = group.items[ii];
-          var rec = r.record_data || {};
-          rec.id = rec.id || r.id;
-          rec._cloudRecordId = rec._cloudRecordId || r.id;
-          var status = r.status || '待回访';
-          var customerName = r.customer_name || rec.customerName || '未填写';
-          var phone = r.customer_phone || rec.customerPhone || '';
-          var technician = r.technician || rec.technician || '';
-          var stylist = r.barber || rec.barber || '';
-          var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
-          // 判断当前用户身份
-          var techList = (technician || '').split(',');
-          var isTech = false;
-          for (var ti = 0; ti < techList.length; ti++) {
-            if (techList[ti].trim() === barber) { isTech = true; break; }
-          }
-          var isStylist = (stylist === barber);
-          var hasFollowup = hairTaskHasFollowup(status, rec);
-          var assistantReturned = hairTaskAssistantReturned(status, rec);
-          var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
-          var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
-          // 卡片CSS状态class
-          var cardStatusClass = 'status-pending';
-          var pillStatusClass = 'pending';
-          if (hasFollowup) { cardStatusClass = 'status-followup-done'; pillStatusClass = 'followup-done'; }
-          else if (assistantReturned) { cardStatusClass = 'status-tech-done'; pillStatusClass = 'tech-done'; }
-          else if (status === '已完成') { cardStatusClass = 'status-saved'; pillStatusClass = 'saved'; }
-          html += '<div class="hair-task-card ' + cardStatusClass + '">';
-          html += '<div class="hair-task-card-inner">';
-          // 第一行：编号 + 客户名 + 状态pill
-          html += '<div class="hair-task-card-row1">';
-          html += '<span class="hair-task-card-seq">' + formatHairRecordSeq(rec) + '</span>';
-          html += '<span class="hair-task-card-name">' + esc(person.name) + '</span>';
-          html += '<span class="hair-task-card-status-pill ' + pillStatusClass + '">' + esc(primaryStatusText) + '</span>';
-          html += '</div>';
-          // 第二行：时间 + 电话
-          var _dt = r.created_at || rec.createdAt || rec.date || '';
-          var _timeStr = formatTaskTime(_dt);
-          if (_timeStr) {
-            html += '<div class="hair-task-card-row2">' + _timeStr + ' · ' + esc(person.phone || '无电话') + '</div>';
-          } else {
-            html += '<div class="hair-task-card-row2">' + esc(person.phone || '无电话') + '</div>';
-          }
-          // 第三行：技师/发型师信息
-          html += '<div class="hair-task-card-row3">' + esc(person.line2) + '</div>';
-          // 红色提醒
+      // ── 渲染单张卡片（共用） ──
+      function renderCard(r) {
+        var rec = r.record_data || {};
+        rec.id = rec.id || r.id;
+        rec._cloudRecordId = rec._cloudRecordId || r.id;
+        var status = r.status || '待回访';
+        var customerName = r.customer_name || rec.customerName || '未填写';
+        var phone = r.customer_phone || rec.customerPhone || '';
+        var technician = r.technician || rec.technician || '';
+        var stylist = r.barber || rec.barber || '';
+        var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
+        // 判断当前用户身份
+        var techList = (technician || '').split(',');
+        var isTech = false;
+        for (var ti = 0; ti < techList.length; ti++) {
+          if (techList[ti].trim() === barber) { isTech = true; break; }
+        }
+        var isStylist = (stylist === barber);
+        var hasFollowup = hairTaskHasFollowup(status, rec);
+        var assistantReturned = hairTaskAssistantReturned(status, rec);
+        var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
+        var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
+        // 状态圆点 class
+        var dotClass = 'pending';
+        if (hasFollowup) { dotClass = 'followup-done'; }
+        else if (assistantReturned) { dotClass = 'tech-done'; }
+        else if (status === '已完成') { dotClass = 'saved'; }
+        var h = '';
+        h += '<div class="hair-task-card">';
+        h += '<div class="hair-task-card-inner">';
+        // 第一行：编号 + 客户名 + 状态圆点
+        h += '<div class="hair-task-card-row1">';
+        h += '<span class="hair-task-card-seq">' + formatHairRecordSeq(rec) + '</span>';
+        h += '<span class="hair-task-card-name">' + esc(person.name) + '</span>';
+        h += '<span><span class="ht-status-dot ' + dotClass + '"></span><span class="ht-status-text">' + esc(primaryStatusText) + '</span></span>';
+        h += '</div>';
+        // 第二行：时间 + 电话
+        var _dt = r.created_at || rec.createdAt || rec.date || '';
+        var _timeStr = formatTaskTime(_dt);
+        if (_timeStr) {
+          h += '<div class="hair-task-card-row2">' + _timeStr + ' · ' + esc(person.phone || '无电话') + '</div>';
+        } else {
+          h += '<div class="hair-task-card-row2">' + esc(person.phone || '无电话') + '</div>';
+        }
+        // 第三行：技师/发型师信息
+        h += '<div class="hair-task-card-row3">' + esc(person.line2) + '</div>';
+        // 红色提醒
+        if (needsStylistFollowup) {
+          h += '<div class="hair-task-card-warning">未评定未回访</div>';
+        }
+        if (status === '技师已完成' && isStylist) {
+          h += '<div class="hair-task-card-warning">⚠️ 未评定，回访客户</div>';
+        }
+        // 底部操作按钮行
+        h += '<div class="hair-task-card-actions">';
+        if (isStylist) {
+          h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">编辑</button>';
           if (needsStylistFollowup) {
-            html += '<div class="hair-task-card-warning">未评定未回访</div>';
+            h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
           }
-          if (status === '技师已完成' && isStylist) {
-            html += '<div class="hair-task-card-warning">⚠️ 未评定，回访客户</div>';
-          }
-          // 底部操作按钮行
-          html += '<div class="hair-task-card-actions">';
-          if (isStylist) {
-            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">✏️ 编辑</button>';
-            if (needsStylistFollowup) {
-              html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
-            }
-            html += '<span class="hair-task-card-info">已入档案不可删</span>';
-          } else if (isTech && !hasFollowup) {
-            var techBtnText = assistantReturned ? '✏️ 继续修改' : '✏️ 编辑填写';
-            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">' + techBtnText + '</button>';
-          }
-          if (!isStylist && hasFollowup) {
-            html += '<span class="hair-task-card-done">✅ 已完成</span>';
-          }
-          html += '</div>'; // end actions
-          html += '</div>'; // end card-inner
-          html += '</div>'; // end card
+          h += '<span class="hair-task-card-info">已入档案不可删</span>';
+        } else if (isTech && !hasFollowup) {
+          var techBtnText = assistantReturned ? '继续修改' : '编辑填写';
+          h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">' + techBtnText + '</button>';
         }
-        html += '</div>'; // end group-body
-        html += '</div>'; // end group
+        if (!isStylist && hasFollowup) {
+          h += '<span class="hair-task-card-done">已完成</span>';
+        }
+        h += '</div>'; // end actions
+        h += '</div>'; // end card-inner
+        h += '</div>'; // end card
+        return h;
       }
+      // ── 构建 HTML ──
+      var html = '<div class="hair-tasks-section">';
+      // A. 顶部「⚠️ 待处理」优先区
+      if (pendingRows.length > 0) {
+        html += '<div class="ht-pending-section">';
+        html += '<div class="ht-pending-header">⚠️ 待处理（' + pendingRows.length + '）</div>';
+        html += '<hr class="ht-pending-divider">';
+        for (var pi = 0; pi < pendingRows.length; pi++) {
+          html += renderCard(pendingRows[pi]);
+        }
+        html += '</div>';
+      }
+      // B. 下方日期分组（已完成记录）
+      if (doneRows.length > 0) {
+        var today = new Date();
+        today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        var yesterday = new Date(today.getTime() - 86400000);
+        var cutoff = new Date(today.getTime() - 3 * 86400000); // 3天前
+        var groups = {}; // key -> { label, items[], expanded }
+        var dateGroupKeys = []; // 收集具体日期key用于排序
+        for (var di = 0; di < doneRows.length; di++) {
+          var r = doneRows[di];
+          var dt = r.created_at || (r.record_data || {}).createdAt || (r.record_data || {}).date || '';
+          var taskDate = parseTaskDate(dt);
+          var groupKey;
+          if (!taskDate) {
+            groupKey = 'older';
+          } else if (taskDate.getTime() === today.getTime()) {
+            groupKey = 'today';
+          } else if (taskDate.getTime() === yesterday.getTime()) {
+            groupKey = 'yesterday';
+          } else if (taskDate.getTime() < cutoff.getTime()) {
+            groupKey = 'older';
+          } else {
+            groupKey = 'date_' + taskDate.getTime();
+            if (dateGroupKeys.indexOf(groupKey) === -1) dateGroupKeys.push(groupKey);
+          }
+          if (!groups[groupKey]) {
+            var label;
+            if (groupKey === 'today') label = '今天';
+            else if (groupKey === 'yesterday') label = '昨天 ' + (yesterday.getMonth()+1) + '月' + yesterday.getDate() + '日';
+            else if (groupKey === 'older') label = '更早';
+            else {
+              var td = new Date(parseInt(groupKey.split('_')[1]));
+              label = (td.getMonth()+1) + '月' + td.getDate() + '日';
+            }
+            groups[groupKey] = { label: label, items: [], expanded: (groupKey === 'today') };
+          }
+          groups[groupKey].items.push(r);
+        }
+        // 排序日期组（降序）
+        dateGroupKeys.sort(function(a, b) { return parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]); });
+        var finalGroupKeys = ['today', 'yesterday'].concat(dateGroupKeys);
+        if (groups['older']) finalGroupKeys.push('older');
+        // ── 渲染日期分组 ──
+        for (var gi = 0; gi < finalGroupKeys.length; gi++) {
+          var gk = finalGroupKeys[gi];
+          var group = groups[gk];
+          if (!group || group.items.length === 0) continue;
+          var groupId = 'htg-' + gi + '-' + Date.now();
+          var headerClass = group.expanded ? 'ht-group-header expanded' : 'ht-group-header';
+          var arrowIcon = group.expanded ? '▼' : '▶';
+          html += '<div class="hair-tasks-group">';
+          html += '<div class="' + headerClass + '" onclick="var b=document.getElementById(\''+groupId+'-body\');var hdr=this;if(b){if(b.classList.contains(\'collapsed\')){b.classList.remove(\'collapsed\');b.classList.add(\'expanded\');hdr.classList.add(\'expanded\');}else{b.classList.remove(\'expanded\');b.classList.add(\'collapsed\');hdr.classList.remove(\'expanded\');}}">';
+          html += '<span>' + group.label + '</span>';
+          html += '<span><span class="ht-group-count">' + group.items.length + '条</span><span class="ht-group-arrow">' + arrowIcon + '</span></span>';
+          html += '</div>';
+          html += '<hr class="ht-group-divider">';
+          var bodyClass = group.expanded ? 'hair-tasks-group-body expanded' : 'hair-tasks-group-body collapsed';
+          html += '<div class="' + bodyClass + '" id="' + groupId + '-body">';
+          for (var ii = 0; ii < group.items.length; ii++) {
+            html += renderCard(group.items[ii]);
+          }
+          html += '</div>'; // end group-body
+          html += '</div>'; // end group
+        }
+      }
+      html += '</div>'; // end section
       container.innerHTML = html;
     }).catch(function() {
       container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--danger);">❌ 加载失败</div>';
