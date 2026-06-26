@@ -5,7 +5,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v317
+- App version: v319
 - Last synchronized base checked: `6fe1047 Add shared agent sync handoff`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
@@ -14,6 +14,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v319: 发质分析表预约选择器改为展示所有客户（不再仅限烫染/护理），删除 `bookingNeedsHairAnalysis` 过滤条件。空列表文案改为「暂无预约」。
 - v317 prevents pure haircut appointments from entering the hair-analysis booking picker/task path.
 - v317 prevents silent close/autosave from creating empty `hair_records` tasks.
 - v317 prevents assistants from returning an empty cloud hair form as `技师已完成`.
@@ -30,8 +31,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
-- 2026-06-26: `node scripts/check-version-sync.js` passed at v317.
-- 2026-06-26: `node scripts/smoke-test-app.js` passed at v317.
+- 2026-06-26: `node scripts/check-version-sync.js` passed at v319.
+- 2026-06-26: `node scripts/smoke-test-app.js` passed at v319.
 - 2026-06-26: `node scripts/check-agent-sync-status.js` passed at v317.
 - 2026-06-26: `admin.html` script syntax check passed.
 - 2026-06-26: `node scripts/check-version-sync.js` passed at v316.

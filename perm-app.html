@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="318">
+<html lang="zh-CN" data-version="319">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6211,14 +6211,13 @@ function initApp() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         if (!r.customer_name || r.customer_name === '未登记') continue;
-        if (!bookingNeedsHairAnalysis(r)) continue;
         var key = (r.customer_phone || r.customer_name) + '|' + (r.time_label || r.reservation_time || '');
         if (seen[key]) continue;
         seen[key] = true;
         unique.push(r);
       }
       if (!unique.length) {
-        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无烫染/护理预约</div>';
+        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无预约</div>';
         return;
       }
       var html = '';
