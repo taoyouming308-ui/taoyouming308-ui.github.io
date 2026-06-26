@@ -1493,8 +1493,8 @@ window.loadHairRecordList = function() {
   var statusFilter = (document.getElementById('hr-status-filter')||{}).value || '';
   tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=50';
-  if (statusFilter) url += '&status=eq.' + encodeURIComponent(statusFilter);
+  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&order=created_at.desc&limit=50';
+  if (statusFilter) url = url.replace('status=neq.deleted', 'status=eq.' + encodeURIComponent(statusFilter));
 
   fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
   .then(function(r){ return r.json(); })
