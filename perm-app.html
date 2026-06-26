@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="325">
+<html lang="zh-CN" data-version="326">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1965,8 +1965,7 @@ const PERM_DATA = new Proxy([], {
   }
 });
 
-// 页面加载时立即拉数据
-loadPermData();
+// 页面加载时不预拉数据，首次进入方案页才加载
 
 const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据备份 ===
   { hairType: 'level-1-coarse', permStyle: 'wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '90 ~ 100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ > 刹车上限70%，至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
@@ -2094,7 +2093,7 @@ function initApp() {
       content.classList.add('active');
       // 方案tab + 预约tab — 白底，其他恢复暗底
       document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings');
-      if (tabName === 'plans') switchPlan('calc');
+      if (tabName === 'plans') { loadPermData(); switchPlan('calc'); }
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
     }
