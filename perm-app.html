@@ -842,6 +842,169 @@ body {
   opacity: 1;
 }
 
+/* ── 我的任务：分组 + 卡片排版 ── */
+.hair-tasks-group {
+  margin-bottom: 16px;
+}
+.hair-tasks-group:last-child {
+  margin-bottom: 0;
+}
+.hair-tasks-group-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  padding: 8px 0 8px 10px;
+  border-left: 2px solid #007AFF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: opacity 0.2s;
+  margin-bottom: 6px;
+}
+.hair-tasks-group-header:hover {
+  opacity: 0.7;
+}
+.hair-tasks-group-header:active {
+  opacity: 0.5;
+}
+.hair-tasks-group-badge {
+  font-size: 11px;
+  background: #f0f0f0;
+  color: #8e8e93;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.hair-tasks-group-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.hair-tasks-group-body.collapsed {
+  max-height: 0;
+}
+.hair-tasks-group-body.expanded {
+  max-height: 2000px;
+}
+.hair-task-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.hair-task-card:last-child {
+  margin-bottom: 0;
+}
+.hair-task-card-inner {
+  padding: 10px 12px;
+  border-left: 3px solid transparent;
+}
+.hair-task-card.status-pending .hair-task-card-inner { border-left-color: #FF9500; }
+.hair-task-card.status-tech-done .hair-task-card-inner { border-left-color: #007AFF; }
+.hair-task-card.status-followup-done .hair-task-card-inner { border-left-color: #34C759; }
+.hair-task-card.status-saved .hair-task-card-inner { border-left-color: #8E8E93; }
+.hair-task-card-row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.hair-task-card-seq {
+  font-size: 10px;
+  color: #8e8e93;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.hair-task-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.hair-task-card-status-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.hair-task-card-status-pill.pending { background: #FFF3E0; color: #FF9500; }
+.hair-task-card-status-pill.tech-done { background: #E3F2FF; color: #007AFF; }
+.hair-task-card-status-pill.followup-done { background: #E8F5E9; color: #34C759; }
+.hair-task-card-status-pill.saved { background: #F5F5F5; color: #8E8E93; }
+.hair-task-card-row2 {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-bottom: 1px;
+}
+.hair-task-card-row3 {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-bottom: 4px;
+}
+.hair-task-card-warning {
+  font-size: 11px;
+  color: #dc3545;
+  font-weight: 700;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+.hair-task-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.hair-task-card-btn {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  color: #333;
+  transition: background 0.15s;
+}
+.hair-task-card-btn.primary {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+.hair-task-card-btn.danger {
+  background: #e85050;
+  color: #fff;
+  border-color: #e85050;
+}
+.hair-task-card-btn:active { opacity: 0.7; }
+.hair-task-card-info {
+  font-size: 10px;
+  color: #8e8e93;
+  text-align: center;
+  padding: 4px;
+  flex: 1;
+}
+.hair-task-card-done {
+  font-size: 10px;
+  color: #34C759;
+  font-weight: 600;
+  padding: 4px;
+  flex: 1;
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -5285,95 +5448,165 @@ function initApp() {
         container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无你的任务</div>';
         return;
       }
-      var html = '';
+      // ── 辅助：解析 created_at 为日期对象 ──
+      function parseTaskDate(dt) {
+        if (!dt) return null;
+        if (dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
+          var parts = dt.split('.');
+          return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        }
+        try {
+          var d = new Date(dt);
+          if (!isNaN(d.getTime())) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        } catch(e) {}
+        return null;
+      }
+      // ── 辅助：格式化时间为显示字符串 ──
+      function formatTaskTime(dt) {
+        if (!dt) return '';
+        if (dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) return dt;
+        try {
+          var d = new Date(dt);
+          if (!isNaN(d.getTime())) {
+            var mo = String(d.getMonth()+1).padStart(2,'0');
+            var dd = String(d.getDate()).padStart(2,'0');
+            var hh = String(d.getHours()).padStart(2,'0');
+            var mm = String(d.getMinutes()).padStart(2,'0');
+            return d.getFullYear() + '.' + mo + '.' + dd + ' ' + hh + ':' + mm;
+          }
+        } catch(e) {}
+        return '';
+      }
+      // ── 分组逻辑 ──
+      var today = new Date();
+      today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      var yesterday = new Date(today.getTime() - 86400000);
+      var cutoff = new Date(today.getTime() - 3 * 86400000); // 3天前
+      var groupOrder = ['today', 'yesterday']; // 日期组按desc排序后追加
+      var groups = {}; // key -> { label, items[], expanded }
+      var dateGroupKeys = []; // 收集具体日期key用于排序
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
-        var rec = r.record_data || {};
-        rec.id = rec.id || r.id;
-        rec._cloudRecordId = rec._cloudRecordId || r.id;
-        var status = r.status || '待回访';
-        var customerName = r.customer_name || rec.customerName || '未填写';
-        var phone = r.customer_phone || rec.customerPhone || '';
-        var technician = r.technician || rec.technician || '';
-        var stylist = r.barber || rec.barber || '';
-        var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
-        // 判断当前用户身份：技师 or 发型师
-        var techList = (technician || '').split(',');
-        var isTech = false;
-        for (var ti = 0; ti < techList.length; ti++) {
-          if (techList[ti].trim() === barber) { isTech = true; break; }
+        var dt = r.created_at || (r.record_data || {}).createdAt || (r.record_data || {}).date || '';
+        var taskDate = parseTaskDate(dt);
+        var groupKey;
+        if (!taskDate) {
+          groupKey = 'older';
+        } else if (taskDate.getTime() === today.getTime()) {
+          groupKey = 'today';
+        } else if (taskDate.getTime() === yesterday.getTime()) {
+          groupKey = 'yesterday';
+        } else if (taskDate.getTime() < cutoff.getTime()) {
+          groupKey = 'older';
+        } else {
+          groupKey = 'date_' + taskDate.getTime();
+          if (dateGroupKeys.indexOf(groupKey) === -1) dateGroupKeys.push(groupKey);
         }
-        var isStylist = (stylist === barber);
-        var hasFollowup = hairTaskHasFollowup(status, rec);
-        var assistantReturned = hairTaskAssistantReturned(status, rec);
-        var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
-        var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
-        html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + formatHairRecordSeq(rec) + ' ' + esc(person.name) + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(primaryStatusText) + '</span>';
+        if (!groups[groupKey]) {
+          var label;
+          if (groupKey === 'today') label = '📅 今天';
+          else if (groupKey === 'yesterday') label = '📅 昨天 ' + (yesterday.getMonth()+1) + '月' + yesterday.getDate() + '日';
+          else if (groupKey === 'older') label = '📅 更早';
+          else {
+            var td = new Date(parseInt(groupKey.split('_')[1]));
+            label = '📅 ' + (td.getMonth()+1) + '月' + td.getDate() + '日';
+          }
+          groups[groupKey] = { label: label, items: [], expanded: (groupKey === 'today') };
+        }
+        groups[groupKey].items.push(r);
+      }
+      // 排序日期组（降序）
+      dateGroupKeys.sort(function(a, b) { return parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]); });
+      var finalGroupKeys = ['today', 'yesterday'].concat(dateGroupKeys);
+      if (groups['older']) finalGroupKeys.push('older');
+      // ── 渲染 HTML ──
+      var html = '';
+      for (var gi = 0; gi < finalGroupKeys.length; gi++) {
+        var gk = finalGroupKeys[gi];
+        var group = groups[gk];
+        if (!group || group.items.length === 0) continue;
+        var groupId = 'htg-' + gi + '-' + Date.now();
+        html += '<div class="hair-tasks-group">';
+        html += '<div class="hair-tasks-group-header" onclick="var b=document.getElementById(\''+groupId+'-body\');if(b){if(b.classList.contains(\'collapsed\')){b.classList.remove(\'collapsed\');b.classList.add(\'expanded\');}else{b.classList.remove(\'expanded\');b.classList.add(\'collapsed\');}}">';
+        html += '<span>' + group.label + '</span>';
+        html += '<span class="hair-tasks-group-badge">' + group.items.length + '条</span>';
         html += '</div>';
-        // 显示日期时间
-        var _dt = r.created_at || rec.createdAt || rec.date || '';
-        var _timeStr = '';
-        if (_dt) {
-          if (_dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
-            _timeStr = _dt;
+        var bodyClass = group.expanded ? 'hair-tasks-group-body expanded' : 'hair-tasks-group-body collapsed';
+        html += '<div class="' + bodyClass + '" id="' + groupId + '-body">';
+        for (var ii = 0; ii < group.items.length; ii++) {
+          var r = group.items[ii];
+          var rec = r.record_data || {};
+          rec.id = rec.id || r.id;
+          rec._cloudRecordId = rec._cloudRecordId || r.id;
+          var status = r.status || '待回访';
+          var customerName = r.customer_name || rec.customerName || '未填写';
+          var phone = r.customer_phone || rec.customerPhone || '';
+          var technician = r.technician || rec.technician || '';
+          var stylist = r.barber || rec.barber || '';
+          var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
+          // 判断当前用户身份
+          var techList = (technician || '').split(',');
+          var isTech = false;
+          for (var ti = 0; ti < techList.length; ti++) {
+            if (techList[ti].trim() === barber) { isTech = true; break; }
+          }
+          var isStylist = (stylist === barber);
+          var hasFollowup = hairTaskHasFollowup(status, rec);
+          var assistantReturned = hairTaskAssistantReturned(status, rec);
+          var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
+          var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
+          // 卡片CSS状态class
+          var cardStatusClass = 'status-pending';
+          var pillStatusClass = 'pending';
+          if (hasFollowup) { cardStatusClass = 'status-followup-done'; pillStatusClass = 'followup-done'; }
+          else if (assistantReturned) { cardStatusClass = 'status-tech-done'; pillStatusClass = 'tech-done'; }
+          else if (status === '已完成') { cardStatusClass = 'status-saved'; pillStatusClass = 'saved'; }
+          html += '<div class="hair-task-card ' + cardStatusClass + '">';
+          html += '<div class="hair-task-card-inner">';
+          // 第一行：编号 + 客户名 + 状态pill
+          html += '<div class="hair-task-card-row1">';
+          html += '<span class="hair-task-card-seq">' + formatHairRecordSeq(rec) + '</span>';
+          html += '<span class="hair-task-card-name">' + esc(person.name) + '</span>';
+          html += '<span class="hair-task-card-status-pill ' + pillStatusClass + '">' + esc(primaryStatusText) + '</span>';
+          html += '</div>';
+          // 第二行：时间 + 电话
+          var _dt = r.created_at || rec.createdAt || rec.date || '';
+          var _timeStr = formatTaskTime(_dt);
+          if (_timeStr) {
+            html += '<div class="hair-task-card-row2">' + _timeStr + ' · ' + esc(person.phone || '无电话') + '</div>';
           } else {
-            try {
-              var _d = new Date(_dt);
-              if (!isNaN(_d.getTime())) {
-                var _mo = String(_d.getMonth()+1).padStart(2,'0');
-                var _dd = String(_d.getDate()).padStart(2,'0');
-                var _hh = String(_d.getHours()).padStart(2,'0');
-                var _mm = String(_d.getMinutes()).padStart(2,'0');
-                _timeStr = _d.getFullYear() + '.' + _mo + '.' + _dd + ' ' + _hh + ':' + _mm;
-              }
-            } catch(e){}
+            html += '<div class="hair-task-card-row2">' + esc(person.phone || '无电话') + '</div>';
           }
-        }
-        if (_timeStr) {
-          html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + _timeStr + '</div>';
-        }
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(person.phone || '无电话') + '</div>';
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + esc(person.line2) + '</div>';
-        if (needsStylistFollowup) {
-          html += '<div style="font-size:11px;color:#e85050;font-weight:800;margin-top:3px;">未评定未回访</div>';
-        }
-        html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        var statusColor = '#e8a817';
-        var statusText = '待回访';
-        if (hasFollowup) { statusColor = 'var(--success)'; statusText = '回访完成'; }
-        else if (assistantReturned) { statusColor = 'var(--success)'; statusText = isStylist ? '待保存档案' : '已回传发型师'; }
-        else if (status === '已完成') { statusColor = 'var(--success)'; statusText = '已保存'; }
-        else if (isStylist && technician) { statusText = '待助理填写'; }
-        if (isTech && !isStylist && !hasFollowup) {
-          statusColor = assistantReturned ? 'var(--success)' : '#e89217';
-          statusText = assistantReturned ? '已回传发型师' : '待填写';
-        }
-        html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
-        html += '</div>';
-        // ★ 红色提醒：技师已完成，但发型师未回访/评定
-        if (status === '技师已完成' && isStylist) {
-          html += '<div style="color:var(--danger,#e0556a);font-size:11px;font-weight:600;margin-top:2px;">⚠️ 未评定，回访客户</div>';
-        }
-        html += '<div style="display:flex;gap:4px;margin-top:4px;">';
-        if (isStylist) {
-          // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
-          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑</button>';
+          // 第三行：技师/发型师信息
+          html += '<div class="hair-task-card-row3">' + esc(person.line2) + '</div>';
+          // 红色提醒
           if (needsStylistFollowup) {
-            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:#e85050;border:1px solid #e85050;border-radius:4px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:700;">填写回访</button>';
+            html += '<div class="hair-task-card-warning">未评定未回访</div>';
           }
-          html += '<span style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-align:center;">已入档案不可删</span>';
-        } else if (isTech && !hasFollowup) {
-          // 助理只要被指派就可以进入填写/继续修改，保存后回传给发型师
-          var techBtnText = assistantReturned ? '✏️ 继续修改' : '✏️ 编辑填写';
-          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">' + techBtnText + '</button>';
+          if (status === '技师已完成' && isStylist) {
+            html += '<div class="hair-task-card-warning">⚠️ 未评定，回访客户</div>';
+          }
+          // 底部操作按钮行
+          html += '<div class="hair-task-card-actions">';
+          if (isStylist) {
+            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">✏️ 编辑</button>';
+            if (needsStylistFollowup) {
+              html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
+            }
+            html += '<span class="hair-task-card-info">已入档案不可删</span>';
+          } else if (isTech && !hasFollowup) {
+            var techBtnText = assistantReturned ? '✏️ 继续修改' : '✏️ 编辑填写';
+            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">' + techBtnText + '</button>';
+          }
+          if (!isStylist && hasFollowup) {
+            html += '<span class="hair-task-card-done">✅ 已完成</span>';
+          }
+          html += '</div>'; // end actions
+          html += '</div>'; // end card-inner
+          html += '</div>'; // end card
         }
-        if (!isStylist && hasFollowup) {
-          html += '<span style="font-size:10px;color:var(--success);">✅ 已完成</span>';
-        }
-        html += '</div></div>';
+        html += '</div>'; // end group-body
+        html += '</div>'; // end group
       }
       container.innerHTML = html;
     }).catch(function() {
@@ -6718,8 +6951,7 @@ function initApp() {
     html += '</div>';
 
     // 我的任务（技师端）- 云端编辑时隐藏
-    html += '<div id="hair-tasks-section" style="margin-top:12px;">' +
-    '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">☁️ 我的任务</div>' +
+    html += '<div id="hair-tasks-section" style="padding-top:12px;">' +
     '<div id="hair-tasks-list"></div>' +
     '</div>';
 
