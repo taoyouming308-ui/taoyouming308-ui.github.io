@@ -16,8 +16,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v330
-- Last synchronized base checked: `da6c369 v329 forward restore stable app`
+- App version: v331
+- Last synchronized base checked: `681dbfb v330 harden workflows and synchronization`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
