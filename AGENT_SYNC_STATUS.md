@@ -10,6 +10,8 @@
 - 正常同步在每小时 `00/30` 分轮换 20 人；缺失字段回填在 `15/45` 分断点处理 20 人。两者共用文件锁，回填只补空字段，不覆盖已有消费或套餐。
 - 2026-06-28 样本验证：尾号 5050 为 20 笔消费、5 个套餐；回填 id 63 保留原 32 个套餐并新增 348 笔消费。
 - 2026-06-28 全量分页审计：`customer_profiles` 共 15748 行；5629 行有到店次数但无消费明细，3291 行有消费金额但无明细，261 行有套餐。此前 1000 行统计仅是 Supabase 单页样本。
+- 美管加保活唯一源文件为 `scripts/mgj_keepalive.py`，Hermes 任务 `25e56b7f1ac0` 每小时 50 分运行。它先验证 `code=0`，仅过期时重登，原子更新 Cookie，并与客户同步共用 `/tmp/sync_mgj_all.lock`。
+- 保活凭据仅存于本机权限 600 的 `~/.hermes/meiguanjia-auth.json`，状态写入 `~/.hermes/mgj_keepalive_status.json`；禁止把账号密码写回仓库脚本。
 
 This file is the live handoff baton between Codex, Hermes, and any other assistant.
 Every meaningful change must update this file before commit/push.

@@ -8,6 +8,9 @@
 - A failed package or bill request must never replace `card_packages` or `service_history` with an empty array.
 - Cron modes: normal sync at `00/30`, missing-field backfill at `15/45`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
 - Backfill checkpoint: `/Users/a1/.hermes/mgj_customer_backfill.json`. Backfill advances by profile `id` and never resets automatically after reaching the end.
+- Keepalive canonical source: `scripts/mgj_keepalive.py`; deployed copies under `~/.hermes/scripts/` and the Meiguanjia skill must have the same hash.
+- Hermes keepalive job `25e56b7f1ac0` runs at `50 * * * *`, not on the hour. It shares the customer sync lock and must never unconditionally relogin.
+- Credentials are local-only in `~/.hermes/meiguanjia-auth.json` with mode 600. Never commit or print them.
 
 This file is the working context Hermes should read before editing the app.
 

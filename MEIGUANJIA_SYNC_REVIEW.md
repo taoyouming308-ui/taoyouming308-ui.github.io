@@ -92,6 +92,7 @@ Current audit findings from sample data:
 - 2026-06-27 verified read-only: `member!queryMemberBillListnew.action` returns 20 bill rows for the 5050 sample and `bill!detail.action` returns projects and service staff. The sync now preserves old arrays on partial API failure and deduplicates history by source bill id.
 - 2026-06-28 verified both shops with direct multipart requests. The bill payload uses `memberInfo.shopid`; the multipart session shop comes from `meiguanjia-config.json`. Browser fetch is a fallback, not a required runtime dependency.
 - The resumable `backfill` mode only fills empty arrays and preserves every existing nonempty profile field. Its checkpoint is local and advances by stable Supabase profile id.
+- Session keepalive runs at minute 50 through Hermes job `25e56b7f1ac0`. It validates the metadata response body (`code=0`), relogs only after expiry, verifies the new session, and writes configuration atomically under the shared sync lock.
 - v330: customer archive list loads up to 1000 profile summaries; opening a customer refetches that phone/name with `select=*` so `service_history`, `notes`, and package details are not lost by the list query.
 - v330: appointment selection is filtered by both logged-in store and selected stylist.
 - v316: booking cache is now separated by shop, date, and barber.
