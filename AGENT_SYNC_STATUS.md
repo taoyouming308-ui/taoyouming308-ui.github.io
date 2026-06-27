@@ -5,8 +5,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v327
-- Last synchronized base checked: `0138ba3 v326: 懒加载-perm_data首次进方案页才拉`
+- App version: v328
+- Last synchronized base checked: `40bfc10 v327 hide deleted hair tasks everywhere`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -14,6 +14,12 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v328: 修复护理出库从 v321 起静默失败的问题。根因是 App 向 `care_outbound_queue` 写入数据库不存在的 `barber` 字段，PostgREST 返回 400，但旧代码没有检查 HTTP 状态。
+- v328: 护理产品不再在点击“添加”时立即出库；只有技师回传或发型师最终保存成功后才批量进入美管加出库队列。
+- v328: 同一张发质分析表按品牌/产品累计克数，只提交相对上次出库快照的新增差额，防止重复保存造成重复扣库存；已出库数量不能直接减少。
+- v328: 出库队列写入与护理记录写入均检查 HTTP 错误；出库状态显示“同步中/已完成/失败”，失败项目支持单独重试。
+- v328: `care_records` 改为先删除该发质表旧明细，再一次性批量重建，移除旧流程多处重复插入导致的护理记录重复。
+- v328: 发布检查新增护理出库铁律：点击“添加”不得直接写出库队列、队列载荷不得包含不存在的 `barber` 字段，并自动测试首次 15g、重复 0g、增量 5g、减量阻止。
 - v327: 修复后台软删除发质分析表后，App「我的任务」仍显示旧云任务的问题；任务查询与前端渲染双重排除 `status=deleted`。
 - v327: 预约烫染标记、客户档案、客户历史发质记录、后台统计与未完成明细统一排除已删除的 `hair_records`。
 - v327: 修复 v326 页面版本与 `version.txt/version.json` 仍停在 v322 的不一致，三处版本统一为 327。
@@ -42,6 +48,11 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-27: 只读检查 `care_outbound_queue`：旧 v320 测试共 5 条，4 条 `completed`、1 条因测试产品无 `depotId` 为 `failed`，证明后台执行器存在。
+- 2026-06-27: 只读查询 `care_outbound_queue.barber` 明确返回 PostgreSQL `42703 column does not exist`，确认 v321 后的静默 400 根因。
+- 2026-06-27: 只读检查 `care_records` 发现同一发质表、同一护理产品存在重复明细，已在 v328 合并保存路径。
+- 2026-06-27: `node scripts/audit-meiguanjia-sync.js` 只读审计完成；本次出库修复未改动预约、客户档案和套餐同步。
+- 2026-06-27: v328 版本、冒烟、护理差额出库、Agent 同步、HTML 脚本语法和 `git diff --check` 均通过；队列模拟载荷确认只发送 5g 差额且不含 `barber`。
 - 2026-06-27: 已从 GitHub 拉取并快进到 v326；确认 GitHub 比 Gitee 多 13 个提交，禁止从旧的 Gitee v317 基线直接发布。
 - 2026-06-27: v326 同步前检查发现页面为 326、`version.txt/version.json` 为 322；已在 v327 修复。
 - 2026-06-27: Supabase 只读检查确认当前有 10 条 `hair_records.status=deleted`，包含截图里的 `cesi` 与多条“小爱/未填写”；v327 正常页面查询均不会返回这些记录。
@@ -58,6 +69,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Open Work For Next Agent
 
+- 护理出库仍需用户确认后做一笔真实 1g 测试，并在美管加库存流水核对实际扣减；禁止把队列 `completed` 单独当成库存已核实。
+- 当前 `care_outbound_queue` 没有 `shop_name/barber`，现有执行器无法从队列区分两家门店；如两店维护独立库存，需先扩展表结构和执行器映射，再开启跨店出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.
 - Verify real endpoints/fields for appointments, customer packages/cards, remaining package items, and consumption history.
 - Ensure sync writers never overwrite existing package/history arrays with empty arrays when an external request partially fails.
@@ -73,6 +86,7 @@ git fetch origin master
 git status --short --branch
 node scripts/check-version-sync.js
 node scripts/smoke-test-app.js
+node scripts/test-care-outbound.js
 node scripts/check-agent-sync-status.js
 ```
 

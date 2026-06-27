@@ -37,6 +37,25 @@ if (!taskSource.includes('status=neq.deleted')) {
   fail('cloud hair task query must exclude soft-deleted records');
 }
 
+const careAddStart = html.indexOf('window.addCareRecord = function()');
+const careAddEnd = html.indexOf('window.removeCareRecord', careAddStart);
+const careAddSource = careAddStart >= 0 && careAddEnd > careAddStart ? html.slice(careAddStart, careAddEnd) : '';
+if (careAddSource.includes('care_outbound_queue')) {
+  fail('adding a care item must not enqueue inventory before the hair record is saved');
+}
+for (const marker of ['enqueueCareOutboundForRecord', 'prepareCareOutboundBaseline', 'retryLatestCareOutbound']) {
+  if (!html.includes(marker)) fail('missing care outbound safety marker: ' + marker);
+}
+const careQueueStart = html.indexOf('function enqueueCareOutboundForRecord(');
+const careQueueEnd = html.indexOf('function refreshCareOutboundStatus(', careQueueStart);
+const careQueueSource = careQueueStart >= 0 && careQueueEnd > careQueueStart ? html.slice(careQueueStart, careQueueEnd) : '';
+if (careQueueSource.includes('barber:')) {
+  fail('care outbound payload uses barber, but care_outbound_queue has no barber column');
+}
+if (!careQueueSource.includes("Prefer': 'return=representation")) {
+  fail('care outbound insert must return queue ids for status tracking');
+}
+
 try {
   cp.execFileSync('node', ['scripts/check-version-sync.js'], { stdio: 'inherit' });
 } catch (_) {

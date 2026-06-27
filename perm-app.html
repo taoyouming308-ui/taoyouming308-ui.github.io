@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="327">
+<html lang="zh-CN" data-version="328">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3862,10 +3862,16 @@ function initApp() {
     var el = document.getElementById('hair-save-meta');
     if (!el) return;
     var info = hairRecordPersonText(rec || {});
+    var batches = rec && Array.isArray(rec.careOutboundBatches) ? rec.careOutboundBatches : [];
+    var outboundHtml = batches.length
+      ? '<div id="hair-outbound-status" style="margin-top:2px;color:#e8a817;">护理出库：查询中</div>'
+      : '';
     el.innerHTML = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;font-size:11px;line-height:1.7;color:var(--text-secondary);">' +
       '<div style="font-weight:700;color:var(--text);">' + esc(info.line1) + '</div>' +
       '<div>' + esc(info.line2) + '</div>' +
+      outboundHtml +
       '</div>';
+    if (batches.length) refreshCareOutboundStatus(rec);
   }
 
   function renderHairRodArchiveTable(rec) {
@@ -4641,37 +4647,293 @@ function initApp() {
     if (!record.id) return Promise.resolve();
     var careArray = Array.isArray(record.careUsage) ? record.careUsage : [];
     var headers = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
-    return getCareRecordShopName(record.barber || '').then(function(shopName) {
-      return fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(record.id), {
-        method: 'DELETE',
-        headers: headers
-      }).catch(function(){});
+    return fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(record.id), {
+      method: 'DELETE',
+      headers: headers
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('护理记录清理失败: ' + (t || r.status)); });
     }).then(function() {
       if (!careArray.length) return;
-      return getCareRecordShopName(record.barber || '').then(function(shopName) {
-        var today = new Date().toISOString().slice(0, 10);
-        var rows = [];
-        careArray.forEach(function(cu) {
-          if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') return;
-          rows.push({
-            hair_record_id: record.id,
-            barber: record.barber || '',
-            shop_name: shopName || '',
-            brand: cu.brand,
-            product: cu.product,
-            grams: parseFloat(cu.grams) || 0,
-            record_date: today
-          });
-        });
-        if (!rows.length) return;
-        return fetch(SUPABASE_URL + '/rest/v1/care_records', {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify(rows)
+      return getCareRecordShopName(record.barber || '');
+    }).then(function(shopName) {
+      if (!careArray.length) return;
+      var today = new Date().toISOString().slice(0, 10);
+      var rows = [];
+      careArray.forEach(function(cu) {
+        if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') return;
+        var grams = parseFloat(cu.grams) || 0;
+        if (grams <= 0) return;
+        rows.push({
+          hair_record_id: record.id,
+          barber: record.barber || '',
+          shop_name: shopName || '',
+          brand: cu.brand,
+          product: cu.product,
+          grams: grams,
+          record_date: today
         });
       });
-    }).catch(function(){});
+      if (!rows.length) return;
+      return fetch(SUPABASE_URL + '/rest/v1/care_records', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(rows)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error('护理记录保存失败: ' + (t || r.status)); });
+      });
+    });
   }
+
+  function careUsageKey(brand, product) {
+    return String(brand || '').trim() + '\u001f' + String(product || '').trim();
+  }
+
+  function careUsageTotals(careArray) {
+    var totals = {};
+    var order = [];
+    (Array.isArray(careArray) ? careArray : []).forEach(function(cu) {
+      var brand = String((cu && cu.brand) || '').trim();
+      var product = String((cu && cu.product) || '').trim();
+      var grams = parseFloat(cu && cu.grams) || 0;
+      if (!brand || !product || grams <= 0) return;
+      var key = careUsageKey(brand, product);
+      if (!totals[key]) {
+        totals[key] = { brand: brand, product: product, grams: 0 };
+        order.push(key);
+      }
+      totals[key].grams = Math.round((totals[key].grams + grams) * 1000) / 1000;
+    });
+    return order.map(function(key) { return totals[key]; });
+  }
+
+  function careUsageMap(careArray) {
+    var map = {};
+    careUsageTotals(careArray).forEach(function(cu) {
+      map[careUsageKey(cu.brand, cu.product)] = cu;
+    });
+    return map;
+  }
+
+  function prepareCareOutboundBaseline(record, previousRecord) {
+    record = record || {};
+    previousRecord = previousRecord || {};
+    var existingSnapshot = Array.isArray(previousRecord.careOutboundSnapshot)
+      ? previousRecord.careOutboundSnapshot
+      : (Array.isArray(record.careOutboundSnapshot) ? record.careOutboundSnapshot : null);
+    if (existingSnapshot) {
+      record.careOutboundSnapshot = careUsageTotals(existingSnapshot);
+    } else {
+      var previousMap = careUsageMap(previousRecord.careUsage);
+      var currentMap = careUsageMap(record.careUsage);
+      var baseline = [];
+      Object.keys(previousMap).forEach(function(key) {
+        if (!currentMap[key]) return;
+        baseline.push({
+          brand: previousMap[key].brand,
+          product: previousMap[key].product,
+          grams: Math.min(previousMap[key].grams, currentMap[key].grams)
+        });
+      });
+      record.careOutboundSnapshot = careUsageTotals(baseline);
+    }
+    record.careOutboundBatches = Array.isArray(previousRecord.careOutboundBatches)
+      ? JSON.parse(JSON.stringify(previousRecord.careOutboundBatches))
+      : (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []);
+    record.careOutboundStatus = previousRecord.careOutboundStatus || record.careOutboundStatus || '';
+    record.careOutboundQueuedAt = previousRecord.careOutboundQueuedAt || record.careOutboundQueuedAt || '';
+    return record;
+  }
+
+  function validateCareOutboundReduction(record) {
+    var currentMap = careUsageMap(record && record.careUsage);
+    var snapshotMap = careUsageMap(record && record.careOutboundSnapshot);
+    var reduced = [];
+    Object.keys(snapshotMap).forEach(function(key) {
+      var current = currentMap[key] ? currentMap[key].grams : 0;
+      if (current + 0.0001 < snapshotMap[key].grams) {
+        reduced.push(snapshotMap[key].brand + ' ' + snapshotMap[key].product + '（已出库' + snapshotMap[key].grams + 'g）');
+      }
+    });
+    return reduced;
+  }
+
+  function persistHairRecordData(record) {
+    if (!record || !record.id) return Promise.reject(new Error('缺少发质分析表编号'));
+    return fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(record.id), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_data: record })
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('出库状态保存失败: ' + (t || r.status)); });
+      return record;
+    });
+  }
+
+  function enqueueCareOutboundForRecord(record) {
+    record = record || {};
+    var currentTotals = careUsageTotals(record.careUsage);
+    var currentMap = careUsageMap(currentTotals);
+    var snapshotMap = careUsageMap(record.careOutboundSnapshot);
+    var deltas = [];
+    Object.keys(currentMap).forEach(function(key) {
+      var previousGrams = snapshotMap[key] ? snapshotMap[key].grams : 0;
+      var delta = Math.round((currentMap[key].grams - previousGrams) * 1000) / 1000;
+      if (delta > 0) {
+        deltas.push({
+          brand: currentMap[key].brand,
+          product: currentMap[key].product,
+          grams: delta
+        });
+      }
+    });
+    if (!deltas.length) {
+      record.careOutboundSnapshot = currentTotals;
+      return Promise.resolve({ record: record, queued: false, count: 0 });
+    }
+
+    var queuedAt = new Date().toISOString();
+    var queueRows = deltas.map(function(item) {
+      return {
+        brand: item.brand,
+        product: item.product,
+        grams: item.grams,
+        status: 'pending',
+        created_at: queuedAt
+      };
+    });
+    return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(queueRows)
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) {
+          throw new Error('美管加出库入队失败: ' + (t || ('HTTP ' + r.status)));
+        });
+      }
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      if (rows.length !== queueRows.length) throw new Error('美管加出库入队返回数量不一致');
+      record.careOutboundSnapshot = currentTotals;
+      record.careOutboundStatus = 'pending';
+      record.careOutboundQueuedAt = queuedAt;
+      var batch = {
+        queuedAt: queuedAt,
+        ids: rows.map(function(row) { return row.id; }).filter(function(id) { return id !== undefined && id !== null; }),
+        items: deltas
+      };
+      record.careOutboundBatches = (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []).concat([batch]).slice(-20);
+      return persistHairRecordData(record).then(function() {
+        return { record: record, queued: true, count: deltas.length };
+      });
+    });
+  }
+
+  function refreshCareOutboundStatus(record) {
+    var el = document.getElementById('hair-outbound-status');
+    var batches = record && Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
+    var latest = batches.length ? batches[batches.length - 1] : null;
+    var ids = latest && Array.isArray(latest.ids) ? latest.ids.filter(function(id) { return id !== undefined && id !== null; }) : [];
+    if (!el || !ids.length) return;
+    window._careOutboundStatusRecord = record;
+    el.textContent = '护理出库：同步中';
+    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?select=id,status,error_message&id=in.(' + ids.map(encodeURIComponent).join(',') + ')', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('状态查询失败');
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      var failed = rows.filter(function(row) { return row.status === 'failed'; });
+      var completed = rows.filter(function(row) { return row.status === 'completed'; });
+      if (failed.length) {
+        el.innerHTML = '护理出库：失败 <button type="button" onclick="retryLatestCareOutbound()" style="margin-left:6px;padding:2px 8px;border:1px solid #e85050;border-radius:4px;background:transparent;color:#e85050;font-size:10px;cursor:pointer;">重试</button>';
+        el.style.color = '#e85050';
+        el.title = failed.map(function(row) { return row.error_message || '未知错误'; }).join('；');
+      } else if (rows.length === ids.length && completed.length === ids.length) {
+        el.textContent = '护理出库：美管加已完成';
+        el.style.color = 'var(--success, #2ecc71)';
+      } else {
+        el.textContent = '护理出库：已进入同步队列';
+        el.style.color = '#e8a817';
+      }
+    }).catch(function() {
+      el.textContent = '护理出库：状态暂不可查';
+      el.style.color = 'var(--text-secondary)';
+    });
+  }
+
+  window.retryLatestCareOutbound = function() {
+    var record = window._careOutboundStatusRecord || {};
+    var batches = Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
+    var latest = batches.length ? batches[batches.length - 1] : null;
+    var ids = latest && Array.isArray(latest.ids) ? latest.ids : [];
+    var items = latest && Array.isArray(latest.items) ? latest.items : [];
+    var el = document.getElementById('hair-outbound-status');
+    if (!record.id || !ids.length || !items.length) return;
+    if (el) {
+      el.textContent = '护理出库：正在重试';
+      el.style.color = '#e8a817';
+    }
+    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?select=id,status,error_message&id=in.(' + ids.map(encodeURIComponent).join(',') + ')', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('读取失败记录失败');
+      return r.json();
+    }).then(function(rows) {
+      var statusById = {};
+      (Array.isArray(rows) ? rows : []).forEach(function(row) { statusById[String(row.id)] = row; });
+      var failedItems = [];
+      for (var i = 0; i < ids.length; i++) {
+        var row = statusById[String(ids[i])];
+        if (row && row.status === 'failed' && items[i]) failedItems.push(items[i]);
+      }
+      if (!failedItems.length) {
+        refreshCareOutboundStatus(record);
+        return null;
+      }
+      var queuedAt = new Date().toISOString();
+      var queueRows = failedItems.map(function(item) {
+        return {
+          brand: item.brand,
+          product: item.product,
+          grams: item.grams,
+          status: 'pending',
+          created_at: queuedAt
+        };
+      });
+      return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify(queueRows)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error('重试入队失败: ' + (t || r.status)); });
+        return r.json();
+      }).then(function(newRows) {
+        newRows = Array.isArray(newRows) ? newRows : [];
+        if (newRows.length !== queueRows.length) throw new Error('重试入队返回数量不一致');
+        record.careOutboundStatus = 'pending';
+        record.careOutboundQueuedAt = queuedAt;
+        record.careOutboundBatches = batches.concat([{
+          queuedAt: queuedAt,
+          ids: newRows.map(function(row) { return row.id; }),
+          items: failedItems
+        }]).slice(-20);
+        return persistHairRecordData(record).then(function() {
+          window._careOutboundStatusRecord = record;
+          renderHairSaveMeta(record);
+        });
+      });
+    }).catch(function(err) {
+      if (el) {
+        el.textContent = '护理出库：重试失败';
+        el.style.color = '#e85050';
+        el.title = err && err.message ? err.message : '';
+      }
+      alert('❌ ' + (err && err.message ? err.message : '护理出库重试失败'));
+    });
+  };
 
   function recordTechValueFromFields(fields) {
     var container = document.getElementById('hair-form-tech-container');
@@ -5102,8 +5364,23 @@ function initApp() {
         return;
       }
       var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : (_stylistFinalSave ? '已完成' : _oldCloudStatus));
+      prepareCareOutboundBaseline(_mergedData, _cloudRecordData || {});
+      var _careReductionErrors = validateCareOutboundReduction(_mergedData);
+      if (_careReductionErrors.length) {
+        alert('以下护理用量已经提交美管加出库，不能直接改小或删除：\n' + _careReductionErrors.join('\n') + '\n如需冲销，请联系管理员处理。');
+        _cloudEditingId = cloudId;
+        _followUpMode = isFollowUp;
+        return;
+      }
+      var _shouldQueueCareOutbound = _nextCloudStatus === '技师已完成' || _nextCloudStatus === '已完成' || _nextCloudStatus === '回访完成';
       // 直接 PATCH 云端记录，不存本地。助理保存后回到发型师任务里。
       _mergedData.status = _nextCloudStatus;
+      var _cloudSaveBtn = document.getElementById('hair-save-btn');
+      if (_cloudSaveBtn) {
+        _cloudSaveBtn.textContent = '保存中...';
+        _cloudSaveBtn.disabled = true;
+      }
+      var _hairCloudSaved = false;
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -5111,9 +5388,18 @@ function initApp() {
           status: _nextCloudStatus,
           record_data: _mergedData
         })
-        }).then(function(r) {
-        if (r.ok) {
-          syncCareRecordsForHairRecord(_mergedData);
+      }).then(function(r) {
+        if (!r.ok) {
+          return r.text().then(function(t) { throw new Error('云端保存失败: ' + (t || r.status)); });
+        }
+        _hairCloudSaved = true;
+        return syncCareRecordsForHairRecord(_mergedData).then(function() {
+          if (_shouldQueueCareOutbound) return enqueueCareOutboundForRecord(_mergedData);
+          return { record: _mergedData, queued: false, count: 0 };
+        });
+      }).then(function(outboundResult) {
+          _mergedData = outboundResult.record || _mergedData;
+          _cloudRecordData = JSON.parse(JSON.stringify(_mergedData));
           // PATCH成功后才刷新按钮和任务列表
           var btn = document.getElementById('hair-save-btn');
           if (btn) {
@@ -5123,8 +5409,18 @@ function initApp() {
           }
           renderHairSaveMeta(_mergedData);
           if (window.renderMyTasks) window.renderMyTasks();
+      }).catch(function(err) {
+        _cloudEditingId = cloudId;
+        _followUpMode = isFollowUp;
+        var btn = document.getElementById('hair-save-btn');
+        if (btn) {
+          btn.textContent = _hairCloudSaved ? '⚠️ 已保存但同步未完成，点此重试' : '⚠️ 保存失败，点此重试';
+          btn.style.background = '#e8a817';
+          btn.disabled = false;
+          btn.onclick = function(){ window.saveHairRecordLocal(); };
         }
-      }).catch(function(){ alert('❌ 云端同步失败，请检查网络'); });
+        alert('❌ ' + (err && err.message ? err.message : '云端同步失败，请检查网络'));
+      });
       // 重置编辑状态
       _editingHairId = null;
       return;
@@ -5189,93 +5485,12 @@ function initApp() {
       // 重置编辑状态
       _editingHairId = record.id;
 
-      // ★ 等 hair_records 写完（外键约束），再写 care_records
-      var careArray = record.careUsage;
-      if (careArray && careArray.length > 0) {
-        var today = new Date().toISOString().slice(0, 10);
-        var shopName = '';
-        // 查发型师所属门店
-        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
-          shopName = window._staffStoreCache[record.barber] || '';
-        }
-        if (!shopName && record.barber) {
-          // 缓存未就绪，从Supabase拉
-          try {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
-            xhr.setRequestHeader('apikey', SUPABASE_KEY);
-            xhr.send();
-            if (xhr.status === 200) {
-              var rows = JSON.parse(xhr.responseText);
-              if (rows && rows[0] && rows[0].store) shopName = rows[0].store;
-            }
-          } catch(e) {}
-        }
-        hrPromise.then(function() {
-          var carePromises = [];
-          for (var ci = 0; ci < careArray.length; ci++) {
-            var cu = careArray[ci];
-            if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') continue;
-            carePromises.push(
-              fetch(SUPABASE_URL + '/rest/v1/care_records', {
-                method: 'POST',
-                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-                body: JSON.stringify({
-                  hair_record_id: record.id,
-                  barber: record.barber,
-                  shop_name: shopName,
-                  brand: cu.brand,
-                  product: cu.product,
-                  grams: parseFloat(cu.grams),
-                  record_date: today
-                })
-              })
-            );
-          }
-          if (carePromises.length > 0) {
-            Promise.all(carePromises).catch(function(){});
-          }
-        });
-      }
-    } else {
-      // 静默模式：也写 care_records（可能 hair_records 已有，外键不会失败）
-      var careArray2 = record.careUsage;
-      if (careArray2 && careArray2.length > 0) {
-        var today2 = new Date().toISOString().slice(0, 10);
-        var shopName2 = '';
-        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
-          shopName2 = window._staffStoreCache[record.barber] || '';
-        }
-        if (!shopName2 && record.barber) {
-          try {
-            var xhr2 = new XMLHttpRequest();
-            xhr2.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
-            xhr2.setRequestHeader('apikey', SUPABASE_KEY);
-            xhr2.send();
-            if (xhr2.status === 200) {
-              var rows2 = JSON.parse(xhr2.responseText);
-              if (rows2 && rows2[0] && rows2[0].store) shopName2 = rows2[0].store;
-            }
-          } catch(e) {}
-        }
-        for (var ci2 = 0; ci2 < careArray2.length; ci2++) {
-          var cu2 = careArray2[ci2];
-          if (!cu2 || !cu2.brand || !cu2.product || cu2.grams === undefined || cu2.grams === '') continue;
-          fetch(SUPABASE_URL + '/rest/v1/care_records', {
-            method: 'POST',
-            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              hair_record_id: record.id,
-              barber: record.barber,
-              shop_name: shopName2,
-              brand: cu2.brand,
-              product: cu2.product,
-              grams: parseFloat(cu2.grams),
-              record_date: today2
-            })
-          }).catch(function(){});
-        }
-      }
+      // 等 hair_records 写完（外键约束），再用“先删旧明细、后批量重建”同步护理记录。
+      hrPromise.then(function() {
+        return syncCareRecordsForHairRecord(record);
+      }).catch(function(err) {
+        console.warn('[护理记录同步失败]', err);
+      });
     }
   };
 
@@ -6331,6 +6546,7 @@ function initApp() {
     // 收集所有表单字段（同 saveHairRecordLocal 逻辑）
     // ★ 自动收集所有表单字段
     var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
+    var previousArchiveRecord = _cloudRecordData ? JSON.parse(JSON.stringify(_cloudRecordData)) : {};
     var archiveSeqSeed = _cloudRecordData || { id: cloudId, _cloudRecordId: cloudId, seq: _cloudRecordSeq };
     archiveSeqSeed.id = archiveSeqSeed.id || cloudId;
     archiveSeqSeed._cloudRecordId = archiveSeqSeed._cloudRecordId || cloudId;
@@ -6401,12 +6617,24 @@ function initApp() {
       status: archiveStatus,
       synced: false
     };
+    prepareCareOutboundBaseline(record, previousArchiveRecord);
+    var archiveCareReductionErrors = validateCareOutboundReduction(record);
+    if (archiveCareReductionErrors.length) {
+      alert('以下护理用量已经提交美管加出库，不能直接改小或删除：\n' + archiveCareReductionErrors.join('\n') + '\n如需冲销，请联系管理员处理。');
+      return;
+    }
     if (!hairRecordHasMeaningfulContent(record)) {
       alert('这张发质分析表还没有实际发质、烫染或护理内容，不能归档');
       return;
     }
 
     // PATCH 云端记录，标记已完成
+    var archiveSaveBtn = document.getElementById('hair-save-btn');
+    if (archiveSaveBtn) {
+      archiveSaveBtn.textContent = '保存中...';
+      archiveSaveBtn.disabled = true;
+    }
+    var archiveHairSaved = false;
     fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -6415,38 +6643,56 @@ function initApp() {
         record_data: record
       })
     }).then(function(r) {
-      if (r.ok) {
-        // 也更新本地记录
-        var records = getHairRecords();
-        for (var i = 0; i < records.length; i++) {
-          if (records[i].id === cloudId) {
-            records[i].status = archiveStatus;
-            records[i].synced = true;
-            break;
-          }
-        }
-        saveHairRecords(records);
-
-        record._cloudRecordId = cloudId;
-        record._isCloudRecord = true;
-        _cloudEditingId = cloudId;
-        _editingHairId = cloudId;
-        _cloudRecordData = JSON.parse(JSON.stringify(record));
-        syncCareRecordsForHairRecord(record);
-        var btn = document.getElementById('hair-save-btn');
-        if (btn) {
-          btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
-          btn.style.background = 'var(--success, #2ecc71)';
-          btn.disabled = false;
-          btn.onclick = window.saveAndUploadHairArchive;
-        }
-        renderHairSaveMeta(record);
-        if (window.renderPendingRecords) window.renderPendingRecords();
-        if (window.renderMyTasks) window.renderMyTasks();
-      } else {
-        r.text().then(function(t){ alert('❌ 上传失败: '+t.slice(0,80)); });
+      if (!r.ok) {
+        return r.text().then(function(t) { throw new Error('上传失败: ' + (t || r.status)); });
       }
-    }).catch(function(){ alert('❌ 上传失败，网络错误'); });
+      archiveHairSaved = true;
+      // 也更新本地记录
+      var records = getHairRecords();
+      for (var i = 0; i < records.length; i++) {
+        if (records[i].id === cloudId) {
+          records[i].status = archiveStatus;
+          records[i].synced = true;
+          break;
+        }
+      }
+      saveHairRecords(records);
+
+      record._cloudRecordId = cloudId;
+      record._isCloudRecord = true;
+      _cloudEditingId = cloudId;
+      _editingHairId = cloudId;
+      _cloudRecordData = JSON.parse(JSON.stringify(record));
+      return syncCareRecordsForHairRecord(record).then(function() {
+        if (archiveStatus === '已完成' || archiveStatus === '回访完成') {
+          return enqueueCareOutboundForRecord(record);
+        }
+        return { record: record, queued: false, count: 0 };
+      });
+    }).then(function(outboundResult) {
+      record = outboundResult.record || record;
+      _cloudRecordData = JSON.parse(JSON.stringify(record));
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
+        btn.style.background = 'var(--success, #2ecc71)';
+        btn.disabled = false;
+        btn.onclick = window.saveAndUploadHairArchive;
+      }
+      renderHairSaveMeta(record);
+      if (window.renderPendingRecords) window.renderPendingRecords();
+      if (window.renderMyTasks) window.renderMyTasks();
+    }).catch(function(err) {
+      _cloudEditingId = cloudId;
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = archiveHairSaved ? '⚠️ 已保存但同步未完成，点此重试' : '⚠️ 保存失败，点此重试';
+        btn.style.background = '#e8a817';
+        btn.disabled = false;
+        btn.onclick = window.saveAndUploadHairArchive;
+      }
+      alert('❌ ' + (err && err.message ? err.message : '上传失败，网络错误'));
+    });
   };
 
   // ===== 从预约选择客户 =====
@@ -6606,12 +6852,6 @@ function initApp() {
     if (!product || !gramVal || parseFloat(gramVal) <= 0) return;
     var _barberName = (document.getElementById('hair-form-barber') || {}).value || localStorage.getItem('booking-barber') || BOOKING_BARBER || '未知';
     _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName });
-    // 同步推送护理用量到出库队列（自动出库用）
-    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName, status: 'pending', created_at: new Date().toISOString() })
-    }).catch(function(e){ console.warn('[出库队列推送失败]', e); });
     // 清空并重置
     sel.value = '';
     grams.value = '';

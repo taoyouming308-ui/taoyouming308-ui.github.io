@@ -30,6 +30,7 @@ git fetch github main
 git fetch origin master
 node scripts/check-version-sync.js
 node scripts/smoke-test-app.js
+node scripts/test-care-outbound.js
 node scripts/check-agent-sync-status.js
 git push github main
 git push origin main:master
