@@ -29,7 +29,8 @@ node scripts/audit-meiguanjia-sync.js
 
 Current audit findings from sample data:
 
-- `customer_profiles` has many rows with `total_visits` or `total_consumption` but empty `service_history`.
+- 2026-06-27 read-only sample: 1000 profile rows, 839 have visits but no `service_history`, and 821 have consumption but no `service_history`.
+- 60 sampled profiles have package rows and 50 have active remaining packages.
 - Some `last_visit_date` values are relative text like `8小时前` instead of stable ISO dates.
 - Some bookings have no `service_name`; if Meiguanjia has the project name, the sync should write it.
 - Some bookings have empty `time_label`; the app can use `reservation_time`, but `time_label` should still be normalized for display.
@@ -85,6 +86,8 @@ Current audit findings from sample data:
 
 ## Frontend Changes Already Made
 
+- v330: customer archive list loads up to 1000 profile summaries; opening a customer refetches that phone/name with `select=*` so `service_history`, `notes`, and package details are not lost by the list query.
+- v330: appointment selection is filtered by both logged-in store and selected stylist.
 - v316: booking cache is now separated by shop, date, and barber.
 - v316: booking DOM refresh signature includes phone and reservation time.
 - v316: customer archive loads up to 1000 `customer_profiles` rows instead of 500 to reduce missing package data.

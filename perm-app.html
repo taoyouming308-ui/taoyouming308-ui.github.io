@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="329">
+<html lang="zh-CN" data-version="330">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2955,6 +2955,8 @@ function initApp() {
   var BOOKING_DATE = getLocalDateStr();
   var BOOKING_INTERVAL = null;
   var BOOKINGS_CACHE = [];
+  var AUTHENTICATED_STAFF = null;
+  var APP_SESSION_MAX_AGE = 12 * 60 * 60 * 1000;
 
   // ★ 设备ID（每个手机唯一，存在localStorage）
   var DEVICE_ID = localStorage.getItem('booking-device-id');
@@ -2964,13 +2966,51 @@ function initApp() {
   }
 
   function checkIdentity() {
-    var cached = localStorage.getItem('booking-barber');
-    if (cached) {
-      BOOKING_BARBER = cached;
-      document.getElementById('current-identity').textContent = cached;
-    } else {
+    var session = null;
+    try { session = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch(e) {}
+    if (!session || !session.username || !session.store || !session.loggedAt ||
+        Date.now() - Number(session.loggedAt) > APP_SESSION_MAX_AGE) {
+      localStorage.removeItem('booking-session');
+      localStorage.removeItem('booking-barber');
+      localStorage.removeItem('booking-store');
       showIdentityModal();
+      return;
     }
+    applyAuthenticatedIdentity(session, false);
+    fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active,store,position&username=eq.' + encodeURIComponent(session.username) + '&limit=1', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) { return r.ok ? r.json() : []; }).then(function(rows) {
+      if (!rows.length || rows[0].active === false || rows[0].store !== session.store) {
+        localStorage.removeItem('booking-session');
+        localStorage.removeItem('booking-barber');
+        localStorage.removeItem('booking-store');
+        AUTHENTICATED_STAFF = null;
+        BOOKING_BARBER = '';
+        showIdentityModal();
+      }
+    }).catch(function() {});
+  }
+
+  function applyAuthenticatedIdentity(staff, persist) {
+    if (!staff || !staff.username || !staff.store) return false;
+    AUTHENTICATED_STAFF = {
+      username: staff.username,
+      store: staff.store,
+      position: staff.position || '',
+      loggedAt: Number(staff.loggedAt) || Date.now()
+    };
+    BOOKING_BARBER = AUTHENTICATED_STAFF.username;
+    BOOKING_SHOP = AUTHENTICATED_STAFF.store;
+    localStorage.setItem('booking-barber', BOOKING_BARBER);
+    localStorage.setItem('booking-store', BOOKING_SHOP);
+    if (persist !== false) localStorage.setItem('booking-session', JSON.stringify(AUTHENTICATED_STAFF));
+    var identityEl = document.getElementById('current-identity');
+    if (identityEl) identityEl.textContent = BOOKING_BARBER;
+    var freeBtn = document.getElementById('shop-btn-ziyou');
+    var xiangliBtn = document.getElementById('shop-btn-xiangli');
+    if (freeBtn) freeBtn.classList.toggle('on', BOOKING_SHOP === '自由手艺人');
+    if (xiangliBtn) xiangliBtn.classList.toggle('on', BOOKING_SHOP === '向里造型');
+    return true;
   }
 
   var DOW = ['日','一','二','三','四','五','六'];
@@ -3039,15 +3079,13 @@ function initApp() {
     try {
       var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
       // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
-      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active,store,position&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
         headers: { 'apikey': SUPABASE_KEY }
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       var rows = await r.json();
       if (rows && rows.length > 0 && rows[0].active !== false) {
-        // 登录成功 → 弹出选名字页面，不直接绑定
-        document.getElementById('identity-modal').remove();
-        showBarberPicker();
+        selectIdentity(rows[0].username, rows[0].store, rows[0].position || '');
       } else {
         errEl.textContent = '姓名或密码错误，或账号未通过审核';
         errEl.style.display = '';
@@ -3060,43 +3098,8 @@ function initApp() {
   };
 
   window.showBarberPicker = async function(){
-    var existing = document.getElementById('barber-picker-modal');
-    if (existing) existing.remove();
-    // 拉取所有 active 发型师作为可选身份
-    var barbers = [];
-    try {
-      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&role=eq.staff&order=username.asc', {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      var rows = await r.json();
-      if (rows && rows.length > 0) {
-        barbers = rows.map(function(r){ return r.username; });
-      }
-    } catch(e) { /* 兜底 */ }
-    if (barbers.length < 3) {
-      barbers = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆','向里造型','十一','哈维','晓伟','郭小康','陈浩'];
-    }
-    var div = document.createElement('div');
-    div.className = 'identity-modal';
-    div.id = 'barber-picker-modal';
-    var html = '<div class="box"><h3>选择你的身份</h3><div id="barber-picker-list" style="max-height:400px;overflow-y:auto;"></div></div>';
-    div.innerHTML = html;
-    document.body.appendChild(div);
-    var list = document.getElementById('barber-picker-list');
-    list.addEventListener('click', function(e){
-      var btn = e.target.closest('button[data-name]');
-      if (!btn || !list.contains(btn)) return;
-      selectIdentity(btn.getAttribute('data-name') || '');
-    });
-    barbers.forEach(function(b){
-      var btn = document.createElement('button');
-      btn.className = 'opt';
-      btn.type = 'button';
-      btn.setAttribute('data-name', b || '');
-      btn.textContent = b || '';
-      list.appendChild(btn);
-    });
+    showIdentityModal();
+    showLoginForm();
   };
 
   window.showRegisterForm = function(){
@@ -3127,10 +3130,13 @@ function initApp() {
     document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
   };
 
-  window.selectIdentity = function(name) {
-    BOOKING_BARBER = name;
-    localStorage.setItem('booking-barber', name);
-    document.getElementById('current-identity').textContent = name || '全部发型师';
+  window.selectIdentity = function(name, store, position) {
+    if (!name || !store) {
+      showIdentityModal();
+      showLoginForm();
+      return;
+    }
+    applyAuthenticatedIdentity({ username: name, store: store, position: position, loggedAt: Date.now() }, true);
     var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
     if (modal) modal.remove();
     // ★ 存到Supabase，管理员可在后台修改
@@ -3188,12 +3194,19 @@ function initApp() {
   window.logoutAccount = function(){
     if (!confirm('确定退出当前账号？')) return;
     localStorage.removeItem('booking-barber');
+    localStorage.removeItem('booking-store');
+    localStorage.removeItem('booking-session');
     localStorage.removeItem('install_guide_done');
     BOOKING_BARBER = '';
     location.reload();
   };
 
   window.switchShop = function(shop) {
+    var ownStore = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.store) || localStorage.getItem('booking-store') || '';
+    if (ownStore && shop !== ownStore) {
+      alert('当前账号只可查看所属门店：' + ownStore);
+      return;
+    }
     BOOKING_SHOP = shop;
     document.getElementById('shop-btn-ziyou').classList.toggle('on', shop === '自由手艺人');
     document.getElementById('shop-btn-xiangli').classList.toggle('on', shop === '向里造型');
@@ -4301,6 +4314,29 @@ function initApp() {
     localStorage.setItem('_hairRecordSeqCounter', String(next));
     return next;
   }
+  var _hairSeqSyncPromise = null;
+  function syncHairSeqCounterFromCloud() {
+    if (_hairSeqSyncPromise) return _hairSeqSyncPromise;
+    _hairSeqSyncPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data&status=neq.deleted&limit=2000', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(rows) {
+      var maxSeq = 0;
+      (Array.isArray(rows) ? rows : []).forEach(function(row) {
+        var seq = parseHairRecordSeq(row && row.record_data && row.record_data.seq);
+        if (seq > maxSeq) maxSeq = seq;
+      });
+      ensureHairSeqCounterAtLeast(maxSeq);
+      return maxSeq;
+    }).catch(function() {
+      return parseHairRecordSeq(localStorage.getItem('_hairRecordSeqCounter'));
+    }).finally(function() {
+      _hairSeqSyncPromise = null;
+    });
+    return _hairSeqSyncPromise;
+  }
   function stableHairRecordSeq(rec) {
     rec = rec || {};
     var seq = parseHairRecordSeq(rec.seq);
@@ -4782,8 +4818,94 @@ function initApp() {
     });
   }
 
+  function careOutboundPendingRows(pending) {
+    return (pending.items || []).map(function(item) {
+      return {
+        brand: item.brand,
+        product: item.product,
+        grams: item.grams,
+        status: 'pending',
+        created_at: pending.queuedAt
+      };
+    });
+  }
+
+  function finalizeCareOutboundPending(record, pending, rows) {
+    var oldPending = record.careOutboundPending;
+    record.careOutboundSnapshot = careUsageTotals(pending.snapshot);
+    record.careOutboundStatus = 'pending';
+    record.careOutboundQueuedAt = pending.queuedAt;
+    record.careOutboundBatches = (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []).concat([{
+      queuedAt: pending.queuedAt,
+      ids: rows.map(function(row) { return row.id; }).filter(function(id) { return id !== undefined && id !== null; }),
+      items: pending.items
+    }]).slice(-20);
+    delete record.careOutboundPending;
+    return persistHairRecordData(record).then(function() {
+      return { record: record, queued: true, count: pending.items.length };
+    }).catch(function(error) {
+      record.careOutboundPending = oldPending || pending;
+      throw error;
+    });
+  }
+
+  function submitCareOutboundPending(record, pending) {
+    var queueRows = careOutboundPendingRows(pending);
+    return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(queueRows)
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) {
+          throw new Error('美管加出库入队失败: ' + (t || ('HTTP ' + r.status)));
+        });
+      }
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      if (rows.length !== queueRows.length) throw new Error('美管加出库入队返回数量不一致');
+      return finalizeCareOutboundPending(record, pending, rows);
+    });
+  }
+
+  function recoverCareOutboundPending(record) {
+    var pending = record && record.careOutboundPending;
+    if (!pending || !pending.queuedAt || !Array.isArray(pending.items) || !pending.items.length) {
+      return Promise.resolve(null);
+    }
+    var query = '/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at&created_at=eq.' +
+      encodeURIComponent(pending.queuedAt) + '&order=id.asc';
+    return fetch(SUPABASE_URL + query, {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('读取待出库批次失败');
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      var unmatched = rows.slice();
+      var matched = [];
+      for (var i = 0; i < pending.items.length; i++) {
+        var item = pending.items[i];
+        var found = -1;
+        for (var j = 0; j < unmatched.length; j++) {
+          var row = unmatched[j];
+          if (row.brand === item.brand && row.product === item.product &&
+              Math.abs((parseFloat(row.grams) || 0) - item.grams) < 0.0001) {
+            found = j;
+            break;
+          }
+        }
+        if (found < 0) return submitCareOutboundPending(record, pending);
+        matched.push(unmatched.splice(found, 1)[0]);
+      }
+      return finalizeCareOutboundPending(record, pending, matched);
+    });
+  }
+
   function enqueueCareOutboundForRecord(record) {
     record = record || {};
+    if (record.careOutboundPending) return recoverCareOutboundPending(record);
     var currentTotals = careUsageTotals(record.careUsage);
     var currentMap = careUsageMap(currentTotals);
     var snapshotMap = careUsageMap(record.careOutboundSnapshot);
@@ -4804,42 +4926,14 @@ function initApp() {
       return Promise.resolve({ record: record, queued: false, count: 0 });
     }
 
-    var queuedAt = new Date().toISOString();
-    var queueRows = deltas.map(function(item) {
-      return {
-        brand: item.brand,
-        product: item.product,
-        grams: item.grams,
-        status: 'pending',
-        created_at: queuedAt
-      };
-    });
-    return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify(queueRows)
-    }).then(function(r) {
-      if (!r.ok) {
-        return r.text().then(function(t) {
-          throw new Error('美管加出库入队失败: ' + (t || ('HTTP ' + r.status)));
-        });
-      }
-      return r.json();
-    }).then(function(rows) {
-      rows = Array.isArray(rows) ? rows : [];
-      if (rows.length !== queueRows.length) throw new Error('美管加出库入队返回数量不一致');
-      record.careOutboundSnapshot = currentTotals;
-      record.careOutboundStatus = 'pending';
-      record.careOutboundQueuedAt = queuedAt;
-      var batch = {
-        queuedAt: queuedAt,
-        ids: rows.map(function(row) { return row.id; }).filter(function(id) { return id !== undefined && id !== null; }),
-        items: deltas
-      };
-      record.careOutboundBatches = (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []).concat([batch]).slice(-20);
-      return persistHairRecordData(record).then(function() {
-        return { record: record, queued: true, count: deltas.length };
-      });
+    var pending = {
+      queuedAt: new Date().toISOString(),
+      items: deltas,
+      snapshot: currentTotals
+    };
+    record.careOutboundPending = pending;
+    return persistHairRecordData(record).then(function() {
+      return submitCareOutboundPending(record, pending);
     });
   }
 
@@ -4981,14 +5075,13 @@ function initApp() {
     }).then(function(r){ return r.json(); }).then(function(rows){
       rows = Array.isArray(rows) ? rows : [];
       var currentUser = localStorage.getItem('booking-barber') || BOOKING_BARBER || fallback || '';
-      var currentStore = '';
+      var currentStore = localStorage.getItem('booking-store') || BOOKING_SHOP || '';
       for (var sr = 0; sr < rows.length; sr++) {
         if (rows[sr] && rows[sr].username === currentUser && rows[sr].store) {
           currentStore = rows[sr].store;
           break;
         }
       }
-      if (!currentStore && BOOKING_SHOP) currentStore = BOOKING_SHOP;
       var fallbackFree = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
       var fallbackXiangli = ['向里造型','十一','哈维','晓伟','郭小康','陈浩'];
       var inferredStore = currentStore || (fallbackXiangli.indexOf(currentUser) !== -1 ? '向里造型' : '自由手艺人');
@@ -5243,9 +5336,10 @@ function initApp() {
       endProtect: F['hair-form-end-protect'] || false,
       colorNotes: F['hair-form-color-notes'] || '',
       feedbackRating: F['fb-hair'] || '',
+      followUpScreenshot: window._hairFollowUpScreenshot || '',
       followDate: F['hair-form-follow-date'] || '',
       followMsg: F['hair-form-follow-msg'] || '',
-      status: '待回访',
+      status: recordTechValueFromFields(F) ? '待技师填写' : '待回访',
       synced: false
     };
     var _recordHasMeaningfulContent = hairRecordHasMeaningfulContent(record);
@@ -5299,7 +5393,7 @@ function initApp() {
           customer_phone: newRec.customerPhone || '',
           technician: newRec.technician,
           barber: newRec.barber,
-          status: '待回访',
+          status: newRec.technician ? '待技师填写' : '待回访',
           record_data: newRec
         })
       }).then(function(r) {
@@ -5347,7 +5441,7 @@ function initApp() {
       }
       // 对于新record中为空但云端旧数据有值的字段，保留旧值（表单中可能没有对应的输入框）
       var _preserveFields = ['rodMethod','dwellType','rinse','dwellNatural','dwellHeat','creative',
-        'feedbackRating','followMsg','applyOrder','serviceType',
+        'feedbackRating','followUpScreenshot','followMsg','applyOrder','serviceType',
         'targetColor','tone','toneOther','developer','mixRatio',
         'colorDwell','colorHeat','colorHeatTemp','scalpProtect','endProtect','colorNotes',
         'rodDetails','planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference'];
@@ -5369,14 +5463,13 @@ function initApp() {
       }
       var _cloudSaveAsStylist = ((_cloudRecordData && _cloudRecordData.barber) || record.barber || '') === _currentUserForCloudSave;
       var _oldCloudStatus = ((_cloudRecordData && _cloudRecordData.status) || record.status || '待回访');
-      var _stylistFinalSave = _cloudSaveAsStylist && (_oldCloudStatus === '技师已完成' || _oldCloudStatus === '待回访完成');
       if (_cloudSaveAsAssistant && !_cloudSaveAsStylist && !isFollowUp && !hairRecordHasMeaningfulContent(_mergedData)) {
         alert('请先填写发质、烫染或护理内容后再回传发型师');
         _cloudEditingId = cloudId;
         _followUpMode = false;
         return;
       }
-      var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : (_stylistFinalSave ? '已完成' : _oldCloudStatus));
+      var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : _oldCloudStatus);
       prepareCareOutboundBaseline(_mergedData, _cloudRecordData || {});
       var _careReductionErrors = validateCareOutboundReduction(_mergedData);
       if (_careReductionErrors.length) {
@@ -5595,15 +5688,29 @@ function initApp() {
   }
   function hairTaskHasFollowup(status, rec) {
     rec = rec || {};
-    return status === '回访完成' || rec.status === '回访完成';
+    var effectiveStatus = status || rec.status || '';
+    var hasEvidence = !!(rec.feedbackRating || rec.followUpScreenshot);
+    return effectiveStatus === '回访完成' && hasEvidence;
   }
   function hairTaskAssistantReturned(status, rec) {
     rec = rec || {};
-    return status === '技师已完成' || status === '待回访完成' ||
-      rec.status === '技师已完成' || rec.status === '待回访完成';
+    var effectiveStatus = status || rec.status || '';
+    return effectiveStatus === '技师已完成' || effectiveStatus === '待回访完成';
+  }
+  function hairTaskStage(status, rec) {
+    rec = rec || {};
+    var effectiveStatus = status || rec.status || '';
+    if (hairTaskHasFollowup(effectiveStatus, rec)) return 'complete';
+    if (hairTaskAssistantReturned(effectiveStatus, rec)) return 'followup';
+    if (effectiveStatus === '回访完成') return 'followup';
+    if (effectiveStatus === '待技师填写') return 'assistant';
+    if (effectiveStatus === '待回访' && rec.technician) return 'assistant';
+    if (effectiveStatus === '已完成' || effectiveStatus === '已保存' || effectiveStatus === '待回访') return 'followup';
+    if (rec.technician) return 'assistant';
+    return 'followup';
   }
   function hairTaskNeedsStylistFollowup(status, rec) {
-    return !hairTaskHasFollowup(status, rec);
+    return hairTaskStage(status, rec) === 'followup';
   }
 
   // ===== 渲染待上传记录列表 =====
@@ -5730,6 +5837,8 @@ function initApp() {
         } catch(e) {}
         return '';
       }
+      // 所有任务只保留最近30天，避免待处理任务无限累积。
+      rows = rows.filter(isHairTaskWithinVisibleWindow);
       // ── 拆分 pending / done ──
       var pendingRows = [];
       var doneRows = [];
@@ -5738,14 +5847,12 @@ function initApp() {
         var rec = r.record_data || {};
         var st = r.status || '';
         var hasFollowup = hairTaskHasFollowup(st, rec);
-        if (hasFollowup || st === '已完成' || st === '回访完成' || st === '已保存') {
+        if (hasFollowup) {
           doneRows.push(r);
         } else {
           pendingRows.push(r);
         }
       }
-      // 已完成记录限制30天窗口，待处理不受限制
-      doneRows = doneRows.filter(isHairTaskWithinVisibleWindow);
       // ── 渲染单张卡片（共用） ──
       function renderCard(r) {
         var rec = r.record_data || {};
@@ -5756,6 +5863,8 @@ function initApp() {
         var phone = r.customer_phone || rec.customerPhone || '';
         var technician = r.technician || rec.technician || '';
         var stylist = r.barber || rec.barber || '';
+        rec.technician = rec.technician || technician;
+        rec.barber = rec.barber || stylist;
         var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
         // 判断当前用户身份
         var techList = (technician || '').split(',');
@@ -5766,8 +5875,10 @@ function initApp() {
         var isStylist = (stylist === barber);
         var hasFollowup = hairTaskHasFollowup(status, rec);
         var assistantReturned = hairTaskAssistantReturned(status, rec);
+        var taskStage = hairTaskStage(status, rec);
         var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
-        var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
+        var primaryStatusText = taskStage === 'complete' ? '回访完成' :
+          (taskStage === 'followup' ? '待发型师回访' : '待技师填写');
         // 状态圆点 class
         var dotClass = 'pending';
         if (hasFollowup) { dotClass = 'followup-done'; }
@@ -5796,15 +5907,14 @@ function initApp() {
         if (needsStylistFollowup) {
           h += '<div class="hair-task-card-warning">未评定未回访</div>';
         }
-        if (status === '技师已完成' && isStylist) {
-          h += '<div class="hair-task-card-warning">⚠️ 未评定，回访客户</div>';
-        }
         // 底部操作按钮行
         h += '<div class="hair-task-card-actions">';
         if (isStylist) {
           h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">编辑</button>';
           if (needsStylistFollowup) {
             h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
+          } else if (taskStage === 'assistant') {
+            h += '<span class="hair-task-card-info">等待技师填写</span>';
           }
           h += '<span class="hair-task-card-info">已入档案不可删</span>';
         } else if (isTech && !hasFollowup) {
@@ -6259,13 +6369,10 @@ function initApp() {
       var fbLabel = document.querySelector('label[data-val="' + data.feedbackRating + '"][data-name="fb-hair"]');
       if (fbLabel) { fbLabel.click(); }
     }
-    // 聊天截图单独存在localStorage，没有存记录里
-    var _screenshot = localStorage.getItem('_hairFbScreenshot');
-    if (_screenshot && _screenshot.length > 20) {
-      var prevImg = document.getElementById('hair-fb-preview');
-      if (prevImg) prevImg.src = _screenshot;
+    window._hairFollowUpScreenshot = data.followUpScreenshot || '';
+    if (typeof window.showHairFollowupScreenshot === 'function') {
+      window.showHairFollowupScreenshot(window._hairFollowUpScreenshot);
     }
-    setVal('hair-form-follow-date', data.followDate);
     selectRadio('hair-rod-method', data.rodMethod);
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
@@ -6277,7 +6384,7 @@ function initApp() {
     setVal('hair-form-color-notes', data.colorNotes);
     setChecked('hair-form-scalp-protect', data.scalpProtect);
     setChecked('hair-form-end-protect', data.endProtect);
-    setVal('hair-form-follow-date', data.followDate || getLocalDateStr());
+    setVal('hair-form-follow-date', data.followDate || (_followUpMode ? getLocalDateStr() : ''));
     setVal('hair-form-follow-msg', data.followMsg);
     // 显示AI结果框
     var resultBox = document.getElementById('hair-result');
@@ -6570,9 +6677,8 @@ function initApp() {
     var hasAssignedAssistant = !!recordTechValueFromFields(F);
     var assistantReturned = previousArchiveStatus === '技师已完成' || previousArchiveStatus === '待回访完成';
     var alreadyFollowed = previousArchiveStatus === '回访完成';
-    var alreadyArchived = previousArchiveStatus === '已完成' || alreadyFollowed;
-    var archiveStatus = alreadyFollowed ? '回访完成' : '已完成';
-    if (hasAssignedAssistant && !assistantReturned && !alreadyArchived) archiveStatus = '待回访';
+    var archiveStatus = alreadyFollowed ? '回访完成' :
+      (assistantReturned ? '技师已完成' : (hasAssignedAssistant ? '待技师填写' : '待回访'));
 
     var record = {
       id: cloudId,
@@ -6625,6 +6731,7 @@ function initApp() {
       endProtect: F['hair-form-end-protect'] || false,
       colorNotes: F['hair-form-color-notes'] || '',
       feedbackRating: F['fb-hair'] || '',
+      followUpScreenshot: window._hairFollowUpScreenshot || '',
       followDate: F['hair-form-follow-date'] || '',
       followMsg: F['hair-form-follow-msg'] || '',
       status: archiveStatus,
@@ -6687,7 +6794,8 @@ function initApp() {
       _cloudRecordData = JSON.parse(JSON.stringify(record));
       var btn = document.getElementById('hair-save-btn');
       if (btn) {
-        btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
+        btn.textContent = archiveStatus === '待技师填写' ? '✅ 已派给技师' :
+          (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，待回访');
         btn.style.background = 'var(--success, #2ecc71)';
         btn.disabled = false;
         btn.onclick = window.saveAndUploadHairArchive;
@@ -6754,7 +6862,8 @@ function initApp() {
     list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">加载中...</div>';
     var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
     var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + barberFilter + '&order=reservation_time.asc', {
+    var shopFilter = BOOKING_SHOP ? '&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) : '';
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + shopFilter + barberFilter + '&order=reservation_time.asc', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       rows = Array.isArray(rows) ? rows : [];
@@ -6799,6 +6908,30 @@ function initApp() {
   window.pickBookingCustomer = function(name, phone) {
     var nameEl = document.getElementById('hair-form-name');
     var phoneEl = document.getElementById('hair-form-phone');
+    var oldPhone = normalizeHairCustomerPhone(phoneEl && phoneEl.value);
+    var newPhone = normalizeHairCustomerPhone(phone);
+    var oldName = normalizeHairCustomerName(nameEl && nameEl.value);
+    var newName = normalizeHairCustomerName(name);
+    var customerChanged = (oldPhone && newPhone && oldPhone !== newPhone) ||
+      (!oldPhone && !newPhone && oldName && newName && oldName !== newName);
+    if (_cloudEditingId && customerChanged) {
+      alert('已上传的发质分析表不能更换客户，请返回后新建一张表');
+      return;
+    }
+    if (customerChanged) {
+      window._hairFollowUpScreenshot = '';
+      if (typeof window.showHairFollowupScreenshot === 'function') window.showHairFollowupScreenshot('');
+      var selectedRating = document.querySelector('input[name="fb-hair"]:checked');
+      if (selectedRating) selectedRating.checked = false;
+      var ratingLabels = document.querySelectorAll('label[data-name="fb-hair"]');
+      for (var rli = 0; rli < ratingLabels.length; rli++) {
+        ratingLabels[rli].style.background = '#f5f5f5';
+        ratingLabels[rli].style.borderColor = '#e5e5e5';
+        ratingLabels[rli].style.color = '#666';
+      }
+      setVal('hair-form-follow-date', '');
+      setVal('hair-form-follow-msg', '');
+    }
     if (nameEl) nameEl.value = name;
     if (phoneEl) phoneEl.value = phone;
   };
@@ -6916,10 +7049,12 @@ function initApp() {
     _followUpMode = false;
     _cloudRecordSeq = null;
     _cloudRecordData = null;
+    syncHairSeqCounterFromCloud();
     var containerId = 'hair-analysis-section';
     var existing = document.getElementById(containerId);
     if (existing) existing.remove();
     var rec = existingRec || {};
+    window._hairFollowUpScreenshot = rec.followUpScreenshot || '';
     // 初始化护理记录数据（编辑模式时回填已有记录）
     initCareUsage(rec.careUsage);
 
@@ -7235,7 +7370,7 @@ function initApp() {
     });
     html += '</div>';
     // 聊天截图
-    var savedSsBase64 = '';
+    var savedSsBase64 = rec.followUpScreenshot || '';
     if (savedSsBase64 && savedSsBase64.length > 20) {
       html += '<div style="position:relative;display:inline-block;margin-bottom:8px;">';
       html += '<img id="hair-fb-preview" src="' + savedSsBase64 + '" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid #e5e5e5;object-fit:cover;">';
@@ -7656,7 +7791,7 @@ function initApp() {
       function pollQueue(queueId) {
         var pollStart = Date.now();
         var POLL_TIMEOUT = 120000;
-        var POLL_INTERVAL = 500;
+        var POLL_INTERVAL = 2000;
         var pollTimer;
         function doPoll() {
           fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + queueId + '&select=status,ai_damage_level,ai_analysis,error_message', {
@@ -7980,7 +8115,7 @@ function initApp() {
           function pollQueue(queueId) {
             var pollStart = Date.now();
             var POLL_TIMEOUT = 120000;
-            var POLL_INTERVAL = 500;
+            var POLL_INTERVAL = 2000;
             var pollTimer;
 
             function doPoll() {
@@ -8094,7 +8229,7 @@ function initApp() {
       if (!r.ok) return [];
       return r.json();
     }).catch(function(){ return []; });
-    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,total_visits,total_consumption,last_visit_date,card_packages,barber_name,shop_name&order=last_visit_date.desc.nullslast&limit=200', {
+    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,total_visits,total_consumption,last_visit_date,card_packages,barber_name,shop_name&order=last_visit_date.desc.nullslast&limit=1000', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) return [];
@@ -8241,7 +8376,18 @@ function initApp() {
     document.getElementById('profile-search-box').style.display = 'none';
     var detailEl = document.getElementById('profile-detail');
     detailEl.style.display = 'block';
+    detailEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">正在加载完整消费和套餐记录...</div>';
+    fetchCustomerProfileRows(g.phone, g.name, 2000).then(function(rows) {
+      if (rows && rows.length) g.profileRows = rows;
+      renderCustomerProfileDetail(g);
+    }).catch(function() {
+      renderCustomerProfileDetail(g);
+    });
+  };
 
+  function renderCustomerProfileDetail(g) {
+    var detailEl = document.getElementById('profile-detail');
+    if (!detailEl) return;
     var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
     var html = '<div style="margin-bottom:12px;">';
     html += '<button onclick="backToProfileList()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 0;font-family:var(--font);">← 返回列表</button>';
@@ -8326,7 +8472,7 @@ function initApp() {
       html += '</div>';
     }
     detailEl.innerHTML = html;
-  };
+  }
 
   window.backToProfileList = function() {
     document.getElementById('profile-list').style.display = '';
@@ -8375,19 +8521,49 @@ window.uploadAppFbScreenshot = function(inputEl) {
   if (file.size > 5*1024*1024) { alert('截图太大，请压缩到5MB以内'); return; }
   var reader = new FileReader();
   reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    // 存到localStorage，在保存时一并提交
-    localStorage.setItem('_hairFbScreenshot', dataUrl);
-    // 显示预览
-    var img = document.getElementById('hair-fb-preview') || document.createElement('img');
-    img.id = 'hair-fb-preview';
-    img.src = dataUrl;
-    img.style.cssText = 'max-width:160px;max-height:120px;border-radius:6px;border:1px solid #333;object-fit:cover;';
-    // 确保预览在正确位置
-    var uploadLabel = inputEl.parentElement;
-    uploadLabel.parentElement.insertBefore(img, uploadLabel);
+    var source = new Image();
+    source.onload = function() {
+      var maxSide = 1200;
+      var scale = Math.min(1, maxSide / Math.max(source.width, source.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(source.width * scale));
+      canvas.height = Math.max(1, Math.round(source.height * scale));
+      canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.68);
+      if (dataUrl.length > 900000) {
+        var secondScale = Math.min(1, 900 / Math.max(canvas.width, canvas.height));
+        var smaller = document.createElement('canvas');
+        smaller.width = Math.max(1, Math.round(canvas.width * secondScale));
+        smaller.height = Math.max(1, Math.round(canvas.height * secondScale));
+        smaller.getContext('2d').drawImage(canvas, 0, 0, smaller.width, smaller.height);
+        dataUrl = smaller.toDataURL('image/jpeg', 0.58);
+      }
+      window._hairFollowUpScreenshot = dataUrl;
+      window.showHairFollowupScreenshot(dataUrl, inputEl);
+    };
+    source.onerror = function() { alert('截图读取失败，请重新选择'); };
+    source.src = e.target.result;
   };
   reader.readAsDataURL(file);
+};
+
+window.showHairFollowupScreenshot = function(dataUrl, inputEl) {
+  var current = document.getElementById('hair-fb-preview');
+  if (!dataUrl) {
+    if (current) current.remove();
+    return;
+  }
+  var img = current || document.createElement('img');
+  img.id = 'hair-fb-preview';
+  img.src = dataUrl;
+  img.style.cssText = 'max-width:160px;max-height:120px;border-radius:6px;border:1px solid #333;object-fit:cover;';
+  if (!current) {
+    var upload = inputEl || document.getElementById('hair-fb-upload');
+    var uploadLabel = upload && upload.parentElement;
+    if (uploadLabel && uploadLabel.parentElement) {
+      uploadLabel.parentElement.insertBefore(img, uploadLabel);
+    }
+  }
 };
 </script>
 

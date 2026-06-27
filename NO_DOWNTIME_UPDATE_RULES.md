@@ -18,7 +18,10 @@ Run:
 git fetch github main
 git fetch origin master
 node scripts/check-version-sync.js
+node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
+node scripts/test-care-outbound.js
+node scripts/test-hair-task-state.js
 ```
 
 The pre-push hook runs these checks automatically.

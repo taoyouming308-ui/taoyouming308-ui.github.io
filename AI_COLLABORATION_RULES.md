@@ -50,6 +50,16 @@ git push origin main:master
 
 13. `AGENT_SYNC_STATUS.md` is the live baton between Codex and Hermes. Every meaningful change must update it before commit/push.
 
+14. Never add or modify `perm-app.v*.html` or `perm-app.backup.html` as a release method. Git history and tags are the only release backups; production changes must be applied to the latest `perm-app.html`.
+
+15. The tracked hook must be enabled in every clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+GitHub branch protection must require the `Validate shared app` check before merging or publishing through a pull request.
+
 ## Ownership
 
 - GitHub `github/main` is the live GitHub Pages source.
@@ -62,6 +72,7 @@ Before telling the user the work is done, verify:
 
 ```sh
 node scripts/check-version-sync.js
+node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
 node scripts/check-agent-sync-status.js
 git status --short

@@ -247,9 +247,11 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <input id="hr-search" placeholder="搜索客户名/手机号" style="flex:1;min-width:120px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
         <select id="hr-status-filter" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
           <option value="">全部状态</option>
+          <option value="待技师填写">待技师填写</option>
           <option value="待回访">待回访</option>
           <option value="技师已完成">技师已填</option>
-          <option value="已完成">已完成</option>
+          <option value="回访完成">回访完成</option>
+          <option value="已完成">旧版已保存</option>
         </select>
         <button id="hr-batch-del" onclick="batchDeleteHR()" style="display:none;padding:6px 14px;background:#e74c3c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">删除选中</button>
         <button onclick="loadHairRecordList()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
@@ -459,14 +461,19 @@ function stopPendingPolling() {
 
 // 自动恢复登录（除非主动退出）
 (function() {
-  const s = localStorage.getItem('perm_admin');
-  if (s) {
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('perm_admin') || 'null'); } catch(e) {}
+  const sessionValid = session && session.user && session.role === 'admin' && session.loggedAt &&
+    Date.now() - Number(session.loggedAt) < 2 * 60 * 60 * 1000;
+  if (sessionValid) {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('admin-panel').style.display = 'block';
     loadData('staff');
     updatePendingBadge();
     startPendingPolling();
     connectRealtime();
+  } else {
+    localStorage.removeItem('perm_admin');
   }
   document.getElementById('login-btn').addEventListener('click', doLogin);
   document.getElementById('reload-btn').addEventListener('click', function() {
@@ -517,14 +524,14 @@ async function doLogin() {
   if (btn && btn.disabled) return;
   if (btn) btn.disabled = true;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,password_hash,role,active&username=eq.${encodeURIComponent(u)}&limit=1`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,role,active&username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(p)}&role=eq.admin&limit=1`, {
       headers: { 'apikey': SUPABASE_KEY }
     });
     await ensureOk(r, '登录失败');
     const rows = await r.json();
     const user = rows[0];
-    if (user && user.password_hash === p && user.active !== false) {
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
+    if (user && user.role === 'admin' && user.active !== false) {
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, loggedAt: Date.now()}));
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
       document.getElementById('login-error').textContent = '';
@@ -1343,12 +1350,27 @@ function stopRealtime() {
 }
 
 // ===== 发质分析表完成统计（按发型师分组） =====
+function adminHairFollowupComplete(row) {
+  var rd = (row && row.record_data) || {};
+  return row && row.status === '回访完成' && !!(rd.feedbackRating || rd.followUpScreenshot);
+}
+
+function adminHairStatusText(row) {
+  if (adminHairFollowupComplete(row)) return '回访完成';
+  var status = (row && row.status) || '';
+  if (status === '待技师填写') return '待技师填写';
+  if (status === '技师已完成' || status === '待回访完成') return '待发型师回访';
+  if (status === '已完成' || status === '已保存') return '已保存，待回访';
+  if (status === '回访完成') return '回访资料不完整';
+  return status || '待回访';
+}
+
 window.loadHairRecordStats = function() {
   var container = document.getElementById('hair-record-stats');
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
 
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&status=neq.deleted&limit=500', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&limit=500', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
@@ -1366,8 +1388,8 @@ window.loadHairRecordStats = function() {
       if (!stats[barber]) stats[barber] = { barber: barber, total: 0, completed: 0, technicianDone: 0, pending: 0, items: [] };
       stats[barber].total++;
       stats[barber].items.push(r);
-      if (r.status === '已完成') stats[barber].completed++;
-      else if (r.status === '技师已完成') stats[barber].technicianDone++;
+      if (adminHairFollowupComplete(r)) stats[barber].completed++;
+      else if (r.status === '技师已完成' || r.status === '待回访完成') stats[barber].technicianDone++;
       else stats[barber].pending++;
     });
 
@@ -1388,7 +1410,7 @@ window.loadHairRecordStats = function() {
     // 顶部汇总卡片
     var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#fff;">'+totalAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">总发质分析表</div></div>';
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#2ecc71;">'+completedAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">已完成</div></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#2ecc71;">'+completedAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">回访完成</div></div>';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(pendingAll>0?'#e8a817':'#fff')+';">'+pendingAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">未完成</div></div>';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(rateAll<50?'#e74c3c':rateAll<80?'#e8a817':'#2ecc71')+';">'+rateAll+'%</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">完成率</div></div>';
     html += '</div>';
@@ -1396,7 +1418,7 @@ window.loadHairRecordStats = function() {
     // 按发型师统计表
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">';
     html += '<div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📊 发型师完成统计</div>';
-    html += '<table style="font-size:12px;"><thead><tr><th>发型师</th><th>门店</th><th>烫染客户</th><th>已完成</th><th>技师已填</th><th>待回访</th><th>完成率</th><th>操作</th></tr></thead><tbody>';
+    html += '<table style="font-size:12px;"><thead><tr><th>发型师</th><th>门店</th><th>发质分析表</th><th>回访完成</th><th>技师已填</th><th>待处理</th><th>完成率</th><th>操作</th></tr></thead><tbody>';
 
     list.forEach(function(s){
       var pendingCount = s.pending + s.technicianDone;
@@ -1434,17 +1456,17 @@ window.loadHairRecordStats = function() {
 
 // 弹窗显示某个发型师的未完成明细
 window.showBarberDetail = function(barberName) {
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&status=neq.deleted&limit=100', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.deleted&limit=100', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
   .then(function(rows){
+    rows = (rows || []).filter(function(r) { return !adminHairFollowupComplete(r); });
     if (!rows || rows.length === 0) {
       toast('该发型师没有未完成的记录', 'ok');
       return;
     }
     var now = new Date();
-    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '待回访完成': '待回访完成' };
     var html = '<div class="modal-box" style="max-width:650px;">';
     html += '<h3>' + esc(barberName) + ' · 未完成明细</h3>';
     html += '<p style="font-size:12px;color:var(--muted);margin-bottom:10px;">共 ' + rows.length + ' 条未完成</p>';
@@ -1452,7 +1474,7 @@ window.showBarberDetail = function(barberName) {
     html += '<table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>技师</th><th>状态</th><th>停留</th><th>创建时间</th></tr></thead><tbody>';
 
     rows.forEach(function(r){
-      var statusText = statusMap[r.status] || r.status || '—';
+      var statusText = adminHairStatusText(r);
       var tech = r.technician || '—';
       // 计算停留天数
       var days = '—';
@@ -1471,7 +1493,7 @@ window.showBarberDetail = function(barberName) {
       html += '<td>' + esc(r.customer_name || '—') + '</td>';
       html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
       html += '<td>' + esc(tech) + '</td>';
-      html += '<td style="color:' + (r.status === '待回访' ? '#e74c3c' : '#e8a817') + ';">' + statusText + '</td>';
+      html += '<td style="color:#e8a817;">' + statusText + '</td>';
       html += '<td style="color:' + (overdue ? '#e74c3c;font-weight:600' : 'var(--muted)') + ';">' + days + '</td>';
       html += '<td style="font-size:11px;color:var(--muted);">' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</td>';
       html += '</tr>';
@@ -1514,12 +1536,11 @@ window.loadHairRecordList = function() {
     }
     document.getElementById('hr-count').textContent = '共 ' + rows.length + ' 条';
     var now = new Date();
-    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '已完成': '已完成' };
     var lvlMap = {'1':'1级·健康','2':'2级·轻损','3':'3级·受损','4':'4级·严重','5':'5级·极度'};
     var html = '';
     rows.forEach(function(r){
       var rd = r.record_data || {};
-      var statusText = statusMap[r.status] || r.status || '—';
+      var statusText = adminHairStatusText(r);
       var tech = r.technician || '—';
       var days = '—';
       if (r.created_at) {
@@ -1531,8 +1552,9 @@ window.loadHairRecordList = function() {
           }
         } catch(e){}
       }
-      var overdue = r.status !== '已完成' && typeof days === 'string' && days.indexOf('天') > 0 && parseInt(days) >= 2;
-      var statusColor = r.status === '已完成' ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c';
+      var isComplete = adminHairFollowupComplete(r);
+      var overdue = !isComplete && typeof days === 'string' && days.indexOf('天') > 0 && parseInt(days) >= 2;
+      var statusColor = isComplete ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c';
       
       // 三段诊断摘要
       var diagSum = '—';
@@ -1591,8 +1613,7 @@ window.viewHairRecordDetail = function(recordId) {
     if (!rows || rows.length === 0) { toast('未找到记录', 'err'); return; }
     var r = rows[0];
     var rd = r.record_data || {};
-    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '已完成': '已完成' };
-    var statusText = statusMap[r.status] || r.status || '—';
+    var statusText = adminHairStatusText(r);
     
     var html = '<div class="modal-box" style="max-width:600px;">';
     html += '<h3>发质分析表详情</h3>';
@@ -1606,7 +1627,7 @@ window.viewHairRecordDetail = function(recordId) {
     html += '<tr><td style="color:#888;padding:2px 4px;">手机</td><td style="padding:2px 4px;">' + esc(r.customer_phone || '—') + '</td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">发型师</td><td style="padding:2px 4px;">' + esc(r.barber || '—') + '</td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">技师</td><td style="padding:2px 4px;">' + esc(r.technician || '—') + '</td></tr>';
-    html += '<tr><td style="color:#888;padding:2px 4px;">状态</td><td style="padding:2px 4px;"><span style="color:' + (r.status === '已完成' ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c') + ';">' + statusText + '</span></td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">状态</td><td style="padding:2px 4px;"><span style="color:' + (adminHairFollowupComplete(r) ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c') + ';">' + statusText + '</span></td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">创建</td><td style="padding:2px 4px;font-size:11px;color:#aaa;">' + (r.created_at || '—') + '</td></tr>';
     html += '</table></div>';
     

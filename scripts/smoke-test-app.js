@@ -46,7 +46,7 @@ if (careAddSource.includes('care_outbound_queue')) {
 for (const marker of ['enqueueCareOutboundForRecord', 'prepareCareOutboundBaseline', 'retryLatestCareOutbound']) {
   if (!html.includes(marker)) fail('missing care outbound safety marker: ' + marker);
 }
-const careQueueStart = html.indexOf('function enqueueCareOutboundForRecord(');
+const careQueueStart = html.indexOf('function careOutboundPendingRows(');
 const careQueueEnd = html.indexOf('function refreshCareOutboundStatus(', careQueueStart);
 const careQueueSource = careQueueStart >= 0 && careQueueEnd > careQueueStart ? html.slice(careQueueStart, careQueueEnd) : '';
 if (careQueueSource.includes('barber:')) {

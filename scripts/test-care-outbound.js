@@ -14,6 +14,10 @@ const functionNames = [
   'prepareCareOutboundBaseline',
   'validateCareOutboundReduction',
   'persistHairRecordData',
+  'careOutboundPendingRows',
+  'finalizeCareOutboundPending',
+  'submitCareOutboundPending',
+  'recoverCareOutboundPending',
   'enqueueCareOutboundForRecord'
 ];
 
@@ -45,13 +49,19 @@ function extractFunction(name) {
 const source = functionNames.map(extractFunction).join('\n') +
   '\nreturn { careUsageTotals, prepareCareOutboundBaseline, validateCareOutboundReduction, enqueueCareOutboundForRecord };';
 const requests = [];
+const queuedRows = [];
 async function mockFetch(url, options) {
   requests.push({ url, options });
   if (url.includes('/care_outbound_queue')) {
+    if (!options || options.method !== 'POST') {
+      return { ok: true, json: async () => queuedRows };
+    }
     const rows = JSON.parse(options.body);
+    const inserted = rows.map((row, index) => ({ ...row, id: queuedRows.length + index + 101 }));
+    queuedRows.push(...inserted);
     return {
       ok: true,
-      json: async () => rows.map((row, index) => ({ ...row, id: index + 101 }))
+      json: async () => inserted
     };
   }
   return { ok: true, text: async () => '' };
@@ -105,5 +115,22 @@ api.enqueueCareOutboundForRecord({
   if (queueRows.length !== 1 || queueRows[0].grams !== 5) fail('queue payload must contain only the 5g delta');
   if (Object.prototype.hasOwnProperty.call(queueRows[0], 'barber')) fail('queue payload contains nonexistent barber column');
   if (!result.queued || result.record.careOutboundBatches[0].ids[0] !== 101) fail('queue ids were not recorded');
-  console.log('care outbound test ok: first=15g repeat=0g increase=5g reduction=blocked payload=5g');
+  const interrupted = {
+    id: 'hair-2',
+    careUsage: [{ brand: '歌薇', product: '6A', grams: 20 }],
+    careOutboundSnapshot: [{ brand: '歌薇', product: '6A', grams: 15 }],
+    careOutboundPending: {
+      queuedAt: queuedRows[0].created_at,
+      items: [{ brand: '歌薇', product: '6A', grams: 5 }],
+      snapshot: [{ brand: '歌薇', product: '6A', grams: 20 }]
+    },
+    careOutboundBatches: []
+  };
+  const postCountBeforeRecovery = requests.filter(request => request.url.includes('/care_outbound_queue') && request.options && request.options.method === 'POST').length;
+  return api.enqueueCareOutboundForRecord(interrupted).then((recovered) => {
+    const postCountAfterRecovery = requests.filter(request => request.url.includes('/care_outbound_queue') && request.options && request.options.method === 'POST').length;
+    if (postCountAfterRecovery !== postCountBeforeRecovery) fail('interrupted batch was inserted twice');
+    if (recovered.record.careOutboundPending) fail('recovered batch still has a pending marker');
+    console.log('care outbound test ok: delta=5g reduction=blocked interrupted-batch=recovered');
+  });
 }).catch(error => fail(error.message));

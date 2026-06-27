@@ -1,0 +1,35 @@
+name: Validate shared app
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate release integrity
+        run: node scripts/check-release-integrity.js
+      - name: Validate synchronized versions
+        run: node scripts/check-version-sync.js
+      - name: Run app smoke tests
+        run: node scripts/smoke-test-app.js
+      - name: Run care outbound tests
+        run: node scripts/test-care-outbound.js
+      - name: Run hair task state tests
+        run: node scripts/test-hair-task-state.js
+      - name: Validate Codex and Hermes handoff
+        run: node scripts/check-agent-sync-status.js
+      - name: Reject whitespace errors
+        run: git diff --check HEAD^ HEAD

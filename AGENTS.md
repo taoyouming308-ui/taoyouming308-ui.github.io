@@ -12,7 +12,7 @@ Codex, Hermes, and other AI coding agents must read these files before editing:
 Mandatory start command:
 
 ```sh
-git fetch github main && git fetch origin master && node scripts/check-version-sync.js && node scripts/check-agent-sync-status.js
+git fetch github main && git fetch origin master && node scripts/check-version-sync.js && node scripts/check-release-integrity.js && node scripts/check-agent-sync-status.js
 ```
 
 Never publish from a stale copy. Never push a lower app version. Push the same commit to GitHub and Gitee. Never force-refresh users during active work; use update prompts and forward-only rollback. Update `AGENT_SYNC_STATUS.md` before committing meaningful work.

@@ -22,6 +22,8 @@ Before changing or publishing:
 8. Do not force-refresh users during normal work; the app must show an update prompt instead.
 9. If a release breaks usage, rollback forward with a higher version number.
 10. Update `AGENT_SYNC_STATUS.md` before publishing meaningful work.
+11. Do not create or edit `perm-app.v*.html` snapshots; use Git commits/tags for history.
+12. Enable the shared hook once in every clone with `git config core.hooksPath .githooks`.
 
 Recommended commands:
 
@@ -29,6 +31,7 @@ Recommended commands:
 git fetch github main
 git fetch origin master
 node scripts/check-version-sync.js
+node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
 node scripts/test-care-outbound.js
 node scripts/check-agent-sync-status.js

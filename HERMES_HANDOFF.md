@@ -26,6 +26,8 @@ This file is the working context Hermes should read before editing the app.
 The repo now has:
 
 - `scripts/check-version-sync.js`
+- `scripts/check-release-integrity.js`
+- `scripts/test-hair-task-state.js`
 - `.githooks/pre-push`
 - `PUBLISH_RULES.md`
 - `AI_COLLABORATION_RULES.md`
@@ -38,6 +40,8 @@ Run:
 ```sh
 git config core.hooksPath .githooks
 node scripts/check-version-sync.js
+node scripts/check-release-integrity.js
+node scripts/test-hair-task-state.js
 node scripts/check-agent-sync-status.js
 ```
 
@@ -69,17 +73,18 @@ Important columns and JSON fields:
 
 Status meanings:
 
-- `待回访`: the stylist created/saved the record and assistant may still need to fill.
+- `待技师填写`: the stylist assigned an assistant and the assistant has not returned the record.
+- `待回访`: no assistant is pending; the stylist still needs to complete the follow-up.
 - `技师已完成`: assistant has filled and returned it to stylist.
 - `待回访完成`: legacy equivalent of assistant returned; treat like `技师已完成`.
-- `已完成`: stylist saved the archive, but follow-up/evaluation is not completed.
-- `回访完成`: stylist completed follow-up/evaluation and archived it.
+- `已完成` / `已保存`: legacy saved states; they are not proof of follow-up.
+- `回访完成`: only complete when `record_data.feedbackRating` or this record's `record_data.followUpScreenshot` is present.
 
 Task-list display rules:
 
 - Stylist sees `待助理填写` only when there is an assistant and status has not returned.
 - Stylist sees `待保存档案` when status is `技师已完成` or `待回访完成`.
-- Stylist sees red `未评定未回访` unless status is exactly `回访完成`.
+- Stylist sees red `未评定未回访` only after the task is ready for stylist follow-up.
 - The red task button is `填写回访`, not `回访完成`. `回访完成` is a result, not an action.
 - Assistant sees `待填写` before saving and `已回传发型师` after saving.
 
@@ -90,6 +95,8 @@ Save behavior:
 - Stylist follow-up save must come from the follow-up mode and set status to `回访完成`.
 - Uploaded/customer-archive hair records must not be deleted from task list.
 - Record numbering must remain stable across app versions.
+- All task states are hidden after 30 days.
+- Follow-up screenshots belong to the current `hair_records.record_data`; never restore a global screenshot from localStorage.
 
 ## Customer Archive Sync
 
@@ -146,7 +153,10 @@ git fetch github main
 git fetch origin master
 git status --short --branch
 node scripts/check-version-sync.js
+node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
+node scripts/test-care-outbound.js
+node scripts/test-hair-task-state.js
 node scripts/check-agent-sync-status.js
 ```
 

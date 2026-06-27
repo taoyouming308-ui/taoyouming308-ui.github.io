@@ -5,8 +5,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v329
-- Last synchronized base checked: `737394b fix:hairQueryPlan加载数据`
+- App version: v330
+- Last synchronized base checked: `da6c369 v329 forward restore stable app`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -14,6 +14,14 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v330: 发质分析任务统一为“待技师填写 → 技师已完成/待发型师回访 → 回访完成”；旧 `已完成/已保存` 不再被误判为回访完成。回访完成必须有 A/B/C 评定或本单截图，App 与后台统计使用同一规则。
+- v330: 所有任务统一只展示最近 30 天；技师未回传时不显示“填写回访”，技师回传后不再显示“待技师填写”，技师仍可继续修改，发型师最终回访后归档。
+- v330: 回访截图从全局 localStorage 改为压缩后保存到当前 `hair_records.record_data.followUpScreenshot`，杜绝上一位顾客截图串到下一张表。
+- v330: 员工登录直接绑定本人和所属门店，不再登录后任选身份；预约选择器按门店与发型师双重过滤，发型师/助理选项继续限定同门店。员工会话 12 小时，后台管理员会话 2 小时。
+- v330: 客户档案列表扩大到 1000 条摘要，点开客户后按手机号/姓名重新读取完整 profile 字段，已有 `service_history/card_packages/notes` 会完整参与显示。
+- v330: 护理出库增加两阶段待提交标记；队列写入后若快照保存中断，重试会恢复原批次而不是再次扣库存。
+- v330: 发质表新编号保存前会读取云端最大编号抬高本机计数器；已有 `record_data.seq` 继续原样保留，版本更新不会重编号。
+- v330: 新增 GitHub `Validate shared app` CI、版本单调/旧快照覆盖检查、发质任务状态测试；Codex 与 Hermes 本地仓库均启用 `.githooks/pre-push`。
 - v329: 向前恢复被 GitHub 提交 `737394b` 用 v322 整页覆盖的 `perm-app.html` 与 `admin.html`，保留 v328 的任务软删除、后台管理和护理差额出库功能；未回退 Git 历史。
 - v329: 修复发质分析表直接查询烫发方案时 `perm_data` 尚未加载的问题。并发入口共享同一个加载任务，查询按钮会等待云端或离线数据完成后再计算。
 - v329: 浏览器检测到线上版本低于本机见过的最高版本时不再清空最高版本记录，而是显示版本异常提示。
@@ -51,6 +59,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-27: v330 版本、发布完整性、冒烟、护理两阶段出库、7 组任务状态、App/后台脚本语法与 whitespace 检查通过。
+- 2026-06-27: 只读核对 13 条有效 `hair_records`：2 条 `回访完成` 均有 A 评定；2 条旧 `已完成` 没有评定，v330 会正确显示为待回访。
+- 2026-06-27: 美管加同步只读审计 1000 条客户档案：839 条有到店次数但无消费/到店明细，821 条有消费金额但无明细，60 条有套餐、50 条有剩余套餐。
+- 2026-06-27: Chrome 中 App/美管加旧标签页被已有自动化会话占用，本次没有抢占或在美管加执行写操作。
 - 2026-06-27: v329 版本一致性、冒烟、护理差额出库、Agent 同步、App/后台脚本语法检查均通过。
 - 2026-06-27: 确认 GitHub `737394b` 把线上页面版本从 v328 降为 v322，同时 Gitee 仍停留在 v328；v329 使用向前提交恢复，不允许对共享分支强制回退。
 - 2026-06-27: 只读检查 `care_outbound_queue`：旧 v320 测试共 5 条，4 条 `completed`、1 条因测试产品无 `depotId` 为 `failed`，证明后台执行器存在。
@@ -74,6 +86,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Open Work For Next Agent
 
+- GitHub CLI 当前未登录，无法从本机替用户开启分支保护；仓库已提供 CI，但仓库设置仍需把 `Validate shared app` 设为 `main` 必需检查，才能彻底阻止绕过检查的直接推送。
+- `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
+- 客户消费明细的大量缺失来自同步源没有写 `service_history`；前端 v330 已完整读取现有字段，不能伪造缺失的 839/821 条。需在登录的美管加 Network 中确认消费记录接口并修同步执行器。
+- `care_outbound_queue` 仍没有 `hair_record_id/shop_name/idempotency_key` 数据库字段；v330 用两阶段批次恢复降低重复出库风险，后续仍应扩展表结构和 worker 的数据库级幂等。
 - 护理出库仍需用户确认后做一笔真实 1g 测试，并在美管加库存流水核对实际扣减；禁止把队列 `completed` 单独当成库存已核实。
 - 当前 `care_outbound_queue` 没有 `shop_name/barber`，现有执行器无法从队列区分两家门店；如两店维护独立库存，需先扩展表结构和执行器映射，再开启跨店出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.
