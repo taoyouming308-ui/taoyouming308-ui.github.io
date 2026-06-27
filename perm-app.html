@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="330">
+<html lang="zh-CN" data-version="331">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3731,9 +3731,9 @@ function initApp() {
           if (!visitHistory.length && lastDateStr) visitHistory = [{'date': lastDateStr, 'time': '', 'barber': '', 'shop': '美管加'}];
           if (visitHistory.length > 0) {
             var showCount = Math.min(visitHistory.length, 3);
-            var last3 = visitHistory.slice(visitHistory.length - showCount);
+            var last3 = visitHistory.slice(0, showCount);
             htmlContent += '<div class="row" style="border-bottom:none;padding-bottom:2px;"><span class="label">最近到店</span></div>';
-            for (var hi = last3.length - 1; hi >= 0; hi--) {
+            for (var hi = 0; hi < last3.length; hi++) {
               var h = last3[hi];
               var hDate = h.date || '';
               var hTime = h.time || '';
@@ -4523,11 +4523,24 @@ function initApp() {
         var total = Number(pkg.total != null ? pkg.total : pkg.sumtimes) || 0;
         if (!includeUsed && left <= 0) return;
         var name = pkg.name || pkg.itemname || '套餐';
-        var shop = row.shop_name || pkg.shop || '';
-        var key = [shop, name, left, total].join('|');
+        var shop = pkg.shop || row.shop_name || '';
+        var sourceId = pkg.id || pkg.source_id || '';
+        var key = sourceId ? 'id:' + sourceId : [shop, name, left, total].join('|');
         if (seen[key]) return;
         seen[key] = true;
-        list.push({ name: name, left: left, remaining: left, leavetimes: left, total: total, sumtimes: total, shop: shop });
+        list.push({
+          id: sourceId,
+          name: name,
+          packageName: pkg.package_name || '',
+          left: left,
+          remaining: left,
+          leavetimes: left,
+          total: total,
+          sumtimes: total,
+          shop: shop,
+          expireDate: pkg.expire_date || pkg.validdate || '',
+          status: pkg.status || ''
+        });
       });
     });
     list.sort(function(a, b) {
@@ -4548,14 +4561,34 @@ function initApp() {
       }
       history.forEach(function(item) {
         item = item || {};
+        if (typeof item === 'string') item = { items: [{ name: item }] };
         var date = item.date || String(row.last_visit_date || '').slice(0, 10);
         var time = item.time || '';
         var barber = item.barber || row.barber_name || '';
         var shop = item.shop || row.shop_name || '';
-        var key = [date, time, barber, shop].join('|');
+        var sourceId = item.source_id || item.id || '';
+        var itemRows = Array.isArray(item.items) ? item.items : [];
+        var items = itemRows.map(function(project) {
+          if (typeof project === 'string') return project;
+          return project && (project.name || project.itemname) || '';
+        }).filter(Boolean);
+        var staff = Array.isArray(item.staff) ? item.staff.filter(Boolean) : [];
+        if (!barber && staff.length) barber = staff[0];
+        var amount = Number(item.amount != null ? item.amount : item.consumefee) || 0;
+        var key = sourceId ? 'id:' + sourceId : [date, time, amount, items.join(','), shop].join('|');
         if (!date || seen[key]) return;
         seen[key] = true;
-        list.push({ date: date, time: time, barber: barber, shop: shop });
+        list.push({
+          id: sourceId,
+          date: date,
+          time: time,
+          barber: barber,
+          staff: staff,
+          shop: shop,
+          amount: amount,
+          items: items,
+          comment: item.comment || ''
+        });
       });
     });
     list.sort(function(a, b) {
@@ -4620,10 +4653,18 @@ function initApp() {
     if (history.length) {
       html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin:8px 0 4px;">消费/到店记录</div>';
       html += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
-      history.slice(0, 12).forEach(function(h) {
+      history.forEach(function(h) {
         var label = (h.date || '') + (h.time ? ' ' + h.time : '');
-        var right = [h.barber, h.shop].filter(Boolean).join(' · ');
-        html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(label) + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--text-secondary);">' + esc(right || '—') + '</td></tr>';
+        var people = h.staff && h.staff.length ? h.staff.join('、') : h.barber;
+        var right = [people, h.shop].filter(Boolean).join(' · ');
+        var projectText = h.items && h.items.length ? h.items.join('、') : '消费记录';
+        var amountText = h.amount > 0 ? '¥' + Math.round(h.amount * 100) / 100 : '';
+        html += '<tr><td style="padding:6px 4px;border-bottom:1px solid var(--border);vertical-align:top;">' + esc(label) +
+          '<br><span style="color:var(--text-secondary);font-size:10px;">' + esc(projectText) + '</span></td>' +
+          '<td style="padding:6px 4px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top;">' +
+          '<span style="font-weight:600;">' + esc(amountText) + '</span>' +
+          (right ? '<br><span style="color:var(--text-secondary);font-size:10px;">' + esc(right) + '</span>' : '') +
+          '</td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -4637,7 +4678,8 @@ function initApp() {
     packages.forEach(function(pkg) {
       var pct = pkg.total > 0 ? Math.round(pkg.left / pkg.total * 100) : 0;
       var color = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
-      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.name || '套餐') + (pkg.shop ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(pkg.shop) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
+      var meta = [pkg.shop, pkg.expireDate ? '有效期至' + pkg.expireDate : ''].filter(Boolean).join(' · ');
+      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.name || '套餐') + (meta ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(meta) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
     });
     html += '</tbody></table>';
     return html;

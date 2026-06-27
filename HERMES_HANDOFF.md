@@ -1,5 +1,14 @@
 # Hermes Handoff
 
+## v331 Meiguanjia customer sync
+
+- Canonical source: `scripts/sync_mgj_customer_profiles.py`.
+- Deployed cron target: `/Users/a1/.hermes/scripts/sync_mgj_all.py`.
+- Never edit only the deployed target. Change the canonical source, run `python3 -m unittest scripts/test_sync_mgj_customer_profiles.py -v`, then deploy the exact file.
+- A failed package or bill request must never replace `card_packages` or `service_history` with an empty array.
+- Cron modes: normal sync at `00/30`, missing-field backfill at `15/45`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
+- Backfill checkpoint: `/Users/a1/.hermes/mgj_customer_backfill.json`. Backfill advances by profile `id` and never resets automatically after reaching the end.
+
 This file is the working context Hermes should read before editing the app.
 
 ## App Shape

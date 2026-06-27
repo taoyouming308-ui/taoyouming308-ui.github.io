@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v331 (2026-06-27)
+
+- 美管加消费记录接口已实测恢复：账单列表 `member!queryMemberBillListnew.action`，账单明细 `bill!detail.action`。
+- 唯一受版本控制的客户同步源是 `scripts/sync_mgj_customer_profiles.py`；Hermes cron 路径 `/Users/a1/.hermes/scripts/sync_mgj_all.py` 必须由该文件部署，禁止单独修改后不回写仓库。
+- 同步改为非破坏性合并：套餐或账单接口失败时保留旧数据；成功时按美管加账单 ID 去重，并保存项目、金额、服务人员、门店和套餐有效期。
+- App v331 客户档案展示完整同步账单和套餐明细。
+- 双店账单参数已按美管加 SPA 修正：账单 `shopid` 使用客户详情所属门店，多卡客户跳过首张默认空卡。
+- 正常同步在每小时 `00/30` 分轮换 20 人；缺失字段回填在 `15/45` 分断点处理 20 人。两者共用文件锁，回填只补空字段，不覆盖已有消费或套餐。
+- 2026-06-28 样本验证：尾号 5050 为 20 笔消费、5 个套餐；回填 id 63 保留原 32 个套餐并新增 348 笔消费。
+- 2026-06-28 全量分页审计：`customer_profiles` 共 15748 行；5629 行有到店次数但无消费明细，3291 行有消费金额但无明细，261 行有套餐。此前 1000 行统计仅是 Supabase 单页样本。
+
 This file is the live handoff baton between Codex, Hermes, and any other assistant.
 Every meaningful change must update this file before commit/push.
 

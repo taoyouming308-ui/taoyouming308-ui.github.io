@@ -9,6 +9,18 @@ async function get(path) {
   return res.json();
 }
 
+async function getAll(path, pageSize = 1000) {
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const separator = path.includes('?') ? '&' : '?';
+    const page = await get(`${path}${separator}limit=${pageSize}&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+    offset += pageSize;
+  }
+}
+
 function asArray(value) {
   if (Array.isArray(value)) return value;
   if (!value) return [];
@@ -35,14 +47,15 @@ function countBy(rows, key) {
   }, {});
 }
 
-const profiles = await get('/rest/v1/customer_profiles?select=phone,name,shop_name,barber_name,total_visits,total_consumption,last_visit_date,card_packages,service_history,notes,last_updated&limit=5000');
-const bookings = await get('/rest/v1/bookings?select=id,date,shop_name,barber_name,customer_name,customer_phone,time_label,reservation_time,service_name,notes,status&order=date.desc&limit=5000');
+const profiles = await getAll('/rest/v1/customer_profiles?select=id,phone,name,shop_name,barber_name,total_visits,total_consumption,last_visit_date,card_packages,service_history,notes,last_updated&order=id.asc');
+const bookings = await getAll('/rest/v1/bookings?select=id,date,shop_name,barber_name,customer_name,customer_phone,time_label,reservation_time,service_name,notes,status&order=date.desc');
 
 const profileStats = {
-  sampled_rows: profiles.length,
+  total_rows: profiles.length,
   no_phone: profiles.filter(row => !row.phone).length,
   iso_last_visit: profiles.filter(row => isIsoDate(row.last_visit_date)).length,
   relative_or_invalid_last_visit: profiles.filter(row => row.last_visit_date && !isIsoDate(row.last_visit_date)).length,
+  has_any_service_history: profiles.filter(row => asArray(row.service_history).length > 0).length,
   visits_but_no_service_history: profiles.filter(row => (Number(row.total_visits) || 0) > 0 && asArray(row.service_history).length === 0).length,
   consumption_but_no_service_history: profiles.filter(row => (Number(row.total_consumption) || 0) > 0 && asArray(row.service_history).length === 0).length,
   has_any_packages: profiles.filter(row => asArray(row.card_packages).length > 0).length,
@@ -51,7 +64,7 @@ const profileStats = {
 };
 
 const bookingStats = {
-  sampled_rows: bookings.length,
+  total_rows: bookings.length,
   no_phone: bookings.filter(row => !row.customer_phone).length,
   no_name: bookings.filter(row => !row.customer_name).length,
   no_barber: bookings.filter(row => !row.barber_name).length,
