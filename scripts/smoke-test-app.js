@@ -30,6 +30,13 @@ for (const marker of requiredMarkers) {
   if (!html.includes(marker)) fail('missing required marker: ' + marker);
 }
 
+const taskStart = html.indexOf('window.renderMyTasks = function()');
+const taskEnd = html.indexOf('window.loadCloudRecord', taskStart);
+const taskSource = taskStart >= 0 && taskEnd > taskStart ? html.slice(taskStart, taskEnd) : '';
+if (!taskSource.includes('status=neq.deleted')) {
+  fail('cloud hair task query must exclude soft-deleted records');
+}
+
 try {
   cp.execFileSync('node', ['scripts/check-version-sync.js'], { stdio: 'inherit' });
 } catch (_) {

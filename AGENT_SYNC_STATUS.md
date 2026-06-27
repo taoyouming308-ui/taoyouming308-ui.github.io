@@ -5,8 +5,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v319
-- Last synchronized base checked: `6fe1047 Add shared agent sync handoff`
+- App version: v327
+- Last synchronized base checked: `0138ba3 v326: 懒加载-perm_data首次进方案页才拉`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -14,6 +14,17 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v327: 修复后台软删除发质分析表后，App「我的任务」仍显示旧云任务的问题；任务查询与前端渲染双重排除 `status=deleted`。
+- v327: 预约烫染标记、客户档案、客户历史发质记录、后台统计与未完成明细统一排除已删除的 `hair_records`。
+- v327: 修复 v326 页面版本与 `version.txt/version.json` 仍停在 v322 的不一致，三处版本统一为 327。
+- v327: 冒烟检查新增铁律，`renderMyTasks` 的云任务查询必须排除软删除记录。
+- v326: 懒加载 `perm_data`，首次进入方案页时再请求。
+- v325: 待处理任务不受日期限制，已完成任务只显示最近 30 天。
+- v324: 我的任务增加待处理优先区并调整为黑白配色。
+- v323: 我的任务按日期分组。
+- v322: 降低轮询频率并精简查询字段。
+- v321: 修复版本降级导致的无限跳转闪屏。
+- v320: 护理产品添加后自动推送出库队列。
 - v319: 发质分析表预约选择器改为展示所有客户（不再仅限烫染/护理），删除 `bookingNeedsHairAnalysis` 过滤条件。空列表文案改为「暂无预约」。
 - v317 prevents pure haircut appointments from entering the hair-analysis booking picker/task path.
 - v317 prevents silent close/autosave from creating empty `hair_records` tasks.
@@ -31,6 +42,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-27: 已从 GitHub 拉取并快进到 v326；确认 GitHub 比 Gitee 多 13 个提交，禁止从旧的 Gitee v317 基线直接发布。
+- 2026-06-27: v326 同步前检查发现页面为 326、`version.txt/version.json` 为 322；已在 v327 修复。
+- 2026-06-27: Supabase 只读检查确认当前有 10 条 `hair_records.status=deleted`，包含截图里的 `cesi` 与多条“小爱/未填写”；v327 正常页面查询均不会返回这些记录。
+- 2026-06-27: v327 `check-version-sync`、`smoke-test-app`、`check-agent-sync-status`、HTML 脚本语法和 `git diff --check` 均通过。
 - 2026-06-26: `node scripts/check-version-sync.js` passed at v319.
 - 2026-06-26: `node scripts/smoke-test-app.js` passed at v319.
 - 2026-06-26: `node scripts/check-agent-sync-status.js` passed at v317.

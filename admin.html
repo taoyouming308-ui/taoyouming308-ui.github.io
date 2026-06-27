@@ -1348,7 +1348,7 @@ window.loadHairRecordStats = function() {
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
 
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&limit=500', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&status=neq.deleted&limit=500', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
@@ -1434,7 +1434,7 @@ window.loadHairRecordStats = function() {
 
 // 弹窗显示某个发型师的未完成明细
 window.showBarberDetail = function(barberName) {
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&limit=100', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&status=neq.deleted&limit=100', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })

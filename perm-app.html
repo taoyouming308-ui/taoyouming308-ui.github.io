@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="326">
+<html lang="zh-CN" data-version="327">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3298,7 +3298,7 @@ function initApp() {
     if (phones.length === 0) return;
     var normalizedPhoneSet = {};
     phones.forEach(function(p){ normalizedPhoneSet[normalizeHairCustomerPhone(p)] = true; });
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&order=created_at.desc&limit=200', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
     var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
@@ -4387,7 +4387,7 @@ function initApp() {
   }
   function fetchHairRecordsForCustomer(phone, name, limit) {
     limit = limit || 100;
-    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=' + limit, {
+    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=' + limit, {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -5451,7 +5451,7 @@ function initApp() {
     }
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载我的任务...</div>';
     // 从 hair_records 表查询（技师或发型师相关的记录）
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=200', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
@@ -5460,6 +5460,7 @@ function initApp() {
       }
       // 只显示本人相关的记录（自己是技师或发型师）
       rows = rows.filter(function(r) {
+        if (r.status === 'deleted') return false;
         var rec = r.record_data || {};
         // 技师可能多选（逗号分隔），逐个匹配
         var techs = (r.technician || rec.technician || '').split(',');
@@ -5677,7 +5678,7 @@ function initApp() {
   window.loadCloudRecord = function(recordId, followUp) {
     if (!recordId) return;
     _followUpMode = followUp === true;
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&status=neq.deleted&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
@@ -7825,7 +7826,7 @@ function initApp() {
     if (detailEl) detailEl.style.display = 'none';
     if (versionEl) versionEl.textContent = 'v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1);
 
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=200', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) return [];
