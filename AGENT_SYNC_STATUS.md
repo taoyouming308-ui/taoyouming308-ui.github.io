@@ -5,8 +5,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v328
-- Last synchronized base checked: `40bfc10 v327 hide deleted hair tasks everywhere`
+- App version: v329
+- Last synchronized base checked: `737394b fix:hairQueryPlan加载数据`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -14,6 +14,9 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v329: 向前恢复被 GitHub 提交 `737394b` 用 v322 整页覆盖的 `perm-app.html` 与 `admin.html`，保留 v328 的任务软删除、后台管理和护理差额出库功能；未回退 Git 历史。
+- v329: 修复发质分析表直接查询烫发方案时 `perm_data` 尚未加载的问题。并发入口共享同一个加载任务，查询按钮会等待云端或离线数据完成后再计算。
+- v329: 浏览器检测到线上版本低于本机见过的最高版本时不再清空最高版本记录，而是显示版本异常提示。
 - v328: 修复护理出库从 v321 起静默失败的问题。根因是 App 向 `care_outbound_queue` 写入数据库不存在的 `barber` 字段，PostgREST 返回 400，但旧代码没有检查 HTTP 状态。
 - v328: 护理产品不再在点击“添加”时立即出库；只有技师回传或发型师最终保存成功后才批量进入美管加出库队列。
 - v328: 同一张发质分析表按品牌/产品累计克数，只提交相对上次出库快照的新增差额，防止重复保存造成重复扣库存；已出库数量不能直接减少。
@@ -48,6 +51,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-27: v329 版本一致性、冒烟、护理差额出库、Agent 同步、App/后台脚本语法检查均通过。
+- 2026-06-27: 确认 GitHub `737394b` 把线上页面版本从 v328 降为 v322，同时 Gitee 仍停留在 v328；v329 使用向前提交恢复，不允许对共享分支强制回退。
 - 2026-06-27: 只读检查 `care_outbound_queue`：旧 v320 测试共 5 条，4 条 `completed`、1 条因测试产品无 `depotId` 为 `failed`，证明后台执行器存在。
 - 2026-06-27: 只读查询 `care_outbound_queue.barber` 明确返回 PostgreSQL `42703 column does not exist`，确认 v321 后的静默 400 根因。
 - 2026-06-27: 只读检查 `care_records` 发现同一发质表、同一护理产品存在重复明细，已在 v328 合并保存路径。

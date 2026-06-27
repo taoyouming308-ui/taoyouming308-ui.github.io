@@ -238,7 +238,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div id="hair-record-stats" style="margin-bottom:16px;">
     <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>
   </div>
-  
+
   <!-- 发质分析表明细列表（从 hair_records 表） -->
   <div id="hair-records-list" style="margin-bottom:16px;display:none;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
@@ -251,27 +251,29 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
           <option value="技师已完成">技师已填</option>
           <option value="已完成">已完成</option>
         </select>
+        <button id="hr-batch-del" onclick="batchDeleteHR()" style="display:none;padding:6px 14px;background:#e74c3c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">删除选中</button>
         <button onclick="loadHairRecordList()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
         <span id="hr-count" style="font-size:12px;color:var(--muted);"></span>
       </div>
       <div style="max-height:480px;overflow-y:auto;">
-        <table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>发型师</th><th>技师</th><th>三段诊断</th><th>烫发方案</th><th>评定</th><th>状态</th><th>停留</th><th>时间</th><th>操作</th></tr></thead>
+        <table style="font-size:12px;"><thead><tr><th><input type="checkbox" id="hr-select-all"></th><th>客户名</th><th>手机号</th><th>发型师</th><th>技师</th><th>三段诊断</th><th>烫发方案</th><th>评定</th><th>状态</th><th>停留</th><th>时间</th><th>操作</th></tr></thead>
           <tbody id="table-hair-records"></tbody>
         </table>
       </div>
     </div>
   </div>
-  
+
   <!-- AI分析记录（从 hair_analysis_queue 表） -->
   <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
     <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;">📷 AI拍照分析记录</div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
       <input id="ha-search" placeholder="搜索手机号/客户名" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
+      <button id="ha-batch-del" onclick="batchDeleteHA()" style="display:none;padding:8px 16px;background:#e74c3c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">删除选中</button>
       <button onclick="loadHairAnalyses()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
       <span id="ha-count" style="font-size:12px;color:var(--muted);"></span>
     </div>
     <table>
-      <thead><tr><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="ha-select-all"></th><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
       <tbody id="table-hair-analysis"></tbody>
     </table>
   </div>
@@ -736,7 +738,7 @@ async function openModal(tab, id) {
   editingPermOriginal = null;
   const box = document.getElementById('modal-box');
   clearNode(box);
-  
+
   if (tab === 'staff') {
     let data = { username:'', password_hash:'', role:'staff', store:'', active:true };
     if (id) {
@@ -1346,7 +1348,7 @@ window.loadHairRecordStats = function() {
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
 
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&limit=500', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&status=neq.deleted&limit=500', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
@@ -1432,7 +1434,7 @@ window.loadHairRecordStats = function() {
 
 // 弹窗显示某个发型师的未完成明细
 window.showBarberDetail = function(barberName) {
-  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&limit=100', {
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&status=neq.deleted&limit=100', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
@@ -1489,16 +1491,16 @@ window.loadHairRecordList = function() {
   if (!tbody) return;
   var search = (document.getElementById('hr-search')||{}).value || '';
   var statusFilter = (document.getElementById('hr-status-filter')||{}).value || '';
-  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=50';
-  if (statusFilter) url += '&status=eq.' + encodeURIComponent(statusFilter);
+  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&order=created_at.desc&limit=50';
+  if (statusFilter) url = url.replace('status=neq.deleted', 'status=eq.' + encodeURIComponent(statusFilter));
 
   fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
   .then(function(r){ return r.json(); })
   .then(function(rows){
     if (!rows || rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">暂无数据</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">暂无数据</td></tr>';
       document.getElementById('hr-count').textContent = '共 0 条';
       return;
     }
@@ -1557,6 +1559,7 @@ window.loadHairRecordList = function() {
       var rating = rd && rd.feedbackRating ? rd.feedbackRating : '—';
       
       html += '<tr' + (overdue ? ' style="background:rgba(231,76,60,0.06);"' : '') + '>';
+      html += '<td><input type="checkbox" class="hr-checkbox" data-id="' + r.id + '" onchange="toggleHRBatchBtn()"></td>';
       html += '<td style="font-weight:600;">' + esc(r.customer_name || '—') + '</td>';
       html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
       html += '<td style="font-size:11px;">' + esc(r.barber || '—') + '</td>';
@@ -1573,7 +1576,7 @@ window.loadHairRecordList = function() {
     tbody.innerHTML = html;
   })
   .catch(function(){
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
   });
 };
 
@@ -1770,9 +1773,9 @@ window.loadHairAnalyses = async function() {
   var search = (document.getElementById('ha-search')||{}).value || '';
   var tbody = document.getElementById('table-hair-analysis');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=in.(completed,record_saved)&order=created_at.desc&limit=200';
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=neq.deleted&order=created_at.desc&limit=200';
   if (search) {
     url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,ai_analysis->record->>customerName.ilike.%25' + encodeURIComponent(search) + '%25)';
   }
@@ -1781,7 +1784,7 @@ window.loadHairAnalyses = async function() {
     .then(function(r){ return r.json(); })
     .then(function(rows){
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>';
         document.getElementById('ha-count').textContent = '共 0 条';
         return;
       }
@@ -1807,6 +1810,7 @@ window.loadHairAnalyses = async function() {
         var statusText = statusMap[r.status] || r.status || '—';
 
         html += '<tr>';
+        html += '<td><input type="checkbox" class="ha-checkbox" data-id="' + r.id + '" onchange="toggleHABatchBtn()"></td>';
         html += '<td style="font-family:monospace;font-size:11px;">' + esc(phone) + '</td>';
         html += '<td>' + esc(custName) + '</td>';
         html += '<td>' + esc(technician) + '</td>';
@@ -1822,7 +1826,7 @@ window.loadHairAnalyses = async function() {
       tbody.innerHTML = html;
     })
     .catch(function(){
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
     });
 };
 
@@ -1831,8 +1835,9 @@ window.deleteHairAnalysis = async function(id, btn) {
   setButtonBusy(btn, true);
   try {
     var r = await fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: 'deleted' })
     });
     await ensureOk(r, '删除失败');
     toast('删除成功', 'ok');
@@ -1842,6 +1847,74 @@ window.deleteHairAnalysis = async function(id, btn) {
   } finally {
     setButtonBusy(btn, false);
   }
+};
+
+// ===== 批量删除 AI拍照分析记录 =====
+document.getElementById('ha-select-all').onchange = function() {
+  document.querySelectorAll('.ha-checkbox').forEach(cb => cb.checked = this.checked);
+  toggleHABatchBtn();
+};
+
+function toggleHABatchBtn() {
+  var any = document.querySelectorAll('.ha-checkbox:checked').length > 0;
+  document.getElementById('ha-batch-del').style.display = any ? '' : 'none';
+}
+
+window.batchDeleteHA = async function() {
+  var checked = document.querySelectorAll('.ha-checkbox:checked');
+  if (checked.length === 0) return;
+  if (!confirm('确定删除选中的 ' + checked.length + ' 条记录？')) return;
+  var ids = [];
+  checked.forEach(cb => ids.push(cb.dataset.id));
+
+  var failCount = 0;
+  for (var i = 0; i < ids.length; i++) {
+    try {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + encodeURIComponent(ids[i]), {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ status: 'deleted' })
+      });
+      if (!r.ok) failCount++;
+    } catch(e) { failCount++; }
+  }
+
+  toast('删除 ' + (ids.length - failCount) + '/' + ids.length + ' 条成功', failCount ? 'warn' : 'ok');
+  loadHairAnalyses();
+};
+
+// ===== 批量删除 发质分析表记录 =====
+document.getElementById('hr-select-all').onchange = function() {
+  document.querySelectorAll('.hr-checkbox').forEach(cb => cb.checked = this.checked);
+  toggleHRBatchBtn();
+};
+
+function toggleHRBatchBtn() {
+  var any = document.querySelectorAll('.hr-checkbox:checked').length > 0;
+  document.getElementById('hr-batch-del').style.display = any ? '' : 'none';
+}
+
+window.batchDeleteHR = async function() {
+  var checked = document.querySelectorAll('.hr-checkbox:checked');
+  if (checked.length === 0) return;
+  if (!confirm('确定删除选中的 ' + checked.length + ' 条记录？')) return;
+  var ids = [];
+  checked.forEach(cb => ids.push(cb.dataset.id));
+
+  var failCount = 0;
+  for (var i = 0; i < ids.length; i++) {
+    try {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(ids[i]), {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ status: 'deleted' })
+      });
+      if (!r.ok) failCount++;
+    } catch(e) { failCount++; }
+  }
+
+  toast('删除 ' + (ids.length - failCount) + '/' + ids.length + ' 条成功', failCount ? 'warn' : 'ok');
+  loadHairRecordList();
 };
 
 window.viewHairAnalysis = async function(id) {

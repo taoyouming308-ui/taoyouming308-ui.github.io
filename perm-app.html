@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="322">
+<html lang="zh-CN" data-version="329">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -840,6 +840,195 @@ body {
 
 .toast.show {
   opacity: 1;
+}
+
+/* ── 我的任务：极简黑白配色 + 待处理优先区 ── */
+.hair-tasks-section {
+  padding-top: 12px;
+}
+/* ── 待处理区 ── */
+.ht-pending-section {
+  margin-bottom: 20px;
+}
+.ht-pending-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  padding: 4px 0 8px 0;
+}
+.ht-pending-divider {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 0 0 12px 0;
+}
+/* ── 日期分组 ── */
+.hair-tasks-group {
+  margin-bottom: 16px;
+}
+.ht-group-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  padding: 4px 0 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: opacity 0.2s;
+  margin-bottom: 6px;
+}
+.ht-group-header:hover {
+  opacity: 0.7;
+}
+.ht-group-header:active {
+  opacity: 0.5;
+}
+.ht-group-count {
+  font-size: 11px;
+  color: #8e8e93;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.ht-group-arrow {
+  font-size: 10px;
+  color: #8e8e93;
+  margin-left: 6px;
+  transition: transform 0.2s;
+}
+.ht-group-header.expanded .ht-group-arrow {
+  transform: rotate(90deg);
+}
+.ht-group-divider {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 0 0 10px 0;
+}
+.hair-tasks-group-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.hair-tasks-group-body.collapsed {
+  max-height: 0;
+}
+.hair-tasks-group-body.expanded {
+  max-height: 2000px;
+}
+/* ── 卡片 ── */
+.hair-task-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.hair-task-card:last-child {
+  margin-bottom: 0;
+}
+.hair-task-card-inner {
+  padding: 12px 14px;
+}
+/* 状态圆点 */
+.ht-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.ht-status-text {
+  font-size: 12px;
+  color: #8e8e93;
+}
+.ht-status-dot.pending { background: #FF9500; }
+.ht-status-dot.tech-done { background: #007AFF; }
+.ht-status-dot.followup-done { background: #34C759; }
+.ht-status-dot.saved { background: #8E8E93; }
+/* 卡片行 */
+.hair-task-card-row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.hair-task-card-seq {
+  font-size: 10px;
+  color: #8e8e93;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.hair-task-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.hair-task-card-row2 {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-bottom: 2px;
+}
+.hair-task-card-row3 {
+  font-size: 11px;
+  color: #8e8e93;
+  margin-bottom: 4px;
+}
+.hair-task-card-warning {
+  font-size: 11px;
+  color: #dc3545;
+  font-weight: 700;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+.hair-task-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+/* 按钮 —— 极简风格 */
+.hair-task-card-btn {
+  flex: 1;
+  padding: 4px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-weight: 500;
+  text-align: center;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  transition: opacity 0.15s;
+}
+.hair-task-card-btn.primary {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+.hair-task-card-btn.danger {
+  background: #fff;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+.hair-task-card-btn:active { opacity: 0.7; }
+.hair-task-card-info {
+  font-size: 10px;
+  color: #8e8e93;
+  text-align: center;
+  padding: 4px;
+  flex: 1;
+}
+.hair-task-card-done {
+  font-size: 10px;
+  color: #34C759;
+  font-weight: 600;
+  padding: 4px;
+  flex: 1;
+  text-align: center;
 }
 
 </style>
@@ -1689,6 +1878,7 @@ let PERM_DATA_CACHE = [];
 let DATA_LOADING = false;
 let DATA_LOADED = false;
 let DATA_ERROR = '';
+let DATA_LOAD_PROMISE = null;
 
 // 本地日期工具（修复UTC时区偏移）
 function getLocalDate(d) {
@@ -1700,7 +1890,18 @@ function getLocalDate(d) {
 function getLocalDateStr() { return getLocalDate(new Date()); }
 
 async function loadPermData() {
-  if (DATA_LOADING) return;
+  if (DATA_LOADED) return PERM_DATA_CACHE;
+  if (DATA_LOAD_PROMISE) return DATA_LOAD_PROMISE;
+
+  DATA_LOAD_PROMISE = loadPermDataOnce();
+  try {
+    return await DATA_LOAD_PROMISE;
+  } finally {
+    DATA_LOAD_PROMISE = null;
+  }
+}
+
+async function loadPermDataOnce() {
   DATA_LOADING = true;
 
   // ★ 离线模式：先从localStorage加载缓存，保证即使网络慢也能立即查询
@@ -1766,6 +1967,7 @@ async function loadPermData() {
   }
   DATA_LOADING = false;
   if (typeof window.updateQueryButtonState === 'function') window.updateQueryButtonState();
+  return PERM_DATA_CACHE;
 }
 
 // 兼容旧代码的 PERM_DATA 代理
@@ -1776,8 +1978,7 @@ const PERM_DATA = new Proxy([], {
   }
 });
 
-// 页面加载时立即拉数据
-loadPermData();
+// 页面加载时不预拉数据，首次进入方案页才加载
 
 const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据备份 ===
   { hairType: 'level-1-coarse', permStyle: 'wool-perm', soften: { pH: '9.5', tgaCa: '纯TGA', thio: '9.5%', targetDegree: '90 ~ 100%', penetration: true, penetrationType: 'full', penetrationNote: '①同级药水:水=2:1稀释→10分→拆杠 ②正式药水→15分→拆杠 ③需更高→同级药水:水=1:1注:（细软头可以药水比例更少，或者纯水）→10分→冲水。目标90%+ > 刹车上限70%，至测试杠90%', rinseSignal: '测试杠卷圈清晰、弹力下降时冲水（约90%）' }, rods: [{ zone: '头顶', size: '16号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '枕骨', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '两侧', size: '16~18号', technique: '平卷', startFrom: '从发根', angle: '90°' },{ zone: '后颈', size: '18~20号', technique: '平卷', startFrom: '从发尾', angle: '45~72°' }], warning: null },
@@ -1905,7 +2106,7 @@ function initApp() {
       content.classList.add('active');
       // 方案tab + 预约tab — 白底，其他恢复暗底
       document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings');
-      if (tabName === 'plans') switchPlan('calc');
+      if (tabName === 'plans') { loadPermData(); switchPlan('calc'); }
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
     }
@@ -3110,7 +3311,7 @@ function initApp() {
     if (phones.length === 0) return;
     var normalizedPhoneSet = {};
     phones.forEach(function(p){ normalizedPhoneSet[normalizeHairCustomerPhone(p)] = true; });
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&order=created_at.desc&limit=200', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
     var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
@@ -3674,10 +3875,16 @@ function initApp() {
     var el = document.getElementById('hair-save-meta');
     if (!el) return;
     var info = hairRecordPersonText(rec || {});
+    var batches = rec && Array.isArray(rec.careOutboundBatches) ? rec.careOutboundBatches : [];
+    var outboundHtml = batches.length
+      ? '<div id="hair-outbound-status" style="margin-top:2px;color:#e8a817;">护理出库：查询中</div>'
+      : '';
     el.innerHTML = '<div style="margin-top:8px;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;font-size:11px;line-height:1.7;color:var(--text-secondary);">' +
       '<div style="font-weight:700;color:var(--text);">' + esc(info.line1) + '</div>' +
       '<div>' + esc(info.line2) + '</div>' +
+      outboundHtml +
       '</div>';
+    if (batches.length) refreshCareOutboundStatus(rec);
   }
 
   function renderHairRodArchiveTable(rec) {
@@ -4199,7 +4406,7 @@ function initApp() {
   }
   function fetchHairRecordsForCustomer(phone, name, limit) {
     limit = limit || 100;
-    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=' + limit, {
+    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=' + limit, {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -4453,37 +4660,293 @@ function initApp() {
     if (!record.id) return Promise.resolve();
     var careArray = Array.isArray(record.careUsage) ? record.careUsage : [];
     var headers = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
-    return getCareRecordShopName(record.barber || '').then(function(shopName) {
-      return fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(record.id), {
-        method: 'DELETE',
-        headers: headers
-      }).catch(function(){});
+    return fetch(SUPABASE_URL + '/rest/v1/care_records?hair_record_id=eq.' + encodeURIComponent(record.id), {
+      method: 'DELETE',
+      headers: headers
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('护理记录清理失败: ' + (t || r.status)); });
     }).then(function() {
       if (!careArray.length) return;
-      return getCareRecordShopName(record.barber || '').then(function(shopName) {
-        var today = new Date().toISOString().slice(0, 10);
-        var rows = [];
-        careArray.forEach(function(cu) {
-          if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') return;
-          rows.push({
-            hair_record_id: record.id,
-            barber: record.barber || '',
-            shop_name: shopName || '',
-            brand: cu.brand,
-            product: cu.product,
-            grams: parseFloat(cu.grams) || 0,
-            record_date: today
-          });
-        });
-        if (!rows.length) return;
-        return fetch(SUPABASE_URL + '/rest/v1/care_records', {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify(rows)
+      return getCareRecordShopName(record.barber || '');
+    }).then(function(shopName) {
+      if (!careArray.length) return;
+      var today = new Date().toISOString().slice(0, 10);
+      var rows = [];
+      careArray.forEach(function(cu) {
+        if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') return;
+        var grams = parseFloat(cu.grams) || 0;
+        if (grams <= 0) return;
+        rows.push({
+          hair_record_id: record.id,
+          barber: record.barber || '',
+          shop_name: shopName || '',
+          brand: cu.brand,
+          product: cu.product,
+          grams: grams,
+          record_date: today
         });
       });
-    }).catch(function(){});
+      if (!rows.length) return;
+      return fetch(SUPABASE_URL + '/rest/v1/care_records', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(rows)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error('护理记录保存失败: ' + (t || r.status)); });
+      });
+    });
   }
+
+  function careUsageKey(brand, product) {
+    return String(brand || '').trim() + '\u001f' + String(product || '').trim();
+  }
+
+  function careUsageTotals(careArray) {
+    var totals = {};
+    var order = [];
+    (Array.isArray(careArray) ? careArray : []).forEach(function(cu) {
+      var brand = String((cu && cu.brand) || '').trim();
+      var product = String((cu && cu.product) || '').trim();
+      var grams = parseFloat(cu && cu.grams) || 0;
+      if (!brand || !product || grams <= 0) return;
+      var key = careUsageKey(brand, product);
+      if (!totals[key]) {
+        totals[key] = { brand: brand, product: product, grams: 0 };
+        order.push(key);
+      }
+      totals[key].grams = Math.round((totals[key].grams + grams) * 1000) / 1000;
+    });
+    return order.map(function(key) { return totals[key]; });
+  }
+
+  function careUsageMap(careArray) {
+    var map = {};
+    careUsageTotals(careArray).forEach(function(cu) {
+      map[careUsageKey(cu.brand, cu.product)] = cu;
+    });
+    return map;
+  }
+
+  function prepareCareOutboundBaseline(record, previousRecord) {
+    record = record || {};
+    previousRecord = previousRecord || {};
+    var existingSnapshot = Array.isArray(previousRecord.careOutboundSnapshot)
+      ? previousRecord.careOutboundSnapshot
+      : (Array.isArray(record.careOutboundSnapshot) ? record.careOutboundSnapshot : null);
+    if (existingSnapshot) {
+      record.careOutboundSnapshot = careUsageTotals(existingSnapshot);
+    } else {
+      var previousMap = careUsageMap(previousRecord.careUsage);
+      var currentMap = careUsageMap(record.careUsage);
+      var baseline = [];
+      Object.keys(previousMap).forEach(function(key) {
+        if (!currentMap[key]) return;
+        baseline.push({
+          brand: previousMap[key].brand,
+          product: previousMap[key].product,
+          grams: Math.min(previousMap[key].grams, currentMap[key].grams)
+        });
+      });
+      record.careOutboundSnapshot = careUsageTotals(baseline);
+    }
+    record.careOutboundBatches = Array.isArray(previousRecord.careOutboundBatches)
+      ? JSON.parse(JSON.stringify(previousRecord.careOutboundBatches))
+      : (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []);
+    record.careOutboundStatus = previousRecord.careOutboundStatus || record.careOutboundStatus || '';
+    record.careOutboundQueuedAt = previousRecord.careOutboundQueuedAt || record.careOutboundQueuedAt || '';
+    return record;
+  }
+
+  function validateCareOutboundReduction(record) {
+    var currentMap = careUsageMap(record && record.careUsage);
+    var snapshotMap = careUsageMap(record && record.careOutboundSnapshot);
+    var reduced = [];
+    Object.keys(snapshotMap).forEach(function(key) {
+      var current = currentMap[key] ? currentMap[key].grams : 0;
+      if (current + 0.0001 < snapshotMap[key].grams) {
+        reduced.push(snapshotMap[key].brand + ' ' + snapshotMap[key].product + '（已出库' + snapshotMap[key].grams + 'g）');
+      }
+    });
+    return reduced;
+  }
+
+  function persistHairRecordData(record) {
+    if (!record || !record.id) return Promise.reject(new Error('缺少发质分析表编号'));
+    return fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(record.id), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_data: record })
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('出库状态保存失败: ' + (t || r.status)); });
+      return record;
+    });
+  }
+
+  function enqueueCareOutboundForRecord(record) {
+    record = record || {};
+    var currentTotals = careUsageTotals(record.careUsage);
+    var currentMap = careUsageMap(currentTotals);
+    var snapshotMap = careUsageMap(record.careOutboundSnapshot);
+    var deltas = [];
+    Object.keys(currentMap).forEach(function(key) {
+      var previousGrams = snapshotMap[key] ? snapshotMap[key].grams : 0;
+      var delta = Math.round((currentMap[key].grams - previousGrams) * 1000) / 1000;
+      if (delta > 0) {
+        deltas.push({
+          brand: currentMap[key].brand,
+          product: currentMap[key].product,
+          grams: delta
+        });
+      }
+    });
+    if (!deltas.length) {
+      record.careOutboundSnapshot = currentTotals;
+      return Promise.resolve({ record: record, queued: false, count: 0 });
+    }
+
+    var queuedAt = new Date().toISOString();
+    var queueRows = deltas.map(function(item) {
+      return {
+        brand: item.brand,
+        product: item.product,
+        grams: item.grams,
+        status: 'pending',
+        created_at: queuedAt
+      };
+    });
+    return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(queueRows)
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) {
+          throw new Error('美管加出库入队失败: ' + (t || ('HTTP ' + r.status)));
+        });
+      }
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      if (rows.length !== queueRows.length) throw new Error('美管加出库入队返回数量不一致');
+      record.careOutboundSnapshot = currentTotals;
+      record.careOutboundStatus = 'pending';
+      record.careOutboundQueuedAt = queuedAt;
+      var batch = {
+        queuedAt: queuedAt,
+        ids: rows.map(function(row) { return row.id; }).filter(function(id) { return id !== undefined && id !== null; }),
+        items: deltas
+      };
+      record.careOutboundBatches = (Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : []).concat([batch]).slice(-20);
+      return persistHairRecordData(record).then(function() {
+        return { record: record, queued: true, count: deltas.length };
+      });
+    });
+  }
+
+  function refreshCareOutboundStatus(record) {
+    var el = document.getElementById('hair-outbound-status');
+    var batches = record && Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
+    var latest = batches.length ? batches[batches.length - 1] : null;
+    var ids = latest && Array.isArray(latest.ids) ? latest.ids.filter(function(id) { return id !== undefined && id !== null; }) : [];
+    if (!el || !ids.length) return;
+    window._careOutboundStatusRecord = record;
+    el.textContent = '护理出库：同步中';
+    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?select=id,status,error_message&id=in.(' + ids.map(encodeURIComponent).join(',') + ')', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('状态查询失败');
+      return r.json();
+    }).then(function(rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      var failed = rows.filter(function(row) { return row.status === 'failed'; });
+      var completed = rows.filter(function(row) { return row.status === 'completed'; });
+      if (failed.length) {
+        el.innerHTML = '护理出库：失败 <button type="button" onclick="retryLatestCareOutbound()" style="margin-left:6px;padding:2px 8px;border:1px solid #e85050;border-radius:4px;background:transparent;color:#e85050;font-size:10px;cursor:pointer;">重试</button>';
+        el.style.color = '#e85050';
+        el.title = failed.map(function(row) { return row.error_message || '未知错误'; }).join('；');
+      } else if (rows.length === ids.length && completed.length === ids.length) {
+        el.textContent = '护理出库：美管加已完成';
+        el.style.color = 'var(--success, #2ecc71)';
+      } else {
+        el.textContent = '护理出库：已进入同步队列';
+        el.style.color = '#e8a817';
+      }
+    }).catch(function() {
+      el.textContent = '护理出库：状态暂不可查';
+      el.style.color = 'var(--text-secondary)';
+    });
+  }
+
+  window.retryLatestCareOutbound = function() {
+    var record = window._careOutboundStatusRecord || {};
+    var batches = Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
+    var latest = batches.length ? batches[batches.length - 1] : null;
+    var ids = latest && Array.isArray(latest.ids) ? latest.ids : [];
+    var items = latest && Array.isArray(latest.items) ? latest.items : [];
+    var el = document.getElementById('hair-outbound-status');
+    if (!record.id || !ids.length || !items.length) return;
+    if (el) {
+      el.textContent = '护理出库：正在重试';
+      el.style.color = '#e8a817';
+    }
+    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?select=id,status,error_message&id=in.(' + ids.map(encodeURIComponent).join(',') + ')', {
+      headers: { 'apikey': SUPABASE_KEY }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('读取失败记录失败');
+      return r.json();
+    }).then(function(rows) {
+      var statusById = {};
+      (Array.isArray(rows) ? rows : []).forEach(function(row) { statusById[String(row.id)] = row; });
+      var failedItems = [];
+      for (var i = 0; i < ids.length; i++) {
+        var row = statusById[String(ids[i])];
+        if (row && row.status === 'failed' && items[i]) failedItems.push(items[i]);
+      }
+      if (!failedItems.length) {
+        refreshCareOutboundStatus(record);
+        return null;
+      }
+      var queuedAt = new Date().toISOString();
+      var queueRows = failedItems.map(function(item) {
+        return {
+          brand: item.brand,
+          product: item.product,
+          grams: item.grams,
+          status: 'pending',
+          created_at: queuedAt
+        };
+      });
+      return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify(queueRows)
+      }).then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error('重试入队失败: ' + (t || r.status)); });
+        return r.json();
+      }).then(function(newRows) {
+        newRows = Array.isArray(newRows) ? newRows : [];
+        if (newRows.length !== queueRows.length) throw new Error('重试入队返回数量不一致');
+        record.careOutboundStatus = 'pending';
+        record.careOutboundQueuedAt = queuedAt;
+        record.careOutboundBatches = batches.concat([{
+          queuedAt: queuedAt,
+          ids: newRows.map(function(row) { return row.id; }),
+          items: failedItems
+        }]).slice(-20);
+        return persistHairRecordData(record).then(function() {
+          window._careOutboundStatusRecord = record;
+          renderHairSaveMeta(record);
+        });
+      });
+    }).catch(function(err) {
+      if (el) {
+        el.textContent = '护理出库：重试失败';
+        el.style.color = '#e85050';
+        el.title = err && err.message ? err.message : '';
+      }
+      alert('❌ ' + (err && err.message ? err.message : '护理出库重试失败'));
+    });
+  };
 
   function recordTechValueFromFields(fields) {
     var container = document.getElementById('hair-form-tech-container');
@@ -4914,8 +5377,23 @@ function initApp() {
         return;
       }
       var _nextCloudStatus = isFollowUp ? '回访完成' : (_cloudSaveAsAssistant && !_cloudSaveAsStylist ? '技师已完成' : (_stylistFinalSave ? '已完成' : _oldCloudStatus));
+      prepareCareOutboundBaseline(_mergedData, _cloudRecordData || {});
+      var _careReductionErrors = validateCareOutboundReduction(_mergedData);
+      if (_careReductionErrors.length) {
+        alert('以下护理用量已经提交美管加出库，不能直接改小或删除：\n' + _careReductionErrors.join('\n') + '\n如需冲销，请联系管理员处理。');
+        _cloudEditingId = cloudId;
+        _followUpMode = isFollowUp;
+        return;
+      }
+      var _shouldQueueCareOutbound = _nextCloudStatus === '技师已完成' || _nextCloudStatus === '已完成' || _nextCloudStatus === '回访完成';
       // 直接 PATCH 云端记录，不存本地。助理保存后回到发型师任务里。
       _mergedData.status = _nextCloudStatus;
+      var _cloudSaveBtn = document.getElementById('hair-save-btn');
+      if (_cloudSaveBtn) {
+        _cloudSaveBtn.textContent = '保存中...';
+        _cloudSaveBtn.disabled = true;
+      }
+      var _hairCloudSaved = false;
       fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -4923,9 +5401,18 @@ function initApp() {
           status: _nextCloudStatus,
           record_data: _mergedData
         })
-        }).then(function(r) {
-        if (r.ok) {
-          syncCareRecordsForHairRecord(_mergedData);
+      }).then(function(r) {
+        if (!r.ok) {
+          return r.text().then(function(t) { throw new Error('云端保存失败: ' + (t || r.status)); });
+        }
+        _hairCloudSaved = true;
+        return syncCareRecordsForHairRecord(_mergedData).then(function() {
+          if (_shouldQueueCareOutbound) return enqueueCareOutboundForRecord(_mergedData);
+          return { record: _mergedData, queued: false, count: 0 };
+        });
+      }).then(function(outboundResult) {
+          _mergedData = outboundResult.record || _mergedData;
+          _cloudRecordData = JSON.parse(JSON.stringify(_mergedData));
           // PATCH成功后才刷新按钮和任务列表
           var btn = document.getElementById('hair-save-btn');
           if (btn) {
@@ -4935,8 +5422,18 @@ function initApp() {
           }
           renderHairSaveMeta(_mergedData);
           if (window.renderMyTasks) window.renderMyTasks();
+      }).catch(function(err) {
+        _cloudEditingId = cloudId;
+        _followUpMode = isFollowUp;
+        var btn = document.getElementById('hair-save-btn');
+        if (btn) {
+          btn.textContent = _hairCloudSaved ? '⚠️ 已保存但同步未完成，点此重试' : '⚠️ 保存失败，点此重试';
+          btn.style.background = '#e8a817';
+          btn.disabled = false;
+          btn.onclick = function(){ window.saveHairRecordLocal(); };
         }
-      }).catch(function(){ alert('❌ 云端同步失败，请检查网络'); });
+        alert('❌ ' + (err && err.message ? err.message : '云端同步失败，请检查网络'));
+      });
       // 重置编辑状态
       _editingHairId = null;
       return;
@@ -5001,93 +5498,12 @@ function initApp() {
       // 重置编辑状态
       _editingHairId = record.id;
 
-      // ★ 等 hair_records 写完（外键约束），再写 care_records
-      var careArray = record.careUsage;
-      if (careArray && careArray.length > 0) {
-        var today = new Date().toISOString().slice(0, 10);
-        var shopName = '';
-        // 查发型师所属门店
-        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
-          shopName = window._staffStoreCache[record.barber] || '';
-        }
-        if (!shopName && record.barber) {
-          // 缓存未就绪，从Supabase拉
-          try {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
-            xhr.setRequestHeader('apikey', SUPABASE_KEY);
-            xhr.send();
-            if (xhr.status === 200) {
-              var rows = JSON.parse(xhr.responseText);
-              if (rows && rows[0] && rows[0].store) shopName = rows[0].store;
-            }
-          } catch(e) {}
-        }
-        hrPromise.then(function() {
-          var carePromises = [];
-          for (var ci = 0; ci < careArray.length; ci++) {
-            var cu = careArray[ci];
-            if (!cu || !cu.brand || !cu.product || cu.grams === undefined || cu.grams === '') continue;
-            carePromises.push(
-              fetch(SUPABASE_URL + '/rest/v1/care_records', {
-                method: 'POST',
-                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-                body: JSON.stringify({
-                  hair_record_id: record.id,
-                  barber: record.barber,
-                  shop_name: shopName,
-                  brand: cu.brand,
-                  product: cu.product,
-                  grams: parseFloat(cu.grams),
-                  record_date: today
-                })
-              })
-            );
-          }
-          if (carePromises.length > 0) {
-            Promise.all(carePromises).catch(function(){});
-          }
-        });
-      }
-    } else {
-      // 静默模式：也写 care_records（可能 hair_records 已有，外键不会失败）
-      var careArray2 = record.careUsage;
-      if (careArray2 && careArray2.length > 0) {
-        var today2 = new Date().toISOString().slice(0, 10);
-        var shopName2 = '';
-        if (window._staffStoreCache && window._staffStoreCache[record.barber]) {
-          shopName2 = window._staffStoreCache[record.barber] || '';
-        }
-        if (!shopName2 && record.barber) {
-          try {
-            var xhr2 = new XMLHttpRequest();
-            xhr2.open('GET', SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(record.barber) + '&limit=1', false);
-            xhr2.setRequestHeader('apikey', SUPABASE_KEY);
-            xhr2.send();
-            if (xhr2.status === 200) {
-              var rows2 = JSON.parse(xhr2.responseText);
-              if (rows2 && rows2[0] && rows2[0].store) shopName2 = rows2[0].store;
-            }
-          } catch(e) {}
-        }
-        for (var ci2 = 0; ci2 < careArray2.length; ci2++) {
-          var cu2 = careArray2[ci2];
-          if (!cu2 || !cu2.brand || !cu2.product || cu2.grams === undefined || cu2.grams === '') continue;
-          fetch(SUPABASE_URL + '/rest/v1/care_records', {
-            method: 'POST',
-            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              hair_record_id: record.id,
-              barber: record.barber,
-              shop_name: shopName2,
-              brand: cu2.brand,
-              product: cu2.product,
-              grams: parseFloat(cu2.grams),
-              record_date: today2
-            })
-          }).catch(function(){});
-        }
-      }
+      // 等 hair_records 写完（外键约束），再用“先删旧明细、后批量重建”同步护理记录。
+      hrPromise.then(function() {
+        return syncCareRecordsForHairRecord(record);
+      }).catch(function(err) {
+        console.warn('[护理记录同步失败]', err);
+      });
     }
   };
 
@@ -5263,16 +5679,16 @@ function initApp() {
     }
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载我的任务...</div>';
     // 从 hair_records 表查询（技师或发型师相关的记录）
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=200', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无记录</div>';
         return;
       }
-      rows = rows.filter(isHairTaskWithinVisibleWindow);
       // 只显示本人相关的记录（自己是技师或发型师）
       rows = rows.filter(function(r) {
+        if (r.status === 'deleted') return false;
         var rec = r.record_data || {};
         // 技师可能多选（逗号分隔），逐个匹配
         var techs = (r.technician || rec.technician || '').split(',');
@@ -5285,9 +5701,53 @@ function initApp() {
         container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">暂无你的任务</div>';
         return;
       }
-      var html = '';
+      // ── 辅助：解析 created_at 为日期对象 ──
+      function parseTaskDate(dt) {
+        if (!dt) return null;
+        if (dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
+          var parts = dt.split('.');
+          return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        }
+        try {
+          var d = new Date(dt);
+          if (!isNaN(d.getTime())) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        } catch(e) {}
+        return null;
+      }
+      // ── 辅助：格式化时间为显示字符串 ──
+      function formatTaskTime(dt) {
+        if (!dt) return '';
+        if (dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) return dt;
+        try {
+          var d = new Date(dt);
+          if (!isNaN(d.getTime())) {
+            var mo = String(d.getMonth()+1).padStart(2,'0');
+            var dd = String(d.getDate()).padStart(2,'0');
+            var hh = String(d.getHours()).padStart(2,'0');
+            var mm = String(d.getMinutes()).padStart(2,'0');
+            return d.getFullYear() + '.' + mo + '.' + dd + ' ' + hh + ':' + mm;
+          }
+        } catch(e) {}
+        return '';
+      }
+      // ── 拆分 pending / done ──
+      var pendingRows = [];
+      var doneRows = [];
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
+        var rec = r.record_data || {};
+        var st = r.status || '';
+        var hasFollowup = hairTaskHasFollowup(st, rec);
+        if (hasFollowup || st === '已完成' || st === '回访完成' || st === '已保存') {
+          doneRows.push(r);
+        } else {
+          pendingRows.push(r);
+        }
+      }
+      // 已完成记录限制30天窗口，待处理不受限制
+      doneRows = doneRows.filter(isHairTaskWithinVisibleWindow);
+      // ── 渲染单张卡片（共用） ──
+      function renderCard(r) {
         var rec = r.record_data || {};
         rec.id = rec.id || r.id;
         rec._cloudRecordId = rec._cloudRecordId || r.id;
@@ -5297,7 +5757,7 @@ function initApp() {
         var technician = r.technician || rec.technician || '';
         var stylist = r.barber || rec.barber || '';
         var person = hairRecordPersonText({ customerName: customerName, customerPhone: phone, barber: stylist, technician: technician });
-        // 判断当前用户身份：技师 or 发型师
+        // 判断当前用户身份
         var techList = (technician || '').split(',');
         var isTech = false;
         for (var ti = 0; ti < techList.length; ti++) {
@@ -5308,73 +5768,135 @@ function initApp() {
         var assistantReturned = hairTaskAssistantReturned(status, rec);
         var needsStylistFollowup = isStylist && hairTaskNeedsStylistFollowup(status, rec);
         var primaryStatusText = hasFollowup ? '回访完成' : (assistantReturned ? '技师已完成' : (status === '已完成' ? '已保存' : '待回访'));
-        html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-        html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + formatHairRecordSeq(rec) + ' ' + esc(person.name) + '</span>';
-        html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(primaryStatusText) + '</span>';
-        html += '</div>';
-        // 显示日期时间
+        // 状态圆点 class
+        var dotClass = 'pending';
+        if (hasFollowup) { dotClass = 'followup-done'; }
+        else if (assistantReturned) { dotClass = 'tech-done'; }
+        else if (status === '已完成') { dotClass = 'saved'; }
+        var h = '';
+        h += '<div class="hair-task-card">';
+        h += '<div class="hair-task-card-inner">';
+        // 第一行：编号 + 客户名 + 状态圆点
+        h += '<div class="hair-task-card-row1">';
+        h += '<span class="hair-task-card-seq">' + formatHairRecordSeq(rec) + '</span>';
+        h += '<span class="hair-task-card-name">' + esc(person.name) + '</span>';
+        h += '<span><span class="ht-status-dot ' + dotClass + '"></span><span class="ht-status-text">' + esc(primaryStatusText) + '</span></span>';
+        h += '</div>';
+        // 第二行：时间 + 电话
         var _dt = r.created_at || rec.createdAt || rec.date || '';
-        var _timeStr = '';
-        if (_dt) {
-          if (_dt.match(/^\d{4}\.\d{1,2}\.\d{1,2}$/)) {
-            _timeStr = _dt;
-          } else {
-            try {
-              var _d = new Date(_dt);
-              if (!isNaN(_d.getTime())) {
-                var _mo = String(_d.getMonth()+1).padStart(2,'0');
-                var _dd = String(_d.getDate()).padStart(2,'0');
-                var _hh = String(_d.getHours()).padStart(2,'0');
-                var _mm = String(_d.getMinutes()).padStart(2,'0');
-                _timeStr = _d.getFullYear() + '.' + _mo + '.' + _dd + ' ' + _hh + ':' + _mm;
-              }
-            } catch(e){}
-          }
-        }
+        var _timeStr = formatTaskTime(_dt);
         if (_timeStr) {
-          html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + _timeStr + '</div>';
+          h += '<div class="hair-task-card-row2">' + _timeStr + ' · ' + esc(person.phone || '无电话') + '</div>';
+        } else {
+          h += '<div class="hair-task-card-row2">' + esc(person.phone || '无电话') + '</div>';
         }
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(person.phone || '无电话') + '</div>';
-        html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:1px;">' + esc(person.line2) + '</div>';
+        // 第三行：技师/发型师信息
+        h += '<div class="hair-task-card-row3">' + esc(person.line2) + '</div>';
+        // 红色提醒
         if (needsStylistFollowup) {
-          html += '<div style="font-size:11px;color:#e85050;font-weight:800;margin-top:3px;">未评定未回访</div>';
+          h += '<div class="hair-task-card-warning">未评定未回访</div>';
         }
-        html += '<div style="display:flex;gap:4px;font-size:10px;color:var(--text-secondary);margin-top:2px;">';
-        var statusColor = '#e8a817';
-        var statusText = '待回访';
-        if (hasFollowup) { statusColor = 'var(--success)'; statusText = '回访完成'; }
-        else if (assistantReturned) { statusColor = 'var(--success)'; statusText = isStylist ? '待保存档案' : '已回传发型师'; }
-        else if (status === '已完成') { statusColor = 'var(--success)'; statusText = '已保存'; }
-        else if (isStylist && technician) { statusText = '待助理填写'; }
-        if (isTech && !isStylist && !hasFollowup) {
-          statusColor = assistantReturned ? 'var(--success)' : '#e89217';
-          statusText = assistantReturned ? '已回传发型师' : '待填写';
-        }
-        html += '<span style="margin-left:auto;color:'+statusColor+';">' + statusText + '</span>';
-        html += '</div>';
-        // ★ 红色提醒：技师已完成，但发型师未回访/评定
         if (status === '技师已完成' && isStylist) {
-          html += '<div style="color:var(--danger,#e0556a);font-size:11px;font-weight:600;margin-top:2px;">⚠️ 未评定，回访客户</div>';
+          h += '<div class="hair-task-card-warning">⚠️ 未评定，回访客户</div>';
         }
-        html += '<div style="display:flex;gap:4px;margin-top:4px;">';
+        // 底部操作按钮行
+        h += '<div class="hair-task-card-actions">';
         if (isStylist) {
-          // 发型师操作云端原记录：编辑会 PATCH 当前 id；已入客户档案后不允许删除
-          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">✏️ 编辑</button>';
+          h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">编辑</button>';
           if (needsStylistFollowup) {
-            html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" style="flex:1;padding:4px;font-size:10px;background:#e85050;border:1px solid #e85050;border-radius:4px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:700;">填写回访</button>';
+            h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
           }
-          html += '<span style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);text-align:center;">已入档案不可删</span>';
+          h += '<span class="hair-task-card-info">已入档案不可删</span>';
         } else if (isTech && !hasFollowup) {
-          // 助理只要被指派就可以进入填写/继续修改，保存后回传给发型师
-          var techBtnText = assistantReturned ? '✏️ 继续修改' : '✏️ 编辑填写';
-          html += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" style="flex:1;padding:4px;font-size:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font);">' + techBtnText + '</button>';
+          var techBtnText = assistantReturned ? '继续修改' : '编辑填写';
+          h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\')" class="hair-task-card-btn primary">' + techBtnText + '</button>';
         }
         if (!isStylist && hasFollowup) {
-          html += '<span style="font-size:10px;color:var(--success);">✅ 已完成</span>';
+          h += '<span class="hair-task-card-done">已完成</span>';
         }
-        html += '</div></div>';
+        h += '</div>'; // end actions
+        h += '</div>'; // end card-inner
+        h += '</div>'; // end card
+        return h;
       }
+      // ── 构建 HTML ──
+      var html = '<div class="hair-tasks-section">';
+      // A. 顶部「⚠️ 待处理」优先区
+      if (pendingRows.length > 0) {
+        html += '<div class="ht-pending-section">';
+        html += '<div class="ht-pending-header">⚠️ 待处理（' + pendingRows.length + '）</div>';
+        html += '<hr class="ht-pending-divider">';
+        for (var pi = 0; pi < pendingRows.length; pi++) {
+          html += renderCard(pendingRows[pi]);
+        }
+        html += '</div>';
+      }
+      // B. 下方日期分组（已完成记录）
+      if (doneRows.length > 0) {
+        var today = new Date();
+        today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        var yesterday = new Date(today.getTime() - 86400000);
+        var cutoff = new Date(today.getTime() - 3 * 86400000); // 3天前
+        var groups = {}; // key -> { label, items[], expanded }
+        var dateGroupKeys = []; // 收集具体日期key用于排序
+        for (var di = 0; di < doneRows.length; di++) {
+          var r = doneRows[di];
+          var dt = r.created_at || (r.record_data || {}).createdAt || (r.record_data || {}).date || '';
+          var taskDate = parseTaskDate(dt);
+          var groupKey;
+          if (!taskDate) {
+            groupKey = 'older';
+          } else if (taskDate.getTime() === today.getTime()) {
+            groupKey = 'today';
+          } else if (taskDate.getTime() === yesterday.getTime()) {
+            groupKey = 'yesterday';
+          } else if (taskDate.getTime() < cutoff.getTime()) {
+            groupKey = 'older';
+          } else {
+            groupKey = 'date_' + taskDate.getTime();
+            if (dateGroupKeys.indexOf(groupKey) === -1) dateGroupKeys.push(groupKey);
+          }
+          if (!groups[groupKey]) {
+            var label;
+            if (groupKey === 'today') label = '今天';
+            else if (groupKey === 'yesterday') label = '昨天 ' + (yesterday.getMonth()+1) + '月' + yesterday.getDate() + '日';
+            else if (groupKey === 'older') label = '更早';
+            else {
+              var td = new Date(parseInt(groupKey.split('_')[1]));
+              label = (td.getMonth()+1) + '月' + td.getDate() + '日';
+            }
+            groups[groupKey] = { label: label, items: [], expanded: (groupKey === 'today') };
+          }
+          groups[groupKey].items.push(r);
+        }
+        // 排序日期组（降序）
+        dateGroupKeys.sort(function(a, b) { return parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]); });
+        var finalGroupKeys = ['today', 'yesterday'].concat(dateGroupKeys);
+        if (groups['older']) finalGroupKeys.push('older');
+        // ── 渲染日期分组 ──
+        for (var gi = 0; gi < finalGroupKeys.length; gi++) {
+          var gk = finalGroupKeys[gi];
+          var group = groups[gk];
+          if (!group || group.items.length === 0) continue;
+          var groupId = 'htg-' + gi + '-' + Date.now();
+          var headerClass = group.expanded ? 'ht-group-header expanded' : 'ht-group-header';
+          var arrowIcon = group.expanded ? '▼' : '▶';
+          html += '<div class="hair-tasks-group">';
+          html += '<div class="' + headerClass + '" onclick="var b=document.getElementById(\''+groupId+'-body\');var hdr=this;if(b){if(b.classList.contains(\'collapsed\')){b.classList.remove(\'collapsed\');b.classList.add(\'expanded\');hdr.classList.add(\'expanded\');}else{b.classList.remove(\'expanded\');b.classList.add(\'collapsed\');hdr.classList.remove(\'expanded\');}}">';
+          html += '<span>' + group.label + '</span>';
+          html += '<span><span class="ht-group-count">' + group.items.length + '条</span><span class="ht-group-arrow">' + arrowIcon + '</span></span>';
+          html += '</div>';
+          html += '<hr class="ht-group-divider">';
+          var bodyClass = group.expanded ? 'hair-tasks-group-body expanded' : 'hair-tasks-group-body collapsed';
+          html += '<div class="' + bodyClass + '" id="' + groupId + '-body">';
+          for (var ii = 0; ii < group.items.length; ii++) {
+            html += renderCard(group.items[ii]);
+          }
+          html += '</div>'; // end group-body
+          html += '</div>'; // end group
+        }
+      }
+      html += '</div>'; // end section
       container.innerHTML = html;
     }).catch(function() {
       container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--danger);">❌ 加载失败</div>';
@@ -5384,7 +5906,7 @@ function initApp() {
   window.loadCloudRecord = function(recordId, followUp) {
     if (!recordId) return;
     _followUpMode = followUp === true;
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
+    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&status=neq.deleted&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       if (!rows || rows.length === 0) return;
@@ -6037,6 +6559,7 @@ function initApp() {
     // 收集所有表单字段（同 saveHairRecordLocal 逻辑）
     // ★ 自动收集所有表单字段
     var F = (typeof window.collectHairFormFields === 'function') ? window.collectHairFormFields() : {};
+    var previousArchiveRecord = _cloudRecordData ? JSON.parse(JSON.stringify(_cloudRecordData)) : {};
     var archiveSeqSeed = _cloudRecordData || { id: cloudId, _cloudRecordId: cloudId, seq: _cloudRecordSeq };
     archiveSeqSeed.id = archiveSeqSeed.id || cloudId;
     archiveSeqSeed._cloudRecordId = archiveSeqSeed._cloudRecordId || cloudId;
@@ -6107,12 +6630,24 @@ function initApp() {
       status: archiveStatus,
       synced: false
     };
+    prepareCareOutboundBaseline(record, previousArchiveRecord);
+    var archiveCareReductionErrors = validateCareOutboundReduction(record);
+    if (archiveCareReductionErrors.length) {
+      alert('以下护理用量已经提交美管加出库，不能直接改小或删除：\n' + archiveCareReductionErrors.join('\n') + '\n如需冲销，请联系管理员处理。');
+      return;
+    }
     if (!hairRecordHasMeaningfulContent(record)) {
       alert('这张发质分析表还没有实际发质、烫染或护理内容，不能归档');
       return;
     }
 
     // PATCH 云端记录，标记已完成
+    var archiveSaveBtn = document.getElementById('hair-save-btn');
+    if (archiveSaveBtn) {
+      archiveSaveBtn.textContent = '保存中...';
+      archiveSaveBtn.disabled = true;
+    }
+    var archiveHairSaved = false;
     fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(cloudId), {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -6121,38 +6656,56 @@ function initApp() {
         record_data: record
       })
     }).then(function(r) {
-      if (r.ok) {
-        // 也更新本地记录
-        var records = getHairRecords();
-        for (var i = 0; i < records.length; i++) {
-          if (records[i].id === cloudId) {
-            records[i].status = archiveStatus;
-            records[i].synced = true;
-            break;
-          }
-        }
-        saveHairRecords(records);
-
-        record._cloudRecordId = cloudId;
-        record._isCloudRecord = true;
-        _cloudEditingId = cloudId;
-        _editingHairId = cloudId;
-        _cloudRecordData = JSON.parse(JSON.stringify(record));
-        syncCareRecordsForHairRecord(record);
-        var btn = document.getElementById('hair-save-btn');
-        if (btn) {
-          btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
-          btn.style.background = 'var(--success, #2ecc71)';
-          btn.disabled = false;
-          btn.onclick = window.saveAndUploadHairArchive;
-        }
-        renderHairSaveMeta(record);
-        if (window.renderPendingRecords) window.renderPendingRecords();
-        if (window.renderMyTasks) window.renderMyTasks();
-      } else {
-        r.text().then(function(t){ alert('❌ 上传失败: '+t.slice(0,80)); });
+      if (!r.ok) {
+        return r.text().then(function(t) { throw new Error('上传失败: ' + (t || r.status)); });
       }
-    }).catch(function(){ alert('❌ 上传失败，网络错误'); });
+      archiveHairSaved = true;
+      // 也更新本地记录
+      var records = getHairRecords();
+      for (var i = 0; i < records.length; i++) {
+        if (records[i].id === cloudId) {
+          records[i].status = archiveStatus;
+          records[i].synced = true;
+          break;
+        }
+      }
+      saveHairRecords(records);
+
+      record._cloudRecordId = cloudId;
+      record._isCloudRecord = true;
+      _cloudEditingId = cloudId;
+      _editingHairId = cloudId;
+      _cloudRecordData = JSON.parse(JSON.stringify(record));
+      return syncCareRecordsForHairRecord(record).then(function() {
+        if (archiveStatus === '已完成' || archiveStatus === '回访完成') {
+          return enqueueCareOutboundForRecord(record);
+        }
+        return { record: record, queued: false, count: 0 };
+      });
+    }).then(function(outboundResult) {
+      record = outboundResult.record || record;
+      _cloudRecordData = JSON.parse(JSON.stringify(record));
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = archiveStatus === '待回访' ? '✅ 已回传助理' : (archiveStatus === '回访完成' ? '✅ 回访完成，已归档' : '✅ 已保存，可继续修改');
+        btn.style.background = 'var(--success, #2ecc71)';
+        btn.disabled = false;
+        btn.onclick = window.saveAndUploadHairArchive;
+      }
+      renderHairSaveMeta(record);
+      if (window.renderPendingRecords) window.renderPendingRecords();
+      if (window.renderMyTasks) window.renderMyTasks();
+    }).catch(function(err) {
+      _cloudEditingId = cloudId;
+      var btn = document.getElementById('hair-save-btn');
+      if (btn) {
+        btn.textContent = archiveHairSaved ? '⚠️ 已保存但同步未完成，点此重试' : '⚠️ 保存失败，点此重试';
+        btn.style.background = '#e8a817';
+        btn.disabled = false;
+        btn.onclick = window.saveAndUploadHairArchive;
+      }
+      alert('❌ ' + (err && err.message ? err.message : '上传失败，网络错误'));
+    });
   };
 
   // ===== 从预约选择客户 =====
@@ -6312,12 +6865,6 @@ function initApp() {
     if (!product || !gramVal || parseFloat(gramVal) <= 0) return;
     var _barberName = (document.getElementById('hair-form-barber') || {}).value || localStorage.getItem('booking-barber') || BOOKING_BARBER || '未知';
     _careUsageData.push({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName });
-    // 同步推送护理用量到出库队列（自动出库用）
-    fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue', {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ brand: currentCareBrand, product: product, grams: gramVal, barber: _barberName, status: 'pending', created_at: new Date().toISOString() })
-    }).catch(function(e){ console.warn('[出库队列推送失败]', e); });
     // 清空并重置
     sel.value = '';
     grams.value = '';
@@ -6718,8 +7265,7 @@ function initApp() {
     html += '</div>';
 
     // 我的任务（技师端）- 云端编辑时隐藏
-    html += '<div id="hair-tasks-section" style="margin-top:12px;">' +
-    '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">☁️ 我的任务</div>' +
+    html += '<div id="hair-tasks-section" style="padding-top:12px;">' +
     '<div id="hair-tasks-list"></div>' +
     '</div>';
 
@@ -6730,24 +7276,21 @@ function initApp() {
 
     // 查询方案函数
     window.hairQueryPlan = async function() {
-      // 确保数据已加载
-      if (!DATA_LOADED) {
-        var area = document.getElementById('hair-q-result');
-        if (area) area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">数据加载中...</div>';
-        await loadPermData();
-      }
       // 从步骤2的hair-diagnosis-type读取发质类型
       var diagnosisSelect = document.getElementById('hair-diagnosis-type');
       var style = document.getElementById('hair-q-style');
       if (!diagnosisSelect || !style) return;
+      var area = document.getElementById('hair-q-result');
       var h = diagnosisSelect.value, s = style.value;
       if (!h || !s) {
-        var area = document.getElementById('hair-q-result');
         if (area) area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">请先选择发质类型和烫发款式</div>';
         return;
       }
+      if (!DATA_LOADED) {
+        if (area) area.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">正在加载方案...</div>';
+        await loadPermData();
+      }
       var results = (typeof PERM_DATA_CACHE !== 'undefined' ? PERM_DATA_CACHE : []).filter(function(d){ return d.hairType === h && d.permStyle === s; });
-      var area = document.getElementById('hair-q-result');
       if (!area) return;
       if (results.length === 0) {
         // ★ 无精确匹配，尝试现场生成近似方案
@@ -7539,7 +8082,7 @@ function initApp() {
     if (detailEl) detailEl.style.display = 'none';
     if (versionEl) versionEl.textContent = 'v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1);
 
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&order=created_at.desc&limit=200', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
       if (!r.ok) return [];
@@ -7885,13 +8428,16 @@ window.uploadAppFbScreenshot = function(inputEl) {
       location.href = buildVersionUrl(v);
     };
   };
-  // ── 降级保护（v321修复无限跳转闪屏）──
-  // 如果当前版本比本地记住的低，说明部署降级了。此时不跳转，只把本地的版本记录降下来。
+  // 当前页面低于本机见过的最高版本时保留最高版本记录，等待向前修复。
   if (VER < MAX_VER) {
-    console.warn('版本降级:', VER, '<', MAX_VER, '，重置本地缓存');
+    console.error('检测到线上版本降级:', VER, '<', MAX_VER);
     localStorage.setItem('app-version', VER);
-    localStorage.setItem('app-max-version', VER);
-    MAX_VER = VER;
+    var downgradeBanner = document.getElementById('update-banner');
+    if (downgradeBanner) {
+      downgradeBanner.textContent = '检测到线上版本异常（当前 v' + VER + '，应不低于 v' + MAX_VER + '）';
+      downgradeBanner.style.display = 'block';
+      downgradeBanner.onclick = null;
+    }
   }
   
   // 先从服务器拉最新版本号，跳过CDN缓存
