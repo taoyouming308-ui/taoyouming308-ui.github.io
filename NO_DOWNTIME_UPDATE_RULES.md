@@ -6,9 +6,10 @@ These rules are mandatory. Updates must not interrupt normal salon work.
 
 1. Never force-refresh a user who may be filling an appointment, customer archive, or hair analysis form.
 2. New versions may show an update prompt, but the user chooses when to refresh.
-3. Do not change Supabase production data during a code deploy unless the task is explicitly a data repair.
-4. Do not change schema or field names without backward-compatible reading of old fields.
-5. Keep the previous stable version recoverable.
+3. Normal app startup must not navigate again only to append a cache-busting version parameter; this causes a visible double render.
+4. Do not change Supabase production data during a code deploy unless the task is explicitly a data repair.
+5. Do not change schema or field names without backward-compatible reading of old fields.
+6. Keep the previous stable version recoverable.
 
 ## Required Checks Before Push
 

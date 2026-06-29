@@ -37,6 +37,21 @@ if (!taskSource.includes('status=neq.deleted')) {
   fail('cloud hair task query must exclude soft-deleted records');
 }
 
+const versionReadyStart = html.indexOf('var _onVersionReady = function()');
+const versionReadyEnd = html.indexOf('// 立即执行版本检查', versionReadyStart);
+const versionReadySource = versionReadyStart >= 0 && versionReadyEnd > versionReadyStart
+  ? html.slice(versionReadyStart, versionReadyEnd)
+  : '';
+if (!versionReadySource) {
+  fail('version-ready handler not found');
+}
+if (versionReadySource.includes('location.replace(')) {
+  fail('normal startup must not force a second page navigation for cache busting');
+}
+if (!html.includes('showUpdatePrompt(sv)') || !html.includes('location.href = buildVersionUrl(v)')) {
+  fail('version updates must still require an explicit user-triggered refresh');
+}
+
 const careAddStart = html.indexOf('window.addCareRecord = function()');
 const careAddEnd = html.indexOf('window.removeCareRecord', careAddStart);
 const careAddSource = careAddStart >= 0 && careAddEnd > careAddStart ? html.slice(careAddStart, careAddEnd) : '';

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="333">
+<html lang="zh-CN" data-version="334">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8762,11 +8762,8 @@ window.showHairFollowupScreenshot = function(dataUrl, inputEl) {
   };
   
   var _onVersionReady = function() {
-    // 缓存爆破：URL带版本号，让CDN和浏览器每次都拉最新版
-    if (location.search.indexOf('_v=' + VER) === -1) {
-      location.replace(buildVersionUrl(VER));
-      return;
-    }
+    // 正常启动不再为了追加版本参数强制二次跳转，避免首页完整渲染两次造成闪屏。
+    // 缓存中的旧页面仍会通过 version.txt 发现新版本，并由用户点击更新提示后进入版本化 URL。
     var OLD_VER = Math.max(parseInt(localStorage.getItem('app-version')) || 0, parseInt(localStorage.getItem('app-max-version')) || 0);
     if (OLD_VER > 0 && VER > OLD_VER) {
       var tip = document.createElement('div');

@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v334 (2026-06-29)
+
+- 修复 App 首页启动闪屏：普通 `perm-app.html` 启动不再为了追加 `?_v=版本号` 执行 `location.replace`，避免首页完整渲染后立即发生第二次整页加载。
+- 保留 `version.txt` 防缓存检测和用户主动更新提示；发现新版本时仍只提示，不强制刷新正在使用的页面。
+- 浏览器复现确认 v333 普通启动会连续请求 `perm-app.html` 与 `perm-app.html?_v=333`；v334 回归要求普通启动只加载一份页面文档。
+- App 冒烟测试新增首页启动不得强制二次导航的发布保护。
+
 ## v333 (2026-06-29)
 
 - 发型师在云端发质表中完成 A/B/C 评定或上传本单聊天截图后，点击「保存档案」会直接把行状态和 `record_data.status` 写为 `回访完成`，不再停留在 `技师已完成/待发型师回访`。
@@ -35,8 +42,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v333
-- Last synchronized base checked: GitHub `b666d8f`, Gitee `b666d8f`
+- App version: v334
+- Last synchronized base checked: GitHub `85c6c83`, Gitee `85c6c83`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -44,6 +51,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v334: 移除正常首页启动的版本参数强制跳转，保留用户主动更新机制，消除整页二次加载闪屏。
 - v333: 修复发型师已评定后「保存档案」仍停留在回访的问题，并补齐技师直接开单回传发型师的入口状态。
 - v332: 烫发备注随发质表保存、归档和再次编辑；客户消费/套餐丰富展示受到发布测试保护。
 - v332: 预约同步按门店+日期隔离删除授权，完整回写手机号/发型师/服务/状态，失败不再伪装成功。
@@ -93,6 +101,9 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-29: v334 完整回归通过：版本/发布完整性、App 冒烟、护理出库、22 组发质状态、客户档案及 17 个 Python 同步测试全部通过。
+- 2026-06-29: v334 本地浏览器普通 URL 启动后仍停留在 `perm-app.html`、页面版本为 334、控制台无错误；HTTP 日志仅有 1 次页面文档请求。
+- 2026-06-29: v334 修改前浏览器与本地 HTTP 日志复现同一次首页启动请求两份页面文档；新增冒烟断言阻止正常启动重新引入 `location.replace`。
 - 2026-06-29: v333 发质任务 22 组状态/归档/开单测试、App 冒烟和 JavaScript 语法检查通过；本地页面可正常加载，未使用测试数据写入线上。
 - 2026-06-29: 线上异常单 `1782479086695_yk6t` 条件修复恰好更新 1 行；复查行状态、`record_data.status` 均为 `回访完成`，A 评定保留。
 - 2026-06-29: 新预约脚本真实执行成功：双店未来 8 天共 16 个门店/日期请求全部成功，读取并 upsert 237 条，删除 0 条；随后 Hermes 每 5 分钟自动任务再次运行，状态仍为 `healthy`。
