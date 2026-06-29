@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v333 (2026-06-29)
+
+- 发型师在云端发质表中完成 A/B/C 评定或上传本单聊天截图后，点击「保存档案」会直接把行状态和 `record_data.status` 写为 `回访完成`，不再停留在 `技师已完成/待发型师回访`。
+- 技师或助理本人新建发质表并选择其他发型师时，系统自动把当前员工记为技师并以 `技师已完成` 直接回传发型师；技师未选择发型师或未填写实际内容时禁止回传。
+- 技师尚未回传时，即使误填评定也不会提前结束任务；回访完成仍严格要求评定或本单截图二选一。
+- 线上只读核对 6 张技师回传单，仅发现 `1782479086695_yk6t`（宣女士，尾号 3150）已有 A 评定但仍是 `技师已完成`；已按 id、姓名、电话、原状态条件只修复该行并复查为 `回访完成`。
+- 发质任务状态测试扩展到 22 个状态、归档和开单场景。
+
 ## v332 (2026-06-29)
 
 - 合并 Hermes 的 v331 提交历史但保留稳定页面，避免旧整页再次覆盖消费项目、金额、服务人员、套餐有效期和最新到店排序。
@@ -27,8 +35,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v332
-- Last synchronized base checked: GitHub `965bc35`, Gitee `708f9db`
+- App version: v333
+- Last synchronized base checked: GitHub `b666d8f`, Gitee `b666d8f`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -36,6 +44,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v333: 修复发型师已评定后「保存档案」仍停留在回访的问题，并补齐技师直接开单回传发型师的入口状态。
 - v332: 烫发备注随发质表保存、归档和再次编辑；客户消费/套餐丰富展示受到发布测试保护。
 - v332: 预约同步按门店+日期隔离删除授权，完整回写手机号/发型师/服务/状态，失败不再伪装成功。
 - v332: 停止 Hermes 遗留无限回填，统一预约、客户回填和保活的唯一源文件与调度规则。
@@ -84,6 +93,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-29: v333 发质任务 22 组状态/归档/开单测试、App 冒烟和 JavaScript 语法检查通过；本地页面可正常加载，未使用测试数据写入线上。
+- 2026-06-29: 线上异常单 `1782479086695_yk6t` 条件修复恰好更新 1 行；复查行状态、`record_data.status` 均为 `回访完成`，A 评定保留。
 - 2026-06-29: 新预约脚本真实执行成功：双店未来 8 天共 16 个门店/日期请求全部成功，读取并 upsert 237 条，删除 0 条；随后 Hermes 每 5 分钟自动任务再次运行，状态仍为 `healthy`。
 - 2026-06-29: 预约、客户和保活的仓库源文件与 `~/.hermes/scripts` 部署文件 SHA-256 一致；旧预约脚本已被无明文凭据版本覆盖。
 - 2026-06-29: 无限回填进程已通过 Hermes 进程注册表终止并注销；OS crontab 只保留 `:00/:30` 常规客户同步，Hermes 回填为 `:05/:20/:35`，保活为 `:50`。

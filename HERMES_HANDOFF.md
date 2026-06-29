@@ -108,8 +108,10 @@ Task-list display rules:
 Save behavior:
 
 - Assistant save must patch the same cloud row and set status to `技师已完成`.
-- Stylist ordinary archive save must not become `回访完成`.
-- Stylist follow-up save must come from the follow-up mode and set status to `回访完成`.
+- An assistant/technician who creates a new record and selects another stylist is recorded as the technician; meaningful content is returned directly with status `技师已完成`.
+- Stylist archive save without a rating or this record's screenshot must not become `回访完成`.
+- Stylist save from either the archive-edit entry or the dedicated follow-up entry sets status to `回访完成` when a rating or this record's screenshot is present.
+- A record still waiting for its assigned assistant must not become `回访完成`, even if follow-up evidence was entered early.
 - Uploaded/customer-archive hair records must not be deleted from task list.
 - Record numbering must remain stable across app versions.
 - All task states are hidden after 30 days.
