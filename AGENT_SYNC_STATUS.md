@@ -53,7 +53,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v335
-- Last synchronized base checked: GitHub `954cc02`, Gitee `954cc02`
+- Last synchronized base checked: GitHub `f1f34a6`, Gitee `f1f34a6`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -112,6 +112,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-29: v335 提交 `f1f34a6` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=335`。线上文件确认新后台导航、注册审核、异常中心、动态轮播和旧后台跳转均生效，三个配置模块的导航与后台 REST 接口均不存在。
 - 2026-06-29: v335 后台与 App JavaScript 语法、后台工作流静态约束、HTML 页面层级和重复 ID 检查通过；本地浏览器确认后台桌面/390px 登录页、旧后台地址跳转、App 首页动态轮播和控制台无错误。未写入生产业务数据。
 - 2026-06-29: v334 完整回归通过：版本/发布完整性、App 冒烟、护理出库、22 组发质状态、客户档案及 17 个 Python 同步测试全部通过。
 - 2026-06-29: v334 本地浏览器普通 URL 启动后仍停留在 `perm-app.html`、页面版本为 334、控制台无错误；HTTP 日志仅有 1 次页面文档请求。
