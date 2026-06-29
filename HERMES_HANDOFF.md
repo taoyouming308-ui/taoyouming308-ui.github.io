@@ -15,6 +15,7 @@
 - Booking wrapper canonical source: `scripts/sync_mgj_bookings.sh`. It must use `exec` and propagate failures; never suppress stderr or force `exit 0`.
 - A booking may be deleted only when that exact store/date API call succeeded and omitted the stable appointment id.
 - Customer backfill canonical wrapper: `scripts/backfill_mgj_customer_profiles.sh`. Run one scheduled backfill source only; unmanaged endless loops are forbidden.
+- Hermes no-agent scripts have a 120-second execution limit. Keep customer backfill at 15 profiles per run so the 2-second API pacing can finish before timeout.
 
 This file is the working context Hermes should read before editing the app.
 

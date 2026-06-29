@@ -10,4 +10,4 @@ if [ -f "$STATUS_FILE" ]; then
   fi
 fi
 
-exec /usr/bin/python3 /Users/a1/.hermes/scripts/sync_mgj_all.py backfill 50
+exec /usr/bin/python3 /Users/a1/.hermes/scripts/sync_mgj_all.py backfill 15
