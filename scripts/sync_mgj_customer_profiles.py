@@ -1258,3 +1258,5 @@ if __name__ == "__main__":
             log("没有需要同步的客户")
 
     write_status(final_status, mode=mode, **status_details)
+    if final_status != "healthy":
+        sys.exit(1)

@@ -81,6 +81,15 @@ Current audit findings from sample data:
    - Map Meiguanjia status numbers to a readable status label in an additional field, while preserving original status.
    - Keep stable Meiguanjia appointment id as `id` to avoid duplicate rows.
 
+## v332 Runtime Rules
+
+- The only tracked booking source is `scripts/sync_mgj_bookings.py`; deploy it as `~/.hermes/scripts/sync_mgj_bookings.py`.
+- The Hermes booking job runs `sync_mgj_bookings.sh` and must preserve the script's exit status. Never redirect errors to `/dev/null` or append `exit 0`.
+- Appointment deletion is authorized per successful `(shop_id, date)` response. A success from one date or shop never authorizes deletion from another pair.
+- Every fetched appointment is upserted by stable Meiguanjia `id`, including phone, stylist, shop, service, time, notes, and source status.
+- Login credentials are read only from `~/.hermes/meiguanjia-auth.json`; runtime scripts must not contain passwords.
+- Customer profile backfill has one scheduler only. Do not run unmanaged endless loops or duplicate OS/Hermes backfill schedules.
+
 5. Add sync metadata.
    - Add or preserve fields such as `last_updated`, `source`, `source_id`, `sync_error`, `raw_hash`.
    - Do not delete old useful data during partial sync. If one Meiguanjia endpoint fails, keep existing `card_packages` and `service_history`.
@@ -88,6 +97,7 @@ Current audit findings from sample data:
 ## Frontend Changes Already Made
 
 - v331: customer archives render real Meiguanjia bill items, amount, staff, shop, and all synced bill rows; package rows retain stable source ids, shop, and expiry.
+- v332: release tests protect those rich archive fields from stale whole-page replacement, and the booking synchronizer rejects HTTP failures instead of reporting false success.
 - v331: the tracked sync source is `scripts/sync_mgj_customer_profiles.py`. Hermes cron must deploy this exact file to `/Users/a1/.hermes/scripts/sync_mgj_all.py`; do not maintain a divergent copy.
 - 2026-06-27 verified read-only: `member!queryMemberBillListnew.action` returns 20 bill rows for the 5050 sample and `bill!detail.action` returns projects and service staff. The sync now preserves old arrays on partial API failure and deduplicates history by source bill id.
 - 2026-06-28 verified both shops with direct multipart requests. The bill payload uses `memberInfo.shopid`; the multipart session shop comes from `meiguanjia-config.json`. Browser fetch is a fallback, not a required runtime dependency.

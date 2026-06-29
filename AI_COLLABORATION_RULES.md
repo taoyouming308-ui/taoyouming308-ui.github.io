@@ -58,6 +58,16 @@ git push origin main:master
 git config core.hooksPath .githooks
 ```
 
+16. Meiguanjia runtime files have one canonical source each:
+
+- appointments: `scripts/sync_mgj_bookings.py`
+- customer profiles: `scripts/sync_mgj_customer_profiles.py`
+- keepalive: `scripts/mgj_keepalive.py`
+
+Never edit only the copy under `~/.hermes/scripts`. Deploy the tracked source and verify matching hashes.
+
+17. Never run an unmanaged endless customer backfill. Appointment sync, customer sync, backfill, and keepalive must use their documented locks and non-overlapping schedules.
+
 GitHub branch protection must require the `Validate shared app` check before merging or publishing through a pull request.
 
 ## Ownership

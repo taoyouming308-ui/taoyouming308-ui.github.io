@@ -22,6 +22,8 @@ node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
 node scripts/test-care-outbound.js
 node scripts/test-hair-task-state.js
+node scripts/test-customer-archive-rendering.js
+python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
 ```
 
 The pre-push hook runs these checks automatically.
@@ -44,6 +46,8 @@ Manual business-flow checks are still required for risky changes:
 - save a local record
 - load “我的任务”
 - for hair-analysis changes, test stylist and assistant flows
+- for customer archive changes, verify bill items, amount, staff, package expiry, and newest-first visits
+- for synchronization changes, verify a failed shop/date cannot delete another shop/date
 
 ## Release Flow
 

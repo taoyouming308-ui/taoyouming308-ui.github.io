@@ -1,16 +1,20 @@
 # Hermes Handoff
 
-## v331 Meiguanjia customer sync
+## v332 Meiguanjia synchronization
 
 - Canonical source: `scripts/sync_mgj_customer_profiles.py`.
 - Deployed cron target: `/Users/a1/.hermes/scripts/sync_mgj_all.py`.
 - Never edit only the deployed target. Change the canonical source, run `python3 -m unittest scripts/test_sync_mgj_customer_profiles.py -v`, then deploy the exact file.
 - A failed package or bill request must never replace `card_packages` or `service_history` with an empty array.
-- Cron modes: normal sync at `00/30`, missing-field backfill at `15/45`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
+- Cron modes: OS normal sync at `00/30`; the single Hermes missing-field backfill runs at `05/20/35`; keepalive runs at `50`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
 - Backfill checkpoint: `/Users/a1/.hermes/mgj_customer_backfill.json`. Backfill advances by profile `id` and never resets automatically after reaching the end.
 - Keepalive canonical source: `scripts/mgj_keepalive.py`; deployed copies under `~/.hermes/scripts/` and the Meiguanjia skill must have the same hash.
 - Hermes keepalive job `25e56b7f1ac0` runs at `50 * * * *`, not on the hour. It shares the customer sync lock and must never unconditionally relogin.
 - Credentials are local-only in `~/.hermes/meiguanjia-auth.json` with mode 600. Never commit or print them.
+- Booking canonical source: `scripts/sync_mgj_bookings.py`; deployed target: `/Users/a1/.hermes/scripts/sync_mgj_bookings.py`.
+- Booking wrapper canonical source: `scripts/sync_mgj_bookings.sh`. It must use `exec` and propagate failures; never suppress stderr or force `exit 0`.
+- A booking may be deleted only when that exact store/date API call succeeded and omitted the stable appointment id.
+- Customer backfill canonical wrapper: `scripts/backfill_mgj_customer_profiles.sh`. Run one scheduled backfill source only; unmanaged endless loops are forbidden.
 
 This file is the working context Hermes should read before editing the app.
 
@@ -169,6 +173,8 @@ node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
 node scripts/test-care-outbound.js
 node scripts/test-hair-task-state.js
+node scripts/test-customer-archive-rendering.js
+python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
 node scripts/check-agent-sync-status.js
 ```
 

@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v332 (2026-06-29)
+
+- 合并 Hermes 的 v331 提交历史但保留稳定页面，避免旧整页再次覆盖消费项目、金额、服务人员、套餐有效期和最新到店排序。
+- 步骤4新增烫发备注，草稿、云端归档和再次编辑均保存/恢复同一字段。
+- 预约同步改为稳定 ID 全字段 upsert；只有对应门店和日期的接口成功后才允许删除缺失预约，HTTP/API/写入失败会真实返回失败。
+- 预约同步与保活只从本机权限 600 的认证文件读取账号，仓库及运行脚本不再保存明文密码。
+- 客户回填恢复受版本控制的 2 秒限速，停止无限循环；回填只保留一个限速调度入口。
+- 新增客户档案回归测试和预约同步单元测试，并加入 pre-push 铁律。
+
 ## v331 (2026-06-27)
 
 - 美管加消费记录接口已实测恢复：账单列表 `member!queryMemberBillListnew.action`，账单明细 `bill!detail.action`。
@@ -18,8 +27,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v331
-- Last synchronized base checked: `681dbfb v330 harden workflows and synchronization`
+- App version: v332
+- Last synchronized base checked: GitHub `965bc35`, Gitee `708f9db`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -27,6 +36,9 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v332: 烫发备注随发质表保存、归档和再次编辑；客户消费/套餐丰富展示受到发布测试保护。
+- v332: 预约同步按门店+日期隔离删除授权，完整回写手机号/发型师/服务/状态，失败不再伪装成功。
+- v332: 停止 Hermes 遗留无限回填，统一预约、客户回填和保活的唯一源文件与调度规则。
 - v330: 发质分析任务统一为“待技师填写 → 技师已完成/待发型师回访 → 回访完成”；旧 `已完成/已保存` 不再被误判为回访完成。回访完成必须有 A/B/C 评定或本单截图，App 与后台统计使用同一规则。
 - v330: 所有任务统一只展示最近 30 天；技师未回传时不显示“填写回访”，技师回传后不再显示“待技师填写”，技师仍可继续修改，发型师最终回访后归档。
 - v330: 回访截图从全局 localStorage 改为压缩后保存到当前 `hair_records.record_data.followUpScreenshot`，杜绝上一位顾客截图串到下一张表。
@@ -72,6 +84,11 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-29: 新预约脚本真实执行成功：双店未来 8 天共 16 个门店/日期请求全部成功，读取并 upsert 237 条，删除 0 条；随后 Hermes 每 5 分钟自动任务再次运行，状态仍为 `healthy`。
+- 2026-06-29: 预约、客户和保活的仓库源文件与 `~/.hermes/scripts` 部署文件 SHA-256 一致；旧预约脚本已被无明文凭据版本覆盖。
+- 2026-06-29: 无限回填进程已通过 Hermes 进程注册表终止并注销；OS crontab 只保留 `:00/:30` 常规客户同步，Hermes 回填为 `:05/:20/:35`，保活为 `:50`。
+- 2026-06-29: 全量只读审计：15,758 个客户中 7,730 个已有消费明细，1,870 个已有套餐；仍有 2,265 个有到店次数但消费明细为空，将由断点回填继续补齐。预约表共 863 条，当前同步窗口已按稳定 ID 全字段刷新。
+- 2026-06-29: v332 版本、发布完整性、App 冒烟、护理出库、7 组任务状态、客户档案防降级及 17 个 Python 同步测试通过。
 - 2026-06-27: v330 版本、发布完整性、冒烟、护理两阶段出库、7 组任务状态、App/后台脚本语法与 whitespace 检查通过。
 - 2026-06-27: 只读核对 13 条有效 `hair_records`：2 条 `回访完成` 均有 A 评定；2 条旧 `已完成` 没有评定，v330 会正确显示为待回访。
 - 2026-06-27: 美管加同步只读审计 1000 条客户档案：839 条有到店次数但无消费/到店明细，821 条有消费金额但无明细，60 条有套餐、50 条有剩余套餐。
@@ -101,7 +118,7 @@ Every meaningful change must update this file before commit/push.
 
 - GitHub CLI 当前未登录，无法从本机替用户开启分支保护；仓库已提供 CI，但仓库设置仍需把 `Validate shared app` 设为 `main` 必需检查，才能彻底阻止绕过检查的直接推送。
 - `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
-- 客户消费明细的大量缺失来自同步源没有写 `service_history`；前端 v330 已完整读取现有字段，不能伪造缺失的 839/821 条。需在登录的美管加 Network 中确认消费记录接口并修同步执行器。
+- 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。
 - `care_outbound_queue` 仍没有 `hair_record_id/shop_name/idempotency_key` 数据库字段；v330 用两阶段批次恢复降低重复出库风险，后续仍应扩展表结构和 worker 的数据库级幂等。
 - 护理出库仍需用户确认后做一笔真实 1g 测试，并在美管加库存流水核对实际扣减；禁止把队列 `completed` 单独当成库存已核实。
 - 当前 `care_outbound_queue` 没有 `shop_name/barber`，现有执行器无法从队列区分两家门店；如两店维护独立库存，需先扩展表结构和执行器映射，再开启跨店出库。

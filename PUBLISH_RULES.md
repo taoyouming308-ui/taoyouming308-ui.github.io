@@ -34,6 +34,9 @@ node scripts/check-version-sync.js
 node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
 node scripts/test-care-outbound.js
+node scripts/test-hair-task-state.js
+node scripts/test-customer-archive-rendering.js
+python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
 node scripts/check-agent-sync-status.js
 git push github main
 git push origin main:master

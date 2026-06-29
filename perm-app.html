@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="331">
+<html lang="zh-CN" data-version="332">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5365,6 +5365,7 @@ function initApp() {
       permStyle: F['hair-q-style'] || '',
       secondHeatHealthy: F['hair-second-heat-healthy'] || false,
       secondHeatDamaged: F['hair-second-heat-damaged'] || false,
+      permNotes: F['hair-form-perm-notes'] || '',
       targetColor: F['hair-form-target-color'] || '',
       tone: F['hair-form-tone'] || '',
       toneOther: F['hair-form-tone-other'] || '',
@@ -6424,6 +6425,7 @@ function initApp() {
     selectRadio('hair-mix-ratio', data.mixRatio);
     // 备注框和染前复选框恢复
     setVal('hair-form-color-notes', data.colorNotes);
+    setVal('hair-form-perm-notes', data.permNotes);
     setChecked('hair-form-scalp-protect', data.scalpProtect);
     setChecked('hair-form-end-protect', data.endProtect);
     setVal('hair-form-follow-date', data.followDate || (_followUpMode ? getLocalDateStr() : ''));
@@ -6760,6 +6762,7 @@ function initApp() {
       permStyle: F['hair-q-style'] || '',
       secondHeatHealthy: F['hair-second-heat-healthy'] || false,
       secondHeatDamaged: F['hair-second-heat-damaged'] || false,
+      permNotes: F['hair-form-perm-notes'] || '',
       targetColor: F['hair-form-target-color'] || '',
       tone: F['hair-form-tone'] || '',
       toneOther: F['hair-form-tone-other'] || '',
@@ -7320,6 +7323,7 @@ function initApp() {
     html += '<label style="font-size:11px;color:var(--text);cursor:pointer;"><input type="checkbox" id="hair-second-heat-damaged" value="damaged_100" style="accent-color:var(--accent);"> 受损发质100°C</label>';
     html += '</div>';
     html += '<div style="font-size:11px;color:var(--danger);margin-bottom:6px;padding:0 8px;font-weight:600;">加热到全干</div>';
+    html += '<textarea id="hair-form-perm-notes" placeholder="烫发备注" rows="2" style="width:100%;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;box-sizing:border-box;margin-top:8px;"></textarea>';
     html += '</div>'; // end hair-perm-params
 
     // ── 染发参数区（一直显示，不隐藏） ──
