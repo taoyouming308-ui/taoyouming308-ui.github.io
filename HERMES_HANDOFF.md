@@ -28,6 +28,10 @@ This file is the working context Hermes should read before editing the app.
   - `version.txt`
   - `version.json`
 - `admin.html` is the backend/admin page.
+- `admin-panel.html` is legacy-only and redirects to `admin.html`; do not add features to the legacy file.
+- Backend configuration modules for `hair_types`, `perm_styles`, and `perm_data` were intentionally removed from `admin.html` in v335. Their tables/data were not deleted, and the App must keep its existing `perm_data` runtime query.
+- Inactive `staff` rows are registration applications in the current schema. Do not add a staff-disable action until a separate approval/disabled state exists, or pending applications and disabled employees will be conflated.
+- Backend operation logs are current-device localStorage only. Do not describe them as database-level audit logs.
 - Supabase is the app data backend. Do not rename table fields casually because the frontend reads many fields directly from `record_data`.
 
 ## Remotes
@@ -45,6 +49,7 @@ The repo now has:
 - `scripts/check-version-sync.js`
 - `scripts/check-release-integrity.js`
 - `scripts/test-hair-task-state.js`
+- `scripts/test-admin-workflow.js`
 - `.githooks/pre-push`
 - `PUBLISH_RULES.md`
 - `AI_COLLABORATION_RULES.md`

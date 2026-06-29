@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="334">
+<html lang="zh-CN" data-version="335">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1104,9 +1104,9 @@ body {
     我们用专业技术，让每一次设计都更稳定、更适合、更有品质。
   </div>
   <div class="carousel-box" onclick="openFeature('showcase')">
-    <img class="active" loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
-    <img loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg" alt="">
-    <img loading="lazy" src="https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg" alt="">
+    <img class="active" loading="eager" fetchpriority="high" decoding="async" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
+    <img loading="lazy" decoding="async" src="https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg" alt="">
+    <img loading="lazy" decoding="async" src="https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg" alt="">
   </div>
 </section>
 
@@ -2255,12 +2255,12 @@ function initApp() {
 
   // === 首页轮播 + 下拉刷新 ===
   (function(){
-    var imgs = document.querySelectorAll('.carousel-box img');
-    if (imgs.length < 2) return;
+    var slots = Array.prototype.slice.call(document.querySelectorAll('.carousel-box img'));
+    var imgs = slots.slice();
     var idx = 0;
     var carouselTimer = null;
     function startCarousel() {
-      if (carouselTimer) return;
+      if (carouselTimer || imgs.length < 2) return;
       carouselTimer = setInterval(function(){
         if (document.hidden) return;
         imgs[idx].classList.remove('active');
@@ -2271,11 +2271,41 @@ function initApp() {
     function stopCarousel() {
       if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
     }
+    function loadHomeCarousel() {
+      var url = SUPABASE_URL + '/rest/v1/showcase_images?select=image_url,sort_order&status=eq.approved&is_carousel=eq.true&order=sort_order.asc.nullslast,created_at.asc&limit=3';
+      fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+        .then(function(r){ if (!r.ok) throw new Error('carousel ' + r.status); return r.json(); })
+        .then(function(rows){
+          var urls = (rows || []).map(function(row){ return row.image_url; }).filter(function(url){ return /^https?:\/\//i.test(url || ''); });
+          if (!urls.length) return;
+          return Promise.all(urls.map(function(url) {
+            return new Promise(function(resolve, reject) {
+              var preload = new Image();
+              preload.onload = function(){ resolve(url); };
+              preload.onerror = reject;
+              preload.src = url;
+            });
+          })).then(function(loadedUrls) {
+            stopCarousel();
+            slots.forEach(function(slot, index) {
+              slot.classList.remove('active');
+              slot.style.display = index < loadedUrls.length ? '' : 'none';
+              if (loadedUrls[index]) slot.src = loadedUrls[index];
+            });
+            imgs = slots.slice(0, loadedUrls.length);
+            idx = 0;
+            if (imgs[0]) imgs[0].classList.add('active');
+            startCarousel();
+          });
+        })
+        .catch(function(){ /* 网络失败时保留首屏静态图，避免空白或闪烁。 */ });
+    }
     document.addEventListener('visibilitychange', function(){
       if (document.hidden) stopCarousel();
       else startCarousel();
     });
     startCarousel();
+    loadHomeCarousel();
 
     // 下拉刷新已禁用 — 有sessionStorage保存页面状态，不需要手动刷新
     // 保留空IIFE占位，避免删除后影响其他代码的行号

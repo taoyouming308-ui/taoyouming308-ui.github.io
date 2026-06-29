@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v335 (2026-06-29)
+
+- 后台改为分组侧栏与工作台，注册审核、在职员工、客户回访、发质任务、护理、月报、作品、异常和本机操作记录各自独立；手机端使用抽屉侧栏。
+- `发质配置`、`款式管理`、`烫发方案` 三个管理模块仅从 `admin.html` 移除；未执行数据库删除、迁移或配置数据写入，App 的 `perm_data` 读取保持不变。
+- 注册申请与在职员工分开；通过注册时核对门店/职位并固定普通员工角色，新建或重置员工密码统一保存 SHA-256 摘要。
+- 回访任务按 `notes.follow_ups[].next` 计划日判断今日、逾期和未来 7 天；月度报表改用 `hair_records`，只有 `回访完成` 且存在评定或本单截图才计为流程完成。
+- 作品审核与首页展示分离：移出首页只清除 `is_carousel`，不再拒绝作品；支持排序。App 首页先显示静态首图，后台轮播图片全部预加载成功后再无闪白切换。
+- 护理产品已有历史引用时禁止删除；历史护理记录更正必须填写原因并记录更正前后内容。异常中心支持查看和安全重试失败出库记录。
+- `admin-panel.html` 统一跳转到规范后台 `admin.html`；新增 `scripts/test-admin-workflow.js` 并加入 pre-push。
+
 ## v334 (2026-06-29)
 
 - 修复 App 首页启动闪屏：普通 `perm-app.html` 启动不再为了追加 `?_v=版本号` 执行 `location.replace`，避免首页完整渲染后立即发生第二次整页加载。
@@ -42,8 +52,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v334
-- Last synchronized base checked: GitHub `85c6c83`, Gitee `85c6c83`
+- App version: v335
+- Last synchronized base checked: GitHub `954cc02`, Gitee `954cc02`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -51,6 +61,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v335: 后台信息架构和注册审核重做，三个不用的配置模块只从后台移除，回访/月报/作品轮播/护理更正/异常重试按真实业务规则收口。
 - v334: 移除正常首页启动的版本参数强制跳转，保留用户主动更新机制，消除整页二次加载闪屏。
 - v333: 修复发型师已评定后「保存档案」仍停留在回访的问题，并补齐技师直接开单回传发型师的入口状态。
 - v332: 烫发备注随发质表保存、归档和再次编辑；客户消费/套餐丰富展示受到发布测试保护。
@@ -101,6 +112,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-29: v335 后台与 App JavaScript 语法、后台工作流静态约束、HTML 页面层级和重复 ID 检查通过；本地浏览器确认后台桌面/390px 登录页、旧后台地址跳转、App 首页动态轮播和控制台无错误。未写入生产业务数据。
 - 2026-06-29: v334 完整回归通过：版本/发布完整性、App 冒烟、护理出库、22 组发质状态、客户档案及 17 个 Python 同步测试全部通过。
 - 2026-06-29: v334 本地浏览器普通 URL 启动后仍停留在 `perm-app.html`、页面版本为 334、控制台无错误；HTTP 日志仅有 1 次页面文档请求。
 - 2026-06-29: v334 修改前浏览器与本地 HTTP 日志复现同一次首页启动请求两份页面文档；新增冒烟断言阻止正常启动重新引入 `location.replace`。
