@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="339">
+<html lang="zh-CN" data-version="340">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2398,8 +2398,64 @@ body {
       cursor:pointer;
     }
     #hair-analysis-section { margin-top:0 !important; padding-top:0 !important; }
+    .hair-view-switch {
+      position:sticky;
+      top:63px;
+      z-index:19;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:3px;
+      margin:0 0 8px;
+      padding:3px;
+      border-radius:13px;
+      background:rgba(238,238,235,.96);
+      box-shadow:0 6px 18px rgba(0,0,0,.04);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+    }
+    .hair-view-btn {
+      min-height:40px;
+      padding:0 12px;
+      border:0;
+      border-radius:10px !important;
+      background:transparent;
+      color:#8b8b86;
+      font-size:12px;
+      font-weight:620;
+      cursor:pointer;
+    }
+    .hair-view-btn.active {
+      background:#fff;
+      color:var(--ui-ink);
+      box-shadow:0 1px 5px rgba(0,0,0,.08) !important;
+    }
+    .hair-tasks-intro {
+      padding:22px 0 12px;
+      border-bottom:1px solid var(--ui-line);
+    }
+    .hair-tasks-intro span {
+      display:block;
+      margin-bottom:7px;
+      color:var(--ui-muted);
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.5px;
+    }
+    .hair-tasks-intro h3 {
+      margin:0;
+      color:var(--ui-ink);
+      font-size:22px;
+      line-height:1.15;
+      letter-spacing:-.6px;
+    }
+    .hair-tasks-intro p {
+      margin:7px 0 0;
+      color:var(--ui-muted);
+      font-size:11px;
+      line-height:1.6;
+    }
     .hair-analysis .ha-card,
-    #hair-analysis-section > div[style*="background:var(--surface)"] {
+    #hair-form-flow > div[style*="background:var(--surface)"] {
       margin:0 !important;
       padding:24px 0 !important;
       border:0 !important;
@@ -2409,11 +2465,55 @@ body {
       box-shadow:none !important;
     }
     .hair-analysis .ha-step {
-      margin-bottom:16px;
-      color:#666661;
-      font-size:10px;
-      font-weight:680;
-      letter-spacing:1px;
+      display:flex;
+      align-items:center;
+      min-height:32px;
+      margin-bottom:14px;
+      color:var(--ui-ink);
+      font-size:13px;
+      font-weight:700;
+      letter-spacing:-.1px;
+    }
+    .hair-analysis .ha-step::after {
+      content:"";
+      flex:1;
+      height:1px;
+      margin-left:12px;
+      background:var(--ui-line);
+    }
+    .hair-customer-grid {
+      display:grid !important;
+      grid-template-columns:1fr 1fr;
+      gap:8px !important;
+    }
+    .hair-customer-grid > input { min-width:0 !important; width:100%; }
+    .hair-booking-pick {
+      grid-column:1 / -1;
+      min-height:42px;
+      border:0 !important;
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+      font-size:12px !important;
+    }
+    .hair-staff-field {
+      grid-column:1 / -1;
+      display:grid !important;
+      grid-template-columns:56px 1fr;
+      gap:8px !important;
+    }
+    .hair-form-date {
+      grid-column:1 / -1;
+      padding:0 !important;
+      color:var(--ui-muted) !important;
+      font-size:10px !important;
+      text-align:right;
+    }
+    .hair-assistant-field {
+      grid-column:1 / -1;
+      display:grid !important;
+      grid-template-columns:48px 1fr;
+      gap:8px !important;
+      align-items:start !important;
     }
     .hair-analysis .ha-title { margin:20px 0 10px; gap:0; }
     .hair-analysis .ha-title::before { display:none; }
@@ -2421,6 +2521,9 @@ body {
     .hair-analysis .chip-label { margin:14px 0 6px; color:var(--ui-muted); font-size:10px; }
     .hair-analysis .chip-row { display:flex; flex-wrap:wrap; gap:6px; }
     .hair-analysis .chip {
+      display:inline-flex;
+      align-items:center;
+      min-height:36px;
       padding:7px 11px;
       border:0;
       border-radius:999px;
@@ -2433,10 +2536,39 @@ body {
       background:var(--ui-black);
       color:#fff;
     }
+    .hair-analysis .ha-subsection-title {
+      margin:18px 0 10px !important;
+      color:var(--ui-ink) !important;
+      font-size:13px !important;
+      font-weight:700 !important;
+    }
+    .hair-rod-plan { display:grid; gap:10px; margin-bottom:14px !important; }
+    .hair-rod-head { display:none !important; }
+    .hair-rod-row {
+      display:grid !important;
+      grid-template-columns:1fr 1fr !important;
+      gap:8px !important;
+      margin:0 !important;
+      padding:12px;
+      border-radius:12px;
+      background:#fafaf8;
+    }
+    .hair-rod-zone {
+      grid-column:1 / -1;
+      color:var(--ui-ink) !important;
+      font-size:12px !important;
+      font-weight:700;
+    }
+    .hair-rod-row input {
+      min-height:42px !important;
+      padding:0 10px !important;
+      background:#f0f0ed !important;
+      font-size:12px !important;
+    }
     .hair-analysis input:not([type=radio]):not([type=checkbox]):not([type=file]),
     .hair-analysis select,
     .hair-analysis textarea {
-      min-height:40px;
+      min-height:44px;
       border:0 !important;
       border-radius:10px !important;
       background:var(--ui-soft) !important;
@@ -2844,6 +2976,7 @@ function initApp() {
   };
   window.showHairAnalysisPage = function(phone) {
     sessionStorage.setItem('_curPage', 'hair');
+    window._hairViewMode = 'form';
     // 弹出一个全屏模态框显示发质分析，不需要手机号
     var existing = document.getElementById('hair-analysis-modal');
     if (existing) existing.remove();
@@ -2930,6 +3063,28 @@ function initApp() {
         }
       }
     }, 100);
+  };
+
+  window.switchHairView = function(view) {
+    view = view === 'tasks' ? 'tasks' : 'form';
+    if (view === 'tasks' && _cloudEditingId) {
+      if (window.showToast) window.showToast('请先完成当前档案编辑');
+      return;
+    }
+    window._hairViewMode = view;
+    var formPanel = document.getElementById('hair-form-flow');
+    var taskPanel = document.getElementById('hair-tasks-section');
+    if (formPanel) formPanel.style.display = view === 'form' ? '' : 'none';
+    if (taskPanel) taskPanel.style.display = view === 'tasks' ? '' : 'none';
+    var buttons = document.querySelectorAll('#hair-analysis-section .hair-view-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      var active = buttons[i].getAttribute('data-view') === view;
+      buttons[i].classList.toggle('active', active);
+      buttons[i].setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+    if (view === 'tasks' && window.renderMyTasks) window.renderMyTasks();
+    var modal = document.getElementById('hair-analysis-modal');
+    if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   window.openHomeDrawerFeature = function(tabName) {
@@ -3028,7 +3183,8 @@ function initApp() {
     if (saved) {
       sessionStorage.removeItem('_curPage'); // 用完清除，避免无限循环
       if (saved === 'hair') {
-        showHairAnalysisPage();
+        // 发质表渲染函数在 initApp 后段注册，延后到当前初始化完成后再恢复页面。
+        setTimeout(function(){ showHairAnalysisPage(); }, 0);
       } else if (saved === 'plans' || saved === 'bookings' || saved === 'showcase') {
         openFeature(saved);
       }
@@ -6874,6 +7030,7 @@ function initApp() {
 
   window.loadCloudRecord = function(recordId, followUp) {
     if (!recordId) return;
+    if (window.switchHairView) window.switchHairView('form');
     _followUpMode = followUp === true;
     fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&status=neq.deleted&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
@@ -7142,7 +7299,7 @@ function initApp() {
     // 云端编辑时隐藏「我的任务」
     var taskSection = document.getElementById('hair-tasks-section');
     if (taskSection) {
-      taskSection.style.display = _cloudEditingId ? 'none' : '';
+      taskSection.style.display = (!_cloudEditingId && window._hairViewMode === 'tasks') ? '' : 'none';
     }
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
@@ -7917,24 +8074,30 @@ function initApp() {
     // 初始化护理记录数据（编辑模式时回填已有记录）
     initCareUsage(rec.careUsage);
 
+    var activeView = window._hairViewMode === 'tasks' ? 'tasks' : 'form';
     var html = '<div id="'+containerId+'" class="hair-analysis" style="margin-top:14px;padding-top:14px;">';
+    html += '<div class="hair-view-switch" role="group" aria-label="发质分析页面">' +
+      '<button type="button" class="hair-view-btn' + (activeView === 'form' ? ' active' : '') + '" data-view="form" aria-pressed="' + (activeView === 'form' ? 'true' : 'false') + '" onclick="switchHairView(\'form\')">新建分析</button>' +
+      '<button type="button" class="hair-view-btn' + (activeView === 'tasks' ? ' active' : '') + '" data-view="tasks" aria-pressed="' + (activeView === 'tasks' ? 'true' : 'false') + '" onclick="switchHairView(\'tasks\')">我的任务</button>' +
+    '</div>';
+    html += '<div id="hair-form-flow"' + (activeView === 'tasks' ? ' style="display:none;"' : '') + '>';
     html += '<div class="ha-card"><div class="ha-step">步骤1 · 客户信息</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    html += '<div class="hair-customer-grid" style="display:flex;flex-wrap:wrap;gap:8px;">';
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
     var selectedBarber = rec.barber || currentBarber || '';
     var today = new Date();
     var dateStr = today.getFullYear()+'.'+(today.getMonth()+1)+'.'+today.getDate();
     html += '<input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;min-width:100px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="电话" style="flex:1;min-width:120px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
-    html += '<button type="button" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">📋预约</button>';
-    html += '<div style="display:flex;align-items:center;gap:4px;flex:1;min-width:150px;">';
+    html += '<button type="button" class="hair-booking-pick" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">从预约选择客户</button>';
+    html += '<div class="hair-staff-field" style="display:flex;align-items:center;gap:4px;flex:1;min-width:150px;">';
     html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);">发型师</label>';
     html += '<select id="hair-form-barber" onchange="loadHairAssistantOptionsForBarber(this.value,false)" style="flex:1;min-width:0;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<option value="' + escAttr(selectedBarber) + '">' + esc(selectedBarber || '选择发型师') + '</option>';
     html += '</select></div>';
-    html += '<span style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
+    html += '<span class="hair-form-date" style="flex-shrink:0;padding:8px 0;color:var(--text-secondary);font-size:12px;">'+dateStr+'</span>';
     // 助理/技师chip多选（从Supabase拉取，toggle模式可多选）
-    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">';
+    html += '<div class="hair-assistant-field" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">';
     html += '<label style="flex-shrink:0;font-size:12px;color:var(--text-secondary);margin-right:4px;">助理</label>';
     html += '<div id="hair-form-tech-container" style="display:flex;flex-wrap:wrap;gap:4px;"></div>';
     html += '</div>';
@@ -8087,8 +8250,8 @@ function initApp() {
     html += '</div>';
 
     // ===== 步骤3: 烫发方案（无切换，一直显示） =====
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">步骤3 · 烫发方案</div>';
+    html += '<div class="ha-card hair-plan-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
+    html += '<div class="ha-step" style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">步骤3 · 烫发方案</div>';
     html += '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;display:block;">烫发款式</label>';
     html += '<select id="hair-q-style" style="width:100%;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<option value="">请选择烫发款式</option>';
@@ -8108,16 +8271,16 @@ function initApp() {
 
     // ── 烫发参数区（服务类型含烫发时显示） ──
     html += '<div id="hair-perm-params">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">烫发参数</div>';
+    html += '<div class="ha-subsection-title" style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">烫发参数</div>';
     // 排杠参数
-    html += '<div style="margin-bottom:8px;">';
-    html += '<div style="display:grid;grid-template-columns:58px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;margin-bottom:4px;font-size:10px;color:var(--text-secondary);">';
+    html += '<div class="hair-rod-plan" style="margin-bottom:8px;">';
+    html += '<div class="hair-rod-head" style="display:grid;grid-template-columns:58px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;margin-bottom:4px;font-size:10px;color:var(--text-secondary);">';
     html += '<span>分区</span><span>杠号</span><span>手法</span><span>起点</span><span>提拉角</span>';
     html += '</div>';
     for (var rzi = 0; rzi < HAIR_ROD_ZONE_CONFIG.length; rzi++) {
       var rcfg = HAIR_ROD_ZONE_CONFIG[rzi];
-      html += '<div style="display:grid;grid-template-columns:58px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;margin-bottom:4px;">';
-      html += '<span style="font-size:11px;color:var(--text-secondary);">' + rcfg.zone + '</span>';
+      html += '<div class="hair-rod-row" style="display:grid;grid-template-columns:58px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;margin-bottom:4px;">';
+      html += '<span class="hair-rod-zone" style="font-size:11px;color:var(--text-secondary);">' + rcfg.zone + '</span>';
       html += '<input id="' + escAttr(rcfg.sizeId) + '" placeholder="杠号" style="min-width:0;width:100%;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:var(--font);box-sizing:border-box;">';
       html += '<input id="' + escAttr(rcfg.techniqueId) + '" placeholder="手法" style="min-width:0;width:100%;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:var(--font);box-sizing:border-box;">';
       html += '<input id="' + escAttr(rcfg.startId) + '" placeholder="起点" style="min-width:0;width:100%;padding:6px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:var(--font);box-sizing:border-box;">';
@@ -8126,7 +8289,7 @@ function initApp() {
     }
     html += '</div>';
     // 上杠方式已移除，替换为加热方式标题
-    html += '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:8px 0 6px;">加热方式</div>';
+    html += '<div class="ha-subsection-title" style="font-size:13px;font-weight:700;color:var(--accent);margin:8px 0 6px;">加热方式</div>';
     // 停放和冲水已移除，替换为加热说明
     html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;">';
     html += '<span style="font-size:11px;color:var(--text-secondary);">🔥 第一次加热60°C 15分钟</span>';
@@ -8142,7 +8305,7 @@ function initApp() {
 
     // ── 染发参数区（一直显示，不隐藏） ──
     html += '<div id="hair-color-params">';
-    html += '<div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">染发参数</div>';
+    html += '<div class="ha-subsection-title" style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:6px;">染发参数</div>';
     // 目标色度和色调已移除（用户要求）
     // 双氧水
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center;">';
@@ -8258,14 +8421,16 @@ function initApp() {
     html += '<div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">📦 本地记录</div>';
     html += '<div id="hair-pending-list"></div>';
     html += '</div>';
+    html += '</div>'; // end hair-form-flow
 
     // 我的任务（技师端）- 云端编辑时隐藏
-    html += '<div id="hair-tasks-section" style="padding-top:12px;">' +
+    html += '<div id="hair-tasks-section" style="padding-top:0;' + (activeView === 'tasks' ? '' : 'display:none;') + '">' +
+    '<div class="hair-tasks-intro"><span>WORK QUEUE</span><h3>我的任务</h3><p>待处理任务优先显示，点开后可继续填写或完成回访。</p></div>' +
     '<div id="hair-tasks-list"></div>' +
     '</div>';
 
     // 版本号
-    html += '<div style="text-align:center;padding:8px 0 4px;font-size:9px;color:var(--text-secondary);opacity:0.5;">v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1) + '</div>';
+    html += '<div class="hair-version" style="text-align:center;padding:8px 0 4px;font-size:9px;color:var(--text-secondary);opacity:0.5;">v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1) + '</div>';
 
     html += '</div>'; // end outer container
 

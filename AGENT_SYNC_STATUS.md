@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v340 (2026-06-30)
+
+- 发质分析页拆分为“新建分析 / 我的任务”两个独立视图，顶部吸附切换；任务不再埋在超长表单底部。
+- 客户信息区改为两列姓名/电话、整行预约选择、独立发型师与助理区域，手机填写层级更清楚。
+- 排杠参数从手机五列拥挤表格改为按头顶、枕骨、两侧、刘海、后颈分区的 2×2 输入块，杠号、手法、起点和角度均保留原字段与保存逻辑。
+- 任务页增加说明标题，待处理任务优先；从任务点编辑或填写回访会自动切回对应表单，云端编辑期间不显示任务列表。
+- 修复刷新时恢复发质分析页早于渲染函数注册、导致空白页面和 `renderHairAnalysis is not defined` 的初始化时序问题。
+- 未修改开单、技师回传、回访完成判定、客户归档、护理出库或 Supabase 数据结构。
+
 ## v339 (2026-06-30)
 
 - 首页恢复 v337 原有的完整企业文化文案，不再只显示 v338 的两行精简说明。
@@ -83,8 +92,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v339
-- Last synchronized base checked: GitHub `fc454ca`, Gitee `fc454ca`
+- App version: v340
+- Last synchronized base checked: GitHub `aa7018d`, Gitee `aa7018d`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -92,6 +101,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v340: 发质分析页增加表单/任务双视图，重排客户信息和手机排杠输入，并修复刷新恢复空白页。
 - v339: 首页恢复完整企业文化文案并缩小“自由手艺人”标题，保留 v338 极简视觉系统。
 - v338: 整套前端 App 完成统一黑白极简重构，覆盖首页菜单、登录注册、方案、冷烫、作品、发质分析、任务和客户档案内容；业务逻辑保持不变。
 - v337: 前端预约页完成极简黑白重构，预约项目与客户卡项视觉语义分离，修复直接恢复预约页的日期初始化时序。
@@ -147,6 +157,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v340 本地浏览器在 390×844 下验证新建分析、客户区、五个排杠分区和“我的任务”8张真实任务卡；任务 #021 点编辑后正确回到张小姐表单并显示“保存档案”。页面无横向溢出，刷新恢复发质页后渲染完整，未执行保存或生产数据写入。
 - 2026-06-30: v339 代码提交 `fc454ca` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=339`，线上文件确认完整企业文化首尾文案及 35px/33px 标题字号规则均已生效。
 - 2026-06-30: v339 本地浏览器在 390×844 下确认完整五段企业文化均显示，主标题计算字号为 35px，文案区域无遮挡和横向溢出；浏览器控制台无新增 error/warning。
 - 2026-06-30: v338 代码提交 `ee583ca` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=338`，线上 `perm-app.html` 已包含统一设计系统、员工登录注册层级和新版发质分析页壳。

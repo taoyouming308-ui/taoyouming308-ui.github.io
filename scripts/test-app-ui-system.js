@@ -25,6 +25,10 @@ assert(styles.includes('left:max(16px, calc(50% - 224px))'), 'fixed navigation i
 assert(app.includes('class="identity-kicker"') && app.includes('identity-secondary'), 'login and registration hierarchy is not using the shared modal system');
 assert(styles.includes('input:not([type=checkbox]):not([type=radio])'), 'registration checkboxes can inherit full-size text input styles');
 assert(app.includes('class="hair-modal-shell"') && app.includes('class="hair-modal-footer"'), 'hair analysis shell and footer are not unified');
+assert(app.includes('class="hair-view-switch"') && app.includes("window.switchHairView = function(view)"), 'hair form and task views are not separated');
+assert(app.includes('id="hair-form-flow"') && app.includes('class="hair-tasks-intro"'), 'hair workflow panels are missing');
+assert(app.includes('class="hair-rod-row"') && styles.includes('grid-template-columns:1fr 1fr !important'), 'mobile rod inputs are still using the cramped five-column layout');
+assert(app.includes("setTimeout(function(){ showHairAnalysisPage(); }, 0)"), 'restoring the hair page can run before its renderer is registered');
 assert(app.includes('class="hair-archive-section"') && app.includes('class="profile-record"'), 'customer archive content is missing shared section styles');
 assert(styles.includes('.hair-task-card') && styles.includes('.hair-local-record'), 'hair task and local record surfaces are not covered');
 assert(styles.includes('.hair-analysis .chip.selected') && styles.includes('background:var(--ui-black)'), 'hair analysis controls are not using the monochrome selected state');
