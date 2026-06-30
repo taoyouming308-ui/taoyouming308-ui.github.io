@@ -1152,7 +1152,7 @@ window.loadDashboard = function() {
     fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载作品审核失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&limit=500', '加载发质任务失败'),
     isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/customer_profiles?select=id,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=500', '加载回访任务失败'),
-    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/care_outbound_queue?select=id,status,error_message,created_at&status=in.(pending,failed)&order=created_at.desc&limit=200', '加载出库异常失败'),
+    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/care_outbound_queue?select=id,status,error_message,created_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库异常失败'),
     fetchAdminStaffStoreMap()
   ]).then(function(results) {
     const staffMap = results[5];
@@ -1166,7 +1166,9 @@ window.loadDashboard = function() {
       const meta = followupMetaFromProfile(row);
       return meta.today || meta.overdue;
     }).length;
-    const outboundFailed = outbound.filter(function(row){ return row.status === 'failed'; }).length;
+    const outboundFailed = outbound.filter(function(row){
+      return ['failed','needs_review'].indexOf(row.status) !== -1;
+    }).length;
     stats.innerHTML =
       '<div class="stat-card" onclick="switchTab(\'registrations\')"><div class="stat-value">' + registrations.length + '</div><div class="stat-label">待审核注册</div></div>' +
       '<div class="stat-card" onclick="switchTab(\'content\')"><div class="stat-value">' + images.length + '</div><div class="stat-label">待审核作品</div></div>' +
@@ -1198,25 +1200,45 @@ window.loadSystemStatus = function() {
   Promise.all([
     fetchAdminJson('/rest/v1/bookings?select=updated_at&order=updated_at.desc&limit=1', '加载预约同步状态失败'),
     fetchAdminJson('/rest/v1/customer_profiles?select=last_updated&order=last_updated.desc.nullslast&limit=1', '加载客户同步状态失败'),
-    fetchAdminJson('/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at,processed_at&status=in.(pending,failed)&order=created_at.desc&limit=200', '加载出库状态失败')
+    fetchAdminJson('/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at,processed_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库状态失败'),
+    fetchAdminJson('/rest/v1/hair_records?select=id,barber,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', '加载出库关联档案失败')
   ]).then(function(results) {
     const bookingTime = results[0][0] && results[0][0].updated_at;
     const customerTime = results[1][0] && results[1][0].last_updated;
     const rows = results[2] || [];
-    const failed = rows.filter(function(row){ return row.status === 'failed'; });
+    const contextMap = adminCareOutboundContextMap(results[3] || []);
+    window._adminOutboundContextMap = contextMap;
+    const failed = rows.filter(function(row){
+      return ['failed','needs_review'].indexOf(row.status) !== -1;
+    });
+    const legacy = rows.filter(function(row){ return row.status === 'legacy_review'; });
     const pending = rows.filter(function(row){ return row.status === 'pending'; });
+    const processing = rows.filter(function(row){ return row.status === 'processing'; });
     stats.innerHTML =
       '<div class="stat-card"><div class="stat-value" style="font-size:16px;">' + esc(bookingTime ? bookingTime.replace('T',' ').substring(0,16) : '无记录') + '</div><div class="stat-label">预约最后同步</div></div>' +
       '<div class="stat-card"><div class="stat-value" style="font-size:16px;">' + esc(customerTime ? customerTime.replace('T',' ').substring(0,16) : '无记录') + '</div><div class="stat-label">客户最后同步</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + pending.length + '</div><div class="stat-label">护理待出库</div></div>' +
-      '<div class="stat-card"><div class="stat-value" style="color:var(--danger);">' + failed.length + '</div><div class="stat-label">护理出库失败</div></div>';
+      '<div class="stat-card"><div class="stat-value">' + processing.length + '</div><div class="stat-label">护理处理中</div></div>' +
+      '<div class="stat-card"><div class="stat-value" style="color:var(--danger);">' + failed.length + '</div><div class="stat-label">护理需处理</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + legacy.length + '</div><div class="stat-label">旧任务已隔离</div></div>';
     if (!rows.length) {
       list.innerHTML = '<div style="text-align:center;color:var(--success);padding:28px;">当前没有护理出库异常</div>';
       return;
     }
-    let html = '<table><thead><tr><th>时间</th><th>品牌</th><th>产品</th><th>克数</th><th>状态</th><th>原因</th><th>操作</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>时间</th><th>门店/发型师</th><th>品牌</th><th>产品</th><th>克数</th><th>状态</th><th>说明</th><th>操作</th></tr></thead><tbody>';
     rows.forEach(function(row) {
-      html += '<tr><td style="font-size:11px;">' + esc((row.created_at || '').replace('T',' ').substring(0,16)) + '</td><td>' + esc(row.brand) + '</td><td>' + esc(row.product) + '</td><td>' + esc(row.grams) + 'g</td><td><span class="status-chip ' + (row.status === 'failed' ? 'status-danger' : 'status-pending') + '">' + (row.status === 'failed' ? '失败' : '待同步') + '</span></td><td style="max-width:260px;font-size:11px;color:var(--muted);">' + esc(row.error_message || '—') + '</td><td>' + (row.status === 'failed' ? '<button class="btn-edit" onclick="retryOutbound(' + Number(row.id) + ')">安全重试</button>' : '等待执行') + '</td></tr>';
+      var context = contextMap[String(row.id)] || {};
+      var statusMeta = adminOutboundStatusMeta(row.status);
+      var canRetry = Number(row.id) < 0 && (row.status === 'failed' || row.status === 'needs_review');
+      var personText = context.shopName
+        ? context.shopName + (context.barber ? ' / ' + context.barber : '')
+        : (Number(row.id) > 0 ? '旧版任务' : '关联档案缺失');
+      html += '<tr><td style="font-size:11px;">' + esc((row.created_at || '').replace('T',' ').substring(0,16)) + '</td>' +
+        '<td>' + esc(personText) + (context.hairRecordId ? '<br><span style="font-size:10px;color:var(--muted);">' + esc(context.hairRecordId) + '</span>' : '') + '</td>' +
+        '<td>' + esc(row.brand) + '</td><td>' + esc(row.product) + '</td><td>' + esc(row.grams) + 'g</td>' +
+        '<td><span class="status-chip ' + statusMeta.className + '">' + statusMeta.label + '</span></td>' +
+        '<td style="max-width:260px;font-size:11px;color:var(--muted);">' + esc(row.error_message || '—') + '</td>' +
+        '<td>' + (canRetry ? '<button class="btn-edit" onclick="retryOutbound(' + Number(row.id) + ')">核对后重试</button>' : statusMeta.action) + '</td></tr>';
     });
     list.innerHTML = html + '</tbody></table>';
   }).catch(function(e) {
@@ -1225,11 +1247,58 @@ window.loadSystemStatus = function() {
   });
 };
 
+function adminOutboundStatusMeta(status) {
+  var map = {
+    pending: { label: '待同步', className: 'status-pending', action: '等待执行' },
+    processing: { label: '处理中', className: 'status-pending', action: '正在核对美管加' },
+    failed: { label: '安全失败', className: 'status-danger', action: '检查配置' },
+    needs_review: { label: '待人工核对', className: 'status-danger', action: '禁止自动重试' },
+    legacy_review: { label: '旧任务隔离', className: 'status-disabled-chip', action: '仅人工核对' }
+  };
+  return map[status] || { label: status || '未知', className: 'status-disabled-chip', action: '—' };
+}
+
+function adminCareOutboundContextMap(hairRows) {
+  var result = {};
+  (hairRows || []).forEach(function(row) {
+    var data = row.record_data || {};
+    var containers = [];
+    if (data.careOutboundPending && data.careOutboundPending.protocolVersion === 2) {
+      containers.push(data.careOutboundPending);
+    }
+    (Array.isArray(data.careOutboundBatches) ? data.careOutboundBatches : []).forEach(function(batch) {
+      if (batch && batch.protocolVersion === 2) containers.push(batch);
+    });
+    containers.forEach(function(batch) {
+      var items = Array.isArray(batch.items) ? batch.items : [];
+      var queueIds = items.map(function(item) { return item && item.queueId; })
+        .filter(function(id) { return id !== undefined && id !== null; });
+      items.forEach(function(item) {
+        if (item && item.queueId !== undefined && item.queueId !== null) {
+          result[String(item.queueId)] = {
+            hairRecordId: batch.hairRecordId || row.id || '',
+            shopName: batch.shopName || '',
+            barber: batch.barber || row.barber || '',
+            queueIds: queueIds
+          };
+        }
+      });
+    });
+  });
+  return result;
+}
+
 window.retryOutbound = async function(id) {
   if (!requireSuperAdmin('护理出库重试')) return;
-  if (!confirm('确认将这条失败记录重新放回出库队列？')) return;
+  if (!(Number(id) < 0)) {
+    toast('旧版任务不能自动重试，请先人工核对美管加库存流水', 'err');
+    return;
+  }
+  var context = (window._adminOutboundContextMap || {})[String(id)] || {};
+  var queueIds = Array.isArray(context.queueIds) && context.queueIds.length ? context.queueIds : [id];
+  if (!confirm('请先确认美管加没有重复的“护理App”出库单。将把同批次' + queueIds.length + '项一起重新核对，执行器会先回查单据再决定是否创建，是否继续？')) return;
   try {
-    const r = await fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?id=eq.' + encodeURIComponent(id) + '&status=eq.failed', {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?id=in.(' + queueIds.map(encodeURIComponent).join(',') + ')&status=in.(failed,needs_review)', {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
       body: JSON.stringify({ status: 'pending', error_message: null, processed_at: null })
@@ -1237,8 +1306,8 @@ window.retryOutbound = async function(id) {
     await ensureOk(r, '重试失败');
     const changed = await r.json();
     if (!changed.length) throw new Error('记录状态已经变化');
-    recordAdminAction('重试护理出库', String(id), '失败记录重新进入 pending');
-    toast('已重新进入出库队列', 'ok');
+    recordAdminAction('核对后重试护理出库', queueIds.join(','), '协议v2同批记录重新进入pending，执行器必须先回查美管加');
+    toast('已进入安全核对队列', 'ok');
     loadSystemStatus();
   } catch(e) {
     toast('重试失败: ' + e.message, 'err');

@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v343 (2026-07-01)
+
+- 护理出库实验范围固定为自由手艺人；向里造型护理记录照常保存，但 App 明确显示暂未启用且不会生成美管加出库任务。
+- App 出库队列升级为协议 v2：按发质表、门店、产品和累计目标克数生成确定性负数队列 ID；重复保存、网络中断恢复或重复提交会复用同一行。
+- 新增仓库唯一执行器 `scripts/care_outbound_worker.py` 和门店映射 `scripts/care_outbound_store_config.json`；已通过部署脚本同步到 `~/.hermes/scripts/` 并校验哈希。
+- 执行器只处理协议 v2 负数 ID，按真实克数和 `outwaretype=8` 创建出库单，再调用审核接口并回查单据；只有状态为已审核且 depotId/克数完全一致才标记完成。
+- 美管加结果不明确时进入 `needs_review`，App 不提供盲目重试；总后台按同批次核对后重试，并显示门店、发型师、关联发质表和新版处理状态。
+- 旧版待处理正数队列 7-17 共 11 条已按 ID 和 pending 状态条件隔离为 `legacy_review`，没有触发美管加出库。
+- 生产队列使用负数 ID `-4343000000000001` 做过一次幂等协议探针：首次插入 1 行、重复插入 0 行，确认主键冲突保护有效；该探针未调用美管加，因匿名策略不允许删除，已明确标记 `completed` 和“未扣库存”。
+- 真实运行开关保持关闭，未安装定时任务，尚未进行真实库存扣减；需用户指定自由手艺人测试产品和克数后再做受控实验。
+
 ## v342 (2026-06-30)
 
 - 后台新增绑定门店的 `store_admin` 分店管理员角色；总管理员可在员工管理中为指定门店设置分店管理员，登录会话必须携带门店。
@@ -108,8 +119,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v342
-- Last synchronized base checked: GitHub `c95deb5`, Gitee `c95deb5`
+- App version: v343
+- Last synchronized base checked: GitHub `cf088e5`, Gitee `cf088e5`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -117,6 +128,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v343: 自由手艺人护理出库升级为确定性队列、创建/审核/回查三阶段执行器；向里暂不接入，旧版任务隔离，真实出库保持关闭。
 - v342: 增加绑定门店的分店管理员后台；向里造型仅管理本店员工、发质、护理、月报和作品审核，首页推荐及客户/回访/系统权限保留总后台。
 - v341: 发质分析选择项和 A/B/C 评定改为纯黑底、白字、✓ 的高对比选中反馈。
 - v340: 发质分析页增加表单/任务双视图，重排客户信息和手机排杠输入，并修复刷新恢复空白页。
@@ -175,6 +187,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-07-01: v343 App确定性队列测试、5组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
+- 2026-07-01: 仓库执行器和 `~/.hermes/scripts/` 部署副本 SHA-256 一致；部署后只读模拟显示没有协议v2待处理任务，真实运行开关为关闭，系统未安装护理出库定时任务。
+- 2026-07-01: 美管加只读核对确认自由手艺人20个护理产品均有独立 depotId；真实已审核出库单使用 `outwaretype=8` 和原始整数/小数克数。前端库存组件源码确认审核载荷包含单据ID、审核人、门店、原类型和待审核状态。
+- 2026-07-01: 旧队列正数 ID 7-17 共11条从 `pending` 条件隔离为 `legacy_review` 并逐条复查；协议探针验证确定性负数ID首次插入成功、重复插入被主键忽略，未调用美管加、未扣库存。
 - 2026-06-30: v342 代码提交 `c95deb5` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=342`，线上后台确认 `store_admin`、8 模块白名单、本店作品/发质过滤和首页推荐总后台守卫均已生效。
 - 2026-06-30: v342 本地浏览器验证向里造型 `store_admin`：桌面和 390×844 手机端只显示 8 个授权模块；员工列表 11 行全部为向里造型，门店选择锁定，新增员工仅有普通员工角色；护理明细/月报锁定本店，发质页没有全局 AI 队列。作品审核只显示向里员工陈浩的真实作品，操作仅有拒绝/下架而没有首页推荐。切换总管理员后客户、回访、异常和首页展示入口仍完整；控制台无 error/warning，未执行任何保存或生产数据写入。
 - 2026-06-30: v341 代码提交 `58ef11f` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=341`，线上文件确认高对比 `.active` 选中态、✓ 标记和 A/B/C 独立选中类均已生效。
@@ -235,9 +251,9 @@ Every meaningful change must update this file before commit/push.
 - GitHub CLI 当前未登录，无法从本机替用户开启分支保护；仓库已提供 CI，但仓库设置仍需把 `Validate shared app` 设为 `main` 必需检查，才能彻底阻止绕过检查的直接推送。
 - `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
 - 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。
-- `care_outbound_queue` 仍没有 `hair_record_id/shop_name/idempotency_key` 数据库字段；v330 用两阶段批次恢复降低重复出库风险，后续仍应扩展表结构和 worker 的数据库级幂等。
-- 护理出库仍需用户确认后做一笔真实 1g 测试，并在美管加库存流水核对实际扣减；禁止把队列 `completed` 单独当成库存已核实。
-- 当前 `care_outbound_queue` 没有 `shop_name/barber`，现有执行器无法从队列区分两家门店；如两店维护独立库存，需先扩展表结构和执行器映射，再开启跨店出库。
+- `care_outbound_queue` 仍没有新增数据库字段；v343 暂以确定性负数主键实现数据库幂等，并把门店、发质表、发型师和批次元数据保存在 `hair_records.record_data`。后续如有受控数据库迁移窗口，可再增加专用列和唯一约束。
+- 护理出库仍需用户指定自由手艺人测试产品和克数，执行一笔真实小克数测试，并在美管加库存流水核对实际扣减；当前运行开关和定时任务均未开启。
+- 向里造型美管加当前只有一个汇总“歌薇酸性护理”库存商品，欧拉裴/上色水及色号没有独立映射；用户已决定本阶段不接入向里自动出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.
 - Verify real endpoints/fields for appointments, customer packages/cards, remaining package items, and consumption history.
 - Ensure sync writers never overwrite existing package/history arrays with empty arrays when an external request partially fails.

@@ -14,6 +14,10 @@ const functionNames = [
   'prepareCareOutboundBaseline',
   'validateCareOutboundReduction',
   'persistHairRecordData',
+  'careOutboundStableId',
+  'careOutboundIdempotencyKey',
+  'buildCareOutboundPending',
+  'resolveCareOutboundShopName',
   'careOutboundPendingRows',
   'finalizeCareOutboundPending',
   'submitCareOutboundPending',
@@ -46,18 +50,28 @@ function extractFunction(name) {
   fail(`unterminated function: ${name}`);
 }
 
-const source = functionNames.map(extractFunction).join('\n') +
-  '\nreturn { careUsageTotals, prepareCareOutboundBaseline, validateCareOutboundReduction, enqueueCareOutboundForRecord };';
+const source = [
+  'var CARE_OUTBOUND_PROTOCOL_VERSION = 2;',
+  "var CARE_OUTBOUND_ENABLED_SHOP = '自由手艺人';",
+  ...functionNames.map(extractFunction),
+  'return { careUsageTotals, prepareCareOutboundBaseline, validateCareOutboundReduction, careOutboundStableId, enqueueCareOutboundForRecord };'
+].join('\n');
 const requests = [];
 const queuedRows = [];
 async function mockFetch(url, options) {
   requests.push({ url, options });
   if (url.includes('/care_outbound_queue')) {
     if (!options || options.method !== 'POST') {
-      return { ok: true, json: async () => queuedRows };
+      const idMatch = url.match(/[?&]id=in\.\(([^)]+)\)/);
+      const selected = idMatch
+        ? queuedRows.filter(row => idMatch[1].split(',').map(decodeURIComponent).includes(String(row.id)))
+        : queuedRows;
+      return { ok: true, json: async () => selected };
     }
     const rows = JSON.parse(options.body);
-    const inserted = rows.map((row, index) => ({ ...row, id: queuedRows.length + index + 101 }));
+    const inserted = rows
+      .filter(row => !queuedRows.some(existing => String(existing.id) === String(row.id)))
+      .map(row => ({ ...row }));
     queuedRows.push(...inserted);
     return {
       ok: true,
@@ -66,10 +80,11 @@ async function mockFetch(url, options) {
   }
   return { ok: true, text: async () => '' };
 }
-const api = new Function('fetch', 'SUPABASE_URL', 'SUPABASE_KEY', source)(
+const api = new Function('fetch', 'SUPABASE_URL', 'SUPABASE_KEY', 'getCareRecordShopName', source)(
   mockFetch,
   'https://example.supabase.co',
-  'test-key'
+  'test-key',
+  async barber => barber === '向里员工' ? '向里造型' : '自由手艺人'
 );
 
 const firstSave = { careUsage: [{ brand: '歌薇', product: '6A', grams: '15' }] };
@@ -113,15 +128,40 @@ api.enqueueCareOutboundForRecord({
   if (!queueRequest) fail('outbound queue request was not created');
   const queueRows = JSON.parse(queueRequest.options.body);
   if (queueRows.length !== 1 || queueRows[0].grams !== 5) fail('queue payload must contain only the 5g delta');
+  if (!(queueRows[0].id < 0)) fail('protocol-v2 queue id must be deterministic and negative');
   if (Object.prototype.hasOwnProperty.call(queueRows[0], 'barber')) fail('queue payload contains nonexistent barber column');
-  if (!result.queued || result.record.careOutboundBatches[0].ids[0] !== 101) fail('queue ids were not recorded');
+  if (!result.queued || result.record.careOutboundBatches[0].ids[0] !== queueRows[0].id) fail('queue ids were not recorded');
+  if (result.record.careOutboundBatches[0].protocolVersion !== 2) fail('queue batch is missing protocol version');
+  if (result.record.careOutboundBatches[0].shopName !== '自由手艺人') fail('queue batch is missing store routing');
+  const recoveryQueueId = api.careOutboundStableId('care-v2|hair-2|自由手艺人|歌薇|6A|20');
+  queuedRows.push({
+    id: recoveryQueueId,
+    brand: '歌薇',
+    product: '6A',
+    grams: 5,
+    status: 'pending',
+    created_at: queuedRows[0].created_at
+  });
   const interrupted = {
     id: 'hair-2',
+    barber: '无名',
     careUsage: [{ brand: '歌薇', product: '6A', grams: 20 }],
     careOutboundSnapshot: [{ brand: '歌薇', product: '6A', grams: 15 }],
     careOutboundPending: {
+      protocolVersion: 2,
+      batchKey: result.record.careOutboundBatches[0].batchKey,
+      hairRecordId: 'hair-2',
+      shopName: '自由手艺人',
+      barber: '无名',
       queuedAt: queuedRows[0].created_at,
-      items: [{ brand: '歌薇', product: '6A', grams: 5 }],
+      items: [{
+        queueId: recoveryQueueId,
+        idempotencyKey: 'test-recovery',
+        brand: '歌薇',
+        product: '6A',
+        grams: 5,
+        targetGrams: 20
+      }],
       snapshot: [{ brand: '歌薇', product: '6A', grams: 20 }]
     },
     careOutboundBatches: []
@@ -131,6 +171,18 @@ api.enqueueCareOutboundForRecord({
     const postCountAfterRecovery = requests.filter(request => request.url.includes('/care_outbound_queue') && request.options && request.options.method === 'POST').length;
     if (postCountAfterRecovery !== postCountBeforeRecovery) fail('interrupted batch was inserted twice');
     if (recovered.record.careOutboundPending) fail('recovered batch still has a pending marker');
-    console.log('care outbound test ok: delta=5g reduction=blocked interrupted-batch=recovered');
+    const xiangliPostsBefore = requests.filter(request => request.url.includes('/care_outbound_queue') && request.options && request.options.method === 'POST').length;
+    return api.enqueueCareOutboundForRecord({
+      id: 'hair-xiangli',
+      barber: '向里员工',
+      careUsage: [{ brand: '歌薇', product: '6A', grams: 10 }],
+      careOutboundSnapshot: [],
+      careOutboundBatches: []
+    }).then((skipped) => {
+      const xiangliPostsAfter = requests.filter(request => request.url.includes('/care_outbound_queue') && request.options && request.options.method === 'POST').length;
+      if (!skipped.skipped || skipped.record.careOutboundStatus !== 'disabled') fail('Xiangli outbound must remain disabled');
+      if (xiangliPostsAfter !== xiangliPostsBefore) fail('Xiangli usage entered the outbound queue');
+      console.log('care outbound test ok: deterministic-id delta=5g reduction=blocked recovery=stable Xiangli=disabled');
+    });
   });
 }).catch(error => fail(error.message));

@@ -1,5 +1,17 @@
 # Hermes Handoff
 
+## v343 护理自动出库实验
+
+- 仅自由手艺人启用协议配置；向里造型护理数据继续保存，但 App 不生成出库任务。
+- 执行器唯一源文件：`scripts/care_outbound_worker.py`。
+- 门店与产品映射唯一源文件：`scripts/care_outbound_store_config.json`。
+- 部署脚本：`scripts/deploy_care_outbound_worker.sh`；部署目标位于 `~/.hermes/scripts/`，必须保持 SHA-256 一致，禁止只改 Hermes 副本。
+- 新版 App 使用协议 v2 和确定性负数队列 ID；执行器只读取 `id < 0`，旧版正数队列永远不会被自动重放。
+- 美管加出库必须使用原始克数和 `outwaretype=8`，并按 `saveOutDepot → auditOutDepot → getOutDepotList` 完成创建、审核和明细回查。
+- 只有美管加单据 `status=1` 且 depotId/克数全部一致时，队列才能标记 `completed`。网络结果不明确一律进入 `needs_review`。
+- `scripts/care_outbound_store_config.json` 当前 `runtime_enabled=false`；真实库存实验完成前不得安装定时任务或开启运行开关。
+- 2026-07-01 已将旧版正数 pending 行 `7-17` 条件更新为 `legacy_review`；这些记录可能已人工出库，只能核对，不能自动重试。
+
 ## v332 Meiguanjia synchronization
 
 - Canonical source: `scripts/sync_mgj_customer_profiles.py`.

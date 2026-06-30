@@ -26,7 +26,9 @@ jobs:
       - name: Run app smoke tests
         run: node scripts/smoke-test-app.js
       - name: Run care outbound tests
-        run: node scripts/test-care-outbound.js
+        run: |
+          node scripts/test-care-outbound.js
+          python3 -m unittest scripts/test_care_outbound_worker.py
       - name: Run hair task state tests
         run: node scripts/test-hair-task-state.js
       - name: Protect customer archive rendering

@@ -47,6 +47,10 @@ assert(admin.includes("currentAdminStore() || (document.getElementById('care-mon
 assert(admin.includes("currentAdminStore() || (document.getElementById('care-detail-store')"), 'care detail does not force the administrator store');
 assert(admin.includes("if (!requireSuperAdmin('护理产品配置')) return;"), 'global care product configuration is exposed to store administrators');
 assert(admin.includes("if (!requireSuperAdmin('顾客档案')) return;") && admin.includes("if (!requireSuperAdmin('回访任务')) return;"), 'removed store modules can still be opened directly');
+assert(admin.includes('adminCareOutboundContextMap') && admin.includes('protocolVersion === 2'), 'outbound exceptions are not linked to protocol-v2 hair records');
+assert(admin.includes('status=in.(pending,processing,failed,needs_review,legacy_review)'), 'backend does not show the full outbound state machine');
+assert(admin.includes("Number(id) < 0") && admin.includes('queueIds.map(encodeURIComponent)'), 'backend retry does not protect legacy rows or retry the whole batch');
+assert(admin.includes('执行器会先回查单据再决定是否创建'), 'backend retry warning does not require external reconciliation');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');

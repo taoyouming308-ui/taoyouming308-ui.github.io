@@ -5,6 +5,7 @@ node scripts/check-version-sync.js || exit 1
 node scripts/check-release-integrity.js || exit 1
 node scripts/smoke-test-app.js || exit 1
 node scripts/test-care-outbound.js || exit 1
+python3 -m unittest scripts/test_care_outbound_worker.py || exit 1
 node scripts/test-hair-task-state.js || exit 1
 node scripts/test-customer-archive-rendering.js || exit 1
 node scripts/test-admin-workflow.js || exit 1

@@ -67,8 +67,8 @@ const careQueueSource = careQueueStart >= 0 && careQueueEnd > careQueueStart ? h
 if (careQueueSource.includes('barber:')) {
   fail('care outbound payload uses barber, but care_outbound_queue has no barber column');
 }
-if (!careQueueSource.includes("Prefer': 'return=representation")) {
-  fail('care outbound insert must return queue ids for status tracking');
+if (!careQueueSource.includes("resolution=ignore-duplicates,return=representation")) {
+  fail('care outbound insert must use deterministic-id conflict protection');
 }
 
 try {
