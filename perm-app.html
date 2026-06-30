@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="336">
+<html lang="zh-CN" data-version="337">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -276,27 +276,22 @@ body.plan-white-mode #app-content { background:#ffffff !important; }
 body.plan-white-mode .home-btn-bottom { color:#000000 !important; }
 
 /* ── 预约页白底 ── */
-body.plan-white-mode #tab-bookings { background:#ffffff !important; }
-body.plan-white-mode .booking-bar { border-bottom-color:#e5e5e5; }
-body.plan-white-mode .booking-bar .shop-switch { color:#333; border-color:#d1d5db; background:#ffffff; }
-body.plan-white-mode .booking-bar .shop-switch.on { color:#000000; border-color:#000000; }
-body.plan-white-mode .booking-item { border-bottom-color:#e5e5e5; background:#ffffff; }
-body.plan-white-mode .booking-item.real-customer { background:#f8f9fa; border-left-color:#94a3b8; }
+body.plan-white-mode #tab-bookings { background:#ffffff !important; color:#111111; }
+body.plan-white-mode .booking-bar { background:#f3f3f1; }
+body.plan-white-mode .booking-bar .shop-switch { color:#8a8a86; background:transparent; }
+body.plan-white-mode .booking-bar .shop-switch.on { color:#111111; background:#ffffff; }
+body.plan-white-mode .booking-item,
+body.plan-white-mode .booking-item.real-customer { border-bottom-color:#ececea; background:#ffffff; }
 body.plan-white-mode .booking-item .bi-name { color:#000000; }
 body.plan-white-mode .booking-item .bi-meta { color:#8e8e93; }
 body.plan-white-mode .booking-item .bi-time { color:#000000; }
 body.plan-white-mode .booking-item .bi-barber { color:#8e8e93; }
 body.plan-white-mode .booking-item .bi-note { color:#555; }
-body.plan-white-mode .booking-item .bi-service-tag.cut { color:#111827; background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.12); }
-body.plan-white-mode .bi-plan-btn { color:#333; background:#ffffff; border-color:#d1d5db; }
-body.plan-white-mode .bi-plan-btn:hover { background:#333; color:#fff; }
+body.plan-white-mode .bi-plan-btn { color:#111111; background:transparent; }
 body.plan-white-mode .booking-loading { color:#8e8e93; }
-body.plan-white-mode .booking-date-header { color:#8e8e93; border-bottom-color:#e5e5e5; }
-body.plan-white-mode .date-strip { }
-body.plan-white-mode .date-chip { background:#ffffff; border-color:#d1d5db; color:#8e8e93; }
-body.plan-white-mode .date-chip.on { background:#000000; color:#ffffff; border-color:#000000; }
-body.plan-white-mode .identity-bar { background:#f5f5f5; color:#000000; }
-body.plan-white-mode .identity-bar .switch-btn { color:#007AFF; }
+body.plan-white-mode .date-chip { background:transparent; color:#a0a09b; }
+body.plan-white-mode .date-chip.on { background:#111111; color:#ffffff; }
+body.plan-white-mode .identity-bar { background:transparent; color:#000000; }
 
 /* ── 身份选择弹窗白底 ── */
 body.plan-white-mode .identity-modal { background:rgba(0,0,0,0.4); }
@@ -1737,26 +1732,41 @@ body {
   <!-- 预约 Tab -->
   <section class="tab-content" id="tab-bookings">
     <style>
-      .booking-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 0; margin-bottom:12px; border-bottom:1px solid var(--border); }
-      .booking-bar .shop-switch { font-size:12px; color:var(--text-secondary); cursor:pointer; padding:4px 10px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
-      .booking-bar .shop-switch.on { color:var(--accent); border-color:var(--accent); }
-      .booking-item { padding:14px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-      .booking-item.real-customer { background:rgba(112,128,144,0.12); border-left:3px solid rgba(112,128,144,0.5); }
-      .booking-item .bi-left { flex:1; min-width:0; }
-      .booking-item .bi-right { flex-shrink:0; margin-left:10px; }
-      .booking-item .bi-name { font-size:15px; font-weight:600; color:var(--text); }
-      .booking-item .bi-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
-      .booking-item .bi-time { font-size:14px; font-weight:600; color:var(--accent); text-align:right; }
-      .booking-item .bi-barber { font-size:11px; color:var(--text-secondary); text-align:right; }
-      .booking-item .bi-service-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:18px; }
-      .booking-item .bi-service-tag { font-size:11px; line-height:16px; padding:1px 7px; border-radius:8px; color:#fff; background:rgba(148,163,184,0.22); border:1px solid rgba(148,163,184,0.35); white-space:nowrap; }
-      .booking-item .bi-service-tag.cut { color:#111827; background:rgba(255,255,255,0.72); border-color:rgba(148,163,184,0.45); }
-      .booking-item .bi-service-tag.perm { background:#f97316; border-color:#f97316; }
-      .booking-item .bi-service-tag.color { background:#a855f7; border-color:#a855f7; }
-      .booking-item .bi-service-tag.care { background:#22c55e; border-color:#22c55e; }
-      .booking-item .bi-note { font-size:12px; color:var(--text-secondary); line-height:18px; }
-      .identity-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-radius:8px; margin-bottom:12px; font-size:13px; }
-      .identity-bar .switch-btn { color:var(--accent); cursor:pointer; font-size:12px; }
+      #tab-bookings { padding:2px 0 96px; }
+      .identity-bar { display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:0 0 16px; margin-bottom:18px; border-bottom:1px solid #efefed; }
+      .identity-person { display:flex; align-items:center; gap:10px; min-width:0; }
+      .identity-mark { width:8px; height:8px; border-radius:50%; background:#111; flex:0 0 auto; }
+      .identity-person b { color:#111; font-size:15px; font-weight:650; letter-spacing:.1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .identity-logout { border:0; background:transparent; color:#9a9a96; font:inherit; font-size:12px; padding:8px 0 8px 16px; cursor:pointer; }
+      .booking-date-title { color:#111; font-size:22px; line-height:1.2; font-weight:700; letter-spacing:-.5px; margin:0 0 12px; }
+      .date-strip { display:flex; gap:4px; padding:0 0 16px; margin:0 -4px; overflow-x:auto; scrollbar-width:none; }
+      .date-strip::-webkit-scrollbar { display:none; }
+      .date-chip { flex:0 0 58px; min-height:62px; padding:9px 6px; border:0; border-radius:14px; font:inherit; font-size:12px; cursor:pointer; background:transparent; color:#a0a09b; white-space:nowrap; text-align:center; }
+      .date-chip.on { background:#111; color:#fff; font-weight:600; }
+      .date-chip .dow { display:block; font-size:10px; line-height:1.2; margin-bottom:5px; font-weight:500; }
+      .date-chip .date-number { display:block; font-size:15px; line-height:1; letter-spacing:-.2px; }
+      .booking-bar { display:grid; grid-template-columns:1fr 1fr; gap:2px; padding:3px; margin:0 0 18px; border:0; border-radius:12px; background:#f3f3f1; }
+      .booking-bar .shop-switch { min-height:38px; padding:8px 12px; border:0; border-radius:9px; background:transparent; color:#8a8a86; font:inherit; font-size:12px; font-weight:500; cursor:pointer; }
+      .booking-bar .shop-switch.on { background:#fff; color:#111; box-shadow:0 1px 4px rgba(0,0,0,.08); font-weight:650; }
+      #booking-list { border-top:1px solid #ececea; }
+      .booking-item,
+      .booking-item.real-customer { display:grid; grid-template-columns:62px minmax(0,1fr); gap:14px; align-items:start; padding:20px 0; border:0; border-bottom:1px solid #ececea; background:#fff; }
+      .booking-item .bi-time-column { padding-top:1px; }
+      .booking-item .bi-time { color:#111; font-size:19px; line-height:1.1; font-weight:720; letter-spacing:-.6px; text-align:left; }
+      .booking-item .bi-body { min-width:0; }
+      .booking-item .bi-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+      .booking-item .bi-name { color:#111; font-size:17px; line-height:1.25; font-weight:680; letter-spacing:-.2px; min-width:0; }
+      .booking-item .bi-barber { flex:0 0 auto; color:#9a9a96; font-size:11px; line-height:1.3; text-align:right; }
+      .booking-item .bi-meta { color:#a0a09b; font-size:12px; line-height:1.4; margin-top:4px; }
+      .booking-item .bi-service-row,
+      .booking-item .bi-note-row { display:flex; align-items:baseline; gap:8px; margin-top:11px; font-size:12px; line-height:1.5; }
+      .booking-item .bi-info-label { flex:0 0 auto; color:#aaa9a4; }
+      .booking-item .bi-service-text { color:#4c4c49; min-width:0; overflow-wrap:anywhere; }
+      .booking-item .bi-note { color:#666662; min-width:0; overflow-wrap:anywhere; }
+      .booking-item .bi-actions { display:flex; align-items:center; gap:10px; margin-top:14px; min-height:24px; }
+      .bi-plan-btn { display:inline-flex; align-items:center; gap:5px; border:0; border-bottom:1px solid #c9c9c5; border-radius:0; padding:2px 0 3px; margin:0; background:transparent; color:#111; font:inherit; font-size:12px; font-weight:650; cursor:pointer; white-space:nowrap; }
+      .bi-plan-btn:active { opacity:.5; }
+      .bi-hair-tag { display:inline-flex!important; align-items:center; min-height:22px; margin:0!important; padding:3px 8px!important; border-radius:999px!important; background:#f4f4f2; color:#666662; font-size:10px!important; line-height:1!important; font-weight:650!important; cursor:pointer; }
       .identity-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center; }
       .identity-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:300px; width:90%; }
       .identity-modal .reg-form input { width:100%; margin-bottom:10px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:14px; box-sizing:border-box; }
@@ -1764,14 +1774,14 @@ body {
       .identity-modal .opt { display:block; width:100%; padding:12px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
       .identity-modal .opt:active { background:var(--surface-light); border-color:var(--accent); }
       .booking-loading { text-align:center; padding:40px; color:var(--text-secondary); }
-      .booking-date-header { font-size:12px; color:var(--text-secondary); padding:16px 12px 6px; border-bottom:1px solid var(--border); font-weight:600; }
-      .date-strip { display:flex; gap:4px; padding:0 0 10px; overflow-x:auto; scrollbar-width:none; }
-      .date-strip::-webkit-scrollbar { display:none; }
-      .date-chip { flex-shrink:0; padding:6px 14px; border-radius:16px; font-size:12px; cursor:pointer; background:var(--bg); border:1px solid var(--border); color:var(--text-secondary); white-space:nowrap; }
-      .date-chip.on { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
-      .date-chip .dow { font-size:10px; opacity:0.7; }
-      .bi-plan-btn { font-size:10px; color:var(--accent); background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:2px 8px; cursor:pointer; margin-left:8px; white-space:nowrap; }
-      .bi-plan-btn:hover { background:var(--accent); color:var(--bg); }
+      .booking-empty { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:34px 0; color:#111; }
+      .booking-empty strong { font-size:14px; font-weight:650; }
+      .booking-empty span { color:#aaa9a4; font-size:11px; }
+      @media (max-width:380px) {
+        .booking-item, .booking-item.real-customer { grid-template-columns:56px minmax(0,1fr); gap:11px; }
+        .booking-item .bi-time { font-size:18px; }
+        .date-chip { flex-basis:54px; }
+      }
       .plan-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10030;display:flex;align-items:center;justify-content:center; }
       .plan-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:340px; width:90%; max-height:80vh; overflow-y:auto; }
       .plan-modal h3 { font-size:16px; margin-bottom:8px; color:var(--text); }
@@ -1790,13 +1800,14 @@ body {
       .plan-modal .no-data { text-align:center; padding:30px; color:var(--text-secondary); font-size:14px; }
     </style>
     <div class="identity-bar" id="identity-bar">
-      <span>👤 <b id="current-identity">加载中...</b></span>
-      <span><a style="color:var(--text-secondary);cursor:pointer;font-size:12px;text-decoration:none;" onclick="logoutAccount()">退出</a></span>
+      <div class="identity-person"><span class="identity-mark" aria-hidden="true"></span><b id="current-identity">加载中...</b></div>
+      <button class="identity-logout" type="button" onclick="logoutAccount()">退出</button>
     </div>
+    <div class="booking-date-title" id="booking-date-title"></div>
     <div class="date-strip" id="date-strip"></div>
     <div class="booking-bar">
-      <span class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</span>
-      <span class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</span>
+      <button type="button" class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</button>
+      <button type="button" class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</button>
     </div>
     <div id="booking-list"><div class="booking-loading">加载中...</div></div>
   </section>
@@ -3043,20 +3054,25 @@ function initApp() {
     return true;
   }
 
-  var DOW = ['日','一','二','三','四','五','六'];
-
   function renderDateStrip() {
     var strip = document.getElementById('date-strip');
     var today = getLocalDateStr();
     var html = '';
+    var dayNames = ['日','一','二','三','四','五','六'];
+    var selectedParts = String(BOOKING_DATE || today).split('-');
+    var selectedDate = new Date(Number(selectedParts[0]), Number(selectedParts[1]) - 1, Number(selectedParts[2]));
+    var title = document.getElementById('booking-date-title');
+    if (title && !isNaN(selectedDate.getTime())) {
+      title.textContent = (selectedDate.getMonth() + 1) + '月' + selectedDate.getDate() + '日 · 周' + dayNames[selectedDate.getDay()];
+    }
     for (var i = 0; i < 8; i++) {
       var d = new Date();
       d.setDate(d.getDate() + i);
       var ds = getLocalDate(d);
-      var label = i === 0 ? '今天' : (i === 1 ? '明天' : ('周' + DOW[d.getDay()]));
+      var label = i === 0 ? '今天' : (i === 1 ? '明天' : ('周' + dayNames[d.getDay()]));
       var sub = (d.getMonth()+1) + '/' + d.getDate();
       var on = ds === BOOKING_DATE ? ' on' : '';
-      html += '<div class="date-chip'+on+'" onclick="pickDate(\''+ds+'\')"><div class="dow">'+label+'</div>'+sub+'</div>';
+      html += '<button type="button" class="date-chip'+on+'" data-date="'+ds+'" aria-label="'+label+' '+sub+'" onclick="pickDate(\''+ds+'\')"><span class="dow">'+label+'</span><span class="date-number">'+sub+'</span></button>';
     }
     strip.innerHTML = html;
   }
@@ -3291,44 +3307,40 @@ function initApp() {
   // ★ 独立渲染函数，避免重复代码
   function renderBookings(rows, list, isOffline) {
     if (rows.length === 0) {
-      list.innerHTML = '<div class="no-results"><div class="icon">📭</div>暂无预约</div>';
+      list.innerHTML = '<div class="booking-empty"><strong>当天暂无预约</strong><span>可以选择其他日期查看</span></div>';
       return;
     }
     var html = '';
     rows.forEach(function(r){
       var isReal = r.customer_name && r.customer_name !== '待定' && r.customer_name !== '未登记';
       html += '<div class="booking-item' + (isReal ? ' real-customer' : '') + '">';
-      html += '<div class="bi-left"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-meta">'+esc(r.time_label||'')+(r.customer_phone ? ' · '+esc(maskPhone(r.customer_phone)) : '')+'</div>';
+      html += '<div class="bi-time-column"><div class="bi-time">'+esc(r.time_label || '—')+'</div></div>';
+      html += '<div class="bi-body"><div class="bi-heading"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-barber">'+esc(r.barber_name ? '发型师 · ' + r.barber_name : '')+'</div></div>';
+      if (r.customer_phone) html += '<div class="bi-meta">'+esc(maskPhone(r.customer_phone))+'</div>';
 
       var serviceRaw = r.service_name || '';
       if (serviceRaw || r.notes) {
-        html += '<div class="bi-service-row">';
         if (serviceRaw) {
           var services = String(serviceRaw).split(/[、,，/／|｜\n\r]+/);
+          var cleanServices = [];
           for (var si=0; si<services.length; si++) {
             var sv = services[si].replace(/^预约/, '').trim();
             if (!sv) continue;
-            var cls = '';
-            if (sv.indexOf('剪发') !== -1) cls = ' cut';
-            else if (sv.indexOf('烫发') !== -1) cls = ' perm';
-            else if (sv.indexOf('染发') !== -1) cls = ' color';
-            else if (sv.indexOf('护理') !== -1) cls = ' care';
-            html += '<span class="bi-service-tag'+cls+'">'+esc(sv)+'</span>';
+            cleanServices.push(sv);
           }
+          if (cleanServices.length) html += '<div class="bi-service-row"><span class="bi-info-label">预约项目</span><span class="bi-service-text">'+esc(cleanServices.join(' · '))+'</span></div>';
         }
-        if (r.notes) html += '<span class="bi-note">📝 '+esc(r.notes)+'</span>';
-        html += '</div>';
+        if (r.notes) html += '<div class="bi-note-row"><span class="bi-info-label">备注</span><span class="bi-note">'+esc(r.notes)+'</span></div>';
       }
-      html += '</div>';
       var _isDyePerm = bookingNeedsHairAnalysis(r);
-      html += '<div class="bi-right"><div class="bi-time">'+esc(r.time_label||'')+'</div><div class="bi-barber">'+esc(r.barber_name||'')+'</div>';
+      html += '<div class="bi-actions">';
       if (r.customer_phone) {
-        html += '<span class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">方案</span>';
+        html += '<button type="button" class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">查看方案 <span aria-hidden="true">→</span></button>';
         if (_isDyePerm) {
-          html += '<span class="bi-hair-tag" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" style="font-size:10px;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;cursor:pointer;background:rgba(255,80,80,0.2);color:#ff5050;font-weight:600;">🔥烫染</span>';
+          html += '<span class="bi-hair-tag" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'">烫染</span>';
         }
       }
-      html += '</div></div>';
+      html += '</div></div></div>';
     });
     list.innerHTML = html;
     if (window.loadHairTagStatuses) window.loadHairTagStatuses();
@@ -3388,17 +3400,17 @@ function initApp() {
         var bdate = t.getAttribute('data-bdate') || '';
         var st = statusMap[normalizeHairCustomerPhone(phone)];
         if (st === 'pending') {
-          t.textContent = '\uD83D\uDCCB\u5F85\u5206\u6790';
+          t.textContent = '\u5F85\u5206\u6790';
           t.style.background = 'rgba(232,168,23,0.2)';
           t.style.color = '#e8a817';
           t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate); };
         } else if (st === 'record_saved' || st === 'completed') {
-          t.textContent = '\u2705\u5DF2\u5206\u6790';
+          t.textContent = '\u5DF2\u5206\u6790';
           t.style.background = 'rgba(46,204,113,0.2)';
           t.style.color = '#2ecc71';
           t.onclick = function(){ window.showHairRecordByPhone(phone); };
         } else {
-          t.textContent = '\uD83D\uDD25\u70EB\u67D3';
+          t.textContent = '\u70EB\u67D3';
           t.style.background = 'rgba(255,80,80,0.2)';
           t.style.color = '#ff5050';
           t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate); };
@@ -4123,11 +4135,12 @@ function initApp() {
   document.addEventListener('click', function(e) {
     var target = e.target;
     // 方案按钮
-    if (target.classList.contains('bi-plan-btn')) {
-      var phone = target.getAttribute('data-phone');
-      var name = target.getAttribute('data-name') || '';
-      var barber = target.getAttribute('data-barber') || '';
-      var bdate = target.getAttribute('data-bdate') || '';
+    var planTarget = target.closest ? target.closest('.bi-plan-btn') : null;
+    if (planTarget) {
+      var phone = planTarget.getAttribute('data-phone');
+      var name = planTarget.getAttribute('data-name') || '';
+      var barber = planTarget.getAttribute('data-barber') || '';
+      var bdate = planTarget.getAttribute('data-bdate') || '';
       if (phone) showPlanModal(phone, name, barber, bdate);
       return;
     }

@@ -50,6 +50,7 @@ The repo now has:
 - `scripts/check-release-integrity.js`
 - `scripts/test-hair-task-state.js`
 - `scripts/test-admin-workflow.js`
+- `scripts/test-booking-ui.js`
 - `.githooks/pre-push`
 - `PUBLISH_RULES.md`
 - `AI_COLLABORATION_RULES.md`
@@ -64,6 +65,8 @@ git config core.hooksPath .githooks
 node scripts/check-version-sync.js
 node scripts/check-release-integrity.js
 node scripts/test-hair-task-state.js
+node scripts/test-admin-workflow.js
+node scripts/test-booking-ui.js
 node scripts/check-agent-sync-status.js
 ```
 
@@ -182,6 +185,8 @@ node scripts/smoke-test-app.js
 node scripts/test-care-outbound.js
 node scripts/test-hair-task-state.js
 node scripts/test-customer-archive-rendering.js
+node scripts/test-admin-workflow.js
+node scripts/test-booking-ui.js
 python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
 node scripts/check-agent-sync-status.js
 ```

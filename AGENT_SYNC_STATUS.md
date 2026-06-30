@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v337 (2026-06-30)
+
+- 前端 App 预约页改为极简黑白信息架构：无底色身份栏、选中日期标题、无边框日期按钮、紧凑门店二段切换和时间优先的预约列表。
+- 预约卡取消浅色整块背景、左侧竖线和彩色项目胶囊；时间只显示一次，客户、手机号、发型师分层排列。
+- 美管加 `service_name` 明确显示为“预约项目”普通文字；只有烫染、待分析和已分析保留状态标签，避免预约项目被误认为客户持有卡项。
+- “查看方案”改为语义化文字按钮并兼容点击箭头子元素，客户方案与发质入口逻辑保持不变。
+- 日期渲染改为函数内自包含星期文案，修复直接恢复预约页时星期数组尚未初始化、页面停在加载中的问题。
+- 新增 `scripts/test-booking-ui.js` 并加入 pre-push 与 GitHub CI，锁定预约项目标识、时间不重复、按钮语义和初始化顺序；现有后台工作流测试也补入 CI。
+
 ## v336 (2026-06-30)
 
 - 护理管理的月度统计为每个发型师增加“编辑用量”按钮；按钮按当前统计年月自动定位该门店和发型师的护理明细，再通过既有“更正”入口逐条修改并填写原因，避免直接篡改由多条明细汇总出的合计值。
@@ -59,8 +68,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v336
-- Last synchronized base checked: GitHub `753efe0`, Gitee `753efe0`
+- App version: v337
+- Last synchronized base checked: GitHub `d92eb21`, Gitee `d92eb21`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -68,6 +77,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v337: 前端预约页完成极简黑白重构，预约项目与客户卡项视觉语义分离，修复直接恢复预约页的日期初始化时序。
 - v336: 护理月度统计增加按发型师进入明细更正的入口，修复后台已登录刷新初始化时序；确认截图项目来自美管加原始预约而非客户卡项。
 - v335: 后台信息架构和注册审核重做，三个不用的配置模块只从后台移除，回访/月报/作品轮播/护理更正/异常重试按真实业务规则收口。
 - v334: 移除正常首页启动的版本参数强制跳转，保留用户主动更新机制，消除整页二次加载闪屏。
@@ -120,6 +130,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v337 本地浏览器在 390×844 手机尺寸验证 2026-07-01 邓小姐预约：时间、客户、发型师、手机号和“预约项目”层级正确，“查看方案”可打开客户方案；默认 1280×720 下 App 保持 480px 居中。未修改预约、客户或卡项数据。
+- 2026-06-30: v337 浏览器首次恢复预约页时发现并修复 `renderDateStrip` 初始化时序；修复后今天/未来 7 天日期按钮与选中日期标题正常渲染。
 - 2026-06-30: v336 本地浏览器使用真实护理数据只读验证“编辑用量”：cesi 行自动筛选自由手艺人/cesi，打开 4 条明细和 4 个更正入口，合计 9.0g；未保存任何更正。后台刷新后工作台和护理导航正常，无新增控制台错误。
 - 2026-06-30: 通过当前有效美管加会话只读请求原始预约接口，预约 id 291979007 的 `categoryId=-1`，`categoryName` 与 `itemProp.items[51437].name` 均为“资生堂短发680（3折）”；未执行同步写入或数据修复。
 - 2026-06-29: v335 提交 `f1f34a6` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=335`。线上文件确认新后台导航、注册审核、异常中心、动态轮播和旧后台跳转均生效，三个配置模块的导航与后台 REST 接口均不存在。
