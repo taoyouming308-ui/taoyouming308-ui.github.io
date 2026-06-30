@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v338 (2026-06-30)
+
+- 前端 App 从预约页扩展为整套统一的黑白极简设计系统，覆盖首页与工作台菜单、员工登录注册、专业方案、冷烫、作品、预约、发质分析、护理、我的任务及客户方案/档案内容。
+- 首页改为编辑式品牌排版和精简文案，作品轮播增加明确入口；工作台菜单补齐作品入口和功能说明，手机与桌面固定导航统一跟随 480px App 容器。
+- 方案与冷烫移除厚重卡片、彩色边框和多余阴影；作品页改为黑底画廊与文字筛选；发质表、任务和客户档案统一为留白、细分隔线和黑白控件。
+- 登录注册弹窗重做信息层级、输入框、职位选择和主次按钮；修复统一输入样式误放大职位复选框，以及居中桌面布局下关闭菜单仍露在页面左侧的问题。
+- 不修改预约查询、药水计算、发质任务状态、回访归档、护理出库、客户数据或保存流程。
+- 新增 `scripts/test-app-ui-system.js` 并加入 pre-push 与 GitHub CI，保护统一页面标题、菜单入口、桌面抽屉关闭状态、注册复选框、发质表和客户档案的公共样式结构。
+
 ## v337 (2026-06-30)
 
 - 前端 App 预约页改为极简黑白信息架构：无底色身份栏、选中日期标题、无边框日期按钮、紧凑门店二段切换和时间优先的预约列表。
@@ -68,8 +77,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v337
-- Last synchronized base checked: GitHub `e11204a`, Gitee `e11204a`
+- App version: v338
+- Last synchronized base checked: GitHub `f17df72`, Gitee `f17df72`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -77,6 +86,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v338: 整套前端 App 完成统一黑白极简重构，覆盖首页菜单、登录注册、方案、冷烫、作品、发质分析、任务和客户档案内容；业务逻辑保持不变。
 - v337: 前端预约页完成极简黑白重构，预约项目与客户卡项视觉语义分离，修复直接恢复预约页的日期初始化时序。
 - v336: 护理月度统计增加按发型师进入明细更正的入口，修复后台已登录刷新初始化时序；确认截图项目来自美管加原始预约而非客户卡项。
 - v335: 后台信息架构和注册审核重做，三个不用的配置模块只从后台移除，回访/月报/作品轮播/护理更正/异常重试按真实业务规则收口。
@@ -130,6 +140,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v338 本地浏览器在 390×844 下逐页验证首页菜单、员工登录注册、方案换算、冷烫、作品、预约、发质分析、护理/保存区和 8 张真实任务卡；默认 1280×720 下确认 App 维持 480px 居中、固定导航对齐，关闭菜单不再露出。浏览器控制台无新增 error/warning，未提交表单或修改生产业务数据。
+- 2026-06-30: v338 新增统一 UI 静态回归测试；现有预约 UI、22 组发质任务状态、客户档案和 App 冒烟测试在改版后通过。
 - 2026-06-30: v337 代码提交 `e11204a` 已同步到 GitHub `main` 和 Gitee `master`，远端哈希一致；GitHub Pages 已返回 `version.txt=337`，线上 `perm-app.html` 包含新版日期标题、时间列、预约项目说明和极简空状态。
 - 2026-06-30: v337 本地浏览器在 390×844 手机尺寸验证 2026-07-01 邓小姐预约：时间、客户、发型师、手机号和“预约项目”层级正确，“查看方案”可打开客户方案；默认 1280×720 下 App 保持 480px 居中。未修改预约、客户或卡项数据。
 - 2026-06-30: v337 浏览器首次恢复预约页时发现并修复 `renderDateStrip` 初始化时序；修复后今天/未来 7 天日期按钮与选中日期标题正常渲染。

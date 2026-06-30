@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="337">
+<html lang="zh-CN" data-version="338">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1082,21 +1082,21 @@ body {
   <button class="home-menu-btn" type="button" onclick="openHomeDrawer()" aria-label="打开菜单">☰</button>
   <div id="home-drawer-mask" class="home-drawer-mask" onclick="closeHomeDrawer()"></div>
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')">方案</button>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')">预约</button>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')">发质分析</button>
+    <div class="home-drawer-label">工作台</div>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')"><span>专业方案</span><small>换算与冷烫参数</small></button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')"><span>今日预约</span><small>门店与顾客日程</small></button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')"><span>发质分析</span><small>开单、任务与归档</small></button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('showcase')"><span>作品灵感</span><small>门店发型作品</small></button>
   </aside>
   <div class="hero-text">
+    <div class="hero-index">01 / HAIR STUDIO</div>
     <h1>自由手艺人</h1>
     <div class="sub">Hair Design</div>
     <div class="slogan">找到属于你的风格</div>
   </div>
   <div class="brand-text">
-    技术，是一切发型设计的基础。<br>
-    好看的发型，不只是审美判断，更需要扎实的技术落地。<br>
-    从发质判断、层次结构、软化控制，到最终的线条与质感，每一步都决定着发型的完成度。<br>
-    审美决定上限，<em>技术决定下限</em>。<br>
-    我们用专业技术，让每一次设计都更稳定、更适合、更有品质。
+    从发质判断到线条与质感，<br>
+    用专业技术完成每一次<em>适合你的设计</em>。
   </div>
   <div class="carousel-box" onclick="openFeature('showcase')">
     <img class="active" loading="eager" fetchpriority="high" decoding="async" src="https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg" alt="">
@@ -1128,6 +1128,11 @@ body {
       .plan-page { display:none; }
       .plan-page.active { display:block; padding-top:32px; }
     </style>
+    <header class="page-intro page-intro-light">
+      <span class="page-kicker">TOOLS / 01</span>
+      <h2>专业方案</h2>
+      <p>快速换算药水比例，查阅冷烫操作参数。</p>
+    </header>
     <nav class="plan-nav" id="plan-nav">
       <button onclick="switchPlan('calc')" class="on">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
@@ -1394,6 +1399,12 @@ body {
       .lightbox .back-btn:active { background:rgba(255,255,255,0.2); }
       .lightbox .lb-content { padding:40px 16px 40px; max-width:480px; margin:0 auto; }
     </style>
+
+    <header class="page-intro page-intro-dark">
+      <span class="page-kicker">WORK / SELECTED</span>
+      <h2>作品灵感</h2>
+      <p>从真实作品中找到下一次设计方向。</p>
+    </header>
 
     <!-- 筛选导航 -->
     <div class="filter-nav" id="filter-nav">
@@ -1814,6 +1825,687 @@ body {
 
   <!-- 内容 Tab（已删除） -->
 
+  <style id="app-minimal-system">
+    :root {
+      --ui-black: #111111;
+      --ui-ink: #191918;
+      --ui-muted: #8c8c87;
+      --ui-faint: #b5b5b0;
+      --ui-line: #e9e9e6;
+      --ui-soft: #f4f4f1;
+      --ui-white: #ffffff;
+      --ui-radius: 14px;
+    }
+
+    button, input, select, textarea { font-family: var(--font); }
+    button:focus:not(:focus-visible) { outline:none; }
+    button:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+    .page-intro { padding:18px 0 22px; }
+    .page-intro .page-kicker {
+      display:block;
+      margin-bottom:10px;
+      color:var(--ui-muted);
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.8px;
+    }
+    .page-intro h2 {
+      margin:0;
+      font-size:28px;
+      line-height:1.08;
+      font-weight:720;
+      letter-spacing:-1px;
+    }
+    .page-intro p {
+      margin:8px 0 0;
+      color:var(--ui-muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+    .page-intro-light h2 { color:var(--ui-ink); }
+    .page-intro-dark h2 { color:#f5f5f3; }
+
+    /* 首页与菜单 */
+    #home-page { padding:0 0 100px; text-align:left; }
+    #home-page .hero-text { padding:54px 22px 20px; }
+    #home-page .hero-index {
+      margin-bottom:20px;
+      color:#696965;
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.8px;
+    }
+    #home-page .hero-text h1 {
+      margin:0;
+      color:#f7f7f4;
+      font-size:39px;
+      line-height:1.03;
+      font-weight:720;
+      letter-spacing:-2.2px;
+    }
+    #home-page .hero-text .sub {
+      margin:8px 0 22px;
+      color:#f0f0ed;
+      font-size:10px;
+      font-weight:600;
+      letter-spacing:3.8px;
+    }
+    #home-page .hero-text .slogan {
+      color:#8b8b86;
+      font-size:14px;
+      font-weight:400;
+      letter-spacing:.2px;
+    }
+    #home-page .brand-text {
+      padding:0 22px 22px;
+      color:#777772;
+      font-size:12px;
+      line-height:1.75;
+      text-align:left;
+    }
+    #home-page .brand-text em { color:#d7d7d3; font-weight:500; }
+    #home-page .carousel-box {
+      margin:0 14px;
+      border-radius:2px;
+      aspect-ratio:4 / 5;
+      background:#0b0b0b;
+    }
+    #home-page .carousel-box::after {
+      content:"查看作品  ↗";
+      position:absolute;
+      right:14px;
+      bottom:14px;
+      z-index:3;
+      padding:8px 11px;
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:999px;
+      background:rgba(0,0,0,.34);
+      color:#fff;
+      font-size:10px;
+      letter-spacing:.4px;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+    }
+    #home-page .home-menu-btn {
+      left:max(16px, calc(50% - 224px));
+      bottom:calc(22px + env(safe-area-inset-bottom, 0px));
+      width:48px;
+      height:48px;
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:50%;
+      background:rgba(16,16,16,.76);
+      color:#fff;
+      font-size:18px;
+      line-height:48px;
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+    }
+    #home-page .home-drawer-mask {
+      background:rgba(0,0,0,.48);
+      backdrop-filter:blur(3px);
+      -webkit-backdrop-filter:blur(3px);
+    }
+    #home-page .home-drawer {
+      left:max(14px, calc(50% - 226px));
+      bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+      width:min(276px, calc(100vw - 28px));
+      padding:10px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:20px;
+      background:rgba(22,22,21,.92);
+      box-shadow:0 20px 60px rgba(0,0,0,.45);
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transform:translateY(12px);
+      backdrop-filter:blur(24px);
+      -webkit-backdrop-filter:blur(24px);
+    }
+    #home-page .home-drawer.open {
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+      transform:translateY(0);
+    }
+    #home-page .home-drawer-label {
+      padding:7px 10px 10px;
+      color:#777772;
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.6px;
+      text-transform:uppercase;
+    }
+    #home-page .home-drawer-item {
+      display:grid;
+      grid-template-columns:1fr auto;
+      align-items:center;
+      gap:12px;
+      padding:13px 10px;
+      border-radius:12px;
+      color:#f4f4f1;
+      font-size:14px;
+      font-weight:600;
+    }
+    #home-page .home-drawer-item::after { content:"→"; color:#6f6f6a; font-size:12px; }
+    #home-page .home-drawer-item span,
+    #home-page .home-drawer-item small { grid-column:1; }
+    #home-page .home-drawer-item small {
+      margin-top:-8px;
+      color:#777772;
+      font-size:9px;
+      font-weight:400;
+    }
+    #home-page .home-drawer-item + .home-drawer-item { border-top:0; }
+    #home-page .home-drawer-item:active { background:rgba(255,255,255,.07); opacity:1; }
+
+    /* 页面返回 */
+    .home-btn-bottom {
+      left:max(16px, calc(50% - 224px)) !important;
+      bottom:calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+      min-height:42px;
+      padding:0 14px !important;
+      border:1px solid rgba(255,255,255,.15) !important;
+      border-radius:999px !important;
+      background:rgba(15,15,15,.78) !important;
+      color:#f3f3f0 !important;
+      font-size:12px !important;
+      font-weight:600;
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+    }
+    body.plan-white-mode .home-btn-bottom {
+      border-color:rgba(0,0,0,.1) !important;
+      background:rgba(255,255,255,.88) !important;
+      color:var(--ui-ink) !important;
+      box-shadow:0 4px 18px rgba(0,0,0,.07);
+    }
+
+    /* 方案与冷烫 */
+    #tab-plans { padding:0 0 96px; }
+    #tab-plans .plan-nav {
+      gap:22px;
+      margin:0 0 4px !important;
+      border-bottom:1px solid var(--ui-line) !important;
+    }
+    #tab-plans .plan-nav button {
+      flex:0 0 auto;
+      padding:11px 0 12px;
+      color:var(--ui-muted) !important;
+      font-size:12px;
+      font-weight:550;
+      border-bottom-width:1px;
+    }
+    #tab-plans .plan-nav button.on {
+      color:var(--ui-ink) !important;
+      border-bottom-color:var(--ui-ink) !important;
+    }
+    #tab-plans .plan-page.active { padding-top:8px; }
+    #tab-plans .result-card {
+      margin:0;
+      border:0;
+      border-bottom:1px solid var(--ui-line);
+      border-radius:0;
+      background:#fff;
+      box-shadow:none;
+    }
+    #tab-plans .result-card:last-child { border-bottom:0; }
+    #tab-plans .card-header {
+      padding:24px 0 8px;
+      border:0;
+      border-radius:0;
+      background:#fff;
+    }
+    #tab-plans .card-title {
+      color:var(--ui-ink);
+      font-size:15px;
+      font-weight:680;
+      letter-spacing:-.2px;
+    }
+    #tab-plans .card-body { padding:8px 0 26px; }
+    #tab-plans select,
+    #tab-plans input,
+    #tab-plans .preset-btn {
+      min-height:42px;
+      border:0 !important;
+      border-radius:12px !important;
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+      box-shadow:none !important;
+    }
+    #tab-plans .preset-btn { min-height:36px; color:#5f5f5a !important; }
+    #tab-plans .preset-btn:active { background:#e8e8e4 !important; color:#111 !important; }
+    #tab-plans .query-btn {
+      min-height:46px;
+      border-radius:12px !important;
+      background:var(--ui-black) !important;
+      font-weight:650 !important;
+    }
+    #tab-plans table th {
+      padding:9px 8px !important;
+      border-bottom-color:var(--ui-line) !important;
+      color:var(--ui-muted) !important;
+    }
+    #tab-plans table td {
+      padding:10px 8px !important;
+      border-bottom-color:var(--ui-line) !important;
+      color:var(--ui-ink) !important;
+    }
+    #plan-cold .card-body > div[style*="rgba(212,165,116"] {
+      border-radius:14px !important;
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+    }
+
+    /* 作品 */
+    #tab-showcase { padding:0 0 96px; }
+    #tab-showcase .page-intro { padding-top:18px; }
+    #tab-showcase .filter-nav {
+      gap:18px;
+      padding:0 0 14px;
+      margin-bottom:14px;
+      border-bottom:1px solid #222220;
+    }
+    #tab-showcase .filter-btn {
+      padding:7px 0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      color:#6f6f6a;
+      font-size:11px;
+      font-weight:520;
+    }
+    #tab-showcase .filter-btn.on {
+      background:transparent;
+      color:#f5f5f2;
+      box-shadow:inset 0 -1px 0 #fff;
+    }
+    #tab-showcase .thumb-grid { column-gap:10px; }
+    #tab-showcase .thumb-item {
+      margin-bottom:10px;
+      border-radius:2px;
+      background:#0d0d0d;
+    }
+    #tab-showcase .thumb-item img { border-radius:2px 2px 0 0; }
+    #tab-showcase .thumb-item .thumb-label {
+      padding:10px 9px 12px;
+      color:#d8d8d4;
+      font-size:11px;
+      font-weight:520;
+    }
+    #tab-showcase .showcase-card {
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:#000;
+    }
+    #tab-showcase .showcase-img { border-radius:2px; }
+    #tab-showcase .showcase-card .ai-badge {
+      border:0;
+      border-radius:12px;
+      background:#111110;
+    }
+    #tab-showcase .upload-fab button {
+      width:50px;
+      height:50px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(245,245,242,.96);
+      box-shadow:0 12px 34px rgba(0,0,0,.48);
+    }
+    #tab-showcase .upload-page .up-header { padding:24px 18px 16px; }
+    #tab-showcase .upload-page .up-body { padding:28px 18px; }
+    #tab-showcase .upload-page .up-header,
+    #tab-showcase .upload-page .up-body {
+      max-width:480px;
+      margin-right:auto;
+      margin-left:auto;
+    }
+    #tab-showcase .upload-page select,
+    #tab-showcase .upload-page input[type=file] {
+      min-height:48px;
+      border:0;
+      border-radius:12px;
+      background:#171716;
+    }
+    #tab-showcase .upload-page .up-btn { min-height:48px; border-radius:12px; }
+
+    /* 登录注册 */
+    .identity-modal {
+      padding:18px;
+      background:rgba(0,0,0,.52) !important;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    .identity-modal .box {
+      width:min(100%, 360px);
+      max-width:360px;
+      padding:28px 22px 22px;
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:24px;
+      background:#fff !important;
+      box-shadow:0 24px 80px rgba(0,0,0,.22);
+    }
+    .identity-modal .identity-kicker {
+      margin-bottom:10px;
+      color:var(--ui-muted);
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.8px;
+      text-align:center;
+    }
+    .identity-modal h3 {
+      margin-bottom:8px !important;
+      color:var(--ui-ink) !important;
+      font-size:22px;
+      font-weight:720;
+      letter-spacing:-.5px;
+    }
+    .identity-modal .identity-note {
+      margin:0 0 22px;
+      color:var(--ui-muted);
+      font-size:11px;
+      line-height:1.6;
+      text-align:center;
+    }
+    .identity-modal .reg-form input:not([type=checkbox]):not([type=radio]),
+    .identity-modal #reg-store {
+      width:100% !important;
+      min-height:48px;
+      margin:0 0 10px !important;
+      padding:0 14px !important;
+      border:0 !important;
+      border-radius:12px !important;
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+      font-size:14px !important;
+    }
+    .identity-modal .opt {
+      min-height:48px;
+      margin:0 0 9px;
+      padding:0 14px;
+      border:0 !important;
+      border-radius:12px;
+      background:var(--ui-black) !important;
+      color:#fff !important;
+      font-size:13px;
+      font-weight:650;
+    }
+    .identity-modal .opt.identity-secondary {
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+    }
+    .identity-modal .pos-check-group {
+      grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+      gap:8px !important;
+      max-width:none !important;
+      margin:2px 0 16px;
+      padding:0 !important;
+    }
+    .identity-modal .pos-check-group label {
+      min-height:42px;
+      padding:0 11px !important;
+      border:0 !important;
+      border-radius:11px !important;
+      background:var(--ui-soft) !important;
+      color:#4e4e4a !important;
+      font-size:12px !important;
+    }
+    .identity-modal input[type=checkbox] {
+      width:16px !important;
+      height:16px !important;
+      min-height:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      accent-color:#111;
+      flex:0 0 auto;
+    }
+
+    /* 客户方案与档案内容 */
+    .plan-modal {
+      padding:18px;
+      background:rgba(0,0,0,.5) !important;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    .plan-modal .box {
+      width:min(100%, 390px);
+      max-width:390px;
+      max-height:86vh;
+      padding:26px 20px 20px;
+      border-radius:22px;
+      background:#fff !important;
+      box-shadow:0 24px 80px rgba(0,0,0,.2);
+    }
+    .plan-modal h3 { color:var(--ui-ink) !important; font-size:22px; letter-spacing:-.5px; }
+    .plan-modal .row { padding:9px 0; border-bottom-color:var(--ui-line) !important; }
+    .plan-modal .suggestion,
+    .plan-modal .ai-result { border:0 !important; border-radius:14px; background:var(--ui-soft) !important; }
+    .plan-modal .close-btn,
+    .plan-modal .ai-btn {
+      min-height:44px;
+      border:0 !important;
+      border-radius:12px;
+      background:var(--ui-black) !important;
+      color:#fff !important;
+    }
+    .hair-archive-section {
+      margin-top:14px !important;
+      border:0 !important;
+      border-top:1px solid var(--ui-line) !important;
+      border-radius:0 !important;
+      background:#fff !important;
+      overflow:visible !important;
+    }
+    .hair-archive-title {
+      padding:15px 0 8px !important;
+      border:0 !important;
+      color:var(--ui-ink) !important;
+      font-size:12px !important;
+    }
+    .hair-archive-body { padding:0 0 8px !important; color:var(--ui-ink) !important; }
+    .profile-card {
+      margin:0 !important;
+      padding:16px 0 !important;
+      border:0 !important;
+      border-bottom:1px solid var(--ui-line) !important;
+      border-radius:0 !important;
+      background:#fff !important;
+    }
+    .profile-record {
+      margin:0 !important;
+      padding:18px 0 !important;
+      border:0 !important;
+      border-bottom:1px solid var(--ui-line) !important;
+      border-radius:0 !important;
+      background:#fff !important;
+    }
+
+    /* 发质分析、任务与护理 */
+    #hair-analysis-modal .hair-modal-shell {
+      max-width:500px;
+      min-height:100vh;
+      margin:0 auto;
+      padding:24px 18px calc(94px + env(safe-area-inset-bottom, 0px));
+      background:#fff;
+    }
+    #hair-analysis-modal .hair-modal-header {
+      position:sticky;
+      top:0;
+      z-index:20;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      margin:0 -2px 12px;
+      padding:4px 2px 16px;
+      border-bottom:1px solid var(--ui-line);
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+    }
+    #hair-analysis-modal .hair-modal-kicker {
+      display:block;
+      margin-bottom:6px;
+      color:var(--ui-muted);
+      font-size:9px;
+      font-weight:650;
+      letter-spacing:1.6px;
+    }
+    #hair-analysis-modal .hair-modal-title {
+      color:var(--ui-ink);
+      font-size:24px;
+      line-height:1.05;
+      font-weight:720;
+      letter-spacing:-.8px;
+    }
+    #hair-analysis-modal .hair-modal-close {
+      width:36px;
+      height:36px;
+      padding:0;
+      border:0;
+      border-radius:50%;
+      background:var(--ui-soft);
+      color:#555550;
+      font-size:16px;
+      cursor:pointer;
+    }
+    #hair-analysis-modal .hair-modal-footer {
+      position:fixed;
+      right:0;
+      bottom:0;
+      left:0;
+      z-index:100000;
+      display:flex;
+      justify-content:space-between;
+      max-width:480px;
+      margin:0 auto;
+      padding:12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+      border-top:1px solid rgba(0,0,0,.07);
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+    }
+    #hair-analysis-modal .hair-modal-action {
+      min-height:38px;
+      padding:0 13px;
+      border:0;
+      border-radius:999px;
+      background:var(--ui-soft);
+      color:#4e4e49;
+      font-size:11px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    #hair-analysis-section { margin-top:0 !important; padding-top:0 !important; }
+    .hair-analysis .ha-card,
+    #hair-analysis-section > div[style*="background:var(--surface)"] {
+      margin:0 !important;
+      padding:24px 0 !important;
+      border:0 !important;
+      border-bottom:1px solid var(--ui-line) !important;
+      border-radius:0 !important;
+      background:#fff !important;
+      box-shadow:none !important;
+    }
+    .hair-analysis .ha-step {
+      margin-bottom:16px;
+      color:#666661;
+      font-size:10px;
+      font-weight:680;
+      letter-spacing:1px;
+    }
+    .hair-analysis .ha-title { margin:20px 0 10px; gap:0; }
+    .hair-analysis .ha-title::before { display:none; }
+    .hair-analysis .ha-title span { color:var(--ui-ink); font-size:13px; font-weight:680; }
+    .hair-analysis .chip-label { margin:14px 0 6px; color:var(--ui-muted); font-size:10px; }
+    .hair-analysis .chip-row { display:flex; flex-wrap:wrap; gap:6px; }
+    .hair-analysis .chip {
+      padding:7px 11px;
+      border:0;
+      border-radius:999px;
+      background:var(--ui-soft);
+      color:#5b5b56;
+      font-size:11px;
+    }
+    .hair-analysis .chip.selected {
+      border-color:var(--ui-black);
+      background:var(--ui-black);
+      color:#fff;
+    }
+    .hair-analysis input:not([type=radio]):not([type=checkbox]):not([type=file]),
+    .hair-analysis select,
+    .hair-analysis textarea {
+      min-height:40px;
+      border:0 !important;
+      border-radius:10px !important;
+      background:var(--ui-soft) !important;
+      color:var(--ui-ink) !important;
+      box-shadow:none !important;
+    }
+    .hair-analysis button { border-radius:10px !important; box-shadow:none !important; }
+    .hair-analysis #hair-save-btn {
+      min-height:48px;
+      border-radius:12px !important;
+      background:var(--ui-black) !important;
+      color:#fff !important;
+    }
+    .hair-analysis label[data-name="fb-hair"] {
+      min-height:58px;
+      border:0 !important;
+      border-radius:12px !important;
+      background:var(--ui-soft);
+    }
+    .care-tab-bar { gap:6px; }
+    .care-tab-btn {
+      border:0;
+      border-radius:999px;
+      background:var(--ui-soft);
+      color:#5b5b56;
+    }
+    .care-tab-btn.active { background:var(--ui-black); color:#fff; }
+    .care-select-row select,
+    .care-select-row input[type=number] { border:0; background:var(--ui-soft); }
+    .care-add-btn { min-height:40px; border-radius:10px; background:var(--ui-black); }
+    .care-added-item { border-radius:10px; background:var(--ui-soft); }
+    .hair-task-card {
+      margin:0;
+      border:0;
+      border-bottom:1px solid var(--ui-line);
+      border-radius:0;
+      background:#fff;
+    }
+    .hair-task-card-inner { padding:16px 0; }
+    .hair-task-card-actions { gap:8px; margin-top:10px; }
+    .hair-task-card-btn {
+      min-height:34px;
+      border:0;
+      border-radius:9px;
+      background:var(--ui-soft);
+      color:var(--ui-ink);
+    }
+    .hair-task-card-btn.primary { background:var(--ui-black); color:#fff; }
+    .hair-task-card-btn.danger { border:1px solid #dc3545; background:#fff; color:#dc3545; }
+    .ht-status-dot.pending, .ht-status-dot.saved { background:#aaa9a4; }
+    .ht-status-dot.tech-done, .ht-status-dot.followup-done { background:#111; }
+    .hair-task-card-done { color:#555550; }
+    .hair-local-record {
+      margin:0 !important;
+      padding:14px 0 !important;
+      border:0 !important;
+      border-bottom:1px solid var(--ui-line) !important;
+      border-radius:0 !important;
+      background:#fff !important;
+    }
+
+    @media (min-width:600px) {
+      body { box-shadow:0 0 0 1px rgba(255,255,255,.04); }
+      .plan-modal, .identity-modal { padding:30px; }
+    }
+    @media (max-width:380px) {
+      #home-page .hero-text h1 { font-size:35px; }
+      #hair-analysis-modal .hair-modal-shell { padding-right:14px; padding-left:14px; }
+      .identity-modal .box { padding-right:18px; padding-left:18px; }
+    }
+  </style>
+
 </div><!-- /app-content -->
 
 </main>
@@ -2161,16 +2853,18 @@ function initApp() {
     overlay.id = 'hair-analysis-modal';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#ffffff;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none;padding-top:env(safe-area-inset-top,44px);';
     overlay.innerHTML =
-      '<div style="max-width:500px;margin:0 auto;padding:20px;padding-bottom:calc(70px + env(safe-area-inset-bottom,0px));background:#ffffff;min-height:100vh;box-sizing:border-box;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
-          '<div style="font-size:16px;font-weight:700;color:#000000;">发质分析</div>' +
-          '<button onclick="autoSaveHairForm();closeHairAnalysisModal();" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:8px;">✕</button>' +
+      '<div class="hair-modal-shell">' +
+        '<div class="hair-modal-header">' +
+          '<div><span class="hair-modal-kicker">HAIR / WORKFLOW</span><div class="hair-modal-title">发质分析</div></div>' +
+          '<button class="hair-modal-close" onclick="autoSaveHairForm();closeHairAnalysisModal();" aria-label="关闭">✕</button>' +
         '</div>' +
         '<div id="hair-quick-area"></div>' +
       '</div>';
     overlay.insertAdjacentHTML('beforeend',
-      '<button onclick="closeHairAnalysisModal();" style="position:fixed;bottom:24px;left:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">← 首页</button>' +
-      '<button onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();" style="position:fixed;bottom:24px;right:20px;z-index:100000;display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:#555;font-size:13px;cursor:pointer;padding:8px 14px;">↻ 刷新</button>');
+      '<div class="hair-modal-footer">' +
+        '<button class="hair-modal-action" onclick="closeHairAnalysisModal();">← 首页</button>' +
+        '<button class="hair-modal-action" onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();">刷新 ↻</button>' +
+      '</div>');
     document.body.appendChild(overlay);
     // body变白背景
     document.body.classList.add('hair-modal-open');
@@ -3089,7 +3783,7 @@ function initApp() {
     var div = document.createElement('div');
     div.className = 'identity-modal';
     div.id = 'identity-modal';
-    div.innerHTML = '<div class="box" id="login-box-main"><h3 style="margin-bottom:20px;">自由手艺人</h3><div class="reg-form"><button class="opt" id="show-login-btn">登录</button><button class="opt" style="color:var(--accent);" id="show-register-btn">注册新员工</button><div id="identity-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
+    div.innerHTML = '<div class="box" id="login-box-main"><div class="identity-kicker">STAFF ACCESS</div><h3>自由手艺人</h3><p class="identity-note">员工工作台，仅供门店内部使用</p><div class="reg-form"><button class="opt" id="show-login-btn">员工登录</button><button class="opt identity-secondary" id="show-register-btn">注册新员工</button><div id="identity-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div></div></div>';
     document.body.appendChild(div);
     document.getElementById('show-login-btn').onclick = showLoginForm;
     document.getElementById('show-register-btn').onclick = function(){ showRegisterForm(); };
@@ -3099,11 +3793,11 @@ function initApp() {
     var box = document.getElementById('login-box-main');
     if (!box) return;
     box.innerHTML =
-      '<h3>员工登录</h3><div class="reg-form">' +
+      '<div class="identity-kicker">STAFF ACCESS</div><h3>员工登录</h3><p class="identity-note">使用已通过审核的姓名和密码</p><div class="reg-form">' +
         '<input id="login-name" placeholder="姓名" required>' +
         '<input id="login-pass" type="password" placeholder="密码" required>' +
         '<button class="opt" id="login-submit-btn">登录</button>' +
-        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '<button class="opt identity-secondary" onclick="showIdentityModal()">返回</button>' +
         '<div id="login-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
       '</div>';
     document.getElementById('login-submit-btn').onclick = doAppLogin;
@@ -3152,7 +3846,8 @@ function initApp() {
     var box = document.getElementById('login-box-main');
     if (!box) return;
     box.innerHTML =
-      '<h3>注册新员工</h3>' +
+      '<div class="identity-kicker">NEW STAFF</div><h3>注册新员工</h3>' +
+      '<p class="identity-note">提交后由店主审核，审核通过后可登录</p>' +
       '<div class="reg-form">' +
         '<input id="reg-name" placeholder="姓名" required>' +
         '<input id="reg-pass" type="password" placeholder="密码" required>' +
@@ -3170,7 +3865,7 @@ function initApp() {
           '<label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;"><input type="checkbox" value="店长"> 店长</label>' +
         '</div>' +
         '<button class="opt" id="reg-submit-btn">提交注册</button>' +
-        '<button class="opt" style="color:var(--text-secondary);margin-top:6px;" onclick="showIdentityModal()">← 返回</button>' +
+        '<button class="opt identity-secondary" onclick="showIdentityModal()">返回</button>' +
         '<div id="reg-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>' +
       '</div>';
     document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
@@ -3896,9 +4591,9 @@ function initApp() {
 
   function hairArchiveSection(title, body) {
     if (!body) return '';
-    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;overflow:hidden;">' +
-      '<div style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text);">' + title + '</div>' +
-      '<div style="padding:10px 12px;font-size:12px;line-height:1.6;color:var(--text);">' + body + '</div></div>';
+    return '<div class="hair-archive-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;overflow:hidden;">' +
+      '<div class="hair-archive-title" style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text);">' + title + '</div>' +
+      '<div class="hair-archive-body" style="padding:10px 12px;font-size:12px;line-height:1.6;color:var(--text);">' + body + '</div></div>';
   }
 
   function hairArchiveInfoRows(rows) {
@@ -5892,7 +6587,7 @@ function initApp() {
       var rec = records[ri];
       var recInfo = hairRecordPersonText(rec);
       var seqStr = formatHairRecordSeq(rec);
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
+      html += '<div class="hair-local-record" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
       html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + seqStr + ' ' + esc(recInfo.name) + '</span>';
       html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(rec.date || '') + '</span>';
@@ -7086,8 +7781,8 @@ function initApp() {
       if (selectedRating) selectedRating.checked = false;
       var ratingLabels = document.querySelectorAll('label[data-name="fb-hair"]');
       for (var rli = 0; rli < ratingLabels.length; rli++) {
-        ratingLabels[rli].style.background = '#f5f5f5';
-        ratingLabels[rli].style.borderColor = '#e5e5e5';
+        ratingLabels[rli].style.background = '#f4f4f1';
+        ratingLabels[rli].style.borderColor = 'transparent';
         ratingLabels[rli].style.color = '#666';
       }
       setVal('hair-form-follow-date', '');
@@ -7522,10 +8217,10 @@ function initApp() {
     // A/B/C 单选（新建时默认空，编辑时由loadHairRecordData回填）
     var savedFbRating = '';
     html += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
-    [['A','效果好','#2a6e3b'],['B','一般','#7a6a2a'],['C','需优化','#8a3a3a']].forEach(function(item){
-      var val = item[0], lbl = item[1], selBg = item[2];
+    [['A','效果好'],['B','一般'],['C','需优化']].forEach(function(item){
+      var val = item[0], lbl = item[1], selBg = '#111111';
       var checked = savedFbRating === val;
-      html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#f5f5f5') + ';border:1px solid ' + (checked ? '#fff' : '#e5e5e5') + ';color:' + (checked ? '#fff' : '#666') + ';" onclick="selectAppFbRating(this)">';
+      html += '<label id="fb-label-' + val + '" data-val="' + val + '" data-bg="' + selBg + '" data-name="fb-hair" style="flex:1;padding:8px 4px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:' + (checked ? selBg : '#f4f4f1') + ';border:1px solid ' + (checked ? '#111111' : 'transparent') + ';color:' + (checked ? '#fff' : '#666') + ';" onclick="selectAppFbRating(this)">';
       html += '<span style="font-size:14px;font-weight:700;">' + val + '</span><br><span style="font-size:10px;">' + lbl + '</span>';
       html += '<input type="radio" name="fb-hair" value="' + val + '"' + (checked ? ' checked' : '') + ' style="display:none;">';
       html += '</label>';
@@ -8570,7 +9265,7 @@ function initApp() {
       var item = g.records[ri];
       var rec = item.rec;
       var dateStr = rec.date || (item.row.created_at || '').slice(0, 10) || '未知日期';
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;">';
+      html += '<div class="profile-record" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
       html += '<span style="font-size:12px;font-weight:600;color:var(--text);">' + dateStr + '</span>';
       html += '<span style="font-size:10px;color:var(--text-secondary);">' + esc(rec.technician || '') + '</span>';
@@ -8663,16 +9358,15 @@ if (document.readyState === 'loading') {
 
 // ===== 发质分析ABC回馈 + 截图上传 =====
 window.selectAppFbRating = function(el) {
-  var bg = el.getAttribute('data-bg');
   var name = el.getAttribute('data-name');
   var val = el.getAttribute('data-val');
   el.parentElement.querySelectorAll('label').forEach(function(e){
-    e.style.background = '#0a0a0a';
-    e.style.borderColor = '#2a2a2a';
-    e.style.color = '#888';
+    e.style.background = '#f4f4f1';
+    e.style.borderColor = 'transparent';
+    e.style.color = '#666';
   });
-  el.style.background = bg;
-  el.style.borderColor = '#fff';
+  el.style.background = '#111111';
+  el.style.borderColor = '#111111';
   el.style.color = '#fff';
   var radio = document.querySelector('input[name="' + name + '"]');
   if (radio) { radio.value = val; radio.checked = true; }
