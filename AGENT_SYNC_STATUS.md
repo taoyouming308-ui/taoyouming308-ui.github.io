@@ -93,7 +93,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v340
-- Last synchronized base checked: GitHub `aa7018d`, Gitee `aa7018d`
+- Last synchronized base checked: GitHub `b0a03d4`, Gitee `b0a03d4`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -157,6 +157,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v340 代码提交 `b0a03d4` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=340`，线上文件确认双视图、预约选择、手机排杠区和刷新恢复时序修复均已生效。
 - 2026-06-30: v340 本地浏览器在 390×844 下验证新建分析、客户区、五个排杠分区和“我的任务”8张真实任务卡；任务 #021 点编辑后正确回到张小姐表单并显示“保存档案”。页面无横向溢出，刷新恢复发质页后渲染完整，未执行保存或生产数据写入。
 - 2026-06-30: v339 代码提交 `fc454ca` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=339`，线上文件确认完整企业文化首尾文案及 35px/33px 标题字号规则均已生效。
 - 2026-06-30: v339 本地浏览器在 390×844 下确认完整五段企业文化均显示，主标题计算字号为 35px，文案区域无遮挡和横向溢出；浏览器控制台无新增 error/warning。
