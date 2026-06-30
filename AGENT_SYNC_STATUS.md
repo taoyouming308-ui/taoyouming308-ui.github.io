@@ -69,7 +69,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v337
-- Last synchronized base checked: GitHub `d92eb21`, Gitee `d92eb21`
+- Last synchronized base checked: GitHub `e11204a`, Gitee `e11204a`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -130,6 +130,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v337 代码提交 `e11204a` 已同步到 GitHub `main` 和 Gitee `master`，远端哈希一致；GitHub Pages 已返回 `version.txt=337`，线上 `perm-app.html` 包含新版日期标题、时间列、预约项目说明和极简空状态。
 - 2026-06-30: v337 本地浏览器在 390×844 手机尺寸验证 2026-07-01 邓小姐预约：时间、客户、发型师、手机号和“预约项目”层级正确，“查看方案”可打开客户方案；默认 1280×720 下 App 保持 480px 居中。未修改预约、客户或卡项数据。
 - 2026-06-30: v337 浏览器首次恢复预约页时发现并修复 `renderDateStrip` 初始化时序；修复后今天/未来 7 天日期按钮与选中日期标题正常渲染。
 - 2026-06-30: v336 本地浏览器使用真实护理数据只读验证“编辑用量”：cesi 行自动筛选自由手艺人/cesi，打开 4 条明细和 4 个更正入口，合计 9.0g；未保存任何更正。后台刷新后工作台和护理导航正常，无新增控制台错误。
