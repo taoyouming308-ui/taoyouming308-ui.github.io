@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v342 (2026-06-30)
+
+- 后台新增绑定门店的 `store_admin` 分店管理员角色；总管理员可在员工管理中为指定门店设置分店管理员，登录会话必须携带门店。
+- 向里造型分店后台只保留工作台、注册审核、员工管理、发质任务、护理管理、月度报表、本店作品审核和本店操作记录；顾客档案、回访任务、异常中心、AI分析队列和首页推荐不展示且有直接调用守卫。
+- 注册和员工管理锁定本店；分店管理员只能新增、审核或修改本店普通员工，不能授予管理员、切换门店或编辑管理员账号。
+- 发质任务和月报按发型师所属门店过滤；护理明细、用量更正和月度统计固定 `shop_name`，全局护理产品配置仅总后台可见。
+- 作品审核按上传员工所属门店过滤，分店可通过、拒绝和下架本店作品；首页展示开关、排序和上传继续只允许总后台操作。
+- 本机操作记录增加角色和门店范围，分店端只显示及清理本店记录；本次未创建分店管理员账号，也未修改生产员工或业务数据。
+
 ## v341 (2026-06-30)
 
 - 修复发质分析选择按钮选中与未选中颜色过于接近的问题：实际交互使用的 `.active` 状态现在为纯黑底、白字、加粗、外描边并显示 ✓，未选中保持浅灰。
@@ -99,8 +108,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v341
-- Last synchronized base checked: GitHub `58ef11f`, Gitee `58ef11f`
+- App version: v342
+- Last synchronized base checked: GitHub `029d365`, Gitee `029d365`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -108,6 +117,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v342: 增加绑定门店的分店管理员后台；向里造型仅管理本店员工、发质、护理、月报和作品审核，首页推荐及客户/回访/系统权限保留总后台。
 - v341: 发质分析选择项和 A/B/C 评定改为纯黑底、白字、✓ 的高对比选中反馈。
 - v340: 发质分析页增加表单/任务双视图，重排客户信息和手机排杠输入，并修复刷新恢复空白页。
 - v339: 首页恢复完整企业文化文案并缩小“自由手艺人”标题，保留 v338 极简视觉系统。
@@ -165,6 +175,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v342 本地浏览器验证向里造型 `store_admin`：桌面和 390×844 手机端只显示 8 个授权模块；员工列表 11 行全部为向里造型，门店选择锁定，新增员工仅有普通员工角色；护理明细/月报锁定本店，发质页没有全局 AI 队列。作品审核只显示向里员工陈浩的真实作品，操作仅有拒绝/下架而没有首页推荐。切换总管理员后客户、回访、异常和首页展示入口仍完整；控制台无 error/warning，未执行任何保存或生产数据写入。
 - 2026-06-30: v341 代码提交 `58ef11f` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=341`，线上文件确认高对比 `.active` 选中态、✓ 标记和 A/B/C 独立选中类均已生效。
 - 2026-06-30: v341 本地浏览器在 390×844 下实际点击发根色度、协作技师和 A/B/C 评定；选中项计算样式为 `rgb(17,17,17)` 黑底、白字、✓ 和外描边，取消或切换后恢复浅灰。控制台无 error/warning，未保存表单或写入生产数据。
 - 2026-06-30: v340 代码提交 `b0a03d4` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=340`，线上文件确认双视图、预约选择、手机排杠区和刷新恢复时序修复均已生效。

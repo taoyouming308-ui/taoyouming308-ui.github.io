@@ -33,11 +33,26 @@ assert(admin.includes('recordAdminAction'), 'backend operation audit is missing'
 assert(admin.includes('openCareMonthlyEditor') && admin.includes('编辑用量'), 'care monthly report has no per-barber edit entry');
 assert(admin.includes('loadCareDetailRecords();') && admin.includes('loadCareMonthlyStats();'), 'care correction does not refresh detail and monthly summary');
 assert(admin.indexOf('initializeAdminPage();') > admin.indexOf('window.loadDashboard ='), 'backend initializes before dashboard loaders are registered');
+assert(admin.includes("const STORE_ADMIN_ROLE = 'store_admin'"), 'store administrator role is missing');
+assert(admin.includes("const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'hair-analysis', 'care', 'assessment', 'content', 'audit']"), 'store administrator navigation allowlist is wrong');
+assert(admin.includes('session.role !== STORE_ADMIN_ROLE || !!session.store'), 'store administrators can log in without a bound store');
+assert(admin.includes('role=in.(admin,${STORE_ADMIN_ROLE})'), 'backend login does not accept scoped store administrators');
+assert(admin.includes('data-tab="customers" data-super-admin-only') && admin.includes('data-tab="followups" data-super-admin-only'), 'customer or follow-up navigation is exposed to store administrators');
+assert(admin.includes('data-tab="system" data-super-admin-only'), 'system exceptions are exposed to store administrators');
+assert(admin.includes('data-content-view="carousel" data-super-admin-only'), 'homepage recommendation navigation is exposed to store administrators');
+assert(admin.includes("if (view === 'carousel' && !requireSuperAdmin('首页推荐'))"), 'homepage recommendation lacks an action guard');
+assert(admin.includes('filterImageRowsForAdmin') && admin.includes('assertImageAdminScope'), 'store work review is not scoped to uploader store');
+assert(admin.includes('filterHairRowsForAdmin') && admin.includes('fetchAdminStaffStoreMap'), 'store hair tasks are not scoped through staff stores');
+assert(admin.includes("currentAdminStore() || (document.getElementById('care-month-store')"), 'care monthly statistics do not force the administrator store');
+assert(admin.includes("currentAdminStore() || (document.getElementById('care-detail-store')"), 'care detail does not force the administrator store');
+assert(admin.includes("if (!requireSuperAdmin('护理产品配置')) return;"), 'global care product configuration is exposed to store administrators');
+assert(admin.includes("if (!requireSuperAdmin('顾客档案')) return;") && admin.includes("if (!requireSuperAdmin('回访任务')) return;"), 'removed store modules can still be opened directly');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');
 assert(!assessment.includes('/rest/v1/hair_analysis_queue?'), 'monthly report still uses the AI queue');
 assert(assessment.includes('adminHairFollowupComplete'), 'monthly report does not use strict follow-up completion');
+assert(assessment.includes('filterHairRowsForAdmin'), 'monthly report is not scoped to the administrator store');
 
 const followups = admin.slice(admin.indexOf('function loadFollowups'), admin.indexOf('// ===== 记录回访弹窗 ====='));
 assert(followups.includes('followupMetaFromProfile'), 'follow-up task list does not use planned dates');
