@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v336 (2026-06-30)
+
+- 护理管理的月度统计为每个发型师增加“编辑用量”按钮；按钮按当前统计年月自动定位该门店和发型师的护理明细，再通过既有“更正”入口逐条修改并填写原因，避免直接篡改由多条明细汇总出的合计值。
+- 护理明细更正成功后同时刷新明细和月度汇总。
+- 修复后台已登录会话刷新时初始化过早的问题；所有页面加载器注册完成后才恢复会话和绑定导航，避免 `loadDashboard is not defined` 导致侧栏失效。
+- 只读核对 2026-07-01 10:30 的邓小姐预约（尾号 4880）：Supabase 预约 `service_name`、美管加原始 `categoryName` 和 `itemProp.items` 均为“资生堂短发680（3折）”；客户档案套餐实际只有“酸护套餐9”和“健康染长发1460补染”。截图标签是预约中选定的服务项目，不是客户持有卡项；本次未修改预约或客户数据。
+
 ## v335 (2026-06-29)
 
 - 后台改为分组侧栏与工作台，注册审核、在职员工、客户回访、发质任务、护理、月报、作品、异常和本机操作记录各自独立；手机端使用抽屉侧栏。
@@ -52,8 +59,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v335
-- Last synchronized base checked: GitHub `f1f34a6`, Gitee `f1f34a6`
+- App version: v336
+- Last synchronized base checked: GitHub `753efe0`, Gitee `753efe0`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -61,6 +68,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v336: 护理月度统计增加按发型师进入明细更正的入口，修复后台已登录刷新初始化时序；确认截图项目来自美管加原始预约而非客户卡项。
 - v335: 后台信息架构和注册审核重做，三个不用的配置模块只从后台移除，回访/月报/作品轮播/护理更正/异常重试按真实业务规则收口。
 - v334: 移除正常首页启动的版本参数强制跳转，保留用户主动更新机制，消除整页二次加载闪屏。
 - v333: 修复发型师已评定后「保存档案」仍停留在回访的问题，并补齐技师直接开单回传发型师的入口状态。
@@ -112,6 +120,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v336 本地浏览器使用真实护理数据只读验证“编辑用量”：cesi 行自动筛选自由手艺人/cesi，打开 4 条明细和 4 个更正入口，合计 9.0g；未保存任何更正。后台刷新后工作台和护理导航正常，无新增控制台错误。
+- 2026-06-30: 通过当前有效美管加会话只读请求原始预约接口，预约 id 291979007 的 `categoryId=-1`，`categoryName` 与 `itemProp.items[51437].name` 均为“资生堂短发680（3折）”；未执行同步写入或数据修复。
 - 2026-06-29: v335 提交 `f1f34a6` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=335`。线上文件确认新后台导航、注册审核、异常中心、动态轮播和旧后台跳转均生效，三个配置模块的导航与后台 REST 接口均不存在。
 - 2026-06-29: v335 后台与 App JavaScript 语法、后台工作流静态约束、HTML 页面层级和重复 ID 检查通过；本地浏览器确认后台桌面/390px 登录页、旧后台地址跳转、App 首页动态轮播和控制台无错误。未写入生产业务数据。
 - 2026-06-29: v334 完整回归通过：版本/发布完整性、App 冒烟、护理出库、22 组发质状态、客户档案及 17 个 Python 同步测试全部通过。

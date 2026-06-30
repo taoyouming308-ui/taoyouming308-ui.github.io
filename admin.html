@@ -447,6 +447,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <!-- 月度护理用量统计 -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
     <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📊 月度统计</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">汇总数据由客户护理明细相加得出。点击发型师行的“编辑用量”，进入该发型师当月明细逐条更正。</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
@@ -665,8 +666,8 @@ function stopPendingPolling() {
   }
 }
 
-// 自动恢复登录（除非主动退出）
-(function() {
+// 页面初始化必须在所有后台函数定义完成后执行，避免已登录用户刷新时提前调用未注册的页面加载器。
+function initializeAdminPage() {
   let session = null;
   try { session = JSON.parse(localStorage.getItem('perm_admin') || 'null'); } catch(e) {}
   const sessionValid = session && session.user && session.role === 'admin' && session.loggedAt &&
@@ -726,7 +727,7 @@ function stopPendingPolling() {
   document.getElementById('ha-search').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') loadHairAnalyses();
   });
-})();
+}
 
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
@@ -3148,8 +3149,8 @@ window.loadCareMonthlyStats = function() {
     }
 
     if (!careRows || careRows.length === 0) {
-      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th></tr>';
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 3) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
+      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th><th>操作</th></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
       document.getElementById('care-stat-summary').textContent = '该月暂无记录';
       return;
     }
@@ -3208,13 +3209,13 @@ window.loadCareMonthlyStats = function() {
     for (var ai = 0; ai < allProducts.length; ai++) {
       headerHtml += '<th style="white-space:nowrap;">' + esc(allProducts[ai].brand) + '<br>' + esc(allProducts[ai].product) + '</th>';
     }
-    headerHtml += '<th>合计(g)</th></tr>';
+    headerHtml += '<th>合计(g)</th><th style="min-width:82px;">操作</th></tr>';
     thead.innerHTML = headerHtml;
 
     // 构建表格行
     var keys = Object.keys(stats);
     if (keys.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 3) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
       document.getElementById('care-stat-summary').textContent = '该月暂无记录';
       ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
         var el = document.getElementById(id);
@@ -3237,6 +3238,7 @@ window.loadCareMonthlyStats = function() {
       }
       var rowTotal = s.total || 0;
       bodyHtml += '<td style="text-align:right;font-weight:600;">' + rowTotal.toFixed(1) + '</td>';
+      bodyHtml += '<td><button type="button" class="btn-edit" onclick="openCareMonthlyEditor(\'' + escAttr(s.store || '') + '\',\'' + escAttr(s.barber) + '\')" style="white-space:nowrap;padding:4px 8px;font-size:11px;">编辑用量</button></td>';
       bodyHtml += '</tr>';
       grandTotal += rowTotal;
     }
@@ -3257,12 +3259,12 @@ window.loadCareMonthlyStats = function() {
 // ===== 护理记录明细 =====
 function populateCareDetailBarbers(storeFilter) {
   var sel = document.getElementById('care-detail-barber');
-  if (!sel) return;
+  if (!sel) return Promise.resolve();
   sel.innerHTML = '<option value="">全部发型师</option>';
   storeFilter = storeFilter || '';
   // 从staff表获取发型师列表，按门店过滤
   var url = SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username';
-  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+  return fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
     .then(function(r){ return r.json(); }).then(function(rows){
       if (rows && rows.length) {
         var names = {};
@@ -3280,6 +3282,23 @@ function populateCareDetailBarbers(storeFilter) {
       }
     }).catch(function(){});
 }
+
+window.openCareMonthlyEditor = function(store, barber) {
+  var storeSel = document.getElementById('care-detail-store');
+  var barberSel = document.getElementById('care-detail-barber');
+  var detail = document.getElementById('care-detail-records');
+  if (!storeSel || !barberSel || !detail) return;
+  storeSel.value = store || '';
+  populateCareDetailBarbers(store || '').then(function() {
+    var exists = Array.from(barberSel.options).some(function(option){ return option.value === barber; });
+    if (!exists && barber) barberSel.appendChild(el('option', { value: barber, text: barber }));
+    barberSel.value = barber || '';
+    loadCareDetailRecords();
+    var panel = detail.parentElement;
+    if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('已打开 ' + (barber || '该发型师') + ' 的当月护理明细', 'ok');
+  });
+};
 
 window.loadCareDetailRecords = function() {
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
@@ -3435,6 +3454,7 @@ function saveCareRecord() {
     toast('更正成功', 'ok');
     closeModal();
     loadCareDetailRecords();
+    loadCareMonthlyStats();
   })
   .catch(function(e) {
     toast('保存失败: ' + e.message, 'err');
@@ -3444,6 +3464,7 @@ function saveCareRecord() {
 
 // 初始化
 initCustAndFu();
+initializeAdminPage();
 </script>
 </body>
 </html>

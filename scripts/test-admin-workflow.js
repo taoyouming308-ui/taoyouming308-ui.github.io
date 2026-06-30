@@ -30,6 +30,9 @@ assert(app.includes('/rest/v1/perm_data'), 'app runtime unexpectedly lost perm_d
 assert(admin.includes('active=eq.false') && admin.includes('openRegistrationReview'), 'registration review is not separated from active staff');
 assert(admin.includes("hashPasswordValue(pass)"), 'new employee passwords are not hashed');
 assert(admin.includes('recordAdminAction'), 'backend operation audit is missing');
+assert(admin.includes('openCareMonthlyEditor') && admin.includes('编辑用量'), 'care monthly report has no per-barber edit entry');
+assert(admin.includes('loadCareDetailRecords();') && admin.includes('loadCareMonthlyStats();'), 'care correction does not refresh detail and monthly summary');
+assert(admin.indexOf('initializeAdminPage();') > admin.indexOf('window.loadDashboard ='), 'backend initializes before dashboard loaders are registered');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');
