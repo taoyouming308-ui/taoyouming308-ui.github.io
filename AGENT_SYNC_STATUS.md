@@ -84,7 +84,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v339
-- Last synchronized base checked: GitHub `f59f4b0`, Gitee `f59f4b0`
+- Last synchronized base checked: GitHub `fc454ca`, Gitee `fc454ca`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -147,6 +147,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v339 代码提交 `fc454ca` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=339`，线上文件确认完整企业文化首尾文案及 35px/33px 标题字号规则均已生效。
 - 2026-06-30: v339 本地浏览器在 390×844 下确认完整五段企业文化均显示，主标题计算字号为 35px，文案区域无遮挡和横向溢出；浏览器控制台无新增 error/warning。
 - 2026-06-30: v338 代码提交 `ee583ca` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=338`，线上 `perm-app.html` 已包含统一设计系统、员工登录注册层级和新版发质分析页壳。
 - 2026-06-30: v338 本地浏览器在 390×844 下逐页验证首页菜单、员工登录注册、方案换算、冷烫、作品、预约、发质分析、护理/保存区和 8 张真实任务卡；默认 1280×720 下确认 App 维持 480px 居中、固定导航对齐，关闭菜单不再露出。浏览器控制台无新增 error/warning，未提交表单或修改生产业务数据。
