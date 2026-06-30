@@ -78,7 +78,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v338
-- Last synchronized base checked: GitHub `f17df72`, Gitee `f17df72`
+- Last synchronized base checked: GitHub `ee583ca`, Gitee `ee583ca`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -140,6 +140,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v338 代码提交 `ee583ca` 已同步到 GitHub `main` 和 Gitee `master`，两端远端哈希一致；GitHub Pages 已返回 `version.txt=338`，线上 `perm-app.html` 已包含统一设计系统、员工登录注册层级和新版发质分析页壳。
 - 2026-06-30: v338 本地浏览器在 390×844 下逐页验证首页菜单、员工登录注册、方案换算、冷烫、作品、预约、发质分析、护理/保存区和 8 张真实任务卡；默认 1280×720 下确认 App 维持 480px 居中、固定导航对齐，关闭菜单不再露出。浏览器控制台无新增 error/warning，未提交表单或修改生产业务数据。
 - 2026-06-30: v338 新增统一 UI 静态回归测试；现有预约 UI、22 组发质任务状态、客户档案和 App 冒烟测试在改版后通过。
 - 2026-06-30: v337 代码提交 `e11204a` 已同步到 GitHub `main` 和 Gitee `master`，远端哈希一致；GitHub Pages 已返回 `version.txt=337`，线上 `perm-app.html` 包含新版日期标题、时间列、预约项目说明和极简空状态。
