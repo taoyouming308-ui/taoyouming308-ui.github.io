@@ -109,7 +109,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v342
-- Last synchronized base checked: GitHub `029d365`, Gitee `029d365`
+- Last synchronized base checked: GitHub `c95deb5`, Gitee `c95deb5`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -175,6 +175,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v342 代码提交 `c95deb5` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=342`，线上后台确认 `store_admin`、8 模块白名单、本店作品/发质过滤和首页推荐总后台守卫均已生效。
 - 2026-06-30: v342 本地浏览器验证向里造型 `store_admin`：桌面和 390×844 手机端只显示 8 个授权模块；员工列表 11 行全部为向里造型，门店选择锁定，新增员工仅有普通员工角色；护理明细/月报锁定本店，发质页没有全局 AI 队列。作品审核只显示向里员工陈浩的真实作品，操作仅有拒绝/下架而没有首页推荐。切换总管理员后客户、回访、异常和首页展示入口仍完整；控制台无 error/warning，未执行任何保存或生产数据写入。
 - 2026-06-30: v341 代码提交 `58ef11f` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=341`，线上文件确认高对比 `.active` 选中态、✓ 标记和 A/B/C 独立选中类均已生效。
 - 2026-06-30: v341 本地浏览器在 390×844 下实际点击发根色度、协作技师和 A/B/C 评定；选中项计算样式为 `rgb(17,17,17)` 黑底、白字、✓ 和外描边，取消或切换后恢复浅灰。控制台无 error/warning，未保存表单或写入生产数据。
