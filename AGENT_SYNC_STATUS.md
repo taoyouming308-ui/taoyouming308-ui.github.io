@@ -100,7 +100,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v341
-- Last synchronized base checked: GitHub `b0e31b7`, Gitee `b0e31b7`
+- Last synchronized base checked: GitHub `58ef11f`, Gitee `58ef11f`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -165,6 +165,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v341 代码提交 `58ef11f` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=341`，线上文件确认高对比 `.active` 选中态、✓ 标记和 A/B/C 独立选中类均已生效。
 - 2026-06-30: v341 本地浏览器在 390×844 下实际点击发根色度、协作技师和 A/B/C 评定；选中项计算样式为 `rgb(17,17,17)` 黑底、白字、✓ 和外描边，取消或切换后恢复浅灰。控制台无 error/warning，未保存表单或写入生产数据。
 - 2026-06-30: v340 代码提交 `b0a03d4` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=340`，线上文件确认双视图、预约选择、手机排杠区和刷新恢复时序修复均已生效。
 - 2026-06-30: v340 本地浏览器在 390×844 下验证新建分析、客户区、五个排杠分区和“我的任务”8张真实任务卡；任务 #021 点编辑后正确回到张小姐表单并显示“保存档案”。页面无横向溢出，刷新恢复发质页后渲染完整，未执行保存或生产数据写入。
