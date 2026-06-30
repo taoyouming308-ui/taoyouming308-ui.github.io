@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v341 (2026-06-30)
+
+- 修复发质分析选择按钮选中与未选中颜色过于接近的问题：实际交互使用的 `.active` 状态现在为纯黑底、白字、加粗、外描边并显示 ✓，未选中保持浅灰。
+- 协作技师、发质诊断等同类选项统一使用明确选中态；涂抹顺序继续保留数字序号，不重复显示 ✓。
+- A/B/C 效果评定增加独立选中类、纯黑高亮和 ✓；切换评定时旧选项会完整恢复未选中状态。
+- 仅调整前端视觉反馈和状态类，不修改表单字段、保存条件、回传流程或云端数据。
+
 ## v340 (2026-06-30)
 
 - 发质分析页拆分为“新建分析 / 我的任务”两个独立视图，顶部吸附切换；任务不再埋在超长表单底部。
@@ -92,8 +99,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v340
-- Last synchronized base checked: GitHub `b0a03d4`, Gitee `b0a03d4`
+- App version: v341
+- Last synchronized base checked: GitHub `b0e31b7`, Gitee `b0e31b7`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -101,6 +108,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v341: 发质分析选择项和 A/B/C 评定改为纯黑底、白字、✓ 的高对比选中反馈。
 - v340: 发质分析页增加表单/任务双视图，重排客户信息和手机排杠输入，并修复刷新恢复空白页。
 - v339: 首页恢复完整企业文化文案并缩小“自由手艺人”标题，保留 v338 极简视觉系统。
 - v338: 整套前端 App 完成统一黑白极简重构，覆盖首页菜单、登录注册、方案、冷烫、作品、发质分析、任务和客户档案内容；业务逻辑保持不变。
@@ -157,6 +165,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-06-30: v341 本地浏览器在 390×844 下实际点击发根色度、协作技师和 A/B/C 评定；选中项计算样式为 `rgb(17,17,17)` 黑底、白字、✓ 和外描边，取消或切换后恢复浅灰。控制台无 error/warning，未保存表单或写入生产数据。
 - 2026-06-30: v340 代码提交 `b0a03d4` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=340`，线上文件确认双视图、预约选择、手机排杠区和刷新恢复时序修复均已生效。
 - 2026-06-30: v340 本地浏览器在 390×844 下验证新建分析、客户区、五个排杠分区和“我的任务”8张真实任务卡；任务 #021 点编辑后正确回到张小姐表单并显示“保存档案”。页面无横向溢出，刷新恢复发质页后渲染完整，未执行保存或生产数据写入。
 - 2026-06-30: v339 代码提交 `fc454ca` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=339`，线上文件确认完整企业文化首尾文案及 35px/33px 标题字号规则均已生效。

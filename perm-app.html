@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="340">
+<html lang="zh-CN" data-version="341">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2531,10 +2531,23 @@ body {
       color:#5b5b56;
       font-size:11px;
     }
+    .hair-analysis .chip.active,
     .hair-analysis .chip.selected {
-      border-color:var(--ui-black);
-      background:var(--ui-black);
-      color:#fff;
+      border:1px solid var(--ui-black) !important;
+      background:var(--ui-black) !important;
+      color:#fff !important;
+      font-weight:700;
+      box-shadow:0 0 0 2px #fff, 0 0 0 3px var(--ui-black) !important;
+    }
+    .hair-analysis .chip.active::after,
+    .hair-analysis .chip.selected::after {
+      content:"✓";
+      margin-left:5px;
+      font-size:10px;
+      font-weight:800;
+    }
+    #hair-apply-chips .chip.active::after {
+      display:none;
     }
     .hair-analysis .ha-subsection-title {
       margin:18px 0 10px !important;
@@ -2583,10 +2596,24 @@ body {
       color:#fff !important;
     }
     .hair-analysis label[data-name="fb-hair"] {
+      position:relative;
       min-height:58px;
       border:0 !important;
       border-radius:12px !important;
       background:var(--ui-soft);
+    }
+    .hair-analysis label[data-name="fb-hair"].selected {
+      background:var(--ui-black) !important;
+      color:#fff !important;
+      box-shadow:0 0 0 2px #fff, 0 0 0 3px var(--ui-black);
+    }
+    .hair-analysis label[data-name="fb-hair"].selected::after {
+      content:"✓";
+      position:absolute;
+      top:6px;
+      right:8px;
+      font-size:10px;
+      font-weight:800;
     }
     .care-tab-bar { gap:6px; }
     .care-tab-btn {
@@ -7941,6 +7968,7 @@ function initApp() {
       if (selectedRating) selectedRating.checked = false;
       var ratingLabels = document.querySelectorAll('label[data-name="fb-hair"]');
       for (var rli = 0; rli < ratingLabels.length; rli++) {
+        ratingLabels[rli].classList.remove('selected');
         ratingLabels[rli].style.background = '#f4f4f1';
         ratingLabels[rli].style.borderColor = 'transparent';
         ratingLabels[rli].style.color = '#666';
@@ -9529,6 +9557,7 @@ window.selectAppFbRating = function(el) {
   var name = el.getAttribute('data-name');
   var val = el.getAttribute('data-val');
   el.parentElement.querySelectorAll('label').forEach(function(e){
+    e.classList.remove('selected');
     e.style.background = '#f4f4f1';
     e.style.borderColor = 'transparent';
     e.style.color = '#666';
@@ -9536,6 +9565,7 @@ window.selectAppFbRating = function(el) {
   el.style.background = '#111111';
   el.style.borderColor = '#111111';
   el.style.color = '#fff';
+  el.classList.add('selected');
   var radio = document.querySelector('input[name="' + name + '"]');
   if (radio) { radio.value = val; radio.checked = true; }
 };

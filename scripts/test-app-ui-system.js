@@ -31,6 +31,7 @@ assert(app.includes('class="hair-rod-row"') && styles.includes('grid-template-co
 assert(app.includes("setTimeout(function(){ showHairAnalysisPage(); }, 0)"), 'restoring the hair page can run before its renderer is registered');
 assert(app.includes('class="hair-archive-section"') && app.includes('class="profile-record"'), 'customer archive content is missing shared section styles');
 assert(styles.includes('.hair-task-card') && styles.includes('.hair-local-record'), 'hair task and local record surfaces are not covered');
-assert(styles.includes('.hair-analysis .chip.selected') && styles.includes('background:var(--ui-black)'), 'hair analysis controls are not using the monochrome selected state');
+assert(styles.includes('.hair-analysis .chip.active') && styles.includes('.hair-analysis .chip.active::after') && styles.includes('background:var(--ui-black) !important'), 'hair analysis controls do not expose a strong selected state');
+assert(app.includes("el.classList.add('selected')") && styles.includes('label[data-name="fb-hair"].selected'), 'follow-up rating selection is not visually explicit');
 
 console.log('app UI system test ok');
