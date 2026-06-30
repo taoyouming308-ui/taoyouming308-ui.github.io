@@ -18,6 +18,8 @@ const styles = app.slice(styleStart, styleEnd);
 assert(styleStart >= 0 && styleEnd > styleStart, 'shared minimal design system is missing');
 assert(app.includes('class="page-intro page-intro-light"') && app.includes('class="page-intro page-intro-dark"'), 'plan and showcase page headers are not unified');
 assert(app.includes("openHomeDrawerFeature('showcase')"), 'showcase is missing from the main workbench menu');
+assert(app.includes('技术，是一切发型设计的基础。') && app.includes('我们用专业技术，让每一次设计都更稳定、更适合、更有品质。'), 'full brand culture copy is missing from the home page');
+assert(styles.includes('font-size:35px') && styles.includes('font-size:33px'), 'home brand title size is not protected');
 assert(styles.includes('visibility:hidden') && styles.includes('pointer-events:none'), 'closed desktop drawer can remain visible or clickable');
 assert(styles.includes('left:max(16px, calc(50% - 224px))'), 'fixed navigation is not aligned to the centered app shell');
 assert(app.includes('class="identity-kicker"') && app.includes('identity-secondary'), 'login and registration hierarchy is not using the shared modal system');
