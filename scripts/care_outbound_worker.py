@@ -236,9 +236,12 @@ def resolve_depot_details(
             raise WorkerFailure(f"未配置产品映射: {context.brand}/{context.product}")
         details.append(
             {
+                "id": None,
                 "depotid": str(depot_id),
                 "num": context.grams,
                 "price": 0,
+                "remark": None,
+                "depotName": context.brand + context.product,
             }
         )
     return details
@@ -387,6 +390,7 @@ class MeiguanjiaStockClient:
         self.sleep_fn = sleep_fn
         self.user_id = self._cookie_value("userId")
         self.token = self._cookie_value("token")
+        self._operator_info: Optional[Tuple[str, str, str]] = None
 
     def _cookie_value(self, name: str) -> str:
         for item in self.cookies.split(";"):
@@ -441,6 +445,35 @@ class MeiguanjiaStockClient:
             raise NeedsReview("美管加返回格式异常")
         return result
 
+    def operator_info(self) -> Tuple[str, str, str]:
+        if self._operator_info:
+            return self._operator_info
+        url = f"https://{self.server}/shair/metedata!reservationMetadata.action"
+        headers = {
+            "Cookie": self.cookies,
+            "Accept": "application/json, text/plain, */*",
+            "User-Agent": random.choice(USER_AGENTS),
+        }
+        if self.token:
+            headers["Token"] = self.token
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=15, context=SSL_CONTEXT) as response:
+                result = json.loads(response.read().decode())
+        except Exception as error:
+            raise WorkerFailure(f"读取美管加登录员工失败: {error}") from error
+        if not api_succeeded(result):
+            raise WorkerFailure("美管加登录状态无效")
+        content = result.get("content") if isinstance(result.get("content"), dict) else {}
+        user = content.get("userInfo") if isinstance(content.get("userInfo"), dict) else {}
+        user_id = str(user.get("userId") or self.user_id or "")
+        user_name = str(user.get("name") or user.get("userName") or "")
+        session_shop_id = str(user.get("shopId") or "")
+        if not user_id or not user_name:
+            raise WorkerFailure("美管加登录员工信息不完整")
+        self._operator_info = (user_id, user_name, session_shop_id)
+        return self._operator_info
+
     def list_outbound(
         self,
         shop_id: str,
@@ -493,17 +526,31 @@ class MeiguanjiaStockClient:
         remark: str,
         details: Sequence[Mapping[str, Any]],
     ) -> None:
+        operator_id, operator_name, session_shop_id = self.operator_info()
+        if session_shop_id and session_shop_id != str(shop_id):
+            raise WorkerFailure(
+                f"美管加当前登录门店为 {session_shop_id}，目标门店为 {shop_id}"
+            )
         result = self.call(
             "stockApi!saveOutDepot.action",
             {
+                "shopId": str(shop_id),
                 "outdepot": {
+                    "id": None,
                     "shopid": str(shop_id),
                     "parentShopId": self.parent_shop_id,
                     "outwaretype": "8",
                     "outdate": int(time.time() * 1000),
                     "remark": remark,
+                    "price": 0,
+                    "totoalNum": round(
+                        sum(normalize_quantity(item.get("num")) for item in details), 3
+                    ),
+                    "operatid": operator_id,
+                    "operatName": operator_name,
+                    "type": -1,
+                    "details": list(details),
                 },
-                "stockOutDepotDetailDtoList": list(details),
             },
             shop_id,
         )
@@ -516,8 +563,13 @@ class MeiguanjiaStockClient:
         document_id = str(document.get("id") or "")
         if not document_id:
             raise NeedsReview("美管加出库单缺少ID，无法审核")
-        operator_id = self.user_id or str(document.get("operatid") or "")
-        operator_name = str(document.get("operatName") or "")
+        metadata_id, metadata_name, session_shop_id = self.operator_info()
+        if session_shop_id and session_shop_id != str(shop_id):
+            raise WorkerFailure(
+                f"美管加当前登录门店为 {session_shop_id}，目标门店为 {shop_id}"
+            )
+        operator_id = metadata_id or self.user_id or str(document.get("operatid") or "")
+        operator_name = metadata_name or str(document.get("operatName") or "")
         result = self.call(
             "stockApi!auditOutDepot.action",
             {
@@ -538,6 +590,35 @@ class MeiguanjiaStockClient:
         if not api_succeeded(result):
             raise NeedsReview(
                 f"美管加审核结果不明确: {result.get('code')} {result.get('message')}"
+            )
+
+    def delete_unaudited_document(
+        self,
+        shop_id: str,
+        document: Mapping[str, Any],
+    ) -> None:
+        if str(document.get("status")) != "0" or (document.get("details") or []):
+            raise WorkerFailure("只允许删除未审核且无明细的测试空壳单")
+        document_id = str(document.get("id") or "")
+        if not document_id:
+            raise WorkerFailure("测试空壳单缺少ID")
+        operator_id, _, session_shop_id = self.operator_info()
+        if session_shop_id and session_shop_id != str(shop_id):
+            raise WorkerFailure("当前登录门店与测试空壳单不一致")
+        result = self.call(
+            "stockApi!deleteOutDepot.action",
+            {
+                "outdepot": {
+                    "id": document_id,
+                    "operatid": operator_id,
+                },
+                "shopid": str(shop_id),
+            },
+            shop_id,
+        )
+        if not api_succeeded(result):
+            raise WorkerFailure(
+                f"删除测试空壳单失败: {result.get('code')} {result.get('message')}"
             )
 
 

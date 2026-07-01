@@ -20,4 +20,4 @@ if [ "$SOURCE_WORKER" != "$TARGET_WORKER" ] || [ "$SOURCE_CONFIG" != "$TARGET_CO
   exit 1
 fi
 
-echo "护理出库执行器已部署（真实出库保持禁用）"
+echo "护理出库执行器与门店配置已部署"

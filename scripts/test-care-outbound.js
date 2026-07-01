@@ -22,7 +22,9 @@ const functionNames = [
   'finalizeCareOutboundPending',
   'submitCareOutboundPending',
   'recoverCareOutboundPending',
-  'enqueueCareOutboundForRecord'
+  'enqueueCareOutboundForRecord',
+  'scheduleCareOutboundStatusPoll',
+  'stopCareOutboundStatusPoll'
 ];
 
 function extractFunction(name) {

@@ -1,5 +1,5 @@
 {
-  "runtime_enabled": false,
+  "runtime_enabled": true,
   "server": "vip12.meiguanjia.net",
   "parent_shop_id": "1103470",
   "shops": {

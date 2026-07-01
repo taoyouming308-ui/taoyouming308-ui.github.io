@@ -9,7 +9,10 @@
 - 新版 App 使用协议 v2 和确定性负数队列 ID；执行器只读取 `id < 0`，旧版正数队列永远不会被自动重放。
 - 美管加出库必须使用原始克数和 `outwaretype=8`，并按 `saveOutDepot → auditOutDepot → getOutDepotList` 完成创建、审核和明细回查。
 - 只有美管加单据 `status=1` 且 depotId/克数全部一致时，队列才能标记 `completed`。网络结果不明确一律进入 `needs_review`。
-- `scripts/care_outbound_store_config.json` 当前 `runtime_enabled=false`；真实库存实验完成前不得安装定时任务或开启运行开关。
+- `scripts/care_outbound_store_config.json` 当前 `runtime_enabled=true`，但仅自由手艺人 `enabled=true`；向里造型仍保持关闭。
+- LaunchAgent 唯一源文件：`scripts/com.freecraftsman.care-outbound.plist`；使用 `scripts/install_care_outbound_launchd.sh` 安装，任务 `com.freecraftsman.care-outbound` 每60秒运行一次。
+- 2026-07-01 受控真实测试：自由手艺人 `歌薇酸性护理6A` 出库1克，美管加单号 `CPKY20260701001`、状态已审核，库存由756克变为755克。
+- 美管加当前保存载荷使用顶层 `shopId` 和 `outdepot.details`；旧 `stockOutDepotDetailDtoList` 会生成无明细空壳单，禁止恢复。首次测试产生的未审核空壳单 `73539954` 已删除且未改变库存。
 - 2026-07-01 已将旧版正数 pending 行 `7-17` 条件更新为 `legacy_review`；这些记录可能已人工出库，只能核对，不能自动重试。
 
 ## v332 Meiguanjia synchronization

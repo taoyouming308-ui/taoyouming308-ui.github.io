@@ -62,6 +62,22 @@ class FakeStock:
         self.document["status"] = "1"
 
 
+class RecordingMeiguanjiaClient(worker_module.MeiguanjiaStockClient):
+    def __init__(self):
+        super().__init__(
+            server="example.invalid",
+            cookies="userId=543987; token=test-token",
+            parent_shop_id="1103470",
+            sleep_fn=lambda _: None,
+        )
+        self._operator_info = ("543987", "陶友明", "1009951")
+        self.calls = []
+
+    def call(self, action, payload, shop_id):
+        self.calls.append((action, payload, shop_id))
+        return {"code": 0, "message": "success"}
+
+
 def make_batch():
     return {
         "protocolVersion": 2,
@@ -109,6 +125,43 @@ def make_store_config(runtime_enabled=False):
 
 
 class CareOutboundWorkerTests(unittest.TestCase):
+    def test_meiguanjia_payload_uses_current_outdepot_details_contract(self):
+        client = RecordingMeiguanjiaClient()
+        details = [
+            {
+                "id": None,
+                "depotid": "23043758",
+                "num": 1,
+                "price": 0,
+                "remark": None,
+                "depotName": "歌薇酸性护理6A",
+            }
+        ]
+        client.create_document("1009951", "护理App|TEST", details)
+        action, payload, shop_id = client.calls[0]
+        self.assertEqual(action, "stockApi!saveOutDepot.action")
+        self.assertEqual(shop_id, "1009951")
+        self.assertEqual(payload["shopId"], "1009951")
+        self.assertEqual(payload["outdepot"]["outwaretype"], "8")
+        self.assertEqual(payload["outdepot"]["details"], details)
+        self.assertEqual(payload["outdepot"]["totoalNum"], 1)
+        self.assertNotIn("stockOutDepotDetailDtoList", payload)
+
+        client.audit_document(
+            "1009951",
+            {
+                "id": "73539957",
+                "status": "0",
+                "outwaretype": "8",
+                "operatName": "陶友明",
+            },
+        )
+        audit_action, audit_payload, _ = client.calls[1]
+        self.assertEqual(audit_action, "stockApi!auditOutDepot.action")
+        self.assertEqual(audit_payload["outdepot"]["id"], "73539957")
+        self.assertEqual(audit_payload["outdepot"]["type"], -1)
+        self.assertEqual(audit_payload["outdepot"]["status"], 0)
+
     def test_builds_context_only_for_protocol_v2_negative_ids(self):
         rows = [
             {

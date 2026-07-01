@@ -58,7 +58,7 @@ const careAddSource = careAddStart >= 0 && careAddEnd > careAddStart ? html.slic
 if (careAddSource.includes('care_outbound_queue')) {
   fail('adding a care item must not enqueue inventory before the hair record is saved');
 }
-for (const marker of ['enqueueCareOutboundForRecord', 'prepareCareOutboundBaseline', 'retryLatestCareOutbound']) {
+for (const marker of ['enqueueCareOutboundForRecord', 'prepareCareOutboundBaseline', 'retryLatestCareOutbound', 'scheduleCareOutboundStatusPoll']) {
   if (!html.includes(marker)) fail('missing care outbound safety marker: ' + marker);
 }
 const careQueueStart = html.indexOf('function careOutboundPendingRows(');

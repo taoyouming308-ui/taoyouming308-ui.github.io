@@ -9,7 +9,9 @@
 - 美管加结果不明确时进入 `needs_review`，App 不提供盲目重试；总后台按同批次核对后重试，并显示门店、发型师、关联发质表和新版处理状态。
 - 旧版待处理正数队列 7-17 共 11 条已按 ID 和 pending 状态条件隔离为 `legacy_review`，没有触发美管加出库。
 - 生产队列使用负数 ID `-4343000000000001` 做过一次幂等协议探针：首次插入 1 行、重复插入 0 行，确认主键冲突保护有效；该探针未调用美管加，因匿名策略不允许删除，已明确标记 `completed` 和“未扣库存”。
-- 真实运行开关保持关闭，未安装定时任务，尚未进行真实库存扣减；需用户指定自由手艺人测试产品和克数后再做受控实验。
+- 受控真实测试已完成：自由手艺人 `歌薇酸性护理6A` 出库1克，美管加单号 `CPKY20260701001` 已审核，库存从756克准确降至755克。
+- 实测确认保存载荷必须使用顶层 `shopId` 和 `outdepot.details`；旧字段会生成无明细空壳单。测试中产生的未审核空壳单 `73539954` 已安全删除，未改变库存。
+- 自由手艺人真实运行开关已开启，LaunchAgent `com.freecraftsman.care-outbound` 已安装，每60秒运行一次；向里造型仍保持关闭。
 
 ## v342 (2026-06-30)
 
@@ -187,8 +189,10 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
-- 2026-07-01: v343 App确定性队列测试、5组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
-- 2026-07-01: 仓库执行器和 `~/.hermes/scripts/` 部署副本 SHA-256 一致；部署后只读模拟显示没有协议v2待处理任务，真实运行开关为关闭，系统未安装护理出库定时任务。
+- 2026-07-01: 自由手艺人6A真实出库1克验证成功；美管加单据 `73539957 / CPKY20260701001` 为已审核，明细 depotId `23043758` 数量1，库存756克→755克。首次错误字段生成的未审核空壳单 `73539954` 已删除，回查不存在且库存未变。
+- 2026-07-01: LaunchAgent `com.freecraftsman.care-outbound` 已加载，运行间隔60秒，最近退出码0；日志显示没有协议v2待处理任务，Supabase负数队列无 pending/processing/failed/needs_review。
+- 2026-07-01: v343 App确定性队列测试、6组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
+- 2026-07-01: 仓库执行器、门店配置、LaunchAgent 与部署副本一致；真实运行开关只对自由手艺人开启，后台任务最近退出码0，当前没有协议v2待处理任务。
 - 2026-07-01: 美管加只读核对确认自由手艺人20个护理产品均有独立 depotId；真实已审核出库单使用 `outwaretype=8` 和原始整数/小数克数。前端库存组件源码确认审核载荷包含单据ID、审核人、门店、原类型和待审核状态。
 - 2026-07-01: 旧队列正数 ID 7-17 共11条从 `pending` 条件隔离为 `legacy_review` 并逐条复查；协议探针验证确定性负数ID首次插入成功、重复插入被主键忽略，未调用美管加、未扣库存。
 - 2026-06-30: v342 代码提交 `c95deb5` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=342`，线上后台确认 `store_admin`、8 模块白名单、本店作品/发质过滤和首页推荐总后台守卫均已生效。
@@ -252,7 +256,7 @@ Every meaningful change must update this file before commit/push.
 - `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
 - 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。
 - `care_outbound_queue` 仍没有新增数据库字段；v343 暂以确定性负数主键实现数据库幂等，并把门店、发质表、发型师和批次元数据保存在 `hair_records.record_data`。后续如有受控数据库迁移窗口，可再增加专用列和唯一约束。
-- 护理出库仍需用户指定自由手艺人测试产品和克数，执行一笔真实小克数测试，并在美管加库存流水核对实际扣减；当前运行开关和定时任务均未开启。
+- 自由手艺人真实1克出库已经验证；发布后仍需由员工在App完成一张带护理用量的发质表，做一次完整“App入队→后台任务→美管加审核→App状态”验收。
 - 向里造型美管加当前只有一个汇总“歌薇酸性护理”库存商品，欧拉裴/上色水及色号没有独立映射；用户已决定本阶段不接入向里自动出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.
 - Verify real endpoints/fields for appointments, customer packages/cards, remaining package items, and consumption history.

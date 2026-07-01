@@ -6008,6 +6008,26 @@ function initApp() {
     });
   }
 
+  function scheduleCareOutboundStatusPoll(record, ids) {
+    var key = (ids || []).join(',');
+    if (window._careOutboundPollKey !== key) {
+      window._careOutboundPollKey = key;
+      window._careOutboundPollAttempts = 0;
+    }
+    window._careOutboundPollAttempts = (window._careOutboundPollAttempts || 0) + 1;
+    clearTimeout(window._careOutboundPollTimer);
+    if (window._careOutboundPollAttempts > 36) return;
+    window._careOutboundPollTimer = setTimeout(function() {
+      refreshCareOutboundStatus(record);
+    }, 5000);
+  }
+
+  function stopCareOutboundStatusPoll() {
+    clearTimeout(window._careOutboundPollTimer);
+    window._careOutboundPollTimer = null;
+    window._careOutboundPollAttempts = 0;
+  }
+
   function refreshCareOutboundStatus(record) {
     var el = document.getElementById('hair-outbound-status');
     var batches = record && Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
@@ -6028,26 +6048,32 @@ function initApp() {
       var processing = rows.filter(function(row) { return row.status === 'processing'; });
       var completed = rows.filter(function(row) { return row.status === 'completed'; });
       if (review.length) {
+        stopCareOutboundStatusPoll();
         el.textContent = '护理出库：待管理员核对';
         el.style.color = '#e85050';
         el.title = review.map(function(row) { return row.error_message || '结果需要人工核对'; }).join('；');
       } else if (failed.length) {
+        stopCareOutboundStatusPoll();
         el.textContent = '护理出库：失败，请联系管理员';
         el.style.color = '#e85050';
         el.title = failed.map(function(row) { return row.error_message || '未知错误'; }).join('；');
       } else if (rows.length === ids.length && completed.length === ids.length) {
+        stopCareOutboundStatusPoll();
         el.textContent = '护理出库：美管加已审核';
         el.style.color = 'var(--success, #2ecc71)';
       } else if (processing.length) {
         el.textContent = '护理出库：美管加处理中';
         el.style.color = '#e8a817';
+        scheduleCareOutboundStatusPoll(record, ids);
       } else {
         el.textContent = '护理出库：已进入同步队列';
         el.style.color = '#e8a817';
+        scheduleCareOutboundStatusPoll(record, ids);
       }
     }).catch(function() {
       el.textContent = '护理出库：状态暂不可查';
       el.style.color = 'var(--text-secondary)';
+      scheduleCareOutboundStatusPoll(record, ids);
     });
   }
 
