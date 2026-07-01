@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v343 (2026-07-01)
+## v344 (2026-07-01)
 
 - 护理出库实验范围固定为自由手艺人；向里造型护理记录照常保存，但 App 明确显示暂未启用且不会生成美管加出库任务。
 - App 出库队列升级为协议 v2：按发质表、门店、产品和累计目标克数生成确定性负数队列 ID；重复保存、网络中断恢复或重复提交会复用同一行。
@@ -121,7 +121,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v343
+- App version: v344
 - Last synchronized base checked: GitHub `cf088e5`, Gitee `cf088e5`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
@@ -130,7 +130,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
-- v343: 自由手艺人护理出库升级为确定性队列、创建/审核/回查三阶段执行器；向里暂不接入，旧版任务隔离，真实出库保持关闭。
+- v344: 自由手艺人护理出库升级为确定性队列、创建/审核/回查三阶段执行器并每60秒自动运行；向里暂不接入，旧版任务隔离。
 - v342: 增加绑定门店的分店管理员后台；向里造型仅管理本店员工、发质、护理、月报和作品审核，首页推荐及客户/回访/系统权限保留总后台。
 - v341: 发质分析选择项和 A/B/C 评定改为纯黑底、白字、✓ 的高对比选中反馈。
 - v340: 发质分析页增加表单/任务双视图，重排客户信息和手机排杠输入，并修复刷新恢复空白页。
@@ -191,7 +191,7 @@ Every meaningful change must update this file before commit/push.
 
 - 2026-07-01: 自由手艺人6A真实出库1克验证成功；美管加单据 `73539957 / CPKY20260701001` 为已审核，明细 depotId `23043758` 数量1，库存756克→755克。首次错误字段生成的未审核空壳单 `73539954` 已删除，回查不存在且库存未变。
 - 2026-07-01: LaunchAgent `com.freecraftsman.care-outbound` 已加载，运行间隔60秒，最近退出码0；日志显示没有协议v2待处理任务，Supabase负数队列无 pending/processing/failed/needs_review。
-- 2026-07-01: v343 App确定性队列测试、6组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
+- 2026-07-01: v344 App确定性队列测试、6组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
 - 2026-07-01: 仓库执行器、门店配置、LaunchAgent 与部署副本一致；真实运行开关只对自由手艺人开启，后台任务最近退出码0，当前没有协议v2待处理任务。
 - 2026-07-01: 美管加只读核对确认自由手艺人20个护理产品均有独立 depotId；真实已审核出库单使用 `outwaretype=8` 和原始整数/小数克数。前端库存组件源码确认审核载荷包含单据ID、审核人、门店、原类型和待审核状态。
 - 2026-07-01: 旧队列正数 ID 7-17 共11条从 `pending` 条件隔离为 `legacy_review` 并逐条复查；协议探针验证确定性负数ID首次插入成功、重复插入被主键忽略，未调用美管加、未扣库存。
@@ -255,7 +255,7 @@ Every meaningful change must update this file before commit/push.
 - GitHub CLI 当前未登录，无法从本机替用户开启分支保护；仓库已提供 CI，但仓库设置仍需把 `Validate shared app` 设为 `main` 必需检查，才能彻底阻止绕过检查的直接推送。
 - `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
 - 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。
-- `care_outbound_queue` 仍没有新增数据库字段；v343 暂以确定性负数主键实现数据库幂等，并把门店、发质表、发型师和批次元数据保存在 `hair_records.record_data`。后续如有受控数据库迁移窗口，可再增加专用列和唯一约束。
+- `care_outbound_queue` 仍没有新增数据库字段；v344 暂以确定性负数主键实现数据库幂等，并把门店、发质表、发型师和批次元数据保存在 `hair_records.record_data`。后续如有受控数据库迁移窗口，可再增加专用列和唯一约束。
 - 自由手艺人真实1克出库已经验证；发布后仍需由员工在App完成一张带护理用量的发质表，做一次完整“App入队→后台任务→美管加审核→App状态”验收。
 - 向里造型美管加当前只有一个汇总“歌薇酸性护理”库存商品，欧拉裴/上色水及色号没有独立映射；用户已决定本阶段不接入向里自动出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.

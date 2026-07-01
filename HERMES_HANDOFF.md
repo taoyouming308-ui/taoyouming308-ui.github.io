@@ -1,6 +1,6 @@
 # Hermes Handoff
 
-## v343 护理自动出库实验
+## v344 护理自动出库实验
 
 - 仅自由手艺人启用协议配置；向里造型护理数据继续保存，但 App 不生成出库任务。
 - 执行器唯一源文件：`scripts/care_outbound_worker.py`。
