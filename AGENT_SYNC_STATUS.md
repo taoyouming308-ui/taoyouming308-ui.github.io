@@ -122,7 +122,7 @@ Every meaningful change must update this file before commit/push.
 ## Current Shared State
 
 - App version: v344
-- Last synchronized base checked: GitHub `cf088e5`, Gitee `cf088e5`
+- Last synchronized base checked: GitHub `ca8853c`, Gitee `ca8853c`
 - GitHub live branch: `github/main`
 - Gitee Hermes branch: `origin/master`
 - Required state before editing: local `HEAD` includes both `github/main` and `origin/master`
@@ -189,6 +189,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-07-01: v344 代码提交 `ca8853c` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=344` 和 `data-version=344`。
 - 2026-07-01: 自由手艺人6A真实出库1克验证成功；美管加单据 `73539957 / CPKY20260701001` 为已审核，明细 depotId `23043758` 数量1，库存756克→755克。首次错误字段生成的未审核空壳单 `73539954` 已删除，回查不存在且库存未变。
 - 2026-07-01: LaunchAgent `com.freecraftsman.care-outbound` 已加载，运行间隔60秒，最近退出码0；日志显示没有协议v2待处理任务，Supabase负数队列无 pending/processing/failed/needs_review。
 - 2026-07-01: v344 App确定性队列测试、6组执行器创建/审核/回查单元测试、22组发质任务、后台工作流、客户档案、预约和全局UI测试全部通过；17组美管加同步Python测试、版本/发布完整性、脚本语法、Agent状态和 whitespace 检查通过。
