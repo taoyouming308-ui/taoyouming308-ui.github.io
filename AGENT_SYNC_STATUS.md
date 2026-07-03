@@ -7,6 +7,7 @@
 - 创建、审核和最终完成前都会回查美管加单据的 `employeeid`；已有单据员工为空或与发型师不一致时进入 `needs_review`，不会误报完成。
 - 部署目录曾存在未进入仓库的临时实现；本次恢复 `scripts/care_outbound_worker.py` 与 `scripts/care_outbound_store_config.json` 为唯一源，部署必须重新校验哈希。
 - 用户确认 Gitee 已停用；GitHub `main` 现为唯一发布源，发布检查和协作说明不再访问 Gitee。
+- 用户选择隔离7月1日旧批次：3个批次共14条队列已精确标记 `needs_review` 和“未自动出库”，未调用美管加写接口；修复版已部署并重新启用60秒任务。
 
 ## v344 (2026-07-01)
 
@@ -201,6 +202,7 @@ Every meaningful change must update this file before commit/push.
 - 2026-07-03: 美管加库存前端只读源码确认员工选择绑定 `bill.employeeid`；最近护理 App 出库单回查为 `operatid` 有值而 `employeeid=null`，确认员工为空的直接根因。
 - 2026-07-03: Supabase 只读检查发现 7 月 1 日仍有 3 个协议 v2 待处理批次；两批产品映射完整，共169克，第三批169.3克包含错误品牌下的1/2/4/5号并会安全失败。重新启用前必须明确这些旧批次是否处理。
 - 2026-07-03: 新增员工字段、员工回查和未映射阻断测试，8组执行器单元测试、护理队列静态测试、Python语法和 whitespace 检查通过；未调用美管加写接口、未改变库存。
+- 2026-07-03: 旧批次14条按明确ID从 `pending` 隔离为 `needs_review`，复查 active pending/processing 为0；仓库与 `~/.hermes/scripts` 的执行器和配置哈希一致，`runtime_enabled=true`，LaunchAgent最近退出码0并记录“没有协议v2待处理任务”。
 - 2026-07-01: v344 代码提交 `ca8853c` 已同步到 GitHub `main` 和 Gitee `master`，双远端哈希一致；GitHub Pages 已返回 `version.txt=344` 和 `data-version=344`。
 - 2026-07-01: 自由手艺人6A真实出库1克验证成功；美管加单据 `73539957 / CPKY20260701001` 为已审核，明细 depotId `23043758` 数量1，库存756克→755克。首次错误字段生成的未审核空壳单 `73539954` 已删除，回查不存在且库存未变。
 - 2026-07-01: LaunchAgent `com.freecraftsman.care-outbound` 已加载，运行间隔60秒，最近退出码0；日志显示没有协议v2待处理任务，Supabase负数队列无 pending/processing/failed/needs_review。
@@ -270,7 +272,7 @@ Every meaningful change must update this file before commit/push.
 - 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。
 - `care_outbound_queue` 仍没有新增数据库字段；v344 暂以确定性负数主键实现数据库幂等，并把门店、发质表、发型师和批次元数据保存在 `hair_records.record_data`。后续如有受控数据库迁移窗口，可再增加专用列和唯一约束。
 - 自由手艺人真实1克出库已经验证；发布后仍需由员工在App完成一张带护理用量的发质表，做一次完整“App入队→后台任务→美管加审核→App状态”验收。
-- 2026-07-01 的3个旧协议 v2 待处理批次在重新启用前必须由用户决定处理或隔离，禁止默认批量扣库存。
+- 下一步由用户新建一张少量护理测试单，确认美管加单据同时显示正确发型师员工、克数和已审核状态。
 - 向里造型美管加当前只有一个汇总“歌薇酸性护理”库存商品，欧拉裴/上色水及色号没有独立映射；用户已决定本阶段不接入向里自动出库。
 - For Meiguanjia sync, use the logged-in Meiguanjia page with DevTools Network in read-only mode before changing endpoint mappings.
 - Verify real endpoints/fields for appointments, customer packages/cards, remaining package items, and consumption history.

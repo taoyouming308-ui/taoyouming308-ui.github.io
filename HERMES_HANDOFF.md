@@ -16,6 +16,7 @@
 - 2026-07-01 受控真实测试：自由手艺人 `歌薇酸性护理6A` 出库1克，美管加单号 `CPKY20260701001`、状态已审核，库存由756克变为755克。
 - 美管加当前保存载荷使用顶层 `shopId` 和 `outdepot.details`；旧 `stockOutDepotDetailDtoList` 会生成无明细空壳单，禁止恢复。首次测试产生的未审核空壳单 `73539954` 已删除且未改变库存。
 - 2026-07-01 已将旧版正数 pending 行 `7-17` 条件更新为 `legacy_review`；这些记录可能已人工出库，只能核对，不能自动重试。
+- 2026-07-03 用户选择隔离员工字段修复前的3个协议v2批次；14条旧队列已标记 `needs_review` 且未自动出库。修复版部署后 active pending/processing 为0，后续只处理新建测试单。
 
 ## v332 Meiguanjia synchronization
 
