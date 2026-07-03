@@ -31,4 +31,4 @@ fs.writeFileSync('version.txt', String(nextVersion) + '\n');
 fs.writeFileSync('version.json', JSON.stringify({ version: nextVersion }) + '\n');
 
 console.log(`prepared forward rollback from ${stableRef} as v${nextVersion}`);
-console.log('Next: run node scripts/smoke-test-app.js, commit, then push both remotes.');
+console.log('Next: run node scripts/smoke-test-app.js, commit, then push GitHub main.');

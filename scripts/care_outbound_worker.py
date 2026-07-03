@@ -109,6 +109,22 @@ def product_key(brand: Any, product: Any) -> Tuple[str, str]:
     return (str(brand or "").strip(), str(product or "").strip())
 
 
+def resolve_employee_id(barber_name: Any, shop: Mapping[str, Any]) -> str:
+    """Resolve the stylist to the explicit Meiguanjia employee id for this shop."""
+    name = str(barber_name or "").strip()
+    if not name:
+        raise WorkerFailure("发质分析表未填写发型师，禁止无员工出库")
+    employees = shop.get("employees")
+    if not isinstance(employees, dict):
+        raise WorkerFailure("门店未配置美管加员工映射")
+    employee_id = str(employees.get(name) or "").strip()
+    if not employee_id:
+        raise WorkerFailure(f"发型师“{name}”未配置美管加员工ID")
+    if not employee_id.isdigit():
+        raise WorkerFailure(f"发型师“{name}”的美管加员工ID无效")
+    return employee_id
+
+
 @dataclass(frozen=True)
 class QueueContext:
     queue_id: int
@@ -525,6 +541,7 @@ class MeiguanjiaStockClient:
         shop_id: str,
         remark: str,
         details: Sequence[Mapping[str, Any]],
+        employee_id: str,
     ) -> None:
         operator_id, operator_name, session_shop_id = self.operator_info()
         if session_shop_id and session_shop_id != str(shop_id):
@@ -548,6 +565,7 @@ class MeiguanjiaStockClient:
                     ),
                     "operatid": operator_id,
                     "operatName": operator_name,
+                    "employeeid": str(employee_id),
                     "type": -1,
                     "details": list(details),
                 },
@@ -662,6 +680,7 @@ class CareOutboundWorker:
         shop_id = str(shop.get("shop_id") or "")
         if not shop_id:
             raise WorkerFailure(f"门店缺少美管加shopId: {shop_name}")
+        employee_id = resolve_employee_id(contexts[0].barber, shop)
         details = resolve_depot_details(contexts, shop)
         remark = f"护理App|{batch_key}"
         self.log(
@@ -674,6 +693,8 @@ class CareOutboundWorker:
                 + json.dumps(
                     {
                         "shopId": shop_id,
+                        "employeeid": employee_id,
+                        "employeeName": contexts[0].barber,
                         "remark": remark,
                         "details": details,
                     },
@@ -690,8 +711,10 @@ class CareOutboundWorker:
         document = self.stock.find_document(shop_id, contexts[0].queued_at, remark)
         if document and not document_matches(document, details):
             raise NeedsReview("已存在的美管加出库单与护理克数不一致")
+        if document and str(document.get("employeeid") or "") != employee_id:
+            raise NeedsReview("已存在的美管加出库单员工为空或与发型师不一致")
         if not document:
-            self.stock.create_document(shop_id, remark, details)
+            self.stock.create_document(shop_id, remark, details, employee_id)
             for attempt in range(3):
                 document = self.stock.find_document(shop_id, contexts[0].queued_at, remark)
                 if document:
@@ -702,6 +725,8 @@ class CareOutboundWorker:
                 raise NeedsReview("创建接口已返回成功，但回查不到对应美管加出库单")
         if not document_matches(document, details):
             raise NeedsReview("美管加出库单明细与护理克数不一致")
+        if str(document.get("employeeid") or "") != employee_id:
+            raise NeedsReview("美管加出库单未正确选择发型师员工")
         if str(document.get("status")) != "1":
             self.stock.audit_document(shop_id, document)
             document = self.stock.find_document(shop_id, contexts[0].queued_at, remark)
@@ -709,6 +734,8 @@ class CareOutboundWorker:
             raise NeedsReview("美管加出库单未达到已审核状态")
         if not document_matches(document, details):
             raise NeedsReview("审核后的美管加出库明细与护理克数不一致")
+        if str(document.get("employeeid") or "") != employee_id:
+            raise NeedsReview("审核后的美管加出库单员工与发型师不一致")
         bill_no = str(document.get("billno") or document.get("id") or "")
         self.supabase.set_status(queue_ids, "completed", f"美管加单号:{bill_no} 已审核")
         self.log(f"完成: {batch_key} -> {bill_no}")

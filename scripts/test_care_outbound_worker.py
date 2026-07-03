@@ -42,13 +42,14 @@ class FakeStock:
     def find_document(self, shop_id, queued_at, remark):
         return self.document
 
-    def create_document(self, shop_id, remark, details):
-        self.created.append((shop_id, remark, details))
+    def create_document(self, shop_id, remark, details, employee_id):
+        self.created.append((shop_id, remark, details, employee_id))
         self.document = {
             "id": "73599999",
             "billno": "CPKYTEST001",
             "status": "0",
             "outwaretype": "8",
+            "employeeid": employee_id,
             "remark": remark,
             "operatName": "陶友明",
             "details": [
@@ -110,6 +111,7 @@ def make_store_config(runtime_enabled=False):
             "自由手艺人": {
                 "enabled": True,
                 "shop_id": "1009951",
+                "employees": {"无名": "2488057"},
                 "products": {
                     "歌薇酸性护理": {"6A": "23043758"},
                     "欧拉裴": {"1号": "23043813"},
@@ -118,6 +120,7 @@ def make_store_config(runtime_enabled=False):
             "向里造型": {
                 "enabled": False,
                 "shop_id": "1837032",
+                "employees": {},
                 "products": {},
             },
         },
@@ -137,7 +140,7 @@ class CareOutboundWorkerTests(unittest.TestCase):
                 "depotName": "歌薇酸性护理6A",
             }
         ]
-        client.create_document("1009951", "护理App|TEST", details)
+        client.create_document("1009951", "护理App|TEST", details, "2488057")
         action, payload, shop_id = client.calls[0]
         self.assertEqual(action, "stockApi!saveOutDepot.action")
         self.assertEqual(shop_id, "1009951")
@@ -145,6 +148,12 @@ class CareOutboundWorkerTests(unittest.TestCase):
         self.assertEqual(payload["outdepot"]["outwaretype"], "8")
         self.assertEqual(payload["outdepot"]["details"], details)
         self.assertEqual(payload["outdepot"]["totoalNum"], 1)
+        self.assertEqual(payload["outdepot"]["employeeid"], "2488057")
+        self.assertEqual(payload["outdepot"]["operatid"], "543987")
+        self.assertNotEqual(
+            payload["outdepot"]["employeeid"], payload["outdepot"]["operatid"]
+        )
+        self.assertNotIn("staffId", payload["outdepot"])
         self.assertNotIn("stockOutDepotDetailDtoList", payload)
 
         client.audit_document(
@@ -227,6 +236,7 @@ class CareOutboundWorkerTests(unittest.TestCase):
         self.assertEqual(set(supabase.claimed), {-101, -102})
         self.assertEqual(stock.created[0][0], "1009951")
         self.assertEqual(stock.created[0][1], "护理App|FC-100")
+        self.assertEqual(stock.created[0][3], "2488057")
         self.assertEqual(stock.audited, [("1009951", "73599999")])
         self.assertEqual(supabase.status_updates[-1][1], "completed")
         self.assertIn("CPKYTEST001", supabase.status_updates[-1][2])
@@ -242,6 +252,7 @@ class CareOutboundWorkerTests(unittest.TestCase):
             "billno": "CPKYTEST002",
             "status": "1",
             "outwaretype": "8",
+            "employeeid": "2488057",
             "remark": "护理App|FC-100",
             "details": details,
         }
@@ -268,6 +279,74 @@ class CareOutboundWorkerTests(unittest.TestCase):
         self.assertEqual(stock.created, [])
         self.assertEqual(stock.audited, [])
         self.assertEqual(supabase.status_updates[-1][1], "completed")
+
+    def test_existing_document_without_employee_needs_review(self):
+        batch = make_batch()
+        details = [
+            {"depotid": "23043758", "num": 15},
+            {"depotid": "23043813", "num": 3},
+        ]
+        existing = {
+            "id": "73599999",
+            "billno": "CPKYTEST003",
+            "status": "0",
+            "outwaretype": "8",
+            "employeeid": None,
+            "remark": "护理App|FC-100",
+            "details": details,
+        }
+        queue_rows = [
+            {
+                "id": item["queueId"],
+                "brand": item["brand"],
+                "product": item["product"],
+                "grams": item["grams"],
+                "status": "processing",
+                "created_at": batch["queuedAt"],
+            }
+            for item in batch["items"]
+        ]
+        supabase = FakeSupabase(
+            queue_rows,
+            [{"id": "hair-1", "record_data": {"careOutboundBatches": [batch]}}],
+        )
+        stock = FakeStock(existing)
+        worker = worker_module.CareOutboundWorker(
+            make_store_config(), supabase, stock, logger=lambda _: None
+        )
+        self.assertEqual(worker.run(), 1)
+        self.assertEqual(stock.created, [])
+        self.assertEqual(stock.audited, [])
+        self.assertEqual(supabase.status_updates[-1][1], "needs_review")
+        self.assertIn("员工为空", supabase.status_updates[-1][2])
+
+    def test_unmapped_barber_fails_before_external_write(self):
+        batch = make_batch()
+        batch["barber"] = "未映射员工"
+        queue_rows = [
+            {
+                "id": item["queueId"],
+                "brand": item["brand"],
+                "product": item["product"],
+                "grams": item["grams"],
+                "status": "pending",
+                "created_at": batch["queuedAt"],
+            }
+            for item in batch["items"]
+        ]
+        supabase = FakeSupabase(
+            queue_rows,
+            [{"id": "hair-1", "record_data": {"careOutboundPending": batch}}],
+        )
+        stock = FakeStock()
+        worker = worker_module.CareOutboundWorker(
+            make_store_config(), supabase, stock, logger=lambda _: None
+        )
+        self.assertEqual(worker.run(), 1)
+        self.assertEqual(supabase.claimed, [])
+        self.assertEqual(stock.created, [])
+        self.assertEqual(supabase.status_updates[-1][1], "failed")
+        self.assertIn("未配置美管加员工ID", supabase.status_updates[-1][2])
 
     def test_xiangli_is_rejected_before_external_write(self):
         batch = make_batch()

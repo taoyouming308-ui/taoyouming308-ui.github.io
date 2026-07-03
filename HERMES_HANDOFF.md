@@ -8,7 +8,9 @@
 - 部署脚本：`scripts/deploy_care_outbound_worker.sh`；部署目标位于 `~/.hermes/scripts/`，必须保持 SHA-256 一致，禁止只改 Hermes 副本。
 - 新版 App 使用协议 v2 和确定性负数队列 ID；执行器只读取 `id < 0`，旧版正数队列永远不会被自动重放。
 - 美管加出库必须使用原始克数和 `outwaretype=8`，并按 `saveOutDepot → auditOutDepot → getOutDepotList` 完成创建、审核和明细回查。
-- 只有美管加单据 `status=1` 且 depotId/克数全部一致时，队列才能标记 `completed`。网络结果不明确一律进入 `needs_review`。
+- 出库员工对应发质分析表的发型师，必须写入 `outdepot.employeeid`；`operatid/operatName` 只表示当前登录操作人，禁止用它替代员工字段。
+- 人员 ID 在门店配置的 `employees` 中显式维护；未填写、未映射或回查员工不一致时禁止继续出库。
+- 只有美管加单据 `status=1` 且 employeeId、depotId、克数全部一致时，队列才能标记 `completed`。网络结果不明确一律进入 `needs_review`。
 - `scripts/care_outbound_store_config.json` 当前 `runtime_enabled=true`，但仅自由手艺人 `enabled=true`；向里造型仍保持关闭。
 - LaunchAgent 唯一源文件：`scripts/com.freecraftsman.care-outbound.plist`；使用 `scripts/install_care_outbound_launchd.sh` 安装，任务 `com.freecraftsman.care-outbound` 每60秒运行一次。
 - 2026-07-01 受控真实测试：自由手艺人 `歌薇酸性护理6A` 出库1克，美管加单号 `CPKY20260701001`、状态已审核，库存由756克变为755克。
@@ -49,13 +51,12 @@ This file is the working context Hermes should read before editing the app.
 - Backend operation logs are current-device localStorage only. Do not describe them as database-level audit logs.
 - Supabase is the app data backend. Do not rename table fields casually because the frontend reads many fields directly from `record_data`.
 
-## Remotes
+## Publication Source
 
 - `github` -> `git@github.com:taoyouming308-ui/taoyouming308-ui.github.io.git`
-- `origin` -> `git@gitee.com:free-craftsman/perm-app.git`
 - GitHub branch is `main`.
-- Gitee branch is `master`.
-- These two must be kept synchronized. The previous downgrade happened because Gitee was old while GitHub was new.
+- GitHub `main` is the only publication source.
+- Gitee is retired; Hermes and Codex must not fetch or push it.
 
 ## Current Publish Guard
 
@@ -85,7 +86,7 @@ node scripts/test-booking-ui.js
 node scripts/check-agent-sync-status.js
 ```
 
-The hook fetches both remotes and rejects pushes if local `HEAD` does not include both remote heads.
+The hook fetches GitHub and rejects pushes if local `HEAD` does not include `github/main`.
 
 Updates must not interrupt active salon work. The app should prompt for refresh instead of forcing a refresh. If a release is bad, use `scripts/rollback-forward.js` to publish stable code as a higher version.
 
@@ -192,7 +193,6 @@ Before editing:
 
 ```sh
 git fetch github main
-git fetch origin master
 git status --short --branch
 node scripts/check-version-sync.js
 node scripts/check-release-integrity.js
@@ -212,7 +212,6 @@ Before publishing:
 node scripts/check-version-sync.js
 node scripts/check-agent-sync-status.js
 git push github main
-git push origin main:master
 ```
 
 After publishing:

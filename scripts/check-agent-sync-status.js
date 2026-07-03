@@ -32,7 +32,6 @@ const requiredPhrases = [
   'Required Checks Before Publishing',
   'Handoff Rule',
   'git fetch github main',
-  'git fetch origin master',
   'node scripts/check-version-sync.js',
   'node scripts/smoke-test-app.js'
 ];

@@ -51,7 +51,7 @@ if (htmlVersion !== txtVersion || txtVersion !== jsonVersion) {
   fail(`local version mismatch: html=${htmlVersion}, txt=${txtVersion}, json=${jsonVersion}`);
 }
 
-const remoteRefs = ['github/main', 'origin/master'];
+const remoteRefs = ['github/main'];
 for (const ref of remoteRefs) {
   if (!gitOk(['rev-parse', '--verify', '--quiet', ref])) continue;
   if (!gitOk(['merge-base', '--is-ancestor', ref, 'HEAD'])) {

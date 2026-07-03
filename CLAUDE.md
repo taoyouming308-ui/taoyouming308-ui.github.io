@@ -13,7 +13,6 @@ Run:
 
 ```sh
 git fetch github main
-git fetch origin master
 node scripts/check-version-sync.js
 node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
@@ -22,4 +21,4 @@ python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive
 node scripts/check-agent-sync-status.js
 ```
 
-Do not push unless the checks pass. Keep GitHub `main` and Gitee `master` synchronized. Do not force-refresh users; use update prompts and forward-only rollback. Update `AGENT_SYNC_STATUS.md` before committing meaningful work. Deploy Meiguanjia runtime scripts only from the tracked canonical files in this repository; never keep a separate Hermes-only copy or run an endless backfill loop.
+Do not push unless the checks pass. GitHub `main` is the only publication source; Gitee is retired. Do not force-refresh users; use update prompts and forward-only rollback. Update `AGENT_SYNC_STATUS.md` before committing meaningful work. Deploy Meiguanjia runtime scripts only from the tracked canonical files in this repository; never keep a separate Hermes-only copy or run an endless backfill loop.

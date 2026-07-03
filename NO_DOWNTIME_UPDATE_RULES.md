@@ -17,7 +17,6 @@ Run:
 
 ```sh
 git fetch github main
-git fetch origin master
 node scripts/check-version-sync.js
 node scripts/check-release-integrity.js
 node scripts/smoke-test-app.js
@@ -55,7 +54,7 @@ Manual business-flow checks are still required for risky changes:
 1. Build the change on the latest synchronized commit.
 2. Bump version only when ready to publish.
 3. Run smoke tests.
-4. Push the same commit to GitHub and Gitee.
+4. Push the commit to GitHub `main`.
 5. Verify GitHub Pages returns the new version.
 6. Watch the first real use report before making another change.
 
@@ -70,7 +69,6 @@ node scripts/rollback-forward.js <stable-ref> 316
 node scripts/smoke-test-app.js
 git commit -am "v316 rollback to stable app"
 git push github main
-git push origin main:master
 ```
 
 This keeps browser downgrade guards and user caches working correctly.

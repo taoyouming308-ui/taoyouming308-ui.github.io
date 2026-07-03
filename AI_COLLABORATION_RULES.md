@@ -4,15 +4,14 @@ These rules are mandatory for Codex, Hermes, and any other assistant editing thi
 
 ## Iron Rules
 
-1. Always start by fetching both remotes:
+1. Always start by fetching GitHub:
 
 ```sh
 git fetch github main
-git fetch origin master
 git status --short --branch
 ```
 
-2. Never edit from an old local copy. `HEAD` must include both `github/main` and `origin/master`.
+2. Never edit from an old local copy. `HEAD` must include `github/main`.
 
 3. Never overwrite `perm-app.html`, `version.txt`, or `version.json` from an older copy.
 
@@ -29,14 +28,13 @@ node scripts/check-version-sync.js
 node scripts/check-agent-sync-status.js
 ```
 
-6. Push the same commit to both remotes:
+6. Publish only to GitHub:
 
 ```sh
 git push github main
-git push origin main:master
 ```
 
-7. If either remote has changed, stop and merge/rebase first. Never force-push to solve divergence.
+7. If GitHub has changed, stop and merge/rebase first. Never force-push to solve divergence.
 
 8. If another assistant made changes, read the diff before editing. Preserve their work unless the user explicitly asks to revert it.
 
@@ -73,8 +71,7 @@ GitHub branch protection must require the `Validate shared app` check before mer
 ## Ownership
 
 - GitHub `github/main` is the live GitHub Pages source.
-- Gitee `origin/master` is a mirror that Hermes may use.
-- Both remotes must stay on the same commit whenever possible.
+- Gitee is retired. Agents must not fetch or push it.
 
 ## Required Final Check
 
