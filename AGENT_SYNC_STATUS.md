@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## v345 (2026-07-03)
+
+- App 员工登录从固定12小时过期改为30天滚动有效期；每次打开 App 且云端确认员工仍有效、门店未变时，刷新本地 `loggedAt`。
+- 停用、删除或更换门店的员工不会续期，仍会清理本地会话并要求重新登录；网络验证失败时也不会延长有效期。
+- 已经被旧版清除登录信息的设备无法自动恢复，需要重新登录一次；之后正常打开 App 即可滚动续期。
+
 ## v344 runtime maintenance (2026-07-03)
 
 - 修复护理出库员工为空：美管加员工选择实际读取 `outdepot.employeeid`，不再把发型师 ID 错写到 `operatid/staffId`；登录账号继续作为操作人，发型师作为出库员工。
@@ -130,8 +136,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v344
-- Last synchronized base checked: GitHub `e895d6c`
+- App version: v345
+- Last synchronized base checked: GitHub `cb170ca`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -139,6 +145,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v345: 员工登录改为30天滚动续期，同时保留云端停用、删除和门店变更的强制退出检查。
 - v344 runtime maintenance: 护理出库改用美管加真实员工字段 `employeeid`，操作人与发型师分离，并在创建后、审核后回查员工；未映射人员禁止出库。
 - v344: 自由手艺人护理出库升级为确定性队列、创建/审核/回查三阶段执行器并每60秒自动运行；向里暂不接入，旧版任务隔离。
 - v342: 增加绑定门店的分店管理员后台；向里造型仅管理本店员工、发质、护理、月报和作品审核，首页推荐及客户/回访/系统权限保留总后台。
@@ -199,6 +206,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-07-03: v345 版本一致性、发布完整性、App JavaScript语法、30天有效期/云端验证后续期/停用与门店变更退出断言、全局UI、预约和22组发质任务测试通过。
 - 2026-07-03: 美管加库存前端只读源码确认员工选择绑定 `bill.employeeid`；最近护理 App 出库单回查为 `operatid` 有值而 `employeeid=null`，确认员工为空的直接根因。
 - 2026-07-03: Supabase 只读检查发现 7 月 1 日仍有 3 个协议 v2 待处理批次；两批产品映射完整，共169克，第三批169.3克包含错误品牌下的1/2/4/5号并会安全失败。重新启用前必须明确这些旧批次是否处理。
 - 2026-07-03: 新增员工字段、员工回查和未映射阻断测试，8组执行器单元测试、护理队列静态测试、Python语法和 whitespace 检查通过；未调用美管加写接口、未改变库存。

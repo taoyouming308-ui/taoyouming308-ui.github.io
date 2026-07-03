@@ -52,6 +52,23 @@ if (!html.includes('showUpdatePrompt(sv)') || !html.includes('location.href = bu
   fail('version updates must still require an explicit user-triggered refresh');
 }
 
+const identityStart = html.indexOf('function checkIdentity()');
+const identityEnd = html.indexOf('function applyAuthenticatedIdentity(', identityStart);
+const identitySource = identityStart >= 0 && identityEnd > identityStart
+  ? html.slice(identityStart, identityEnd)
+  : '';
+if (!html.includes('var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;')) {
+  fail('employee login session must use a 30-day maximum age');
+}
+if (!identitySource.includes('rows[0].active === false') ||
+    !identitySource.includes('rows[0].store !== session.store')) {
+  fail('employee session renewal must still revoke disabled or moved staff');
+}
+if (!identitySource.includes('loggedAt: Date.now()') ||
+    !identitySource.includes('applyAuthenticatedIdentity({')) {
+  fail('valid employee sessions must renew after cloud verification');
+}
+
 const careAddStart = html.indexOf('window.addCareRecord = function()');
 const careAddEnd = html.indexOf('window.removeCareRecord', careAddStart);
 const careAddSource = careAddStart >= 0 && careAddEnd > careAddStart ? html.slice(careAddStart, careAddEnd) : '';

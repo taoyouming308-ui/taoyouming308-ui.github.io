@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="344">
+<html lang="zh-CN" data-version="345">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3877,7 +3877,7 @@ function initApp() {
   var BOOKING_INTERVAL = null;
   var BOOKINGS_CACHE = [];
   var AUTHENTICATED_STAFF = null;
-  var APP_SESSION_MAX_AGE = 12 * 60 * 60 * 1000;
+  var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
   // ★ 设备ID（每个手机唯一，存在localStorage）
   var DEVICE_ID = localStorage.getItem('booking-device-id');
@@ -3908,6 +3908,13 @@ function initApp() {
         AUTHENTICATED_STAFF = null;
         BOOKING_BARBER = '';
         showIdentityModal();
+      } else {
+        applyAuthenticatedIdentity({
+          username: rows[0].username,
+          store: rows[0].store,
+          position: rows[0].position || session.position || '',
+          loggedAt: Date.now()
+        }, true);
       }
     }).catch(function() {});
   }
