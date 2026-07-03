@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
+const vm = require('vm');
 
 function fail(message) {
   console.error('BOOKING UI TEST FAILED: ' + message);
@@ -24,11 +25,55 @@ assert(render.includes('预约项目') && render.includes('bi-service-text'), 'b
 assert(!render.includes('<span class="bi-service-tag'), 'booking project regressed to a pill/card tag');
 assert(!render.includes("bi-meta\">'+esc(r.time_label"), 'booking time is duplicated in metadata');
 assert(render.includes('<button type="button" class="bi-plan-btn"'), 'plan action is not a semantic button');
+assert(render.includes('data-booking-id'), 'hair-analysis tag is not bound to the booking id');
 assert(app.includes("target.closest('.bi-plan-btn')"), 'plan action does not handle clicks on nested arrow content');
 assert(app.includes('identity-mark') && app.includes('identity-logout'), 'minimal identity header is missing');
 assert(app.includes('<button type="button" class="shop-switch'), 'shop switch is not keyboard-accessible');
 assert(dates.includes('var dayNames =') && dates.includes('<button type="button" class="date-chip'), 'date strip is not self-contained and button-based');
 assert(app.includes('booking-date-title'), 'selected booking date heading is missing');
 assert(render.includes('booking-empty') && !render.includes('📭'), 'empty booking state is not minimal');
+assert(app.includes('bookings?select=id,customer_name,customer_phone'), 'hair booking picker does not retain booking ids');
+assert(app.includes("var key = r.id ? 'booking:' + r.id"), 'hair booking picker still merges separate booking ids');
+assert(app.includes('bookingId: String(_recordBookingContext.bookingId || \'\')'), 'hair records do not persist the booking id');
+assert(app.includes('bookingDate: normalizeHairBookingDate(_recordBookingContext.bookingDate)'), 'hair records do not persist the visit date');
+assert(app.includes('shouldStartNewBooking') && app.includes("window.renderHairAnalysis('', '')"), 'switching appointments does not start a fresh independent form');
+assert(app.includes('data.bookingId || data.booking_id || openingBookingContext.bookingId'), 'opening a legacy same-day record drops the current booking id instead of backfilling it on save');
+
+const matchStart = app.indexOf('function normalizeHairBookingDate');
+const matchEnd = app.indexOf('window.loadHairTagStatuses', matchStart);
+assert(matchStart >= 0 && matchEnd > matchStart, 'booking-specific hair matching helpers not found');
+const context = {
+  normalizeHairCustomerPhone(value) {
+    return String(value || '').replace(/\D/g, '').slice(-11);
+  },
+};
+vm.createContext(context);
+vm.runInContext(app.slice(matchStart, matchEnd), context);
+
+const current = {
+  id: 'hair-current',
+  customer_phone: '18971990010',
+  created_at: '2026-07-03T02:55:08Z',
+  record_data: {
+    bookingId: '291662726',
+    bookingDate: '2026-07-03',
+    customerPhone: '18971990010',
+  },
+};
+assert(context.hairRecordMatchesBooking(current, '291662726', '2026-07-03', '18971990010'), 'exact booking id must match its own hair record');
+assert(!context.hairRecordMatchesBooking(current, '291662727', '2026-07-03', '18971990010'), 'same-day bookings must not share a booking-bound hair record');
+
+const legacySameDay = {
+  customer_phone: '18971990010',
+  created_at: '2026-07-03T02:55:08Z',
+  record_data: { date: '2026.7.3', customerPhone: '18971990010' },
+};
+assert(context.hairRecordMatchesBooking(legacySameDay, '291662726', '2026-07-03', '18971990010'), 'legacy record should match only the same phone and visit date');
+assert(!context.hairRecordMatchesBooking(legacySameDay, '291662726', '2026-08-03', '18971990010'), 'historical hair record must not mark a later visit as analyzed');
+assert(!context.hairQueueMatchesBooking({ phone: '18971990010', booking_id: '291662727', booking_date: '2026-07-03' }, '291662726', '2026-07-03', '18971990010'), 'queue rows from a different booking must not match');
+assert(context.findHairRecordForBooking([legacySameDay, current], '291662726', '2026-07-03', '18971990010') === current, 'exact booking record must take priority over same-day legacy fallback');
+const exactQueue = { phone: '18971990010', booking_id: '291662726', booking_date: '2026-07-03', status: 'pending' };
+const legacyQueue = { phone: '18971990010', booking_id: null, booking_date: '2026-07-03', status: 'completed' };
+assert(context.findHairQueueRowsForBooking([legacyQueue, exactQueue], '291662726', '2026-07-03', '18971990010')[0] === exactQueue, 'exact booking queue must take priority over same-day legacy fallback');
 
 console.log('booking UI test ok');

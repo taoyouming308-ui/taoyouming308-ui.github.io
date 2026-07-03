@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="345">
+<html lang="zh-CN" data-version="346">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2988,6 +2988,7 @@ function initApp() {
     if (_tm) _tm.content = '#000000';
     var m = document.getElementById('hair-analysis-modal');
     if (m) m.remove();
+    window._activeHairBookingContext = null;
   };
   window.openHomeDrawer = function() {
     var drawer = document.getElementById('home-drawer');
@@ -3001,9 +3002,10 @@ function initApp() {
     if (drawer) drawer.classList.remove('open');
     if (mask) mask.classList.remove('open');
   };
-  window.showHairAnalysisPage = function(phone) {
+  window.showHairAnalysisPage = function(phone, bookingContext) {
     sessionStorage.setItem('_curPage', 'hair');
     window._hairViewMode = 'form';
+    window._activeHairBookingContext = bookingContext || null;
     // 弹出一个全屏模态框显示发质分析，不需要手机号
     var existing = document.getElementById('hair-analysis-modal');
     if (existing) existing.remove();
@@ -4225,7 +4227,7 @@ function initApp() {
       if (r.customer_phone) {
         html += '<button type="button" class="bi-plan-btn" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-bdate="'+escAttr(r.date||'')+'" data-barber="'+escAttr(r.barber_name||'')+'">查看方案 <span aria-hidden="true">→</span></button>';
         if (_isDyePerm) {
-          html += '<span class="bi-hair-tag" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'">烫染</span>';
+          html += '<span class="bi-hair-tag" data-booking-id="'+escAttr(r.id||'')+'" data-phone="'+escAttr(r.customer_phone||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-barber="'+escAttr(r.barber_name||'')+'" data-bdate="'+escAttr(r.date||'')+'">烫染</span>';
         }
       }
       html += '</div></div></div>';
@@ -4241,7 +4243,91 @@ function initApp() {
     return /烫|染|漂|护理|拉直|卷/.test(text);
   }
 
-  // ===== 烫染标记：优先查询 hair_records，旧 hair_analysis_queue 只做兜底 =====
+  function normalizeHairBookingDate(value) {
+    if (!value) return '';
+    var text = String(value).trim();
+    var match = text.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+    if (match) {
+      return match[1] + '-' + String(match[2]).padStart(2, '0') + '-' + String(match[3]).padStart(2, '0');
+    }
+    var parsed = new Date(value);
+    if (isNaN(parsed.getTime())) return '';
+    return parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+  }
+
+  function hairRecordBookingId(row) {
+    row = row || {};
+    var data = row.record_data && typeof row.record_data === 'object' ? row.record_data : row;
+    return String(data.bookingId || data.booking_id || row.booking_id || '').trim();
+  }
+
+  function hairRecordMatchesBooking(row, bookingId, bookingDate, phone) {
+    row = row || {};
+    var data = row.record_data && typeof row.record_data === 'object' ? row.record_data : row;
+    var targetId = String(bookingId || '').trim();
+    var recordId = hairRecordBookingId(row);
+    if (targetId && recordId) return targetId === recordId;
+    var targetPhone = normalizeHairCustomerPhone(phone || '');
+    var recordPhone = normalizeHairCustomerPhone(
+      row.customer_phone || data.customerPhone || data.customer_phone || data.phone || ''
+    );
+    var targetDate = normalizeHairBookingDate(bookingDate);
+    var recordDate = normalizeHairBookingDate(
+      data.bookingDate || data.booking_date || data.visitDate || data.date ||
+      data.createdAt || row.created_at || ''
+    );
+    return !!(targetPhone && recordPhone && targetPhone === recordPhone &&
+      targetDate && recordDate && targetDate === recordDate);
+  }
+
+  function hairQueueMatchesBooking(row, bookingId, bookingDate, phone) {
+    row = row || {};
+    var targetId = String(bookingId || '').trim();
+    var queueId = String(row.booking_id || '').trim();
+    if (targetId && queueId) return targetId === queueId;
+    return normalizeHairCustomerPhone(phone || '') === normalizeHairCustomerPhone(row.phone || '') &&
+      normalizeHairBookingDate(bookingDate) === normalizeHairBookingDate(row.booking_date || row.created_at || '');
+  }
+
+  function findHairRecordForBooking(records, bookingId, bookingDate, phone) {
+    records = Array.isArray(records) ? records : [];
+    var targetId = String(bookingId || '').trim();
+    if (targetId) {
+      for (var exactIndex = 0; exactIndex < records.length; exactIndex++) {
+        if (hairRecordBookingId(records[exactIndex]) === targetId) return records[exactIndex];
+      }
+    }
+    for (var i = 0; i < records.length; i++) {
+      if (targetId && hairRecordBookingId(records[i])) continue;
+      if (hairRecordMatchesBooking(records[i], bookingId, bookingDate, phone)) return records[i];
+    }
+    return null;
+  }
+
+  function findHairQueueRowsForBooking(rows, bookingId, bookingDate, phone) {
+    rows = Array.isArray(rows) ? rows : [];
+    var targetId = String(bookingId || '').trim();
+    var exact = [];
+    var legacy = [];
+    for (var i = 0; i < rows.length; i++) {
+      var queueId = String((rows[i] && rows[i].booking_id) || '').trim();
+      if (targetId && queueId === targetId) exact.push(rows[i]);
+      else if ((!targetId || !queueId) && hairQueueMatchesBooking(rows[i], bookingId, bookingDate, phone)) legacy.push(rows[i]);
+    }
+    return exact.length ? exact : legacy;
+  }
+
+  function hairBookingContext(bookingId, bookingDate, phone, name, barber) {
+    return {
+      bookingId: String(bookingId || '').trim(),
+      bookingDate: normalizeHairBookingDate(bookingDate),
+      phone: phone || '',
+      name: name || '',
+      barber: barber || ''
+    };
+  }
+
+  // ===== 烫染标记：按预约ID判断；旧记录只按手机号+同日兼容 =====
   window.loadHairTagStatuses = function() {
     var tags = document.querySelectorAll('.bi-hair-tag');
     if (tags.length === 0) return;
@@ -4252,63 +4338,58 @@ function initApp() {
       if (p && !phoneSet[p]) { phones.push(p); phoneSet[p] = true; }
     });
     if (phones.length === 0) return;
-    var normalizedPhoneSet = {};
-    phones.forEach(function(p){ normalizedPhoneSet[normalizeHairCustomerPhone(p)] = true; });
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
+    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
     var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
-    var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,status&or=('+orParts+')&order=created_at.desc&limit='+phones.length, {
+    var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,booking_id,booking_date,status,created_at&or=('+orParts+')&order=created_at.desc&limit=500', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
     Promise.all([hairRecordsPromise, queuePromise]).then(function(results){
       var hairRows = Array.isArray(results[0]) ? results[0] : [];
       var rows = Array.isArray(results[1]) ? results[1] : [];
-      var statusMap = {};
-      hairRows.forEach(function(row){
-        var rec = normalizeHairCloudRecord(row);
-        var p = normalizeHairCustomerPhone(rec.customerPhone);
-        if (p && normalizedPhoneSet[p]) statusMap[p] = 'record_saved';
-      });
-      rows.forEach(function(row){
-        var p = normalizeHairCustomerPhone(row.phone);
-        if (statusMap[p] === 'record_saved' || statusMap[p] === 'completed') return;
-        if (!statusMap[p]) {
-          statusMap[p] = row.status;
-        } else {
-          if (row.status === 'pending' && statusMap[p] !== 'pending') {
-            statusMap[p] = 'pending';
-          }
-        }
-      });
       tags.forEach(function(t){
+        var bookingId = t.getAttribute('data-booking-id') || '';
         var phone = t.getAttribute('data-phone');
         var name = t.getAttribute('data-name') || '';
         var barber = t.getAttribute('data-barber') || '';
         var bdate = t.getAttribute('data-bdate') || '';
-        var st = statusMap[normalizeHairCustomerPhone(phone)];
-        if (st === 'pending') {
+        var matchedRecord = findHairRecordForBooking(hairRows, bookingId, bdate, phone);
+        var st = matchedRecord ? 'record_saved' : '';
+        if (!st) {
+          var matchedQueueRows = findHairQueueRowsForBooking(rows, bookingId, bdate, phone);
+          for (var ri = 0; ri < matchedQueueRows.length; ri++) {
+            var rowStatus = matchedQueueRows[ri].status || '';
+            if (rowStatus === 'record_saved' || rowStatus === 'completed') {
+              st = rowStatus;
+              break;
+            }
+            if (!st || rowStatus === 'pending' || rowStatus === 'processing') st = rowStatus;
+          }
+        }
+        if (st === 'pending' || st === 'processing') {
           t.textContent = '\u5F85\u5206\u6790';
           t.style.background = 'rgba(232,168,23,0.2)';
           t.style.color = '#e8a817';
-          t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate); };
+          t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate, bookingId); };
         } else if (st === 'record_saved' || st === 'completed') {
           t.textContent = '\u5DF2\u5206\u6790';
           t.style.background = 'rgba(46,204,113,0.2)';
           t.style.color = '#2ecc71';
-          t.onclick = function(){ window.showHairRecordByPhone(phone); };
+          t.onclick = function(){ window.showHairRecordByPhone(phone, bookingId, bdate); };
         } else {
           t.textContent = '\u70EB\u67D3';
           t.style.background = 'rgba(255,80,80,0.2)';
           t.style.color = '#ff5050';
-          t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate); };
+          t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate, bookingId); };
         }
       });
     }).catch(function(){});
   };
 
-  window.openHairAnalysisForBooking = function(name, phone, barber, bdate) {
-    window.showHairAnalysisPage(phone);
+  window.openHairAnalysisForBooking = function(name, phone, barber, bdate, bookingId) {
+    var context = hairBookingContext(bookingId, bdate, phone, name, barber);
+    window.showHairAnalysisPage(phone, context);
     setTimeout(function(){
       var nameEl = document.getElementById('hair-form-name');
       var phoneEl = document.getElementById('hair-form-phone');
@@ -4317,27 +4398,40 @@ function initApp() {
     }, 200);
   };
 
-  window.showHairRecordByPhone = function(phone) {
+  window.showHairRecordByPhone = function(phone, bookingId, bookingDate) {
+    var hasBookingContext = !!(String(bookingId || '').trim() || normalizeHairBookingDate(bookingDate));
+    var context = hasBookingContext ? hairBookingContext(bookingId, bookingDate, phone, '', '') : null;
     function openRecord(rec) {
-      window.showHairAnalysisPage(phone);
+      window.showHairAnalysisPage(phone, context);
       setTimeout(function(){
         if (window.loadHairRecordData) window.loadHairRecordData(rec);
       }, 200);
     }
     function openLegacyRecord() {
       var records = window.getHairRecords ? window.getHairRecords() : [];
-      var found = findLatestHairRecordForCustomer(records, phone, '');
+      var found = hasBookingContext
+        ? findHairRecordForBooking(records, bookingId, bookingDate, phone)
+        : findLatestHairRecordForCustomer(records, phone, '');
       if (found) {
         if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
         return;
       }
-      fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,status&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=1', {
+      fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,booking_id,booking_date,ai_analysis,status,created_at&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=100', {
         headers: { 'apikey': SUPABASE_KEY }
       }).then(function(r){ return r.json(); }).then(function(rows){
         if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
-        var row = rows[0];
+        var row = null;
+        if (hasBookingContext) {
+          var matchedRows = findHairQueueRowsForBooking(rows, bookingId, bookingDate, phone);
+          row = matchedRows.length ? matchedRows[0] : null;
+        } else {
+          row = rows[0];
+        }
+        if (!row) { alert('当前预约暂无发质分析记录'); return; }
         var rec = (row.ai_analysis && row.ai_analysis.record) || {};
-        window.showHairAnalysisPage(phone);
+        if (!rec.bookingId && row.booking_id) rec.bookingId = String(row.booking_id);
+        if (!rec.bookingDate && row.booking_date) rec.bookingDate = row.booking_date;
+        window.showHairAnalysisPage(phone, context);
         setTimeout(function(){
           if (rec.customerName) {
             var ne = document.getElementById('hair-form-name');
@@ -4353,8 +4447,13 @@ function initApp() {
     }
     fetchHairRecordsForCustomer(phone, '', 100).then(function(list) {
       if (list && list.length > 0) {
-        openRecord(list[0]);
-        return;
+        var found = hasBookingContext
+          ? findHairRecordForBooking(list, bookingId, bookingDate, phone)
+          : list[0];
+        if (found) {
+          openRecord(found);
+          return;
+        }
       }
       openLegacyRecord();
     }).catch(function(){
@@ -4362,8 +4461,9 @@ function initApp() {
     });
   };
 
-  window.createAndOpenHairTask = function(name, phone, barber, bdate) {
+  window.createAndOpenHairTask = function(name, phone, barber, bdate, bookingId) {
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    var context = hairBookingContext(bookingId, bdate, phone, name, barber || currentBarber);
     fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue', {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
@@ -4372,12 +4472,13 @@ function initApp() {
         customer_name: name || '',
         barber_name: barber || currentBarber,
         shop_name: BOOKING_SHOP || '\u81EA\u7531\u624B\u827A\u4EBA',
+        booking_id: context.bookingId ? Number(context.bookingId) : null,
         booking_date: bdate || '',
         source: 'booking_tag',
         status: 'pending'
       })
     }).then(function(){
-      window.showHairAnalysisPage(phone);
+      window.showHairAnalysisPage(phone, context);
       setTimeout(function(){
         var nameEl = document.getElementById('hair-form-name');
         var phoneEl = document.getElementById('hair-form-phone');
@@ -4386,7 +4487,7 @@ function initApp() {
         if (window.loadHairTagStatuses) window.loadHairTagStatuses();
       }, 200);
     }).catch(function(){
-      window.showHairAnalysisPage(phone);
+      window.showHairAnalysisPage(phone, context);
       setTimeout(function(){
         var nameEl = document.getElementById('hair-form-name');
         var phoneEl = document.getElementById('hair-form-phone');
@@ -6333,6 +6434,30 @@ function initApp() {
       _recordTechnician = mergeHairTechnicianNames(_recordTechnician, _currentHairUser);
     }
     var _initialHairStatus = hairInitialTaskStatus(_recordCreatedByAssistant, _recordTechnician);
+    var _recordBookingContext = window._activeHairBookingContext || {};
+    if ((!_recordBookingContext.bookingId && !_recordBookingContext.bookingDate) && _cloudRecordData) {
+      _recordBookingContext = hairBookingContext(
+        _cloudRecordData.bookingId || _cloudRecordData.booking_id,
+        _cloudRecordData.bookingDate || _cloudRecordData.booking_date || _cloudRecordData.visitDate,
+        _cloudRecordData.customerPhone || F['hair-form-phone'] || '',
+        _cloudRecordData.customerName || F['hair-form-name'] || '',
+        _cloudRecordData.barber || _recordBarber
+      );
+    }
+    if ((!_recordBookingContext.bookingId && !_recordBookingContext.bookingDate) && _editingHairId) {
+      var _editingBookingRecords = getHairRecords();
+      for (var _ebi = 0; _ebi < _editingBookingRecords.length; _ebi++) {
+        if (_editingBookingRecords[_ebi].id !== _editingHairId) continue;
+        _recordBookingContext = hairBookingContext(
+          _editingBookingRecords[_ebi].bookingId || _editingBookingRecords[_ebi].booking_id,
+          _editingBookingRecords[_ebi].bookingDate || _editingBookingRecords[_ebi].booking_date || _editingBookingRecords[_ebi].visitDate,
+          _editingBookingRecords[_ebi].customerPhone || F['hair-form-phone'] || '',
+          _editingBookingRecords[_ebi].customerName || F['hair-form-name'] || '',
+          _editingBookingRecords[_ebi].barber || _recordBarber
+        );
+        break;
+      }
+    }
 
     // 构建 record（元数据 + 特殊字段 + 向后兼容字段 + 自动收集字段）
     var record = {
@@ -6358,6 +6483,9 @@ function initApp() {
       })(),
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
+      bookingId: String(_recordBookingContext.bookingId || ''),
+      bookingDate: normalizeHairBookingDate(_recordBookingContext.bookingDate),
+      visitDate: normalizeHairBookingDate(_recordBookingContext.bookingDate) || getLocalDateStr(),
       // ── 特殊字段（非标准 input/select/textarea） ──
       technician: _recordTechnician,
       barber: _recordBarber,
@@ -6695,6 +6823,13 @@ function initApp() {
     if (!rec) return;
 
     _editingHairId = id;
+    window._activeHairBookingContext = hairBookingContext(
+      rec.bookingId || rec.booking_id,
+      rec.bookingDate || rec.booking_date || rec.visitDate,
+      rec.customerPhone || '',
+      rec.customerName || '',
+      rec.barber || ''
+    );
 
     // 填入各字段
     setVal('hair-form-name', rec.customerName);
@@ -7382,6 +7517,14 @@ function initApp() {
 
   window.loadHairRecordData = function(data) {
     if (!data) return;
+    var openingBookingContext = window._activeHairBookingContext || {};
+    window._activeHairBookingContext = hairBookingContext(
+      data.bookingId || data.booking_id || openingBookingContext.bookingId,
+      data.bookingDate || data.booking_date || data.visitDate || openingBookingContext.bookingDate,
+      data.customerPhone || openingBookingContext.phone || '',
+      data.customerName || openingBookingContext.name || '',
+      data.barber || openingBookingContext.barber || ''
+    );
     _editingHairId = data.id || 'cloud_' + Date.now();
     // 记录云端记录ID（如果有）
     _cloudEditingId = data._cloudRecordId || (data._isCloudRecord ? data.id : null);
@@ -7805,6 +7948,9 @@ function initApp() {
       seq: archiveSeq,
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
+      bookingId: String((window._activeHairBookingContext && window._activeHairBookingContext.bookingId) || previousArchiveRecord.bookingId || previousArchiveRecord.booking_id || ''),
+      bookingDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate),
+      visitDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate) || getLocalDateStr(),
       technician: recordTechValueFromFields(F),
       barber: recordBarberValueFromFields(F),
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},
@@ -7986,7 +8132,7 @@ function initApp() {
     var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
     var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
     var shopFilter = BOOKING_SHOP ? '&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + shopFilter + barberFilter + '&order=reservation_time.asc', {
+    fetch(SUPABASE_URL + '/rest/v1/bookings?select=id,customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + shopFilter + barberFilter + '&order=reservation_time.asc', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       rows = Array.isArray(rows) ? rows : [];
@@ -7996,7 +8142,8 @@ function initApp() {
       for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
         if (!r.customer_name || r.customer_name === '未登记') continue;
-        var key = (r.customer_phone || r.customer_name) + '|' + (r.time_label || r.reservation_time || '');
+        var key = r.id ? 'booking:' + r.id :
+          (r.customer_phone || r.customer_name) + '|' + (r.time_label || r.reservation_time || '');
         if (seen[key]) continue;
         seen[key] = true;
         unique.push(r);
@@ -8010,7 +8157,7 @@ function initApp() {
         var r = unique[i];
         var meta = [r.time_label || '', r.customer_phone || '', r.barber_name || ''].filter(Boolean).join(' · ');
         var service = [r.service_name || '', r.notes || ''].filter(Boolean).join(' / ');
-        html += '<button type="button" data-name="'+escAttr(r.customer_name||'')+'" data-phone="'+escAttr(r.customer_phone||'')+'" onclick="pickBookingCustomerFromNode(this)" style="display:block;width:100%;text-align:left;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--font);">';
+        html += '<button type="button" data-booking-id="'+escAttr(r.id||'')+'" data-bdate="'+escAttr(r.date||dateKey)+'" data-barber="'+escAttr(r.barber_name||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-phone="'+escAttr(r.customer_phone||'')+'" onclick="pickBookingCustomerFromNode(this)" style="display:block;width:100%;text-align:left;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--font);">';
         html += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + esc(r.customer_name) + '</div>';
         html += '<div style="font-size:11px;color:var(--text-secondary);">' + esc(meta || dateKey) + '</div>';
         if (service) html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(service) + '</div>';
@@ -8023,23 +8170,47 @@ function initApp() {
   };
 
   window.pickBookingCustomerFromNode = function(node) {
-    window.pickBookingCustomer(node.getAttribute('data-name') || '', node.getAttribute('data-phone') || '');
+    window.pickBookingCustomer(
+      node.getAttribute('data-name') || '',
+      node.getAttribute('data-phone') || '',
+      node.getAttribute('data-booking-id') || '',
+      node.getAttribute('data-bdate') || '',
+      node.getAttribute('data-barber') || ''
+    );
     var modal = document.getElementById('hair-booking-picker-modal');
     if (modal) modal.remove();
   };
 
-  window.pickBookingCustomer = function(name, phone) {
+  window.pickBookingCustomer = function(name, phone, bookingId, bookingDate, barber) {
     var nameEl = document.getElementById('hair-form-name');
     var phoneEl = document.getElementById('hair-form-phone');
+    var selectedBookingContext = hairBookingContext(bookingId, bookingDate, phone, name, barber);
+    var activeBookingId = String((window._activeHairBookingContext && window._activeHairBookingContext.bookingId) || '').trim();
     var oldPhone = normalizeHairCustomerPhone(phoneEl && phoneEl.value);
     var newPhone = normalizeHairCustomerPhone(phone);
     var oldName = normalizeHairCustomerName(nameEl && nameEl.value);
     var newName = normalizeHairCustomerName(name);
     var customerChanged = (oldPhone && newPhone && oldPhone !== newPhone) ||
       (!oldPhone && !newPhone && oldName && newName && oldName !== newName);
-    if (_cloudEditingId && customerChanged) {
-      alert('已上传的发质分析表不能更换客户，请返回后新建一张表');
+    var currentBookingId = String((_cloudRecordData && (_cloudRecordData.bookingId || _cloudRecordData.booking_id)) || '').trim();
+    var bookingChanged = !!(_cloudEditingId && bookingId && String(bookingId) !== currentBookingId);
+    if (_cloudEditingId && (customerChanged || bookingChanged)) {
+      alert('已上传的发质分析表不能更换客户或预约，请返回后新建一张表');
       return;
+    }
+    var shouldStartNewBooking = !_cloudEditingId && bookingId &&
+      ((activeBookingId && String(bookingId) !== activeBookingId) || (_editingHairId && !activeBookingId));
+    if (shouldStartNewBooking) {
+      window._activeHairBookingContext = selectedBookingContext;
+      var area = document.getElementById('hair-quick-area');
+      if (area) area.innerHTML = window.renderHairAnalysis('', '');
+      if (window.initHairChips) window.initHairChips();
+      if (window.initApplyOrderChips) window.initApplyOrderChips();
+      if (window.initCareSection) window.initCareSection();
+      if (window.renderPendingRecords) window.renderPendingRecords();
+      if (window.renderMyTasks) window.renderMyTasks();
+      nameEl = document.getElementById('hair-form-name');
+      phoneEl = document.getElementById('hair-form-phone');
     }
     if (customerChanged) {
       window._hairFollowUpScreenshot = '';
@@ -8058,6 +8229,14 @@ function initApp() {
     }
     if (nameEl) nameEl.value = name;
     if (phoneEl) phoneEl.value = phone;
+    window._activeHairBookingContext = selectedBookingContext;
+    if (barber) {
+      setVal('hair-form-barber', barber);
+      if (window.populateHairBarberSelect) window.populateHairBarberSelect(barber);
+      if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(barber, false);
+    }
+    var dateEl = document.querySelector('#hair-analysis-section .hair-form-date');
+    if (dateEl && bookingDate) dateEl.textContent = normalizeHairBookingDate(bookingDate);
   };
 
   // ===== 护理记录：品牌tab + 下拉选择 + 添加列表 =====
@@ -8169,6 +8348,7 @@ function initApp() {
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name, existingRec) {
     // 重置云端编辑状态（新建表单时）
+    _editingHairId = null;
     _cloudEditingId = null;
     _followUpMode = false;
     _cloudRecordSeq = null;
@@ -8194,7 +8374,10 @@ function initApp() {
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
     var selectedBarber = rec.barber || currentBarber || '';
     var today = new Date();
-    var dateStr = today.getFullYear()+'.'+(today.getMonth()+1)+'.'+today.getDate();
+    var activeBookingDate = (window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) ||
+      rec.bookingDate || rec.booking_date || rec.visitDate || '';
+    var dateStr = normalizeHairBookingDate(activeBookingDate) ||
+      (today.getFullYear()+'.'+(today.getMonth()+1)+'.'+today.getDate());
     html += '<input id="hair-form-name" value="'+escAttr(name||'')+'" placeholder="姓名" style="flex:1;min-width:100px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<input id="hair-form-phone" value="'+escAttr(phone||'')+'" placeholder="电话" style="flex:1;min-width:120px;padding:8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--font);">';
     html += '<button type="button" class="hair-booking-pick" onclick="showBookingPicker()" style="flex-shrink:0;padding:8px 10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">从预约选择客户</button>';
@@ -8901,6 +9084,8 @@ function initApp() {
             phone: phone || '',
             raw_photo: compressed,
             status: 'pending',
+            booking_id: (window._activeHairBookingContext && window._activeHairBookingContext.bookingId) ? Number(window._activeHairBookingContext.bookingId) : null,
+            booking_date: (window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || '',
             base_info: formData.base_info || {},
             three_section: formData.three_section || {}
           })
@@ -9195,6 +9380,8 @@ function initApp() {
                 phone: phone || '',
                 raw_photo: compressed,
                 status: 'pending',
+                booking_id: (window._activeHairBookingContext && window._activeHairBookingContext.bookingId) ? Number(window._activeHairBookingContext.bookingId) : null,
+                booking_date: (window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || '',
                 base_info: formData.base_info || {},
                 three_section: formData.three_section || {}
               })
@@ -9224,6 +9411,8 @@ function initApp() {
               method: 'POST',
               headers: _supabaseHeaders,
               body: JSON.stringify({ phone: phone || '', raw_photo: compressed, status: 'pending',
+                booking_id: (window._activeHairBookingContext && window._activeHairBookingContext.bookingId) ? Number(window._activeHairBookingContext.bookingId) : null,
+                booking_date: (window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || '',
                 base_info: formData.base_info || {},
                 three_section: formData.three_section || {}
               })
