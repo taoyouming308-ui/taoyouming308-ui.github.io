@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="346">
+<html lang="zh-CN" data-version="347">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -6438,7 +6438,7 @@ function initApp() {
     if ((!_recordBookingContext.bookingId && !_recordBookingContext.bookingDate) && _cloudRecordData) {
       _recordBookingContext = hairBookingContext(
         _cloudRecordData.bookingId || _cloudRecordData.booking_id,
-        _cloudRecordData.bookingDate || _cloudRecordData.booking_date || _cloudRecordData.visitDate,
+        _cloudRecordData.bookingDate || _cloudRecordData.booking_date || _cloudRecordData.visitDate || _cloudRecordData.date,
         _cloudRecordData.customerPhone || F['hair-form-phone'] || '',
         _cloudRecordData.customerName || F['hair-form-name'] || '',
         _cloudRecordData.barber || _recordBarber
@@ -6450,7 +6450,7 @@ function initApp() {
         if (_editingBookingRecords[_ebi].id !== _editingHairId) continue;
         _recordBookingContext = hairBookingContext(
           _editingBookingRecords[_ebi].bookingId || _editingBookingRecords[_ebi].booking_id,
-          _editingBookingRecords[_ebi].bookingDate || _editingBookingRecords[_ebi].booking_date || _editingBookingRecords[_ebi].visitDate,
+          _editingBookingRecords[_ebi].bookingDate || _editingBookingRecords[_ebi].booking_date || _editingBookingRecords[_ebi].visitDate || _editingBookingRecords[_ebi].date,
           _editingBookingRecords[_ebi].customerPhone || F['hair-form-phone'] || '',
           _editingBookingRecords[_ebi].customerName || F['hair-form-name'] || '',
           _editingBookingRecords[_ebi].barber || _recordBarber
@@ -6825,7 +6825,7 @@ function initApp() {
     _editingHairId = id;
     window._activeHairBookingContext = hairBookingContext(
       rec.bookingId || rec.booking_id,
-      rec.bookingDate || rec.booking_date || rec.visitDate,
+      rec.bookingDate || rec.booking_date || rec.visitDate || rec.date,
       rec.customerPhone || '',
       rec.customerName || '',
       rec.barber || ''
@@ -7520,7 +7520,7 @@ function initApp() {
     var openingBookingContext = window._activeHairBookingContext || {};
     window._activeHairBookingContext = hairBookingContext(
       data.bookingId || data.booking_id || openingBookingContext.bookingId,
-      data.bookingDate || data.booking_date || data.visitDate || openingBookingContext.bookingDate,
+      data.bookingDate || data.booking_date || data.visitDate || data.date || openingBookingContext.bookingDate,
       data.customerPhone || openingBookingContext.phone || '',
       data.customerName || openingBookingContext.name || '',
       data.barber || openingBookingContext.barber || ''
@@ -7949,8 +7949,8 @@ function initApp() {
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       bookingId: String((window._activeHairBookingContext && window._activeHairBookingContext.bookingId) || previousArchiveRecord.bookingId || previousArchiveRecord.booking_id || ''),
-      bookingDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate),
-      visitDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate) || getLocalDateStr(),
+      bookingDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate || previousArchiveRecord.date),
+      visitDate: normalizeHairBookingDate((window._activeHairBookingContext && window._activeHairBookingContext.bookingDate) || previousArchiveRecord.bookingDate || previousArchiveRecord.booking_date || previousArchiveRecord.visitDate || previousArchiveRecord.date) || getLocalDateStr(),
       technician: recordTechValueFromFields(F),
       barber: recordBarberValueFromFields(F),
       baseInfo: (typeof getHairFormData === 'function') ? getHairFormData().base_info : {},

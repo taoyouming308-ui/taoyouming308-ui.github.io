@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v346 (2026-07-03)
+## v347 (2026-07-03)
 
 - 发质分析与预约改为一对一：预约卡携带美管加预约 ID，新建发质表把 `bookingId`、`bookingDate` 和 `visitDate` 保存到 `hair_records.record_data`。
 - 预约页“待分析/已分析”不再按手机号跨历史判断；优先精确匹配预约 ID，旧表没有预约 ID 时只允许“同手机号＋同一天”兼容，不会把上次到店误当成本次已分析。
@@ -144,8 +144,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v346
-- Last synchronized base checked: GitHub `abf4fc1`
+- App version: v347
+- Last synchronized base checked: GitHub `5fc510b`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -153,7 +153,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
-- v346: 每个预约独立保存发质分析表，预约状态和打开旧表均按预约 ID 匹配；旧数据仅同手机号同日兼容。
+- v347: 每个预约独立保存发质分析表，预约状态和打开旧表均按预约 ID 匹配；旧数据仅同手机号同日兼容，并在后续编辑时保留原到店日期。
 - v345: 员工登录改为30天滚动续期，同时保留云端停用、删除和门店变更的强制退出检查。
 - v344 runtime maintenance: 护理出库改用美管加真实员工字段 `employeeid`，操作人与发型师分离，并在创建后、审核后回查员工；未映射人员禁止出库。
 - v344: 自由手艺人护理出库升级为确定性队列、创建/审核/回查三阶段执行器并每60秒自动运行；向里暂不接入，旧版任务隔离。
@@ -215,7 +215,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
-- 2026-07-03: v346 预约ID精确匹配测试覆盖同手机号跨日期、同日不同预约、旧表同日兼容和精确队列优先；版本/发布完整性、App语法、预约UI、22组发质任务、顾客档案、全局UI、后台、护理出库及25组Python同步测试全部通过。
+- 2026-07-03: v347 预约ID精确匹配测试覆盖同手机号跨日期、同日不同预约、旧表同日兼容和精确队列优先；版本/发布完整性、App语法、预约UI、22组发质任务、顾客档案、全局UI、后台、护理出库及25组Python同步测试全部通过。
 - 2026-07-03: v345 版本一致性、发布完整性、App JavaScript语法、30天有效期/云端验证后续期/停用与门店变更退出断言、全局UI、预约和22组发质任务测试通过。
 - 2026-07-03: 美管加库存前端只读源码确认员工选择绑定 `bill.employeeid`；最近护理 App 出库单回查为 `operatid` 有值而 `employeeid=null`，确认员工为空的直接根因。
 - 2026-07-03: Supabase 只读检查发现 7 月 1 日仍有 3 个协议 v2 待处理批次；两批产品映射完整，共169克，第三批169.3克包含错误品牌下的1/2/4/5号并会安全失败。重新启用前必须明确这些旧批次是否处理。
