@@ -1,0 +1,94 @@
+import io
+import json
+import unittest
+from unittest import mock
+
+import scripts.aesthetic_coach_endpoint as coach
+
+
+class FakeHandler:
+    def __init__(self, payload, origin="https://taoyouming308-ui.github.io"):
+        raw = json.dumps(payload).encode("utf-8")
+        self.headers = {"Content-Length": str(len(raw)), "Origin": origin}
+        self.rfile = io.BytesIO(raw)
+        self.client_address = ("127.0.0.1", 12345)
+        self.result = None
+
+    def send_json(self, data, status=200):
+        self.result = (status, data)
+
+
+def valid_payload():
+    return {
+        "username": "测试发型师",
+        "store": "自由手艺人",
+        "stage": "observe",
+        "answer": "整体轮廓偏圆，重量集中在耳上和后脑，后颈有较轻的延伸和外翻。",
+        "previous_answers": {},
+        "case": {
+            "id": "CASE-001",
+            "title": "轻盈短发",
+            "category": "短发",
+            "focus": "轮廓",
+            "image_url": "https://taoyouming308-ui.github.io/img/showcase.jpg",
+            "limitations": "只有侧面",
+            "reference": "圆形轮廓",
+        },
+    }
+
+
+def active_staff(_path):
+    return [{"username": "测试发型师", "store": "自由手艺人", "active": True}]
+
+
+class AestheticCoachEndpointTests(unittest.TestCase):
+    def setUp(self):
+        coach._RATE_STATE.clear()
+
+    def test_rejects_untrusted_origin(self):
+        handler = FakeHandler(valid_payload(), "https://evil.example")
+        coach.handle_aesthetic_coach(handler, "key", active_staff)
+        self.assertEqual(handler.result[0], 403)
+
+    def test_rejects_external_image(self):
+        payload = valid_payload()
+        payload["case"]["image_url"] = "https://example.com/image.jpg"
+        handler = FakeHandler(payload)
+        coach.handle_aesthetic_coach(handler, "key", active_staff)
+        self.assertEqual(handler.result[0], 400)
+
+    def test_rejects_inactive_employee(self):
+        handler = FakeHandler(valid_payload())
+        coach.handle_aesthetic_coach(handler, "key", lambda _path: [])
+        self.assertEqual(handler.result[0], 403)
+
+    def test_returns_normalized_model_feedback(self):
+        handler = FakeHandler(valid_payload())
+        feedback = {
+            "score": 82,
+            "affirmation": "你准确指出了重量位置。",
+            "omissions": ["补充刘海和脸周", "区分事实与推测"],
+            "follow_up": "外轮廓在哪里开始转轻？",
+            "ready": True,
+            "model": coach.MODEL,
+        }
+        with mock.patch.object(coach, "_call_openrouter", return_value=feedback):
+            coach.handle_aesthetic_coach(handler, "key", active_staff)
+        self.assertEqual(handler.result[0], 200)
+        self.assertEqual(handler.result[1]["score"], 82)
+
+    def test_normalizer_limits_score_and_omissions(self):
+        result = coach._normalized_feedback(
+            {
+                "score": 130,
+                "affirmation": "具体肯定",
+                "omissions": ["一", "二", "三", "四"],
+                "follow_up": "为什么？",
+            }
+        )
+        self.assertEqual(result["score"], 100)
+        self.assertEqual(len(result["omissions"]), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()

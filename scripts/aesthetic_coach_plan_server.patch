@@ -1,0 +1,16 @@
+--- plan_server.py
++++ plan_server.py
+@@
+ import json, urllib.request, urllib.parse, urllib.error, ssl, re, time, os, tempfile, base64, subprocess, uuid
+ from http.server import HTTPServer, BaseHTTPRequestHandler
++from aesthetic_coach_endpoint import handle_aesthetic_coach
+@@
+         elif path == "/api/hair-analysis":
+             self.do_hair_analysis()
++        elif path == "/api/aesthetic-coach":
++            handle_aesthetic_coach(self, OPENROUTER_KEY, supabase_get)
+         elif path == "/api/save-hair-analysis":
+             self.do_save_hair_analysis()
+@@
+-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
++        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")

@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v349 (2026-07-04)
+
+- “今日训练”从 5 道选择题重做为单作品五步训练：观察、分析、判断、设计、复盘逐步完成，前一步提交后再进入下一步。
+- 五步页面每次只呈现一个核心问题、3–4 个短提示和一个输入框，避免一次展示大量任务；首页明确训练“会看、会拆、会判断、会设计、会审美”。
+- 新增 5 个版本化短发训练案例，每个案例都包含观察边界、五步引导和完整大师解析；单张照片看不到的脸型、发质或头型信息明确禁止猜测。
+- 接入真实 AI 导师短点评：每一步返回一个具体肯定、1–3 个遗漏和一个追问；完成五步后才显示完整解析，AI 不直接代替发型师作答。
+- 运行时新增 `scripts/aesthetic_coach_endpoint.py`，使用 OpenRouter `qwen/qwen3-vl-32b-instruct`，核验启用员工并按员工、IP 和全局限流；不保存训练请求，模型失败时 App 明确使用非 AI 的网络备用提示。
+- AI 点评只使用仓库内已审核公开作品，不上传顾客照片；训练文字仍只在员工本机形成成长记录，正式知识标准继续由版本文件和后台来源治理控制。
+
 ## v348 (2026-07-04)
 
 - App 工作台新增“美感训练”，包含每日 5 题、知识体系、六维成长记录和作品复盘；训练进度与复盘文字按登录员工保存在本机，顾客照片只做本机预览、不上传也不写入记录。
@@ -153,8 +162,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v348
-- Last synchronized base checked: GitHub `4967813`
+- App version: v349
+- Last synchronized base checked: GitHub `e6e7e3a`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -162,6 +171,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v349: 今日训练升级为作品驱动的五步 AI 导师训练，新增 5 个带观察边界和大师解析的案例；OpenRouter 点评服务已部署并通过公网实测。
 - v348: App 新增美感训练、每日答题、知识地图、成长记录与本机作品复盘；总后台新增版本化来源目录和本机知识候选登记，正式知识使用三层治理和自动完整性检查。
 - v347: 每个预约独立保存发质分析表，预约状态和打开旧表均按预约 ID 匹配；旧数据仅同手机号同日兼容，并在后续编辑时保留原到店日期。
 - v345: 员工登录改为30天滚动续期，同时保留云端停用、删除和门店变更的强制退出检查。

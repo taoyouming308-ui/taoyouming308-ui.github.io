@@ -543,7 +543,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=348"></script>
+<script src="aesthetic-knowledge.v1.js?v=349"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -1397,6 +1397,7 @@ window.loadAestheticAdmin = function() {
       '<div class="stat-card"><div class="stat-value">' + esc(data.version) + '</div><div class="stat-label">当前知识版本</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.sources.length + '</div><div class="stat-label">已发布来源</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.modules.length + '</div><div class="stat-label">能力章节</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + (data.trainingCases || []).length + '</div><div class="stat-label">五步训练案例</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.questions.length + '</div><div class="stat-label">训练题</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + candidates.length + '</div><div class="stat-label">本机待评审候选</div></div>';
   }
