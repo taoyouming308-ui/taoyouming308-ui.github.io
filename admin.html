@@ -187,6 +187,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <div class="nav-group">
         <div class="nav-group-title">内容</div>
         <button class="admin-nav-item" data-tab="content">作品管理 <span class="badge-tip nav-count" id="badge-images" style="display:none;"></span></button>
+        <button class="admin-nav-item" data-tab="aesthetic" data-super-admin-only>美感知识</button>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">系统</div>
@@ -468,6 +469,52 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
 </div>
 
+<div id="tab-aesthetic" class="admin-page" data-super-admin-only>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">美感知识</h1>
+      <div class="page-desc">管理知识来源、发布规则和待评审候选。正式知识由版本文件发布，未经审核的内容不会进入 App 评分标准。</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn-add" type="button" onclick="openAestheticCandidateModal()">+ 新增候选</button>
+      <button class="btn-edit" type="button" onclick="exportAestheticKnowledge()">导出清单</button>
+    </div>
+  </div>
+  <div id="aesthetic-admin-stats" class="stats-grid"></div>
+  <div class="panel">
+    <div class="panel-title">发布与安全规则</div>
+    <div id="aesthetic-governance" style="display:grid;gap:10px;"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">待评审候选（当前设备）</div>
+    <div style="margin:-4px 0 12px;color:var(--muted);font-size:11px;line-height:1.6;">候选仅保存在当前后台设备，不能直接成为正式知识。导出后完成来源、版权和专业审核，再随新版本发布。</div>
+    <div id="aesthetic-candidate-list"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">已发布来源</div>
+    <div class="toolbar">
+      <input id="aesthetic-source-search" placeholder="搜索来源、机构或用途">
+      <select id="aesthetic-layer-filter">
+        <option value="">全部层级</option>
+        <option value="standard">稳定标准</option>
+        <option value="internal">门店方法</option>
+        <option value="trend">趋势候选</option>
+      </select>
+      <button class="btn-edit" type="button" onclick="renderAestheticSources()">查询</button>
+    </div>
+    <div class="admin-table-wrap">
+      <table>
+        <thead><tr><th>编号</th><th>层级</th><th>来源</th><th>机构/作者</th><th>用途</th><th>版权处理</th><th>复核日期</th></tr></thead>
+        <tbody id="table-aesthetic-sources"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">课程结构与题库</div>
+    <div id="aesthetic-module-list" class="action-list"></div>
+  </div>
+</div>
+
 <div id="tab-system" class="admin-page">
   <div class="page-header"><div><h1 class="page-title">异常中心</h1><div class="page-desc">查看预约、客户同步新鲜度及护理出库失败，集中处理可安全重试的异常。</div></div></div>
   <div id="system-stats" class="stats-grid"></div>
@@ -496,6 +543,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
+<script src="aesthetic-knowledge.v1.js?v=348"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -508,6 +556,7 @@ let realtimeHeartbeatTimer = null;
 let realtimeManualClose = false;
 let pendingBadgeErrorShown = false;
 const ADMIN_AUDIT_KEY = 'perm_admin_audit_v1';
+const AESTHETIC_CANDIDATE_KEY = 'hair_aesthetic_candidates_v1';
 const STORE_ADMIN_ROLE = 'store_admin';
 const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
 let adminStaffStoreMapPromise = null;
@@ -1314,6 +1363,201 @@ window.retryOutbound = async function(id) {
   }
 };
 
+function aestheticAdminData() {
+  return window.AESTHETIC_KNOWLEDGE_V1 || null;
+}
+
+function aestheticLayerName(layer) {
+  return ({ standard: '稳定标准', internal: '门店方法', trend: '趋势候选' })[layer] || layer || '未分类';
+}
+
+function loadAestheticCandidates() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(AESTHETIC_CANDIDATE_KEY) || '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveAestheticCandidates(rows) {
+  localStorage.setItem(AESTHETIC_CANDIDATE_KEY, JSON.stringify((rows || []).slice(-100)));
+}
+
+window.loadAestheticAdmin = function() {
+  const data = aestheticAdminData();
+  const stats = document.getElementById('aesthetic-admin-stats');
+  if (!data) {
+    if (stats) stats.innerHTML = '<div class="panel" style="color:var(--danger);">知识版本加载失败，请检查发布文件。</div>';
+    return;
+  }
+  const candidates = loadAestheticCandidates();
+  if (stats) {
+    stats.innerHTML =
+      '<div class="stat-card"><div class="stat-value">' + esc(data.version) + '</div><div class="stat-label">当前知识版本</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + data.sources.length + '</div><div class="stat-label">已发布来源</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + data.modules.length + '</div><div class="stat-label">能力章节</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + data.questions.length + '</div><div class="stat-label">训练题</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + candidates.length + '</div><div class="stat-label">本机待评审候选</div></div>';
+  }
+
+  const governance = document.getElementById('aesthetic-governance');
+  if (governance) {
+    const layerHtml = data.governance.layers.map(function(layer) {
+      return '<div style="padding:12px;border:1px solid var(--border);border-radius:9px;"><strong style="display:block;color:#fff;font-size:12px;margin-bottom:5px;">' +
+        esc(layer.name) + '</strong><span style="color:var(--muted);font-size:11px;line-height:1.6;">' + esc(layer.rule) + '</span></div>';
+    }).join('');
+    governance.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">' + layerHtml + '</div>' +
+      '<div style="padding:12px;border-left:2px solid #fff;background:rgba(255,255,255,.03);color:var(--muted);font-size:11px;line-height:1.8;">' +
+      '<strong style="color:#fff;">发布流程：</strong>' + esc(data.governance.publishFlow.join(' → ')) + '<br>' +
+      '<strong style="color:#fff;">AI 边界：</strong>' + esc(data.governance.aiRule) + '<br>' +
+      '<strong style="color:#fff;">顾客隐私：</strong>' + esc(data.governance.privacyRule) + '<br>' +
+      '<strong style="color:#fff;">版权：</strong>' + esc(data.governance.copyrightRule) + '</div>';
+  }
+
+  const modules = document.getElementById('aesthetic-module-list');
+  if (modules) {
+    modules.innerHTML = data.modules.map(function(module) {
+      const count = data.questions.filter(function(question) { return question.moduleId === module.id; }).length;
+      return '<div class="action-card" style="cursor:default;"><strong>' + esc(module.id + ' · ' + module.title) +
+        '</strong><span>' + esc(module.objective) + '<br>训练题 ' + count + ' 道 · 来源 ' + module.sourceIds.length + ' 个</span></div>';
+    }).join('');
+  }
+  renderAestheticSources();
+  renderAestheticCandidates();
+};
+
+window.renderAestheticSources = function() {
+  const data = aestheticAdminData();
+  const tbody = document.getElementById('table-aesthetic-sources');
+  if (!data || !tbody) return;
+  const keyword = ((document.getElementById('aesthetic-source-search') || {}).value || '').trim().toLowerCase();
+  const layer = (document.getElementById('aesthetic-layer-filter') || {}).value || '';
+  const rows = data.sources.filter(function(source) {
+    if (layer && source.layer !== layer) return false;
+    if (!keyword) return true;
+    return [source.id, source.title, source.publisher, source.use, source.type].join(' ').toLowerCase().indexOf(keyword) !== -1;
+  });
+  tbody.innerHTML = rows.length ? rows.map(function(source) {
+    const title = source.url
+      ? '<a href="' + esc(source.url) + '" target="_blank" rel="noopener noreferrer" style="color:#fff;text-decoration:underline;text-underline-offset:3px;">' + esc(source.title) + '</a>'
+      : '<span style="color:#fff;">' + esc(source.title) + '</span>';
+    return '<tr><td>' + esc(source.id) + '</td><td><span class="status-chip status-active-chip">' + esc(aestheticLayerName(source.layer)) +
+      '</span></td><td>' + title + '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + esc(source.type) +
+      '</div></td><td>' + esc(source.publisher) + '</td><td>' + esc(source.use) + '</td><td>' + esc(source.rights) +
+      '</td><td>' + esc(source.reviewedAt) + '</td></tr>';
+  }).join('') : '<tr class="empty-row"><td colspan="7">没有匹配的知识来源</td></tr>';
+};
+
+window.renderAestheticCandidates = function() {
+  const container = document.getElementById('aesthetic-candidate-list');
+  if (!container) return;
+  const rows = loadAestheticCandidates().slice().reverse();
+  if (!rows.length) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">暂无候选。发现新课程、趋势或门店方法时，先在这里登记来源。</div>';
+    return;
+  }
+  container.innerHTML = '<div class="admin-table-wrap"><table><thead><tr><th>层级</th><th>候选来源</th><th>用途/备注</th><th>提交人</th><th>时间</th><th>操作</th></tr></thead><tbody>' +
+    rows.map(function(row) {
+      const title = row.url
+        ? '<a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer" style="color:#fff;">' + esc(row.title) + '</a>'
+        : '<span style="color:#fff;">' + esc(row.title) + '</span>';
+      return '<tr><td>' + esc(aestheticLayerName(row.layer)) + '</td><td>' + title + '</td><td>' + esc(row.note) +
+        '</td><td>' + esc(row.createdBy) + '</td><td>' + esc(String(row.createdAt || '').slice(0, 10)) +
+        '</td><td><button class="btn-delete" type="button" onclick="deleteAestheticCandidate(\'' + esc(row.id) + '\')">移除</button></td></tr>';
+    }).join('') + '</tbody></table></div>';
+};
+
+window.openAestheticCandidateModal = function() {
+  if (!isSuperAdmin()) {
+    toast('只有总后台可以提交知识候选', 'err');
+    return;
+  }
+  const box = document.getElementById('modal-box');
+  clearNode(box);
+  box.appendChild(el('h3', { text: '新增知识候选' }));
+  box.appendChild(el('div', {
+    style: 'color:var(--muted);font-size:11px;line-height:1.6;margin-bottom:8px;',
+    text: '登记不等于发布。候选仍需核验原始来源、版权、专业准确性和适用范围。'
+  }));
+  appendField(box, '知识层级', makeSelect('aesthetic-candidate-layer', [
+    { value: 'standard', text: '稳定标准（教材/官方教育/职业标准/研究）' },
+    { value: 'internal', text: '门店方法（自由手艺人内部体系）' },
+    { value: 'trend', text: '趋势候选（案例/平台/秀场观察）' }
+  ], 'trend'));
+  appendField(box, '来源名称', makeInput('aesthetic-candidate-title', '', { placeholder: '课程、书籍、机构、案例或方法名称' }));
+  appendField(box, '原始链接（可选）', makeInput('aesthetic-candidate-url', '', { type: 'url', placeholder: 'https://...' }));
+  appendField(box, '准备解决什么问题', makeTextarea('aesthetic-candidate-note', ''));
+  const row = el('div', { className: 'btn-row' });
+  row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
+  row.appendChild(actionButton('保存候选', 'btn-save', saveAestheticCandidate));
+  box.appendChild(row);
+  document.getElementById('modal').classList.add('show');
+};
+
+window.saveAestheticCandidate = function() {
+  const layer = (document.getElementById('aesthetic-candidate-layer') || {}).value || 'trend';
+  const title = ((document.getElementById('aesthetic-candidate-title') || {}).value || '').trim();
+  const url = ((document.getElementById('aesthetic-candidate-url') || {}).value || '').trim();
+  const note = ((document.getElementById('aesthetic-candidate-note') || {}).value || '').trim();
+  if (!title || note.length < 8) {
+    toast('请填写来源名称和至少 8 个字的用途说明', 'err');
+    return;
+  }
+  if (url && !/^https?:\/\//i.test(url)) {
+    toast('原始链接必须以 http:// 或 https:// 开头', 'err');
+    return;
+  }
+  const rows = loadAestheticCandidates();
+  const session = getAdminSession();
+  rows.push({
+    id: 'AKC-' + Date.now(),
+    layer: layer,
+    title: title,
+    url: url,
+    note: note,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    createdBy: session.user || 'admin'
+  });
+  saveAestheticCandidates(rows);
+  recordAdminAction('新增美感知识候选', title, aestheticLayerName(layer) + '；' + note);
+  closeModal();
+  loadAestheticAdmin();
+  toast('候选已保存，尚未进入正式知识库', 'ok');
+};
+
+window.deleteAestheticCandidate = function(id) {
+  const rows = loadAestheticCandidates();
+  const target = rows.find(function(row) { return row.id === id; });
+  saveAestheticCandidates(rows.filter(function(row) { return row.id !== id; }));
+  recordAdminAction('移除美感知识候选', target ? target.title : id, '仅移除当前设备候选');
+  loadAestheticAdmin();
+  toast('候选已移除', 'ok');
+};
+
+window.exportAestheticKnowledge = function() {
+  const data = aestheticAdminData();
+  if (!data) return;
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    published: data,
+    localCandidates: loadAestheticCandidates()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'hair-aesthetic-knowledge-' + data.version + '.json';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  recordAdminAction('导出美感知识清单', data.version, '包含已发布知识与当前设备候选');
+  toast('知识清单已导出', 'ok');
+};
+
 function switchTab(tab) {
   if (!adminCanAccessTab(tab)) {
     toast('分店后台没有该功能权限', 'err');
@@ -1335,6 +1579,8 @@ function switchTab(tab) {
     loadStaff();
   } else if (tab === 'content') {
     showContentView('images');
+  } else if (tab === 'aesthetic') {
+    loadAestheticAdmin();
   } else if (tab === 'customers') {
     loadCustomers();
   } else if (tab === 'followups') {

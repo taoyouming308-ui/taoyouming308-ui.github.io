@@ -39,6 +39,8 @@ jobs:
         run: node scripts/test-booking-ui.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
+      - name: Protect aesthetic training and knowledge governance
+        run: node scripts/test-aesthetic-system.js
       - name: Run Meiguanjia sync tests
         run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
       - name: Validate Codex and Hermes handoff

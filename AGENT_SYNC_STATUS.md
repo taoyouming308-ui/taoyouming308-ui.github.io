@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v348 (2026-07-04)
+
+- App 工作台新增“美感训练”，包含每日 5 题、知识体系、六维成长记录和作品复盘；训练进度与复盘文字按登录员工保存在本机，顾客照片只做本机预览、不上传也不写入记录。
+- 首版 `Hair Aesthetic System` 落地为 9 个章节、8 条统一风格坐标、6 个评分维度和 18 道带解释训练题；设计流程补入顾客目标与限制，不把风格标签直接当结论。
+- 新增 14 条版本化知识来源，区分稳定标准、门店方法和趋势候选；每条来源记录机构、用途、证据类型、版权方式、审核状态和复核日期，外部教材只保存书目、链接与原创摘要。
+- 总后台新增仅总管理员可见的“美感知识”页面，可查看来源、发布规则、章节和题库；支持登记当前设备的待评审候选和导出知识清单，候选不会直接进入 App 评分标准。
+- 新增知识治理说明与自动检查，明确候选收集、来源和版权核验、专业审核、试用、版本发布、效果复盘的流程，以及 AI、顾客照片和匿名写入边界。
+- 当前自定义员工会话无法为 Supabase RLS 提供可靠身份，因此本版不开放线上知识写权限；跨设备候选、审核和训练同步要在服务端认证、角色、RLS、私有图片存储与数据库审计完成后再启用。
+
 ## v347 (2026-07-03)
 
 - 发质分析与预约改为一对一：预约卡携带美管加预约 ID，新建发质表把 `bookingId`、`bookingDate` 和 `visitDate` 保存到 `hair_records.record_data`。
@@ -144,8 +153,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v347
-- Last synchronized base checked: GitHub `5fc510b`
+- App version: v348
+- Last synchronized base checked: GitHub `4967813`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -153,6 +162,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v348: App 新增美感训练、每日答题、知识地图、成长记录与本机作品复盘；总后台新增版本化来源目录和本机知识候选登记，正式知识使用三层治理和自动完整性检查。
 - v347: 每个预约独立保存发质分析表，预约状态和打开旧表均按预约 ID 匹配；旧数据仅同手机号同日兼容，并在后续编辑时保留原到店日期。
 - v345: 员工登录改为30天滚动续期，同时保留云端停用、删除和门店变更的强制退出检查。
 - v344 runtime maintenance: 护理出库改用美管加真实员工字段 `employeeid`，操作人与发型师分离，并在创建后、审核后回查员工；未映射人员禁止出库。
@@ -285,6 +295,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Open Work For Next Agent
 
+- 美感训练 V1 的正式知识是只读版本文件，训练进度和后台候选只保存在当前设备；跨设备同步必须先接入可由 RLS 识别的服务端认证、角色、私有图片存储和数据库审计，禁止直接给公开 Supabase key 增加写权限。
 - GitHub CLI 当前未登录，无法从本机替用户开启分支保护；仓库已提供 CI，但仓库设置仍需把 `Validate shared app` 设为 `main` 必需检查，才能彻底阻止绕过检查的直接推送。
 - `staff.password_hash` 仍能被公开 Supabase key 查询。前端已缩短会话并限制管理员角色，但真正安全需要 Supabase Edge Function/Auth + RLS，不能仅靠静态 HTML 完成。
 - 客户消费/套餐接口和写入逻辑已恢复，断点回填仍在补齐历史缺失；2026-06-29 仍有 2,265 个有到店次数的客户缺少 `service_history`，完成前不得宣称全量数据已经补齐。

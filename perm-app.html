@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="347">
+<html lang="zh-CN" data-version="348">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1086,6 +1086,7 @@ body {
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')"><span>专业方案</span><small>换算与冷烫参数</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')"><span>今日预约</span><small>门店与顾客日程</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')"><span>发质分析</span><small>开单、任务与归档</small></button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('aesthetic')"><span>美感训练</span><small>每日训练与作品复盘</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('showcase')"><span>作品灵感</span><small>门店发型作品</small></button>
   </aside>
   <div class="hero-text">
@@ -2668,6 +2669,191 @@ body {
     }
   </style>
 
+  <section class="tab-content" id="tab-aesthetic">
+    <style>
+      #tab-aesthetic {
+        --ae-ink:#11110f;
+        --ae-muted:#74746e;
+        --ae-line:#e8e8e3;
+        --ae-soft:#f5f5f1;
+        min-height:calc(100vh - 72px);
+        padding:0 0 104px;
+        background:#fff;
+        color:var(--ae-ink);
+      }
+      .ae-head { padding:10px 2px 22px; border-bottom:1px solid var(--ae-line); }
+      .ae-kicker { color:#8c8c86; font-size:10px; font-weight:700; letter-spacing:2.4px; text-transform:uppercase; }
+      .ae-title { margin:10px 0 8px; color:var(--ae-ink); font-size:31px; line-height:1.12; letter-spacing:-1.2px; }
+      .ae-desc { max-width:340px; color:var(--ae-muted); font-size:12px; line-height:1.75; }
+      .ae-version { display:inline-flex; margin-top:12px; padding:5px 9px; border:1px solid var(--ae-line); border-radius:999px; color:#666660; font-size:9px; }
+      .ae-nav { display:flex; gap:22px; padding:18px 0 2px; border-bottom:1px solid var(--ae-line); }
+      .ae-nav button { padding:0 0 12px; border:0; border-bottom:2px solid transparent; background:transparent; color:#9b9b95; font:inherit; font-size:12px; cursor:pointer; }
+      .ae-nav button.on { border-bottom-color:#111; color:#111; font-weight:700; }
+      .ae-nav button:focus { outline:none; }
+      .ae-nav button:focus-visible { outline:2px solid #111; outline-offset:4px; }
+      .ae-view { display:none; padding-top:22px; }
+      .ae-view.on { display:block; }
+      .ae-section-label { margin-bottom:10px; color:#8b8b85; font-size:9px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+      .ae-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px; }
+      .ae-stat { padding:14px 12px; border:1px solid var(--ae-line); border-radius:14px; background:#fff; }
+      .ae-stat strong { display:block; color:#111; font-size:22px; line-height:1; }
+      .ae-stat span { display:block; margin-top:8px; color:var(--ae-muted); font-size:9px; }
+      .ae-card { margin-bottom:12px; padding:18px; border:1px solid var(--ae-line); border-radius:16px; background:#fff; }
+      .ae-card.dark { border-color:#111; background:#111; color:#fff; }
+      .ae-card h3 { margin:0 0 7px; font-size:16px; line-height:1.35; }
+      .ae-card p { margin:0; color:var(--ae-muted); font-size:11px; line-height:1.7; }
+      .ae-card.dark p { color:#a8a8a2; }
+      .ae-card-row { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+      .ae-primary, .ae-secondary {
+        min-height:42px;
+        padding:0 16px;
+        border:0;
+        border-radius:11px;
+        background:#111;
+        color:#fff;
+        font:inherit;
+        font-size:12px;
+        font-weight:700;
+        cursor:pointer;
+      }
+      .ae-card.dark .ae-primary { background:#fff; color:#111; }
+      .ae-secondary { border:1px solid var(--ae-line); background:#fff; color:#111; }
+      .ae-flow { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-top:16px; }
+      .ae-flow span { padding:8px 3px; border-radius:8px; background:#20201e; color:#bdbdb7; font-size:8px; text-align:center; }
+      .ae-trainer { display:none; margin-top:12px; }
+      .ae-trainer.on { display:block; }
+      .ae-progress { height:3px; margin-bottom:18px; border-radius:3px; overflow:hidden; background:#e8e8e3; }
+      .ae-progress i { display:block; height:100%; width:0; background:#111; }
+      .ae-question-meta { margin-bottom:8px; color:#8b8b85; font-size:9px; letter-spacing:1px; }
+      .ae-question { margin-bottom:14px; color:#111; font-size:17px; font-weight:700; line-height:1.55; }
+      .ae-options { display:grid; gap:8px; }
+      .ae-option { width:100%; padding:12px 13px; border:1px solid var(--ae-line); border-radius:11px; background:#fff; color:#33332f; font:inherit; font-size:11px; line-height:1.55; text-align:left; cursor:pointer; }
+      .ae-option.selected { border-color:#111; background:#111; color:#fff; }
+      .ae-option.correct { border-color:#111; background:#111; color:#fff; }
+      .ae-option.wrong { border-color:#c7c7c0; background:#ededE8; color:#777770; text-decoration:line-through; }
+      .ae-explain { display:none; margin-top:14px; padding:13px; border-radius:11px; background:var(--ae-soft); color:#55554f; font-size:11px; line-height:1.7; }
+      .ae-explain.on { display:block; }
+      .ae-question-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+      .ae-review-grid { display:grid; gap:10px; margin-top:14px; }
+      .ae-review-grid label { color:#777771; font-size:10px; }
+      .ae-review-grid textarea { width:100%; min-height:72px; margin-top:5px; padding:11px; border:1px solid var(--ae-line); border-radius:10px; background:var(--ae-soft); color:#111; font:inherit; font-size:11px; line-height:1.6; resize:vertical; }
+      .ae-photo-input { display:block; padding:12px; border:1px dashed #cfcfc8; border-radius:11px; background:var(--ae-soft); color:#666660; font-size:10px; }
+      #ae-review-preview { display:none; width:100%; max-height:280px; border-radius:12px; object-fit:cover; }
+      .ae-privacy { color:#92928c; font-size:9px; line-height:1.6; }
+      .ae-module-list { display:grid; gap:8px; }
+      .ae-module { padding:15px 0; border-bottom:1px solid var(--ae-line); }
+      .ae-module:last-child { border-bottom:0; }
+      .ae-module-top { display:flex; align-items:flex-start; gap:12px; }
+      .ae-module-code { flex:0 0 32px; color:#999993; font-size:10px; font-weight:700; }
+      .ae-module h3 { margin:0 0 5px; font-size:14px; }
+      .ae-module p { color:var(--ae-muted); font-size:10px; line-height:1.65; }
+      .ae-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+      .ae-tags span { padding:4px 7px; border-radius:999px; background:var(--ae-soft); color:#686862; font-size:8px; }
+      .ae-axis-list { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px; }
+      .ae-axis { min-height:86px; padding:12px; border:1px solid var(--ae-line); border-radius:12px; }
+      .ae-axis strong { display:block; font-size:11px; }
+      .ae-axis span { display:block; margin-top:7px; color:var(--ae-muted); font-size:9px; line-height:1.55; }
+      .ae-growth-list { display:grid; gap:8px; margin-top:12px; }
+      .ae-growth-item { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--ae-line); }
+      .ae-growth-item:last-child { border-bottom:0; }
+      .ae-growth-item i { width:7px; height:7px; border-radius:50%; background:#c9c9c3; }
+      .ae-growth-item.done i { background:#111; }
+      .ae-growth-item div { flex:1; }
+      .ae-growth-item strong { display:block; font-size:11px; }
+      .ae-growth-item span { display:block; margin-top:3px; color:var(--ae-muted); font-size:9px; }
+      .ae-source-link { color:#55554f; text-decoration:underline; text-underline-offset:3px; }
+      @media (max-width:360px) {
+        .ae-title { font-size:27px; }
+        .ae-card { padding:15px; }
+        .ae-axis-list { grid-template-columns:1fr; }
+      }
+    </style>
+    <header class="ae-head">
+      <div class="ae-kicker">Hair / Aesthetic Lab</div>
+      <h1 class="ae-title">美感训练</h1>
+      <p class="ae-desc">先看见，再分析；先说明理由，再做设计。每天 20 分钟，建立可以复用的审美判断。</p>
+      <span class="ae-version" id="ae-version">知识版本加载中</span>
+    </header>
+    <nav class="ae-nav" aria-label="美感训练页面">
+      <button type="button" class="on" data-ae-view="today" onclick="switchAestheticView('today')">今日训练</button>
+      <button type="button" data-ae-view="knowledge" onclick="switchAestheticView('knowledge')">知识体系</button>
+      <button type="button" data-ae-view="growth" onclick="switchAestheticView('growth')">成长记录</button>
+    </nav>
+
+    <div class="ae-view on" id="ae-view-today">
+      <div class="ae-section-label">Today / 20 min</div>
+      <div class="ae-stats">
+        <div class="ae-stat"><strong id="ae-stat-days">0</strong><span>完成天数</span></div>
+        <div class="ae-stat"><strong id="ae-stat-rate">0%</strong><span>判断正确率</span></div>
+        <div class="ae-stat"><strong id="ae-stat-reviews">0</strong><span>作品复盘</span></div>
+      </div>
+      <article class="ae-card dark">
+        <div class="ae-card-row">
+          <div>
+            <h3 id="ae-today-title">今日训练 · 5 题</h3>
+            <p id="ae-today-desc">观察、判断、解释、转译与复盘。</p>
+          </div>
+          <button class="ae-primary" id="ae-start-btn" type="button" onclick="startAestheticTraining()">开始</button>
+        </div>
+        <div class="ae-flow"><span>观察</span><span>分析</span><span>判断</span><span>设计</span><span>复盘</span></div>
+      </article>
+      <div class="ae-card ae-trainer" id="ae-trainer">
+        <div class="ae-progress"><i id="ae-progress-bar"></i></div>
+        <div class="ae-question-meta" id="ae-question-meta"></div>
+        <div class="ae-question" id="ae-question"></div>
+        <div class="ae-options" id="ae-options"></div>
+        <div class="ae-explain" id="ae-explain"></div>
+        <div class="ae-question-actions">
+          <button class="ae-secondary" id="ae-submit-answer" type="button" onclick="submitAestheticAnswer()">确认判断</button>
+          <button class="ae-primary" id="ae-next-question" type="button" onclick="nextAestheticQuestion()" style="display:none;">下一题</button>
+        </div>
+      </div>
+      <article class="ae-card">
+        <h3>作品复盘</h3>
+        <p>照片只在当前设备预览，不上传；保存的是结构化复盘文字。</p>
+        <div class="ae-review-grid">
+          <input class="ae-photo-input" id="ae-review-photo" type="file" accept="image/*" onchange="previewAestheticReview(this)">
+          <img id="ae-review-preview" alt="作品本机预览">
+          <label>观察事实<textarea id="ae-review-observation" placeholder="只写看得见的轮廓、线条、比例、重心、色彩与质感。"></textarea></label>
+          <label>设计判断<textarea id="ae-review-design" placeholder="人物目标是什么？选择了什么风格坐标和发型动作？"></textarea></label>
+          <label>技术与风险<textarea id="ae-review-risk" placeholder="发质条件、技术动作、风险、替代方案和维护要求。"></textarea></label>
+          <div class="ae-privacy">顾客照片默认不进入知识库。用于门店训练前必须取得授权并明确使用范围。</div>
+          <button class="ae-primary" type="button" onclick="saveAestheticReview()">保存复盘</button>
+        </div>
+      </article>
+    </div>
+
+    <div class="ae-view" id="ae-view-knowledge">
+      <div class="ae-section-label">System / 0—8</div>
+      <article class="ae-card">
+        <h3>统一风格坐标</h3>
+        <p>风格名称可以变化，但视觉判断必须回到可观察、可调整的连续坐标。</p>
+        <div class="ae-axis-list" id="ae-axis-list"></div>
+      </article>
+      <article class="ae-card">
+        <h3>九章能力体系</h3>
+        <div class="ae-module-list" id="ae-module-list"></div>
+      </article>
+      <article class="ae-card">
+        <h3>知识如何更新</h3>
+        <p id="ae-governance-summary"></p>
+      </article>
+    </div>
+
+    <div class="ae-view" id="ae-view-growth">
+      <div class="ae-section-label">Progress / Personal</div>
+      <article class="ae-card">
+        <h3>当前能力记录</h3>
+        <p id="ae-growth-summary">完成训练后，这里会显示正确率与薄弱维度。</p>
+        <div class="ae-growth-list" id="ae-rubric-list"></div>
+      </article>
+      <article class="ae-card">
+        <h3>训练原则</h3>
+        <p>AI 可以帮助出题、追问和整理证据，但不能替你完成审美判断。无法说明理由的答案，不计为真正掌握。</p>
+      </article>
+    </div>
+  </section>
+
 </div><!-- /app-content -->
 
 </main>
@@ -2678,6 +2864,7 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="aesthetic-knowledge.v1.js?v=348"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -2956,6 +3143,376 @@ const OLD_PERM_DATA_DUMMY = [  // === 已迁移至Supabase，以下为旧数据�
    APP LOGIC
    ───────────────────────────────────────── */
 
+var aestheticTrainingState = {
+  items: [],
+  index: 0,
+  selected: null,
+  answered: false,
+  score: 0,
+  dimensions: {}
+};
+var aestheticReviewObjectUrl = '';
+
+function aestheticKnowledge() {
+  return window.AESTHETIC_KNOWLEDGE_V1 || null;
+}
+
+function aestheticIdentity() {
+  return (localStorage.getItem('booking-barber') || '未登录员工').trim();
+}
+
+function aestheticProgressKey() {
+  return 'hair_aesthetic_progress_v1:' + aestheticIdentity();
+}
+
+function loadAestheticProgress() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(aestheticProgressKey()) || '{}');
+    return {
+      attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
+      reviews: Array.isArray(parsed.reviews) ? parsed.reviews : []
+    };
+  } catch(e) {
+    return { attempts: [], reviews: [] };
+  }
+}
+
+function saveAestheticProgress(progress) {
+  progress.attempts = (progress.attempts || []).slice(-60);
+  progress.reviews = (progress.reviews || []).slice(-30);
+  localStorage.setItem(aestheticProgressKey(), JSON.stringify(progress));
+}
+
+function aestheticToday() {
+  var now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+}
+
+function aestheticEscape(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function aestheticHash(text) {
+  var hash = 0;
+  for (var i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  return Math.abs(hash);
+}
+
+function buildDailyAestheticQuestions() {
+  var data = aestheticKnowledge();
+  if (!data || !Array.isArray(data.questions) || !data.questions.length) return [];
+  var questions = data.questions.slice();
+  var start = aestheticHash(aestheticToday() + ':' + aestheticIdentity()) % questions.length;
+  var picked = [];
+  for (var i = 0; i < Math.min(5, questions.length); i++) {
+    picked.push(questions[(start + i * 7) % questions.length]);
+  }
+  return picked;
+}
+
+window.switchAestheticView = function(view) {
+  document.querySelectorAll('[data-ae-view]').forEach(function(button) {
+    button.classList.toggle('on', button.getAttribute('data-ae-view') === view);
+  });
+  document.querySelectorAll('.ae-view').forEach(function(panel) {
+    panel.classList.toggle('on', panel.id === 'ae-view-' + view);
+  });
+  if (view === 'growth') renderAestheticGrowth();
+};
+
+window.initAestheticTraining = function() {
+  var data = aestheticKnowledge();
+  var version = document.getElementById('ae-version');
+  if (!data) {
+    if (version) version.textContent = '知识库加载失败';
+    return;
+  }
+  if (version) version.textContent = '知识版本 ' + data.version + ' · ' + data.publishedAt;
+
+  var axes = document.getElementById('ae-axis-list');
+  if (axes) {
+    axes.innerHTML = data.styleAxes.map(function(axis) {
+      return '<div class="ae-axis"><strong>' + aestheticEscape(axis.name) + '</strong><span>' + aestheticEscape(axis.use) + '</span></div>';
+    }).join('');
+  }
+
+  var modules = document.getElementById('ae-module-list');
+  if (modules) {
+    modules.innerHTML = data.modules.map(function(module) {
+      return '<div class="ae-module"><div class="ae-module-top"><span class="ae-module-code">' + aestheticEscape(module.id) + '</span><div><h3>' +
+        aestheticEscape(module.title) + '</h3><p>' + aestheticEscape(module.objective) + '</p><div class="ae-tags">' +
+        module.topics.map(function(topic) { return '<span>' + aestheticEscape(topic) + '</span>'; }).join('') +
+        '</div></div></div></div>';
+    }).join('');
+  }
+
+  var governance = document.getElementById('ae-governance-summary');
+  if (governance) {
+    governance.textContent = data.governance.publishFlow.join(' → ') + '。' + data.governance.aiRule + ' ' + data.governance.copyrightRule;
+  }
+  renderAestheticSummary();
+  renderAestheticGrowth();
+};
+
+function renderAestheticSummary() {
+  var progress = loadAestheticProgress();
+  var completedDays = {};
+  var correct = 0;
+  var total = 0;
+  progress.attempts.forEach(function(attempt) {
+    completedDays[attempt.date] = true;
+    correct += Number(attempt.score) || 0;
+    total += Number(attempt.total) || 0;
+  });
+  var daysEl = document.getElementById('ae-stat-days');
+  var rateEl = document.getElementById('ae-stat-rate');
+  var reviewEl = document.getElementById('ae-stat-reviews');
+  if (daysEl) daysEl.textContent = Object.keys(completedDays).length;
+  if (rateEl) rateEl.textContent = total ? Math.round(correct / total * 100) + '%' : '0%';
+  if (reviewEl) reviewEl.textContent = progress.reviews.length;
+
+  var todayDone = progress.attempts.some(function(attempt) { return attempt.date === aestheticToday(); });
+  var button = document.getElementById('ae-start-btn');
+  var title = document.getElementById('ae-today-title');
+  var desc = document.getElementById('ae-today-desc');
+  if (button) button.textContent = todayDone ? '再练一次' : '开始';
+  if (title) title.textContent = todayDone ? '今日已完成 · 继续巩固' : '今日训练 · 5 题';
+  if (desc) desc.textContent = todayDone ? '重复训练会保留为一次新尝试，用于识别薄弱维度。' : '观察、判断、解释、转译与复盘。';
+}
+
+window.startAestheticTraining = function() {
+  if (aestheticIdentity() === '未登录员工') {
+    if (window.showToast) window.showToast('请先到“今日预约”完成员工登录');
+    return;
+  }
+  aestheticTrainingState = {
+    items: buildDailyAestheticQuestions(),
+    index: 0,
+    selected: null,
+    answered: false,
+    score: 0,
+    dimensions: {}
+  };
+  var trainer = document.getElementById('ae-trainer');
+  if (trainer) trainer.classList.add('on');
+  renderAestheticQuestion();
+  if (trainer) trainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+function renderAestheticQuestion() {
+  var item = aestheticTrainingState.items[aestheticTrainingState.index];
+  if (!item) return;
+  aestheticTrainingState.selected = null;
+  aestheticTrainingState.answered = false;
+  var data = aestheticKnowledge();
+  var module = data.modules.find(function(row) { return row.id === item.moduleId; }) || {};
+  var meta = document.getElementById('ae-question-meta');
+  var question = document.getElementById('ae-question');
+  var options = document.getElementById('ae-options');
+  var explain = document.getElementById('ae-explain');
+  var submit = document.getElementById('ae-submit-answer');
+  var next = document.getElementById('ae-next-question');
+  var progress = document.getElementById('ae-progress-bar');
+  if (meta) meta.textContent = (aestheticTrainingState.index + 1) + ' / ' + aestheticTrainingState.items.length + ' · ' + (module.title || item.moduleId);
+  if (question) question.textContent = item.prompt;
+  if (options) {
+    options.innerHTML = item.options.map(function(option, index) {
+      return '<button type="button" class="ae-option" data-ae-option="' + index + '" onclick="selectAestheticOption(' + index + ')">' + aestheticEscape(option) + '</button>';
+    }).join('');
+  }
+  if (explain) {
+    explain.classList.remove('on');
+    explain.innerHTML = '';
+  }
+  if (submit) {
+    submit.style.display = '';
+    submit.disabled = false;
+  }
+  if (next) next.style.display = 'none';
+  if (progress) progress.style.width = Math.round(aestheticTrainingState.index / aestheticTrainingState.items.length * 100) + '%';
+}
+
+window.selectAestheticOption = function(index) {
+  if (aestheticTrainingState.answered) return;
+  aestheticTrainingState.selected = Number(index);
+  document.querySelectorAll('#ae-options .ae-option').forEach(function(button) {
+    button.classList.toggle('selected', Number(button.getAttribute('data-ae-option')) === Number(index));
+  });
+};
+
+window.submitAestheticAnswer = function() {
+  if (aestheticTrainingState.selected == null) {
+    if (window.showToast) window.showToast('请先选择你的判断');
+    return;
+  }
+  if (aestheticTrainingState.answered) return;
+  aestheticTrainingState.answered = true;
+  var item = aestheticTrainingState.items[aestheticTrainingState.index];
+  var correct = Number(aestheticTrainingState.selected) === Number(item.answer);
+  if (correct) aestheticTrainingState.score += 1;
+  if (!aestheticTrainingState.dimensions[item.dimension]) aestheticTrainingState.dimensions[item.dimension] = { correct: 0, total: 0 };
+  aestheticTrainingState.dimensions[item.dimension].total += 1;
+  if (correct) aestheticTrainingState.dimensions[item.dimension].correct += 1;
+
+  document.querySelectorAll('#ae-options .ae-option').forEach(function(button) {
+    var optionIndex = Number(button.getAttribute('data-ae-option'));
+    button.classList.remove('selected');
+    if (optionIndex === Number(item.answer)) button.classList.add('correct');
+    if (optionIndex === Number(aestheticTrainingState.selected) && !correct) button.classList.add('wrong');
+    button.disabled = true;
+  });
+
+  var data = aestheticKnowledge();
+  var sourceNames = item.sourceIds.map(function(id) {
+    var source = data.sources.find(function(row) { return row.id === id; });
+    return source ? source.title : id;
+  });
+  var explain = document.getElementById('ae-explain');
+  if (explain) {
+    explain.innerHTML = '<strong>' + (correct ? '判断正确' : '需要重看理由') + '</strong><br>' +
+      aestheticEscape(item.explanation) + '<br><span style="color:#92928c;">依据：' + aestheticEscape(sourceNames.join('；')) + '</span>';
+    explain.classList.add('on');
+  }
+  var submit = document.getElementById('ae-submit-answer');
+  var next = document.getElementById('ae-next-question');
+  if (submit) submit.style.display = 'none';
+  if (next) {
+    next.textContent = aestheticTrainingState.index === aestheticTrainingState.items.length - 1 ? '完成训练' : '下一题';
+    next.style.display = '';
+  }
+};
+
+window.nextAestheticQuestion = function() {
+  if (!aestheticTrainingState.answered) return;
+  if (aestheticTrainingState.index < aestheticTrainingState.items.length - 1) {
+    aestheticTrainingState.index += 1;
+    renderAestheticQuestion();
+    return;
+  }
+  completeAestheticTraining();
+};
+
+function completeAestheticTraining() {
+  var progress = loadAestheticProgress();
+  progress.attempts.push({
+    date: aestheticToday(),
+    completedAt: new Date().toISOString(),
+    score: aestheticTrainingState.score,
+    total: aestheticTrainingState.items.length,
+    dimensions: aestheticTrainingState.dimensions
+  });
+  saveAestheticProgress(progress);
+  var trainer = document.getElementById('ae-trainer');
+  var rate = aestheticTrainingState.items.length ? Math.round(aestheticTrainingState.score / aestheticTrainingState.items.length * 100) : 0;
+  if (trainer) {
+    trainer.innerHTML = '<div class="ae-section-label">Completed</div><div style="font-size:34px;font-weight:750;letter-spacing:-1px;">' + rate +
+      '%</div><p style="margin:8px 0 18px;color:#74746e;font-size:11px;line-height:1.7;">本次答对 ' + aestheticTrainingState.score + ' / ' +
+      aestheticTrainingState.items.length + '。成长记录会按评分维度累计你的薄弱项。</p><button class="ae-secondary" type="button" onclick="resetAestheticTrainer()">收起</button>';
+  }
+  renderAestheticSummary();
+  renderAestheticGrowth();
+};
+
+window.resetAestheticTrainer = function() {
+  var trainer = document.getElementById('ae-trainer');
+  if (!trainer) return;
+  trainer.classList.remove('on');
+  trainer.innerHTML = '<div class="ae-progress"><i id="ae-progress-bar"></i></div><div class="ae-question-meta" id="ae-question-meta"></div>' +
+    '<div class="ae-question" id="ae-question"></div><div class="ae-options" id="ae-options"></div><div class="ae-explain" id="ae-explain"></div>' +
+    '<div class="ae-question-actions"><button class="ae-secondary" id="ae-submit-answer" type="button" onclick="submitAestheticAnswer()">确认判断</button>' +
+    '<button class="ae-primary" id="ae-next-question" type="button" onclick="nextAestheticQuestion()" style="display:none;">下一题</button></div>';
+};
+
+window.previewAestheticReview = function(input) {
+  var preview = document.getElementById('ae-review-preview');
+  var file = input && input.files && input.files[0];
+  if (!preview || !file) return;
+  if (aestheticReviewObjectUrl) URL.revokeObjectURL(aestheticReviewObjectUrl);
+  aestheticReviewObjectUrl = URL.createObjectURL(file);
+  preview.src = aestheticReviewObjectUrl;
+  preview.style.display = 'block';
+};
+
+window.saveAestheticReview = function() {
+  if (aestheticIdentity() === '未登录员工') {
+    if (window.showToast) window.showToast('请先完成员工登录');
+    return;
+  }
+  var observation = (document.getElementById('ae-review-observation') || {}).value || '';
+  var design = (document.getElementById('ae-review-design') || {}).value || '';
+  var risk = (document.getElementById('ae-review-risk') || {}).value || '';
+  if (observation.trim().length < 10 || design.trim().length < 10 || risk.trim().length < 10) {
+    if (window.showToast) window.showToast('三个部分都请至少填写 10 个字');
+    return;
+  }
+  var progress = loadAestheticProgress();
+  progress.reviews.push({
+    createdAt: new Date().toISOString(),
+    observation: observation.trim(),
+    design: design.trim(),
+    risk: risk.trim(),
+    photoStored: false
+  });
+  saveAestheticProgress(progress);
+  ['ae-review-observation', 'ae-review-design', 'ae-review-risk'].forEach(function(id) {
+    var field = document.getElementById(id);
+    if (field) field.value = '';
+  });
+  var photo = document.getElementById('ae-review-photo');
+  var preview = document.getElementById('ae-review-preview');
+  if (photo) photo.value = '';
+  if (preview) {
+    preview.removeAttribute('src');
+    preview.style.display = 'none';
+  }
+  if (aestheticReviewObjectUrl) {
+    URL.revokeObjectURL(aestheticReviewObjectUrl);
+    aestheticReviewObjectUrl = '';
+  }
+  renderAestheticSummary();
+  if (window.showToast) window.showToast('复盘文字已保存在本机');
+};
+
+function renderAestheticGrowth() {
+  var data = aestheticKnowledge();
+  var list = document.getElementById('ae-rubric-list');
+  var summary = document.getElementById('ae-growth-summary');
+  if (!data || !list) return;
+  var progress = loadAestheticProgress();
+  var totals = {};
+  progress.attempts.forEach(function(attempt) {
+    Object.keys(attempt.dimensions || {}).forEach(function(id) {
+      if (!totals[id]) totals[id] = { correct: 0, total: 0 };
+      totals[id].correct += Number(attempt.dimensions[id].correct) || 0;
+      totals[id].total += Number(attempt.dimensions[id].total) || 0;
+    });
+  });
+  list.innerHTML = data.rubric.map(function(item) {
+    var stat = totals[item.id] || { correct: 0, total: 0 };
+    var rate = stat.total ? Math.round(stat.correct / stat.total * 100) : null;
+    return '<div class="ae-growth-item ' + (rate != null && rate >= 80 ? 'done' : '') + '"><i></i><div><strong>' +
+      aestheticEscape(item.name) + '</strong><span>' + (rate == null ? '尚未训练' : rate + '% · ' + stat.correct + '/' + stat.total) +
+      ' · 权重 ' + item.weight + '%</span></div></div>';
+  }).join('');
+  var tested = Object.keys(totals).filter(function(id) { return totals[id].total > 0; });
+  if (summary) {
+    if (!tested.length) {
+      summary.textContent = '完成训练后，这里会显示正确率与薄弱维度。';
+    } else {
+      tested.sort(function(a, b) {
+        return totals[a].correct / totals[a].total - totals[b].correct / totals[b].total;
+      });
+      var weakest = data.rubric.find(function(item) { return item.id === tested[0]; });
+      summary.textContent = '当前优先加强：' + (weakest ? weakest.name : tested[0]) + '。建议回看解释后再做一次相近题。';
+    }
+  }
+}
+
 function initApp() {
   console.log('initApp');
 
@@ -2969,11 +3526,12 @@ function initApp() {
     var content = document.getElementById('tab-' + tabName);
     if (content) {
       content.classList.add('active');
-      // 方案tab + 预约tab — 白底，其他恢复暗底
-      document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings');
+      // 方案、预约和美感训练使用白底
+      document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings' || tabName === 'aesthetic');
       if (tabName === 'plans') { loadPermData(); switchPlan('calc'); }
       if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
       if (tabName === 'showcase') { startShowcasePoll(); }
+      if (tabName === 'aesthetic') { initAestheticTraining(); }
     }
   };
   window.goHome = function() {
