@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="349">
+<html lang="zh-CN" data-version="350">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3720,6 +3720,7 @@ function initApp() {
     document.body.classList.remove('hair-modal-open');
     var _tm = document.querySelector('meta[name="theme-color"]');
     if (_tm) _tm.content = '#000000';
+    if (window._hairPollTimer) { clearTimeout(window._hairPollTimer); window._hairPollTimer = null; }
     var m = document.getElementById('hair-analysis-modal');
     if (m) m.remove();
     window._activeHairBookingContext = null;
@@ -3802,6 +3803,7 @@ function initApp() {
                 if (!rows2 || rows2.length === 0) return;
                 var rec2 = rows2[0];
                 if (rec2.status === 'completed') {
+                  window._hairPollTimer = null;
                   localStorage.removeItem('_pendingHairQueueId');
                   loadingEl.style.display = 'none';
                   resultEl.style.display = 'block';
@@ -3812,16 +3814,17 @@ function initApp() {
                     autoMatchHairType();
                   }
                 } else if (rec2.status === 'failed') {
+                  window._hairPollTimer = null;
                   localStorage.removeItem('_pendingHairQueueId');
                   loadingEl.style.display = 'none';
                   resultEl.innerHTML = '<div style="color:var(--danger);font-size:13px;padding:16px;text-align:center;">❌ 分析失败</div>';
                   resultEl.style.display = 'block';
                 } else {
-                  setTimeout(pollFn, 3000);  // 3秒后再试
+                  window._hairPollTimer = setTimeout(pollFn, 3000);  // 3秒后再试
                 }
-              }).catch(function(){ setTimeout(pollFn, 5000); });
+              }).catch(function(){ window._hairPollTimer = setTimeout(pollFn, 5000); });
             };
-            setTimeout(pollFn, 1000);
+            window._hairPollTimer = setTimeout(pollFn, 1000);
           }
         }
       }
@@ -8740,6 +8743,16 @@ function initApp() {
     };
     archiveStatus = resolveHairArchiveStatus(previousArchiveStatus, record);
     record.status = archiveStatus;
+    // ★ 合并旧数据：保留 previousArchiveRecord 中当前表单未填写的关键字段
+    if (previousArchiveRecord && previousArchiveRecord.id) {
+      var _arcMergeFields = ['rodDetails','planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference','aiSuggestions','feedbackRating','followUpScreenshot','followDate','followMsg'];
+      for (var _arcMi = 0; _arcMi < _arcMergeFields.length; _arcMi++) {
+        var _arcF = _arcMergeFields[_arcMi];
+        if ((!record[_arcF] || (Array.isArray(record[_arcF]) && record[_arcF].length === 0)) && previousArchiveRecord[_arcF]) {
+          record[_arcF] = previousArchiveRecord[_arcF];
+        }
+      }
+    }
     prepareCareOutboundBaseline(record, previousArchiveRecord);
     var archiveCareReductionErrors = validateCareOutboundReduction(record);
     if (archiveCareReductionErrors.length) {
