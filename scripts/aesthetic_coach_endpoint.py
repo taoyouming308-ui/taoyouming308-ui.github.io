@@ -8,13 +8,14 @@ It does not persist answers or images.
 
 import datetime as dt
 import json
+import os
 import threading
 import urllib.error
 import urllib.parse
 import urllib.request
 
 
-MODEL = "qwen/qwen3-vl-32b-instruct"
+MODEL = os.getenv("AESTHETIC_COACH_MODEL", "openai/gpt-4o-mini")
 ALLOWED_STAGES = {"observe", "analyze", "judge", "design", "review"}
 ALLOWED_IMAGE_HOST = "taoyouming308-ui.github.io"
 MAX_BODY_BYTES = 64 * 1024
