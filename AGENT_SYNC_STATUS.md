@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v351 (2026-07-08)
+
+- 美感训练新增“我的训练图库”：支持发型师在今日训练页上传个人图片并按登录员工隔离存储，默认仅本人可见。
+- 上传图片会自动压缩并生成可用的五步训练引导（观察/分析/判断/设计/复盘），保证 AI 导师点评流程可直接复用。
+- 今日训练案例改为“个人图库优先、系统案例兜底”，删除个人图片后会立即刷新今日案例与图库展示。
+- 新增个人图库可视化列表与删除入口，列表标记当日命中案例，便于发型师维护自己的训练素材。
+
 ## v349 (2026-07-04)
 
 - “今日训练”从 5 道选择题重做为单作品五步训练：观察、分析、判断、设计、复盘逐步完成，前一步提交后再进入下一步。
@@ -162,8 +169,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v349
-- Last synchronized base checked: GitHub `e6e7e3a`
+- App version: v351
+- Last synchronized base checked: GitHub `fa87a64`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -171,6 +178,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v351: 美感训练支持个人私有上传图库（上传/删除/当日训练命中），并为上传图片自动生成五步训练引导；今日训练优先使用个人案例，无个人图时回退内置案例。
 - v349: 今日训练升级为作品驱动的五步 AI 导师训练，新增 5 个带观察边界和大师解析的案例；OpenRouter 点评服务已部署并通过公网实测。
 - v348: App 新增美感训练、每日答题、知识地图、成长记录与本机作品复盘；总后台新增版本化来源目录和本机知识候选登记，正式知识使用三层治理和自动完整性检查。
 - v347: 每个预约独立保存发质分析表，预约状态和打开旧表均按预约 ID 匹配；旧数据仅同手机号同日兼容，并在后续编辑时保留原到店日期。
