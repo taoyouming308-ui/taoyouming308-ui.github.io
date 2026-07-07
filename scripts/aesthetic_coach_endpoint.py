@@ -9,6 +9,7 @@ It does not persist answers or images.
 import datetime as dt
 import json
 import os
+import re
 import threading
 import urllib.error
 import urllib.parse
@@ -47,6 +48,30 @@ STAGE_RULES = {
         "训练美感能力。检查学员是否从单一作品提炼出可迁移的比例、空间、重心、风格、"
         "色彩或纹理原则，并能区分剪裁、造型、人物和摄影的贡献。"
     ),
+}
+
+LOW_QUALITY_HINTS = (
+    "随便",
+    "乱写",
+    "瞎写",
+    "不知道",
+    "没想法",
+    "不会",
+    "哈哈哈",
+    "呵呵",
+    "test",
+    "123456",
+    "asdf",
+    "qwer",
+    "zxcv",
+)
+
+STAGE_REWRITE_HINT = {
+    "observe": "先写2条可见事实（轮廓、长度、重量、线条、纹理等），不要写“适合/高级”。",
+    "analyze": "把“为什么”写出来：哪一个设计动作造成了哪一个视觉结果。",
+    "judge": "同时写适合谁、不适合谁，以及至少1条调整策略。",
+    "design": "给出可执行方案：轮廓、层次、重量和技术步骤至少各写1点。",
+    "review": "总结1条可迁移原则，并指出它适用的边界条件。",
 }
 
 
@@ -131,6 +156,40 @@ def _normalized_feedback(data):
     }
 
 
+def _low_quality_reason(answer):
+    compact = re.sub(r"\s+", "", str(answer or "")).lower()
+    if not compact:
+        return "几乎没有有效内容"
+    if re.fullmatch(r"[\W_]+", compact):
+        return "主要由符号组成"
+    if re.search(r"(.)\1{5,}", compact):
+        return "存在大量重复字符"
+    if any(token in compact for token in LOW_QUALITY_HINTS):
+        return "内容偏敷衍或与训练无关"
+    if re.fullmatch(r"[0-9a-z]+", compact) and len(compact) >= 10:
+        if len(set(compact)) <= 5:
+            return "看起来像随机键入字符"
+    cjk_count = len(re.findall(r"[\u4e00-\u9fff]", compact))
+    punctuation_count = len(re.findall(r"[，。,.；;：:！？?!]", answer or ""))
+    if cjk_count < 6 and punctuation_count == 0 and len(compact) < 36:
+        return "缺少可读的完整语句"
+    return ""
+
+
+def _low_quality_feedback(stage, reason):
+    return {
+        "score": 12,
+        "affirmation": "你已经提交了答案，这是开始训练的第一步。",
+        "omissions": [
+            "当前回答" + reason + "，需要重写为和图片直接相关的内容。",
+            STAGE_REWRITE_HINT.get(stage, "请写出与本阶段问题对应的具体证据和理由。"),
+        ],
+        "follow_up": "请先写出至少2个画面证据，再补一句“因此我判断…”。",
+        "ready": False,
+        "model": MODEL,
+    }
+
+
 def _employee_is_active(supabase_get, username, store):
     query = (
         "staff?select=username,store,active&username=eq."
@@ -185,6 +244,7 @@ def _build_prompt(stage, case_data, answer, previous_answers):
 6. 单张照片看不到的内容必须明确说不能确定，不能猜脸型、发质或技术参数。
 7. 评分衡量本次回答的证据、逻辑和完整度，不评价发型师天赋。
 8. 中文短句，直接、专业，不超过260字。
+9. 若回答明显敷衍、乱码、重复口号或与图片无关，必须给低分（20分及以下）并要求重写。
 
 只输出JSON：
 {{
@@ -278,6 +338,11 @@ def handle_aesthetic_coach(handler, openrouter_key, supabase_get):
 
     if not _check_rate_limit(username, _client_ip(handler)):
         handler.send_json({"error": "今天的 AI 点评次数已达上限，请明天继续"}, 429)
+        return
+
+    low_quality_reason = _low_quality_reason(answer)
+    if low_quality_reason:
+        handler.send_json(_low_quality_feedback(stage, low_quality_reason))
         return
 
     try:

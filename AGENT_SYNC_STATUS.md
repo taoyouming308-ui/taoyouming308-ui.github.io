@@ -5,6 +5,8 @@
 - 美感训练 AI 导师默认模型从 OpenRouter `qwen/qwen3-vl-32b-instruct` 切换为 GPT：`openai/gpt-4o-mini`。
 - 新增环境变量 `AESTHETIC_COACH_MODEL`，运行时可覆盖默认模型，无需再次改动代码。
 - 训练接口行为、限流和员工核验逻辑保持不变；现有后端单测继续通过。
+- 新增低质量回答拦截：对明显敷衍/乱码/重复字符/随机键盘字符串直接返回低分与重写提示，不再误进入正常点评。
+- 提示词补充“无效回答必须低分并要求重写”的约束，进一步降低乱答误判为通过的概率。
 
 ## v351 (2026-07-08)
 
@@ -184,6 +186,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v351 runtime maintenance: 美感训练后端新增乱答识别与重写引导，明显无效回答会被直接低分拦截，不调用模型。
 - v351 runtime maintenance: 美感训练点评模型默认切到 GPT（`openai/gpt-4o-mini`），并支持 `AESTHETIC_COACH_MODEL` 环境变量覆盖。
 - v351: 美感训练支持个人私有上传图库（上传/删除/当日训练命中），并为上传图片自动生成五步训练引导；今日训练优先使用个人案例，无个人图时回退内置案例。
 - v349: 今日训练升级为作品驱动的五步 AI 导师训练，新增 5 个带观察边界和大师解析的案例；OpenRouter 点评服务已部署并通过公网实测。
@@ -250,6 +253,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-07-08: 美感训练“乱答拦截”新增后，`python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（6项）与 `python3 -m py_compile scripts/aesthetic_coach_endpoint.py` 通过；新增断言验证低质量回答不会调用模型且直接低分返回。
 - 2026-07-08: 美感训练模型切换到 GPT 后，`python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（5项）与 `python3 -m py_compile scripts/aesthetic_coach_endpoint.py` 通过；未改动训练接口入参、限流与员工核验。
 - 2026-07-03: v347 预约ID精确匹配测试覆盖同手机号跨日期、同日不同预约、旧表同日兼容和精确队列优先；版本/发布完整性、App语法、预约UI、22组发质任务、顾客档案、全局UI、后台、护理出库及25组Python同步测试全部通过。
 - 2026-07-03: v345 版本一致性、发布完整性、App JavaScript语法、30天有效期/云端验证后续期/停用与门店变更退出断言、全局UI、预约和22组发质任务测试通过。

@@ -77,6 +77,17 @@ class AestheticCoachEndpointTests(unittest.TestCase):
         self.assertEqual(handler.result[0], 200)
         self.assertEqual(handler.result[1]["score"], 82)
 
+    def test_blocks_low_quality_answer_without_calling_model(self):
+        payload = valid_payload()
+        payload["answer"] = "asdfasdfasdfasdf"
+        handler = FakeHandler(payload)
+        with mock.patch.object(coach, "_call_openrouter") as mocked:
+            coach.handle_aesthetic_coach(handler, "key", active_staff)
+            mocked.assert_not_called()
+        self.assertEqual(handler.result[0], 200)
+        self.assertLessEqual(handler.result[1]["score"], 20)
+        self.assertFalse(handler.result[1]["ready"])
+
     def test_normalizer_limits_score_and_omissions(self):
         result = coach._normalized_feedback(
             {
