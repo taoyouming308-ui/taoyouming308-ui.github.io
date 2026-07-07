@@ -1,5 +1,6 @@
 import io
 import json
+import urllib.error
 import unittest
 from unittest import mock
 
@@ -99,6 +100,29 @@ class AestheticCoachEndpointTests(unittest.TestCase):
         )
         self.assertEqual(result["score"], 100)
         self.assertEqual(len(result["omissions"]), 3)
+
+    def test_model_fallback_uses_second_candidate(self):
+        payload = valid_payload()
+        with mock.patch.object(coach, "_model_candidates", return_value=["openai/o3", "openai/gpt-4o-mini"]):
+            with mock.patch.object(
+                coach,
+                "_call_openrouter_once",
+                side_effect=[
+                    urllib.error.HTTPError("http://x", 400, "bad request", None, None),
+                    {
+                        "score": 86,
+                        "affirmation": "你的因果解释更完整了。",
+                        "omissions": ["再补充一条证据"],
+                        "follow_up": "这条判断在什么顾客条件下不成立？",
+                        "ready": True,
+                        "model": "openai/gpt-4o-mini",
+                    },
+                ],
+            ):
+                handler = FakeHandler(payload)
+                coach.handle_aesthetic_coach(handler, "key", active_staff)
+        self.assertEqual(handler.result[0], 200)
+        self.assertEqual(handler.result[1]["model"], "openai/gpt-4o-mini")
 
 
 if __name__ == "__main__":

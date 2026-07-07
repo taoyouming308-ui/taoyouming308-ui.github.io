@@ -16,7 +16,8 @@ import urllib.parse
 import urllib.request
 
 
-MODEL = os.getenv("AESTHETIC_COACH_MODEL", "openai/gpt-4o-mini")
+MODEL = os.getenv("AESTHETIC_COACH_MODEL", "openai/o3")
+FALLBACK_MODEL = os.getenv("AESTHETIC_COACH_FALLBACK_MODEL", "openai/gpt-4o-mini")
 ALLOWED_STAGES = {"observe", "analyze", "judge", "design", "review"}
 ALLOWED_IMAGE_HOST = "taoyouming308-ui.github.io"
 MAX_BODY_BYTES = 64 * 1024
@@ -137,7 +138,7 @@ def _parse_model_json(content):
     return json.loads(text)
 
 
-def _normalized_feedback(data):
+def _normalized_feedback(data, model_name=None):
     omissions = data.get("omissions") if isinstance(data, dict) else []
     if not isinstance(omissions, list):
         omissions = [omissions]
@@ -152,7 +153,7 @@ def _normalized_feedback(data):
         "omissions": omissions,
         "follow_up": _clean_text(data.get("follow_up"), 180) or "你能为这个判断再指出一个画面证据吗？",
         "ready": bool(data.get("ready", True)),
-        "model": MODEL,
+        "model": model_name or MODEL,
     }
 
 
@@ -256,11 +257,20 @@ def _build_prompt(stage, case_data, answer, previous_answers):
 }}"""
 
 
-def _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers):
+def _model_candidates():
+    candidates = []
+    for name in (MODEL, FALLBACK_MODEL):
+        clean = _clean_text(name, 80)
+        if clean and clean not in candidates:
+            candidates.append(clean)
+    return candidates or ["openai/gpt-4o-mini"]
+
+
+def _call_openrouter_once(openrouter_key, stage, case_data, answer, previous_answers, model_name):
     prompt = _build_prompt(stage, case_data, answer, previous_answers)
     request_body = json.dumps(
         {
-            "model": MODEL,
+            "model": model_name,
             "messages": [
                 {
                     "role": "user",
@@ -288,7 +298,25 @@ def _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers)
     with urllib.request.urlopen(request, timeout=28) as response:
         result = json.loads(response.read())
     content = result["choices"][0]["message"]["content"]
-    return _normalized_feedback(_parse_model_json(content))
+    return _normalized_feedback(_parse_model_json(content), model_name=model_name)
+
+
+def _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers):
+    last_error = None
+    for model_name in _model_candidates():
+        try:
+            return _call_openrouter_once(openrouter_key, stage, case_data, answer, previous_answers, model_name)
+        except urllib.error.HTTPError as error:
+            last_error = error
+            if error.code in (400, 401, 402, 403, 404, 409, 415, 422, 429):
+                continue
+            raise
+        except (urllib.error.URLError, ValueError, KeyError, json.JSONDecodeError) as error:
+            last_error = error
+            continue
+    if isinstance(last_error, Exception):
+        raise last_error
+    raise RuntimeError("AI 导师模型调用失败")
 
 
 def handle_aesthetic_coach(handler, openrouter_key, supabase_get):
