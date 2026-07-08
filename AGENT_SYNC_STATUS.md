@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v352 (2026-07-08)
+
+- 美感训练前端新增低质量回答预检：明显重复词组、中文乱码、随机键盘串或缺少发型画面关键词的回答会直接要求重写。
+- `ready:false` 的导师反馈不再显示“继续下一步”；本地备用评分也不能通过训练阶段，必须拿到真实 AI 导师点评后才能继续。
+- 个人上传训练图提交 AI 点评时会临时压缩为小尺寸 data image 发给导师服务；后端允许该临时图片输入并继续不落库保存。
+- 后端低质量识别同步补强截图中的中文重复乱码场景，避免只靠字数误判为有效回答。
+
 ## v351 runtime maintenance (2026-07-08)
 
 - 美感训练 AI 导师默认模型从 OpenRouter `qwen/qwen3-vl-32b-instruct` 切换为 GPT：`openai/gpt-4o-mini`。
@@ -178,8 +185,8 @@ Every meaningful change must update this file before commit/push.
 
 ## Current Shared State
 
-- App version: v351
-- Last synchronized base checked: GitHub `15c0159`
+- App version: v352
+- Last synchronized base checked: GitHub `6317238`
 - GitHub live branch: `github/main`
 - Gitee: retired; do not fetch or push
 - Required state before editing: local `HEAD` includes `github/main`
@@ -187,6 +194,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Completed Work
 
+- v352: 美感训练乱答拦截扩展到前端本地备用与后端模型入口，`ready:false` 时禁止继续下一步；个人上传图会临时压缩传给 AI 导师点评，不保存到公共库。
 - v351 runtime maintenance: 美感训练 AI 导师默认改为 `openai/o3`，并新增主模型失败自动回退机制，优先保证深思考质量同时避免服务中断。
 - v351 runtime maintenance: 美感训练后端新增乱答识别与重写引导，明显无效回答会被直接低分拦截，不调用模型。
 - v351 runtime maintenance: 美感训练点评模型默认切到 GPT（`openai/gpt-4o-mini`），并支持 `AESTHETIC_COACH_MODEL` 环境变量覆盖。
@@ -255,6 +263,7 @@ Every meaningful change must update this file before commit/push.
 
 ## Last Verification
 
+- 2026-07-08: v352 通过 `python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（9项，覆盖截图中的中文重复乱码与个人上传 data image）、`python3 -m py_compile scripts/aesthetic_coach_endpoint.py`、`node scripts/check-version-sync.js`、`node scripts/test-aesthetic-system.js`、`node scripts/smoke-test-app.js`、`node scripts/check-release-integrity.js`、`node scripts/check-agent-sync-status.js`。
 - 2026-07-08: 美感训练模型升级为 `openai/o3` 并新增自动回退后，`python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（7项）与 `python3 -m py_compile scripts/aesthetic_coach_endpoint.py` 通过；新增断言验证主模型失败会切换到回退模型。
 - 2026-07-08: 美感训练“乱答拦截”新增后，`python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（6项）与 `python3 -m py_compile scripts/aesthetic_coach_endpoint.py` 通过；新增断言验证低质量回答不会调用模型且直接低分返回。
 - 2026-07-08: 美感训练模型切换到 GPT 后，`python3 -m unittest scripts/test_aesthetic_coach_endpoint.py`（5项）与 `python3 -m py_compile scripts/aesthetic_coach_endpoint.py` 通过；未改动训练接口入参、限流与员工核验。

@@ -79,6 +79,9 @@ data.trainingCases.forEach(row => {
   'submitAestheticStage()',
   'continueAestheticStage()',
   'showAestheticMaster()',
+  'aestheticLowQualityReason(',
+  'aestheticCoachImageUrl(',
+  'feedback.ready !== false',
   '/api/aesthetic-coach',
   'hair_aesthetic_progress_v1:',
   'aesthetic-knowledge.v1.js'

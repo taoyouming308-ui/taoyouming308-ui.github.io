@@ -1,5 +1,6 @@
 import io
 import json
+import base64
 import urllib.error
 import unittest
 from unittest import mock
@@ -88,6 +89,38 @@ class AestheticCoachEndpointTests(unittest.TestCase):
         self.assertEqual(handler.result[0], 200)
         self.assertLessEqual(handler.result[1]["score"], 20)
         self.assertFalse(handler.result[1]["ready"])
+
+    def test_blocks_repeated_chinese_gibberish_without_calling_model(self):
+        payload = valid_payload()
+        payload["answer"] = "就斤斤计较斤斤计较及坎坎坷坷健健康康坎坎坷坷看坎坎坷坷门密密麻麻姐姐"
+        handler = FakeHandler(payload)
+        with mock.patch.object(coach, "_call_openrouter") as mocked:
+            coach.handle_aesthetic_coach(handler, "key", active_staff)
+            mocked.assert_not_called()
+        self.assertEqual(handler.result[0], 200)
+        self.assertLessEqual(handler.result[1]["score"], 20)
+        self.assertFalse(handler.result[1]["ready"])
+
+    def test_accepts_personal_upload_data_image(self):
+        payload = valid_payload()
+        payload["case"]["image_url"] = (
+            "data:image/jpeg;base64,"
+            + base64.b64encode(b"temporary-personal-training-image").decode("ascii")
+        )
+        feedback = {
+            "score": 81,
+            "affirmation": "你准确指出了整体轮廓。",
+            "omissions": ["再补充重量位置"],
+            "follow_up": "脸周线条如何影响重心？",
+            "ready": True,
+            "model": coach.MODEL,
+        }
+        handler = FakeHandler(payload)
+        with mock.patch.object(coach, "_call_openrouter", return_value=feedback) as mocked:
+            coach.handle_aesthetic_coach(handler, "key", active_staff)
+            mocked.assert_called_once()
+        self.assertEqual(handler.result[0], 200)
+        self.assertEqual(handler.result[1]["score"], 81)
 
     def test_normalizer_limits_score_and_omissions(self):
         result = coach._normalized_feedback(

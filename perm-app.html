@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="351">
+<html lang="zh-CN" data-version="352">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3544,6 +3544,52 @@ function compressAestheticUpload(file) {
   });
 }
 
+function isAestheticDataImageUrl(url) {
+  return /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(String(url || ''));
+}
+
+function resizeAestheticDataUrl(dataUrl, maxW, maxH, quality) {
+  return new Promise(function(resolve, reject) {
+    var image = new Image();
+    image.onload = function() {
+      var width = image.width;
+      var height = image.height;
+      if (!width || !height) {
+        reject(new Error('图片尺寸异常'));
+        return;
+      }
+      if (width > maxW) {
+        height = Math.round(height * maxW / width);
+        width = maxW;
+      }
+      if (height > maxH) {
+        width = Math.round(width * maxH / height);
+        height = maxH;
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('无法处理图片'));
+        return;
+      }
+      ctx.drawImage(image, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    image.onerror = function() {
+      reject(new Error('图片读取失败'));
+    };
+    image.src = dataUrl;
+  });
+}
+
+function aestheticCoachImageUrl(item) {
+  var imageUrl = item && item.imageUrl ? String(item.imageUrl) : '';
+  if (!isAestheticDataImageUrl(imageUrl)) return Promise.resolve(imageUrl);
+  return resizeAestheticDataUrl(imageUrl, 768, 960, 0.68);
+}
+
 window.triggerAestheticUpload = function() {
   if (aestheticIdentity() === '未登录员工') {
     if (window.showToast) window.showToast('请先到“今日预约”完成员工登录');
@@ -3796,15 +3842,94 @@ window.updateAestheticAnswerCount = function() {
   if (answer && count) count.textContent = answer.value.length + ' / 1200';
 };
 
-function localAestheticFeedback(flow, guide, answer, errorMessage) {
-  var lengthScore = Math.min(30, Math.floor(answer.length / 8));
-  var base = flow.id === 'observe' ? 48 : 52;
+var AESTHETIC_LOW_QUALITY_HINTS = ['随便', '乱写', '瞎写', '不知道', '没想法', '不会', '哈哈哈', '呵呵', 'test', '123456', 'asdf', 'qwer', 'zxcv'];
+var AESTHETIC_DOMAIN_TERMS = ['轮廓', '长度', '重量', '层次', '刘海', '脸周', '发尾', '发根', '发中', '线条', '纹理', '发色', '光泽', '卷度', '卷', '外翻', '内扣', '蓬松', '贴', '厚', '薄', '圆', '方', '弧', '直', '柔', '硬', '短发', '长发', '下巴', '耳', '后脑', '颈', '重心', '比例', '饱满', '轻盈'];
+
+function aestheticDomainTermCount(text) {
+  return AESTHETIC_DOMAIN_TERMS.reduce(function(total, term) {
+    return total + (text.indexOf(term) !== -1 ? 1 : 0);
+  }, 0);
+}
+
+function aestheticRepeatedNgramCount(text) {
+  var total = 0;
+  for (var size = 2; size <= 4; size += 1) {
+    var seen = {};
+    for (var i = 0; i <= text.length - size; i += 1) {
+      var chunk = text.slice(i, i + size);
+      if (!/^[\u4e00-\u9fff0-9a-z]+$/i.test(chunk)) continue;
+      seen[chunk] = (seen[chunk] || 0) + 1;
+    }
+    Object.keys(seen).forEach(function(key) {
+      if (seen[key] > 1) total += seen[key] - 1;
+    });
+  }
+  return total;
+}
+
+function aestheticLowQualityReason(answer) {
+  var raw = String(answer || '');
+  var compact = raw.replace(/\s+/g, '').toLowerCase();
+  if (!compact) return '几乎没有有效内容';
+  if (/^[^\u4e00-\u9fff0-9a-z]+$/i.test(compact)) return '主要由符号组成';
+  if (/(.)\1{5,}/.test(compact)) return '存在大量重复字符';
+  if (AESTHETIC_LOW_QUALITY_HINTS.some(function(token) { return compact.indexOf(token) !== -1; })) {
+    return '内容偏敷衍或与训练无关';
+  }
+  if (/^[0-9a-z]+$/.test(compact) && compact.length >= 10) {
+    var chars = {};
+    compact.split('').forEach(function(ch) { chars[ch] = true; });
+    if (Object.keys(chars).length <= 5) return '看起来像随机键入字符';
+  }
+  var cjk = compact.match(/[\u4e00-\u9fff]/g) || [];
+  var punctuation = raw.match(/[，。,.；;：:！？?!]/g) || [];
+  if (cjk.length >= 16 && aestheticRepeatedNgramCount(compact) >= 6) {
+    return '存在大量重复词组，像随手输入的内容';
+  }
+  if (cjk.length >= 16 && punctuation.length === 0 && compact.length < 80 && aestheticDomainTermCount(compact) < 2) {
+    return '缺少和图片相关的发型描述';
+  }
+  if (cjk.length < 6 && punctuation.length === 0 && compact.length < 36) {
+    return '缺少可读的完整语句';
+  }
+  return '';
+}
+
+function aestheticLowQualityFeedback(flow, reason) {
+  var rewrite = {
+    observe: '先写2条可见事实（轮廓、长度、重量、线条、纹理等），不要写“适合/高级”。',
+    analyze: '把“为什么”写出来：哪一个设计动作造成了哪一个视觉结果。',
+    judge: '同时写适合谁、不适合谁，以及至少1条调整策略。',
+    design: '给出可执行方案：轮廓、层次、重量和技术步骤至少各写1点。',
+    review: '总结1条可迁移原则，并指出它适用的边界条件。'
+  };
   return {
-    score: Math.min(78, base + lengthScore),
-    affirmation: '你已经先完成了独立思考，这一步比直接看答案更重要。',
-    omissions: guide.prompts.slice(0, 2),
-    follow_up: flow.id === 'observe' ? '再检查一次：你的描述里有没有“适合、高级、显瘦”这类推测？' : '你的每个判断，能否在作品里指出一个具体证据？',
-    ready: true,
+    score: 12,
+    affirmation: '你已经提交了答案，这是开始训练的第一步。',
+    omissions: [
+      '当前回答' + reason + '，需要重写为和图片直接相关的内容。',
+      rewrite[flow.id] || '请写出与本阶段问题对应的具体证据和理由。'
+    ],
+    follow_up: '请先写出至少2个画面证据，再补一句“因此我判断…”。',
+    ready: false,
+    localGuard: true
+  };
+}
+
+function localAestheticFeedback(flow, guide, answer, errorMessage) {
+  var lowQualityReason = aestheticLowQualityReason(answer);
+  if (lowQualityReason) {
+    var blocked = aestheticLowQualityFeedback(flow, lowQualityReason);
+    blocked.fallback = true;
+    blocked.error = errorMessage || 'AI 导师暂时不可用';
+    return blocked;
+  }
+  return {
+    score: 0,
+    affirmation: '你已经写下了答案，但 AI 导师暂时没有完成点评。',
+    omissions: ['当前阶段还没有拿到模型点评，不能直接通过。', '请稍后重新提交，或检查导师服务连接。'],
+    follow_up: '网络恢复后，再让 AI 导师根据图片和你的回答认真点评一次。',
+    ready: false,
     fallback: true,
     error: errorMessage || 'AI 导师暂时不可用'
   };
@@ -3830,7 +3955,12 @@ function requestAestheticCoach(flow, guide, answer) {
   var timer = controller ? setTimeout(function() { controller.abort(); }, 30000) : null;
   return getAestheticCoachBase()
     .then(function(base) {
-      return fetch(base + '/api/aesthetic-coach', {
+      return aestheticCoachImageUrl(item).then(function(coachImageUrl) {
+        return { base: base, imageUrl: coachImageUrl };
+      });
+    })
+    .then(function(requestData) {
+      return fetch(requestData.base + '/api/aesthetic-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller ? controller.signal : undefined,
@@ -3845,7 +3975,7 @@ function requestAestheticCoach(flow, guide, answer) {
             title: item.title,
             category: item.category,
             focus: item.focus,
-            image_url: item.imageUrl,
+            image_url: requestData.imageUrl,
             limitations: item.limitations,
             reference: guide.master
           }
@@ -3872,6 +4002,14 @@ window.submitAestheticStage = function() {
   if (!flow || !guide) return;
   if (answer.length < minLength) {
     if (window.showToast) window.showToast('先写下具体观察和理由，至少 ' + minLength + ' 个字');
+    return;
+  }
+  var lowQualityReason = aestheticLowQualityReason(answer);
+  if (lowQualityReason) {
+    var blockedFeedback = aestheticLowQualityFeedback(flow, lowQualityReason);
+    aestheticTrainingState.answers[flow.id] = answer;
+    aestheticTrainingState.feedback[flow.id] = blockedFeedback;
+    renderAestheticFeedback(flow, blockedFeedback);
     return;
   }
   if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) {
@@ -3907,21 +4045,24 @@ function renderAestheticFeedback(flow, feedback) {
   var status = document.getElementById('ae-ai-status');
   var submit = document.getElementById('ae-submit-answer');
   var omissions = Array.isArray(feedback.omissions) ? feedback.omissions.slice(0, 3) : [];
+  var canContinue = feedback.ready !== false;
+  var kicker = feedback.localGuard ? '训练提示 · 需重写' : (feedback.fallback ? '训练提示 · 网络备用' : 'AI MENTOR · 导师点评');
   if (status) status.classList.remove('on');
   if (submit) submit.style.display = 'none';
   if (!box) return;
   box.innerHTML =
-    '<div class="ae-feedback-kicker">' + (feedback.fallback ? '训练提示 · 网络备用' : 'AI MENTOR · 导师点评') +
+    '<div class="ae-feedback-kicker">' + kicker +
       '<span class="ae-feedback-score">' + Math.max(0, Math.min(100, Number(feedback.score) || 0)) + '</span></div>' +
     '<h4>你已经做到</h4><p>' + aestheticEscape(feedback.affirmation || '已经完成独立作答。') + '</p>' +
     '<h4>下一步补充</h4>' + (omissions.length
       ? '<ul>' + omissions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>'
       : '<p>当前信息较完整，可以进入下一步。</p>') +
     '<p class="ae-follow-up"><strong>导师追问：</strong>' + aestheticEscape(feedback.follow_up || '你能为这个判断再指出一个画面证据吗？') + '</p>' +
-    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 暂时未连接，本次分数只作为填写完整度提示。</p>' : '') +
+    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 暂时未连接，当前阶段不会直接通过。</p>' : '') +
+    (!canContinue ? '<p style="margin-top:8px;color:#85857f;">当前回答未通过本阶段，请补充具体画面证据后再评。</p>' : '') +
     '<div class="ae-feedback-actions">' +
       '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">补充后再评</button>' +
-      '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' +
+      (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' : '') +
     '</div>';
   box.classList.add('on');
 }
@@ -3946,6 +4087,12 @@ window.reviseAestheticStage = function() {
 
 window.continueAestheticStage = function() {
   var data = aestheticKnowledge();
+  var flow = currentAestheticFlow();
+  var feedback = flow ? aestheticTrainingState.feedback[flow.id] : null;
+  if (feedback && feedback.ready === false) {
+    if (window.showToast) window.showToast('先补充具体画面证据，再继续下一步');
+    return;
+  }
   if (!data) return;
   if (aestheticTrainingState.index < data.trainingFlow.length - 1) {
     aestheticTrainingState.index += 1;

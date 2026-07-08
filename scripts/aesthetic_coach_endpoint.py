@@ -7,6 +7,7 @@ It does not persist answers or images.
 """
 
 import datetime as dt
+import base64
 import json
 import os
 import re
@@ -20,7 +21,8 @@ MODEL = os.getenv("AESTHETIC_COACH_MODEL", "openai/o3")
 FALLBACK_MODEL = os.getenv("AESTHETIC_COACH_FALLBACK_MODEL", "openai/gpt-4o-mini")
 ALLOWED_STAGES = {"observe", "analyze", "judge", "design", "review"}
 ALLOWED_IMAGE_HOST = "taoyouming308-ui.github.io"
-MAX_BODY_BYTES = 64 * 1024
+MAX_BODY_BYTES = 2 * 1024 * 1024
+MAX_DATA_IMAGE_CHARS = 1800 * 1024
 MAX_ANSWER_CHARS = 1200
 MAX_PREVIOUS_CHARS = 3600
 _RATE_LOCK = threading.Lock()
@@ -65,6 +67,46 @@ LOW_QUALITY_HINTS = (
     "asdf",
     "qwer",
     "zxcv",
+)
+
+LOW_QUALITY_DOMAIN_TERMS = (
+    "轮廓",
+    "长度",
+    "重量",
+    "层次",
+    "刘海",
+    "脸周",
+    "发尾",
+    "发根",
+    "发中",
+    "线条",
+    "纹理",
+    "发色",
+    "光泽",
+    "卷度",
+    "卷",
+    "外翻",
+    "内扣",
+    "蓬松",
+    "贴",
+    "厚",
+    "薄",
+    "圆",
+    "方",
+    "弧",
+    "直",
+    "柔",
+    "硬",
+    "短发",
+    "长发",
+    "下巴",
+    "耳",
+    "后脑",
+    "颈",
+    "重心",
+    "比例",
+    "饱满",
+    "轻盈",
 )
 
 STAGE_REWRITE_HINT = {
@@ -113,6 +155,8 @@ def _check_rate_limit(username, ip):
 
 
 def _valid_training_image(url):
+    if _valid_data_image(url):
+        return True
     try:
         parsed = urllib.parse.urlparse(url)
         return (
@@ -121,6 +165,20 @@ def _valid_training_image(url):
             and parsed.path.startswith("/img/")
             and ".." not in parsed.path
         )
+    except Exception:
+        return False
+
+
+def _valid_data_image(url):
+    text = str(url or "")
+    if len(text) > MAX_DATA_IMAGE_CHARS:
+        return False
+    match = re.fullmatch(r"data:image/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)", text, re.I)
+    if not match:
+        return False
+    try:
+        base64.b64decode(re.sub(r"\s+", "", match.group(2)), validate=True)
+        return True
     except Exception:
         return False
 
@@ -172,9 +230,31 @@ def _low_quality_reason(answer):
             return "看起来像随机键入字符"
     cjk_count = len(re.findall(r"[\u4e00-\u9fff]", compact))
     punctuation_count = len(re.findall(r"[，。,.；;：:！？?!]", answer or ""))
+    if cjk_count >= 16 and _repeated_ngram_count(compact) >= 6:
+        return "存在大量重复词组，像随手输入的内容"
+    if cjk_count >= 16 and punctuation_count == 0 and len(compact) < 80:
+        if _domain_term_count(compact) < 2:
+            return "缺少和图片相关的发型描述"
     if cjk_count < 6 and punctuation_count == 0 and len(compact) < 36:
         return "缺少可读的完整语句"
     return ""
+
+
+def _domain_term_count(text):
+    return sum(1 for term in LOW_QUALITY_DOMAIN_TERMS if term in text)
+
+
+def _repeated_ngram_count(text):
+    total = 0
+    for size in range(2, 5):
+        counts = {}
+        for index in range(0, max(0, len(text) - size + 1)):
+            chunk = text[index : index + size]
+            if not re.fullmatch(r"[\u4e00-\u9fff0-9a-z]+", chunk):
+                continue
+            counts[chunk] = counts.get(chunk, 0) + 1
+        total += sum(count - 1 for count in counts.values() if count > 1)
+    return total
 
 
 def _low_quality_feedback(stage, reason):
