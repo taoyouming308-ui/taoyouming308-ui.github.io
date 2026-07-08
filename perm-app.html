@@ -3960,7 +3960,7 @@ function requestAestheticCoach(flow, guide, answer) {
       });
     })
     .then(function(requestData) {
-      return fetch(requestData.base + '/api/aesthetic-coach', {
+      return fetch(requestData.base, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller ? controller.signal : undefined,
