@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="350">
+<html lang="zh-CN" data-version="352">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2775,6 +2775,22 @@ body {
       .ae-case-body h3 { margin-bottom:5px; font-size:17px; }
       .ae-case-meta { color:#888882; font-size:9px; line-height:1.6; }
       .ae-case-note { margin-top:10px; padding-top:10px; border-top:1px solid var(--ae-line); color:#90908a; font-size:9px; line-height:1.6; }
+      .ae-library-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+      .ae-library-head h3 { margin:0; font-size:16px; }
+      .ae-library-head p { margin-top:4px; color:var(--ae-muted); font-size:10px; }
+      .ae-library-actions { margin-top:12px; display:flex; align-items:flex-end; gap:8px; }
+      .ae-library-actions label { display:block; color:#777771; font-size:10px; margin-bottom:4px; }
+      .ae-library-actions select { width:100%; min-height:42px; padding:0 12px; border:1px solid var(--ae-line); border-radius:11px; background:#fff; color:#111; font:inherit; font-size:12px; }
+      .ae-library-note { margin-top:8px; color:#989892; font-size:9px; line-height:1.6; }
+      .ae-library-grid { margin-top:12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+      .ae-library-item { border:1px solid var(--ae-line); border-radius:10px; overflow:hidden; background:#fff; }
+      .ae-library-item.today { border-color:#111; box-shadow:inset 0 0 0 1px #111; }
+      .ae-library-item-media { position:relative; aspect-ratio:3/4; background:#f0f0eb; }
+      .ae-library-item img { width:100%; height:100%; object-fit:cover; display:block; }
+      .ae-library-del { position:absolute; top:6px; right:6px; border:0; border-radius:999px; background:rgba(0,0,0,.72); color:#fff; font-size:9px; padding:4px 7px; cursor:pointer; }
+      .ae-library-tag { position:absolute; left:6px; bottom:6px; border-radius:999px; background:rgba(255,255,255,.9); color:#111; font-size:8px; font-weight:700; padding:4px 6px; max-width:calc(100% - 12px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .ae-library-item-meta { padding:6px 7px 7px; color:#90908a; font-size:8px; line-height:1.5; min-height:28px; }
+      .ae-library-empty { grid-column:1 / -1; padding:12px; border:1px dashed #d7d7d2; border-radius:10px; color:#8f8f88; font-size:10px; text-align:center; }
       .ae-stage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
       .ae-stage-number { color:#a0a09a; font-size:9px; font-weight:700; letter-spacing:1.2px; }
       .ae-stage-head h3 { margin:5px 0 4px; font-size:20px; }
@@ -2853,6 +2869,34 @@ body {
           <div class="ae-case-note" id="ae-case-limit"></div>
           <button class="ae-primary" id="ae-start-btn" type="button" onclick="startAestheticTraining()" style="width:100%;margin-top:14px;">开始今天的训练</button>
         </div>
+      </article>
+      <article class="ae-card" id="ae-personal-library">
+        <div class="ae-library-head">
+          <div>
+            <h3>我的训练图库</h3>
+            <p id="ae-library-count">还没有个人训练图片</p>
+          </div>
+          <button class="ae-secondary" type="button" onclick="triggerAestheticUpload()">上传图片</button>
+        </div>
+        <div class="ae-library-actions">
+          <div style="flex:1;">
+            <label for="ae-upload-category">分类</label>
+            <select id="ae-upload-category">
+              <option value="超短发">超短发</option>
+              <option value="短发" selected>短发</option>
+              <option value="锁骨发">锁骨发</option>
+              <option value="中长发">中长发</option>
+              <option value="高层次长发">高层次长发</option>
+              <option value="造型烫">造型烫</option>
+              <option value="法式卷">法式卷</option>
+              <option value="羊毛卷">羊毛卷</option>
+              <option value="漂发发色">漂发发色</option>
+            </select>
+          </div>
+        </div>
+        <input type="file" id="ae-upload-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadAestheticImage(this)">
+        <div class="ae-library-note">仅当前登录发型师可见。上传后自动进入你的今日训练候选。</div>
+        <div class="ae-library-grid" id="ae-library-grid"></div>
       </article>
       <div class="ae-card ae-trainer" id="ae-trainer">
         <div class="ae-progress"><i id="ae-progress-bar"></i></div>
@@ -3266,7 +3310,347 @@ function aestheticHash(text) {
   return Math.abs(hash);
 }
 
+var AESTHETIC_CATEGORY_FOCUS = {
+  '超短发': '轮廓、量感、边界',
+  '短发': '轮廓、层次、重量',
+  '锁骨发': '长度比例、发尾走向、脸周',
+  '中长发': '层次、弧度、空气感',
+  '高层次长发': '高低层次、体积分配、流向',
+  '造型烫': '卷度节奏、体积重心、打理难度',
+  '法式卷': '曲线密度、蓬松位置、脸周修饰',
+  '羊毛卷': '卷圈尺度、根部支撑、轮廓控制',
+  '漂发发色': '明暗对比、色调层次、光泽质感'
+};
+
+var AESTHETIC_CATEGORY_LIMIT = {
+  '超短发': '单张图无法确认完整头型和发流，判断前需补充正侧后信息。',
+  '短发': '受拍摄角度影响，不能仅凭一面图判断双侧对称和真实发量。',
+  '锁骨发': '造型和拍摄会改变体积感，需区分剪裁结构与临时造型。',
+  '中长发': '光线和摆拍会影响层次观感，需结合自然状态再做判断。',
+  '高层次长发': '风吹和造型会放大层次效果，不能直接等同日常状态。',
+  '造型烫': '照片卷度受打理影响较大，不能直接推断顾客自然落点。',
+  '法式卷': '卷度弹性与维护成本受发质影响，需结合发质条件再判断。',
+  '羊毛卷': '卷圈紧度和蓬松度受产品与打理影响，需核对自然干发状态。',
+  '漂发发色': '发色会受光线和滤镜影响，需避免用照片直接判定真实色深。'
+};
+
+function aestheticLibraryKey() {
+  return 'hair_aesthetic_library_v1:' + aestheticIdentity();
+}
+
+function hasAestheticGuides(guides) {
+  if (!guides) return false;
+  var required = ['observe', 'analyze', 'judge', 'design', 'review'];
+  return required.every(function(step) {
+    var item = guides[step];
+    return item && Array.isArray(item.prompts) && item.prompts.length && item.master;
+  });
+}
+
+function buildAestheticGuides(title, category, focus) {
+  var caseLabel = category || '发型作品';
+  var focusText = focus || AESTHETIC_CATEGORY_FOCUS[caseLabel] || '轮廓、层次、质感';
+  return {
+    observe: {
+      prompts: ['先描述外轮廓和主要长度', '重量最集中在哪里', '线条、纹理和色彩有哪些可见事实', '不要写“适合、高级、显瘦”等推测'],
+      master: '先把画面里可见的事实说清楚：轮廓、长度、重量、纹理和色彩。当前案例可优先观察' + focusText + '。'
+    },
+    analyze: {
+      prompts: ['这些外观由哪些设计动作造成', '重心为什么落在这里', '哪些细节负责“稳定”或“变化”'],
+      master: '分析时要把“动作”和“结果”连起来。围绕' + focusText + '解释因果关系，而不是只给结论。'
+    },
+    judge: {
+      prompts: ['适合什么顾客条件', '什么情况下需要调整', '维护成本和风险点是什么'],
+      master: '判断时同时说清适合与不适合，再给出调整策略。尤其关注发质、脸周比例和日常维护能力。'
+    },
+    design: {
+      prompts: ['如果你来做，轮廓怎么建立', '层次和重量如何安排', '需要什么技术与造型配合'],
+      master: '把审美判断落成可执行方案：先骨架，再细节，再打理路径。方案要能在真实门店里完成。'
+    },
+    review: {
+      prompts: ['今天可迁移的一条设计原则', '下次遇到不同发质如何调整', '你会保留什么个人表达'],
+      master: '复盘重点不是“答案一致”，而是形成可复用的判断语言：有证据、有逻辑、有边界。'
+    }
+  };
+}
+
+function normalizeAestheticLibraryCase(item, index) {
+  if (!item || !item.imageUrl) return null;
+  var category = String(item.category || '短发');
+  var focus = String(item.focus || AESTHETIC_CATEGORY_FOCUS[category] || '轮廓、层次、质感');
+  var title = String(item.title || (category + ' · 个人案例'));
+  return {
+    id: String(item.id || ('USER-' + index + '-' + aestheticHash(title + ':' + item.imageUrl))),
+    title: title,
+    category: category,
+    imageUrl: String(item.imageUrl),
+    focus: focus,
+    estimatedMinutes: Number(item.estimatedMinutes) || 15,
+    limitations: String(item.limitations || AESTHETIC_CATEGORY_LIMIT[category] || '单张图仅用于审美训练，结论需结合现场条件验证。'),
+    guides: hasAestheticGuides(item.guides) ? item.guides : buildAestheticGuides(title, category, focus),
+    source: 'personal',
+    uploadedAt: item.uploadedAt || new Date().toISOString()
+  };
+}
+
+function loadAestheticLibrary() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(aestheticLibraryKey()) || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(function(item, index) { return normalizeAestheticLibraryCase(item, index); })
+      .filter(Boolean)
+      .sort(function(a, b) { return String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')); });
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveAestheticLibrary(cases) {
+  var safeList = (cases || []).slice(0, 60);
+  try {
+    localStorage.setItem(aestheticLibraryKey(), JSON.stringify(safeList));
+    return true;
+  } catch (e) {
+    if (window.showToast) window.showToast('本机存储空间不足，请先删除部分训练图片');
+    return false;
+  }
+}
+
+function aestheticDateLabel(value) {
+  if (!value) return '';
+  var d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+function renderAestheticLibrary() {
+  var grid = document.getElementById('ae-library-grid');
+  var count = document.getElementById('ae-library-count');
+  if (!grid) return;
+  var personalCases = loadAestheticLibrary();
+  var today = dailyAestheticCase();
+  var todayId = today && today.source === 'personal' ? String(today.id) : '';
+  if (count) {
+    count.textContent = personalCases.length
+      ? ('已上传 ' + personalCases.length + ' 张 · 仅自己可见')
+      : '还没有个人训练图片';
+  }
+  grid.textContent = '';
+  if (!personalCases.length) {
+    var empty = document.createElement('div');
+    empty.className = 'ae-library-empty';
+    empty.textContent = '点击“上传图片”加入你的私有案例库。';
+    grid.appendChild(empty);
+    return;
+  }
+  var fragment = document.createDocumentFragment();
+  personalCases.forEach(function(item) {
+    var card = document.createElement('div');
+    card.className = 'ae-library-item' + (todayId && todayId === String(item.id) ? ' today' : '');
+
+    var media = document.createElement('div');
+    media.className = 'ae-library-item-media';
+
+    var img = document.createElement('img');
+    img.src = item.imageUrl;
+    img.alt = item.title || '个人训练图';
+    img.loading = 'lazy';
+
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'ae-library-del';
+    del.textContent = '删除';
+    del.addEventListener('click', function() {
+      window.removeAestheticCase(item.id);
+    });
+
+    var tag = document.createElement('div');
+    tag.className = 'ae-library-tag';
+    tag.textContent = item.category || '发型作品';
+
+    var meta = document.createElement('div');
+    meta.className = 'ae-library-item-meta';
+    meta.textContent = '上传 ' + (aestheticDateLabel(item.uploadedAt) || '最近');
+
+    media.appendChild(img);
+    media.appendChild(del);
+    media.appendChild(tag);
+    card.appendChild(media);
+    card.appendChild(meta);
+    fragment.appendChild(card);
+  });
+  grid.appendChild(fragment);
+}
+
+function buildAestheticCaseFromUpload(imageUrl, category, currentCount) {
+  var now = new Date();
+  var stamp = now.getTime();
+  var focus = AESTHETIC_CATEGORY_FOCUS[category] || '轮廓、层次、质感';
+  var title = category + ' · 个人案例 ' + String(currentCount + 1);
+  return {
+    id: 'USER-' + stamp + '-' + Math.floor(Math.random() * 1000),
+    title: title,
+    category: category,
+    imageUrl: imageUrl,
+    focus: focus,
+    estimatedMinutes: 15,
+    limitations: AESTHETIC_CATEGORY_LIMIT[category] || '单张图仅用于审美训练，结论需结合现场条件验证。',
+    guides: buildAestheticGuides(title, category, focus),
+    source: 'personal',
+    uploadedAt: now.toISOString()
+  };
+}
+
+function compressAestheticUpload(file) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var image = new Image();
+    image.onload = function() {
+      var width = image.width;
+      var height = image.height;
+      var maxW = 960;
+      var maxH = 1280;
+      if (width > maxW) {
+        height = Math.round(height * maxW / width);
+        width = maxW;
+      }
+      if (height > maxH) {
+        width = Math.round(width * maxH / height);
+        height = maxH;
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        reject(new Error('无法处理图片'));
+        return;
+      }
+      ctx.drawImage(image, 0, 0, width, height);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+      URL.revokeObjectURL(url);
+      resolve(dataUrl);
+    };
+    image.onerror = function() {
+      URL.revokeObjectURL(url);
+      reject(new Error('图片读取失败'));
+    };
+    image.src = url;
+  });
+}
+
+function isAestheticDataImageUrl(url) {
+  return /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(String(url || ''));
+}
+
+function resizeAestheticDataUrl(dataUrl, maxW, maxH, quality) {
+  return new Promise(function(resolve, reject) {
+    var image = new Image();
+    image.onload = function() {
+      var width = image.width;
+      var height = image.height;
+      if (!width || !height) {
+        reject(new Error('图片尺寸异常'));
+        return;
+      }
+      if (width > maxW) {
+        height = Math.round(height * maxW / width);
+        width = maxW;
+      }
+      if (height > maxH) {
+        width = Math.round(width * maxH / height);
+        height = maxH;
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('无法处理图片'));
+        return;
+      }
+      ctx.drawImage(image, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    image.onerror = function() {
+      reject(new Error('图片读取失败'));
+    };
+    image.src = dataUrl;
+  });
+}
+
+function aestheticCoachImageUrl(item) {
+  var imageUrl = item && item.imageUrl ? String(item.imageUrl) : '';
+  if (!isAestheticDataImageUrl(imageUrl)) return Promise.resolve(imageUrl);
+  return resizeAestheticDataUrl(imageUrl, 768, 960, 0.68);
+}
+
+window.triggerAestheticUpload = function() {
+  if (aestheticIdentity() === '未登录员工') {
+    if (window.showToast) window.showToast('请先到“今日预约”完成员工登录');
+    return;
+  }
+  var input = document.getElementById('ae-upload-input');
+  if (input) input.click();
+};
+
+window.uploadAestheticImage = function(input) {
+  var file = input && input.files ? input.files[0] : null;
+  if (!file) return;
+  if (aestheticIdentity() === '未登录员工') {
+    if (window.showToast) window.showToast('请先登录员工后再上传');
+    input.value = '';
+    return;
+  }
+  if (['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) === -1) {
+    if (window.showToast) window.showToast('仅支持 JPG/PNG/WebP 格式');
+    input.value = '';
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    if (window.showToast) window.showToast('图片超过10MB，请压缩后上传');
+    input.value = '';
+    return;
+  }
+  var categoryEl = document.getElementById('ae-upload-category');
+  var category = categoryEl ? categoryEl.value : '短发';
+  compressAestheticUpload(file)
+    .then(function(base64) {
+      var list = loadAestheticLibrary();
+      list.unshift(buildAestheticCaseFromUpload(base64, category, list.length));
+      if (!saveAestheticLibrary(list)) return;
+      renderAestheticLibrary();
+      renderAestheticCaseCard();
+      if (window.showToast) window.showToast('已加入你的训练图库');
+    })
+    .catch(function(error) {
+      if (window.showToast) window.showToast(error && error.message ? error.message : '上传失败，请重试');
+    })
+    .finally(function() {
+      input.value = '';
+    });
+};
+
+window.removeAestheticCase = function(caseId) {
+  var list = loadAestheticLibrary();
+  var next = list.filter(function(item) { return String(item.id) !== String(caseId); });
+  if (next.length === list.length) return;
+  if (!saveAestheticLibrary(next)) return;
+  renderAestheticLibrary();
+  renderAestheticCaseCard();
+  if (window.showToast) window.showToast('已从个人图库删除');
+};
+
 function dailyAestheticCase() {
+  var personalCases = loadAestheticLibrary();
+  if (personalCases.length) {
+    return personalCases[aestheticHash(aestheticToday() + ':' + aestheticIdentity() + ':personal') % personalCases.length];
+  }
   var data = aestheticKnowledge();
   var cases = data && Array.isArray(data.trainingCases) ? data.trainingCases : [];
   if (!cases.length) return null;
@@ -3280,6 +3664,7 @@ window.switchAestheticView = function(view) {
   document.querySelectorAll('.ae-view').forEach(function(panel) {
     panel.classList.toggle('on', panel.id === 'ae-view-' + view);
   });
+  if (view === 'today') renderAestheticLibrary();
   if (view === 'growth') renderAestheticGrowth();
 };
 
@@ -3313,6 +3698,7 @@ window.initAestheticTraining = function() {
   if (governance) {
     governance.textContent = data.governance.publishFlow.join(' → ') + '。' + data.governance.aiRule + ' ' + data.governance.copyrightRule;
   }
+  renderAestheticLibrary();
   renderAestheticCaseCard();
   renderAestheticSummary();
   renderAestheticGrowth();
@@ -3320,11 +3706,20 @@ window.initAestheticTraining = function() {
 
 function renderAestheticCaseCard() {
   var item = dailyAestheticCase();
-  if (!item) return;
   var image = document.getElementById('ae-case-image');
   var title = document.getElementById('ae-case-title');
   var meta = document.getElementById('ae-case-meta');
   var limit = document.getElementById('ae-case-limit');
+  var button = document.getElementById('ae-start-btn');
+  if (!item) {
+    if (image) image.removeAttribute('src');
+    if (title) title.textContent = '暂无训练案例';
+    if (meta) meta.textContent = '上传个人图片后即可开始你的专属训练';
+    if (limit) limit.textContent = '观察边界：先完成员工登录，再上传作品图。';
+    if (button) button.disabled = true;
+    return;
+  }
+  if (button) button.disabled = false;
   if (image) image.src = item.imageUrl;
   if (title) title.textContent = item.title;
   if (meta) meta.textContent = item.category + ' · 今日重点：' + item.focus + ' · 约 ' + item.estimatedMinutes + ' 分钟';
@@ -3447,23 +3842,111 @@ window.updateAestheticAnswerCount = function() {
   if (answer && count) count.textContent = answer.value.length + ' / 1200';
 };
 
-function localAestheticFeedback(flow, guide, answer, errorMessage) {
-  var lengthScore = Math.min(30, Math.floor(answer.length / 8));
-  var base = flow.id === 'observe' ? 48 : 52;
+var AESTHETIC_LOW_QUALITY_HINTS = ['随便', '乱写', '瞎写', '不知道', '没想法', '不会', '哈哈哈', '呵呵', 'test', '123456', 'asdf', 'qwer', 'zxcv'];
+var AESTHETIC_DOMAIN_TERMS = ['轮廓', '长度', '重量', '层次', '刘海', '脸周', '发尾', '发根', '发中', '线条', '纹理', '发色', '光泽', '卷度', '卷', '外翻', '内扣', '蓬松', '贴', '厚', '薄', '圆', '方', '弧', '直', '柔', '硬', '短发', '长发', '下巴', '耳', '后脑', '颈', '重心', '比例', '饱满', '轻盈'];
+
+function aestheticDomainTermCount(text) {
+  return AESTHETIC_DOMAIN_TERMS.reduce(function(total, term) {
+    return total + (text.indexOf(term) !== -1 ? 1 : 0);
+  }, 0);
+}
+
+function aestheticRepeatedNgramCount(text) {
+  var total = 0;
+  for (var size = 2; size <= 4; size += 1) {
+    var seen = {};
+    for (var i = 0; i <= text.length - size; i += 1) {
+      var chunk = text.slice(i, i + size);
+      if (!/^[\u4e00-\u9fff0-9a-z]+$/i.test(chunk)) continue;
+      seen[chunk] = (seen[chunk] || 0) + 1;
+    }
+    Object.keys(seen).forEach(function(key) {
+      if (seen[key] > 1) total += seen[key] - 1;
+    });
+  }
+  return total;
+}
+
+function aestheticLowQualityReason(answer) {
+  var raw = String(answer || '');
+  var compact = raw.replace(/\s+/g, '').toLowerCase();
+  if (!compact) return '几乎没有有效内容';
+  if (/^[^\u4e00-\u9fff0-9a-z]+$/i.test(compact)) return '主要由符号组成';
+  if (/(.)\1{5,}/.test(compact)) return '存在大量重复字符';
+  if (AESTHETIC_LOW_QUALITY_HINTS.some(function(token) { return compact.indexOf(token) !== -1; })) {
+    return '内容偏敷衍或与训练无关';
+  }
+  if (/^[0-9a-z]+$/.test(compact) && compact.length >= 10) {
+    var chars = {};
+    compact.split('').forEach(function(ch) { chars[ch] = true; });
+    if (Object.keys(chars).length <= 5) return '看起来像随机键入字符';
+  }
+  var cjk = compact.match(/[\u4e00-\u9fff]/g) || [];
+  var punctuation = raw.match(/[，。,.；;：:！？?!]/g) || [];
+  if (cjk.length >= 16 && aestheticRepeatedNgramCount(compact) >= 6) {
+    return '存在大量重复词组，像随手输入的内容';
+  }
+  if (cjk.length >= 16 && punctuation.length === 0 && compact.length < 80 && aestheticDomainTermCount(compact) < 2) {
+    return '缺少和图片相关的发型描述';
+  }
+  if (cjk.length < 6 && punctuation.length === 0 && compact.length < 36) {
+    return '缺少可读的完整语句';
+  }
+  return '';
+}
+
+function aestheticLowQualityFeedback(flow, reason) {
+  var rewrite = {
+    observe: '先写2条可见事实（轮廓、长度、重量、线条、纹理等），不要写“适合/高级”。',
+    analyze: '把“为什么”写出来：哪一个设计动作造成了哪一个视觉结果。',
+    judge: '同时写适合谁、不适合谁，以及至少1条调整策略。',
+    design: '给出可执行方案：轮廓、层次、重量和技术步骤至少各写1点。',
+    review: '总结1条可迁移原则，并指出它适用的边界条件。'
+  };
   return {
-    score: Math.min(78, base + lengthScore),
-    affirmation: '你已经先完成了独立思考，这一步比直接看答案更重要。',
-    omissions: guide.prompts.slice(0, 2),
-    follow_up: flow.id === 'observe' ? '再检查一次：你的描述里有没有“适合、高级、显瘦”这类推测？' : '你的每个判断，能否在作品里指出一个具体证据？',
-    ready: true,
+    score: 12,
+    affirmation: '你已经提交了答案，这是开始训练的第一步。',
+    omissions: [
+      '当前回答' + reason + '，需要重写为和图片直接相关的内容。',
+      rewrite[flow.id] || '请写出与本阶段问题对应的具体证据和理由。'
+    ],
+    follow_up: '请先写出至少2个画面证据，再补一句“因此我判断…”。',
+    ready: false,
+    localGuard: true
+  };
+}
+
+function localAestheticFeedback(flow, guide, answer, errorMessage) {
+  var lowQualityReason = aestheticLowQualityReason(answer);
+  if (lowQualityReason) {
+    var blocked = aestheticLowQualityFeedback(flow, lowQualityReason);
+    blocked.fallback = true;
+    blocked.error = errorMessage || 'AI 导师暂时不可用';
+    return blocked;
+  }
+  return {
+    score: 0,
+    affirmation: '你已经写下了答案，但 AI 导师暂时没有完成点评。',
+    omissions: ['当前阶段还没有拿到模型点评，不能直接通过。', '请稍后重新提交，或检查导师服务连接。'],
+    follow_up: '网络恢复后，再让 AI 导师根据图片和你的回答认真点评一次。',
+    ready: false,
     fallback: true,
     error: errorMessage || 'AI 导师暂时不可用'
   };
 }
 
 function getAestheticCoachBase() {
-  var COACH_URL = 'https://courtesy-starring-illustration-emphasis.trycloudflare.com';
-  return Promise.resolve(COACH_URL);
+  if (window._aestheticCoachBase) return Promise.resolve(window._aestheticCoachBase);
+  return fetch('tunnel-url.json?_t=' + Date.now())
+    .then(function(response) {
+      if (!response.ok) throw new Error('导师服务地址不可用');
+      return response.json();
+    })
+    .then(function(data) {
+      if (!data.url || data.url.indexOf('https://') !== 0) throw new Error('导师服务地址无效');
+      window._aestheticCoachBase = data.url.replace(/\/+$/, '');
+      return window._aestheticCoachBase;
+    });
 }
 
 function requestAestheticCoach(flow, guide, answer) {
@@ -3472,7 +3955,12 @@ function requestAestheticCoach(flow, guide, answer) {
   var timer = controller ? setTimeout(function() { controller.abort(); }, 30000) : null;
   return getAestheticCoachBase()
     .then(function(base) {
-      return fetch(base + '/api/aesthetic-coach', {
+      return aestheticCoachImageUrl(item).then(function(coachImageUrl) {
+        return { base: base, imageUrl: coachImageUrl };
+      });
+    })
+    .then(function(requestData) {
+      return fetch(requestData.base + '/api/aesthetic-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller ? controller.signal : undefined,
@@ -3487,7 +3975,7 @@ function requestAestheticCoach(flow, guide, answer) {
             title: item.title,
             category: item.category,
             focus: item.focus,
-            image_url: item.imageUrl,
+            image_url: requestData.imageUrl,
             limitations: item.limitations,
             reference: guide.master
           }
@@ -3514,6 +4002,14 @@ window.submitAestheticStage = function() {
   if (!flow || !guide) return;
   if (answer.length < minLength) {
     if (window.showToast) window.showToast('先写下具体观察和理由，至少 ' + minLength + ' 个字');
+    return;
+  }
+  var lowQualityReason = aestheticLowQualityReason(answer);
+  if (lowQualityReason) {
+    var blockedFeedback = aestheticLowQualityFeedback(flow, lowQualityReason);
+    aestheticTrainingState.answers[flow.id] = answer;
+    aestheticTrainingState.feedback[flow.id] = blockedFeedback;
+    renderAestheticFeedback(flow, blockedFeedback);
     return;
   }
   if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) {
@@ -3549,21 +4045,24 @@ function renderAestheticFeedback(flow, feedback) {
   var status = document.getElementById('ae-ai-status');
   var submit = document.getElementById('ae-submit-answer');
   var omissions = Array.isArray(feedback.omissions) ? feedback.omissions.slice(0, 3) : [];
+  var canContinue = feedback.ready !== false;
+  var kicker = feedback.localGuard ? '训练提示 · 需重写' : (feedback.fallback ? '训练提示 · 网络备用' : 'AI MENTOR · 导师点评');
   if (status) status.classList.remove('on');
   if (submit) submit.style.display = 'none';
   if (!box) return;
   box.innerHTML =
-    '<div class="ae-feedback-kicker">' + (feedback.fallback ? '训练提示 · 网络备用' : 'AI MENTOR · 导师点评') +
+    '<div class="ae-feedback-kicker">' + kicker +
       '<span class="ae-feedback-score">' + Math.max(0, Math.min(100, Number(feedback.score) || 0)) + '</span></div>' +
     '<h4>你已经做到</h4><p>' + aestheticEscape(feedback.affirmation || '已经完成独立作答。') + '</p>' +
     '<h4>下一步补充</h4>' + (omissions.length
       ? '<ul>' + omissions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>'
       : '<p>当前信息较完整，可以进入下一步。</p>') +
     '<p class="ae-follow-up"><strong>导师追问：</strong>' + aestheticEscape(feedback.follow_up || '你能为这个判断再指出一个画面证据吗？') + '</p>' +
-    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 暂时未连接，本次分数只作为填写完整度提示。</p>' : '') +
+    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 暂时未连接，当前阶段不会直接通过。</p>' : '') +
+    (!canContinue ? '<p style="margin-top:8px;color:#85857f;">当前回答未通过本阶段，请补充具体画面证据后再评。</p>' : '') +
     '<div class="ae-feedback-actions">' +
       '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">补充后再评</button>' +
-      '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' +
+      (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' : '') +
     '</div>';
   box.classList.add('on');
 }
@@ -3588,6 +4087,12 @@ window.reviseAestheticStage = function() {
 
 window.continueAestheticStage = function() {
   var data = aestheticKnowledge();
+  var flow = currentAestheticFlow();
+  var feedback = flow ? aestheticTrainingState.feedback[flow.id] : null;
+  if (feedback && feedback.ready === false) {
+    if (window.showToast) window.showToast('先补充具体画面证据，再继续下一步');
+    return;
+  }
   if (!data) return;
   if (aestheticTrainingState.index < data.trainingFlow.length - 1) {
     aestheticTrainingState.index += 1;

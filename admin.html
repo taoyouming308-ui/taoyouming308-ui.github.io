@@ -65,70 +65,6 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 .btn-approve { background:transparent; color:var(--success); border:1px solid var(--success); }
 .btn-reject { background:transparent; color:var(--accent); border:1px solid var(--accent); }
 .empty-row td { text-align:center; color:#555; padding:40px; }
-.admin-layout { display:grid; grid-template-columns:220px minmax(0,1fr); min-height:calc(100vh - 57px); }
-.admin-sidebar { background:var(--surface-2); border-right:1px solid var(--border); padding:16px 12px; position:sticky; top:0; height:calc(100vh - 57px); overflow-y:auto; }
-.nav-group { margin-bottom:18px; }
-.nav-group-title { padding:0 10px 6px; color:#555; font-size:10px; letter-spacing:1.5px; }
-.admin-nav-item { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; margin:2px 0; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:13px; text-align:left; cursor:pointer; }
-.admin-nav-item:hover { background:rgba(255,255,255,0.04); color:#ddd; }
-.admin-nav-item.active { background:#fff; color:#000; font-weight:600; }
-.nav-count { min-width:20px; padding:1px 6px; border-radius:10px; background:var(--danger); color:#fff; font-size:10px; text-align:center; }
-.admin-menu-btn { display:none; background:transparent!important; color:#fff!important; border:1px solid var(--border)!important; padding:6px 10px!important; }
-.content { width:100%; max-width:1380px; padding:24px; }
-.admin-page { display:none; overflow:visible!important; }
-.admin-page.active { display:block; }
-.page-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:18px; }
-.page-title { font-size:20px; color:#fff; margin-bottom:4px; }
-.page-desc { color:var(--muted); font-size:12px; line-height:1.6; }
-.page-actions { display:flex; gap:8px; flex-wrap:wrap; }
-.panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
-.panel-title { color:#fff; font-size:14px; font-weight:600; margin-bottom:12px; }
-.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
-.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; cursor:pointer; }
-.stat-card:hover { border-color:#555; }
-.stat-value { font-size:26px; line-height:1; font-weight:700; color:#fff; }
-.stat-label { margin-top:7px; color:var(--muted); font-size:11px; }
-.toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.toolbar input, .toolbar select { padding:9px 10px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:#fff; font-size:12px; }
-.toolbar input { min-width:180px; flex:1; }
-.status-chip { display:inline-flex; align-items:center; padding:3px 8px; border-radius:12px; font-size:11px; }
-.status-pending { color:#facc15; background:rgba(250,204,21,.1); }
-.status-active-chip { color:var(--success); background:rgba(74,222,128,.1); }
-.status-disabled-chip { color:#aaa; background:rgba(255,255,255,.06); }
-.status-danger { color:var(--danger); background:rgba(224,85,106,.1); }
-.content-switch { display:flex; gap:6px; margin-bottom:14px; }
-.content-switch button { padding:7px 12px; border:1px solid var(--border); border-radius:7px; background:transparent; color:var(--muted); cursor:pointer; }
-.content-switch button.active { background:#fff; color:#000; border-color:#fff; }
-.content-subpage { display:none; }
-.content-subpage.active { display:block; }
-.admin-table-wrap { overflow-x:auto; border:1px solid var(--border-soft); border-radius:9px; }
-.admin-table-wrap table { margin-bottom:0; min-width:720px; }
-.action-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
-.action-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; cursor:pointer; }
-.action-card:hover { border-color:#555; }
-.action-card strong { display:block; color:#fff; margin-bottom:5px; }
-.action-card span { color:var(--muted); font-size:11px; line-height:1.5; }
-.registration-card-list { display:grid; gap:10px; }
-.registration-card { display:grid; grid-template-columns:minmax(120px,1.2fr) repeat(3,minmax(100px,1fr)) auto; align-items:center; gap:12px; padding:14px; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
-.registration-name { color:#fff; font-weight:600; }
-.registration-meta { color:var(--muted); font-size:11px; }
-.sidebar-mask { display:none; }
-@media (max-width:760px) {
-  .header { position:sticky; top:0; z-index:80; }
-  .admin-menu-btn { display:inline-block; }
-  .admin-layout { display:block; }
-  .admin-sidebar { position:fixed; left:0; top:57px; z-index:75; width:240px; height:calc(100vh - 57px); transform:translateX(-105%); transition:transform .18s ease; box-shadow:8px 0 28px rgba(0,0,0,.5); }
-  .admin-sidebar.open { transform:translateX(0); }
-  .sidebar-mask { display:none; position:fixed; inset:57px 0 0; z-index:70; background:rgba(0,0,0,.65); }
-  .sidebar-mask.open { display:block; }
-  .content { padding:16px 12px 40px; }
-  .page-header { align-items:stretch; flex-direction:column; }
-  .page-actions .btn-add { width:100%; margin:0; }
-  .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .registration-card { grid-template-columns:1fr auto; }
-  .registration-card .registration-field { grid-column:1 / -1; }
-  .registration-card .registration-actions { grid-column:2; grid-row:1; }
-}
 /* 护理管理表格美化 */
 #tab-care table tbody tr:nth-child(even) { background:rgba(255,255,255,0.03); }
 #tab-care table tbody tr:hover { background:rgba(255,255,255,0.06); }
@@ -149,10 +85,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 
 <div id="admin-panel">
   <div class="header">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="admin-menu-btn" class="admin-menu-btn" type="button">☰</button>
-      <h2 id="admin-brand-title">自由手艺人 · 后台管理</h2>
-    </div>
+    <h2>自由手艺人 · 后台管理</h2>
     <div style="display:flex;gap:6px;align-items:center;">
       <button id="reload-btn" title="刷新" style="padding:6px 10px;background:transparent;color:#888;border:1px solid #333;border-radius:6px;cursor:pointer;font-size:13px;">↻</button>
       <button id="logout-btn">退出</button>
@@ -161,84 +94,42 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div class="pending-alert" id="pending-alert" style="display:none;padding:10px 20px;background:#2a1a0a;color:#facc15;font-size:13px;text-align:center;border-bottom:1px solid #442200;cursor:pointer;">
     📸 有 <strong id="pending-count-text">0</strong> 张图片待审核，点击查看
   </div>
-  <div class="admin-layout">
-    <div id="sidebar-mask" class="sidebar-mask"></div>
-    <aside id="admin-sidebar" class="admin-sidebar">
-      <div class="nav-group">
-        <div class="nav-group-title">工作</div>
-        <button class="admin-nav-item active" data-tab="dashboard">工作台</button>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-title">团队</div>
-        <button class="admin-nav-item" data-tab="registrations">注册审核 <span id="nav-registration-count" class="nav-count" style="display:none;"></span></button>
-        <button class="admin-nav-item" data-tab="staff">员工管理</button>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-title">客户</div>
-        <button class="admin-nav-item" data-tab="customers" data-super-admin-only>顾客档案</button>
-        <button class="admin-nav-item" data-tab="followups" data-super-admin-only>回访任务</button>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-title">技术质量</div>
-        <button class="admin-nav-item" data-tab="hair-analysis">发质任务</button>
-        <button class="admin-nav-item" data-tab="care">护理管理</button>
-        <button class="admin-nav-item" data-tab="assessment">月度报表</button>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-title">内容</div>
-        <button class="admin-nav-item" data-tab="content">作品管理 <span class="badge-tip nav-count" id="badge-images" style="display:none;"></span></button>
-        <button class="admin-nav-item" data-tab="aesthetic" data-super-admin-only>美感知识</button>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-title">系统</div>
-        <button class="admin-nav-item" data-tab="system" data-super-admin-only>异常中心</button>
-        <button class="admin-nav-item" data-tab="audit">操作记录</button>
-      </div>
-    </aside>
-    <main class="content">
-    <div id="tab-dashboard" class="admin-page active">
-      <div class="page-header">
-        <div><h1 class="page-title">工作台</h1><div class="page-desc">集中查看今天需要处理的注册、回访、发质任务和同步异常。</div></div>
-      </div>
-      <div id="dashboard-stats" class="stats-grid"></div>
-      <div class="panel">
-        <div class="panel-title">待处理事项</div>
-        <div id="dashboard-actions" class="action-list"><div style="color:var(--muted);font-size:12px;">加载中...</div></div>
-      </div>
-    </div>
-
-    <div id="tab-registrations" class="admin-page">
-      <div class="page-header">
-        <div><h1 class="page-title">注册审核</h1><div class="page-desc">核对新员工申请的门店和职位，通过后账号才能登录。</div></div>
-      </div>
-      <div id="registration-summary" class="stats-grid"></div>
-      <div id="registration-list" class="registration-card-list"></div>
-    </div>
-
+  <div class="tabs">
+    <div class="tab active" data-tab="staff">员工管理</div>
+    <div class="tab" data-tab="hair">发质配置</div>
+    <div class="tab" data-tab="style">款式管理</div>
+    <div class="tab" data-tab="perm">烫发方案</div>
+    <div class="tab" data-tab="images">图片审核<span class="badge-tip" id="badge-images" style="display:none;margin-left:6px;background:#e0556a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;"></span></div>
+    <div class="tab" data-tab="carousel">轮播管理</div>
+    <div class="tab" data-tab="customers">顾客档案</div>
+    <div class="tab" data-tab="followups">回访管理</div>
+    <div class="tab" data-tab="assessment">月度考核</div>
+    <div class="tab" data-tab="hair-analysis">发质分析</div>
+    <div class="tab" data-tab="care">护理管理</div>
+  </div>
+  <div class="content">
     <!-- 员工管理 -->
-    <div id="tab-staff" class="admin-page">
-      <div class="page-header">
-        <div><h1 class="page-title">员工管理</h1><div class="page-desc">管理已通过审核的员工、所属门店、业务职位和后台权限。</div></div>
-        <div class="page-actions"><button class="btn-add" data-open-modal="staff">+ 新增员工</button></div>
-      </div>
-      <div class="toolbar">
-        <input id="staff-search" placeholder="搜索姓名、职位或门店">
-        <select id="staff-store-filter"><option value="">全部门店</option><option value="自由手艺人">自由手艺人</option><option value="向里造型">向里造型</option></select>
-        <button class="btn-edit" type="button" onclick="loadStaff()">查询</button>
-      </div>
-      <div class="admin-table-wrap"><table><thead><tr><th>用户名</th><th>角色</th><th>职位</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
-      <tbody id="table-staff"></tbody></table></div>
+    <div id="tab-staff">
+      <button class="btn-add" data-open-modal="staff">+ 新增员工</button>
+      <table><thead><tr><th>用户名</th><th>角色</th><th>职位</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="table-staff"></tbody></table>
     </div>
-
-    <div id="tab-content" class="admin-page">
-      <div class="page-header">
-        <div><h1 class="page-title">作品管理</h1><div class="page-desc">先审核作品，再从已通过作品中选择首页展示图片。</div></div>
-      </div>
-      <div class="content-switch">
-        <button type="button" class="active" data-content-view="images">作品审核</button>
-        <button type="button" data-content-view="carousel" data-super-admin-only>首页展示</button>
-      </div>
-    <div id="tab-images" class="content-subpage active">
+    <div id="tab-hair" style="display:none">
+      <button class="btn-add" data-open-modal="hair">+ 新增加</button>
+      <table><thead><tr><th>名称</th><th>TGA:CA</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-hair"></tbody></table>
+    </div>
+    <div id="tab-style" style="display:none">
+      <button class="btn-add" data-open-modal="style">+ 新增</button>
+      <table><thead><tr><th>名称</th><th>描述</th><th>操作</th></tr></thead>
+      <tbody id="table-style"></tbody></table>
+    </div>
+    <div id="tab-perm" style="display:none">
+      <button class="btn-add" data-open-modal="perm">+ 新增方案</button>
+      <table><thead><tr><th>发质</th><th>款式</th><th>PH</th><th>硫代</th><th>操作</th></tr></thead>
+      <tbody id="table-perm"></tbody></table>
+    </div>
+    <div id="tab-images" style="display:none">
       <div style="font-size:12px;color:#888;margin-bottom:12px;">状态：
         <select id="img-filter" style="background:#000;color:#fff;border:1px solid #333;padding:4px 8px;border-radius:4px;">
           <option value="all" selected>全部</option>
@@ -254,7 +145,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <tbody id="table-images"></tbody>
       </table>
     </div>
-    <div id="tab-carousel" class="content-subpage" data-super-admin-only>
+    <div id="tab-carousel" style="display:none">
       <div style="font-size:12px;color:#888;margin-bottom:8px;">首页轮播图（仅显示已审核的HTTP图片，建议750×1000px）</div>
       <div style="margin-bottom:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
         <label style="display:block;font-size:13px;color:#888;margin-bottom:6px;">轮播图 HTTP URL</label>
@@ -263,15 +154,15 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <div id="car-msg" style="font-size:13px;margin-top:8px;color:var(--accent);"></div>
       </div>
       <table>
-        <thead><tr><th>顺序</th><th>预览</th><th>分类</th><th>上传者</th><th>操作</th></tr></thead>
+        <thead><tr><th>预览</th><th>分类</th><th>上传者</th><th>操作</th></tr></thead>
         <tbody id="table-carousel"></tbody>
       </table>
     </div>
-    </div>
+  </div>
+</div>
 
 <!-- 顾客档案 -->
-<div id="tab-customers" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">顾客档案</h1><div class="page-desc">查询客户消费、套餐、发质分析和回访历史；美管加同步字段保持只读。</div></div></div>
+<div id="tab-customers" style="display:none">
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
     <input id="cust-search" placeholder="搜索姓名/手机号" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
     <select id="cust-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
@@ -287,13 +178,12 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 </div>
 
 <!-- 回访管理 -->
-<div id="tab-followups" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">回访任务</h1><div class="page-desc">按计划日期管理今日、逾期和已完成回访。</div></div></div>
+<div id="tab-followups" style="display:none">
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
     <select id="fu-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
     <select id="fu-status-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
-      <option value="">全部</option><option value="overdue">已逾期</option><option value="today">今日计划</option>
-      <option value="week">未来7天</option><option value="completed">本周已完成</option>
+      <option value="">全部</option><option value="over30">超过30天未回访</option><option value="over60">超过60天未回访</option>
+      <option value="today">今日回访</option><option value="week">本周回访</option>
     </select>
     <button onclick="loadFollowups()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
   </div>
@@ -306,52 +196,49 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <div style="font-size:11px;color:var(--muted);margin-top:4px;">今日回访</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--danger);" id="fu-overdue">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">逾期回访</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">超30天未回访</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--accent);" id="fu-this-week">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">本周已完成</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">本周回访</div></div>
   </div>
-  <table><thead><tr><th>客户</th><th>手机号</th><th>发型师</th><th>最后到店</th><th>最近回访</th><th>下次计划</th><th>状态</th><th>操作</th></tr></thead>
+  <table><thead><tr><th>客户</th><th>手机号</th><th>发型师</th><th>最后到店</th><th>距今天数</th><th>最近回访</th><th>操作</th></tr></thead>
   <tbody id="table-followups"></tbody></table>
 </div>
 
 <!-- 月度考核 -->
-<div id="tab-assessment" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">月度报表</h1><div class="page-desc">以发质分析表真实流程状态统计填写率和回访完成率。</div></div></div>
+<div id="tab-assessment" style="display:none">
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-    <input type="month" id="ass-month" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
     <select id="ass-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
     <button onclick="loadAssessment()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
   </div>
   <div id="ass-summary" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:#fff;" id="ass-total">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">发质分析表</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">烫染客户</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--info);" id="ass-analyzed">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">技师已填写</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">已分析</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--accent);" id="ass-rate">0%</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">技师填写率</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">分析完成率</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--success);" id="ass-followed">0</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">流程已完成</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">已回访</div></div>
     <div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
       <div style="font-size:24px;font-weight:700;color:var(--accent);" id="ass-fu-rate">0%</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">流程完成率</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">回访率</div></div>
   </div>
-  <table><thead><tr><th>门店</th><th>发型师</th><th>发质表</th><th>技师已填</th><th>填写率</th><th>待技师</th><th>流程完成</th><th>完成率</th></tr></thead>
+  <table><thead><tr><th>门店</th><th>发型师</th><th>烫染客户</th><th>已分析</th><th>分析完成率</th><th>待分析</th><th>已回访</th><th>回访率</th></tr></thead>
   <tbody id="table-assessment"></tbody></table>
 </div>
 
 <!-- 发质分析 -->
-<div id="tab-hair-analysis" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">发质任务</h1><div class="page-desc">监督“待技师填写 → 待发型师回访 → 回访完成”的完整流程。</div></div></div>
+<div id="tab-hair-analysis" style="display:none">
   <!-- 发质分析表完成统计（从 hair_records 表） -->
   <div id="hair-record-stats" style="margin-bottom:16px;">
     <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>
   </div>
-
+  
   <!-- 发质分析表明细列表（从 hair_records 表） -->
   <div id="hair-records-list" style="margin-bottom:16px;display:none;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
@@ -360,43 +247,38 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <input id="hr-search" placeholder="搜索客户名/手机号" style="flex:1;min-width:120px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
         <select id="hr-status-filter" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
           <option value="">全部状态</option>
-          <option value="待技师填写">待技师填写</option>
           <option value="待回访">待回访</option>
           <option value="技师已完成">技师已填</option>
-          <option value="回访完成">回访完成</option>
-          <option value="已完成">旧版已保存</option>
+          <option value="已完成">已完成</option>
         </select>
-        <button id="hr-batch-del" onclick="batchDeleteHR()" style="display:none;padding:6px 14px;background:#e74c3c;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">删除选中</button>
         <button onclick="loadHairRecordList()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
         <span id="hr-count" style="font-size:12px;color:var(--muted);"></span>
       </div>
       <div style="max-height:480px;overflow-y:auto;">
-        <table style="font-size:12px;"><thead><tr><th><input type="checkbox" id="hr-select-all"></th><th>客户名</th><th>手机号</th><th>发型师</th><th>技师</th><th>三段诊断</th><th>烫发方案</th><th>评定</th><th>状态</th><th>停留</th><th>时间</th><th>操作</th></tr></thead>
+        <table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>发型师</th><th>技师</th><th>三段诊断</th><th>烫发方案</th><th>评定</th><th>状态</th><th>停留</th><th>时间</th><th>操作</th></tr></thead>
           <tbody id="table-hair-records"></tbody>
         </table>
       </div>
     </div>
   </div>
-
+  
   <!-- AI分析记录（从 hair_analysis_queue 表） -->
-  <div id="hair-ai-admin-section" data-super-admin-only style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
+  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
     <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;">📷 AI拍照分析记录</div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
       <input id="ha-search" placeholder="搜索手机号/客户名" style="flex:1;min-width:150px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
-      <button id="ha-batch-del" onclick="batchDeleteHA()" style="display:none;padding:8px 16px;background:#e74c3c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">删除选中</button>
       <button onclick="loadHairAnalyses()" style="padding:8px 16px;background:#fff;color:#000;border:none;border-radius:6px;cursor:pointer;font-size:13px;">刷新</button>
       <span id="ha-count" style="font-size:12px;color:var(--muted);"></span>
     </div>
     <table>
-      <thead><tr><th><input type="checkbox" id="ha-select-all"></th><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+      <thead><tr><th>手机号</th><th>客户名</th><th>技师名</th><th>诊断等级</th><th>AI分析摘要</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
       <tbody id="table-hair-analysis"></tbody>
     </table>
   </div>
 </div>
 
 <!-- 护理管理 -->
-<div id="tab-care" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">护理管理</h1><div class="page-desc">查看产品、护理用量、出库状态和月度汇总。</div></div></div>
+<div id="tab-care" style="display:none">
   <!-- 顶部概览卡片 -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
@@ -431,7 +313,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
 
   <!-- 产品管理 -->
-  <div id="care-products-admin-panel" data-super-admin-only style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-size:14px;font-weight:600;color:#fff;">📦 护理产品</div>
       <button class="btn-add" onclick="openCareProductModal()" style="margin-bottom:0;padding:6px 14px;font-size:12px;">+ 新增</button>
@@ -448,7 +330,6 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <!-- 月度护理用量统计 -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
     <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📊 月度统计</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">汇总数据由客户护理明细相加得出。点击发型师行的“编辑用量”，进入该发型师当月明细逐条更正。</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
@@ -469,72 +350,6 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   </div>
 </div>
 
-<div id="tab-aesthetic" class="admin-page" data-super-admin-only>
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">美感知识</h1>
-      <div class="page-desc">管理知识来源、发布规则和待评审候选。正式知识由版本文件发布，未经审核的内容不会进入 App 评分标准。</div>
-    </div>
-    <div class="page-actions">
-      <button class="btn-add" type="button" onclick="openAestheticCandidateModal()">+ 新增候选</button>
-      <button class="btn-edit" type="button" onclick="exportAestheticKnowledge()">导出清单</button>
-    </div>
-  </div>
-  <div id="aesthetic-admin-stats" class="stats-grid"></div>
-  <div class="panel">
-    <div class="panel-title">发布与安全规则</div>
-    <div id="aesthetic-governance" style="display:grid;gap:10px;"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title">待评审候选（当前设备）</div>
-    <div style="margin:-4px 0 12px;color:var(--muted);font-size:11px;line-height:1.6;">候选仅保存在当前后台设备，不能直接成为正式知识。导出后完成来源、版权和专业审核，再随新版本发布。</div>
-    <div id="aesthetic-candidate-list"></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title">已发布来源</div>
-    <div class="toolbar">
-      <input id="aesthetic-source-search" placeholder="搜索来源、机构或用途">
-      <select id="aesthetic-layer-filter">
-        <option value="">全部层级</option>
-        <option value="standard">稳定标准</option>
-        <option value="internal">门店方法</option>
-        <option value="trend">趋势候选</option>
-      </select>
-      <button class="btn-edit" type="button" onclick="renderAestheticSources()">查询</button>
-    </div>
-    <div class="admin-table-wrap">
-      <table>
-        <thead><tr><th>编号</th><th>层级</th><th>来源</th><th>机构/作者</th><th>用途</th><th>版权处理</th><th>复核日期</th></tr></thead>
-        <tbody id="table-aesthetic-sources"></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-title">课程结构与题库</div>
-    <div id="aesthetic-module-list" class="action-list"></div>
-  </div>
-</div>
-
-<div id="tab-system" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">异常中心</h1><div class="page-desc">查看预约、客户同步新鲜度及护理出库失败，集中处理可安全重试的异常。</div></div></div>
-  <div id="system-stats" class="stats-grid"></div>
-  <div class="panel">
-    <div class="panel-title">护理出库异常</div>
-    <div id="system-outbound-list" class="admin-table-wrap"></div>
-  </div>
-</div>
-
-<div id="tab-audit" class="admin-page">
-  <div class="page-header">
-    <div><h1 class="page-title">操作记录</h1><div class="page-desc">记录当前设备执行的审核、修改、重试和内容管理操作。数据库级审计需要后续接入服务端认证。</div></div>
-    <button class="btn-edit" type="button" onclick="clearLocalAudit()">清空本机记录</button>
-  </div>
-  <div id="audit-list" class="panel"></div>
-</div>
-    </main>
-  </div>
-</div>
-
 <div class="modal" id="modal">
   <div class="modal-box" id="modal-box"></div>
 </div>
@@ -543,234 +358,18 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=349"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
-let currentTab = 'dashboard';
+let currentTab = 'staff';
 let editId = null;
+let editingPermOriginal = null;
 let pendingBadgeTimer = null;
 let realtimeWs = null;
 let realtimeReconnectTimer = null;
 let realtimeHeartbeatTimer = null;
 let realtimeManualClose = false;
 let pendingBadgeErrorShown = false;
-const ADMIN_AUDIT_KEY = 'perm_admin_audit_v1';
-const AESTHETIC_CANDIDATE_KEY = 'hair_aesthetic_candidates_v1';
-const STORE_ADMIN_ROLE = 'store_admin';
-const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
-let adminStaffStoreMapPromise = null;
-
-function getAdminSession() {
-  try {
-    return JSON.parse(localStorage.getItem('perm_admin') || 'null') || {};
-  } catch(e) {
-    return {};
-  }
-}
-
-function isStoreAdmin() {
-  return getAdminSession().role === STORE_ADMIN_ROLE;
-}
-
-function isSuperAdmin() {
-  return getAdminSession().role === 'admin';
-}
-
-function currentAdminStore() {
-  var session = getAdminSession();
-  return session.role === STORE_ADMIN_ROLE ? (session.store || '') : '';
-}
-
-function adminCanAccessTab(tab) {
-  return !isStoreAdmin() || STORE_ADMIN_TABS.indexOf(tab) !== -1;
-}
-
-function requireSuperAdmin(action) {
-  if (isSuperAdmin()) return true;
-  toast((action || '该操作') + '仅总后台可用', 'err');
-  return false;
-}
-
-function clearAdminStaffStoreCache() {
-  adminStaffStoreMapPromise = null;
-}
-
-function fetchAdminStaffStoreMap() {
-  if (adminStaffStoreMapPromise) return adminStaffStoreMapPromise;
-  var storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '';
-  adminStaffStoreMapPromise = fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active' + storeScope + '&order=username.asc', '加载门店员工失败')
-    .then(function(rows) {
-      var byName = {};
-      var byId = {};
-      (rows || []).forEach(function(row) {
-        if (row.username) byName[row.username] = row;
-        if (row.id !== undefined && row.id !== null) byId[String(row.id)] = row;
-      });
-      return { rows: rows || [], byName: byName, byId: byId };
-    })
-    .catch(function(error) {
-      adminStaffStoreMapPromise = null;
-      throw error;
-    });
-  return adminStaffStoreMapPromise;
-}
-
-function adminPersonStore(name, staffMap) {
-  var row = staffMap && staffMap.byName && staffMap.byName[name || ''];
-  return (row && row.store) || '';
-}
-
-function filterStaffRowsForAdmin(rows) {
-  var store = currentAdminStore();
-  if (!store) return rows || [];
-  return (rows || []).filter(function(row) { return row.store === store; });
-}
-
-function adminCanManageStaffRow(row, registrationOnly) {
-  if (!row) return false;
-  if (isSuperAdmin()) return true;
-  if (row.store !== currentAdminStore()) return false;
-  if (registrationOnly) return row.active === false;
-  return row.role === 'staff';
-}
-
-function filterHairRowsForAdmin(rows, staffMap) {
-  var store = currentAdminStore();
-  if (!store) return rows || [];
-  return (rows || []).filter(function(row) {
-    var rd = row.record_data || {};
-    var explicitStore = rd.shopName || rd.shop_name || rd.store || '';
-    if (explicitStore) return explicitStore === store;
-    return adminPersonStore(row.barber || rd.barber || '', staffMap) === store;
-  });
-}
-
-function filterImageRowsForAdmin(rows, staffMap) {
-  var store = currentAdminStore();
-  if (!store) return rows || [];
-  return (rows || []).filter(function(row) {
-    return adminPersonStore(row.uploaded_by || '', staffMap) === store;
-  });
-}
-
-function applyAdminScope() {
-  var store = currentAdminStore();
-  document.querySelectorAll('[data-super-admin-only]').forEach(function(node) {
-    node.style.display = isStoreAdmin() ? 'none' : '';
-  });
-  document.querySelectorAll('#admin-sidebar .nav-group').forEach(function(group) {
-    var visibleItems = Array.from(group.querySelectorAll('.admin-nav-item')).filter(function(item) {
-      return item.style.display !== 'none';
-    });
-    group.style.display = visibleItems.length ? '' : 'none';
-  });
-  var title = document.getElementById('admin-brand-title');
-  if (title) title.textContent = store ? store + ' · 分店后台' : '自由手艺人 · 后台管理';
-  document.title = store ? store + ' · 分店后台' : '自由手艺人 · 后台管理';
-  if (!store) return;
-  ['staff-store-filter', 'care-detail-store', 'care-month-store'].forEach(function(id) {
-    var select = document.getElementById(id);
-    if (!select) return;
-    var exists = Array.from(select.options).some(function(option) { return option.value === store; });
-    if (!exists) select.appendChild(el('option', { value: store, text: store }));
-    select.value = store;
-    select.disabled = true;
-  });
-  var contentDesc = document.querySelector('#tab-content .page-desc');
-  if (contentDesc) contentDesc.textContent = '审核本店员工上传的作品；首页推荐由总后台统一管理。';
-  var dashboardDesc = document.querySelector('#tab-dashboard .page-desc');
-  if (dashboardDesc) dashboardDesc.textContent = '集中查看本店注册、作品、发质任务和护理数据。';
-  var careDesc = document.querySelector('#tab-care .page-desc');
-  if (careDesc) careDesc.textContent = '查看和更正本店护理用量，并按月汇总。';
-  var auditDesc = document.querySelector('#tab-audit .page-desc');
-  if (auditDesc) auditDesc.textContent = '仅显示当前设备记录的本店后台操作。';
-  var batchDelete = document.getElementById('hr-batch-del');
-  var selectAll = document.getElementById('hr-select-all');
-  if (batchDelete) batchDelete.style.display = 'none';
-  if (selectAll) selectAll.style.display = 'none';
-  document.querySelectorAll('.hr-checkbox').forEach(function(input) { input.style.display = 'none'; });
-}
-
-function currentAdminName() {
-  return getAdminSession().user || '管理员';
-}
-
-function recordAdminAction(action, target, detail) {
-  let rows = [];
-  try { rows = JSON.parse(localStorage.getItem(ADMIN_AUDIT_KEY) || '[]'); } catch(e) {}
-  rows.unshift({
-    time: new Date().toISOString(),
-    operator: currentAdminName(),
-    role: getAdminSession().role || '',
-    store: currentAdminStore(),
-    action: action || '',
-    target: target || '',
-    detail: detail || ''
-  });
-  localStorage.setItem(ADMIN_AUDIT_KEY, JSON.stringify(rows.slice(0, 200)));
-  if (currentTab === 'audit') loadLocalAudit();
-}
-
-function loadLocalAudit() {
-  const container = document.getElementById('audit-list');
-  if (!container) return;
-  let rows = [];
-  try { rows = JSON.parse(localStorage.getItem(ADMIN_AUDIT_KEY) || '[]'); } catch(e) {}
-  if (isStoreAdmin()) {
-    rows = rows.filter(function(row) { return row.store === currentAdminStore(); });
-  }
-  if (!rows.length) {
-    container.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:28px;">当前设备暂无后台操作记录</div>';
-    return;
-  }
-  let html = '<div class="admin-table-wrap"><table><thead><tr><th>时间</th><th>操作人</th><th>操作</th><th>对象</th><th>说明</th></tr></thead><tbody>';
-  rows.forEach(function(row) {
-    html += '<tr><td style="font-size:11px;color:var(--muted);">' + esc((row.time || '').replace('T',' ').substring(0,19)) + '</td><td>' + esc(row.operator) + '</td><td>' + esc(row.action) + '</td><td>' + esc(row.target) + '</td><td style="font-size:11px;color:var(--muted);">' + esc(row.detail) + '</td></tr>';
-  });
-  container.innerHTML = html + '</tbody></table></div>';
-}
-
-window.clearLocalAudit = function() {
-  if (!confirm('确认清空当前设备的后台操作记录？')) return;
-  if (isStoreAdmin()) {
-    var rows = [];
-    try { rows = JSON.parse(localStorage.getItem(ADMIN_AUDIT_KEY) || '[]'); } catch(e) {}
-    rows = rows.filter(function(row) { return row.store !== currentAdminStore(); });
-    localStorage.setItem(ADMIN_AUDIT_KEY, JSON.stringify(rows));
-  } else {
-    localStorage.removeItem(ADMIN_AUDIT_KEY);
-  }
-  loadLocalAudit();
-};
-
-function setSidebarOpen(open) {
-  const sidebar = document.getElementById('admin-sidebar');
-  const mask = document.getElementById('sidebar-mask');
-  if (sidebar) sidebar.classList.toggle('open', !!open);
-  if (mask) mask.classList.toggle('open', !!open);
-}
-
-function showContentView(view) {
-  if (view === 'carousel' && !requireSuperAdmin('首页推荐')) {
-    view = 'images';
-  }
-  document.querySelectorAll('[data-content-view]').forEach(function(btn) {
-    btn.classList.toggle('active', btn.getAttribute('data-content-view') === view);
-  });
-  document.querySelectorAll('.content-subpage').forEach(function(page) {
-    page.classList.toggle('active', page.id === 'tab-' + view);
-  });
-  if (view === 'carousel') loadCarousel();
-  else loadImages();
-}
-
-async function hashPasswordValue(value) {
-  if (!value) return '';
-  if (!window.crypto || !crypto.subtle || !window.TextEncoder) throw new Error('当前浏览器不支持安全密码处理');
-  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)));
-  return 'sha256:' + Array.from(bytes).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
-}
 
 function restErrorMessage(r, fallback) {
   return r.text().then(function(txt) {
@@ -846,10 +445,7 @@ function setButtonBusy(btn, busy) {
 }
 
 function startPendingPolling() {
-  if (!pendingBadgeTimer) pendingBadgeTimer = setInterval(function() {
-    updatePendingBadge();
-    updateRegistrationBadge();
-  }, 10000);
+  if (!pendingBadgeTimer) pendingBadgeTimer = setInterval(updatePendingBadge, 5000);
 }
 
 function stopPendingPolling() {
@@ -859,23 +455,16 @@ function stopPendingPolling() {
   }
 }
 
-// 页面初始化必须在所有后台函数定义完成后执行，避免已登录用户刷新时提前调用未注册的页面加载器。
-function initializeAdminPage() {
-  const session = getAdminSession();
-  const sessionValid = session && session.user && ['admin', STORE_ADMIN_ROLE].indexOf(session.role) !== -1 && session.loggedAt &&
-    (session.role !== STORE_ADMIN_ROLE || !!session.store) &&
-    Date.now() - Number(session.loggedAt) < 2 * 60 * 60 * 1000;
-  if (sessionValid) {
+// 自动恢复登录（除非主动退出）
+(function() {
+  const s = localStorage.getItem('perm_admin');
+  if (s) {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('admin-panel').style.display = 'block';
-    applyAdminScope();
-    switchTab('dashboard');
+    loadData('staff');
     updatePendingBadge();
-    updateRegistrationBadge();
     startPendingPolling();
     connectRealtime();
-  } else {
-    localStorage.removeItem('perm_admin');
   }
   document.getElementById('login-btn').addEventListener('click', doLogin);
   document.getElementById('reload-btn').addEventListener('click', function() {
@@ -883,8 +472,7 @@ function initializeAdminPage() {
   });
   document.getElementById('logout-btn').addEventListener('click', doLogout);
   document.getElementById('pending-alert').addEventListener('click', function() {
-    switchTab('content');
-    showContentView('images');
+    switchTab('images');
   });
   document.querySelectorAll('[data-tab]').forEach(function(tabEl) {
     tabEl.addEventListener('click', function() {
@@ -895,14 +483,6 @@ function initializeAdminPage() {
     btn.addEventListener('click', function() {
       openModal(btn.getAttribute('data-open-modal'));
     });
-  });
-  document.querySelectorAll('[data-content-view]').forEach(function(btn) {
-    btn.addEventListener('click', function() { showContentView(btn.getAttribute('data-content-view')); });
-  });
-  document.getElementById('admin-menu-btn').addEventListener('click', function() { setSidebarOpen(true); });
-  document.getElementById('sidebar-mask').addEventListener('click', function() { setSidebarOpen(false); });
-  document.getElementById('staff-search').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') loadStaff();
   });
   document.getElementById('img-filter').addEventListener('change', loadImages);
   document.getElementById('car-upload-btn').addEventListener('click', uploadCarousel);
@@ -921,7 +501,7 @@ function initializeAdminPage() {
   document.getElementById('ha-search').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') loadHairAnalyses();
   });
-}
+})();
 
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
@@ -935,34 +515,23 @@ async function doLogin() {
   if (btn && btn.disabled) return;
   if (btn) btn.disabled = true;
   try {
-    const hashed = await hashPasswordValue(p);
-    async function findAdmin(passwordValue) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,role,active,store&username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(passwordValue)}&role=in.(admin,${STORE_ADMIN_ROLE})&limit=1`, {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      await ensureOk(r, '登录失败');
-      return r.json();
-    }
-    let rows = await findAdmin(hashed);
-    // 兼容历史后台管理员的旧密码值；员工新增和重置统一保存 SHA-256 摘要。
-    if (!rows.length) rows = await findAdmin(p);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,password_hash,role,active&username=eq.${encodeURIComponent(u)}&limit=1`, {
+      headers: { 'apikey': SUPABASE_KEY }
+    });
+    await ensureOk(r, '登录失败');
+    const rows = await r.json();
     const user = rows[0];
-    if (user && ['admin', STORE_ADMIN_ROLE].indexOf(user.role) !== -1 && user.active !== false &&
-        (user.role !== STORE_ADMIN_ROLE || !!user.store)) {
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now()}));
+    if (user && user.password_hash === p && user.active !== false) {
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role}));
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
       document.getElementById('login-error').textContent = '';
-      applyAdminScope();
-      switchTab('dashboard');
+      loadData('staff');
       updatePendingBadge();
-      updateRegistrationBadge();
       startPendingPolling();
       connectRealtime();
     } else if (user && user.active === false) {
       document.getElementById('login-error').textContent = '账号已停用';
-    } else if (user && user.role === STORE_ADMIN_ROLE && !user.store) {
-      document.getElementById('login-error').textContent = '分店管理员尚未绑定门店';
     } else {
       document.getElementById('login-error').textContent = '用户名或密码错误';
     }
@@ -982,606 +551,17 @@ function doLogout() {
   document.getElementById('admin-panel').style.display = 'none';
 }
 
-function fetchAdminJson(path, fallback) {
-  return fetch(SUPABASE_URL + path, { headers: { 'apikey': SUPABASE_KEY } })
-    .then(function(r) { return ensureOk(r, fallback || '加载失败'); })
-    .then(function(r) { return r.json(); });
-}
-
-function followupMetaFromProfile(profile) {
-  let followUps = [];
-  try {
-    const notes = JSON.parse((profile && profile.notes) || '{}');
-    followUps = Array.isArray(notes.follow_ups) ? notes.follow_ups : [];
-  } catch(e) {}
-  const last = followUps.length ? followUps[followUps.length - 1] : null;
-  const today = new Date();
-  const todayKey = today.toISOString().substring(0, 10);
-  let dueKey = last && last.next ? last.next : '';
-  if (!dueKey) {
-    const seed = (last && last.date) || (profile && profile.last_visit_date ? String(profile.last_visit_date).substring(0,10) : '');
-    if (seed) {
-      const due = new Date(seed);
-      if (!isNaN(due.getTime())) {
-        due.setDate(due.getDate() + 30);
-        dueKey = due.toISOString().substring(0,10);
-      }
-    }
-  }
-  const lastDate = last && last.date ? last.date : '';
-  const weekAgo = new Date(today.getTime() - 6 * 86400000).toISOString().substring(0,10);
-  return {
-    followUps: followUps,
-    last: last,
-    lastDate: lastDate,
-    dueDate: dueKey,
-    today: dueKey === todayKey,
-    overdue: !!dueKey && dueKey < todayKey,
-    upcomingWeek: !!dueKey && dueKey >= todayKey && dueKey <= new Date(today.getTime() + 7 * 86400000).toISOString().substring(0,10),
-    completedThisWeek: !!lastDate && lastDate >= weekAgo
-  };
-}
-
-window.loadStaff = function() {
-  const search = ((document.getElementById('staff-search') || {}).value || '').trim().toLowerCase();
-  const store = currentAdminStore() || (document.getElementById('staff-store-filter') || {}).value || '';
-  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,created_at&active=eq.true' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=username.asc', '加载员工失败')
-    .then(function(rows) {
-      rows = filterStaffRowsForAdmin(rows || []).filter(function(row) {
-        if (store && row.store !== store) return false;
-        if (!search) return true;
-        return [row.username, row.position, row.store].join(' ').toLowerCase().indexOf(search) !== -1;
-      });
-      renderTable('staff', rows);
-      return rows;
-    })
-    .catch(function(e) { toast('加载员工失败: ' + e.message, 'err'); });
-};
-
-function updateRegistrationBadge() {
-  return fetchAdminJson('/rest/v1/staff?select=id,store&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册数量失败')
-    .then(function(rows) {
-      const count = filterStaffRowsForAdmin(rows || []).length;
-      const badge = document.getElementById('nav-registration-count');
-      if (badge) {
-        badge.textContent = count;
-        badge.style.display = count ? 'inline-block' : 'none';
-      }
-      return count;
-    }).catch(function() { return 0; });
-}
-
-window.loadRegistrations = function() {
-  const list = document.getElementById('registration-list');
-  if (!list) return Promise.resolve([]);
-  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">加载中...</div>';
-  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,created_at&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册申请失败')
-    .then(function(rows) {
-      rows = filterStaffRowsForAdmin(rows || []);
-      const freeCount = rows.filter(function(r){ return r.store === '自由手艺人'; }).length;
-      const xiangliCount = rows.filter(function(r){ return r.store === '向里造型'; }).length;
-      document.getElementById('registration-summary').innerHTML = isStoreAdmin()
-        ? '<div class="stat-card"><div class="stat-value">' + rows.length + '</div><div class="stat-label">' + esc(currentAdminStore()) + '待审核申请</div></div>'
-        : '<div class="stat-card"><div class="stat-value">' + rows.length + '</div><div class="stat-label">待审核申请</div></div>' +
-          '<div class="stat-card"><div class="stat-value">' + freeCount + '</div><div class="stat-label">自由手艺人</div></div>' +
-          '<div class="stat-card"><div class="stat-value">' + xiangliCount + '</div><div class="stat-label">向里造型</div></div>';
-      const badge = document.getElementById('nav-registration-count');
-      if (badge) {
-        badge.textContent = rows.length;
-        badge.style.display = rows.length ? 'inline-block' : 'none';
-      }
-      if (!rows.length) {
-        list.innerHTML = '<div class="panel" style="text-align:center;color:var(--muted);padding:36px;">暂无待审核注册申请</div>';
-        return rows;
-      }
-      let html = '';
-      rows.forEach(function(row) {
-        html += '<div class="registration-card">' +
-          '<div><div class="registration-name">' + esc(row.username) + '</div><div class="registration-meta">' + esc((row.created_at || '').replace('T',' ').substring(0,16)) + '</div></div>' +
-          '<div class="registration-field"><div class="registration-meta">申请门店</div><div>' + esc(row.store || '未选择') + '</div></div>' +
-          '<div class="registration-field"><div class="registration-meta">申请职位</div><div>' + esc(row.position || '未选择') + '</div></div>' +
-          '<div class="registration-field"><span class="status-chip status-pending">待审核</span></div>' +
-          '<div class="registration-actions"><button class="btn-edit" onclick="openRegistrationReview(' + Number(row.id) + ')">审核</button></div>' +
-          '</div>';
-      });
-      list.innerHTML = html;
-      return rows;
-    })
-    .catch(function(e) {
-      list.innerHTML = '<div class="panel" style="color:var(--danger);">加载失败：' + esc(e.message) + '</div>';
-      return [];
-    });
-};
-
-window.openRegistrationReview = async function(id) {
-  let data;
-  try {
-    data = await loadOne('staff', id);
-  } catch(e) {
-    toast('加载申请失败: ' + e.message, 'err');
-    return;
-  }
-  if (!data || data.active) {
-    toast('该申请状态已经变化，请刷新', 'err');
-    return;
-  }
-  if (!adminCanManageStaffRow(data, true)) {
-    toast('无权审核其他门店的注册申请', 'err');
-    return;
-  }
-  const box = document.getElementById('modal-box');
-  clearNode(box);
-  box.appendChild(el('h3', { text: '审核注册申请' }));
-  appendField(box, '员工姓名', makeInput('reg-review-user', data.username, { disabled: 'disabled' }));
-  appendField(box, '确认门店', makeSelect('reg-review-store', [
-    { value: currentAdminStore() || '自由手艺人', text: currentAdminStore() || '自由手艺人' },
-    ...(isStoreAdmin() ? [] : [{ value: '向里造型', text: '向里造型' }])
-  ], currentAdminStore() || data.store || '自由手艺人'));
-  appendField(box, '确认职位（可多选）', createPositionChecks(data.position || '发型师', 'reg-review-position'));
-  const note = el('div', { style: 'margin-top:12px;color:var(--muted);font-size:11px;line-height:1.6;', text: '通过前请核对门店和职位。注册申请只能成为普通员工，管理员权限需在员工管理中单独设置。' });
-  box.appendChild(note);
-  const row = el('div', { className: 'btn-row' });
-  row.appendChild(actionButton('拒绝申请', 'btn-del', function() { rejectRegistration(id, data.username); }));
-  row.appendChild(actionButton('确认通过', 'btn-save', function() { approveRegistration(id, data.username); }));
-  box.appendChild(row);
-  document.getElementById('modal').classList.add('show');
-};
-
-function createPositionChecks(value, id) {
-  const div = el('div', { id: id || '', className: 'pos-check-group', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:340px;' });
-  const vals = String(value || '').split(',').map(function(v){ return v.trim(); });
-  ['发型师','技师','助理','前台','店长'].forEach(function(position) {
-    const label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;' });
-    const cb = el('input', { type: 'checkbox', value: position });
-    if (vals.indexOf(position) !== -1) cb.checked = true;
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(position));
-    div.appendChild(label);
-  });
-  return div;
-}
-
-async function approveRegistration(id, username) {
-  const btn = document.querySelector('#modal .btn-save');
-  setButtonBusy(btn, true);
-  try {
-    const existing = await loadOne('staff', id);
-    if (!adminCanManageStaffRow(existing, true)) throw new Error('无权审核其他门店的注册申请');
-    const store = currentAdminStore() || document.getElementById('reg-review-store').value;
-    const position = Array.from(document.querySelectorAll('#reg-review-position input:checked')).map(function(cb){ return cb.value; }).join(',');
-    if (!store || !position) throw new Error('请确认门店和职位');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: true, role: 'staff', store: store, position: position })
-    });
-    await ensureOk(r, '审核失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('申请状态已经变化');
-    clearAdminStaffStoreCache();
-    recordAdminAction('通过注册', username, store + ' / ' + position);
-    toast('已通过注册审核', 'ok');
-    closeModal();
-    loadRegistrations();
-    updateRegistrationBadge();
-  } catch(e) {
-    toast('审核失败: ' + e.message, 'err');
-    setButtonBusy(btn, false);
-  }
-}
-
-async function rejectRegistration(id, username) {
-  if (!confirm('确认拒绝“' + username + '”的注册申请？未通过的申请将被移除，但不会影响任何业务配置数据。')) return;
-  try {
-    const existing = await loadOne('staff', id);
-    if (!adminCanManageStaffRow(existing, true)) throw new Error('无权拒绝其他门店的注册申请');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=representation' }
-    });
-    await ensureOk(r, '拒绝失败');
-    clearAdminStaffStoreCache();
-    recordAdminAction('拒绝注册', username, '移除未通过申请');
-    toast('已拒绝注册申请', 'ok');
-    closeModal();
-    loadRegistrations();
-    updateRegistrationBadge();
-  } catch(e) {
-    toast('拒绝失败: ' + e.message, 'err');
-  }
-}
-
-window.loadDashboard = function() {
-  const stats = document.getElementById('dashboard-stats');
-  const actions = document.getElementById('dashboard-actions');
-  if (!stats || !actions) return;
-  stats.innerHTML = '<div class="stat-card"><div class="stat-label">加载中...</div></div>';
-  Promise.all([
-    fetchAdminJson('/rest/v1/staff?select=id,store&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), '加载注册申请失败'),
-    fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载作品审核失败'),
-    fetchAdminJson('/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&limit=500', '加载发质任务失败'),
-    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/customer_profiles?select=id,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=500', '加载回访任务失败'),
-    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/care_outbound_queue?select=id,status,error_message,created_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库异常失败'),
-    fetchAdminStaffStoreMap()
-  ]).then(function(results) {
-    const staffMap = results[5];
-    const registrations = filterStaffRowsForAdmin(results[0] || []);
-    const images = filterImageRowsForAdmin(results[1] || [], staffMap);
-    const hairRows = filterHairRowsForAdmin(results[2] || [], staffMap);
-    const profiles = results[3] || [];
-    const outbound = results[4] || [];
-    const hairPending = hairRows.filter(function(row){ return !adminHairFollowupComplete(row); }).length;
-    const followupDue = profiles.filter(function(row) {
-      const meta = followupMetaFromProfile(row);
-      return meta.today || meta.overdue;
-    }).length;
-    const outboundFailed = outbound.filter(function(row){
-      return ['failed','needs_review'].indexOf(row.status) !== -1;
-    }).length;
-    stats.innerHTML =
-      '<div class="stat-card" onclick="switchTab(\'registrations\')"><div class="stat-value">' + registrations.length + '</div><div class="stat-label">待审核注册</div></div>' +
-      '<div class="stat-card" onclick="switchTab(\'content\')"><div class="stat-value">' + images.length + '</div><div class="stat-label">待审核作品</div></div>' +
-      '<div class="stat-card" onclick="switchTab(\'hair-analysis\')"><div class="stat-value">' + hairPending + '</div><div class="stat-label">未完成发质任务</div></div>' +
-      (isStoreAdmin() ? '' :
-        '<div class="stat-card" onclick="switchTab(\'followups\')"><div class="stat-value">' + followupDue + '</div><div class="stat-label">今日及逾期回访</div></div>' +
-        '<div class="stat-card" onclick="switchTab(\'system\')"><div class="stat-value">' + outboundFailed + '</div><div class="stat-label">护理出库失败</div></div>');
-    const items = [
-      { count: registrations.length, title: '审核新员工注册', desc: '核对门店和职位后再通过账号。', tab: 'registrations' },
-      { count: images.length, title: '审核新作品', desc: isStoreAdmin() ? '审核后进入本店作品库。' : '审核通过后才能设置为首页展示。', tab: 'content' },
-      { count: hairPending, title: '处理未完成发质任务', desc: '查看卡在哪个岗位以及停留时间。', tab: 'hair-analysis' },
-      { count: followupDue, title: '完成今日和逾期回访', desc: '按计划日期优先处理客户回访。', tab: 'followups', superOnly: true },
-      { count: outboundFailed, title: '处理护理出库异常', desc: '查看失败原因并安全重试。', tab: 'system', superOnly: true }
-    ].filter(function(item){ return item.count > 0 && (!item.superOnly || isSuperAdmin()); });
-    actions.innerHTML = items.length ? items.map(function(item) {
-      return '<div class="action-card" onclick="switchTab(\'' + item.tab + '\')"><strong>' + item.count + ' · ' + esc(item.title) + '</strong><span>' + esc(item.desc) + '</span></div>';
-    }).join('') : '<div style="text-align:center;color:var(--success);padding:24px;">当前没有需要处理的事项</div>';
-  }).catch(function(e) {
-    stats.innerHTML = '<div class="panel" style="color:var(--danger);">工作台加载失败：' + esc(e.message) + '</div>';
-    actions.innerHTML = '';
-  });
-};
-
-window.loadSystemStatus = function() {
-  if (!requireSuperAdmin('异常中心')) return;
-  const stats = document.getElementById('system-stats');
-  const list = document.getElementById('system-outbound-list');
-  if (!stats || !list) return;
-  Promise.all([
-    fetchAdminJson('/rest/v1/bookings?select=updated_at&order=updated_at.desc&limit=1', '加载预约同步状态失败'),
-    fetchAdminJson('/rest/v1/customer_profiles?select=last_updated&order=last_updated.desc.nullslast&limit=1', '加载客户同步状态失败'),
-    fetchAdminJson('/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at,processed_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库状态失败'),
-    fetchAdminJson('/rest/v1/hair_records?select=id,barber,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', '加载出库关联档案失败')
-  ]).then(function(results) {
-    const bookingTime = results[0][0] && results[0][0].updated_at;
-    const customerTime = results[1][0] && results[1][0].last_updated;
-    const rows = results[2] || [];
-    const contextMap = adminCareOutboundContextMap(results[3] || []);
-    window._adminOutboundContextMap = contextMap;
-    const failed = rows.filter(function(row){
-      return ['failed','needs_review'].indexOf(row.status) !== -1;
-    });
-    const legacy = rows.filter(function(row){ return row.status === 'legacy_review'; });
-    const pending = rows.filter(function(row){ return row.status === 'pending'; });
-    const processing = rows.filter(function(row){ return row.status === 'processing'; });
-    stats.innerHTML =
-      '<div class="stat-card"><div class="stat-value" style="font-size:16px;">' + esc(bookingTime ? bookingTime.replace('T',' ').substring(0,16) : '无记录') + '</div><div class="stat-label">预约最后同步</div></div>' +
-      '<div class="stat-card"><div class="stat-value" style="font-size:16px;">' + esc(customerTime ? customerTime.replace('T',' ').substring(0,16) : '无记录') + '</div><div class="stat-label">客户最后同步</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + pending.length + '</div><div class="stat-label">护理待出库</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + processing.length + '</div><div class="stat-label">护理处理中</div></div>' +
-      '<div class="stat-card"><div class="stat-value" style="color:var(--danger);">' + failed.length + '</div><div class="stat-label">护理需处理</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + legacy.length + '</div><div class="stat-label">旧任务已隔离</div></div>';
-    if (!rows.length) {
-      list.innerHTML = '<div style="text-align:center;color:var(--success);padding:28px;">当前没有护理出库异常</div>';
-      return;
-    }
-    let html = '<table><thead><tr><th>时间</th><th>门店/发型师</th><th>品牌</th><th>产品</th><th>克数</th><th>状态</th><th>说明</th><th>操作</th></tr></thead><tbody>';
-    rows.forEach(function(row) {
-      var context = contextMap[String(row.id)] || {};
-      var statusMeta = adminOutboundStatusMeta(row.status);
-      var canRetry = Number(row.id) < 0 && (row.status === 'failed' || row.status === 'needs_review');
-      var personText = context.shopName
-        ? context.shopName + (context.barber ? ' / ' + context.barber : '')
-        : (Number(row.id) > 0 ? '旧版任务' : '关联档案缺失');
-      html += '<tr><td style="font-size:11px;">' + esc((row.created_at || '').replace('T',' ').substring(0,16)) + '</td>' +
-        '<td>' + esc(personText) + (context.hairRecordId ? '<br><span style="font-size:10px;color:var(--muted);">' + esc(context.hairRecordId) + '</span>' : '') + '</td>' +
-        '<td>' + esc(row.brand) + '</td><td>' + esc(row.product) + '</td><td>' + esc(row.grams) + 'g</td>' +
-        '<td><span class="status-chip ' + statusMeta.className + '">' + statusMeta.label + '</span></td>' +
-        '<td style="max-width:260px;font-size:11px;color:var(--muted);">' + esc(row.error_message || '—') + '</td>' +
-        '<td>' + (canRetry ? '<button class="btn-edit" onclick="retryOutbound(' + Number(row.id) + ')">核对后重试</button>' : statusMeta.action) + '</td></tr>';
-    });
-    list.innerHTML = html + '</tbody></table>';
-  }).catch(function(e) {
-    stats.innerHTML = '<div class="panel" style="color:var(--danger);">异常中心加载失败：' + esc(e.message) + '</div>';
-    list.innerHTML = '';
-  });
-};
-
-function adminOutboundStatusMeta(status) {
-  var map = {
-    pending: { label: '待同步', className: 'status-pending', action: '等待执行' },
-    processing: { label: '处理中', className: 'status-pending', action: '正在核对美管加' },
-    failed: { label: '安全失败', className: 'status-danger', action: '检查配置' },
-    needs_review: { label: '待人工核对', className: 'status-danger', action: '禁止自动重试' },
-    legacy_review: { label: '旧任务隔离', className: 'status-disabled-chip', action: '仅人工核对' }
-  };
-  return map[status] || { label: status || '未知', className: 'status-disabled-chip', action: '—' };
-}
-
-function adminCareOutboundContextMap(hairRows) {
-  var result = {};
-  (hairRows || []).forEach(function(row) {
-    var data = row.record_data || {};
-    var containers = [];
-    if (data.careOutboundPending && data.careOutboundPending.protocolVersion === 2) {
-      containers.push(data.careOutboundPending);
-    }
-    (Array.isArray(data.careOutboundBatches) ? data.careOutboundBatches : []).forEach(function(batch) {
-      if (batch && batch.protocolVersion === 2) containers.push(batch);
-    });
-    containers.forEach(function(batch) {
-      var items = Array.isArray(batch.items) ? batch.items : [];
-      var queueIds = items.map(function(item) { return item && item.queueId; })
-        .filter(function(id) { return id !== undefined && id !== null; });
-      items.forEach(function(item) {
-        if (item && item.queueId !== undefined && item.queueId !== null) {
-          result[String(item.queueId)] = {
-            hairRecordId: batch.hairRecordId || row.id || '',
-            shopName: batch.shopName || '',
-            barber: batch.barber || row.barber || '',
-            queueIds: queueIds
-          };
-        }
-      });
-    });
-  });
-  return result;
-}
-
-window.retryOutbound = async function(id) {
-  if (!requireSuperAdmin('护理出库重试')) return;
-  if (!(Number(id) < 0)) {
-    toast('旧版任务不能自动重试，请先人工核对美管加库存流水', 'err');
-    return;
-  }
-  var context = (window._adminOutboundContextMap || {})[String(id)] || {};
-  var queueIds = Array.isArray(context.queueIds) && context.queueIds.length ? context.queueIds : [id];
-  if (!confirm('请先确认美管加没有重复的“护理App”出库单。将把同批次' + queueIds.length + '项一起重新核对，执行器会先回查单据再决定是否创建，是否继续？')) return;
-  try {
-    const r = await fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?id=in.(' + queueIds.map(encodeURIComponent).join(',') + ')&status=in.(failed,needs_review)', {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ status: 'pending', error_message: null, processed_at: null })
-    });
-    await ensureOk(r, '重试失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('记录状态已经变化');
-    recordAdminAction('核对后重试护理出库', queueIds.join(','), '协议v2同批记录重新进入pending，执行器必须先回查美管加');
-    toast('已进入安全核对队列', 'ok');
-    loadSystemStatus();
-  } catch(e) {
-    toast('重试失败: ' + e.message, 'err');
-  }
-};
-
-function aestheticAdminData() {
-  return window.AESTHETIC_KNOWLEDGE_V1 || null;
-}
-
-function aestheticLayerName(layer) {
-  return ({ standard: '稳定标准', internal: '门店方法', trend: '趋势候选' })[layer] || layer || '未分类';
-}
-
-function loadAestheticCandidates() {
-  try {
-    const rows = JSON.parse(localStorage.getItem(AESTHETIC_CANDIDATE_KEY) || '[]');
-    return Array.isArray(rows) ? rows : [];
-  } catch(e) {
-    return [];
-  }
-}
-
-function saveAestheticCandidates(rows) {
-  localStorage.setItem(AESTHETIC_CANDIDATE_KEY, JSON.stringify((rows || []).slice(-100)));
-}
-
-window.loadAestheticAdmin = function() {
-  const data = aestheticAdminData();
-  const stats = document.getElementById('aesthetic-admin-stats');
-  if (!data) {
-    if (stats) stats.innerHTML = '<div class="panel" style="color:var(--danger);">知识版本加载失败，请检查发布文件。</div>';
-    return;
-  }
-  const candidates = loadAestheticCandidates();
-  if (stats) {
-    stats.innerHTML =
-      '<div class="stat-card"><div class="stat-value">' + esc(data.version) + '</div><div class="stat-label">当前知识版本</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.sources.length + '</div><div class="stat-label">已发布来源</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.modules.length + '</div><div class="stat-label">能力章节</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + (data.trainingCases || []).length + '</div><div class="stat-label">五步训练案例</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.questions.length + '</div><div class="stat-label">训练题</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + candidates.length + '</div><div class="stat-label">本机待评审候选</div></div>';
-  }
-
-  const governance = document.getElementById('aesthetic-governance');
-  if (governance) {
-    const layerHtml = data.governance.layers.map(function(layer) {
-      return '<div style="padding:12px;border:1px solid var(--border);border-radius:9px;"><strong style="display:block;color:#fff;font-size:12px;margin-bottom:5px;">' +
-        esc(layer.name) + '</strong><span style="color:var(--muted);font-size:11px;line-height:1.6;">' + esc(layer.rule) + '</span></div>';
-    }).join('');
-    governance.innerHTML =
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">' + layerHtml + '</div>' +
-      '<div style="padding:12px;border-left:2px solid #fff;background:rgba(255,255,255,.03);color:var(--muted);font-size:11px;line-height:1.8;">' +
-      '<strong style="color:#fff;">发布流程：</strong>' + esc(data.governance.publishFlow.join(' → ')) + '<br>' +
-      '<strong style="color:#fff;">AI 边界：</strong>' + esc(data.governance.aiRule) + '<br>' +
-      '<strong style="color:#fff;">顾客隐私：</strong>' + esc(data.governance.privacyRule) + '<br>' +
-      '<strong style="color:#fff;">版权：</strong>' + esc(data.governance.copyrightRule) + '</div>';
-  }
-
-  const modules = document.getElementById('aesthetic-module-list');
-  if (modules) {
-    modules.innerHTML = data.modules.map(function(module) {
-      const count = data.questions.filter(function(question) { return question.moduleId === module.id; }).length;
-      return '<div class="action-card" style="cursor:default;"><strong>' + esc(module.id + ' · ' + module.title) +
-        '</strong><span>' + esc(module.objective) + '<br>训练题 ' + count + ' 道 · 来源 ' + module.sourceIds.length + ' 个</span></div>';
-    }).join('');
-  }
-  renderAestheticSources();
-  renderAestheticCandidates();
-};
-
-window.renderAestheticSources = function() {
-  const data = aestheticAdminData();
-  const tbody = document.getElementById('table-aesthetic-sources');
-  if (!data || !tbody) return;
-  const keyword = ((document.getElementById('aesthetic-source-search') || {}).value || '').trim().toLowerCase();
-  const layer = (document.getElementById('aesthetic-layer-filter') || {}).value || '';
-  const rows = data.sources.filter(function(source) {
-    if (layer && source.layer !== layer) return false;
-    if (!keyword) return true;
-    return [source.id, source.title, source.publisher, source.use, source.type].join(' ').toLowerCase().indexOf(keyword) !== -1;
-  });
-  tbody.innerHTML = rows.length ? rows.map(function(source) {
-    const title = source.url
-      ? '<a href="' + esc(source.url) + '" target="_blank" rel="noopener noreferrer" style="color:#fff;text-decoration:underline;text-underline-offset:3px;">' + esc(source.title) + '</a>'
-      : '<span style="color:#fff;">' + esc(source.title) + '</span>';
-    return '<tr><td>' + esc(source.id) + '</td><td><span class="status-chip status-active-chip">' + esc(aestheticLayerName(source.layer)) +
-      '</span></td><td>' + title + '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + esc(source.type) +
-      '</div></td><td>' + esc(source.publisher) + '</td><td>' + esc(source.use) + '</td><td>' + esc(source.rights) +
-      '</td><td>' + esc(source.reviewedAt) + '</td></tr>';
-  }).join('') : '<tr class="empty-row"><td colspan="7">没有匹配的知识来源</td></tr>';
-};
-
-window.renderAestheticCandidates = function() {
-  const container = document.getElementById('aesthetic-candidate-list');
-  if (!container) return;
-  const rows = loadAestheticCandidates().slice().reverse();
-  if (!rows.length) {
-    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px;">暂无候选。发现新课程、趋势或门店方法时，先在这里登记来源。</div>';
-    return;
-  }
-  container.innerHTML = '<div class="admin-table-wrap"><table><thead><tr><th>层级</th><th>候选来源</th><th>用途/备注</th><th>提交人</th><th>时间</th><th>操作</th></tr></thead><tbody>' +
-    rows.map(function(row) {
-      const title = row.url
-        ? '<a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer" style="color:#fff;">' + esc(row.title) + '</a>'
-        : '<span style="color:#fff;">' + esc(row.title) + '</span>';
-      return '<tr><td>' + esc(aestheticLayerName(row.layer)) + '</td><td>' + title + '</td><td>' + esc(row.note) +
-        '</td><td>' + esc(row.createdBy) + '</td><td>' + esc(String(row.createdAt || '').slice(0, 10)) +
-        '</td><td><button class="btn-delete" type="button" onclick="deleteAestheticCandidate(\'' + esc(row.id) + '\')">移除</button></td></tr>';
-    }).join('') + '</tbody></table></div>';
-};
-
-window.openAestheticCandidateModal = function() {
-  if (!isSuperAdmin()) {
-    toast('只有总后台可以提交知识候选', 'err');
-    return;
-  }
-  const box = document.getElementById('modal-box');
-  clearNode(box);
-  box.appendChild(el('h3', { text: '新增知识候选' }));
-  box.appendChild(el('div', {
-    style: 'color:var(--muted);font-size:11px;line-height:1.6;margin-bottom:8px;',
-    text: '登记不等于发布。候选仍需核验原始来源、版权、专业准确性和适用范围。'
-  }));
-  appendField(box, '知识层级', makeSelect('aesthetic-candidate-layer', [
-    { value: 'standard', text: '稳定标准（教材/官方教育/职业标准/研究）' },
-    { value: 'internal', text: '门店方法（自由手艺人内部体系）' },
-    { value: 'trend', text: '趋势候选（案例/平台/秀场观察）' }
-  ], 'trend'));
-  appendField(box, '来源名称', makeInput('aesthetic-candidate-title', '', { placeholder: '课程、书籍、机构、案例或方法名称' }));
-  appendField(box, '原始链接（可选）', makeInput('aesthetic-candidate-url', '', { type: 'url', placeholder: 'https://...' }));
-  appendField(box, '准备解决什么问题', makeTextarea('aesthetic-candidate-note', ''));
-  const row = el('div', { className: 'btn-row' });
-  row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
-  row.appendChild(actionButton('保存候选', 'btn-save', saveAestheticCandidate));
-  box.appendChild(row);
-  document.getElementById('modal').classList.add('show');
-};
-
-window.saveAestheticCandidate = function() {
-  const layer = (document.getElementById('aesthetic-candidate-layer') || {}).value || 'trend';
-  const title = ((document.getElementById('aesthetic-candidate-title') || {}).value || '').trim();
-  const url = ((document.getElementById('aesthetic-candidate-url') || {}).value || '').trim();
-  const note = ((document.getElementById('aesthetic-candidate-note') || {}).value || '').trim();
-  if (!title || note.length < 8) {
-    toast('请填写来源名称和至少 8 个字的用途说明', 'err');
-    return;
-  }
-  if (url && !/^https?:\/\//i.test(url)) {
-    toast('原始链接必须以 http:// 或 https:// 开头', 'err');
-    return;
-  }
-  const rows = loadAestheticCandidates();
-  const session = getAdminSession();
-  rows.push({
-    id: 'AKC-' + Date.now(),
-    layer: layer,
-    title: title,
-    url: url,
-    note: note,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    createdBy: session.user || 'admin'
-  });
-  saveAestheticCandidates(rows);
-  recordAdminAction('新增美感知识候选', title, aestheticLayerName(layer) + '；' + note);
-  closeModal();
-  loadAestheticAdmin();
-  toast('候选已保存，尚未进入正式知识库', 'ok');
-};
-
-window.deleteAestheticCandidate = function(id) {
-  const rows = loadAestheticCandidates();
-  const target = rows.find(function(row) { return row.id === id; });
-  saveAestheticCandidates(rows.filter(function(row) { return row.id !== id; }));
-  recordAdminAction('移除美感知识候选', target ? target.title : id, '仅移除当前设备候选');
-  loadAestheticAdmin();
-  toast('候选已移除', 'ok');
-};
-
-window.exportAestheticKnowledge = function() {
-  const data = aestheticAdminData();
-  if (!data) return;
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    published: data,
-    localCandidates: loadAestheticCandidates()
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = 'hair-aesthetic-knowledge-' + data.version + '.json';
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-  recordAdminAction('导出美感知识清单', data.version, '包含已发布知识与当前设备候选');
-  toast('知识清单已导出', 'ok');
-};
-
 function switchTab(tab) {
-  if (!adminCanAccessTab(tab)) {
-    toast('分店后台没有该功能权限', 'err');
-    tab = 'dashboard';
-  }
   currentTab = tab;
-  document.querySelectorAll('.admin-nav-item[data-tab]').forEach(function(item) {
-    item.classList.toggle('active', item.getAttribute('data-tab') === tab);
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['staff','hair','style','perm','images','carousel','customers','followups','assessment','hair-analysis','care'][i] === tab);
   });
-  document.querySelectorAll('.admin-page').forEach(function(page) { page.classList.remove('active'); });
-  const page = document.getElementById('tab-' + tab);
-  if (page) page.classList.add('active');
-  setSidebarOpen(false);
-  if (tab === 'dashboard') {
-    loadDashboard();
-  } else if (tab === 'registrations') {
-    loadRegistrations();
-  } else if (tab === 'staff') {
-    loadStaff();
-  } else if (tab === 'content') {
-    showContentView('images');
-  } else if (tab === 'aesthetic') {
-    loadAestheticAdmin();
+  document.querySelectorAll('#tab-staff, #tab-hair, #tab-style, #tab-perm, #tab-images, #tab-carousel, #tab-customers, #tab-followups, #tab-assessment, #tab-hair-analysis, #tab-care').forEach(d => d.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = '';
+  if (tab === 'images') {
+    loadImages();
+  } else if (tab === 'carousel') {
+    loadCarousel();
   } else if (tab === 'customers') {
     loadCustomers();
   } else if (tab === 'followups') {
@@ -1591,13 +571,32 @@ function switchTab(tab) {
   } else if (tab === 'hair-analysis') {
     document.getElementById('hair-records-list').style.display = 'none';
     loadHairRecordStats();
-    if (isSuperAdmin()) loadHairAnalyses();
+    loadHairAnalyses();
   } else if (tab === 'care') {
     loadCareProducts();
-  } else if (tab === 'system') {
-    loadSystemStatus();
-  } else if (tab === 'audit') {
-    loadLocalAudit();
+  } else {
+    loadData(tab);
+  }
+}
+
+async function loadData(tab) {
+  let url;
+  if (tab === 'staff') {
+    url = `${SUPABASE_URL}/rest/v1/staff?select=*&order=id`;
+  } else if (tab === 'hair') {
+    url = `${SUPABASE_URL}/rest/v1/hair_types?select=*&order=id`;
+  } else if (tab === 'style') {
+    url = `${SUPABASE_URL}/rest/v1/perm_styles?select=*&order=id`;
+  } else {
+    url = `${SUPABASE_URL}/rest/v1/perm_data?select=*&order=id&limit=100`;
+  }
+  try {
+    const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
+    await ensureOk(r, '加载失败');
+    const rows = await r.json();
+    renderTable(tab, rows);
+  } catch(e) {
+    toast('加载失败: ' + e.message, 'err');
   }
 }
 
@@ -1607,30 +606,89 @@ function renderTable(tab, rows) {
   clearNode(tbody);
   if (tab === 'staff') {
     if (rows.length === 0) {
-      appendEmptyRow(tbody, 7);
+      appendEmptyRow(tbody, 6);
+      return;
+    }
+    // 分开显示：在职 vs 待审核
+    var activeRows = rows.filter(function(r){ return r.active; });
+    var pendingRows = rows.filter(function(r){ return !r.active; });
+    if (pendingRows.length > 0) {
+      var sep = el('tr');
+      sep.innerHTML = '<td colspan="7" style="padding:12px 8px 4px;font-size:13px;color:var(--warning);border:none;">⏳ 待审核员工（'+pendingRows.length+'人）</td>';
+      tbody.appendChild(sep);
+      pendingRows.forEach(function(r) {
+        const tr = el('tr');
+        const name = el('b', { text: r.username });
+        const status = el('span', { text: '待审核', style: 'color:var(--warning);' });
+        const actions = el('span');
+        actions.appendChild(actionButton('通过', 'btn-edit', function(e) { approveStaff(r.id, e.currentTarget); }));
+        actions.appendChild(actionButton('拒绝', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
+        appendCells(tr, [name, '', r.position || '', r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
+        tbody.appendChild(tr);
+      });
+    }
+    if (activeRows.length > 0) {
+      var sep2 = el('tr');
+      sep2.innerHTML = '<td colspan="7" style="padding:12px 8px 4px;font-size:13px;color:var(--text-secondary);border:none;">✅ 在职员工</td>';
+      tbody.appendChild(sep2);
+      activeRows.forEach(function(r) {
+        const tr = el('tr');
+        const name = el('b', { text: r.username });
+        const role = el('span', { className: 'badge ' + (r.role === 'admin' ? 'badge-admin' : 'badge-staff'), text: r.role });
+        const status = el('span');
+        status.appendChild(el('span', { className: 'status-dot status-active' }));
+        status.appendChild(document.createTextNode('启用'));
+        const actions = el('span');
+        actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
+        actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('staff', r.id, e.currentTarget); }));
+        appendCells(tr, [name, role, r.position || '', r.store || '', status, (r.created_at || '').substring(0, 10), actions]);
+        tbody.appendChild(tr);
+      });
+    }
+  } else if (tab === 'hair') {
+    if (rows.length === 0) {
+      appendEmptyRow(tbody, 5);
       return;
     }
     rows.forEach(function(r) {
       const tr = el('tr');
-      const name = el('b', { text: r.username });
-      const roleText = r.role === 'admin' ? '总管理员' : r.role === STORE_ADMIN_ROLE ? '分店管理员' : '普通员工';
-      const role = el('span', { className: 'badge ' + (r.role === 'staff' ? 'badge-staff' : 'badge-admin'), text: roleText });
-      const status = el('span', { className: 'status-chip status-active-chip', text: '在职' });
       const actions = el('span');
-      if (adminCanManageStaffRow(r, false)) {
-        actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
-      } else {
-        actions.appendChild(el('span', { style: 'font-size:11px;color:var(--muted);', text: '无编辑权限' }));
-      }
-      appendCells(tr, [name, role, r.position || '—', r.store || '—', status, (r.created_at || '').substring(0, 10), actions]);
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('hair', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('hair_types', r.id, e.currentTarget); }));
+      appendCells(tr, [r.name, r.tga_ca_ratio, r.base_ph, r.base_thio, actions]);
+      tbody.appendChild(tr);
+    });
+  } else if (tab === 'style') {
+    if (rows.length === 0) {
+      appendEmptyRow(tbody, 3);
+      return;
+    }
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('style', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('perm_styles', r.id, e.currentTarget); }));
+      appendCells(tr, [r.name, r.description || '', actions]);
+      tbody.appendChild(tr);
+    });
+  } else {
+    if (rows.length === 0) {
+      appendEmptyRow(tbody, 5);
+      return;
+    }
+    rows.forEach(function(r) {
+      const tr = el('tr');
+      const actions = el('span');
+      actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('perm', r.id); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { doDelete('perm_data', r.id, e.currentTarget); }));
+      appendCells(tr, [r.hair_type, r.style, r.soften_ph, r.soften_thio, actions]);
       tbody.appendChild(tr);
     });
   }
 }
 
 async function loadOne(table, id) {
-  const storeScope = table === 'staff' && currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '';
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
   await ensureOk(r, '加载失败');
   const rows = await r.json();
   return rows[0];
@@ -1661,6 +719,11 @@ function makeSelect(id, options, selectedValue) {
   return select;
 }
 
+function copyExistingField(target, source, field) {
+  if (!source || !Object.prototype.hasOwnProperty.call(source, field)) return;
+  target[field] = source[field];
+}
+
 function appendModalButtons(box, saveText, saveHandler) {
   const row = el('div', { className: 'btn-row' });
   row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
@@ -1669,42 +732,94 @@ function appendModalButtons(box, saveText, saveHandler) {
 }
 
 async function openModal(tab, id) {
-  if (tab !== 'staff') {
-    toast('该配置已从后台移除', 'err');
-    return;
-  }
   editId = id || null;
+  editingPermOriginal = null;
   const box = document.getElementById('modal-box');
   clearNode(box);
-
-  let data = { username:'', password_hash:'', role:'staff', store:'', active:true };
-  if (id) {
-    try {
-      data = await loadOne('staff', id) || data;
-    } catch(e) {
-      toast(e.message, 'err');
-      return;
+  
+  if (tab === 'staff') {
+    let data = { username:'', password_hash:'', role:'staff', store:'', active:true };
+    if (id) {
+      try {
+        data = await loadOne('staff', id) || data;
+      } catch(e) {
+        toast(e.message, 'err');
+        return;
+      }
     }
-    if (!adminCanManageStaffRow(data, false)) {
-      toast('无权编辑该账号', 'err');
-      return;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '员工' }));
+    appendField(box, '用户名', makeInput('f-user', data.username));
+    appendField(box, '密码', makeInput('f-pass', '', { type: 'text', placeholder: id ? '留空则不修改' : '请输入密码' }));
+    appendField(box, '角色', makeSelect('f-role', [{ value: 'admin', text: '管理员' }, { value: 'staff', text: '员工' }], data.role));
+    appendField(box, '职位（可多选）', function(){
+      var div = el('div', { className: 'pos-check-group', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:320px;' });
+      var vals = (data.position || '发型师').split(',').map(function(v){ return v.trim(); });
+      ['发型师','技师','助理','前台','店长'].forEach(function(p){
+        var label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:6px 8px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;transition:all 0.15s;' });
+        var cb = el('input', { type: 'checkbox', value: p });
+        if (vals.indexOf(p) !== -1) cb.checked = true;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(p));
+        div.appendChild(label);
+      });
+      return div;
+    }());
+    appendField(box, '分店', makeSelect('f-store', [
+      { value: '自由手艺人', text: '自由手艺人' },
+      { value: '向里造型', text: '向里造型' }
+    ], data.store || '自由手艺人'));
+    appendField(box, '状态', makeSelect('f-active', [{ value: 'true', text: '启用' }, { value: 'false', text: '停用' }], data.active !== false ? 'true' : 'false'));
+    appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
+  } else if (tab === 'hair') {
+    let data = { name:'', tga_ca_ratio:'', base_ph:'', base_thio:'' };
+    if (id) {
+      try {
+        data = await loadOne('hair_types', id) || data;
+      } catch(e) {
+        toast(e.message, 'err');
+        return;
+      }
     }
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '发质' }));
+    appendField(box, '名称', makeInput('f-name', data.name));
+    appendField(box, 'TGA:CA配比', makeInput('f-ratio', data.tga_ca_ratio || ''));
+    appendField(box, '基础PH', makeInput('f-ph', data.base_ph || ''));
+    appendField(box, '基础硫代', makeInput('f-thio', data.base_thio || ''));
+    appendModalButtons(box, '保存', function() { saveHair(id || 0); });
+  } else if (tab === 'style') {
+    let data = { name:'', description:'' };
+    if (id) {
+      try {
+        data = await loadOne('perm_styles', id) || data;
+      } catch(e) {
+        toast(e.message, 'err');
+        return;
+      }
+    }
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '款式' }));
+    appendField(box, '名称', makeInput('f-name', data.name));
+    appendField(box, '描述', makeInput('f-desc', data.description || ''));
+    appendModalButtons(box, '保存', function() { saveStyle(id || 0); });
+  } else {
+    let data = { hair_type:'', style:'', soften_ph:'', soften_thio:'', rod_sizes:'[]', technique:'', steps:'[]', soften_raw:'{}', warning:'' };
+    if (id) {
+      try {
+        data = await loadOne('perm_data', id) || data;
+      } catch(e) {
+        toast(e.message, 'err');
+        return;
+      }
+    }
+    editingPermOriginal = data;
+    box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '烫发方案' }));
+    appendField(box, '发质类型', makeInput('f-ht', data.hair_type));
+    appendField(box, '款式', makeInput('f-style', data.style));
+    appendField(box, '软化PH', makeInput('f-ph', data.soften_ph));
+    appendField(box, '硫代', makeInput('f-thio', data.soften_thio));
+    appendField(box, '杠号(JSON)', makeTextarea('f-rods', typeof data.rod_sizes === 'string' ? data.rod_sizes : JSON.stringify(data.rod_sizes)));
+    appendField(box, '手法', makeInput('f-tech', data.technique));
+    appendModalButtons(box, '保存', function() { savePerm(id || 0); });
   }
-  box.appendChild(el('h3', { text: (id ? '编辑' : '新增') + '员工' }));
-  appendField(box, '用户名', makeInput('f-user', data.username));
-  appendField(box, '密码', makeInput('f-pass', '', { type: 'password', autocomplete: 'new-password', placeholder: id ? '留空则不修改' : '请输入密码' }));
-  appendField(box, '角色', makeSelect('f-role', isStoreAdmin()
-    ? [{ value: 'staff', text: '普通员工' }]
-    : [{ value: 'admin', text: '总管理员' }, { value: STORE_ADMIN_ROLE, text: '分店管理员' }, { value: 'staff', text: '普通员工' }], isStoreAdmin() ? 'staff' : data.role));
-  appendField(box, '职位（可多选）', createPositionChecks(data.position || '发型师', 'staff-position'));
-  appendField(box, '分店', makeSelect('f-store', [
-    { value: currentAdminStore() || '自由手艺人', text: currentAdminStore() || '自由手艺人' },
-    ...(isStoreAdmin() ? [] : [{ value: '向里造型', text: '向里造型' }])
-  ], currentAdminStore() || data.store || '自由手艺人'));
-  if (id) {
-    box.appendChild(el('div', { style: 'margin-top:10px;color:var(--muted);font-size:11px;', text: '员工停用不在此页处理，避免把“待审核”和“已停用”混为同一状态。' }));
-  }
-  appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   document.getElementById('modal').classList.add('show');
 }
 
@@ -1715,49 +830,68 @@ function closeModal() {
 
 async function saveStaff(id) {
   const data = {
-    username: document.getElementById('f-user').value.trim(),
-    role: isStoreAdmin() ? 'staff' : document.getElementById('f-role').value,
-    position: Array.from(document.querySelectorAll('#staff-position input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(','),
-    store: currentAdminStore() || document.getElementById('f-store').value
+    username: document.getElementById('f-user').value,
+    role: document.getElementById('f-role').value,
+    position: Array.from(document.querySelectorAll('.pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(','),
+    store: document.getElementById('f-store').value,
+    active: document.getElementById('f-active').value === 'true'
   };
   const pass = document.getElementById('f-pass').value;
-  if (!data.username || !data.position || !data.store) { toast('请完整填写姓名、职位和门店', 'err'); return; }
-  if (!id) {
-    if (!pass) { toast('请输入密码', 'err'); return; }
-    data.active = true;
-  }
-  if (pass) {
-    try {
-      data.password_hash = await hashPasswordValue(pass);
-    } catch(e) {
-      toast('密码处理失败: ' + e.message, 'err');
-      return;
-    }
-  }
-  if (id) {
-    try {
-      const existing = await loadOne('staff', id);
-      if (!adminCanManageStaffRow(existing, false)) {
-        toast('无权编辑该账号', 'err');
-        return;
-      }
-    } catch(e) {
-      toast('加载员工权限失败: ' + e.message, 'err');
-      return;
-    }
-  }
+  if (!id && !pass) { toast('请输入密码', 'err'); return; }
+  if (pass) data.password_hash = pass;
   await upsert('staff', id, data);
 }
 
+async function saveHair(id) {
+  await upsert('hair_types', id, {
+    name: document.getElementById('f-name').value,
+    tga_ca_ratio: document.getElementById('f-ratio').value,
+    base_ph: document.getElementById('f-ph').value,
+    base_thio: document.getElementById('f-thio').value
+  });
+}
+
+async function saveStyle(id) {
+  await upsert('perm_styles', id, {
+    name: document.getElementById('f-name').value,
+    description: document.getElementById('f-desc').value
+  });
+}
+
+async function savePerm(id) {
+  let rodSizes = document.getElementById('f-rods').value.trim();
+  if (rodSizes) {
+    try {
+      rodSizes = JSON.parse(rodSizes);
+    } catch(e) {
+      // 兼容历史文本值；合法 JSON 字符串或数组会被解析成结构化值。
+    }
+  } else {
+    rodSizes = [];
+  }
+  const data = {
+    hair_type: document.getElementById('f-ht').value,
+    style: document.getElementById('f-style').value,
+    soften_ph: document.getElementById('f-ph').value,
+    soften_thio: document.getElementById('f-thio').value,
+    rod_sizes: rodSizes,
+    technique: document.getElementById('f-tech').value
+  };
+  if (id) {
+    copyExistingField(data, editingPermOriginal, 'steps');
+    copyExistingField(data, editingPermOriginal, 'soften_raw');
+    copyExistingField(data, editingPermOriginal, 'warning');
+  }
+  await upsert('perm_data', id, data);
+}
+
 async function upsert(table, id, data) {
-  if (table !== 'staff') throw new Error('后台不允许修改该配置');
   const btn = document.querySelector('#modal .btn-save');
   if (btn) btn.disabled = true;
   try {
     let r;
     if (id) {
-      const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
-      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}`, {
+      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify(data)
@@ -1770,15 +904,48 @@ async function upsert(table, id, data) {
       });
     }
     await ensureOk(r, '保存失败');
-    clearAdminStaffStoreCache();
-    recordAdminAction(id ? '修改员工' : '新增员工', data.username, data.store + ' / ' + data.position + ' / ' + data.role);
     toast('保存成功', 'ok');
     closeModal();
-    loadStaff();
+    loadData(currentTab);
   } catch(e) {
     toast('保存失败: ' + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+async function approveStaff(id, btn) {
+  setButtonBusy(btn, true);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ active: true })
+    });
+    if (!r.ok) throw new Error('审核失败');
+    toast('已通过审核');
+    loadData('staff');
+  } catch(e) {
+    toast('审核失败: '+e.message, 'err');
+    setButtonBusy(btn, false);
+  }
+}
+
+async function doDelete(table, id, btn) {
+  if (!confirm('确定删除？')) return;
+  setButtonBusy(btn, true);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+    });
+    await ensureOk(r, '删除失败');
+    toast('删除成功', 'ok');
+    loadData(currentTab);
+  } catch(e) {
+    toast('删除失败: ' + e.message, 'err');
+  } finally {
+    setButtonBusy(btn, false);
   }
 }
 
@@ -1813,26 +980,7 @@ function appendAISection(parent, title, rows) {
   parent.appendChild(section);
 }
 
-async function assertImageAdminScope(id) {
-  if (isSuperAdmin()) return null;
-  const results = await Promise.all([
-    fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&id=eq.' + encodeURIComponent(id) + '&limit=1', '加载作品权限失败'),
-    fetchAdminStaffStoreMap()
-  ]);
-  const image = results[0] && results[0][0];
-  if (!image || adminPersonStore(image.uploaded_by || '', results[1]) !== currentAdminStore()) {
-    throw new Error('无权操作其他门店的作品');
-  }
-  return image;
-}
-
-async function showAIAnalysis(id) {
-  try {
-    await assertImageAdminScope(id);
-  } catch(e) {
-    toast(e.message, 'err');
-    return;
-  }
+function showAIAnalysis(id) {
   var rows = document.querySelectorAll('#table-images tr');
   for (var i = 0; i < rows.length; i++) {
     var imgId = rows[i].querySelector('td')?.textContent;
@@ -1887,11 +1035,12 @@ async function showAIAnalysis(id) {
 // 待审核角标计数 + 桌面通知
 var _lastPendingCount = -1;
 function updatePendingBadge() {
-  Promise.all([
-    fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载待审核数量失败'),
-    fetchAdminStaffStoreMap()
-  ]).then(function(results) {
-    var count = filterImageRowsForAdmin(results[0] || [], results[1]).length;
+  fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id&status=eq.pending`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact' }
+  }).then(function(r) {
+    return ensureOk(r, '加载待审核数量失败');
+  }).then(function(r) {
+    var count = parseInt(r.headers.get('content-range')?.split('/')[1] || '0', 10);
     pendingBadgeErrorShown = false;
     var badge = document.getElementById('badge-images');
     var alert = document.getElementById('pending-alert');
@@ -1899,7 +1048,7 @@ function updatePendingBadge() {
     if (count > 0) {
       badge.textContent = count;
       badge.style.display = 'inline';
-      document.title = '(' + count + ') ' + (currentAdminStore() ? currentAdminStore() + ' · 分店后台' : '自由手艺人 · 后台管理');
+      document.title = '(' + count + ') 自由手艺人 · 后台管理';
       try { navigator.setAppBadge(count); } catch(e) {}
       // 桌面通知：新增或首次发现待审核时弹
       if (count > _lastPendingCount) {
@@ -1919,7 +1068,7 @@ function updatePendingBadge() {
       badge.style.display = 'none';
       alert.style.display = 'none';
       if (txt) txt.textContent = '0';
-      document.title = currentAdminStore() ? currentAdminStore() + ' · 分店后台' : '自由手艺人 · 后台管理';
+      document.title = '自由手艺人 · 后台管理';
       try { navigator.clearAppBadge(); } catch(e) {}
     }
     _lastPendingCount = count;
@@ -1933,20 +1082,16 @@ function updatePendingBadge() {
 
 async function loadImages() {
   const filter = document.getElementById('img-filter').value;
-  let url = `${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,ai_analysis,status,created_at,is_carousel,sort_order&order=created_at.desc`;
+  let url = `${SUPABASE_URL}/rest/v1/showcase_images?select=*&order=created_at.desc`;
   if (filter !== 'all') {
     url += `&status=eq.${encodeURIComponent(filter)}`;
   }
   try {
-    const results = await Promise.all([
-      fetch(url, { headers: { 'apikey': SUPABASE_KEY } }),
-      fetchAdminStaffStoreMap()
-    ]);
-    const r = results[0];
+    const r = await fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
     await ensureOk(r, '加载失败');
     const rows = await r.json();
     const tbody = document.getElementById('table-images');
-    const list = filterImageRowsForAdmin(rows || [], results[1]);
+    const list = rows || [];
     clearNode(tbody);
     if (list.length === 0) {
       appendEmptyRow(tbody, 7);
@@ -1986,12 +1131,7 @@ async function loadImages() {
       const actions = el('td');
       if (img.status !== 'approved') actions.appendChild(actionButton('通过', 'btn-approve', function(e) { approveImage(img.id, e.currentTarget); }));
       if (img.status !== 'rejected') actions.appendChild(actionButton('拒绝', 'btn-reject', function(e) { rejectImage(img.id, e.currentTarget); }));
-      if (img.status === 'approved' && isSuperAdmin()) {
-        actions.appendChild(actionButton(img.is_carousel ? '移出首页' : '设为首页', 'btn-edit', function(e) {
-          toggleImageCarousel(img.id, !img.is_carousel, e.currentTarget);
-        }));
-      }
-      if (img.status !== 'rejected') actions.appendChild(actionButton('下架', 'btn-del', function(e) { deleteImage(img.id, e.currentTarget); }));
+      actions.appendChild(actionButton('删除', 'btn-del', function(e) { deleteImage(img.id, e.currentTarget); }));
       [idCell, imgCell, aiCell, el('td', { text: img.uploaded_by || '' }), statusCell, timeCell, actions].forEach(function(td) {
         tr.appendChild(td);
       });
@@ -2005,15 +1145,12 @@ async function loadImages() {
 async function approveImage(id, btn) {
   setButtonBusy(btn, true);
   try {
-    const scopedImage = await assertImageAdminScope(id);
-    const uploadScope = scopedImage ? '&uploaded_by=eq.' + encodeURIComponent(scopedImage.uploaded_by || '') : '';
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}${uploadScope}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
       body: JSON.stringify({status:'approved'})
     });
     await ensureOk(r, '操作失败');
-    recordAdminAction('通过作品', String(id), '作品审核通过');
     toast('已通过', 'ok');
     loadImages();
     updatePendingBadge();
@@ -2024,15 +1161,12 @@ async function approveImage(id, btn) {
 async function rejectImage(id, btn) {
   setButtonBusy(btn, true);
   try {
-    const scopedImage = await assertImageAdminScope(id);
-    const uploadScope = scopedImage ? '&uploaded_by=eq.' + encodeURIComponent(scopedImage.uploaded_by || '') : '';
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}${uploadScope}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
-      body: JSON.stringify({status:'rejected', is_carousel:false})
+      body: JSON.stringify({status:'rejected'})
     });
     await ensureOk(r, '操作失败');
-    recordAdminAction('拒绝作品', String(id), '作品审核拒绝并移出首页');
     toast('已拒绝', 'ok');
     loadImages();
     updatePendingBadge();
@@ -2041,19 +1175,16 @@ async function rejectImage(id, btn) {
 }
 
 async function deleteImage(id, btn) {
-  if (!confirm('确认下架该作品？记录仍会保留，只是不再对外展示。')) return;
+  if (!confirm('确认删除？')) return;
   setButtonBusy(btn, true);
   try {
-    const scopedImage = await assertImageAdminScope(id);
-    const uploadScope = scopedImage ? '&uploaded_by=eq.' + encodeURIComponent(scopedImage.uploaded_by || '') : '';
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}${uploadScope}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({status: 'rejected', is_carousel: false})
+      body: JSON.stringify({status: 'rejected'})
     });
-    await ensureOk(r, '下架失败');
-    recordAdminAction('下架作品', String(id), '保留记录并停止展示');
-    toast('已下架', 'ok');
+    await ensureOk(r, '删除失败');
+    toast('已拒绝', 'ok');
     loadImages();
     updatePendingBadge();
   } catch(e) {
@@ -2062,58 +1193,29 @@ async function deleteImage(id, btn) {
     setButtonBusy(btn, false);
   }
 }
-
-async function toggleImageCarousel(id, enabled, btn) {
-  if (!requireSuperAdmin('首页推荐')) return;
-  setButtonBusy(btn, true);
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}&status=eq.approved`, {
-      method: 'PATCH',
-      headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Prefer':'return=representation' },
-      body: JSON.stringify({ is_carousel: enabled, sort_order: enabled ? 9999 : null })
-    });
-    await ensureOk(r, '更新首页展示失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('作品状态已经变化');
-    recordAdminAction(enabled ? '加入首页展示' : '移出首页展示', String(id), '作品记录和审核状态保持不变');
-    toast(enabled ? '已加入首页展示' : '已移出首页展示', 'ok');
-    loadImages();
-  } catch(e) {
-    toast('操作失败: ' + e.message, 'err');
-  } finally {
-    setButtonBusy(btn, false);
-  }
-}
-
 // === 轮播管理 ===
-var _carouselRows = [];
 async function loadCarousel() {
-  if (!requireSuperAdmin('首页推荐')) return;
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status,is_carousel,sort_order,created_at&status=eq.approved&is_carousel=eq.true&order=sort_order.asc.nullslast,created_at.asc&limit=50`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?select=id,image_url,category,uploaded_by,status&status=eq.approved&order=created_at.asc&limit=50`, {
       headers: { 'apikey': SUPABASE_KEY }
     });
     await ensureOk(r, '加载失败');
     const rows = await r.json();
     const tbody = document.getElementById('table-carousel');
     const list = rows || [];
-    _carouselRows = list;
     clearNode(tbody);
     if (list.length === 0) {
-      appendEmptyRow(tbody, 5);
+      appendEmptyRow(tbody, 4);
       return;
     }
-    list.forEach(function(img, index) {
+    list.forEach(function(img) {
       const tr = el('tr');
-      tr.appendChild(el('td', { text: String(index + 1) }));
       const previewCell = el('td');
       previewCell.appendChild(el('img', { src: img.image_url || '', style: 'width:60px;height:80px;object-fit:cover;border-radius:4px;' }));
       tr.appendChild(previewCell);
       tr.appendChild(el('td', { text: img.category || '' }));
       tr.appendChild(el('td', { text: img.uploaded_by || '' }));
       const actions = el('td');
-      if (index > 0) actions.appendChild(actionButton('上移', 'btn-edit', function(e) { moveCarousel(img.id, -1, e.currentTarget); }));
-      if (index < list.length - 1) actions.appendChild(actionButton('下移', 'btn-edit', function(e) { moveCarousel(img.id, 1, e.currentTarget); }));
       actions.appendChild(actionButton('移除', 'btn-del', function(e) { deleteCarousel(img.id, e.currentTarget); }));
       tr.appendChild(actions);
       tbody.appendChild(tr);
@@ -2123,53 +1225,21 @@ async function loadCarousel() {
     const tbody = document.getElementById('table-carousel');
     clearNode(tbody);
     const tr = el('tr');
-    tr.appendChild(el('td', { colspan: 5, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
+    tr.appendChild(el('td', { colspan: 4, style: 'text-align:center;color:#e0556a;padding:40px;', text: '加载失败：' + e.message }));
     tbody.appendChild(tr);
   }
 }
-
-async function moveCarousel(id, direction, btn) {
-  if (!requireSuperAdmin('首页推荐')) return;
-  const index = _carouselRows.findIndex(function(row){ return String(row.id) === String(id); });
-  const targetIndex = index + direction;
-  if (index < 0 || targetIndex < 0 || targetIndex >= _carouselRows.length) return;
-  const current = _carouselRows[index];
-  const target = _carouselRows[targetIndex];
-  const currentOrder = Number.isFinite(Number(current.sort_order)) ? Number(current.sort_order) : index + 1;
-  const targetOrder = Number.isFinite(Number(target.sort_order)) ? Number(target.sort_order) : targetIndex + 1;
-  setButtonBusy(btn, true);
-  try {
-    const headers = { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Prefer':'return=minimal' };
-    const responses = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(current.id)}`, {
-        method:'PATCH', headers:headers, body:JSON.stringify({ sort_order: targetOrder })
-      }),
-      fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(target.id)}`, {
-        method:'PATCH', headers:headers, body:JSON.stringify({ sort_order: currentOrder })
-      })
-    ]);
-    await Promise.all(responses.map(function(r){ return ensureOk(r, '调整顺序失败'); }));
-    recordAdminAction('调整首页顺序', String(id), direction < 0 ? '上移一位' : '下移一位');
-    loadCarousel();
-  } catch(e) {
-    toast('调整顺序失败: ' + e.message, 'err');
-    setButtonBusy(btn, false);
-  }
-}
-
 async function deleteCarousel(id, btn) {
-  if (!requireSuperAdmin('首页推荐')) return;
   if (!confirm('确认从轮播移除？')) return;
   setButtonBusy(btn, true);
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/showcase_images?id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({is_carousel: false, sort_order: null})
+      body: JSON.stringify({status: 'rejected'})
     });
     await ensureOk(r, '移除失败');
-    recordAdminAction('移出首页展示', String(id), '作品仍保持审核通过');
-    toast('已移出首页展示', 'ok');
+    toast('已拒绝', 'ok');
     loadCarousel();
   } catch(e) {
     toast('网络错误：' + e.message, 'err');
@@ -2178,7 +1248,6 @@ async function deleteCarousel(id, btn) {
   }
 }
 async function uploadCarousel() {
-  if (!requireSuperAdmin('首页推荐')) return;
   const input = document.getElementById('car-url');
   const imageUrl = input.value.trim();
   if (!imageUrl) { toast('请输入图片 URL', 'err'); return; }
@@ -2199,14 +1268,11 @@ async function uploadCarousel() {
         category: '轮播',
         title: '轮播',
         status: 'approved',
-        is_carousel: true,
-        sort_order: 9999,
         uploaded_by: '管理员',
         created_at: new Date().toISOString()
       })
     });
     await ensureOk(r, '保存失败');
-    recordAdminAction('新增首页展示', imageUrl, '通过 URL 新增已审核作品');
     msg.textContent = '保存成功，已加入轮播';
     input.value = '';
     loadCarousel();
@@ -2244,7 +1310,7 @@ function connectRealtime() {
         var m = JSON.parse(e.data);
         if (m && m[3] === 'postgres_changes') {
           updatePendingBadge();
-          if (currentTab === 'content' && document.getElementById('tab-images').classList.contains('active')) loadImages();
+          if (currentTab === 'images') loadImages();
         }
       } catch(ex) {}
     };
@@ -2275,35 +1341,16 @@ function stopRealtime() {
 }
 
 // ===== 发质分析表完成统计（按发型师分组） =====
-function adminHairFollowupComplete(row) {
-  var rd = (row && row.record_data) || {};
-  return row && row.status === '回访完成' && !!(rd.feedbackRating || rd.followUpScreenshot);
-}
-
-function adminHairStatusText(row) {
-  if (adminHairFollowupComplete(row)) return '回访完成';
-  var status = (row && row.status) || '';
-  if (status === '待技师填写') return '待技师填写';
-  if (status === '技师已完成' || status === '待回访完成') return '待发型师回访';
-  if (status === '已完成' || status === '已保存') return '已保存，待回访';
-  if (status === '回访完成') return '回访资料不完整';
-  return status || '待回访';
-}
-
 window.loadHairRecordStats = function() {
   var container = document.getElementById('hair-record-stats');
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>';
 
-  Promise.all([
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&limit=500', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return ensureOk(r, '加载发质任务失败'); }).then(function(r){ return r.json(); }),
-    fetchAdminStaffStoreMap()
-  ])
-  .then(function(results){
-    var staffMap = results[1];
-    var rows = filterHairRowsForAdmin(results[0] || [], staffMap);
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&limit=500', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
     if (!rows || rows.length === 0) {
       container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">暂无发质分析表数据</div>';
       return;
@@ -2317,8 +1364,8 @@ window.loadHairRecordStats = function() {
       if (!stats[barber]) stats[barber] = { barber: barber, total: 0, completed: 0, technicianDone: 0, pending: 0, items: [] };
       stats[barber].total++;
       stats[barber].items.push(r);
-      if (adminHairFollowupComplete(r)) stats[barber].completed++;
-      else if (r.status === '技师已完成' || r.status === '待回访完成') stats[barber].technicianDone++;
+      if (r.status === '已完成') stats[barber].completed++;
+      else if (r.status === '技师已完成') stats[barber].technicianDone++;
       else stats[barber].pending++;
     });
 
@@ -2339,7 +1386,7 @@ window.loadHairRecordStats = function() {
     // 顶部汇总卡片
     var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#fff;">'+totalAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">总发质分析表</div></div>';
-    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#2ecc71;">'+completedAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">回访完成</div></div>';
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#2ecc71;">'+completedAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">已完成</div></div>';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(pendingAll>0?'#e8a817':'#fff')+';">'+pendingAll+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">未完成</div></div>';
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(rateAll<50?'#e74c3c':rateAll<80?'#e8a817':'#2ecc71')+';">'+rateAll+'%</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">完成率</div></div>';
     html += '</div>';
@@ -2347,7 +1394,7 @@ window.loadHairRecordStats = function() {
     // 按发型师统计表
     html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">';
     html += '<div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;">📊 发型师完成统计</div>';
-    html += '<table style="font-size:12px;"><thead><tr><th>发型师</th><th>门店</th><th>发质分析表</th><th>回访完成</th><th>技师已填</th><th>待处理</th><th>完成率</th><th>操作</th></tr></thead><tbody>';
+    html += '<table style="font-size:12px;"><thead><tr><th>发型师</th><th>门店</th><th>烫染客户</th><th>已完成</th><th>技师已填</th><th>待回访</th><th>完成率</th><th>操作</th></tr></thead><tbody>';
 
     list.forEach(function(s){
       var pendingCount = s.pending + s.technicianDone;
@@ -2357,7 +1404,7 @@ window.loadHairRecordStats = function() {
       var barberEsc = esc(s.barber);
       html += '<tr>';
       html += '<td style="font-weight:600;">' + barberEsc + '</td>';
-      html += '<td style="color:var(--muted);font-size:11px;">' + esc(adminPersonStore(s.barber, staffMap) || '—') + '</td>';
+      html += '<td style="color:var(--muted);font-size:11px;">—</td>';
       html += '<td>' + s.total + '</td>';
       html += '<td style="color:#2ecc71;">' + s.completed + '</td>';
       html += '<td style="color:#e8a817;">' + s.technicianDone + '</td>';
@@ -2385,23 +1432,17 @@ window.loadHairRecordStats = function() {
 
 // 弹窗显示某个发型师的未完成明细
 window.showBarberDetail = function(barberName) {
-  Promise.all([
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.deleted&limit=100', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return ensureOk(r, '加载未完成明细失败'); }).then(function(r){ return r.json(); }),
-    fetchAdminStaffStoreMap()
-  ])
-  .then(function(results){
-    if (currentAdminStore() && adminPersonStore(barberName, results[1]) !== currentAdminStore()) {
-      throw new Error('无权查看其他门店的发质任务');
-    }
-    var rows = filterHairRowsForAdmin(results[0] || [], results[1]);
-    rows = (rows || []).filter(function(r) { return !adminHairFollowupComplete(r); });
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at&barber=eq.' + encodeURIComponent(barberName) + '&status=neq.已完成&limit=100', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
     if (!rows || rows.length === 0) {
       toast('该发型师没有未完成的记录', 'ok');
       return;
     }
     var now = new Date();
+    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '待回访完成': '待回访完成' };
     var html = '<div class="modal-box" style="max-width:650px;">';
     html += '<h3>' + esc(barberName) + ' · 未完成明细</h3>';
     html += '<p style="font-size:12px;color:var(--muted);margin-bottom:10px;">共 ' + rows.length + ' 条未完成</p>';
@@ -2409,7 +1450,7 @@ window.showBarberDetail = function(barberName) {
     html += '<table style="font-size:12px;"><thead><tr><th>客户名</th><th>手机号</th><th>技师</th><th>状态</th><th>停留</th><th>创建时间</th></tr></thead><tbody>';
 
     rows.forEach(function(r){
-      var statusText = adminHairStatusText(r);
+      var statusText = statusMap[r.status] || r.status || '—';
       var tech = r.technician || '—';
       // 计算停留天数
       var days = '—';
@@ -2428,7 +1469,7 @@ window.showBarberDetail = function(barberName) {
       html += '<td>' + esc(r.customer_name || '—') + '</td>';
       html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
       html += '<td>' + esc(tech) + '</td>';
-      html += '<td style="color:#e8a817;">' + statusText + '</td>';
+      html += '<td style="color:' + (r.status === '待回访' ? '#e74c3c' : '#e8a817') + ';">' + statusText + '</td>';
       html += '<td style="color:' + (overdue ? '#e74c3c;font-weight:600' : 'var(--muted)') + ';">' + days + '</td>';
       html += '<td style="font-size:11px;color:var(--muted);">' + (r.created_at ? r.created_at.substring(0,10) : '—') + '</td>';
       html += '</tr>';
@@ -2448,21 +1489,16 @@ window.loadHairRecordList = function() {
   if (!tbody) return;
   var search = (document.getElementById('hr-search')||{}).value || '';
   var statusFilter = (document.getElementById('hr-status-filter')||{}).value || '';
-  tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&order=created_at.desc&limit=50';
-  if (statusFilter) url = url.replace('status=neq.deleted', 'status=eq.' + encodeURIComponent(statusFilter));
+  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&order=created_at.desc&limit=50';
+  if (statusFilter) url += '&status=eq.' + encodeURIComponent(statusFilter);
 
-  Promise.all([
-    fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-      .then(function(r){ return ensureOk(r, '加载发质任务失败'); })
-      .then(function(r){ return r.json(); }),
-    fetchAdminStaffStoreMap()
-  ])
-  .then(function(results){
-    var rows = filterHairRowsForAdmin(results[0] || [], results[1]);
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
     if (!rows || rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">暂无数据</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#555;padding:20px;">暂无数据</td></tr>';
       document.getElementById('hr-count').textContent = '共 0 条';
       return;
     }
@@ -2476,11 +1512,12 @@ window.loadHairRecordList = function() {
     }
     document.getElementById('hr-count').textContent = '共 ' + rows.length + ' 条';
     var now = new Date();
+    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '已完成': '已完成' };
     var lvlMap = {'1':'1级·健康','2':'2级·轻损','3':'3级·受损','4':'4级·严重','5':'5级·极度'};
     var html = '';
     rows.forEach(function(r){
       var rd = r.record_data || {};
-      var statusText = adminHairStatusText(r);
+      var statusText = statusMap[r.status] || r.status || '—';
       var tech = r.technician || '—';
       var days = '—';
       if (r.created_at) {
@@ -2492,9 +1529,8 @@ window.loadHairRecordList = function() {
           }
         } catch(e){}
       }
-      var isComplete = adminHairFollowupComplete(r);
-      var overdue = !isComplete && typeof days === 'string' && days.indexOf('天') > 0 && parseInt(days) >= 2;
-      var statusColor = isComplete ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c';
+      var overdue = r.status !== '已完成' && typeof days === 'string' && days.indexOf('天') > 0 && parseInt(days) >= 2;
+      var statusColor = r.status === '已完成' ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c';
       
       // 三段诊断摘要
       var diagSum = '—';
@@ -2521,7 +1557,6 @@ window.loadHairRecordList = function() {
       var rating = rd && rd.feedbackRating ? rd.feedbackRating : '—';
       
       html += '<tr' + (overdue ? ' style="background:rgba(231,76,60,0.06);"' : '') + '>';
-      html += '<td>' + (isSuperAdmin() ? '<input type="checkbox" class="hr-checkbox" data-id="' + r.id + '" onchange="toggleHRBatchBtn()">' : '') + '</td>';
       html += '<td style="font-weight:600;">' + esc(r.customer_name || '—') + '</td>';
       html += '<td style="font-family:monospace;font-size:11px;">' + esc(r.customer_phone || '') + '</td>';
       html += '<td style="font-size:11px;">' + esc(r.barber || '—') + '</td>';
@@ -2538,25 +1573,23 @@ window.loadHairRecordList = function() {
     tbody.innerHTML = html;
   })
   .catch(function(){
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
   });
 };
 
 // ===== 查看发质分析表完整详情 =====
 window.viewHairRecordDetail = function(recordId) {
   if (!recordId) return;
-  Promise.all([
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=*&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return ensureOk(r, '加载发质任务失败'); }).then(function(r){ return r.json(); }),
-    fetchAdminStaffStoreMap()
-  ])
-  .then(function(results){
-    var rows = filterHairRowsForAdmin(results[0] || [], results[1]);
+  fetch(SUPABASE_URL + '/rest/v1/hair_records?select=*&id=eq.' + encodeURIComponent(recordId) + '&limit=1', {
+    headers: { 'apikey': SUPABASE_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rows){
     if (!rows || rows.length === 0) { toast('未找到记录', 'err'); return; }
     var r = rows[0];
     var rd = r.record_data || {};
-    var statusText = adminHairStatusText(r);
+    var statusMap = { '待回访': '待回访', '技师已完成': '技师已填', '已完成': '已完成' };
+    var statusText = statusMap[r.status] || r.status || '—';
     
     var html = '<div class="modal-box" style="max-width:600px;">';
     html += '<h3>发质分析表详情</h3>';
@@ -2570,7 +1603,7 @@ window.viewHairRecordDetail = function(recordId) {
     html += '<tr><td style="color:#888;padding:2px 4px;">手机</td><td style="padding:2px 4px;">' + esc(r.customer_phone || '—') + '</td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">发型师</td><td style="padding:2px 4px;">' + esc(r.barber || '—') + '</td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">技师</td><td style="padding:2px 4px;">' + esc(r.technician || '—') + '</td></tr>';
-    html += '<tr><td style="color:#888;padding:2px 4px;">状态</td><td style="padding:2px 4px;"><span style="color:' + (adminHairFollowupComplete(r) ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c') + ';">' + statusText + '</span></td></tr>';
+    html += '<tr><td style="color:#888;padding:2px 4px;">状态</td><td style="padding:2px 4px;"><span style="color:' + (r.status === '已完成' ? '#2ecc71' : r.status === '技师已完成' ? '#e8a817' : '#e74c3c') + ';">' + statusText + '</span></td></tr>';
     html += '<tr><td style="color:#888;padding:2px 4px;">创建</td><td style="padding:2px 4px;font-size:11px;color:#aaa;">' + (r.created_at || '—') + '</td></tr>';
     html += '</table></div>';
     
@@ -2734,13 +1767,12 @@ window.viewHairRecordDetail = function(recordId) {
 
 // ===== 发质分析管理 =====
 window.loadHairAnalyses = async function() {
-  if (!requireSuperAdmin('AI拍照分析记录')) return;
   var search = (document.getElementById('ha-search')||{}).value || '';
   var tbody = document.getElementById('table-hair-analysis');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=neq.deleted&order=created_at.desc&limit=200';
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&status=in.(completed,record_saved)&order=created_at.desc&limit=200';
   if (search) {
     url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,ai_analysis->record->>customerName.ilike.%25' + encodeURIComponent(search) + '%25)';
   }
@@ -2749,7 +1781,7 @@ window.loadHairAnalyses = async function() {
     .then(function(r){ return r.json(); })
     .then(function(rows){
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>';
         document.getElementById('ha-count').textContent = '共 0 条';
         return;
       }
@@ -2775,7 +1807,6 @@ window.loadHairAnalyses = async function() {
         var statusText = statusMap[r.status] || r.status || '—';
 
         html += '<tr>';
-        html += '<td><input type="checkbox" class="ha-checkbox" data-id="' + r.id + '" onchange="toggleHABatchBtn()"></td>';
         html += '<td style="font-family:monospace;font-size:11px;">' + esc(phone) + '</td>';
         html += '<td>' + esc(custName) + '</td>';
         html += '<td>' + esc(technician) + '</td>';
@@ -2791,19 +1822,17 @@ window.loadHairAnalyses = async function() {
       tbody.innerHTML = html;
     })
     .catch(function(){
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
     });
 };
 
 window.deleteHairAnalysis = async function(id, btn) {
-  if (!requireSuperAdmin('删除AI分析记录')) return;
   if (!confirm('确定删除该条发质分析记录？')) return;
   setButtonBusy(btn, true);
   try {
     var r = await fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + encodeURIComponent(id), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ status: 'deleted' })
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
     });
     await ensureOk(r, '删除失败');
     toast('删除成功', 'ok');
@@ -2815,78 +1844,7 @@ window.deleteHairAnalysis = async function(id, btn) {
   }
 };
 
-// ===== 批量删除 AI拍照分析记录 =====
-document.getElementById('ha-select-all').onchange = function() {
-  document.querySelectorAll('.ha-checkbox').forEach(cb => cb.checked = this.checked);
-  toggleHABatchBtn();
-};
-
-function toggleHABatchBtn() {
-  var any = document.querySelectorAll('.ha-checkbox:checked').length > 0;
-  document.getElementById('ha-batch-del').style.display = any ? '' : 'none';
-}
-
-window.batchDeleteHA = async function() {
-  if (!requireSuperAdmin('批量删除AI分析记录')) return;
-  var checked = document.querySelectorAll('.ha-checkbox:checked');
-  if (checked.length === 0) return;
-  if (!confirm('确定删除选中的 ' + checked.length + ' 条记录？')) return;
-  var ids = [];
-  checked.forEach(cb => ids.push(cb.dataset.id));
-
-  var failCount = 0;
-  for (var i = 0; i < ids.length; i++) {
-    try {
-      var r = await fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + encodeURIComponent(ids[i]), {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ status: 'deleted' })
-      });
-      if (!r.ok) failCount++;
-    } catch(e) { failCount++; }
-  }
-
-  toast('删除 ' + (ids.length - failCount) + '/' + ids.length + ' 条成功', failCount ? 'warn' : 'ok');
-  loadHairAnalyses();
-};
-
-// ===== 批量删除 发质分析表记录 =====
-document.getElementById('hr-select-all').onchange = function() {
-  document.querySelectorAll('.hr-checkbox').forEach(cb => cb.checked = this.checked);
-  toggleHRBatchBtn();
-};
-
-function toggleHRBatchBtn() {
-  var any = document.querySelectorAll('.hr-checkbox:checked').length > 0;
-  document.getElementById('hr-batch-del').style.display = any ? '' : 'none';
-}
-
-window.batchDeleteHR = async function() {
-  if (!requireSuperAdmin('删除发质任务')) return;
-  var checked = document.querySelectorAll('.hr-checkbox:checked');
-  if (checked.length === 0) return;
-  if (!confirm('确定删除选中的 ' + checked.length + ' 条记录？')) return;
-  var ids = [];
-  checked.forEach(cb => ids.push(cb.dataset.id));
-
-  var failCount = 0;
-  for (var i = 0; i < ids.length; i++) {
-    try {
-      var r = await fetch(SUPABASE_URL + '/rest/v1/hair_records?id=eq.' + encodeURIComponent(ids[i]), {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ status: 'deleted' })
-      });
-      if (!r.ok) failCount++;
-    } catch(e) { failCount++; }
-  }
-
-  toast('删除 ' + (ids.length - failCount) + '/' + ids.length + ' 条成功', failCount ? 'warn' : 'ok');
-  loadHairRecordList();
-};
-
 window.viewHairAnalysis = async function(id) {
-  if (!requireSuperAdmin('AI拍照分析记录')) return;
   fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?id=eq.' + id + '&select=*', {
     headers: { 'apikey': SUPABASE_KEY }
   })
@@ -3078,7 +2036,6 @@ function showModal(html) {
 
 // ===== 顾客档案 =====
 function loadCustomers() {
-  if (!requireSuperAdmin('顾客档案')) return;
   var search = (document.getElementById('cust-search')||{}).value || '';
   var barber = (document.getElementById('cust-barber-filter')||{}).value || '';
   var visit = (document.getElementById('cust-visit-filter')||{}).value || '';
@@ -3154,7 +2111,6 @@ function loadCustomers() {
 
 // ===== 查看客户发质分析记录 =====
 function viewCustAnalyses(phone, name) {
-  if (!requireSuperAdmin('顾客档案')) return;
   if (!phone) return;
   fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=created_at,ai_analysis,stylist_damage_level,status&phone=eq.' + encodeURIComponent(phone) + '&status=in.(completed,record_saved)&order=created_at.desc&limit=20', {
     headers: { 'apikey': SUPABASE_KEY }
@@ -3196,44 +2152,52 @@ function viewCustAnalyses(phone, name) {
 
 // ===== 回访管理 =====
 function loadFollowups() {
-  if (!requireSuperAdmin('回访任务')) return;
   var barber = (document.getElementById('fu-barber-filter')||{}).value || '';
   var filter = (document.getElementById('fu-status-filter')||{}).value || '';
   var tbody = document.getElementById('table-followups');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=id,phone,name,barber_name,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=1000';
+  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=500';
   if (barber) url += '&barber_name=eq.' + encodeURIComponent(barber);
 
   fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
     .then(function(r){ return r.json(); })
     .then(function(rows){
-      if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
+      if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
+
+      var now = new Date();
+      var todayStr = now.toISOString().substring(0,10);
+      var weekAgo = new Date(now - 7*24*60*60*1000).toISOString().substring(0,10);
 
       // 为每个客户计算回访状态
       var enriched = rows.map(function(r){
-        return { row: r, meta: followupMetaFromProfile(r) };
+        var followUps = [];
+        try { var notes = JSON.parse(r.notes || '{}'); if (notes.follow_ups) followUps = notes.follow_ups; } catch(e) {}
+        var lastFu = followUps.length > 0 ? followUps[followUps.length-1] : null;
+        var lastFuDate = lastFu ? lastFu.date : null;
+        var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : null;
+        var daysSinceVisit = lastVisit ? Math.floor((now - new Date(lastVisit)) / (1000*60*60*24)) : 999;
+        var daysSinceFu = lastFuDate ? Math.floor((now - new Date(lastFuDate)) / (1000*60*60*24)) : 999;
+        var fuToday = lastFuDate === todayStr;
+        var fuThisWeek = lastFuDate && lastFuDate >= weekAgo;
+        return { row: r, followUps: followUps, lastFu: lastFu, lastFuDate: lastFuDate,
+          daysSinceVisit: daysSinceVisit, daysSinceFu: daysSinceFu,
+          fuToday: fuToday, fuThisWeek: fuThisWeek };
       });
 
       // 按筛选条件过滤
       var filtered = enriched;
-      if (filter === 'overdue') filtered = enriched.filter(function(e){ return e.meta.overdue; });
-      else if (filter === 'today') filtered = enriched.filter(function(e){ return e.meta.today; });
-      else if (filter === 'week') filtered = enriched.filter(function(e){ return e.meta.upcomingWeek; });
-      else if (filter === 'completed') filtered = enriched.filter(function(e){ return e.meta.completedThisWeek; });
-      filtered.sort(function(a, b) {
-        var aPriority = a.meta.overdue ? 0 : a.meta.today ? 1 : a.meta.upcomingWeek ? 2 : 3;
-        var bPriority = b.meta.overdue ? 0 : b.meta.today ? 1 : b.meta.upcomingWeek ? 2 : 3;
-        if (aPriority !== bPriority) return aPriority - bPriority;
-        return String(a.meta.dueDate || '9999').localeCompare(String(b.meta.dueDate || '9999'));
-      });
+      if (filter === 'over30') filtered = enriched.filter(function(e){ return e.daysSinceFu >= 30 || !e.lastFuDate; });
+      else if (filter === 'over60') filtered = enriched.filter(function(e){ return e.daysSinceFu >= 60 || !e.lastFuDate; });
+      else if (filter === 'today') filtered = enriched.filter(function(e){ return e.fuToday; });
+      else if (filter === 'week') filtered = enriched.filter(function(e){ return e.fuThisWeek; });
 
       // 统计卡片
       var totalCust = rows.length;
-      var todayCount = enriched.filter(function(e){ return e.meta.today; }).length;
-      var overdueCount = enriched.filter(function(e){ return e.meta.overdue; }).length;
-      var weekCount = enriched.filter(function(e){ return e.meta.completedThisWeek; }).length;
+      var todayCount = enriched.filter(function(e){ return e.fuToday; }).length;
+      var overdueCount = enriched.filter(function(e){ return e.daysSinceFu >= 30 || !e.lastFuDate; }).length;
+      var weekCount = enriched.filter(function(e){ return e.fuThisWeek; }).length;
       document.getElementById('fu-total').textContent = totalCust;
       document.getElementById('fu-today').textContent = todayCount;
       document.getElementById('fu-overdue').textContent = overdueCount;
@@ -3242,31 +2206,34 @@ function loadFollowups() {
       var html = '';
       filtered.forEach(function(e){
         var r = e.row;
-        var meta = e.meta;
         var phone = r.phone || '';
         var name = r.name || '—';
         var barberName = r.barber_name || '—';
         var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : '—';
-        var statusText = meta.overdue ? '已逾期' : meta.today ? '今日计划' : meta.upcomingWeek ? '即将回访' : meta.dueDate ? '待计划日' : '未排计划';
-        var statusClass = meta.overdue ? 'status-danger' : (meta.today || meta.upcomingWeek) ? 'status-pending' : 'status-disabled-chip';
-        var rowClass = meta.overdue ? 'style="background:rgba(224,85,106,0.04);"' : '';
+        var daysStr = e.daysSinceVisit >= 999 ? '—' : e.daysSinceVisit + '天';
+        var fuStatus = '';
+        if (e.lastFuDate) {
+          fuStatus = e.lastFuDate + ' (' + e.daysSinceFu + '天前)';
+        } else {
+          fuStatus = '<span style="color:var(--danger);">从未回访</span>';
+        }
+        var rowClass = (e.daysSinceFu >= 30 || !e.lastFuDate) ? 'style="background:rgba(224,85,106,0.04);"' : '';
 
         html += '<tr ' + rowClass + '>';
         html += '<td>' + esc(name) + '</td>';
         html += '<td style="font-family:monospace;font-size:11px;">' + phone + '</td>';
         html += '<td>' + esc(barberName) + '</td>';
         html += '<td style="font-size:11px;">' + lastVisit + '</td>';
-        html += '<td style="font-size:11px;">' + esc(meta.lastDate || '从未回访') + '</td>';
-        html += '<td style="font-size:11px;">' + esc(meta.dueDate || '—') + '</td>';
-        html += '<td><span class="status-chip ' + statusClass + '">' + statusText + '</span></td>';
+        html += '<td>' + daysStr + '</td>';
+        html += '<td style="font-size:11px;">' + fuStatus + '</td>';
         html += '<td>';
-        html += '<button onclick="showFollowUpModal(\'' + escAttr(phone) + '\',\'' + escAttr(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
+        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
         html += '</td></tr>';
       });
-      tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
+      tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
     })
     .catch(function(){
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:30px;">加载失败</td></tr>';
       document.getElementById('fu-total').textContent = '—';
     });
 }
@@ -3275,7 +2242,6 @@ function loadFollowups() {
 var _fuPhone = '';
 var _fuName = '';
 function showFollowUpModal(phone, name) {
-  if (!requireSuperAdmin('客户回访')) return;
   _fuPhone = phone;
   _fuName = name;
   // 查询历史回访记录
@@ -3343,16 +2309,14 @@ function showFollowUpModal(phone, name) {
 }
 
 function saveFollowUp() {
-  if (!requireSuperAdmin('客户回访')) return;
   var content = document.getElementById('fu-content');
   var next = document.getElementById('fu-next');
   if (!_fuPhone || !content || !content.value.trim()) return;
   var now = new Date();
   var dateStr = now.toISOString().substring(0,10);
   
-  var barber = currentAdminName();
-  var savedContent = content.value.trim();
-  var savedNext = next ? next.value : '';
+  // 获取当前发型师
+  var barber = localStorage.getItem('fu-barber') || '管理员';
 
   // 先取现有notes
   fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(_fuPhone), {
@@ -3366,8 +2330,8 @@ function saveFollowUp() {
     notes.follow_ups.push({
       date: dateStr,
       barber: barber,
-      content: savedContent,
-      next: savedNext
+      content: content.value.trim(),
+      next: next ? next.value : ''
     });
     // 写回
     return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(_fuPhone), {
@@ -3376,31 +2340,26 @@ function saveFollowUp() {
       body: JSON.stringify({ notes: JSON.stringify(notes) })
     });
   })
-  .then(function(r){
-    return ensureOk(r, '保存回访失败');
-  })
   .then(function(){
-    recordAdminAction('记录客户回访', _fuName || _fuPhone, savedNext ? '下次计划 ' + savedNext : '未设置下次计划');
-    toast('回访记录已保存', 'ok');
+    showToast('回访记录已保存', 'ok');
     document.getElementById('fu-modal').classList.remove('show');
     // 刷新当前列表
-    if (document.getElementById('tab-customers').classList.contains('active')) loadCustomers();
-    if (document.getElementById('tab-followups').classList.contains('active')) loadFollowups();
+    if (document.getElementById('tab-customers').style.display !== 'none') loadCustomers();
+    if (document.getElementById('tab-followups').style.display !== 'none') loadFollowups();
   })
-  .catch(function(e){
-    toast('保存失败: ' + e.message, 'err');
+  .catch(function(){
+    showToast('保存失败', 'err');
   });
 }
 
 // ===== 初始化（发型师下拉） =====
 function initCustAndFu() {
-  fetch(SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username.asc', {
+  fetch(SUPABASE_URL + '/rest/v1/staff?select=username&active=eq.true&order=username.asc', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return r.json(); })
   .then(function(rows){
     if (!rows) return;
-    rows = filterStaffRowsForAdmin(rows);
     ['cust-barber-filter','fu-barber-filter','ass-barber-filter'].forEach(function(id){
       var sel = document.getElementById(id);
       if (!sel) return;
@@ -3422,26 +2381,17 @@ window.loadAssessment = async function() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
+  // 本月1号到今天
   var now = new Date();
-  var monthInput = document.getElementById('ass-month');
-  if (monthInput && !monthInput.value) monthInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  var monthKey = (monthInput && monthInput.value) || now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  var fromDate = monthKey + '-01';
-  var nextMonth = new Date(Number(monthKey.substring(0,4)), Number(monthKey.substring(5,7)), 1);
-  var toDate = nextMonth.getFullYear() + '-' + String(nextMonth.getMonth() + 1).padStart(2, '0') + '-01';
-  var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&created_at=gte.' + fromDate + '&created_at=lt.' + toDate + '&limit=5000';
+  var monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
 
-  Promise.all([
-    fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-      .then(function(r){ return ensureOk(r, '加载月度报表失败'); })
-      .then(function(r){ return r.json(); }),
-    fetchAdminStaffStoreMap()
-  ])
-    .then(function(results){
-      var staffMap = results[1];
-      var rows = filterHairRowsForAdmin(results[0] || [], staffMap);
+  var url = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=*&barber_name=neq.&created_at=gte.' + monthStr;
+
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
       if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">该月暂无发质分析表</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">本月暂无烫染客户数据</td></tr>';
         document.getElementById('ass-total').textContent = '0';
         document.getElementById('ass-analyzed').textContent = '0';
         document.getElementById('ass-rate').textContent = '0%';
@@ -3453,16 +2403,12 @@ window.loadAssessment = async function() {
       // 按发型师分组统计
       var stats = {};
       rows.forEach(function(r){
-        var rd = r.record_data || {};
-        var barberName = r.barber || '未指定';
-        var shopName = rd.shopName || rd.shop_name || rd.store || adminPersonStore(barberName, staffMap) || '';
-        var key = barberName + '|' + shopName;
-        if (!stats[key]) stats[key] = { barber_name: barberName, shop_name: shopName, total: 0, completed: 0, pending: 0, followed_up: 0 };
+        var key = (r.barber_name || '未知') + '|' + (r.shop_name || '');
+        if (!stats[key]) stats[key] = { barber_name: r.barber_name || '未知', shop_name: r.shop_name || '', total: 0, completed: 0, pending: 0, followed_up: 0 };
         stats[key].total++;
-        var technicianCompleted = ['技师已完成','待回访','待回访完成','回访完成','已完成'].indexOf(r.status) !== -1;
-        if (technicianCompleted) stats[key].completed++;
-        else stats[key].pending++;
-        if (adminHairFollowupComplete(r)) stats[key].followed_up++;
+        if (r.status === 'record_saved' || r.status === 'completed') stats[key].completed++;
+        if (r.status === 'pending') stats[key].pending++;
+        if (r.status === 'completed') stats[key].followed_up++;
       });
 
       // 转数组并排序（完成率降序）
@@ -3486,7 +2432,7 @@ window.loadAssessment = async function() {
         totalFollowed += s.followed_up;
       });
       var totalRate = totalTasks > 0 ? Math.round(totalCompleted / totalTasks * 100) : 0;
-      var totalFuRate = totalTasks > 0 ? Math.round(totalFollowed / totalTasks * 100) : 0;
+      var totalFuRate = totalCompleted > 0 ? Math.round(totalFollowed / totalCompleted * 100) : 0;
 
       document.getElementById('ass-total').textContent = totalTasks;
       document.getElementById('ass-analyzed').textContent = totalCompleted;
@@ -3498,7 +2444,7 @@ window.loadAssessment = async function() {
       var html = '';
       list.forEach(function(s){
         var rate = s.total > 0 ? Math.round(s.completed / s.total * 100) : 0;
-        var fuRate = s.total > 0 ? Math.round(s.followed_up / s.total * 100) : 0;
+        var fuRate = s.completed > 0 ? Math.round(s.followed_up / s.completed * 100) : 0;
         var rowClass = rate < 30 ? 'style="background:rgba(224,85,106,0.08);"' : rate > 80 ? 'style="background:rgba(74,222,128,0.06);"' : '';
 
         html += '<tr ' + rowClass + '>';
@@ -3546,12 +2492,6 @@ function fetchCareProducts() {
 window.loadCareProducts = function() {
   var tbody = document.getElementById('table-care-products');
   if (!tbody) return;
-  if (isStoreAdmin()) {
-    initCareMonthSelects();
-    loadCareMonthlyStats();
-    populateCareDetailBarbers(currentAdminStore());
-    return;
-  }
   fetchCareProducts().then(function(rows) {
     var products = rows || [];
     document.getElementById('care-product-count').textContent = '共 ' + products.length + ' 个产品';
@@ -3568,9 +2508,9 @@ window.loadCareProducts = function() {
             actionButton('编辑', 'btn-edit', function(id, brand, product) {
               return function() { openCareProductModal(id, brand, product); };
             }(products[i].id, products[i].brand, products[i].product_name)),
-            actionButton('删除', 'btn-del', function(id, brand, product) {
-              return function(e) { deleteCareProduct(id, brand, product, e.currentTarget); };
-            }(products[i].id, products[i].brand, products[i].product_name))
+            actionButton('删除', 'btn-del', function(id) {
+              return function() { deleteCareProduct(id); };
+            }(products[i].id))
           ])
         ]);
         tbody.appendChild(tr);
@@ -3596,7 +2536,6 @@ window.loadCareProducts = function() {
 };
 
 function openCareProductModal(editId, editBrand, editProduct) {
-  if (!requireSuperAdmin('护理产品配置')) return;
   var box = document.getElementById('modal-box');
   if (!box) return;
   clearNode(box);
@@ -3614,7 +2553,6 @@ function openCareProductModal(editId, editBrand, editProduct) {
 }
 
 function saveCareProduct(editId, editBrand) {
-  if (!requireSuperAdmin('护理产品配置')) return;
   var brand = (document.getElementById('care-f-brand')||{}).value || '';
   var product = (document.getElementById('care-f-product')||{}).value || '';
   if (!brand || !product) { toast('品牌和产品不能为空', 'err'); return; }
@@ -3637,7 +2575,6 @@ function saveCareProduct(editId, editBrand) {
   })
   .then(function(r){ return ensureOk(r, '保存失败'); })
   .then(function() {
-    recordAdminAction(editId ? '修改护理产品' : '新增护理产品', brand + ' / ' + product, editBrand || '');
     toast('保存成功', 'ok');
     closeModal();
     loadCareProducts();
@@ -3650,30 +2587,25 @@ function saveCareProduct(editId, editBrand) {
   });
 }
 
-async function deleteCareProduct(id, brand, product, btn) {
-  if (!requireSuperAdmin('护理产品配置')) return;
-  if (!confirm('确认删除“' + brand + ' / ' + product + '”？已被护理记录使用的产品不能删除。')) return;
-  setButtonBusy(btn, true);
-  try {
-    const usage = await fetch(SUPABASE_URL + '/rest/v1/care_records?select=id&brand=eq.' + encodeURIComponent(brand) + '&product=eq.' + encodeURIComponent(product) + '&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact' }
-    });
-    await ensureOk(usage, '检查产品使用情况失败');
-    const total = parseInt((usage.headers.get('content-range') || '0/0').split('/')[1] || '0', 10);
-    if (total > 0) throw new Error('该产品已有 ' + total + ' 条护理记录，不能删除');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/care_products?id=eq.' + encodeURIComponent(id), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
-    });
-    await ensureOk(r, '删除失败');
-    recordAdminAction('删除护理产品', brand + ' / ' + product, '确认无历史护理记录引用');
+function deleteCareProduct(id) {
+  if (!confirm('确认删除该产品？')) return;
+  var btn = event && event.currentTarget;
+  if (btn) setButtonBusy(btn, true);
+  fetch(SUPABASE_URL + '/rest/v1/care_products?id=eq.' + encodeURIComponent(id), {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=minimal' }
+  })
+  .then(function(r){ return ensureOk(r, '删除失败'); })
+  .then(function() {
     toast('已删除', 'ok');
     loadCareProducts();
-  } catch(e) {
+  })
+  .catch(function(e) {
     toast('删除失败: ' + e.message, 'err');
-  } finally {
-    setButtonBusy(btn, false);
-  }
+  })
+  .finally(function() {
+    if (btn) setButtonBusy(btn, false);
+  });
 }
 
 // 月度统计
@@ -3703,7 +2635,7 @@ function initCareMonthSelects() {
 window.loadCareMonthlyStats = function() {
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
   var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
-  var store = currentAdminStore() || (document.getElementById('care-month-store')||{}).value || '';
+  var store = (document.getElementById('care-month-store')||{}).value || '';
 
   var tbody = document.getElementById('care-stat-tbody');
   var thead = document.getElementById('care-stat-thead');
@@ -3717,7 +2649,7 @@ window.loadCareMonthlyStats = function() {
   // 并行拉取：产品列表（列头）+ 护理记录
   Promise.all([
     fetchCareProducts(),
-    fetch(SUPABASE_URL + '/rest/v1/care_records?select=shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (store ? '&shop_name=eq.' + encodeURIComponent(store) : '') + '&limit=5000', {
+    fetch(SUPABASE_URL + '/rest/v1/care_records?select=shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + '&limit=5000', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r){ return ensureOk(r, '加载护理记录失败'); }).then(function(r){ return r.json(); })
   ])
@@ -3735,8 +2667,8 @@ window.loadCareMonthlyStats = function() {
     }
 
     if (!careRows || careRows.length === 0) {
-      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th><th>操作</th></tr>';
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
+      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 3) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
       document.getElementById('care-stat-summary').textContent = '该月暂无记录';
       return;
     }
@@ -3795,13 +2727,13 @@ window.loadCareMonthlyStats = function() {
     for (var ai = 0; ai < allProducts.length; ai++) {
       headerHtml += '<th style="white-space:nowrap;">' + esc(allProducts[ai].brand) + '<br>' + esc(allProducts[ai].product) + '</th>';
     }
-    headerHtml += '<th>合计(g)</th><th style="min-width:82px;">操作</th></tr>';
+    headerHtml += '<th>合计(g)</th></tr>';
     thead.innerHTML = headerHtml;
 
     // 构建表格行
     var keys = Object.keys(stats);
     if (keys.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 3) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
       document.getElementById('care-stat-summary').textContent = '该月暂无记录';
       ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
         var el = document.getElementById(id);
@@ -3824,7 +2756,6 @@ window.loadCareMonthlyStats = function() {
       }
       var rowTotal = s.total || 0;
       bodyHtml += '<td style="text-align:right;font-weight:600;">' + rowTotal.toFixed(1) + '</td>';
-      bodyHtml += '<td><button type="button" class="btn-edit" onclick="openCareMonthlyEditor(\'' + escAttr(s.store || '') + '\',\'' + escAttr(s.barber) + '\')" style="white-space:nowrap;padding:4px 8px;font-size:11px;">编辑用量</button></td>';
       bodyHtml += '</tr>';
       grandTotal += rowTotal;
     }
@@ -3845,12 +2776,12 @@ window.loadCareMonthlyStats = function() {
 // ===== 护理记录明细 =====
 function populateCareDetailBarbers(storeFilter) {
   var sel = document.getElementById('care-detail-barber');
-  if (!sel) return Promise.resolve();
+  if (!sel) return;
   sel.innerHTML = '<option value="">全部发型师</option>';
-  storeFilter = currentAdminStore() || storeFilter || '';
+  storeFilter = storeFilter || '';
   // 从staff表获取发型师列表，按门店过滤
   var url = SUPABASE_URL + '/rest/v1/staff?select=username,store&active=eq.true&order=username';
-  return fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
+  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
     .then(function(r){ return r.json(); }).then(function(rows){
       if (rows && rows.length) {
         var names = {};
@@ -3869,32 +2800,10 @@ function populateCareDetailBarbers(storeFilter) {
     }).catch(function(){});
 }
 
-window.openCareMonthlyEditor = function(store, barber) {
-  if (currentAdminStore() && store !== currentAdminStore()) {
-    toast('无权编辑其他门店的护理记录', 'err');
-    return;
-  }
-  store = currentAdminStore() || store;
-  var storeSel = document.getElementById('care-detail-store');
-  var barberSel = document.getElementById('care-detail-barber');
-  var detail = document.getElementById('care-detail-records');
-  if (!storeSel || !barberSel || !detail) return;
-  storeSel.value = store || '';
-  populateCareDetailBarbers(store || '').then(function() {
-    var exists = Array.from(barberSel.options).some(function(option){ return option.value === barber; });
-    if (!exists && barber) barberSel.appendChild(el('option', { value: barber, text: barber }));
-    barberSel.value = barber || '';
-    loadCareDetailRecords();
-    var panel = detail.parentElement;
-    if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    toast('已打开 ' + (barber || '该发型师') + ' 的当月护理明细', 'ok');
-  });
-};
-
 window.loadCareDetailRecords = function() {
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
   var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
-  var filterStore = currentAdminStore() || (document.getElementById('care-detail-store')||{}).value || '';
+  var filterStore = (document.getElementById('care-detail-store')||{}).value || '';
   var filterBarber = (document.getElementById('care-detail-barber')||{}).value || '';
   var container = document.getElementById('care-detail-records');
   if (!container) return;
@@ -3907,7 +2816,7 @@ window.loadCareDetailRecords = function() {
     : year + '-' + String(parseInt(month) + 1).padStart(2, '0') + '-01';
 
   // 第一步：拉取该月的 care_records
-  fetch(SUPABASE_URL + '/rest/v1/care_records?select=id,hair_record_id,shop_name,barber,brand,product,grams,record_date&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (filterStore ? '&shop_name=eq.' + encodeURIComponent(filterStore) : '') + '&order=record_date.asc&limit=5000', {
+  fetch(SUPABASE_URL + '/rest/v1/care_records?select=id,hair_record_id,shop_name,barber,brand,product,grams,record_date&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + '&order=record_date.asc&limit=5000', {
     headers: { 'apikey': SUPABASE_KEY }
   })
   .then(function(r){ return ensureOk(r, '加载护理记录失败'); })
@@ -3965,8 +2874,6 @@ window.loadCareDetailRecords = function() {
           var cr2 = filtered[ci3];
           var hrInfo = hrMap[cr2.hair_record_id] || {};
           list.push({
-            id: cr2.id,
-            store: cr2.shop_name || '',
             date: cr2.record_date || '',
             barber: cr2.barber || '未知',
             technician: hrInfo.technician || '',
@@ -3987,7 +2894,7 @@ window.loadCareDetailRecords = function() {
         var totalG = 0;
         for (var li = 0; li < list.length; li++) {
           var d = list[li];
-          html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td><td><button onclick="editCareRecord(\'' + escAttr(d.id) + '\',\'' + escAttr(d.store) + '\',\'' + escAttr(d.brand) + '\',\'' + escAttr(d.product) + '\',\'' + d.grams + '\')" style="padding:2px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">更正</button></td></tr>';
+          html += '<tr><td>' + esc(d.date) + '</td><td>' + esc(d.customer) + '</td><td>' + esc(d.barber) + '</td><td>' + esc(d.technician) + '</td><td>' + esc(d.brand) + '</td><td>' + esc(d.product) + '</td><td style="text-align:right;font-weight:600;">' + d.grams + '</td><td><button onclick="editCareRecord(\'' + filtered[li].id + '\',\'' + escAttr(d.brand) + '\',\'' + escAttr(d.product) + '\',\'' + d.grams + '\')" style="padding:2px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">编辑</button></td></tr>';
           totalG += parseFloat(d.grams) || 0;
         }
         html += '</tbody></table></div>';
@@ -4002,24 +2909,16 @@ window.loadCareDetailRecords = function() {
 
 function escAttr(s) { return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
-window.editCareRecord = function(id, store, brand, product, grams) {
-  if (currentAdminStore() && store !== currentAdminStore()) {
-    toast('无权更正其他门店的护理记录', 'err');
-    return;
-  }
+window.editCareRecord = function(id, brand, product, grams) {
   var box = document.getElementById('modal-box');
   if (!box) return;
   clearNode(box);
-  box.appendChild(el('h3', { text: '更正护理记录' }));
-  box.appendChild(el('div', { style: 'color:var(--muted);font-size:11px;line-height:1.6;margin-bottom:8px;', text: '历史记录只允许纠错。保存后会在本机操作记录中保留更正前后内容和原因。' }));
+  box.appendChild(el('h3', { text: '编辑护理记录' }));
   appendField(box, '品牌', makeInput('care-edit-brand', brand));
   appendField(box, '产品/色号', makeInput('care-edit-product', product));
   appendField(box, '用量(g)', makeInput('care-edit-grams', String(grams), { type: 'number', step: '0.1' }));
-  appendField(box, '更正原因', makeTextarea('care-edit-reason', ''));
   var hid = el('input', { type: 'hidden', id: 'care-edit-id', value: id });
   box.appendChild(hid);
-  box.appendChild(el('input', { type: 'hidden', id: 'care-edit-store', value: store || '' }));
-  box.appendChild(el('input', { type: 'hidden', id: 'care-edit-old', value: JSON.stringify({ brand:brand, product:product, grams:grams }) }));
   var row = el('div', { className: 'btn-row' });
   row.appendChild(actionButton('取消', 'btn-cancel', closeModal));
   row.appendChild(actionButton('保存', 'btn-save', saveCareRecord));
@@ -4027,42 +2926,33 @@ window.editCareRecord = function(id, store, brand, product, grams) {
   document.getElementById('modal').classList.add('show');
 };
 
-async function saveCareRecord() {
+function saveCareRecord() {
   var id = (document.getElementById('care-edit-id')||{}).value;
   var brand = (document.getElementById('care-edit-brand')||{}).value || '';
   var product = (document.getElementById('care-edit-product')||{}).value || '';
   var grams = parseFloat((document.getElementById('care-edit-grams')||{}).value) || 0;
-  var reason = ((document.getElementById('care-edit-reason')||{}).value || '').trim();
-  var oldValue = (document.getElementById('care-edit-old')||{}).value || '{}';
-  if (!brand || !product || grams <= 0) { toast('品牌、产品和正确用量不能为空', 'err'); return; }
-  if (!reason) { toast('请填写更正原因', 'err'); return; }
+  if (!brand || !product) { toast('品牌和产品不能为空', 'err'); return; }
   var btn = document.querySelector('#modal .btn-save');
   if (btn) btn.disabled = true;
-  try {
-    var scopeRows = await fetchAdminJson('/rest/v1/care_records?select=id,shop_name&id=eq.' + encodeURIComponent(id) + '&limit=1', '加载护理记录权限失败');
-    var scopeRow = scopeRows && scopeRows[0];
-    if (!scopeRow) throw new Error('护理记录不存在');
-    if (currentAdminStore() && scopeRow.shop_name !== currentAdminStore()) throw new Error('无权更正其他门店的护理记录');
-    var r = await fetch(SUPABASE_URL + '/rest/v1/care_records?id=eq.' + encodeURIComponent(id), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ brand: brand, product: product, grams: grams })
-    });
-    await ensureOk(r, '保存更正失败');
-    recordAdminAction('更正护理记录', String(id), '原值 ' + oldValue + '；新值 ' + JSON.stringify({brand:brand, product:product, grams:grams}) + '；原因 ' + reason);
-    toast('更正成功', 'ok');
+  fetch(SUPABASE_URL + '/rest/v1/care_records?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ brand: brand, product: product, grams: grams })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('保存失败 (' + r.status + ')');
+    toast('修改成功', 'ok');
     closeModal();
     loadCareDetailRecords();
-    loadCareMonthlyStats();
-  } catch(e) {
+  })
+  .catch(function(e) {
     toast('保存失败: ' + e.message, 'err');
     if (btn) btn.disabled = false;
-  }
+  });
 }
 
 // 初始化
 initCustAndFu();
-initializeAdminPage();
 </script>
 </body>
 </html>
