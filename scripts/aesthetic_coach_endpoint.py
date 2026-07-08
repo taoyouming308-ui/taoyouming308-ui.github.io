@@ -17,6 +17,8 @@ import urllib.parse
 import urllib.request
 
 
+OPENAI_MODEL = os.getenv("AESTHETIC_COACH_OPENAI_MODEL", "gpt-4o")
+OPENAI_FALLBACK_MODEL = os.getenv("AESTHETIC_COACH_OPENAI_FALLBACK_MODEL", "gpt-4o-mini")
 MODEL = os.getenv("AESTHETIC_COACH_MODEL", "openai/o3")
 FALLBACK_MODEL = os.getenv("AESTHETIC_COACH_FALLBACK_MODEL", "openai/gpt-4o-mini")
 ALLOWED_STAGES = {"observe", "analyze", "judge", "design", "review"}
@@ -131,6 +133,23 @@ def _client_ip(handler):
     if forwarded:
         return forwarded.split(",")[0].strip()[:64]
     return str(handler.client_address[0])[:64] if handler.client_address else "unknown"
+
+
+def _env_file_value(name):
+    env_path = os.getenv("HERMES_ENV_PATH", os.path.expanduser("~/.hermes/.env"))
+    try:
+        with open(env_path) as handle:
+            for line in handle:
+                if not line.startswith(name + "="):
+                    continue
+                return line.split("=", 1)[1].strip().strip("\"").strip("'")
+    except OSError:
+        return ""
+    return ""
+
+
+def _openai_key():
+    return os.getenv("OPENAI_API_KEY", "").strip() or _env_file_value("OPENAI_API_KEY")
 
 
 def _check_rate_limit(username, ip):
@@ -267,7 +286,7 @@ def _low_quality_feedback(stage, reason):
         ],
         "follow_up": "请先写出至少2个画面证据，再补一句“因此我判断…”。",
         "ready": False,
-        "model": MODEL,
+        "model": OPENAI_MODEL,
     }
 
 
@@ -346,6 +365,66 @@ def _model_candidates():
     return candidates or ["openai/gpt-4o-mini"]
 
 
+def _openai_model_candidates():
+    candidates = []
+    for name in (OPENAI_MODEL, OPENAI_FALLBACK_MODEL):
+        clean = _clean_text(name, 80)
+        if clean and clean not in candidates:
+            candidates.append(clean)
+    return candidates or ["gpt-4o-mini"]
+
+
+def _call_openai_once(openai_key, stage, case_data, answer, previous_answers, model_name):
+    prompt = _build_prompt(stage, case_data, answer, previous_answers)
+    request_body = json.dumps(
+        {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": case_data["image_url"]}},
+                    ],
+                }
+            ],
+            "max_tokens": 500,
+            "temperature": 0.25,
+            "response_format": {"type": "json_object"},
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=request_body,
+        headers={
+            "Authorization": f"Bearer {openai_key}",
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=24) as response:
+        result = json.loads(response.read())
+    content = result["choices"][0]["message"]["content"]
+    return _normalized_feedback(_parse_model_json(content), model_name=model_name)
+
+
+def _call_openai(openai_key, stage, case_data, answer, previous_answers):
+    last_error = None
+    for model_name in _openai_model_candidates():
+        try:
+            return _call_openai_once(openai_key, stage, case_data, answer, previous_answers, model_name)
+        except urllib.error.HTTPError as error:
+            last_error = error
+            if error.code in (400, 401, 402, 403, 404, 409, 415, 422, 429):
+                continue
+            raise
+        except (urllib.error.URLError, ValueError, KeyError, json.JSONDecodeError) as error:
+            last_error = error
+            continue
+    if isinstance(last_error, Exception):
+        raise last_error
+    raise RuntimeError("OpenAI 导师模型调用失败")
+
+
 def _call_openrouter_once(openrouter_key, stage, case_data, answer, previous_answers, model_name):
     prompt = _build_prompt(stage, case_data, answer, previous_answers)
     request_body = json.dumps(
@@ -399,6 +478,23 @@ def _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers)
     raise RuntimeError("AI 导师模型调用失败")
 
 
+def _call_ai_feedback(openai_key, openrouter_key, stage, case_data, answer, previous_answers):
+    last_error = None
+    if openai_key:
+        try:
+            return _call_openai(openai_key, stage, case_data, answer, previous_answers)
+        except (urllib.error.HTTPError, urllib.error.URLError, ValueError, KeyError, json.JSONDecodeError) as error:
+            last_error = error
+    if openrouter_key:
+        try:
+            return _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers)
+        except (urllib.error.HTTPError, urllib.error.URLError, ValueError, KeyError, json.JSONDecodeError) as error:
+            last_error = error
+    if isinstance(last_error, Exception):
+        raise last_error
+    raise RuntimeError("AI 导师模型调用失败")
+
+
 def handle_aesthetic_coach(handler, openrouter_key, supabase_get):
     """Handle a POST request and write the JSON response through the host handler."""
     origin = _clean_text(handler.headers.get("Origin"), 300)
@@ -433,7 +529,8 @@ def handle_aesthetic_coach(handler, openrouter_key, supabase_get):
     if not _valid_training_image(_clean_text(case_data.get("image_url"), 500)):
         handler.send_json({"error": "训练图片不在允许范围"}, 400)
         return
-    if not openrouter_key:
+    openai_key = _openai_key()
+    if not openai_key and not openrouter_key:
         handler.send_json({"error": "AI 导师服务未配置"}, 503)
         return
     try:
@@ -454,7 +551,7 @@ def handle_aesthetic_coach(handler, openrouter_key, supabase_get):
         return
 
     try:
-        feedback = _call_openrouter(openrouter_key, stage, case_data, answer, previous_answers)
+        feedback = _call_ai_feedback(openai_key, openrouter_key, stage, case_data, answer, previous_answers)
         handler.send_json(feedback)
     except urllib.error.HTTPError as error:
         handler.send_json({"error": f"AI 导师服务异常（{error.code}）"}, 502)

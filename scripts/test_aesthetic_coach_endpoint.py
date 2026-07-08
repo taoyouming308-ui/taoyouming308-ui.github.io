@@ -46,6 +46,9 @@ def active_staff(_path):
 class AestheticCoachEndpointTests(unittest.TestCase):
     def setUp(self):
         coach._RATE_STATE.clear()
+        self.openai_key_patch = mock.patch.object(coach, "_openai_key", return_value="")
+        self.openai_key_patch.start()
+        self.addCleanup(self.openai_key_patch.stop)
 
     def test_rejects_untrusted_origin(self):
         handler = FakeHandler(valid_payload(), "https://evil.example")
@@ -154,6 +157,48 @@ class AestheticCoachEndpointTests(unittest.TestCase):
             ):
                 handler = FakeHandler(payload)
                 coach.handle_aesthetic_coach(handler, "key", active_staff)
+        self.assertEqual(handler.result[0], 200)
+        self.assertEqual(handler.result[1]["model"], "openai/gpt-4o-mini")
+
+    def test_prefers_openai_key_when_available(self):
+        handler = FakeHandler(valid_payload())
+        feedback = {
+            "score": 84,
+            "affirmation": "你准确指出了整体轮廓。",
+            "omissions": ["补充重量位置"],
+            "follow_up": "这个重量会怎样影响脸周？",
+            "ready": True,
+            "model": "gpt-4o",
+        }
+        with mock.patch.object(coach, "_openai_key", return_value="openai-key"):
+            with mock.patch.object(coach, "_call_openai", return_value=feedback) as openai_call:
+                with mock.patch.object(coach, "_call_openrouter") as openrouter_call:
+                    coach.handle_aesthetic_coach(handler, "openrouter-key", active_staff)
+        openai_call.assert_called_once()
+        openrouter_call.assert_not_called()
+        self.assertEqual(handler.result[0], 200)
+        self.assertEqual(handler.result[1]["model"], "gpt-4o")
+
+    def test_openai_error_falls_back_to_openrouter(self):
+        handler = FakeHandler(valid_payload())
+        feedback = {
+            "score": 79,
+            "affirmation": "你描述了发尾线条。",
+            "omissions": ["补充层次"],
+            "follow_up": "层次从哪里开始变轻？",
+            "ready": True,
+            "model": "openai/gpt-4o-mini",
+        }
+        with mock.patch.object(coach, "_openai_key", return_value="openai-key"):
+            with mock.patch.object(
+                coach,
+                "_call_openai",
+                side_effect=urllib.error.HTTPError("http://x", 401, "unauthorized", None, None),
+            ) as openai_call:
+                with mock.patch.object(coach, "_call_openrouter", return_value=feedback) as openrouter_call:
+                    coach.handle_aesthetic_coach(handler, "openrouter-key", active_staff)
+        openai_call.assert_called_once()
+        openrouter_call.assert_called_once()
         self.assertEqual(handler.result[0], 200)
         self.assertEqual(handler.result[1]["model"], "openai/gpt-4o-mini")
 
