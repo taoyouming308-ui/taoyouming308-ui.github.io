@@ -4012,8 +4012,8 @@ window.submitAestheticStage = function() {
     renderAestheticFeedback(flow, blockedFeedback);
     return;
   }
-  if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) {
-    if (window.showToast) window.showToast('这一阶段已点评两次，先继续下一步');
+  if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) {
+    if (window.showToast) window.showToast('已提交太多次，先继续下一步');
     return;
   }
   aestheticTrainingState.answers[flow.id] = answer;
@@ -4023,21 +4023,31 @@ window.submitAestheticStage = function() {
   if (submit) submit.disabled = true;
   if (answerEl) answerEl.disabled = true;
   if (status) {
-    status.textContent = 'AI 导师正在阅读你的思路，只指出最值得补的一步...';
+    status.textContent = 'AI 导师正在阅读你的回答，仔细推敲中' + (aestheticTrainingState.submissions[flow.id] > 1 ? '（第' + aestheticTrainingState.submissions[flow.id] + '次）' : '') + '...';
     status.classList.add('on');
   }
-  requestAestheticCoach(flow, guide, answer)
+  // 最低等待时间：让发型师感觉AI真正在思考
+  var MIN_THINK_TIME = 3500;
+  var thinkStart = Date.now();
+  var coachPromise = requestAestheticCoach(flow, guide, answer)
     .catch(function(error) {
       return localAestheticFeedback(flow, guide, answer, error && error.message);
-    })
-    .then(function(feedback) {
-      aestheticTrainingState.feedback[flow.id] = feedback;
-      aestheticTrainingState.scores[flow.capabilityId] = Math.max(
-        Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
-        Number(feedback.score) || 0
-      );
-      renderAestheticFeedback(flow, feedback);
     });
+  Promise.all([
+    coachPromise,
+    new Promise(function(resolve) {
+      var elapsed = Date.now() - thinkStart;
+      setTimeout(resolve, Math.max(0, MIN_THINK_TIME - elapsed));
+    })
+  ]).then(function(results) {
+    var feedback = results[0];
+    aestheticTrainingState.feedback[flow.id] = feedback;
+    aestheticTrainingState.scores[flow.capabilityId] = Math.max(
+      Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
+      Number(feedback.score) || 0
+    );
+    renderAestheticFeedback(flow, feedback);
+  });
 };
 
 function renderAestheticFeedback(flow, feedback) {
@@ -4080,8 +4090,8 @@ window.reviseAestheticStage = function() {
   if (submit) {
     submit.style.display = '';
     submit.disabled = false;
-    submit.textContent = (aestheticTrainingState.submissions[flow.id] || 0) >= 2 ? '已完成两次点评' : '再次提交给 AI 导师';
-    if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) submit.disabled = true;
+    submit.textContent = '再次提交给 AI 导师';
+    if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) submit.disabled = true;
   }
 };
 
