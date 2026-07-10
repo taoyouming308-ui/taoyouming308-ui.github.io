@@ -12,7 +12,7 @@
     product: {
       mission: '帮助发型师沿着视觉识别、结构拆解、风格归纳、技术转化与人物适配，建立可迁移的设计能力。',
       positioning: 'AI 发型师设计思维训练系统',
-      belief: '产品核心不是 AI，而是训练体系。AI 不替发型师思考，只负责点评、指出遗漏、继续追问和整理完整解析。',
+      belief: '产品核心不是 AI，而是训练体系。用户看到自然对话，AI 内部维护训练目标、能力诊断和渐进提示，不替发型师思考。',
       promise: '不是教发型师复制作品，而是训练他们创造作品。',
       tagline: '让模仿变成理解，让理解变成创造。'
     },
@@ -105,6 +105,23 @@
         coachAction: '检查方案是否真正考虑人物与现实限制，而不是照搬图片或使用年龄、职业刻板印象。'
       }
     ],
+    guidedConversation: {
+      mode: 'hidden-goal-chat',
+      principle: '不要完成一次图片分析，而要完成一次设计师成长。',
+      visibleRule: '一次只聊一个关键问题，像设计总监带教，不显示固定五步和阶段分数。',
+      goals: [
+        { id: 'outline', name: '轮廓观察', group: 'observation', beginner: '识别边界与最宽点', intermediate: '解释轮廓与重心关系', advanced: '推导人物比例变化' },
+        { id: 'weight', name: '重量判断', group: 'analysis', beginner: '指出最重与最轻区域', intermediate: '解释重量如何稳定或改变轮廓', advanced: '在不同发量下重做取舍' },
+        { id: 'layers', name: '层次关系', group: 'analysis', beginner: '观察从哪里开始变轻', intermediate: '解释层次、连接和动静关系', advanced: '区分视觉结果与技术推测' },
+        { id: 'line_texture', name: '线条与纹理', group: 'observation', beginner: '识别主要方向和表面状态', intermediate: '说明线条与风格的因果', advanced: '比较相邻风格的细节密度' },
+        { id: 'style', name: '风格归纳', group: 'judgment', beginner: '从九型选择主风格', intermediate: '提供证据与反证', advanced: '分析混合比例和变化条件' },
+        { id: 'suitability', name: '人物适配', group: 'aesthetic', beginner: '识别需要确认的顾客条件', intermediate: '说明保留、调整与风险', advanced: '在多项限制下做设计取舍' },
+        { id: 'technique', name: '技术转化', group: 'design', beginner: '先确定要保留的视觉结果', intermediate: '建立结构与技术假设', advanced: '比较多条路径与失败风险' },
+        { id: 'client_communication', name: '顾客沟通', group: 'communication', beginner: '确认顾客真正喜欢的元素', intermediate: '说明差异并给替代方案', advanced: '平衡效果、维护、预算与接受度' }
+      ],
+      hintLevels: ['常驻方法提示', '基于弱项的个性化提示', '卡住后逐层缩小观察范围'],
+      completionSummary: ['看对的内容', '主要遗漏', '误判模式', '能力变化', '可迁移的方法', '下次重点']
+    },
     governance: {
       layers: [
         { id: 'standard', name: '稳定标准', rule: '优先采用官方教育体系、职业标准与经审核教材，进入正式评分标准。' },

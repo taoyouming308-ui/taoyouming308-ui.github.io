@@ -28,6 +28,9 @@ assert(Array.isArray(data.sources) && data.sources.length >= 10, 'source catalog
 assert(Array.isArray(data.questions) && data.questions.length >= 15, 'training question bank is too small');
 assert(Array.isArray(data.capabilities) && data.capabilities.length === 5, 'five core capabilities are required');
 assert(Array.isArray(data.trainingFlow) && data.trainingFlow.length === 5, 'five-stage guided flow is required');
+assert(data.guidedConversation && data.guidedConversation.mode === 'hidden-goal-chat', 'guided conversation mode is required');
+assert(Array.isArray(data.guidedConversation.goals) && data.guidedConversation.goals.length >= 8, 'guided conversation goals are incomplete');
+assert(data.guidedConversation.goals.some(row => row.id === 'client_communication'), 'client communication goal is required');
 assert(Array.isArray(data.trainingCases) && data.trainingCases.length >= 5, 'guided training cases are incomplete');
 assert(Array.isArray(data.rubric) && data.rubric.reduce((sum, row) => sum + row.weight, 0) === 100, 'rubric weights must total 100');
 
@@ -77,8 +80,13 @@ data.trainingCases.forEach(row => {
   "openHomeDrawerFeature('aesthetic')",
   'id="tab-aesthetic"',
   'startAestheticTraining()',
-  'submitAestheticStage()',
-  'continueAestheticStage()',
+  'sendAestheticChatMessage()',
+  'finishAestheticConversation()',
+  'showAestheticProgressiveHint()',
+  'id="ae-chat-messages"',
+  'id="ae-chat-input"',
+  "operation: 'coach_turn'",
+  "operation: 'summarize_session'",
   'showAestheticMaster()',
   'aestheticLowQualityReason(',
   'aestheticCoachImageUrl(',
@@ -139,6 +147,14 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   ,'misconceptions'
   ,'finalAnalysis'
   ,'factInference'
+  ,'COACH_GOALS'
+  ,'buildCoachTurnPrompt'
+  ,'buildSessionSummaryPrompt'
+  ,'coach_turn'
+  ,'summarize_session'
 ].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
+
+assert(!/STEP 1 \/ 5/.test(app.slice(app.indexOf('id="ae-trainer"'), app.indexOf('id="ae-master"'))), 'chat trainer must not expose the old five-step UI');
+assert(!/提交给 AI 导师/.test(app.slice(app.indexOf('id="ae-trainer"'), app.indexOf('id="ae-master"'))), 'chat trainer must use send-message interaction');
 
 console.log(`aesthetic system ok: v${data.version}, ${data.trainingCases.length} cases, ${data.capabilities.length} capabilities, ${data.sources.length} sources`);

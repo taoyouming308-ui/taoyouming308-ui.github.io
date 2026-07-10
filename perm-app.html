@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="367">
+<html lang="zh-CN" data-version="368">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2850,6 +2850,33 @@ body {
       .ae-complete-grid div { padding:9px 3px; border-radius:9px; background:var(--ae-soft); text-align:center; }
       .ae-complete-grid strong { display:block; font-size:13px; }
       .ae-complete-grid span { display:block; margin-top:4px; color:#888882; font-size:7px; }
+      .ae-chat-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--ae-line); }
+      .ae-chat-head strong { display:block; font-size:14px; }
+      .ae-chat-head span { display:block; margin-top:3px; color:var(--ae-muted); font-size:9px; }
+      .ae-chat-actions { display:flex; gap:6px; }
+      .ae-chat-actions button { min-height:32px; padding:0 10px; border:1px solid var(--ae-line); border-radius:999px; background:#fff; color:#555; font-size:9px; }
+      .ae-chat-method { margin:12px 0; padding:10px 12px; border-left:2px solid #111; background:var(--ae-soft); color:#555; font-size:10px; line-height:1.6; }
+      .ae-chat-messages { display:flex; flex-direction:column; gap:11px; min-height:260px; max-height:58vh; padding:4px 0 14px; overflow-y:auto; }
+      .ae-chat-row { display:flex; align-items:flex-end; gap:7px; }
+      .ae-chat-row.user { justify-content:flex-end; }
+      .ae-chat-avatar { width:25px; height:25px; display:grid; place-items:center; flex:0 0 25px; border-radius:50%; background:#111; color:#fff; font-size:8px; font-weight:700; }
+      .ae-chat-bubble { max-width:82%; padding:10px 12px; border-radius:14px 14px 14px 4px; background:#f0f0ec; color:#222; font-size:11px; line-height:1.65; white-space:pre-wrap; }
+      .ae-chat-row.user .ae-chat-bubble { border-radius:14px 14px 4px 14px; background:#111; color:#fff; }
+      .ae-chat-meta { margin-top:4px; color:#999; font-size:8px; }
+      .ae-chat-hints { display:none; margin:0 0 10px; padding:10px 12px; border:1px solid var(--ae-line); border-radius:11px; background:#fafaf7; }
+      .ae-chat-hints.on { display:block; }
+      .ae-chat-hints strong { display:block; margin-bottom:5px; font-size:10px; }
+      .ae-chat-hints p { margin:0; color:#666; font-size:10px; line-height:1.6; }
+      .ae-chat-compose { position:sticky; bottom:0; padding-top:9px; background:#fff; }
+      .ae-chat-input-row { display:flex; align-items:flex-end; gap:8px; }
+      .ae-chat-input { min-height:42px; max-height:120px; flex:1; padding:11px 12px; border:1px solid #d8d8d2; border-radius:16px; resize:none; font:inherit; font-size:11px; line-height:1.55; }
+      .ae-chat-input:focus { border-color:#111; outline:none; }
+      .ae-chat-send { width:42px; height:42px; flex:0 0 42px; border:0; border-radius:50%; background:#111; color:#fff; font-size:16px; }
+      .ae-chat-send:disabled { opacity:.35; }
+      .ae-chat-tools { display:flex; justify-content:space-between; gap:8px; margin-top:7px; }
+      .ae-chat-tools button { border:0; background:transparent; color:#777; font-size:9px; padding:5px 2px; }
+      .ae-chat-status { display:none; padding:5px 0; color:#888; font-size:9px; }
+      .ae-chat-status.on { display:block; }
       @media (max-width:360px) {
         .ae-title { font-size:27px; }
         .ae-card { padding:15px; }
@@ -2921,34 +2948,26 @@ body {
         <div class="ae-library-grid" id="ae-library-grid"></div>
       </article>
       <div class="ae-card ae-trainer" id="ae-trainer">
-        <div class="ae-progress"><i id="ae-progress-bar"></i></div>
-        <div class="ae-stage-head">
-          <div>
-            <div class="ae-stage-number" id="ae-stage-number">STEP 1 / 5</div>
-            <h3 id="ae-stage-title">观察</h3>
-            <p id="ae-stage-rule"></p>
-          </div>
-          <span class="ae-stage-verb" id="ae-stage-verb">会看</span>
+        <div class="ae-chat-head">
+          <div><strong>AI 设计陪练</strong><span id="ae-chat-focus">正在建立图片知识卡</span></div>
+          <div class="ae-chat-actions"><button type="button" onclick="updateAestheticAnalysisWithFacts()">补充信息</button><button type="button" onclick="finishAestheticConversation()">结束训练</button></div>
         </div>
-        <div class="ae-stage-question" id="ae-stage-question"></div>
-        <div class="ae-coach-note" id="ae-coach-note"></div>
-        <div class="ae-prompt-list" id="ae-prompt-list"></div>
-        <div class="ae-quick-tools" id="ae-quick-tools"></div>
-        <div class="ae-style-lesson" id="ae-style-lesson"></div>
-        <p class="ae-answer-hint" id="ae-answer-hint">先用下面的观察标签搭骨架，再补充你的理由。</p>
-        <textarea class="ae-answer" id="ae-stage-answer" maxlength="1200" placeholder="" oninput="updateAestheticAnswerCount()"></textarea>
-        <div class="ae-answer-count" id="ae-answer-count">0 / 1200</div>
-        <div class="ae-ai-status" id="ae-ai-status">AI 导师正在阅读你的思路...</div>
-        <button class="ae-secondary" type="button" onclick="updateAestheticAnalysisWithFacts()" style="margin-top:8px;">补充真实信息</button>
-        <div class="ae-feedback" id="ae-feedback"></div>
-        <div class="ae-question-actions">
-          <button class="ae-primary" id="ae-submit-answer" type="button" onclick="submitAestheticStage()" style="width:100%;">提交给 AI 导师</button>
+        <div class="ae-chat-method" id="ae-chat-method">先描述你看见的事实，不急着给风格下结论。</div>
+        <div class="ae-chat-messages" id="ae-chat-messages" aria-live="polite"></div>
+        <div class="ae-chat-hints" id="ae-chat-hints"><strong id="ae-chat-hint-title">观察方法</strong><p id="ae-chat-hint-body"></p></div>
+        <div class="ae-chat-compose" id="ae-chat-compose">
+          <div class="ae-chat-status" id="ae-chat-status">设计总监正在看你的思路…</div>
+          <div class="ae-chat-input-row">
+            <textarea class="ae-chat-input" id="ae-chat-input" maxlength="600" rows="1" placeholder="像聊天一样，说说你看到的…" onkeydown="aestheticChatKeydown(event)"></textarea>
+            <button class="ae-chat-send" id="ae-chat-send" type="button" onclick="sendAestheticChatMessage()" aria-label="发送">↑</button>
+          </div>
+          <div class="ae-chat-tools"><button type="button" onclick="showAestheticProgressiveHint()">我卡住了</button><button type="button" onclick="finishAestheticConversation()">结束并看总结</button></div>
         </div>
       </div>
       <article class="ae-card ae-master" id="ae-master">
         <div class="ae-section-label">Master analysis</div>
         <h3>完整设计解析</h3>
-        <p>先完成五步训练，再对照解析。重点不是答案一样，而是检查自己有没有证据、逻辑和取舍。</p>
+        <p>结束对话后再对照解析。重点不是答案一样，而是检查自己有没有形成可迁移的观察和设计方法。</p>
         <div id="ae-master-content"></div>
       </article>
     </div>
@@ -3288,7 +3307,16 @@ var aestheticTrainingState = {
   answerHistory: {},
   feedbackHistory: {},
   analysisRecord: null,
-  analysisPromise: null
+  analysisPromise: null,
+  sessionId: '',
+  messages: [],
+  activeGoal: 'outline',
+  goalStates: {},
+  hintLevel: 0,
+  turnCount: 0,
+  abilitySnapshot: {},
+  conversationSummary: null,
+  pendingRequest: false
 };
 
 function aestheticAnalysisKey(item) {
@@ -3873,16 +3901,230 @@ window.startAestheticTraining = function() {
     answerHistory: {},
     feedbackHistory: {},
     analysisRecord: loadAestheticAnalysisRecord(item),
-    analysisPromise: null
+    analysisPromise: null,
+    sessionId: 'ae-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    messages: [],
+    activeGoal: 'outline',
+    goalStates: {},
+    hintLevel: 0,
+    turnCount: 0,
+    abilitySnapshot: loadAestheticAbilityProfile(),
+    conversationSummary: null,
+    pendingRequest: false
   };
   var master = document.getElementById('ae-master');
   if (master) master.classList.remove('on');
   var trainer = document.getElementById('ae-trainer');
   if (trainer) trainer.classList.add('on');
-  renderAestheticStage();
-  ensureAestheticAnalysis().catch(function() {});
+  startAestheticConversation();
   if (trainer) trainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
+
+function loadAestheticAbilityProfile() {
+  try { return JSON.parse(localStorage.getItem(aestheticAbilityKey()) || '{}'); } catch (e) { return {}; }
+}
+
+var AESTHETIC_GOAL_LABELS = {
+  outline: '轮廓观察', weight: '重量判断', layers: '层次关系', line_texture: '线条与纹理',
+  style: '风格归纳', suitability: '人物适配', technique: '技术转化', client_communication: '顾客沟通'
+};
+
+var AESTHETIC_METHOD_HINTS = {
+  outline: '先看外轮廓的边界和最宽点，不急着判断风格。',
+  weight: '把图片缩小看：哪一块最重，哪一块最轻？',
+  layers: '不要数层次，观察头发从哪里开始变轻、变动。',
+  line_texture: '先看主要线条往哪里走，再看表面是完整、束感还是碎感。',
+  style: '风格是结果：先用轮廓、重量、线条和纹理证明你的判断。',
+  suitability: '不要只看脸大脸小，同时考虑骨骼、发量、发质和维护能力。',
+  technique: '先说必须保留的视觉结果，再推测可能的技术路径。',
+  client_communication: '先确认顾客真正喜欢什么，再说明差异和替代方案。'
+};
+
+function addAestheticChatMessage(role, content, meta) {
+  aestheticTrainingState.messages.push({ role: role, content: String(content || ''), meta: meta || {}, createdAt: new Date().toISOString() });
+  renderAestheticChatMessages();
+}
+
+function renderAestheticChatMessages() {
+  var box = document.getElementById('ae-chat-messages');
+  if (!box) return;
+  box.innerHTML = aestheticTrainingState.messages.map(function(message) {
+    var user = message.role === 'user';
+    return '<div class="ae-chat-row ' + (user ? 'user' : 'coach') + '">' +
+      (user ? '' : '<div class="ae-chat-avatar">总监</div>') +
+      '<div><div class="ae-chat-bubble">' + aestheticEscape(message.content) + '</div>' +
+      (message.meta && message.meta.transition ? '<div class="ae-chat-meta">训练重点已自然转向：' + aestheticEscape(AESTHETIC_GOAL_LABELS[message.meta.goal] || message.meta.goal) + '</div>' : '') +
+      '</div></div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateAestheticConversationChrome(goal) {
+  goal = goal || aestheticTrainingState.activeGoal || 'outline';
+  var focus = document.getElementById('ae-chat-focus');
+  var method = document.getElementById('ae-chat-method');
+  if (focus) focus.textContent = '当前陪练重点 · ' + (AESTHETIC_GOAL_LABELS[goal] || goal);
+  if (method) method.textContent = AESTHETIC_METHOD_HINTS[goal] || AESTHETIC_METHOD_HINTS.outline;
+}
+
+function startAestheticConversation() {
+  updateAestheticConversationChrome('outline');
+  addAestheticChatMessage('assistant', '今天我们一起看这张图。我不会让你写一篇标准答案，也不会一上来告诉你是什么风格。先说第一眼：这款发型的外轮廓最吸引你的是哪里？');
+  ensureAestheticAnalysis().then(function() {
+    var focus = document.getElementById('ae-chat-focus');
+    if (focus) focus.textContent = '当前陪练重点 · 轮廓观察';
+  }).catch(function() {
+    addAestheticChatMessage('assistant', '图片知识卡暂时没有建立成功，但你的回答已经保留。网络恢复后可以继续，不需要重新输入。');
+  });
+}
+
+window.aestheticChatKeydown = function(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    window.sendAestheticChatMessage();
+  }
+};
+
+function relevantAestheticModules(record, goal) {
+  var routes = {
+    outline: ['outline', 'layers', 'uncertainties'], weight: ['outline', 'layers', 'texture', 'uncertainties'],
+    layers: ['outline', 'layers', 'texture', 'cuttingLogic', 'uncertainties'], line_texture: ['texture', 'curlStyling', 'outline', 'uncertainties'],
+    style: ['style', 'outline', 'layers', 'texture', 'curlStyling', 'color', 'uncertainties'],
+    suitability: ['suitability', 'outline', 'layers', 'maintenance', 'uncertainties'],
+    technique: ['outline', 'layers', 'texture', 'cuttingLogic', 'maintenance', 'uncertainties'],
+    client_communication: ['style', 'suitability', 'maintenance', 'uncertainties']
+  };
+  var selected = {};
+  (routes[goal] || routes.outline).forEach(function(key) { if (record.current.modules[key]) selected[key] = record.current.modules[key]; });
+  return selected;
+}
+
+function requestAestheticConversationTurn(answer) {
+  var item = aestheticTrainingState.caseItem;
+  return ensureAestheticAnalysis().then(function(record) {
+    return postAestheticCoach({
+      operation: 'coach_turn', username: aestheticIdentity(), store: aestheticStore(), session_id: aestheticTrainingState.sessionId,
+      answer: answer, active_goal: aestheticTrainingState.activeGoal, goal_states: aestheticTrainingState.goalStates,
+      hint_level: aestheticTrainingState.hintLevel, turn_count: aestheticTrainingState.turnCount,
+      ability_profile: aestheticTrainingState.abilitySnapshot,
+      messages: aestheticTrainingState.messages.slice(-8), analysis_modules: relevantAestheticModules(record, aestheticTrainingState.activeGoal),
+      case: { id: item.id, title: item.title, category: item.category, focus: item.focus, limitations: item.limitations }
+    });
+  });
+}
+
+window.sendAestheticChatMessage = function() {
+  var input = document.getElementById('ae-chat-input');
+  var send = document.getElementById('ae-chat-send');
+  var status = document.getElementById('ae-chat-status');
+  var answer = input ? input.value.trim() : '';
+  if (!answer || aestheticTrainingState.pendingRequest) return;
+  if (answer.length > 600) answer = answer.slice(0, 600);
+  addAestheticChatMessage('user', answer);
+  if (input) input.value = '';
+  aestheticTrainingState.pendingRequest = true;
+  aestheticTrainingState.turnCount += 1;
+  if (send) send.disabled = true;
+  if (status) status.classList.add('on');
+  requestAestheticConversationTurn(answer).then(function(result) {
+    var priorGoal = aestheticTrainingState.activeGoal;
+    aestheticTrainingState.activeGoal = result.active_goal || priorGoal;
+    aestheticTrainingState.goalStates = result.goal_states || aestheticTrainingState.goalStates;
+    aestheticTrainingState.hintLevel = 0;
+    if (result.ability_updates) mergeAestheticAbilityUpdates(result.ability_updates);
+    updateAestheticConversationChrome(aestheticTrainingState.activeGoal);
+    addAestheticChatMessage('assistant', result.message || '我们换一个角度看。你能指出一个具体画面证据吗？', {
+      transition: result.active_goal && result.active_goal !== priorGoal,
+      goal: result.active_goal
+    });
+    if (result.should_offer_summary) addAestheticChatMessage('assistant', '这次已经形成了几条清楚的判断。你可以继续聊，也可以现在结束并看本次总结。');
+  }).catch(function(error) {
+    addAestheticChatMessage('assistant', '导师连接暂时不稳定，你刚才的话已经保留。请稍后再发一次，我会从这里继续。', { error: error && error.message });
+  }).finally(function() {
+    aestheticTrainingState.pendingRequest = false;
+    if (send) send.disabled = false;
+    if (status) status.classList.remove('on');
+    if (input) input.focus();
+  });
+};
+
+function mergeAestheticAbilityUpdates(updates) {
+  var profile = loadAestheticAbilityProfile();
+  profile.guidedDimensions = profile.guidedDimensions || {};
+  Object.keys(updates || {}).forEach(function(key) {
+    var incoming = updates[key] || {};
+    var current = profile.guidedDimensions[key] || { attempts: 0, level: 0 };
+    current.attempts += 1;
+    current.level = Math.max(0, Math.min(100, Number(incoming.level) || current.level || 0));
+    current.trend = Number(incoming.trend) || 0;
+    current.lastEvidence = String(incoming.evidence || '').slice(0, 160);
+    current.updatedAt = new Date().toISOString();
+    profile.guidedDimensions[key] = current;
+  });
+  profile.updatedAt = new Date().toISOString();
+  localStorage.setItem(aestheticAbilityKey(), JSON.stringify(profile));
+  aestheticTrainingState.abilitySnapshot = profile;
+}
+
+window.showAestheticProgressiveHint = function() {
+  var goal = aestheticTrainingState.activeGoal || 'outline';
+  var levels = {
+    outline: ['把图片缩小，只看头发最外面一圈。', '找最宽点：它在耳侧、下颌还是肩部？', '先在“纵向、圆形、A形”中比较，不急着选风格。'],
+    weight: ['眯起眼睛看，颜色和头发堆积最重在哪里？', '只比较顶部和肩部，哪一处更有存在感？', '重量不等于长度，观察发丝密度和轮廓厚度。'],
+    layers: ['看头发从哪里开始变轻。', '比较顶部、脸周和发尾，哪个区域变化最大？', '先描述层次带来的视觉结果，不推测准确角度。'],
+    style: ['先列三个视觉事实。', '比较法式的松弛留白与日系的束感细节。', '找一条不支持你判断的反证。'],
+    client_communication: ['先问顾客真正喜欢图片的哪一点。', '再说明她与模特在哪个条件上不同。', '最后给一个保留感觉但更适合她的替代方案。']
+  };
+  var list = levels[goal] || ['缩小观察范围，只说一个你能确认的事实。', '指出这个事实在图片中的具体位置。', '说明它对整体轮廓或感觉产生什么影响。'];
+  aestheticTrainingState.hintLevel = Math.min(list.length, aestheticTrainingState.hintLevel + 1);
+  var box = document.getElementById('ae-chat-hints');
+  var body = document.getElementById('ae-chat-hint-body');
+  if (body) body.textContent = list[aestheticTrainingState.hintLevel - 1];
+  if (box) box.classList.add('on');
+};
+
+window.finishAestheticConversation = function() {
+  if (aestheticTrainingState.pendingRequest) return;
+  if (aestheticTrainingState.messages.length < 3) {
+    if (window.showToast) window.showToast('至少完成一轮对话后再生成总结');
+    return;
+  }
+  aestheticTrainingState.pendingRequest = true;
+  var status = document.getElementById('ae-chat-status');
+  if (status) { status.textContent = '正在整理本次成长总结…'; status.classList.add('on'); }
+  postAestheticCoach({
+    operation: 'summarize_session', username: aestheticIdentity(), store: aestheticStore(), session_id: aestheticTrainingState.sessionId,
+    messages: aestheticTrainingState.messages.slice(-20), goal_states: aestheticTrainingState.goalStates,
+    ability_profile: aestheticTrainingState.abilitySnapshot,
+    case: { id: aestheticTrainingState.caseItem.id, title: aestheticTrainingState.caseItem.title }
+  }).then(function(result) {
+    aestheticTrainingState.conversationSummary = result.summary || result;
+    completeAestheticConversation();
+  }).catch(function() {
+    completeAestheticConversation();
+  }).finally(function() {
+    aestheticTrainingState.pendingRequest = false;
+    if (status) status.classList.remove('on');
+  });
+};
+
+function completeAestheticConversation() {
+  var summary = aestheticTrainingState.conversationSummary || {};
+  var progress = loadAestheticProgress();
+  progress.attempts.push({ type: 'guided-chat-v1', date: aestheticToday(), completedAt: new Date().toISOString(), caseId: aestheticTrainingState.caseItem.id, caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, summary: summary });
+  saveAestheticProgress(progress);
+  var trainer = document.getElementById('ae-trainer');
+  function list(items, fallback) { return (Array.isArray(items) && items.length ? items : [fallback]).map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join(''); }
+  if (trainer) trainer.innerHTML = '<div class="ae-section-label">Conversation summary</div><h3>这次你带走了什么</h3>' +
+    '<h4>看对的内容</h4><ul>' + list(summary.strengths, '你完成了围绕同一张图的连续观察和表达。') + '</ul>' +
+    '<h4>主要遗漏</h4><ul>' + list(summary.missed_points, '本次对话较短，继续训练后才能形成稳定判断。') + '</ul>' +
+    '<h4>误判模式</h4><ul>' + list(summary.misconception_patterns, '暂未发现稳定的重复误判。') + '</ul>' +
+    '<h4>一个可迁移的方法</h4><p>' + aestheticEscape(summary.transferable_method || '先描述事实，再解释关系，最后归纳风格。') + '</p>' +
+    '<h4>下次重点</h4><p>' + aestheticEscape(summary.next_focus || AESTHETIC_GOAL_LABELS[aestheticTrainingState.activeGoal] || '继续训练视觉证据') + '</p>' +
+    '<button class="ae-primary" type="button" onclick="showAestheticMaster()" style="width:100%;margin-top:12px;">查看专业解析</button>';
+  renderAestheticSummary();
+  renderAestheticGrowth();
+}
 
 function currentAestheticFlow() {
   var data = aestheticKnowledge();

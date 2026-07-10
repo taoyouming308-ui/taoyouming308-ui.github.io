@@ -22,6 +22,55 @@ const STAGE_MODULES: Record<string, string[]> = {
 };
 
 const DSS_STYLES = ["natural", "french", "korean", "japanese", "urban", "minimal", "sweet", "androgynous", "avant_garde"];
+const COACH_GOALS = ["outline", "weight", "layers", "line_texture", "style", "suitability", "technique", "client_communication"];
+
+function buildCoachTurnPrompt(payload: Record<string, unknown>, modules: Record<string, unknown>): string {
+  const messages = Array.isArray(payload.messages) ? payload.messages.slice(-8) : [];
+  const activeGoal = COACH_GOALS.includes(String(payload.active_goal || "")) ? String(payload.active_goal) : "outline";
+  return `你是一位带团队20年的发型设计总监，正在通过有剧本的自由聊天培养发型师，而不是批改考试。
+你的任务不是完成图片报告，而是让发型师在本轮产生一次可观察的能力进步。
+
+内部训练目标：${activeGoal}
+允许目标：${COACH_GOALS.join(", ")}
+DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、重量、层次、线条、纹理、卷度与色彩后的结果，不能作为起点。
+当前目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 3000)}
+用户能力画像：${JSON.stringify(payload.ability_profile || {}).slice(0, 3000)}
+提示层级：${Number(payload.hint_level) || 0}；当前轮次：${Number(payload.turn_count) || 0}
+最近对话：${JSON.stringify(messages).slice(0, 6000)}
+当前回答：${String(payload.answer || "").slice(0, 600)}
+相关图片知识模块：${JSON.stringify(modules).slice(0, 7000)}
+
+教学规则：
+1. 区分图片直接事实、合理推测、无依据判断和当前无法确认的信息。
+2. 一次只处理一个关键点，用户可见回复通常2到5句，只允许一个主要问题。
+3. 少给答案、多追问；但不要机械反问。用户卡住时才逐层给观察方法。
+4. 禁止使用“回答不错、还需补充”等阅卷套话，禁止显示分数。
+5. 同一误判重复出现时要换一种观察方法，不能重复同一句提示。
+6. 新人用具体观察或二选一；中级要求结构因果和证据；高级进入人物适配、技术取舍和顾客沟通。
+7. 当前目标达到 demonstrated 后，可做一次迁移测试；达到 transfer_tested 后自然转到最有价值的下一目标。
+8. 顾客沟通评价需求确认、差异说明、替代方案、打理成本和语气。
+9. 不得虚构你看见了知识模块中没有的事实；低置信度结论必须保留推测表达。
+
+只输出JSON：{
+ "message":"给发型师看的自然回复",
+ "response_type":"probe|hint|challenge|explain|transition|wrap_up",
+ "active_goal":"允许目标之一",
+ "goal_states":{"目标":{"status":"unseen|probing|partial|demonstrated|transfer_tested|mastered","attempts":0,"last_evidence":""}},
+ "classification":{"observed_facts":[],"reasonable_inferences":[],"unsupported_claims":[],"unknowns":[]},
+ "repeated_pattern":"",
+ "difficulty":1,
+ "ability_updates":{"能力维度":{"level":0,"trend":0,"evidence":""}},
+ "should_offer_summary":false
+}`;
+}
+
+function buildSessionSummaryPrompt(payload: Record<string, unknown>): string {
+  return `你是发型设计总监。根据本次对话生成简洁、具体、可迁移的成长总结，不要写空泛鼓励。
+对话：${JSON.stringify(Array.isArray(payload.messages) ? payload.messages.slice(-20) : []).slice(0, 12000)}
+目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 4000)}
+能力画像：${JSON.stringify(payload.ability_profile || {}).slice(0, 3000)}
+只输出JSON：{"strengths":[],"missed_points":[],"misconception_patterns":[],"ability_changes":[],"transferable_method":"","next_focus":"","conversation_highlight":"","professional_summary":""}。每个数组最多4项，中文输出。`;
+}
 
 function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "", previousModules: Record<string, unknown> = {}): string {
   return `你是遵循 DSS V1.0 的资深发型设计教育导师。请先观察事实，再归纳风格。只根据图片可见证据建立该图片专属分析底稿；看不清或无法确认的内容必须放入 uncertainties，不得把推测写成事实。
@@ -115,7 +164,7 @@ Deno.serve(async (req: Request) => {
   const analysisModules = (typeof payload.analysis_modules === "object" && payload.analysis_modules) ? payload.analysis_modules as Record<string, unknown> : {};
   const finalRequest = payload.final_request === true;
 
-  if (!username || !["analyze_image", "feedback", "revise_analysis"].includes(operation)) {
+  if (!username || !["analyze_image", "feedback", "revise_analysis", "coach_turn", "summarize_session"].includes(operation)) {
     return new Response(JSON.stringify({ error: "invalid params" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
   }
   if (!OPENAI_KEY) return new Response(JSON.stringify({ error: "not configured" }), { status: 503, headers: { ...headers, "Content-Type": "application/json" } });
@@ -134,6 +183,29 @@ Deno.serve(async (req: Request) => {
         throw new Error("analysis structure incomplete");
       }
       return new Response(JSON.stringify({ analysis, model: MODEL }), { headers: { ...headers, "Content-Type": "application/json" } });
+    }
+    if (operation === "coach_turn") {
+      if (answer.length < 1) return new Response(JSON.stringify({ error: "answer required" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+      const prompt = buildCoachTurnPrompt(payload, analysisModules);
+      const turn = await callOpenAI(prompt, "");
+      const goal = COACH_GOALS.includes(String(turn.active_goal || "")) ? String(turn.active_goal) : String(payload.active_goal || "outline");
+      const result = {
+        message: String(turn.message || "我们先缩小范围，只说一个你能确认的画面事实。你最先看到哪里？").slice(0, 600),
+        response_type: String(turn.response_type || "probe").slice(0, 30),
+        active_goal: goal,
+        goal_states: typeof turn.goal_states === "object" && turn.goal_states ? turn.goal_states : payload.goal_states || {},
+        classification: typeof turn.classification === "object" && turn.classification ? turn.classification : {},
+        repeated_pattern: String(turn.repeated_pattern || "").slice(0, 180),
+        difficulty: Math.max(1, Math.min(3, Number(turn.difficulty) || 1)),
+        ability_updates: typeof turn.ability_updates === "object" && turn.ability_updates ? turn.ability_updates : {},
+        should_offer_summary: turn.should_offer_summary === true,
+        model: MODEL,
+      };
+      return new Response(JSON.stringify(result), { headers: { ...headers, "Content-Type": "application/json" } });
+    }
+    if (operation === "summarize_session") {
+      const summary = await callOpenAI(buildSessionSummaryPrompt(payload), "");
+      return new Response(JSON.stringify({ summary, model: MODEL }), { headers: { ...headers, "Content-Type": "application/json" } });
     }
     if (!["observe", "analyze", "judge", "design", "review"].includes(stage) || answer.length < 16) {
       return new Response(JSON.stringify({ error: "invalid params" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
