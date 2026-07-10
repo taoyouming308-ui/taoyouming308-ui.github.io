@@ -13,22 +13,43 @@ const STAGE_RULES: Record<string, string> = {
   review: "Check if the student extracts transferable principles of proportion, space, focus, style, color or texture, distinguishing cut, style, model and photography.",
 };
 
-function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: string, prevAnswers: Record<string, string>): string {
+const STAGE_MODULES: Record<string, string[]> = {
+  observe: ["style", "outline", "layers", "bangs", "texture", "color", "uncertainties"],
+  analyze: ["outline", "layers", "bangs", "texture", "curlStyling", "cuttingLogic", "uncertainties"],
+  judge: ["suitability", "texture", "maintenance", "uncertainties"],
+  design: ["outline", "layers", "bangs", "texture", "curlStyling", "color", "cuttingLogic", "maintenance", "uncertainties"],
+  review: ["style", "outline", "layers", "suitability", "cuttingLogic", "maintenance", "uncertainties"],
+};
+
+function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "", previousModules: Record<string, unknown> = {}): string {
+  return `你是资深发型设计教育导师。请只根据图片可见证据建立该图片专属分析底稿；看不清或无法确认的内容必须放入 uncertainties，不得把推测写成事实。
+案例：${String(caseData.title || "").slice(0, 120)}；分类：${String(caseData.category || "").slice(0, 80)}
+已知限制：${String(caseData.limitations || "").slice(0, 500)}
+用户补充的真实信息：${extraFacts || "无"}
+已有模块（修订时只更新受新增信息影响的模块）：${JSON.stringify(previousModules).slice(0, 9000) || "无"}
+输出严格 JSON：{
+ "fullAnalysis":"不超过900字的完整专业分析，覆盖所有模块",
+ "summary":"不超过180字精简摘要",
+ "modules":{
+  "style":"风格定位与证据","outline":"外轮廓与视觉重心","layers":"长度与层次","bangs":"刘海与脸周","texture":"发量发径与质感","curlStyling":"卷度与造型方式","color":"发色冷暖明度挑染","suitability":"适合脸型头型发质和人群","cuttingLogic":"可能的修剪分区提升角度引导线和去量逻辑","maintenance":"日常打理方式与难度","uncertainties":"无法从当前图片确认的事项"
+ },"affectedModules":["本次实际修改的模块名"]}。每个模块不超过160字。首次分析所有模块必须存在；修订时 modules 只返回受影响模块。中文输出。`;
+}
+
+function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: string, answerHistory: string[], feedbackHistory: unknown[], modules: Record<string, unknown>): string {
   const rule = STAGE_RULES[stage] || "";
   const priorLines: string[] = [];
-  for (const [key, val] of Object.entries(prevAnswers || {})) {
-    if (key === stage) continue;
-    const v = String(val || "").slice(0, 700);
-    if (v) priorLines.push("- " + key + ": " + v);
-  }
-  const priorText = priorLines.join("\n").slice(0, 3600) || "None";
+  answerHistory.slice(-4).forEach((val, index) => priorLines.push(`- 回答${index + 1}: ${String(val).slice(0, 900)}`));
+  const priorText = priorLines.join("\n").slice(0, 4200) || "None";
+  const priorFeedback = JSON.stringify(feedbackHistory.slice(-3)).slice(0, 3600) || "[]";
+  const moduleText = JSON.stringify(modules).slice(0, 7000);
   return "You are a hair design mentor. Train students to observe, analyze, judge, design independently.\n\n" +
     "Stage: " + stage + " | Rule: " + rule + "\n\n" +
     "Case: " + String(caseData.title || "").slice(0, 120) + " (" + String(caseData.category || "").slice(0, 80) + ")\n" +
     "Focus: " + String(caseData.focus || "").slice(0, 200) + " | Limits: " + String(caseData.limitations || "").slice(0, 500) + "\n\n" +
     "Student answer: " + answer + "\n\n" +
-    "Previous answers: " + priorText + "\n\n" +
-    "Reference: " + String(caseData.reference || "").slice(0, 1000) + "\n\n" +
+    "Current-stage answer history: " + priorText + "\n\n" +
+    "Previous AI feedback: " + priorFeedback + "\n\n" +
+    "Relevant image-analysis modules (authoritative evidence base): " + moduleText + "\n\n" +
     "Requirements:\n" +
     "1. Affirm one specific thing done right.\n" +
     "2. Point out 1-3 most critical missing points.\n" +
@@ -49,7 +70,8 @@ async function callOpenAI(prompt: string, imageUrl: string): Promise<Record<stri
     body: JSON.stringify({
       model: MODEL,
       messages: [{ role: "user", content }],
-      max_completion_tokens: 700,
+      max_completion_tokens: imageUrl ? 3500 : 1600,
+      reasoning_effort: imageUrl ? "none" : "low",
       response_format: { type: "json_object" },
     }),
   });
@@ -82,12 +104,15 @@ Deno.serve(async (req: Request) => {
   try { payload = await req.json(); } catch { return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } }); }
 
   const username = String(payload.username || "").trim().slice(0, 80);
+  const operation = String(payload.operation || "feedback").trim().slice(0, 30);
   const stage = String(payload.stage || "").trim().slice(0, 20);
   const answer = String(payload.answer || "").trim().slice(0, 1200);
   const caseData = (typeof payload.case === "object" && payload.case) ? payload.case as Record<string, unknown> : {};
-  const prevAnswers = (typeof payload.previous_answers === "object" && payload.previous_answers) ? payload.previous_answers as Record<string, string> : {};
+  const answerHistory = Array.isArray(payload.answer_history) ? payload.answer_history.map((v) => String(v).slice(0, 1200)).slice(-4) : [];
+  const feedbackHistory = Array.isArray(payload.feedback_history) ? payload.feedback_history.slice(-3) : [];
+  const analysisModules = (typeof payload.analysis_modules === "object" && payload.analysis_modules) ? payload.analysis_modules as Record<string, unknown> : {};
 
-  if (!username || !["observe", "analyze", "judge", "design", "review"].includes(stage) || answer.length < 16) {
+  if (!username || !["analyze_image", "feedback", "revise_analysis"].includes(operation)) {
     return new Response(JSON.stringify({ error: "invalid params" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
   }
   if (!OPENAI_KEY) return new Response(JSON.stringify({ error: "not configured" }), { status: 503, headers: { ...headers, "Content-Type": "application/json" } });
@@ -96,8 +121,24 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const prompt = buildPrompt(stage, caseData, answer, prevAnswers);
-    const imageUrl = String(caseData.image_url || "");
+    if (operation === "analyze_image" || operation === "revise_analysis") {
+      const extraFacts = String(payload.extra_facts || "").slice(0, 1600);
+      const prompt = buildAnalysisPrompt(caseData, extraFacts, operation === "revise_analysis" ? analysisModules : {});
+      const imageUrl = String(caseData.image_url || "");
+      if (operation === "analyze_image" && !imageUrl) throw new Error("image required");
+      const analysis = await callOpenAI(prompt, operation === "analyze_image" ? imageUrl : "");
+      if (!analysis || typeof analysis.modules !== "object" || !analysis.modules || !String(analysis.summary || "").trim()) {
+        throw new Error("analysis structure incomplete");
+      }
+      return new Response(JSON.stringify({ analysis, model: MODEL }), { headers: { ...headers, "Content-Type": "application/json" } });
+    }
+    if (!["observe", "analyze", "judge", "design", "review"].includes(stage) || answer.length < 16) {
+      return new Response(JSON.stringify({ error: "invalid params" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+    }
+    const selected: Record<string, unknown> = {};
+    for (const key of STAGE_MODULES[stage] || []) if (key in analysisModules) selected[key] = analysisModules[key];
+    const prompt = buildPrompt(stage, caseData, answer, answerHistory, feedbackHistory, selected);
+    const imageUrl = "";
     const fb = await callOpenAI(prompt, imageUrl);
     const omissions = Array.isArray(fb.omissions) ? fb.omissions.slice(0, 3).map((v: unknown) => String(v).slice(0, 120)) : [];
     const result = {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="360">
+<html lang="zh-CN" data-version="361">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2914,6 +2914,7 @@ body {
         <textarea class="ae-answer" id="ae-stage-answer" maxlength="1200" placeholder="" oninput="updateAestheticAnswerCount()"></textarea>
         <div class="ae-answer-count" id="ae-answer-count">0 / 1200</div>
         <div class="ae-ai-status" id="ae-ai-status">AI 导师正在阅读你的思路...</div>
+        <button class="ae-secondary" type="button" onclick="updateAestheticAnalysisWithFacts()" style="margin-top:8px;">补充真实信息</button>
         <div class="ae-feedback" id="ae-feedback"></div>
         <div class="ae-question-actions">
           <button class="ae-primary" id="ae-submit-answer" type="button" onclick="submitAestheticStage()" style="width:100%;">提交给 AI 导师</button>
@@ -3253,8 +3254,29 @@ var aestheticTrainingState = {
   answers: {},
   feedback: {},
   scores: {},
-  submissions: {}
+  submissions: {},
+  answerHistory: {},
+  feedbackHistory: {},
+  analysisRecord: null,
+  analysisPromise: null
 };
+
+function aestheticAnalysisKey(item) {
+  return 'hair_aesthetic_analysis_v1:' + aestheticIdentity() + ':' + String(item && item.id || '') + ':' + aestheticHash(String(item && item.imageUrl || ''));
+}
+
+function loadAestheticAnalysisRecord(item) {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(aestheticAnalysisKey(item)) || 'null');
+    return parsed && parsed.current && parsed.current.modules ? parsed : null;
+  } catch (e) { return null; }
+}
+
+function saveAestheticAnalysisRecord(item, record) {
+  record.versions = (record.versions || []).slice(-10);
+  localStorage.setItem(aestheticAnalysisKey(item), JSON.stringify(record));
+  return record;
+}
 
 function aestheticKnowledge() {
   return window.AESTHETIC_KNOWLEDGE_V1 || null;
@@ -3767,13 +3789,18 @@ window.startAestheticTraining = function() {
     answers: {},
     feedback: {},
     scores: {},
-    submissions: {}
+    submissions: {},
+    answerHistory: {},
+    feedbackHistory: {},
+    analysisRecord: loadAestheticAnalysisRecord(item),
+    analysisPromise: null
   };
   var master = document.getElementById('ae-master');
   if (master) master.classList.remove('on');
   var trainer = document.getElementById('ae-trainer');
   if (trainer) trainer.classList.add('on');
   renderAestheticStage();
+  ensureAestheticAnalysis().catch(function() {});
   if (trainer) trainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
@@ -3949,20 +3976,12 @@ function getAestheticCoachBase() {
     });
 }
 
-function requestAestheticCoach(flow, guide, answer) {
-  var item = aestheticTrainingState.caseItem;
+function postAestheticCoach(payload) {
   var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var timer = controller ? setTimeout(function() { controller.abort(); }, 30000) : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, 60000) : null;
   return getAestheticCoachBase()
     .then(function(base) {
-      return aestheticCoachImageUrl(item).then(function(coachImageUrl) {
-        return { base: base, imageUrl: coachImageUrl };
-      });
-    })
-    .then(function(requestData) {
-      var endpoint = /\/functions\/v1\/aesthetic-coach\/?$/.test(requestData.base)
-        ? requestData.base
-        : requestData.base + '/api/aesthetic-coach';
+      var endpoint = /\/functions\/v1\/aesthetic-coach\/?$/.test(base) ? base : base + '/api/aesthetic-coach';
       var coachHeaders = { 'Content-Type': 'application/json' };
       if (/\.supabase\.co\/functions\/v1\//.test(endpoint)) {
         coachHeaders.apikey = SUPABASE_KEY;
@@ -3972,22 +3991,7 @@ function requestAestheticCoach(flow, guide, answer) {
         method: 'POST',
         headers: coachHeaders,
         signal: controller ? controller.signal : undefined,
-        body: JSON.stringify({
-          username: aestheticIdentity(),
-          store: aestheticStore(),
-          stage: flow.id,
-          answer: answer,
-          previous_answers: aestheticTrainingState.answers,
-          case: {
-            id: item.id,
-            title: item.title,
-            category: item.category,
-            focus: item.focus,
-            image_url: requestData.imageUrl,
-            limitations: item.limitations,
-            reference: guide.master
-          }
-        })
+        body: JSON.stringify(payload)
       });
     })
     .then(function(response) {
@@ -3999,6 +4003,51 @@ function requestAestheticCoach(flow, guide, answer) {
     .finally(function() {
       if (timer) clearTimeout(timer);
     });
+}
+
+function ensureAestheticAnalysis() {
+  var item = aestheticTrainingState.caseItem;
+  if (aestheticTrainingState.analysisRecord && aestheticTrainingState.analysisRecord.current) return Promise.resolve(aestheticTrainingState.analysisRecord);
+  if (aestheticTrainingState.analysisPromise) return aestheticTrainingState.analysisPromise;
+  aestheticTrainingState.analysisPromise = aestheticCoachImageUrl(item).then(function(imageUrl) {
+    return postAestheticCoach({ operation: 'analyze_image', username: aestheticIdentity(), store: aestheticStore(), case: { id: item.id, title: item.title, category: item.category, image_url: imageUrl, limitations: item.limitations } });
+  }).then(function(result) {
+    var version = { version: 1, createdAt: new Date().toISOString(), reason: '首次图片深度分析', affectedModules: Object.keys(result.analysis.modules || {}), fullAnalysis: result.analysis.fullAnalysis || '', summary: result.analysis.summary || '', modules: result.analysis.modules || {} };
+    var record = { caseId: item.id, imageHash: aestheticHash(String(item.imageUrl || '')), current: version, versions: [version] };
+    aestheticTrainingState.analysisRecord = saveAestheticAnalysisRecord(item, record);
+    return record;
+  }).finally(function() { aestheticTrainingState.analysisPromise = null; });
+  return aestheticTrainingState.analysisPromise;
+}
+
+window.updateAestheticAnalysisWithFacts = function() {
+  var facts = window.prompt('补充现场确认的真实信息（如自然发质、真实发量、头型、日常打理习惯）：');
+  if (!facts || !facts.trim()) return;
+  var item = aestheticTrainingState.caseItem;
+  ensureAestheticAnalysis().then(function(record) {
+    return postAestheticCoach({ operation: 'revise_analysis', username: aestheticIdentity(), store: aestheticStore(), extra_facts: facts.trim(), case: { id: item.id, title: item.title, category: item.category, limitations: item.limitations }, analysis_modules: record.current.modules });
+  }).then(function(result) {
+    var record = aestheticTrainingState.analysisRecord;
+    var affected = Array.isArray(result.analysis.affectedModules) ? result.analysis.affectedModules : Object.keys(result.analysis.modules || {});
+    var version = { version: record.versions.length + 1, createdAt: new Date().toISOString(), reason: '用户补充真实信息：' + facts.trim().slice(0, 120), affectedModules: affected, fullAnalysis: result.analysis.fullAnalysis || record.current.fullAnalysis, summary: result.analysis.summary || record.current.summary, modules: Object.assign({}, record.current.modules, result.analysis.modules || {}) };
+    record.current = version;
+    record.versions.push(version);
+    saveAestheticAnalysisRecord(item, record);
+    if (window.showToast) window.showToast('分析底稿已更新为 v' + version.version);
+  }).catch(function() { if (window.showToast) window.showToast('底稿修订失败，请稍后重试'); });
+};
+
+function requestAestheticCoach(flow, guide, answer) {
+  var item = aestheticTrainingState.caseItem;
+  return ensureAestheticAnalysis().then(function(record) {
+    return postAestheticCoach({
+      operation: 'feedback', username: aestheticIdentity(), store: aestheticStore(), stage: flow.id, answer: answer,
+      answer_history: aestheticTrainingState.answerHistory[flow.id] || [],
+      feedback_history: aestheticTrainingState.feedbackHistory[flow.id] || [],
+      analysis_modules: record.current.modules,
+      case: { id: item.id, title: item.title, category: item.category, focus: item.focus, limitations: item.limitations }
+    });
+  });
 }
 
 var AESTHETIC_MAX_SUPPLEMENTS = 3;
@@ -4029,6 +4078,9 @@ window.submitAestheticStage = function() {
     return;
   }
   aestheticTrainingState.answers[flow.id] = answer;
+  if (!aestheticTrainingState.answerHistory[flow.id]) aestheticTrainingState.answerHistory[flow.id] = [];
+  aestheticTrainingState.answerHistory[flow.id].push(answer);
+  aestheticTrainingState.answerHistory[flow.id] = aestheticTrainingState.answerHistory[flow.id].slice(-4);
   var requestedReview = completedReviews + 1;
   var submit = document.getElementById('ae-submit-answer');
   var status = document.getElementById('ae-ai-status');
@@ -4057,6 +4109,11 @@ window.submitAestheticStage = function() {
       aestheticTrainingState.submissions[flow.id] = requestedReview;
     }
     aestheticTrainingState.feedback[flow.id] = feedback;
+    if (!feedback.fallback) {
+      if (!aestheticTrainingState.feedbackHistory[flow.id]) aestheticTrainingState.feedbackHistory[flow.id] = [];
+      aestheticTrainingState.feedbackHistory[flow.id].push(feedback);
+      aestheticTrainingState.feedbackHistory[flow.id] = aestheticTrainingState.feedbackHistory[flow.id].slice(-3);
+    }
     aestheticTrainingState.scores[flow.capabilityId] = Math.max(
       Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
       Number(feedback.score) || 0
@@ -4175,7 +4232,8 @@ window.showAestheticMaster = function() {
   var master = document.getElementById('ae-master');
   var content = document.getElementById('ae-master-content');
   if (!item || !data || !master || !content) return;
-  content.innerHTML = data.trainingFlow.map(function(flow) {
+  var fullAnalysis = aestheticTrainingState.analysisRecord && aestheticTrainingState.analysisRecord.current ? aestheticTrainingState.analysisRecord.current.fullAnalysis : '';
+  content.innerHTML = (fullAnalysis ? '<div class="ae-master-section"><strong>图片专属完整分析底稿</strong><p>' + aestheticEscape(fullAnalysis) + '</p></div>' : '') + data.trainingFlow.map(function(flow) {
     var guide = item.guides[flow.id];
     return '<div class="ae-master-section"><strong>' + aestheticEscape(flow.name + ' · ' + flow.question) +
       '</strong><p>' + aestheticEscape(guide.master) + '</p></div>';

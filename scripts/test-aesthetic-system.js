@@ -6,6 +6,7 @@ const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'aesthetic-knowledge.v1.js'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'perm-app.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
+const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
 const context = { window: {} };
 
 function assert(condition, message) {
@@ -82,7 +83,7 @@ data.trainingCases.forEach(row => {
   'aestheticLowQualityReason(',
   'aestheticCoachImageUrl(',
   'feedback.ready !== false',
-  "requestData.base + '/api/aesthetic-coach'",
+  "base + '/api/aesthetic-coach'",
   '/functions\\/v1\\/aesthetic-coach',
   '当前状态为“等待点评”，不是“未通过”',
   'AESTHETIC_MAX_SUPPLEMENTS = 3',
@@ -91,6 +92,14 @@ data.trainingCases.forEach(row => {
   '3次补充点评已完成，现在可以进入下一步',
   '补充后再评（还可',
   "aestheticTrainingState.submissions[flow.id] = requestedReview",
+  "operation: 'analyze_image'",
+  "operation: 'feedback'",
+  "operation: 'revise_analysis'",
+  'hair_aesthetic_analysis_v1:',
+  'analysis_modules: record.current.modules',
+  'answer_history: aestheticTrainingState.answerHistory[flow.id]',
+  'feedback_history: aestheticTrainingState.feedbackHistory[flow.id]',
+  '图片专属完整分析底稿',
   "coachHeaders.Authorization = 'Bearer ' + SUPABASE_KEY",
   'hair_aesthetic_progress_v1:',
   'aesthetic-knowledge.v1.js'
@@ -108,5 +117,17 @@ data.trainingCases.forEach(row => {
 assert(!app.includes('id="ae-review-photo"'), 'guided daily training must not upload customer photos');
 assert(data.governance.aiRule.includes('不得'), 'AI publishing boundary must be explicit');
 assert(data.governance.privacyRule.includes('不进入公共知识库'), 'customer photo privacy rule must be explicit');
+
+[
+  'analyze_image',
+  'revise_analysis',
+  'STAGE_MODULES',
+  'answer_history',
+  'feedback_history',
+  'analysis_modules',
+  'const imageUrl = ""',
+  'analysis structure incomplete',
+  'affectedModules'
+].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
 
 console.log(`aesthetic system ok: v${data.version}, ${data.trainingCases.length} cases, ${data.capabilities.length} capabilities, ${data.sources.length} sources`);
