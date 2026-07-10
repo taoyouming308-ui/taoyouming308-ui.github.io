@@ -82,7 +82,10 @@ data.trainingCases.forEach(row => {
   'aestheticLowQualityReason(',
   'aestheticCoachImageUrl(',
   'feedback.ready !== false',
-  '/api/aesthetic-coach',
+  "requestData.base + '/api/aesthetic-coach'",
+  '/functions\\/v1\\/aesthetic-coach',
+  '当前状态为“等待点评”，不是“未通过”',
+  "feedback.fallback ? '重新请求点评' : '补充后再评'",
   'hair_aesthetic_progress_v1:',
   'aesthetic-knowledge.v1.js'
 ].forEach(marker => assert(app.includes(marker), `App is missing marker: ${marker}`));

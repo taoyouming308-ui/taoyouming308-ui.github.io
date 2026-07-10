@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="357">
+<html lang="zh-CN" data-version="352">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3816,7 +3816,7 @@ function renderAestheticStage() {
   if (answer) {
     answer.value = aestheticTrainingState.answers[flow.id] || '';
     answer.placeholder = flow.id === 'observe'
-      ? '例如：甜美风格。线条C弧、量感轻盈、重心偏高、暖棕色调、柔亮光泽。整体轮廓A型……'
+      ? '例如：整体轮廓偏圆，重量集中在……'
       : flow.id === 'review'
         ? '今天我确认了一条可以带到下一位顾客身上的原则是……'
         : '写下你的判断和理由，不需要一次写得完美。';
@@ -3926,9 +3926,9 @@ function localAestheticFeedback(flow, guide, answer, errorMessage) {
   }
   return {
     score: 0,
-    affirmation: '你的答案已经保存，正在等待 AI 导师点评。',
-    omissions: ['导师服务暂时未返回结果，本阶段状态是“等待点评”，不是“未通过”。', '请点击“重新请求点评”，无需改写已经保存的答案。'],
-    follow_up: '导师连接恢复后，系统会根据图片和你的原答案重新完成点评。',
+    affirmation: '你已经写下了答案，但 AI 导师暂时没有完成点评。',
+    omissions: ['当前阶段还没有拿到模型点评，不能直接通过。', '请稍后重新提交，或检查导师服务连接。'],
+    follow_up: '网络恢复后，再让 AI 导师根据图片和你的回答认真点评一次。',
     ready: false,
     fallback: true,
     error: errorMessage || 'AI 导师暂时不可用'
@@ -3960,10 +3960,7 @@ function requestAestheticCoach(flow, guide, answer) {
       });
     })
     .then(function(requestData) {
-      var endpoint = /\/functions\/v1\/aesthetic-coach\/?$/.test(requestData.base)
-        ? requestData.base
-        : requestData.base + '/api/aesthetic-coach';
-      return fetch(endpoint, {
+      return fetch(requestData.base + '/api/aesthetic-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller ? controller.signal : undefined,
@@ -4015,8 +4012,8 @@ window.submitAestheticStage = function() {
     renderAestheticFeedback(flow, blockedFeedback);
     return;
   }
-  if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) {
-    if (window.showToast) window.showToast('已提交太多次，先继续下一步');
+  if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) {
+    if (window.showToast) window.showToast('这一阶段已点评两次，先继续下一步');
     return;
   }
   aestheticTrainingState.answers[flow.id] = answer;
@@ -4026,31 +4023,21 @@ window.submitAestheticStage = function() {
   if (submit) submit.disabled = true;
   if (answerEl) answerEl.disabled = true;
   if (status) {
-    status.textContent = 'AI 导师正在阅读你的回答，仔细推敲中' + (aestheticTrainingState.submissions[flow.id] > 1 ? '（第' + aestheticTrainingState.submissions[flow.id] + '次）' : '') + '...';
+    status.textContent = 'AI 导师正在阅读你的思路，只指出最值得补的一步...';
     status.classList.add('on');
   }
-  // 最低等待时间：让发型师感觉AI真正在思考
-  var MIN_THINK_TIME = 3500;
-  var thinkStart = Date.now();
-  var coachPromise = requestAestheticCoach(flow, guide, answer)
+  requestAestheticCoach(flow, guide, answer)
     .catch(function(error) {
       return localAestheticFeedback(flow, guide, answer, error && error.message);
-    });
-  Promise.all([
-    coachPromise,
-    new Promise(function(resolve) {
-      var elapsed = Date.now() - thinkStart;
-      setTimeout(resolve, Math.max(0, MIN_THINK_TIME - elapsed));
     })
-  ]).then(function(results) {
-    var feedback = results[0];
-    aestheticTrainingState.feedback[flow.id] = feedback;
-    aestheticTrainingState.scores[flow.capabilityId] = Math.max(
-      Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
-      Number(feedback.score) || 0
-    );
-    renderAestheticFeedback(flow, feedback);
-  });
+    .then(function(feedback) {
+      aestheticTrainingState.feedback[flow.id] = feedback;
+      aestheticTrainingState.scores[flow.capabilityId] = Math.max(
+        Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
+        Number(feedback.score) || 0
+      );
+      renderAestheticFeedback(flow, feedback);
+    });
 };
 
 function renderAestheticFeedback(flow, feedback) {
@@ -4071,10 +4058,10 @@ function renderAestheticFeedback(flow, feedback) {
       ? '<ul>' + omissions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>'
       : '<p>当前信息较完整，可以进入下一步。</p>') +
     '<p class="ae-follow-up"><strong>导师追问：</strong>' + aestheticEscape(feedback.follow_up || '你能为这个判断再指出一个画面证据吗？') + '</p>' +
-    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 导师暂时未连接，当前状态为“等待点评”，不是“未通过”。</p>' : '') +
-    (!canContinue && !feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">当前回答尚未通过本阶段，请补充具体画面证据后再评。</p>' : '') +
+    (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 暂时未连接，当前阶段不会直接通过。</p>' : '') +
+    (!canContinue ? '<p style="margin-top:8px;color:#85857f;">当前回答未通过本阶段，请补充具体画面证据后再评。</p>' : '') +
     '<div class="ae-feedback-actions">' +
-      '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">' + (feedback.fallback ? '重新请求点评' : '补充后再评') + '</button>' +
+      '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">补充后再评</button>' +
       (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' : '') +
     '</div>';
   box.classList.add('on');
@@ -4093,8 +4080,8 @@ window.reviseAestheticStage = function() {
   if (submit) {
     submit.style.display = '';
     submit.disabled = false;
-    submit.textContent = '再次提交给 AI 导师';
-    if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) submit.disabled = true;
+    submit.textContent = (aestheticTrainingState.submissions[flow.id] || 0) >= 2 ? '已完成两次点评' : '再次提交给 AI 导师';
+    if ((aestheticTrainingState.submissions[flow.id] || 0) >= 2) submit.disabled = true;
   }
 };
 
@@ -6447,7 +6434,7 @@ function initApp() {
   function getAiUrl(phone, barberName) {
     var barberParam = barberName ? '&barber=' + encodeURIComponent(barberName) : '';
     var localUrl = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam;
-    var tunnelBase = AI_TUNNEL_URL || 'https://petersburg-parade-traveller-existed.trycloudflare.com';
+    var tunnelBase = AI_TUNNEL_URL || 'https://integrating-paso-cindy-disclose.trycloudflare.com';
     return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam };
   }
 
