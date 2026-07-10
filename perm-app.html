@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="364">
+<html lang="zh-CN" data-version="365">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3950,14 +3950,24 @@ window.insertAestheticQuickTag = function(button, stage, tag) {
   if (!answer || answer.disabled) return;
   button.classList.toggle('on');
   var prefix = stage === 'judge' && ['自然', '法式', '韩系', '日系', '都市', '极简', '少女', '中性', '先锋'].indexOf(tag) !== -1
-    ? '风格判断：' : '观察标签：';
-  var line = prefix + tag;
-  var current = answer.value || '';
+    ? '风格判断：' : '观察事实：';
+  var lines = (answer.value || '').split(/\\n/);
+  var lineIndex = lines.findIndex(function(line) { return line.indexOf(prefix) === 0; });
   if (button.classList.contains('on')) {
-    answer.value = current ? current + (/[。；;\\n]$/.test(current) ? '' : '；') + line : line;
-  } else {
-    answer.value = current.replace(new RegExp('(?:^|[；;。\\n])\\s*' + prefix + tag.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '([；;。\\n]|$)'), '$1').replace(/^；|^;|^。/, '').trim();
+    if (lineIndex === -1) {
+      var separator = answer.value && !/[。；;\\n]$/.test(answer.value) ? '；' : '';
+      lines = (answer.value || '') ? [answer.value + separator, prefix + tag] : [prefix + tag];
+    } else {
+      var existing = lines[lineIndex].slice(prefix.length).split(/[、,，]/).filter(Boolean);
+      if (existing.indexOf(tag) === -1) existing.push(tag);
+      lines[lineIndex] = prefix + existing.join('、');
+    }
+  } else if (lineIndex !== -1) {
+    var remaining = lines[lineIndex].slice(prefix.length).split(/[、,，]/).filter(function(item) { return item && item !== tag; });
+    if (remaining.length) lines[lineIndex] = prefix + remaining.join('、');
+    else lines.splice(lineIndex, 1);
   }
+  answer.value = lines.filter(function(line) { return line.trim(); }).join('\\n').trim();
   answer.focus();
   updateAestheticAnswerCount();
 };
@@ -4009,7 +4019,8 @@ function aestheticLowQualityReason(answer) {
   }
   var cjk = compact.match(/[\u4e00-\u9fff]/g) || [];
   var punctuation = raw.match(/[，。,.；;：:！？?!]/g) || [];
-  if (cjk.length >= 16 && aestheticRepeatedNgramCount(compact) >= 6) {
+  var withoutSystemLabels = compact.replace(/观察标签：/g, '').replace(/观察事实：/g, '').replace(/风格判断：/g, '');
+  if (cjk.length >= 16 && aestheticRepeatedNgramCount(withoutSystemLabels) >= 6 && aestheticDomainTermCount(withoutSystemLabels) < 4) {
     return '存在大量重复词组，像随手输入的内容';
   }
   if (cjk.length >= 16 && punctuation.length === 0 && compact.length < 80 && aestheticDomainTermCount(compact) < 2) {
