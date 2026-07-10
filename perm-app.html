@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="359">
+<html lang="zh-CN" data-version="360">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4001,6 +4001,9 @@ function requestAestheticCoach(flow, guide, answer) {
     });
 }
 
+var AESTHETIC_MAX_SUPPLEMENTS = 3;
+var AESTHETIC_MAX_REVIEWS = 1 + AESTHETIC_MAX_SUPPLEMENTS;
+
 window.submitAestheticStage = function() {
   var flow = currentAestheticFlow();
   var guide = currentAestheticGuide();
@@ -4020,18 +4023,19 @@ window.submitAestheticStage = function() {
     renderAestheticFeedback(flow, blockedFeedback);
     return;
   }
-  if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) {
-    if (window.showToast) window.showToast('已提交太多次，先继续下一步');
+  var completedReviews = aestheticTrainingState.submissions[flow.id] || 0;
+  if (completedReviews >= AESTHETIC_MAX_REVIEWS) {
+    if (window.showToast) window.showToast('本阶段已完成3次补充点评，请进入下一步');
     return;
   }
   aestheticTrainingState.answers[flow.id] = answer;
-  aestheticTrainingState.submissions[flow.id] = (aestheticTrainingState.submissions[flow.id] || 0) + 1;
+  var requestedReview = completedReviews + 1;
   var submit = document.getElementById('ae-submit-answer');
   var status = document.getElementById('ae-ai-status');
   if (submit) submit.disabled = true;
   if (answerEl) answerEl.disabled = true;
   if (status) {
-    status.textContent = 'AI 导师正在阅读你的回答，仔细推敲中' + (aestheticTrainingState.submissions[flow.id] > 1 ? '（第' + aestheticTrainingState.submissions[flow.id] + '次）' : '') + '...';
+    status.textContent = 'AI 导师正在认真思考你的' + (requestedReview === 1 ? '首次回答' : '第' + (requestedReview - 1) + '次补充回答') + '...';
     status.classList.add('on');
   }
   // 最低等待时间：让发型师感觉AI真正在思考
@@ -4049,6 +4053,9 @@ window.submitAestheticStage = function() {
     })
   ]).then(function(results) {
     var feedback = results[0];
+    if (!feedback.fallback) {
+      aestheticTrainingState.submissions[flow.id] = requestedReview;
+    }
     aestheticTrainingState.feedback[flow.id] = feedback;
     aestheticTrainingState.scores[flow.capabilityId] = Math.max(
       Number(aestheticTrainingState.scores[flow.capabilityId]) || 0,
@@ -4063,7 +4070,11 @@ function renderAestheticFeedback(flow, feedback) {
   var status = document.getElementById('ae-ai-status');
   var submit = document.getElementById('ae-submit-answer');
   var omissions = Array.isArray(feedback.omissions) ? feedback.omissions.slice(0, 3) : [];
-  var canContinue = feedback.ready !== false;
+  var completedReviews = aestheticTrainingState.submissions[flow.id] || 0;
+  var supplementsUsed = Math.max(0, completedReviews - 1);
+  var reachedReviewLimit = completedReviews >= AESTHETIC_MAX_REVIEWS;
+  var canContinue = feedback.ready !== false || reachedReviewLimit;
+  var canSupplement = !feedback.fallback && !reachedReviewLimit;
   var kicker = feedback.localGuard ? '训练提示 · 需重写' : (feedback.fallback ? '训练提示 · 网络备用' : 'AI MENTOR · 导师点评');
   if (status) status.classList.remove('on');
   if (submit) submit.style.display = 'none';
@@ -4076,11 +4087,14 @@ function renderAestheticFeedback(flow, feedback) {
       ? '<ul>' + omissions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>'
       : '<p>当前信息较完整，可以进入下一步。</p>') +
     '<p class="ae-follow-up"><strong>导师追问：</strong>' + aestheticEscape(feedback.follow_up || '你能为这个判断再指出一个画面证据吗？') + '</p>' +
+    (!feedback.fallback && completedReviews > 0 ? '<p style="margin-top:8px;color:#85857f;">AI 点评 ' + completedReviews + '/' + AESTHETIC_MAX_REVIEWS + ' · 已补充 ' + supplementsUsed + '/' + AESTHETIC_MAX_SUPPLEMENTS + ' 次</p>' : '') +
     (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 导师暂时未连接，当前状态为“等待点评”，不是“未通过”。</p>' : '') +
+    (reachedReviewLimit ? '<p style="margin-top:8px;color:#85857f;">3次补充点评已完成，现在可以进入下一步。</p>' : '') +
     (!canContinue && !feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">当前回答尚未通过本阶段，请补充具体画面证据后再评。</p>' : '') +
     '<div class="ae-feedback-actions">' +
-      '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">' + (feedback.fallback ? '重新请求点评' : '补充后再评') + '</button>' +
-      (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '继续下一步') + '</button>' : '') +
+      (feedback.fallback ? '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">重新请求点评</button>' : '') +
+      (canSupplement ? '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">补充后再评（还可' + (AESTHETIC_MAX_SUPPLEMENTS - supplementsUsed) + '次）</button>' : '') +
+      (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '进入下一步') + '</button>' : '') +
     '</div>';
   box.classList.add('on');
 }
@@ -4099,7 +4113,7 @@ window.reviseAestheticStage = function() {
     submit.style.display = '';
     submit.disabled = false;
     submit.textContent = '再次提交给 AI 导师';
-    if ((aestheticTrainingState.submissions[flow.id] || 0) >= 20) submit.disabled = true;
+    if ((aestheticTrainingState.submissions[flow.id] || 0) >= AESTHETIC_MAX_REVIEWS) submit.disabled = true;
   }
 };
 
@@ -4107,7 +4121,8 @@ window.continueAestheticStage = function() {
   var data = aestheticKnowledge();
   var flow = currentAestheticFlow();
   var feedback = flow ? aestheticTrainingState.feedback[flow.id] : null;
-  if (feedback && feedback.ready === false) {
+  var completedReviews = flow ? (aestheticTrainingState.submissions[flow.id] || 0) : 0;
+  if (feedback && feedback.ready === false && completedReviews < AESTHETIC_MAX_REVIEWS) {
     if (window.showToast) window.showToast('先补充具体画面证据，再继续下一步');
     return;
   }
