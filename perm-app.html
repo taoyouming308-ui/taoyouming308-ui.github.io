@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="363">
+<html lang="zh-CN" data-version="364">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11367,7 +11367,8 @@ window.showHairFollowupScreenshot = function(dataUrl, inputEl) {
   var STORED_VER = parseInt(localStorage.getItem('app-version')) || 0;
   var MAX_VER = Math.max(VER, STORED_VER, parseInt(localStorage.getItem('app-max-version')) || 0);
   var buildVersionUrl = function(v) {
-    var q = '?_v=' + v;
+    // 用户明确点击更新时增加时间戳，避免 iOS/PWA 将固定版本 URL 继续命中旧文档缓存。
+    var q = '?_v=' + v + '&_t=' + Date.now();
     if (location.hash) q += location.hash;
     return location.pathname + q;
   };
