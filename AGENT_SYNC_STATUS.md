@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v359 (2026-07-10)
+
+- 美感训练 AI 导师升级为 OpenAI `gpt-5.5`；官方模型页确认该模型支持 Chat Completions、图片输入和结构化输出。
+- 修复 Supabase Edge Function 调用授权：前端对函数请求增加公开发布密钥的 `apikey` 与 `Authorization` 请求头，避免网关在进入函数前返回 401。
+- 修复 Edge Function 旧部署中的字符串插值错误，改用 GPT-5.5 兼容的 `max_completion_tokens`；保留启用员工校验和模型名称回传。
+- App version: v359
+- Supabase `aesthetic-coach` Edge Function 已成功部署；使用启用员工“无名”的观察阶段测试真实返回 HTTP 200、有效中文点评、`ready=true` 和 `model=gpt-5.5`。
+- 已通过：版本同步、发布完整性、美感训练、App 冒烟、Agent 状态及11组导师后端测试；待发布 App v359 后核对 GitHub Pages。
+
 ## v358 (2026-07-10)
 
 - 修复美感训练导师服务地址兼容：Supabase Edge Function 使用完整函数地址，Cloudflare 隧道地址自动追加 `/api/aesthetic-coach`，避免切换服务后请求到错误路径。

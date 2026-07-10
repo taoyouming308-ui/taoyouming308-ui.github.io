@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="358">
+<html lang="zh-CN" data-version="359">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3963,9 +3963,14 @@ function requestAestheticCoach(flow, guide, answer) {
       var endpoint = /\/functions\/v1\/aesthetic-coach\/?$/.test(requestData.base)
         ? requestData.base
         : requestData.base + '/api/aesthetic-coach';
+      var coachHeaders = { 'Content-Type': 'application/json' };
+      if (/\.supabase\.co\/functions\/v1\//.test(endpoint)) {
+        coachHeaders.apikey = SUPABASE_KEY;
+        coachHeaders.Authorization = 'Bearer ' + SUPABASE_KEY;
+      }
       return fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: coachHeaders,
         signal: controller ? controller.signal : undefined,
         body: JSON.stringify({
           username: aestheticIdentity(),
