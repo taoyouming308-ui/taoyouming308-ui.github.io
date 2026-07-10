@@ -6,6 +6,12 @@
 - 保留用户先观察、再回答、再接受 AI 纠偏的流程，不提前泄露本题完整答案。
 - 待完成：发布 v366 并核对 GitHub Pages 线上版本。
 
+## Knowledge candidate collector (local, not published)
+
+- 新增 `scripts/collect-aesthetic-candidates.js` 和来源配置示例，支持抓取明确允许的 HTTPS 公开来源。
+- DeepSeek 仅用于原创摘要、主题分类和版权风险提示，候选写入 `knowledge-candidates/pending/`，不会自动修改正式知识或评分标准。
+- API Key 只读取 `DEEPSEEK_API_KEY` 环境变量；支持 `--no-ai` 先做无模型候选采集。
+
 ## v365 (2026-07-10)
 
 - 修复快速观察标签重复插入“观察标签：”导致认真回答被低质量检测误判的问题。

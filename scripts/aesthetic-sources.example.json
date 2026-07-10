@@ -1,0 +1,8 @@
+[
+  {
+    "name": "示例公开来源",
+    "url": "https://example.com/aesthetic-article",
+    "allowed": false,
+    "notes": "替换为你已核验、允许抓取的公开来源；脚本不会自动发现或抓取未列入白名单的站点。"
+  }
+]
