@@ -6,23 +6,25 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://pdssrmpeiuwvxzsgsc
 const SUPABASE_ANON_KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t";
 
 const STAGE_RULES: Record<string, string> = {
-  observe: "Evaluate whether the student accurately describes visual facts: outline, length proportions, layers, weight, bangs, face-framing, lines, texture, hair color, gloss. Flag subjective words like 'high-end, slim, gentle'.",
-  analyze: "Check if the student explains causal links between design actions and visual results, not just repeating observations. Push on why outline, layers, weight, length are arranged this way.",
-  judge: "Check if they say who it suits/doesn't suit, provide reasons, note hair quality and maintenance. Don't assume face shape or hair quality from one photo.",
-  design: "Check if the plan covers outline, length, layers, weight, face-framing, texture, and technical steps. Point out the key gap between design language and execution.",
-  review: "Check if the student extracts transferable principles of proportion, space, focus, style, color or texture, distinguishing cut, style, model and photography.",
+  observe: "DSS visual scan. Evaluate only directly visible facts: length, outline, line direction, weight location, layers, texture, curl and color. Flag style labels, suitability claims and technical guesses at this stage.",
+  analyze: "DSS structure. Check relationships among top, sides, back and face-frame: support, connection, weight, focus, stable areas and moving areas. Do not accept a repeated list of surface observations as analysis.",
+  judge: "DSS nine-style synthesis. The only base styles are natural, french, korean, japanese, urban, minimal, sweet, androgynous and avant-garde. Require one primary, at most one secondary, at least three visual evidence points and one counter-signal.",
+  design: "DSS technical translation. Start from visual results that must be preserved, then test outline, layers, weight, face-frame, texture and styling hypotheses. Require explicit unknowns; never present a finished photo as proof of exact cutting angles or tools.",
+  review: "DSS person adaptation. Check what to keep, adjust or abandon for the person's target, head/face proportions, real hair properties, context and maintenance capacity. Avoid stereotypes; require trade-offs and an alternative plan.",
 };
 
 const STAGE_MODULES: Record<string, string[]> = {
   observe: ["style", "outline", "layers", "bangs", "texture", "color", "uncertainties"],
   analyze: ["outline", "layers", "bangs", "texture", "curlStyling", "cuttingLogic", "uncertainties"],
-  judge: ["suitability", "texture", "maintenance", "uncertainties"],
+  judge: ["style", "outline", "layers", "texture", "curlStyling", "color", "uncertainties"],
   design: ["outline", "layers", "bangs", "texture", "curlStyling", "color", "cuttingLogic", "maintenance", "uncertainties"],
   review: ["style", "outline", "layers", "suitability", "cuttingLogic", "maintenance", "uncertainties"],
 };
 
+const DSS_STYLES = ["natural", "french", "korean", "japanese", "urban", "minimal", "sweet", "androgynous", "avant_garde"];
+
 function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "", previousModules: Record<string, unknown> = {}): string {
-  return `你是资深发型设计教育导师。请只根据图片可见证据建立该图片专属分析底稿；看不清或无法确认的内容必须放入 uncertainties，不得把推测写成事实。
+  return `你是遵循 DSS V1.0 的资深发型设计教育导师。请先观察事实，再归纳风格。只根据图片可见证据建立该图片专属分析底稿；看不清或无法确认的内容必须放入 uncertainties，不得把推测写成事实。
 案例：${String(caseData.title || "").slice(0, 120)}；分类：${String(caseData.category || "").slice(0, 80)}
 已知限制：${String(caseData.limitations || "").slice(0, 500)}
 用户补充的真实信息：${extraFacts || "无"}
@@ -42,7 +44,7 @@ function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: s
   const priorText = priorLines.join("\n").slice(0, 4200) || "None";
   const priorFeedback = JSON.stringify(feedbackHistory.slice(-3)).slice(0, 3600) || "[]";
   const moduleText = JSON.stringify(modules).slice(0, 7000);
-  return "You are a hair design mentor. Train students to observe, analyze, judge, design independently.\n\n" +
+  return "You are a DSS V1.0 hair design mentor. Train students through visual scan, structure, style synthesis, technical translation and person adaptation.\n\n" +
     "Stage: " + stage + " | Rule: " + rule + "\n\n" +
     "Case: " + String(caseData.title || "").slice(0, 120) + " (" + String(caseData.category || "").slice(0, 80) + ")\n" +
     "Focus: " + String(caseData.focus || "").slice(0, 200) + " | Limits: " + String(caseData.limitations || "").slice(0, 500) + "\n\n" +
@@ -53,7 +55,7 @@ function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: s
     "Requirements:\n" +
     "1. Compare all answers, identify newly added valid observations and improvement from prior rounds.\n" +
     "2. Separate observedPoints, missedPoints and misconceptions; never praise unsupported claims.\n" +
-    "3. Ask one guiding question without exposing the whole answer before the final round.\n" +
+    "3. Ask one guiding question without exposing the whole answer before the final round. For style synthesis, only use these nine base styles: " + DSS_STYLES.join(", ") + ".\n" +
     "4. Return completion 0-100 and explainable metrics: accuracy, coverage, evidence, logic, factInference, technical, progress.\n" +
     (finalRequest ? "5. This is the final round: include finalAnalysis for the current stage based on the selected modules and all answers.\n" : "5. finalAnalysis must be empty before the final round.\n") +
     "6. Output ONLY JSON: {\"score\":0,\"affirmation\":\"\",\"improvement\":\"\",\"observedPoints\":[],\"missedPoints\":[],\"misconceptions\":[],\"follow_up\":\"\",\"completion\":0,\"metrics\":{\"accuracy\":0,\"coverage\":0,\"evidence\":0,\"logic\":0,\"factInference\":0,\"technical\":0,\"progress\":0},\"finalAnalysis\":\"\",\"ready\":true}";
