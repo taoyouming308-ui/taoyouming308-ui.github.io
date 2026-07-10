@@ -131,6 +131,17 @@
       { id: 'era', name: '经典 ↔ 前卫', use: '判断设计对趋势的依赖程度和长期适用性。' },
       { id: 'distance', name: '亲和 ↔ 距离感', use: '判断轮廓开放度、五官暴露度和整体气场。' }
     ],
+    styleLibrary: [
+      { id: 'natural', name: '自然风', english: 'Natural', keywords: '真实、舒适、低造作', language: '均衡轮廓、中等控制、自然纹理、低对比色彩。', neighbors: '与法式共享松弛；比法式更均衡、比日系更少细节。', mapping: '保留真实质感，减少统一造型痕迹，优先考虑日常维护。' },
+      { id: 'french', name: '法式风', english: 'French', keywords: '松弛、流动、留白', language: '柔曲线、轻重对比、局部留白、不完全规则的纹理、低饱和色彩。', neighbors: '与日系都可轻盈；法式更松弛留白，日系更强调束感和细节。', mapping: '控制统一痕迹，保留流动和留白，避免把每一束都做成同样方向。' },
+      { id: 'korean', name: '韩系风', english: 'Korean', keywords: '精致、柔和、完整', language: '脸周包裹、连续线条、规则卷度、光泽统一、完成度高。', neighbors: '与少女共享柔和；韩系更精致统一，少女更圆润轻快。', mapping: '强化脸周连接和光泽，控制卷度尺度，减少随机碎感。' },
+      { id: 'japanese', name: '日系风', english: 'Japanese', keywords: '轻盈、细节、灵动', language: '束感、碎感、丰富局部层次、方向变化和空气感。', neighbors: '与法式共享轻盈；日系细节密度更高、方向变化更明显。', mapping: '保留结构支撑，再用束感和局部纹理制造动感，避免平均打薄。' },
+      { id: 'urban', name: '都市风', english: 'Urban', keywords: '知性、利落、稳定', language: '清晰轮廓、中低层次、稳定重心、整洁光泽和高复现性。', neighbors: '与极简共享克制；都市更强调职业场景和可维护性。', mapping: '稳定重心、清楚边界、减少维护成本，让设计可持续复现。' },
+      { id: 'minimal', name: '极简风', english: 'Minimal', keywords: '克制、纯净、安静', language: '少层次、少纹理、精确边界、大面积留白和单一色彩关系。', neighbors: '与都市共享结构；极简更少装饰，依赖比例、贴合和边界质量。', mapping: '减少元素但提高精度，先确认头型、发流和边界，再决定长度。' },
+      { id: 'sweet', name: '少女风', english: 'Sweet', keywords: '轻快、亲和、圆润', language: '柔曲线、小量感、轻刘海、弹性小弧和明快但不必浅的色彩。', neighbors: '与韩系共享柔和；少女更圆润亲和，韩系更精致包裹。', mapping: '降低攻击性，保留圆润和轻快，避免过度厚重或锐利切口。' },
+      { id: 'androgynous', name: '中性风', english: 'Androgynous', keywords: '利落、冷静、力量', language: '直线、几何、集中重量、少卷度、深色或高对比结构。', neighbors: '与都市共享利落；中性更去装饰、直线和力量感更明显。', mapping: '减少曲线和装饰，明确结构边界，同时确认顾客对暴露和维护的接受度。' },
+      { id: 'avant_garde', name: '先锋风', english: 'Avant-garde', keywords: '实验、冲突、表达', language: '非对称、强对比、非常规轮廓、特殊色块或故意失衡。', neighbors: '与日系可共享细节；先锋更强调冲突、表达和非常规目的。', mapping: '先明确表达目标和风险，再设计对比关系；不能把随机凌乱当作先锋。' }
+    ],
     rubric: [
       { id: 'observation', name: '观察能力', verb: '会看', weight: 20, question: '是否准确描述轮廓、比例、层次、重量、线条、纹理和色彩事实？' },
       { id: 'analysis', name: '分析能力', verb: '会拆', weight: 20, question: '是否说明设计动作为什么产生当前视觉结果？' },

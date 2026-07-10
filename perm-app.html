@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="366">
+<html lang="zh-CN" data-version="367">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2753,6 +2753,17 @@ body {
       .ae-axis { min-height:86px; padding:12px; border:1px solid var(--ae-line); border-radius:12px; }
       .ae-axis strong { display:block; font-size:11px; }
       .ae-axis span { display:block; margin-top:7px; color:var(--ae-muted); font-size:9px; line-height:1.55; }
+      .ae-style-library { display:grid; gap:8px; margin-top:12px; }
+      .ae-style-card { border:1px solid var(--ae-line); border-radius:12px; background:#fff; overflow:hidden; }
+      .ae-style-card summary { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px; cursor:pointer; list-style:none; }
+      .ae-style-card summary::-webkit-details-marker { display:none; }
+      .ae-style-card summary strong { font-size:12px; }
+      .ae-style-card summary span { color:#8b8b85; font-size:9px; }
+      .ae-style-card summary::after { content:'＋'; color:#999993; font-size:14px; }
+      .ae-style-card[open] summary::after { content:'−'; color:#111; }
+      .ae-style-card-body { padding:0 13px 13px; border-top:1px solid var(--ae-line); }
+      .ae-style-card-body p { margin:9px 0 0; color:#666660; font-size:10px; line-height:1.65; }
+      .ae-style-card-body b { color:#22221f; }
       .ae-growth-list { display:grid; gap:8px; margin-top:12px; }
       .ae-growth-item { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--ae-line); }
       .ae-growth-item:last-child { border-bottom:0; }
@@ -2948,6 +2959,11 @@ body {
         <h3>统一风格坐标</h3>
         <p>风格名称可以变化，但视觉判断必须回到可观察、可调整的连续坐标。</p>
         <div class="ae-axis-list" id="ae-axis-list"></div>
+      </article>
+      <article class="ae-card">
+        <h3>DSS 九型风格</h3>
+        <p>先观察视觉语言，再归纳主风格和副风格。点击任一风格查看它的视觉组成、相邻区别和设计映射。</p>
+        <div class="ae-style-library" id="ae-style-library"></div>
       </article>
       <article class="ae-card">
         <h3>九章能力体系</h3>
@@ -3770,6 +3786,13 @@ window.initAestheticTraining = function() {
         aestheticEscape(module.title) + '</h3><p>' + aestheticEscape(module.objective) + '</p><div class="ae-tags">' +
         module.topics.map(function(topic) { return '<span>' + aestheticEscape(topic) + '</span>'; }).join('') +
         '</div></div></div></div>';
+    }).join('');
+  }
+
+  var styleLibrary = document.getElementById('ae-style-library');
+  if (styleLibrary) {
+    styleLibrary.innerHTML = (data.styleLibrary || []).map(function(style) {
+      return '<details class="ae-style-card"><summary><strong>' + aestheticEscape(style.name) + '</strong><span>' + aestheticEscape(style.english + ' · ' + style.keywords) + '</span></summary><div class="ae-style-card-body"><p><b>视觉语言：</b>' + aestheticEscape(style.language) + '</p><p><b>相邻风格：</b>' + aestheticEscape(style.neighbors) + '</p><p><b>设计映射：</b>' + aestheticEscape(style.mapping) + '</p></div></details>';
     }).join('');
   }
 
