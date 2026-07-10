@@ -1,12 +1,14 @@
 # Agent Sync Status
 
-## v357 (2026-07-10)
+## v358 (2026-07-10)
 
 - 修复美感训练导师服务地址兼容：Supabase Edge Function 使用完整函数地址，Cloudflare 隧道地址自动追加 `/api/aesthetic-coach`，避免切换服务后请求到错误路径。
 - 导师请求失败时明确标记为“等待点评”，不再把尚未获得模型结果的回答误写成“未通过”；重试按钮改为“重新请求点评”，保留员工已填写的原答案。
 - 当前 `tunnel-url.json` 采用稳定的 Supabase Edge Function；只读连通性检查确认 Edge Function OPTIONS 与备用 Cloudflare `/api/health` 均返回 200。
-- App version: v357
-- 待完成：发布前版本、完整性、美感训练、冒烟和 Agent 状态检查；发布后核对 GitHub Pages 版本与导师真实点评流程。
+- 合并线上最新代码时同时清理了违规加入的 `perm-app.v350.html`、`perm-app.v352.html` 运行快照，并恢复被覆盖的后台美感知识入口，专项 CI 已恢复通过。
+- App version: v358
+- 已通过：版本同步、App 冒烟、美感训练、护理出库、22组发质任务、顾客档案、后台、预约、全局 UI、11组导师后端及17组美管加同步测试。
+- 待完成：发布后核对 GitHub Pages 版本与导师真实点评流程。
 
 ## v352 (2026-07-08)
 
