@@ -100,6 +100,12 @@ data.trainingCases.forEach(row => {
   'answer_history: aestheticTrainingState.answerHistory[flow.id]',
   'feedback_history: aestheticTrainingState.feedbackHistory[flow.id]',
   '图片专属完整分析底稿',
+  'hair_aesthetic_ability_v1:',
+  'observed_points',
+  'misconceptions',
+  '当前观察完整度',
+  'showAestheticStageAnalysis()',
+  'final_request: finalRequest === true',
   "coachHeaders.Authorization = 'Bearer ' + SUPABASE_KEY",
   'hair_aesthetic_progress_v1:',
   'aesthetic-knowledge.v1.js'
@@ -128,6 +134,11 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   'const imageUrl = ""',
   'analysis structure incomplete',
   'affectedModules'
+  ,'observedPoints'
+  ,'missedPoints'
+  ,'misconceptions'
+  ,'finalAnalysis'
+  ,'factInference'
 ].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
 
 console.log(`aesthetic system ok: v${data.version}, ${data.trainingCases.length} cases, ${data.capabilities.length} capabilities, ${data.sources.length} sources`);

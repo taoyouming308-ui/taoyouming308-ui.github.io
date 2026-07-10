@@ -28,14 +28,14 @@ function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "",
 用户补充的真实信息：${extraFacts || "无"}
 已有模块（修订时只更新受新增信息影响的模块）：${JSON.stringify(previousModules).slice(0, 9000) || "无"}
 输出严格 JSON：{
- "fullAnalysis":"不超过900字的完整专业分析，覆盖所有模块",
- "summary":"不超过180字精简摘要",
- "modules":{
-  "style":"风格定位与证据","outline":"外轮廓与视觉重心","layers":"长度与层次","bangs":"刘海与脸周","texture":"发量发径与质感","curlStyling":"卷度与造型方式","color":"发色冷暖明度挑染","suitability":"适合脸型头型发质和人群","cuttingLogic":"可能的修剪分区提升角度引导线和去量逻辑","maintenance":"日常打理方式与难度","uncertainties":"无法从当前图片确认的事项"
- },"affectedModules":["本次实际修改的模块名"]}。每个模块不超过160字。首次分析所有模块必须存在；修订时 modules 只返回受影响模块。中文输出。`;
+ "fullAnalysis":"不超过650字的完整专业分析，覆盖所有模块",
+ "summary":"不超过120字精简摘要",
+ "modules":{"style|outline|layers|bangs|texture|curlStyling|color|suitability|cuttingLogic|maintenance|uncertainties":{
+  "conclusion":"模块结论","observations":["图片直接可见事实"],"inferences":["明确标记的专业推测"],"evidence":["支持结论的视觉证据"],"conflicts":["冲突信号"],"confidence":0到100,"requestedInputs":["提高置信度所需信息"]
+ }},"affectedModules":["本次实际修改的模块名"]}。每个模块文字合计不超过150字；observations/evidence最多3条，inferences/conflicts/requestedInputs最多2条。首次分析11个模块必须存在；修订时 modules 只返回受影响模块。低于60分置信度只能写成推测。中文输出。`;
 }
 
-function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: string, answerHistory: string[], feedbackHistory: unknown[], modules: Record<string, unknown>): string {
+function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: string, answerHistory: string[], feedbackHistory: unknown[], modules: Record<string, unknown>, finalRequest: boolean): string {
   const rule = STAGE_RULES[stage] || "";
   const priorLines: string[] = [];
   answerHistory.slice(-4).forEach((val, index) => priorLines.push(`- 回答${index + 1}: ${String(val).slice(0, 900)}`));
@@ -51,12 +51,12 @@ function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: s
     "Previous AI feedback: " + priorFeedback + "\n\n" +
     "Relevant image-analysis modules (authoritative evidence base): " + moduleText + "\n\n" +
     "Requirements:\n" +
-    "1. Affirm one specific thing done right.\n" +
-    "2. Point out 1-3 most critical missing points.\n" +
-    "3. Ask one follow-up question.\n" +
-    "4. Score 0-100 based on evidence, logic, completeness.\n" +
-    "5. Short professional Chinese, under 260 chars.\n" +
-    "6. Output ONLY valid JSON: {\"score\":0,\"affirmation\":\"...\",\"omissions\":[\"...\"],\"follow_up\":\"...\",\"ready\":true}";
+    "1. Compare all answers, identify newly added valid observations and improvement from prior rounds.\n" +
+    "2. Separate observedPoints, missedPoints and misconceptions; never praise unsupported claims.\n" +
+    "3. Ask one guiding question without exposing the whole answer before the final round.\n" +
+    "4. Return completion 0-100 and explainable metrics: accuracy, coverage, evidence, logic, factInference, technical, progress.\n" +
+    (finalRequest ? "5. This is the final round: include finalAnalysis for the current stage based on the selected modules and all answers.\n" : "5. finalAnalysis must be empty before the final round.\n") +
+    "6. Output ONLY JSON: {\"score\":0,\"affirmation\":\"\",\"improvement\":\"\",\"observedPoints\":[],\"missedPoints\":[],\"misconceptions\":[],\"follow_up\":\"\",\"completion\":0,\"metrics\":{\"accuracy\":0,\"coverage\":0,\"evidence\":0,\"logic\":0,\"factInference\":0,\"technical\":0,\"progress\":0},\"finalAnalysis\":\"\",\"ready\":true}";
 }
 
 async function callOpenAI(prompt: string, imageUrl: string): Promise<Record<string, unknown>> {
@@ -70,7 +70,7 @@ async function callOpenAI(prompt: string, imageUrl: string): Promise<Record<stri
     body: JSON.stringify({
       model: MODEL,
       messages: [{ role: "user", content }],
-      max_completion_tokens: imageUrl ? 3500 : 1600,
+      max_completion_tokens: imageUrl ? 3000 : 1600,
       reasoning_effort: imageUrl ? "none" : "low",
       response_format: { type: "json_object" },
     }),
@@ -111,6 +111,7 @@ Deno.serve(async (req: Request) => {
   const answerHistory = Array.isArray(payload.answer_history) ? payload.answer_history.map((v) => String(v).slice(0, 1200)).slice(-4) : [];
   const feedbackHistory = Array.isArray(payload.feedback_history) ? payload.feedback_history.slice(-3) : [];
   const analysisModules = (typeof payload.analysis_modules === "object" && payload.analysis_modules) ? payload.analysis_modules as Record<string, unknown> : {};
+  const finalRequest = payload.final_request === true;
 
   if (!username || !["analyze_image", "feedback", "revise_analysis"].includes(operation)) {
     return new Response(JSON.stringify({ error: "invalid params" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
@@ -137,14 +138,27 @@ Deno.serve(async (req: Request) => {
     }
     const selected: Record<string, unknown> = {};
     for (const key of STAGE_MODULES[stage] || []) if (key in analysisModules) selected[key] = analysisModules[key];
-    const prompt = buildPrompt(stage, caseData, answer, answerHistory, feedbackHistory, selected);
+    const prompt = buildPrompt(stage, caseData, answer, answerHistory, feedbackHistory, selected, finalRequest);
     const imageUrl = "";
     const fb = await callOpenAI(prompt, imageUrl);
     const omissions = Array.isArray(fb.omissions) ? fb.omissions.slice(0, 3).map((v: unknown) => String(v).slice(0, 120)) : [];
+    const observedPoints = Array.isArray(fb.observedPoints) ? fb.observedPoints.slice(0, 8).map((v: unknown) => String(v).slice(0, 100)) : [];
+    const missedPoints = Array.isArray(fb.missedPoints) ? fb.missedPoints.slice(0, 8).map((v: unknown) => String(v).slice(0, 100)) : omissions;
+    const misconceptions = Array.isArray(fb.misconceptions) ? fb.misconceptions.slice(0, 6).map((v: unknown) => String(v).slice(0, 120)) : [];
+    const metricSource = (typeof fb.metrics === "object" && fb.metrics) ? fb.metrics as Record<string, unknown> : {};
+    const metrics: Record<string, number> = {};
+    for (const key of ["accuracy", "coverage", "evidence", "logic", "factInference", "technical", "progress"]) metrics[key] = Math.max(0, Math.min(100, Number(metricSource[key]) || 0));
     const result = {
       score: Math.max(0, Math.min(100, Number(fb.score) || 0)),
       affirmation: String(fb.affirmation || "Done. Here is your feedback.").slice(0, 180),
-      omissions,
+      omissions: missedPoints,
+      observed_points: observedPoints,
+      missed_points: missedPoints,
+      misconceptions,
+      improvement: String(fb.improvement || "").slice(0, 220),
+      completion: Math.max(0, Math.min(100, Number(fb.completion) || Number(fb.score) || 0)),
+      metrics,
+      final_analysis: finalRequest ? String(fb.finalAnalysis || "").slice(0, 1800) : "",
       follow_up: String(fb.follow_up || "Can you point to one more visual clue?").slice(0, 180),
       ready: fb.ready !== false,
       model: MODEL,

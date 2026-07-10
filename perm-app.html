@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="361">
+<html lang="zh-CN" data-version="362">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3294,6 +3294,49 @@ function aestheticProgressKey() {
   return 'hair_aesthetic_progress_v1:' + aestheticIdentity();
 }
 
+function aestheticAbilityKey() {
+  return 'hair_aesthetic_ability_v1:' + aestheticIdentity();
+}
+
+function updateAestheticAbilityProfile() {
+  var profile;
+  try { profile = JSON.parse(localStorage.getItem(aestheticAbilityKey()) || '{}'); } catch (e) { profile = {}; }
+  profile.metrics = profile.metrics || {};
+  profile.capabilities = profile.capabilities || {};
+  profile.missedPoints = profile.missedPoints || {};
+  var data = aestheticKnowledge();
+  (data.trainingFlow || []).forEach(function(flow) {
+    var feedback = aestheticTrainingState.feedback[flow.id];
+    if (!feedback || feedback.fallback) return;
+    Object.keys(feedback.metrics || {}).forEach(function(key) {
+      var stat = profile.metrics[key] || { sum: 0, count: 0 };
+      stat.sum += Number(feedback.metrics[key]) || 0;
+      stat.count += 1;
+      profile.metrics[key] = stat;
+    });
+    var capability = profile.capabilities[flow.capabilityId] || { sum: 0, count: 0 };
+    capability.sum += Number(feedback.score) || 0;
+    capability.count += 1;
+    profile.capabilities[flow.capabilityId] = capability;
+    (feedback.missed_points || feedback.omissions || []).forEach(function(point) {
+      var label = String(point).slice(0, 80);
+      profile.missedPoints[label] = (profile.missedPoints[label] || 0) + 1;
+    });
+  });
+  profile.updatedAt = new Date().toISOString();
+  localStorage.setItem(aestheticAbilityKey(), JSON.stringify(profile));
+  return profile;
+}
+
+function currentAestheticAbilitySummary(profile) {
+  var labels = { accuracy: '结论准确度', coverage: '观察覆盖度', evidence: '证据完整度', logic: '逻辑连贯性', factInference: '事实与推测区分', technical: '技术推导', progress: '补充进步' };
+  var rows = Object.keys(profile.metrics || {}).map(function(key) {
+    var stat = profile.metrics[key];
+    return { key: key, name: labels[key] || key, score: stat.count ? Math.round(stat.sum / stat.count) : 0 };
+  }).sort(function(a, b) { return a.score - b.score; });
+  return rows;
+}
+
 function loadAestheticProgress() {
   try {
     var parsed = JSON.parse(localStorage.getItem(aestheticProgressKey()) || '{}');
@@ -4037,7 +4080,7 @@ window.updateAestheticAnalysisWithFacts = function() {
   }).catch(function() { if (window.showToast) window.showToast('底稿修订失败，请稍后重试'); });
 };
 
-function requestAestheticCoach(flow, guide, answer) {
+function requestAestheticCoach(flow, guide, answer, finalRequest) {
   var item = aestheticTrainingState.caseItem;
   return ensureAestheticAnalysis().then(function(record) {
     return postAestheticCoach({
@@ -4045,6 +4088,7 @@ function requestAestheticCoach(flow, guide, answer) {
       answer_history: aestheticTrainingState.answerHistory[flow.id] || [],
       feedback_history: aestheticTrainingState.feedbackHistory[flow.id] || [],
       analysis_modules: record.current.modules,
+      final_request: finalRequest === true,
       case: { id: item.id, title: item.title, category: item.category, focus: item.focus, limitations: item.limitations }
     });
   });
@@ -4093,7 +4137,7 @@ window.submitAestheticStage = function() {
   // 最低等待时间：让发型师感觉AI真正在思考
   var MIN_THINK_TIME = 3500;
   var thinkStart = Date.now();
-  var coachPromise = requestAestheticCoach(flow, guide, answer)
+  var coachPromise = requestAestheticCoach(flow, guide, answer, requestedReview >= AESTHETIC_MAX_REVIEWS)
     .catch(function(error) {
       return localAestheticFeedback(flow, guide, answer, error && error.message);
     });
@@ -4127,6 +4171,8 @@ function renderAestheticFeedback(flow, feedback) {
   var status = document.getElementById('ae-ai-status');
   var submit = document.getElementById('ae-submit-answer');
   var omissions = Array.isArray(feedback.omissions) ? feedback.omissions.slice(0, 3) : [];
+  var observed = Array.isArray(feedback.observed_points) ? feedback.observed_points.slice(0, 6) : [];
+  var misconceptions = Array.isArray(feedback.misconceptions) ? feedback.misconceptions.slice(0, 4) : [];
   var completedReviews = aestheticTrainingState.submissions[flow.id] || 0;
   var supplementsUsed = Math.max(0, completedReviews - 1);
   var reachedReviewLimit = completedReviews >= AESTHETIC_MAX_REVIEWS;
@@ -4140,9 +4186,13 @@ function renderAestheticFeedback(flow, feedback) {
     '<div class="ae-feedback-kicker">' + kicker +
       '<span class="ae-feedback-score">' + Math.max(0, Math.min(100, Number(feedback.score) || 0)) + '</span></div>' +
     '<h4>你已经做到</h4><p>' + aestheticEscape(feedback.affirmation || '已经完成独立作答。') + '</p>' +
+    (feedback.improvement ? '<h4>比上一次的进步</h4><p>' + aestheticEscape(feedback.improvement) + '</p>' : '') +
+    (observed.length ? '<h4>已经观察到</h4><ul>' + observed.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>' : '') +
     '<h4>下一步补充</h4>' + (omissions.length
       ? '<ul>' + omissions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>'
       : '<p>当前信息较完整，可以进入下一步。</p>') +
+    (misconceptions.length ? '<h4>需要修正</h4><ul>' + misconceptions.map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join('') + '</ul>' : '') +
+    (!feedback.fallback ? '<p style="margin-top:8px;color:#fff;"><strong>当前观察完整度：' + Math.max(0, Math.min(100, Number(feedback.completion) || 0)) + '%</strong></p>' : '') +
     '<p class="ae-follow-up"><strong>导师追问：</strong>' + aestheticEscape(feedback.follow_up || '你能为这个判断再指出一个画面证据吗？') + '</p>' +
     (!feedback.fallback && completedReviews > 0 ? '<p style="margin-top:8px;color:#85857f;">AI 点评 ' + completedReviews + '/' + AESTHETIC_MAX_REVIEWS + ' · 已补充 ' + supplementsUsed + '/' + AESTHETIC_MAX_SUPPLEMENTS + ' 次</p>' : '') +
     (feedback.fallback ? '<p style="margin-top:8px;color:#85857f;">AI 导师暂时未连接，当前状态为“等待点评”，不是“未通过”。</p>' : '') +
@@ -4151,10 +4201,22 @@ function renderAestheticFeedback(flow, feedback) {
     '<div class="ae-feedback-actions">' +
       (feedback.fallback ? '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">重新请求点评</button>' : '') +
       (canSupplement ? '<button class="ae-secondary" type="button" onclick="reviseAestheticStage()">补充后再评（还可' + (AESTHETIC_MAX_SUPPLEMENTS - supplementsUsed) + '次）</button>' : '') +
+      (feedback.final_analysis ? '<button class="ae-secondary" type="button" onclick="showAestheticStageAnalysis()">查看本题完整解析</button>' : '') +
       (canContinue ? '<button class="ae-primary" type="button" onclick="continueAestheticStage()">' + (aestheticTrainingState.index === 4 ? '完成并看解析' : '进入下一步') + '</button>' : '') +
     '</div>';
   box.classList.add('on');
 }
+
+window.showAestheticStageAnalysis = function() {
+  var flow = currentAestheticFlow();
+  var feedback = flow ? aestheticTrainingState.feedback[flow.id] : null;
+  var master = document.getElementById('ae-master');
+  var content = document.getElementById('ae-master-content');
+  if (!feedback || !feedback.final_analysis || !master || !content) return;
+  content.innerHTML = '<div class="ae-master-section"><strong>' + aestheticEscape(flow.name + ' · 本题完整解析') + '</strong><p>' + aestheticEscape(feedback.final_analysis) + '</p></div>';
+  master.classList.add('on');
+  master.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 
 window.reviseAestheticStage = function() {
   var flow = currentAestheticFlow();
@@ -4200,6 +4262,8 @@ function completeAestheticTraining() {
   var scoreValues = data.capabilities.map(function(item) { return Number(scores[item.id]) || 0; });
   var average = scoreValues.length ? Math.round(scoreValues.reduce(function(sum, value) { return sum + value; }, 0) / scoreValues.length) : 0;
   var progress = loadAestheticProgress();
+  var abilityProfile = updateAestheticAbilityProfile();
+  var abilitySummary = currentAestheticAbilitySummary(abilityProfile);
   progress.attempts.push({
     type: 'guided-v2',
     date: aestheticToday(),
@@ -4209,7 +4273,8 @@ function completeAestheticTraining() {
     averageScore: average,
     scores: scores,
     answers: aestheticTrainingState.answers,
-    aiFeedback: aestheticTrainingState.feedback
+    aiFeedback: aestheticTrainingState.feedback,
+    abilityMetrics: abilitySummary
   });
   saveAestheticProgress(progress);
   var trainer = document.getElementById('ae-trainer');
@@ -4220,6 +4285,7 @@ function completeAestheticTraining() {
       '<div class="ae-complete-grid">' + data.capabilities.map(function(item) {
         return '<div><strong>' + (Number(scores[item.id]) || 0) + '</strong><span>' + aestheticEscape(item.name) + '</span></div>';
       }).join('') + '</div>' +
+      (abilitySummary.length ? '<p style="margin:12px 0;color:#74746e;font-size:11px;line-height:1.7;">当前优先提升：' + aestheticEscape(abilitySummary.slice(0, 2).map(function(row) { return row.name + ' ' + row.score + '分'; }).join('、')) + '</p>' : '') +
       '<button class="ae-primary" type="button" onclick="showAestheticMaster()" style="width:100%;">对照完整设计解析</button>';
   }
   renderAestheticSummary();
