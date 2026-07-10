@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="365">
+<html lang="zh-CN" data-version="366">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2807,6 +2807,11 @@ body {
       .ae-quick-tag { min-height:30px; padding:0 10px; border:1px solid #d8d8d2; border-radius:999px; background:#fff; color:#4d4d48; font:inherit; font-size:10px; cursor:pointer; }
       .ae-quick-tag.on { border-color:#111; background:#111; color:#fff; }
       .ae-answer-hint { margin:0 0 7px; color:#8b8b85; font-size:9px; line-height:1.55; }
+      .ae-style-lesson { margin:0 0 12px; padding:12px; border-left:2px solid #111; background:#fafaf7; }
+      .ae-style-lesson-label { color:#8b8b85; font-size:8px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; }
+      .ae-style-lesson strong { display:block; margin-top:5px; color:#22221f; font-size:11px; line-height:1.55; }
+      .ae-style-lesson p { margin:4px 0 0; color:#666660; font-size:10px; line-height:1.65; }
+      .ae-style-lesson em { color:#111; font-style:normal; font-weight:700; }
       .ae-answer { width:100%; min-height:132px; padding:13px; border:1px solid #dcdcd6; border-radius:12px; background:#fff; color:#111; font:inherit; font-size:12px; line-height:1.7; resize:vertical; }
       .ae-answer:focus { border-color:#111; outline:none; box-shadow:0 0 0 2px rgba(0,0,0,.06); }
       .ae-answer-count { margin-top:5px; color:#9b9b95; font-size:8px; text-align:right; }
@@ -2918,6 +2923,7 @@ body {
         <div class="ae-coach-note" id="ae-coach-note"></div>
         <div class="ae-prompt-list" id="ae-prompt-list"></div>
         <div class="ae-quick-tools" id="ae-quick-tools"></div>
+        <div class="ae-style-lesson" id="ae-style-lesson"></div>
         <p class="ae-answer-hint" id="ae-answer-hint">先用下面的观察标签搭骨架，再补充你的理由。</p>
         <textarea class="ae-answer" id="ae-stage-answer" maxlength="1200" placeholder="" oninput="updateAestheticAnswerCount()"></textarea>
         <div class="ae-answer-count" id="ae-answer-count">0 / 1200</div>
@@ -3880,6 +3886,7 @@ function renderAestheticStage() {
   var note = document.getElementById('ae-coach-note');
   var prompts = document.getElementById('ae-prompt-list');
   var quickTools = document.getElementById('ae-quick-tools');
+  var styleLesson = document.getElementById('ae-style-lesson');
   var answerHint = document.getElementById('ae-answer-hint');
   var answer = document.getElementById('ae-stage-answer');
   var feedback = document.getElementById('ae-feedback');
@@ -3894,6 +3901,7 @@ function renderAestheticStage() {
   if (note) note.textContent = '导师提醒：' + flow.coachAction;
   if (prompts) prompts.innerHTML = guide.prompts.map(function(item) { return '<span>' + aestheticEscape(item) + '</span>'; }).join('');
   if (quickTools) renderAestheticQuickTools(quickTools, flow.id);
+  if (styleLesson) renderAestheticStyleLesson(styleLesson, flow.id);
   if (answerHint) answerHint.textContent = aestheticQuickHint(flow.id);
   if (answer) {
     answer.value = aestheticTrainingState.answers[flow.id] || '';
@@ -3925,6 +3933,34 @@ var AESTHETIC_QUICK_TOOLS = {
   design: { label: '把视觉目标转成可执行假设', tags: ['保留视觉结果', '轮廓', '层次', '重量', '脸周', '纹理', '造型路径', '技术待确认'] },
   review: { label: '换成真实顾客时做取舍', tags: ['保留', '调整', '放弃', '发质发量', '头脸比例', '维护时间', '场景限制', '风险边界'] }
 };
+
+var AESTHETIC_STYLE_LESSONS = {
+  observe: {
+    title: '风格先看变量，不先背名称',
+    body: '长度、轮廓、重量、线条和纹理是风格的组成材料。先写事实，再判断这些材料共同形成了什么感觉。'
+  },
+  analyze: {
+    title: '同一个元素，关系不同，风格就会变',
+    body: '轻重量＋留白更容易形成法式松弛；轻重量＋高细节更接近日系；清晰边界＋低纹理则更接近极简或都市。'
+  },
+  judge: {
+    title: '主风格不是唯一标签',
+    body: '先选主风格和副风格，再说明证据。法式与日系都可能轻盈，但法式强调松弛留白，日系强调束感和细节密度。'
+  },
+  design: {
+    title: '把风格语言翻译成设计动作',
+    body: '想要法式松弛，就要控制统一痕迹并保留流动；想要都市感，就要稳定重心、清晰轮廓并降低维护难度。'
+  },
+  review: {
+    title: '设计不是复制，是保留风格核心后重新适配',
+    body: '换顾客时先找必须保留的风格核心，再根据发质、头脸比例、场景和维护时间决定调整或放弃什么。'
+  }
+};
+
+function renderAestheticStyleLesson(container, stage) {
+  var lesson = AESTHETIC_STYLE_LESSONS[stage] || AESTHETIC_STYLE_LESSONS.observe;
+  container.innerHTML = '<div class="ae-style-lesson-label">DSS STYLE NOTE</div><strong>' + aestheticEscape(lesson.title) + '</strong><p>' + aestheticEscape(lesson.body) + '</p>';
+}
 
 function aestheticQuickHint(stage) {
   var hints = {
