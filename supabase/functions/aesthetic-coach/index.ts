@@ -39,6 +39,8 @@ DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、�
 最近对话：${JSON.stringify(messages).slice(0, 6000)}
 当前回答：${String(payload.answer || "").slice(0, 600)}
 相关图片知识模块：${JSON.stringify(modules).slice(0, 7000)}
+当前策略版本：${String(payload.strategy_version || "control-v1").slice(0, 80)}
+经过自动验证的附加教学策略：${String(payload.strategy_instructions || "").slice(0, 2000) || "无，保持当前控制策略"}
 
 教学规则：
 1. 区分图片直接事实、合理推测、无依据判断和当前无法确认的信息。

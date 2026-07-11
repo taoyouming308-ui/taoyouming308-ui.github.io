@@ -1,0 +1,326 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+const MODEL = Deno.env.get("AESTHETIC_EVALUATOR_MODEL") || "gpt-5.5";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const EVALUATOR_VERSION = "evaluator-v1";
+const CANDIDATE_INTERVAL = 100;
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
+  "Content-Type": "application/json",
+};
+
+function clamp(value: unknown, min = 0, max = 100): number {
+  return Math.max(min, Math.min(max, Math.round(Number(value) || 0)));
+}
+
+function cleanText(value: unknown, max = 1200): string {
+  return String(value || "").trim().slice(0, max);
+}
+
+function rest(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    ...init,
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: "Bearer " + SERVICE_KEY,
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function activeEmployee(username: string, store: string): Promise<boolean> {
+  const query = "staff?select=username,store&username=eq." + encodeURIComponent(username) +
+    "&active=eq.true&limit=1";
+  const response = await rest(query);
+  if (!response.ok) return false;
+  const rows = await response.json();
+  return Array.isArray(rows) && rows.some((row) => !store || !row.store || row.store === store);
+}
+
+async function openAI(prompt: string): Promise<Record<string, unknown>> {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + OPENAI_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      max_completion_tokens: 2200,
+      reasoning_effort: "low",
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!response.ok) throw new Error("OpenAI " + response.status + ": " + await response.text());
+  const body = await response.json();
+  const raw = body.choices?.[0]?.message?.content || "{}";
+  return JSON.parse(raw.replace(/```json\n?|```/g, ""));
+}
+
+function evaluationPrompt(session: Record<string, unknown>, turns: unknown[]): string {
+  return `你是独立的发型审美训练质量评审AI，不是原训练导师。请评价训练是否真正帮助员工自己产生了更具体、更有证据、可迁移的判断。
+
+评审原则：
+1. 不因文字长或表达华丽给高分，表达能力与审美观察能力分开。
+2. 检查首次回答到最终回答是否增加了图片证据、结构因果、取舍与顾客沟通能力。
+3. 检查导师是否一次只推进一个关键点，是否重复、泄露答案、过度推断图片不可见信息。
+4. 专业准确性与安全性是硬门槛。员工原话不能成为专业知识标准。
+5. improvement_score 可为负数；没有真实改善不得判为有效。
+
+Session：${JSON.stringify(session).slice(0, 5000)}
+完整轮次：${JSON.stringify(turns).slice(0, 18000)}
+
+只输出JSON：
+{"problem_tags":[],"strategy_tags":[],"initial_quality":0,"final_quality":0,"improvement_score":0,
+"professional_accuracy":0,"guidance_quality":0,"evidence_growth":0,"safety_score":0,
+"effective":false,"failure_reason":"","recommended_strategy":"","evaluator_notes":""}`;
+}
+
+async function upsertSession(payload: Record<string, unknown>): Promise<void> {
+  const row = {
+    id: cleanText(payload.session_id, 120),
+    username: cleanText(payload.username, 80),
+    store: cleanText(payload.store, 100),
+    business_date: cleanText(payload.business_date, 10),
+    case_id: cleanText(payload.case_id, 120),
+    case_title: cleanText(payload.case_title, 180),
+    status: payload.status === "completed" ? "completed" : "in_progress",
+    current_goal: cleanText(payload.current_goal, 40) || "outline",
+    turn_count: clamp(payload.turn_count, 0, 100),
+    prompt_version: cleanText(payload.prompt_version, 60) || "coach-v1",
+    strategy_version: cleanText(payload.strategy_version, 60) || "control-v1",
+    model_version: cleanText(payload.model_version, 80),
+    goal_states: typeof payload.goal_states === "object" && payload.goal_states ? payload.goal_states : {},
+    summary: typeof payload.summary === "object" && payload.summary ? payload.summary : {},
+    updated_at: new Date().toISOString(),
+    completed_at: payload.status === "completed" ? new Date().toISOString() : null,
+  };
+  const response = await rest("aesthetic_training_sessions?on_conflict=id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(row),
+  });
+  if (!response.ok) throw new Error("session write " + response.status + ": " + await response.text());
+}
+
+async function upsertTurns(payload: Record<string, unknown>): Promise<unknown[]> {
+  const messages = Array.isArray(payload.messages) ? payload.messages.slice(-40) as Record<string, unknown>[] : [];
+  const rows: Record<string, unknown>[] = [];
+  let employeeAnswer = "";
+  let index = 0;
+  for (const message of messages) {
+    if (message.role === "user") {
+      employeeAnswer = cleanText(message.content, 1200);
+      continue;
+    }
+    if (message.role === "assistant" && employeeAnswer) {
+      index += 1;
+      rows.push({
+        session_id: cleanText(payload.session_id, 120),
+        turn_index: index,
+        employee_answer: employeeAnswer,
+        coach_message: cleanText(message.content, 1200),
+        active_goal: cleanText((message.meta as Record<string, unknown>)?.goal || payload.current_goal, 40) || "outline",
+        response_type: cleanText((message.meta as Record<string, unknown>)?.response_type, 40),
+        classification: (message.meta as Record<string, unknown>)?.classification || {},
+        repeated_pattern: cleanText((message.meta as Record<string, unknown>)?.repeated_pattern, 180),
+        strategy_version: cleanText(payload.strategy_version, 60) || "control-v1",
+        model_version: cleanText(payload.model_version, 80),
+      });
+      employeeAnswer = "";
+    }
+  }
+  if (employeeAnswer) {
+    index += 1;
+    rows.push({
+      session_id: cleanText(payload.session_id, 120),
+      turn_index: index,
+      employee_answer: employeeAnswer,
+      coach_message: "",
+      active_goal: cleanText(payload.current_goal, 40) || "outline",
+      strategy_version: cleanText(payload.strategy_version, 60) || "control-v1",
+      model_version: cleanText(payload.model_version, 80),
+    });
+  }
+  if (rows.length) {
+    const response = await rest("aesthetic_training_turns?on_conflict=session_id,turn_index", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify(rows),
+    });
+    if (!response.ok) throw new Error("turn write " + response.status + ": " + await response.text());
+  }
+  return rows;
+}
+
+async function evaluateSession(payload: Record<string, unknown>, turns: unknown[]): Promise<void> {
+  const sessionId = cleanText(payload.session_id, 120);
+  const result = await openAI(evaluationPrompt(payload, turns));
+  const row = {
+    session_id: sessionId,
+    evaluator_version: EVALUATOR_VERSION,
+    evaluator_model: MODEL,
+    problem_tags: Array.isArray(result.problem_tags) ? result.problem_tags.slice(0, 12) : [],
+    strategy_tags: Array.isArray(result.strategy_tags) ? result.strategy_tags.slice(0, 12) : [],
+    initial_quality: clamp(result.initial_quality),
+    final_quality: clamp(result.final_quality),
+    improvement_score: clamp(result.improvement_score, -100, 100),
+    professional_accuracy: clamp(result.professional_accuracy),
+    guidance_quality: clamp(result.guidance_quality),
+    evidence_growth: clamp(result.evidence_growth),
+    safety_score: clamp(result.safety_score),
+    effective: result.effective === true && clamp(result.professional_accuracy) >= 80 && clamp(result.safety_score) >= 90,
+    failure_reason: cleanText(result.failure_reason, 500),
+    recommended_strategy: cleanText(result.recommended_strategy, 1000),
+    evaluator_notes: cleanText(result.evaluator_notes, 1200),
+    raw_result: result,
+  };
+  const response = await rest("aesthetic_training_evaluations?on_conflict=session_id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(row),
+  });
+  if (!response.ok) throw new Error("evaluation write " + response.status + ": " + await response.text());
+  await updateExperiment(sessionId, row);
+  await maybeGenerateCandidate();
+  await reconcileExperiment();
+}
+
+async function updateExperiment(sessionId: string, evaluation: Record<string, unknown>): Promise<void> {
+  const response = await rest("aesthetic_strategy_experiments?session_id=eq." + encodeURIComponent(sessionId), {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      completed: true,
+      improvement_score: evaluation.improvement_score,
+      professional_accuracy: evaluation.professional_accuracy,
+      safety_score: evaluation.safety_score,
+    }),
+  });
+  if (!response.ok) throw new Error("experiment update " + response.status);
+}
+
+async function maybeGenerateCandidate(): Promise<void> {
+  const countResponse = await rest("aesthetic_training_evaluations?select=id", {
+    headers: { Prefer: "count=exact", Range: "0-0" },
+  });
+  const total = Number((countResponse.headers.get("content-range") || "/0").split("/")[1]) || 0;
+  if (total < CANDIDATE_INTERVAL || total % CANDIDATE_INTERVAL !== 0) return;
+  const existing = await rest("aesthetic_coach_strategies?select=id&source_evaluation_count=eq." + total + "&limit=1");
+  if (existing.ok && (await existing.json()).length) return;
+  const sampleResponse = await rest("aesthetic_training_evaluations?select=problem_tags,strategy_tags,improvement_score,professional_accuracy,guidance_quality,evidence_growth,safety_score,effective,failure_reason,recommended_strategy&order=created_at.desc&limit=100");
+  if (!sampleResponse.ok) return;
+  const sample = await sampleResponse.json();
+  const proposal = await openAI(`你是训练策略优化AI。根据100次独立评审，生成一个仅优化“如何追问”的候选策略，不修改专业知识标准，不改变现有自由聊天体验。
+数据：${JSON.stringify(sample).slice(0, 24000)}
+只输出JSON：{"instructions":"不超过800字、可直接追加给训练导师的规则","predicted_improvement":0,"professional_risk":0,"safety_risk":0,"rationale":""}`);
+  if (clamp(proposal.professional_risk) > 10 || clamp(proposal.safety_risk) > 5 || clamp(proposal.predicted_improvement) < 5) return;
+  const version = "candidate-" + new Date().toISOString().slice(0, 10).replace(/-/g, "") + "-" + total;
+  await rest("aesthetic_coach_strategies", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      version,
+      status: "experiment",
+      instructions: cleanText(proposal.instructions, 2000),
+      source_evaluation_count: total,
+      validation_score: clamp(proposal.predicted_improvement),
+      experiment_percent: 10,
+      parent_version: "control-v1",
+      metrics: proposal,
+      activated_at: new Date().toISOString(),
+    }),
+  });
+}
+
+async function reconcileExperiment(): Promise<void> {
+  const strategyResponse = await rest("aesthetic_coach_strategies?select=version,minimum_samples,minimum_accuracy,minimum_safety,minimum_improvement&status=eq.experiment&order=activated_at.desc&limit=1");
+  if (!strategyResponse.ok) return;
+  const strategies = await strategyResponse.json();
+  const strategy = strategies[0];
+  if (!strategy) return;
+  const resultResponse = await rest(
+    "aesthetic_strategy_experiments?select=improvement_score,professional_accuracy,safety_score&strategy_version=eq." +
+    encodeURIComponent(strategy.version) + "&completed=eq.true&limit=1000",
+  );
+  if (!resultResponse.ok) return;
+  const results = await resultResponse.json();
+  if (results.length < Number(strategy.minimum_samples || 100)) return;
+  const average = (key: string) => results.reduce((sum: number, row: Record<string, unknown>) => sum + Number(row[key] || 0), 0) / results.length;
+  const metrics = {
+    samples: results.length,
+    improvement: average("improvement_score"),
+    professional_accuracy: average("professional_accuracy"),
+    safety: average("safety_score"),
+  };
+  const passed = metrics.improvement >= Number(strategy.minimum_improvement || 5) &&
+    metrics.professional_accuracy >= Number(strategy.minimum_accuracy || 90) &&
+    metrics.safety >= Number(strategy.minimum_safety || 95);
+  const response = await rest("aesthetic_coach_strategies?version=eq." + encodeURIComponent(strategy.version), {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      status: passed ? "active" : "rejected",
+      experiment_percent: passed ? 100 : 0,
+      metrics,
+      activated_at: passed ? new Date().toISOString() : null,
+    }),
+  });
+  if (!response.ok) throw new Error("strategy reconcile " + response.status);
+}
+
+function stableBucket(text: string): number {
+  let hash = 0;
+  for (let index = 0; index < text.length; index++) hash = ((hash << 5) - hash + text.charCodeAt(index)) | 0;
+  return Math.abs(hash) % 100;
+}
+
+async function assignStrategy(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const sessionId = cleanText(payload.session_id, 120);
+  const response = await rest("aesthetic_coach_strategies?select=version,status,instructions,experiment_percent&status=in.(experiment,active,control)&order=activated_at.desc.nullslast,created_at.desc");
+  if (!response.ok) return { version: "control-v1", instructions: "" };
+  const strategies = await response.json();
+  const experiment = strategies.find((row: Record<string, unknown>) => row.status === "experiment");
+  const active = strategies.find((row: Record<string, unknown>) => row.status === "active") ||
+    strategies.find((row: Record<string, unknown>) => row.status === "control");
+  const selected = experiment && stableBucket(sessionId) < Number(experiment.experiment_percent || 0) ? experiment : active;
+  const cohort = selected?.status === "experiment" ? "experiment" : "control";
+  await rest("aesthetic_strategy_experiments?on_conflict=session_id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ session_id: sessionId, strategy_version: selected?.version || "control-v1", cohort }),
+  });
+  return { version: selected?.version || "control-v1", instructions: cleanText(selected?.instructions, 2000), cohort };
+}
+
+Deno.serve(async (request: Request) => {
+  if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
+  if (request.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: cors });
+  if (!SERVICE_KEY || !OPENAI_KEY) return new Response(JSON.stringify({ error: "service not configured" }), { status: 503, headers: cors });
+  let payload: Record<string, unknown>;
+  try { payload = await request.json(); } catch { return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: cors }); }
+  const username = cleanText(payload.username, 80);
+  const store = cleanText(payload.store, 100);
+  const operation = cleanText(payload.operation, 40);
+  if (!username || !(await activeEmployee(username, store))) return new Response(JSON.stringify({ error: "inactive staff" }), { status: 403, headers: cors });
+  try {
+    if (operation === "assign_strategy") {
+      const assigned = await assignStrategy(payload);
+      return new Response(JSON.stringify(assigned), { headers: cors });
+    }
+    if (!["sync_session", "complete_session"].includes(operation)) return new Response(JSON.stringify({ error: "invalid operation" }), { status: 400, headers: cors });
+    await upsertSession({ ...payload, status: operation === "complete_session" ? "completed" : "in_progress" });
+    const turns = await upsertTurns(payload);
+    if (operation === "complete_session") {
+      EdgeRuntime.waitUntil(evaluateSession(payload, turns));
+      return new Response(JSON.stringify({ saved: true, evaluation: "queued", evaluator_version: EVALUATOR_VERSION }), { status: 202, headers: cors });
+    }
+    return new Response(JSON.stringify({ saved: true }), { headers: cors });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 502, headers: cors });
+  }
+});

@@ -7,6 +7,8 @@ const source = fs.readFileSync(path.join(root, 'aesthetic-knowledge.v1.js'), 'ut
 const app = fs.readFileSync(path.join(root, 'perm-app.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
+const learningEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-learning/index.ts'), 'utf8');
+const learningMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260711090000_aesthetic_learning_loop.sql'), 'utf8');
 const context = { window: {} };
 
 function assert(condition, message) {
@@ -127,6 +129,10 @@ data.trainingCases.forEach(row => {
   'id="ae-kpi-rate"',
   'id="ae-kpi-streak"',
   'points: points',
+  'AESTHETIC_LEARNING_ENDPOINT',
+  "postAestheticLearning('sync_session')",
+  "postAestheticLearning('complete_session')",
+  'strategy_instructions: aestheticTrainingState.strategyInstructions',
   'aesthetic-knowledge.v1.js'
 ].forEach(marker => assert(app.includes(marker), `App is missing marker: ${marker}`));
 
@@ -166,6 +172,32 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   ,'coach_turn'
   ,'summarize_session'
 ].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
+
+[
+  'EVALUATOR_VERSION = "evaluator-v1"',
+  'CANDIDATE_INTERVAL = 100',
+  'evaluateSession',
+  'maybeGenerateCandidate',
+  'assignStrategy',
+  'reconcileExperiment',
+  'experiment_percent: 10',
+  'status: passed ? "active" : "rejected"',
+  'professional_accuracy',
+  'safety_score',
+  'experiment_percent',
+  'EdgeRuntime.waitUntil'
+].forEach(marker => assert(learningEdge.includes(marker), `Learning Edge Function is missing marker: ${marker}`));
+
+[
+  'aesthetic_training_sessions',
+  'aesthetic_training_turns',
+  'aesthetic_training_evaluations',
+  'aesthetic_coach_strategies',
+  'aesthetic_strategy_experiments',
+  'enable row level security',
+  'revoke all',
+  'grant all'
+].forEach(marker => assert(learningMigration.includes(marker), `Learning migration is missing marker: ${marker}`));
 
 assert(!/STEP 1 \/ 5/.test(app.slice(app.indexOf('id="ae-trainer"'), app.indexOf('id="ae-master"'))), 'chat trainer must not expose the old five-step UI');
 assert(!/提交给 AI 导师/.test(app.slice(app.indexOf('id="ae-trainer"'), app.indexOf('id="ae-master"'))), 'chat trainer must use send-message interaction');

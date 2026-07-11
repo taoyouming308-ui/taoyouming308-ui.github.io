@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v372 (2026-07-11)
+
+- 保持现有美感训练自由聊天方式不变，新增后台静默云同步：Session、员工回答、导师追问、目标状态、Prompt/策略/模型版本进入 Supabase。
+- 新增独立 AI 训练评审器，不由训练导师给自己评分；自动评估回答改善、专业准确性、引导质量、证据增长和安全性。
+- 新增有效/失败样本自动分类；每累计 100 次独立评审，优化 AI 自动生成候选追问策略，不修改专业知识标准。
+- 新增策略生命周期、确定性实验分组、最低样本量、准确性、安全性和改善率门槛。
+- 合格候选自动进入 10% 灰度；累计 100 个实验样本后，按真实改善、专业准确性和安全性自动晋升 active 或淘汰 rejected。
+- 新增五张 RLS 隔离表，匿名及普通认证角色无直接访问权限，仅 Edge Function 服务角色读写。
+- aesthetic-learning 与更新后的 aesthetic-coach 已部署至生产 Supabase。
+- App version: v372
+
 ## ZYSYR enterprise backup system (2026-07-11, no app release)
 
 - Added daily, weekly, and release backup directories plus a macOS daily archive script that keeps 30 days.

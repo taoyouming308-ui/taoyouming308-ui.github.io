@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="371">
+<html lang="zh-CN" data-version="372">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3317,6 +3317,77 @@ var aestheticTrainingState = {
   pendingRequest: false
 };
 
+var AESTHETIC_LEARNING_ENDPOINT = SUPABASE_URL + '/functions/v1/aesthetic-learning';
+
+function aestheticLearningPayload(operation) {
+  var item = aestheticTrainingState.caseItem || {};
+  return {
+    operation: operation,
+    username: aestheticIdentity(),
+    store: aestheticStore(),
+    session_id: aestheticTrainingState.sessionId,
+    business_date: aestheticToday(),
+    case_id: item.id || '',
+    case_title: item.title || '',
+    current_goal: aestheticTrainingState.activeGoal || 'outline',
+    turn_count: aestheticTrainingState.turnCount || 0,
+    goal_states: aestheticTrainingState.goalStates || {},
+    messages: aestheticTrainingState.messages || [],
+    summary: aestheticTrainingState.conversationSummary || {},
+    prompt_version: 'coach-chat-v1',
+    strategy_version: aestheticTrainingState.strategyVersion || 'control-v1',
+    model_version: 'gpt-5.5'
+  };
+}
+
+function postAestheticLearning(operation) {
+  if (!aestheticTrainingState.sessionId || aestheticIdentity() === '未登录员工') return Promise.resolve(null);
+  return fetch(AESTHETIC_LEARNING_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY
+    },
+    body: JSON.stringify(aestheticLearningPayload(operation))
+  }).then(function(response) {
+    if (!response.ok) throw new Error('learning sync ' + response.status);
+    return response.json();
+  }).catch(function(error) {
+    console.warn('aesthetic learning sync deferred:', error && error.message);
+    return null;
+  });
+}
+
+function initializeAestheticLearning() {
+  return postAestheticLearning('sync_session').then(function() {
+    return fetch(AESTHETIC_LEARNING_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      },
+      body: JSON.stringify({
+        operation: 'assign_strategy',
+        username: aestheticIdentity(),
+        store: aestheticStore(),
+        session_id: aestheticTrainingState.sessionId
+      })
+    });
+  }).then(function(response) {
+    if (!response.ok) throw new Error('strategy assignment ' + response.status);
+    return response.json();
+  }).then(function(strategy) {
+    aestheticTrainingState.strategyVersion = strategy.version || 'control-v1';
+    aestheticTrainingState.strategyInstructions = strategy.instructions || '';
+    aestheticTrainingState.strategyCohort = strategy.cohort || 'control';
+    saveAestheticSession();
+  }).catch(function(error) {
+    console.warn('aesthetic strategy uses control:', error && error.message);
+  });
+}
+
 function aestheticAnalysisKey(item) {
   return 'hair_aesthetic_analysis_v1:' + aestheticIdentity() + ':' + String(item && item.id || '') + ':' + aestheticHash(String(item && item.imageUrl || ''));
 }
@@ -3382,6 +3453,9 @@ function saveAestheticSession() {
     hintLevel: aestheticTrainingState.hintLevel,
     turnCount: aestheticTrainingState.turnCount,
     conversationSummary: aestheticTrainingState.conversationSummary,
+    strategyVersion: aestheticTrainingState.strategyVersion || 'control-v1',
+    strategyInstructions: aestheticTrainingState.strategyInstructions || '',
+    strategyCohort: aestheticTrainingState.strategyCohort || 'control',
     draft: String((document.getElementById('ae-chat-input') || {}).value || ''),
     updatedAt: new Date().toISOString(),
     version: Number(aestheticTrainingState.sessionVersion || 0) + 1
@@ -3976,6 +4050,9 @@ window.startAestheticTraining = function() {
       turnCount: savedSession.turnCount || 0,
       abilitySnapshot: loadAestheticAbilityProfile(),
       conversationSummary: savedSession.conversationSummary || null,
+      strategyVersion: savedSession.strategyVersion || 'control-v1',
+      strategyInstructions: savedSession.strategyInstructions || '',
+      strategyCohort: savedSession.strategyCohort || 'control',
       pendingRequest: false
     };
     var savedTrainer = document.getElementById('ae-trainer');
@@ -3986,6 +4063,7 @@ window.startAestheticTraining = function() {
     if (draftInput) draftInput.value = savedSession.draft || '';
     if (savedTrainer) savedTrainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.showToast) window.showToast('已恢复今日训练，回答没有丢失');
+    postAestheticLearning('sync_session');
     return;
   }
   aestheticTrainingState = {
@@ -4008,6 +4086,9 @@ window.startAestheticTraining = function() {
     turnCount: 0,
     abilitySnapshot: loadAestheticAbilityProfile(),
     conversationSummary: null,
+    strategyVersion: 'control-v1',
+    strategyInstructions: '',
+    strategyCohort: 'control',
     pendingRequest: false
   };
   var master = document.getElementById('ae-master');
@@ -4015,6 +4096,7 @@ window.startAestheticTraining = function() {
   var trainer = document.getElementById('ae-trainer');
   if (trainer) trainer.classList.add('on');
   startAestheticConversation();
+  initializeAestheticLearning();
   if (trainer) trainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
@@ -4107,6 +4189,8 @@ function requestAestheticConversationTurn(answer) {
       hint_level: aestheticTrainingState.hintLevel, turn_count: aestheticTrainingState.turnCount,
       ability_profile: aestheticTrainingState.abilitySnapshot,
       messages: aestheticTrainingState.messages.slice(-8), analysis_modules: relevantAestheticModules(record, aestheticTrainingState.activeGoal),
+      strategy_version: aestheticTrainingState.strategyVersion || 'control-v1',
+      strategy_instructions: aestheticTrainingState.strategyInstructions || '',
       case: { id: item.id, title: item.title, category: item.category, focus: item.focus, limitations: item.limitations }
     });
   });
@@ -4134,10 +4218,14 @@ window.sendAestheticChatMessage = function() {
     updateAestheticConversationChrome(aestheticTrainingState.activeGoal);
     addAestheticChatMessage('assistant', result.message || '我们换一个角度看。你能指出一个具体画面证据吗？', {
       transition: result.active_goal && result.active_goal !== priorGoal,
-      goal: result.active_goal
+      goal: result.active_goal,
+      response_type: result.response_type || '',
+      classification: result.classification || {},
+      repeated_pattern: result.repeated_pattern || ''
     });
     if (result.should_offer_summary) addAestheticChatMessage('assistant', '这次已经形成了几条清楚的判断。你可以继续聊，也可以现在结束并看本次总结。');
     saveAestheticSession();
+    postAestheticLearning('sync_session');
   }).catch(function(error) {
     addAestheticChatMessage('assistant', '导师连接暂时不稳定，你刚才的话已经保留。请稍后再发一次，我会从这里继续。', { error: error && error.message });
   }).finally(function() {
@@ -4215,6 +4303,7 @@ function completeAestheticConversation() {
   var points = 20 + (aestheticTrainingState.turnCount >= 5 ? 10 : 0);
   progress.attempts.push({ type: 'guided-chat-v1', sessionId: aestheticTrainingState.sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, summary: summary, points: points });
   saveAestheticProgress(progress);
+  postAestheticLearning('complete_session');
   clearAestheticSession();
   var trainer = document.getElementById('ae-trainer');
   function list(items, fallback) { return (Array.isArray(items) && items.length ? items : [fallback]).map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join(''); }
