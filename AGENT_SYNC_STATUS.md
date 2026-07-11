@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## ZYSYR enterprise backup system (2026-07-11, no app release)
+
+- Added daily, weekly, and release backup directories plus a macOS daily archive script that keeps 30 days.
+- Added an optional iCloud Drive destination, a LaunchAgent installer for 02:00 daily execution, backup documentation, and mandatory recovery-point rules in `AGENTS.md`.
+- App version remains v371; no production page, database, runtime worker, or version file was changed.
+
 ## v371 (2026-07-11)
 
 - 美感训练升级为每日任务：同一员工每天只完成一次，完成后首页直接进入成长记录，次日自动生成新任务。

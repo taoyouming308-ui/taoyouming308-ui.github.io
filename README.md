@@ -23,6 +23,30 @@ python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
 
 完整发布前检查见 `AGENTS.md` 和 `PUBLISH_RULES.md`。
 
+## ZYSYR 企业级备份
+
+项目采用 Git 本地历史、GitHub 远端历史、每日完整归档和发布归档组成的多层备份。归档目录如下：
+
+- `backups/daily/`：每日完整归档，自动保留最近 30 天
+- `backups/weekly/`：每周归档预留目录
+- `backups/release/`：需要长期保存的发布版本归档
+
+手动创建当天备份：
+
+```sh
+./scripts/backup-zysyr.sh
+```
+
+同一天重复运行会复用已有备份；需要强制新建时使用 `--force`。归档统一命名为 `ZYSYR_YYYY-MM-DD_HHMMSS.tar.gz`，不包含 `.git`、`backups`、依赖缓存、临时文件或本地密钥。Git 历史由本地仓库和 GitHub 保存。
+
+在 macOS 安装每天 02:00 自动备份：
+
+```sh
+./scripts/install-zysyr-backup-launchagent.sh
+```
+
+如需同步到 iCloud Drive，把 `scripts/backup.env.example` 复制到 `scripts/backup.env`，取消注释并确认目标目录。`scripts/backup.env` 是本机配置且不会提交；未配置时只生成本地备份。恢复前应先校验归档并解压到新目录，不要直接覆盖当前工作区。
+
 ## 目录
 
 - `perm-app.html` / `admin.html`：稳定的线上入口

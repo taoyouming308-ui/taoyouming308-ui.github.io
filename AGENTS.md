@@ -1,5 +1,24 @@
 # Agent Instructions
 
+## Enterprise backup rules
+
+Before any modification:
+
+1. Run `git status --short --branch` and review existing changes.
+2. Create a recovery commit when there are tracked changes that form a safe, coherent checkpoint. Never commit secrets, caches, or unrelated untracked files merely to create a checkpoint.
+3. Push the recovery commit to GitHub with `git push github main`. If the push cannot be completed, stop before risky or broad changes and report the blocker.
+4. Run `scripts/backup-zysyr.sh`; it creates at most one complete `ZYSYR` daily archive per calendar day unless `--force` is supplied.
+5. Start development only after the checks and backup above succeed.
+
+The following operations are prohibited:
+
+- `git reset --hard`
+- `git clean -fd`
+- deleting many files without explicit user confirmation
+- overwriting existing business logic without explicit user confirmation and a reviewed diff
+
+After every completed module, create a focused commit, push it to GitHub, and update `CHANGELOG.md`. Existing publication, version, synchronization, and no-downtime rules below remain mandatory.
+
 这是训练发型师审美、分析、判断、设计与沟通能力的 AI 产品，同时承载门店业务流程。开始修改前先读 `ARCHITECTURE.md`、目标模块的 `README.md`，以及下列协作与发布文件。
 
 ## Product and architecture rules
