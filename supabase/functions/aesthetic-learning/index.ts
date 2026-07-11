@@ -70,6 +70,8 @@ function evaluationPrompt(session: Record<string, unknown>, turns: unknown[]): s
 3. 检查导师是否一次只推进一个关键点，是否重复、泄露答案、过度推断图片不可见信息。
 4. 专业准确性与安全性是硬门槛。员工原话不能成为专业知识标准。
 5. improvement_score 可为负数；没有真实改善不得判为有效。
+6. 检查人物、风格、发型解剖、适配、客户沟通五项是否真实经过；未回答不能算掌握。
+7. 如果是同款重复训练，必须判断本次 unique_takeaway 是否区别于 prior_case_history；换句话重复旧结论应降低有效性。
 
 Session：${JSON.stringify(session).slice(0, 5000)}
 完整轮次：${JSON.stringify(turns).slice(0, 18000)}
@@ -81,6 +83,7 @@ Session：${JSON.stringify(session).slice(0, 5000)}
 }
 
 async function upsertSession(payload: Record<string, unknown>): Promise<void> {
+  const goalStates = typeof payload.goal_states === "object" && payload.goal_states ? payload.goal_states as Record<string, unknown> : {};
   const row = {
     id: cleanText(payload.session_id, 120),
     username: cleanText(payload.username, 80),
@@ -94,7 +97,16 @@ async function upsertSession(payload: Record<string, unknown>): Promise<void> {
     prompt_version: cleanText(payload.prompt_version, 60) || "coach-v1",
     strategy_version: cleanText(payload.strategy_version, 60) || "control-v1",
     model_version: cleanText(payload.model_version, 80),
-    goal_states: typeof payload.goal_states === "object" && payload.goal_states ? payload.goal_states : {},
+    goal_states: {
+      ...goalStates,
+      _hairVision: {
+        active_checkpoint: cleanText(payload.active_checkpoint, 40),
+        checkpoint_states: typeof payload.checkpoint_states === "object" && payload.checkpoint_states ? payload.checkpoint_states : {},
+        training_plan: typeof payload.training_plan === "object" && payload.training_plan ? payload.training_plan : {},
+        elapsed_seconds: clamp(payload.elapsed_seconds, 0, 3600),
+        time_phase: cleanText(payload.time_phase, 20),
+      },
+    },
     summary: typeof payload.summary === "object" && payload.summary ? payload.summary : {},
     updated_at: new Date().toISOString(),
     completed_at: payload.status === "completed" ? new Date().toISOString() : null,
@@ -297,6 +309,26 @@ async function assignStrategy(payload: Record<string, unknown>): Promise<Record<
   return { version: selected?.version || "control-v1", instructions: cleanText(selected?.instructions, 2000), cohort };
 }
 
+async function caseHistory(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const username = cleanText(payload.username, 80);
+  const caseId = cleanText(payload.case_id, 120);
+  const response = await rest(
+    "aesthetic_training_sessions?select=summary,goal_states,completed_at&username=eq." + encodeURIComponent(username) +
+    "&case_id=eq." + encodeURIComponent(caseId) + "&status=eq.completed&order=completed_at.desc&limit=20",
+    { headers: { Prefer: "count=exact", Range: "0-19" } },
+  );
+  if (!response.ok) throw new Error("case history " + response.status);
+  const rows = await response.json();
+  return {
+    completed_count: Number((response.headers.get("content-range") || "/" + rows.length).split("/")[1]) || rows.length,
+    prior_takeaways: rows.slice(0, 5).map((row: Record<string, unknown>) => ({
+      unique_takeaway: cleanText((row.summary as Record<string, unknown>)?.unique_takeaway || (row.summary as Record<string, unknown>)?.transferable_method, 600),
+      training_plan: (row.goal_states as Record<string, unknown>)?._hairVision && ((row.goal_states as Record<string, unknown>)._hairVision as Record<string, unknown>).training_plan || {},
+      completed_at: row.completed_at,
+    })),
+  };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: cors });
@@ -311,6 +343,10 @@ Deno.serve(async (request: Request) => {
     if (operation === "assign_strategy") {
       const assigned = await assignStrategy(payload);
       return new Response(JSON.stringify(assigned), { headers: cors });
+    }
+    if (operation === "case_history") {
+      const history = await caseHistory(payload);
+      return new Response(JSON.stringify(history), { headers: cors });
     }
     if (!["sync_session", "complete_session"].includes(operation)) return new Response(JSON.stringify({ error: "invalid operation" }), { status: 400, headers: cors });
     await upsertSession({ ...payload, status: operation === "complete_session" ? "completed" : "in_progress" });

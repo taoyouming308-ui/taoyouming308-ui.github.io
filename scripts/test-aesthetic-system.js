@@ -4,6 +4,7 @@ const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'aesthetic-knowledge.v1.js'), 'utf8');
+const hairVisionSource = fs.readFileSync(path.join(root, 'hair-vision-training.v1.js'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'perm-app.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
@@ -20,9 +21,34 @@ function assert(condition, message) {
 
 vm.createContext(context);
 vm.runInContext(source, context);
+vm.runInContext(hairVisionSource, context);
 
 const data = context.window.AESTHETIC_KNOWLEDGE_V1;
+const hairVision = context.window.HAIR_VISION_TRAINING_V1;
 assert(data, 'knowledge catalog did not initialize');
+assert(hairVision, 'Hair Vision runtime did not initialize');
+assert(hairVision.targetMs === 300000, 'Hair Vision training target must be 5 minutes');
+assert(hairVision.closingMs === 270000, 'Hair Vision must start closing at 4:30');
+assert(hairVision.graceMs === 360000, 'Hair Vision hard stop must be 6 minutes');
+assert(JSON.stringify(hairVision.checkpoints.map(row => row.id)) === JSON.stringify(['human_analysis', 'style', 'hair_anatomy', 'suitability', 'client_communication']), 'five hidden checkpoints are required');
+
+const phaseAt = milliseconds => hairVision.timeStateFromElapsed(milliseconds).phase;
+assert(phaseAt(269999) === 'active', 'before 4:30 must remain active');
+assert(phaseAt(270000) === 'closing', '4:30 must start closing');
+assert(phaseAt(300000) === 'grace', '5:00 must enter grace');
+assert(phaseAt(360000) === 'overtime', '6:00 must safely finish');
+
+const repeatedPlans = Array.from({ length: 6 }, (_, exposureCount) => hairVision.buildPlan({ identity: '测试员工', caseKey: 'CASE-001:image-hash', exposureCount }));
+assert(new Set(repeatedPlans.map(plan => plan.variantId)).size === 6, 'repeat sessions need unique variants');
+assert(new Set(repeatedPlans.map(plan => plan.lessonSignature)).size === 6, 'repeat sessions need unique lesson signatures');
+assert(new Set(repeatedPlans.slice(0, 5).map(plan => plan.deepFocus)).size === 5, 'first five repeats must rotate every deep focus');
+assert(new Set(repeatedPlans.map(plan => plan.styleContrast.id)).size === 6, 'style contrasts must rotate before repeating');
+assert(new Set(repeatedPlans.slice(0, 5).map(plan => plan.humanLens)).size === 5, 'human lenses must rotate');
+assert(new Set(repeatedPlans.map(plan => plan.anatomyLens)).size === 6, 'anatomy lenses must rotate');
+assert(new Set(repeatedPlans.map(plan => plan.adaptationScenario)).size === 6, 'adaptation scenarios must rotate');
+assert(new Set(repeatedPlans.map(plan => plan.clientScenario)).size === 6, 'client scenarios must rotate');
+assert(hairVision.openingQuestion(repeatedPlans[0]) !== hairVision.openingQuestion(repeatedPlans[1]), 'repeat sessions need different openings');
+assert(hairVision.openingQuestion(repeatedPlans[1]).includes('第2次训练'), 'repeat opening must explain its new entry point');
 assert(/^\d+\.\d+\.\d+$/.test(data.version), 'knowledge version must use semantic versioning');
 assert(data.status === 'published', 'knowledge catalog must declare published status');
 assert(Array.isArray(data.modules) && data.modules.length >= 9, 'nine curriculum modules are required');
@@ -35,6 +61,13 @@ assert(Array.isArray(data.guidedConversation.goals) && data.guidedConversation.g
 assert(data.guidedConversation.goals.some(row => row.id === 'client_communication'), 'client communication goal is required');
 assert(Array.isArray(data.trainingCases) && data.trainingCases.length >= 5, 'guided training cases are incomplete');
 assert(Array.isArray(data.rubric) && data.rubric.reduce((sum, row) => sum + row.weight, 0) === 100, 'rubric weights must total 100');
+assert(data.hairVision && data.hairVision.systems.length === 4, 'four Hair Vision systems are required');
+assert(data.hairVision.styleDNA.length === 9, 'nine style DNA records are required');
+data.hairVision.styleDNA.forEach(style => {
+  ['coreFeeling', 'outline', 'weight', 'layers', 'line', 'texture', 'neighborDifference', 'transformation', 'counterSignal'].forEach(field => assert(style[field], `style ${style.id} is missing ${field}`));
+});
+['outer_outline', 'inner_outline', 'length', 'weight', 'layers', 'bangs', 'ends', 'debulking', 'texture', 'color', 'tool_marks', 'blow_dry'].forEach(id => assert(data.hairVision.anatomy.some(row => row.id === id), `hair anatomy is missing ${id}`));
+assert(JSON.stringify(data.hairVision.styleDNA.map(row => row.id)) === JSON.stringify(data.styleLibrary.map(row => row.id)), 'style DNA and style library ids must remain aligned');
 
 const sourceIds = new Set(data.sources.map(row => row.id));
 const moduleIds = new Set(data.modules.map(row => row.id));
@@ -70,6 +103,7 @@ data.trainingFlow.forEach(row => {
 });
 
 data.trainingCases.forEach(row => {
+  assert(row.estimatedMinutes === 5, `case ${row.id} must be a five-minute mission`);
   assert(/^https:\/\/taoyouming308-ui\.github\.io\/img\//.test(row.imageUrl), `case ${row.id} image is outside the approved training host`);
   assert(row.limitations, `case ${row.id} must state image limitations`);
   stageIds.forEach(id => {
@@ -133,6 +167,18 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
+  'hair-vision-training.v1.js?v=373',
+  'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
+  'hair_vision: aestheticHairVisionContext()',
+  'prior_case_history: aestheticPriorCaseHistory(item)',
+  'active_checkpoint:',
+  'checkpoint_states:',
+  'stopAestheticTrainingTimer()',
+  'completionCommitted',
+  'caseKey: aestheticTrainingCaseKey',
+  'elapsedSeconds: currentAestheticTimeState().elapsedSeconds',
+  'unique_takeaway',
+  'difference_from_previous',
   'aesthetic-knowledge.v1.js'
 ].forEach(marker => assert(app.includes(marker), `App is missing marker: ${marker}`));
 
@@ -171,6 +217,11 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   ,'buildSessionSummaryPrompt'
   ,'coach_turn'
   ,'summarize_session'
+  ,'HAIR_VISION_CHECKPOINTS'
+  ,'checkpoint_states'
+  ,'should_auto_finish'
+  ,'prior_case_history'
+  ,'unique_takeaway'
 ].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
 
 [

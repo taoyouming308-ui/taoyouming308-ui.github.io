@@ -6,6 +6,16 @@ export const COACH_GOALS = [
   "outline", "weight", "layers", "line_texture", "style", "suitability", "technique", "client_communication",
 ] as const;
 
+export const HAIR_VISION_CHECKPOINTS = [
+  "human_analysis", "style", "hair_anatomy", "suitability", "client_communication",
+] as const;
+
+export const HAIR_VISION_TIMING = {
+  targetSeconds: 300,
+  closingSeconds: 270,
+  hardStopSeconds: 360,
+} as const;
+
 export const STAGE_RULES: Record<string, string> = {
   observe: "DSS visual scan. Evaluate only directly visible facts: length, outline, line direction, weight location, layers, texture, curl and color. Flag style labels, suitability claims and technical guesses at this stage.",
   analyze: "DSS structure. Check relationships among top, sides, back and face-frame: support, connection, weight, focus, stable areas and moving areas. Do not accept a repeated list of surface observations as analysis.",

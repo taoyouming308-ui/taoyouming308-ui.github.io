@@ -60,6 +60,17 @@ for (const file of ['perm-app.html', 'admin.html']) {
   });
 }
 
+for (const file of ['aesthetic-knowledge.v1.js', 'hair-vision-training.v1.js']) {
+  try {
+    new vm.Script(read(file), { filename: file });
+  } catch (error) {
+    fail(`${file} syntax error: ${error.message}`);
+  }
+}
+if (!app.includes('hair-vision-training.v1.js?v=' + version)) {
+  fail('Hair Vision runtime must be loaded with the current app version');
+}
+
 const baseRef = process.env.RELEASE_BASE_REF || (hasRef('HEAD^') ? 'HEAD^' : '');
 if (baseRef) {
   let oldVersion = 0;

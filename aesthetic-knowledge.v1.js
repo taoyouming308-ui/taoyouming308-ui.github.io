@@ -3,9 +3,9 @@
 
   global.AESTHETIC_KNOWLEDGE_V1 = {
     schemaVersion: 1,
-    version: '1.2.0',
+    version: '1.3.0',
     title: 'Hair Aesthetic System',
-    publishedAt: '2026-07-04',
+    publishedAt: '2026-07-12',
     status: 'published',
     owner: '自由手艺人',
     notice: '本知识库用于审美训练与设计复盘，不替代现场发质检测、顾客沟通和专业技术判断。',
@@ -15,6 +15,56 @@
       belief: '产品核心不是 AI，而是训练体系。用户看到自然对话，AI 内部维护训练目标、能力诊断和渐进提示，不替发型师思考。',
       promise: '不是教发型师复制作品，而是训练他们创造作品。',
       tagline: '让模仿变成理解，让理解变成创造。'
+    },
+    hairVision: {
+      version: '1.0.0',
+      positioning: 'AI 不是分析工具，而是五分钟设计陪练。',
+      systems: [
+        { id: 'human_analysis', name: '人物分析', goal: '先看人物与发型的视觉关系，再设计发型。', boundaries: ['画面气质只能描述为视觉呈现', '职业、年龄、性格、生活方式和偏好必须询问或作为模拟条件'] },
+        { id: 'style_aesthetics', name: '风格美学', goal: '不背风格名称，理解轮廓、重量、层次、线条、纹理与色彩组成的风格 DNA。' },
+        { id: 'hair_anatomy', name: '发型解剖', goal: '用统一结构拆解任何发型，解释每个设计变量为何存在。' },
+        { id: 'communication', name: '客户沟通', goal: '把专业判断转化为需求确认、差异解释、替代方案与维护预期。' }
+      ],
+      sessionRule: {
+        targetMinutes: 5,
+        checkpoints: ['human_analysis', 'style', 'hair_anatomy', 'suitability', 'client_communication'],
+        rule: '每次自然经过五个检查点，只选择一个深练；同一案例按完成次数轮换深练重点与情境。'
+      },
+      visualExpressions: [
+        { id: 'gentle', name: '温柔', signals: ['柔和曲线', '低对比', '边缘不过度锐利'], guardrail: '只描述画面呈现，不推断真实性格。' },
+        { id: 'capable', name: '干练', signals: ['清晰边界', '稳定重心', '较高秩序感'], guardrail: '不能由画面推断职业。' },
+        { id: 'youthful', name: '少年感', signals: ['自然纹理', '适度留白', '稳定或偏低重量', '不过度精修'], guardrail: '任何单一元素都不能独立推出少年感。' },
+        { id: 'mature', name: '成熟感', signals: ['稳定比例', '完整轮廓', '较低随机度'], guardrail: '视觉成熟感不等于真实年龄。' },
+        { id: 'cool', name: '清冷', signals: ['低装饰', '清晰线条', '克制色彩与距离感'], guardrail: '视觉距离感不等于性格冷淡。' },
+        { id: 'cute', name: '可爱', signals: ['圆润曲线', '小量感', '轻快节奏'], guardrail: '避免把脸型或年龄当作唯一依据。' },
+        { id: 'neutral', name: '中性', signals: ['直线与几何', '减少装饰', '力量感'], guardrail: '不把视觉风格等同于性别身份。' },
+        { id: 'elegant', name: '优雅', signals: ['连续线条', '比例协调', '节奏克制'], guardrail: '不以价格、身份或职业定义优雅。' }
+      ],
+      anatomy: [
+        { id: 'outer_outline', name: '外轮廓', certainty: 'visible' },
+        { id: 'inner_outline', name: '内轮廓', certainty: 'visible_or_partial' },
+        { id: 'length', name: '长度', certainty: 'visible' },
+        { id: 'weight', name: '重量', certainty: 'visible' },
+        { id: 'layers', name: '层次', certainty: 'visible_or_partial' },
+        { id: 'bangs', name: '刘海与脸周', certainty: 'visible' },
+        { id: 'ends', name: '发尾', certainty: 'visible' },
+        { id: 'debulking', name: '去量', certainty: 'inference_only' },
+        { id: 'texture', name: '纹理', certainty: 'visible' },
+        { id: 'color', name: '色彩与光泽', certainty: 'visible' },
+        { id: 'tool_marks', name: '工具痕迹', certainty: 'inference_only' },
+        { id: 'blow_dry', name: '吹风与造型方式', certainty: 'inference_only' }
+      ],
+      styleDNA: [
+        { id: 'natural', name: '自然风', coreFeeling: ['真实', '舒适', '低造作'], outline: '均衡、不过度修饰', weight: '自然稳定', layers: '服务真实发流', line: '不过度统一', texture: '保留原生质感', neighborDifference: '比法式更均衡，比日系更少细节', transformation: '增加留白与不规则流动会更接近法式', counterSignal: '高度统一的光泽和规则卷度' },
+        { id: 'french', name: '法式风', coreFeeling: ['松弛', '流动', '留白'], outline: '柔和且不完全对称', weight: '有轻重对比', layers: '自然连接并制造流动', line: '曲线与留白并存', texture: '随意但有秩序', neighborDifference: '比日系更松弛，比自然风更强调留白', transformation: '提高统一光泽与轮廓完整度会向韩系移动', counterSignal: '每一束方向和卷度完全一致' },
+        { id: 'korean', name: '韩系风', coreFeeling: ['精致', '柔和', '完整'], outline: '饱满且连续', weight: '稳定并服务脸周包裹', layers: '连接顺滑', line: '规则柔曲线', texture: '统一光泽、低随机度', neighborDifference: '比少女风更精致完整，比法式更统一', transformation: '降低统一度并增加留白会向法式移动', counterSignal: '大量随机碎感和强烈方向冲突' },
+        { id: 'japanese', name: '日系风', coreFeeling: ['轻盈', '细节', '灵动'], outline: '轻巧并允许局部变化', weight: '支撑结构后局部变轻', layers: '细节丰富、变化明确', line: '多方向细线条', texture: '束感、碎感与空气感', neighborDifference: '比法式细节密度更高，比先锋更少目的性冲突', transformation: '放大不对称和冲突会向先锋移动', counterSignal: '厚重连续且几乎没有局部细节' },
+        { id: 'urban', name: '都市风', coreFeeling: ['知性', '利落', '稳定'], outline: '清晰、可复现', weight: '中低且稳定', layers: '克制并服务场景', line: '整洁利落', texture: '完成度高、随机度低', neighborDifference: '比极简更强调职业完成度，比中性更柔和', transformation: '减少装饰并提高边界纯度会向极简移动', counterSignal: '维护成本极高且结构过度实验' },
+        { id: 'minimal', name: '极简风', coreFeeling: ['克制', '纯净', '安静'], outline: '依赖精确比例和边界', weight: '集中而清楚', layers: '少层次或隐性层次', line: '少而准确', texture: '低纹理、低装饰', neighborDifference: '比都市更少场景装饰，比中性更安静', transformation: '增加职业完成度和柔和修饰会向都市移动', counterSignal: '大量装饰、碎感和色彩冲突' },
+        { id: 'sweet', name: '少女风', coreFeeling: ['轻快', '亲和', '圆润'], outline: '小量感与柔和曲线', weight: '轻而不过度下坠', layers: '轻盈、节奏明快', line: '圆润小弧线', texture: '柔软、有弹性', neighborDifference: '比韩系更轻快圆润，比自然风更具装饰性', transformation: '提高光泽、完整度和脸周包裹会向韩系移动', counterSignal: '强直线、重边界和高攻击性对比' },
+        { id: 'androgynous', name: '中性风', coreFeeling: ['利落', '冷静', '力量'], outline: '几何、清楚', weight: '集中并产生力量感', layers: '克制、结构优先', line: '直线占主导', texture: '少卷度、低装饰', neighborDifference: '比都市更去装饰，比极简更强调力量', transformation: '柔化直线并增加职业完成度会向都市移动', counterSignal: '大量圆润小弧和甜美装饰' },
+        { id: 'avant_garde', name: '先锋风', coreFeeling: ['实验', '冲突', '表达'], outline: '非常规、不对称或故意失衡', weight: '用于制造冲突与焦点', layers: '可断裂或非连续', line: '强方向与强对比', texture: '服务明确表达目的', neighborDifference: '比日系更强调冲突目的，比中性更非常规', transformation: '降低冲突并保留细节会向日系移动', counterSignal: '没有表达目的的随机凌乱' }
+      ]
     },
     capabilities: [
       {
@@ -220,7 +270,7 @@
         order: 6,
         title: 'AI 训练',
         objective: '通过观察、分类、解释、修改和复盘建立可重复的审美判断。',
-        topics: ['每日 20 分钟', '先判断后解释', '对比训练', '错题回练', '多维评分'],
+        topics: ['每日 5 分钟', '五个隐藏检查点', '同款差异化训练', '先判断后解释', '对比训练', '多维评分'],
         sourceIds: ['S01', 'S09', 'S10']
       },
       {
@@ -431,7 +481,7 @@
         category: '短发',
         imageUrl: 'https://taoyouming308-ui.github.io/img/showcase_45_%E7%9F%AD%E5%8F%91_2026-06-14T09-25-44.jpg',
         focus: '轮廓、后脑重量、发尾动感',
-        estimatedMinutes: 15,
+        estimatedMinutes: 5,
         limitations: '只有侧后角度，不能据此确定完整脸型、正面刘海和两侧是否完全对称。',
         guides: {
           observe: {
@@ -462,7 +512,7 @@
         category: '短发',
         imageUrl: 'https://taoyouming308-ui.github.io/img/showcase_46_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-49.jpg',
         focus: '脸周、曲线节奏、轻重平衡',
-        estimatedMinutes: 15,
+        estimatedMinutes: 5,
         limitations: '作品包含造型、妆容和拍摄光线，不能把所有氛围都归因于剪发。',
         guides: {
           observe: {
@@ -493,7 +543,7 @@
         category: '超短发',
         imageUrl: 'https://taoyouming308-ui.github.io/img/showcase_47_%E7%9F%AD%E5%8F%91_2026-06-14T09-26-59.jpg',
         focus: '小量感、面部留白、精细边界',
-        estimatedMinutes: 15,
+        estimatedMinutes: 5,
         limitations: '正面照片看不到完整枕骨结构，也无法判断自然状态下的发量和发流。',
         guides: {
           observe: {
@@ -524,7 +574,7 @@
         category: '超短发',
         imageUrl: 'https://taoyouming308-ui.github.io/img/showcase_48_%E8%B6%85%E7%9F%AD%E5%8F%91_2026-06-14T09-27-38.jpg',
         focus: '圆轮廓、短刘海、柔锐平衡',
-        estimatedMinutes: 15,
+        estimatedMinutes: 5,
         limitations: '照片经过正面光线和造型处理，发色、光泽与皮肤对比可能受拍摄影响。',
         guides: {
           observe: {
@@ -555,7 +605,7 @@
         category: '短发',
         imageUrl: 'https://taoyouming308-ui.github.io/img/showcase_49_%E8%B6%85%E7%9F%AD%E5%8F%91_2026-06-14T09-27-53.jpg',
         focus: '直线轮廓、低体积、湿感质地',
-        estimatedMinutes: 15,
+        estimatedMinutes: 5,
         limitations: '湿感造型显著改变发量、光泽和贴合度，不能直接推断顾客自然干发状态。',
         guides: {
           observe: {
@@ -706,8 +756,8 @@
         id: 'Q013',
         moduleId: 'M6',
         dimension: 'observation',
-        prompt: '每天 20 分钟训练中，哪种安排更利于形成审美判断？',
-        options: ['连续看 20 分钟漂亮图片', '观察事实、做出判断、说明理由、修改方案、复盘错因', '背诵风格名称', '只练自己最熟悉的发型'],
+        prompt: '每天 5 分钟训练中，哪种安排更利于形成审美判断？',
+        options: ['连续看 5 分钟漂亮图片', '人物、风格、解剖、适配、沟通依次完成并说明依据', '背诵风格名称', '只练自己最熟悉的发型'],
         answer: 1,
         explanation: '有效训练需要明确任务、即时反馈和针对弱项的重复，而不是被动浏览。',
         sourceIds: ['S01', 'S09', 'S10']

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="372">
+<html lang="zh-CN" data-version="373">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2886,7 +2886,7 @@ body {
     <header class="ae-head">
       <div class="ae-kicker">Hair / Aesthetic Lab</div>
       <h1 class="ae-title">美感训练</h1>
-      <p class="ae-desc">先看见，再分析；先说明理由，再做设计。每天 20 分钟，建立可以复用的审美判断。</p>
+      <p class="ae-desc">先看人，再懂风格；五分钟完成一次可以迁移的设计训练。</p>
       <span class="ae-version" id="ae-version">知识版本加载中</span>
     </header>
     <nav class="ae-nav" aria-label="美感训练页面">
@@ -2897,9 +2897,9 @@ body {
 
     <div class="ae-view on" id="ae-view-today">
       <div class="ae-mission">
-        <strong>不是找答案，是训练设计思维。</strong>
-        <p>用一张作品，依次练会看、会拆、会判断、会设计、会审美。每次只完成一步，AI 导师先听你的答案，再指出遗漏。</p>
-        <div class="ae-ability-strip"><span>观察<br>会看</span><span>分析<br>会拆</span><span>判断<br>会判断</span><span>设计<br>会设计</span><span>美感<br>会审美</span></div>
+        <strong>五分钟，看人、懂风格、会设计、能表达。</strong>
+        <p>每次自然聊完人物、风格、解剖、适配与沟通五件事；同一款发型再次训练，也会换一个观察入口。</p>
+        <div class="ae-ability-strip"><span>人物<br>先看人</span><span>风格<br>拆 DNA</span><span>解剖<br>懂结构</span><span>适配<br>会调整</span><span>沟通<br>能成交</span></div>
       </div>
       <div class="ae-section-label">Today / One case</div>
       <article class="ae-card" id="ae-session-banner" style="display:none;margin-bottom:12px;">
@@ -2939,9 +2939,10 @@ body {
       <div class="ae-card ae-trainer" id="ae-trainer">
         <div class="ae-chat-head">
           <div><strong>AI 设计陪练</strong><span id="ae-chat-focus">正在建立图片知识卡</span></div>
-          <div class="ae-chat-actions"><button type="button" onclick="updateAestheticAnalysisWithFacts()">补充信息</button><button type="button" onclick="finishAestheticConversation()">结束训练</button></div>
+          <div class="ae-chat-actions"><span id="ae-training-clock" style="font-variant-numeric:tabular-nums;font-weight:700;color:#111;">05:00</span><button type="button" onclick="updateAestheticAnalysisWithFacts()">补充信息</button><button type="button" onclick="finishAestheticConversation()">结束训练</button></div>
         </div>
         <div class="ae-chat-method" id="ae-chat-method">先描述你看见的事实，不急着给风格下结论。</div>
+        <div class="ae-chat-status on" id="ae-time-note">5分钟 · 人物 → 风格 → 解剖 → 适配 → 沟通</div>
         <div class="ae-chat-messages" id="ae-chat-messages" aria-live="polite"></div>
         <div class="ae-chat-hints" id="ae-chat-hints"><strong id="ae-chat-hint-title">观察方法</strong><p id="ae-chat-hint-body"></p></div>
         <div class="ae-chat-compose" id="ae-chat-compose">
@@ -3016,7 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=349"></script>
+<script src="aesthetic-knowledge.v1.js?v=373"></script>
+<script src="hair-vision-training.v1.js?v=373"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3309,11 +3311,27 @@ var aestheticTrainingState = {
   sessionId: '',
   messages: [],
   activeGoal: 'outline',
+  activeCheckpoint: 'human_analysis',
+  checkpointStates: {},
   goalStates: {},
   hintLevel: 0,
   turnCount: 0,
   abilitySnapshot: {},
   conversationSummary: null,
+  trainingPlan: null,
+  cloudCaseHistory: [],
+  trainingStartedAt: '',
+  activeElapsedMs: 0,
+  lastTimerTickAt: 0,
+  lastTimerPersistBucket: -1,
+  timePhase: 'active',
+  timerHandle: null,
+  closingNoticeShown: false,
+  autoFinishRequested: false,
+  finishAfterTurn: false,
+  finishing: false,
+  completionCommitted: false,
+  requestGeneration: 0,
   pendingRequest: false
 };
 
@@ -3327,11 +3345,16 @@ function aestheticLearningPayload(operation) {
     store: aestheticStore(),
     session_id: aestheticTrainingState.sessionId,
     business_date: aestheticToday(),
-    case_id: item.id || '',
+    case_id: aestheticTrainingCaseKey(item),
     case_title: item.title || '',
     current_goal: aestheticTrainingState.activeGoal || 'outline',
     turn_count: aestheticTrainingState.turnCount || 0,
     goal_states: aestheticTrainingState.goalStates || {},
+    active_checkpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis',
+    checkpoint_states: aestheticTrainingState.checkpointStates || {},
+    training_plan: aestheticTrainingState.trainingPlan || {},
+    elapsed_seconds: currentAestheticTimeState().elapsedSeconds,
+    time_phase: currentAestheticTimeState().phase,
     messages: aestheticTrainingState.messages || [],
     summary: aestheticTrainingState.conversationSummary || {},
     prompt_version: 'coach-chat-v1',
@@ -3409,6 +3432,158 @@ function aestheticKnowledge() {
   return window.AESTHETIC_KNOWLEDGE_V1 || null;
 }
 
+function hairVisionRuntime() {
+  return window.HAIR_VISION_TRAINING_V1 || null;
+}
+
+function aestheticTrainingCaseKey(item) {
+  return String(item && item.id || '') + ':' + aestheticHash(String(item && item.imageUrl || ''));
+}
+
+function aestheticCaseExposureCount(item) {
+  var caseKey = aestheticTrainingCaseKey(item);
+  return guidedAestheticAttempts(loadAestheticProgress()).filter(function(attempt) {
+    return attempt.qualified !== false && (attempt.caseKey === caseKey || (!attempt.caseKey && attempt.caseId === String(item && item.id || '')));
+  }).length;
+}
+
+function aestheticPriorCaseHistory(item) {
+  var caseKey = aestheticTrainingCaseKey(item);
+  var localRows = guidedAestheticAttempts(loadAestheticProgress()).filter(function(attempt) {
+    return attempt.qualified !== false && (attempt.caseKey === caseKey || (!attempt.caseKey && attempt.caseId === String(item && item.id || '')));
+  }).slice(-5).map(function(attempt) {
+    return {
+      variantId: attempt.trainingPlan && attempt.trainingPlan.variantId || '',
+      deepFocus: attempt.trainingPlan && attempt.trainingPlan.deepFocus || '',
+      uniqueTakeaway: attempt.summary && (attempt.summary.unique_takeaway || attempt.summary.transferable_method) || ''
+    };
+  });
+  return localRows.concat(aestheticTrainingState.cloudCaseHistory || []).slice(-5);
+}
+
+function buildAestheticTrainingPlan(item, exposureOverride) {
+  var runtime = hairVisionRuntime();
+  if (!runtime) return null;
+  return runtime.buildPlan({
+    identity: aestheticIdentity(),
+    caseKey: aestheticTrainingCaseKey(item),
+    exposureCount: exposureOverride == null ? aestheticCaseExposureCount(item) : Math.max(0, Number(exposureOverride) || 0)
+  });
+}
+
+function refreshAestheticCloudRotation(item) {
+  return fetch(AESTHETIC_LEARNING_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+    body: JSON.stringify({ operation: 'case_history', username: aestheticIdentity(), store: aestheticStore(), case_id: aestheticTrainingCaseKey(item) })
+  }).then(function(response) {
+    if (!response.ok) throw new Error('case history ' + response.status);
+    return response.json();
+  }).then(function(history) {
+    aestheticTrainingState.cloudCaseHistory = Array.isArray(history.prior_takeaways) ? history.prior_takeaways : [];
+    var cloudCount = Math.max(0, Number(history.completed_count) || 0);
+    var currentCount = Number(aestheticTrainingState.trainingPlan && aestheticTrainingState.trainingPlan.exposureCount || 0);
+    var alreadyAnswered = aestheticTrainingState.messages.some(function(message) { return message.role === 'user'; });
+    if (cloudCount > currentCount && !alreadyAnswered && aestheticTrainingState.sessionId) {
+      aestheticTrainingState.trainingPlan = buildAestheticTrainingPlan(item, cloudCount);
+      var runtime = hairVisionRuntime();
+      if (runtime && aestheticTrainingState.messages[0] && aestheticTrainingState.messages[0].role === 'assistant') {
+        aestheticTrainingState.messages[0].content = runtime.openingQuestion(aestheticTrainingState.trainingPlan);
+        renderAestheticChatMessages();
+      }
+      saveAestheticSession();
+    }
+    return history;
+  }).catch(function() { return null; });
+}
+
+function aestheticHairVisionContext() {
+  var knowledge = aestheticKnowledge();
+  var plan = aestheticTrainingState.trainingPlan || {};
+  var styles = knowledge && knowledge.hairVision && knowledge.hairVision.styleDNA || [];
+  var selectedIds = plan.styleContrast && plan.styleContrast.styles || [];
+  return {
+    systems: knowledge && knowledge.hairVision && knowledge.hairVision.systems || [],
+    anatomy: knowledge && knowledge.hairVision && knowledge.hairVision.anatomy || [],
+    styleDNA: styles.filter(function(style) { return selectedIds.indexOf(style.id) !== -1; }),
+    plan: plan
+  };
+}
+
+function currentAestheticTimeState() {
+  var runtime = hairVisionRuntime();
+  if (!runtime) return { elapsedSeconds: 0, phase: 'active', remainingMs: 300000 };
+  return runtime.timeStateFromElapsed(aestheticTrainingState.activeElapsedMs || 0);
+}
+
+function formatAestheticClock(milliseconds) {
+  var seconds = Math.max(0, Math.ceil(Number(milliseconds || 0) / 1000));
+  return String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+}
+
+function stopAestheticTrainingTimer() {
+  if (aestheticTrainingState.timerHandle) clearInterval(aestheticTrainingState.timerHandle);
+  aestheticTrainingState.timerHandle = null;
+}
+
+function updateAestheticTrainingTimer() {
+  if (!aestheticTrainingState.sessionId || !aestheticTrainingState.trainingStartedAt) return;
+  var now = Date.now();
+  if (!aestheticTrainingState.lastTimerTickAt) aestheticTrainingState.lastTimerTickAt = now;
+  var delta = Math.max(0, Math.min(2000, now - aestheticTrainingState.lastTimerTickAt));
+  aestheticTrainingState.lastTimerTickAt = now;
+  var aestheticTab = document.getElementById('tab-aesthetic');
+  var todayView = document.getElementById('ae-view-today');
+  var trainingVisible = !document.hidden && (!aestheticTab || aestheticTab.classList.contains('active')) && (!todayView || todayView.classList.contains('on'));
+  if (trainingVisible && !aestheticTrainingState.finishing && !aestheticTrainingState.completionCommitted) {
+    aestheticTrainingState.activeElapsedMs = Number(aestheticTrainingState.activeElapsedMs || 0) + delta;
+  }
+  var state = currentAestheticTimeState();
+  var persistBucket = Math.floor(Number(aestheticTrainingState.activeElapsedMs || 0) / 15000);
+  if (persistBucket !== aestheticTrainingState.lastTimerPersistBucket) {
+    aestheticTrainingState.lastTimerPersistBucket = persistBucket;
+    saveAestheticSession();
+  }
+  var clock = document.getElementById('ae-training-clock');
+  var note = document.getElementById('ae-time-note');
+  if (clock) {
+    clock.textContent = state.phase === 'active' || state.phase === 'closing'
+      ? formatAestheticClock(state.remainingMs)
+      : '+' + formatAestheticClock(state.overtimeMs || 0);
+    clock.style.color = state.phase === 'active' ? '#111' : '#b45c24';
+  }
+  if (state.phase !== aestheticTrainingState.timePhase) {
+    aestheticTrainingState.timePhase = state.phase;
+    saveAestheticSession();
+  }
+  if (note) {
+    if (state.phase === 'closing') note.textContent = '进入收束：完成适配和客户沟通后生成总结';
+    else if (state.phase === 'grace') note.textContent = '5分钟已到 · 完成当前回答后自动总结';
+    else if (state.phase === 'overtime') note.textContent = '延长时间已到 · 正在安全结束本次训练';
+  }
+  if (state.phase === 'overtime' && !aestheticTrainingState.autoFinishRequested) {
+    aestheticTrainingState.autoFinishRequested = true;
+    var draft = String((document.getElementById('ae-chat-input') || {}).value || '').trim();
+    if (aestheticTrainingState.pendingRequest) {
+      aestheticTrainingState.finishAfterTurn = true;
+    } else if (aestheticTrainingState.messages.length >= 3) {
+      if (draft) {
+        addAestheticChatMessage('user', draft, { timedDraft: true });
+        var input = document.getElementById('ae-chat-input');
+        if (input) input.value = '';
+      }
+      window.finishAestheticConversation('time_limit');
+    }
+  }
+}
+
+function startAestheticTrainingTimer() {
+  stopAestheticTrainingTimer();
+  aestheticTrainingState.lastTimerTickAt = Date.now();
+  updateAestheticTrainingTimer();
+  aestheticTrainingState.timerHandle = setInterval(updateAestheticTrainingTimer, 1000);
+}
+
 function aestheticIdentity() {
   return (localStorage.getItem('booking-barber') || '未登录员工').trim();
 }
@@ -3438,7 +3613,7 @@ function loadAestheticSession() {
 }
 
 function saveAestheticSession() {
-  if (!aestheticTrainingState.sessionId || !aestheticTrainingState.caseItem) return;
+  if (!aestheticTrainingState.sessionId || !aestheticTrainingState.caseItem || aestheticTrainingState.completionCommitted) return;
   var session = {
     id: aestheticTrainingState.sessionId,
     userId: aestheticIdentity(),
@@ -3450,12 +3625,23 @@ function saveAestheticSession() {
     messages: aestheticTrainingState.messages,
     goalStates: aestheticTrainingState.goalStates,
     activeGoal: aestheticTrainingState.activeGoal,
+    activeCheckpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis',
+    checkpointStates: aestheticTrainingState.checkpointStates || {},
     hintLevel: aestheticTrainingState.hintLevel,
     turnCount: aestheticTrainingState.turnCount,
     conversationSummary: aestheticTrainingState.conversationSummary,
     strategyVersion: aestheticTrainingState.strategyVersion || 'control-v1',
     strategyInstructions: aestheticTrainingState.strategyInstructions || '',
     strategyCohort: aestheticTrainingState.strategyCohort || 'control',
+    trainingPlan: aestheticTrainingState.trainingPlan || null,
+    cloudCaseHistory: aestheticTrainingState.cloudCaseHistory || [],
+    trainingStartedAt: aestheticTrainingState.trainingStartedAt || new Date().toISOString(),
+    activeElapsedMs: Number(aestheticTrainingState.activeElapsedMs || 0),
+    timePhase: aestheticTrainingState.timePhase || 'active',
+    closingNoticeShown: aestheticTrainingState.closingNoticeShown === true,
+    autoFinishRequested: aestheticTrainingState.autoFinishRequested === true,
+    finishAfterTurn: aestheticTrainingState.finishAfterTurn === true,
+    requestGeneration: Number(aestheticTrainingState.requestGeneration || 0),
     draft: String((document.getElementById('ae-chat-input') || {}).value || ''),
     updatedAt: new Date().toISOString(),
     version: Number(aestheticTrainingState.sessionVersion || 0) + 1
@@ -3640,7 +3826,7 @@ function normalizeAestheticLibraryCase(item, index) {
     category: category,
     imageUrl: String(item.imageUrl),
     focus: focus,
-    estimatedMinutes: Number(item.estimatedMinutes) || 15,
+    estimatedMinutes: Number(item.estimatedMinutes) || 5,
     limitations: String(item.limitations || AESTHETIC_CATEGORY_LIMIT[category] || '单张图仅用于审美训练，结论需结合现场条件验证。'),
     guides: hasAestheticGuides(item.guides) ? item.guides : buildAestheticGuides(title, category, focus),
     source: 'personal',
@@ -3752,7 +3938,7 @@ function buildAestheticCaseFromUpload(imageUrl, category, currentCount) {
     category: category,
     imageUrl: imageUrl,
     focus: focus,
-    estimatedMinutes: 15,
+    estimatedMinutes: 5,
     limitations: AESTHETIC_CATEGORY_LIMIT[category] || '单张图仅用于审美训练，结论需结合现场条件验证。',
     guides: buildAestheticGuides(title, category, focus),
     source: 'personal',
@@ -3951,7 +4137,8 @@ window.initAestheticTraining = function() {
   var styleLibrary = document.getElementById('ae-style-library');
   if (styleLibrary) {
     styleLibrary.innerHTML = (data.styleLibrary || []).map(function(style) {
-      return '<details class="ae-style-card"><summary><strong>' + aestheticEscape(style.name) + '</strong><span>' + aestheticEscape(style.english + ' · ' + style.keywords) + '</span></summary><div class="ae-style-card-body"><p><b>视觉语言：</b>' + aestheticEscape(style.language) + '</p><p><b>相邻风格：</b>' + aestheticEscape(style.neighbors) + '</p><p><b>设计映射：</b>' + aestheticEscape(style.mapping) + '</p></div></details>';
+      var dna = data.hairVision && data.hairVision.styleDNA && data.hairVision.styleDNA.find(function(item) { return item.id === style.id; }) || {};
+      return '<details class="ae-style-card"><summary><strong>' + aestheticEscape(style.name) + '</strong><span>' + aestheticEscape(style.english + ' · ' + style.keywords) + '</span></summary><div class="ae-style-card-body"><p><b>核心感觉：</b>' + aestheticEscape((dna.coreFeeling || []).join('、') || style.keywords) + '</p><p><b>风格 DNA：</b>轮廓 ' + aestheticEscape(dna.outline || '') + '；重量 ' + aestheticEscape(dna.weight || '') + '；层次 ' + aestheticEscape(dna.layers || '') + '；线条 ' + aestheticEscape(dna.line || '') + '；纹理 ' + aestheticEscape(dna.texture || '') + '。</p><p><b>相邻风格：</b>' + aestheticEscape(dna.neighborDifference || style.neighbors) + '</p><p><b>变量变化：</b>' + aestheticEscape(dna.transformation || style.mapping) + '</p><p><b>反证：</b>' + aestheticEscape(dna.counterSignal || '需要寻找一条不支持当前判断的视觉证据。') + '</p></div></details>';
     }).join('');
   }
 
@@ -3995,7 +4182,8 @@ function guidedAestheticAttempts(progress) {
 
 function renderAestheticSummary() {
   var progress = loadAestheticProgress();
-  var attempts = guidedAestheticAttempts(progress);
+  var allAttempts = guidedAestheticAttempts(progress);
+  var attempts = allAttempts.filter(function(attempt) { return attempt.qualified !== false; });
   var completedDays = {};
   var scoreTotal = 0;
   attempts.forEach(function(attempt) {
@@ -4009,7 +4197,7 @@ function renderAestheticSummary() {
   if (rateEl) rateEl.textContent = attempts.length;
   if (reviewEl) reviewEl.textContent = scoreTotal ? Math.round(scoreTotal / attempts.length) : '成长中';
 
-  var todayDone = attempts.some(function(attempt) { return attempt.date === aestheticToday(); });
+  var todayDone = allAttempts.some(function(attempt) { return attempt.date === aestheticToday(); });
   var activeSession = loadAestheticSession();
   renderAestheticSessionBanner(activeSession);
   var button = document.getElementById('ae-start-btn');
@@ -4045,6 +4233,8 @@ window.startAestheticTraining = function() {
       sessionVersion: savedSession.version || 1,
       messages: savedSession.messages || [],
       activeGoal: savedSession.activeGoal || savedSession.currentStep || 'outline',
+      activeCheckpoint: savedSession.activeCheckpoint || 'human_analysis',
+      checkpointStates: savedSession.checkpointStates || {},
       goalStates: savedSession.goalStates || {},
       hintLevel: savedSession.hintLevel || 0,
       turnCount: savedSession.turnCount || 0,
@@ -4053,6 +4243,20 @@ window.startAestheticTraining = function() {
       strategyVersion: savedSession.strategyVersion || 'control-v1',
       strategyInstructions: savedSession.strategyInstructions || '',
       strategyCohort: savedSession.strategyCohort || 'control',
+      trainingPlan: savedSession.trainingPlan || buildAestheticTrainingPlan(savedSession.caseItem || item),
+      cloudCaseHistory: savedSession.cloudCaseHistory || [],
+      trainingStartedAt: savedSession.trainingStartedAt || new Date().toISOString(),
+      activeElapsedMs: Number(savedSession.activeElapsedMs || 0),
+      lastTimerTickAt: 0,
+      lastTimerPersistBucket: -1,
+      timePhase: savedSession.timePhase || 'active',
+      timerHandle: null,
+      closingNoticeShown: savedSession.closingNoticeShown === true,
+      autoFinishRequested: savedSession.autoFinishRequested === true,
+      finishAfterTurn: savedSession.finishAfterTurn === true,
+      finishing: false,
+      completionCommitted: false,
+      requestGeneration: Number(savedSession.requestGeneration || 0),
       pendingRequest: false
     };
     var savedTrainer = document.getElementById('ae-trainer');
@@ -4061,6 +4265,7 @@ window.startAestheticTraining = function() {
     renderAestheticChatMessages();
     var draftInput = document.getElementById('ae-chat-input');
     if (draftInput) draftInput.value = savedSession.draft || '';
+    startAestheticTrainingTimer();
     if (savedTrainer) savedTrainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.showToast) window.showToast('已恢复今日训练，回答没有丢失');
     postAestheticLearning('sync_session');
@@ -4081,6 +4286,8 @@ window.startAestheticTraining = function() {
     sessionVersion: 0,
     messages: [],
     activeGoal: 'outline',
+    activeCheckpoint: 'human_analysis',
+    checkpointStates: {},
     goalStates: {},
     hintLevel: 0,
     turnCount: 0,
@@ -4089,6 +4296,20 @@ window.startAestheticTraining = function() {
     strategyVersion: 'control-v1',
     strategyInstructions: '',
     strategyCohort: 'control',
+    trainingPlan: buildAestheticTrainingPlan(item),
+    cloudCaseHistory: [],
+    trainingStartedAt: new Date().toISOString(),
+    activeElapsedMs: 0,
+    lastTimerTickAt: 0,
+    lastTimerPersistBucket: -1,
+    timePhase: 'active',
+    timerHandle: null,
+    closingNoticeShown: false,
+    autoFinishRequested: false,
+    finishAfterTurn: false,
+    finishing: false,
+    completionCommitted: false,
+    requestGeneration: 0,
     pendingRequest: false
   };
   var master = document.getElementById('ae-master');
@@ -4096,6 +4317,8 @@ window.startAestheticTraining = function() {
   var trainer = document.getElementById('ae-trainer');
   if (trainer) trainer.classList.add('on');
   startAestheticConversation();
+  startAestheticTrainingTimer();
+  refreshAestheticCloudRotation(item);
   initializeAestheticLearning();
   if (trainer) trainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
@@ -4105,11 +4328,14 @@ function loadAestheticAbilityProfile() {
 }
 
 var AESTHETIC_GOAL_LABELS = {
+  human_analysis: '人物分析', hair_anatomy: '发型解剖',
   outline: '轮廓观察', weight: '重量判断', layers: '层次关系', line_texture: '线条与纹理',
   style: '风格归纳', suitability: '人物适配', technique: '技术转化', client_communication: '顾客沟通'
 };
 
 var AESTHETIC_METHOD_HINTS = {
+  human_analysis: '先描述画面呈现与比例证据，不把职业、性格或生活方式猜成事实。',
+  hair_anatomy: '按轮廓、长度、重量、层次、脸周与纹理拆结构；工具和吹风只能作为推测。',
   outline: '先看外轮廓的边界和最宽点，不急着判断风格。',
   weight: '把图片缩小看：哪一块最重，哪一块最轻？',
   layers: '不要数层次，观察头发从哪里开始变轻、变动。',
@@ -4141,7 +4367,7 @@ function renderAestheticChatMessages() {
 }
 
 function updateAestheticConversationChrome(goal) {
-  goal = goal || aestheticTrainingState.activeGoal || 'outline';
+  goal = goal || aestheticTrainingState.activeCheckpoint || aestheticTrainingState.activeGoal || 'human_analysis';
   var focus = document.getElementById('ae-chat-focus');
   var method = document.getElementById('ae-chat-method');
   if (focus) focus.textContent = '当前陪练重点 · ' + (AESTHETIC_GOAL_LABELS[goal] || goal);
@@ -4149,11 +4375,15 @@ function updateAestheticConversationChrome(goal) {
 }
 
 function startAestheticConversation() {
-  updateAestheticConversationChrome('outline');
-  addAestheticChatMessage('assistant', '今天我们一起看这张图。我不会让你写一篇标准答案，也不会一上来告诉你是什么风格。先说第一眼：这款发型的外轮廓最吸引你的是哪里？');
+  var runtime = hairVisionRuntime();
+  aestheticTrainingState.activeCheckpoint = 'human_analysis';
+  updateAestheticConversationChrome('human_analysis');
+  addAestheticChatMessage('assistant', runtime
+    ? runtime.openingQuestion(aestheticTrainingState.trainingPlan || {})
+    : '今天先从人物开始，不急着给发型命名。说一个人物与发型关系的判断，并指出画面依据。');
   ensureAestheticAnalysis().then(function() {
     var focus = document.getElementById('ae-chat-focus');
-    if (focus) focus.textContent = '当前陪练重点 · 轮廓观察';
+    if (focus) focus.textContent = '当前陪练重点 · 人物分析';
   }).catch(function() {
     addAestheticChatMessage('assistant', '图片知识卡暂时没有建立成功，但你的回答已经保留。网络恢复后可以继续，不需要重新输入。');
   });
@@ -4166,8 +4396,10 @@ window.aestheticChatKeydown = function(event) {
   }
 };
 
-function relevantAestheticModules(record, goal) {
+function relevantAestheticModules(record, goal, checkpoint) {
   var routes = {
+    human_analysis: ['suitability', 'outline', 'bangs', 'uncertainties'],
+    hair_anatomy: ['outline', 'layers', 'bangs', 'texture', 'color', 'curlStyling', 'cuttingLogic', 'uncertainties'],
     outline: ['outline', 'layers', 'uncertainties'], weight: ['outline', 'layers', 'texture', 'uncertainties'],
     layers: ['outline', 'layers', 'texture', 'cuttingLogic', 'uncertainties'], line_texture: ['texture', 'curlStyling', 'outline', 'uncertainties'],
     style: ['style', 'outline', 'layers', 'texture', 'curlStyling', 'color', 'uncertainties'],
@@ -4176,7 +4408,7 @@ function relevantAestheticModules(record, goal) {
     client_communication: ['style', 'suitability', 'maintenance', 'uncertainties']
   };
   var selected = {};
-  (routes[goal] || routes.outline).forEach(function(key) { if (record.current.modules[key]) selected[key] = record.current.modules[key]; });
+  (routes[checkpoint] || routes[goal] || routes.outline).forEach(function(key) { if (record.current.modules[key]) selected[key] = record.current.modules[key]; });
   return selected;
 }
 
@@ -4186,9 +4418,15 @@ function requestAestheticConversationTurn(answer) {
     return postAestheticCoach({
       operation: 'coach_turn', username: aestheticIdentity(), store: aestheticStore(), session_id: aestheticTrainingState.sessionId,
       answer: answer, active_goal: aestheticTrainingState.activeGoal, goal_states: aestheticTrainingState.goalStates,
+      active_checkpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis', checkpoint_states: aestheticTrainingState.checkpointStates || {},
       hint_level: aestheticTrainingState.hintLevel, turn_count: aestheticTrainingState.turnCount,
       ability_profile: aestheticTrainingState.abilitySnapshot,
-      messages: aestheticTrainingState.messages.slice(-8), analysis_modules: relevantAestheticModules(record, aestheticTrainingState.activeGoal),
+      messages: aestheticTrainingState.messages.slice(-8), analysis_modules: relevantAestheticModules(record, aestheticTrainingState.activeGoal, aestheticTrainingState.activeCheckpoint),
+      training_plan: aestheticTrainingState.trainingPlan || {},
+      hair_vision: aestheticHairVisionContext(),
+      prior_case_history: aestheticPriorCaseHistory(item),
+      elapsed_seconds: currentAestheticTimeState().elapsedSeconds,
+      time_phase: currentAestheticTimeState().phase,
       strategy_version: aestheticTrainingState.strategyVersion || 'control-v1',
       strategy_instructions: aestheticTrainingState.strategyInstructions || '',
       case: { id: item.id, title: item.title, category: item.category, focus: item.focus, limitations: item.limitations }
@@ -4207,32 +4445,44 @@ window.sendAestheticChatMessage = function() {
   if (input) input.value = '';
   aestheticTrainingState.pendingRequest = true;
   aestheticTrainingState.turnCount += 1;
+  aestheticTrainingState.requestGeneration += 1;
+  var requestGeneration = aestheticTrainingState.requestGeneration;
+  var requestSessionId = aestheticTrainingState.sessionId;
   if (send) send.disabled = true;
   if (status) status.classList.add('on');
   requestAestheticConversationTurn(answer).then(function(result) {
+    if (aestheticTrainingState.completionCommitted || aestheticTrainingState.sessionId !== requestSessionId || aestheticTrainingState.requestGeneration !== requestGeneration) return;
     var priorGoal = aestheticTrainingState.activeGoal;
+    var priorCheckpoint = aestheticTrainingState.activeCheckpoint;
     aestheticTrainingState.activeGoal = result.active_goal || priorGoal;
     aestheticTrainingState.goalStates = result.goal_states || aestheticTrainingState.goalStates;
+    aestheticTrainingState.activeCheckpoint = result.active_checkpoint || result.next_checkpoint || priorCheckpoint;
+    aestheticTrainingState.checkpointStates = result.checkpoint_states || aestheticTrainingState.checkpointStates;
     aestheticTrainingState.hintLevel = 0;
     if (result.ability_updates) mergeAestheticAbilityUpdates(result.ability_updates);
-    updateAestheticConversationChrome(aestheticTrainingState.activeGoal);
+    updateAestheticConversationChrome(aestheticTrainingState.activeCheckpoint);
     addAestheticChatMessage('assistant', result.message || '我们换一个角度看。你能指出一个具体画面证据吗？', {
-      transition: result.active_goal && result.active_goal !== priorGoal,
-      goal: result.active_goal,
+      transition: (result.active_checkpoint && result.active_checkpoint !== priorCheckpoint) || (result.active_goal && result.active_goal !== priorGoal),
+      goal: result.active_checkpoint || result.active_goal,
       response_type: result.response_type || '',
       classification: result.classification || {},
       repeated_pattern: result.repeated_pattern || ''
     });
-    if (result.should_offer_summary) addAestheticChatMessage('assistant', '这次已经形成了几条清楚的判断。你可以继续聊，也可以现在结束并看本次总结。');
+    if (result.should_offer_summary || result.should_auto_finish) aestheticTrainingState.finishAfterTurn = true;
     saveAestheticSession();
     postAestheticLearning('sync_session');
   }).catch(function(error) {
+    if (aestheticTrainingState.completionCommitted || aestheticTrainingState.sessionId !== requestSessionId) return;
     addAestheticChatMessage('assistant', '导师连接暂时不稳定，你刚才的话已经保留。请稍后再发一次，我会从这里继续。', { error: error && error.message });
   }).finally(function() {
+    if (aestheticTrainingState.completionCommitted || aestheticTrainingState.sessionId !== requestSessionId || aestheticTrainingState.requestGeneration !== requestGeneration) return;
     aestheticTrainingState.pendingRequest = false;
     if (send) send.disabled = false;
     if (status) status.classList.remove('on');
-    if (input) input.focus();
+    if (aestheticTrainingState.finishAfterTurn) {
+      aestheticTrainingState.finishAfterTurn = false;
+      window.finishAestheticConversation('checkpoint_complete');
+    } else if (input) input.focus();
   });
 };
 
@@ -4256,7 +4506,10 @@ function mergeAestheticAbilityUpdates(updates) {
 
 window.showAestheticProgressiveHint = function() {
   var goal = aestheticTrainingState.activeGoal || 'outline';
+  goal = aestheticTrainingState.activeCheckpoint || goal;
   var levels = {
+    human_analysis: ['先只看五官线条、头脸和颈肩比例。', '把“这个人很温柔”改成“画面哪些线条呈现柔和”。', '职业、性格和打理时间无法从照片确认，请说需要询问什么。'],
+    hair_anatomy: ['先找外轮廓和最重的位置。', '再看从哪里开始变轻，以及脸周怎样连接。', '工具、去量和吹风方式只说可能性，不写成事实。'],
     outline: ['把图片缩小，只看头发最外面一圈。', '找最宽点：它在耳侧、下颌还是肩部？', '先在“纵向、圆形、A形”中比较，不急着选风格。'],
     weight: ['眯起眼睛看，颜色和头发堆积最重在哪里？', '只比较顶部和肩部，哪一处更有存在感？', '重量不等于长度，观察发丝密度和轮廓厚度。'],
     layers: ['看头发从哪里开始变轻。', '比较顶部、脸周和发尾，哪个区域变化最大？', '先描述层次带来的视觉结果，不推测准确角度。'],
@@ -4271,18 +4524,42 @@ window.showAestheticProgressiveHint = function() {
   if (box) box.classList.add('on');
 };
 
-window.finishAestheticConversation = function() {
-  if (aestheticTrainingState.pendingRequest) return;
-  if (aestheticTrainingState.messages.length < 3) {
-    if (window.showToast) window.showToast('至少完成一轮对话后再生成总结');
+function completedAestheticCheckpointIds() {
+  var states = aestheticTrainingState.checkpointStates || {};
+  return Object.keys(states).filter(function(key) {
+    var value = typeof states[key] === 'string' ? states[key] : states[key] && states[key].status;
+    return ['answered', 'demonstrated', 'complete', 'mastered'].indexOf(value) !== -1;
+  });
+}
+
+window.finishAestheticConversation = function(reason) {
+  reason = reason || 'manual';
+  if (aestheticTrainingState.completionCommitted || aestheticTrainingState.finishing) return;
+  if (aestheticTrainingState.pendingRequest) {
+    aestheticTrainingState.finishAfterTurn = true;
     return;
   }
+  if (reason === 'manual' && completedAestheticCheckpointIds().length < 5) {
+    if (window.showToast) window.showToast('五分钟训练还没走完五个重点，可以退出后下次继续');
+    return;
+  }
+  if (aestheticTrainingState.messages.length < 3) return;
+  aestheticTrainingState.finishing = true;
+  aestheticTrainingState.finishReason = reason;
+  stopAestheticTrainingTimer();
   aestheticTrainingState.pendingRequest = true;
   var status = document.getElementById('ae-chat-status');
   if (status) { status.textContent = '正在整理本次成长总结…'; status.classList.add('on'); }
   postAestheticCoach({
     operation: 'summarize_session', username: aestheticIdentity(), store: aestheticStore(), session_id: aestheticTrainingState.sessionId,
     messages: aestheticTrainingState.messages.slice(-20), goal_states: aestheticTrainingState.goalStates,
+    active_checkpoint: aestheticTrainingState.activeCheckpoint,
+    checkpoint_states: aestheticTrainingState.checkpointStates,
+    training_plan: aestheticTrainingState.trainingPlan,
+    hair_vision: aestheticHairVisionContext(),
+    prior_case_history: aestheticPriorCaseHistory(aestheticTrainingState.caseItem),
+    elapsed_seconds: currentAestheticTimeState().elapsedSeconds,
+    finish_reason: reason,
     ability_profile: aestheticTrainingState.abilitySnapshot,
     case: { id: aestheticTrainingState.caseItem.id, title: aestheticTrainingState.caseItem.title }
   }).then(function(result) {
@@ -4297,21 +4574,32 @@ window.finishAestheticConversation = function() {
 };
 
 function completeAestheticConversation() {
+  if (aestheticTrainingState.completionCommitted) return;
+  aestheticTrainingState.completionCommitted = true;
+  aestheticTrainingState.finishing = false;
+  stopAestheticTrainingTimer();
   var summary = aestheticTrainingState.conversationSummary || {};
   var progress = loadAestheticProgress();
   var completedAt = new Date().toISOString();
-  var points = 20 + (aestheticTrainingState.turnCount >= 5 ? 10 : 0);
-  progress.attempts.push({ type: 'guided-chat-v1', sessionId: aestheticTrainingState.sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, summary: summary, points: points });
+  var completedCheckpoints = completedAestheticCheckpointIds();
+  var qualified = completedCheckpoints.length === 5;
+  var points = qualified ? 30 : 5;
+  var sessionId = aestheticTrainingState.sessionId;
+  var attempt = { type: 'guided-chat-v1', sessionId: sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseKey: aestheticTrainingCaseKey(aestheticTrainingState.caseItem), caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, checkpointStates: aestheticTrainingState.checkpointStates, completedCheckpoints: completedCheckpoints, qualified: qualified, trainingPlan: aestheticTrainingState.trainingPlan, elapsedSeconds: currentAestheticTimeState().elapsedSeconds, finishReason: aestheticTrainingState.finishReason || 'manual', summary: summary, points: points };
+  if (!progress.attempts.some(function(row) { return row.sessionId === sessionId; })) progress.attempts.push(attempt);
   saveAestheticProgress(progress);
   postAestheticLearning('complete_session');
   clearAestheticSession();
+  aestheticTrainingState.requestGeneration += 1;
+  aestheticTrainingState.sessionId = '';
   var trainer = document.getElementById('ae-trainer');
   function list(items, fallback) { return (Array.isArray(items) && items.length ? items : [fallback]).map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join(''); }
   if (trainer) trainer.innerHTML = '<div class="ae-section-label">Conversation summary</div><h3>这次你带走了什么</h3>' +
     '<h4>看对的内容</h4><ul>' + list(summary.strengths, '你完成了围绕同一张图的连续观察和表达。') + '</ul>' +
     '<h4>主要遗漏</h4><ul>' + list(summary.missed_points, '本次对话较短，继续训练后才能形成稳定判断。') + '</ul>' +
     '<h4>误判模式</h4><ul>' + list(summary.misconception_patterns, '暂未发现稳定的重复误判。') + '</ul>' +
-    '<h4>一个可迁移的方法</h4><p>' + aestheticEscape(summary.transferable_method || '先描述事实，再解释关系，最后归纳风格。') + '</p>' +
+    '<h4>这次独有的收获</h4><p>' + aestheticEscape(summary.unique_takeaway || summary.transferable_method || '先描述事实，再解释关系，最后归纳风格。') + '</p>' +
+    (summary.difference_from_previous ? '<h4>和上次同款训练的不同</h4><p>' + aestheticEscape(summary.difference_from_previous) + '</p>' : '') +
     '<h4>下次重点</h4><p>' + aestheticEscape(summary.next_focus || AESTHETIC_GOAL_LABELS[aestheticTrainingState.activeGoal] || '继续训练视觉证据') + '</p>' +
     '<button class="ae-primary" type="button" onclick="showAestheticMaster()" style="width:100%;margin-top:12px;">查看专业解析</button>';
   renderAestheticSummary();
@@ -4873,7 +5161,7 @@ function renderAestheticGrowth() {
   var list = document.getElementById('ae-rubric-list');
   var summary = document.getElementById('ae-growth-summary');
   if (!data || !list) return;
-  var attempts = guidedAestheticAttempts(loadAestheticProgress());
+  var attempts = guidedAestheticAttempts(loadAestheticProgress()).filter(function(attempt) { return attempt.qualified !== false; });
   var now = new Date();
   var monthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   var monthly = attempts.filter(function(attempt) { return String(attempt.date || '').slice(0, 7) === monthPrefix; });

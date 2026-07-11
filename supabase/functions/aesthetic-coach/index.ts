@@ -23,14 +23,18 @@ const STAGE_MODULES: Record<string, string[]> = {
 
 const DSS_STYLES = ["natural", "french", "korean", "japanese", "urban", "minimal", "sweet", "androgynous", "avant_garde"];
 const COACH_GOALS = ["outline", "weight", "layers", "line_texture", "style", "suitability", "technique", "client_communication"];
+const HAIR_VISION_CHECKPOINTS = ["human_analysis", "style", "hair_anatomy", "suitability", "client_communication"];
 
 function buildCoachTurnPrompt(payload: Record<string, unknown>, modules: Record<string, unknown>): string {
   const messages = Array.isArray(payload.messages) ? payload.messages.slice(-8) : [];
   const activeGoal = COACH_GOALS.includes(String(payload.active_goal || "")) ? String(payload.active_goal) : "outline";
+  const activeCheckpoint = HAIR_VISION_CHECKPOINTS.includes(String(payload.active_checkpoint || "")) ? String(payload.active_checkpoint) : "human_analysis";
   return `你是一位带团队20年的发型设计总监，正在通过有剧本的自由聊天培养发型师，而不是批改考试。
 你的任务不是完成图片报告，而是让发型师在本轮产生一次可观察的能力进步。
 
 内部训练目标：${activeGoal}
+当前 Hair Vision 检查点：${activeCheckpoint}
+五个必经检查点：${HAIR_VISION_CHECKPOINTS.join(" -> ")}
 允许目标：${COACH_GOALS.join(", ")}
 DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、重量、层次、线条、纹理、卷度与色彩后的结果，不能作为起点。
 当前目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 3000)}
@@ -39,6 +43,10 @@ DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、�
 最近对话：${JSON.stringify(messages).slice(0, 6000)}
 当前回答：${String(payload.answer || "").slice(0, 600)}
 相关图片知识模块：${JSON.stringify(modules).slice(0, 7000)}
+本次差异化训练计划：${JSON.stringify(payload.training_plan || {}).slice(0, 5000)}
+Hair Vision 相关知识：${JSON.stringify(payload.hair_vision || {}).slice(0, 8000)}
+同款发型近期收获（不得换句话重复）：${JSON.stringify(payload.prior_case_history || []).slice(0, 3000)}
+已用有效训练时间：${Number(payload.elapsed_seconds) || 0} 秒；时间阶段：${String(payload.time_phase || "active")}
 当前策略版本：${String(payload.strategy_version || "control-v1").slice(0, 80)}
 经过自动验证的附加教学策略：${String(payload.strategy_instructions || "").slice(0, 2000) || "无，保持当前控制策略"}
 
@@ -52,17 +60,25 @@ DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、�
 7. 当前目标达到 demonstrated 后，可做一次迁移测试；达到 transfer_tested 后自然转到最有价值的下一目标。
 8. 顾客沟通评价需求确认、差异说明、替代方案、打理成本和语气。
 9. 不得虚构你看见了知识模块中没有的事实；低置信度结论必须保留推测表达。
+10. 保持自然聊天，但必须按人物、风格、解剖、适配、沟通顺序推进；每轮只问一个主要问题。
+11. 图片看不见人物正脸时，人物分析可用“无法确认＋需要补充什么”完成，禁止猜职业、年龄、性格和生活方式。
+12. 同款再次训练必须围绕 training_plan 的新镜头产生新收获，不得重复 prior_case_history。
+13. closing 阶段停止深挖并补齐未完成检查点；grace/overtime 阶段只评价当前回答并结束。
+14. training_plan 的风格对比只是训练镜头；图片证据不支持时把它用于反证或迁移，不得硬套风格。
 
 只输出JSON：{
  "message":"给发型师看的自然回复",
  "response_type":"probe|hint|challenge|explain|transition|wrap_up",
  "active_goal":"允许目标之一",
+ "active_checkpoint":"五个检查点之一",
+ "checkpoint_states":{"检查点":"unseen|asked|answered|demonstrated|incomplete"},
  "goal_states":{"目标":{"status":"unseen|probing|partial|demonstrated|transfer_tested|mastered","attempts":0,"last_evidence":""}},
  "classification":{"observed_facts":[],"reasonable_inferences":[],"unsupported_claims":[],"unknowns":[]},
  "repeated_pattern":"",
  "difficulty":1,
  "ability_updates":{"能力维度":{"level":0,"trend":0,"evidence":""}},
- "should_offer_summary":false
+ "should_offer_summary":false,
+ "should_auto_finish":false
 }`;
 }
 
@@ -70,8 +86,12 @@ function buildSessionSummaryPrompt(payload: Record<string, unknown>): string {
   return `你是发型设计总监。根据本次对话生成简洁、具体、可迁移的成长总结，不要写空泛鼓励。
 对话：${JSON.stringify(Array.isArray(payload.messages) ? payload.messages.slice(-20) : []).slice(0, 12000)}
 目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 4000)}
+Hair Vision 检查点：${JSON.stringify(payload.checkpoint_states || {}).slice(0, 3000)}
+本次训练计划：${JSON.stringify(payload.training_plan || {}).slice(0, 4000)}
+同款历史收获：${JSON.stringify(payload.prior_case_history || []).slice(0, 3000)}
+有效训练时长：${Number(payload.elapsed_seconds) || 0}秒；结束原因：${String(payload.finish_reason || "manual")}
 能力画像：${JSON.stringify(payload.ability_profile || {}).slice(0, 3000)}
-只输出JSON：{"strengths":[],"missed_points":[],"misconception_patterns":[],"ability_changes":[],"transferable_method":"","next_focus":"","conversation_highlight":"","professional_summary":""}。每个数组最多4项，中文输出。`;
+只输出JSON：{"strengths":[],"missed_points":[],"misconception_patterns":[],"ability_changes":[],"transferable_method":"","unique_takeaway":"本次区别于同款历史的唯一收获","difference_from_previous":"和上次同款训练的差异","next_focus":"","conversation_highlight":"","professional_summary":""}。不得把 incomplete 写成已掌握；每个数组最多4项，中文输出。`;
 }
 
 function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "", previousModules: Record<string, unknown> = {}): string {
@@ -190,17 +210,36 @@ Deno.serve(async (req: Request) => {
       if (answer.length < 1) return new Response(JSON.stringify({ error: "answer required" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
       const prompt = buildCoachTurnPrompt(payload, analysisModules);
       const turn = await callOpenAI(prompt, "");
-      const goal = COACH_GOALS.includes(String(turn.active_goal || "")) ? String(turn.active_goal) : String(payload.active_goal || "outline");
+      const fallbackGoal = COACH_GOALS.includes(String(payload.active_goal || "")) ? String(payload.active_goal) : "outline";
+      const goal = COACH_GOALS.includes(String(turn.active_goal || "")) ? String(turn.active_goal) : fallbackGoal;
+      const currentCheckpoint = HAIR_VISION_CHECKPOINTS.includes(String(payload.active_checkpoint || "")) ? String(payload.active_checkpoint) : "human_analysis";
+      const checkpointSource = (typeof payload.checkpoint_states === "object" && payload.checkpoint_states) ? payload.checkpoint_states as Record<string, unknown> : {};
+      const checkpointStates: Record<string, string> = {};
+      for (const checkpoint of HAIR_VISION_CHECKPOINTS) {
+        const incoming = typeof checkpointSource[checkpoint] === "string"
+          ? String(checkpointSource[checkpoint])
+          : String((checkpointSource[checkpoint] as Record<string, unknown>)?.status || "unseen");
+        checkpointStates[checkpoint] = ["unseen", "asked", "answered", "demonstrated", "incomplete"].includes(incoming) ? incoming : "unseen";
+      }
+      checkpointStates[currentCheckpoint] = "answered";
+      const nextCheckpoint = HAIR_VISION_CHECKPOINTS.find((checkpoint) => !["answered", "demonstrated"].includes(checkpointStates[checkpoint])) || "client_communication";
+      if (nextCheckpoint !== currentCheckpoint && checkpointStates[nextCheckpoint] === "unseen") checkpointStates[nextCheckpoint] = "asked";
+      const timePhase = String(payload.time_phase || "active");
+      const allCovered = HAIR_VISION_CHECKPOINTS.every((checkpoint) => ["answered", "demonstrated"].includes(checkpointStates[checkpoint]));
+      const shouldAutoFinish = allCovered || ["grace", "overtime"].includes(timePhase) || Number(payload.turn_count || 0) >= 5;
       const result = {
         message: String(turn.message || "我们先缩小范围，只说一个你能确认的画面事实。你最先看到哪里？").slice(0, 600),
         response_type: String(turn.response_type || "probe").slice(0, 30),
         active_goal: goal,
+        active_checkpoint: shouldAutoFinish ? currentCheckpoint : nextCheckpoint,
+        checkpoint_states: checkpointStates,
         goal_states: typeof turn.goal_states === "object" && turn.goal_states ? turn.goal_states : payload.goal_states || {},
         classification: typeof turn.classification === "object" && turn.classification ? turn.classification : {},
         repeated_pattern: String(turn.repeated_pattern || "").slice(0, 180),
         difficulty: Math.max(1, Math.min(3, Number(turn.difficulty) || 1)),
         ability_updates: typeof turn.ability_updates === "object" && turn.ability_updates ? turn.ability_updates : {},
-        should_offer_summary: turn.should_offer_summary === true,
+        should_offer_summary: shouldAutoFinish || turn.should_offer_summary === true,
+        should_auto_finish: shouldAutoFinish,
         model: MODEL,
       };
       return new Response(JSON.stringify(result), { headers: { ...headers, "Content-Type": "application/json" } });
