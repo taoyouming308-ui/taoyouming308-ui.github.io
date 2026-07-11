@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="368">
+<html lang="zh-CN" data-version="369">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2927,22 +2927,6 @@ body {
           </div>
           <button class="ae-secondary" type="button" onclick="triggerAestheticUpload()">上传图片</button>
         </div>
-        <div class="ae-library-actions">
-          <div style="flex:1;">
-            <label for="ae-upload-category">分类</label>
-            <select id="ae-upload-category">
-              <option value="超短发">超短发</option>
-              <option value="短发" selected>短发</option>
-              <option value="锁骨发">锁骨发</option>
-              <option value="中长发">中长发</option>
-              <option value="高层次长发">高层次长发</option>
-              <option value="造型烫">造型烫</option>
-              <option value="法式卷">法式卷</option>
-              <option value="羊毛卷">羊毛卷</option>
-              <option value="漂发发色">漂发发色</option>
-            </select>
-          </div>
-        </div>
         <input type="file" id="ae-upload-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadAestheticImage(this)">
         <div class="ae-library-note">仅当前登录发型师可见。上传后自动进入你的今日训练候选。</div>
         <div class="ae-library-grid" id="ae-library-grid"></div>
@@ -3740,8 +3724,7 @@ window.uploadAestheticImage = function(input) {
     input.value = '';
     return;
   }
-  var categoryEl = document.getElementById('ae-upload-category');
-  var category = categoryEl ? categoryEl.value : '短发';
+  var category = '发型作品';
   compressAestheticUpload(file)
     .then(function(base64) {
       var list = loadAestheticLibrary();

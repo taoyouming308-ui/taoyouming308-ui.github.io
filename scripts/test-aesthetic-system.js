@@ -129,6 +129,8 @@ data.trainingCases.forEach(row => {
 ].forEach(marker => assert(admin.includes(marker), `Admin is missing marker: ${marker}`));
 
 assert(!app.includes('id="ae-review-photo"'), 'guided daily training must not upload customer photos');
+assert(!app.includes('id="ae-upload-category"'), 'personal training uploads must not show a manual category selector');
+assert(app.includes("var category = '发型作品';"), 'personal training uploads must keep a neutral compatibility category');
 assert(data.governance.aiRule.includes('不得'), 'AI publishing boundary must be explicit');
 assert(data.governance.privacyRule.includes('不进入公共知识库'), 'customer photo privacy rule must be explicit');
 

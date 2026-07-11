@@ -1,0 +1,11 @@
+# Historical release snapshots are retained for now but excluded from normal searches.
+perm-app.v*.html
+perm-app.backup.html
+
+# Generated caches and local Supabase state.
+**/__pycache__/
+**/*.pyc
+supabase/.temp/
+
+# Candidate knowledge is reviewed through its index, not scanned by default.
+knowledge-candidates/pending/

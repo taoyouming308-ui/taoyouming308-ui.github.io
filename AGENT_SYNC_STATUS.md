@@ -1,5 +1,21 @@
 # Agent Sync Status
 
+## v369 (2026-07-11)
+
+- 美感训练“我的训练图库”移除手动分类下拉框，上传入口和个人图库保持不变。
+- 新上传图片使用中性的内部兼容分类“发型作品”；已有个人图片及其原分类不修改。
+- 新增回归断言，防止手动分类控件再次出现在个人训练图库。
+- App version: v369
+
+## Architecture refactor (2026-07-11, no app release)
+
+- Added `ARCHITECTURE.md`, a root development README, focused package READMEs and a domain-indexed `docs/` tree so new sessions can read only the relevant boundary.
+- Added initial executable boundaries for DSS definitions, Prompt builders and AI operation contracts under `packages/`; kept the root GitHub Pages entry files unchanged for URL and zero-build compatibility.
+- Added `scripts/test-module-boundaries.js` to the local pre-push hook and GitHub CI, plus `.rgignore` rules that keep historical release snapshots and generated caches out of normal Codex searches without deleting them.
+- Updated `AGENTS.md` with the product mission, Prompt/DSS/knowledge separation, AI Engine contract, UI and low-coupling rules.
+- No production page, database, environment variable, version file or runtime worker was changed. The deployed Edge Function still contains its existing Prompt implementation until Supabase external-import packaging is verified; do not delete that implementation merely to satisfy directory shape.
+- App version remains v368. Version, release integrity, smoke, UI/business regression, module-boundary and 36 Python unit tests passed locally; standalone Deno type-checking was unavailable.
+
 ## v368 (2026-07-10)
 
 - 美感训练主交互从固定五步“填写答案—提交点评—进入下一步”改为有剧本的自由聊天：用户看到连续对话，系统内部维护轮廓、重量、层次、线条纹理、风格、人物适配、技术转化和顾客沟通八类隐藏目标。

@@ -41,6 +41,7 @@ jobs:
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance
         run: |
+          node scripts/test-module-boundaries.js
           node scripts/test-aesthetic-system.js
           python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
       - name: Run Meiguanjia sync tests
