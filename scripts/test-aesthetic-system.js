@@ -116,6 +116,17 @@ data.trainingCases.forEach(row => {
   'final_request: finalRequest === true',
   "coachHeaders.Authorization = 'Bearer ' + SUPABASE_KEY",
   'hair_aesthetic_progress_v1:',
+  'hair_aesthetic_session_v1:',
+  'function saveAestheticSession()',
+  'function loadAestheticSession()',
+  'currentStep: aestheticTrainingState.activeGoal',
+  'status: \'in_progress\'',
+  'oninput="saveAestheticDraft()"',
+  '继续今日训练',
+  'id="ae-kpi-points"',
+  'id="ae-kpi-rate"',
+  'id="ae-kpi-streak"',
+  'points: points',
   'aesthetic-knowledge.v1.js'
 ].forEach(marker => assert(app.includes(marker), `App is missing marker: ${marker}`));
 

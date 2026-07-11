@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="370">
+<html lang="zh-CN" data-version="371">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2902,6 +2902,11 @@ body {
         <div class="ae-ability-strip"><span>观察<br>会看</span><span>分析<br>会拆</span><span>判断<br>会判断</span><span>设计<br>会设计</span><span>美感<br>会审美</span></div>
       </div>
       <div class="ae-section-label">Today / One case</div>
+      <article class="ae-card" id="ae-session-banner" style="display:none;margin-bottom:12px;">
+        <div class="ae-section-label">Auto save / Resume</div>
+        <h3 id="ae-session-title">今日训练已自动保存</h3>
+        <p id="ae-session-detail">下次回来会从这里继续。</p>
+      </article>
       <div class="ae-stats">
         <div class="ae-stat"><strong id="ae-stat-days">0</strong><span>完成天数</span></div>
         <div class="ae-stat"><strong id="ae-stat-rate">0</strong><span>训练作品</span></div>
@@ -2942,7 +2947,7 @@ body {
         <div class="ae-chat-compose" id="ae-chat-compose">
           <div class="ae-chat-status" id="ae-chat-status">设计总监正在看你的思路…</div>
           <div class="ae-chat-input-row">
-            <textarea class="ae-chat-input" id="ae-chat-input" maxlength="600" rows="1" placeholder="像聊天一样，说说你看到的…" onkeydown="aestheticChatKeydown(event)"></textarea>
+            <textarea class="ae-chat-input" id="ae-chat-input" maxlength="600" rows="1" placeholder="像聊天一样，说说你看到的…" oninput="saveAestheticDraft()" onkeydown="aestheticChatKeydown(event)"></textarea>
             <button class="ae-chat-send" id="ae-chat-send" type="button" onclick="sendAestheticChatMessage()" aria-label="发送">↑</button>
           </div>
           <div class="ae-chat-tools"><button type="button" onclick="showAestheticProgressiveHint()">我卡住了</button><button type="button" onclick="finishAestheticConversation()">结束并看总结</button></div>
@@ -2980,6 +2985,15 @@ body {
 
     <div class="ae-view" id="ae-view-growth">
       <div class="ae-section-label">Progress / Personal</div>
+      <article class="ae-card">
+        <h3>本月训练 KPI</h3>
+        <div class="ae-stats">
+          <div class="ae-stat"><strong id="ae-kpi-points">0</strong><span>本月积分</span></div>
+          <div class="ae-stat"><strong id="ae-kpi-rate">0%</strong><span>完成率</span></div>
+          <div class="ae-stat"><strong id="ae-kpi-streak">0</strong><span>连续天数</span></div>
+        </div>
+        <p id="ae-kpi-note">完成今日训练后开始累计。</p>
+      </article>
       <article class="ae-card">
         <h3>当前能力记录</h3>
         <p id="ae-growth-summary">完成训练后，这里会显示正确率与薄弱维度。</p>
@@ -3339,6 +3353,66 @@ function aestheticProgressKey() {
 function aestheticAbilityKey() {
   return 'hair_aesthetic_ability_v1:' + aestheticIdentity();
 }
+
+function aestheticSessionKey() {
+  return 'hair_aesthetic_session_v1:' + aestheticIdentity();
+}
+
+function loadAestheticSession() {
+  try {
+    var session = JSON.parse(localStorage.getItem(aestheticSessionKey()) || 'null');
+    if (!session || session.businessDate !== aestheticToday() || session.status === 'completed') return null;
+    return session;
+  } catch (e) { return null; }
+}
+
+function saveAestheticSession() {
+  if (!aestheticTrainingState.sessionId || !aestheticTrainingState.caseItem) return;
+  var session = {
+    id: aestheticTrainingState.sessionId,
+    userId: aestheticIdentity(),
+    businessDate: aestheticToday(),
+    status: 'in_progress',
+    currentStep: aestheticTrainingState.activeGoal || 'outline',
+    caseId: aestheticTrainingState.caseItem.id,
+    caseItem: aestheticTrainingState.caseItem,
+    messages: aestheticTrainingState.messages,
+    goalStates: aestheticTrainingState.goalStates,
+    activeGoal: aestheticTrainingState.activeGoal,
+    hintLevel: aestheticTrainingState.hintLevel,
+    turnCount: aestheticTrainingState.turnCount,
+    conversationSummary: aestheticTrainingState.conversationSummary,
+    draft: String((document.getElementById('ae-chat-input') || {}).value || ''),
+    updatedAt: new Date().toISOString(),
+    version: Number(aestheticTrainingState.sessionVersion || 0) + 1
+  };
+  aestheticTrainingState.sessionVersion = session.version;
+  localStorage.setItem(aestheticSessionKey(), JSON.stringify(session));
+  renderAestheticSessionBanner(session);
+}
+
+function clearAestheticSession() {
+  localStorage.removeItem(aestheticSessionKey());
+  var banner = document.getElementById('ae-session-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+function renderAestheticSessionBanner(session) {
+  var banner = document.getElementById('ae-session-banner');
+  var title = document.getElementById('ae-session-title');
+  var detail = document.getElementById('ae-session-detail');
+  if (!banner) return;
+  if (!session) { banner.style.display = 'none'; return; }
+  var count = (session.messages || []).filter(function(message) { return message.role === 'user'; }).length;
+  banner.style.display = '';
+  if (title) title.textContent = '今日训练进行中 · 已完成 ' + count + ' 轮';
+  if (detail) detail.textContent = '最近自动保存 ' + new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '，点击下方按钮继续。';
+}
+
+window.saveAestheticDraft = function() {
+  clearTimeout(window._aestheticDraftTimer);
+  window._aestheticDraftTimer = setTimeout(saveAestheticSession, 900);
+};
 
 function updateAestheticAbilityProfile() {
   var profile;
@@ -3840,7 +3914,9 @@ function renderAestheticCaseCard() {
 }
 
 function guidedAestheticAttempts(progress) {
-  return (progress.attempts || []).filter(function(attempt) { return attempt.type === 'guided-v2'; });
+  return (progress.attempts || []).filter(function(attempt) {
+    return attempt.type === 'guided-v2' || attempt.type === 'guided-chat-v1';
+  });
 }
 
 function renderAestheticSummary() {
@@ -3850,18 +3926,20 @@ function renderAestheticSummary() {
   var scoreTotal = 0;
   attempts.forEach(function(attempt) {
     completedDays[attempt.date] = true;
-    scoreTotal += Number(attempt.averageScore) || 0;
+    scoreTotal += Number(attempt.averageScore || (attempt.summary && attempt.summary.score)) || 0;
   });
   var daysEl = document.getElementById('ae-stat-days');
   var rateEl = document.getElementById('ae-stat-rate');
   var reviewEl = document.getElementById('ae-stat-reviews');
   if (daysEl) daysEl.textContent = Object.keys(completedDays).length;
   if (rateEl) rateEl.textContent = attempts.length;
-  if (reviewEl) reviewEl.textContent = attempts.length ? Math.round(scoreTotal / attempts.length) : 0;
+  if (reviewEl) reviewEl.textContent = scoreTotal ? Math.round(scoreTotal / attempts.length) : '成长中';
 
   var todayDone = attempts.some(function(attempt) { return attempt.date === aestheticToday(); });
+  var activeSession = loadAestheticSession();
+  renderAestheticSessionBanner(activeSession);
   var button = document.getElementById('ae-start-btn');
-  if (button) button.textContent = todayDone ? '再练一遍，比较进步' : '开始今天的训练';
+  if (button) button.textContent = activeSession ? '继续今日训练' : (todayDone ? '今日已完成 · 查看成长' : '开始今天的训练');
 }
 
 window.startAestheticTraining = function() {
@@ -3869,9 +3947,45 @@ window.startAestheticTraining = function() {
     if (window.showToast) window.showToast('请先到“今日预约”完成员工登录');
     return;
   }
+  var completedToday = guidedAestheticAttempts(loadAestheticProgress()).some(function(attempt) {
+    return attempt.date === aestheticToday();
+  });
+  if (completedToday && !loadAestheticSession()) {
+    switchAestheticView('growth');
+    if (window.showToast) window.showToast('今日训练已经完成，明天会自动生成新任务');
+    return;
+  }
   var item = dailyAestheticCase();
   if (!item) {
     if (window.showToast) window.showToast('今日训练案例加载失败');
+    return;
+  }
+  var savedSession = loadAestheticSession();
+  if (savedSession) {
+    aestheticTrainingState = {
+      caseItem: savedSession.caseItem || item,
+      index: 0, answers: {}, feedback: {}, scores: {}, submissions: {}, answerHistory: {}, feedbackHistory: {},
+      analysisRecord: loadAestheticAnalysisRecord(savedSession.caseItem || item),
+      analysisPromise: null,
+      sessionId: savedSession.id,
+      sessionVersion: savedSession.version || 1,
+      messages: savedSession.messages || [],
+      activeGoal: savedSession.activeGoal || savedSession.currentStep || 'outline',
+      goalStates: savedSession.goalStates || {},
+      hintLevel: savedSession.hintLevel || 0,
+      turnCount: savedSession.turnCount || 0,
+      abilitySnapshot: loadAestheticAbilityProfile(),
+      conversationSummary: savedSession.conversationSummary || null,
+      pendingRequest: false
+    };
+    var savedTrainer = document.getElementById('ae-trainer');
+    if (savedTrainer) savedTrainer.classList.add('on');
+    updateAestheticConversationChrome(aestheticTrainingState.activeGoal);
+    renderAestheticChatMessages();
+    var draftInput = document.getElementById('ae-chat-input');
+    if (draftInput) draftInput.value = savedSession.draft || '';
+    if (savedTrainer) savedTrainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.showToast) window.showToast('已恢复今日训练，回答没有丢失');
     return;
   }
   aestheticTrainingState = {
@@ -3886,6 +4000,7 @@ window.startAestheticTraining = function() {
     analysisRecord: loadAestheticAnalysisRecord(item),
     analysisPromise: null,
     sessionId: 'ae-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    sessionVersion: 0,
     messages: [],
     activeGoal: 'outline',
     goalStates: {},
@@ -3926,6 +4041,7 @@ var AESTHETIC_METHOD_HINTS = {
 function addAestheticChatMessage(role, content, meta) {
   aestheticTrainingState.messages.push({ role: role, content: String(content || ''), meta: meta || {}, createdAt: new Date().toISOString() });
   renderAestheticChatMessages();
+  saveAestheticSession();
 }
 
 function renderAestheticChatMessages() {
@@ -4021,6 +4137,7 @@ window.sendAestheticChatMessage = function() {
       goal: result.active_goal
     });
     if (result.should_offer_summary) addAestheticChatMessage('assistant', '这次已经形成了几条清楚的判断。你可以继续聊，也可以现在结束并看本次总结。');
+    saveAestheticSession();
   }).catch(function(error) {
     addAestheticChatMessage('assistant', '导师连接暂时不稳定，你刚才的话已经保留。请稍后再发一次，我会从这里继续。', { error: error && error.message });
   }).finally(function() {
@@ -4094,8 +4211,11 @@ window.finishAestheticConversation = function() {
 function completeAestheticConversation() {
   var summary = aestheticTrainingState.conversationSummary || {};
   var progress = loadAestheticProgress();
-  progress.attempts.push({ type: 'guided-chat-v1', date: aestheticToday(), completedAt: new Date().toISOString(), caseId: aestheticTrainingState.caseItem.id, caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, summary: summary });
+  var completedAt = new Date().toISOString();
+  var points = 20 + (aestheticTrainingState.turnCount >= 5 ? 10 : 0);
+  progress.attempts.push({ type: 'guided-chat-v1', sessionId: aestheticTrainingState.sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, summary: summary, points: points });
   saveAestheticProgress(progress);
+  clearAestheticSession();
   var trainer = document.getElementById('ae-trainer');
   function list(items, fallback) { return (Array.isArray(items) && items.length ? items : [fallback]).map(function(item) { return '<li>' + aestheticEscape(item) + '</li>'; }).join(''); }
   if (trainer) trainer.innerHTML = '<div class="ae-section-label">Conversation summary</div><h3>这次你带走了什么</h3>' +
@@ -4665,6 +4785,29 @@ function renderAestheticGrowth() {
   var summary = document.getElementById('ae-growth-summary');
   if (!data || !list) return;
   var attempts = guidedAestheticAttempts(loadAestheticProgress());
+  var now = new Date();
+  var monthPrefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var monthly = attempts.filter(function(attempt) { return String(attempt.date || '').slice(0, 7) === monthPrefix; });
+  var monthlyDays = {};
+  monthly.forEach(function(attempt) { monthlyDays[attempt.date] = true; });
+  var elapsedDays = Math.max(1, now.getDate());
+  var completedDates = Object.keys(monthlyDays).sort();
+  var streak = 0;
+  var cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  while (true) {
+    var key = cursor.getFullYear() + '-' + String(cursor.getMonth() + 1).padStart(2, '0') + '-' + String(cursor.getDate()).padStart(2, '0');
+    if (!monthlyDays[key]) {
+      if (key === aestheticToday()) { cursor.setDate(cursor.getDate() - 1); continue; }
+      break;
+    }
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  var points = monthly.reduce(function(sum, attempt) { return sum + (Number(attempt.points) || 20); }, 0);
+  if (document.getElementById('ae-kpi-points')) document.getElementById('ae-kpi-points').textContent = points;
+  if (document.getElementById('ae-kpi-rate')) document.getElementById('ae-kpi-rate').textContent = Math.round(completedDates.length / elapsedDays * 100) + '%';
+  if (document.getElementById('ae-kpi-streak')) document.getElementById('ae-kpi-streak').textContent = streak;
+  if (document.getElementById('ae-kpi-note')) document.getElementById('ae-kpi-note').textContent = '本月完成 ' + completedDates.length + '/' + elapsedDays + ' 天 · 每日完成 20 分，深度对话另加 10 分。';
   var totals = {};
   attempts.forEach(function(attempt) {
     Object.keys(attempt.scores || {}).forEach(function(id) {
