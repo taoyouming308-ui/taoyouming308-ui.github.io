@@ -51,6 +51,9 @@ if (versionReadySource.includes('location.replace(')) {
 if (!html.includes('showUpdatePrompt(sv)') || !html.includes('location.href = buildVersionUrl(v)')) {
   fail('version updates must still require an explicit user-triggered refresh');
 }
+if (!html.includes('showUpdatePrompt(MAX_VER)') || html.includes('检测到线上版本异常（当前 v')) {
+  fail('a cached old page must show the normal clickable update prompt, not a false downgrade warning');
+}
 
 const identityStart = html.indexOf('function checkIdentity()');
 const identityEnd = html.indexOf('function applyAuthenticatedIdentity(', identityStart);

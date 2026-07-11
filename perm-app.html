@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="369">
+<html lang="zh-CN" data-version="370">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11679,16 +11679,11 @@ window.showHairFollowupScreenshot = function(dataUrl, inputEl) {
       location.href = buildVersionUrl(v);
     };
   };
-  // 当前页面低于本机见过的最高版本时保留最高版本记录，等待向前修复。
+  // 当前页面低于本机见过的最高版本，通常只是 iOS/PWA 仍在使用旧文档缓存。
+  // 保留最高版本并继续提供正常的可点击更新入口，不把缓存命中误报为线上降级。
   if (VER < MAX_VER) {
-    console.error('检测到线上版本降级:', VER, '<', MAX_VER);
-    localStorage.setItem('app-version', VER);
-    var downgradeBanner = document.getElementById('update-banner');
-    if (downgradeBanner) {
-      downgradeBanner.textContent = '检测到线上版本异常（当前 v' + VER + '，应不低于 v' + MAX_VER + '）';
-      downgradeBanner.style.display = 'block';
-      downgradeBanner.onclick = null;
-    }
+    console.info('检测到旧页面缓存:', VER, '<', MAX_VER);
+    showUpdatePrompt(MAX_VER);
   }
   
   // 先从服务器拉最新版本号，跳过CDN缓存
