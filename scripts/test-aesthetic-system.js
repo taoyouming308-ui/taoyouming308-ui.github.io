@@ -10,6 +10,7 @@ const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
 const learningEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-learning/index.ts'), 'utf8');
 const learningMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260711090000_aesthetic_learning_loop.sql'), 'utf8');
+const managementMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260712090000_aesthetic_training_management.sql'), 'utf8');
 const context = { window: {} };
 
 function assert(condition, message) {
@@ -167,7 +168,7 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=373',
+  'hair-vision-training.v1.js?v=374',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'prior_case_history: aestheticPriorCaseHistory(item)',
@@ -184,12 +185,19 @@ data.trainingCases.forEach(row => {
 
 [
   'data-tab="aesthetic"',
+  'data-tab="training"',
+  'id="tab-training"',
+  'loadTrainingManagement()',
+  "trainingAdminRequest('admin_update_policy'",
   'id="tab-aesthetic"',
   'openAestheticCandidateModal()',
   'loadAestheticAdmin()',
   'AESTHETIC_CANDIDATE_KEY',
   'aesthetic-knowledge.v1.js'
 ].forEach(marker => assert(admin.includes(marker), `Admin is missing marker: ${marker}`));
+
+['daily_limit integer not null default 1', 'access_status', 'aesthetic_training_admin_audit', 'drop constraint if exists aesthetic_training_sessions_username_business_date_key'].forEach(marker => assert(managementMigration.includes(marker), `Training management migration is missing marker: ${marker}`));
+['DEFAULT_DAILY_LIMIT = 1', 'training_entitlement', 'admin_overview', 'admin_update_policy', 'admin_login'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing training management marker: ${marker}`));
 
 assert(!app.includes('id="ae-review-photo"'), 'guided daily training must not upload customer photos');
 assert(!app.includes('id="ae-upload-category"'), 'personal training uploads must not show a manual category selector');

@@ -172,6 +172,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
         <div class="nav-group-title">团队</div>
         <button class="admin-nav-item" data-tab="registrations">注册审核 <span id="nav-registration-count" class="nav-count" style="display:none;"></span></button>
         <button class="admin-nav-item" data-tab="staff">员工管理</button>
+        <button class="admin-nav-item" data-tab="training">训练管理</button>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">客户</div>
@@ -228,6 +229,12 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </div>
       <div class="admin-table-wrap"><table><thead><tr><th>用户名</th><th>角色</th><th>职位</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
       <tbody id="table-staff"></tbody></table></div>
+    </div>
+
+    <div id="tab-training" class="admin-page">
+      <div class="page-header"><div><h2>训练管理</h2><p class="page-desc">每位员工默认每天 1 次；管理员可调整次数、暂停或禁用训练。历史记录不会被修改。</p></div></div>
+      <div id="training-admin-stats" class="stats-grid"></div>
+      <div class="admin-table-wrap"><table><thead><tr><th>员工</th><th>门店</th><th>今日训练</th><th>每日次数</th><th>训练状态</th><th>原因</th><th>操作</th></tr></thead><tbody id="table-training"></tbody></table></div>
     </div>
 
     <div id="tab-content" class="admin-page">
@@ -543,7 +550,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=373"></script>
+<script src="aesthetic-knowledge.v1.js?v=374"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -558,7 +565,8 @@ let pendingBadgeErrorShown = false;
 const ADMIN_AUDIT_KEY = 'perm_admin_audit_v1';
 const AESTHETIC_CANDIDATE_KEY = 'hair_aesthetic_candidates_v1';
 const STORE_ADMIN_ROLE = 'store_admin';
-const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
+const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'training', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
+const AESTHETIC_LEARNING_ENDPOINT = SUPABASE_URL + '/functions/v1/aesthetic-learning';
 let adminStaffStoreMapPromise = null;
 
 function getAdminSession() {
@@ -941,15 +949,20 @@ async function doLogin() {
         headers: { 'apikey': SUPABASE_KEY }
       });
       await ensureOk(r, '登录失败');
-      return r.json();
+      return { rows: await r.json(), passwordValue: passwordValue };
     }
-    let rows = await findAdmin(hashed);
+    let loginMatch = await findAdmin(hashed);
     // 兼容历史后台管理员的旧密码值；员工新增和重置统一保存 SHA-256 摘要。
-    if (!rows.length) rows = await findAdmin(p);
-    const user = rows[0];
+    if (!loginMatch.rows.length) loginMatch = await findAdmin(p);
+    const user = loginMatch.rows[0];
     if (user && ['admin', STORE_ADMIN_ROLE].indexOf(user.role) !== -1 && user.active !== false &&
         (user.role !== STORE_ADMIN_ROLE || !!user.store)) {
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now()}));
+      var trainingAuth = null;
+      try {
+        var authResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}, body:JSON.stringify({operation:'admin_login',username:u,password_hash:loginMatch.passwordValue}) });
+        if (authResponse.ok) trainingAuth = await authResponse.json();
+      } catch(e) {}
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now(), trainingToken: trainingAuth && trainingAuth.token || ''}));
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
       document.getElementById('login-error').textContent = '';
@@ -1559,6 +1572,64 @@ window.exportAestheticKnowledge = function() {
   toast('知识清单已导出', 'ok');
 };
 
+function trainingAdminRequest(operation, extra) {
+  var session = getAdminSession();
+  return fetch(AESTHETIC_LEARNING_ENDPOINT, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body: JSON.stringify(Object.assign({ operation: operation, admin_token: session.trainingToken || '', business_date: new Date().toISOString().slice(0,10) }, extra || {}))
+  }).then(async function(response) {
+    var body = await response.json().catch(function(){ return {}; });
+    if (!response.ok) throw new Error(body.error || '训练管理请求失败');
+    return body;
+  });
+}
+
+window.loadTrainingManagement = function() {
+  var tbody = document.getElementById('table-training');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">加载中…</td></tr>';
+  trainingAdminRequest('admin_overview').then(function(result) {
+    var rows = result.rows || [];
+    var completed = 0;
+    rows.forEach(function(row){ completed += (row.today_sessions || []).filter(function(session){ return session.status === 'completed'; }).length; });
+    var stats = document.getElementById('training-admin-stats');
+    if (stats) stats.innerHTML = '<div class="stat-card"><div class="stat-value">'+rows.length+'</div><div class="stat-label">训练员工</div></div><div class="stat-card"><div class="stat-value">'+completed+'</div><div class="stat-label">今日已完成</div></div><div class="stat-card"><div class="stat-value">'+rows.filter(function(row){return row.access_status !== 'enabled';}).length+'</div><div class="stat-label">暂停/禁用</div></div>';
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">暂无员工</td></tr>'; return; }
+    tbody.innerHTML = rows.map(function(row) {
+      var sessions = row.today_sessions || [];
+      var completedCount = sessions.filter(function(session){ return session.status === 'completed'; }).length;
+      return '<tr><td><b>'+esc(row.username)+'</b></td><td>'+esc(row.store || '—')+'</td><td>'+completedCount+' / '+sessions.length+'</td>'+
+        '<td><input id="training-limit-'+encodeURIComponent(row.username)+'" type="number" min="0" max="20" value="'+Number(row.daily_limit || 0)+'" style="width:72px;"></td>'+
+        '<td><select id="training-status-'+encodeURIComponent(row.username)+'"><option value="enabled"'+(row.access_status==='enabled'?' selected':'')+'>启用</option><option value="paused"'+(row.access_status==='paused'?' selected':'')+'>暂停</option><option value="disabled"'+(row.access_status==='disabled'?' selected':'')+'>禁用</option></select></td>'+
+        '<td><input id="training-reason-'+encodeURIComponent(row.username)+'" value="'+esc(row.reason || '')+'" placeholder="可填写原因" style="min-width:140px;"></td>'+
+        '<td><button class="btn-edit" onclick="saveTrainingPolicy('+JSON.stringify(row.username).replace(/"/g,'&quot;')+')">保存</button><button class="btn-view" onclick="viewTrainingRecords('+JSON.stringify(row.username).replace(/"/g,'&quot;')+')">记录</button></td></tr>';
+    }).join('');
+  }).catch(function(error) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);">'+esc(error.message)+'，请退出后重新登录后台</td></tr>';
+  });
+};
+
+window.saveTrainingPolicy = function(username) {
+  var key = encodeURIComponent(username);
+  var limit = Number(document.getElementById('training-limit-'+key).value);
+  var status = document.getElementById('training-status-'+key).value;
+  var reason = document.getElementById('training-reason-'+key).value.trim();
+  trainingAdminRequest('admin_update_policy', { target_username:username, daily_limit:limit, access_status:status, reason:reason }).then(function(){
+    recordAdminAction('调整训练规则', username, '每日 '+limit+' 次；状态 '+status+(reason?'；'+reason:''));
+    toast('训练规则已保存', 'ok');
+    loadTrainingManagement();
+  }).catch(function(error){ toast(error.message, 'err'); });
+};
+
+window.viewTrainingRecords = function(username) {
+  trainingAdminRequest('admin_overview').then(function(result) {
+    var row = (result.rows || []).find(function(item){ return item.username === username; });
+    var sessions = row && row.today_sessions || [];
+    alert(username+' 今日训练记录\n\n'+(sessions.length ? sessions.map(function(session){ return (session.status==='completed'?'已完成':'进行中')+' · '+(session.case_title||'训练案例')+' · '+Number(session.turn_count||0)+'轮'; }).join('\n') : '今天暂无训练'));
+  }).catch(function(error){ toast(error.message, 'err'); });
+};
+
 function switchTab(tab) {
   if (!adminCanAccessTab(tab)) {
     toast('分店后台没有该功能权限', 'err');
@@ -1578,6 +1649,8 @@ function switchTab(tab) {
     loadRegistrations();
   } else if (tab === 'staff') {
     loadStaff();
+  } else if (tab === 'training') {
+    loadTrainingManagement();
   } else if (tab === 'content') {
     showContentView('images');
   } else if (tab === 'aesthetic') {

@@ -6,6 +6,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const EVALUATOR_VERSION = "evaluator-v1";
 const CANDIDATE_INTERVAL = 100;
+const DEFAULT_DAILY_LIMIT = 1;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +42,109 @@ async function activeEmployee(username: string, store: string): Promise<boolean>
   if (!response.ok) return false;
   const rows = await response.json();
   return Array.isArray(rows) && rows.some((row) => !store || !row.store || row.store === store);
+}
+
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function trainingEntitlement(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const username = cleanText(payload.username, 80);
+  const store = cleanText(payload.store, 100);
+  const businessDate = cleanText(payload.business_date, 10) || new Date().toISOString().slice(0, 10);
+  const sessionId = cleanText(payload.session_id, 120);
+  const policyResponse = await rest("aesthetic_training_policies?select=daily_limit,access_status,reason,disabled_until&username=eq." + encodeURIComponent(username) + "&limit=1");
+  if (!policyResponse.ok) throw new Error("policy read " + policyResponse.status);
+  const policy = (await policyResponse.json())[0] || {};
+  let status = cleanText(policy.access_status, 20) || "enabled";
+  if (status === "paused" && policy.disabled_until && new Date(String(policy.disabled_until)).getTime() <= Date.now()) status = "enabled";
+  const dailyLimit = policy.daily_limit === undefined ? DEFAULT_DAILY_LIMIT : clamp(policy.daily_limit, 0, 20);
+  const countResponse = await rest(
+    "aesthetic_training_sessions?select=id,status&username=eq." + encodeURIComponent(username) +
+    "&business_date=eq." + encodeURIComponent(businessDate) + "&status=in.(in_progress,completed)",
+  );
+  if (!countResponse.ok) throw new Error("session count " + countResponse.status);
+  const sessions = await countResponse.json();
+  const currentExists = sessionId && sessions.some((row: Record<string, unknown>) => row.id === sessionId);
+  const used = sessions.length;
+  const allowed = status === "enabled" && (currentExists || used < dailyLimit);
+  return { allowed, status, reason: cleanText(policy.reason, 300), daily_limit: dailyLimit, used, remaining: Math.max(0, dailyLimit - used), store };
+}
+
+async function adminLogin(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const username = cleanText(payload.username, 80);
+  const passwordHash = cleanText(payload.password_hash, 160);
+  const response = await rest("staff?select=username,role,store,active,password_hash&username=eq." + encodeURIComponent(username) + "&role=in.(admin,store_admin)&limit=1");
+  if (!response.ok) throw new Error("admin login " + response.status);
+  const row = (await response.json())[0];
+  if (!row || row.active === false || !passwordHash || String(row.password_hash || "") !== passwordHash || (row.role === "store_admin" && !row.store)) {
+    throw new Error("invalid admin credentials");
+  }
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  const tokenHash = await sha256(token);
+  const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+  const saved = await rest("aesthetic_training_admin_sessions", {
+    method: "POST", headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ token_hash: tokenHash, username: row.username, role: row.role, store: row.store || "", expires_at: expiresAt }),
+  });
+  if (!saved.ok) throw new Error("admin session " + saved.status);
+  return { token, expires_at: expiresAt, role: row.role, store: row.store || "" };
+}
+
+async function requireTrainingAdmin(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const token = cleanText(payload.admin_token, 200);
+  if (!token) throw new Error("admin login required");
+  const response = await rest("aesthetic_training_admin_sessions?select=username,role,store,expires_at&token_hash=eq." + encodeURIComponent(await sha256(token)) + "&expires_at=gt." + encodeURIComponent(new Date().toISOString()) + "&limit=1");
+  if (!response.ok) throw new Error("admin session read " + response.status);
+  const admin = (await response.json())[0];
+  if (!admin) throw new Error("admin session expired");
+  return admin;
+}
+
+async function adminTrainingOverview(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireTrainingAdmin(payload);
+  const scope = admin.role === "store_admin" ? "&store=eq." + encodeURIComponent(admin.store) : "";
+  const staffResponse = await rest("staff?select=username,store,position&active=eq.true&role=eq.staff" + scope + "&order=username.asc");
+  if (!staffResponse.ok) throw new Error("staff overview " + staffResponse.status);
+  const staff = await staffResponse.json();
+  const names = staff.map((row: Record<string, unknown>) => cleanText(row.username, 80)).filter(Boolean);
+  if (!names.length) return { rows: [] };
+  const encodedNames = names.map((name: string) => encodeURIComponent(name)).join(",");
+  const today = cleanText(payload.business_date, 10) || new Date().toISOString().slice(0, 10);
+  const [policiesResponse, sessionsResponse] = await Promise.all([
+    rest("aesthetic_training_policies?select=username,daily_limit,access_status,reason,disabled_until,updated_at&username=in.(" + encodedNames + ")"),
+    rest("aesthetic_training_sessions?select=id,username,status,case_title,turn_count,started_at,completed_at,summary,goal_states&username=in.(" + encodedNames + ")&business_date=eq." + encodeURIComponent(today) + "&order=started_at.desc"),
+  ]);
+  if (!policiesResponse.ok || !sessionsResponse.ok) throw new Error("training overview unavailable");
+  const policies = await policiesResponse.json();
+  const sessions = await sessionsResponse.json();
+  return { rows: staff.map((person: Record<string, unknown>) => {
+    const policy = policies.find((row: Record<string, unknown>) => row.username === person.username) || {};
+    const own = sessions.filter((row: Record<string, unknown>) => row.username === person.username);
+    return { ...person, daily_limit: policy.daily_limit === undefined ? DEFAULT_DAILY_LIMIT : policy.daily_limit, access_status: policy.access_status || "enabled", reason: policy.reason || "", disabled_until: policy.disabled_until || null, today_sessions: own };
+  }) };
+}
+
+async function adminUpdateTrainingPolicy(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireTrainingAdmin(payload);
+  const username = cleanText(payload.target_username, 80);
+  const staffResponse = await rest("staff?select=username,store&username=eq." + encodeURIComponent(username) + "&active=eq.true&role=eq.staff&limit=1");
+  const person = staffResponse.ok ? (await staffResponse.json())[0] : null;
+  if (!person || (admin.role === "store_admin" && person.store !== admin.store)) throw new Error("staff outside admin scope");
+  const currentResponse = await rest("aesthetic_training_policies?select=*&username=eq." + encodeURIComponent(username) + "&limit=1");
+  const before = currentResponse.ok ? (await currentResponse.json())[0] || {} : {};
+  const row = {
+    username, store: person.store || "", daily_limit: clamp(payload.daily_limit, 0, 20),
+    access_status: ["enabled", "paused", "disabled"].includes(String(payload.access_status)) ? payload.access_status : "enabled",
+    reason: cleanText(payload.reason, 300), disabled_until: payload.disabled_until || null,
+    updated_by: admin.username, updated_at: new Date().toISOString(),
+  };
+  const saved = await rest("aesthetic_training_policies?on_conflict=username", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify(row) });
+  if (!saved.ok) throw new Error("policy update " + saved.status + ": " + await saved.text());
+  await rest("aesthetic_training_admin_audit", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ operator: admin.username, operator_role: admin.role, operator_store: admin.store || "", username, action: "update_training_policy", before_value: before, after_value: row, reason: row.reason }) });
+  return { saved: true, policy: (await saved.json())[0] };
 }
 
 async function openAI(prompt: string): Promise<Record<string, unknown>> {
@@ -338,8 +442,18 @@ Deno.serve(async (request: Request) => {
   const username = cleanText(payload.username, 80);
   const store = cleanText(payload.store, 100);
   const operation = cleanText(payload.operation, 40);
+  try {
+    if (operation === "admin_login") return new Response(JSON.stringify(await adminLogin(payload)), { headers: cors });
+    if (operation === "admin_overview") return new Response(JSON.stringify(await adminTrainingOverview(payload)), { headers: cors });
+    if (operation === "admin_update_policy") return new Response(JSON.stringify(await adminUpdateTrainingPolicy(payload)), { headers: cors });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 403, headers: cors });
+  }
   if (!username || !(await activeEmployee(username, store))) return new Response(JSON.stringify({ error: "inactive staff" }), { status: 403, headers: cors });
   try {
+    if (operation === "training_entitlement") {
+      return new Response(JSON.stringify(await trainingEntitlement(payload)), { headers: cors });
+    }
     if (operation === "assign_strategy") {
       const assigned = await assignStrategy(payload);
       return new Response(JSON.stringify(assigned), { headers: cors });
@@ -349,6 +463,8 @@ Deno.serve(async (request: Request) => {
       return new Response(JSON.stringify(history), { headers: cors });
     }
     if (!["sync_session", "complete_session"].includes(operation)) return new Response(JSON.stringify({ error: "invalid operation" }), { status: 400, headers: cors });
+    const entitlement = await trainingEntitlement(payload);
+    if (!entitlement.allowed) return new Response(JSON.stringify({ error: "training unavailable", entitlement }), { status: 429, headers: cors });
     await upsertSession({ ...payload, status: operation === "complete_session" ? "completed" : "in_progress" });
     const turns = await upsertTurns(payload);
     if (operation === "complete_session") {

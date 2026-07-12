@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="373">
+<html lang="zh-CN" data-version="374">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3017,8 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=373"></script>
-<script src="hair-vision-training.v1.js?v=373"></script>
+<script src="aesthetic-knowledge.v1.js?v=374"></script>
+<script src="hair-vision-training.v1.js?v=374"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -4201,20 +4201,12 @@ function renderAestheticSummary() {
   var activeSession = loadAestheticSession();
   renderAestheticSessionBanner(activeSession);
   var button = document.getElementById('ae-start-btn');
-  if (button) button.textContent = activeSession ? '继续今日训练' : (todayDone ? '今日已完成 · 查看成长' : '开始今天的训练');
+  if (button) button.textContent = activeSession ? '继续今日训练' : (todayDone ? '再次训练' : '开始今天的训练');
 }
 
-window.startAestheticTraining = function() {
+window.startAestheticTraining = async function() {
   if (aestheticIdentity() === '未登录员工') {
     if (window.showToast) window.showToast('请先到“今日预约”完成员工登录');
-    return;
-  }
-  var completedToday = guidedAestheticAttempts(loadAestheticProgress()).some(function(attempt) {
-    return attempt.date === aestheticToday();
-  });
-  if (completedToday && !loadAestheticSession()) {
-    switchAestheticView('growth');
-    if (window.showToast) window.showToast('今日训练已经完成，明天会自动生成新任务');
     return;
   }
   var item = dailyAestheticCase();
@@ -4270,6 +4262,25 @@ window.startAestheticTraining = function() {
     if (window.showToast) window.showToast('已恢复今日训练，回答没有丢失');
     postAestheticLearning('sync_session');
     return;
+  }
+  try {
+    var entitlementResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: JSON.stringify({ operation: 'training_entitlement', username: aestheticIdentity(), store: aestheticStore(), business_date: aestheticToday() })
+    });
+    var entitlement = await entitlementResponse.json();
+    if (!entitlementResponse.ok || !entitlement.allowed) {
+      var unavailableText = entitlement.status === 'disabled' ? '管理员已暂停你的训练权限' : entitlement.status === 'paused' ? '训练权限暂时停用' : '今天的训练次数已用完';
+      if (window.showToast) window.showToast(unavailableText + (entitlement.reason ? '：' + entitlement.reason : ''));
+      return;
+    }
+  } catch (entitlementError) {
+    var localUsed = guidedAestheticAttempts(loadAestheticProgress()).filter(function(attempt) { return attempt.date === aestheticToday(); }).length;
+    if (localUsed >= 1) {
+      if (window.showToast) window.showToast('暂时无法核验训练次数，请稍后重试');
+      return;
+    }
   }
   aestheticTrainingState = {
     caseItem: item,
