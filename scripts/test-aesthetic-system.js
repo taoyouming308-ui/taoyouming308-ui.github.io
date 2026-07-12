@@ -168,7 +168,7 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=374',
+  'hair-vision-training.v1.js?v=375',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'prior_case_history: aestheticPriorCaseHistory(item)',

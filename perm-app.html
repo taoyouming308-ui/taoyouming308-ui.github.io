@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="374">
+<html lang="zh-CN" data-version="375">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3017,8 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=374"></script>
-<script src="hair-vision-training.v1.js?v=374"></script>
+<script src="aesthetic-knowledge.v1.js?v=375"></script>
+<script src="hair-vision-training.v1.js?v=375"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -4270,7 +4270,9 @@ window.startAestheticTraining = async function() {
       body: JSON.stringify({ operation: 'training_entitlement', username: aestheticIdentity(), store: aestheticStore(), business_date: aestheticToday() })
     });
     var entitlement = await entitlementResponse.json();
-    if (!entitlementResponse.ok || !entitlement.allowed) {
+    if (!entitlementResponse.ok && !entitlement.entitlement && entitlement.error !== 'training unavailable') throw new Error('entitlement endpoint pending');
+    entitlement = entitlement.entitlement || entitlement;
+    if (!entitlement.allowed) {
       var unavailableText = entitlement.status === 'disabled' ? '管理员已暂停你的训练权限' : entitlement.status === 'paused' ? '训练权限暂时停用' : '今天的训练次数已用完';
       if (window.showToast) window.showToast(unavailableText + (entitlement.reason ? '：' + entitlement.reason : ''));
       return;
