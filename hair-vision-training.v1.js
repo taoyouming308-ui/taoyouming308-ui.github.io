@@ -103,7 +103,7 @@
     var start = new Date(startedAt || 0).getTime();
     var current = now == null ? Date.now() : new Date(now).getTime();
     var elapsedMs = Math.max(0, current - start);
-    var phase = elapsedMs < 270000 ? 'active' : elapsedMs < 300000 ? 'closing' : elapsedMs < 360000 ? 'grace' : 'overtime';
+    var phase = elapsedMs < 270000 ? 'active' : elapsedMs < 300000 ? 'closing' : elapsedMs < 900000 ? 'extended' : 'overtime';
     return {
       elapsedMs: elapsedMs,
       elapsedSeconds: Math.floor(elapsedMs / 1000),
@@ -115,7 +115,7 @@
 
   function timeStateFromElapsed(elapsed) {
     var elapsedMs = Math.max(0, Number(elapsed) || 0);
-    var phase = elapsedMs < 270000 ? 'active' : elapsedMs < 300000 ? 'closing' : elapsedMs < 360000 ? 'grace' : 'overtime';
+    var phase = elapsedMs < 270000 ? 'active' : elapsedMs < 300000 ? 'closing' : elapsedMs < 900000 ? 'extended' : 'overtime';
     return {
       elapsedMs: elapsedMs,
       elapsedSeconds: Math.floor(elapsedMs / 1000),
@@ -126,10 +126,10 @@
   }
 
   global.HAIR_VISION_TRAINING_V1 = {
-    version: '1.0.0',
+    version: '1.1.0',
     targetMs: 300000,
     closingMs: 270000,
-    graceMs: 360000,
+    hardStopMs: 900000,
     checkpoints: CHECKPOINTS,
     buildPlan: buildPlan,
     openingQuestion: openingQuestion,

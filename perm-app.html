@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="375">
+<html lang="zh-CN" data-version="376">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3017,8 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=375"></script>
-<script src="hair-vision-training.v1.js?v=375"></script>
+<script src="aesthetic-knowledge.v1.js?v=376"></script>
+<script src="hair-vision-training.v1.js?v=376"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3558,8 +3558,8 @@ function updateAestheticTrainingTimer() {
   }
   if (note) {
     if (state.phase === 'closing') note.textContent = '进入收束：完成适配和客户沟通后生成总结';
-    else if (state.phase === 'grace') note.textContent = '5分钟已到 · 完成当前回答后自动总结';
-    else if (state.phase === 'overtime') note.textContent = '延长时间已到 · 正在安全结束本次训练';
+    else if (state.phase === 'extended') note.textContent = '已完成5分钟目标 · 时间不会结束，请继续完成五个训练重点';
+    else if (state.phase === 'overtime') note.textContent = '已到15分钟 · AI正在快速收束本次训练';
   }
   if (state.phase === 'overtime' && !aestheticTrainingState.autoFinishRequested) {
     aestheticTrainingState.autoFinishRequested = true;

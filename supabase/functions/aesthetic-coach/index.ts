@@ -63,7 +63,7 @@ Hair Vision 相关知识：${JSON.stringify(payload.hair_vision || {}).slice(0, 
 10. 保持自然聊天，但必须按人物、风格、解剖、适配、沟通顺序推进；每轮只问一个主要问题。
 11. 图片看不见人物正脸时，人物分析可用“无法确认＋需要补充什么”完成，禁止猜职业、年龄、性格和生活方式。
 12. 同款再次训练必须围绕 training_plan 的新镜头产生新收获，不得重复 prior_case_history。
-13. closing 阶段停止深挖并补齐未完成检查点；grace/overtime 阶段只评价当前回答并结束。
+13. closing 阶段提醒接近5分钟；extended 阶段继续补齐未完成检查点，不得仅因超过5分钟结束；只有 overtime（15分钟）才快速收束。
 14. training_plan 的风格对比只是训练镜头；图片证据不支持时把它用于反证或迁移，不得硬套风格。
 
 只输出JSON：{
@@ -226,7 +226,7 @@ Deno.serve(async (req: Request) => {
       if (nextCheckpoint !== currentCheckpoint && checkpointStates[nextCheckpoint] === "unseen") checkpointStates[nextCheckpoint] = "asked";
       const timePhase = String(payload.time_phase || "active");
       const allCovered = HAIR_VISION_CHECKPOINTS.every((checkpoint) => ["answered", "demonstrated"].includes(checkpointStates[checkpoint]));
-      const shouldAutoFinish = allCovered || ["grace", "overtime"].includes(timePhase) || Number(payload.turn_count || 0) >= 5;
+      const shouldAutoFinish = allCovered || timePhase === "overtime";
       const result = {
         message: String(turn.message || "我们先缩小范围，只说一个你能确认的画面事实。你最先看到哪里？").slice(0, 600),
         response_type: String(turn.response_type || "probe").slice(0, 30),

@@ -30,14 +30,15 @@ assert(data, 'knowledge catalog did not initialize');
 assert(hairVision, 'Hair Vision runtime did not initialize');
 assert(hairVision.targetMs === 300000, 'Hair Vision training target must be 5 minutes');
 assert(hairVision.closingMs === 270000, 'Hair Vision must start closing at 4:30');
-assert(hairVision.graceMs === 360000, 'Hair Vision hard stop must be 6 minutes');
+assert(hairVision.hardStopMs === 900000, 'Hair Vision hard stop must be 15 minutes');
 assert(JSON.stringify(hairVision.checkpoints.map(row => row.id)) === JSON.stringify(['human_analysis', 'style', 'hair_anatomy', 'suitability', 'client_communication']), 'five hidden checkpoints are required');
 
 const phaseAt = milliseconds => hairVision.timeStateFromElapsed(milliseconds).phase;
 assert(phaseAt(269999) === 'active', 'before 4:30 must remain active');
 assert(phaseAt(270000) === 'closing', '4:30 must start closing');
-assert(phaseAt(300000) === 'grace', '5:00 must enter grace');
-assert(phaseAt(360000) === 'overtime', '6:00 must safely finish');
+assert(phaseAt(300000) === 'extended', '5:00 must allow continued training');
+assert(phaseAt(899999) === 'extended', 'training must remain available before 15:00');
+assert(phaseAt(900000) === 'overtime', '15:00 must safely finish');
 
 const repeatedPlans = Array.from({ length: 6 }, (_, exposureCount) => hairVision.buildPlan({ identity: '测试员工', caseKey: 'CASE-001:image-hash', exposureCount }));
 assert(new Set(repeatedPlans.map(plan => plan.variantId)).size === 6, 'repeat sessions need unique variants');
@@ -50,6 +51,8 @@ assert(new Set(repeatedPlans.map(plan => plan.adaptationScenario)).size === 6, '
 assert(new Set(repeatedPlans.map(plan => plan.clientScenario)).size === 6, 'client scenarios must rotate');
 assert(hairVision.openingQuestion(repeatedPlans[0]) !== hairVision.openingQuestion(repeatedPlans[1]), 'repeat sessions need different openings');
 assert(hairVision.openingQuestion(repeatedPlans[1]).includes('第2次训练'), 'repeat opening must explain its new entry point');
+assert(coachEdge.includes('const shouldAutoFinish = allCovered || timePhase === "overtime";'), 'coach must not auto-finish merely because five minutes or five turns elapsed');
+assert(!coachEdge.includes('["grace", "overtime"].includes(timePhase)'), 'legacy five-minute auto-finish rule must stay removed');
 assert(/^\d+\.\d+\.\d+$/.test(data.version), 'knowledge version must use semantic versioning');
 assert(data.status === 'published', 'knowledge catalog must declare published status');
 assert(Array.isArray(data.modules) && data.modules.length >= 9, 'nine curriculum modules are required');
@@ -168,7 +171,7 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=375',
+  'hair-vision-training.v1.js?v=376',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'prior_case_history: aestheticPriorCaseHistory(item)',
