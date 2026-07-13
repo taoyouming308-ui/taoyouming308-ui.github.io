@@ -86,11 +86,14 @@ function loadSources(args) {
   }));
 }
 
-function candidateExists(outputDir, contentHash) {
+function candidateExists(outputDir, contentHash, sourceUrl) {
   if (!fs.existsSync(outputDir)) return false;
   return fs.readdirSync(outputDir).some((file) => {
     if (!file.endsWith('.json')) return false;
-    try { return readJson(path.join(outputDir, file)).content_hash === contentHash; } catch (_) { return false; }
+    try {
+      const candidate = readJson(path.join(outputDir, file));
+      return candidate.content_hash === contentHash || candidate.source?.url === sourceUrl;
+    } catch (_) { return false; }
   });
 }
 
@@ -167,7 +170,7 @@ async function main() {
     try {
       const page = await fetchSource(source);
       const contentHash = sha256(source.url + '\n' + page.text);
-      if (candidateExists(outputDir, contentHash)) {
+      if (candidateExists(outputDir, contentHash, source.url)) {
         console.log('skip duplicate: ' + source.url);
         continue;
       }

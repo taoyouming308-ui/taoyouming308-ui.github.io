@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## 美学知识每日收集（2026-07-13，不发版）
+
+- 已安装 `com.freecraftsman.aesthetic-knowledge-collector`，每天 02:30（Asia/Shanghai 本地时间）运行。
+- 唯一源为仓库中的收集器、运行脚本和来源白名单；安装器逐文件校验 SHA-256 后部署到 `~/.hermes/aesthetic-knowledge/runtime/`，禁止只改运行副本。
+- 来源白名单为 `scripts/aesthetic-sources.json`；输出隔离在 `~/.hermes/aesthetic-knowledge/pending/`，日志位于 `~/.hermes/logs/`。
+- DeepSeek Key 只从 `~/.hermes/.env` 读取；plist、仓库、日志和候选文件均不保存密钥。
+- 首次运行已产生 4 条 `pending_review` 候选。当前还未接入 Supabase 后台队列；没有 service role 凭据时禁止绕过受保护接口直接写库。
+- 自动任务不得批准、试用或发布知识；正式知识仍需专家审核、案例验证和版本发布。
+- App version: v381
+
 ## v381 (2026-07-13)
 
 - 美学研究院 AI Provider 从 OpenAI 全面切换到 DeepSeek：Flash 负责批量整理，Pro 负责知识适用性、训练质量和策略深度审核。

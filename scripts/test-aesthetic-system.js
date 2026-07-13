@@ -15,6 +15,10 @@ const schemaMigration = fs.readFileSync(path.join(root, 'supabase/migrations/202
 const knowledgeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713170000_aesthetic_knowledge_acquisition.sql'), 'utf8');
 const starterKnowledgeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713190000_seed_aesthetic_starter_candidates.sql'), 'utf8');
 const researchInstituteMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713210000_aesthetic_research_institute.sql'), 'utf8');
+const collector = fs.readFileSync(path.join(root, 'scripts/collect-aesthetic-candidates.js'), 'utf8');
+const collectorRunner = fs.readFileSync(path.join(root, 'scripts/run-aesthetic-knowledge-collection.sh'), 'utf8');
+const collectorInstaller = fs.readFileSync(path.join(root, 'scripts/install-aesthetic-knowledge-launchagent.sh'), 'utf8');
+const collectorSources = JSON.parse(fs.readFileSync(path.join(root, 'scripts/aesthetic-sources.json'), 'utf8'));
 const outputSchema = fs.readFileSync(path.join(root, 'supabase/functions/_shared/aesthetic-output-schema.ts'), 'utf8');
 const analysisPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/analysis.ts'), 'utf8');
 const coachPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/coach.ts'), 'utf8');
@@ -86,6 +90,12 @@ assert(data.knowledgeFoundation.domains.map(row => row.id).join(',') === 'VIS,PE
 assert(data.knowledgeFoundation.evidencePolicy.grades.map(row => row.id).join('') === 'ABCDE', 'evidence grades are incomplete');
 assert(data.knowledgeFoundation.safetyRules.some(rule => rule.includes('不由外貌推断')), 'appearance inference safety boundary is missing');
 assert(data.hairVision.styleDNA.length === 9, 'nine style DNA records are required');
+assert(collectorSources.length === 8 && collectorSources.every(row => row.allowed === true && /^https:\/\//.test(row.url)), 'daily collector source allowlist is invalid');
+assert(collector.includes("status: 'pending_review'") && !collector.includes("status: 'published'"), 'collector must only create pending-review candidates');
+assert(collector.includes('candidate.source?.url === sourceUrl'), 'collector must deduplicate dynamic pages by source URL while review is pending');
+assert(collectorRunner.includes('$HOME/.hermes/aesthetic-knowledge/pending') && collectorRunner.includes('DEEPSEEK_API_KEY'), 'collector runner must use isolated output and protected DeepSeek configuration');
+assert(collectorRunner.includes('dss-aesthetic-knowledge-collector.lock'), 'collector runner must prevent overlapping runs');
+assert(collectorInstaller.includes('"Hour": 2, "Minute": 30'), 'daily collector must run at 02:30');
 data.hairVision.styleDNA.forEach(style => {
   ['coreFeeling', 'outline', 'weight', 'layers', 'line', 'texture', 'neighborDifference', 'transformation', 'counterSignal'].forEach(field => assert(style[field], `style ${style.id} is missing ${field}`));
 });

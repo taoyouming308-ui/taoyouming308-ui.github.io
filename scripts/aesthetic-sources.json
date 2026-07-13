@@ -1,0 +1,50 @@
+[
+  {
+    "name": "中国丝绸博物馆：时尚风格与穿搭",
+    "url": "https://www.chinasilkmuseum.com/gskt/info_319.aspx?itemid=31010",
+    "allowed": true,
+    "notes": "机构公开页面；只保存链接、引用信息和原创摘要，不复制图片或课程正文。"
+  },
+  {
+    "name": "Colour Me Beautiful UK：Shake Up Your Style",
+    "url": "https://www.colourmebeautiful.co.uk/blog/shake-up-your-style/",
+    "allowed": true,
+    "notes": "流派官方公开页面；用于追踪类型定义差异，只保存原创摘要。"
+  },
+  {
+    "name": "Color Me Beautiful Japan：Fashion Type",
+    "url": "https://www.cp-cmb.jp/fashiontype.html",
+    "allowed": true,
+    "notes": "流派官方公开页面；用于追踪地区版本差异，只保存原创摘要。"
+  },
+  {
+    "name": "Penguin Random House：David Kibbe 作者页",
+    "url": "https://www.penguinrandomhouse.com/authors/2280872/david-kibbe/",
+    "allowed": true,
+    "notes": "出版方公开书目；只保存书目、链接与原创摘要。"
+  },
+  {
+    "name": "CIE：Colorimetry, 4th Edition",
+    "url": "https://www.cie.co.at/publications/colorimetry-4th-edition",
+    "allowed": true,
+    "notes": "国际标准机构公开书目页；不复制标准正文。"
+  },
+  {
+    "name": "ISO/CIE 11664-4:2019",
+    "url": "https://www.iso.org/standard/74166.html",
+    "allowed": true,
+    "notes": "国际标准公开目录页；不复制付费标准正文。"
+  },
+  {
+    "name": "PubMed：Accuracy in Facial Trustworthiness Impressions",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/34609231/",
+    "allowed": true,
+    "notes": "保存引用信息与原创摘要；用于约束外貌人格推断。"
+  },
+  {
+    "name": "PubMed Central：First Impressions From Faces",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5473630/",
+    "allowed": true,
+    "notes": "保存引用信息与原创摘要；具体复用仍按页面许可和原文许可证审核。"
+  }
+]
