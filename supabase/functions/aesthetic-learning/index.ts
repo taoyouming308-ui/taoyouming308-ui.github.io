@@ -103,6 +103,99 @@ async function requireTrainingAdmin(payload: Record<string, unknown>): Promise<R
   return admin;
 }
 
+function cleanList(value: unknown, maxItems = 12, maxText = 500): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => cleanText(item, maxText)).filter(Boolean).slice(0, maxItems);
+}
+
+async function requireKnowledgeAdmin(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireTrainingAdmin(payload);
+  if (admin.role !== "admin") throw new Error("knowledge governance requires super admin");
+  return admin;
+}
+
+async function adminKnowledgeOverview(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  await requireKnowledgeAdmin(payload);
+  const response = await rest("aesthetic_knowledge_candidates?select=*&order=created_at.desc&limit=300");
+  if (!response.ok) throw new Error("knowledge candidates " + response.status);
+  const rows = await response.json();
+  return {
+    rows,
+    counts: rows.reduce((result: Record<string, number>, row: Record<string, unknown>) => {
+      const status = cleanText(row.status, 40) || "unknown";
+      result[status] = (result[status] || 0) + 1;
+      return result;
+    }, {}),
+  };
+}
+
+async function adminCreateKnowledgeCandidate(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireKnowledgeAdmin(payload);
+  const title = cleanText(payload.title, 240);
+  const summary = cleanText(payload.summary || payload.note, 2000);
+  const layer = ["standard", "internal", "trend"].includes(String(payload.layer)) ? String(payload.layer) : "trend";
+  const sourceUrl = cleanText(payload.source_url || payload.url, 1000);
+  if (!title || summary.length < 8) throw new Error("title and summary are required");
+  if (sourceUrl && !sourceUrl.startsWith("https://")) throw new Error("source URL must use HTTPS");
+  const row = {
+    layer,
+    title,
+    source_url: sourceUrl,
+    summary,
+    observation_facts: cleanList(payload.observation_facts),
+    proposed_judgment: cleanText(payload.proposed_judgment, 1600),
+    reasoning: cleanText(payload.reasoning, 2400),
+    applicable_conditions: cleanList(payload.applicable_conditions),
+    unsuitable_conditions: cleanList(payload.unsuitable_conditions),
+    positive_examples: cleanList(payload.positive_examples),
+    counter_examples: cleanList(payload.counter_examples),
+    related_styles: cleanList(payload.related_styles, 9, 80),
+    copyright_status: ["unverified", "public_reference", "licensed", "internal_original", "restricted"].includes(String(payload.copyright_status)) ? payload.copyright_status : "unverified",
+    confidence: clamp(payload.confidence),
+    status: "pending_review",
+    submitted_by: admin.username,
+  };
+  const saved = await rest("aesthetic_knowledge_candidates", {
+    method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row),
+  });
+  if (!saved.ok) throw new Error("knowledge candidate create " + saved.status + ": " + await saved.text());
+  return { saved: true, candidate: (await saved.json())[0] };
+}
+
+async function adminReviewKnowledgeCandidate(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireKnowledgeAdmin(payload);
+  const candidateId = cleanText(payload.candidate_id, 80);
+  const decision = ["needs_revision", "approved_for_trial", "rejected"].includes(String(payload.decision)) ? String(payload.decision) : "";
+  const reason = cleanText(payload.reason, 1600);
+  const professionalAccuracy = clamp(payload.professional_accuracy);
+  const evidenceQuality = clamp(payload.evidence_quality);
+  const copyrightClear = payload.copyright_clear === true;
+  const safetyClear = payload.safety_clear === true;
+  if (!candidateId || !decision || reason.length < 8) throw new Error("candidate, decision and review reason are required");
+  if (decision === "approved_for_trial" && (!copyrightClear || !safetyClear || professionalAccuracy < 80 || evidenceQuality < 70)) {
+    throw new Error("approval requires copyright and safety clearance, accuracy >= 80 and evidence >= 70");
+  }
+  const current = await rest("aesthetic_knowledge_candidates?select=*&id=eq." + encodeURIComponent(candidateId) + "&limit=1");
+  const candidate = current.ok ? (await current.json())[0] : null;
+  if (!candidate) throw new Error("knowledge candidate not found");
+  const review = await rest("aesthetic_knowledge_reviews", {
+    method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({
+      candidate_id: candidateId, reviewer: admin.username, decision,
+      professional_accuracy: professionalAccuracy, evidence_quality: evidenceQuality,
+      copyright_clear: copyrightClear, safety_clear: safetyClear, reason, snapshot: candidate,
+    }),
+  });
+  if (!review.ok) throw new Error("knowledge review " + review.status);
+  const updated = await rest("aesthetic_knowledge_candidates?id=eq." + encodeURIComponent(candidateId), {
+    method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({
+      status: decision, reviewed_by: admin.username, reviewed_at: new Date().toISOString(),
+      review_reason: reason, version: Number(candidate.version || 1) + 1, updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!updated.ok) throw new Error("knowledge candidate update " + updated.status);
+  return { saved: true, candidate: (await updated.json())[0] };
+}
+
 async function adminTrainingOverview(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const admin = await requireTrainingAdmin(payload);
   const scope = admin.role === "store_admin" ? "&store=eq." + encodeURIComponent(admin.store) : "";
@@ -460,6 +553,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "admin_login") return new Response(JSON.stringify(await adminLogin(payload)), { headers: cors });
     if (operation === "admin_overview") return new Response(JSON.stringify(await adminTrainingOverview(payload)), { headers: cors });
     if (operation === "admin_update_policy") return new Response(JSON.stringify(await adminUpdateTrainingPolicy(payload)), { headers: cors });
+    if (operation === "admin_knowledge_overview") return new Response(JSON.stringify(await adminKnowledgeOverview(payload)), { headers: cors });
+    if (operation === "admin_create_knowledge_candidate") return new Response(JSON.stringify(await adminCreateKnowledgeCandidate(payload)), { headers: cors });
+    if (operation === "admin_review_knowledge_candidate") return new Response(JSON.stringify(await adminReviewKnowledgeCandidate(payload)), { headers: cors });
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 403, headers: cors });
   }

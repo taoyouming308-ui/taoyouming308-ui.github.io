@@ -72,5 +72,10 @@ assert(app.includes('function loadHomeCarousel()'), 'app homepage does not load 
 assert(app.includes('is_carousel=eq.true'), 'app homepage carousel query is missing');
 assert(app.includes('网络失败时保留首屏静态图'), 'app homepage has no non-flicker fallback');
 assert(legacyAdmin.includes("location.replace('admin.html')"), 'legacy backend does not redirect to the canonical admin');
+assert(admin.includes("trainingAdminRequest('admin_knowledge_overview')"), 'knowledge candidates are not loaded from the protected service');
+assert(admin.includes("trainingAdminRequest('admin_create_knowledge_candidate'"), 'knowledge candidate creation is not service-backed');
+assert(admin.includes("trainingAdminRequest('admin_review_knowledge_candidate'"), 'knowledge review is not service-backed');
+assert(admin.includes('版权与安全边界均已核验'), 'knowledge approval lacks explicit copyright and safety confirmation');
+assert(admin.includes('审核通过只表示进入试用'), 'knowledge review could be mistaken for automatic publication');
 
 console.log('admin workflow test ok');

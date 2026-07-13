@@ -1,6 +1,6 @@
 # DSS 候选知识区
 
-此目录保存自动收集、尚未进入正式知识标准的候选内容。
+此目录保存命令行自动收集、尚未进入正式知识标准的文件候选。总后台人工提交的候选保存于受保护的 Supabase 表，两条入口都不能自动发布正式知识。
 
 ## 状态
 
@@ -31,7 +31,7 @@ node scripts/collect-aesthetic-candidates.js \\
   --sources scripts/aesthetic-sources.json --no-ai
 ```
 
-脚本只写入 `pending/`，不会自动修改 `aesthetic-knowledge.v1.js`、Prompt 或评分标准。审核人需要检查来源、版权、证据、适用边界和与 DSS 的一致性，之后再由人工提交正式版本变更。
+脚本只写入 `pending/`，不会自动修改 `aesthetic-knowledge.v1.js`、Prompt 或评分标准。文件候选经整理后可由总管理员录入云端候选，补齐观察事实、判断依据、适用条件、正反例和版权状态，再执行专家审核。审核通过只进入试用，之后仍需人工提交正式版本变更。
 
 ## DeepSeek 配置
 
@@ -40,4 +40,3 @@ node scripts/collect-aesthetic-candidates.js \\
 - 可选：`DEEPSEEK_MODEL=deepseek-v4-pro`；
 - 可选：`DEEPSEEK_BASE_URL` 覆盖 API 基地址；
 - API Key 只允许通过环境变量注入，禁止写入仓库、日志或前端代码。
-

@@ -12,6 +12,7 @@ const learningEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthet
 const learningMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260711090000_aesthetic_learning_loop.sql'), 'utf8');
 const managementMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260712090000_aesthetic_training_management.sql'), 'utf8');
 const schemaMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713140000_aesthetic_schema_state_machine.sql'), 'utf8');
+const knowledgeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713170000_aesthetic_knowledge_acquisition.sql'), 'utf8');
 const outputSchema = fs.readFileSync(path.join(root, 'supabase/functions/_shared/aesthetic-output-schema.ts'), 'utf8');
 const analysisPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/analysis.ts'), 'utf8');
 const coachPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/coach.ts'), 'utf8');
@@ -180,7 +181,7 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=377',
+  'hair-vision-training.v1.js?v=378',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'prior_case_history: aestheticPriorCaseHistory(item)',
@@ -210,7 +211,9 @@ data.trainingCases.forEach(row => {
 
 ['daily_limit integer not null default 1', 'access_status', 'aesthetic_training_admin_audit', 'drop constraint if exists aesthetic_training_sessions_username_business_date_key'].forEach(marker => assert(managementMigration.includes(marker), `Training management migration is missing marker: ${marker}`));
 ['DEFAULT_DAILY_LIMIT = 1', 'training_entitlement', 'admin_overview', 'admin_update_policy', 'admin_login'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing training management marker: ${marker}`));
+['admin_knowledge_overview', 'admin_create_knowledge_candidate', 'admin_review_knowledge_candidate', 'approval requires copyright and safety clearance'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing knowledge governance marker: ${marker}`));
 ['session_state', 'resume_payload', 'aesthetic_model_outputs', 'aesthetic_ability_history'].forEach(marker => assert(schemaMigration.includes(marker), `Schema/state migration is missing marker: ${marker}`));
+['aesthetic_knowledge_sources', 'aesthetic_knowledge_candidates', 'aesthetic_knowledge_reviews', 'aesthetic_case_evidence', 'enable row level security', 'revoke all'].forEach(marker => assert(knowledgeMigration.includes(marker), `Knowledge migration is missing marker: ${marker}`));
 ['validateAestheticOutput', 'outputRepairPrompt', 'coach_turn', 'session_summary'].forEach(marker => assert(outputSchema.includes(marker), `Output schema is missing marker: ${marker}`));
 assert(coachEdge.includes('model output schema invalid after repair'), 'coach must fail safely after one unsuccessful repair');
 assert(coachEdge.includes('repaired: true'), 'coach must annotate automatically repaired output');
