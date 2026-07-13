@@ -6,6 +6,8 @@
 - 部署 Prompt 拆分为分析、教练/总结、评审和安全边界模块；`packages/prompts` 改为复用部署模块，避免 Edge Function 与包目录继续双源漂移。
 - 训练 Session 在原有 `status` 兼容字段之外增加细粒度状态机、状态版本、最后保存时间和恢复载荷；本机恢复继续兼容旧记录。
 - 新增 `aesthetic_model_outputs` 与 `aesthetic_ability_history` 的 additive migration，RLS 开启且仅 service role 可访问；未改生产数据、未提交 API Key。
+- 迁移 `20260713140000` 已应用到生产 Supabase；`aesthetic-learning` 与 `aesthetic-coach` 已部署，非法参数探针返回受控 HTTP 400。
+- GitHub Pages 已验证 `version.txt=377` 且 `perm-app.html data-version=377`；完整业务回归与 28 项 Python 测试通过。
 - App version: v377
 
 ## v376 (2026-07-12)
