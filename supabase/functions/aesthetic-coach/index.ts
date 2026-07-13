@@ -1,4 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { outputRepairPrompt, validateAestheticOutput, type AestheticOutputKind } from "../_shared/aesthetic-output-schema.ts";
+import { buildAnalysisPrompt } from "../_shared/prompts/analysis.ts";
+import { buildCoachTurnPrompt, buildSessionSummaryPrompt } from "../_shared/prompts/coach.ts";
 
 const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY") || "";
 const MODEL = Deno.env.get("AESTHETIC_COACH_MODEL") || "gpt-5.5";
@@ -25,89 +28,6 @@ const DSS_STYLES = ["natural", "french", "korean", "japanese", "urban", "minimal
 const COACH_GOALS = ["outline", "weight", "layers", "line_texture", "style", "suitability", "technique", "client_communication"];
 const HAIR_VISION_CHECKPOINTS = ["human_analysis", "style", "hair_anatomy", "suitability", "client_communication"];
 
-function buildCoachTurnPrompt(payload: Record<string, unknown>, modules: Record<string, unknown>): string {
-  const messages = Array.isArray(payload.messages) ? payload.messages.slice(-8) : [];
-  const activeGoal = COACH_GOALS.includes(String(payload.active_goal || "")) ? String(payload.active_goal) : "outline";
-  const activeCheckpoint = HAIR_VISION_CHECKPOINTS.includes(String(payload.active_checkpoint || "")) ? String(payload.active_checkpoint) : "human_analysis";
-  return `你是一位带团队20年的发型设计总监，正在通过有剧本的自由聊天培养发型师，而不是批改考试。
-你的任务不是完成图片报告，而是让发型师在本轮产生一次可观察的能力进步。
-
-内部训练目标：${activeGoal}
-当前 Hair Vision 检查点：${activeCheckpoint}
-五个必经检查点：${HAIR_VISION_CHECKPOINTS.join(" -> ")}
-允许目标：${COACH_GOALS.join(", ")}
-DSS九型只允许：${DSS_STYLES.join(", ")}。风格必须是观察轮廓、重量、层次、线条、纹理、卷度与色彩后的结果，不能作为起点。
-当前目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 3000)}
-用户能力画像：${JSON.stringify(payload.ability_profile || {}).slice(0, 3000)}
-提示层级：${Number(payload.hint_level) || 0}；当前轮次：${Number(payload.turn_count) || 0}
-最近对话：${JSON.stringify(messages).slice(0, 6000)}
-当前回答：${String(payload.answer || "").slice(0, 600)}
-相关图片知识模块：${JSON.stringify(modules).slice(0, 7000)}
-本次差异化训练计划：${JSON.stringify(payload.training_plan || {}).slice(0, 5000)}
-Hair Vision 相关知识：${JSON.stringify(payload.hair_vision || {}).slice(0, 8000)}
-同款发型近期收获（不得换句话重复）：${JSON.stringify(payload.prior_case_history || []).slice(0, 3000)}
-已用有效训练时间：${Number(payload.elapsed_seconds) || 0} 秒；时间阶段：${String(payload.time_phase || "active")}
-当前策略版本：${String(payload.strategy_version || "control-v1").slice(0, 80)}
-经过自动验证的附加教学策略：${String(payload.strategy_instructions || "").slice(0, 2000) || "无，保持当前控制策略"}
-
-教学规则：
-1. 区分图片直接事实、合理推测、无依据判断和当前无法确认的信息。
-2. 一次只处理一个关键点，用户可见回复通常2到5句，只允许一个主要问题。
-3. 少给答案、多追问；但不要机械反问。用户卡住时才逐层给观察方法。
-4. 禁止使用“回答不错、还需补充”等阅卷套话，禁止显示分数。
-5. 同一误判重复出现时要换一种观察方法，不能重复同一句提示。
-6. 新人用具体观察或二选一；中级要求结构因果和证据；高级进入人物适配、技术取舍和顾客沟通。
-7. 当前目标达到 demonstrated 后，可做一次迁移测试；达到 transfer_tested 后自然转到最有价值的下一目标。
-8. 顾客沟通评价需求确认、差异说明、替代方案、打理成本和语气。
-9. 不得虚构你看见了知识模块中没有的事实；低置信度结论必须保留推测表达。
-10. 保持自然聊天，但必须按人物、风格、解剖、适配、沟通顺序推进；每轮只问一个主要问题。
-11. 图片看不见人物正脸时，人物分析可用“无法确认＋需要补充什么”完成，禁止猜职业、年龄、性格和生活方式。
-12. 同款再次训练必须围绕 training_plan 的新镜头产生新收获，不得重复 prior_case_history。
-13. closing 阶段提醒接近5分钟；extended 阶段继续补齐未完成检查点，不得仅因超过5分钟结束；只有 overtime（15分钟）才快速收束。
-14. training_plan 的风格对比只是训练镜头；图片证据不支持时把它用于反证或迁移，不得硬套风格。
-
-只输出JSON：{
- "message":"给发型师看的自然回复",
- "response_type":"probe|hint|challenge|explain|transition|wrap_up",
- "active_goal":"允许目标之一",
- "active_checkpoint":"五个检查点之一",
- "checkpoint_states":{"检查点":"unseen|asked|answered|demonstrated|incomplete"},
- "goal_states":{"目标":{"status":"unseen|probing|partial|demonstrated|transfer_tested|mastered","attempts":0,"last_evidence":""}},
- "classification":{"observed_facts":[],"reasonable_inferences":[],"unsupported_claims":[],"unknowns":[]},
- "repeated_pattern":"",
- "difficulty":1,
- "ability_updates":{"能力维度":{"level":0,"trend":0,"evidence":""}},
- "should_offer_summary":false,
- "should_auto_finish":false
-}`;
-}
-
-function buildSessionSummaryPrompt(payload: Record<string, unknown>): string {
-  return `你是发型设计总监。根据本次对话生成简洁、具体、可迁移的成长总结，不要写空泛鼓励。
-对话：${JSON.stringify(Array.isArray(payload.messages) ? payload.messages.slice(-20) : []).slice(0, 12000)}
-目标状态：${JSON.stringify(payload.goal_states || {}).slice(0, 4000)}
-Hair Vision 检查点：${JSON.stringify(payload.checkpoint_states || {}).slice(0, 3000)}
-本次训练计划：${JSON.stringify(payload.training_plan || {}).slice(0, 4000)}
-同款历史收获：${JSON.stringify(payload.prior_case_history || []).slice(0, 3000)}
-有效训练时长：${Number(payload.elapsed_seconds) || 0}秒；结束原因：${String(payload.finish_reason || "manual")}
-能力画像：${JSON.stringify(payload.ability_profile || {}).slice(0, 3000)}
-只输出JSON：{"strengths":[],"missed_points":[],"misconception_patterns":[],"ability_changes":[],"transferable_method":"","unique_takeaway":"本次区别于同款历史的唯一收获","difference_from_previous":"和上次同款训练的差异","next_focus":"","conversation_highlight":"","professional_summary":""}。不得把 incomplete 写成已掌握；每个数组最多4项，中文输出。`;
-}
-
-function buildAnalysisPrompt(caseData: Record<string, unknown>, extraFacts = "", previousModules: Record<string, unknown> = {}): string {
-  return `你是遵循 DSS V1.0 的资深发型设计教育导师。请先观察事实，再归纳风格。只根据图片可见证据建立该图片专属分析底稿；看不清或无法确认的内容必须放入 uncertainties，不得把推测写成事实。
-案例：${String(caseData.title || "").slice(0, 120)}；分类：${String(caseData.category || "").slice(0, 80)}
-已知限制：${String(caseData.limitations || "").slice(0, 500)}
-用户补充的真实信息：${extraFacts || "无"}
-已有模块（修订时只更新受新增信息影响的模块）：${JSON.stringify(previousModules).slice(0, 9000) || "无"}
-输出严格 JSON：{
- "fullAnalysis":"不超过650字的完整专业分析，覆盖所有模块",
- "summary":"不超过120字精简摘要",
- "modules":{"style|outline|layers|bangs|texture|curlStyling|color|suitability|cuttingLogic|maintenance|uncertainties":{
-  "conclusion":"模块结论","observations":["图片直接可见事实"],"inferences":["明确标记的专业推测"],"evidence":["支持结论的视觉证据"],"conflicts":["冲突信号"],"confidence":0到100,"requestedInputs":["提高置信度所需信息"]
- }},"affectedModules":["本次实际修改的模块名"]}。每个模块文字合计不超过150字；observations/evidence最多3条，inferences/conflicts/requestedInputs最多2条。首次分析11个模块必须存在；修订时 modules 只返回受影响模块。低于60分置信度只能写成推测。中文输出。`;
-}
-
 function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: string, answerHistory: string[], feedbackHistory: unknown[], modules: Record<string, unknown>, finalRequest: boolean): string {
   const rule = STAGE_RULES[stage] || "";
   const priorLines: string[] = [];
@@ -132,7 +52,7 @@ function buildPrompt(stage: string, caseData: Record<string, unknown>, answer: s
     "6. Output ONLY JSON: {\"score\":0,\"affirmation\":\"\",\"improvement\":\"\",\"observedPoints\":[],\"missedPoints\":[],\"misconceptions\":[],\"follow_up\":\"\",\"completion\":0,\"metrics\":{\"accuracy\":0,\"coverage\":0,\"evidence\":0,\"logic\":0,\"factInference\":0,\"technical\":0,\"progress\":0},\"finalAnalysis\":\"\",\"ready\":true}";
 }
 
-async function callOpenAI(prompt: string, imageUrl: string): Promise<Record<string, unknown>> {
+async function requestOpenAI(prompt: string, imageUrl: string): Promise<string> {
   const content: Array<Record<string, unknown>> = [{ type: "text", text: prompt }];
   if (imageUrl && (imageUrl.startsWith("https://") || imageUrl.startsWith("data:image/"))) {
     content.push({ type: "image_url", image_url: { url: imageUrl } });
@@ -150,10 +70,26 @@ async function callOpenAI(prompt: string, imageUrl: string): Promise<Record<stri
   });
   if (!resp.ok) throw new Error("OpenAI " + resp.status + ": " + await resp.text());
   const data = await resp.json();
-  const raw = data.choices?.[0]?.message?.content || "{}";
-  let parsed: Record<string, unknown>;
-  try { parsed = JSON.parse(raw); } catch { parsed = JSON.parse(raw.replace(/```json\n?|```/g, "")); }
-  return parsed;
+  return data.choices?.[0]?.message?.content || "{}";
+}
+
+function parseModelJson(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return JSON.parse(raw.replace(/```json\n?|```/g, "")); }
+}
+
+async function callOpenAI(prompt: string, imageUrl: string, kind: AestheticOutputKind): Promise<Record<string, unknown>> {
+  const raw = await requestOpenAI(prompt, imageUrl);
+  let parsed: unknown;
+  try { parsed = parseModelJson(raw); } catch { parsed = null; }
+  const first = validateAestheticOutput(kind, parsed);
+  if (first.ok) return { ...first.value, _validation: { schema: kind, repaired: false } };
+
+  const repairedRaw = await requestOpenAI(outputRepairPrompt(kind, raw, first.errors), "");
+  let repaired: unknown;
+  try { repaired = parseModelJson(repairedRaw); } catch { repaired = null; }
+  const second = validateAestheticOutput(kind, repaired);
+  if (!second.ok) throw new Error("model output schema invalid after repair: " + second.errors.join("; "));
+  return { ...second.value, _validation: { schema: kind, repaired: true, initial_errors: first.errors } };
 }
 
 async function employeeIsActive(username: string): Promise<boolean> {
@@ -200,7 +136,7 @@ Deno.serve(async (req: Request) => {
       const prompt = buildAnalysisPrompt(caseData, extraFacts, operation === "revise_analysis" ? analysisModules : {});
       const imageUrl = String(caseData.image_url || "");
       if (operation === "analyze_image" && !imageUrl) throw new Error("image required");
-      const analysis = await callOpenAI(prompt, operation === "analyze_image" ? imageUrl : "");
+      const analysis = await callOpenAI(prompt, operation === "analyze_image" ? imageUrl : "", "analysis");
       if (!analysis || typeof analysis.modules !== "object" || !analysis.modules || !String(analysis.summary || "").trim()) {
         throw new Error("analysis structure incomplete");
       }
@@ -209,7 +145,7 @@ Deno.serve(async (req: Request) => {
     if (operation === "coach_turn") {
       if (answer.length < 1) return new Response(JSON.stringify({ error: "answer required" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
       const prompt = buildCoachTurnPrompt(payload, analysisModules);
-      const turn = await callOpenAI(prompt, "");
+      const turn = await callOpenAI(prompt, "", "coach_turn");
       const fallbackGoal = COACH_GOALS.includes(String(payload.active_goal || "")) ? String(payload.active_goal) : "outline";
       const goal = COACH_GOALS.includes(String(turn.active_goal || "")) ? String(turn.active_goal) : fallbackGoal;
       const currentCheckpoint = HAIR_VISION_CHECKPOINTS.includes(String(payload.active_checkpoint || "")) ? String(payload.active_checkpoint) : "human_analysis";
@@ -245,7 +181,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify(result), { headers: { ...headers, "Content-Type": "application/json" } });
     }
     if (operation === "summarize_session") {
-      const summary = await callOpenAI(buildSessionSummaryPrompt(payload), "");
+      const summary = await callOpenAI(buildSessionSummaryPrompt(payload), "", "session_summary");
       return new Response(JSON.stringify({ summary, model: MODEL }), { headers: { ...headers, "Content-Type": "application/json" } });
     }
     if (!["observe", "analyze", "judge", "design", "review"].includes(stage) || answer.length < 16) {
@@ -255,7 +191,7 @@ Deno.serve(async (req: Request) => {
     for (const key of STAGE_MODULES[stage] || []) if (key in analysisModules) selected[key] = analysisModules[key];
     const prompt = buildPrompt(stage, caseData, answer, answerHistory, feedbackHistory, selected, finalRequest);
     const imageUrl = "";
-    const fb = await callOpenAI(prompt, imageUrl);
+    const fb = await callOpenAI(prompt, imageUrl, "stage_feedback");
     const omissions = Array.isArray(fb.omissions) ? fb.omissions.slice(0, 3).map((v: unknown) => String(v).slice(0, 120)) : [];
     const observedPoints = Array.isArray(fb.observedPoints) ? fb.observedPoints.slice(0, 8).map((v: unknown) => String(v).slice(0, 100)) : [];
     const missedPoints = Array.isArray(fb.missedPoints) ? fb.missedPoints.slice(0, 8).map((v: unknown) => String(v).slice(0, 100)) : omissions;

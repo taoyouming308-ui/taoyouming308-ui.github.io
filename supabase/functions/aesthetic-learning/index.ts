@@ -188,6 +188,15 @@ Session：${JSON.stringify(session).slice(0, 5000)}
 
 async function upsertSession(payload: Record<string, unknown>): Promise<void> {
   const goalStates = typeof payload.goal_states === "object" && payload.goal_states ? payload.goal_states as Record<string, unknown> : {};
+  const allowedStates = new Set([
+    "created", "image_uploaded", "observation_started", "observation_completed",
+    "person_analysis_started", "person_analysis_completed", "style_analysis_started",
+    "style_analysis_completed", "structure_analysis_started", "structure_analysis_completed",
+    "design_started", "design_completed", "communication_started", "communication_completed",
+    "evaluation_started", "evaluation_completed", "paused", "finished", "failed",
+  ]);
+  const requestedState = cleanText(payload.session_state, 40);
+  const sessionState = payload.status === "completed" ? "finished" : (allowedStates.has(requestedState) ? requestedState : "observation_started");
   const row = {
     id: cleanText(payload.session_id, 120),
     username: cleanText(payload.username, 80),
@@ -201,6 +210,11 @@ async function upsertSession(payload: Record<string, unknown>): Promise<void> {
     prompt_version: cleanText(payload.prompt_version, 60) || "coach-v1",
     strategy_version: cleanText(payload.strategy_version, 60) || "control-v1",
     model_version: cleanText(payload.model_version, 80),
+    session_state: sessionState,
+    state_version: clamp(payload.state_version, 1, 1000000),
+    last_saved_at: new Date().toISOString(),
+    paused_at: sessionState === "paused" ? new Date().toISOString() : null,
+    resume_payload: typeof payload.resume_payload === "object" && payload.resume_payload ? payload.resume_payload : {},
     goal_states: {
       ...goalStates,
       _hairVision: {

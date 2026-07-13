@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v377 (2026-07-13)
+
+- 美感训练四类模型输出新增统一 Schema 校验；首次失败自动修复一次，第二次失败安全中止并返回可理解错误，不把不合格 JSON 传给页面。
+- 部署 Prompt 拆分为分析、教练/总结、评审和安全边界模块；`packages/prompts` 改为复用部署模块，避免 Edge Function 与包目录继续双源漂移。
+- 训练 Session 在原有 `status` 兼容字段之外增加细粒度状态机、状态版本、最后保存时间和恢复载荷；本机恢复继续兼容旧记录。
+- 新增 `aesthetic_model_outputs` 与 `aesthetic_ability_history` 的 additive migration，RLS 开启且仅 service role 可访问；未改生产数据、未提交 API Key。
+- App version: v377
+
 ## v376 (2026-07-12)
 
 - 5分钟改为建议目标而非强制结束：到达5分钟后继续累计有效训练时间，并明确提示员工完成剩余重点。

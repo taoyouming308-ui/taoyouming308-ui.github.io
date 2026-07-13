@@ -125,8 +125,33 @@
     };
   }
 
+  var SESSION_STATES = [
+    'created', 'image_uploaded', 'observation_started', 'observation_completed',
+    'person_analysis_started', 'person_analysis_completed', 'style_analysis_started',
+    'style_analysis_completed', 'structure_analysis_started', 'structure_analysis_completed',
+    'design_started', 'design_completed', 'communication_started',
+    'communication_completed', 'evaluation_started', 'evaluation_completed',
+    'paused', 'finished', 'failed'
+  ];
+
+  function stateForCheckpoint(checkpoint, finishing, completed) {
+    if (completed) return 'finished';
+    if (finishing) return 'evaluation_started';
+    return {
+      human_analysis: 'person_analysis_started',
+      style: 'style_analysis_started',
+      hair_anatomy: 'structure_analysis_started',
+      suitability: 'design_started',
+      client_communication: 'communication_started'
+    }[checkpoint] || 'observation_started';
+  }
+
+  function normalizeSessionState(value) {
+    return SESSION_STATES.indexOf(value) !== -1 ? value : 'created';
+  }
+
   global.HAIR_VISION_TRAINING_V1 = {
-    version: '1.1.0',
+    version: '1.2.0',
     targetMs: 300000,
     closingMs: 270000,
     hardStopMs: 900000,
@@ -134,6 +159,9 @@
     buildPlan: buildPlan,
     openingQuestion: openingQuestion,
     timeState: timeState,
-    timeStateFromElapsed: timeStateFromElapsed
+    timeStateFromElapsed: timeStateFromElapsed,
+    sessionStates: SESSION_STATES.slice(),
+    stateForCheckpoint: stateForCheckpoint,
+    normalizeSessionState: normalizeSessionState
   };
 })(typeof window !== 'undefined' ? window : this);

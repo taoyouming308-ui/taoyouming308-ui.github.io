@@ -11,6 +11,11 @@ const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-
 const learningEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-learning/index.ts'), 'utf8');
 const learningMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260711090000_aesthetic_learning_loop.sql'), 'utf8');
 const managementMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260712090000_aesthetic_training_management.sql'), 'utf8');
+const schemaMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260713140000_aesthetic_schema_state_machine.sql'), 'utf8');
+const outputSchema = fs.readFileSync(path.join(root, 'supabase/functions/_shared/aesthetic-output-schema.ts'), 'utf8');
+const analysisPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/analysis.ts'), 'utf8');
+const coachPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/coach.ts'), 'utf8');
+const evaluationPrompt = fs.readFileSync(path.join(root, 'supabase/functions/_shared/prompts/evaluation.ts'), 'utf8');
 const context = { window: {} };
 
 function assert(condition, message) {
@@ -39,6 +44,10 @@ assert(phaseAt(270000) === 'closing', '4:30 must start closing');
 assert(phaseAt(300000) === 'extended', '5:00 must allow continued training');
 assert(phaseAt(899999) === 'extended', 'training must remain available before 15:00');
 assert(phaseAt(900000) === 'overtime', '15:00 must safely finish');
+assert(hairVision.normalizeSessionState('paused') === 'paused', 'paused sessions must be resumable');
+assert(hairVision.normalizeSessionState('unknown') === 'created', 'unknown session states must safely normalize');
+assert(hairVision.stateForCheckpoint('client_communication', false, false) === 'communication_started', 'communication checkpoint must map to state machine');
+assert(hairVision.stateForCheckpoint('style', false, true) === 'finished', 'completed sessions must map to finished');
 
 const repeatedPlans = Array.from({ length: 6 }, (_, exposureCount) => hairVision.buildPlan({ identity: '测试员工', caseKey: 'CASE-001:image-hash', exposureCount }));
 assert(new Set(repeatedPlans.map(plan => plan.variantId)).size === 6, 'repeat sessions need unique variants');
@@ -171,7 +180,7 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=376',
+  'hair-vision-training.v1.js?v=377',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'prior_case_history: aestheticPriorCaseHistory(item)',
@@ -201,6 +210,10 @@ data.trainingCases.forEach(row => {
 
 ['daily_limit integer not null default 1', 'access_status', 'aesthetic_training_admin_audit', 'drop constraint if exists aesthetic_training_sessions_username_business_date_key'].forEach(marker => assert(managementMigration.includes(marker), `Training management migration is missing marker: ${marker}`));
 ['DEFAULT_DAILY_LIMIT = 1', 'training_entitlement', 'admin_overview', 'admin_update_policy', 'admin_login'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing training management marker: ${marker}`));
+['session_state', 'resume_payload', 'aesthetic_model_outputs', 'aesthetic_ability_history'].forEach(marker => assert(schemaMigration.includes(marker), `Schema/state migration is missing marker: ${marker}`));
+['validateAestheticOutput', 'outputRepairPrompt', 'coach_turn', 'session_summary'].forEach(marker => assert(outputSchema.includes(marker), `Output schema is missing marker: ${marker}`));
+assert(coachEdge.includes('model output schema invalid after repair'), 'coach must fail safely after one unsuccessful repair');
+assert(coachEdge.includes('repaired: true'), 'coach must annotate automatically repaired output');
 
 assert(!app.includes('id="ae-review-photo"'), 'guided daily training must not upload customer photos');
 assert(!app.includes('id="ae-upload-category"'), 'personal training uploads must not show a manual category selector');
@@ -216,13 +229,7 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   'feedback_history',
   'analysis_modules',
   'const imageUrl = ""',
-  'analysis structure incomplete',
-  'affectedModules'
-  ,'observedPoints'
-  ,'missedPoints'
-  ,'misconceptions'
-  ,'finalAnalysis'
-  ,'factInference'
+  'analysis structure incomplete'
   ,'COACH_GOALS'
   ,'buildCoachTurnPrompt'
   ,'buildSessionSummaryPrompt'
@@ -231,9 +238,11 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
   ,'HAIR_VISION_CHECKPOINTS'
   ,'checkpoint_states'
   ,'should_auto_finish'
-  ,'prior_case_history'
-  ,'unique_takeaway'
 ].forEach(marker => assert(coachEdge.includes(marker), `Coach Edge Function is missing marker: ${marker}`));
+
+['affectedModules'].forEach(marker => assert(analysisPrompt.includes(marker), `Analysis Prompt is missing marker: ${marker}`));
+['prior_case_history', 'unique_takeaway', 'checkpoint_states'].forEach(marker => assert(coachPrompt.includes(marker), `Coach Prompt is missing marker: ${marker}`));
+['observedPoints', 'missedPoints', 'misconceptions', 'finalAnalysis', 'factInference'].forEach(marker => assert(evaluationPrompt.includes(marker), `Evaluation Prompt is missing marker: ${marker}`));
 
 [
   'EVALUATOR_VERSION = "evaluator-v1"',

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="376">
+<html lang="zh-CN" data-version="377">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3017,8 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=376"></script>
-<script src="hair-vision-training.v1.js?v=376"></script>
+<script src="aesthetic-knowledge.v1.js?v=377"></script>
+<script src="hair-vision-training.v1.js?v=377"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3339,6 +3339,10 @@ var AESTHETIC_LEARNING_ENDPOINT = SUPABASE_URL + '/functions/v1/aesthetic-learni
 
 function aestheticLearningPayload(operation) {
   var item = aestheticTrainingState.caseItem || {};
+  var runtime = hairVisionRuntime();
+  var sessionState = runtime && runtime.stateForCheckpoint
+    ? runtime.stateForCheckpoint(aestheticTrainingState.activeCheckpoint, aestheticTrainingState.finishing, operation === 'complete_session')
+    : (operation === 'complete_session' ? 'finished' : 'observation_started');
   return {
     operation: operation,
     username: aestheticIdentity(),
@@ -3357,7 +3361,15 @@ function aestheticLearningPayload(operation) {
     time_phase: currentAestheticTimeState().phase,
     messages: aestheticTrainingState.messages || [],
     summary: aestheticTrainingState.conversationSummary || {},
-    prompt_version: 'coach-chat-v1',
+    session_state: sessionState,
+    state_version: Number(aestheticTrainingState.sessionVersion || 0) + 1,
+    resume_payload: {
+      active_checkpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis',
+      checkpoint_states: aestheticTrainingState.checkpointStates || {},
+      active_elapsed_ms: Number(aestheticTrainingState.activeElapsedMs || 0),
+      draft: String((document.getElementById('ae-chat-input') || {}).value || '').slice(0, 600)
+    },
+    prompt_version: 'coach-chat-v2',
     strategy_version: aestheticTrainingState.strategyVersion || 'control-v1',
     model_version: 'gpt-5.5'
   };
@@ -3607,19 +3619,23 @@ function aestheticSessionKey() {
 function loadAestheticSession() {
   try {
     var session = JSON.parse(localStorage.getItem(aestheticSessionKey()) || 'null');
-    if (!session || session.businessDate !== aestheticToday() || session.status === 'completed') return null;
+    if (!session || session.businessDate !== aestheticToday() || session.status === 'completed' || session.sessionState === 'finished') return null;
     return session;
   } catch (e) { return null; }
 }
 
 function saveAestheticSession() {
   if (!aestheticTrainingState.sessionId || !aestheticTrainingState.caseItem || aestheticTrainingState.completionCommitted) return;
+  var runtime = hairVisionRuntime();
   var session = {
     id: aestheticTrainingState.sessionId,
     userId: aestheticIdentity(),
     businessDate: aestheticToday(),
     status: 'in_progress',
     currentStep: aestheticTrainingState.activeGoal || 'outline',
+    sessionState: runtime && runtime.stateForCheckpoint
+      ? runtime.stateForCheckpoint(aestheticTrainingState.activeCheckpoint, aestheticTrainingState.finishing, false)
+      : 'observation_started',
     caseId: aestheticTrainingState.caseItem.id,
     caseItem: aestheticTrainingState.caseItem,
     messages: aestheticTrainingState.messages,
