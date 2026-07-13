@@ -2,6 +2,14 @@ export const DSS_STYLES = [
   "natural", "french", "korean", "japanese", "urban", "minimal", "sweet", "androgynous", "avant_garde",
 ] as const;
 
+export const STYLE_TYPE_SYSTEMS = {
+  dssNine: { id: "SCH.DSS.NINE.HAIR", status: "published", role: "hair_style_synthesis" },
+  cnEight: { id: "SCH.CN.EIGHT.BASELINE", status: "sourced_reference", role: "personal_image_reference" },
+  cnNine: { id: "SCH.CN.NINE.PROVISIONAL", status: "provisional", role: "school_specific_mapping" },
+} as const;
+
+export const STYLE_AESTHETIC_DOMAINS = ["VIS", "PER", "STY", "DES", "HAI", "TRN", "SCR"] as const;
+
 export const COACH_GOALS = [
   "outline", "weight", "layers", "line_texture", "style", "suitability", "technique", "client_communication",
 ] as const;

@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "accessedAt": "2026-07-13",
+  "sources": [
+    {"id":"S15","grade":"C","title":"时尚教室：时尚风格与穿搭","publisher":"中国丝绸博物馆","url":"https://www.chinasilkmuseum.com/gskt/info_319.aspx?itemid=31010","supports":"中文八型名称与行业传播","limitation":"活动材料不是分类效度研究"},
+    {"id":"S16","grade":"B","title":"Shake Up Your Style","publisher":"Colour Me Beautiful UK","url":"https://www.colourmebeautiful.co.uk/blog/shake-up-your-style/","supports":"英国版六种 style personality","limitation":"机构定义不等于科学效度"},
+    {"id":"S17","grade":"B","title":"Fashion Type 诊断","publisher":"Color Me Beautiful Japan","url":"https://www.cp-cmb.jp/fashiontype.html","supports":"日本版六类型及判断因素","limitation":"未提供公开信效度"},
+    {"id":"S18","grade":"B","title":"David Kibbe author and Image Identity","publisher":"Penguin Random House","url":"https://www.penguinrandomhouse.com/authors/2280872/david-kibbe/","supports":"Kibbe 独立体系与原始著作来源","limitation":"页面未详列全部规则"},
+    {"id":"S19","grade":"A","title":"Colorimetry, 4th Edition","publisher":"CIE","url":"https://www.cie.co.at/publications/colorimetry-4th-edition","supports":"色彩测量和色貌基础","limitation":"不支持风格类型"},
+    {"id":"S20","grade":"A","title":"ISO/CIE 11664-4:2019","publisher":"ISO / CIE","url":"https://www.iso.org/standard/74166.html","supports":"CIELAB 定义与条件","limitation":"不支持主观风格语义"},
+    {"id":"S21","grade":"A","title":"Accuracy in Facial Trustworthiness Impressions","publisher":"Personality and Social Psychology Bulletin","url":"https://pubmed.ncbi.nlm.nih.gov/34609231/","supports":"面孔可信度推断准确度有限","limitation":"只覆盖可信度相关研究"},
+    {"id":"S22","grade":"A","title":"First Impressions From Faces","publisher":"PubMed Central","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC5473630/","supports":"面孔印象与过度泛化机制","limitation":"不能用于个体人格诊断"}
+  ]
+}

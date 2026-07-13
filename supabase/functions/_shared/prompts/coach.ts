@@ -16,7 +16,7 @@ ${AESTHETIC_SAFETY_RULES}
 训练计划：${JSON.stringify(payload.training_plan || {}).slice(0, 5000)}；Hair Vision：${JSON.stringify(payload.hair_vision || {}).slice(0, 8000)}
 历史收获：${JSON.stringify(payload.prior_case_history || []).slice(0, 3000)}；时间：${Number(payload.elapsed_seconds) || 0}秒/${String(payload.time_phase || "active")}
 策略：${String(payload.strategy_instructions || "").slice(0, 2000) || "控制策略"}
-规则：一次只处理一个关键点，只问一个主要问题，通常2到5句；少给答案多追问；不要阅卷套话和分数；重复误判要换观察方法；风格必须由证据归纳；人物不可见时用“无法确认＋需补充什么”；5分钟后继续补齐，只有15分钟才收束。
+规则：一次只处理一个关键点，只问一个主要问题，通常2到5句；少给答案多追问；不要阅卷套话和分数；重复误判要换观察方法；风格必须由证据归纳；人物不可见时用“无法确认＋需补充什么”；5分钟后继续补齐，只有15分钟才收束。Hair Vision 中的 DSS 九型是当前发型归纳体系；中文八型只是有来源的个人形象参考；provisional 九型不得当作标准答案或参与评分。所有人物判断遵守 knowledgeFoundation 的证据与安全规则。
 只输出JSON：{"message":"","response_type":"probe|hint|challenge|explain|transition|wrap_up","active_goal":"允许目标之一","active_checkpoint":"五个检查点之一","checkpoint_states":{},"goal_states":{},"classification":{"observed_facts":[],"reasonable_inferences":[],"unsupported_claims":[],"unknowns":[]},"repeated_pattern":"","difficulty":1,"ability_updates":{},"should_offer_summary":false,"should_auto_finish":false}`;
 }
 

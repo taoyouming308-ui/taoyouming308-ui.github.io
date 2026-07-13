@@ -77,6 +77,13 @@ assert(data.guidedConversation.goals.some(row => row.id === 'client_communicatio
 assert(Array.isArray(data.trainingCases) && data.trainingCases.length >= 5, 'guided training cases are incomplete');
 assert(Array.isArray(data.rubric) && data.rubric.reduce((sum, row) => sum + row.weight, 0) === 100, 'rubric weights must total 100');
 assert(data.hairVision && data.hairVision.systems.length === 4, 'four Hair Vision systems are required');
+assert(data.knowledgeFoundation && data.knowledgeFoundation.version === '0.1.0', 'style aesthetics knowledge foundation is required');
+assert(data.knowledgeFoundation.typeSystemBoundary.dssNine.status === 'published', 'DSS nine-style runtime boundary is missing');
+assert(data.knowledgeFoundation.typeSystemBoundary.cnEight.types.length === 8, 'Chinese eight-style reference is incomplete');
+assert(data.knowledgeFoundation.typeSystemBoundary.cnNine.status === 'provisional', 'unverified ninth style must remain provisional');
+assert(data.knowledgeFoundation.domains.map(row => row.id).join(',') === 'VIS,PER,STY,DES,HAI,TRN,SCR', 'knowledge domains are incomplete');
+assert(data.knowledgeFoundation.evidencePolicy.grades.map(row => row.id).join('') === 'ABCDE', 'evidence grades are incomplete');
+assert(data.knowledgeFoundation.safetyRules.some(rule => rule.includes('不由外貌推断')), 'appearance inference safety boundary is missing');
 assert(data.hairVision.styleDNA.length === 9, 'nine style DNA records are required');
 data.hairVision.styleDNA.forEach(style => {
   ['coreFeeling', 'outline', 'weight', 'layers', 'line', 'texture', 'neighborDifference', 'transformation', 'counterSignal'].forEach(field => assert(style[field], `style ${style.id} is missing ${field}`));
@@ -182,9 +189,10 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=378',
+  'hair-vision-training.v1.js?v=379',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
+  'knowledgeFoundation: knowledge && knowledge.knowledgeFoundation || {}',
   'prior_case_history: aestheticPriorCaseHistory(item)',
   'active_checkpoint:',
   'checkpoint_states:',
@@ -249,6 +257,7 @@ assert(data.governance.privacyRule.includes('不进入公共知识库'), 'custom
 
 ['affectedModules'].forEach(marker => assert(analysisPrompt.includes(marker), `Analysis Prompt is missing marker: ${marker}`));
 ['prior_case_history', 'unique_takeaway', 'checkpoint_states'].forEach(marker => assert(coachPrompt.includes(marker), `Coach Prompt is missing marker: ${marker}`));
+['中文八型只是有来源的个人形象参考', 'provisional 九型不得当作标准答案'].forEach(marker => assert(coachPrompt.includes(marker), `Coach Prompt is missing type-system boundary: ${marker}`));
 ['observedPoints', 'missedPoints', 'misconceptions', 'finalAnalysis', 'factInference'].forEach(marker => assert(evaluationPrompt.includes(marker), `Evaluation Prompt is missing marker: ${marker}`));
 
 [

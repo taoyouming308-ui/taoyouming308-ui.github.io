@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v379 (2026-07-13)
+
+- 将九型风格与风格美学研究底座纳入 `aesthetic-knowledge.v1.js` 1.4.0，覆盖 VIS/PER/STY/DES/HAI/TRN/SCR 七个领域、连续视觉维度、A–E 证据等级和统一条目合同。
+- 保留现有 DSS 发型九型为生产训练分类；中文个人形象八型作为 `sourced_reference`；来源未冻结的中文九型保持 `provisional`，不得作为标准答案或自动评分依据。
+- 新增中国丝绸博物馆、CMB UK/JP、Kibbe 出版方、CIE/ISO 与面孔印象研究共 8 条来源记录，并写明每项来源能证明和不能证明的内容。
+- 对话教练现在接收 `knowledgeFoundation`，Prompt 明确区分各类型体系并执行外貌推断安全边界；无数据库迁移，无生产业务数据写入。
+- `aesthetic-coach` 已部署；知识/版本/发布完整性/冒烟/模块边界/App UI/护理/发质任务/客户档案/后台/预约及 17 项 Python 同步测试通过。
+- 待完成：GitHub 推送与线上版本核验。
+- App version: v379
+
 ## 美学知识起始包 v1（2026-07-13，不发版）
 
 - 新增 30 条 `system-starter-v1` 内部原创候选，覆盖六组基础美学能力；全部为 `pending_review`、置信度 70。

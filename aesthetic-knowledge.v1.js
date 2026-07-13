@@ -3,7 +3,7 @@
 
   global.AESTHETIC_KNOWLEDGE_V1 = {
     schemaVersion: 1,
-    version: '1.3.0',
+    version: '1.4.0',
     title: 'Hair Aesthetic System',
     publishedAt: '2026-07-12',
     status: 'published',
@@ -187,6 +187,85 @@
       aiRule: 'AI 只根据已发布知识解释和出题，不得把聊天内容、网络热度或单个案例自动写回正式标准。',
       privacyRule: '顾客照片默认不进入公共知识库；用于训练前需取得授权、脱敏并记录使用范围。',
       copyrightRule: '外部书籍和课程只保存书目、链接与原创摘要，不复制受版权保护的正文、图表或课程资料。'
+    },
+    knowledgeFoundation: {
+      version: '0.1.0',
+      status: 'published_with_provisional_type_system',
+      updatedAt: '2026-07-13',
+      purpose: '为 App、RAG、自然对话训练和评分提供统一的风格美学底层语言、来源等级与流派边界。',
+      typeSystemBoundary: {
+        dssNine: {
+          id: 'SCH.DSS.NINE.HAIR',
+          status: 'published',
+          role: '当前美感训练用于发型作品归纳的九型：自然、法式、韩系、日系、都市、极简、少女、中性、先锋。',
+          rule: '继续作为发型训练运行时分类，不与个人形象八型或九型人格互换。'
+        },
+        cnEight: {
+          id: 'SCH.CN.EIGHT.BASELINE',
+          status: 'sourced_reference',
+          role: '中文个人形象设计行业常见八型基线，用于比较研究与人物风格语言。',
+          types: [
+            { id: 'ingenue', name: '少女', definition: '小量感、柔和、轻快和年轻感的视觉表达。' },
+            { id: 'elegant', name: '优雅', definition: '柔和、克制、流畅和精致的视觉表达。' },
+            { id: 'romantic', name: '浪漫', definition: '成熟、华丽、曲线丰富和感官性较强的视觉表达。' },
+            { id: 'boyish', name: '少年', definition: '利落、中性、轻快和短小精干的视觉表达。' },
+            { id: 'avant_garde', name: '前卫', definition: '新奇、反常规、实验性和个性化的视觉表达。' },
+            { id: 'natural', name: '自然', definition: '松弛、亲和、质朴和不过度修饰的视觉表达。' },
+            { id: 'classic', name: '古典', definition: '端正、平衡、克制、稳定和正式的视觉表达。' },
+            { id: 'dramatic', name: '戏剧', definition: '醒目、强势、夸张和舞台化的视觉表达。' }
+          ],
+          rule: '属于行业启发式，不宣称心理测量学效度，不作为人的本质标签。'
+        },
+        cnNine: {
+          id: 'SCH.CN.NINE.PROVISIONAL',
+          status: 'provisional',
+          ninthType: 'tbd',
+          variants: ['拆分既有类型', '新增都市/知性/异域/创意等机构类型', '机构专有九型', '与九型人格误混'],
+          rule: '在取得九个准确名称和原始教材前，不进入自动评分，也不宣称唯一来源。'
+        }
+      },
+      continuousDimensions: [
+        { id: 'line_curve', name: '曲线 ↔ 直线' },
+        { id: 'visual_scale', name: '小量感 ↔ 大量感' },
+        { id: 'visual_weight', name: '轻 ↔ 重' },
+        { id: 'movement', name: '静 ↔ 动' },
+        { id: 'order', name: '随机 ↔ 秩序' },
+        { id: 'contrast', name: '低对比 ↔ 高对比' },
+        { id: 'finish', name: '质朴 ↔ 精致' },
+        { id: 'space', name: '开放/留白 ↔ 密集' },
+        { id: 'symmetry', name: '对称 ↔ 不对称' },
+        { id: 'era', name: '传统 ↔ 实验' }
+      ],
+      domains: [
+        { id: 'VIS', name: '视觉基础', topics: ['感知组织', '点线面体', '比例尺度', '视觉重心', '节奏动态', '秩序复杂度', '留白空间', '对比强调', '质感光泽', '色彩', '构图视角'] },
+        { id: 'PER', name: '人物分析', topics: ['图像条件', '头脸结构', '五官视觉', '头肩颈', '体型姿态', '个人色彩观察', '视觉印象边界', '需求限制', '设计矛盾'] },
+        { id: 'STY', name: '风格识别', topics: ['类型系统史', '流派版本', '连续维度', '风格DNA', '主辅混合', '地域年代', '近邻辨析', '反例伪线索'] },
+        { id: 'DES', name: '设计语言', topics: ['设计目标', '形态操作', '比例策略', '轮廓策略', '重心策略', '纹理策略', '色彩策略', '约束设计', '决策解释'] },
+        { id: 'HAI', name: '发型映射', topics: ['长度', '轮廓', '层次', '体积密度', '刘海分缝', '纹理卷度', '色彩', '技术路径', '风格映射', '安全可行性'] },
+        { id: 'TRN', name: '训练方法', topics: ['事实观察', '证据标注', 'AB对比', '排序', '找差异', '去标签', '反例纠错', '变量实验', '设计推演', '客户沟通', '苏格拉底对话', '间隔复习'] },
+        { id: 'SCR', name: '评分标准', topics: ['观察准确性', '证据充分性', '概念准确性', '因果谨慎性', '设计推理', '替代方案', '约束意识', '表达质量', '不确定性', '迁移能力'] }
+      ],
+      evidencePolicy: {
+        grades: [
+          { id: 'A', meaning: '标准、系统综述、元分析或原始同行评审研究' },
+          { id: 'B', meaning: '原始著作、创始机构官方材料或权威专业教材' },
+          { id: 'C', meaning: '博物馆、高校、协会或职业教材中的行业采用证据' },
+          { id: 'D', meaning: '专家实践、结构化门店数据或内部实验' },
+          { id: 'E', meaning: '媒体、自媒体、电商或培训宣传，只用于发现线索' }
+        ],
+        claimRule: '来源权威与命题有效性分开判断；每个知识命题必须绑定来源、定位、等级、确定性和适用边界。',
+        publishStates: ['draft', 'sourced', 'expert_reviewed', 'calibrated', 'published', 'deprecated']
+      },
+      safetyRules: [
+        '只描述可见形式、视觉印象和设计假设，不由外貌推断真实性格、道德、智力、健康、职业、阶层、消费能力或性取向。',
+        '风格类型不是医学或心理诊断，不用脸型、年龄、性别或种族给人打价值分。',
+        '单张图片必须记录角度、光线、镜头、妆容、姿态和遮挡造成的不确定性。',
+        '评分对象是学员的观察、证据和设计推理，不是人物长相。'
+      ],
+      entryContract: {
+        required: ['id', 'title', 'domain', 'status', 'version', 'definition', 'observables', 'mechanisms', 'designApplications', 'hairMappings', 'training', 'rubric', 'claims', 'sources', 'governance'],
+        designChain: '目标 → 证据 → 设计动作 → 预期效果 → 约束/风险 → 替代方案'
+      }
     },
     styleAxes: [
       { id: 'line', name: '曲线 ↔ 直线', use: '判断轮廓、脸周、刘海和卷度的线条语言。' },
@@ -472,6 +551,46 @@
         rights: '仅保存书目、链接与原创摘要',
         reviewStatus: 'approved',
         reviewedAt: '2026-07-04'
+      },
+      {
+        id: 'S15', layer: 'standard', type: '机构材料', title: '时尚教室：时尚风格与穿搭', publisher: '中国丝绸博物馆',
+        url: 'https://www.chinasilkmuseum.com/gskt/info_319.aspx?itemid=31010', use: '证明中文形象设计中八型名称、量感、轮廓与形态的行业传播',
+        evidence: 'institutional_adoption', rights: '仅保存链接与原创摘要', reviewStatus: 'reference_only', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S16', layer: 'standard', type: '流派官方材料', title: 'Shake Up Your Style', publisher: 'Colour Me Beautiful UK',
+        url: 'https://www.colourmebeautiful.co.uk/blog/shake-up-your-style/', use: '记录 CMB 英国版六种 style personality，证明地区版本存在差异',
+        evidence: 'official_school_definition', rights: '仅保存链接与原创摘要', reviewStatus: 'reference_only', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S17', layer: 'standard', type: '流派官方材料', title: 'Fashion Type 诊断', publisher: 'Color Me Beautiful Japan',
+        url: 'https://www.cp-cmb.jp/fashiontype.html', use: '记录 CMB 日本版六类型及其判断因素',
+        evidence: 'official_school_definition', rights: '仅保存链接与原创摘要', reviewStatus: 'reference_only', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S18', layer: 'standard', type: '出版方书目', title: "David Kibbe's Metamorphosis", publisher: 'Penguin Random House / Atheneum',
+        url: 'https://www.penguinrandomhouse.com/authors/2280872/david-kibbe/', use: '区分 Kibbe Image Identity 与中文八型/九型的独立谱系',
+        evidence: 'author_and_publisher_catalog', rights: '仅保存书目、链接与原创摘要', reviewStatus: 'reference_only', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S19', layer: 'standard', type: '国际标准', title: 'Colorimetry, 4th Edition', publisher: 'CIE',
+        url: 'https://www.cie.co.at/publications/colorimetry-4th-edition', use: '色彩测量、观看条件与色貌基础',
+        evidence: 'international_standard', rights: '仅保存书目、链接与原创摘要', reviewStatus: 'approved', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S20', layer: 'standard', type: '国际标准', title: 'ISO/CIE 11664-4:2019', publisher: 'ISO / CIE',
+        url: 'https://www.iso.org/standard/74166.html', use: 'CIELAB 色空间定义与适用条件',
+        evidence: 'international_standard', rights: '仅保存书目、链接与原创摘要', reviewStatus: 'approved', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S21', layer: 'standard', type: '元分析', title: 'Accuracy in Facial Trustworthiness Impressions', publisher: 'Personality and Social Psychology Bulletin',
+        url: 'https://pubmed.ncbi.nlm.nih.gov/34609231/', use: '约束从面孔外貌推断真实可信度或人格的准确性主张',
+        evidence: 'peer_reviewed_meta_analysis', rights: '保存引用信息与原创摘要', reviewStatus: 'approved', reviewedAt: '2026-07-13'
+      },
+      {
+        id: 'S22', layer: 'standard', type: '研究综述', title: 'First Impressions From Faces', publisher: 'PubMed Central',
+        url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5473630/', use: '面孔第一印象、过度泛化与情境边界',
+        evidence: 'peer_reviewed_review', rights: '保存引用信息与原创摘要', reviewStatus: 'approved', reviewedAt: '2026-07-13'
       }
     ],
     trainingCases: [
