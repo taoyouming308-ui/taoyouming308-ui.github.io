@@ -1,7 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-const MODEL = Deno.env.get("AESTHETIC_EVALUATOR_MODEL") || "gpt-5.5";
+const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY") || "";
+const DEEPSEEK_BASE_URL = (Deno.env.get("DEEPSEEK_BASE_URL") || "https://api.deepseek.com").replace(/\/$/, "");
+const FLASH_MODEL = Deno.env.get("KNOWLEDGE_COLLECTOR_MODEL") || "deepseek-v4-flash";
+const PRO_MODEL = Deno.env.get("KNOWLEDGE_REVIEW_MODEL") || "deepseek-v4-pro";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const EVALUATOR_VERSION = "evaluator-v1";
@@ -151,7 +153,7 @@ async function adminAssessKnowledgeCandidate(payload: Record<string, unknown>): 
   const current = await rest("aesthetic_knowledge_candidates?select=*&id=eq." + encodeURIComponent(candidateId) + "&limit=1");
   const candidate = current.ok ? (await current.json())[0] : null;
   if (!candidate) throw new Error("knowledge candidate not found");
-  const raw = await openAI(knowledgeAssessmentPrompt(candidate));
+  const raw = await callDeepSeek(knowledgeAssessmentPrompt(candidate), PRO_MODEL, true);
   const allowedGrades = new Set(["A", "B", "C", "D", "E"]);
   const allowedRecommendations = new Set(["continue_research", "needs_source", "expert_review", "reference_only", "reject"]);
   const applicabilitySource = typeof raw.applicability === "object" && raw.applicability ? raw.applicability as Record<string, unknown> : {};
@@ -164,7 +166,7 @@ async function adminAssessKnowledgeCandidate(payload: Record<string, unknown>): 
     completed: true,
     assessed_at: new Date().toISOString(),
     assessed_by: admin.username,
-    model: MODEL,
+    model: PRO_MODEL,
     knowledge_class: cleanText(raw.knowledge_class, 40),
     evidence_grade: allowedGrades.has(String(raw.evidence_grade)) ? raw.evidence_grade : "E",
     source_supports: cleanText(raw.source_supports, 1000),
@@ -342,19 +344,20 @@ async function adminUpdateTrainingPolicy(payload: Record<string, unknown>): Prom
   return { saved: true, policy: (await saved.json())[0] };
 }
 
-async function openAI(prompt: string): Promise<Record<string, unknown>> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+async function callDeepSeek(prompt: string, model = FLASH_MODEL, thinking = false): Promise<Record<string, unknown>> {
+  const response = await fetch(DEEPSEEK_BASE_URL + "/chat/completions", {
     method: "POST",
-    headers: { Authorization: "Bearer " + OPENAI_KEY, "Content-Type": "application/json" },
+    headers: { Authorization: "Bearer " + DEEPSEEK_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       messages: [{ role: "user", content: prompt }],
-      max_completion_tokens: 2200,
-      reasoning_effort: "low",
+      max_tokens: 2200,
+      thinking: { type: thinking ? "enabled" : "disabled" },
+      reasoning_effort: thinking ? "high" : "low",
       response_format: { type: "json_object" },
     }),
   });
-  if (!response.ok) throw new Error("OpenAI " + response.status + ": " + await response.text());
+  if (!response.ok) throw new Error("DeepSeek " + response.status + ": " + await response.text());
   const body = await response.json();
   const raw = body.choices?.[0]?.message?.content || "{}";
   return JSON.parse(raw.replace(/```json\n?|```/g, ""));
@@ -484,11 +487,11 @@ async function upsertTurns(payload: Record<string, unknown>): Promise<unknown[]>
 
 async function evaluateSession(payload: Record<string, unknown>, turns: unknown[]): Promise<void> {
   const sessionId = cleanText(payload.session_id, 120);
-  const result = await openAI(evaluationPrompt(payload, turns));
+  const result = await callDeepSeek(evaluationPrompt(payload, turns), PRO_MODEL, true);
   const row = {
     session_id: sessionId,
     evaluator_version: EVALUATOR_VERSION,
-    evaluator_model: MODEL,
+    evaluator_model: PRO_MODEL,
     problem_tags: Array.isArray(result.problem_tags) ? result.problem_tags.slice(0, 12) : [],
     strategy_tags: Array.isArray(result.strategy_tags) ? result.strategy_tags.slice(0, 12) : [],
     initial_quality: clamp(result.initial_quality),
@@ -540,9 +543,9 @@ async function maybeGenerateCandidate(): Promise<void> {
   const sampleResponse = await rest("aesthetic_training_evaluations?select=problem_tags,strategy_tags,improvement_score,professional_accuracy,guidance_quality,evidence_growth,safety_score,effective,failure_reason,recommended_strategy&order=created_at.desc&limit=100");
   if (!sampleResponse.ok) return;
   const sample = await sampleResponse.json();
-  const proposal = await openAI(`你是训练策略优化AI。根据100次独立评审，生成一个仅优化“如何追问”的候选策略，不修改专业知识标准，不改变现有自由聊天体验。
+  const proposal = await callDeepSeek(`你是训练策略优化AI。根据100次独立评审，生成一个仅优化“如何追问”的候选策略，不修改专业知识标准，不改变现有自由聊天体验。
 数据：${JSON.stringify(sample).slice(0, 24000)}
-只输出JSON：{"instructions":"不超过800字、可直接追加给训练导师的规则","predicted_improvement":0,"professional_risk":0,"safety_risk":0,"rationale":""}`);
+只输出JSON：{"instructions":"不超过800字、可直接追加给训练导师的规则","predicted_improvement":0,"professional_risk":0,"safety_risk":0,"rationale":""}`, PRO_MODEL, true);
   if (clamp(proposal.professional_risk) > 10 || clamp(proposal.safety_risk) > 5 || clamp(proposal.predicted_improvement) < 5) return;
   const version = "candidate-" + new Date().toISOString().slice(0, 10).replace(/-/g, "") + "-" + total;
   await rest("aesthetic_coach_strategies", {
@@ -645,7 +648,7 @@ async function caseHistory(payload: Record<string, unknown>): Promise<Record<str
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: cors });
-  if (!SERVICE_KEY || !OPENAI_KEY) return new Response(JSON.stringify({ error: "service not configured" }), { status: 503, headers: cors });
+  if (!SERVICE_KEY || !DEEPSEEK_KEY) return new Response(JSON.stringify({ error: "service not configured" }), { status: 503, headers: cors });
   let payload: Record<string, unknown>;
   try { payload = await request.json(); } catch { return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: cors }); }
   const username = cleanText(payload.username, 80);

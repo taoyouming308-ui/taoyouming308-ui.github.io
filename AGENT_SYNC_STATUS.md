@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v381 (2026-07-13)
+
+- 美学研究院 AI Provider 从 OpenAI 全面切换到 DeepSeek：Flash 负责批量整理，Pro 负责知识适用性、训练质量和策略深度审核。
+- 本机 `/Users/a1/.hermes/.env` 中找到现有 DeepSeek Key；只确认存在并安全传入 Supabase Secret，未输出或提交密钥内容。
+- `aesthetic-learning` 不再读取 `OPENAI_API_KEY`；模型默认值固定为 `deepseek-v4-flash` 与 `deepseek-v4-pro`，可由服务端 Secret 覆盖。
+- 生产 Secret 已设置，`aesthetic-learning` 已部署；Flash 与 Pro 官方 API 均返回 HTTP 200 且 JSON 输出有效，未执行知识或业务数据写入。
+- 待完成：完整回归、GitHub 推送与线上核验。
+- App version: v381
+
 ## v380 (2026-07-13)
 
 - 总后台“美感知识”升级为“美学研究院”：收集 → AI 初审 → 形象设计适用性审核 → 案例验证 → 专家审核 → 版本发布。
