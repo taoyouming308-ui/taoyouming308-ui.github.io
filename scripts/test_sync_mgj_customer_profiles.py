@@ -149,5 +149,41 @@ class SyncWindowTests(unittest.TestCase):
         self.assertEqual(SYNC.select_sync_window(phones, limit=3, slot=10), phones)
 
 
+class ServiceReconciliationTests(unittest.TestCase):
+    def test_classifies_perm_dye_and_care_from_bill_items(self):
+        item = {"items": [
+            {"name": "热塑烫"},
+            {"name": "健康染"},
+            {"name": "歌薇酸性护理"},
+        ]}
+        self.assertEqual(SYNC.service_types_for_history(item), ["perm", "dye", "care"])
+
+    def test_does_not_guess_from_bill_without_line_items(self):
+        item = {"comment": "顾客可能做了烫发", "items": []}
+        self.assertEqual(SYNC.service_types_for_history(item), [])
+
+    def test_builds_stable_reconciliation_row(self):
+        profile = {
+            "phone": "18626895050",
+            "name": "张小姐",
+            "shop_name": "自由手艺人",
+            "service_history": [{
+                "source_id": "bill-1",
+                "bill_no": "MGJ001",
+                "date": "2026-07-14",
+                "time": "18:20",
+                "amount": 680,
+                "shop": "自由手艺人",
+                "staff": ["无名", "技师甲"],
+                "items": [{"name": "热塑烫", "quantity": 1}],
+            }],
+        }
+        rows = SYNC.build_service_records(profile)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["source_id"], "bill-1")
+        self.assertEqual(rows[0]["service_types"], ["perm"])
+        self.assertEqual(rows[0]["customer_phone"], "18626895050")
+
+
 if __name__ == "__main__":
     unittest.main()

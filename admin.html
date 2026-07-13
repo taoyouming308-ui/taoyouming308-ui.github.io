@@ -359,6 +359,26 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">加载中...</div>
   </div>
 
+  <div id="mgj-reconciliation" style="margin-bottom:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <div><div style="font-size:13px;font-weight:600;color:#fff;">🔎 美管加烫染护漏单对账</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">按顾客手机号和服务日期核对发质分析表；同名仅作为无手机号时的备用匹配。</div></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="mgj-reconcile-filter" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
+            <option value="missing">只看漏单</option>
+            <option value="all">全部记录</option>
+            <option value="matched">已匹配</option>
+          </select>
+          <button onclick="loadMgjReconciliation()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
+        </div>
+      </div>
+      <div id="mgj-reconcile-summary" style="margin-bottom:8px;color:var(--muted);font-size:12px;">加载中...</div>
+      <div style="max-height:420px;overflow:auto;">
+        <table style="font-size:12px;"><thead><tr><th>状态</th><th>顾客</th><th>手机号</th><th>项目</th><th>服务时间</th><th>门店</th><th>服务员工</th><th>美管加单号</th><th>金额</th></tr></thead><tbody id="table-mgj-reconciliation"><tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
   <!-- 发质分析表明细列表（从 hair_records 表） -->
   <div id="hair-records-list" style="margin-bottom:16px;display:none;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
@@ -550,7 +570,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=381"></script>
+<script src="aesthetic-knowledge.v1.js?v=382"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -1789,6 +1809,7 @@ function switchTab(tab) {
   } else if (tab === 'hair-analysis') {
     document.getElementById('hair-records-list').style.display = 'none';
     loadHairRecordStats();
+    loadMgjReconciliation();
     if (isSuperAdmin()) loadHairAnalyses();
   } else if (tab === 'care') {
     loadCareProducts();
@@ -2487,6 +2508,145 @@ function adminHairStatusText(row) {
   if (status === '回访完成') return '回访资料不完整';
   return status || '待回访';
 }
+
+var _mgjReconciliationRows = [];
+
+function adminNormalizePhone(value) {
+  return String(value || '').replace(/\D/g, '').slice(-11);
+}
+
+function adminNormalizeCustomerName(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase();
+}
+
+function adminHairRecordDate(row) {
+  var rd = (row && row.record_data) || {};
+  var raw = rd.serviceDate || rd.recordDate || rd.createdAt || row.created_at || '';
+  var match = String(raw).match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : '';
+}
+
+function adminMgjServiceLabels(types) {
+  var labels = {perm:'烫', dye:'染', care:'护'};
+  return (Array.isArray(types) ? types : []).map(function(type){ return labels[type] || type; }).join(' / ');
+}
+
+function adminMgjTypesFromItems(items) {
+  var names = (Array.isArray(items) ? items : []).map(function(item){ return item && item.name ? item.name : String(item || ''); }).join(' ');
+  var types = [];
+  if (/[烫]|热塑|纹理|软化/.test(names)) types.push('perm');
+  if (/[染漂]|补色|挑染|盖白/.test(names)) types.push('dye');
+  if (/护理|护发|酸护|蛋白|头疗|水疗/.test(names)) types.push('care');
+  return types;
+}
+
+function fetchMgjServicesForAdmin(serviceUrl, sinceDate, store) {
+  return fetch(serviceUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(response){
+    if (response.ok) return response.json();
+    if (response.status !== 404) return ensureOk(response, '加载美管加烫染护记录失败').then(function(r){ return r.json(); });
+    var profileUrl = SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,shop_name,service_history&last_visit_date=gte.' + sinceDate + '&order=last_visit_date.desc&limit=1000';
+    if (store) profileUrl += '&shop_name=eq.' + encodeURIComponent(store);
+    return fetch(profileUrl, {headers:{'apikey':SUPABASE_KEY}})
+      .then(function(r){ return ensureOk(r, '加载美管加消费历史失败'); })
+      .then(function(r){ return r.json(); })
+      .then(function(profiles){
+        var rows = [];
+        (profiles || []).forEach(function(profile){
+          var history = Array.isArray(profile.service_history) ? profile.service_history : [];
+          history.forEach(function(item){
+            var types = adminMgjTypesFromItems(item && item.items);
+            if (!item || !types.length || String(item.date || '') < sinceDate) return;
+            rows.push({
+              source_id:String(item.source_id || item.id || ''), bill_no:String(item.bill_no || ''),
+              customer_phone:profile.phone || '', customer_name:profile.name || '', shop_name:item.shop || profile.shop_name || '',
+              service_date:item.date, service_time:item.time || '', staff:item.staff || (item.barber ? [item.barber] : []),
+              items:item.items || [], service_types:types, amount:item.amount || 0, synced_at:''
+            });
+          });
+        });
+        return rows;
+      });
+  });
+}
+
+window.loadMgjReconciliation = function() {
+  var tbody = document.getElementById('table-mgj-reconciliation');
+  var summary = document.getElementById('mgj-reconcile-summary');
+  if (!tbody || !summary) return;
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
+  summary.textContent = '正在核对最近90天记录...';
+  var since = new Date();
+  since.setDate(since.getDate() - 90);
+  var sinceDate = since.toISOString().slice(0, 10);
+  var store = currentAdminStore();
+  var serviceUrl = SUPABASE_URL + '/rest/v1/mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&service_date=gte.' + sinceDate + '&order=service_date.desc,service_time.desc&limit=1000';
+  if (store) serviceUrl += '&shop_name=eq.' + encodeURIComponent(store);
+  var hairUrl = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&created_at=gte.' + sinceDate + 'T00:00:00&order=created_at.desc&limit=2000';
+  Promise.all([
+    fetchMgjServicesForAdmin(serviceUrl, sinceDate, store),
+    fetch(hairUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(r){ return ensureOk(r, '加载发质分析表失败'); }).then(function(r){ return r.json(); }),
+    fetchAdminStaffStoreMap()
+  ]).then(function(results){
+    var serviceRows = results[0] || [];
+    var hairRows = filterHairRowsForAdmin(results[1] || [], results[2]);
+    var byPhoneDate = {};
+    var byNameDate = {};
+    hairRows.forEach(function(row){
+      var date = adminHairRecordDate(row);
+      var phone = adminNormalizePhone(row.customer_phone);
+      var name = adminNormalizeCustomerName(row.customer_name);
+      if (date && phone) byPhoneDate[phone + '|' + date] = row;
+      if (date && name) byNameDate[name + '|' + date] = row;
+    });
+    _mgjReconciliationRows = serviceRows.map(function(row){
+      var date = String(row.service_date || '').slice(0, 10);
+      var phone = adminNormalizePhone(row.customer_phone);
+      var name = adminNormalizeCustomerName(row.customer_name);
+      var match = (phone && byPhoneDate[phone + '|' + date]) || (!phone && name && byNameDate[name + '|' + date]) || null;
+      var copy = Object.assign({}, row);
+      copy.hairRecord = match;
+      copy.reconcileStatus = match ? 'matched' : 'missing';
+      return copy;
+    });
+    renderMgjReconciliation();
+  }).catch(function(err){
+    summary.textContent = err && err.message ? err.message : '对账加载失败';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger);padding:20px;">加载失败</td></tr>';
+  });
+};
+
+window.renderMgjReconciliation = function() {
+  var tbody = document.getElementById('table-mgj-reconciliation');
+  var summary = document.getElementById('mgj-reconcile-summary');
+  if (!tbody || !summary) return;
+  var filter = (document.getElementById('mgj-reconcile-filter') || {}).value || 'missing';
+  var total = _mgjReconciliationRows.length;
+  var matched = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus === 'matched'; }).length;
+  var missing = total - matched;
+  summary.innerHTML = '美管加烫染护 <b style="color:#fff;">' + total + '</b> 单　已匹配 <b style="color:#2ecc71;">' + matched + '</b> 单　漏开发质分析表 <b style="color:' + (missing ? '#e74c3c' : '#2ecc71') + ';">' + missing + '</b> 单';
+  var rows = _mgjReconciliationRows.filter(function(row){ return filter === 'all' || row.reconcileStatus === filter; });
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">' + (filter === 'missing' ? '没有发现漏单' : '暂无记录') + '</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(row){
+    var missingRow = row.reconcileStatus === 'missing';
+    var itemNames = (Array.isArray(row.items) ? row.items : []).map(function(item){ return item && item.name ? item.name : ''; }).filter(Boolean).join('、');
+    var serviceText = itemNames || adminMgjServiceLabels(row.service_types) || '烫染护';
+    var staffText = Array.isArray(row.staff) ? row.staff.join('、') : '';
+    var timeText = esc(String(row.service_date || '').slice(0,10)) + (row.service_time ? ' ' + esc(row.service_time) : '');
+    return '<tr' + (missingRow ? ' style="background:rgba(231,76,60,0.08);"' : '') + '>' +
+      '<td style="color:' + (missingRow ? '#e74c3c' : '#2ecc71') + ';font-weight:600;">' + (missingRow ? '漏开发质表' : '已匹配') + '</td>' +
+      '<td>' + esc(row.customer_name || '—') + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;">' + esc(row.customer_phone || '—') + '</td>' +
+      '<td>' + esc(serviceText) + '</td>' +
+      '<td style="white-space:nowrap;">' + timeText + '</td>' +
+      '<td>' + esc(row.shop_name || '—') + '</td>' +
+      '<td>' + esc(staffText || '—') + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;">' + esc(row.bill_no || row.source_id || '—') + '</td>' +
+      '<td>' + (Number(row.amount) > 0 ? '¥' + Number(row.amount).toFixed(0) : '—') + '</td></tr>';
+  }).join('');
+};
 
 window.loadHairRecordStats = function() {
   var container = document.getElementById('hair-record-stats');

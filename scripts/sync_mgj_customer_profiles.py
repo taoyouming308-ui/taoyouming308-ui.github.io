@@ -49,6 +49,7 @@ SERVER = "vip12.meiguanjia.net"
 SUPABASE_URL = "https://pdssrmpeiuwvxzsgschm.supabase.co"
 SUPABASE_KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t"
 TABLE = "customer_profiles"
+SERVICE_TABLE = "mgj_service_records"
 SHOP_IDS = ["1009951", "1837032"]  # 自由手艺人, 向里造型
 PARENT_SHOP_ID = "1103470"
 EMP_ID = "543987"
@@ -820,6 +821,68 @@ def merge_notes(existing_notes, avg_fee, source_customer_id):
     return " | ".join(parts)
 
 
+SERVICE_TYPE_KEYWORDS = {
+    "perm": ("烫", "热塑", "冷烫", "纹理", "软化"),
+    "dye": ("染", "补色", "漂", "挑染", "盖白"),
+    "care": ("护理", "护发", "酸护", "蛋白", "头疗", "水疗"),
+}
+
+
+def service_types_for_history(item):
+    """Return the regulated service types proved by Meiguanjia bill line items."""
+    names = []
+    for row in parse_array((item or {}).get("items")):
+        if isinstance(row, dict):
+            name = str(row.get("name") or "").strip()
+        else:
+            name = str(row or "").strip()
+        if name:
+            names.append(name)
+    joined = " ".join(names)
+    return [
+        service_type
+        for service_type, keywords in SERVICE_TYPE_KEYWORDS.items()
+        if any(keyword in joined for keyword in keywords)
+    ]
+
+
+def build_service_records(profile):
+    """Flatten authoritative perm/dye/care bills for daily hair-form reconciliation."""
+    records = []
+    for item in parse_array((profile or {}).get("service_history")):
+        if not isinstance(item, dict):
+            continue
+        source_id = str(item.get("source_id") or item.get("id") or "").strip()
+        service_date = str(item.get("date") or "").strip()
+        service_types = service_types_for_history(item)
+        if not source_id or not service_date or not service_types:
+            continue
+        records.append({
+            "source_id": source_id,
+            "bill_no": str(item.get("bill_no") or ""),
+            "customer_phone": str(profile.get("phone") or "").strip(),
+            "customer_name": str(profile.get("name") or "").strip(),
+            "shop_name": str(item.get("shop") or profile.get("shop_name") or "").strip(),
+            "service_date": service_date,
+            "service_time": str(item.get("time") or "").strip() or None,
+            "staff": unique_strings(item.get("staff") or [item.get("barber")]),
+            "items": parse_array(item.get("items")),
+            "service_types": service_types,
+            "amount": number(item.get("amount")),
+            "source": "meiguanjia",
+            "synced_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        })
+    return records
+
+
+def upsert_service_records(profile):
+    records = build_service_records(profile)
+    if not records:
+        return 0
+    supabase_post(f"{SERVICE_TABLE}?on_conflict=source_id", records)
+    return len(records)
+
+
 def merge_profile(existing, incoming, fill_missing_only=False):
     """Merge only authoritative fields; partial API failures never erase arrays."""
     existing = existing or {}
@@ -894,10 +957,18 @@ def upsert_customer(data, fill_missing_only=False):
     try:
         if existing:
             supabase_patch(filter_path, profile)
-            return True, "updated"
+            action = "updated"
         else:
             supabase_post(f"{TABLE}?on_conflict=phone", profile)
-            return True, "created"
+            action = "created"
+        try:
+            service_count = upsert_service_records(profile)
+            if service_count:
+                action += f" + {service_count} service records"
+        except Exception as service_exc:
+            # Customer archives must keep syncing during a staged schema rollout.
+            log(f"  ⚠️ 烫染护对账明细写入失败，客户档案已保留: {service_exc}")
+        return True, action
     except Exception as e:
         return False, str(e)
 

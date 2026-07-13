@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v382 (2026-07-14)
+
+- 新增 `mgj_service_records` 独立对账表，以美管加账单 ID 去重，保存顾客、门店、服务日期时间、员工、真实项目明细及烫/染/护分类。
+- `sync_mgj_customer_profiles.py` 在客户档案写入成功后同步已取得项目明细的烫染护账单；新表暂不可用时只记录告警，不中断原客户同步。
+- 后台“发质任务”新增最近 90 天美管加烫染护与 `hair_records` 对账，手机号+同日为主匹配，无手机号时才使用姓名+同日备用匹配，并默认只显示漏单。
+- 对账表返回 404 时自动回退到现有 `customer_profiles.service_history`，避免数据库迁移与页面发布存在时间差时整页失败。
+- 待完成：生产迁移、同步脚本部署、真实账单回填、完整回归、GitHub 推送与线上核验。
+- App version: v382
+
 ## 美学知识每日收集（2026-07-13，不发版）
 
 - 已安装 `com.freecraftsman.aesthetic-knowledge-collector`，每天 02:30（Asia/Shanghai 本地时间）运行。

@@ -51,6 +51,10 @@ assert(admin.includes('adminCareOutboundContextMap') && admin.includes('protocol
 assert(admin.includes('status=in.(pending,processing,failed,needs_review,legacy_review)'), 'backend does not show the full outbound state machine');
 assert(admin.includes("Number(id) < 0") && admin.includes('queueIds.map(encodeURIComponent)'), 'backend retry does not protect legacy rows or retry the whole batch');
 assert(admin.includes('执行器会先回查单据再决定是否创建'), 'backend retry warning does not require external reconciliation');
+assert(admin.includes('/rest/v1/mgj_service_records?') && admin.includes('loadMgjReconciliation'), 'Meiguanjia perm/dye/care reconciliation is missing');
+assert(admin.includes("copy.reconcileStatus = match ? 'matched' : 'missing'"), 'Meiguanjia records are not classified against hair forms');
+assert(admin.includes("if (store) serviceUrl += '&shop_name=eq.'"), 'store administrator reconciliation is not scoped to its store');
+assert(admin.includes("if (response.status !== 404)") && admin.includes('/rest/v1/customer_profiles?select=phone,name,shop_name,service_history'), 'reconciliation lacks a staged-schema fallback');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');
