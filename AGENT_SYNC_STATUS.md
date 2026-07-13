@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v380 (2026-07-13)
+
+- 总后台“美感知识”升级为“美学研究院”：收集 → AI 初审 → 形象设计适用性审核 → 案例验证 → 专家审核 → 版本发布。
+- 新增 additive migration `20260713210000_aesthetic_research_institute.sql`，扩展知识领域、来源定位、证据等级、AI 初审、六项适用性、案例验证和专家复核字段；不改变旧候选字段语义。
+- 新增受总管理员令牌保护的 `admin_assess_knowledge_candidate` 与 `admin_add_case_evidence`；AI 只能给初审建议，不能批准或发布。
+- 进入试用前必须完成 AI 初审，并确认形象设计适用性、版权、安全、专业准确性和证据质量。
+- 生产数据库已应用 `20260713210000`，迁移历史本地/远端一致；`aesthetic-learning` 已部署。
+- 完整知识、版本、发布完整性、App/后台/护理/发质/客户档案/预约/UI/模块边界及 17 项 Python 同步测试通过；未登录 AI 初审探针受控返回 403。
+- 待完成：GitHub 推送和线上核验。
+- App version: v380
+
 ## v379 (2026-07-13)
 
 - 将九型风格与风格美学研究底座纳入 `aesthetic-knowledge.v1.js` 1.4.0，覆盖 VIS/PER/STY/DES/HAI/TRN/SCR 七个领域、连续视觉维度、A–E 证据等级和统一条目合同。

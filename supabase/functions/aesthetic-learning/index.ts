@@ -129,6 +129,89 @@ async function adminKnowledgeOverview(payload: Record<string, unknown>): Promise
   };
 }
 
+function knowledgeAssessmentPrompt(candidate: Record<string, unknown>): string {
+  return `你是“美学研究院”的知识初审员。判断这条资料是否有证据、是否适用于人物形象设计，以及能否转成可验证的设计和训练知识。你只能提出初审建议，不能批准或发布知识。
+
+硬规则：
+1. 区分可核验事实、流派自我定义、行业经验、营销观点和 AI 假设。
+2. 来源权威不等于命题有效；必须写清来源能证明什么、不能证明什么。
+3. 不得由外貌推断真实性格、道德、智力、健康、职业、阶层、消费能力或性取向。
+4. 分别判断人物分析、风格识别、设计动作、发型映射、训练题、评分标准六项适用性。
+5. 没有原始来源、页码/章节或案例证据时必须明确缺口；不能编造出处。
+6. evidence_grade 只能是 A/B/C/D/E；recommendation 只能是 continue_research、needs_source、expert_review、reference_only、reject。
+
+候选：${JSON.stringify(candidate).slice(0, 14000)}
+
+只输出 JSON：{"completed":true,"knowledge_class":"fact|theory|school_definition|practice|trend|marketing|hypothesis","evidence_grade":"A|B|C|D|E","source_supports":"","source_does_not_support":"","claims":[{"text":"","certainty":"supported|provisional|disputed","evidence_needed":""}],"risks":[],"missing_information":[],"controversies":[],"applicability":{"person_analysis":{"applicable":false,"reason":""},"style_recognition":{"applicable":false,"reason":""},"design_action":{"applicable":false,"reason":""},"hair_mapping":{"applicable":false,"reason":""},"training_exercise":{"applicable":false,"reason":""},"scoring_standard":{"applicable":false,"reason":""}},"recommended_domain":"visual|person|style|design|hair|training|scoring","recommendation":"continue_research|needs_source|expert_review|reference_only|reject","review_questions":[]}`;
+}
+
+async function adminAssessKnowledgeCandidate(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireKnowledgeAdmin(payload);
+  const candidateId = cleanText(payload.candidate_id, 80);
+  const current = await rest("aesthetic_knowledge_candidates?select=*&id=eq." + encodeURIComponent(candidateId) + "&limit=1");
+  const candidate = current.ok ? (await current.json())[0] : null;
+  if (!candidate) throw new Error("knowledge candidate not found");
+  const raw = await openAI(knowledgeAssessmentPrompt(candidate));
+  const allowedGrades = new Set(["A", "B", "C", "D", "E"]);
+  const allowedRecommendations = new Set(["continue_research", "needs_source", "expert_review", "reference_only", "reject"]);
+  const applicabilitySource = typeof raw.applicability === "object" && raw.applicability ? raw.applicability as Record<string, unknown> : {};
+  const applicability: Record<string, Record<string, unknown>> = {};
+  for (const key of ["person_analysis", "style_recognition", "design_action", "hair_mapping", "training_exercise", "scoring_standard"]) {
+    const value = typeof applicabilitySource[key] === "object" && applicabilitySource[key] ? applicabilitySource[key] as Record<string, unknown> : {};
+    applicability[key] = { applicable: value.applicable === true, reason: cleanText(value.reason, 500) };
+  }
+  const assessment = {
+    completed: true,
+    assessed_at: new Date().toISOString(),
+    assessed_by: admin.username,
+    model: MODEL,
+    knowledge_class: cleanText(raw.knowledge_class, 40),
+    evidence_grade: allowedGrades.has(String(raw.evidence_grade)) ? raw.evidence_grade : "E",
+    source_supports: cleanText(raw.source_supports, 1000),
+    source_does_not_support: cleanText(raw.source_does_not_support, 1000),
+    claims: Array.isArray(raw.claims) ? raw.claims.slice(0, 12) : [],
+    risks: cleanList(raw.risks, 12, 500),
+    missing_information: cleanList(raw.missing_information, 12, 500),
+    controversies: cleanList(raw.controversies, 12, 500),
+    recommendation: allowedRecommendations.has(String(raw.recommendation)) ? raw.recommendation : "continue_research",
+    review_questions: cleanList(raw.review_questions, 12, 500),
+  };
+  const domain = ["visual", "person", "style", "design", "hair", "training", "scoring"].includes(String(raw.recommended_domain)) ? raw.recommended_domain : candidate.knowledge_domain;
+  const updated = await rest("aesthetic_knowledge_candidates?id=eq." + encodeURIComponent(candidateId), {
+    method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({
+      ai_assessment: assessment, applicability, knowledge_domain: domain, evidence_grade: assessment.evidence_grade,
+      validation_status: candidate.validation_status === "not_started" ? "collecting_cases" : candidate.validation_status,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!updated.ok) throw new Error("knowledge assessment save " + updated.status + ": " + await updated.text());
+  return { saved: true, candidate: (await updated.json())[0] };
+}
+
+async function adminAddCaseEvidence(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const admin = await requireKnowledgeAdmin(payload);
+  const candidateId = cleanText(payload.candidate_id, 80);
+  const observation = cleanText(payload.observation, 1600);
+  const role = ["positive", "counter", "boundary", "failure"].includes(String(payload.evidence_role)) ? payload.evidence_role : "boundary";
+  const result = ["pending", "supports", "contradicts", "inconclusive"].includes(String(payload.result)) ? payload.result : "pending";
+  if (!candidateId || observation.length < 8) throw new Error("candidate and case observation are required");
+  const saved = await rest("aesthetic_case_evidence", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({
+    candidate_id: candidateId, case_id: cleanText(payload.case_id, 120), evidence_role: role, observation,
+    outcome: cleanText(payload.outcome, 1600), image_consent_status: ["no_image", "internal_training", "model_training", "restricted"].includes(String(payload.image_consent_status)) ? payload.image_consent_status : "no_image",
+    created_by: admin.username, reviewer: admin.username, result,
+    design_context: typeof payload.design_context === "object" && payload.design_context ? payload.design_context : {},
+  }) });
+  if (!saved.ok) throw new Error("case evidence create " + saved.status + ": " + await saved.text());
+  const evidence = (await saved.json())[0];
+  const countResponse = await rest("aesthetic_case_evidence?select=id,result&candidate_id=eq." + encodeURIComponent(candidateId));
+  const rows = countResponse.ok ? await countResponse.json() : [];
+  const resolved = rows.filter((row: Record<string, unknown>) => row.result !== "pending");
+  await rest("aesthetic_knowledge_candidates?id=eq." + encodeURIComponent(candidateId), { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({
+    validation_status: resolved.length >= 3 ? "ready_for_review" : "collecting_cases", updated_at: new Date().toISOString(),
+  }) });
+  return { saved: true, evidence, evidence_count: rows.length, resolved_count: resolved.length };
+}
+
 async function adminCreateKnowledgeCandidate(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const admin = await requireKnowledgeAdmin(payload);
   const title = cleanText(payload.title, 240);
@@ -152,6 +235,11 @@ async function adminCreateKnowledgeCandidate(payload: Record<string, unknown>): 
     related_styles: cleanList(payload.related_styles, 9, 80),
     copyright_status: ["unverified", "public_reference", "licensed", "internal_original", "restricted"].includes(String(payload.copyright_status)) ? payload.copyright_status : "unverified",
     confidence: clamp(payload.confidence),
+    knowledge_domain: ["visual", "person", "style", "design", "hair", "training", "scoring"].includes(String(payload.knowledge_domain)) ? payload.knowledge_domain : "style",
+    source_kind: ["standard", "paper", "book", "official_school", "course", "practice", "case", "trend", "ai_hypothesis"].includes(String(payload.source_kind)) ? payload.source_kind : "practice",
+    source_creator: cleanText(payload.source_creator, 240), source_publisher: cleanText(payload.source_publisher, 240),
+    source_year: cleanText(payload.source_year, 20), source_locator: cleanText(payload.source_locator, 500),
+    evidence_grade: ["A", "B", "C", "D", "E"].includes(String(payload.evidence_grade)) ? payload.evidence_grade : "E",
     status: "pending_review",
     submitted_by: admin.username,
   };
@@ -171,18 +259,32 @@ async function adminReviewKnowledgeCandidate(payload: Record<string, unknown>): 
   const evidenceQuality = clamp(payload.evidence_quality);
   const copyrightClear = payload.copyright_clear === true;
   const safetyClear = payload.safety_clear === true;
+  const applicabilityClear = payload.applicability_clear === true;
+  const aiAssessmentReviewed = payload.ai_assessment_reviewed === true;
+  const requestedApplicabilityScores = typeof payload.applicability_scores === "object" && payload.applicability_scores ? payload.applicability_scores as Record<string, unknown> : {};
+  const applicabilityScores: Record<string, number> = {};
+  for (const key of ["person_analysis", "style_recognition", "design_action", "hair_mapping", "training_exercise", "scoring_standard"]) applicabilityScores[key] = clamp(requestedApplicabilityScores[key]);
+  const caseValidationRequired = payload.case_validation_required !== false;
   if (!candidateId || !decision || reason.length < 8) throw new Error("candidate, decision and review reason are required");
-  if (decision === "approved_for_trial" && (!copyrightClear || !safetyClear || professionalAccuracy < 80 || evidenceQuality < 70)) {
-    throw new Error("approval requires copyright and safety clearance, accuracy >= 80 and evidence >= 70");
+  if (decision === "approved_for_trial" && (!copyrightClear || !safetyClear || !applicabilityClear || !aiAssessmentReviewed || professionalAccuracy < 80 || evidenceQuality < 70)) {
+    throw new Error("approval requires AI review, image-design applicability, copyright and safety clearance, accuracy >= 80 and evidence >= 70");
   }
   const current = await rest("aesthetic_knowledge_candidates?select=*&id=eq." + encodeURIComponent(candidateId) + "&limit=1");
   const candidate = current.ok ? (await current.json())[0] : null;
   if (!candidate) throw new Error("knowledge candidate not found");
+  if (decision === "approved_for_trial" && !(candidate.ai_assessment && candidate.ai_assessment.completed === true)) {
+    throw new Error("AI assessment must be completed before trial approval");
+  }
+  if (decision === "approved_for_trial" && caseValidationRequired && !["ready_for_review", "validated"].includes(String(candidate.validation_status))) {
+    throw new Error("case validation evidence is required before trial approval");
+  }
   const review = await rest("aesthetic_knowledge_reviews", {
     method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({
       candidate_id: candidateId, reviewer: admin.username, decision,
       professional_accuracy: professionalAccuracy, evidence_quality: evidenceQuality,
-      copyright_clear: copyrightClear, safety_clear: safetyClear, reason, snapshot: candidate,
+      copyright_clear: copyrightClear, safety_clear: safetyClear, applicability_clear: applicabilityClear,
+      ai_assessment_reviewed: aiAssessmentReviewed, applicability_scores: applicabilityScores,
+      case_validation_required: caseValidationRequired, reason, snapshot: candidate,
     }),
   });
   if (!review.ok) throw new Error("knowledge review " + review.status);
@@ -555,6 +657,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "admin_update_policy") return new Response(JSON.stringify(await adminUpdateTrainingPolicy(payload)), { headers: cors });
     if (operation === "admin_knowledge_overview") return new Response(JSON.stringify(await adminKnowledgeOverview(payload)), { headers: cors });
     if (operation === "admin_create_knowledge_candidate") return new Response(JSON.stringify(await adminCreateKnowledgeCandidate(payload)), { headers: cors });
+    if (operation === "admin_assess_knowledge_candidate") return new Response(JSON.stringify(await adminAssessKnowledgeCandidate(payload)), { headers: cors });
+    if (operation === "admin_add_case_evidence") return new Response(JSON.stringify(await adminAddCaseEvidence(payload)), { headers: cors });
     if (operation === "admin_review_knowledge_candidate") return new Response(JSON.stringify(await adminReviewKnowledgeCandidate(payload)), { headers: cors });
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 403, headers: cors });
