@@ -53,6 +53,7 @@ assert(admin.includes("Number(id) < 0") && admin.includes('queueIds.map(encodeUR
 assert(admin.includes('执行器会先回查单据再决定是否创建'), 'backend retry warning does not require external reconciliation');
 assert(admin.includes('/rest/v1/mgj_service_records?') && admin.includes('loadMgjReconciliation'), 'Meiguanjia perm/dye/care reconciliation is missing');
 assert(admin.includes("copy.reconcileStatus = match ? 'matched' : 'missing'"), 'Meiguanjia records are not classified against hair forms');
+assert(admin.includes('adminHairRecordDates') && admin.includes('adminDatesWithinDays(hairDate, date, 1)'), 'reconciliation does not consider actual visit dates and cross-day checkout');
 assert(admin.includes('未开单 · 美管加烫染护对账') && admin.includes('不包含回访任务'), 'missing-order queue is not separated from follow-up work');
 assert(admin.includes('mgj-reconcile-store') && admin.includes('mgj-reconcile-barber'), 'missing-order queue lacks store and stylist filters');
 assert(admin.includes("groupHeader = '<tr><td colspan=\"9\"") && admin.includes("adminMgjBarber(row)"), 'missing-order queue is not grouped by store and stylist');

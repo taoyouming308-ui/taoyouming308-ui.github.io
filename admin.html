@@ -573,7 +573,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=383"></script>
+<script src="aesthetic-knowledge.v1.js?v=384"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -2522,11 +2522,27 @@ function adminNormalizeCustomerName(value) {
   return String(value || '').replace(/\s+/g, '').toLowerCase();
 }
 
-function adminHairRecordDate(row) {
+function adminNormalizeDate(value) {
+  var match = String(value || '').match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if (!match) return '';
+  return match[1] + '-' + String(match[2]).padStart(2, '0') + '-' + String(match[3]).padStart(2, '0');
+}
+
+function adminHairRecordDates(row) {
   var rd = (row && row.record_data) || {};
-  var raw = rd.serviceDate || rd.recordDate || rd.createdAt || row.created_at || '';
-  var match = String(raw).match(/^\d{4}-\d{2}-\d{2}/);
-  return match ? match[0] : '';
+  return Array.from(new Set([
+    rd.visitDate, rd.bookingDate, rd.serviceDate, rd.recordDate, rd.date, rd.createdAt, row && row.created_at
+  ].map(adminNormalizeDate).filter(Boolean)));
+}
+
+function adminHairRecordDate(row) {
+  return adminHairRecordDates(row)[0] || '';
+}
+
+function adminDatesWithinDays(left, right, tolerance) {
+  var leftTime = Date.parse(String(left || '') + 'T00:00:00Z');
+  var rightTime = Date.parse(String(right || '') + 'T00:00:00Z');
+  return Number.isFinite(leftTime) && Number.isFinite(rightTime) && Math.abs(leftTime - rightTime) <= (tolerance || 0) * 86400000;
 }
 
 function adminMgjServiceLabels(types) {
@@ -2606,20 +2622,22 @@ window.loadMgjReconciliation = function() {
   ]).then(function(results){
     var serviceRows = results[0] || [];
     var hairRows = filterHairRowsForAdmin(results[1] || [], results[2]);
-    var byPhoneDate = {};
-    var byNameDate = {};
+    var byPhone = {};
+    var byName = {};
     hairRows.forEach(function(row){
-      var date = adminHairRecordDate(row);
       var phone = adminNormalizePhone(row.customer_phone);
       var name = adminNormalizeCustomerName(row.customer_name);
-      if (date && phone) byPhoneDate[phone + '|' + date] = row;
-      if (date && name) byNameDate[name + '|' + date] = row;
+      if (phone) (byPhone[phone] || (byPhone[phone] = [])).push(row);
+      if (name) (byName[name] || (byName[name] = [])).push(row);
     });
     _mgjReconciliationRows = serviceRows.map(function(row){
       var date = String(row.service_date || '').slice(0, 10);
       var phone = adminNormalizePhone(row.customer_phone);
       var name = adminNormalizeCustomerName(row.customer_name);
-      var match = (phone && byPhoneDate[phone + '|' + date]) || (!phone && name && byNameDate[name + '|' + date]) || null;
+      var candidates = phone ? (byPhone[phone] || []) : (name ? (byName[name] || []) : []);
+      var match = candidates.find(function(hairRow){
+        return adminHairRecordDates(hairRow).some(function(hairDate){ return adminDatesWithinDays(hairDate, date, 1); });
+      }) || null;
       var copy = Object.assign({}, row);
       copy.hairRecord = match;
       copy.reconcileStatus = match ? 'matched' : 'missing';
