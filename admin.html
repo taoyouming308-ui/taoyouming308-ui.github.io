@@ -377,7 +377,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </div>
       <div id="mgj-reconcile-summary" style="margin-bottom:8px;color:var(--muted);font-size:12px;">加载中...</div>
       <div style="max-height:420px;overflow:auto;">
-        <table style="font-size:12px;"><thead><tr><th>开单状态</th><th>顾客</th><th>手机号</th><th>项目</th><th>服务时间</th><th>门店</th><th>发型师</th><th>美管加单号</th><th>金额</th></tr></thead><tbody id="table-mgj-reconciliation"><tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr></tbody></table>
+        <table style="font-size:12px;"><thead><tr><th>开单状态</th><th>顾客</th><th>手机号</th><th>项目</th><th>服务时间</th><th>门店</th><th>发型师</th><th>美管加单号</th><th>金额</th><th>操作</th></tr></thead><tbody id="table-mgj-reconciliation"><tr><td colspan="10" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -573,7 +573,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=385"></script>
+<script src="aesthetic-knowledge.v1.js?v=386"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -2572,6 +2572,7 @@ function adminCurrentMonthStart() {
 }
 
 function adminMgjBarber(row) {
+  if (row && row.assigned_barber) return String(row.assigned_barber);
   var staff = Array.isArray(row && row.staff) ? row.staff.filter(Boolean) : [];
   return String(staff[0] || '未标记发型师');
 }
@@ -2622,7 +2623,7 @@ window.loadMgjReconciliation = function() {
   summary.textContent = '正在核对本月烫染护记录...';
   var sinceDate = adminCurrentMonthStart();
   var store = currentAdminStore();
-  var serviceUrl = SUPABASE_URL + '/rest/v1/mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&service_date=gte.' + sinceDate + '&order=service_date.desc,service_time.desc&limit=1000';
+  var serviceUrl = SUPABASE_URL + '/rest/v1/mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at,task_status,assigned_barber,hair_record_id,task_reason,task_updated_at&service_date=gte.' + sinceDate + '&order=service_date.desc,service_time.desc&limit=1000';
   if (store) serviceUrl += '&shop_name=eq.' + encodeURIComponent(store);
   var hairUrl = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,barber,technician,status,created_at,record_data&status=neq.deleted&created_at=gte.' + sinceDate + 'T00:00:00&order=created_at.desc&limit=2000';
   Promise.all([
@@ -2653,7 +2654,7 @@ window.loadMgjReconciliation = function() {
       }) || null;
       var copy = Object.assign({}, row);
       copy.hairRecord = match;
-      copy.reconcileStatus = match ? 'matched' : 'missing';
+      copy.reconcileStatus = row.task_status === 'exempt' ? 'exempt' : (match || row.task_status === 'completed' ? 'matched' : 'missing');
       return copy;
     });
     fillAdminSelect('mgj-reconcile-store', _mgjReconciliationRows.map(function(row){ return row.shop_name || '未标记门店'; }), '全部门店');
@@ -2672,12 +2673,13 @@ window.renderMgjReconciliation = function() {
   var filter = (document.getElementById('mgj-reconcile-filter') || {}).value || 'missing';
   var storeFilter = (document.getElementById('mgj-reconcile-store') || {}).value || '';
   var barberFilter = (document.getElementById('mgj-reconcile-barber') || {}).value || '';
-  var total = _mgjReconciliationRows.length;
+  var activeRows = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus !== 'exempt'; });
+  var total = activeRows.length;
   var matched = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus === 'matched'; }).length;
-  var missing = total - matched;
+  var missing = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus === 'missing'; }).length;
   var typeCounts = {perm:0, dye:0, care:0};
   var totalAmount = 0;
-  _mgjReconciliationRows.forEach(function(row){
+  activeRows.forEach(function(row){
     adminMgjServiceTypes(row).forEach(function(type){ typeCounts[type]++; });
     totalAmount += Number(row.amount) || 0;
   });
@@ -2709,7 +2711,7 @@ window.renderMgjReconciliation = function() {
     var groupHeader = '';
     if (group !== lastGroup) {
       lastGroup = group;
-      groupHeader = '<tr><td colspan="9" style="padding:9px 10px;background:rgba(255,255,255,0.07);font-weight:700;color:#fff;">' + esc(row.shop_name || '未标记门店') + '　›　' + esc(barberText) + '</td></tr>';
+      groupHeader = '<tr><td colspan="10" style="padding:9px 10px;background:rgba(255,255,255,0.07);font-weight:700;color:#fff;">' + esc(row.shop_name || '未标记门店') + '　›　' + esc(barberText) + '</td></tr>';
     }
     return groupHeader + '<tr' + (missingRow ? ' style="background:rgba(231,76,60,0.08);"' : '') + '>' +
       '<td style="color:' + (missingRow ? '#e74c3c' : '#2ecc71') + ';font-weight:600;">' + (missingRow ? '未开单' : '已开单') + '</td>' +
@@ -2720,8 +2722,27 @@ window.renderMgjReconciliation = function() {
       '<td>' + esc(row.shop_name || '—') + '</td>' +
       '<td>' + esc(barberText) + '</td>' +
       '<td style="font-family:monospace;font-size:11px;">' + esc(row.bill_no || row.source_id || '—') + '</td>' +
-      '<td>' + (Number(row.amount) > 0 ? '¥' + Number(row.amount).toFixed(0) : '—') + '</td></tr>';
+      '<td>' + (Number(row.amount) > 0 ? '¥' + Number(row.amount).toFixed(0) : '疗程/零金额') + '</td>' +
+      '<td>' + (missingRow ? '<button onclick="adminTransferMgjTask(\'' + escAttr(row.source_id) + '\')" style="font-size:11px;margin-right:4px;">转交</button><button onclick="adminExemptMgjTask(\'' + escAttr(row.source_id) + '\')" style="font-size:11px;">无需开单</button>' : '—') + '</td></tr>';
   }).join('');
+};
+
+window.adminTransferMgjTask = function(sourceId) {
+  var name = prompt('请输入转交后的发型师姓名');
+  if (!name || !name.trim()) return;
+  fetch(SUPABASE_URL + '/rest/v1/mgj_service_records?source_id=eq.' + encodeURIComponent(sourceId), {
+    method:'PATCH', headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({assigned_barber:name.trim(),task_status:'pending',task_reason:'后台转交',task_updated_at:new Date().toISOString()})
+  }).then(function(r){ return ensureOk(r,'转交失败'); }).then(function(){ toast('已转交给 ' + name.trim(),'ok'); loadMgjReconciliation(); }).catch(function(e){ toast(e.message,'err'); });
+};
+
+window.adminExemptMgjTask = function(sourceId) {
+  var reason = prompt('请输入无需开单原因（退款、重复记录、项目录错等）');
+  if (!reason || !reason.trim()) return;
+  fetch(SUPABASE_URL + '/rest/v1/mgj_service_records?source_id=eq.' + encodeURIComponent(sourceId), {
+    method:'PATCH', headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({task_status:'exempt',task_reason:reason.trim(),task_updated_at:new Date().toISOString()})
+  }).then(function(r){ return ensureOk(r,'标记失败'); }).then(function(){ toast('已标记无需开单','ok'); loadMgjReconciliation(); }).catch(function(e){ toast(e.message,'err'); });
 };
 
 window.loadHairRecordStats = function() {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="385">
+<html lang="zh-CN" data-version="386">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3017,8 +3017,8 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=385"></script>
-<script src="hair-vision-training.v1.js?v=385"></script>
+<script src="aesthetic-knowledge.v1.js?v=386"></script>
+<script src="hair-vision-training.v1.js?v=386"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -8789,6 +8789,15 @@ function initApp() {
       planResultHTML: ((document.getElementById('hair-q-result')||{}).innerHTML || ''),
       careUsage: (typeof window.collectCareUsage === 'function') ? window.collectCareUsage() : [],
       serviceType: 'both',
+      isMakeup: !!_activeMgjMakeupTask,
+      mgjMakeupSourceId: _activeMgjMakeupTask ? String(_activeMgjMakeupTask.source_id || '') : '',
+      mgjOriginalService: _activeMgjMakeupTask ? {
+        serviceDate: _activeMgjMakeupTask.service_date || '',
+        shopName: _activeMgjMakeupTask.shop_name || '',
+        items: _activeMgjMakeupTask.items || [],
+        serviceTypes: _activeMgjMakeupTask.service_types || [],
+        amount: Number(_activeMgjMakeupTask.amount) || 0
+      } : null,
       // ── 自动收集的所有标准表单字段（id→值 / name→值） ──
       //    未来新增字段无需修改保存代码，自动出现在此
       formFields: F,
@@ -9097,6 +9106,18 @@ function initApp() {
 
       // 等 hair_records 写完（外键约束），再用“先删旧明细、后批量重建”同步护理记录。
       hrPromise.then(function() {
+        if (record.mgjMakeupSourceId) {
+          fetch(SUPABASE_URL + '/rest/v1/mgj_service_records?source_id=eq.' + encodeURIComponent(record.mgjMakeupSourceId), {
+            method: 'PATCH',
+            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ task_status:'completed', hair_record_id:String(record.id), task_reason:'发型师补开', task_updated_at:new Date().toISOString() })
+          }).then(function(response){
+            if (response.ok) {
+              _activeMgjMakeupTask = null;
+              if (window.renderMgjMakeupTasks) window.renderMgjMakeupTasks();
+            }
+          }).catch(function(){});
+        }
         return syncCareRecordsForHairRecord(record);
       }).catch(function(err) {
         console.warn('[护理记录同步失败]', err);
@@ -9323,6 +9344,74 @@ function initApp() {
     container.innerHTML = html;
   };
 
+  var _activeMgjMakeupTask = null;
+
+  function mgjMakeupMonthStart() {
+    var now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+  }
+
+  function mgjMakeupItems(row) {
+    return (Array.isArray(row && row.items) ? row.items : []).map(function(item){ return item && item.name ? item.name : ''; }).filter(Boolean).join('、');
+  }
+
+  window.openMgjMakeupTask = function(sourceId) {
+    var task = (window._mgjMakeupTaskRows || []).find(function(row){ return String(row.source_id) === String(sourceId); });
+    if (!task) return;
+    _activeMgjMakeupTask = task;
+    window._hairViewMode = 'form';
+    window.showHairAnalysisPage(task.customer_phone || '', hairBookingContext('', task.service_date, task.customer_phone, task.customer_name, task.assigned_barber || task._inferredBarber || ''));
+    setTimeout(function(){
+      var name = document.getElementById('hair-form-name');
+      var phone = document.getElementById('hair-form-phone');
+      var barber = document.getElementById('hair-form-barber');
+      if (name) { name.value = task.customer_name || ''; name.readOnly = true; }
+      if (phone) { phone.value = task.customer_phone || ''; phone.readOnly = true; }
+      if (barber) barber.value = task.assigned_barber || task._inferredBarber || '';
+      var flow = document.getElementById('hair-form-flow');
+      if (flow) flow.insertAdjacentHTML('afterbegin', '<div style="margin-bottom:10px;padding:10px;border:1px solid #e8a817;border-radius:8px;background:rgba(232,168,23,.09);font-size:12px;color:var(--text);"><b>补开单</b> · 原服务信息只读<br>' + esc(task.service_date || '') + '　' + esc(mgjMakeupItems(task) || '烫染护') + '　' + (Number(task.amount) ? '¥' + Number(task.amount).toFixed(0) : '疗程/零金额') + '</div>');
+    }, 250);
+  };
+
+  window.renderMgjMakeupTasks = function() {
+    var box = document.getElementById('mgj-makeup-tasks');
+    if (!box) return;
+    var user = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
+    if (!user) { box.innerHTML = ''; return; }
+    var month = mgjMakeupMonthStart();
+    var taskUrl = SUPABASE_URL + '/rest/v1/mgj_service_records?select=source_id,customer_phone,customer_name,shop_name,service_date,staff,items,service_types,amount,task_status,assigned_barber,hair_record_id&service_date=gte.' + month + '&task_status=eq.pending&order=service_date.desc&limit=300';
+    Promise.all([
+      fetch(taskUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(r){ return r.ok ? r.json() : []; }),
+      fetch(SUPABASE_URL + '/rest/v1/staff?select=username,position,store&active=eq.true', {headers:{'apikey':SUPABASE_KEY}}).then(function(r){ return r.ok ? r.json() : []; }),
+      fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,created_at,record_data&status=neq.deleted&created_at=gte.' + month + 'T00:00:00&limit=1000', {headers:{'apikey':SUPABASE_KEY}}).then(function(r){ return r.ok ? r.json() : []; })
+    ]).then(function(results){
+      var staff = results[1] || [];
+      var hair = results[2] || [];
+      var positions = {};
+      staff.forEach(function(row){ positions[row.username] = row.position || ''; });
+      var rows = (results[0] || []).filter(function(row){
+        var inferred = (row.staff || []).find(function(name){ return /发型师/.test(positions[name] || ''); }) || '';
+        row._inferredBarber = inferred;
+        var owner = row.assigned_barber || inferred;
+        if (owner !== user) return false;
+        var phone = normalizeHairCustomerPhone(row.customer_phone || '');
+        return !hair.some(function(hr){
+          var rec = hr.record_data || {};
+          if (normalizeHairCustomerPhone(hr.customer_phone || rec.customerPhone || '') !== phone) return false;
+          var dates = [rec.visitDate, rec.bookingDate, rec.serviceDate, rec.recordDate, rec.date, rec.createdAt, hr.created_at];
+          return dates.some(function(value){
+            var a = new Date(String(value || '').replace(/\./g,'-')).getTime();
+            var b = new Date(String(row.service_date || '')).getTime();
+            return isFinite(a) && isFinite(b) && Math.abs(a-b) <= 86400000;
+          });
+        });
+      });
+      window._mgjMakeupTaskRows = rows;
+      if (!rows.length) { box.innerHTML = ''; return; }
+      box.innerHTML = '<div style="margin-bottom:12px;padding:10px;border:1px solid #e8a817;border-radius:8px;"><div style="font-size:13px;font-weight:700;color:#e8a817;margin-bottom:8px;">待补开（' + rows.length + '）</div>' + rows.map(function(row){ return '<div style="padding:8px 0;border-top:1px solid var(--border);font-size:12px;"><b>' + esc(row.customer_name || '未填写') + '</b>　' + esc(row.service_date || '') + '<div style="color:var(--text-secondary);margin:3px 0;">' + esc(mgjMakeupItems(row) || '烫染护') + '　' + (Number(row.amount) ? '¥'+Number(row.amount).toFixed(0) : '疗程/零金额') + '</div><button onclick="openMgjMakeupTask(\'' + escAttr(row.source_id) + '\')" class="hair-task-card-btn primary">补开发质表</button></div>'; }).join('') + '</div>';
+    }).catch(function(){ box.innerHTML = ''; });
+  };
+
   // ===== 我的任务（技师端：看云端指派给自己的记录） =====
   window.renderMyTasks = function() {
     var container = document.getElementById('hair-tasks-list');
@@ -9332,6 +9421,7 @@ function initApp() {
       container.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-secondary);">请先登录</div>';
       return;
     }
+    if (window.renderMgjMakeupTasks) window.renderMgjMakeupTasks();
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载我的任务...</div>';
     // 从 hair_records 表查询（技师或发型师相关的记录）
     fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
@@ -11018,6 +11108,7 @@ function initApp() {
     // 我的任务（技师端）- 云端编辑时隐藏
     html += '<div id="hair-tasks-section" style="padding-top:0;' + (activeView === 'tasks' ? '' : 'display:none;') + '">' +
     '<div class="hair-tasks-intro"><span>WORK QUEUE</span><h3>我的任务</h3><p>待处理任务优先显示，点开后可继续填写或完成回访。</p></div>' +
+    '<div id="mgj-makeup-tasks"></div>' +
     '<div id="hair-tasks-list"></div>' +
     '</div>';
 
