@@ -177,7 +177,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <div class="nav-group">
         <div class="nav-group-title">客户</div>
         <button class="admin-nav-item" data-tab="customers" data-super-admin-only>顾客档案</button>
-        <button class="admin-nav-item" data-tab="followups" data-super-admin-only>回访任务</button>
+        <button class="admin-nav-item" data-tab="followups" data-super-admin-only>未回访</button>
       </div>
       <div class="nav-group">
         <div class="nav-group-title">技术质量</div>
@@ -295,8 +295,9 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 
 <!-- 回访管理 -->
 <div id="tab-followups" class="admin-page">
-  <div class="page-header"><div><h1 class="page-title">回访任务</h1><div class="page-desc">按计划日期管理今日、逾期和已完成回访。</div></div></div>
+  <div class="page-header"><div><h1 class="page-title">未回访</h1><div class="page-desc">只管理已经开单但尚未完成的回访；按门店、发型师分组，不与未开单混合。</div></div></div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <select id="fu-store-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部门店</option><option value="自由手艺人">自由手艺人</option><option value="向里造型">向里造型</option></select>
     <select id="fu-barber-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"><option value="">全部发型师</option></select>
     <select id="fu-status-filter" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;">
       <option value="">全部</option><option value="overdue">已逾期</option><option value="today">今日计划</option>
@@ -362,19 +363,21 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div id="mgj-reconciliation" style="margin-bottom:16px;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <div><div style="font-size:13px;font-weight:600;color:#fff;">🔎 美管加烫染护漏单对账</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">按顾客手机号和服务日期核对发质分析表；同名仅作为无手机号时的备用匹配。</div></div>
+        <div><div style="font-size:13px;font-weight:600;color:#fff;">未开单 · 美管加烫染护对账</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">这里只核对有没有开具发质分析表，不包含回访任务；按门店、发型师分组。</div></div>
         <div style="display:flex;gap:6px;align-items:center;">
+          <select id="mgj-reconcile-store" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;"><option value="">全部门店</option></select>
+          <select id="mgj-reconcile-barber" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;"><option value="">全部发型师</option></select>
           <select id="mgj-reconcile-filter" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;">
-            <option value="missing">只看漏单</option>
-            <option value="all">全部记录</option>
-            <option value="matched">已匹配</option>
+            <option value="missing">未开单</option>
+            <option value="matched">已开单</option>
+            <option value="all">全部开单状态</option>
           </select>
           <button onclick="loadMgjReconciliation()" style="padding:6px 14px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;">刷新</button>
         </div>
       </div>
       <div id="mgj-reconcile-summary" style="margin-bottom:8px;color:var(--muted);font-size:12px;">加载中...</div>
       <div style="max-height:420px;overflow:auto;">
-        <table style="font-size:12px;"><thead><tr><th>状态</th><th>顾客</th><th>手机号</th><th>项目</th><th>服务时间</th><th>门店</th><th>服务员工</th><th>美管加单号</th><th>金额</th></tr></thead><tbody id="table-mgj-reconciliation"><tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr></tbody></table>
+        <table style="font-size:12px;"><thead><tr><th>开单状态</th><th>顾客</th><th>手机号</th><th>项目</th><th>服务时间</th><th>门店</th><th>发型师</th><th>美管加单号</th><th>金额</th></tr></thead><tbody id="table-mgj-reconciliation"><tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -570,7 +573,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=382"></script>
+<script src="aesthetic-knowledge.v1.js?v=383"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -2540,6 +2543,20 @@ function adminMgjTypesFromItems(items) {
   return types;
 }
 
+function adminMgjBarber(row) {
+  var staff = Array.isArray(row && row.staff) ? row.staff.filter(Boolean) : [];
+  return String(staff[0] || '未标记发型师');
+}
+
+function fillAdminSelect(selectId, values, placeholder) {
+  var select = document.getElementById(selectId);
+  if (!select) return;
+  var current = select.value;
+  var unique = Array.from(new Set((values || []).filter(Boolean))).sort(function(a,b){ return String(a).localeCompare(String(b), 'zh-CN'); });
+  select.innerHTML = '<option value="">' + placeholder + '</option>' + unique.map(function(value){ return '<option value="' + escAttr(value) + '">' + esc(value) + '</option>'; }).join('');
+  if (unique.indexOf(current) !== -1) select.value = current;
+}
+
 function fetchMgjServicesForAdmin(serviceUrl, sinceDate, store) {
   return fetch(serviceUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(response){
     if (response.ok) return response.json();
@@ -2608,6 +2625,8 @@ window.loadMgjReconciliation = function() {
       copy.reconcileStatus = match ? 'matched' : 'missing';
       return copy;
     });
+    fillAdminSelect('mgj-reconcile-store', _mgjReconciliationRows.map(function(row){ return row.shop_name || '未标记门店'; }), '全部门店');
+    fillAdminSelect('mgj-reconcile-barber', _mgjReconciliationRows.map(adminMgjBarber), '全部发型师');
     renderMgjReconciliation();
   }).catch(function(err){
     summary.textContent = err && err.message ? err.message : '对账加载失败';
@@ -2620,29 +2639,48 @@ window.renderMgjReconciliation = function() {
   var summary = document.getElementById('mgj-reconcile-summary');
   if (!tbody || !summary) return;
   var filter = (document.getElementById('mgj-reconcile-filter') || {}).value || 'missing';
+  var storeFilter = (document.getElementById('mgj-reconcile-store') || {}).value || '';
+  var barberFilter = (document.getElementById('mgj-reconcile-barber') || {}).value || '';
   var total = _mgjReconciliationRows.length;
   var matched = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus === 'matched'; }).length;
   var missing = total - matched;
   summary.innerHTML = '美管加烫染护 <b style="color:#fff;">' + total + '</b> 单　已匹配 <b style="color:#2ecc71;">' + matched + '</b> 单　漏开发质分析表 <b style="color:' + (missing ? '#e74c3c' : '#2ecc71') + ';">' + missing + '</b> 单';
-  var rows = _mgjReconciliationRows.filter(function(row){ return filter === 'all' || row.reconcileStatus === filter; });
+  var rows = _mgjReconciliationRows.filter(function(row){
+    if (filter !== 'all' && row.reconcileStatus !== filter) return false;
+    if (storeFilter && String(row.shop_name || '未标记门店') !== storeFilter) return false;
+    if (barberFilter && adminMgjBarber(row) !== barberFilter) return false;
+    return true;
+  });
+  rows.sort(function(a, b){
+    return String(a.shop_name || '未标记门店').localeCompare(String(b.shop_name || '未标记门店'), 'zh-CN') ||
+      adminMgjBarber(a).localeCompare(adminMgjBarber(b), 'zh-CN') ||
+      String(b.service_date || '').localeCompare(String(a.service_date || ''));
+  });
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">' + (filter === 'missing' ? '没有发现漏单' : '暂无记录') + '</td></tr>';
     return;
   }
+  var lastGroup = '';
   tbody.innerHTML = rows.map(function(row){
     var missingRow = row.reconcileStatus === 'missing';
     var itemNames = (Array.isArray(row.items) ? row.items : []).map(function(item){ return item && item.name ? item.name : ''; }).filter(Boolean).join('、');
     var serviceText = itemNames || adminMgjServiceLabels(row.service_types) || '烫染护';
-    var staffText = Array.isArray(row.staff) ? row.staff.join('、') : '';
+    var barberText = adminMgjBarber(row);
     var timeText = esc(String(row.service_date || '').slice(0,10)) + (row.service_time ? ' ' + esc(row.service_time) : '');
-    return '<tr' + (missingRow ? ' style="background:rgba(231,76,60,0.08);"' : '') + '>' +
-      '<td style="color:' + (missingRow ? '#e74c3c' : '#2ecc71') + ';font-weight:600;">' + (missingRow ? '漏开发质表' : '已匹配') + '</td>' +
+    var group = String(row.shop_name || '未标记门店') + '|' + barberText;
+    var groupHeader = '';
+    if (group !== lastGroup) {
+      lastGroup = group;
+      groupHeader = '<tr><td colspan="9" style="padding:9px 10px;background:rgba(255,255,255,0.07);font-weight:700;color:#fff;">' + esc(row.shop_name || '未标记门店') + '　›　' + esc(barberText) + '</td></tr>';
+    }
+    return groupHeader + '<tr' + (missingRow ? ' style="background:rgba(231,76,60,0.08);"' : '') + '>' +
+      '<td style="color:' + (missingRow ? '#e74c3c' : '#2ecc71') + ';font-weight:600;">' + (missingRow ? '未开单' : '已开单') + '</td>' +
       '<td>' + esc(row.customer_name || '—') + '</td>' +
       '<td style="font-family:monospace;font-size:11px;">' + esc(row.customer_phone || '—') + '</td>' +
       '<td>' + esc(serviceText) + '</td>' +
       '<td style="white-space:nowrap;">' + timeText + '</td>' +
       '<td>' + esc(row.shop_name || '—') + '</td>' +
-      '<td>' + esc(staffText || '—') + '</td>' +
+      '<td>' + esc(barberText) + '</td>' +
       '<td style="font-family:monospace;font-size:11px;">' + esc(row.bill_no || row.source_id || '—') + '</td>' +
       '<td>' + (Number(row.amount) > 0 ? '¥' + Number(row.amount).toFixed(0) : '—') + '</td></tr>';
   }).join('');
@@ -3555,13 +3593,15 @@ function viewCustAnalyses(phone, name) {
 // ===== 回访管理 =====
 function loadFollowups() {
   if (!requireSuperAdmin('回访任务')) return;
+  var store = (document.getElementById('fu-store-filter')||{}).value || '';
   var barber = (document.getElementById('fu-barber-filter')||{}).value || '';
   var filter = (document.getElementById('fu-status-filter')||{}).value || '';
   var tbody = document.getElementById('table-followups');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=id,phone,name,barber_name,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=1000';
+  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=1000';
+  if (store) url += '&shop_name=eq.' + encodeURIComponent(store);
   if (barber) url += '&barber_name=eq.' + encodeURIComponent(barber);
 
   fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
@@ -3575,12 +3615,16 @@ function loadFollowups() {
       });
 
       // 按筛选条件过滤
-      var filtered = enriched;
+      var filtered = enriched.filter(function(e){ return !e.meta.completedThisWeek; });
       if (filter === 'overdue') filtered = enriched.filter(function(e){ return e.meta.overdue; });
       else if (filter === 'today') filtered = enriched.filter(function(e){ return e.meta.today; });
       else if (filter === 'week') filtered = enriched.filter(function(e){ return e.meta.upcomingWeek; });
       else if (filter === 'completed') filtered = enriched.filter(function(e){ return e.meta.completedThisWeek; });
       filtered.sort(function(a, b) {
+        var storeOrder = String(a.row.shop_name || '未标记门店').localeCompare(String(b.row.shop_name || '未标记门店'), 'zh-CN');
+        if (storeOrder) return storeOrder;
+        var barberOrder = String(a.row.barber_name || '未标记发型师').localeCompare(String(b.row.barber_name || '未标记发型师'), 'zh-CN');
+        if (barberOrder) return barberOrder;
         var aPriority = a.meta.overdue ? 0 : a.meta.today ? 1 : a.meta.upcomingWeek ? 2 : 3;
         var bPriority = b.meta.overdue ? 0 : b.meta.today ? 1 : b.meta.upcomingWeek ? 2 : 3;
         if (aPriority !== bPriority) return aPriority - bPriority;
@@ -3598,12 +3642,18 @@ function loadFollowups() {
       document.getElementById('fu-this-week').textContent = weekCount;
 
       var html = '';
+      var lastGroup = '';
       filtered.forEach(function(e){
         var r = e.row;
         var meta = e.meta;
         var phone = r.phone || '';
         var name = r.name || '—';
         var barberName = r.barber_name || '—';
+        var group = String(r.shop_name || '未标记门店') + '|' + String(r.barber_name || '未标记发型师');
+        if (group !== lastGroup) {
+          lastGroup = group;
+          html += '<tr><td colspan="8" style="padding:9px 10px;background:rgba(255,255,255,0.07);font-weight:700;color:#fff;">' + esc(r.shop_name || '未标记门店') + '　›　' + esc(r.barber_name || '未标记发型师') + '</td></tr>';
+        }
         var lastVisit = r.last_visit_date ? r.last_visit_date.substring(0,10) : '—';
         var statusText = meta.overdue ? '已逾期' : meta.today ? '今日计划' : meta.upcomingWeek ? '即将回访' : meta.dueDate ? '待计划日' : '未排计划';
         var statusClass = meta.overdue ? 'status-danger' : (meta.today || meta.upcomingWeek) ? 'status-pending' : 'status-disabled-chip';

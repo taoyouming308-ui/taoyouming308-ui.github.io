@@ -53,6 +53,9 @@ assert(admin.includes("Number(id) < 0") && admin.includes('queueIds.map(encodeUR
 assert(admin.includes('执行器会先回查单据再决定是否创建'), 'backend retry warning does not require external reconciliation');
 assert(admin.includes('/rest/v1/mgj_service_records?') && admin.includes('loadMgjReconciliation'), 'Meiguanjia perm/dye/care reconciliation is missing');
 assert(admin.includes("copy.reconcileStatus = match ? 'matched' : 'missing'"), 'Meiguanjia records are not classified against hair forms');
+assert(admin.includes('未开单 · 美管加烫染护对账') && admin.includes('不包含回访任务'), 'missing-order queue is not separated from follow-up work');
+assert(admin.includes('mgj-reconcile-store') && admin.includes('mgj-reconcile-barber'), 'missing-order queue lacks store and stylist filters');
+assert(admin.includes("groupHeader = '<tr><td colspan=\"9\"") && admin.includes("adminMgjBarber(row)"), 'missing-order queue is not grouped by store and stylist');
 assert(admin.includes("if (store) serviceUrl += '&shop_name=eq.'"), 'store administrator reconciliation is not scoped to its store');
 assert(admin.includes("if (response.status !== 404)") && admin.includes('/rest/v1/customer_profiles?select=phone,name,shop_name,service_history'), 'reconciliation lacks a staged-schema fallback');
 
@@ -65,6 +68,8 @@ assert(assessment.includes('filterHairRowsForAdmin'), 'monthly report is not sco
 const followups = admin.slice(admin.indexOf('function loadFollowups'), admin.indexOf('// ===== 记录回访弹窗 ====='));
 assert(followups.includes('followupMetaFromProfile'), 'follow-up task list does not use planned dates');
 assert(followups.includes("filter === 'overdue'"), 'follow-up task list has no overdue filter');
+assert(followups.includes('shop_name') && followups.includes('lastGroup'), 'follow-up queue is not grouped by store and stylist');
+assert(admin.includes('只管理已经开单但尚未完成的回访') && admin.includes('fu-store-filter'), 'follow-up queue is not visibly separated from missing orders');
 
 const carousel = admin.slice(admin.indexOf('async function loadCarousel'), admin.indexOf('async function uploadCarousel'));
 assert(carousel.includes('is_carousel=eq.true'), 'homepage list is not limited to carousel images');
