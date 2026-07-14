@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 美管加库存连接器 MVP（2026-07-14，不发版）
+
+- 审计确认 Hermes 使用美管加网页内部 API；Cookie/Token 只从本机 `~/.hermes/meiguanjia-config.json` 读取，账号密码继续只存权限 600 的 `~/.hermes/meiguanjia-auth.json`。
+- 当前可靠能力为会话校验/刷新及护理出库的创建、审核、回查；商品、库存、入库和流水接口存在跨日期状态冲突，必须逐项只读复验，不能宣称全部可用。
+- 新增 `scripts/meiguanjia_inventory_connector.py` 服务端内核，提供门店白名单、商品 ID/正数量校验、角色与显式批准、幂等、SQLite 审计和异常清单；通用写能力默认关闭。
+- DeepSeek 输出固定标记为 `advisory_only`，只允许字段识别、结构归纳、异常解释和辅助映射，不进入库存执行函数。
+- 6 组连接器测试和 8 组现有护理出库测试通过；本次未调用美管加库存写接口、未修改库存、未部署运行任务。
+- App version: v386
+
 ## v386 (2026-07-14)
 
 - 新增 `mgj_service_records` 独立对账表，以美管加账单 ID 去重，保存顾客、门店、服务日期时间、员工、真实项目明细及烫/染/护分类。
