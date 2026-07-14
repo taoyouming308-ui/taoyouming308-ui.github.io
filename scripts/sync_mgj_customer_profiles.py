@@ -52,7 +52,7 @@ TABLE = "customer_profiles"
 SERVICE_TABLE = "mgj_service_records"
 SHOP_IDS = ["1009951", "1837032"]  # 自由手艺人, 向里造型
 PARENT_SHOP_ID = "1103470"
-EMP_ID = "543987"
+LEGACY_EMP_ID = "543987"
 API_TIMEOUT = 20
 HISTORY_START_DATE = "2018-01-01"
 HISTORY_DETAIL_CALLS = 2
@@ -89,6 +89,21 @@ def load_cookies():
     cfg = load_config()
     ck = cfg.get("cookies", "")
     return ck if isinstance(ck, str) else "".join(ck)
+
+
+def cookie_value(cookies, name):
+    for part in str(cookies or "").split(";"):
+        key, separator, value = part.strip().partition("=")
+        if separator and key == name:
+            return value.strip()
+    return ""
+
+
+def session_employee_id():
+    """Use the employee attached to the current authenticated Meiguanjia session."""
+    cfg = load_config()
+    configured = cfg.get("emp_id") or cfg.get("employee_id")
+    return str(configured or cookie_value(load_cookies(), "userId") or LEGACY_EMP_ID)
 
 
 def session_shop_id():
@@ -370,10 +385,10 @@ def fetch_customer_detail(cust_id, shop_id):
         result = multipart_post("memberDetail!detail.action", {
             "memberid": cust_id,
             "freezeType": 0,
-            "empId": EMP_ID,
+            "empId": int_number(session_employee_id()),
             "parentShopId": PARENT_SHOP_ID,
-            "shopId": shop_id
-        }, shop_id)
+            "shopId": PARENT_SHOP_ID
+        }, PARENT_SHOP_ID)
     except Exception as e:
         log(f"  ⚠️ memberDetail请求异常: {e}")
         return None

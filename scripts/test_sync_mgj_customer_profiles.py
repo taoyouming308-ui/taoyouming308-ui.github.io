@@ -1,6 +1,7 @@
 import importlib.util
 import pathlib
 import unittest
+from unittest import mock
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("sync_mgj_customer_profiles.py")
@@ -135,6 +136,18 @@ class MemberCardSelectionTests(unittest.TestCase):
 
     def test_uses_search_fallback_when_detail_has_no_cards(self):
         self.assertEqual(SYNC.choose_member_card([], 999), 999)
+
+
+class SessionIdentityTests(unittest.TestCase):
+    def test_reads_employee_id_from_current_session_cookie(self):
+        with mock.patch.object(SYNC, "load_config", return_value={}), \
+             mock.patch.object(SYNC, "load_cookies", return_value="JSESSIONID=x; userId=831819; shopId=1009951"):
+            self.assertEqual(SYNC.session_employee_id(), "831819")
+
+    def test_explicit_employee_id_overrides_cookie(self):
+        with mock.patch.object(SYNC, "load_config", return_value={"emp_id": "900001"}), \
+             mock.patch.object(SYNC, "load_cookies", return_value="userId=831819"):
+            self.assertEqual(SYNC.session_employee_id(), "900001")
 
 
 class SyncWindowTests(unittest.TestCase):
