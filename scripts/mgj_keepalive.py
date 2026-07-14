@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Keep the Meiguanjia session alive without racing customer sync jobs."""
+"""Keep a Meiguanjia session alive with configurable isolated state."""
 
+import argparse
 import fcntl
 import http.cookiejar
 import json
@@ -149,7 +150,22 @@ def save_session(config, cookie, source):
     atomic_write_json(CONFIG_PATH, updated)
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="美管加会话校验与按需续期")
+    parser.add_argument("--config", default=CONFIG_PATH)
+    parser.add_argument("--auth", default=AUTH_PATH)
+    parser.add_argument("--lock", default=LOCK_PATH)
+    parser.add_argument("--status", default=STATUS_PATH)
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    global CONFIG_PATH, AUTH_PATH, LOCK_PATH, STATUS_PATH
+    args = parse_args(argv)
+    CONFIG_PATH = os.path.expanduser(args.config)
+    AUTH_PATH = os.path.expanduser(args.auth)
+    LOCK_PATH = os.path.expanduser(args.lock)
+    STATUS_PATH = os.path.expanduser(args.status)
     lock_file = acquire_sync_lock()
     if lock_file is None:
         write_status("skipped_busy", reason="customer_sync_running")

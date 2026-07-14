@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.freecraftsman.care-outbound-keepalive</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3</string>
+    <string>/Users/a1/.hermes/scripts/mgj_keepalive.py</string>
+    <string>--config</string>
+    <string>/Users/a1/.hermes/meiguanjia-care-config.json</string>
+    <string>--auth</string>
+    <string>/Users/a1/.hermes/meiguanjia-care-auth.json</string>
+    <string>--lock</string>
+    <string>/tmp/mgj_care_keepalive.lock</string>
+    <string>--status</string>
+    <string>/Users/a1/.hermes/mgj_care_keepalive_status.json</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/a1/.hermes/scripts</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/a1/.hermes/logs/care_outbound_keepalive.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/a1/.hermes/logs/care_outbound_keepalive.log</string>
+</dict>
+</plist>

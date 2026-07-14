@@ -38,7 +38,7 @@ PROCESSING_STALE_SECONDS = 300
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_STORE_CONFIG = os.path.join(SCRIPT_DIR, "care_outbound_store_config.json")
 HERMES_HOME = os.path.expanduser("~/.hermes")
-DEFAULT_SESSION_CONFIG = os.path.join(HERMES_HOME, "meiguanjia-config.json")
+DEFAULT_SESSION_CONFIG = os.path.join(HERMES_HOME, "meiguanjia-care-config.json")
 DEFAULT_LOG = os.path.join(HERMES_HOME, "logs", "care_outbound_worker.log")
 DEFAULT_LOCK = os.path.join(HERMES_HOME, "logs", "care_outbound_worker.lock")
 

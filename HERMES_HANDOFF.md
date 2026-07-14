@@ -13,6 +13,8 @@
 - 只有美管加单据 `status=1` 且 employeeId、depotId、克数全部一致时，队列才能标记 `completed`。网络结果不明确一律进入 `needs_review`。
 - `scripts/care_outbound_store_config.json` 当前 `runtime_enabled=true`，但仅自由手艺人 `enabled=true`；向里造型仍保持关闭。
 - LaunchAgent 唯一源文件：`scripts/com.freecraftsman.care-outbound.plist`；使用 `scripts/install_care_outbound_launchd.sh` 安装，任务 `com.freecraftsman.care-outbound` 每60秒运行一次。
+- 护理出库使用独立分店会话 `~/.hermes/meiguanjia-care-config.json` 与权限 600 的 `~/.hermes/meiguanjia-care-auth.json`；不得复用总部客户同步会话。
+- 独立保活任务 `com.freecraftsman.care-outbound-keepalive` 每30分钟验证分店会话，仅失效时重登，不改写总部 `meiguanjia-config.json`。
 - 2026-07-01 受控真实测试：自由手艺人 `歌薇酸性护理6A` 出库1克，美管加单号 `CPKY20260701001`、状态已审核，库存由756克变为755克。
 - 美管加当前保存载荷使用顶层 `shopId` 和 `outdepot.details`；旧 `stockOutDepotDetailDtoList` 会生成无明细空壳单，禁止恢复。首次测试产生的未审核空壳单 `73539954` 已删除且未改变库存。
 - 2026-07-01 已将旧版正数 pending 行 `7-17` 条件更新为 `legacy_review`；这些记录可能已人工出库，只能核对，不能自动重试。

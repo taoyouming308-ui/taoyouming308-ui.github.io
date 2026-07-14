@@ -11,6 +11,18 @@ SPEC.loader.exec_module(KEEPALIVE)
 
 
 class KeepaliveTests(unittest.TestCase):
+    def test_isolated_paths_can_be_selected(self):
+        args = KEEPALIVE.parse_args([
+            "--config", "/tmp/care-config.json",
+            "--auth", "/tmp/care-auth.json",
+            "--lock", "/tmp/care.lock",
+            "--status", "/tmp/care-status.json",
+        ])
+        self.assertEqual(args.config, "/tmp/care-config.json")
+        self.assertEqual(args.auth, "/tmp/care-auth.json")
+        self.assertEqual(args.lock, "/tmp/care.lock")
+        self.assertEqual(args.status, "/tmp/care-status.json")
+
     def test_atomic_json_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:
             path = pathlib.Path(directory) / "status.json"

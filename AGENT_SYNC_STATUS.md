@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 护理出库双账号隔离（2026-07-14，不发版）
+
+- 客户/预约同步继续使用总部 `meiguanjia-config.json` 与 `meiguanjia-auth.json`；护理出库改用独立分店会话与凭据文件，避免任一侧续期覆盖另一侧账号。
+- `mgj_keepalive.py` 增加可配置的 session/auth/lock/status 路径，默认总部行为保持不变；护理保活使用独立 LaunchAgent 每30分钟按需续期。
+- 护理执行器默认只读取 `meiguanjia-care-config.json`，分店会话失效时不会再回退到总部账号。
+- 郑惠华 110g 护理批次已在分店会话下完成并审核，美管加单号 `CPKY20260714001`；幂等队列四项均为 `completed`。
+- App version: v386
+
 ## 美管加库存连接器 MVP（2026-07-14，不发版）
 
 - 审计确认 Hermes 使用美管加网页内部 API；Cookie/Token 只从本机 `~/.hermes/meiguanjia-config.json` 读取，账号密码继续只存权限 600 的 `~/.hermes/meiguanjia-auth.json`。
