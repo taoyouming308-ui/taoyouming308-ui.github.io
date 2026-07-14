@@ -363,7 +363,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div id="mgj-reconciliation" style="margin-bottom:16px;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <div><div style="font-size:13px;font-weight:600;color:#fff;">未开单 · 美管加烫染护对账</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">这里只核对有没有开具发质分析表，不包含回访任务；按门店、发型师分组。</div></div>
+        <div><div style="font-size:13px;font-weight:600;color:#fff;">未开单 · 本月美管加烫染护对账</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">只显示本月烫、染、护消费项目和金额，不包含回访任务；按门店、发型师分组。</div></div>
         <div style="display:flex;gap:6px;align-items:center;">
           <select id="mgj-reconcile-store" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;"><option value="">全部门店</option></select>
           <select id="mgj-reconcile-barber" onchange="renderMgjReconciliation()" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:#fff;font-size:12px;"><option value="">全部发型师</option></select>
@@ -573,7 +573,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <img id="img-modal-src">
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
-<script src="aesthetic-knowledge.v1.js?v=384"></script>
+<script src="aesthetic-knowledge.v1.js?v=385"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -2559,6 +2559,18 @@ function adminMgjTypesFromItems(items) {
   return types;
 }
 
+function adminMgjServiceTypes(row) {
+  var declared = Array.isArray(row && row.service_types) ? row.service_types : [];
+  return Array.from(new Set(declared.concat(adminMgjTypesFromItems(row && row.items)))).filter(function(type){
+    return type === 'perm' || type === 'dye' || type === 'care';
+  });
+}
+
+function adminCurrentMonthStart() {
+  var now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+}
+
 function adminMgjBarber(row) {
   var staff = Array.isArray(row && row.staff) ? row.staff.filter(Boolean) : [];
   return String(staff[0] || '未标记发型师');
@@ -2607,10 +2619,8 @@ window.loadMgjReconciliation = function() {
   var summary = document.getElementById('mgj-reconcile-summary');
   if (!tbody || !summary) return;
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:20px;">加载中...</td></tr>';
-  summary.textContent = '正在核对最近90天记录...';
-  var since = new Date();
-  since.setDate(since.getDate() - 90);
-  var sinceDate = since.toISOString().slice(0, 10);
+  summary.textContent = '正在核对本月烫染护记录...';
+  var sinceDate = adminCurrentMonthStart();
   var store = currentAdminStore();
   var serviceUrl = SUPABASE_URL + '/rest/v1/mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&service_date=gte.' + sinceDate + '&order=service_date.desc,service_time.desc&limit=1000';
   if (store) serviceUrl += '&shop_name=eq.' + encodeURIComponent(store);
@@ -2620,7 +2630,10 @@ window.loadMgjReconciliation = function() {
     fetch(hairUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(r){ return ensureOk(r, '加载发质分析表失败'); }).then(function(r){ return r.json(); }),
     fetchAdminStaffStoreMap()
   ]).then(function(results){
-    var serviceRows = results[0] || [];
+    var serviceRows = (results[0] || []).filter(function(row){
+      row.service_types = adminMgjServiceTypes(row);
+      return row.service_types.length > 0 && String(row.service_date || '').slice(0, 10) >= sinceDate;
+    });
     var hairRows = filterHairRowsForAdmin(results[1] || [], results[2]);
     var byPhone = {};
     var byName = {};
@@ -2662,7 +2675,13 @@ window.renderMgjReconciliation = function() {
   var total = _mgjReconciliationRows.length;
   var matched = _mgjReconciliationRows.filter(function(row){ return row.reconcileStatus === 'matched'; }).length;
   var missing = total - matched;
-  summary.innerHTML = '美管加烫染护 <b style="color:#fff;">' + total + '</b> 单　已匹配 <b style="color:#2ecc71;">' + matched + '</b> 单　漏开发质分析表 <b style="color:' + (missing ? '#e74c3c' : '#2ecc71') + ';">' + missing + '</b> 单';
+  var typeCounts = {perm:0, dye:0, care:0};
+  var totalAmount = 0;
+  _mgjReconciliationRows.forEach(function(row){
+    adminMgjServiceTypes(row).forEach(function(type){ typeCounts[type]++; });
+    totalAmount += Number(row.amount) || 0;
+  });
+  summary.innerHTML = '本月烫染护 <b style="color:#fff;">' + total + '</b> 单　烫 <b>' + typeCounts.perm + '</b>　染 <b>' + typeCounts.dye + '</b>　护 <b>' + typeCounts.care + '</b>　金额 <b style="color:#fff;">¥' + totalAmount.toFixed(0) + '</b>　已开单 <b style="color:#2ecc71;">' + matched + '</b>　未开单 <b style="color:' + (missing ? '#e74c3c' : '#2ecc71') + ';">' + missing + '</b>';
   var rows = _mgjReconciliationRows.filter(function(row){
     if (filter !== 'all' && row.reconcileStatus !== filter) return false;
     if (storeFilter && String(row.shop_name || '未标记门店') !== storeFilter) return false;
@@ -2682,7 +2701,8 @@ window.renderMgjReconciliation = function() {
   tbody.innerHTML = rows.map(function(row){
     var missingRow = row.reconcileStatus === 'missing';
     var itemNames = (Array.isArray(row.items) ? row.items : []).map(function(item){ return item && item.name ? item.name : ''; }).filter(Boolean).join('、');
-    var serviceText = itemNames || adminMgjServiceLabels(row.service_types) || '烫染护';
+    var typeText = adminMgjServiceLabels(adminMgjServiceTypes(row));
+    var serviceText = typeText + (itemNames ? ' · ' + itemNames : '');
     var barberText = adminMgjBarber(row);
     var timeText = esc(String(row.service_date || '').slice(0,10)) + (row.service_time ? ' ' + esc(row.service_time) : '');
     var group = String(row.shop_name || '未标记门店') + '|' + barberText;
