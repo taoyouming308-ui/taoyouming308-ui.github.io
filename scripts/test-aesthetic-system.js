@@ -7,6 +7,7 @@ const source = fs.readFileSync(path.join(root, 'aesthetic-knowledge.v1.js'), 'ut
 const hairVisionSource = fs.readFileSync(path.join(root, 'hair-vision-training.v1.js'), 'utf8');
 const growthSource = fs.readFileSync(path.join(root, 'aesthetic-growth.v2.js'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'perm-app.html'), 'utf8');
+const appVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
 const learningEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-learning/index.ts'), 'utf8');
@@ -212,8 +213,8 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=387',
-  'aesthetic-growth.v2.js?v=387',
+  'hair-vision-training.v1.js?v=' + appVersion,
+  'aesthetic-growth.v2.js?v=' + appVersion,
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'knowledgeFoundation: knowledge && knowledge.knowledgeFoundation || {}',
