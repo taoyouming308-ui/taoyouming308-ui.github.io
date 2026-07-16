@@ -37,6 +37,13 @@ export function validateAestheticOutput(kind: AestheticOutputKind, value: unknow
     if (!object(value.goal_states)) errors.push("goal_states must be an object");
     if (!object(value.checkpoint_states)) errors.push("checkpoint_states must be an object");
     if (!object(value.classification)) errors.push("classification must be an object");
+    if (!object(value.checkpoint_evaluation)) errors.push("checkpoint_evaluation must be an object");
+    else {
+      if (!["mastered", "needs_evidence"].includes(String(value.checkpoint_evaluation.status || ""))) errors.push("checkpoint_evaluation.status is invalid");
+      const evidenceCount = Number(value.checkpoint_evaluation.evidence_count);
+      if (!Number.isFinite(evidenceCount) || evidenceCount < 0 || evidenceCount > 8) errors.push("checkpoint_evaluation.evidence_count must be 0-8");
+    }
+    if (!object(value.knowledge_seed)) errors.push("knowledge_seed must be an object");
   }
 
   if (kind === "session_summary") {
@@ -45,6 +52,9 @@ export function validateAestheticOutput(kind: AestheticOutputKind, value: unknow
     }
     if (!text(value.transferable_method, 1200)) errors.push("transferable_method must be non-empty text");
     if (!text(value.next_focus, 800)) errors.push("next_focus must be non-empty text");
+    for (const key of ["new_knowledge", "observation_method", "communication_tip", "golden_insight", "today_breakthrough", "yesterday_comparison", "today_tag"]) {
+      if (!text(value[key], 1200)) errors.push(`${key} must be non-empty text`);
+    }
   }
 
   if (kind === "stage_feedback") {

@@ -155,22 +155,37 @@ Deno.serve(async (req: Request) => {
         const incoming = typeof checkpointSource[checkpoint] === "string"
           ? String(checkpointSource[checkpoint])
           : String((checkpointSource[checkpoint] as Record<string, unknown>)?.status || "unseen");
-        checkpointStates[checkpoint] = ["unseen", "asked", "answered", "demonstrated", "incomplete"].includes(incoming) ? incoming : "unseen";
+        checkpointStates[checkpoint] = ["unseen", "asked", "answered", "demonstrated", "mastered", "incomplete"].includes(incoming) ? incoming : "unseen";
       }
-      checkpointStates[currentCheckpoint] = "answered";
-      const nextCheckpoint = HAIR_VISION_CHECKPOINTS.find((checkpoint) => !["answered", "demonstrated"].includes(checkpointStates[checkpoint])) || "client_communication";
+      const rawEvaluation = (typeof turn.checkpoint_evaluation === "object" && turn.checkpoint_evaluation) ? turn.checkpoint_evaluation as Record<string, unknown> : {};
+      const evidenceCount = Math.max(0, Math.min(8, Number(rawEvaluation.evidence_count) || 0));
+      const classification = (typeof turn.classification === "object" && turn.classification) ? turn.classification as Record<string, unknown> : {};
+      const supportedCount = (Array.isArray(classification.observed_facts) ? classification.observed_facts.length : 0) +
+        (Array.isArray(classification.reasonable_inferences) ? classification.reasonable_inferences.length : 0);
+      const unsupportedCount = Array.isArray(classification.unsupported_claims) ? classification.unsupported_claims.length : 0;
+      const masteryPassed = String(rawEvaluation.status || "") === "mastered" && evidenceCount >= 2 && answer.length >= 28 && supportedCount >= 2 && unsupportedCount <= supportedCount;
+      checkpointStates[currentCheckpoint] = masteryPassed ? "mastered" : "incomplete";
+      const nextCheckpoint = HAIR_VISION_CHECKPOINTS.find((checkpoint) => !["answered", "demonstrated", "mastered"].includes(checkpointStates[checkpoint])) || "client_communication";
       if (nextCheckpoint !== currentCheckpoint && checkpointStates[nextCheckpoint] === "unseen") checkpointStates[nextCheckpoint] = "asked";
       const timePhase = String(payload.time_phase || "active");
-      const allCovered = HAIR_VISION_CHECKPOINTS.every((checkpoint) => ["answered", "demonstrated"].includes(checkpointStates[checkpoint]));
+      const allCovered = HAIR_VISION_CHECKPOINTS.every((checkpoint) => ["answered", "demonstrated", "mastered"].includes(checkpointStates[checkpoint]));
       const shouldAutoFinish = allCovered || timePhase === "overtime";
+      const checkpointEvaluation = {
+        status: masteryPassed ? "mastered" : "needs_evidence",
+        evidence_count: evidenceCount,
+        reason: String(rawEvaluation.reason || "").slice(0, 240),
+        missing_evidence: masteryPassed ? "" : String(rawEvaluation.missing_evidence || "需要至少两个位置明确的证据，并说明它们如何支持判断。 ").slice(0, 240),
+      };
       const result = {
         message: String(turn.message || "我们先缩小范围，只说一个你能确认的画面事实。你最先看到哪里？").slice(0, 600),
         response_type: String(turn.response_type || "probe").slice(0, 30),
         active_goal: goal,
-        active_checkpoint: shouldAutoFinish ? currentCheckpoint : nextCheckpoint,
+        active_checkpoint: shouldAutoFinish ? currentCheckpoint : (masteryPassed ? nextCheckpoint : currentCheckpoint),
         checkpoint_states: checkpointStates,
         goal_states: typeof turn.goal_states === "object" && turn.goal_states ? turn.goal_states : payload.goal_states || {},
-        classification: typeof turn.classification === "object" && turn.classification ? turn.classification : {},
+        classification,
+        checkpoint_evaluation: checkpointEvaluation,
+        knowledge_seed: typeof turn.knowledge_seed === "object" && turn.knowledge_seed ? turn.knowledge_seed : { type: "none", content: "" },
         repeated_pattern: String(turn.repeated_pattern || "").slice(0, 180),
         difficulty: Math.max(1, Math.min(3, Number(turn.difficulty) || 1)),
         ability_updates: typeof turn.ability_updates === "object" && turn.ability_updates ? turn.ability_updates : {},

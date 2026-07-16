@@ -5,6 +5,7 @@ const vm = require('vm');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'aesthetic-knowledge.v1.js'), 'utf8');
 const hairVisionSource = fs.readFileSync(path.join(root, 'hair-vision-training.v1.js'), 'utf8');
+const growthSource = fs.readFileSync(path.join(root, 'aesthetic-growth.v2.js'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'perm-app.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const coachEdge = fs.readFileSync(path.join(root, 'supabase/functions/aesthetic-coach/index.ts'), 'utf8');
@@ -35,11 +36,22 @@ function assert(condition, message) {
 vm.createContext(context);
 vm.runInContext(source, context);
 vm.runInContext(hairVisionSource, context);
+vm.runInContext(growthSource, context);
 
 const data = context.window.AESTHETIC_KNOWLEDGE_V1;
 const hairVision = context.window.HAIR_VISION_TRAINING_V1;
+const growth = context.window.AESTHETIC_GROWTH_V2;
 assert(data, 'knowledge catalog did not initialize');
 assert(hairVision, 'Hair Vision runtime did not initialize');
+assert(growth && growth.version === '2.0.0', 'Aesthetic Growth V2 runtime did not initialize');
+assert(growth.mentors.length === 5 && growth.challenges.length === 8, 'Growth V2 daily variety is incomplete');
+const growthProfile = growth.normalizeProfile({ mistakes: [{ text: '忽略肩颈', count: 3 }] });
+const normalGrowthPlan = growth.buildDailyPlan({ identity: '测试员工', date: '2026-07-16', caseKey: 'case-1', profile: growthProfile, streak: 3 });
+const bossGrowthPlan = growth.buildDailyPlan({ identity: '测试员工', date: '2026-07-16', caseKey: 'case-1', profile: growthProfile, streak: 7 });
+assert(normalGrowthPlan.challenge && normalGrowthPlan.mentor && normalGrowthPlan.targetDimension, 'Growth V2 plan is incomplete');
+assert(bossGrowthPlan.boss === true && bossGrowthPlan.challenge.id === 'hidden_boss', 'seven-day hidden boss is missing');
+const updatedGrowth = growth.applySession(growthProfile, { misconception_patterns: ['只说风格名'], golden_insight: '比例先于标签', today_tag: '比例观察者', today_breakthrough: '开始观察肩颈', strongest_dimension: 'human_analysis' }, { human_analysis: 'mastered' }, '2026-07-16');
+assert(updatedGrowth.insightHistory.includes('比例先于标签') && updatedGrowth.tags.length === 1 && updatedGrowth.mistakes.some(row => row.text === '只说风格名'), 'Growth V2 memory update is incomplete');
 assert(hairVision.targetMs === 300000, 'Hair Vision training target must be 5 minutes');
 assert(hairVision.closingMs === 270000, 'Hair Vision must start closing at 4:30');
 assert(hairVision.hardStopMs === 900000, 'Hair Vision hard stop must be 15 minutes');
@@ -200,7 +212,8 @@ data.trainingCases.forEach(row => {
   "postAestheticLearning('sync_session')",
   "postAestheticLearning('complete_session')",
   'strategy_instructions: aestheticTrainingState.strategyInstructions',
-  'hair-vision-training.v1.js?v=386',
+  'hair-vision-training.v1.js?v=387',
+  'aesthetic-growth.v2.js?v=387',
   'runtime.openingQuestion(aestheticTrainingState.trainingPlan',
   'hair_vision: aestheticHairVisionContext()',
   'knowledgeFoundation: knowledge && knowledge.knowledgeFoundation || {}',
@@ -233,6 +246,9 @@ data.trainingCases.forEach(row => {
 ['DEFAULT_DAILY_LIMIT = 1', 'training_entitlement', 'admin_overview', 'admin_update_policy', 'admin_login'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing training management marker: ${marker}`));
 ['admin_knowledge_overview', 'admin_create_knowledge_candidate', 'admin_assess_knowledge_candidate', 'admin_add_case_evidence', 'admin_review_knowledge_candidate', 'knowledgeAssessmentPrompt', 'AI assessment must be completed before trial approval', 'case validation evidence is required before trial approval', 'image-design applicability'].forEach(marker => assert(learningEdge.includes(marker), `Learning edge is missing research institute marker: ${marker}`));
 ['DEEPSEEK_API_KEY', 'deepseek-v4-flash', 'deepseek-v4-pro', 'callDeepSeek', 'api.deepseek.com'].forEach(marker => assert(learningEdge.includes(marker), `DeepSeek knowledge pipeline is missing ${marker}`));
+['growth_profile', '_growthV2', 'growth_plan', 'growth_profile'].forEach(marker => assert(learningEdge.includes(marker), `Growth V2 cloud memory is missing ${marker}`));
+['checkpoint_evaluation', 'masteryPassed', 'evidenceCount >= 2', 'answer.length >= 28', 'knowledge_seed'].forEach(marker => assert(coachEdge.includes(marker), `Growth V2 mastery guard is missing ${marker}`));
+['今日成长计划', '长期成长档案', 'golden_insight', 'new_knowledge', 'observation_method', 'communication_tip'].forEach(marker => assert(coachPrompt.includes(marker), `Growth V2 coach prompt is missing ${marker}`));
 assert(!learningEdge.includes('OPENAI_API_KEY'), 'knowledge pipeline must not depend on OpenAI');
 ['session_state', 'resume_payload', 'aesthetic_model_outputs', 'aesthetic_ability_history'].forEach(marker => assert(schemaMigration.includes(marker), `Schema/state migration is missing marker: ${marker}`));
 ['aesthetic_knowledge_sources', 'aesthetic_knowledge_candidates', 'aesthetic_knowledge_reviews', 'aesthetic_case_evidence', 'enable row level security', 'revoke all'].forEach(marker => assert(knowledgeMigration.includes(marker), `Knowledge migration is missing marker: ${marker}`));
@@ -248,6 +264,7 @@ assert(coachEdge.includes('repaired: true'), 'coach must annotate automatically 
 assert(!app.includes('id="ae-review-photo"'), 'guided daily training must not upload customer photos');
 assert(!app.includes('id="ae-upload-category"'), 'personal training uploads must not show a manual category selector');
 assert(app.includes("var category = '发型作品';"), 'personal training uploads must keep a neutral compatibility category');
+['aesthetic-growth.v2.js', '美感成长', 'ae-daily-challenge', 'buildAestheticGrowthPlan', 'loadAestheticGrowthProfile', 'guided-chat-v2', '今天最大的顿悟', '新观察方法', '今天击败昨天'].forEach(marker => assert(app.includes(marker), `Growth V2 employee UI is missing ${marker}`));
 assert(data.governance.aiRule.includes('不得'), 'AI publishing boundary must be explicit');
 assert(data.governance.privacyRule.includes('不进入公共知识库'), 'customer photo privacy rule must be explicit');
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="386">
+<html lang="zh-CN" data-version="387">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2877,6 +2877,19 @@ body {
       .ae-chat-tools button { border:0; background:transparent; color:#777; font-size:9px; padding:5px 2px; }
       .ae-chat-status { display:none; padding:5px 0; color:#888; font-size:9px; }
       .ae-chat-status.on { display:block; }
+      .ae-daily-challenge { margin:0 0 12px; padding:14px; border:1px solid #111; border-radius:13px; background:#111; color:#fff; }
+      .ae-daily-challenge .ae-section-label { color:#aaa; }
+      .ae-daily-challenge h3 { margin:4px 0 6px; color:#fff; font-size:15px; }
+      .ae-daily-challenge p { margin:0; color:#d5d5cf; font-size:10px; line-height:1.65; }
+      .ae-daily-challenge-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+      .ae-daily-challenge-meta span { padding:5px 8px; border:1px solid #444; border-radius:999px; color:#ddd; font-size:8px; }
+      .ae-takeaway-grid { display:grid; grid-template-columns:1fr; gap:8px; margin:12px 0; }
+      .ae-takeaway { padding:12px; border-radius:11px; background:var(--ae-soft); }
+      .ae-takeaway strong { display:block; margin-bottom:5px; font-size:10px; }
+      .ae-takeaway p { margin:0; color:#555; font-size:10px; line-height:1.65; }
+      .ae-golden-insight { margin:14px 0; padding:16px; border-left:3px solid #111; background:#f0f0ec; font-size:14px; font-weight:650; line-height:1.7; }
+      .ae-growth-bar { height:6px; margin-top:7px; overflow:hidden; border-radius:99px; background:#e7e7e1; }
+      .ae-growth-bar i { display:block; height:100%; border-radius:inherit; background:#111; }
       @media (max-width:360px) {
         .ae-title { font-size:27px; }
         .ae-card { padding:15px; }
@@ -2885,8 +2898,8 @@ body {
     </style>
     <header class="ae-head">
       <div class="ae-kicker">Hair / Aesthetic Lab</div>
-      <h1 class="ae-title">美感训练</h1>
-      <p class="ae-desc">先看人，再懂风格；五分钟完成一次可以迁移的设计训练。</p>
+      <h1 class="ae-title">美感成长</h1>
+      <p class="ae-desc">每天打破一个盲点，建立属于自己的观察体系。</p>
       <span class="ae-version" id="ae-version">知识版本加载中</span>
     </header>
     <nav class="ae-nav" aria-label="美感训练页面">
@@ -2901,7 +2914,13 @@ body {
         <p>每次自然聊完人物、风格、解剖、适配与沟通五件事；同一款发型再次训练，也会换一个观察入口。</p>
         <div class="ae-ability-strip"><span>人物<br>先看人</span><span>风格<br>拆 DNA</span><span>解剖<br>懂结构</span><span>适配<br>会调整</span><span>沟通<br>能成交</span></div>
       </div>
-      <div class="ae-section-label">Today / One case</div>
+      <div class="ae-section-label">Today / One breakthrough</div>
+      <article class="ae-daily-challenge" id="ae-daily-challenge">
+        <div class="ae-section-label">Today's challenge</div>
+        <h3 id="ae-challenge-title">正在生成今天的挑战</h3>
+        <p id="ae-challenge-instruction">根据你的长期弱点，选择今天最值得突破的一件事。</p>
+        <div class="ae-daily-challenge-meta"><span id="ae-mentor-name">今日导师</span><span id="ae-target-dimension">成长目标</span><span>带走三个新认知</span></div>
+      </article>
       <article class="ae-card" id="ae-session-banner" style="display:none;margin-bottom:12px;">
         <div class="ae-section-label">Auto save / Resume</div>
         <h3 id="ae-session-title">今日训练已自动保存</h3>
@@ -2938,7 +2957,7 @@ body {
       </article>
       <div class="ae-card ae-trainer" id="ae-trainer">
         <div class="ae-chat-head">
-          <div><strong>AI 设计陪练</strong><span id="ae-chat-focus">正在建立图片知识卡</span></div>
+          <div><strong id="ae-mentor-title">AI 美学导师</strong><span id="ae-chat-focus">正在建立图片知识卡</span></div>
           <div class="ae-chat-actions"><span id="ae-training-clock" style="font-variant-numeric:tabular-nums;font-weight:700;color:#111;">05:00</span><button type="button" onclick="updateAestheticAnalysisWithFacts()">补充信息</button><button type="button" onclick="finishAestheticConversation()">结束训练</button></div>
         </div>
         <div class="ae-chat-method" id="ae-chat-method">先描述你看见的事实，不急着给风格下结论。</div>
@@ -2989,7 +3008,7 @@ body {
       <article class="ae-card">
         <h3>本月训练 KPI</h3>
         <div class="ae-stats">
-          <div class="ae-stat"><strong id="ae-kpi-points">0</strong><span>本月积分</span></div>
+          <div class="ae-stat"><strong id="ae-kpi-points">0</strong><span>大师值</span></div>
           <div class="ae-stat"><strong id="ae-kpi-rate">0%</strong><span>完成率</span></div>
           <div class="ae-stat"><strong id="ae-kpi-streak">0</strong><span>连续天数</span></div>
         </div>
@@ -3017,8 +3036,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=386"></script>
-<script src="hair-vision-training.v1.js?v=386"></script>
+<script src="aesthetic-knowledge.v1.js?v=387"></script>
+<script src="hair-vision-training.v1.js?v=387"></script>
+<script src="aesthetic-growth.v2.js?v=387"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3319,6 +3339,7 @@ var aestheticTrainingState = {
   abilitySnapshot: {},
   conversationSummary: null,
   trainingPlan: null,
+  growthPlan: null,
   cloudCaseHistory: [],
   trainingStartedAt: '',
   activeElapsedMs: 0,
@@ -3357,6 +3378,8 @@ function aestheticLearningPayload(operation) {
     active_checkpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis',
     checkpoint_states: aestheticTrainingState.checkpointStates || {},
     training_plan: aestheticTrainingState.trainingPlan || {},
+    growth_plan: aestheticTrainingState.growthPlan || {},
+    growth_profile: loadAestheticGrowthProfile(),
     elapsed_seconds: currentAestheticTimeState().elapsedSeconds,
     time_phase: currentAestheticTimeState().phase,
     messages: aestheticTrainingState.messages || [],
@@ -3369,7 +3392,7 @@ function aestheticLearningPayload(operation) {
       active_elapsed_ms: Number(aestheticTrainingState.activeElapsedMs || 0),
       draft: String((document.getElementById('ae-chat-input') || {}).value || '').slice(0, 600)
     },
-    prompt_version: 'coach-chat-v2',
+    prompt_version: 'coach-growth-v3',
     strategy_version: aestheticTrainingState.strategyVersion || 'control-v1',
     model_version: 'gpt-5.5'
   };
@@ -3420,6 +3443,28 @@ function initializeAestheticLearning() {
     saveAestheticSession();
   }).catch(function(error) {
     console.warn('aesthetic strategy uses control:', error && error.message);
+  });
+}
+
+function hydrateAestheticGrowthProfile() {
+  if (aestheticIdentity() === '未登录员工') return Promise.resolve(null);
+  return fetch(AESTHETIC_LEARNING_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+    body: JSON.stringify({ operation: 'growth_profile', username: aestheticIdentity(), store: aestheticStore() })
+  }).then(function(response) {
+    if (!response.ok) throw new Error('growth profile ' + response.status);
+    return response.json();
+  }).then(function(result) {
+    var cloud = result && result.profile && typeof result.profile === 'object' ? result.profile : null;
+    var local = loadAestheticGrowthProfile();
+    if (cloud && (!local.updatedAt || String(cloud.updatedAt || '') > String(local.updatedAt || ''))) saveAestheticGrowthProfile(cloud);
+    renderAestheticCaseCard();
+    renderAestheticGrowth();
+    return cloud;
+  }).catch(function(error) {
+    console.warn('growth profile uses local copy:', error && error.message);
+    return null;
   });
 }
 
@@ -3613,6 +3658,63 @@ function aestheticAbilityKey() {
   return 'hair_aesthetic_ability_v1:' + aestheticIdentity();
 }
 
+function aestheticGrowthKey() {
+  return 'hair_aesthetic_growth_v2:' + aestheticIdentity();
+}
+
+function loadAestheticGrowthProfile() {
+  var runtime = window.AESTHETIC_GROWTH_V2;
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem(aestheticGrowthKey()) || '{}'); } catch (e) {}
+  return runtime ? runtime.normalizeProfile(profile) : profile;
+}
+
+function saveAestheticGrowthProfile(profile) {
+  localStorage.setItem(aestheticGrowthKey(), JSON.stringify(profile || {}));
+  return profile;
+}
+
+function aestheticCompletedStreak() {
+  var dates = {};
+  guidedAestheticAttempts(loadAestheticProgress()).filter(function(row) { return row.qualified !== false; }).forEach(function(row) { dates[row.date] = true; });
+  var cursor = new Date();
+  var streak = 0;
+  while (true) {
+    var key = getLocalDate(cursor);
+    if (!dates[key]) {
+      if (key === aestheticToday()) { cursor.setDate(cursor.getDate() - 1); continue; }
+      break;
+    }
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function buildAestheticGrowthPlan(item) {
+  var runtime = window.AESTHETIC_GROWTH_V2;
+  if (!runtime) return null;
+  var attempts = guidedAestheticAttempts(loadAestheticProgress()).filter(function(row) { return row.qualified !== false; });
+  return runtime.buildDailyPlan({
+    identity: aestheticIdentity(), date: aestheticToday(), caseKey: aestheticTrainingCaseKey(item),
+    profile: loadAestheticGrowthProfile(), completedCount: attempts.length, streak: aestheticCompletedStreak()
+  });
+}
+
+function renderAestheticGrowthPlan(plan) {
+  if (!plan) return;
+  var title = document.getElementById('ae-challenge-title');
+  var instruction = document.getElementById('ae-challenge-instruction');
+  var mentor = document.getElementById('ae-mentor-name');
+  var target = document.getElementById('ae-target-dimension');
+  var mentorTitle = document.getElementById('ae-mentor-title');
+  if (title) title.textContent = (plan.boss ? '隐藏 Boss · ' : '') + plan.challenge.name;
+  if (instruction) instruction.textContent = plan.challenge.instruction;
+  if (mentor) mentor.textContent = plan.mentor.name;
+  if (target) target.textContent = '突破：' + plan.targetLabel;
+  if (mentorTitle) mentorTitle.textContent = plan.mentor.name;
+}
+
 function aestheticSessionKey() {
   return 'hair_aesthetic_session_v1:' + aestheticIdentity();
 }
@@ -3651,6 +3753,7 @@ function saveAestheticSession() {
     strategyInstructions: aestheticTrainingState.strategyInstructions || '',
     strategyCohort: aestheticTrainingState.strategyCohort || 'control',
     trainingPlan: aestheticTrainingState.trainingPlan || null,
+    growthPlan: aestheticTrainingState.growthPlan || null,
     cloudCaseHistory: aestheticTrainingState.cloudCaseHistory || [],
     trainingStartedAt: aestheticTrainingState.trainingStartedAt || new Date().toISOString(),
     activeElapsedMs: Number(aestheticTrainingState.activeElapsedMs || 0),
@@ -4167,6 +4270,7 @@ window.initAestheticTraining = function() {
   renderAestheticCaseCard();
   renderAestheticSummary();
   renderAestheticGrowth();
+  hydrateAestheticGrowthProfile();
 };
 
 function renderAestheticCaseCard() {
@@ -4189,11 +4293,12 @@ function renderAestheticCaseCard() {
   if (title) title.textContent = item.title;
   if (meta) meta.textContent = item.category + ' · 今日重点：' + item.focus + ' · 约 ' + item.estimatedMinutes + ' 分钟';
   if (limit) limit.textContent = '观察边界：' + item.limitations;
+  renderAestheticGrowthPlan((loadAestheticSession() || {}).growthPlan || buildAestheticGrowthPlan(item));
 }
 
 function guidedAestheticAttempts(progress) {
   return (progress.attempts || []).filter(function(attempt) {
-    return attempt.type === 'guided-v2' || attempt.type === 'guided-chat-v1';
+    return attempt.type === 'guided-v2' || attempt.type === 'guided-chat-v1' || attempt.type === 'guided-chat-v2';
   });
 }
 
@@ -4253,6 +4358,7 @@ window.startAestheticTraining = async function() {
       strategyInstructions: savedSession.strategyInstructions || '',
       strategyCohort: savedSession.strategyCohort || 'control',
       trainingPlan: savedSession.trainingPlan || buildAestheticTrainingPlan(savedSession.caseItem || item),
+      growthPlan: savedSession.growthPlan || buildAestheticGrowthPlan(savedSession.caseItem || item),
       cloudCaseHistory: savedSession.cloudCaseHistory || [],
       trainingStartedAt: savedSession.trainingStartedAt || new Date().toISOString(),
       activeElapsedMs: Number(savedSession.activeElapsedMs || 0),
@@ -4270,6 +4376,7 @@ window.startAestheticTraining = async function() {
     };
     var savedTrainer = document.getElementById('ae-trainer');
     if (savedTrainer) savedTrainer.classList.add('on');
+    renderAestheticGrowthPlan(aestheticTrainingState.growthPlan);
     updateAestheticConversationChrome(aestheticTrainingState.activeGoal);
     renderAestheticChatMessages();
     var draftInput = document.getElementById('ae-chat-input');
@@ -4327,6 +4434,7 @@ window.startAestheticTraining = async function() {
     strategyInstructions: '',
     strategyCohort: 'control',
     trainingPlan: buildAestheticTrainingPlan(item),
+    growthPlan: buildAestheticGrowthPlan(item),
     cloudCaseHistory: [],
     trainingStartedAt: new Date().toISOString(),
     activeElapsedMs: 0,
@@ -4346,6 +4454,7 @@ window.startAestheticTraining = async function() {
   if (master) master.classList.remove('on');
   var trainer = document.getElementById('ae-trainer');
   if (trainer) trainer.classList.add('on');
+  renderAestheticGrowthPlan(aestheticTrainingState.growthPlan);
   startAestheticConversation();
   startAestheticTrainingTimer();
   refreshAestheticCloudRotation(item);
@@ -4385,12 +4494,14 @@ function addAestheticChatMessage(role, content, meta) {
 function renderAestheticChatMessages() {
   var box = document.getElementById('ae-chat-messages');
   if (!box) return;
+  var mentor = aestheticTrainingState.growthPlan && aestheticTrainingState.growthPlan.mentor || { avatar: '师', name: '美学导师' };
   box.innerHTML = aestheticTrainingState.messages.map(function(message) {
     var user = message.role === 'user';
     return '<div class="ae-chat-row ' + (user ? 'user' : 'coach') + '">' +
-      (user ? '' : '<div class="ae-chat-avatar">总监</div>') +
+      (user ? '' : '<div class="ae-chat-avatar" title="' + aestheticEscape(mentor.name) + '">' + aestheticEscape(mentor.avatar || '师') + '</div>') +
       '<div><div class="ae-chat-bubble">' + aestheticEscape(message.content) + '</div>' +
       (message.meta && message.meta.transition ? '<div class="ae-chat-meta">训练重点已自然转向：' + aestheticEscape(AESTHETIC_GOAL_LABELS[message.meta.goal] || message.meta.goal) + '</div>' : '') +
+      (message.meta && message.meta.mastery && message.meta.mastery.status === 'needs_evidence' ? '<div class="ae-chat-meta">还不能算掌握：需要更具体的画面证据</div>' : '') +
       '</div></div>';
   }).join('');
   box.scrollTop = box.scrollHeight;
@@ -4406,11 +4517,14 @@ function updateAestheticConversationChrome(goal) {
 
 function startAestheticConversation() {
   var runtime = hairVisionRuntime();
+  var growth = aestheticTrainingState.growthPlan || {};
   aestheticTrainingState.activeCheckpoint = 'human_analysis';
   updateAestheticConversationChrome('human_analysis');
-  addAestheticChatMessage('assistant', runtime
+  var opening = runtime
     ? runtime.openingQuestion(aestheticTrainingState.trainingPlan || {})
-    : '今天先从人物开始，不急着给发型命名。说一个人物与发型关系的判断，并指出画面依据。');
+    : '今天先从人物开始，不急着给发型命名。说一个人物与发型关系的判断，并指出画面依据。';
+  if (growth.challenge) opening = '今日挑战：' + growth.challenge.name + '。' + growth.challenge.instruction + '\n\n' + opening;
+  addAestheticChatMessage('assistant', opening, { mentor: growth.mentor && growth.mentor.name, challenge: growth.challenge && growth.challenge.id });
   ensureAestheticAnalysis().then(function() {
     var focus = document.getElementById('ae-chat-focus');
     if (focus) focus.textContent = '当前陪练重点 · 人物分析';
@@ -4451,6 +4565,8 @@ function requestAestheticConversationTurn(answer) {
       active_checkpoint: aestheticTrainingState.activeCheckpoint || 'human_analysis', checkpoint_states: aestheticTrainingState.checkpointStates || {},
       hint_level: aestheticTrainingState.hintLevel, turn_count: aestheticTrainingState.turnCount,
       ability_profile: aestheticTrainingState.abilitySnapshot,
+      growth_plan: aestheticTrainingState.growthPlan || {},
+      growth_profile: loadAestheticGrowthProfile(),
       messages: aestheticTrainingState.messages.slice(-8), analysis_modules: relevantAestheticModules(record, aestheticTrainingState.activeGoal, aestheticTrainingState.activeCheckpoint),
       training_plan: aestheticTrainingState.trainingPlan || {},
       hair_vision: aestheticHairVisionContext(),
@@ -4496,7 +4612,9 @@ window.sendAestheticChatMessage = function() {
       goal: result.active_checkpoint || result.active_goal,
       response_type: result.response_type || '',
       classification: result.classification || {},
-      repeated_pattern: result.repeated_pattern || ''
+      repeated_pattern: result.repeated_pattern || '',
+      mastery: result.checkpoint_evaluation || {},
+      knowledge_seed: result.knowledge_seed || {}
     });
     if (result.should_offer_summary || result.should_auto_finish) aestheticTrainingState.finishAfterTurn = true;
     saveAestheticSession();
@@ -4591,6 +4709,8 @@ window.finishAestheticConversation = function(reason) {
     elapsed_seconds: currentAestheticTimeState().elapsedSeconds,
     finish_reason: reason,
     ability_profile: aestheticTrainingState.abilitySnapshot,
+    growth_plan: aestheticTrainingState.growthPlan || {},
+    growth_profile: loadAestheticGrowthProfile(),
     case: { id: aestheticTrainingState.caseItem.id, title: aestheticTrainingState.caseItem.title }
   }).then(function(result) {
     aestheticTrainingState.conversationSummary = result.summary || result;
@@ -4615,7 +4735,10 @@ function completeAestheticConversation() {
   var qualified = completedCheckpoints.length === 5;
   var points = qualified ? 30 : 5;
   var sessionId = aestheticTrainingState.sessionId;
-  var attempt = { type: 'guided-chat-v1', sessionId: sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseKey: aestheticTrainingCaseKey(aestheticTrainingState.caseItem), caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, checkpointStates: aestheticTrainingState.checkpointStates, completedCheckpoints: completedCheckpoints, qualified: qualified, trainingPlan: aestheticTrainingState.trainingPlan, elapsedSeconds: currentAestheticTimeState().elapsedSeconds, finishReason: aestheticTrainingState.finishReason || 'manual', summary: summary, points: points };
+  var growthRuntime = window.AESTHETIC_GROWTH_V2;
+  var growthProfile = growthRuntime ? growthRuntime.applySession(loadAestheticGrowthProfile(), summary, aestheticTrainingState.checkpointStates, aestheticToday()) : loadAestheticGrowthProfile();
+  saveAestheticGrowthProfile(growthProfile);
+  var attempt = { type: 'guided-chat-v2', sessionId: sessionId, date: aestheticToday(), completedAt: completedAt, caseId: aestheticTrainingState.caseItem.id, caseKey: aestheticTrainingCaseKey(aestheticTrainingState.caseItem), caseTitle: aestheticTrainingState.caseItem.title, messages: aestheticTrainingState.messages, goalStates: aestheticTrainingState.goalStates, checkpointStates: aestheticTrainingState.checkpointStates, completedCheckpoints: completedCheckpoints, qualified: qualified, trainingPlan: aestheticTrainingState.trainingPlan, growthPlan: aestheticTrainingState.growthPlan, elapsedSeconds: currentAestheticTimeState().elapsedSeconds, finishReason: aestheticTrainingState.finishReason || 'manual', summary: summary, points: points };
   if (!progress.attempts.some(function(row) { return row.sessionId === sessionId; })) progress.attempts.push(attempt);
   saveAestheticProgress(progress);
   postAestheticLearning('complete_session');
@@ -4628,7 +4751,15 @@ function completeAestheticConversation() {
     '<h4>看对的内容</h4><ul>' + list(summary.strengths, '你完成了围绕同一张图的连续观察和表达。') + '</ul>' +
     '<h4>主要遗漏</h4><ul>' + list(summary.missed_points, '本次对话较短，继续训练后才能形成稳定判断。') + '</ul>' +
     '<h4>误判模式</h4><ul>' + list(summary.misconception_patterns, '暂未发现稳定的重复误判。') + '</ul>' +
-    '<h4>这次独有的收获</h4><p>' + aestheticEscape(summary.unique_takeaway || summary.transferable_method || '先描述事实，再解释关系，最后归纳风格。') + '</p>' +
+    '<div class="ae-golden-insight"><small>今天最大的顿悟</small><br>' + aestheticEscape(summary.golden_insight || summary.unique_takeaway || summary.transferable_method || '先描述事实，再解释关系，最后归纳风格。') + '</div>' +
+    '<div class="ae-takeaway-grid">' +
+      '<div class="ae-takeaway"><strong>新知识</strong><p>' + aestheticEscape(summary.new_knowledge || '结论只有回到可见证据，才会成为可迁移的知识。') + '</p></div>' +
+      '<div class="ae-takeaway"><strong>新观察方法</strong><p>' + aestheticEscape(summary.observation_method || summary.transferable_method || '缩小图片，先找轮廓边界和视觉重心。') + '</p></div>' +
+      '<div class="ae-takeaway"><strong>沟通技巧</strong><p>' + aestheticEscape(summary.communication_tip || '先确认顾客喜欢图片的哪一点，再解释需要调整的条件。') + '</p></div>' +
+    '</div>' +
+    '<h4>今天的成长标签</h4><p>' + aestheticEscape(summary.today_tag || '观察体系建立中') + '</p>' +
+    '<h4>大师值</h4><p>+' + Math.max(1, Math.min(20, Number(summary.mastery_value) || 5)) + ' · 只奖励这次真实形成的新认知</p>' +
+    '<h4>今天击败昨天</h4><p>' + aestheticEscape(summary.yesterday_comparison || (growthRuntime ? growthRuntime.yesterdayComparison(growthProfile) : '下一次训练后开始比较。')) + '</p>' +
     (summary.difference_from_previous ? '<h4>和上次同款训练的不同</h4><p>' + aestheticEscape(summary.difference_from_previous) + '</p>' : '') +
     '<h4>下次重点</h4><p>' + aestheticEscape(summary.next_focus || AESTHETIC_GOAL_LABELS[aestheticTrainingState.activeGoal] || '继续训练视觉证据') + '</p>' +
     '<button class="ae-primary" type="button" onclick="showAestheticMaster()" style="width:100%;margin-top:12px;">查看专业解析</button>';
@@ -5215,6 +5346,22 @@ function renderAestheticGrowth() {
   if (document.getElementById('ae-kpi-rate')) document.getElementById('ae-kpi-rate').textContent = Math.round(completedDates.length / elapsedDays * 100) + '%';
   if (document.getElementById('ae-kpi-streak')) document.getElementById('ae-kpi-streak').textContent = streak;
   if (document.getElementById('ae-kpi-note')) document.getElementById('ae-kpi-note').textContent = '本月完成 ' + completedDates.length + '/' + elapsedDays + ' 天 · 每日完成 20 分，深度对话另加 10 分。';
+  var growthRuntime = window.AESTHETIC_GROWTH_V2;
+  var growthProfile = loadAestheticGrowthProfile();
+  if (growthRuntime && growthProfile.sessions && growthProfile.sessions.length) {
+    if (document.getElementById('ae-kpi-points')) document.getElementById('ae-kpi-points').textContent = growthProfile.masteryValue || 0;
+    if (document.getElementById('ae-kpi-note')) document.getElementById('ae-kpi-note').textContent = '本月完成 ' + completedDates.length + '/' + elapsedDays + ' 天 · 大师值只奖励真实认知升级，不奖励空泛完成。';
+    list.innerHTML = growthRuntime.dimensions.map(function(item) {
+      var row = growthProfile.dimensions[item.id] || { level: 0, attempts: 0, trend: 0 };
+      return '<div class="ae-growth-item ' + (row.level >= 80 ? 'done' : '') + '"><i></i><div><strong>' +
+        aestheticEscape(item.name) + ' · ' + row.level + '</strong><span>训练 ' + row.attempts + ' 次' + (row.trend ? ' · 本次 ' + (row.trend > 0 ? '+' : '') + row.trend : '') + '</span>' +
+        '<div class="ae-growth-bar"><i style="width:' + row.level + '%"></i></div></div></div>';
+    }).join('');
+    var weak = growthRuntime.weakestDimension(growthProfile);
+    var topMistake = growthProfile.mistakes && growthProfile.mistakes[0];
+    if (summary) summary.textContent = '当前优先突破：' + weak.name + '。' + (topMistake ? '固定盲点：' + topMistake.text + '（出现 ' + topMistake.count + ' 次）' : '继续训练后会建立你的个人错误模型。');
+    return;
+  }
   var totals = {};
   attempts.forEach(function(attempt) {
     Object.keys(attempt.scores || {}).forEach(function(id) {

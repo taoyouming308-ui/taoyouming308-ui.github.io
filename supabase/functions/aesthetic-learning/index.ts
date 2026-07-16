@@ -422,6 +422,10 @@ async function upsertSession(payload: Record<string, unknown>): Promise<void> {
         elapsed_seconds: clamp(payload.elapsed_seconds, 0, 3600),
         time_phase: cleanText(payload.time_phase, 20),
       },
+      _growthV2: {
+        plan: typeof payload.growth_plan === "object" && payload.growth_plan ? payload.growth_plan : {},
+        profile: typeof payload.growth_profile === "object" && payload.growth_profile ? payload.growth_profile : {},
+      },
     },
     summary: typeof payload.summary === "object" && payload.summary ? payload.summary : {},
     updated_at: new Date().toISOString(),
@@ -433,6 +437,18 @@ async function upsertSession(payload: Record<string, unknown>): Promise<void> {
     body: JSON.stringify(row),
   });
   if (!response.ok) throw new Error("session write " + response.status + ": " + await response.text());
+}
+
+async function growthProfile(username: string): Promise<Record<string, unknown>> {
+  const response = await rest(
+    "aesthetic_training_sessions?select=goal_states,summary,updated_at&username=eq." + encodeURIComponent(username) +
+    "&order=updated_at.desc&limit=1",
+  );
+  if (!response.ok) throw new Error("growth profile " + response.status);
+  const row = (await response.json())[0] || {};
+  const goalStates = row.goal_states && typeof row.goal_states === "object" ? row.goal_states as Record<string, unknown> : {};
+  const growth = goalStates._growthV2 && typeof goalStates._growthV2 === "object" ? goalStates._growthV2 as Record<string, unknown> : {};
+  return { profile: growth.profile || {}, last_summary: row.summary || {}, updated_at: row.updated_at || null };
 }
 
 async function upsertTurns(payload: Record<string, unknown>): Promise<unknown[]> {
@@ -678,6 +694,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "case_history") {
       const history = await caseHistory(payload);
       return new Response(JSON.stringify(history), { headers: cors });
+    }
+    if (operation === "growth_profile") {
+      return new Response(JSON.stringify(await growthProfile(username)), { headers: cors });
     }
     if (!["sync_session", "complete_session"].includes(operation)) return new Response(JSON.stringify({ error: "invalid operation" }), { status: 400, headers: cors });
     const entitlement = await trainingEntitlement(payload);

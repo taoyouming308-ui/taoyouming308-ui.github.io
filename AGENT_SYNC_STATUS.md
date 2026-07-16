@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v387 (2026-07-16)
+
+- 美感成长 V2 保留现有图片分析、自由对话、权限、计时和断点续练，新增独立 `aesthetic-growth.v2.js` 运行时。
+- 每日计划按个人最低能力生成挑战并轮换五类导师；七日连续训练触发隐藏 Boss，同款案例继续复用 Hair Vision 差异化计划。
+- `aesthetic-coach` 使用 `coach-growth-v3`：检查点只有通过证据数量、回答长度、支持信息和无依据判断的服务端硬门槛才成为 `mastered`。
+- 结束总结强制包含新知识、观察方法、沟通技巧、大师洞察、今日突破、昨日比较、标签和大师值；历史洞察传入模型用于去重。
+- 成长档案保存在 `hair_aesthetic_growth_v2:<员工>`，并写入 Session `goal_states._growthV2`；`growth_profile` 返回最近云端快照供新设备恢复。
+- 两个 Edge Function 已部署；真实低证据回答探针确认返回 `needs_evidence`、当前检查点保持不变。
+- App version: v387
+
 ## 护理出库双账号隔离（2026-07-14，不发版）
 
 - 客户/预约同步继续使用总部 `meiguanjia-config.json` 与 `meiguanjia-auth.json`；护理出库改用独立分店会话与凭据文件，避免任一侧续期覆盖另一侧账号。
