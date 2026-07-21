@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="389">
+<html lang="zh-CN" data-version="390">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=389"></script>
-<script src="hair-vision-training.v1.js?v=389"></script>
-<script src="aesthetic-growth.v2.js?v=389"></script>
+<script src="aesthetic-knowledge.v1.js?v=390"></script>
+<script src="hair-vision-training.v1.js?v=390"></script>
+<script src="aesthetic-growth.v2.js?v=390"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -10626,7 +10626,7 @@ function initApp() {
   window.showBookingPicker = function() {
     var old = document.getElementById('hair-booking-picker-modal');
     if (old) old.remove();
-    var dateKey = localStorage.getItem('hair-booking-picker-date') || BOOKING_DATE || getLocalDateStr();
+    var dateKey = getLocalDateStr();
     var wrap = document.createElement('div');
     wrap.id = 'hair-booking-picker-modal';
     wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
