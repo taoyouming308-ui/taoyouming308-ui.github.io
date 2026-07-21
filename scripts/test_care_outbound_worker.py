@@ -2,6 +2,8 @@ import importlib.util
 import pathlib
 import sys
 import unittest
+import urllib.error
+from unittest import mock
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("care_outbound_worker.py")
@@ -31,6 +33,13 @@ class FakeSupabase:
 
     def set_status(self, queue_ids, status, message=None):
         self.status_updates.append((tuple(queue_ids), status, message))
+
+
+class CompletionWriteFailureSupabase(FakeSupabase):
+    def set_status(self, queue_ids, status, message=None):
+        if status == "completed":
+            raise worker_module.WorkerFailure("connection reset")
+        super().set_status(queue_ids, status, message)
 
 
 class FakeStock:
@@ -128,6 +137,19 @@ def make_store_config(runtime_enabled=False):
 
 
 class CareOutboundWorkerTests(unittest.TestCase):
+    @mock.patch.object(worker_module.urllib.request, "urlopen")
+    def test_supabase_transient_network_failure_is_retried(self, urlopen):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"[]"
+        urlopen.side_effect = [
+            urllib.error.URLError("connection reset"),
+            response,
+        ]
+        client = worker_module.SupabaseClient(sleep_fn=lambda _: None)
+
+        self.assertEqual(client.request("GET", "care_outbound_queue?limit=1"), [])
+        self.assertEqual(urlopen.call_count, 2)
+
     def test_meiguanjia_payload_uses_current_outdepot_details_contract(self):
         client = RecordingMeiguanjiaClient()
         details = [
@@ -279,6 +301,44 @@ class CareOutboundWorkerTests(unittest.TestCase):
         self.assertEqual(stock.created, [])
         self.assertEqual(stock.audited, [])
         self.assertEqual(supabase.status_updates[-1][1], "completed")
+
+    def test_completed_document_callback_failure_never_becomes_retryable_failed(self):
+        batch = make_batch()
+        existing = {
+            "id": "73599999",
+            "billno": "CPKYTEST004",
+            "status": "1",
+            "outwaretype": "8",
+            "employeeid": "2488057",
+            "remark": "护理App|FC-100",
+            "details": [
+                {"depotid": "23043758", "num": 15},
+                {"depotid": "23043813", "num": 3},
+            ],
+        }
+        queue_rows = [
+            {
+                "id": item["queueId"],
+                "brand": item["brand"],
+                "product": item["product"],
+                "grams": item["grams"],
+                "status": "processing",
+                "created_at": batch["queuedAt"],
+            }
+            for item in batch["items"]
+        ]
+        supabase = CompletionWriteFailureSupabase(
+            queue_rows,
+            [{"id": "hair-1", "record_data": {"careOutboundBatches": [batch]}}],
+        )
+        worker = worker_module.CareOutboundWorker(
+            make_store_config(), supabase, FakeStock(existing), logger=lambda _: None
+        )
+
+        self.assertEqual(worker.run(), 1)
+        self.assertEqual(supabase.status_updates[-1][1], "needs_review")
+        self.assertIn("CPKYTEST004 已审核", supabase.status_updates[-1][2])
+        self.assertIn("禁止重复出库", supabase.status_updates[-1][2])
 
     def test_existing_document_without_employee_needs_review(self):
         batch = make_batch()
