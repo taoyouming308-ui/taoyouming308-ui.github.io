@@ -158,8 +158,9 @@ data.trainingCases.forEach(row => {
   });
 });
 
+assert(!app.includes(`onclick="openHomeDrawerFeature('aesthetic')"><span>美感训练</span>`), 'Employee home drawer must not expose the aesthetic training entry');
+
 [
-  "openHomeDrawerFeature('aesthetic')",
   'id="tab-aesthetic"',
   'startAestheticTraining()',
   'sendAestheticChatMessage()',
