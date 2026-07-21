@@ -31,6 +31,8 @@ assert(app.includes('identity-mark') && app.includes('identity-logout'), 'minima
 assert(app.includes('<button type="button" class="shop-switch'), 'shop switch is not keyboard-accessible');
 assert(dates.includes('var dayNames =') && dates.includes('<button type="button" class="date-chip'), 'date strip is not self-contained and button-based');
 assert(app.includes('booking-date-title'), 'selected booking date heading is missing');
+assert(app.includes('window.showBookingPicker = function()') && app.includes('var dateKey = getLocalDateStr();'), 'hair booking picker must open on the current local date');
+assert(!app.includes("localStorage.getItem('hair-booking-picker-date') || BOOKING_DATE"), 'hair booking picker must not reopen on a stale saved date');
 assert(render.includes('booking-empty') && !render.includes('📭'), 'empty booking state is not minimal');
 assert(app.includes('bookings?select=id,customer_name,customer_phone'), 'hair booking picker does not retain booking ids');
 assert(app.includes("var key = r.id ? 'booking:' + r.id"), 'hair booking picker still merges separate booking ids');
