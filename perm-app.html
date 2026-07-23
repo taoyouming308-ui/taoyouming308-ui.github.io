@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="390">
+<html lang="zh-CN" data-version="391">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=390"></script>
-<script src="hair-vision-training.v1.js?v=390"></script>
-<script src="aesthetic-growth.v2.js?v=390"></script>
+<script src="aesthetic-knowledge.v1.js?v=391"></script>
+<script src="hair-vision-training.v1.js?v=391"></script>
+<script src="aesthetic-growth.v2.js?v=391"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3065,6 +3065,9 @@ const HAIR_TYPES = [
   { id: '三段发质 发根2级+发中3级+发梢5级', label: '🔀 三段发质·根2级+中3级+梢5级' },
   { id: '三段发质 发根1级+发中3级+发梢4级', label: '🔀 三段发质·根1级+中3级+梢4级' },
 ];
+
+// 发质照片分析暂时隐藏；保留原有队列与分析逻辑，后续可直接恢复。
+const HAIR_PHOTO_ANALYSIS_VISIBLE = false;
 
 function hairTypeLabel(value) {
   if (!value) return '';
@@ -10935,8 +10938,8 @@ function initApp() {
     }, 500);
     html += '</div></div>';
 
-    // ===== 步骤2: 发质诊断（三段式填写+上传照片） =====
-    html += '<div class="ha-card"><div class="ha-step">步骤2 · 发质诊断（三段式填写+上传照片）</div>';
+    // ===== 步骤2: 发质诊断（三段式填写） =====
+    html += '<div class="ha-card"><div class="ha-step">步骤2 · 发质诊断（三段式填写）</div>';
 
     // ── 区块A：基础信息 ──
     html += '<div class="ha-title"><span>基础信息</span></div>';
@@ -11034,35 +11037,37 @@ function initApp() {
     }
     html += '</div>';
 
-    // ── 区块C：拍照 + AI验证 ──
-    html += '<div style="margin-top:10px;"><div class="ha-title"><span>上传照片分析</span></div></div>';
-    html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
-    html += '<button id="hair-album-btn" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">从相册选择照片</button>';
-    html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
-    html += '</div>';
+    // ── 区块C：拍照 + AI验证（当前通过开关隐藏） ──
+    if (HAIR_PHOTO_ANALYSIS_VISIBLE) {
+      html += '<div style="margin-top:10px;"><div class="ha-title"><span>上传照片分析</span></div></div>';
+      html += '<div id="hair-init" style="display:flex;gap:6px;margin-bottom:8px;">';
+      html += '<button id="hair-album-btn" style="flex:1;padding:8px 10px;background:var(--surface-light);border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">从相册选择照片</button>';
+      html += '<input type="file" id="hair-file-album" accept="image/*" style="display:none;">';
+      html += '</div>';
 
-    // 加载状态（隐藏）
-    html += '<div id="hair-loading" style="display:none;text-align:center;padding:6px 0;"><span style="font-size:11px;color:var(--text-secondary);">🔍 AI验证中...</span></div>';
+      // 加载状态（隐藏）
+      html += '<div id="hair-loading" style="display:none;text-align:center;padding:6px 0;"><span style="font-size:11px;color:var(--text-secondary);">🔍 AI验证中...</span></div>';
 
-    // 拍照缩略图（分析过程中一直显示在外面）
-    html += '<div id="hair-thumb" style="display:none;text-align:center;margin-bottom:6px;"></div>';
+      // 拍照缩略图（分析过程中一直显示在外面）
+      html += '<div id="hair-thumb" style="display:none;text-align:center;margin-bottom:6px;"></div>';
 
-    // AI验证结果展示区
-    html += '<div id="hair-result" style="display:none;">';
+      // AI验证结果展示区
+      html += '<div id="hair-result" style="display:none;">';
 
-    html += '<div id="hair-ai-result-box" style="background:var(--surface-light);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px;">';
-    html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI发质诊断</div>';
-    // ① 整体等级（大号）
-    html += '<div id="hair-ai-overall" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>';
-    // ② 三段诊断
-    html += '<div id="hair-ai-diagnosis" style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.6;"></div>';
-    // ③ 照片可见特征
-    html += '<div id="hair-ai-features" style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;"></div>';
-    // ④ 与发型师对比（小字）
-    html += '<div id="hair-ai-reference" style="font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border);padding-top:4px;margin-top:4px;"></div>';
-    html += '</div>';
+      html += '<div id="hair-ai-result-box" style="background:var(--surface-light);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px;">';
+      html += '<div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI发质诊断</div>';
+      // ① 整体等级（大号）
+      html += '<div id="hair-ai-overall" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>';
+      // ② 三段诊断
+      html += '<div id="hair-ai-diagnosis" style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.6;"></div>';
+      // ③ 照片可见特征
+      html += '<div id="hair-ai-features" style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;"></div>';
+      // ④ 与发型师对比（小字）
+      html += '<div id="hair-ai-reference" style="font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border);padding-top:4px;margin-top:4px;"></div>';
+      html += '</div>';
 
-    html += '</div>'; // end hair-result
+      html += '</div>'; // end hair-result
+    }
 
     // 发质类型下拉（放在区块C下面，AI验证完成后自动匹配，可手动改）
     html += '<div style="margin-top:8px;margin-bottom:4px;">';
