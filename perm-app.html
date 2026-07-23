@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="391">
+<html lang="zh-CN" data-version="392">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=391"></script>
-<script src="hair-vision-training.v1.js?v=391"></script>
-<script src="aesthetic-growth.v2.js?v=391"></script>
+<script src="aesthetic-knowledge.v1.js?v=392"></script>
+<script src="hair-vision-training.v1.js?v=392"></script>
+<script src="aesthetic-growth.v2.js?v=392"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7629,20 +7629,24 @@ function initApp() {
     return null;
   }
 
-  // AI分析隧道URL — 从tunnel-url.json动态获取
-  var AI_TUNNEL_URL = null;
+  // 顾客AI分析使用独立的Codex plan_server地址，不与美感训练接口共用配置。
+  var CUSTOMER_PLAN_URL = 'https://petersburg-parade-traveller-existed.trycloudflare.com/api/codex-plan';
   (function() {
-    fetch('tunnel-url.json?_t=' + Date.now())
+    fetch('customer-plan-url.json?_t=' + Date.now())
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(d){ AI_TUNNEL_URL = d.url; })
-      .catch(function(e){ console.warn('获取隧道URL失败:', e); });
+      .then(function(d){
+        if (d && /^https:\/\//.test(d.url || '') && /\/api\/codex-plan$/.test(d.url)) {
+          CUSTOMER_PLAN_URL = d.url;
+        } else {
+          throw new Error('顾客分析地址格式无效');
+        }
+      })
+      .catch(function(e){ console.warn('获取顾客Codex分析地址失败，使用内置备用地址:', e); });
   })();
 
   function getAiUrl(phone, barberName) {
     var barberParam = barberName ? '&barber=' + encodeURIComponent(barberName) : '';
-    var localUrl = 'http://192.168.3.250:8890/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam;
-    var tunnelBase = AI_TUNNEL_URL || 'https://petersburg-parade-traveller-existed.trycloudflare.com';
-    return { local: localUrl, tunnel: tunnelBase + '/api/codex-plan?phone=' + encodeURIComponent(phone) + barberParam };
+    return CUSTOMER_PLAN_URL + '?phone=' + encodeURIComponent(phone) + barberParam;
   }
 
   function renderAiButton(phone, name, barberName, dateKey) {
@@ -7659,36 +7663,37 @@ function initApp() {
     // 不限网络，始终可用
   }
 
-  // AI分析建议：调plan_server（优先店内→兜底公网隧道）
+  // AI分析建议：通过独立HTTPS入口调用Mac上的plan_server → Codex。
   window.runAiAnalysis = function(phone, name, barberName, bookingDate) {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
+    if (box.getAttribute('data-ai-requesting') === '1') return;
+    box.setAttribute('data-ai-requesting', '1');
+    box.querySelectorAll('.ai-result.error').forEach(function(el){ el.remove(); });
+    var oldLoading = box.querySelector('#ai-loading');
+    if (oldLoading) oldLoading.remove();
     // 加加载状态
-    box.insertAdjacentHTML('beforeend', '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 AI分析中（约30秒）…</div>');
+    box.insertAdjacentHTML('beforeend', '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 Codex分析中（约30秒）…</div>');
     var loadingEl = document.getElementById('ai-loading');
     // 禁掉按钮防重复点击
     var btns = box.querySelectorAll('button');
     btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
-    // 先试本地（店内快），不行走隧道
-    var urls = getAiUrl(phone, barberName);
-    var url = urls.local;
-    var tunnelUrl = urls.tunnel;
+    var url = getAiUrl(phone, barberName);
+    function finishRequest() {
+      box.removeAttribute('data-ai-requesting');
+      if (loadingEl) loadingEl.remove();
+      btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+    }
     function doRequest() {
       var xhr = new XMLHttpRequest();
       var done = false;
-      var timeoutMs = url === urls.local ? 12000 : 95000;
+      var timeoutMs = 95000;
       var timeoutTimer = setTimeout(function() {
         if (done) return;
         done = true;
         try { xhr.abort(); } catch(e) {}
-        if (url === urls.local) {
-          url = tunnelUrl;
-          doRequest();
-          return;
-        }
-        if (loadingEl) loadingEl.remove();
-        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>');
+        finishRequest();
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ Codex分析超时，稍后重试</div>');
       }, timeoutMs);
       xhr.open('GET', url, true);
       xhr.timeout = 0;
@@ -7696,8 +7701,7 @@ function initApp() {
         if (done) return;
         done = true;
         clearTimeout(timeoutTimer);
-        if (loadingEl) loadingEl.remove();
-        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+        finishRequest();
         try {
           if (xhr.status < 200 || xhr.status >= 300) throw new Error('HTTP ' + xhr.status);
           var data = JSON.parse(xhr.responseText);
@@ -7716,35 +7720,25 @@ function initApp() {
           if (aiBtn) aiBtn.remove();
           box.insertAdjacentHTML('beforeend', html);
         } catch(e) {
-          box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 解析失败：' + esc(e.message) + '</div>');
+          var errorText = e.message === 'HTTP 405'
+            ? 'Codex服务地址配置错误（HTTP 405）'
+            : 'Codex分析失败：' + e.message;
+          box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ ' + esc(errorText) + '</div>');
         }
       };
       xhr.onerror = function() {
         if (done) return;
         done = true;
         clearTimeout(timeoutTimer);
-        // 本地失败 → 换隧道重试
-        if (url === urls.local) {
-          url = tunnelUrl;
-          doRequest();
-          return;
-        }
-        if (loadingEl) loadingEl.remove();
-        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 无法连接AI分析服务</div>');
+        finishRequest();
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 无法连接Codex分析服务</div>');
       };
       xhr.ontimeout = function() {
         if (done) return;
         done = true;
         clearTimeout(timeoutTimer);
-        if (url === urls.local) {
-          url = tunnelUrl;
-          doRequest();
-          return;
-        }
-        if (loadingEl) loadingEl.remove();
-        btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
-        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ AI分析超时，稍后重试</div>');
+        finishRequest();
+        box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ Codex分析超时，稍后重试</div>');
       };
       xhr.send();
     }

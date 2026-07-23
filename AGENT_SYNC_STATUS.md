@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v392 (2026-07-23)
+
+- 顾客“AI分析建议”与美感训练接口正式分流：新增 `customer-plan-url.json`，只指向 Mac `plan_server` 的 HTTPS `/api/codex-plan`。
+- 移除员工端已失效的 `192.168.3.250:8890` 本地优先请求，避免 HTTPS 手机页面先触发混合内容/旧 IP 失败再走错误备用接口。
+- AI分析增加单请求保护；重试前清除旧错误，405、连接失败和超时改为明确的 Codex 服务提示。
+- 新增 `scripts/test-ai-codex-route.js` 并接入本地 pre-push 与 GitHub CI，禁止顾客分析再次复用 `aesthetic-coach` 或旧局域网地址。
+- 只读验证：Mac `plan_server` 健康接口 200；独立公网 `/api/codex-plan` 无手机号时返回预期 400；Codex CLI 已登录并使用 `gpt-5.5` 完成无顾客数据的最小返回测试。
+- 本地 v392 页面已确认加载 `customer-plan-url.json`，页面与三个版本化运行时均返回 200，浏览器控制台无错误；版本、发布完整性、App 冒烟、Codex 路由、护理、22 组发质任务、客户档案、后台、预约、全局 UI、模块边界、美感系统及 42 项 Python 测试通过。
+- 当前 Cloudflare Quick Tunnel 没有固定域名配置；现有地址可用，但隧道进程重启后仍需更新 `customer-plan-url.json`。在用户确认前不推送 v392。
+- App version: v392
+
 ## v391 (2026-07-23)
 
 - 暂时隐藏员工端发质分析中的“上传照片分析”和 AI 照片诊断区域。
