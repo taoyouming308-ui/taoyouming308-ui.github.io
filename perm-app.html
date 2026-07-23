@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="392">
+<html lang="zh-CN" data-version="393">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=392"></script>
-<script src="hair-vision-training.v1.js?v=392"></script>
-<script src="aesthetic-growth.v2.js?v=392"></script>
+<script src="aesthetic-knowledge.v1.js?v=393"></script>
+<script src="hair-vision-training.v1.js?v=393"></script>
+<script src="aesthetic-growth.v2.js?v=393"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -5466,7 +5466,7 @@ function initApp() {
     overlay.insertAdjacentHTML('beforeend',
       '<div class="hair-modal-footer">' +
         '<button class="hair-modal-action" onclick="closeHairAnalysisModal();">← 首页</button>' +
-        '<button class="hair-modal-action" onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();">刷新 ↻</button>' +
+        '<button class="hair-modal-action" onclick="document.getElementById(\'hair-quick-area\').innerHTML=window.renderHairAnalysis(\'\',\'\');window.initHairChips&&window.initHairChips();window.initApplyOrderChips&&window.initApplyOrderChips();window.initCareSection&&window.initCareSection();window.initHairServicePhotos&&window.initHairServicePhotos();window.renderPendingRecords&&window.renderPendingRecords();window.renderMyTasks&&window.renderMyTasks();">刷新 ↻</button>' +
       '</div>');
     document.body.appendChild(overlay);
     // body变白背景
@@ -5481,6 +5481,7 @@ function initApp() {
       if (window.initApplyOrderChips) window.initApplyOrderChips();
       // 初始化护理记录已添加列表
       if (window.initCareSection) window.initCareSection();
+      if (window.initHairServicePhotos) window.initHairServicePhotos();
       // 相册按钮（已移除拍照AI验证按钮）
       // 渲染本地记录
       if (window.renderPendingRecords) window.renderPendingRecords();
@@ -8801,7 +8802,8 @@ function initApp() {
       'rodMethod','dwellType','dwellNatural','dwellHeat','rinse','permStyle',
       'targetColor','tone','toneOther','developer','mixRatio','applyOrder',
       'colorDwell','colorHeatTemp','colorNotes','feedbackRating','followMsg',
-      'planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference'
+      'planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference',
+      'serviceBeforePhoto','serviceAfterPhoto'
     ];
     for (var i = 0; i < keys.length; i++) {
       if (nonEmptyHairValue(record[keys[i]])) return true;
@@ -8981,6 +8983,8 @@ function initApp() {
       colorNotes: F['hair-form-color-notes'] || '',
       feedbackRating: F['fb-hair'] || '',
       followUpScreenshot: window._hairFollowUpScreenshot || '',
+      serviceBeforePhoto: window._hairServiceBeforePhoto || '',
+      serviceAfterPhoto: window._hairServiceAfterPhoto || '',
       followDate: F['hair-form-follow-date'] || '',
       followMsg: F['hair-form-follow-msg'] || '',
       status: _initialHairStatus,
@@ -9097,7 +9101,7 @@ function initApp() {
       }
       // 对于新record中为空但云端旧数据有值的字段，保留旧值（表单中可能没有对应的输入框）
       var _preserveFields = ['rodMethod','dwellType','rinse','dwellNatural','dwellHeat','creative',
-        'feedbackRating','followUpScreenshot','followMsg','applyOrder','serviceType',
+        'feedbackRating','followUpScreenshot','serviceBeforePhoto','serviceAfterPhoto','followMsg','applyOrder','serviceType',
         'targetColor','tone','toneOther','developer','mixRatio',
         'colorDwell','colorHeat','colorHeatTemp','scalpProtect','endProtect','colorNotes',
         'rodDetails','planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference'];
@@ -10163,6 +10167,12 @@ function initApp() {
     if (typeof window.showHairFollowupScreenshot === 'function') {
       window.showHairFollowupScreenshot(window._hairFollowUpScreenshot);
     }
+    window._hairServiceBeforePhoto = data.serviceBeforePhoto || '';
+    window._hairServiceAfterPhoto = data.serviceAfterPhoto || '';
+    if (typeof window.renderHairServicePhoto === 'function') {
+      window.renderHairServicePhoto('before');
+      window.renderHairServicePhoto('after');
+    }
     selectRadio('hair-rod-method', data.rodMethod);
     selectRadio('hair-dwell', data.dwellType);
     selectRadio('hair-rinse', data.rinse);
@@ -10523,6 +10533,8 @@ function initApp() {
       colorNotes: F['hair-form-color-notes'] || '',
       feedbackRating: F['fb-hair'] || '',
       followUpScreenshot: window._hairFollowUpScreenshot || '',
+      serviceBeforePhoto: window._hairServiceBeforePhoto || '',
+      serviceAfterPhoto: window._hairServiceAfterPhoto || '',
       followDate: F['hair-form-follow-date'] || '',
       followMsg: F['hair-form-follow-msg'] || '',
       status: '',
@@ -10532,7 +10544,7 @@ function initApp() {
     record.status = archiveStatus;
     // ★ 合并旧数据：保留 previousArchiveRecord 中当前表单未填写的关键字段
     if (previousArchiveRecord && previousArchiveRecord.id) {
-      var _arcMergeFields = ['rodDetails','planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference','aiSuggestions','feedbackRating','followUpScreenshot','followDate','followMsg'];
+      var _arcMergeFields = ['rodDetails','planResultHTML','aiOverall','aiDiagnosisText','aiFeatures','aiReference','aiSuggestions','feedbackRating','followUpScreenshot','serviceBeforePhoto','serviceAfterPhoto','followDate','followMsg'];
       for (var _arcMi = 0; _arcMi < _arcMergeFields.length; _arcMi++) {
         var _arcF = _arcMergeFields[_arcMi];
         if ((!record[_arcF] || (Array.isArray(record[_arcF]) && record[_arcF].length === 0)) && previousArchiveRecord[_arcF]) {
@@ -10741,6 +10753,7 @@ function initApp() {
       if (window.initHairChips) window.initHairChips();
       if (window.initApplyOrderChips) window.initApplyOrderChips();
       if (window.initCareSection) window.initCareSection();
+      if (window.initHairServicePhotos) window.initHairServicePhotos();
       if (window.renderPendingRecords) window.renderPendingRecords();
       if (window.renderMyTasks) window.renderMyTasks();
       nameEl = document.getElementById('hair-form-name');
@@ -10749,6 +10762,9 @@ function initApp() {
     if (customerChanged) {
       window._hairFollowUpScreenshot = '';
       if (typeof window.showHairFollowupScreenshot === 'function') window.showHairFollowupScreenshot('');
+      window._hairServiceBeforePhoto = '';
+      window._hairServiceAfterPhoto = '';
+      if (typeof window.initHairServicePhotos === 'function') window.initHairServicePhotos();
       var selectedRating = document.querySelector('input[name="fb-hair"]:checked');
       if (selectedRating) selectedRating.checked = false;
       var ratingLabels = document.querySelectorAll('label[data-name="fb-hair"]');
@@ -10893,6 +10909,8 @@ function initApp() {
     if (existing) existing.remove();
     var rec = existingRec || {};
     window._hairFollowUpScreenshot = rec.followUpScreenshot || '';
+    window._hairServiceBeforePhoto = rec.serviceBeforePhoto || '';
+    window._hairServiceAfterPhoto = rec.serviceAfterPhoto || '';
     // 初始化护理记录数据（编辑模式时回填已有记录）
     initCareUsage(rec.careUsage);
 
@@ -11205,8 +11223,27 @@ function initApp() {
 
     html += '</div>'; // end ha-card
 
-    // ===== 步骤5: 效果评定 =====
-    html += '<div class="ha-card"><div class="ha-step">步骤5 · 效果评定</div>';
+    // ===== 步骤5: 服务前后照片留档 =====
+    html += '<div class="ha-card"><div class="ha-step">步骤5 · 照片留档（选填）</div>';
+    html += '<div style="font-size:10px;color:var(--text-secondary);margin-bottom:8px;">照片会随本次发质分析表保存，并显示在顾客历史档案中。</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    ['before','after'].forEach(function(photoType) {
+      var photoLabel = photoType === 'before' ? '服务前' : '服务后';
+      html += '<div style="background:var(--surface-light);border:1px solid var(--border);border-radius:8px;padding:8px;">';
+      html += '<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px;">' + photoLabel + '</div>';
+      html += '<div id="hair-service-' + photoType + '-preview" style="min-height:88px;display:flex;align-items:center;justify-content:center;margin-bottom:6px;border:1px dashed var(--border);border-radius:6px;color:var(--text-secondary);font-size:10px;">暂无照片</div>';
+      html += '<div style="display:flex;gap:4px;">';
+      html += '<button type="button" onclick="document.getElementById(\'hair-service-' + photoType + '-camera\').click()" style="flex:1;padding:7px 4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:10px;font-family:var(--font);">拍照</button>';
+      html += '<button type="button" onclick="document.getElementById(\'hair-service-' + photoType + '-album\').click()" style="flex:1;padding:7px 4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:10px;font-family:var(--font);">相册</button>';
+      html += '</div>';
+      html += '<input type="file" id="hair-service-' + photoType + '-camera" accept="image/*" capture="environment" onchange="uploadHairServicePhoto(this,\'' + photoType + '\')" style="display:none;">';
+      html += '<input type="file" id="hair-service-' + photoType + '-album" accept="image/*" onchange="uploadHairServicePhoto(this,\'' + photoType + '\')" style="display:none;">';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    // ===== 步骤6: 效果评定 =====
+    html += '<div class="ha-card"><div class="ha-step">步骤6 · 效果评定</div>';
     // A/B/C 单选（新建时默认空，编辑时由loadHairRecordData回填）
     var savedFbRating = '';
     html += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
@@ -12323,6 +12360,19 @@ function initApp() {
       html += hairArchiveSection('染发参数', renderHairColorArchive(rec));
       html += hairArchiveSection('护理记录', renderHairCareArchive(rec));
 
+      // 服务前后照片留档
+      if (rec.serviceBeforePhoto || rec.serviceAfterPhoto) {
+        html += '<div style="margin-top:8px;"><div style="font-size:10px;color:var(--text-secondary);margin-bottom:5px;">照片留档</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
+        if (rec.serviceBeforePhoto) {
+          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务前</div><img src="' + escAttr(rec.serviceBeforePhoto) + '" alt="服务前照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
+        }
+        if (rec.serviceAfterPhoto) {
+          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务后</div><img src="' + escAttr(rec.serviceAfterPhoto) + '" alt="服务后照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
+        }
+        html += '</div></div>';
+      }
+
       // 效果评定
       if (rec.eval) {
         html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">评定: ' + esc(rec.eval) + ' · ' + esc(rec.status || '待回访') + '</div>';
@@ -12424,6 +12474,69 @@ window.showHairFollowupScreenshot = function(dataUrl, inputEl) {
       uploadLabel.parentElement.insertBefore(img, uploadLabel);
     }
   }
+};
+
+// ===== 发质分析服务前后照片留档 =====
+window.uploadHairServicePhoto = function(inputEl, photoType) {
+  var file = inputEl && inputEl.files && inputEl.files[0];
+  if (!file || (photoType !== 'before' && photoType !== 'after')) return;
+  if (!/^image\//.test(file.type || '')) { alert('请选择照片文件'); return; }
+  if (file.size > 12 * 1024 * 1024) { alert('照片太大，请选择12MB以内的照片'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var source = new Image();
+    source.onload = function() {
+      var maxSide = 720;
+      var scale = Math.min(1, maxSide / Math.max(source.width, source.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(source.width * scale));
+      canvas.height = Math.max(1, Math.round(source.height * scale));
+      canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+      var quality = 0.58;
+      var dataUrl = canvas.toDataURL('image/jpeg', quality);
+      while (dataUrl.length > 120000 && canvas.width > 360 && canvas.height > 360) {
+        var smaller = document.createElement('canvas');
+        smaller.width = Math.max(1, Math.round(canvas.width * 0.82));
+        smaller.height = Math.max(1, Math.round(canvas.height * 0.82));
+        smaller.getContext('2d').drawImage(canvas, 0, 0, smaller.width, smaller.height);
+        canvas = smaller;
+        quality = Math.max(0.38, quality - 0.05);
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+      }
+      if (photoType === 'before') window._hairServiceBeforePhoto = dataUrl;
+      else window._hairServiceAfterPhoto = dataUrl;
+      window.renderHairServicePhoto(photoType);
+      inputEl.value = '';
+    };
+    source.onerror = function() { alert('照片读取失败，请重新选择'); };
+    source.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removeHairServicePhoto = function(photoType) {
+  if (photoType === 'before') window._hairServiceBeforePhoto = '';
+  if (photoType === 'after') window._hairServiceAfterPhoto = '';
+  window.renderHairServicePhoto(photoType);
+};
+
+window.initHairServicePhotos = function() {
+  window.renderHairServicePhoto('before');
+  window.renderHairServicePhoto('after');
+};
+
+window.renderHairServicePhoto = function(photoType) {
+  var preview = document.getElementById('hair-service-' + photoType + '-preview');
+  if (!preview) return;
+  var dataUrl = photoType === 'before' ? window._hairServiceBeforePhoto : window._hairServiceAfterPhoto;
+  if (!dataUrl) {
+    preview.innerHTML = '暂无照片';
+    return;
+  }
+  preview.innerHTML = '<div style="position:relative;width:100%;">' +
+    '<img src="' + dataUrl + '" alt="' + (photoType === 'before' ? '服务前照片' : '服务后照片') + '" style="display:block;width:100%;height:112px;object-fit:cover;border-radius:5px;">' +
+    '<button type="button" onclick="removeHairServicePhoto(\'' + photoType + '\')" aria-label="删除照片" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:14px;line-height:24px;padding:0;">×</button>' +
+    '</div>';
 };
 </script>
 

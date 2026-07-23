@@ -32,7 +32,9 @@ jobs:
           node scripts/test-care-outbound.js
           python3 -m unittest scripts/test_care_outbound_worker.py
       - name: Run hair task state tests
-        run: node scripts/test-hair-task-state.js
+        run: |
+          node scripts/test-hair-task-state.js
+          node scripts/test-hair-service-photos.js
       - name: Protect customer archive rendering
         run: node scripts/test-customer-archive-rendering.js
       - name: Protect backend workflows

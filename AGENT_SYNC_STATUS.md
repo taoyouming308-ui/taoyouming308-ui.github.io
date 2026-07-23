@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v393 (2026-07-23)
+
+- 发质分析表步骤5新增“照片留档（选填）”，分别提供服务前、服务后照片；每组支持手机拍照、相册选择、替换和删除。
+- 照片在浏览器端缩放压缩后，分别保存为 `record_data.serviceBeforePhoto` 与 `record_data.serviceAfterPhoto`；不新增表、不改变旧字段和旧档案兼容性。
+- 本地草稿、云端任务保存、发型师归档和再次编辑均保留照片；顾客历史档案按每次服务展示对应的前后照片。
+- 新增 `scripts/test-hair-service-photos.js` 并接入本地 pre-push 与 GitHub CI，覆盖入口、压缩、双保存路径、恢复、兼容合并和历史展示。
+- App version: v393
+
 ## v392 (2026-07-23)
 
 - 顾客“AI分析建议”与美感训练接口正式分流：新增 `customer-plan-url.json`，只指向 Mac `plan_server` 的 HTTPS `/api/codex-plan`。
