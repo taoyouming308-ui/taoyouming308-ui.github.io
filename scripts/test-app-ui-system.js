@@ -28,6 +28,8 @@ assert(app.includes('class="hair-modal-shell"') && app.includes('class="hair-mod
 assert(app.includes('class="hair-view-switch"') && app.includes("window.switchHairView = function(view)"), 'hair form and task views are not separated');
 assert(app.includes('id="hair-form-flow"') && app.includes('class="hair-tasks-intro"'), 'hair workflow panels are missing');
 assert(app.includes('class="hair-rod-row"') && styles.includes('grid-template-columns:1fr 1fr !important'), 'mobile rod inputs are still using the cramped five-column layout');
+assert(app.includes('const HAIR_PHOTO_ANALYSIS_VISIBLE = false;') && app.includes('if (HAIR_PHOTO_ANALYSIS_VISIBLE) {'), 'hair photo analysis is not hidden behind the recovery switch');
+assert(app.includes('步骤2 · 发质诊断（三段式填写）') && !app.includes('步骤2 · 发质诊断（三段式填写+上传照片）'), 'hair diagnosis heading still asks employees to upload a photo');
 assert(app.includes("setTimeout(function(){ showHairAnalysisPage(); }, 0)"), 'restoring the hair page can run before its renderer is registered');
 assert(app.includes('class="hair-archive-section"') && app.includes('class="profile-record"'), 'customer archive content is missing shared section styles');
 assert(styles.includes('.hair-task-card') && styles.includes('.hair-local-record'), 'hair task and local record surfaces are not covered');
