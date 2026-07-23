@@ -25,12 +25,16 @@ jobs:
         run: node scripts/check-version-sync.js
       - name: Run app smoke tests
         run: node scripts/smoke-test-app.js
+      - name: Protect customer Codex analysis routing
+        run: node scripts/test-ai-codex-route.js
       - name: Run care outbound tests
         run: |
           node scripts/test-care-outbound.js
           python3 -m unittest scripts/test_care_outbound_worker.py
       - name: Run hair task state tests
-        run: node scripts/test-hair-task-state.js
+        run: |
+          node scripts/test-hair-task-state.js
+          node scripts/test-hair-service-photos.js
       - name: Protect customer archive rendering
         run: node scripts/test-customer-archive-rendering.js
       - name: Protect backend workflows
