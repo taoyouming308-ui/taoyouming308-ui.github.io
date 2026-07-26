@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="393">
+<html lang="zh-CN" data-version="394">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=393"></script>
-<script src="hair-vision-training.v1.js?v=393"></script>
-<script src="aesthetic-growth.v2.js?v=393"></script>
+<script src="aesthetic-knowledge.v1.js?v=394"></script>
+<script src="hair-vision-training.v1.js?v=394"></script>
+<script src="aesthetic-growth.v2.js?v=394"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -10675,7 +10675,9 @@ function initApp() {
     var list = document.getElementById('hair-booking-picker-list');
     if (!list) return;
     list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">加载中...</div>';
-    var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
+    // 客户列表必须按当前登录身份查找；表单内的发型师可以被编辑或保留上一次的值，
+    // 不能参与预约筛选，否则预约页与发质分析表会看到两套不同的客户列表。
+    var barberName = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
     var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
     var shopFilter = BOOKING_SHOP ? '&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) : '';
     fetch(SUPABASE_URL + '/rest/v1/bookings?select=id,customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + shopFilter + barberFilter + '&order=reservation_time.asc', {

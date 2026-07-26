@@ -36,6 +36,8 @@ assert(!app.includes("localStorage.getItem('hair-booking-picker-date') || BOOKIN
 assert(render.includes('booking-empty') && !render.includes('📭'), 'empty booking state is not minimal');
 assert(app.includes('bookings?select=id,customer_name,customer_phone'), 'hair booking picker does not retain booking ids');
 assert(app.includes("var key = r.id ? 'booking:' + r.id"), 'hair booking picker still merges separate booking ids');
+assert(app.includes("var barberName = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';"), 'hair booking picker must use the authenticated account, not the editable form barber');
+assert(!app.includes("var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';"), 'hair booking picker must not let a stale form barber hide the current account bookings');
 assert(app.includes('bookingId: String(_recordBookingContext.bookingId || \'\')'), 'hair records do not persist the booking id');
 assert(app.includes('bookingDate: normalizeHairBookingDate(_recordBookingContext.bookingDate)'), 'hair records do not persist the visit date');
 assert(app.includes('shouldStartNewBooking') && app.includes("window.renderHairAnalysis('', '')"), 'switching appointments does not start a fresh independent form');
