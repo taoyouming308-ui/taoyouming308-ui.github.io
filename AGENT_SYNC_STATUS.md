@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## Customer AI tunnel recovery (2026-07-26, no app version bump)
+
+- Replaced the missing tunnel-update entry point with a tracked, tested publisher that reads the managed tunnel log, probes `/api/codex-plan`, and only publishes a changed HTTPS address after the probe succeeds.
+- The customer-plan tunnel now runs through a dedicated launcher that writes its startup URL to a stable log; this removes the previous dependency on an unmanaged process with inaccessible output.
+- Added a small regression suite for URL discovery and the expected no-phone API response. The runtime publisher uses an isolated worktree so automated URL refreshes never modify an active developer checkout.
+- App version remains v394; this is runtime maintenance and the customer-plan configuration is fetched dynamically.
+
 ## v394 (2026-07-26)
 
 - 修复发质分析表“从预约选择客户”错误读取可编辑表单发型师的问题；现在始终按当前登录账号和所属门店加载预约，和预约页保持一致。
