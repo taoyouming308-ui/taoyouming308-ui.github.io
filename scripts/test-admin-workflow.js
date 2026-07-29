@@ -27,7 +27,11 @@ for (const table of ['hair_types', 'perm_styles', 'perm_data']) {
 }
 assert(app.includes('/rest/v1/perm_data'), 'app runtime unexpectedly lost perm_data usage');
 
-assert(admin.includes('active=eq.false') && admin.includes('openRegistrationReview'), 'registration review is not separated from active staff');
+assert(admin.includes('employment_status=eq.pending') && admin.includes('openRegistrationReview'), 'registration review is not separated from active staff');
+assert(admin.includes('employment_status=eq.pending'), 'registration review must not mix pending registrations with departed employees');
+assert(admin.includes('staff-status-filter') && admin.includes("value=\"departed\""), 'staff management must provide an employment-status filter');
+assert(admin.includes('setStaffEmploymentStatus') && admin.includes("employment_status: nextStatus"), 'staff management must support a reversible departure status');
+assert(admin.includes('历史业务记录会保留'), 'departure flow must preserve historical business records');
 assert(admin.includes("hashPasswordValue(pass)"), 'new employee passwords are not hashed');
 assert(admin.includes('recordAdminAction'), 'backend operation audit is missing');
 assert(admin.includes('openCareMonthlyEditor') && admin.includes('编辑用量'), 'care monthly report has no per-barber edit entry');

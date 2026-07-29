@@ -261,6 +261,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       <div class="toolbar">
         <input id="staff-search" placeholder="搜索姓名、职位或门店">
         <select id="staff-store-filter"><option value="">全部门店</option><option value="自由手艺人">自由手艺人</option><option value="向里造型">向里造型</option></select>
+        <select id="staff-status-filter"><option value="active">在职</option><option value="departed">已离职</option><option value="all">全部员工</option></select>
         <button class="btn-edit" type="button" onclick="loadStaff()">查询</button>
       </div>
       <div class="admin-table-wrap"><table><thead><tr><th>用户名</th><th>角色</th><th>职位</th><th>分店</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
@@ -713,7 +714,7 @@ function adminCanManageStaffRow(row, registrationOnly) {
   if (!row) return false;
   if (isSuperAdmin()) return true;
   if (row.store !== currentAdminStore()) return false;
-  if (registrationOnly) return row.active === false;
+  if (registrationOnly) return staffEmploymentStatus(row) === 'pending';
   return row.role === 'staff';
 }
 
@@ -1114,13 +1115,20 @@ function followupMetaFromProfile(profile) {
   };
 }
 
+function staffEmploymentStatus(row) {
+  if (row && row.employment_status) return row.employment_status;
+  return row && row.active ? 'active' : 'pending';
+}
+
 window.loadStaff = function() {
   const search = ((document.getElementById('staff-search') || {}).value || '').trim().toLowerCase();
   const store = currentAdminStore() || (document.getElementById('staff-store-filter') || {}).value || '';
-  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,created_at&active=eq.true' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=username.asc', '加载员工失败')
+  const statusFilter = (document.getElementById('staff-status-filter') || {}).value || 'active';
+  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,employment_status,created_at' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=username.asc', '加载员工失败')
     .then(function(rows) {
       rows = filterStaffRowsForAdmin(rows || []).filter(function(row) {
         if (store && row.store !== store) return false;
+        if (statusFilter !== 'all' && staffEmploymentStatus(row) !== statusFilter) return false;
         if (!search) return true;
         return [row.username, row.position, row.store].join(' ').toLowerCase().indexOf(search) !== -1;
       });
@@ -1131,7 +1139,7 @@ window.loadStaff = function() {
 };
 
 function updateRegistrationBadge() {
-  return fetchAdminJson('/rest/v1/staff?select=id,store&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册数量失败')
+  return fetchAdminJson('/rest/v1/staff?select=id,store&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册数量失败')
     .then(function(rows) {
       const count = filterStaffRowsForAdmin(rows || []).length;
       const badge = document.getElementById('nav-registration-count');
@@ -1147,7 +1155,7 @@ window.loadRegistrations = function() {
   const list = document.getElementById('registration-list');
   if (!list) return Promise.resolve([]);
   list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">加载中...</div>';
-  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,created_at&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册申请失败')
+  return fetchAdminJson('/rest/v1/staff?select=id,username,role,position,store,active,employment_status,created_at&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '') + '&order=created_at.desc', '加载注册申请失败')
     .then(function(rows) {
       rows = filterStaffRowsForAdmin(rows || []);
       const freeCount = rows.filter(function(r){ return r.store === '自由手艺人'; }).length;
@@ -1242,10 +1250,10 @@ async function approveRegistration(id, username) {
     const store = currentAdminStore() || document.getElementById('reg-review-store').value;
     const position = Array.from(document.querySelectorAll('#reg-review-position input:checked')).map(function(cb){ return cb.value; }).join(',');
     if (!store || !position) throw new Error('请确认门店和职位');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: true, role: 'staff', store: store, position: position })
+      body: JSON.stringify({ active: true, employment_status: 'active', role: 'staff', store: store, position: position })
     });
     await ensureOk(r, '审核失败');
     const changed = await r.json();
@@ -1267,7 +1275,7 @@ async function rejectRegistration(id, username) {
   try {
     const existing = await loadOne('staff', id);
     if (!adminCanManageStaffRow(existing, true)) throw new Error('无权拒绝其他门店的注册申请');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
       method: 'DELETE',
       headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=representation' }
     });
@@ -1289,7 +1297,7 @@ window.loadDashboard = function() {
   if (!stats || !actions) return;
   stats.innerHTML = '<div class="stat-card"><div class="stat-label">加载中...</div></div>';
   Promise.all([
-    fetchAdminJson('/rest/v1/staff?select=id,store&active=eq.false' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), '加载注册申请失败'),
+    fetchAdminJson('/rest/v1/staff?select=id,store&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), '加载注册申请失败'),
     fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载作品审核失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&limit=500', '加载发质任务失败'),
     isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/customer_profiles?select=id,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=500', '加载回访任务失败'),
@@ -1950,10 +1958,12 @@ function renderTable(tab, rows) {
       const name = el('b', { text: r.username });
       const roleText = r.role === 'admin' ? '总管理员' : r.role === STORE_ADMIN_ROLE ? '分店管理员' : '普通员工';
       const role = el('span', { className: 'badge ' + (r.role === 'staff' ? 'badge-staff' : 'badge-admin'), text: roleText });
-      const status = el('span', { className: 'status-chip status-active-chip', text: '在职' });
+      const employmentStatus = staffEmploymentStatus(r);
+      const status = el('span', { className: 'status-chip ' + (employmentStatus === 'active' ? 'status-active-chip' : ''), text: employmentStatus === 'departed' ? '已离职' : '在职' });
       const actions = el('span');
       if (adminCanManageStaffRow(r, false)) {
         actions.appendChild(actionButton('编辑', 'btn-edit', function() { openModal('staff', r.id); }));
+        actions.appendChild(actionButton(employmentStatus === 'departed' ? '恢复在职' : '办理离职', employmentStatus === 'departed' ? 'btn-save' : 'btn-del', function() { setStaffEmploymentStatus(r.id, employmentStatus === 'departed' ? 'active' : 'departed'); }));
       } else {
         actions.appendChild(el('span', { style: 'font-size:11px;color:var(--muted);', text: '无编辑权限' }));
       }
@@ -2037,7 +2047,7 @@ async function openModal(tab, id) {
     ...(isStoreAdmin() ? [] : [{ value: '向里造型', text: '向里造型' }])
   ], currentAdminStore() || data.store || '自由手艺人'));
   if (id) {
-    box.appendChild(el('div', { style: 'margin-top:10px;color:var(--muted);font-size:11px;', text: '员工停用不在此页处理，避免把“待审核”和“已停用”混为同一状态。' }));
+    box.appendChild(el('div', { style: 'margin-top:10px;color:var(--muted);font-size:11px;', text: '离职会保留历史发质、预约、护理与训练记录，并立即禁止该账号继续登录。' }));
   }
   appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   document.getElementById('modal').classList.add('show');
@@ -2060,6 +2070,7 @@ async function saveStaff(id) {
   if (!id) {
     if (!pass) { toast('请输入密码', 'err'); return; }
     data.active = true;
+    data.employment_status = 'active';
   }
   if (pass) {
     try {
@@ -2082,6 +2093,31 @@ async function saveStaff(id) {
     }
   }
   await upsert('staff', id, data);
+}
+
+async function setStaffEmploymentStatus(id, nextStatus) {
+  const leaving = nextStatus === 'departed';
+  if (!confirm(leaving ? '确认办理离职？该员工将立即不能登录，历史业务记录会保留。' : '确认恢复该员工为在职？恢复后可重新登录。')) return;
+  try {
+    const existing = await loadOne('staff', id);
+    if (!adminCanManageStaffRow(existing, false)) throw new Error('无权管理该账号');
+    const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
+    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + storeScope, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({ active: !leaving, employment_status: nextStatus })
+    });
+    await ensureOk(r, leaving ? '办理离职失败' : '恢复在职失败');
+    const changed = await r.json();
+    if (!changed.length) throw new Error('员工状态已经变化，请刷新后重试');
+    clearAdminStaffStoreCache();
+    recordAdminAction(leaving ? '办理离职' : '恢复在职', existing.username, existing.store || '');
+    toast(leaving ? '已办理离职，账号已停用' : '已恢复为在职员工', 'ok');
+    loadStaff();
+    updateRegistrationBadge();
+  } catch(e) {
+    toast((leaving ? '办理离职失败: ' : '恢复在职失败: ') + e.message, 'err');
+  }
 }
 
 async function upsert(table, id, data) {

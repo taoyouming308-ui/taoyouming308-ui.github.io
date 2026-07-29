@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v395 (2026-07-29)
+
+- 员工管理新增“在职／已离职／全部员工”筛选；离职员工仍可查看、编辑和恢复在职。
+- “办理离职”会将账号停用并记录离职状态，员工不能继续登录；发质、预约、护理、训练和审计历史保留不删。
+- 注册审核与离职状态分离，待审核账号不会再和离职员工混在一起。
+- 已应用员工状态迁移并完成后台、版本、发布完整性和页面冒烟验证。
+- App version: v395
+
 ## Customer AI tunnel recovery (2026-07-26, no app version bump)
 
 - Replaced the missing tunnel-update entry point with a tracked, tested publisher that reads the managed tunnel log, probes `/api/codex-plan`, and only publishes a changed HTTPS address after the probe succeeds.
