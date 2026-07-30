@@ -205,6 +205,9 @@ class SessionIdentityTests(unittest.TestCase):
 
 
 class SyncWindowTests(unittest.TestCase):
+    def test_incremental_batch_fits_hermes_execution_window(self):
+        self.assertEqual(SYNC.INCREMENTAL_SYNC_LIMIT, 8)
+
     def test_rotates_and_wraps_without_duplicates(self):
         phones = [f"phone-{index}" for index in range(7)]
         selected = SYNC.select_sync_window(phones, limit=3, slot=2)

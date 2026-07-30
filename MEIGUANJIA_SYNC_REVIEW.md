@@ -91,6 +91,7 @@ Current audit findings from sample data:
 - Customer profile backfill has one scheduler only. Do not run unmanaged endless loops or duplicate OS/Hermes backfill schedules.
 - The main customer session currently lacks bill-list permission. Bill list/detail reads use the isolated read-only history session path (default `~/.hermes/meiguanjia-care-config.json`); this sync path does not renew or modify that session and never invokes inventory endpoints.
 - Recent bill enrichment rotates within 45 days instead of across the customer's entire history. The hourly `services 3` refresh prioritizes recent `hair_records` customers, then recent booking customers, and shares the normal customer-sync lock.
+- Normal customer sync rotates 8 profiles per run so it finishes inside the Hermes no-agent 120-second limit; the separate backfill job handles older gaps.
 - The 15-minute read-only health watchdog checks status freshness, source/runtime hashes, active care queue age, latest reconciliation date, and the tracked/runtime 向里造型 outbound disable flag.
 
 5. Add sync metadata.

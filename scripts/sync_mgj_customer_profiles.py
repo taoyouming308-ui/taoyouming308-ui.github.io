@@ -64,6 +64,7 @@ HISTORY_RECORD_LIMIT = 500
 HISTORY_RECENT_DAYS = 45
 SERVICE_REFRESH_DETAIL_CALLS = 8
 SERVICE_REFRESH_LIMIT = 5
+INCREMENTAL_SYNC_LIMIT = 8
 LOCK_PATH = "/tmp/sync_mgj_all.lock"
 STATUS_PATH = "/Users/a1/.hermes/sync_status.json"
 BACKFILL_STATUS_PATH = "/Users/a1/.hermes/mgj_customer_backfill.json"
@@ -1449,13 +1450,13 @@ if __name__ == "__main__":
                 final_status = "degraded"
     
     else:
-        # 增量同步（默认cron模式）：只查今天+未来2天，最多20个
+        # 增量同步（默认cron模式）：单批必须低于Hermes 120秒上限
         log("⏱ 增量同步模式（cron）")
         phones = get_booking_phones(days_back=1, days_forward=2)
-        if len(phones) > 20:
+        if len(phones) > INCREMENTAL_SYNC_LIMIT:
             total_phones = len(phones)
-            phones = select_sync_window(phones, limit=20)
-            log(f"  轮换同步20个（共{total_phones}个）")
+            phones = select_sync_window(phones, limit=INCREMENTAL_SYNC_LIMIT)
+            log(f"  轮换同步{INCREMENTAL_SYNC_LIMIT}个（共{total_phones}个）")
         log(f"📞 获取到 {len(phones)} 个客户手机号")
         if phones:
             ok, fail, skipped = sync_phones(phones, "增量同步")
