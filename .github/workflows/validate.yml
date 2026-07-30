@@ -35,6 +35,7 @@ jobs:
         run: |
           node scripts/test-hair-task-state.js
           node scripts/test-hair-service-photos.js
+          node scripts/test-hair-save-durability.js
       - name: Protect customer archive rendering
         run: node scripts/test-customer-archive-rendering.js
       - name: Protect backend workflows

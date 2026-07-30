@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v399 (2026-07-31)
+
+- 发质分析新建、云端编辑和本地草稿重试统一使用 `persistAndVerifyHairRecord`：幂等写入 `hair_records` 后立即按记录 ID 回读，完整 `record_data` 一致才显示成功。
+- 本地 `localStorage` 写入改为显式返回结果；本地失败仍继续直存云端，云端失败则保留可见重试状态，两端失败时阻止关闭表单。
+- 移除新建记录分配助理时的重复乐观上传；不再在云端确认前把本地记录标成已同步。
+- 本地“上传”改为保存完整 canonical `hair_records`，保留预约 ID、服务日期和全部原表字段，不再只写入旧版摘要队列。
+- 新增 `scripts/test-hair-save-durability.js` 并接入 GitHub CI 与 pre-push，覆盖本地失败容错、云端写入、精确回读、内容不一致拒绝和重试 ID 稳定性。
+- 生产只读核验：无名名下、8 月 1 日预约的石小姐没有本次新云端发质表或分析队列记录，只有 7 月 4 日旧档；本次已丢失内容未被猜测补写，旧档未修改。
+- App version: v399
+
 ## v398 (2026-07-30)
 
 - 预约页“查看方案”补齐预约 ID 传递，发质档案优先使用 `findHairRecordForBooking` 精确关联本次预约，兼容同手机号、同服务日的旧记录。
