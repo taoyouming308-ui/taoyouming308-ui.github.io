@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="395">
+<html lang="zh-CN" data-version="396">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=395"></script>
-<script src="hair-vision-training.v1.js?v=395"></script>
-<script src="aesthetic-growth.v2.js?v=395"></script>
+<script src="aesthetic-knowledge.v1.js?v=396"></script>
+<script src="hair-vision-training.v1.js?v=396"></script>
+<script src="aesthetic-growth.v2.js?v=396"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6602,10 +6602,10 @@ function initApp() {
 
     if (showLoading === false && cached && cached.length > 0) {
       // 轮询刷新时直接显示已缓存数据（不闪）
-      renderBookings(cached, list, false);
+      renderBookings(cached.filter(isVisibleCustomerBooking), list, false);
     } else if (cached && cached.length > 0) {
       // 首次加载：先显示缓存，后面刷新
-      renderBookings(cached, list, true);
+      renderBookings(cached.filter(isVisibleCustomerBooking), list, true);
     } else if (showLoading !== false) {
       list.innerHTML = '<div class="booking-loading">加载中...</div>';
     }
@@ -6615,6 +6615,7 @@ function initApp() {
     }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(rows){
       rows = Array.isArray(rows) ? rows : [];
+      rows = rows.filter(isVisibleCustomerBooking);
       if (BOOKING_BARBER) {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
@@ -6635,8 +6636,16 @@ function initApp() {
     });
   }
 
+  function isVisibleCustomerBooking(row) {
+    row = row || {};
+    var name = String(row.customer_name || '').trim();
+    var phone = String(row.customer_phone || '').replace(/\D/g, '');
+    return !!phone || (!!name && name !== '待定' && name !== '未登记');
+  }
+
   // ★ 独立渲染函数，避免重复代码
   function renderBookings(rows, list, isOffline) {
+    rows = (rows || []).filter(isVisibleCustomerBooking);
     if (rows.length === 0) {
       list.innerHTML = '<div class="booking-empty"><strong>当天暂无预约</strong><span>可以选择其他日期查看</span></div>';
       return;

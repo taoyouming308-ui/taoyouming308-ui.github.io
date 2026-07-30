@@ -34,6 +34,8 @@ PROTOCOL_VERSION = 2
 LEGACY_ID_BOUNDARY = 0
 MAX_GROUPS_PER_RUN = 3
 PROCESSING_STALE_SECONDS = 300
+SUPABASE_MAX_ATTEMPTS = 3
+SUPABASE_RETRYABLE_HTTP_CODES = frozenset({408, 429, 500, 502, 503, 504})
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_STORE_CONFIG = os.path.join(SCRIPT_DIR, "care_outbound_store_config.json")
@@ -285,9 +287,15 @@ def document_matches(
 
 
 class SupabaseClient:
-    def __init__(self, base_url: str = SUPABASE_URL, api_key: str = SUPABASE_KEY):
+    def __init__(
+        self,
+        base_url: str = SUPABASE_URL,
+        api_key: str = SUPABASE_KEY,
+        sleep_fn=time.sleep,
+    ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
+        self.sleep_fn = sleep_fn
 
     def request(
         self,
@@ -305,14 +313,27 @@ class SupabaseClient:
         }
         body = json.dumps(payload, ensure_ascii=False).encode() if payload is not None else None
         request = urllib.request.Request(url, data=body, headers=headers, method=method)
-        try:
-            with urllib.request.urlopen(request, timeout=20, context=SSL_CONTEXT) as response:
-                raw = response.read().decode()
-        except urllib.error.HTTPError as error:
-            raw = error.read().decode()
-            raise WorkerFailure(f"Supabase HTTP {error.code}: {raw[:300]}") from error
-        except Exception as error:
-            raise WorkerFailure(f"Supabase请求失败: {error}") from error
+        raw = ""
+        for attempt in range(SUPABASE_MAX_ATTEMPTS):
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=20, context=SSL_CONTEXT
+                ) as response:
+                    raw = response.read().decode()
+                break
+            except urllib.error.HTTPError as error:
+                error_body = error.read().decode()
+                if (
+                    error.code not in SUPABASE_RETRYABLE_HTTP_CODES
+                    or attempt == SUPABASE_MAX_ATTEMPTS - 1
+                ):
+                    raise WorkerFailure(
+                        f"Supabase HTTP {error.code}: {error_body[:300]}"
+                    ) from error
+            except Exception as error:
+                if attempt == SUPABASE_MAX_ATTEMPTS - 1:
+                    raise WorkerFailure(f"Supabase请求失败: {error}") from error
+            self.sleep_fn(1.0 + attempt)
         if not raw:
             return None
         try:
@@ -737,7 +758,14 @@ class CareOutboundWorker:
         if str(document.get("employeeid") or "") != employee_id:
             raise NeedsReview("审核后的美管加出库单员工与发型师不一致")
         bill_no = str(document.get("billno") or document.get("id") or "")
-        self.supabase.set_status(queue_ids, "completed", f"美管加单号:{bill_no} 已审核")
+        try:
+            self.supabase.set_status(
+                queue_ids, "completed", f"美管加单号:{bill_no} 已审核"
+            )
+        except WorkerFailure as error:
+            raise NeedsReview(
+                f"美管加单号:{bill_no} 已审核，但完成状态回写失败，禁止重复出库: {error}"
+            ) from error
         self.log(f"完成: {batch_key} -> {bill_no}")
 
     def run(self, dry_run: bool = False) -> int:

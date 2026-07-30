@@ -36,6 +36,10 @@
 - A booking may be deleted only when that exact store/date API call succeeded and omitted the stable appointment id.
 - Customer backfill canonical wrapper: `scripts/backfill_mgj_customer_profiles.sh`. Run one scheduled backfill source only; unmanaged endless loops are forbidden.
 - Hermes no-agent scripts have a 120-second execution limit. Keep customer backfill at 15 profiles per run so the 2-second API pacing can finish before timeout.
+- Customer totals/search continue using `~/.hermes/meiguanjia-config.json`. Bill list/detail reads use `MEIGUANJIA_HISTORY_CONFIG_PATH`, defaulting to the isolated `~/.hermes/meiguanjia-care-config.json`; the customer sync may only read this file and must never renew, overwrite, or use it for inventory writes.
+- Recent bill details rotate only within the latest 45 days. `scripts/refresh_mgj_service_records.sh` runs `services 3` at minute `15` each hour and shares `/tmp/sync_mgj_all.lock`.
+- Health audit canonical source: `scripts/check_mgj_sync_health.py`; wrapper: `scripts/mgj_sync_health_watch.sh`. The no-agent watchdog runs every 15 minutes, stays silent while healthy, and reports drift/staleness while verifying that 向里造型 automatic outbound remains disabled. Its canonical checkout defaults to the isolated release worktree and can be changed explicitly with `MGJ_REPO_ROOT`.
+- Canonical runtime deployer: `scripts/deploy_mgj_sync_runtime.sh`. It deploys customer, booking, backfill, recent-service and health scripts to `~/.hermes/scripts/` and verifies SHA-256.
 
 This file is the working context Hermes should read before editing the app.
 

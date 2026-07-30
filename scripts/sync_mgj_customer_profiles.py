@@ -45,6 +45,10 @@ from datetime import datetime, timedelta
 
 # ── 配置 ──
 CONFIG_PATH = "/Users/a1/.hermes/meiguanjia-config.json"
+HISTORY_CONFIG_PATH = os.environ.get(
+    "MEIGUANJIA_HISTORY_CONFIG_PATH",
+    os.path.expanduser("~/.hermes/meiguanjia-care-config.json"),
+)
 SERVER = "vip12.meiguanjia.net"
 SUPABASE_URL = "https://pdssrmpeiuwvxzsgschm.supabase.co"
 SUPABASE_KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t"
@@ -57,6 +61,9 @@ API_TIMEOUT = 20
 HISTORY_START_DATE = "2018-01-01"
 HISTORY_DETAIL_CALLS = 2
 HISTORY_RECORD_LIMIT = 500
+HISTORY_RECENT_DAYS = 45
+SERVICE_REFRESH_DETAIL_CALLS = 8
+SERVICE_REFRESH_LIMIT = 5
 LOCK_PATH = "/tmp/sync_mgj_all.lock"
 STATUS_PATH = "/Users/a1/.hermes/sync_status.json"
 BACKFILL_STATUS_PATH = "/Users/a1/.hermes/mgj_customer_backfill.json"
@@ -79,14 +86,14 @@ def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
-def load_config():
-    with open(CONFIG_PATH, encoding="utf-8") as config_file:
+def load_config(path=CONFIG_PATH):
+    with open(path, encoding="utf-8") as config_file:
         return json.load(config_file)
 
 
-def load_cookies():
+def load_cookies(config_path=None):
     """从配置文件加载美管加cookie"""
-    cfg = load_config()
+    cfg = load_config() if config_path is None else load_config(config_path)
     ck = cfg.get("cookies", "")
     return ck if isinstance(ck, str) else "".join(ck)
 
@@ -106,8 +113,8 @@ def session_employee_id():
     return str(configured or cookie_value(load_cookies(), "userId") or LEGACY_EMP_ID)
 
 
-def session_shop_id():
-    cfg = load_config()
+def session_shop_id(config_path=None):
+    cfg = load_config() if config_path is None else load_config(config_path)
     return str(cfg.get("shop_id") or (cfg.get("shop") or {}).get("id") or DEFAULT_SESSION_SHOP_ID)
 
 
@@ -287,7 +294,7 @@ def form_post(path, data):
         return resp.read().decode("utf-8", errors="replace")
 
 
-def multipart_post(path, json_data, shop_id, retries=2):
+def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     """
     multipart/form-data POST请求。
     通过curl发送，带完整浏览器头+http2以绕过WAF。
@@ -310,7 +317,7 @@ def multipart_post(path, json_data, shop_id, retries=2):
     tmp.write(body)
     tmp.close()
     
-    cookies = load_cookies()
+    cookies = load_cookies(config_path)
     
     cmd = [
         "curl", "-s", "-k", "--connect-timeout", "10", "--max-time", "20",
@@ -451,7 +458,40 @@ def map_bill_summary(bill):
     }
 
 
-def enrich_bill_history(history_item, shop_id):
+def select_history_detail_indexes(
+    history,
+    detail_calls,
+    recent_days=HISTORY_RECENT_DAYS,
+    slot=None,
+    today=None,
+):
+    """Prioritize the newest bill, then rotate only through recent bills."""
+    if not history or detail_calls <= 0:
+        return []
+    today = today or datetime.now().date()
+    cutoff = today - timedelta(days=recent_days)
+    recent_indexes = []
+    for index, row in enumerate(history):
+        try:
+            row_date = datetime.strptime(str(row.get("date") or ""), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if row_date >= cutoff:
+            recent_indexes.append(index)
+    pool = recent_indexes or list(range(len(history)))
+    indexes = [0]
+    candidates = [index for index in pool if index != 0]
+    if not candidates:
+        return indexes[:detail_calls]
+    if slot is None:
+        slot = int(time.time() // 1800)
+    start = (int(slot) * max(1, detail_calls - 1)) % len(candidates)
+    for offset in range(min(detail_calls - 1, len(candidates))):
+        indexes.append(candidates[(start + offset) % len(candidates)])
+    return indexes
+
+
+def enrich_bill_history(history_item, shop_id, config_path=HISTORY_CONFIG_PATH):
     bill_id = history_item.get("source_id") or history_item.get("id")
     if not bill_id:
         return history_item
@@ -459,7 +499,7 @@ def enrich_bill_history(history_item, shop_id):
         "parentShopId": int(PARENT_SHOP_ID),
         "id": int(bill_id),
         "fromHis": 0,
-    }, session_shop_id(), retries=1)
+    }, session_shop_id(config_path), retries=1, config_path=config_path)
     content = detail.get("content") or {}
     item_rows = []
     for item in content.get("details") or []:
@@ -498,8 +538,9 @@ def fetch_service_history(
     member_card_id,
     billing_shop_id,
     detail_calls=HISTORY_DETAIL_CALLS,
+    config_path=HISTORY_CONFIG_PATH,
 ):
-    """Fetch every bill summary and enrich the latest records with line items."""
+    """Fetch bills through the read-only history session and enrich recent rows."""
     if not member_card_id:
         raise RuntimeError("缺少会员卡ID，无法查询消费记录")
     bills = multipart_post("member!queryMemberBillListnew.action", {
@@ -514,7 +555,7 @@ def fetch_service_history(
         "startDate": HISTORY_START_DATE,
         "endDate": datetime.now().strftime("%Y-%m-%d"),
         "isFromOpenCard": 0,
-    }, session_shop_id())
+    }, session_shop_id(config_path), config_path=config_path)
     rows = bills.get("content")
     if not isinstance(rows, list):
         raise RuntimeError("消费记录接口返回格式异常")
@@ -524,14 +565,14 @@ def fetch_service_history(
         key=lambda row: (row.get("date", ""), row.get("time", ""), row.get("id", "")),
         reverse=True,
     )
-    detail_indexes = [0] if history and detail_calls > 0 else []
-    if len(history) > 1 and detail_calls > 1:
-        rotating_index = int(time.time() // 1800) % len(history)
-        if rotating_index not in detail_indexes:
-            detail_indexes.append(rotating_index)
-    for index in detail_indexes[:detail_calls]:
+    detail_indexes = select_history_detail_indexes(history, detail_calls)
+    for index in detail_indexes:
         try:
-            history[index] = enrich_bill_history(history[index], billing_shop_id)
+            history[index] = enrich_bill_history(
+                history[index],
+                billing_shop_id,
+                config_path=config_path,
+            )
         except Exception as exc:
             log(f"  ⚠️ 账单{history[index].get('id')}明细读取失败，保留账单摘要: {exc}")
     return history[:HISTORY_RECORD_LIMIT]
@@ -1197,6 +1238,76 @@ def run_backfill(limit=20):
     return ok, fail, len(candidates)
 
 
+def get_recent_hair_record_phones(days_back=HISTORY_RECENT_DAYS):
+    start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    rows = supabase_get(
+        "hair_records?select=customer_phone"
+        "&status=neq.deleted"
+        f"&created_at=gte.{start}T00:00:00"
+        "&order=created_at.desc&limit=1000"
+    )
+    result = []
+    for row in rows:
+        phone = str(row.get("customer_phone") or "").strip()
+        if phone and phone not in result:
+            result.append(phone)
+    return result
+
+
+def select_service_refresh_phones(hair_phones, booking_phones, limit, slot):
+    """Reserve most of each small refresh batch for recent hair-form customers."""
+    hair_limit = min(len(hair_phones), max(1, (limit + 1) // 2))
+    selected = select_sync_window(hair_phones, limit=hair_limit, slot=slot)
+    remaining = limit - len(selected)
+    booking_pool = [phone for phone in booking_phones if phone not in selected]
+    selected.extend(select_sync_window(booking_pool, limit=remaining, slot=slot))
+    return selected
+
+
+def run_service_refresh(limit=SERVICE_REFRESH_LIMIT):
+    """Refresh recent bill details in small rotating batches for reconciliation."""
+    hair_phones = get_recent_hair_record_phones()
+    booking_phones = get_booking_phones(days_back=HISTORY_RECENT_DAYS, days_forward=0)
+    selected = select_service_refresh_phones(
+        hair_phones,
+        booking_phones,
+        limit,
+        int(time.time() // 3600),
+    )
+    log(
+        f"🧾 近期消费明细刷新: 本批{len(selected)}人"
+        f"（发质档案候选{len(hair_phones)}，预约候选{len(booking_phones)}）"
+    )
+    ok = 0
+    fail = 0
+    service_rows = 0
+    for index, phone in enumerate(selected):
+        log(f"[{index + 1}/{len(selected)}] 刷新消费明细...")
+        try:
+            data = get_customer_full(
+                phone,
+                history_detail_calls=SERVICE_REFRESH_DETAIL_CALLS,
+            )
+            if not data.get("found"):
+                fail += 1
+                continue
+            data["phone"] = phone
+            success, action = upsert_customer(data)
+            if success:
+                ok += 1
+                service_rows += len(build_service_records(data))
+                log(f"  ✅ {action}")
+            else:
+                fail += 1
+                log(f"  ❌ {action}")
+        except Exception as exc:
+            fail += 1
+            log(f"  ❌ 近期明细刷新失败: {exc}")
+        if index < len(selected) - 1:
+            time.sleep(1)
+    return ok, fail, service_rows
+
+
 def run_validate(phones, label="验证"):
     """验证一批客户的数据"""
     total = len(phones)
@@ -1242,7 +1353,19 @@ if __name__ == "__main__":
         log(f"🧩 缺失消费/套餐断点回填，批次上限{batch_limit}")
         ok, fail, processed = run_backfill(batch_limit)
         status_details = {"success": ok, "failed": fail, "processed": processed}
-        if fail:
+        if fail and not ok:
+            final_status = "degraded"
+
+    elif mode == "services":
+        batch_limit = int_number(sys.argv[2], SERVICE_REFRESH_LIMIT) if len(sys.argv) > 2 else SERVICE_REFRESH_LIMIT
+        batch_limit = max(1, min(batch_limit, 10))
+        ok, fail, service_rows = run_service_refresh(batch_limit)
+        status_details = {
+            "success": ok,
+            "failed": fail,
+            "service_records_seen": service_rows,
+        }
+        if fail and not ok:
             final_status = "degraded"
 
     elif mode == "full":

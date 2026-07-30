@@ -138,6 +138,60 @@ class MemberCardSelectionTests(unittest.TestCase):
         self.assertEqual(SYNC.choose_member_card([], 999), 999)
 
 
+class HistorySessionRoutingTests(unittest.TestCase):
+    @mock.patch.object(SYNC, "multipart_post")
+    @mock.patch.object(SYNC, "session_shop_id", return_value="1009951")
+    def test_bill_history_uses_isolated_read_only_session(self, session_shop_id, post):
+        post.return_value = {"code": 0, "content": []}
+        config_path = "/tmp/read-only-history-session.json"
+
+        self.assertEqual(
+            SYNC.fetch_service_history(
+                "customer-1",
+                123,
+                "1837032",
+                detail_calls=0,
+                config_path=config_path,
+            ),
+            [],
+        )
+        session_shop_id.assert_called_once_with(config_path)
+        self.assertEqual(post.call_args.kwargs["config_path"], config_path)
+
+    def test_recent_bill_rotation_does_not_waste_calls_on_old_history(self):
+        history = [
+            {"id": "newest", "date": "2026-07-30"},
+            {"id": "recent-1", "date": "2026-07-20"},
+            {"id": "recent-2", "date": "2026-07-15"},
+            {"id": "old", "date": "2025-01-01"},
+        ]
+        indexes = SYNC.select_history_detail_indexes(
+            history,
+            detail_calls=2,
+            recent_days=45,
+            slot=1,
+            today=SYNC.datetime(2026, 7, 30).date(),
+        )
+        self.assertEqual(indexes[0], 0)
+        self.assertIn(indexes[1], (1, 2))
+        self.assertNotIn(3, indexes)
+
+    def test_service_refresh_can_enrich_multiple_recent_bills_per_customer(self):
+        history = [
+            {"id": f"bill-{index}", "date": f"2026-07-{30-index:02d}"}
+            for index in range(10)
+        ]
+        indexes = SYNC.select_history_detail_indexes(
+            history,
+            detail_calls=8,
+            recent_days=45,
+            slot=0,
+            today=SYNC.datetime(2026, 7, 30).date(),
+        )
+        self.assertEqual(len(indexes), 8)
+        self.assertEqual(len(indexes), len(set(indexes)))
+
+
 class SessionIdentityTests(unittest.TestCase):
     def test_reads_employee_id_from_current_session_cookie(self):
         with mock.patch.object(SYNC, "load_config", return_value={}), \
@@ -160,6 +214,17 @@ class SyncWindowTests(unittest.TestCase):
     def test_keeps_short_list_unchanged(self):
         phones = ["a", "b"]
         self.assertEqual(SYNC.select_sync_window(phones, limit=3, slot=10), phones)
+
+    def test_service_refresh_reserves_capacity_for_hair_form_customers(self):
+        selected = SYNC.select_service_refresh_phones(
+            ["hair-1", "hair-2", "hair-3"],
+            ["booking-1", "hair-1", "booking-2"],
+            limit=3,
+            slot=0,
+        )
+        self.assertEqual(len(selected), 3)
+        self.assertEqual(len([phone for phone in selected if phone.startswith("hair-")]), 2)
+        self.assertEqual(len(selected), len(set(selected)))
 
 
 class ServiceReconciliationTests(unittest.TestCase):

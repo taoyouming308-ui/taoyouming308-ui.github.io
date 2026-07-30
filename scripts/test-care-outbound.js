@@ -7,6 +7,16 @@ function fail(message) {
 }
 
 const html = fs.readFileSync('perm-app.html', 'utf8');
+const storeConfig = JSON.parse(fs.readFileSync('scripts/care_outbound_store_config.json', 'utf8'));
+if (!storeConfig.shops || !storeConfig.shops['向里造型']) {
+  fail('Xiangli store config is missing');
+}
+if (storeConfig.shops['向里造型'].enabled !== false) {
+  fail('Xiangli outbound must stay disabled in tracked runtime config');
+}
+if (Object.keys(storeConfig.shops['向里造型'].products || {}).length !== 0) {
+  fail('Xiangli outbound product mapping must stay empty while disabled');
+}
 const functionNames = [
   'careUsageKey',
   'careUsageTotals',

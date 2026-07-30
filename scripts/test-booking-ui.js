@@ -15,11 +15,18 @@ const app = fs.readFileSync('perm-app.html', 'utf8');
 const renderStart = app.indexOf('function renderBookings(rows, list, isOffline)');
 const renderEnd = app.indexOf('function bookingNeedsHairAnalysis', renderStart);
 const render = app.slice(renderStart, renderEnd);
+const visibilityStart = app.indexOf('function isVisibleCustomerBooking(row)');
+const visibilityEnd = app.indexOf('// ★ 独立渲染函数', visibilityStart);
+const visibility = app.slice(visibilityStart, visibilityEnd);
 const datesStart = app.indexOf('function renderDateStrip()');
 const datesEnd = app.indexOf('window.pickDate', datesStart);
 const dates = app.slice(datesStart, datesEnd);
 
 assert(renderStart >= 0 && renderEnd > renderStart, 'booking renderer not found');
+assert(visibilityStart >= 0 && visibilityEnd > visibilityStart, 'booking visibility guard not found');
+assert(visibility.includes("name !== '待定'") && visibility.includes("name !== '未登记'"), 'blank Meiguanjia slots are not excluded');
+assert(visibility.includes('!!phone ||'), 'named or phoned customer bookings must remain visible');
+assert(render.includes('rows = (rows || []).filter(isVisibleCustomerBooking)'), 'cached placeholder slots can still render');
 assert(render.includes('bi-time-column'), 'time is not the leading booking column');
 assert(render.includes('预约项目') && render.includes('bi-service-text'), 'booking project is not explicitly labeled');
 assert(!render.includes('<span class="bi-service-tag'), 'booking project regressed to a pill/card tag');
