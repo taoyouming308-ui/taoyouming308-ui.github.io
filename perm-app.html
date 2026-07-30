@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="396">
+<html lang="zh-CN" data-version="397">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3035,9 +3035,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=396"></script>
-<script src="hair-vision-training.v1.js?v=396"></script>
-<script src="aesthetic-growth.v2.js?v=396"></script>
+<script src="aesthetic-knowledge.v1.js?v=397"></script>
+<script src="hair-vision-training.v1.js?v=397"></script>
+<script src="aesthetic-growth.v2.js?v=397"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7924,14 +7924,35 @@ function initApp() {
     }
     return found;
   }
+  function fetchAllSupabaseRows(baseUrl, pageSize) {
+    pageSize = Math.max(1, Math.min(parseInt(pageSize, 10) || 1000, 1000));
+    var allRows = [];
+    function fetchPage(offset) {
+      var separator = baseUrl.indexOf('?') === -1 ? '?' : '&';
+      var pageUrl = baseUrl + separator + 'limit=' + pageSize + '&offset=' + offset;
+      return fetch(pageUrl, {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function(rows) {
+        rows = Array.isArray(rows) ? rows : [];
+        allRows = allRows.concat(rows);
+        if (rows.length === pageSize) return fetchPage(offset + pageSize);
+        return allRows;
+      });
+    }
+    return fetchPage(0);
+  }
+
+  function fetchAllActiveHairRecordRows() {
+    var url = SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc';
+    return fetchAllSupabaseRows(url, 1000);
+  }
+
   function fetchHairRecordsForCustomer(phone, name, limit) {
-    limit = limit || 100;
-    return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=' + limit, {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function(rows) {
+    limit = parseInt(limit, 10) || 0;
+    return fetchAllActiveHairRecordRows().then(function(rows) {
       rows = Array.isArray(rows) ? rows : [];
       var list = rows.map(normalizeHairCloudRecord).filter(function(rec) {
         return hairRecordMatchesCustomer(rec, phone, name);
@@ -7941,6 +7962,7 @@ function initApp() {
         var tb = new Date(b.createdAt || b.date || 0).getTime() || 0;
         return tb - ta;
       });
+      if (limit > 0) list = list.slice(0, limit);
       return enrichHairRecordsWithCareRows(list);
     });
   }
@@ -12124,18 +12146,9 @@ function initApp() {
     if (detailEl) detailEl.style.display = 'none';
     if (versionEl) versionEl.textContent = 'v' + (parseInt(document.documentElement.getAttribute('data-version')) || 1);
 
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=200', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) {
-      if (!r.ok) return [];
-      return r.json();
-    }).catch(function(){ return []; });
-    var legacyQueuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc&limit=100', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) {
-      if (!r.ok) return [];
-      return r.json();
-    }).catch(function(){ return []; });
+    var hairRecordsPromise = fetchAllActiveHairRecordRows();
+    var legacyQueueUrl = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc';
+    var legacyQueuePromise = fetchAllSupabaseRows(legacyQueueUrl, 1000);
     var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,total_visits,total_consumption,last_visit_date,card_packages,barber_name,shop_name&order=last_visit_date.desc.nullslast&limit=1000', {
       headers: { 'apikey': SUPABASE_KEY }
     }).then(function(r) {
@@ -12157,12 +12170,13 @@ function initApp() {
       function ensureProfileGroup(phone, name) {
         var normPhone = normalizeHairCustomerPhone(phone || '');
         var normName = normalizeHairCustomerName(name || '');
-        var key = normPhone || (normName ? 'name:' + normName : 'unknown');
+        var hasIdentity = !!(normPhone || normName);
+        var key = normPhone || (normName ? 'name:' + normName : 'unlinked');
         var displayPhone = normPhone || phone || '';
-        var displayName = name || '未知';
+        var displayName = name || (hasIdentity ? '未知' : '待关联顾客');
         if (!groups[key]) groups[key] = { key: key, phone: displayPhone, name: displayName, records: [], profileRows: [], _ids: {} };
         if (!groups[key].phone && displayPhone) groups[key].phone = displayPhone;
-        if ((groups[key].name === '未知' || !groups[key].name) && displayName !== '未知') groups[key].name = displayName;
+        if ((groups[key].name === '未知' || groups[key].name === '待关联顾客' || !groups[key].name) && displayName !== '未知' && displayName !== '待关联顾客') groups[key].name = displayName;
         return groups[key];
       }
       function addCustomerProfileRow(row) {
@@ -12174,13 +12188,13 @@ function initApp() {
         rec = rec || {};
         var phone = normalizeHairCustomerPhone(row.customer_phone || row.phone || rec.customerPhone || rec.phone || '');
         if (!phone) phone = row.customer_phone || row.phone || rec.customerPhone || rec.phone || '';
-        var name = row.customer_name || rec.customerName || rec.name || '未知';
+        var name = row.customer_name || rec.customerName || rec.name || '';
         var g = ensureProfileGroup(phone, name);
         var rid = (source || '') + ':' + (row.id || rec.id || row.created_at || g.records.length);
         if (g._ids[rid]) return;
         g._ids[rid] = true;
         g.records.push({ row: row, rec: rec, source: source });
-        if (g.name === '未知' && name !== '未知') g.name = name;
+        if ((g.name === '未知' || g.name === '待关联顾客') && name) g.name = name;
       }
       for (var pi = 0; pi < customerRows.length; pi++) addCustomerProfileRow(customerRows[pi]);
       var normalizedHairRows = hairRows.map(normalizeHairCloudRecord);
@@ -12232,7 +12246,7 @@ function initApp() {
       if (ts && ts.root && ts.mid && ts.end) {
         diagSummary = '根' + ts.root.level + '/' + ts.mid.level + '/' + ts.end.level;
       }
-      var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
+      var name = (g.name === '未知' || g.name === '待关联顾客') && g.records.length > 0 ? (g.records[0].rec.customerName || g.name) : g.name;
       var badgeText = g.records.length > 0 ? (g.records.length + '表') : '消费档案';
       html += '<div class="profile-card" onclick="showCustomerProfile(\'' + escAttr(g.key || g.phone || '') + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
@@ -12295,7 +12309,7 @@ function initApp() {
   function renderCustomerProfileDetail(g) {
     var detailEl = document.getElementById('profile-detail');
     if (!detailEl) return;
-    var name = g.name === '未知' && g.records.length > 0 ? (g.records[0].rec.customerName || '未知') : g.name;
+    var name = (g.name === '未知' || g.name === '待关联顾客') && g.records.length > 0 ? (g.records[0].rec.customerName || g.name) : g.name;
     var html = '<div style="margin-bottom:12px;">';
     html += '<button onclick="backToProfileList()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 0;font-family:var(--font);">← 返回列表</button>';
     html += '</div>';
