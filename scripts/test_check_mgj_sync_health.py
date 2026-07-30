@@ -60,6 +60,39 @@ class HealthAuditTests(unittest.TestCase):
         self.assertEqual(report["status"], "healthy")
         self.assertEqual(report["issues"], [])
 
+    def test_fresh_running_is_healthy_but_stuck_running_is_reported(self):
+        path = self.hermes / "sync_status.json"
+        path.write_text(
+            json.dumps({
+                "status": "running",
+                "updated_at": (self.now - dt.timedelta(minutes=5)).isoformat(),
+            }),
+            encoding="utf-8",
+        )
+        fresh = HEALTH.run_audit(
+            self.repo,
+            self.hermes,
+            now=self.now,
+            network=False,
+        )
+        self.assertEqual(fresh["status"], "healthy")
+
+        path.write_text(
+            json.dumps({
+                "status": "running",
+                "updated_at": (self.now - dt.timedelta(minutes=11)).isoformat(),
+            }),
+            encoding="utf-8",
+        )
+        stuck = HEALTH.run_audit(
+            self.repo,
+            self.hermes,
+            now=self.now,
+            network=False,
+        )
+        self.assertEqual(stuck["status"], "degraded")
+        self.assertTrue(any("running超过10分钟" in issue for issue in stuck["issues"]))
+
     def test_xiangli_enablement_is_critical(self):
         path = self.hermes / "scripts" / "care_outbound_store_config.json"
         config = json.loads(path.read_text(encoding="utf-8"))

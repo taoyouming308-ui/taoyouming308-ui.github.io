@@ -132,8 +132,12 @@ def audit_status_files(
             "status": status.get("status"),
             "age_minutes": round(age, 1) if age is not None else None,
         }
-        if status.get("status") not in ("healthy", "skipped_busy"):
-            issues.append(f"{label}: 状态为{status.get('status') or 'unknown'}")
+        state = status.get("status")
+        if state == "running":
+            if age is None or age > 10:
+                issues.append(f"{label}: running超过10分钟，疑似卡住")
+        elif state not in ("healthy", "skipped_busy"):
+            issues.append(f"{label}: 状态为{state or 'unknown'}")
         if age is None or age > max_age:
             issues.append(f"{label}: 超过{max_age}分钟未更新")
 
