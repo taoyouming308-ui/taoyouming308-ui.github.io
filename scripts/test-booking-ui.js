@@ -33,7 +33,16 @@ assert(!render.includes('<span class="bi-service-tag'), 'booking project regress
 assert(!render.includes("bi-meta\">'+esc(r.time_label"), 'booking time is duplicated in metadata');
 assert(render.includes('<button type="button" class="bi-plan-btn"'), 'plan action is not a semantic button');
 assert(render.includes('data-booking-id'), 'hair-analysis tag is not bound to the booking id');
+assert(render.includes('data-booking-id="\'+escAttr(r.id||\'\')+\'"'), 'plan action does not carry the booking id into the customer archive');
 assert(app.includes("target.closest('.bi-plan-btn')"), 'plan action does not handle clicks on nested arrow content');
+assert(app.includes('showPlanModal(phone, name, barber, bdate, bookingId)'), 'plan action drops the booking id before loading the hair record');
+assert(app.includes('renderHairRecordReadOnly(phone, name, bookingId, bookingDate)'), 'appointment plan does not request a booking-specific hair record');
+assert(app.includes('findHairRecordForBooking(list, bookingId, bookingDate, phone)'), 'cloud hair archive is not matched to the exact appointment');
+assert(app.includes('class="hair-full-archive-btn"'), 'appointment plan is missing the complete original-form action');
+assert(app.includes('window.openHairRecordArchive = function(recordId, phone, bookingId, bookingDate)'), 'complete hair archive opener is missing');
+assert(app.includes('window.loadCloudRecord(recordId, false, true)'), 'complete hair archive does not load the saved cloud record in read-only mode');
+assert(app.includes("banner.textContent = '只读完整档案 · 内容与保存时的发质分析原表一致'"), 'complete archive is not visibly identified as the original read-only form');
+assert(app.includes('if (window._hairArchiveReadOnly) return;'), 'opening a read-only archive can still trigger an accidental save');
 assert(app.includes('identity-mark') && app.includes('identity-logout'), 'minimal identity header is missing');
 assert(app.includes('<button type="button" class="shop-switch'), 'shop switch is not keyboard-accessible');
 assert(dates.includes('var dayNames =') && dates.includes('<button type="button" class="date-chip'), 'date strip is not self-contained and button-based');
