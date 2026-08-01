@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="399">
+<html lang="zh-CN" data-version="400">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -900,14 +900,13 @@ body {
   margin: 0 0 10px 0;
 }
 .hair-tasks-group-body {
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  overflow: visible;
 }
 .hair-tasks-group-body.collapsed {
-  max-height: 0;
+  display: none;
 }
 .hair-tasks-group-body.expanded {
-  max-height: 2000px;
+  display: block;
 }
 /* ── 卡片 ── */
 .hair-task-card {
@@ -934,6 +933,24 @@ body {
 .ht-status-text {
   font-size: 12px;
   color: #8e8e93;
+}
+.ht-status-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ht-status-badge.pending {
+  background: #fff7ed;
+  border-color: #fb923c;
+}
+.ht-status-badge.pending .ht-status-text {
+  color: #9a3412;
+  font-weight: 700;
 }
 .ht-status-dot.pending { background: #FF9500; }
 .ht-status-dot.tech-done { background: #007AFF; }
@@ -1016,6 +1033,13 @@ body {
   text-align: center;
   padding: 4px;
   flex: 1;
+}
+.hair-task-card-info.pending {
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  font-weight: 700;
 }
 .hair-task-card-done {
   font-size: 10px;
@@ -3042,9 +3066,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=399"></script>
-<script src="hair-vision-training.v1.js?v=399"></script>
-<script src="aesthetic-growth.v2.js?v=399"></script>
+<script src="aesthetic-knowledge.v1.js?v=400"></script>
+<script src="hair-vision-training.v1.js?v=400"></script>
+<script src="aesthetic-growth.v2.js?v=400"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -9806,7 +9830,7 @@ function initApp() {
         h += '<div class="hair-task-card-row1">';
         h += '<span class="hair-task-card-seq">' + formatHairRecordSeq(rec) + '</span>';
         h += '<span class="hair-task-card-name">' + esc(person.name) + '</span>';
-        h += '<span><span class="ht-status-dot ' + dotClass + '"></span><span class="ht-status-text">' + esc(primaryStatusText) + '</span></span>';
+        h += '<span class="ht-status-badge ' + (taskStage === 'assistant' ? 'pending' : '') + '"><span class="ht-status-dot ' + dotClass + '"></span><span class="ht-status-text">' + esc(primaryStatusText) + '</span></span>';
         h += '</div>';
         // 第二行：时间 + 电话
         var _dt = r.created_at || rec.createdAt || rec.date || '';
@@ -9829,7 +9853,7 @@ function initApp() {
           if (needsStylistFollowup) {
             h += '<button onclick="loadCloudRecord(\''+escAttr(r.id)+'\',true)" class="hair-task-card-btn danger">填写回访</button>';
           } else if (taskStage === 'assistant') {
-            h += '<span class="hair-task-card-info">等待技师填写</span>';
+            h += '<span class="hair-task-card-info pending">待技师填写</span>';
           }
           h += '<span class="hair-task-card-info">已入档案不可删</span>';
         } else if (isTech && !hasFollowup) {

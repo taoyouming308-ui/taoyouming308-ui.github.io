@@ -79,4 +79,17 @@ if (!html.includes('rows = rows.filter(isHairTaskWithinVisibleWindow);')) {
   fail('all task states must use the 30-day visibility window');
 }
 
-console.log(`hair task state test ok: ${cases.length + archiveCases.length + creationCases.length + 3} cases`);
+if (/\.hair-tasks-group-body\.expanded\s*\{[^}]*max-height\s*:\s*\d+/s.test(html)) {
+  fail('expanded task groups must not cap visible record height');
+}
+if (!/\.hair-tasks-group-body\.collapsed\s*\{[^}]*display\s*:\s*none/s.test(html)) {
+  fail('collapsed task groups must hide without clipping expanded records');
+}
+if (!html.includes('class="ht-status-badge ')) {
+  fail('task status must render as a readable badge');
+}
+if (!html.includes('class="hair-task-card-info pending">待技师填写</span>')) {
+  fail('stylist pending-assistant action must use the emphasized pending style');
+}
+
+console.log(`hair task state test ok: ${cases.length + archiveCases.length + creationCases.length + 7} cases`);
