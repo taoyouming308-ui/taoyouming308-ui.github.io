@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="401">
+<html lang="zh-CN" data-version="402">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3066,9 +3066,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=401"></script>
-<script src="hair-vision-training.v1.js?v=401"></script>
-<script src="aesthetic-growth.v2.js?v=401"></script>
+<script src="aesthetic-knowledge.v1.js?v=402"></script>
+<script src="hair-vision-training.v1.js?v=402"></script>
+<script src="aesthetic-growth.v2.js?v=402"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -12751,6 +12751,45 @@ window.renderHairServicePhoto = function(photoType) {
     if (location.hash) q += location.hash;
     return location.pathname + q;
   };
+  var readDocumentVersion = function(html) {
+    var match = String(html || '').match(/<html[^>]*data-version=["'](\d+)["']/i);
+    return match ? parseInt(match[1]) || 0 : 0;
+  };
+  var refreshToVersion = function(v) {
+    var banner = document.getElementById('update-banner');
+    if (banner && banner.getAttribute('data-updating') === '1') return;
+    if (banner) {
+      banner.setAttribute('data-updating', '1');
+      banner.textContent = '🔄 正在更新到 v' + v + '…';
+    }
+    var target = buildVersionUrl(v);
+    var unregisterTask = Promise.resolve();
+    if ('serviceWorker' in navigator) {
+      unregisterTask = navigator.serviceWorker.getRegistrations().then(function(regs) {
+        return Promise.all(regs.map(function(reg) { return reg.unregister(); }));
+      });
+    }
+    unregisterTask.then(function() {
+      if (!window.fetch) return true;
+      return fetch(target, { cache: 'reload', credentials: 'same-origin' }).then(function(response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.text();
+      }).then(function(html) {
+        if (readDocumentVersion(html) < v) throw new Error('新版本页面尚未就绪');
+        return true;
+      });
+    }).then(function(ready) {
+      if (!ready) return;
+      // 只有核验到新文档后才跳转；实际版本号由新页面加载完成后写入本机。
+      location.replace(target);
+    }).catch(function(error) {
+      console.warn('版本更新失败:', error);
+      if (!banner) return;
+      banner.removeAttribute('data-updating');
+      banner.textContent = '更新未完成，点此重试 v' + v;
+      banner.onclick = function() { refreshToVersion(v); };
+    });
+  };
   var showUpdatePrompt = function(v) {
     localStorage.setItem('app-max-version', Math.max(MAX_VER, v));
     var banner = document.getElementById('update-banner');
@@ -12758,9 +12797,7 @@ window.renderHairServicePhoto = function(photoType) {
     banner.textContent = '🔄 有新版本 v' + v + '，点此刷新';
     banner.style.display = 'block';
     banner.onclick = function() {
-      localStorage.setItem('app-version', v);
-      localStorage.setItem('app-max-version', v);
-      location.href = buildVersionUrl(v);
+      refreshToVersion(v);
     };
   };
   // 当前页面低于本机见过的最高版本，通常只是 iOS/PWA 仍在使用旧文档缓存。
@@ -12810,6 +12847,17 @@ window.renderHairServicePhoto = function(photoType) {
     }
     localStorage.setItem('app-version', VER);
     localStorage.setItem('app-max-version', Math.max(OLD_VER, VER));
+    // 从版本化地址成功进入后，后台刷新标准入口缓存，避免下次从手机桌面打开又命中旧页面。
+    var requestedVersion = 0;
+    try { requestedVersion = parseInt(new URLSearchParams(location.search).get('_v')) || 0; } catch(e) {}
+    if (window.fetch && requestedVersion === VER) {
+      fetch(location.pathname, { cache: 'reload', credentials: 'same-origin' }).then(function(response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.text();
+      }).then(function(html) {
+        if (readDocumentVersion(html) < VER) console.warn('标准入口缓存仍未更新到 v' + VER);
+      }).catch(function(error) { console.warn('标准入口缓存刷新失败:', error); });
+    }
   };
   
   // 立即执行版本检查

@@ -48,8 +48,25 @@ if (!versionReadySource) {
 if (versionReadySource.includes('location.replace(')) {
   fail('normal startup must not force a second page navigation for cache busting');
 }
-if (!html.includes('showUpdatePrompt(sv)') || !html.includes('location.href = buildVersionUrl(v)')) {
+if (!html.includes('showUpdatePrompt(sv)') || !html.includes('refreshToVersion(v)')) {
   fail('version updates must still require an explicit user-triggered refresh');
+}
+const refreshStart = html.indexOf('var refreshToVersion = function(v)');
+const refreshEnd = html.indexOf('var showUpdatePrompt = function(v)', refreshStart);
+const refreshSource = refreshStart >= 0 && refreshEnd > refreshStart ? html.slice(refreshStart, refreshEnd) : '';
+if (!refreshSource.includes("cache: 'reload'") ||
+    !refreshSource.includes('readDocumentVersion(html) < v') ||
+    !refreshSource.includes('location.replace(target)')) {
+  fail('explicit update must fetch, verify, and then replace with the requested version');
+}
+const promptStart = html.indexOf('var showUpdatePrompt = function(v)');
+const promptEnd = html.indexOf('// 当前页面低于本机见过的最高版本', promptStart);
+const promptSource = promptStart >= 0 && promptEnd > promptStart ? html.slice(promptStart, promptEnd) : '';
+if (promptSource.includes("localStorage.setItem('app-version', v)")) {
+  fail('update prompt must not mark a version installed before the new document loads');
+}
+if (!versionReadySource.includes("fetch(location.pathname, { cache: 'reload'")) {
+  fail('versioned startup must refresh the canonical entry cache for the next launch');
 }
 if (!html.includes('showUpdatePrompt(MAX_VER)') || html.includes('检测到线上版本异常（当前 v')) {
   fail('a cached old page must show the normal clickable update prompt, not a false downgrade warning');
