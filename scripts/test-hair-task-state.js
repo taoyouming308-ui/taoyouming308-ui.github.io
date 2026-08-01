@@ -8,7 +8,7 @@ function fail(message) {
 }
 
 const html = fs.readFileSync('perm-app.html', 'utf8');
-const start = html.indexOf('function hairUserIsAssistantForStylist');
+const start = html.indexOf('function hairTaskTimestamp');
 const end = html.indexOf('// ===== 渲染待上传记录列表', start);
 if (start < 0 || end < 0) fail('state helper block not found');
 
@@ -75,8 +75,22 @@ if (context.mergeHairTechnicianNames('助理A', '助理A') !== '助理A') {
   fail('creator technician merge must not duplicate the same technician');
 }
 
-if (!html.includes('rows = rows.filter(isHairTaskWithinVisibleWindow);')) {
-  fail('all task states must use the 30-day visibility window');
+if (!html.includes('rows = rows.filter(shouldShowHairTask);')) {
+  fail('task list must use completion-aware visibility rules');
+}
+
+const oldDate = '2020-01-01T00:00:00Z';
+const recentDate = new Date().toISOString();
+const visibilityCases = [
+  ['old assistant pending', { status: '待技师填写', created_at: oldDate, record_data: { technician: '助理A' } }, true],
+  ['old stylist followup pending', { status: '技师已完成', created_at: oldDate, record_data: { technician: '助理A' } }, true],
+  ['old legacy pending', { status: '已完成', created_at: oldDate, record_data: { technician: '助理A' } }, true],
+  ['old completed', { status: '回访完成', created_at: oldDate, record_data: { feedbackRating: 'A' } }, false],
+  ['recent completed', { status: '回访完成', created_at: recentDate, record_data: { feedbackRating: 'A' } }, true],
+];
+for (const [label, row, expected] of visibilityCases) {
+  const actual = context.shouldShowHairTask(row);
+  if (actual !== expected) fail(`${label}: expected visible=${expected}, got ${actual}`);
 }
 
 if (/\.hair-tasks-group-body\.expanded\s*\{[^}]*max-height\s*:\s*\d+/s.test(html)) {
@@ -92,4 +106,4 @@ if (!html.includes('class="hair-task-card-info pending">待技师填写</span>')
   fail('stylist pending-assistant action must use the emphasized pending style');
 }
 
-console.log(`hair task state test ok: ${cases.length + archiveCases.length + creationCases.length + 7} cases`);
+console.log(`hair task state test ok: ${cases.length + archiveCases.length + creationCases.length + visibilityCases.length + 7} cases`);

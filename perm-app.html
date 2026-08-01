@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="400">
+<html lang="zh-CN" data-version="401">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3066,9 +3066,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=400"></script>
-<script src="hair-vision-training.v1.js?v=400"></script>
-<script src="aesthetic-growth.v2.js?v=400"></script>
+<script src="aesthetic-knowledge.v1.js?v=401"></script>
+<script src="hair-vision-training.v1.js?v=401"></script>
+<script src="aesthetic-growth.v2.js?v=401"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -9548,6 +9548,12 @@ function initApp() {
     var hasEvidence = hairRecordHasFollowupEvidence(rec);
     return effectiveStatus === '回访完成' && hasEvidence;
   }
+  function shouldShowHairTask(row) {
+    var rec = (row && row.record_data) || {};
+    var status = (row && row.status) || rec.status || '';
+    // 未回访任务无论多久都持续挂在“我的任务”；30天限制只作用于已回访完成记录。
+    return !hairTaskHasFollowup(status, rec) || isHairTaskWithinVisibleWindow(row);
+  }
   function hairTaskAssistantReturned(status, rec) {
     rec = rec || {};
     var effectiveStatus = status || rec.status || '';
@@ -9776,8 +9782,8 @@ function initApp() {
         } catch(e) {}
         return '';
       }
-      // 所有任务只保留最近30天，避免待处理任务无限累积。
-      rows = rows.filter(isHairTaskWithinVisibleWindow);
+      // 未回访任务永久显示；只有回访完成记录在30天后从任务页隐藏。
+      rows = rows.filter(shouldShowHairTask);
       // ── 拆分 pending / done ──
       var pendingRows = [];
       var doneRows = [];

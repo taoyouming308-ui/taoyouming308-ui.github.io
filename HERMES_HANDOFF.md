@@ -146,7 +146,7 @@ Save behavior:
 - A record still waiting for its assigned assistant must not become `回访完成`, even if follow-up evidence was entered early.
 - Uploaded/customer-archive hair records must not be deleted from task list.
 - Record numbering must remain stable across app versions.
-- All task states are hidden after 30 days.
+- Incomplete tasks remain visible regardless of age; only genuinely completed follow-up records are hidden after 30 days.
 - Follow-up screenshots belong to the current `hair_records.record_data`; never restore a global screenshot from localStorage.
 
 ## Customer Archive Sync
