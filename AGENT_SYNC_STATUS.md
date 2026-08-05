@@ -10,7 +10,7 @@
 - `frontdesk-api` 已通过 Supabase CLI 单函数部署，由 v6 更新为 v7，继续使用自定义设备会话且 `verify_jwt=false`；线上只读 `registration_options` 探针返回“向里造型 / 自由手艺人”。
 - v408 本地回归已通过版本同步、发布完整性、更新流程、前台、预约、后台、客户档案、发质、护理、美感、收银边界与 62 项 Python 回归；美管加健康检查确认预约、客户、会话、护理队列及运行副本均正常。
 - Supabase 安全/性能顾问未报告本次新增前台字段的错误；前台四张服务端专用表“RLS 开启但无浏览器策略”的提示符合只允许 service-role 接口访问的设计。旧公共表已有的 RLS 告警未在本次扩大处理。
-- GitHub Pages 发布状态在代码推送完成后补记。
+- v408 功能提交 `0dfd4da` 已推送 GitHub `main`，GitHub Pages 构建状态为 `built` 且无错误；正式站 `version.txt=408`，线上 `frontdesk.html` 已确认包含 v408、横向时间表控制、注册入口和可编辑客户数据表。
 - App version: v408
 
 ## v407 (2026-08-05)
