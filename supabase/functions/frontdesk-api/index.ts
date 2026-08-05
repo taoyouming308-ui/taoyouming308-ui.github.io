@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const SESSION_HOURS = 12;
+const SESSION_DAYS = 3650;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +60,24 @@ function canImport(session: JsonRecord): boolean {
   return ["admin", "store_admin"].includes(role) || /店长/.test(cleanText(session.position, 120));
 }
 
+async function availableStores(session: JsonRecord): Promise<string[]> {
+  const assigned = cleanText(session.store, 100);
+  if (cleanText(session.role, 40) !== "admin") return assigned ? [assigned] : [];
+  const rows = await restRows("staff?select=store&active=eq.true&employment_status=eq.active&order=store.asc&limit=1000");
+  return Array.from(new Set([assigned, ...rows.map((row) => cleanText(row.store, 100))].filter(Boolean)));
+}
+
+async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
+  return {
+    username: session.username,
+    role: session.role || "staff",
+    position: session.position || "",
+    store: session.store || "",
+    stores: await availableStores(session),
+    can_import: canImport(session),
+  };
+}
+
 async function login(payload: JsonRecord): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
@@ -85,7 +103,7 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
   }).catch(() => undefined);
 
   const token = crypto.randomUUID() + crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const response = await rest("frontdesk_sessions", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
@@ -99,17 +117,7 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
     }),
   });
   if (!response.ok) throw new Error(`登录会话创建失败 (${response.status})`);
-  return {
-    session_token: token,
-    expires_at: expiresAt,
-    user: {
-      username: staff.username,
-      role: staff.role || "staff",
-      position: staff.position || "",
-      store: staff.store || "",
-      can_import: canImport(staff),
-    },
-  };
+  return { session_token: token, expires_at: expiresAt, user: await sessionUser(staff) };
 }
 
 async function logout(payload: JsonRecord): Promise<JsonRecord> {
@@ -132,12 +140,28 @@ async function requireSession(payload: JsonRecord): Promise<JsonRecord> {
   );
   const session = rows[0];
   if (!session) throw new Error("登录已过期，请重新登录");
+  const staffRows = await restRows(
+    `staff?select=username,role,position,store,active,employment_status&username=eq.${encodeURIComponent(cleanText(session.username, 80))}&limit=1`,
+  );
+  const staff = staffRows[0];
+  if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active" || !canUseFrontdesk(staff)) {
+    await rest(`frontdesk_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+    throw new Error("账号已停用或前台权限已撤销，请重新登录");
+  }
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const current = {
+    username: staff.username,
+    role: staff.role || "staff",
+    position: staff.position || "",
+    store: staff.store || "",
+    expires_at: expiresAt,
+  };
   rest(`frontdesk_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ last_used_at: new Date().toISOString() }),
+    body: JSON.stringify({ ...current, last_used_at: new Date().toISOString() }),
   }).catch(() => undefined);
-  return session;
+  return current;
 }
 
 function selectedStore(session: JsonRecord, payload: JsonRecord): string {
@@ -155,6 +179,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
   const date = cleanText(payload.date, 10) || new Date().toISOString().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("日期格式错误");
   const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
   const bookingPath = withStore(
     `bookings?select=id,shop_name,barber_name,customer_name,customer_phone,time_label,date,status,service_name,notes&date=eq.${date}&order=reservation_time.asc&limit=300`,
     "shop_name",
@@ -165,17 +190,66 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const [bookings, services] = await Promise.all([restRows(bookingPath), restRows(servicePath)]);
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=created_at.asc&limit=500`;
+  const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
+  const [bookings, services, reception, staffRows] = await Promise.all([
+    restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
+  ]);
   return {
     date,
     store,
     bookings,
     services,
+    reception,
+    barbers: staffRows.filter((row) => /发型师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
     synced_at: services.reduce((latest, row) => {
       const value = cleanText(row.synced_at, 40);
       return value > latest ? value : latest;
     }, ""),
   };
+}
+
+const TODAY_SOURCES = new Set(["walkin", "appointment", "referral", "other"]);
+const TODAY_STATUSES = new Set(["waiting", "arrived", "in_service", "completed", "cancelled"]);
+
+async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const businessDate = cleanText(payload.business_date, 10);
+  const customerName = cleanText(payload.customer_name, 160);
+  const customerPhone = cleanPhone(payload.customer_phone);
+  const barberName = cleanText(payload.barber_name, 120);
+  const visitSource = cleanText(payload.visit_source, 30) || "walkin";
+  const status = cleanText(payload.status, 30) || "waiting";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate)) throw new Error("接待日期无效");
+  if (!customerName && !customerPhone) throw new Error("请填写客户姓名或手机号");
+  if (!barberName) throw new Error("请选择发型师");
+  if (!TODAY_SOURCES.has(visitSource) || !TODAY_STATUSES.has(status)) throw new Error("接待信息无效");
+  const record = {
+    business_date: businessDate,
+    store,
+    customer_name: customerName || "未命名客户",
+    customer_phone: customerPhone,
+    barber_name: barberName,
+    visit_source: visitSource,
+    service_intent: cleanText(payload.service_intent, 500),
+    reception_notes: cleanText(payload.reception_notes, 800),
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  const id = cleanText(payload.id, 60);
+  const response = id
+    ? await rest(`frontdesk_today_customers?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`, {
+      method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(record),
+    })
+    : await rest("frontdesk_today_customers", {
+      method: "POST", headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ ...record, created_by: session.username }),
+    });
+  if (!response.ok) throw new Error(`当天客户保存失败 (${response.status})`);
+  const saved = await response.json();
+  if (!Array.isArray(saved) || !saved.length) throw new Error("当天客户没有保存成功");
+  return { saved: saved[0] };
 }
 
 function remainingPackageCount(value: unknown): number {
@@ -456,8 +530,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "login") return json(await login(payload));
     if (operation === "logout") return json(await logout(payload));
     const session = await requireSession(payload);
-    if (operation === "session") return json({ user: { ...session, can_import: canImport(session) } });
+    if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "dashboard") return json(await dashboard(payload, session));
+    if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "customer_search") return json(await customerSearch(payload, session));
     if (operation === "customer_detail") return json(await customerDetail(payload));
     if (operation === "import_rows") return json(await importRows(payload, session));
