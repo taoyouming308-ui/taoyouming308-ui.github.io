@@ -181,7 +181,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
   const bookingPath = withStore(
-    `bookings?select=id,shop_name,barber_name,customer_name,customer_phone,time_label,date,status,service_name,notes&date=eq.${date}&order=reservation_time.asc&limit=300`,
+    `bookings?select=id,shop_name,barber_name,customer_name,customer_phone,time_label,reservation_time,date,status,service_name,notes&date=eq.${date}&order=reservation_time.asc&limit=300`,
     "shop_name",
     store,
   );
@@ -190,7 +190,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=created_at.asc&limit=500`;
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
   const [bookings, services, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
@@ -219,11 +219,13 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
   const customerName = cleanText(payload.customer_name, 160);
   const customerPhone = cleanPhone(payload.customer_phone);
   const barberName = cleanText(payload.barber_name, 120);
+  const arrivalTime = cleanText(payload.arrival_time, 8);
   const visitSource = cleanText(payload.visit_source, 30) || "walkin";
   const status = cleanText(payload.status, 30) || "waiting";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate)) throw new Error("接待日期无效");
   if (!customerName && !customerPhone) throw new Error("请填写客户姓名或手机号");
   if (!barberName) throw new Error("请选择发型师");
+  if (arrivalTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(arrivalTime)) throw new Error("到店时间无效");
   if (!TODAY_SOURCES.has(visitSource) || !TODAY_STATUSES.has(status)) throw new Error("接待信息无效");
   const record = {
     business_date: businessDate,
@@ -231,6 +233,7 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
     customer_name: customerName || "未命名客户",
     customer_phone: customerPhone,
     barber_name: barberName,
+    arrival_time: arrivalTime || null,
     visit_source: visitSource,
     service_intent: cleanText(payload.service_intent, 500),
     reception_notes: cleanText(payload.reception_notes, 800),
