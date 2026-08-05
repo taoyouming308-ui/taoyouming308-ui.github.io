@@ -11,6 +11,7 @@
 - 已应用 `frontdesk_customer_center` 与 `frontdesk_import_batch_index` 两个生产迁移；核验三张前台表均启用 RLS，`anon/authenticated` 无读写权限，导入 RPC 仅 `service_role` 可执行。
 - `frontdesk-api` Edge Function 已部署至生产 version 3；空账号登录返回 403，服务端无令牌退出返回 200，证明网关、CORS、自定义会话路由和线上运行状态正常。
 - 新增 `scripts/test-frontdesk.js` 并接入 GitHub CI 和 pre-push；v403 完整 pre-push 通过版本、发布、更新流程、前台、预约、后台、客户档案、发质、护理、美感、28 项美管加 Python 回归及 Agent 同步检查。
+- 主功能提交 `83788d2` 已推送到 GitHub `main`；GitHub Pages 已返回 `version.txt=403`，`frontdesk.html` 返回 HTTP 200 且包含 `data-version=403`、前台登录页和 iPad PWA 配置。
 - 编辑前备份已生成 `ZYSYR_2026-08-05_110352.tar.gz` 并复制到 iCloud；未跟踪 `aesthetic-coach-edge.ts` 保持未修改、未纳入提交。
 - 已知安全遗留：现有 `staff`、`bookings`、`customer_profiles` 等旧表仍未全面启用 RLS；v403 没有直接改动这些旧表，避免现有员工端中断，后续应单独迁移到服务端认证。
 - App version: v403
