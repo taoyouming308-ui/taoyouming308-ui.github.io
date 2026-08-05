@@ -1,7 +1,7 @@
 {
   "name": "ZYSYR 前台客户中心",
   "short_name": "前台客户中心",
-  "description": "iPad 前台客户查询、到店动态与历史消费档案",
+  "description": "电脑前台客户查询、到店动态、数据表格与历史消费档案，同时适配 iPad",
   "start_url": "frontdesk.html",
   "scope": "./",
   "display": "standalone",

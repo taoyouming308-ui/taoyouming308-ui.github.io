@@ -21,6 +21,14 @@ function cleanPhone(value: unknown): string {
   return cleanText(value, 60).replace(/\D/g, "").slice(-20);
 }
 
+function customerPhonesMatch(left: unknown, right: unknown): boolean {
+  const a = cleanPhone(left);
+  const b = cleanPhone(right);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return a.length >= 11 && b.length >= 11 && a.slice(-11) === b.slice(-11);
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: cors });
 }
@@ -368,7 +376,7 @@ function historyFromProfiles(profiles: JsonRecord[]): JsonRecord[] {
 
 function sameCustomer(rowPhone: unknown, rowName: unknown, phone: string, name: string): boolean {
   const normalized = cleanPhone(rowPhone);
-  if (phone && normalized) return phone === normalized;
+  if (phone && normalized) return customerPhonesMatch(phone, normalized);
   return !phone && cleanText(rowName, 160) === name;
 }
 
@@ -522,6 +530,81 @@ async function importBatches(session: JsonRecord): Promise<JsonRecord> {
   return { batches: await restRows(path) };
 }
 
+async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const importedPath = withStore(
+    "frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,created_at&order=visit_date.desc,created_at.desc&limit=1000",
+    "store",
+    store,
+  );
+  const receptionPath = withStore(
+    "frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000",
+    "store",
+    store,
+  );
+  const [imported, reception] = await Promise.all([
+    restRows(importedPath),
+    restRows(receptionPath),
+  ]);
+  const rows = [
+    ...imported.map((row) => ({
+      record_id: row.id,
+      row_type: "imported",
+      source: "历史导入",
+      business_date: row.visit_date,
+      arrival_time: "",
+      customer_name: row.customer_name,
+      customer_phone: cleanPhone(row.customer_phone),
+      service_items: row.service_items,
+      barber_name: row.barber_name,
+      technician_name: row.technician_name,
+      assistant_name: row.assistant_name,
+      amount: Number(row.amount) || 0,
+      payment_summary: row.payment_summary,
+      package_note: row.package_note,
+      status: "已导入",
+      notes: "",
+      source_detail: row.source_file,
+      created_at: row.created_at,
+      updated_at: row.created_at,
+    })),
+    ...reception.map((row) => ({
+      record_id: row.id,
+      row_type: "today",
+      source: "当日接待",
+      business_date: row.business_date,
+      arrival_time: cleanText(row.arrival_time, 8),
+      customer_name: row.customer_name,
+      customer_phone: cleanPhone(row.customer_phone),
+      service_items: row.service_intent,
+      barber_name: row.barber_name,
+      technician_name: "",
+      assistant_name: "",
+      amount: null,
+      payment_summary: "",
+      package_note: "",
+      status: row.status,
+      notes: row.reception_notes,
+      visit_source: row.visit_source,
+      created_by: row.created_by,
+      source_detail: "独立接待信息",
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    })),
+  ].sort((a, b) =>
+    `${b.business_date || ""} ${b.arrival_time || ""} ${b.updated_at || ""}`
+      .localeCompare(`${a.business_date || ""} ${a.arrival_time || ""} ${a.updated_at || ""}`)
+  );
+  return {
+    store,
+    rows,
+    imported_count: imported.length,
+    today_count: reception.length,
+    original_customer_profiles_untouched: true,
+  };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
@@ -540,6 +623,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "customer_detail") return json(await customerDetail(payload));
     if (operation === "import_rows") return json(await importRows(payload, session));
     if (operation === "import_batches") return json(await importBatches(session));
+    if (operation === "ledger_records") return json(await ledgerRecords(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";

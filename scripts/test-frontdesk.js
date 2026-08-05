@@ -86,6 +86,13 @@ expect(html.includes('bookingPlaceholder') && html.includes("available?'✋':'�
 expect(html.includes('resolvedBarber') && html.includes('name.endsWith(item)'), 'Meiguanjia/staff barber alias reconciliation missing');
 expect(html.includes('添加今日客户') && html.includes('当天前台备注') && html.includes('id="today-time"'), 'timed daily reception form missing');
 expect(html.includes('store-select') && html.includes('zysyr-frontdesk-store-v1'), 'persistent branch selection missing');
+expect(html.includes('电脑前台为主') && manifest.description.includes('电脑前台'), 'desktop-first frontdesk positioning missing');
+expect(html.includes('id="ledger-table"') && html.includes('class="ledger-table"'), 'customer ledger table missing');
+expect(html.includes('当日接待') && html.includes('历史导入') && html.includes('两类记录均不修改美管加或后台客户原始信息'), 'ledger source boundary missing');
+expect(html.includes("api('ledger_records')") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
+expect(html.includes("$('import-tools').classList.toggle('hidden',!user.can_import)") && !html.includes("$('import-area')"), 'CSV tools permission boundary missing');
+expect(html.includes("Promise.all([loadDashboard(),loadLedger()])") && html.includes('原客户档案未修改'), 'daily reception save must refresh ledger without changing master profile');
+expect(html.includes('pkg.package_name||pkg.name'), 'package card must prefer the recognizable package name');
 expect(!html.includes("'Authorization':'Bearer '+SUPABASE_KEY"), 'publishable API key must not be sent as a bearer token');
 expect(html.includes("setInterval(function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();},60000)"), 'one-minute foreground refresh missing');
 expect(html.includes("accept=\".csv,.tsv"), 'CSV import entry missing');
@@ -105,9 +112,17 @@ expect(edge.includes('reservation_time') && edge.includes('order=arrival_time.as
 expect(edge.includes('operation === "logout"') && edge.includes('async function logout'), 'server-side logout missing');
 expect(edge.includes('/前台|店长/') && edge.includes('canImport'), 'frontdesk and manager permission checks missing');
 expect(edge.includes('customer_profiles') && edge.includes('mgj_service_records'), 'Meiguanjia customer sources missing');
+expect(edge.includes('function customerPhonesMatch') && edge.includes('a.slice(-11) === b.slice(-11)'), 'normalized customer phone matching missing');
 expect(edge.includes('summary_without_history'), 'server-side customer data-gap signal missing');
 expect(edge.includes('rpc/import_frontdesk_records'), 'protected import RPC missing');
 expect(edge.includes('单次最多导入 250 行'), 'import batch limit missing');
+expect(edge.includes('operation === "ledger_records"') && edge.includes('async function ledgerRecords'), 'protected customer ledger API missing');
+expect(edge.includes('original_customer_profiles_untouched: true'), 'ledger response must declare original customer profile boundary');
+const ledgerFunction = edge.slice(edge.indexOf('async function ledgerRecords'), edge.indexOf('Deno.serve'));
+expect(ledgerFunction.includes('frontdesk_import_records') && ledgerFunction.includes('frontdesk_today_customers'), 'ledger must combine imported and daily reception rows');
+expect(ledgerFunction.includes('withStore('), 'ledger rows must be store-scoped');
+const saveFunction = edge.slice(edge.indexOf('async function saveTodayCustomer'), edge.indexOf('function remainingPackageCount'));
+expect(saveFunction.includes('frontdesk_today_customers') && !saveFunction.includes('customer_profiles') && !saveFunction.includes('frontdesk_import_records'), 'daily reception save must not overwrite customer master or imported history');
 
 ['frontdesk_sessions', 'frontdesk_import_batches', 'frontdesk_import_records'].forEach((table) => {
   expect(migration.includes(`alter table public.${table} enable row level security`), `${table} RLS missing`);
