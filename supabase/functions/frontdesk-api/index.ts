@@ -29,6 +29,10 @@ function customerPhonesMatch(left: unknown, right: unknown): boolean {
   return a.length >= 11 && b.length >= 11 && a.slice(-11) === b.slice(-11);
 }
 
+function comparableCustomerName(value: unknown): string {
+  return cleanText(value, 160).replace(/\s+/g, "").replace(/(女士|小姐)$/u, "女客");
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: cors });
 }
@@ -86,6 +90,38 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
   };
 }
 
+async function registrationOptions(): Promise<JsonRecord> {
+  const rows = await restRows("staff?select=store&active=eq.true&employment_status=eq.active&order=store.asc&limit=1000");
+  return { stores: Array.from(new Set(rows.map((row) => cleanText(row.store, 100)).filter(Boolean))) };
+}
+
+async function registerFrontdesk(payload: JsonRecord): Promise<JsonRecord> {
+  const username = cleanText(payload.username, 80);
+  const password = cleanText(payload.password, 200);
+  const store = cleanText(payload.store, 100);
+  if (username.length < 2) throw new Error("姓名至少填写两个字");
+  if (password.length < 6) throw new Error("密码至少 6 位");
+  const options = await registrationOptions();
+  if (!(options.stores as string[]).includes(store)) throw new Error("请选择有效门店");
+  const existing = await restRows(`staff?select=id,employment_status&username=eq.${encodeURIComponent(username)}&limit=1`);
+  if (existing.length) throw new Error("该姓名已经注册，请联系管理员审核或重置账号");
+  const response = await rest("staff", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      username,
+      password_hash: `sha256:${await sha256(password)}`,
+      role: "staff",
+      position: "前台",
+      store,
+      active: false,
+      employment_status: "pending",
+    }),
+  });
+  if (!response.ok) throw new Error(`注册提交失败 (${response.status})`);
+  return { registered: true, status: "pending", username, store, position: "前台" };
+}
+
 async function login(payload: JsonRecord): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
@@ -97,7 +133,7 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
   const hashed = await sha256(password);
   const stored = cleanText(staff?.password_hash, 200);
   if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active" ||
-      !stored || (stored !== hashed && stored !== password)) {
+      !stored || (stored !== hashed && stored !== `sha256:${hashed}` && stored !== password)) {
     throw new Error("账号或密码错误");
   }
   if (!canUseFrontdesk(staff)) throw new Error("该账号尚未开通前台权限");
@@ -126,6 +162,25 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
   });
   if (!response.ok) throw new Error(`登录会话创建失败 (${response.status})`);
   return { session_token: token, expires_at: expiresAt, user: await sessionUser(staff) };
+}
+
+async function requireFrontdeskAdmin(payload: JsonRecord): Promise<JsonRecord> {
+  const token = cleanText(payload.admin_token, 200);
+  if (!token) throw new Error("管理员登录已过期，请重新登录后台");
+  const sessions = await restRows(
+    `aesthetic_training_admin_sessions?select=username,role,store,expires_at&token_hash=eq.${encodeURIComponent(await sha256(token))}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
+  );
+  const session = sessions[0];
+  if (!session) throw new Error("管理员登录已过期，请重新登录后台");
+  const staffRows = await restRows(
+    `staff?select=username,role,store,active,employment_status&username=eq.${encodeURIComponent(cleanText(session.username, 80))}&role=in.(admin,store_admin)&limit=1`,
+  );
+  const staff = staffRows[0];
+  if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active" ||
+      (cleanText(staff.role, 40) === "store_admin" && !cleanText(staff.store, 100))) {
+    throw new Error("管理员账号已停用或权限已变化");
+  }
+  return staff;
 }
 
 async function logout(payload: JsonRecord): Promise<JsonRecord> {
@@ -198,7 +253,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
   const [bookings, services, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
@@ -209,7 +264,10 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     bookings,
     services,
     reception,
+    staff: staffRows.map((row) => ({ username: cleanText(row.username, 80), position: cleanText(row.position, 120) })),
     barbers: staffRows.filter((row) => /发型师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
+    technicians: staffRows.filter((row) => /技师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
+    assistants: staffRows.filter((row) => /助理/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
     synced_at: services.reduce((latest, row) => {
       const value = cleanText(row.synced_at, 40);
       return value > latest ? value : latest;
@@ -241,11 +299,14 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
     customer_name: customerName || "未命名客户",
     customer_phone: customerPhone,
     barber_name: barberName,
+    technician_name: cleanText(payload.technician_name, 120),
+    assistant_name: cleanText(payload.assistant_name, 120),
     arrival_time: arrivalTime || null,
     visit_source: visitSource,
     service_intent: cleanText(payload.service_intent, 500),
     reception_notes: cleanText(payload.reception_notes, 800),
     status,
+    updated_by: cleanText(session.username, 80),
     updated_at: new Date().toISOString(),
   };
   const id = cleanText(payload.id, 60);
@@ -374,10 +435,26 @@ function historyFromProfiles(profiles: JsonRecord[]): JsonRecord[] {
   return history;
 }
 
-function sameCustomer(rowPhone: unknown, rowName: unknown, phone: string, name: string): boolean {
-  const normalized = cleanPhone(rowPhone);
-  if (phone && normalized) return customerPhonesMatch(phone, normalized);
-  return !phone && cleanText(rowName, 160) === name;
+function selectCustomerRows(
+  rows: JsonRecord[],
+  phone: string,
+  name: string,
+  phoneField: string,
+  nameField: string,
+): JsonRecord[] {
+  if (!phone) {
+    const comparable = comparableCustomerName(name);
+    return rows.filter((row) => comparableCustomerName(row[nameField]) === comparable);
+  }
+  const matches = rows.filter((row) => {
+    const value = cleanPhone(row[phoneField]);
+    return value && (customerPhonesMatch(phone, value) || (phone.length >= 4 && value.endsWith(phone)));
+  });
+  if (phone.length >= 11) return matches;
+  const distinctPhones = new Set(matches.map((row) => cleanPhone(row[phoneField])).filter(Boolean));
+  if (distinctPhones.size === 1) return matches;
+  const comparable = comparableCustomerName(name);
+  return matches.filter((row) => comparable && comparableCustomerName(row[nameField]) === comparable);
 }
 
 async function customerDetail(payload: JsonRecord): Promise<JsonRecord> {
@@ -391,16 +468,16 @@ async function customerDetail(payload: JsonRecord): Promise<JsonRecord> {
     ? `customer_phone=ilike.${encodeURIComponent(`*${phone}*`)}`
     : `customer_name=eq.${encodeURIComponent(name)}`;
   const importedFilter = phone
-    ? `customer_phone=eq.${encodeURIComponent(phone)}`
+    ? `customer_phone=ilike.${encodeURIComponent(`*${phone}*`)}`
     : `customer_name=eq.${encodeURIComponent(name)}`;
   const [profileRows, liveRows, importedRows] = await Promise.all([
     restRows(`customer_profiles?select=*&${profileFilter}&order=last_visit_date.desc.nullslast&limit=200`),
     restRows(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&order=service_date.desc,service_time.desc&limit=1000`),
     restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${importedFilter}&order=visit_date.desc&limit=2000`),
   ]);
-  const profiles = profileRows.filter((row) => sameCustomer(row.phone, row.name, phone, name));
-  const live = liveRows.filter((row) => sameCustomer(row.customer_phone, row.customer_name, phone, name));
-  const imported = importedRows.filter((row) => sameCustomer(row.customer_phone, row.customer_name, phone, name));
+  const profiles = selectCustomerRows(profileRows, phone, name, "phone", "name");
+  const live = selectCustomerRows(liveRows, phone, name, "customer_phone", "customer_name");
+  const imported = selectCustomerRows(importedRows, phone, name, "customer_phone", "customer_name");
   const history = historyFromProfiles(profiles);
   for (const row of live) {
     history.push({
@@ -534,12 +611,12 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
   const importedPath = withStore(
-    "frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,created_at&order=visit_date.desc,created_at.desc&limit=1000",
+    "frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,updated_by,created_at,updated_at&order=visit_date.desc,created_at.desc&limit=1000",
     "store",
     store,
   );
   const receptionPath = withStore(
-    "frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000",
+    "frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000",
     "store",
     store,
   );
@@ -566,8 +643,9 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       status: "已导入",
       notes: "",
       source_detail: row.source_file,
+      updated_by: row.updated_by,
       created_at: row.created_at,
-      updated_at: row.created_at,
+      updated_at: row.updated_at || row.created_at,
     })),
     ...reception.map((row) => ({
       record_id: row.id,
@@ -579,8 +657,8 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       customer_phone: cleanPhone(row.customer_phone),
       service_items: row.service_intent,
       barber_name: row.barber_name,
-      technician_name: "",
-      assistant_name: "",
+      technician_name: row.technician_name,
+      assistant_name: row.assistant_name,
       amount: null,
       payment_summary: "",
       package_note: "",
@@ -588,6 +666,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       notes: row.reception_notes,
       visit_source: row.visit_source,
       created_by: row.created_by,
+      updated_by: row.updated_by,
       source_detail: "独立接待信息",
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -605,6 +684,90 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
   };
 }
 
+async function saveLedgerRecord(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const rowType = cleanText(payload.row_type, 20);
+  const id = cleanText(payload.record_id, 80);
+  if (!id || !["today", "imported"].includes(rowType)) throw new Error("台账记录无效");
+  const common = {
+    barber_name: cleanText(payload.barber_name, 120),
+    technician_name: cleanText(payload.technician_name, 120),
+    assistant_name: cleanText(payload.assistant_name, 120),
+    updated_by: cleanText(session.username, 80),
+    updated_at: new Date().toISOString(),
+  };
+  const path = rowType === "today"
+    ? `frontdesk_today_customers?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`
+    : `frontdesk_import_records?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`;
+  const body = rowType === "today"
+    ? { ...common, service_intent: cleanText(payload.service_items, 500), reception_notes: cleanText(payload.notes, 800) }
+    : { ...common, service_items: cleanText(payload.service_items, 500) };
+  const response = await rest(path, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`台账保存失败 (${response.status})`);
+  const saved = await response.json();
+  if (!Array.isArray(saved) || saved.length !== 1) throw new Error("台账记录不存在或已变化");
+  return { saved: true, row_type: rowType, record_id: id, original_sources_untouched: true };
+}
+
+function adminStore(admin: JsonRecord, payload: JsonRecord): string {
+  const ownStore = cleanText(admin.store, 100);
+  if (cleanText(admin.role, 40) === "store_admin") return ownStore;
+  return cleanText(payload.store, 100);
+}
+
+async function frontdeskAdminOverview(payload: JsonRecord): Promise<JsonRecord> {
+  const admin = await requireFrontdeskAdmin(payload);
+  const stores = await availableStores(admin);
+  const store = adminStore(admin, payload) || stores[0] || "";
+  if (!store || !stores.includes(store)) throw new Error("请选择有效门店");
+  const accountPath = `staff?select=id,username,role,position,store,active,employment_status,created_at&position=ilike.${encodeURIComponent("*前台*")}&store=eq.${encodeURIComponent(store)}&order=employment_status.asc,username.asc&limit=300`;
+  const sessionPath = `frontdesk_sessions?select=token_hash,username,role,position,store,created_at,last_used_at,expires_at&store=eq.${encodeURIComponent(store)}&order=last_used_at.desc&limit=300`;
+  const batchPath = `frontdesk_import_batches?select=id,original_filename,total_rows,imported_rows,duplicate_rows,imported_by,store,status,created_at,completed_at&store=eq.${encodeURIComponent(store)}&order=created_at.desc&limit=30`;
+  const [accounts, sessions, batches, ledger] = await Promise.all([
+    restRows(accountPath),
+    restRows(sessionPath),
+    restRows(batchPath),
+    ledgerRecords({ store }, { username: admin.username, role: admin.role, store: cleanText(admin.role, 40) === "store_admin" ? store : "" }),
+  ]);
+  return {
+    role: admin.role,
+    stores,
+    store,
+    accounts,
+    sessions,
+    batches,
+    ledger_rows: (ledger.rows as JsonRecord[]).slice(0, 100),
+    counts: {
+      pending_accounts: accounts.filter((row) => cleanText(row.employment_status, 40) === "pending").length,
+      active_accounts: accounts.filter((row) => cleanText(row.employment_status, 40) === "active" && row.active !== false).length,
+      active_sessions: sessions.length,
+      ledger_rows: (ledger.rows as JsonRecord[]).length,
+    },
+  };
+}
+
+async function revokeFrontdeskSession(payload: JsonRecord): Promise<JsonRecord> {
+  const admin = await requireFrontdeskAdmin(payload);
+  const tokenHash = cleanText(payload.session_id, 128);
+  if (!tokenHash) throw new Error("请选择要退出的前台设备");
+  const store = adminStore(admin, payload);
+  const rows = await restRows(`frontdesk_sessions?select=token_hash,store&token_hash=eq.${encodeURIComponent(tokenHash)}&limit=1`);
+  const row = rows[0];
+  if (!row || (cleanText(admin.role, 40) === "store_admin" && cleanText(row.store, 100) !== store)) {
+    throw new Error("无权退出该前台设备");
+  }
+  const response = await rest(`frontdesk_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, {
+    method: "DELETE", headers: { Prefer: "return=representation" },
+  });
+  if (!response.ok) throw new Error(`设备退出失败 (${response.status})`);
+  return { revoked: true };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
@@ -613,8 +776,12 @@ Deno.serve(async (request: Request) => {
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
   try {
+    if (operation === "registration_options") return json(await registrationOptions());
+    if (operation === "register") return json(await registerFrontdesk(payload));
     if (operation === "login") return json(await login(payload));
     if (operation === "logout") return json(await logout(payload));
+    if (operation === "admin_overview") return json(await frontdeskAdminOverview(payload));
+    if (operation === "admin_revoke_session") return json(await revokeFrontdeskSession(payload));
     const session = await requireSession(payload);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "dashboard") return json(await dashboard(payload, session));
@@ -624,6 +791,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "import_rows") return json(await importRows(payload, session));
     if (operation === "import_batches") return json(await importBatches(session));
     if (operation === "ledger_records") return json(await ledgerRecords(payload, session));
+    if (operation === "ledger_record_save") return json(await saveLedgerRecord(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";

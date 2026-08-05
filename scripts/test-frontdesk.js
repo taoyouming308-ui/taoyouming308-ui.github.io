@@ -13,6 +13,7 @@ const migration = fs.readFileSync(path.join(root, 'supabase/migrations/202608050
 const indexMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805032248_frontdesk_import_batch_index.sql'), 'utf8');
 const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805034830_frontdesk_today_reception.sql'), 'utf8');
 const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805045233_frontdesk_reception_time.sql'), 'utf8');
+const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -88,8 +89,12 @@ expect(html.includes('添加今日客户') && html.includes('当天前台备注'
 expect(html.includes('store-select') && html.includes('zysyr-frontdesk-store-v1'), 'persistent branch selection missing');
 expect(html.includes('电脑前台为主') && manifest.description.includes('电脑前台'), 'desktop-first frontdesk positioning missing');
 expect(html.includes('id="ledger-table"') && html.includes('class="ledger-table"'), 'customer ledger table missing');
-expect(html.includes('当日接待') && html.includes('历史导入') && html.includes('两类记录均不修改美管加或后台客户原始信息'), 'ledger source boundary missing');
+expect(html.includes('当日接待') && html.includes('历史导入') && html.includes('所有修改仅作用于前台独立数据表'), 'ledger source boundary missing');
 expect(html.includes("api('ledger_records')") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
+expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
+expect(html.includes('id="today-technician"') && html.includes('id="today-assistant"'), 'daily reception technician/assistant fields missing');
+expect(html.includes('id="schedule-left"') && html.includes('id="schedule-right"') && html.includes('overflow-x:scroll'), 'explicit horizontal schedule navigation missing');
+expect(html.includes('id="register-form"') && html.includes("api('register'") && html.includes('提交后由管理员在后台审核'), 'frontdesk registration flow missing');
 expect(html.includes("$('import-tools').classList.toggle('hidden',!user.can_import)") && !html.includes("$('import-area')"), 'CSV tools permission boundary missing');
 expect(html.includes("Promise.all([loadDashboard(),loadLedger()])") && html.includes('原客户档案未修改'), 'daily reception save must refresh ledger without changing master profile');
 expect(html.includes('pkg.package_name||pkg.name'), 'package card must prefer the recognizable package name');
@@ -117,6 +122,10 @@ expect(edge.includes('summary_without_history'), 'server-side customer data-gap 
 expect(edge.includes('rpc/import_frontdesk_records'), 'protected import RPC missing');
 expect(edge.includes('单次最多导入 250 行'), 'import batch limit missing');
 expect(edge.includes('operation === "ledger_records"') && edge.includes('async function ledgerRecords'), 'protected customer ledger API missing');
+expect(edge.includes('operation === "ledger_record_save"') && edge.includes('async function saveLedgerRecord'), 'protected ledger edit API missing');
+expect(edge.includes('operation === "register"') && edge.includes('employment_status: "pending"') && edge.includes('position: "前台"'), 'frontdesk pending registration API missing');
+expect(edge.includes('selectCustomerRows') && edge.includes('distinctPhones.size === 1') && edge.includes('comparableCustomerName'), 'masked phone package matching fix missing');
+expect(edge.includes('operation === "admin_overview"') && edge.includes('requireFrontdeskAdmin'), 'frontdesk backend management API missing');
 expect(edge.includes('original_customer_profiles_untouched: true'), 'ledger response must declare original customer profile boundary');
 const ledgerFunction = edge.slice(edge.indexOf('async function ledgerRecords'), edge.indexOf('Deno.serve'));
 expect(ledgerFunction.includes('frontdesk_import_records') && ledgerFunction.includes('frontdesk_today_customers'), 'ledger must combine imported and daily reception rows');
@@ -136,5 +145,7 @@ expect(receptionMigration.includes('alter table public.frontdesk_today_customers
 expect(receptionMigration.includes('revoke all on table public.frontdesk_today_customers from public, anon, authenticated'), 'daily reception public revoke missing');
 expect(receptionTimeMigration.includes('add column if not exists arrival_time time without time zone'), 'daily reception time column missing');
 expect(receptionTimeMigration.includes('frontdesk_today_customers_schedule_idx'), 'daily reception schedule index missing');
+expect(ledgerEditMigration.includes('technician_name') && ledgerEditMigration.includes('assistant_name'), 'daily reception staff edit columns missing');
+expect(ledgerEditMigration.includes('frontdesk_import_records') && ledgerEditMigration.includes('updated_by'), 'imported ledger audit columns missing');
 
 console.log('frontdesk tests passed');

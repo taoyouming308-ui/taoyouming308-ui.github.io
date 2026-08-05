@@ -213,6 +213,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </div>
       <div class="nav-group">
         <div class="nav-group-title">客户</div>
+        <button class="admin-nav-item" data-tab="frontdesk">前台管理</button>
         <button class="admin-nav-item" data-tab="customers" data-super-admin-only>顾客档案</button>
         <button class="admin-nav-item" data-tab="followups" data-super-admin-only>未回访</button>
       </div>
@@ -251,6 +252,19 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </div>
       <div id="registration-summary" class="stats-grid"></div>
       <div id="registration-list" class="registration-card-list"></div>
+    </div>
+
+    <div id="tab-frontdesk" class="admin-page">
+      <div class="page-header">
+        <div><h1 class="page-title">前台管理</h1><div class="page-desc">管理前台账号与登录设备，查看导入批次和最近数据；实际收银仍在美管加完成。</div></div>
+        <div class="page-actions"><a href="frontdesk.html" target="_blank" rel="noopener" class="btn-add" style="text-decoration:none;">打开前台</a></div>
+      </div>
+      <div class="toolbar"><select id="frontdesk-admin-store"></select><button class="btn-edit" type="button" onclick="loadFrontdeskManagement()">刷新</button></div>
+      <div id="frontdesk-admin-stats" class="stats-grid"></div>
+      <div class="panel" style="margin-bottom:14px;"><div class="panel-title">前台账号 <button class="btn-edit" type="button" onclick="switchTab('registrations')" style="float:right;">去注册审核</button></div><div class="admin-table-wrap"><table><thead><tr><th>账号</th><th>门店</th><th>状态</th><th>岗位</th><th>创建时间</th></tr></thead><tbody id="table-frontdesk-accounts"></tbody></table></div></div>
+      <div class="panel" style="margin-bottom:14px;"><div class="panel-title">已登录设备</div><div class="admin-table-wrap"><table><thead><tr><th>账号</th><th>岗位</th><th>最近使用</th><th>有效期</th><th>操作</th></tr></thead><tbody id="table-frontdesk-sessions"></tbody></table></div></div>
+      <div class="panel" style="margin-bottom:14px;"><div class="panel-title">最近导入批次</div><div class="admin-table-wrap"><table><thead><tr><th>文件</th><th>导入人</th><th>新增</th><th>重复</th><th>状态</th><th>时间</th></tr></thead><tbody id="table-frontdesk-batches"></tbody></table></div></div>
+      <div class="panel"><div class="panel-title">最近前台数据</div><div class="admin-table-wrap"><table><thead><tr><th>来源</th><th>日期</th><th>客户</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>修改人</th></tr></thead><tbody id="table-frontdesk-ledger"></tbody></table></div></div>
     </div>
 
     <!-- 员工管理 -->
@@ -641,8 +655,9 @@ const AESTHETIC_CANDIDATE_KEY = 'hair_aesthetic_candidates_v1';
 let aestheticCloudCandidates = null;
 let aestheticAdminView = 'workbench';
 const STORE_ADMIN_ROLE = 'store_admin';
-const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'training', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
+const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'frontdesk', 'training', 'hair-analysis', 'care', 'assessment', 'content', 'audit'];
 const AESTHETIC_LEARNING_ENDPOINT = SUPABASE_URL + '/functions/v1/aesthetic-learning';
+const FRONTDESK_ENDPOINT = SUPABASE_URL + '/functions/v1/frontdesk-api';
 let adminStaffStoreMapPromise = null;
 
 function getAdminSession() {
@@ -1900,6 +1915,46 @@ window.viewTrainingRecords = function(username) {
   }).catch(function(error){ toast(error.message, 'err'); });
 };
 
+function frontdeskAdminRequest(operation, extra) {
+  var session = getAdminSession();
+  return fetch(FRONTDESK_ENDPOINT, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
+    body:JSON.stringify(Object.assign({operation:operation,admin_token:session.trainingToken||''},extra||{}))
+  }).then(async function(response) {
+    var body = await response.json().catch(function(){return {};});
+    if (!response.ok) throw new Error(body.error || '前台管理请求失败');
+    return body;
+  });
+}
+
+function frontdeskDate(value) {
+  if (!value) return '—';
+  var date = new Date(value);
+  return isNaN(date.getTime()) ? String(value).replace('T',' ').slice(0,16) : date.toLocaleString('zh-CN',{hour12:false});
+}
+
+window.loadFrontdeskManagement = function() {
+  var storeSelect = document.getElementById('frontdesk-admin-store');
+  var requestedStore = storeSelect && storeSelect.value || currentAdminStore() || '';
+  ['table-frontdesk-accounts','table-frontdesk-sessions','table-frontdesk-batches','table-frontdesk-ledger'].forEach(function(id){var body=document.getElementById(id);if(body)body.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);">加载中…</td></tr>';});
+  frontdeskAdminRequest('admin_overview',{store:requestedStore}).then(function(result){
+    var stores=result.stores||[],store=result.store||'';
+    storeSelect.innerHTML=stores.map(function(item){return '<option value="'+esc(item)+'">'+esc(item)+'</option>';}).join('');storeSelect.value=store;storeSelect.disabled=isStoreAdmin()||stores.length<=1;storeSelect.onchange=loadFrontdeskManagement;
+    var counts=result.counts||{};document.getElementById('frontdesk-admin-stats').innerHTML='<div class="stat-card"><div class="stat-value">'+Number(counts.pending_accounts||0)+'</div><div class="stat-label">待审核前台</div></div><div class="stat-card"><div class="stat-value">'+Number(counts.active_accounts||0)+'</div><div class="stat-label">启用账号</div></div><div class="stat-card"><div class="stat-value">'+Number(counts.active_sessions||0)+'</div><div class="stat-label">已登录设备</div></div><div class="stat-card"><div class="stat-value">'+Number(counts.ledger_rows||0)+'</div><div class="stat-label">前台数据记录</div></div>';
+    var accounts=result.accounts||[],accountBody=document.getElementById('table-frontdesk-accounts');accountBody.innerHTML=accounts.length?accounts.map(function(row){var pending=row.employment_status==='pending',status=pending?'待审核':(row.active!==false&&row.employment_status==='active'?'已启用':'已停用');return '<tr><td>'+esc(row.username||'—')+'</td><td>'+esc(row.store||'—')+'</td><td><span class="status-chip '+(pending?'status-pending':'')+'">'+esc(status)+'</span></td><td>'+esc(row.position||'前台')+'</td><td>'+esc(frontdeskDate(row.created_at))+'</td></tr>';}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);">该门店暂无前台账号</td></tr>';
+    var sessions=result.sessions||[],sessionBody=document.getElementById('table-frontdesk-sessions');sessionBody.innerHTML=sessions.length?sessions.map(function(row,index){return '<tr><td>'+esc(row.username||'—')+'</td><td>'+esc(row.position||row.role||'—')+'</td><td>'+esc(frontdeskDate(row.last_used_at||row.created_at))+'</td><td>'+esc(frontdeskDate(row.expires_at))+'</td><td><button class="btn-delete frontdesk-revoke" type="button" data-index="'+index+'">退出设备</button></td></tr>';}).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);">暂无已登录设备</td></tr>';
+    sessionBody.querySelectorAll('.frontdesk-revoke').forEach(function(button){button.addEventListener('click',function(){var row=sessions[Number(button.dataset.index)];revokeFrontdeskDevice(row&&row.token_hash,store,row&&row.username);});});
+    var batches=result.batches||[],batchBody=document.getElementById('table-frontdesk-batches');batchBody.innerHTML=batches.length?batches.map(function(row){return '<tr><td>'+esc(row.original_filename||'—')+'</td><td>'+esc(row.imported_by||'—')+'</td><td>'+Number(row.imported_rows||0)+'</td><td>'+Number(row.duplicate_rows||0)+'</td><td>'+esc(row.status||'—')+'</td><td>'+esc(frontdeskDate(row.completed_at||row.created_at))+'</td></tr>';}).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);">暂无导入批次</td></tr>';
+    var ledger=result.ledger_rows||[],ledgerBody=document.getElementById('table-frontdesk-ledger');ledgerBody.innerHTML=ledger.length?ledger.map(function(row){return '<tr><td>'+esc(row.source||'—')+'</td><td>'+esc(row.business_date||'—')+'</td><td>'+esc([row.customer_name,row.customer_phone].filter(Boolean).join(' · ')||'—')+'</td><td>'+esc(row.service_items||'—')+'</td><td>'+esc(row.barber_name||'—')+'</td><td>'+esc(row.technician_name||'—')+'</td><td>'+esc(row.assistant_name||'—')+'</td><td>'+esc(row.updated_by||row.created_by||'—')+'</td></tr>';}).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);">暂无前台数据</td></tr>';
+  }).catch(function(error){toast(error.message,'err');document.getElementById('frontdesk-admin-stats').innerHTML='<div class="panel" style="color:var(--danger);">'+esc(error.message)+'</div>';});
+};
+
+window.revokeFrontdeskDevice = function(sessionId, store, username) {
+  if (!sessionId || !confirm('确认让 '+(username||'该前台账号')+' 的这台设备退出登录？')) return;
+  frontdeskAdminRequest('admin_revoke_session',{session_id:sessionId,store:store}).then(function(){recordAdminAction('退出前台设备',username||'前台设备',store||'');toast('该前台设备已退出','ok');loadFrontdeskManagement();}).catch(function(error){toast(error.message,'err');});
+};
+
 function switchTab(tab) {
   if (!adminCanAccessTab(tab)) {
     toast('分店后台没有该功能权限', 'err');
@@ -1919,6 +1974,8 @@ function switchTab(tab) {
     loadRegistrations();
   } else if (tab === 'staff') {
     loadStaff();
+  } else if (tab === 'frontdesk') {
+    loadFrontdeskManagement();
   } else if (tab === 'training') {
     loadTrainingManagement();
   } else if (tab === 'content') {

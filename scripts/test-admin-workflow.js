@@ -14,7 +14,7 @@ const admin = fs.readFileSync('admin.html', 'utf8');
 const app = fs.readFileSync('perm-app.html', 'utf8');
 const legacyAdmin = fs.readFileSync('admin-panel.html', 'utf8');
 
-for (const tab of ['dashboard', 'registrations', 'staff', 'training', 'customers', 'followups', 'hair-analysis', 'care', 'assessment', 'content', 'system', 'audit']) {
+for (const tab of ['dashboard', 'registrations', 'staff', 'frontdesk', 'training', 'customers', 'followups', 'hair-analysis', 'care', 'assessment', 'content', 'system', 'audit']) {
   assert(admin.includes(`data-tab="${tab}"`), `missing backend navigation: ${tab}`);
 }
 
@@ -38,7 +38,9 @@ assert(admin.includes('openCareMonthlyEditor') && admin.includes('编辑用量')
 assert(admin.includes('loadCareDetailRecords();') && admin.includes('loadCareMonthlyStats();'), 'care correction does not refresh detail and monthly summary');
 assert(admin.indexOf('initializeAdminPage();') > admin.indexOf('window.loadDashboard ='), 'backend initializes before dashboard loaders are registered');
 assert(admin.includes("const STORE_ADMIN_ROLE = 'store_admin'"), 'store administrator role is missing');
-assert(admin.includes("const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'training', 'hair-analysis', 'care', 'assessment', 'content', 'audit']"), 'store administrator navigation allowlist is wrong');
+assert(admin.includes("const STORE_ADMIN_TABS = ['dashboard', 'registrations', 'staff', 'frontdesk', 'training', 'hair-analysis', 'care', 'assessment', 'content', 'audit']"), 'store administrator navigation allowlist is wrong');
+assert(admin.includes('FRONTDESK_ENDPOINT') && admin.includes("frontdeskAdminRequest('admin_overview'") && admin.includes('loadFrontdeskManagement'), 'frontdesk backend management is missing');
+assert(admin.includes("frontdeskAdminRequest('admin_revoke_session'") && admin.includes('退出前台设备'), 'frontdesk device session management is missing');
 assert(admin.includes('session.role !== STORE_ADMIN_ROLE || !!session.store'), 'store administrators can log in without a bound store');
 assert(admin.includes('role=in.(admin,${STORE_ADMIN_ROLE})'), 'backend login does not accept scoped store administrators');
 assert(admin.includes('data-tab="customers" data-super-admin-only') && admin.includes('data-tab="followups" data-super-admin-only'), 'customer or follow-up navigation is exposed to store administrators');
