@@ -1,0 +1,15 @@
+{
+  "name": "ZYSYR 前台客户中心",
+  "short_name": "前台客户中心",
+  "description": "iPad 前台客户查询、到店动态与历史消费档案",
+  "start_url": "frontdesk.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0d0d0c",
+  "theme_color": "#11110f",
+  "icons": [
+    {"src": "apple-icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "apple-icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

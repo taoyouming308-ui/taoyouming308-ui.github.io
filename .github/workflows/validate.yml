@@ -44,6 +44,8 @@ jobs:
         run: node scripts/test-admin-workflow.js
       - name: Protect booking page UI
         run: node scripts/test-booking-ui.js
+      - name: Protect iPad frontdesk customer center
+        run: node scripts/test-frontdesk.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance

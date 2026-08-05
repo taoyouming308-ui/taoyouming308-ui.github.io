@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN" data-version="403">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#11110f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="前台客户中心">
+  <link rel="manifest" href="frontdesk-manifest.json">
+  <link rel="apple-touch-icon" href="apple-icon-192.png">
+  <title>前台客户中心 · ZYSYR</title>
+  <style>
+    :root{--bg:#0d0d0c;--panel:#171714;--panel2:#1f1f1b;--line:#33332d;--text:#f5f2ea;--muted:#a7a399;--gold:#d6b06f;--gold2:#f0d59e;--green:#57c99c;--red:#ef806f;--blue:#80a8ff;--white:#fff;--shadow:0 20px 60px rgba(0,0,0,.28);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);overflow:hidden}button,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+    .shell{height:100%;display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:84px minmax(0,1fr)}
+    header{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:calc(12px + env(safe-area-inset-top)) 24px 12px;border-bottom:1px solid var(--line);background:rgba(13,13,12,.94);backdrop-filter:blur(20px);z-index:5}
+    .brand{display:flex;align-items:center;gap:12px;min-width:250px}.mark{display:grid;place-items:center;width:44px;height:44px;border:1px solid #9a7a49;border-radius:13px;color:var(--gold2);font-size:22px;font-weight:800;background:linear-gradient(145deg,#29241a,#141411)}
+    .brand h1{font-size:20px;margin:0;letter-spacing:.04em}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.22em;margin-top:4px}
+    .head-status{display:flex;align-items:center;gap:10px;margin-left:auto}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(87,201,156,.08)}.sync-label{color:var(--muted);font-size:12px}.head-user{padding:9px 12px;border-left:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .ghost{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:10px 14px}.ghost:active{transform:scale(.98)}
+    aside{padding:22px 14px calc(18px + env(safe-area-inset-bottom));border-right:1px solid var(--line);display:flex;flex-direction:column;background:#11110f}
+    nav{display:grid;gap:8px}.nav-btn{border:1px solid transparent;border-radius:14px;background:transparent;color:var(--muted);padding:14px 16px;text-align:left;display:flex;gap:12px;align-items:center;font-weight:650}.nav-btn span{display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line);border-radius:9px;color:var(--gold)}.nav-btn.on{color:var(--white);background:#252118;border-color:#51442f}.nav-btn.on span{background:var(--gold);border-color:var(--gold);color:#15130e}
+    .scope{margin-top:auto;border-top:1px solid var(--line);padding:16px 10px 0;color:var(--muted);font-size:11px;line-height:1.7}.scope strong{color:var(--gold2);display:block;font-size:13px}.readonly{margin-top:10px;padding:10px;border-radius:10px;background:#1d1912;color:#bea776;line-height:1.55}
+    main{min-width:0;overflow:hidden;position:relative}.view{height:100%;overflow:auto;padding:26px 28px 44px}.view-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:22px}.view-head h2{font-size:29px;margin:0}.view-head p{margin:5px 0 0;color:var(--muted);font-size:12px}.view-head .actions{margin-left:auto;display:flex;gap:10px}
+    .date-input,.search-input{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:11px 13px;outline:none}.date-input:focus,.search-input:focus{border-color:#886c42;box-shadow:0 0 0 3px rgba(214,176,111,.08)}
+    .primary{border:0;border-radius:12px;padding:12px 18px;background:var(--gold);color:#17130d;font-weight:800}.primary:disabled{opacity:.35;cursor:not-allowed}.danger{color:var(--red)}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.kpi{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:16px}.kpi label{color:var(--muted);font-size:11px}.kpi strong{display:block;font-size:28px;margin-top:7px}.kpi small{font-size:10px;color:var(--muted)}
+    .card{border:1px solid var(--line);background:var(--panel);border-radius:17px;overflow:hidden}.card-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}.card-head h3{font-size:15px;margin:0}.card-head small{color:var(--muted)}
+    .today-list{display:grid}.today-row{display:grid;grid-template-columns:86px 1.2fr .9fr .9fr auto;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #2a2a25}.today-row:last-child{border:0}.time{font-size:22px;font-weight:700}.customer{font-weight:750}.sub{font-size:11px;color:var(--muted);margin-top:4px}.pill{display:inline-flex;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap}.pill.green{background:rgba(87,201,156,.12);color:var(--green)}.pill.gold{background:rgba(214,176,111,.12);color:var(--gold2)}.pill.blue{background:rgba(128,168,255,.12);color:var(--blue)}.pill.gray{background:#2a2a25;color:var(--muted)}
+    .empty{padding:44px 20px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+    .customer-layout{display:grid;grid-template-columns:350px minmax(0,1fr);gap:14px;height:calc(100% - 76px);min-height:520px}.search-pane,.detail-pane{min-height:0}.search-box{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--line)}.search-input{min-width:0;flex:1}.result-list{height:calc(100% - 70px);overflow:auto}.result{width:100%;border:0;border-bottom:1px solid #2a2a25;background:transparent;color:var(--text);padding:15px 16px;text-align:left}.result:hover,.result.on{background:#262219}.result-top{display:flex;justify-content:space-between;gap:10px}.result-name{font-weight:760}.result-phone{color:var(--muted);font-size:11px}.result-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;font-size:10px;color:var(--muted)}
+    .detail-pane{overflow:auto}.detail-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted)}.detail-content{padding:20px}.customer-title{display:flex;align-items:flex-start;gap:14px}.avatar{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#2c261c;color:var(--gold2);font-size:22px;font-weight:800}.customer-title h3{font-size:23px;margin:2px 0 5px}.customer-title p{margin:0;color:var(--muted);font-size:12px}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:18px 0}.summary-box{background:#10100e;border:1px solid #2d2d28;border-radius:12px;padding:12px}.summary-box label{color:var(--muted);font-size:10px}.summary-box strong{display:block;font-size:18px;margin-top:5px}.section-title{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;font-size:14px}.section-title span{color:var(--muted);font-size:10px;font-weight:400}
+    .packages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.package{border:1px solid #453a29;background:#1e1a13;border-radius:12px;padding:13px}.package-top{display:flex;justify-content:space-between;gap:10px}.package strong{font-size:13px}.package em{font-style:normal;color:var(--gold2);font-weight:800}.bar{height:4px;border-radius:9px;background:#39342b;margin:10px 0 7px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}.package small{color:var(--muted)}
+    .timeline{border-top:1px solid var(--line)}.history-row{display:grid;grid-template-columns:108px minmax(160px,1fr) 88px minmax(110px,.8fr);gap:12px;padding:12px 3px;border-bottom:1px solid #2a2a25;font-size:12px}.history-row .date{font-weight:650}.history-row .items{line-height:1.6}.history-row .amount{text-align:right;font-weight:750}.history-row .staff{text-align:right;color:var(--muted);font-size:10px;line-height:1.55}.source{display:inline-flex;margin-top:4px;color:var(--muted);font-size:9px}.show-all{display:block;width:100%;margin-top:12px}
+    .import-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:14px}.drop{border:1px dashed #645334;background:linear-gradient(145deg,#1c1913,#151512);border-radius:16px;padding:34px;text-align:center}.drop input{display:none}.drop h3{margin:8px 0}.drop p{color:var(--muted);font-size:12px;line-height:1.8}.link-btn{border:0;background:transparent;color:var(--gold2);padding:5px;text-decoration:underline}.mapping{padding:18px}.mapping h3{margin:0 0 12px;font-size:14px}.mapping table{width:100%;border-collapse:collapse;font-size:11px}.mapping td{padding:8px;border-bottom:1px solid #292925;color:var(--muted)}.mapping td:first-child{color:var(--text)}
+    .preview{margin-top:14px}.preview-wrap{max-height:300px;overflow:auto}.preview table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}.preview th,.preview td{padding:8px 10px;border-bottom:1px solid #292925;text-align:left}.preview th{position:sticky;top:0;background:#25221a;color:var(--gold2)}.import-actions{display:flex;align-items:center;gap:12px;padding:14px 16px}.import-status{font-size:12px;color:var(--muted)}.batch-list{padding:0 16px 16px}.batch{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #292925;font-size:11px}.batch small{color:var(--muted)}
+    .notice{padding:15px;border:1px solid #50442f;background:#201b13;border-radius:13px;color:#dbc28e;font-size:12px;line-height:1.7}.notice strong{display:block;color:var(--gold2)}
+    .login{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(circle at 70% 20%,#2b251a 0,#11110f 43%,#090908 100%);padding:30px}.login-box{width:min(430px,100%);border:1px solid #494035;background:rgba(22,22,19,.92);border-radius:24px;padding:30px;box-shadow:var(--shadow)}.login-box .mark{width:54px;height:54px}.login-box h2{font-size:28px;margin:24px 0 5px}.login-box>p{color:var(--muted);font-size:12px;margin:0 0 24px}.field{display:grid;gap:7px;margin:13px 0}.field label{font-size:11px;color:var(--muted)}.field input{width:100%;border:1px solid var(--line);background:#0f0f0d;color:var(--text);border-radius:12px;padding:14px;outline:none}.login-box .primary{width:100%;margin-top:12px;padding:14px}.login-error{min-height:20px;color:var(--red);font-size:11px;margin-top:10px}.login-note{border-top:1px solid var(--line);margin-top:18px;padding-top:16px;color:var(--muted);font-size:10px;line-height:1.7}
+    .toast{position:fixed;right:24px;bottom:24px;z-index:30;background:#f3efe6;color:#16140f;padding:13px 18px;border-radius:12px;box-shadow:var(--shadow);font-size:12px;max-width:360px}.toast.err{background:#3b1915;color:#ffd1c9;border:1px solid #6c2c24}
+    @media(max-width:900px){.shell{grid-template-columns:84px minmax(0,1fr)}.brand{min-width:0}.brand h1{font-size:16px}.brand small,.nav-btn b,.scope{display:none}.nav-btn{justify-content:center;padding:12px}.nav-btn span{width:36px;height:36px}.customer-layout{grid-template-columns:300px minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}.history-row{grid-template-columns:90px 1fr 70px}.history-row .staff{display:none}.import-grid{grid-template-columns:1fr}}
+    @media(max-width:680px){html,body{overflow:auto}.shell{display:block}.shell header{position:sticky;top:0}.head-status,.head-user{display:none}aside{position:fixed;bottom:0;left:0;right:0;height:74px;z-index:10;padding:8px;background:rgba(17,17,15,.96);border:1px solid var(--line)}nav{grid-template-columns:repeat(3,1fr)}.nav-btn{display:grid;place-items:center;padding:4px;font-size:10px}.nav-btn b{display:block}.nav-btn span{height:30px;width:30px}.view{padding:20px 14px 100px;min-height:calc(100vh - 80px)}.customer-layout{display:block;height:auto}.search-pane{height:360px;margin-bottom:12px}.detail-pane{min-height:500px}.today-row{grid-template-columns:70px 1fr auto}.today-row>div:nth-child(3),.today-row>div:nth-child(4){display:none}.summary-grid{grid-template-columns:repeat(2,1fr)}.packages{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="login" id="login">
+    <form class="login-box" id="login-form">
+      <div class="mark">前</div>
+      <h2>前台客户中心</h2>
+      <p>iPad 专用 · 客户数据由美管加同步</p>
+      <div class="field"><label for="login-user">员工账号</label><input id="login-user" autocomplete="username" required></div>
+      <div class="field"><label for="login-pass">密码</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
+      <button class="primary" id="login-btn" type="submit">进入前台</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-note">可登录账号：管理员、店长，或后台职位包含“前台”的在职员工。这里不处理付款、退款、充值，实际收银继续在美管加完成。</div>
+    </form>
+  </div>
+
+  <div class="shell">
+    <header>
+      <div class="brand"><div class="mark">前</div><div><h1>前台客户中心</h1><small>ZYSYR · CUSTOMER DESK</small></div></div>
+      <div class="head-status"><i class="dot"></i><span class="sync-label" id="sync-label">等待同步状态</span></div>
+      <div class="head-user" id="head-user">—</div>
+      <button class="ghost" type="button" id="refresh-btn">刷新数据</button>
+      <button class="ghost" type="button" id="logout-btn">退出</button>
+    </header>
+    <aside>
+      <nav>
+        <button class="nav-btn on" data-view="today" type="button"><span>今</span><b>今日客户</b></button>
+        <button class="nav-btn" data-view="customers" type="button"><span>客</span><b>客户档案</b></button>
+        <button class="nav-btn" data-view="import" type="button"><span>导</span><b>历史导入</b></button>
+      </nav>
+      <div class="scope"><strong id="scope-store">门店</strong><span id="scope-user">—</span><div class="readonly">美管加负责收银<br>本端负责查询与辅助接待</div></div>
+    </aside>
+
+    <main>
+      <section class="view" id="view-today">
+        <div class="view-head"><div><h2>今日客户</h2><p>预约与已消费记录合并展示；“已消费”代表美管加已经返回消费单。</p></div><div class="actions"><input class="date-input" id="today-date" type="date"></div></div>
+        <div class="kpis">
+          <div class="kpi"><label>今日预约</label><strong id="kpi-bookings">—</strong><small>来自预约同步</small></div>
+          <div class="kpi"><label>已消费客户</label><strong id="kpi-services">—</strong><small>来自美管加消费单</small></div>
+          <div class="kpi"><label>预约已匹配</label><strong id="kpi-matched">—</strong><small>手机号优先匹配</small></div>
+          <div class="kpi"><label>今日消费金额</label><strong id="kpi-amount">—</strong><small>仅展示，不在此收款</small></div>
+        </div>
+        <div class="card"><div class="card-head"><h3>接待动态</h3><small id="today-caption">正在载入</small></div><div class="today-list" id="today-list"><div class="empty">正在读取今日数据…</div></div></div>
+      </section>
+
+      <section class="view hidden" id="view-customers">
+        <div class="view-head"><div><h2>客户档案</h2><p>按姓名或手机号查询，查看全部已同步消费记录和套餐余项。</p></div></div>
+        <div class="customer-layout">
+          <div class="card search-pane"><div class="search-box"><input class="search-input" id="customer-query" placeholder="输入姓名或手机号"><button class="primary" id="customer-search-btn" type="button">查询</button></div><div class="result-list" id="customer-results"><div class="empty"><b>查找客户</b>输入至少两个字或两位手机号</div></div></div>
+          <div class="card detail-pane" id="customer-detail"><div class="detail-empty"><div><div class="mark" style="margin:auto">客</div><p>从左侧选择客户查看档案</p></div></div></div>
+        </div>
+      </section>
+
+      <section class="view hidden" id="view-import">
+        <div class="view-head"><div><h2>历史表格导入</h2><p>把以前的到店登记补入客户时间线；不会写回美管加，也不会执行收银。</p></div></div>
+        <div class="notice hidden" id="import-denied"><strong>当前账号只有查询权限</strong>历史数据导入只允许店长或管理员操作。请使用相应账号重新登录。</div>
+        <div id="import-area">
+          <div class="import-grid">
+            <div>
+              <label class="drop" for="csv-file"><div class="mark" style="margin:auto">表</div><h3>选择历史消费表</h3><p>在 Excel / WPS 中将原表“另存为 CSV UTF‑8”，然后在这里选择。<br>导入前会先预览和检查，不会直接写入。</p><span class="primary" style="display:inline-flex">选择 CSV 文件</span><input id="csv-file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values"></label>
+              <div class="card preview hidden" id="preview-card"><div class="card-head"><h3 id="preview-title">导入预览</h3><small id="preview-summary"></small></div><div class="preview-wrap" id="preview-wrap"></div><div class="import-actions"><button class="primary" id="import-btn" type="button">确认导入</button><span class="import-status" id="import-status">尚未写入</span></div></div>
+            </div>
+            <div class="card mapping"><h3>自动识别这些列</h3><table><tbody><tr><td>消费日期</td><td>必填</td></tr><tr><td>券码</td><td>可选</td></tr><tr><td>姓名 / 手机号</td><td>至少一项</td></tr><tr><td>客户项目</td><td>剪发、烫发、染发等</td></tr><tr><td>发型师 / 技师 / 助理</td><td>自动保存人员</td></tr><tr><td>消费金额</td><td>金额、点评、扣次卡说明</td></tr></tbody></table><button class="link-btn" id="template-btn" type="button">下载 CSV 模板</button><div class="section-title">最近导入<span>防重复写入</span></div><div class="batch-list" id="batch-list"><div class="empty" style="padding:20px">暂无导入记录</div></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script>
+  (function(){
+    'use strict';
+    var SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+    var ENDPOINT = SUPABASE_URL + '/functions/v1/frontdesk-api';
+    var STORAGE_KEY = 'zysyr-frontdesk-session-v1';
+    var state = { session:null, dashboard:null, selected:null, importRows:[], importFile:'', showingAll:false, view:'today' };
+    var $ = function(id){ return document.getElementById(id); };
+
+    function esc(value){ return String(value == null ? '' : value).replace(/[&<>'"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]; }); }
+    function phone(value){ return String(value || '').replace(/\D/g,'').slice(-20); }
+    function money(value){ return '¥' + (Number(value || 0)).toLocaleString('zh-CN',{maximumFractionDigits:2}); }
+    function localDate(){ var d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+    function toast(message,isError){ var el=$('toast'); el.textContent=message; el.className='toast'+(isError?' err':''); clearTimeout(toast.timer); toast.timer=setTimeout(function(){el.className='toast hidden';},3200); }
+    function setBusy(button,busy,label){ if(!button)return; if(!button.dataset.label)button.dataset.label=button.textContent; button.disabled=busy; button.textContent=busy?(label||'处理中…'):button.dataset.label; }
+
+    async function api(operation,data){
+      var body=Object.assign({},data||{},{operation:operation});
+      if(state.session&&state.session.session_token)body.session_token=state.session.session_token;
+      var response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify(body)});
+      var result={}; try{result=await response.json();}catch(e){}
+      if(!response.ok)throw new Error(result.error||('请求失败 '+response.status));
+      return result;
+    }
+
+    function saveSession(session){ state.session=session; localStorage.setItem(STORAGE_KEY,JSON.stringify(session)); applySession(); }
+    function clearSession(){ state.session=null; localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
+    function applySession(){
+      if(!state.session||!state.session.user)return;
+      var user=state.session.user;
+      $('login').classList.add('hidden'); $('head-user').textContent=(user.store||'全部门店')+' · '+user.username;
+      $('scope-store').textContent=user.store||'全部门店'; $('scope-user').textContent=user.username+' · '+(user.position||user.role||'员工');
+      $('import-denied').classList.toggle('hidden',!!user.can_import); $('import-area').classList.toggle('hidden',!user.can_import);
+      loadDashboard(); if(user.can_import)loadBatches();
+    }
+
+    async function restoreSession(){
+      try{state.session=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch(e){state.session=null;}
+      if(!state.session||!state.session.session_token)return;
+      if(state.session.expires_at&&new Date(state.session.expires_at).getTime()<Date.now()){clearSession();return;}
+      try{var result=await api('session');state.session.user=result.user;saveSession(state.session);}catch(e){clearSession();}
+    }
+
+    $('login-form').addEventListener('submit',async function(event){
+      event.preventDefault();var btn=$('login-btn');setBusy(btn,true,'正在验证…');$('login-error').textContent='';
+      try{var result=await api('login',{username:$('login-user').value.trim(),password:$('login-pass').value});saveSession(result);$('login-pass').value='';}
+      catch(e){$('login-error').textContent=e.message;}finally{setBusy(btn,false);}
+    });
+    $('logout-btn').addEventListener('click',async function(){try{await api('logout');}catch(e){}clearSession();});
+
+    document.querySelectorAll('.nav-btn').forEach(function(button){button.addEventListener('click',function(){showView(button.dataset.view);});});
+    function showView(name){state.view=name;document.querySelectorAll('.nav-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.view===name);});document.querySelectorAll('.view').forEach(function(view){view.classList.add('hidden');});$('view-'+name).classList.remove('hidden');if(name==='import'&&state.session&&state.session.user.can_import)loadBatches();}
+
+    function itemNames(items){return (Array.isArray(items)?items:[]).map(function(item){return typeof item==='string'?item:(item&&((item.name||item.itemname)))||'';}).filter(Boolean);}
+    function customerKey(row){return phone(row.customer_phone)||(row.customer_name?'n:'+row.customer_name:'');}
+    function mergeToday(data){
+      var services=(data.services||[]).slice(),used={};
+      var rows=(data.bookings||[]).map(function(booking){
+        var key=customerKey(booking),match=-1;
+        for(var i=0;i<services.length;i++){if(used[i])continue;var service=services[i];if(key&&customerKey(service)===key){match=i;break;}}
+        if(match>=0)used[match]=true;
+        return {time:booking.time_label||'',name:booking.customer_name||'未填写客户',phone:booking.customer_phone||'',barber:booking.barber_name||'',service:booking.service_name||'',notes:booking.notes||'',kind:match>=0?'matched':'booking',amount:match>=0?Number(services[match].amount||0):0,live:match>=0?services[match]:null};
+      });
+      services.forEach(function(service,index){if(used[index])return;rows.push({time:service.service_time||'',name:service.customer_name||'未填写客户',phone:service.customer_phone||'',barber:(service.staff||[]).join('、'),service:itemNames(service.items).join('、')||(service.service_types||[]).join('、'),notes:'',kind:'walkin',amount:Number(service.amount||0),live:service});});
+      rows.sort(function(a,b){return String(a.time).localeCompare(String(b.time));});return rows;
+    }
+    function renderToday(data){
+      var rows=mergeToday(data),matched=rows.filter(function(r){return r.kind==='matched';}).length,total=(data.services||[]).reduce(function(sum,row){return sum+(Number(row.amount)||0);},0);
+      $('kpi-bookings').textContent=(data.bookings||[]).length;$('kpi-services').textContent=(data.services||[]).length;$('kpi-matched').textContent=matched;$('kpi-amount').textContent=money(total);
+      $('today-caption').textContent=rows.length+' 条动态 · '+(data.store||'全部门店');
+      $('sync-label').textContent=data.synced_at?'美管加数据 '+new Date(data.synced_at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 更新':'美管加今日暂无消费回传';
+      if(!rows.length){$('today-list').innerHTML='<div class="empty"><b>今天暂无记录</b>可点击右上角刷新数据</div>';return;}
+      $('today-list').innerHTML=rows.map(function(row){var badge=row.kind==='matched'?'<span class="pill green">预约已消费</span>':(row.kind==='walkin'?'<span class="pill blue">已消费 / 无预约</span>':'<span class="pill gold">预约待消费</span>');return '<div class="today-row"><div class="time">'+esc(row.time||'—')+'</div><div><div class="customer">'+esc(row.name)+'</div><div class="sub">'+esc(row.phone||'未留手机号')+'</div></div><div><div>'+esc(row.service||'未填写项目')+'</div><div class="sub">'+esc(row.notes)+'</div></div><div><div>'+esc(row.barber||'未分配员工')+'</div><div class="sub">'+(row.amount?esc(money(row.amount)):'')+'</div></div><div>'+badge+'</div></div>';}).join('');
+    }
+    async function loadDashboard(){if(!state.session)return;var btn=$('refresh-btn');setBusy(btn,true,'刷新中…');try{var data=await api('dashboard',{date:$('today-date').value||localDate()});state.dashboard=data;renderToday(data);}catch(e){toast(e.message,true);}finally{setBusy(btn,false);}}
+    $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'&&state.selected)openCustomer(state.selected);else loadBatches();});
+
+    async function searchCustomers(){var query=$('customer-query').value.trim(),btn=$('customer-search-btn');if(query.length<2){toast('至少输入两个字或两位手机号',true);return;}setBusy(btn,true,'查询中…');$('customer-results').innerHTML='<div class="empty">正在查询完整客户索引…</div>';try{var data=await api('customer_search',{query:query});renderResults(data.results||[]);}catch(e){$('customer-results').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
+    function renderResults(rows){if(!rows.length){$('customer-results').innerHTML='<div class="empty"><b>没有查到客户</b>请检查姓名或手机号</div>';return;}$('customer-results').innerHTML=rows.map(function(row,index){return '<button class="result" type="button" data-index="'+index+'"><div class="result-top"><span class="result-name">'+esc(row.name||'未命名客户')+'</span><span class="result-phone">'+esc(row.phone||'无手机号')+'</span></div><div class="result-meta"><span>最近 '+esc(row.last_visit||'—')+'</span><span>'+esc((row.shops||[]).join('、'))+'</span>'+(row.remaining_packages?'<span style="color:var(--gold2)">'+esc(row.remaining_packages)+' 个套餐有余项</span>':'')+'</div></button>';}).join('');$('customer-results').querySelectorAll('.result').forEach(function(button){button.addEventListener('click',function(){var row=rows[Number(button.dataset.index)];$('customer-results').querySelectorAll('.result').forEach(function(el){el.classList.remove('on');});button.classList.add('on');openCustomer(row);});});}
+    $('customer-search-btn').addEventListener('click',searchCustomers);$('customer-query').addEventListener('keydown',function(event){if(event.key==='Enter')searchCustomers();});
+
+    async function openCustomer(customer){state.selected=customer;state.showingAll=false;$('customer-detail').innerHTML='<div class="detail-empty">正在读取全部消费与套餐数据…</div>';try{var data=await api('customer_detail',{phone:customer.phone||'',name:customer.name||''});renderCustomer(data);}catch(e){$('customer-detail').innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
+    function renderCustomer(data){
+      var customer=data.customer||{},summary=data.summary||{},legacy=data.historical_import||{},quality=data.data_quality||{},packages=data.packages||[],timeline=data.timeline||[],shown=state.showingAll?timeline:timeline.slice(0,80),initial=(customer.name||'客').slice(0,1);
+      var packageHtml=packages.length?packages.map(function(pkg){var pct=pkg.total>0?Math.max(0,Math.min(100,Math.round(pkg.left/pkg.total*100))):100;return '<div class="package"><div class="package-top"><strong>'+esc(pkg.name)+'</strong><em>剩 '+esc(pkg.left)+' / '+esc(pkg.total||'—')+' 次</em></div><div class="bar"><i style="width:'+pct+'%"></i></div><small>'+esc([pkg.shop,pkg.expire_date?('有效期至 '+pkg.expire_date):''].filter(Boolean).join(' · ')||'美管加套餐同步')+'</small></div>';}).join(''):'<div class="empty" style="grid-column:1/-1;padding:22px">当前未同步到有余项的套餐</div>';
+      var timelineHtml=shown.length?shown.map(function(row){var staff=(row.staff||[]).join('、')||row.barber||'';return '<div class="history-row"><div><div class="date">'+esc(row.date||'—')+'</div><span class="source">'+esc(row.source||'消费记录')+'</span></div><div class="items">'+esc((row.items||[]).join('、')||'消费记录')+(row.note?'<div class="sub">'+esc(row.note)+'</div>':'')+'</div><div class="amount">'+(Number(row.amount)>0?esc(money(row.amount)):'—')+'</div><div class="staff">'+esc(staff)+'<br>'+esc(row.shop||'')+'</div></div>';}).join(''):'<div class="empty">暂无消费记录</div>';
+      $('customer-detail').innerHTML='<div class="detail-content"><div class="customer-title"><div class="avatar">'+esc(initial)+'</div><div><h3>'+esc(customer.name||'未命名客户')+'</h3><p>'+esc(customer.phone||'未留手机号')+'</p></div></div><div class="summary-grid"><div class="summary-box"><label>美管加到店次数</label><strong>'+esc(summary.visits||0)+'</strong></div><div class="summary-box"><label>美管加档案总消费</label><strong>'+esc(money(summary.consumption||0))+'</strong></div><div class="summary-box"><label>最近到店</label><strong style="font-size:14px">'+esc(summary.last_visit||'—')+'</strong></div><div class="summary-box"><label>历史表格补入</label><strong>'+esc(legacy.rows||0)+' 条</strong></div></div>'+(quality.summary_without_history?'<div class="notice"><strong>美管加历史明细尚未完整回传</strong>'+esc(quality.message||'当前仅展示已经同步的逐笔记录。')+'</div>':'')+'<div class="section-title"><b>套餐余项</b><span>'+packages.length+' 个有效套餐</span></div><div class="packages">'+packageHtml+'</div><div class="section-title"><b>全部已同步消费记录</b><span>共 '+timeline.length+' 条 · 美管加与历史表格分源展示</span></div><div class="timeline">'+timelineHtml+'</div>'+(timeline.length>80&&!state.showingAll?'<button class="ghost show-all" id="show-all-history" type="button">显示全部 '+timeline.length+' 条记录</button>':'')+'</div>';
+      var all=$('show-all-history');if(all)all.addEventListener('click',function(){state.showingAll=true;renderCustomer(data);});
+    }
+
+    function parseCSV(text){
+      text=String(text||'').replace(/^\uFEFF/,'');var first=(text.split(/\r?\n/,1)[0]||''),delimiter=first.indexOf('\t')>=0?'\t':',';var rows=[],row=[],cell='',quoted=false;
+      for(var i=0;i<text.length;i++){var ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(ch==='"'){quoted=false;}else{cell+=ch;}}else if(ch==='"'){quoted=true;}else if(ch===delimiter){row.push(cell.trim());cell='';}else if(ch==='\n'){row.push(cell.trim().replace(/\r$/,''));if(row.some(Boolean))rows.push(row);row=[];cell='';}else{cell+=ch;}}
+      row.push(cell.trim().replace(/\r$/,''));if(row.some(Boolean))rows.push(row);return rows;
+    }
+    function normalizeHeader(value){return String(value||'').replace(/[\s_\-\/]/g,'').toLowerCase();}
+    var aliases={visit_date:['消费日期','日期','到店日期','服务日期'],coupon_code:['券码','优惠券码','卡券码'],customer_name:['姓名','客户姓名','顾客姓名'],customer_phone:['手机号','手机','电话','客户电话'],service_items:['客户项目','消费项目','服务项目','项目'],barber_name:['发型师','设计师'],technician_name:['技师'],assistant_name:['助理'],payment_summary:['消费金额','金额','付款','支付方式','消费']};
+    function columnMap(headers){var map={};Object.keys(aliases).forEach(function(key){var idx=headers.findIndex(function(header){return aliases[key].map(normalizeHeader).indexOf(normalizeHeader(header))>=0;});map[key]=idx;});return map;}
+    function normalizeDate(value){var raw=String(value||'').trim();if(/^\d{5}$/.test(raw)){var excel=new Date(Date.UTC(1899,11,30)+Number(raw)*86400000);return excel.toISOString().slice(0,10);}var parts=raw.replace(/[年月\.]/g,'/').replace(/日/g,'').split(/[\/\-\s]+/).filter(Boolean);if(parts.length<3)return '';var y=Number(parts[0]),m=Number(parts[1]),d=Number(parts[2]);if(y<100)y+=2000;if(!y||m<1||m>12||d<1||d>31)return '';return String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+    function parsePayment(value){var raw=String(value||'').trim(),amount=0;var match=raw.match(/(?:^|[^\d])(\d+(?:\.\d{1,2})?)(?:元|点评|$)/);if(match)amount=Number(match[1])||0;var packageNote=/扣|次卡|套餐/.test(raw)?raw:'';return {amount:amount,payment_summary:raw,package_note:packageNote};}
+    function convertRows(matrix){if(matrix.length<2)throw new Error('表格没有可导入的数据');var headers=matrix[0],map=columnMap(headers);if(map.visit_date<0)throw new Error('没有找到“消费日期”列');if(map.customer_name<0&&map.customer_phone<0)throw new Error('没有找到“姓名”或“手机号”列');var result=[],errors=[];matrix.slice(1).forEach(function(values,index){var get=function(key){return map[key]>=0?(values[map[key]]||''):'';},date=normalizeDate(get('visit_date')),name=get('customer_name'),mobile=phone(get('customer_phone')),payment=parsePayment(get('payment_summary'));if(!date){errors.push('第 '+(index+2)+' 行日期无效');return;}if(!name&&!mobile){errors.push('第 '+(index+2)+' 行缺少姓名和手机号');return;}result.push({source_row:index+2,visit_date:date,coupon_code:get('coupon_code'),customer_name:name||'未命名客户',customer_phone:mobile,service_items:get('service_items'),barber_name:get('barber_name'),technician_name:get('technician_name'),assistant_name:get('assistant_name'),amount:payment.amount,payment_summary:payment.payment_summary,package_note:payment.package_note,raw_row:headers.reduce(function(obj,header,i){obj[header||('列'+(i+1))]=values[i]||'';return obj;},{})});});if(errors.length)throw new Error(errors.slice(0,3).join('；')+(errors.length>3?'；另有 '+(errors.length-3)+' 行':'') );return result;}
+    $('csv-file').addEventListener('change',async function(){var file=this.files&&this.files[0];if(!file)return;try{var text=await file.text();state.importRows=convertRows(parseCSV(text));state.importFile=file.name;$('preview-card').classList.remove('hidden');$('preview-title').textContent=file.name;$('preview-summary').textContent='识别 '+state.importRows.length+' 条有效记录';$('import-status').textContent='检查通过，尚未写入';renderPreview();}catch(e){state.importRows=[];$('preview-card').classList.add('hidden');toast(e.message,true);}});
+    function renderPreview(){var rows=state.importRows.slice(0,30);$('preview-wrap').innerHTML='<table><thead><tr><th>日期</th><th>客户</th><th>手机号</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>金额/说明</th></tr></thead><tbody>'+rows.map(function(row){return '<tr><td>'+esc(row.visit_date)+'</td><td>'+esc(row.customer_name)+'</td><td>'+esc(row.customer_phone)+'</td><td>'+esc(row.service_items)+'</td><td>'+esc(row.barber_name)+'</td><td>'+esc(row.technician_name)+'</td><td>'+esc(row.assistant_name)+'</td><td>'+esc(row.payment_summary||money(row.amount))+'</td></tr>';}).join('')+'</tbody></table>'+(state.importRows.length>30?'<div class="empty" style="padding:12px">预览前 30 条，确认后导入全部 '+state.importRows.length+' 条</div>':'');}
+    $('import-btn').addEventListener('click',async function(){if(!state.importRows.length)return;var btn=this,batch=crypto.randomUUID(),done=0,imported=0,duplicates=0;setBusy(btn,true,'正在导入…');try{for(var i=0;i<state.importRows.length;i+=200){var chunk=state.importRows.slice(i,i+200),last=i+200>=state.importRows.length;var result=await api('import_rows',{batch_id:batch,filename:state.importFile,rows:chunk,complete:last});done+=chunk.length;imported+=Number(result.imported||0);duplicates+=Number(result.duplicates||0);$('import-status').textContent='已处理 '+done+' / '+state.importRows.length;}$('import-status').textContent='完成：新增 '+imported+' 条，跳过重复 '+duplicates+' 条';toast('历史数据导入完成');loadBatches();}catch(e){$('import-status').textContent='导入中断：'+e.message;toast(e.message,true);}finally{setBusy(btn,false);}});
+    $('template-btn').addEventListener('click',function(){var csv='消费日期,券码,姓名,手机号,客户项目,发型师,技师,助理,消费金额\n2026-01-01,,示例客户,13800000000,洗剪吹,示例发型师,,示例助理,128\n';var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='前台历史消费导入模板.csv';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);});
+    async function loadBatches(){if(!state.session||!state.session.user||!state.session.user.can_import)return;try{var data=await api('import_batches'),rows=data.batches||[];$('batch-list').innerHTML=rows.length?rows.map(function(row){return '<div class="batch"><div><b>'+esc(row.original_filename)+'</b><br><small>'+esc(new Date(row.created_at).toLocaleString('zh-CN'))+' · '+esc(row.imported_by)+'</small></div><div style="text-align:right">新增 '+esc(row.imported_rows)+'<br><small>重复 '+esc(row.duplicate_rows)+'</small></div></div>';}).join(''):'<div class="empty" style="padding:20px">暂无导入记录</div>';}catch(e){$('batch-list').innerHTML='<div class="empty danger" style="padding:20px">'+esc(e.message)+'</div>';}}
+
+    document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
+    setInterval(function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();},60000);
+    restoreSession();
+  })();
+  </script>
+</body>
+</html>

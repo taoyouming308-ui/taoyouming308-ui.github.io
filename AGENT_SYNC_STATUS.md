@@ -1,5 +1,20 @@
 # Agent Sync Status
 
+## v403 (2026-08-05)
+
+- 新增独立 `frontdesk.html` iPad 横屏前台客户中心，包含今日预约/消费动态、客户搜索、全部已同步消费时间线、套餐余项和历史表格导入；后台提供直接入口。
+- 前台不实现付款、退款、充值：美管加继续作为收银和实时客户数据源；页面仅展示同步结果，并把“预约待消费”“预约已消费”“已消费/无预约”分开标识。
+- 新增 `frontdesk-api` 自定义短会话，允许管理员、店长和职位包含“前台”的在职员工登录；普通前台只读，历史导入仅店长/管理员可执行。
+- 新增 `frontdesk_sessions`、`frontdesk_import_batches`、`frontdesk_import_records` 和受保护 RPC；三表均启用 RLS，撤销 `public/anon/authenticated` 权限，仅 Edge Function 的 `service_role` 可访问。
+- 历史导入首版接受 Excel/WPS 导出的 CSV UTF-8，自动识别现有登记表列、预览校验、200 行分块提交，并用确定性行指纹跳过重复记录；导入数据与美管加记录分源显示。
+- 2026-08-05 只读同步审计：15,889 个客户档案中，4,947 个有到店次数但缺少 `service_history`，其中 262 个有消费额但无逐笔明细；前台客户页会明确提示缺口，只把已经同步或导入的记录称为“全部已同步消费记录”。
+- 已应用 `frontdesk_customer_center` 与 `frontdesk_import_batch_index` 两个生产迁移；核验三张前台表均启用 RLS，`anon/authenticated` 无读写权限，导入 RPC 仅 `service_role` 可执行。
+- `frontdesk-api` Edge Function 已部署至生产 version 3；空账号登录返回 403，服务端无令牌退出返回 200，证明网关、CORS、自定义会话路由和线上运行状态正常。
+- 新增 `scripts/test-frontdesk.js` 并接入 GitHub CI 和 pre-push；v403 完整 pre-push 通过版本、发布、更新流程、前台、预约、后台、客户档案、发质、护理、美感、28 项美管加 Python 回归及 Agent 同步检查。
+- 编辑前备份已生成 `ZYSYR_2026-08-05_110352.tar.gz` 并复制到 iCloud；未跟踪 `aesthetic-coach-edge.ts` 保持未修改、未纳入提交。
+- 已知安全遗留：现有 `staff`、`bookings`、`customer_profiles` 等旧表仍未全面启用 RLS；v403 没有直接改动这些旧表，避免现有员工端中断，后续应单独迁移到服务端认证。
+- App version: v403
+
 ## v402 (2026-08-01)
 
 - 修复 iPhone/PWA 更新循环：显式点击更新后先注销旧 Service Worker，以 `cache:reload` 获取版本化页面并核验 `data-version`，成功后再 `location.replace`。
