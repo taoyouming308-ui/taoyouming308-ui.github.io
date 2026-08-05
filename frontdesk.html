@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="405">
+<html lang="zh-CN" data-version="406">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
@@ -79,7 +79,7 @@
 
     <main>
       <section class="view" id="view-today">
-        <div class="view-head"><div><h2>发型师时间预览</h2><p>横向查看每位发型师的预约与到店客户；点击客户看套餐，点击空白时间格快速登记。</p></div><div class="actions"><button class="primary" id="add-today-btn" type="button">添加今日客户</button><input class="date-input" id="today-date" type="date"></div></div>
+        <div class="view-head"><div><h2>发型师时间预览</h2><p>从当天最早营业时段开始完整显示，已过去时段和已完成客户都会保留；点击客户看套餐，点击空白时间格快速登记。</p></div><div class="actions"><button class="primary" id="add-today-btn" type="button">添加今日客户</button><input class="date-input" id="today-date" type="date"></div></div>
         <div class="kpis">
           <div class="kpi"><label>今日预约</label><strong id="kpi-bookings">—</strong><small>来自预约同步</small></div>
           <div class="kpi"><label>已消费客户</label><strong id="kpi-services">—</strong><small>来自美管加消费单</small></div>
@@ -206,6 +206,7 @@
     }
     function todayState(row){if(row.kind==='matched')return {tone:'green',label:'预约已消费'};if(row.kind==='walkin')return {tone:'blue',label:'已消费 / 无预约'};if(row.reception){var map={waiting:['gold','等待接待'],arrived:['blue','已经到店'],in_service:['blue','服务中'],completed:['green','今日完成'],cancelled:['red','取消/未到']},meta=map[row.reception.status]||map.waiting;return {tone:meta[0],label:meta[1]};}return {tone:'blue',label:'预约待消费'};}
     function scheduleRange(rows){var start=600,end=1320;rows.forEach(function(row){var minute=timeMinutes(row.time);if(minute==null)return;start=Math.min(start,Math.floor(minute/30)*30);end=Math.max(end,Math.min(1440,Math.ceil((minute+30)/30)*30));});return {start:start,end:end};}
+    function scheduleScrollLeft(previousScroll){return previousScroll==null?0:previousScroll;}
     function renderToday(data){
       var rows=mergeToday(data),matched=rows.filter(function(r){return r.kind==='matched';}).length,total=(data.services||[]).reduce(function(sum,row){return sum+(Number(row.amount)||0);},0);
       state.todayRows=rows;
@@ -221,7 +222,7 @@
       container.innerHTML='<div class="schedule-grid" style="--slot-count:'+slots.length+';--barber-count:'+names.length+'">'+header+body+nowLine+'</div>';
       container.querySelectorAll('.schedule-event').forEach(function(el){el.addEventListener('click',function(){openTodayCustomer(rows[Number(el.dataset.index)]);});});
       container.querySelectorAll('.schedule-slot').forEach(function(el){el.addEventListener('click',function(){openTodayForm({barber:el.dataset.barber,time:el.dataset.time});});});
-      requestAnimationFrame(function(){if(previousScroll!=null)container.scrollLeft=previousScroll;else{var focus=showNow?nowMinute:(rows.length?timeMinutes(rows[0].time):range.start);container.scrollLeft=Math.max(0,142+((focus==null?range.start:focus)-range.start)/30*104-208);}});
+      requestAnimationFrame(function(){container.scrollLeft=scheduleScrollLeft(previousScroll);});
     }
     function updateBarberOptions(barbers){$('today-barber-list').innerHTML=(barbers||[]).map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');}
     async function loadDashboard(){if(!state.session||!state.store)return;var btn=$('refresh-btn');setBusy(btn,true,'刷新中…');try{var data=await api('dashboard',{date:$('today-date').value||localDate()});state.dashboard=data;updateBarberOptions(data.barbers);renderToday(data);}catch(e){toast(e.message,true);}finally{setBusy(btn,false);}}

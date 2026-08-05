@@ -32,7 +32,7 @@ function fakeElement() {
 }
 const runtimeScript = scriptMatch[1].replace(
   'restoreSession();',
-  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,scheduleRange};',
+  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft};',
 );
 const runtimeContext = {
   console,
@@ -61,6 +61,16 @@ expect(sampleRows[0].barber === '小康', 'Meiguanjia barber alias must resolve 
 expect(timeline.timeMinutes('11:30:00') === 690 && timeline.minuteLabel(690) === '11:30', 'schedule time parsing failed');
 const defaultRange = timeline.scheduleRange(sampleRows);
 expect(defaultRange.start === 600 && defaultRange.end === 1320, 'schedule must default to 10:00-22:00');
+expect(timeline.scheduleScrollLeft(null) === 0, 'first schedule view must start at the earliest business time');
+expect(timeline.scheduleScrollLeft(728) === 728, 'refresh must preserve the operator scroll position');
+const completedRows = timeline.mergeToday({
+  barbers: ['小康'],
+  bookings: [{ customer_name: '完成客户', customer_phone: '13800000001', barber_name: '小康', time_label: '10:30', status: 4 }],
+  services: [{ customer_name: '完成客户', customer_phone: '13800000001', service_time: '10:30', staff: ['小康'], items: [{ name: '剪发' }], amount: 100 }],
+  reception: [],
+});
+expect(completedRows.length === 1 && completedRows[0].kind === 'matched', 'completed service customer must remain on the schedule');
+expect(timeline.todayState(completedRows[0]).tone === 'green', 'completed service customer must keep the completed visual state');
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'frontdesk version must match current release');
 expect(html.includes('前台客户中心') && html.includes('今日客户') && html.includes('客户档案'), 'core frontdesk views missing');
@@ -69,6 +79,8 @@ expect(html.includes('美管加历史明细尚未完整回传'), 'customer data-
 expect(html.includes('美管加负责收银') && html.includes('不会执行收银'), 'cashier responsibility boundary missing');
 expect(html.includes('发型师时间预览') && html.includes('schedule-grid') && html.includes('schedule-slot'), 'barber timeline grid missing');
 expect(html.includes('10:00') || html.includes('var start=600'), 'default 10:00 timeline start missing');
+expect(html.includes('已过去时段和已完成客户都会保留'), 'past times and completed customer visibility note missing');
+expect(!html.includes('var focus=showNow?nowMinute'), 'schedule must not auto-hide past times by jumping to now');
 expect(html.includes('minute+=30') && html.includes('点击空白时间格快速登记'), '30-minute quick-add schedule behavior missing');
 expect(html.includes('bookingPlaceholder') && html.includes("available?'✋':'＋'"), 'empty Meiguanjia booking slots must render as available schedule cells');
 expect(html.includes('resolvedBarber') && html.includes('name.endsWith(item)'), 'Meiguanjia/staff barber alias reconciliation missing');
