@@ -7,6 +7,7 @@ import unittest
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("check_mgj_sync_health.py")
+WATCH_PATH = pathlib.Path(__file__).with_name("mgj_sync_health_watch.sh")
 SPEC = importlib.util.spec_from_file_location("check_mgj_sync_health", SCRIPT_PATH)
 HEALTH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(HEALTH)
@@ -59,6 +60,11 @@ class HealthAuditTests(unittest.TestCase):
         )
         self.assertEqual(report["status"], "healthy")
         self.assertEqual(report["issues"], [])
+
+    def test_watchdog_defaults_to_current_canonical_checkout(self):
+        text = WATCH_PATH.read_text(encoding="utf-8")
+        self.assertIn("/Users/a1/Documents/Codex/2026-06-20/perm-pages", text)
+        self.assertNotIn("2026-07-29/new-chat/meiguanjia-sync-fix", text)
 
     def test_fresh_running_is_healthy_but_stuck_running_is_reported(self):
         path = self.hermes / "sync_status.json"
