@@ -253,7 +253,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
   const [bookings, services, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
@@ -277,6 +277,14 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
 
 const TODAY_SOURCES = new Set(["walkin", "appointment", "referral", "other"]);
 const TODAY_STATUSES = new Set(["waiting", "arrived", "in_service", "completed", "cancelled"]);
+
+function frontdeskAmount(value: unknown): number {
+  const rawAmount = cleanText(value, 40);
+  if (rawAmount && !/^\d+(?:\.\d{1,2})?$/.test(rawAmount)) throw new Error("金额最多保留两位小数");
+  const amount = Number(rawAmount || 0);
+  if (!Number.isFinite(amount) || amount < 0 || amount > 9999999999.99) throw new Error("金额超出允许范围");
+  return amount;
+}
 
 async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
@@ -304,6 +312,8 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
     arrival_time: arrivalTime || null,
     visit_source: visitSource,
     service_intent: cleanText(payload.service_intent, 500),
+    amount: frontdeskAmount(payload.amount),
+    payment_summary: cleanText(payload.payment_summary, 500),
     reception_notes: cleanText(payload.reception_notes, 800),
     status,
     updated_by: cleanText(session.username, 80),
@@ -699,15 +709,11 @@ async function saveLedgerRecord(payload: JsonRecord, session: JsonRecord): Promi
   const rowType = cleanText(payload.row_type, 20);
   const id = cleanText(payload.record_id, 80);
   if (!id || !["today", "imported"].includes(rowType)) throw new Error("台账记录无效");
-  const rawAmount = cleanText(payload.amount, 40);
-  if (rawAmount && !/^\d+(?:\.\d{1,2})?$/.test(rawAmount)) throw new Error("金额最多保留两位小数");
-  const amount = Number(rawAmount || 0);
-  if (!Number.isFinite(amount) || amount < 0 || amount > 9999999999.99) throw new Error("金额超出允许范围");
   const common = {
     barber_name: cleanText(payload.barber_name, 120),
     technician_name: cleanText(payload.technician_name, 120),
     assistant_name: cleanText(payload.assistant_name, 120),
-    amount,
+    amount: frontdeskAmount(payload.amount),
     payment_summary: cleanText(payload.payment_summary, 500),
     updated_by: cleanText(session.username, 80),
     updated_at: new Date().toISOString(),
