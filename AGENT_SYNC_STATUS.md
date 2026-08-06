@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v412 runtime maintenance (2026-08-06)
+
+- 美管加客户/预约同步增加受限网络重试和 105 秒运行预算；客户每批总量继续固定为 8，不恢复曾超时的 20 人批次。
+- 客户失败补偿队列为本机 `~/.hermes/mgj_sync_retry.json`，原子写入且权限 600；每批最多处理 2 个到期任务，第 5 次失败转 `needs_review`，成功后自动移除。
+- 健康巡检新增客户正常同步唯一调度、连续部分失败、补偿积压和人工检查检测；预约删除安全边界和客户套餐/历史部分失败保留规则不变。
+- 正常客户同步唯一计划为 OS crontab `02/32`；Hermes 重复任务 `666b27f9796b` 应保持停用。向里造型自动护理出库继续关闭。
+- 本次为 v412 运行维护，无数据库迁移、无 PWA 文件改动、不修改任何客户、套餐、消费、预约或收银业务数据。
+- App version: v412
+
 ## v412 (2026-08-06)
 
 - 前台 `customer_search` 与 `customer_detail` 全部数据源改为使用设备会话解析出的当前门店：`customer_profiles.shop_name`、`mgj_service_records.shop_name` 和 `frontdesk_import_records.store` 均在服务端查询层精确过滤。

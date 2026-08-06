@@ -1,6 +1,9 @@
 import importlib.util
 import pathlib
+import tempfile
 import unittest
+import urllib.error
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 
@@ -214,6 +217,15 @@ class SyncWindowTests(unittest.TestCase):
         self.assertEqual(selected, ["phone-6", "phone-0", "phone-1"])
         self.assertEqual(len(selected), len(set(selected)))
 
+    def test_retry_customers_consume_capacity_without_exceeding_batch_limit(self):
+        retry_phones = ["retry-1", "retry-2"]
+        normal = SYNC.select_sync_window(
+            [f"normal-{index}" for index in range(10)],
+            limit=SYNC.INCREMENTAL_SYNC_LIMIT - len(retry_phones),
+            slot=0,
+        )
+        self.assertEqual(len(retry_phones + normal), SYNC.INCREMENTAL_SYNC_LIMIT)
+
     def test_keeps_short_list_unchanged(self):
         phones = ["a", "b"]
         self.assertEqual(SYNC.select_sync_window(phones, limit=3, slot=10), phones)
@@ -228,6 +240,101 @@ class SyncWindowTests(unittest.TestCase):
         self.assertEqual(len(selected), 3)
         self.assertEqual(len([phone for phone in selected if phone.startswith("hair-")]), 2)
         self.assertEqual(len(selected), len(set(selected)))
+
+
+class NetworkRetryTests(unittest.TestCase):
+    def tearDown(self):
+        SYNC.RUN_DEADLINE = None
+
+    @mock.patch.object(SYNC.time, "sleep")
+    def test_transient_timeout_retries_then_succeeds(self, sleep):
+        operation = mock.Mock(side_effect=[TimeoutError("slow"), {"ok": True}])
+        self.assertEqual(SYNC.with_network_retries(operation, 10), {"ok": True})
+        self.assertEqual(operation.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    @mock.patch.object(SYNC.time, "sleep")
+    def test_non_transient_http_error_is_not_retried(self, sleep):
+        error = urllib.error.HTTPError("https://example.invalid", 400, "bad", {}, None)
+        operation = mock.Mock(side_effect=error)
+        try:
+            with self.assertRaises(urllib.error.HTTPError):
+                SYNC.with_network_retries(operation, 10)
+            self.assertEqual(operation.call_count, 1)
+            sleep.assert_not_called()
+        finally:
+            error.close()
+
+
+class RetryQueueTests(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime(2026, 8, 6, 18, 0, tzinfo=timezone(timedelta(hours=8)))
+
+    def test_failure_is_persisted_and_success_removes_it(self):
+        queue = SYNC.update_retry_queue(
+            {"version": 1, "items": []},
+            [{"phone": "13800000000", "success": False, "error": "timeout"}],
+            now=self.now,
+        )
+        self.assertEqual(queue["items"][0]["attempts"], 1)
+        self.assertEqual(queue["items"][0]["status"], "pending")
+        recovered = SYNC.update_retry_queue(
+            queue,
+            [{"phone": "13800000000", "success": True}],
+            now=self.now,
+        )
+        self.assertEqual(recovered["items"], [])
+
+    def test_fifth_failure_requires_manual_review(self):
+        queue = {
+            "version": 1,
+            "items": [{
+                "phone": "13800000000",
+                "attempts": 4,
+                "status": "pending",
+                "first_failed_at": self.now.isoformat(),
+            }],
+        }
+        updated = SYNC.update_retry_queue(
+            queue,
+            [{"phone": "13800000000", "success": False, "error": "still failing"}],
+            now=self.now,
+        )
+        self.assertEqual(updated["items"][0]["status"], "needs_review")
+        self.assertNotIn("next_retry_at", updated["items"][0])
+
+    def test_queue_file_is_private_and_atomic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / "queue.json"
+            SYNC.save_retry_queue({"version": 1, "items": []}, str(path))
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
+    def test_corrupt_queue_is_not_silently_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / "queue.json"
+            path.write_text("not-json", encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "补偿队列不可读"):
+                SYNC.load_retry_queue(str(path))
+            self.assertEqual(path.read_text(encoding="utf-8"), "not-json")
+
+
+class BookingPhoneQueryTests(unittest.TestCase):
+    @mock.patch.object(SYNC, "supabase_get", side_effect=TimeoutError("offline"))
+    def test_all_phone_sources_failing_is_not_reported_as_empty_success(self, get):
+        with self.assertRaisesRegex(RuntimeError, "预约手机号查询全部失败"):
+            SYNC.get_booking_phones(days_back=1, days_forward=2)
+        self.assertEqual(get.call_count, 2)
+
+    def test_expired_budget_skips_without_calling_customer_api(self):
+        SYNC.RUN_DEADLINE = SYNC.time.monotonic() - 1
+        try:
+            with mock.patch.object(SYNC, "get_customer_full") as fetch:
+                ok, fail, skipped, outcomes = SYNC.sync_phones(["a", "b"])
+            self.assertEqual((ok, fail, skipped), (0, 0, 2))
+            self.assertTrue(all(item["skipped"] for item in outcomes))
+            fetch.assert_not_called()
+        finally:
+            SYNC.RUN_DEADLINE = None
 
 
 class ServiceReconciliationTests(unittest.TestCase):

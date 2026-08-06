@@ -126,6 +126,68 @@ class HealthAuditTests(unittest.TestCase):
         self.assertTrue(any("运行副本不一致" in issue for issue in report["issues"]))
         self.assertTrue(any("超过45分钟未更新" in issue for issue in report["issues"]))
 
+    def test_single_partial_failure_is_tolerated_but_repeated_partial_is_reported(self):
+        path = self.hermes / "sync_status.json"
+        path.write_text(
+            json.dumps({
+                "status": "partial",
+                "consecutive_failures": 1,
+                "updated_at": (self.now - dt.timedelta(minutes=5)).isoformat(),
+            }),
+            encoding="utf-8",
+        )
+        first = HEALTH.run_audit(self.repo, self.hermes, now=self.now, network=False)
+        self.assertEqual(first["status"], "healthy")
+
+        status = json.loads(path.read_text(encoding="utf-8"))
+        status["consecutive_failures"] = 2
+        path.write_text(json.dumps(status), encoding="utf-8")
+        repeated = HEALTH.run_audit(self.repo, self.hermes, now=self.now, network=False)
+        self.assertEqual(repeated["status"], "degraded")
+        self.assertTrue(any("连续部分失败2次" in issue for issue in repeated["issues"]))
+
+    def test_retry_queue_old_backlog_and_manual_review_are_reported(self):
+        (self.hermes / "mgj_sync_retry.json").write_text(
+            json.dumps({
+                "items": [
+                    {
+                        "phone": "masked-1",
+                        "status": "pending",
+                        "first_failed_at": (self.now - dt.timedelta(minutes=61)).isoformat(),
+                    },
+                    {"phone": "masked-2", "status": "needs_review"},
+                ],
+            }),
+            encoding="utf-8",
+        )
+        report = HEALTH.run_audit(self.repo, self.hermes, now=self.now, network=False)
+        self.assertEqual(report["status"], "degraded")
+        self.assertTrue(any("需人工检查" in issue for issue in report["issues"]))
+        self.assertTrue(any("等待61分钟" in issue for issue in report["issues"]))
+
+    def test_duplicate_customer_schedulers_are_reported(self):
+        (self.hermes / "cron").mkdir()
+        (self.hermes / "cron" / "jobs.json").write_text(
+            json.dumps({
+                "jobs": [{
+                    "id": "duplicate",
+                    "enabled": True,
+                    "script": "sync_mgj_all.py",
+                }],
+            }),
+            encoding="utf-8",
+        )
+        issues = []
+        details = {}
+        HEALTH.audit_schedulers(
+            self.hermes,
+            issues,
+            details,
+            crontab_text="*/30 * * * * python3 sync_mgj_all.py\n",
+        )
+        self.assertEqual(details["customer_sync_schedulers"]["active_count"], 2)
+        self.assertTrue(any("当前2个" in issue for issue in issues))
+
 
 if __name__ == "__main__":
     unittest.main()

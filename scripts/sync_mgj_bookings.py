@@ -5,12 +5,14 @@ import fcntl
 import http.cookiejar
 import json
 import os
+import socket
 import ssl
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
@@ -32,6 +34,9 @@ USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 Chrome/148.0.0.0 Safari/537.36"
 )
+NETWORK_RETRY_DELAYS = (1, 3)
+RUN_BUDGET_SECONDS = 105
+RUN_DEADLINE = None
 
 
 def now_iso():
@@ -64,7 +69,22 @@ def atomic_write_json(path, value, mode=0o600):
 
 
 def write_status(status, **details):
-    payload = {"status": status, "updated_at": now_iso()}
+    previous_failures = 0
+    try:
+        previous_failures = int(load_json(STATUS_PATH).get("consecutive_failures") or 0)
+    except (OSError, ValueError, json.JSONDecodeError):
+        pass
+    if status == "healthy":
+        consecutive_failures = 0
+    elif status in ("partial", "degraded"):
+        consecutive_failures = previous_failures + 1
+    else:
+        consecutive_failures = previous_failures
+    payload = {
+        "status": status,
+        "updated_at": now_iso(),
+        "consecutive_failures": consecutive_failures,
+    }
     payload.update(details)
     atomic_write_json(STATUS_PATH, payload)
 
@@ -91,6 +111,44 @@ def release_lock(lock_file):
     lock_file.close()
 
 
+def remaining_run_seconds():
+    if RUN_DEADLINE is None:
+        return None
+    return max(0.0, RUN_DEADLINE - time.monotonic())
+
+
+def run_budget_available(minimum=1.0):
+    remaining = remaining_run_seconds()
+    return remaining is None or remaining >= minimum
+
+
+def is_transient_network_error(exc):
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code in (408, 425, 429) or 500 <= exc.code <= 599
+    if isinstance(exc, urllib.error.URLError):
+        return is_transient_network_error(exc.reason) or isinstance(
+            exc.reason, (OSError, TimeoutError)
+        )
+    return isinstance(
+        exc,
+        (TimeoutError, socket.timeout, ConnectionResetError, ConnectionAbortedError),
+    )
+
+
+def with_network_retries(operation, delays=NETWORK_RETRY_DELAYS):
+    for attempt in range(len(delays) + 1):
+        try:
+            return operation()
+        except Exception as exc:
+            if attempt >= len(delays) or not is_transient_network_error(exc):
+                raise
+            delay = delays[attempt]
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining <= delay + 1:
+                raise
+            time.sleep(delay)
+
+
 def request_json(url, cookie="", data=None, timeout=20):
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -102,12 +160,18 @@ def request_json(url, cookie="", data=None, timeout=20):
     if data is not None:
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
     request = urllib.request.Request(url, data=data, headers=headers)
-    with urllib.request.urlopen(
-        request,
-        timeout=timeout,
-        context=ssl.create_default_context(),
-    ) as response:
-        return json.loads(response.read().decode("utf-8", errors="replace"))
+    def perform():
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("预约同步运行时间已到105秒上限")
+        effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+        with urllib.request.urlopen(
+            request,
+            timeout=effective_timeout,
+            context=ssl.create_default_context(),
+        ) as response:
+            return json.loads(response.read().decode("utf-8", errors="replace"))
+    return with_network_retries(perform)
 
 
 def check_session(server, cookie):
@@ -205,6 +269,11 @@ def ensure_session():
 
 
 def curl_request(method, path, body=None, prefer=None, timeout=30):
+    remaining = remaining_run_seconds()
+    if remaining is not None and remaining < 1:
+        raise TimeoutError("预约同步运行时间已到105秒上限")
+    effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+    process_timeout = timeout + 5 if remaining is None else max(1, remaining)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     command = [
         "curl",
@@ -219,7 +288,14 @@ def curl_request(method, path, body=None, prefer=None, timeout=30):
         "--header",
         "Content-Type: application/json",
         "--max-time",
-        str(timeout),
+        str(effective_timeout),
+        "--retry",
+        "2",
+        "--retry-delay",
+        "1",
+        "--retry-max-time",
+        str(effective_timeout),
+        "--retry-connrefused",
     ]
     if prefer:
         command.extend(["--header", f"Prefer: {prefer}"])
@@ -232,7 +308,7 @@ def curl_request(method, path, body=None, prefer=None, timeout=30):
         input=input_text,
         capture_output=True,
         text=True,
-        timeout=timeout + 5,
+        timeout=process_timeout,
         check=False,
     )
     if result.returncode != 0:
@@ -362,8 +438,13 @@ def sync_bookings():
     successful_pairs = set()
     fetch_errors = []
 
+    budget_exhausted = False
     for shop in SHOPS:
         for date_text in dates:
+            if not run_budget_available():
+                fetch_errors.append("预约同步运行时间已到105秒上限，剩余日期留待下次")
+                budget_exhausted = True
+                break
             pair = (shop["shopId"], date_text)
             try:
                 fetched_by_pair[pair] = fetch_reservation_pair(
@@ -376,6 +457,8 @@ def sync_bookings():
                 successful_pairs.add(pair)
             except Exception as exc:
                 fetch_errors.append(f"{shop['name']} {date_text}: {exc}")
+        if budget_exhausted:
+            break
 
     bookings = [
         booking
@@ -424,10 +507,16 @@ def sync_bookings():
             except Exception as exc:
                 write_errors.append(str(exc))
 
-    status = "healthy" if not fetch_errors and not write_errors else "degraded"
+    if not fetch_errors and not write_errors:
+        status = "healthy"
+    elif successful_pairs:
+        status = "partial"
+    else:
+        status = "degraded"
+    expected_pairs = len(SHOPS) * len(dates)
     summary = {
         "pairs_ok": len(successful_pairs),
-        "pairs_failed": len(fetch_errors),
+        "pairs_failed": expected_pairs - len(successful_pairs),
         "fetched": len(bookings),
         "upserted": upserted,
         "deleted": deleted,
@@ -451,6 +540,8 @@ def sync_bookings():
 
 
 def main():
+    global RUN_DEADLINE
+    RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
     run_lock = acquire_lock(RUN_LOCK_PATH)
     if run_lock is None:
         write_status("skipped_busy", reason="booking_sync_running")

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import ssl
+import subprocess
 import tempfile
 import urllib.parse
 import urllib.request
@@ -20,6 +21,7 @@ SUPABASE_URL = "https://pdssrmpeiuwvxzsgschm.supabase.co"
 SUPABASE_KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t"
 DEFAULT_REPO_ROOT = Path("/Users/a1/Documents/Codex/2026-06-20/perm-pages")
 DEFAULT_HERMES_HOME = Path.home() / ".hermes"
+RETRY_QUEUE_FILENAME = "mgj_sync_retry.json"
 
 STATUS_RULES = (
     ("booking_sync", "sync_bookings_status.json", 20),
@@ -131,15 +133,97 @@ def audit_status_files(
         details[label] = {
             "status": status.get("status"),
             "age_minutes": round(age, 1) if age is not None else None,
+            "consecutive_failures": int(status.get("consecutive_failures") or 0),
         }
         state = status.get("status")
         if state == "running":
             if age is None or age > 10:
                 issues.append(f"{label}: running超过10分钟，疑似卡住")
+        elif state == "partial":
+            if int(status.get("consecutive_failures") or 0) >= 2:
+                issues.append(f"{label}: 已连续部分失败{status.get('consecutive_failures')}次")
         elif state not in ("healthy", "skipped_busy"):
             issues.append(f"{label}: 状态为{state or 'unknown'}")
         if age is None or age > max_age:
             issues.append(f"{label}: 超过{max_age}分钟未更新")
+
+
+def audit_retry_queue(
+    hermes_home: Path,
+    now: dt.datetime,
+    issues: list[str],
+    details: dict[str, Any],
+) -> None:
+    path = hermes_home / RETRY_QUEUE_FILENAME
+    if not path.exists():
+        details["customer_retry_queue"] = {"pending": 0, "needs_review": 0}
+        return
+    try:
+        queue = load_json(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        issues.append(f"customer_retry_queue: 文件不可用({type(exc).__name__})")
+        return
+    items = queue.get("items") if isinstance(queue.get("items"), list) else []
+    pending = [item for item in items if item.get("status") == "pending"]
+    needs_review = [item for item in items if item.get("status") == "needs_review"]
+    oldest_age = None
+    for item in pending:
+        age = age_minutes(item.get("first_failed_at"), now)
+        if age is not None:
+            oldest_age = age if oldest_age is None else max(oldest_age, age)
+    details["customer_retry_queue"] = {
+        "pending": len(pending),
+        "needs_review": len(needs_review),
+        "oldest_pending_minutes": round(oldest_age, 1) if oldest_age is not None else None,
+    }
+    if needs_review:
+        issues.append(f"customer_retry_queue: {len(needs_review)}个客户需人工检查")
+    if oldest_age is not None and oldest_age > 60:
+        issues.append(f"customer_retry_queue: 最早待补偿任务已等待{oldest_age:.0f}分钟")
+
+
+def audit_schedulers(
+    hermes_home: Path,
+    issues: list[str],
+    details: dict[str, Any],
+    crontab_text: str | None = None,
+) -> None:
+    jobs_path = hermes_home / "cron" / "jobs.json"
+    if not jobs_path.exists():
+        details["customer_sync_schedulers"] = {"checked": False}
+        return
+    try:
+        payload = load_json(jobs_path)
+        jobs = payload.get("jobs") if isinstance(payload.get("jobs"), list) else []
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        issues.append(f"customer_sync_schedulers: Hermes配置不可用({type(exc).__name__})")
+        return
+    hermes_jobs = [
+        job for job in jobs
+        if job.get("enabled") is True and job.get("script") == "sync_mgj_all.py"
+    ]
+    if crontab_text is None:
+        try:
+            result = subprocess.run(
+                ["crontab", "-l"], capture_output=True, text=True, timeout=5, check=False
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            issues.append(f"customer_sync_schedulers: crontab不可读({type(exc).__name__})")
+            return
+        crontab_text = result.stdout if result.returncode == 0 else ""
+    cron_lines = [
+        line.strip() for line in crontab_text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#") and "sync_mgj_all.py" in line
+    ]
+    active_count = len(hermes_jobs) + len(cron_lines)
+    details["customer_sync_schedulers"] = {
+        "checked": True,
+        "active_count": active_count,
+        "hermes_jobs": len(hermes_jobs),
+        "os_crontab_entries": len(cron_lines),
+    }
+    if active_count != 1:
+        issues.append(f"customer_sync_schedulers: 应为1个，当前{active_count}个")
 
 
 def xiangli_disabled(config: dict[str, Any]) -> bool:
@@ -252,6 +336,8 @@ def run_audit(
     issues: list[str] = []
     details: dict[str, Any] = {}
     audit_status_files(hermes_home, now, issues, details)
+    audit_retry_queue(hermes_home, now, issues, details)
+    audit_schedulers(hermes_home, issues, details)
     audit_runtime(repo_root, hermes_home, issues, details)
     if network:
         try:

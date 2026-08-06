@@ -26,7 +26,7 @@
 - Deployed cron target: `/Users/a1/.hermes/scripts/sync_mgj_all.py`.
 - Never edit only the deployed target. Change the canonical source, run `python3 -m unittest scripts/test_sync_mgj_customer_profiles.py -v`, then deploy the exact file.
 - A failed package or bill request must never replace `card_packages` or `service_history` with an empty array.
-- Cron modes: OS normal sync at `00/30`; the single Hermes missing-field backfill runs at `05/20/35`; keepalive runs at `50`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
+- Cron modes: the only normal customer sync is OS crontab at `02/32`; Hermes job `666b27f9796b` must remain disabled. The single Hermes missing-field backfill runs at `05/20/35`; keepalive runs at `50`. Do not remove the shared `/tmp/sync_mgj_all.lock`.
 - Backfill checkpoint: `/Users/a1/.hermes/mgj_customer_backfill.json`. Backfill advances by profile `id` and never resets automatically after reaching the end.
 - Keepalive canonical source: `scripts/mgj_keepalive.py`; deployed copies under `~/.hermes/scripts/` and the Meiguanjia skill must have the same hash.
 - Hermes keepalive job `25e56b7f1ac0` runs at `50 * * * *`, not on the hour. It shares the customer sync lock and must never unconditionally relogin.
@@ -37,9 +37,11 @@
 - Customer backfill canonical wrapper: `scripts/backfill_mgj_customer_profiles.sh`. Run one scheduled backfill source only; unmanaged endless loops are forbidden.
 - Hermes no-agent scripts have a 120-second execution limit. Keep customer backfill at 15 profiles per run so the 2-second API pacing can finish before timeout.
 - Keep the normal customer sync at 8 rotating profiles per run; a 20-profile run exceeded the Hermes 120-second hard limit on 2026-07-30.
+- Customer and booking syncs stop after a 105-second run budget and retry only transient timeout/disconnect/408/425/429/5xx failures at 1s and 3s. Deterministic 4xx errors are not retried.
+- Normal customer sync reserves at most 2 of its existing 8 slots for due failures from `~/.hermes/mgj_sync_retry.json` (atomic mode 600). A fifth failed customer attempt becomes `needs_review`; successful compensation removes the queue item.
 - Customer totals/search continue using `~/.hermes/meiguanjia-config.json`. Bill list/detail reads use `MEIGUANJIA_HISTORY_CONFIG_PATH`, defaulting to the isolated `~/.hermes/meiguanjia-care-config.json`; the customer sync may only read this file and must never renew, overwrite, or use it for inventory writes.
 - Recent bill details rotate only within the latest 45 days. `scripts/refresh_mgj_service_records.sh` runs `services 3` at minute `15` each hour and shares `/tmp/sync_mgj_all.lock`.
-- Health audit canonical source: `scripts/check_mgj_sync_health.py`; wrapper: `scripts/mgj_sync_health_watch.sh`. The no-agent watchdog runs every 15 minutes, stays silent while healthy, and reports drift/staleness while verifying that 向里造型 automatic outbound remains disabled. Its canonical checkout defaults to the isolated release worktree and can be changed explicitly with `MGJ_REPO_ROOT`.
+- Health audit canonical source: `scripts/check_mgj_sync_health.py`; wrapper: `scripts/mgj_sync_health_watch.sh`. The no-agent watchdog runs every 15 minutes, stays silent while healthy, and reports drift/staleness, duplicate/missing normal customer schedulers, repeated partial failures, retry backlog and `needs_review` items while verifying that 向里造型 automatic outbound remains disabled. Its canonical checkout defaults to the isolated release worktree and can be changed explicitly with `MGJ_REPO_ROOT`.
 - Canonical runtime deployer: `scripts/deploy_mgj_sync_runtime.sh`. It deploys customer, booking, backfill, recent-service and health scripts to `~/.hermes/scripts/` and verifies SHA-256.
 
 This file is the working context Hermes should read before editing the app.

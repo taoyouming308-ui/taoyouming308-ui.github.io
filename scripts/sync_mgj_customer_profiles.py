@@ -34,12 +34,14 @@ import fcntl
 import json
 import os
 import re
+import socket
 import ssl
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 
@@ -65,14 +67,19 @@ HISTORY_RECENT_DAYS = 45
 SERVICE_REFRESH_DETAIL_CALLS = 8
 SERVICE_REFRESH_LIMIT = 5
 INCREMENTAL_SYNC_LIMIT = 8
+INCREMENTAL_RETRY_LIMIT = 2
+RUN_BUDGET_SECONDS = 105
+NETWORK_RETRY_DELAYS = (1, 3)
 LOCK_PATH = "/tmp/sync_mgj_all.lock"
 STATUS_PATH = "/Users/a1/.hermes/sync_status.json"
+RETRY_QUEUE_PATH = "/Users/a1/.hermes/mgj_sync_retry.json"
 BACKFILL_STATUS_PATH = "/Users/a1/.hermes/mgj_customer_backfill.json"
 SHOP_NAMES = {
     "1009951": "自由手艺人",
     "1837032": "向里造型",
 }
 DEFAULT_SESSION_SHOP_ID = "1009951"
+RUN_DEADLINE = None
 
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -85,6 +92,50 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def remaining_run_seconds():
+    if RUN_DEADLINE is None:
+        return None
+    return max(0.0, RUN_DEADLINE - time.monotonic())
+
+
+def run_budget_available(minimum=1.0):
+    remaining = remaining_run_seconds()
+    return remaining is None or remaining >= minimum
+
+
+def is_transient_network_error(exc):
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code in (408, 425, 429) or 500 <= exc.code <= 599
+    if isinstance(exc, urllib.error.URLError):
+        return is_transient_network_error(exc.reason) or isinstance(
+            exc.reason, (OSError, TimeoutError)
+        )
+    return isinstance(
+        exc,
+        (TimeoutError, socket.timeout, ConnectionResetError, ConnectionAbortedError),
+    )
+
+
+def with_network_retries(operation, timeout, delays=NETWORK_RETRY_DELAYS):
+    """Retry only transient transport/server failures within the run budget."""
+    for attempt in range(len(delays) + 1):
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("同步运行时间已到105秒上限")
+        effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+        try:
+            return operation(effective_timeout)
+        except Exception as exc:
+            if attempt >= len(delays) or not is_transient_network_error(exc):
+                raise
+            delay = delays[attempt]
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining <= delay + 1:
+                raise
+            log(f"  ⚠️ 临时网络异常，{delay}秒后重试({attempt + 1}/{len(delays)})")
+            time.sleep(delay)
 
 
 def load_config(path=CONFIG_PATH):
@@ -148,6 +199,110 @@ def write_status(status, **details):
         log(f"  ⚠️ 同步状态写入失败: {exc}")
 
 
+def load_status():
+    try:
+        with open(STATUS_PATH, encoding="utf-8") as status_file:
+            value = json.load(status_file)
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def load_retry_queue(path=RETRY_QUEUE_PATH):
+    try:
+        with open(path, encoding="utf-8") as queue_file:
+            value = json.load(queue_file)
+    except FileNotFoundError:
+        return {"version": 1, "items": []}
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"失败补偿队列不可读: {type(exc).__name__}") from exc
+    items = value.get("items") if isinstance(value, dict) else None
+    return {"version": 1, "items": items if isinstance(items, list) else []}
+
+
+def save_retry_queue(queue, path=RETRY_QUEUE_PATH):
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    fd, temp_path = tempfile.mkstemp(prefix=".mgj-retry-", suffix=".tmp", dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as queue_file:
+            json.dump(queue, queue_file, ensure_ascii=False, indent=2)
+            queue_file.write("\n")
+            queue_file.flush()
+            os.fsync(queue_file.fileno())
+        os.chmod(temp_path, 0o600)
+        os.replace(temp_path, path)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+
+
+def parse_iso_datetime(value):
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.astimezone()
+    return parsed
+
+
+def eligible_retry_phones(queue, now=None, limit=INCREMENTAL_RETRY_LIMIT):
+    now = now or datetime.now().astimezone()
+    eligible = []
+    for item in queue.get("items", []):
+        if item.get("status") != "pending" or not item.get("phone"):
+            continue
+        next_retry = parse_iso_datetime(item.get("next_retry_at"))
+        if next_retry is None or next_retry.astimezone(now.tzinfo) <= now:
+            eligible.append(item)
+    eligible.sort(key=lambda item: (item.get("next_retry_at") or "", item.get("first_failed_at") or ""))
+    return [str(item["phone"]) for item in eligible[:limit]]
+
+
+def update_retry_queue(queue, outcomes, now=None):
+    """Remove recovered customers and retain bounded, reviewable failures."""
+    now = now or datetime.now().astimezone()
+    now_text = now.isoformat(timespec="seconds")
+    by_phone = {
+        str(item.get("phone")): dict(item)
+        for item in queue.get("items", [])
+        if item.get("phone")
+    }
+    retry_minutes = (5, 15, 30, 60)
+    for outcome in outcomes:
+        phone = str(outcome.get("phone") or "")
+        if not phone or outcome.get("skipped"):
+            continue
+        if outcome.get("success"):
+            by_phone.pop(phone, None)
+            continue
+        item = by_phone.get(phone, {"phone": phone, "attempts": 0, "first_failed_at": now_text})
+        attempts = int_number(item.get("attempts"), 0) + 1
+        item.update({
+            "attempts": attempts,
+            "last_failed_at": now_text,
+            "last_error": str(outcome.get("error") or "unknown")[:500],
+            "status": "needs_review" if attempts >= 5 else "pending",
+        })
+        if attempts < 5:
+            delay = retry_minutes[min(attempts - 1, len(retry_minutes) - 1)]
+            item["next_retry_at"] = (now + timedelta(minutes=delay)).isoformat(timespec="seconds")
+        else:
+            item.pop("next_retry_at", None)
+        by_phone[phone] = item
+    items = sorted(by_phone.values(), key=lambda item: (item.get("status") == "needs_review", item.get("first_failed_at") or ""))
+    return {"version": 1, "updated_at": now_text, "items": items}
+
+
+def retry_queue_counts(queue):
+    items = queue.get("items", [])
+    return {
+        "retry_pending": sum(item.get("status") == "pending" for item in items),
+        "retry_needs_review": sum(item.get("status") == "needs_review" for item in items),
+    }
+
+
 def parse_array(value):
     if isinstance(value, list):
         return value
@@ -195,8 +350,10 @@ def supabase_get(path, timeout=10):
     """GET请求Supabase REST API"""
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     req = urllib.request.Request(url, headers={"apikey": SUPABASE_KEY, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
+    def request(effective_timeout):
+        with urllib.request.urlopen(req, timeout=effective_timeout) as response:
+            return json.loads(response.read())
+    return with_network_retries(request, timeout)
 
 
 def supabase_post(path, body, timeout=10):
@@ -208,8 +365,10 @@ def supabase_post(path, body, timeout=10):
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates,return=minimal",
     })
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.status
+    def request(effective_timeout):
+        with urllib.request.urlopen(req, timeout=effective_timeout) as response:
+            return response.status
+    return with_network_retries(request, timeout)
 
 
 def supabase_patch(path, body, timeout=10):
@@ -219,8 +378,10 @@ def supabase_patch(path, body, timeout=10):
     req = urllib.request.Request(url, data=data, headers={
         "apikey": SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal"
     }, method="PATCH")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.status
+    def request(effective_timeout):
+        with urllib.request.urlopen(req, timeout=effective_timeout) as response:
+            return response.status
+    return with_network_retries(request, timeout)
 
 
 def get_booking_phones(days_back=0, days_forward=7):
@@ -238,6 +399,8 @@ def get_booking_phones(days_back=0, days_forward=7):
     start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
     
     phones = set()
+    successful_queries = 0
+    query_errors = []
     
     # 1) 从未来预约（today ~ today+days_forward）获取手机号
     end_date = (datetime.now() + timedelta(days=days_forward)).strftime("%Y-%m-%d")
@@ -248,9 +411,11 @@ def get_booking_phones(days_back=0, days_forward=7):
             p = b.get("customer_phone")
             if p and p.strip():
                 phones.add(p.strip())
+        successful_queries += 1
         log(f"  未来预约({today}~{end_date}): {len(data)}条, {sum(1 for b in data if b.get('customer_phone'))}个有手机号")
     except Exception as e:
         log(f"  ⚠️ 查询未来预约失败: {e}")
+        query_errors.append(str(e))
     
     # 2) 同时从近期历史预约获取手机号（未来预约可能没存手机号）
     if days_back > 0:
@@ -261,8 +426,13 @@ def get_booking_phones(days_back=0, days_forward=7):
                 p = b.get("customer_phone")
                 if p and p.strip():
                     phones.add(p.strip())
+            successful_queries += 1
         except Exception as e:
             log(f"  ⚠️ 查询历史预约失败: {e}")
+            query_errors.append(str(e))
+
+    if successful_queries == 0 and query_errors:
+        raise RuntimeError(f"预约手机号查询全部失败: {query_errors[0]}")
     
     return sorted(phones)
 
@@ -291,8 +461,10 @@ def form_post(path, data):
         "Request-From": "MGJ_SHAIR",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
     })
-    with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+    def request(effective_timeout):
+        with urllib.request.urlopen(req, timeout=effective_timeout, context=SSL_CTX) as response:
+            return response.read().decode("utf-8", errors="replace")
+    return with_network_retries(request, 15)
 
 
 def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
@@ -338,8 +510,12 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     try:
         last_error = None
         for attempt in range(retries + 1):
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining < 1:
+                raise TimeoutError("同步运行时间已到105秒上限")
             try:
-                out = subprocess.check_output(cmd, timeout=25, stderr=subprocess.STDOUT)
+                command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
+                out = subprocess.check_output(cmd, timeout=command_timeout, stderr=subprocess.STDOUT)
                 decoded = out.decode("utf-8", errors="replace")
                 try:
                     result = json.loads(decoded)
@@ -358,7 +534,11 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
             except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
                 last_error = exc
             if attempt < retries:
-                time.sleep(0.8 * (attempt + 1))
+                delay = 0.8 * (attempt + 1)
+                remaining = remaining_run_seconds()
+                if remaining is not None and remaining <= delay + 1:
+                    break
+                time.sleep(delay)
         raise RuntimeError(f"{path}请求失败: {last_error}")
     finally:
         os.unlink(tmp.name)
@@ -1092,17 +1272,26 @@ def sync_phones(phones, label="同步"):
     ok = 0
     fail = 0
     skipped = 0
+    outcomes = []
     
     log(f"📞 共{total}个客户需要{label}")
     
     for i, phone in enumerate(phones):
+        if not run_budget_available():
+            remaining_count = total - i
+            log(f"  ⏭ 已到105秒运行上限，保留{remaining_count}个客户给下次同步")
+            skipped += remaining_count
+            outcomes.extend({"phone": value, "skipped": True} for value in phones[i:])
+            break
         log(f"[{i+1}/{total}] {phone}...")
         
         try:
             data = get_customer_full(phone)
             if not data.get("found"):
-                log(f"  ❌ {data.get('message', '查询失败')}")
+                error = data.get("message", "查询失败")
+                log(f"  ❌ {error}")
                 fail += 1
+                outcomes.append({"phone": phone, "success": False, "error": error})
                 continue
             
             profile_data = dict(data)
@@ -1115,18 +1304,21 @@ def sync_phones(phones, label="同步"):
                 s = data.get("source", "?")
                 log(f"  ✅ ({action}) {v}次 ¥{c:.0f} [{s}]")
                 ok += 1
+                outcomes.append({"phone": phone, "success": True})
             else:
                 log(f"  ❌ 写入失败: {action}")
                 fail += 1
+                outcomes.append({"phone": phone, "success": False, "error": action})
         except Exception as e:
             log(f"  ❌ 同步异常: {e}")
             fail += 1
+            outcomes.append({"phone": phone, "success": False, "error": str(e)})
         
         # API调用间隔，避免被墙
-        if i < total - 1:
+        if i < total - 1 and run_budget_available(2):
             time.sleep(1)
     
-    return ok, fail, skipped
+    return ok, fail, skipped, outcomes
 
 
 def load_backfill_status():
@@ -1340,6 +1532,10 @@ def run_validate(phones, label="验证"):
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "sync"
+    previous_status = load_status()
+    previous_consecutive_failures = int_number(previous_status.get("consecutive_failures"), 0)
+    if mode == "sync":
+        RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
     run_lock = acquire_run_lock()
     if run_lock is None:
         log("⏭ 已有同步任务运行，本次跳过")
@@ -1375,7 +1571,7 @@ if __name__ == "__main__":
         phones = get_booking_phones(days_back=90, days_forward=7)
         log(f"📞 共 {len(phones)} 个客户手机号")
         if phones:
-            ok, fail, skipped = sync_phones(phones, "全量同步")
+            ok, fail, skipped, _ = sync_phones(phones, "全量同步")
             status_details = {"success": ok, "failed": fail, "skipped": skipped}
             if fail:
                 final_status = "degraded"
@@ -1452,21 +1648,78 @@ if __name__ == "__main__":
     else:
         # 增量同步（默认cron模式）：单批必须低于Hermes 120秒上限
         log("⏱ 增量同步模式（cron）")
-        phones = get_booking_phones(days_back=1, days_forward=2)
-        if len(phones) > INCREMENTAL_SYNC_LIMIT:
-            total_phones = len(phones)
-            phones = select_sync_window(phones, limit=INCREMENTAL_SYNC_LIMIT)
-            log(f"  轮换同步{INCREMENTAL_SYNC_LIMIT}个（共{total_phones}个）")
+        try:
+            queue = load_retry_queue()
+        except RuntimeError as exc:
+            log(f"  ❌ {exc}，本次停止，避免覆盖待补偿记录")
+            write_status(
+                "degraded",
+                mode=mode,
+                error=str(exc),
+                consecutive_failures=previous_consecutive_failures + 1,
+            )
+            sys.exit(1)
+        retry_phones = eligible_retry_phones(queue)
+        queued_phones = {
+            str(item.get("phone"))
+            for item in queue.get("items", [])
+            if item.get("phone")
+        }
+        booking_query_error = ""
+        try:
+            booking_phones = get_booking_phones(days_back=1, days_forward=2)
+        except Exception as exc:
+            booking_phones = []
+            booking_query_error = str(exc)
+            final_status = "degraded"
+            log(f"  ❌ {booking_query_error}")
+        booking_phones = [phone for phone in booking_phones if phone not in queued_phones]
+        normal_limit = max(0, INCREMENTAL_SYNC_LIMIT - len(retry_phones))
+        total_phones = len(booking_phones)
+        normal_phones = select_sync_window(booking_phones, limit=normal_limit) if normal_limit else []
+        phones = retry_phones + normal_phones
+        if retry_phones:
+            log(f"  优先补偿{len(retry_phones)}个失败客户，本批总量仍不超过{INCREMENTAL_SYNC_LIMIT}个")
+        if total_phones > normal_limit:
+            log(f"  轮换同步{normal_limit}个普通客户（共{total_phones}个）")
         log(f"📞 获取到 {len(phones)} 个客户手机号")
         if phones:
-            ok, fail, skipped = sync_phones(phones, "增量同步")
+            ok, fail, skipped, outcomes = sync_phones(phones, "增量同步")
+            queue = update_retry_queue(queue, outcomes)
+            queue_save_error = ""
+            try:
+                save_retry_queue(queue)
+            except OSError as exc:
+                queue_save_error = f"失败补偿队列写入失败: {type(exc).__name__}"
+                log(f"  ❌ {queue_save_error}")
+            queue_details = retry_queue_counts(queue)
             log(f"\n📊 完成: ✅ {ok} 成功  ❌ {fail} 失败  ⏭ {skipped} 跳过")
-            status_details = {"success": ok, "failed": fail, "skipped": skipped}
-            if fail:
+            status_details = {
+                "success": ok,
+                "failed": fail,
+                "skipped": skipped,
+                **queue_details,
+            }
+            if booking_query_error:
+                status_details["booking_query_error"] = booking_query_error[:500]
+            if queue_save_error:
+                status_details["queue_save_error"] = queue_save_error
+            if booking_query_error or queue_save_error:
+                final_status = "degraded"
+            elif fail and ok:
+                final_status = "partial"
+            elif fail or skipped:
                 final_status = "degraded"
         else:
             log("没有需要同步的客户")
+            status_details.update(retry_queue_counts(queue))
+            if booking_query_error:
+                status_details["booking_query_error"] = booking_query_error[:500]
 
+    consecutive_failures = (
+        0 if final_status == "healthy" else previous_consecutive_failures + 1
+    )
+    status_details["consecutive_failures"] = consecutive_failures
     write_status(final_status, mode=mode, **status_details)
     if final_status != "healthy":
         sys.exit(1)

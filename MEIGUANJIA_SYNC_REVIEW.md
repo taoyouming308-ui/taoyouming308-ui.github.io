@@ -92,7 +92,9 @@ Current audit findings from sample data:
 - The main customer session currently lacks bill-list permission. Bill list/detail reads use the isolated read-only history session path (default `~/.hermes/meiguanjia-care-config.json`); this sync path does not renew or modify that session and never invokes inventory endpoints.
 - Recent bill enrichment rotates within 45 days instead of across the customer's entire history. The hourly `services 3` refresh prioritizes recent `hair_records` customers, then recent booking customers, and shares the normal customer-sync lock.
 - Normal customer sync rotates 8 profiles per run so it finishes inside the Hermes no-agent 120-second limit; the separate backfill job handles older gaps.
-- The 15-minute read-only health watchdog checks status freshness, source/runtime hashes, active care queue age, latest reconciliation date, and the tracked/runtime 向里造型 outbound disable flag.
+- The only normal customer scheduler is OS crontab at minute `02/32`; Hermes job `666b27f9796b` remains disabled. Each run has a 105-second budget and uses at most 2 of the existing 8 slots for due local compensation tasks.
+- Transient timeout/disconnect/408/425/429/5xx failures receive at most two short retries. Failed customers are stored atomically in mode-600 `~/.hermes/mgj_sync_retry.json`; the fifth failed attempt becomes `needs_review` instead of looping forever.
+- The 15-minute read-only health watchdog checks status freshness, source/runtime hashes, unique normal-customer scheduling, consecutive partial failures, retry backlog, active care queue age, latest reconciliation date, and the tracked/runtime 向里造型 outbound disable flag.
 
 5. Add sync metadata.
    - Add or preserve fields such as `last_updated`, `source`, `source_id`, `sync_error`, `raw_hash`.

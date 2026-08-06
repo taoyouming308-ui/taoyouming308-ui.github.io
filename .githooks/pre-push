@@ -18,5 +18,5 @@ node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
 python3 -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
-python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py || exit 1
+python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1
