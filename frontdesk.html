@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="408">
+<html lang="zh-CN" data-version="409">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
@@ -109,7 +109,7 @@
       <section class="view hidden" id="view-customers">
         <div class="view-head"><div><h2>客户档案</h2><p>按姓名或手机号查询，查看全部已同步消费记录和套餐余项。</p></div></div>
         <div class="customer-layout">
-          <div class="card search-pane"><div class="search-box"><input class="search-input" id="customer-query" placeholder="输入姓名或手机号"><button class="primary" id="customer-search-btn" type="button">查询</button></div><div class="result-list" id="customer-results"><div class="empty"><b>查找客户</b>输入至少两个字或两位手机号</div></div></div>
+          <div class="card search-pane"><div class="search-box"><input class="search-input" id="customer-query" placeholder="输入姓名、完整手机号或后4位"><button class="primary" id="customer-search-btn" type="button">查询</button></div><div class="result-list" id="customer-results"><div class="empty"><b>查找客户</b>可输入姓名、完整手机号或手机号后4位</div></div></div>
           <div class="card detail-pane" id="customer-detail"><div class="detail-empty"><div><div class="mark" style="margin:auto">客</div><p>从左侧选择客户查看档案</p></div></div></div>
         </div>
       </section>
@@ -117,7 +117,7 @@
       <section class="view hidden" id="view-import">
         <div class="view-head"><div><h2>客户数据表</h2><p>以电脑表格查看“当日接待”和“历史导入”；来源分开显示，不覆盖美管加或后台客户原始档案。</p></div></div>
         <div class="card ledger-card">
-          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" placeholder="筛选姓名、手机号、项目或发型师"><select class="ledger-filter" id="ledger-source"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
+          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" placeholder="姓名、完整手机号、手机后4位、项目或发型师"><select class="ledger-filter" id="ledger-source"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
           <div class="ledger-boundary"><span><b>项目 / 发型师 / 技师 / 助理：</b>两类记录都可补充修改</span><span><b>历史导入：</b>保留原 CSV 和来源批次，修改会记录操作人</span><span>所有修改仅作用于前台独立数据表，不修改美管加或后台客户原始信息</span></div>
           <div class="ledger-table-wrap" id="ledger-table"><div class="empty">正在读取客户数据表…</div></div>
         </div>
@@ -148,7 +148,7 @@
     var ENDPOINT = SUPABASE_URL + '/functions/v1/frontdesk-api';
     var STORAGE_KEY = 'zysyr-frontdesk-session-v1';
     var STORE_KEY = 'zysyr-frontdesk-store-v1';
-    var state = { session:null, store:'', dashboard:null, todayRows:[], selected:null, importRows:[], importFile:'', ledgerRows:[], showingAll:false, view:'today' };
+    var state = { session:null, store:'', dashboard:null, todayRows:[], selected:null, importRows:[], importFile:'', ledgerRows:[], ledgerPhoneSuffix:'', ledgerRequest:0, showingAll:false, view:'today' };
     var $ = function(id){ return document.getElementById(id); };
 
     function esc(value){ return String(value == null ? '' : value).replace(/[&<>'"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]; }); }
@@ -299,9 +299,11 @@
     });
 
     function ledgerStatusLabel(status){return {waiting:'等待接待',arrived:'已经到店',in_service:'服务中',completed:'今日完成',cancelled:'取消/未到'}[status]||status||'—';}
+    function phoneSuffixQuery(value){var raw=String(value||'').trim();return /^\d{4}$/.test(raw)?raw:'';}
+    function ledgerRowMatchesQuery(row,query){var normalized=String(query||'').trim().toLowerCase(),suffix=phoneSuffixQuery(normalized);if(!normalized)return true;if(suffix)return phone(row.customer_phone).endsWith(suffix);return [row.business_date,row.customer_name,row.customer_phone,row.service_items,row.barber_name,row.technician_name,row.assistant_name,row.payment_summary,row.package_note,row.notes].some(function(value){return String(value||'').toLowerCase().indexOf(normalized)>=0;});}
     function renderLedger(){
       var query=$('ledger-search').value.trim().toLowerCase(),source=$('ledger-source').value;
-      var rows=state.ledgerRows.filter(function(row){if(source!=='all'&&row.row_type!==source)return false;if(!query)return true;return [row.business_date,row.customer_name,row.customer_phone,row.service_items,row.barber_name,row.technician_name,row.assistant_name,row.payment_summary,row.package_note,row.notes].some(function(value){return String(value||'').toLowerCase().indexOf(query)>=0;});});
+      var rows=state.ledgerRows.filter(function(row){return (source==='all'||row.row_type===source)&&ledgerRowMatchesQuery(row,query);});
       $('ledger-count').textContent='显示 '+rows.length+' 条 / 共 '+state.ledgerRows.length+' 条';
       if(!rows.length){$('ledger-table').innerHTML='<div class="empty"><b>没有符合条件的记录</b>可以清空筛选条件后重试</div>';return;}
       $('ledger-table').innerHTML='<table class="ledger-table"><thead><tr><th>来源</th><th>日期 / 时间</th><th>客户</th><th>手机号</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>金额 / 说明</th><th>状态</th><th>备注</th><th>操作</th></tr></thead><tbody>'+rows.map(function(row){var amount=row.payment_summary||row.package_note||(Number(row.amount)>0?money(row.amount):'—'),time=[row.business_date,row.arrival_time].filter(Boolean).join(' '),audit=row.updated_by?('最近修改：'+row.updated_by+(row.updated_at?' · '+new Date(row.updated_at).toLocaleString('zh-CN'):'')).trim():'';return '<tr><td><span class="source-tag '+(row.row_type==='today'?'today':'imported')+'">'+esc(row.source)+'</span></td><td>'+esc(time||'—')+'</td><td><b>'+esc(row.customer_name||'未命名客户')+'</b></td><td>'+esc(row.customer_phone||'—')+'</td><td>'+esc(row.service_items||'—')+'</td><td>'+esc(row.barber_name||'—')+'</td><td>'+esc(row.technician_name||'—')+'</td><td>'+esc(row.assistant_name||'—')+'</td><td>'+esc(amount)+'</td><td>'+esc(ledgerStatusLabel(row.status))+'</td><td class="notes">'+esc(row.notes||row.source_detail||'—')+(audit?'<div class="sub">'+esc(audit)+'</div>':'')+'</td><td><button class="table-edit" type="button" data-record="'+esc(row.record_id)+'" data-type="'+esc(row.row_type)+'">编辑</button></td></tr>';}).join('')+'</tbody></table>';
@@ -309,13 +311,15 @@
     }
     function openLedgerForm(row){$('ledger-record-type').value=row.row_type;$('ledger-record-id').value=row.record_id;$('ledger-record-customer').textContent=[row.customer_name,row.customer_phone].filter(Boolean).join(' · ')||'未命名客户';$('ledger-record-source').textContent=row.source||row.row_type;$('ledger-service').value=row.service_items||'';$('ledger-barber').value=row.barber_name||'';$('ledger-technician').value=row.technician_name||'';$('ledger-assistant').value=row.assistant_name||'';$('ledger-notes').value=row.notes||'';$('ledger-notes-field').classList.toggle('hidden',row.row_type!=='today');$('ledger-form-overlay').classList.remove('hidden');}
     $('ledger-form').addEventListener('submit',async function(event){event.preventDefault();var btn=$('ledger-save-btn');setBusy(btn,true,'正在保存…');try{await api('ledger_record_save',{row_type:$('ledger-record-type').value,record_id:$('ledger-record-id').value,service_items:$('ledger-service').value.trim(),barber_name:$('ledger-barber').value.trim(),technician_name:$('ledger-technician').value.trim(),assistant_name:$('ledger-assistant').value.trim(),notes:$('ledger-notes').value.trim()});closeOverlay('ledger-form-overlay');toast('前台数据已更新，原始客户档案和美管加未修改');await Promise.all([loadLedger(),loadDashboard()]);}catch(e){toast(e.message,true);}finally{setBusy(btn,false);}});
-    async function loadLedger(){
+    async function loadLedger(phoneSuffixValue){
       if(!state.session||!state.store)return;
+      var suffix=typeof phoneSuffixValue==='string'?phoneSuffixQuery(phoneSuffixValue):phoneSuffixQuery($('ledger-search').value),request=++state.ledgerRequest;
+      state.ledgerPhoneSuffix=suffix;
       $('ledger-count').textContent='正在读取…';
-      try{var data=await api('ledger_records');state.ledgerRows=data.rows||[];renderLedger();}
-      catch(e){$('ledger-count').textContent='读取失败';$('ledger-table').innerHTML='<div class="empty danger"><b>客户数据表读取失败</b>'+esc(e.message)+'</div>';}
+      try{var data=await api('ledger_records',suffix?{phone_suffix:suffix}:{});if(request!==state.ledgerRequest)return;state.ledgerRows=data.rows||[];renderLedger();}
+      catch(e){if(request!==state.ledgerRequest)return;$('ledger-count').textContent='读取失败';$('ledger-table').innerHTML='<div class="empty danger"><b>客户数据表读取失败</b>'+esc(e.message)+'</div>';}
     }
-    $('ledger-search').addEventListener('input',renderLedger);$('ledger-source').addEventListener('change',renderLedger);$('ledger-refresh').addEventListener('click',loadLedger);
+    $('ledger-search').addEventListener('input',function(){var suffix=phoneSuffixQuery(this.value);if(suffix!==state.ledgerPhoneSuffix)loadLedger(suffix);else renderLedger();});$('ledger-source').addEventListener('change',renderLedger);$('ledger-refresh').addEventListener('click',function(){loadLedger();});
 
     function parseCSV(text){
       text=String(text||'').replace(/^\uFEFF/,'');var first=(text.split(/\r?\n/,1)[0]||''),delimiter=first.indexOf('\t')>=0?'\t':',';var rows=[],row=[],cell='',quoted=false;

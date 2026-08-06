@@ -33,7 +33,7 @@ function fakeElement() {
 }
 const runtimeScript = scriptMatch[1].replace(
   'restoreSession();',
-  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft};',
+  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery};',
 );
 const runtimeContext = {
   console,
@@ -72,6 +72,11 @@ const completedRows = timeline.mergeToday({
 });
 expect(completedRows.length === 1 && completedRows[0].kind === 'matched', 'completed service customer must remain on the schedule');
 expect(timeline.todayState(completedRows[0]).tone === 'green', 'completed service customer must keep the completed visual state');
+expect(timeline.phoneSuffixQuery('3360') === '3360', 'exact four-digit phone suffix must be recognized');
+expect(timeline.phoneSuffixQuery('13360') === '' && timeline.phoneSuffixQuery('33a0') === '', 'only exact four digits may activate suffix mode');
+expect(timeline.ledgerRowMatchesQuery({ customer_phone: '13812343360', service_items: '护理 7788' }, '3360'), 'ledger phone suffix must match the end of the customer phone');
+expect(!timeline.ledgerRowMatchesQuery({ customer_phone: '13833601234', service_items: '套餐 3360' }, '3360'), 'four digits must not match a phone middle segment or another ledger field');
+expect(timeline.ledgerRowMatchesQuery({ customer_phone: '13812343360', customer_name: '朱小姐' }, '朱小姐'), 'name search must remain supported');
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'frontdesk version must match current release');
 expect(html.includes('前台客户中心') && html.includes('今日客户') && html.includes('客户档案'), 'core frontdesk views missing');
@@ -90,7 +95,8 @@ expect(html.includes('store-select') && html.includes('zysyr-frontdesk-store-v1'
 expect(html.includes('电脑前台为主') && manifest.description.includes('电脑前台'), 'desktop-first frontdesk positioning missing');
 expect(html.includes('id="ledger-table"') && html.includes('class="ledger-table"'), 'customer ledger table missing');
 expect(html.includes('当日接待') && html.includes('历史导入') && html.includes('所有修改仅作用于前台独立数据表'), 'ledger source boundary missing');
-expect(html.includes("api('ledger_records')") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
+expect(html.includes("api('ledger_records'") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
+expect(html.includes("api('ledger_records',suffix?{phone_suffix:suffix}:{})") && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix query flow missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="today-technician"') && html.includes('id="today-assistant"'), 'daily reception technician/assistant fields missing');
 expect(html.includes('id="schedule-left"') && html.includes('id="schedule-right"') && html.includes('overflow-x:scroll'), 'explicit horizontal schedule navigation missing');
@@ -122,6 +128,7 @@ expect(edge.includes('summary_without_history'), 'server-side customer data-gap 
 expect(edge.includes('rpc/import_frontdesk_records'), 'protected import RPC missing');
 expect(edge.includes('单次最多导入 250 行'), 'import batch limit missing');
 expect(edge.includes('operation === "ledger_records"') && edge.includes('async function ledgerRecords'), 'protected customer ledger API missing');
+expect(edge.includes('phoneSuffix ? `*${phoneSuffix}`') && edge.includes('phoneSuffix ? 1000 : 80') && edge.includes('phoneSuffix ? sortedResults') && edge.includes('手机号后4位格式错误'), 'customer search phone-suffix rule missing');
 expect(edge.includes('operation === "ledger_record_save"') && edge.includes('async function saveLedgerRecord'), 'protected ledger edit API missing');
 expect(edge.includes('operation === "register"') && edge.includes('employment_status: "pending"') && edge.includes('position: "前台"'), 'frontdesk pending registration API missing');
 expect(edge.includes('selectCustomerRows') && edge.includes('distinctPhones.size === 1') && edge.includes('comparableCustomerName'), 'masked phone package matching fix missing');
@@ -130,6 +137,7 @@ expect(edge.includes('original_customer_profiles_untouched: true'), 'ledger resp
 const ledgerFunction = edge.slice(edge.indexOf('async function ledgerRecords'), edge.indexOf('Deno.serve'));
 expect(ledgerFunction.includes('frontdesk_import_records') && ledgerFunction.includes('frontdesk_today_customers'), 'ledger must combine imported and daily reception rows');
 expect(ledgerFunction.includes('withStore('), 'ledger rows must be store-scoped');
+expect(ledgerFunction.includes('customer_phone=ilike.') && ledgerFunction.includes('phone_suffix: rawPhoneSuffix'), 'ledger suffix search must run server-side across historical rows');
 const saveFunction = edge.slice(edge.indexOf('async function saveTodayCustomer'), edge.indexOf('function remainingPackageCount'));
 expect(saveFunction.includes('frontdesk_today_customers') && !saveFunction.includes('customer_profiles') && !saveFunction.includes('frontdesk_import_records'), 'daily reception save must not overwrite customer master or imported history');
 

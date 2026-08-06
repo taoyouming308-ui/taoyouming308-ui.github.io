@@ -337,16 +337,18 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
   const query = cleanText(payload.query, 80);
   if (query.length < 2) throw new Error("至少输入两个字或两位手机号");
   const phone = cleanPhone(query);
+  const phoneSuffix = /^\d{4}$/.test(query) ? phone : "";
+  const searchLimit = phoneSuffix ? 1000 : 80;
   const like = encodeURIComponent(`*${query.replace(/[*,()]/g, "")}*`);
   const profileFilter = phone.length >= 4
-    ? `phone=ilike.${encodeURIComponent(`*${phone}*`)}`
+    ? `phone=ilike.${encodeURIComponent(phoneSuffix ? `*${phoneSuffix}` : `*${phone}*`)}`
     : `name=ilike.${like}`;
   const importFilter = phone.length >= 4
-    ? `customer_phone=ilike.${encodeURIComponent(`*${phone}*`)}`
+    ? `customer_phone=ilike.${encodeURIComponent(phoneSuffix ? `*${phoneSuffix}` : `*${phone}*`)}`
     : `customer_name=ilike.${like}`;
   const [profiles, imported] = await Promise.all([
-    restRows(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages&${profileFilter}&order=last_visit_date.desc.nullslast&limit=80`),
-    restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&order=visit_date.desc&limit=80`),
+    restRows(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages&${profileFilter}&order=last_visit_date.desc.nullslast&limit=${searchLimit}`),
+    restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&order=visit_date.desc&limit=${searchLimit}`),
   ]);
   const index = new Map<string, JsonRecord>();
   for (const row of profiles) {
@@ -375,7 +377,8 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
     current.sources = Array.from(new Set([...(current.sources as unknown[]), "历史表格"]));
     index.set(key, current);
   }
-  const results = Array.from(index.values()).sort((a, b) => String(b.last_visit || "").localeCompare(String(a.last_visit || ""))).slice(0, 60);
+  const sortedResults = Array.from(index.values()).sort((a, b) => String(b.last_visit || "").localeCompare(String(a.last_visit || "")));
+  const results = phoneSuffix ? sortedResults : sortedResults.slice(0, 60);
   return { query, results, store: selectedStore(session, payload) };
 }
 
@@ -610,13 +613,18 @@ async function importBatches(session: JsonRecord): Promise<JsonRecord> {
 async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
+  const rawPhoneSuffix = cleanText(payload.phone_suffix, 20);
+  if (rawPhoneSuffix && !/^\d{4}$/.test(rawPhoneSuffix)) throw new Error("手机号后4位格式错误");
+  const phoneSuffixFilter = rawPhoneSuffix
+    ? `&customer_phone=ilike.${encodeURIComponent(`*${rawPhoneSuffix}`)}`
+    : "";
   const importedPath = withStore(
-    "frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,updated_by,created_at,updated_at&order=visit_date.desc,created_at.desc&limit=1000",
+    `frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,updated_by,created_at,updated_at&order=visit_date.desc,created_at.desc&limit=1000${phoneSuffixFilter}`,
     "store",
     store,
   );
   const receptionPath = withStore(
-    "frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000",
+    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}`,
     "store",
     store,
   );
@@ -680,6 +688,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
     rows,
     imported_count: imported.length,
     today_count: reception.length,
+    phone_suffix: rawPhoneSuffix,
     original_customer_profiles_untouched: true,
   };
 }
