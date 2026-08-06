@@ -14,6 +14,7 @@ const indexMigration = fs.readFileSync(path.join(root, 'supabase/migrations/2026
 const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805034830_frontdesk_today_reception.sql'), 'utf8');
 const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805045233_frontdesk_reception_time.sql'), 'utf8');
 const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
+const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -33,7 +34,7 @@ function fakeElement() {
 }
 const runtimeScript = scriptMatch[1].replace(
   'restoreSession();',
-  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery};',
+  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery,ledgerAmountLabel};',
 );
 const runtimeContext = {
   console,
@@ -77,6 +78,9 @@ expect(timeline.phoneSuffixQuery('13360') === '' && timeline.phoneSuffixQuery('3
 expect(timeline.ledgerRowMatchesQuery({ customer_phone: '13812343360', service_items: '护理 7788' }, '3360'), 'ledger phone suffix must match the end of the customer phone');
 expect(!timeline.ledgerRowMatchesQuery({ customer_phone: '13833601234', service_items: '套餐 3360' }, '3360'), 'four digits must not match a phone middle segment or another ledger field');
 expect(timeline.ledgerRowMatchesQuery({ customer_phone: '13812343360', customer_name: '朱小姐' }, '朱小姐'), 'name search must remain supported');
+expect(timeline.ledgerAmountLabel({ amount: 128, payment_summary: '微信' }) === '¥128 · 微信', 'ledger must display numeric amount and explanation together');
+expect(timeline.ledgerAmountLabel({ amount: 0, payment_summary: '', package_note: '' }) === '—', 'empty ledger amount must keep a clear placeholder');
+expect(timeline.ledgerRowMatchesQuery({ amount: 128.5, customer_name: '金额客户' }, '128.5'), 'ledger amount must remain searchable');
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'frontdesk version must match current release');
 expect(html.includes('前台客户中心') && html.includes('今日客户') && html.includes('客户档案'), 'core frontdesk views missing');
@@ -98,6 +102,9 @@ expect(html.includes('当日接待') && html.includes('历史导入') && html.in
 expect(html.includes("api('ledger_records'") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
 expect(html.includes("api('ledger_records',suffix?{phone_suffix:suffix}:{})") && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix query flow missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
+expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');
+expect(html.includes("amount:$('ledger-amount').value") && html.includes("payment_summary:$('ledger-payment-summary').value.trim()"), 'ledger amount fields must be submitted');
+expect(html.includes('原始上传表格内容、客户主档和美管加收银数据保持不变'), 'ledger financial edit boundary missing');
 expect(html.includes('id="today-technician"') && html.includes('id="today-assistant"'), 'daily reception technician/assistant fields missing');
 expect(html.includes('id="schedule-left"') && html.includes('id="schedule-right"') && html.includes('overflow-x:scroll'), 'explicit horizontal schedule navigation missing');
 expect(html.includes('id="register-form"') && html.includes("api('register'") && html.includes('提交后由管理员在后台审核'), 'frontdesk registration flow missing');
@@ -130,6 +137,7 @@ expect(edge.includes('单次最多导入 250 行'), 'import batch limit missing'
 expect(edge.includes('operation === "ledger_records"') && edge.includes('async function ledgerRecords'), 'protected customer ledger API missing');
 expect(edge.includes('phoneSuffix ? `*${phoneSuffix}`') && edge.includes('phoneSuffix ? 1000 : 80') && edge.includes('phoneSuffix ? sortedResults') && edge.includes('手机号后4位格式错误'), 'customer search phone-suffix rule missing');
 expect(edge.includes('operation === "ledger_record_save"') && edge.includes('async function saveLedgerRecord'), 'protected ledger edit API missing');
+expect(edge.includes('金额最多保留两位小数') && edge.includes('金额超出允许范围'), 'ledger amount validation missing');
 expect(edge.includes('operation === "register"') && edge.includes('employment_status: "pending"') && edge.includes('position: "前台"'), 'frontdesk pending registration API missing');
 expect(edge.includes('selectCustomerRows') && edge.includes('distinctPhones.size === 1') && edge.includes('comparableCustomerName'), 'masked phone package matching fix missing');
 expect(edge.includes('operation === "admin_overview"') && edge.includes('requireFrontdeskAdmin'), 'frontdesk backend management API missing');
@@ -140,6 +148,9 @@ expect(ledgerFunction.includes('withStore('), 'ledger rows must be store-scoped'
 expect(ledgerFunction.includes('customer_phone=ilike.') && ledgerFunction.includes('phone_suffix: rawPhoneSuffix'), 'ledger suffix search must run server-side across historical rows');
 const saveFunction = edge.slice(edge.indexOf('async function saveTodayCustomer'), edge.indexOf('function remainingPackageCount'));
 expect(saveFunction.includes('frontdesk_today_customers') && !saveFunction.includes('customer_profiles') && !saveFunction.includes('frontdesk_import_records'), 'daily reception save must not overwrite customer master or imported history');
+const ledgerSaveFunction = edge.slice(edge.indexOf('async function saveLedgerRecord'), edge.indexOf('function adminStore'));
+expect(ledgerSaveFunction.includes('amount,') && ledgerSaveFunction.includes('payment_summary: cleanText(payload.payment_summary, 500)'), 'ledger save must persist amount and explanation');
+expect(ledgerSaveFunction.includes('rowType === "today"') && ledgerSaveFunction.includes('frontdesk_import_records'), 'both ledger row types must support amount edits');
 
 ['frontdesk_sessions', 'frontdesk_import_batches', 'frontdesk_import_records'].forEach((table) => {
   expect(migration.includes(`alter table public.${table} enable row level security`), `${table} RLS missing`);
@@ -155,5 +166,8 @@ expect(receptionTimeMigration.includes('add column if not exists arrival_time ti
 expect(receptionTimeMigration.includes('frontdesk_today_customers_schedule_idx'), 'daily reception schedule index missing');
 expect(ledgerEditMigration.includes('technician_name') && ledgerEditMigration.includes('assistant_name'), 'daily reception staff edit columns missing');
 expect(ledgerEditMigration.includes('frontdesk_import_records') && ledgerEditMigration.includes('updated_by'), 'imported ledger audit columns missing');
+expect(ledgerAmountMigration.includes('amount numeric(12,2)') && ledgerAmountMigration.includes('payment_summary text'), 'today ledger amount columns missing');
+expect(ledgerAmountMigration.includes('raw_row') && ledgerAmountMigration.includes('does not create or change a Meiguanjia cashier transaction'), 'ledger amount source boundary comments missing');
+expect(ledgerAmountMigration.includes('enable row level security') && ledgerAmountMigration.includes('revoke all on table public.frontdesk_today_customers from public, anon, authenticated'), 'ledger amount migration must preserve server-only access');
 
 console.log('frontdesk tests passed');

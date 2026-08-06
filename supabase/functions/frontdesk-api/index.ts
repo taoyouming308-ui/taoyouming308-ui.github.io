@@ -624,7 +624,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
     store,
   );
   const receptionPath = withStore(
-    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}`,
+    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}`,
     "store",
     store,
   );
@@ -667,8 +667,8 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       barber_name: row.barber_name,
       technician_name: row.technician_name,
       assistant_name: row.assistant_name,
-      amount: null,
-      payment_summary: "",
+      amount: Number(row.amount) || 0,
+      payment_summary: row.payment_summary,
       package_note: "",
       status: row.status,
       notes: row.reception_notes,
@@ -699,10 +699,16 @@ async function saveLedgerRecord(payload: JsonRecord, session: JsonRecord): Promi
   const rowType = cleanText(payload.row_type, 20);
   const id = cleanText(payload.record_id, 80);
   if (!id || !["today", "imported"].includes(rowType)) throw new Error("台账记录无效");
+  const rawAmount = cleanText(payload.amount, 40);
+  if (rawAmount && !/^\d+(?:\.\d{1,2})?$/.test(rawAmount)) throw new Error("金额最多保留两位小数");
+  const amount = Number(rawAmount || 0);
+  if (!Number.isFinite(amount) || amount < 0 || amount > 9999999999.99) throw new Error("金额超出允许范围");
   const common = {
     barber_name: cleanText(payload.barber_name, 120),
     technician_name: cleanText(payload.technician_name, 120),
     assistant_name: cleanText(payload.assistant_name, 120),
+    amount,
+    payment_summary: cleanText(payload.payment_summary, 500),
     updated_by: cleanText(session.username, 80),
     updated_at: new Date().toISOString(),
   };
