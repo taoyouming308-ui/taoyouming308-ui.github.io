@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v412 (2026-08-06)
+
+- 前台 `customer_search` 与 `customer_detail` 全部数据源改为使用设备会话解析出的当前门店：`customer_profiles.shop_name`、`mgj_service_records.shop_name` 和 `frontdesk_import_records.store` 均在服务端查询层精确过滤。
+- 客户主档内的 `card_packages` 与 `service_history` 增加内嵌门店复核；明确属于其他门店的套餐或消费行不会进入搜索余项数、套餐列表和消费时间线。
+- `customer_detail` 路由现在必须传入已复核的员工会话；普通前台/分店管理员不能用请求参数切换门店，总管理员仍按页面当前选择的门店读取。
+- 本次无数据库迁移，不修改客户、套餐、消费、历史导入原始行或美管加数据；新增前台回归断言覆盖搜索、详情、三类数据源及内嵌套餐/历史的门店边界。
+- `frontdesk-api` 已由生产 v11 更新为 v12，状态 `ACTIVE` 且 `verify_jwt=false`；下载的生产源码与仓库源码 SHA-256 完全一致。线上注册选项探针返回两个有效门店，未登录伪造门店的客户详情请求返回预期 HTTP 403“请重新登录”。
+- v412 本地完整回归已通过版本同步、发布完整性、更新流程、前台、预约、后台、客户档案、发质、护理、美感、收银边界与 39 项 Python 回归；`git diff --check` 通过。
+- App version: v412
+
 ## v411 (2026-08-06)
 
 - 补齐 v410 遗漏的“今日预约 → 编辑当天客户信息”入口：实际金额与金额说明可查看、回填和保存，并与客户数据表中的同一条 `frontdesk_today_customers` 记录保持一致。

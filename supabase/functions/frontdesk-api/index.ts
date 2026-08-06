@@ -334,16 +334,20 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
   return { saved: saved[0] };
 }
 
-function remainingPackageCount(value: unknown): number {
+function remainingPackageCount(value: unknown, store: string): number {
   const rows = Array.isArray(value) ? value : [];
   return rows.reduce((count, item) => {
     const pkg = (item || {}) as JsonRecord;
+    const packageStore = cleanText(pkg.shop ?? pkg.shop_name, 100);
+    if (packageStore && packageStore !== store) return count;
     const left = Number(pkg.left ?? pkg.remaining ?? pkg.leavetimes ?? 0) || 0;
     return count + (left > 0 ? 1 : 0);
   }, 0);
 }
 
 async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
   const query = cleanText(payload.query, 80);
   if (query.length < 2) throw new Error("至少输入两个字或两位手机号");
   const phone = cleanPhone(query);
@@ -357,8 +361,8 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
     ? `customer_phone=ilike.${encodeURIComponent(phoneSuffix ? `*${phoneSuffix}` : `*${phone}*`)}`
     : `customer_name=ilike.${like}`;
   const [profiles, imported] = await Promise.all([
-    restRows(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages&${profileFilter}&order=last_visit_date.desc.nullslast&limit=${searchLimit}`),
-    restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&order=visit_date.desc&limit=${searchLimit}`),
+    restRows(withStore(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages&${profileFilter}&order=last_visit_date.desc.nullslast&limit=${searchLimit}`, "shop_name", store)),
+    restRows(withStore(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&order=visit_date.desc&limit=${searchLimit}`, "store", store)),
   ]);
   const index = new Map<string, JsonRecord>();
   for (const row of profiles) {
@@ -371,7 +375,7 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
     current.last_visit = String(current.last_visit || "") > cleanText(row.last_visit_date, 40) ? current.last_visit : row.last_visit_date;
     current.visits = Number(current.visits || 0) + (Number(row.total_visits) || 0);
     current.consumption = Number(current.consumption || 0) + (Number(row.total_consumption) || 0);
-    current.remaining_packages = Number(current.remaining_packages || 0) + remainingPackageCount(row.card_packages);
+    current.remaining_packages = Number(current.remaining_packages || 0) + remainingPackageCount(row.card_packages, store);
     current.shops = Array.from(new Set([...(current.shops as unknown[]), row.shop_name].filter(Boolean)));
     current.sources = Array.from(new Set([...(current.sources as unknown[]), "美管加"]));
     index.set(key, current);
@@ -389,7 +393,7 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
   }
   const sortedResults = Array.from(index.values()).sort((a, b) => String(b.last_visit || "").localeCompare(String(a.last_visit || "")));
   const results = phoneSuffix ? sortedResults : sortedResults.slice(0, 60);
-  return { query, results, store: selectedStore(session, payload) };
+  return { query, results, store };
 }
 
 function parseArray(value: unknown): unknown[] {
@@ -400,12 +404,14 @@ function parseArray(value: unknown): unknown[] {
   return [];
 }
 
-function collectPackages(profiles: JsonRecord[]): JsonRecord[] {
+function collectPackages(profiles: JsonRecord[], store: string): JsonRecord[] {
   const seen = new Set<string>();
   const packages: JsonRecord[] = [];
   for (const profile of profiles) {
     for (const item of parseArray(profile.card_packages)) {
       const pkg = (item || {}) as JsonRecord;
+      const packageStore = cleanText(pkg.shop ?? pkg.shop_name, 100);
+      if (packageStore && packageStore !== store) continue;
       const left = Number(pkg.left ?? pkg.remaining ?? pkg.leavetimes ?? 0) || 0;
       const total = Number(pkg.total ?? pkg.sumtimes ?? 0) || 0;
       if (left <= 0) continue;
@@ -425,11 +431,13 @@ function collectPackages(profiles: JsonRecord[]): JsonRecord[] {
   return packages.sort((a, b) => Number(a.left) / Math.max(1, Number(a.total)) - Number(b.left) / Math.max(1, Number(b.total)));
 }
 
-function historyFromProfiles(profiles: JsonRecord[]): JsonRecord[] {
+function historyFromProfiles(profiles: JsonRecord[], store: string): JsonRecord[] {
   const history: JsonRecord[] = [];
   for (const profile of profiles) {
     for (const item of parseArray(profile.service_history)) {
       const row = (typeof item === "string" ? { items: [{ name: item }] } : (item || {})) as JsonRecord;
+      const historyStore = cleanText(row.shop ?? row.shop_name ?? profile.shop_name, 100);
+      if (historyStore && historyStore !== store) continue;
       const items = parseArray(row.items).map((project) => cleanText((project as JsonRecord)?.name ?? (project as JsonRecord)?.itemname ?? project, 200)).filter(Boolean);
       history.push({
         source: "美管加档案",
@@ -440,7 +448,7 @@ function historyFromProfiles(profiles: JsonRecord[]): JsonRecord[] {
         amount: Number(row.amount ?? row.consumefee ?? 0) || 0,
         staff: parseArray(row.staff).map((x) => cleanText(x, 100)).filter(Boolean),
         barber: row.barber || profile.barber_name || "",
-        shop: row.shop || profile.shop_name || "",
+        shop: historyStore,
         note: row.comment || "",
       });
     }
@@ -470,7 +478,9 @@ function selectCustomerRows(
   return matches.filter((row) => comparable && comparableCustomerName(row[nameField]) === comparable);
 }
 
-async function customerDetail(payload: JsonRecord): Promise<JsonRecord> {
+async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
   const phone = cleanPhone(payload.phone);
   const name = cleanText(payload.name, 160);
   if (!phone && !name) throw new Error("缺少客户信息");
@@ -484,14 +494,14 @@ async function customerDetail(payload: JsonRecord): Promise<JsonRecord> {
     ? `customer_phone=ilike.${encodeURIComponent(`*${phone}*`)}`
     : `customer_name=eq.${encodeURIComponent(name)}`;
   const [profileRows, liveRows, importedRows] = await Promise.all([
-    restRows(`customer_profiles?select=*&${profileFilter}&order=last_visit_date.desc.nullslast&limit=200`),
-    restRows(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&order=service_date.desc,service_time.desc&limit=1000`),
-    restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${importedFilter}&order=visit_date.desc&limit=2000`),
+    restRows(withStore(`customer_profiles?select=*&${profileFilter}&order=last_visit_date.desc.nullslast&limit=200`, "shop_name", store)),
+    restRows(withStore(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&order=service_date.desc,service_time.desc&limit=1000`, "shop_name", store)),
+    restRows(withStore(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${importedFilter}&order=visit_date.desc&limit=2000`, "store", store)),
   ]);
   const profiles = selectCustomerRows(profileRows, phone, name, "phone", "name");
   const live = selectCustomerRows(liveRows, phone, name, "customer_phone", "customer_name");
   const imported = selectCustomerRows(importedRows, phone, name, "customer_phone", "customer_name");
-  const history = historyFromProfiles(profiles);
+  const history = historyFromProfiles(profiles, store);
   for (const row of live) {
     history.push({
       source: "美管加实时",
@@ -535,10 +545,11 @@ async function customerDetail(payload: JsonRecord): Promise<JsonRecord> {
     (Number(row.total_visits) || Number(row.total_consumption)) && parseArray(row.service_history).length === 0
   ).length;
   return {
+    store,
     customer: { phone, name: name || profiles[0]?.name || imported[0]?.customer_name || "未命名客户" },
     summary,
     historical_import: { rows: imported.length, amount: imported.reduce((sum, row) => sum + (Number(row.amount) || 0), 0) },
-    packages: collectPackages(profiles),
+    packages: collectPackages(profiles, store),
     timeline,
     notes: profiles.map((row) => cleanText(row.notes, 500)).filter(Boolean),
     data_quality: {
@@ -808,7 +819,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "dashboard") return json(await dashboard(payload, session));
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "customer_search") return json(await customerSearch(payload, session));
-    if (operation === "customer_detail") return json(await customerDetail(payload));
+    if (operation === "customer_detail") return json(await customerDetail(payload, session));
     if (operation === "import_rows") return json(await importRows(payload, session));
     if (operation === "import_batches") return json(await importBatches(session));
     if (operation === "ledger_records") return json(await ledgerRecords(payload, session));
