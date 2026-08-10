@@ -13,6 +13,7 @@
 - `aesthetic-knowledge.v1.js`、`hair-vision-training.v1.js`、`aesthetic-growth.v2.js` 的页面缓存标记统一为 v414，外部脚本源码未修改。
 - `operations-api` 生产 version 1 状态 `ACTIVE`，自定义会话所以 `verify_jwt=false`；未登录 session 探针返回预期 HTTP 403“请重新登录”。生产核验四表 RLS=true、浏览器角色无表权限、私有桶存在、费用和凭证均为 0 条，未造测试业务数据。
 - Supabase 顾问未报告本次对象的新 ERROR；四张服务端专用表的“RLS 开启但无策略” INFO 符合 service-role 网关设计。项目旧公共表的既有 RLS ERROR 仍需单独无停机迁移，本次未扩大处理。
+- v414 功能提交 `b79c66b` 已推送 GitHub `main`；完整 pre-push 两次通过版本、发布完整性、员工端、前台、预约、后台、护理、美感、经营驾驶舱、48 项美管加 Python 回归及 Agent 状态。GitHub Pages 已返回 `operations.html` HTTP 200、`data-version=414`，正式入口为 `https://taoyouming308-ui.github.io/operations.html`。
 - App version: v414
 
 ## v412 runtime maintenance (2026-08-06)
