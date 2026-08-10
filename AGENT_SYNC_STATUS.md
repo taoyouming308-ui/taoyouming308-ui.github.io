@@ -1,5 +1,20 @@
 # Agent Sync Status
 
+## v414 ZYSYR 经营驾驶舱（2026-08-10）
+
+- 新增根目录 `operations.html`，作为非 Sites 的独立经营入口；复用 `staff` 登录，股东可切换有效门店，财务/店长锁定所属门店，员工只返回本人参与的美管加已同步流水。
+- 新增 `operations-api` 自定义 30 天会话，每次请求重新校验在职状态和最新角色/门店；浏览器仅持有 publishable key，服务角色密钥只在 Edge Function 环境中。
+- 收入只读来自 `mgj_service_records`，费用、历史费用导入和凭证写入 ZYSYR 独立表；不调用美管加付款、退款、充值或收银写接口。
+- 生产已登记迁移 `20260810022101_zysyr_operations_foundation.sql`，增加门店、经营会话、费用和凭证元数据表，并建立私有 `zysyr-vouchers` 桶；四表均启用 RLS、撤销 public/anon/authenticated 并显式授权 service_role。
+- 线上修改前只读核对：向里造型有 12 个在职账号、228 条已同步消费；自由手艺人有 12 个在职账号、836 条已同步消费；目标凭证桶原先不存在。
+- 修改前备份：`ZYSYR_2026-08-10_092541.tar.gz` 已生成并复制到 iCloud。未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不会纳入提交。
+- 本轮基于 GitHub `main` 的 v413；该版本遗漏协作状态记录，本条同时恢复 `App version: v414` 的同步检查要求。
+- `frontdesk.html` 的旧 v412 页面标记同步提升到 v414；本次没有修改其客户、预约、导入或收银逻辑。
+- `aesthetic-knowledge.v1.js`、`hair-vision-training.v1.js`、`aesthetic-growth.v2.js` 的页面缓存标记统一为 v414，外部脚本源码未修改。
+- `operations-api` 生产 version 1 状态 `ACTIVE`，自定义会话所以 `verify_jwt=false`；未登录 session 探针返回预期 HTTP 403“请重新登录”。生产核验四表 RLS=true、浏览器角色无表权限、私有桶存在、费用和凭证均为 0 条，未造测试业务数据。
+- Supabase 顾问未报告本次对象的新 ERROR；四张服务端专用表的“RLS 开启但无策略” INFO 符合 service-role 网关设计。项目旧公共表的既有 RLS ERROR 仍需单独无停机迁移，本次未扩大处理。
+- App version: v414
+
 ## v412 runtime maintenance (2026-08-06)
 
 - 美管加客户/预约同步增加受限网络重试和 105 秒运行预算；客户每批总量继续固定为 8，不恢复曾超时的 20 人批次。

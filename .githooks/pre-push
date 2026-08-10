@@ -14,6 +14,7 @@ node scripts/test-customer-archive-rendering.js || exit 1
 node scripts/test-admin-workflow.js || exit 1
 node scripts/test-booking-ui.js || exit 1
 node scripts/test-frontdesk.js || exit 1
+node scripts/test-operations.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1

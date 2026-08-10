@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN" data-version="414">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#102c2b">
+  <title>ZYSYR 经营驾驶舱</title>
+  <style>
+    :root{--ink:#18302f;--muted:#687674;--paper:#f5f1e8;--card:#fffdf8;--line:#ded7c8;--green:#0d6158;--gold:#b38a3c;--red:#a33a2c;--blue:#2d5f7c;--shadow:0 14px 40px rgba(24,48,47,.09)}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+    .login-shell{min-height:100vh;display:grid;place-items:center;padding:28px;background:radial-gradient(circle at 10% 15%,#d8e8df 0,transparent 31%),radial-gradient(circle at 90% 80%,#ead9b6 0,transparent 32%),#f5f1e8}.login-card{width:min(430px,100%);padding:38px;border:1px solid rgba(24,48,47,.12);border-radius:28px;background:rgba(255,253,248,.94);box-shadow:var(--shadow)}.brand{display:flex;align-items:center;gap:14px;margin-bottom:24px}.mark{width:52px;height:52px;border-radius:18px;display:grid;place-items:center;background:var(--ink);color:#f3d99b;font-weight:800;letter-spacing:1px}.brand h1{font-size:24px;margin:0}.brand p{margin:5px 0 0;color:var(--muted);font-size:13px}.field{display:grid;gap:7px;margin:14px 0}.field label{font-size:13px;color:var(--muted);font-weight:650}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:11px 12px;color:var(--ink)}.field textarea{min-height:92px;resize:vertical}.primary,.secondary,.danger,.ghost{border:0;border-radius:12px;padding:10px 15px;font-weight:700}.primary{background:var(--green);color:white}.secondary{background:#e9e2d3;color:var(--ink)}.danger{background:#f5dfda;color:var(--red)}.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}.login-card .primary{width:100%;margin-top:8px}.boundary{margin-top:18px;padding:12px 14px;border-radius:12px;background:#edf4f1;color:#315e58;font-size:12px;line-height:1.6}
+    .app{min-height:100vh}.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:14px 22px;background:rgba(16,44,43,.96);color:white;box-shadow:0 3px 14px rgba(0,0,0,.12)}.topbar .mark{width:39px;height:39px;border-radius:12px;background:#f3d99b;color:#163b38;font-size:12px}.top-title{min-width:190px}.top-title strong{display:block}.top-title span{font-size:11px;color:#bad1cc}.toolbar{margin-left:auto;display:flex;gap:9px;align-items:center;flex-wrap:wrap}.toolbar select,.toolbar input{border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px 10px;background:#204845;color:white}.toolbar input{width:132px}.toolbar button{padding:8px 11px}.shell{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:calc(100vh - 67px)}.sidebar{padding:24px 14px;border-right:1px solid var(--line);background:#eee9df}.nav{display:grid;gap:7px}.nav button{border:0;text-align:left;border-radius:12px;padding:12px 14px;background:transparent;color:#596461}.nav button.active{background:var(--ink);color:white}.user-card{margin-top:22px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);font-size:12px;line-height:1.7}.content{padding:25px;min-width:0}.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.page-head h2{margin:0;font-size:23px}.page-head p{margin:6px 0 0;color:var(--muted);font-size:13px}.status{font-size:12px;color:var(--muted)}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.kpi{appearance:none;text-align:left;border:1px solid var(--line);border-radius:18px;background:var(--card);padding:18px;box-shadow:0 4px 18px rgba(24,48,47,.04)}.kpi small{display:block;color:var(--muted);margin-bottom:10px}.kpi strong{font-size:26px}.kpi em{display:block;margin-top:8px;font-style:normal;font-size:11px;color:var(--muted)}.kpi.alert{border-color:#d7998d;background:#fff5f1}.kpi.alert strong{color:var(--red)}.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.75fr);gap:16px;margin-top:16px}.panel{border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:0 4px 18px rgba(24,48,47,.035);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}.panel-head h3{margin:0;font-size:15px}.panel-body{padding:16px 18px}.trend{height:180px;display:flex;gap:6px;align-items:flex-end;border-bottom:1px solid var(--line);padding-top:20px}.trend-day{flex:1;min-width:5px;display:flex;gap:2px;align-items:flex-end;height:100%}.bar{width:50%;border-radius:4px 4px 0 0;min-height:2px}.bar.income{background:#3d8b75}.bar.expense{background:#c77b69}.legend{display:flex;gap:14px;margin-top:12px;color:var(--muted);font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}.performance{display:grid;gap:12px}.person{display:grid;grid-template-columns:minmax(70px,1fr) 2fr auto;gap:9px;align-items:center;font-size:12px}.person-track{height:8px;border-radius:99px;background:#ebe6dc;overflow:hidden}.person-bar{height:100%;background:linear-gradient(90deg,var(--green),#5f9c8d);border-radius:99px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}.filters button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 11px;color:var(--muted)}.filters button.active{background:var(--ink);color:white;border-color:var(--ink)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--card)}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:12px 14px;text-align:left;border-bottom:1px solid #ece7dc;font-size:12px}th{position:sticky;top:0;background:#f2eee5;color:var(--muted);font-weight:650}tr.record{cursor:pointer}tr.record:hover{background:#f6f4ed}.money.income{color:var(--green);font-weight:750}.money.expense{color:var(--red);font-weight:750}.tag{display:inline-block;padding:4px 7px;border-radius:999px;background:#e7efed;color:#37665f;font-size:10px}.tag.missing{background:#f7dfd9;color:var(--red);font-weight:800}.empty{padding:42px;text-align:center;color:var(--muted)}
+    .form-card{max-width:760px;padding:23px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 15px}.wide{grid-column:1/-1}.help{font-size:11px;line-height:1.6;color:var(--muted)}.actions{display:flex;gap:10px;margin-top:18px}.import-box{padding:18px;border:1px dashed #a79e8b;border-radius:15px;background:#faf8f2}.import-preview{margin-top:14px;font-size:12px;white-space:pre-wrap;color:var(--muted)}
+    .drawer-backdrop{position:fixed;inset:0;z-index:50;background:rgba(9,22,22,.38);display:flex;justify-content:flex-end}.drawer{height:100%;width:min(500px,94vw);background:var(--card);box-shadow:-14px 0 40px rgba(0,0,0,.18);padding:24px;overflow:auto}.drawer-head{display:flex;justify-content:space-between;align-items:center}.drawer h3{margin:0}.detail-list{display:grid;grid-template-columns:110px 1fr;gap:10px;margin:22px 0;font-size:13px}.detail-list dt{color:var(--muted)}.detail-list dd{margin:0;word-break:break-word}.voucher-box{padding:15px;border-radius:14px;background:#f0ece2}.toast{position:fixed;left:50%;bottom:26px;z-index:80;transform:translateX(-50%);padding:11px 16px;border-radius:12px;background:#18302f;color:white;box-shadow:var(--shadow);font-size:13px}.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(9,22,22,.42)}.modal-card{width:min(430px,100%);padding:22px;border-radius:18px;background:var(--card)}
+    @media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid var(--line);padding:10px;position:sticky;top:67px;z-index:15}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.user-card{display:none}.kpis{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.content{padding:16px}.top-title{min-width:0}.toolbar{width:100%;margin-left:0}.topbar{flex-wrap:wrap}.sidebar{top:123px}}
+    @media(max-width:560px){.kpis{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.toolbar select{max-width:145px}.page-head{display:block}.content{padding:12px}}
+  </style>
+</head>
+<body>
+  <section id="login" class="login-shell">
+    <form id="login-form" class="login-card">
+      <div class="brand"><div class="mark">ZYSYR</div><div><h1>经营驾驶舱</h1><p>多门店透明经营 · 数字追溯到原始明细</p></div></div>
+      <div class="field"><label for="login-name">员工账号</label><input id="login-name" autocomplete="username" required></div>
+      <div class="field"><label for="login-pass">密码</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
+      <button class="primary" type="submit">安全登录</button>
+      <div id="login-error" class="help" style="color:var(--red);margin-top:10px"></div>
+      <div class="boundary">收入来自美管加已同步消费，只读展示；费用、历史导入和凭证保存在独立经营账。本系统不执行付款、退款、充值或自动收银。</div>
+    </form>
+  </section>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="mark">ZYSYR</div><div class="top-title"><strong>经营驾驶舱</strong><span>V1.0 · 可追溯经营数据</span></div>
+      <div class="toolbar">
+        <select id="store-select" aria-label="选择门店"></select>
+        <input id="month" type="month" aria-label="统计月份">
+        <button id="refresh" class="secondary">刷新</button>
+        <button id="new-store" class="ghost hidden">＋ 门店</button>
+      </div>
+    </header>
+    <div class="shell">
+      <aside class="sidebar">
+        <nav class="nav">
+          <button data-view="dashboard" class="active">经营总览</button>
+          <button data-view="records">收支明细</button>
+          <button data-view="expense" class="write-only">费用录入</button>
+          <button data-view="import" class="write-only">历史导入</button>
+        </nav>
+        <div id="user-card" class="user-card"></div>
+      </aside>
+      <main class="content">
+        <section id="view-dashboard" class="view">
+          <div class="page-head"><div><h2 id="overview-title">本月经营概览</h2><p id="overview-note">所有数字均可点击查看明细与来源。</p></div><span id="sync-status" class="status"></span></div>
+          <div class="kpis">
+            <button class="kpi" data-filter="income"><small id="income-label">营业收入</small><strong id="kpi-income">¥0</strong><em>美管加已同步消费 · 只读</em></button>
+            <button class="kpi" data-filter="expense"><small>经营费用</small><strong id="kpi-expense">¥0</strong><em>独立经营账 · 点击看凭证</em></button>
+            <button class="kpi" data-filter="all"><small>经营结余</small><strong id="kpi-profit">¥0</strong><em>收入 − 已录费用</em></button>
+            <button class="kpi alert" data-filter="missing"><small>即时待补凭证</small><strong id="kpi-missing">0</strong><em>应优先补齐，确保可追溯</em></button>
+          </div>
+          <div class="grid">
+            <section class="panel"><div class="panel-head"><h3>每日收支趋势</h3><span class="status">绿：收入　红：费用</span></div><div class="panel-body"><div id="trend" class="trend"></div><div class="legend"><span><i class="dot" style="background:#3d8b75"></i>收入</span><span><i class="dot" style="background:#c77b69"></i>费用</span></div></div></section>
+            <section class="panel"><div class="panel-head"><h3 id="performance-title">员工业绩</h3><span class="status">按参与流水</span></div><div id="performance" class="panel-body performance"></div></section>
+          </div>
+          <section class="panel" style="margin-top:16px"><div class="panel-head"><h3>最近明细</h3><button class="ghost" onclick="showView('records')">查看全部</button></div><div id="recent" class="panel-body"></div></section>
+        </section>
+
+        <section id="view-records" class="view hidden">
+          <div class="page-head"><div><h2>收支明细</h2><p>点击任意记录查看美管加单号、录入人和私有凭证。</p></div></div>
+          <div class="filters"><button data-record-filter="all" class="active">全部</button><button data-record-filter="income">收入</button><button data-record-filter="expense">费用</button><button data-record-filter="missing">待补凭证</button></div>
+          <div id="records"></div>
+        </section>
+
+        <section id="view-expense" class="view hidden">
+          <div class="page-head"><div><h2>费用录入</h2><p>先保存经营费用，再把图片或 PDF 凭证存入私有凭证中心。</p></div></div>
+          <form id="expense-form" class="form-card">
+            <div class="form-grid">
+              <div class="field"><label>发生日期</label><input id="expense-date" type="date" required></div>
+              <div class="field"><label>费用类别</label><select id="expense-category" required><option value="">请选择</option><option>房租物业</option><option>员工工资</option><option>产品耗材</option><option>市场推广</option><option>水电杂费</option><option>设备维护</option><option>其他费用</option></select></div>
+              <div class="field"><label>金额（元）</label><input id="expense-amount" inputmode="decimal" placeholder="0.00" required></div>
+              <div class="field"><label>支付方式</label><input id="expense-method" placeholder="银行转账 / 微信 / 现金"></div>
+              <div class="field wide"><label>摘要</label><input id="expense-summary" placeholder="说明这笔费用用于什么" required></div>
+              <div class="field wide"><label>收款方 / 对方单位</label><input id="expense-counterparty" placeholder="可选"></div>
+              <div class="field wide"><label>原始凭证（推荐同时上传）</label><input id="expense-file" type="file" accept="image/jpeg,image/png,application/pdf"><span class="help">JPG、PNG 或 PDF，最大 10MB。未上传会进入醒目的“即时待补凭证”。</span></div>
+            </div>
+            <div class="actions"><button class="primary" type="submit">保存费用</button><button class="secondary" type="reset">清空</button></div>
+          </form>
+        </section>
+
+        <section id="view-import" class="view hidden">
+          <div class="page-head"><div><h2>历史费用导入</h2><p>适合把旧表格导出为 CSV 后一次导入；重复内容会自动跳过，不覆盖历史。</p></div></div>
+          <div class="form-card">
+            <div class="import-box"><div class="field"><label>选择 CSV（单次最多 250 行）</label><input id="import-file" type="file" accept=".csv,text/csv"></div><div class="help">列名：日期、类别、金额、摘要、收款方、支付方式。日期使用 YYYY-MM-DD。</div><div class="actions"><button id="download-template" class="secondary">下载模板</button><button id="run-import" class="primary">校验并导入</button></div></div>
+            <div id="import-preview" class="import-preview"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="drawer-backdrop" class="drawer-backdrop hidden" onclick="if(event.target===this)closeDrawer()"><aside class="drawer"><div class="drawer-head"><h3>经营明细</h3><button class="ghost" onclick="closeDrawer()">关闭</button></div><div id="drawer-content"></div></aside></div>
+  <div id="store-modal" class="modal hidden"><form id="store-form" class="modal-card"><div class="drawer-head"><h3>新增门店</h3><button type="button" class="ghost" onclick="toggleStoreModal(false)">关闭</button></div><div class="field"><label>门店名称</label><input id="store-name" required></div><div class="field"><label>城市 / 区域</label><input id="store-city"></div><button class="primary" type="submit">创建门店</button></form></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+  var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
+  var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+  var API=SUPABASE_URL+'/functions/v1/operations-api';
+  var state={session:localStorage.getItem('zysyr-operations-session-v1')||'',user:null,data:null,view:'dashboard',filter:'all'};
+  function $(id){return document.getElementById(id)}
+  function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]})}
+  function money(value){return '¥'+Number(value||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+  function toast(message){$('toast').textContent=message;$('toast').classList.remove('hidden');setTimeout(function(){$('toast').classList.add('hidden')},2600)}
+  async function api(operation,payload){var response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify(Object.assign({operation:operation,session_token:state.session},payload||{}))});var data=await response.json().catch(function(){return{error:'服务响应无效'}});if(!response.ok)throw new Error(data.error||'请求失败');return data}
+  function monthRange(){var value=$('month').value;var parts=value.split('-');var last=new Date(Number(parts[0]),Number(parts[1]),0).getDate();return{start:value+'-01',end:value+'-'+String(last).padStart(2,'0')}}
+  function currentStore(){return $('store-select').value||state.user.store||''}
+  function showLogin(message){state.session='';state.user=null;localStorage.removeItem('zysyr-operations-session-v1');$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=message||''}
+  function showApp(){
+    $('login').classList.add('hidden');$('app').classList.remove('hidden');
+    var stores=state.user.stores||[];$('store-select').innerHTML=stores.map(function(store){return'<option>'+esc(store)+'</option>'}).join('');
+    if(state.user.store&&stores.indexOf(state.user.store)>=0)$('store-select').value=state.user.store;
+    $('store-select').disabled=stores.length<2;
+    $('new-store').classList.toggle('hidden',!state.user.can_create_store);
+    document.querySelectorAll('.write-only').forEach(function(el){el.classList.toggle('hidden',!state.user.can_write_expense)});
+    $('user-card').innerHTML='<strong>'+esc(state.user.username)+'</strong><br>'+esc(state.user.role_label)+' · '+esc(state.user.position||'未填写岗位')+'<br>'+esc(state.user.personal_scope?'仅本人参与流水':(state.user.store||'集团视角'))+'<br><button class="ghost" style="margin-top:9px" onclick="logout()">退出登录</button>';
+    $('income-label').textContent=state.user.personal_scope?'本人参与流水':'营业收入';
+    $('overview-note').textContent=state.user.personal_scope?'仅展示本人参与的美管加已同步流水；不展示门店费用。':'所有数字均可点击查看明细与来源。';
+  }
+  async function restoreSession(){if(!state.session){showLogin();return}try{var result=await api('session');state.user=result.user;showApp();await loadOverview()}catch(error){showLogin(error.message)}}
+  $('login-form').addEventListener('submit',async function(event){event.preventDefault();$('login-error').textContent='正在验证…';try{var result=await api('login',{username:$('login-name').value.trim(),password:$('login-pass').value});state.session=result.session_token;state.user=result.user;localStorage.setItem('zysyr-operations-session-v1',state.session);$('login-pass').value='';showApp();await loadOverview()}catch(error){$('login-error').textContent=error.message}});
+  async function logout(){try{await api('logout')}catch(_){}showLogin('已安全退出')}
+  function showView(name){if((name==='expense'||name==='import')&&!state.user.can_write_expense)return;state.view=name;document.querySelectorAll('.view').forEach(function(el){el.classList.add('hidden')});$('view-'+name).classList.remove('hidden');document.querySelectorAll('[data-view]').forEach(function(el){el.classList.toggle('active',el.dataset.view===name)})}
+  document.querySelectorAll('[data-view]').forEach(function(el){el.addEventListener('click',function(){showView(el.dataset.view)})});
+  async function loadOverview(){var range=monthRange();$('sync-status').textContent='读取中…';try{state.data=await api('overview',{store:currentStore(),start:range.start,end:range.end});renderAll();$('sync-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(error){$('sync-status').textContent=error.message;if(/登录|账号|离职/.test(error.message))showLogin(error.message)}}
+  function renderAll(){var data=state.data||{summary:{},records:[],daily:[],performance:[]};$('overview-title').textContent=$('month').value.replace('-','年')+'月经营概览';$('kpi-income').textContent=money(data.summary.income);$('kpi-expense').textContent=money(data.summary.expense);$('kpi-profit').textContent=money(data.summary.profit);$('kpi-missing').textContent=data.summary.pending_vouchers||0;renderTrend(data.daily||[]);renderPerformance(data.performance||[]);renderRecent();renderRecords()}
+  function renderTrend(rows){var max=Math.max(1,...rows.map(function(row){return Math.max(row.income,row.expense)}));$('trend').innerHTML=rows.length?rows.map(function(row){return'<div class="trend-day" title="'+esc(row.date)+' 收入 '+money(row.income)+' / 费用 '+money(row.expense)+'"><i class="bar income" style="height:'+Math.max(2,row.income/max*100)+'%"></i><i class="bar expense" style="height:'+Math.max(2,row.expense/max*100)+'%"></i></div>'}).join(''):'<div class="empty" style="width:100%">本月暂无数据</div>'}
+  function renderPerformance(rows){var max=Math.max(1,...rows.map(function(row){return row.amount}));$('performance').innerHTML=rows.length?rows.slice(0,8).map(function(row){return'<div class="person"><strong>'+esc(row.name)+'</strong><div class="person-track"><div class="person-bar" style="width:'+Math.max(3,row.amount/max*100)+'%"></div></div><span>'+money(row.amount)+' · '+row.orders+'单</span></div>'}).join(''):'<div class="empty">暂无参与员工数据</div>'}
+  function recordRows(rows){if(!rows.length)return'<div class="empty">该范围暂无记录</div>';return'<div class="table-wrap"><table><thead><tr><th>日期</th><th>类型</th><th>摘要 / 客户</th><th>金额</th><th>来源</th><th>凭证</th></tr></thead><tbody>'+rows.map(function(row){return'<tr class="record" data-record-id="'+esc(row.type+':'+row.id)+'"><td>'+esc(row.date)+'</td><td><span class="tag">'+(row.type==='income'?'收入':'费用')+'</span></td><td>'+esc(row.title)+'</td><td class="money '+esc(row.type)+'">'+(row.type==='income'?'+':'−')+money(row.amount)+'</td><td>'+esc(row.source)+'</td><td>'+(row.type==='income'?(row.source_ref?'原单号':'同步明细'):(row.voucher?'<span class="tag">已上传</span>':'<span class="tag missing">即时待补</span>'))+'</td></tr>'}).join('')+'</tbody></table></div>'}
+  function bindRecordRows(root){root.querySelectorAll('[data-record-id]').forEach(function(el){el.addEventListener('click',function(){var key=el.dataset.recordId;var row=(state.data.records||[]).find(function(item){return item.type+':'+item.id===key});if(row)openRecord(row)})})}
+  function renderRecent(){var root=$('recent');root.innerHTML=recordRows((state.data.records||[]).slice(0,6));bindRecordRows(root)}
+  function filteredRecords(){var rows=(state.data&&state.data.records)||[];if(state.filter==='missing')return rows.filter(function(row){return row.type==='expense'&&!row.voucher});if(state.filter==='all')return rows;return rows.filter(function(row){return row.type===state.filter})}
+  function renderRecords(){var root=$('records');root.innerHTML=recordRows(filteredRecords());bindRecordRows(root);document.querySelectorAll('[data-record-filter]').forEach(function(el){el.classList.toggle('active',el.dataset.recordFilter===state.filter)})}
+  document.querySelectorAll('[data-record-filter]').forEach(function(el){el.addEventListener('click',function(){state.filter=el.dataset.recordFilter;renderRecords()})});
+  document.querySelectorAll('[data-filter]').forEach(function(el){el.addEventListener('click',function(){state.filter=el.dataset.filter;showView('records');renderRecords()})});
+  function stringifyItems(value){if(!value)return'—';if(Array.isArray(value))return value.map(function(item){return typeof item==='object'?(item.name||item.item_name||JSON.stringify(item)):item}).join('、');return typeof value==='object'?JSON.stringify(value):String(value)}
+  function openRecord(row){var isExpense=row.type==='expense';var html='<dl class="detail-list"><dt>日期</dt><dd>'+esc(row.date)+'</dd><dt>类型</dt><dd>'+(isExpense?'经营费用':'营业收入')+'</dd><dt>金额</dt><dd class="money '+esc(row.type)+'">'+money(row.amount)+'</dd><dt>摘要</dt><dd>'+esc(row.title)+'</dd><dt>数据来源</dt><dd>'+esc(row.source)+'</dd>'+(isExpense?'<dt>费用类别</dt><dd>'+esc(row.category||'—')+'</dd><dt>收款方</dt><dd>'+esc(row.counterparty||'—')+'</dd><dt>录入人</dt><dd>'+esc(row.created_by||'—')+'</dd>':'<dt>美管加单号</dt><dd>'+esc(row.source_ref||'—')+'</dd><dt>参与员工</dt><dd>'+esc((row.staff||[]).join('、')||'—')+'</dd><dt>项目明细</dt><dd>'+esc(stringifyItems(row.items))+'</dd><dt>同步时间</dt><dd>'+esc(row.synced_at||'—')+'</dd>')+'</dl>';
+    if(row.voucher){html+='<div class="voucher-box"><strong>原始凭证</strong><p>'+esc(row.voucher.original_filename)+' · 上传人 '+esc(row.voucher.uploaded_by)+'</p><button class="primary" data-open-voucher="'+esc(row.voucher.id)+'">打开私有凭证</button></div>'}else if(isExpense&&state.user.can_write_expense){html+='<div class="voucher-box"><strong style="color:var(--red)">即时待补凭证</strong><p class="help">补齐 JPG、PNG 或 PDF 后，这笔费用才具备完整追溯链。</p><input id="detail-file" type="file" accept="image/jpeg,image/png,application/pdf"><button class="primary" style="margin-top:10px" data-attach-expense="'+esc(row.id)+'">上传并关联</button></div>'}
+    $('drawer-content').innerHTML=html;$('drawer-backdrop').classList.remove('hidden');var open=$('drawer-content').querySelector('[data-open-voucher]');if(open)open.addEventListener('click',function(){openVoucher(open.dataset.openVoucher)});var attach=$('drawer-content').querySelector('[data-attach-expense]');if(attach)attach.addEventListener('click',function(){attachVoucher(attach.dataset.attachExpense,$('detail-file').files[0])})}
+  function closeDrawer(){$('drawer-backdrop').classList.add('hidden')}
+  function fileBase64(file){return new Promise(function(resolve,reject){var reader=new FileReader();reader.onerror=function(){reject(new Error('文件读取失败'))};reader.onload=function(){resolve(String(reader.result).split(',')[1]||'')};reader.readAsDataURL(file)})}
+  async function uploadVoucher(recordId,file){if(!file)throw new Error('请先选择凭证文件');if(file.size>10*1024*1024)throw new Error('凭证文件不能超过 10MB');return api('voucher_upload',{store:currentStore(),record_type:'expense',record_id:recordId,filename:file.name,mime_type:file.type,base64:await fileBase64(file)})}
+  async function attachVoucher(recordId,file){try{toast('正在上传私有凭证…');await uploadVoucher(recordId,file);closeDrawer();await loadOverview();toast('凭证已安全关联')}catch(error){toast(error.message)}}
+  async function openVoucher(id){var target=window.open('about:blank','_blank');if(target)target.opener=null;try{var result=await api('voucher_url',{store:currentStore(),voucher_id:id});if(target)target.location=result.url;else window.location.href=result.url}catch(error){if(target)target.close();toast(error.message)}}
+  $('expense-form').addEventListener('submit',async function(event){event.preventDefault();var button=event.submitter;button.disabled=true;try{var result=await api('expense_save',{store:currentStore(),expense_date:$('expense-date').value,category:$('expense-category').value,amount:$('expense-amount').value,summary:$('expense-summary').value.trim(),counterparty:$('expense-counterparty').value.trim(),payment_method:$('expense-method').value.trim()});var file=$('expense-file').files[0],voucherError='';if(file){try{await uploadVoucher(result.saved.id,file)}catch(error){voucherError=error.message}}event.target.reset();$('expense-date').value=new Date().toISOString().slice(0,10);await loadOverview();showView('records');state.filter=voucherError||!file?'missing':'expense';renderRecords();toast(voucherError?'费用已保存；凭证上传失败，请在待补队列重试':(file?'费用和凭证已保存':'费用已保存，请尽快补凭证'))}catch(error){toast(error.message)}finally{button.disabled=false}});
+  function parseCsv(text){var rows=[],row=[],cell='',quoted=false;for(var i=0;i<text.length;i++){var ch=text[i];if(ch==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++}else quoted=!quoted}else if(ch===','&&!quoted){row.push(cell.trim());cell=''}else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell.trim());if(row.some(Boolean))rows.push(row);row=[];cell=''}else cell+=ch}row.push(cell.trim());if(row.some(Boolean))rows.push(row);return rows}
+  function importRowsFromCsv(text){var rows=parseCsv(text);if(rows.length<2)throw new Error('CSV 没有可导入的数据');var headers=rows[0].map(function(item){return item.replace(/^\ufeff/,'')});function value(row,names){for(var i=0;i<names.length;i++){var index=headers.indexOf(names[i]);if(index>=0)return row[index]||''}return''}return rows.slice(1).filter(function(row){return row.some(Boolean)}).map(function(row){return{expense_date:value(row,['日期','发生日期','expense_date']),category:value(row,['类别','费用类别','category']),amount:value(row,['金额','amount']),summary:value(row,['摘要','说明','summary']),counterparty:value(row,['收款方','对方单位','counterparty']),payment_method:value(row,['支付方式','payment_method'])}})}
+  $('run-import').addEventListener('click',async function(event){event.preventDefault();var file=$('import-file').files[0];if(!file){toast('请选择 CSV 文件');return}try{var rows=importRowsFromCsv(await file.text());if(rows.length>250)throw new Error('单次最多导入 250 行');$('import-preview').textContent='已识别 '+rows.length+' 行，正在校验并写入…';var result=await api('expense_import',{store:currentStore(),filename:file.name,rows:rows});$('import-preview').textContent='完成：提交 '+result.submitted+' 行，新增 '+result.imported+' 行，重复跳过 '+result.duplicates+' 行。';await loadOverview();toast('历史费用导入完成')}catch(error){$('import-preview').textContent='导入未执行：'+error.message}});
+  $('download-template').addEventListener('click',function(event){event.preventDefault();var content='日期,类别,金额,摘要,收款方,支付方式\n2026-08-01,房租物业,1000.00,示例费用,示例单位,银行转账\n';var link=document.createElement('a');link.href=URL.createObjectURL(new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8'}));link.download='ZYSYR_历史费用导入模板.csv';link.click();URL.revokeObjectURL(link.href)});
+  function toggleStoreModal(show){$('store-modal').classList.toggle('hidden',!show)}$('new-store').addEventListener('click',function(){toggleStoreModal(true)});$('store-form').addEventListener('submit',async function(event){event.preventDefault();try{await api('store_create',{name:$('store-name').value.trim(),city:$('store-city').value.trim()});toggleStoreModal(false);var result=await api('session');state.user=result.user;showApp();$('store-select').value=$('store-name').value.trim();await loadOverview();event.target.reset();toast('新门店已创建')}catch(error){toast(error.message)}});
+  $('refresh').addEventListener('click',loadOverview);$('store-select').addEventListener('change',loadOverview);$('month').addEventListener('change',loadOverview);
+  $('month').value=new Date().toISOString().slice(0,7);$('expense-date').value=new Date().toISOString().slice(0,10);restoreSession();
+  </script>
+</body>
+</html>

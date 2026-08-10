@@ -46,6 +46,8 @@ jobs:
         run: node scripts/test-booking-ui.js
       - name: Protect iPad frontdesk customer center
         run: node scripts/test-frontdesk.js
+      - name: Protect ZYSYR operations dashboard
+        run: node scripts/test-operations.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance
