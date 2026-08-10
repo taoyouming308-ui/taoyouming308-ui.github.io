@@ -202,6 +202,22 @@ function staffNames(value: unknown): string[] {
   return text.split(/[,，、/]/).map((item) => item.trim()).filter(Boolean);
 }
 
+function isHairstylistPosition(value) {
+  return String(value || "").split(/[,，、/]/).some((item) => item.trim() === "发型师");
+}
+
+function resolvePrimaryHairstylist(serviceStaff, hairstylists) {
+  for (const rawName of serviceStaff) {
+    const name = String(rawName || "").trim();
+    if (!name) continue;
+    const exact = hairstylists.find((candidate) => candidate === name);
+    if (exact) return exact;
+    const matches = hairstylists.filter((candidate) => name.endsWith(candidate) || candidate.endsWith(name));
+    if (matches.length === 1) return matches[0];
+  }
+  return "";
+}
+
 async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStore(session, payload);
   const start = cleanText(payload.start, 10);
@@ -210,11 +226,25 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const incomePath = `mgj_service_records?select=source_id,bill_no,customer_name,shop_name,service_date,staff,items,service_types,amount,source,synced_at&shop_name=eq.${encodeURIComponent(store)}&service_date=gte.${start}&service_date=lte.${end}&order=service_date.desc&limit=5000`;
   const expensePath = `zysyr_expense_records?select=id,store,expense_date,category,counterparty,summary,amount,payment_method,source,source_ref,created_by,updated_by,created_at,updated_at&store=eq.${encodeURIComponent(store)}&expense_date=gte.${start}&expense_date=lte.${end}&order=expense_date.desc,created_at.desc&limit=5000`;
   const voucherPath = `zysyr_voucher_attachments?select=id,record_type,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&store=eq.${encodeURIComponent(store)}&order=uploaded_at.desc&limit=5000`;
-  const [rawIncome, expenses, vouchers] = await Promise.all([restRowsAll(incomePath), restRowsAll(expensePath), restRowsAll(voucherPath)]);
+  const staffPath = `staff?select=username,position&store=eq.${encodeURIComponent(store)}&active=eq.true&employment_status=eq.active&order=username.asc&limit=500`;
+  const [rawIncome, expenses, vouchers, staffRows] = await Promise.all([
+    restRowsAll(incomePath), restRowsAll(expensePath), restRowsAll(voucherPath), restRowsAll(staffPath),
+  ]);
+  const hairstylists = staffRows
+    .filter((row) => isHairstylistPosition(row.position))
+    .map((row) => cleanText(row.username, 80))
+    .filter(Boolean);
   const personal = cleanText(session.operations_role, 40) === "employee";
   const username = cleanText(session.username, 80);
   const incomes = (personal ? rawIncome.filter((row) => staffNames(row.staff).some((name) => name === username || name.endsWith(username) || username.endsWith(name))) : rawIncome)
-    .map((row) => ({ ...row, amount: Number(row.amount) || 0, staff_names: staffNames(row.staff), source_label: "美管加已同步消费" }));
+    .map((row) => {
+      const names = staffNames(row.staff);
+      return {
+        ...row, amount: Number(row.amount) || 0, staff_names: names,
+        primary_hairstylist: resolvePrimaryHairstylist(names, hairstylists),
+        source_label: "美管加已同步消费",
+      };
+    });
   const visibleExpenses = personal ? [] : expenses.map((row) => ({ ...row, amount: Number(row.amount) || 0 }));
   const voucherMap = new Map<string, JsonRecord>();
   for (const row of vouchers) {
@@ -243,7 +273,9 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     item[row.type as "income" | "expense"] += Number(row.amount || 0); daily.set(date, item);
   }
   const performance = new Map<string, { name: string; amount: number; orders: number }>();
-  for (const row of incomes) for (const name of row.staff_names as string[]) {
+  for (const row of incomes) {
+    const name = cleanText(row.primary_hairstylist, 80);
+    if (!name || (personal && name !== username)) continue;
     const item = performance.get(name) || { name, amount: 0, orders: 0 };
     item.amount += Number(row.amount || 0); item.orders += 1; performance.set(name, item);
   }

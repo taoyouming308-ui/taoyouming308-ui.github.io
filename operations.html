@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="414">
+<html lang="zh-CN" data-version="415">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -61,7 +61,7 @@
           </div>
           <div class="grid">
             <section class="panel"><div class="panel-head"><h3>每日收支趋势</h3><span class="status">绿：收入　红：费用</span></div><div class="panel-body"><div id="trend" class="trend"></div><div class="legend"><span><i class="dot" style="background:#3d8b75"></i>收入</span><span><i class="dot" style="background:#c77b69"></i>费用</span></div></div></section>
-            <section class="panel"><div class="panel-head"><h3 id="performance-title">员工业绩</h3><span class="status">按参与流水</span></div><div id="performance" class="panel-body performance"></div></section>
+            <section class="panel"><div class="panel-head"><h3 id="performance-title">发型师业绩</h3><span class="status">每单只归一位发型师</span></div><div id="performance" class="panel-body performance"></div></section>
           </div>
           <section class="panel" style="margin-top:16px"><div class="panel-head"><h3>最近明细</h3><button class="ghost" onclick="showView('records')">查看全部</button></div><div id="recent" class="panel-body"></div></section>
         </section>
@@ -135,7 +135,7 @@
   async function loadOverview(){var range=monthRange();$('sync-status').textContent='读取中…';try{state.data=await api('overview',{store:currentStore(),start:range.start,end:range.end});renderAll();$('sync-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(error){$('sync-status').textContent=error.message;if(/登录|账号|离职/.test(error.message))showLogin(error.message)}}
   function renderAll(){var data=state.data||{summary:{},records:[],daily:[],performance:[]};$('overview-title').textContent=$('month').value.replace('-','年')+'月经营概览';$('kpi-income').textContent=money(data.summary.income);$('kpi-expense').textContent=money(data.summary.expense);$('kpi-profit').textContent=money(data.summary.profit);$('kpi-missing').textContent=data.summary.pending_vouchers||0;renderTrend(data.daily||[]);renderPerformance(data.performance||[]);renderRecent();renderRecords()}
   function renderTrend(rows){var max=Math.max(1,...rows.map(function(row){return Math.max(row.income,row.expense)}));$('trend').innerHTML=rows.length?rows.map(function(row){return'<div class="trend-day" title="'+esc(row.date)+' 收入 '+money(row.income)+' / 费用 '+money(row.expense)+'"><i class="bar income" style="height:'+Math.max(2,row.income/max*100)+'%"></i><i class="bar expense" style="height:'+Math.max(2,row.expense/max*100)+'%"></i></div>'}).join(''):'<div class="empty" style="width:100%">本月暂无数据</div>'}
-  function renderPerformance(rows){var max=Math.max(1,...rows.map(function(row){return row.amount}));$('performance').innerHTML=rows.length?rows.slice(0,8).map(function(row){return'<div class="person"><strong>'+esc(row.name)+'</strong><div class="person-track"><div class="person-bar" style="width:'+Math.max(3,row.amount/max*100)+'%"></div></div><span>'+money(row.amount)+' · '+row.orders+'单</span></div>'}).join(''):'<div class="empty">暂无参与员工数据</div>'}
+  function renderPerformance(rows){var max=Math.max(1,...rows.map(function(row){return row.amount}));$('performance').innerHTML=rows.length?rows.slice(0,8).map(function(row){return'<div class="person"><strong>'+esc(row.name)+'</strong><div class="person-track"><div class="person-bar" style="width:'+Math.max(3,row.amount/max*100)+'%"></div></div><span>'+money(row.amount)+' · '+row.orders+'单</span></div>'}).join(''):'<div class="empty">暂无发型师业绩</div>'}
   function recordRows(rows){if(!rows.length)return'<div class="empty">该范围暂无记录</div>';return'<div class="table-wrap"><table><thead><tr><th>日期</th><th>类型</th><th>摘要 / 客户</th><th>金额</th><th>来源</th><th>凭证</th></tr></thead><tbody>'+rows.map(function(row){return'<tr class="record" data-record-id="'+esc(row.type+':'+row.id)+'"><td>'+esc(row.date)+'</td><td><span class="tag">'+(row.type==='income'?'收入':'费用')+'</span></td><td>'+esc(row.title)+'</td><td class="money '+esc(row.type)+'">'+(row.type==='income'?'+':'−')+money(row.amount)+'</td><td>'+esc(row.source)+'</td><td>'+(row.type==='income'?(row.source_ref?'原单号':'同步明细'):(row.voucher?'<span class="tag">已上传</span>':'<span class="tag missing">即时待补</span>'))+'</td></tr>'}).join('')+'</tbody></table></div>'}
   function bindRecordRows(root){root.querySelectorAll('[data-record-id]').forEach(function(el){el.addEventListener('click',function(){var key=el.dataset.recordId;var row=(state.data.records||[]).find(function(item){return item.type+':'+item.id===key});if(row)openRecord(row)})})}
   function renderRecent(){var root=$('recent');root.innerHTML=recordRows((state.data.records||[]).slice(0,6));bindRecordRows(root)}

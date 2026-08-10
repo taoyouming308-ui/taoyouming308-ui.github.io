@@ -18,8 +18,19 @@ const script = html.match(/<script>([\s\S]*?)<\/script>/);
 expect(script, 'operations inline script missing');
 new vm.Script(script[1], { filename: 'operations.html' });
 
+const primaryStylistSource = edge.match(/function resolvePrimaryHairstylist\([\s\S]*?\n\}/);
+expect(primaryStylistSource, 'primary hairstylist resolver missing');
+const primaryStylistContext = {};
+vm.runInNewContext(`${primaryStylistSource[0]}; globalThis.resolvePrimaryHairstylist = resolvePrimaryHairstylist;`, primaryStylistContext);
+const resolvePrimaryHairstylist = primaryStylistContext.resolvePrimaryHairstylist;
+expect(resolvePrimaryHairstylist(['无名', '王冰洲'], ['无名', '娄云']) === '无名', 'technician must not receive hairstylist performance');
+expect(resolvePrimaryHairstylist(['吴红红', '晓伟'], ['晓伟', '陈浩']) === '晓伟', 'hairstylist may appear after a technician in service staff');
+expect(resolvePrimaryHairstylist(['郭小康', '十一'], ['小康', '十一']) === '小康', 'one bill must resolve to the first matching hairstylist only');
+expect(resolvePrimaryHairstylist(['王冰洲'], ['无名', '娄云']) === '', 'technician-only service staff must not create performance');
+
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
 expect(html.includes('经营驾驶舱') && html.includes('经营总览') && html.includes('收支明细'), 'operations core views missing');
+expect(html.includes('发型师业绩') && html.includes('每单只归一位发型师') && !html.includes('按参与流水'), 'hairstylist-only performance copy missing');
 expect(html.includes('即时待补凭证') && html.includes('data-filter="missing"'), 'urgent missing-voucher queue missing');
 expect(html.includes('美管加已同步消费') && html.includes('不执行付款、退款、充值或自动收银'), 'cashier read-only boundary missing');
 expect(html.includes("api('overview'") && html.includes("api('expense_save'") && html.includes("api('voucher_upload'"), 'protected data flows missing');
@@ -33,6 +44,8 @@ expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Functio
 expect(edge.includes('zysyr_operations_sessions') && edge.includes('requireSession'), 'revalidated operations session missing');
 expect(edge.includes('operationsRole') && edge.includes('personal_scope') && edge.includes('canWriteExpense'), 'role-based operations scope missing');
 expect(edge.includes('mgj_service_records') && edge.includes('income_read_only_from_mgj'), 'read-only Meiguanjia income source missing');
+expect(edge.includes('select=username,position') && edge.includes('isHairstylistPosition') && edge.includes('primary_hairstylist'), 'hairstylist-only performance scope missing');
+expect(edge.includes('if (!name || (personal && name !== username)) continue'), 'personal performance must remain hairstylist-only');
 expect(edge.includes('zysyr_expense_records') && edge.includes('cashier_untouched: true'), 'independent expense source or cashier boundary missing');
 expect(edge.includes('MAX_VOUCHER_BYTES') && edge.includes('/storage/v1/object/sign/'), 'private voucher constraints or signed link missing');
 expect(edge.includes('resolution=ignore-duplicates') && edge.includes('source_ref'), 'idempotent history import missing');
