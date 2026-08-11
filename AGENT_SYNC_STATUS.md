@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v415 ZYSYR V2 Sprint 0 Auth/RBAC 基础（2026-08-11，未部署）
+## v415 ZYSYR V2 Sprint 0 Auth/RBAC 基础（2026-08-11，Gate A 已部署）
 
 - 用户确认 V2.0 直接升级现有 `perm-pages` 经营驾驶舱，不使用 Sites，并同意启用 Supabase Auth；旧账号后续只做短期只读过渡，不迁移现有弱密码表示。
 - 修改前备份 `ZYSYR_2026-08-11_102926.tar.gz` 已生成到本地配置目录并复制 iCloud；两份 SHA-256 均为 `3a0facfa81e1402b52b92bdba67707ac64b1893eefcbd81199464c0c146005d5`。
@@ -8,8 +8,9 @@
 - 新增 Supabase Auth/RBAC/RLS 基础：公司、账号映射、角色、能力、公司/门店 scope、员工归属、直接能力例外；股东无费用录入/审核/凭证上传能力，财务和店长按 V2.0 矩阵分权。
 - 新增 append-only audit/workflow/period-lock 事件、Trace/voucher link 写入闸门，以及旧费用/凭证的可空 UUID 租户键和凭证 SHA-256/版本元数据字段。
 - 新增未部署的 `operations-auth` Edge Function，只验证 Supabase bearer token，并用用户 JWT 走 Data API/RLS；源码不含 service role、旧密码或旧经营会话逻辑。
-- 本地 PostgreSQL 15 从空库三次应用旧基础迁移和新迁移成功；双公司/双门店 RLS、店长审计拒绝、authenticated 写拒绝、事件不可更新和外键索引遗漏 0 均通过。Supabase CLI lint 已连接本机临时库，但普通 PostgreSQL 镜像缺少 `plpgsql_check`；仓库没有运行中的 Supabase local stack，故 `migration list --local` 也无法连接。两项均未记为通过，且未转连生产。
-- 没有应用生产迁移、部署函数、切换登录、修改页面或写生产数据；现有未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不纳入本模块。
+- 生产 Gate A 已登记为 `20260811031221_zysyr_v2_sprint0_auth_rbac_audit`：17 张新表、6 个私有函数、3 个不可变事件触发器和 14 条策略均存在；新表全部启用并强制 RLS，匿名表授权为 0。迁移前后业务计数保持 2 店、28 名员工、1,080 条美管加记录、4 条旧经营会话、0 条费用、0 条凭证、0 个 Auth 用户。
+- 生产 Advisor 揭示此前本地索引检查遗漏了 3 个“完整外键列必须为索引左前缀”的情况。已生成本地未部署迁移 `20260811031403_zysyr_sprint0_fk_covering_indexes.sql`，分别覆盖角色授权 `role_id`、能力授权 `capability_id` 和锁账事件 `(company_id, period_lock_id)`；静态回归已加入，生产应用需独立批准。
+- 没有部署函数、创建 Auth 用户、回填映射、切换登录、修改页面或写生产业务数据；`operations-auth` 仍仅为本地源码。现有未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不纳入本模块。
 - App version: v415
 
 ## v415 经营驾驶舱发型师业绩去重（2026-08-10）

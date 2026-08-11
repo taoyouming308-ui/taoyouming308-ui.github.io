@@ -8,6 +8,11 @@ const migrationPath = path.join(
   'supabase/migrations/20260811024016_zysyr_v2_sprint0_auth_rbac_audit.sql',
 );
 const sql = fs.readFileSync(migrationPath, 'utf8');
+const fkIndexMigrationPath = path.join(
+  root,
+  'supabase/migrations/20260811031403_zysyr_sprint0_fk_covering_indexes.sql',
+);
+const fkIndexSql = fs.readFileSync(fkIndexMigrationPath, 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -56,6 +61,19 @@ expect(has("(scope_type = 'store' and store_id is not null)"), 'store-scope inva
 expect(has('foreign key (company_id, store_id)'), 'composite tenant foreign keys missing');
 expect(has('zysyr_user_role_scope_lookup_idx'), 'role-scope RLS index missing');
 expect(has('zysyr_user_capability_scope_lookup_idx'), 'capability-scope RLS index missing');
+expect(
+  fkIndexSql.includes('on public.zysyr_user_role_grants (role_id)'),
+  'role foreign-key covering index missing',
+);
+expect(
+  fkIndexSql.includes('on public.zysyr_user_capability_grants (capability_id)'),
+  'capability foreign-key covering index missing',
+);
+expect(
+  fkIndexSql.includes('on public.zysyr_period_lock_events (company_id, period_lock_id)'),
+  'period-lock event composite foreign-key covering index missing',
+);
+expect(!/\bdrop\s+index\b/i.test(fkIndexSql), 'FK index follow-up must not drop indexes');
 
 expect(!has("('shareholder', 'expense.create_submit')"), 'shareholder must not create expenses in V2');
 expect(!has("('shareholder', 'expense.approve')"), 'shareholder must not approve expenses in V2');
