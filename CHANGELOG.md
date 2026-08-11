@@ -6,7 +6,7 @@
 - 权限矩阵以 V2.0 为准：股东只有授权范围查看能力，不再获得费用录入、审核或凭证上传能力；财务可录入/审核，店长只能提交本店费用。按授权例外使用独立的 user capability grant，不从岗位文字或 JWT user metadata 推断。
 - 新增 `operations-auth` Edge Function 本地源码：只验证 Supabase access token，并用同一用户 JWT 查询受 RLS 保护的账号、角色、能力和门店；不读取旧 `staff.password_hash`，不使用 service role 代用户查询。
 - Gate A 已作为生产迁移 `20260811031221_zysyr_v2_sprint0_auth_rbac_audit` 应用；17 张新表全部启用并强制 RLS，6 个私有鉴权函数、3 个 append-only 触发器和 14 条策略存在，匿名角色对新表授权为 0。生产前后始终为 2 店、28 名员工、1,080 条美管加记录、4 条旧经营会话、0 条费用、0 条凭证、0 个 Auth 用户。
-- 生产 Advisor 随后精确发现 3 个外键缺少左前缀覆盖索引：角色授权 `role_id`、能力授权 `capability_id`、锁账事件 `(company_id, period_lock_id)`。此前本地“缺失外键索引为 0”的检测条件不够严格，现已更正结论并新增未部署迁移 `20260811031403_zysyr_sprint0_fk_covering_indexes.sql`；未经独立批准不应用到生产。
+- 生产 Advisor 随后精确发现 3 个外键缺少左前缀覆盖索引：角色授权 `role_id`、能力授权 `capability_id`、锁账事件 `(company_id, period_lock_id)`。此前本地“缺失外键索引为 0”的检测条件不够严格，现已更正检测并将补丁登记为生产迁移 `20260811032136_zysyr_sprint0_fk_covering_indexes`；三个索引定义已逐项核对，目标外键缺失索引和对应 Advisor 告警均为 0。
 - 本次没有部署 Edge Function、创建 Auth 用户、回填公司/门店/员工映射、切换登录或修改页面/业务数据；现有 v415 和美管加收入只读边界保持不变。既有 `staff` 等 7 张 public 表 RLS 风险继续单独登记，未在 Gate A 顺手修改。
 
 ## 2026-08-10 · v415

@@ -9,7 +9,7 @@
 - 新增 append-only audit/workflow/period-lock 事件、Trace/voucher link 写入闸门，以及旧费用/凭证的可空 UUID 租户键和凭证 SHA-256/版本元数据字段。
 - 新增未部署的 `operations-auth` Edge Function，只验证 Supabase bearer token，并用用户 JWT 走 Data API/RLS；源码不含 service role、旧密码或旧经营会话逻辑。
 - 生产 Gate A 已登记为 `20260811031221_zysyr_v2_sprint0_auth_rbac_audit`：17 张新表、6 个私有函数、3 个不可变事件触发器和 14 条策略均存在；新表全部启用并强制 RLS，匿名表授权为 0。迁移前后业务计数保持 2 店、28 名员工、1,080 条美管加记录、4 条旧经营会话、0 条费用、0 条凭证、0 个 Auth 用户。
-- 生产 Advisor 揭示此前本地索引检查遗漏了 3 个“完整外键列必须为索引左前缀”的情况。已生成本地未部署迁移 `20260811031403_zysyr_sprint0_fk_covering_indexes.sql`，分别覆盖角色授权 `role_id`、能力授权 `capability_id` 和锁账事件 `(company_id, period_lock_id)`；静态回归已加入，生产应用需独立批准。
+- 生产 Advisor 揭示此前本地索引检查遗漏了 3 个“完整外键列必须为索引左前缀”的情况。补丁已登记为生产迁移 `20260811032136_zysyr_sprint0_fk_covering_indexes`，分别覆盖角色授权 `role_id`、能力授权 `capability_id` 和锁账事件 `(company_id, period_lock_id)`；三个索引存在且有效，目标外键缺失索引与对应 Advisor 告警均为 0。
 - 没有部署函数、创建 Auth 用户、回填映射、切换登录、修改页面或写生产业务数据；`operations-auth` 仍仅为本地源码。现有未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不纳入本模块。
 - App version: v415
 
