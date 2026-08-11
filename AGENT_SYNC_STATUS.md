@@ -1,12 +1,14 @@
 # Agent Sync Status
 
-## v415 ZYSYR V2 Gate C 用户名/现有密码滚动迁移基础（2026-08-11，本地完成、未部署）
+## v415 ZYSYR V2 Gate C1 用户名/现有密码滚动迁移（2026-08-11，已生产部署、页面未切换）
 
 - 用户确认经营驾驶舱登录不填写邮箱，沿用现有用户名和密码；旧密码只在首次迁移时校验一次，成功后交由 Supabase Auth 重新加密，内部 `.invalid` 邮箱只作系统标识且不向用户展示。
-- 新增未部署迁移 `20260811035138_zysyr_auth_rolling_migration.sql`：`zysyr_user_accounts.login_name`、带公司/员工/旧 ID/角色/范围和审批溯源的精确白名单、HMAC 指纹限流事件，以及三个空 `search_path`、仅 `service_role` 可执行的 SECURITY DEFINER 函数。迁移本身不写白名单、不创建用户或授权。
-- 新增未部署 `operations-auth-migrate`：仅开放 `password_login`；非白名单、错误密码、停用身份和映射冲突统一拒绝；每用户名 5 次/15 分钟、每客户端 30 次/15 分钟并分别锁定防并发绕过。首次激活原子创建 V2 账号/范围角色授权和不可变审计，后续登录再次复核 Auth / 账号 / 员工 / 公司 / 白名单绑定。
-- 生产只读核对仍为 Auth 用户 0、V2 账号 0、角色授权 0；24 名在职映射员工无邮箱/手机号，旧密码字段以 25 条 SHA-256 和 3 条其他格式存在，检查未输出密码值。`test_staff` 保持排除。
-- 本地 `operations-auth-migration`、现有 `operations-auth`、Sprint 0 与 Gate B 回归通过；`operations.html`、`operations-api`、旧员工和生产数据均未修改。下一生产动作必须另行批准两个管理员的股东公司范围白名单和函数部署。
+- 新增迁移源码 `20260811035138_zysyr_auth_rolling_migration.sql`：`zysyr_user_accounts.login_name`、带公司/员工/旧 ID/角色/范围和审批溯源的精确白名单、HMAC 指纹限流事件，以及三个空 `search_path`、仅 `service_role` 可执行的 SECURITY DEFINER 函数。基础迁移本身不写白名单、不创建用户或授权。
+- 新增并部署 `operations-auth-migrate`：仅开放 `password_login`；非白名单、错误密码、停用身份和映射冲突统一拒绝；每用户名 5 次/15 分钟、每客户端 30 次/15 分钟并分别锁定防并发绕过。首次激活原子创建 V2 账号/范围角色授权和不可变审计，后续登录再次复核 Auth / 账号 / 员工 / 公司 / 白名单绑定。
+- 用户明确批准 Gate C1；新增精确迁移 `20260811040207_zysyr_gate_c1_admin_shareholder_allowlist.sql`，只匹配 `admin / ziyou` 与 `哈维 / xiangli`，要求两个账号仍为在职管理员、旧 ID 映射唯一并锁定股东能力矩阵，写入 2 条白名单和 2 条不可变审批审计，不预创建 Auth 用户、账号或授权。
+- 生产登记 `20260811040423_zysyr_auth_rolling_migration` 与 `20260811040458_zysyr_gate_c1_admin_shareholder_allowlist`；控制表强制 RLS、浏览器权限 0、迁移函数仅 service role 可执行。`operations-auth-migrate` version 1 为 `ACTIVE`、`verify_jwt=false`，线上源码与仓库逐字符一致。
+- 生产探针：OPTIONS 200、未知操作 400、非白名单假账号统一 403；仅产生 1 attempt + 1 failure，身份/客户端均为 64 位 HMAC。Advisor 对 Gate C 无 ERROR，仅无浏览器策略和新索引未使用的预期 INFO。
+- 部署后白名单 2、审批审计 2，Auth 用户/V2 账号/有效角色授权/激活审计仍为 0；旧员工 28、美管加记录 1,083、旧经营会话 7、费用和凭证 0。`operations.html`、`operations-api`、旧员工和业务数据未修改，页面仍沿用旧登录。
 - App version: v415
 
 ## v415 ZYSYR V2 Gate B 公司/门店/员工映射（2026-08-11，已生产部署）

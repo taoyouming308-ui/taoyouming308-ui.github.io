@@ -1,11 +1,14 @@
 # Changelog
 
-## 2026-08-11 · ZYSYR V2 Gate C 用户名/现有密码滚动迁移基础（本地完成，App 保持 v415）
+## 2026-08-11 · ZYSYR V2 Gate C1 用户名/现有密码滚动迁移（已生产部署，App 保持 v415）
 
 - 用户确认不填写邮箱，继续使用现有用户名和密码；新增独立 `operations-auth-migrate`，只对显式白名单账号做一次旧密码校验，再由 Supabase Auth 以同一密码重新加密保存，内部不可投递邮箱不展示为业务联系方式。
-- 新增未部署迁移 `20260811035138_zysyr_auth_rolling_migration.sql`：账号增加稳定登录名，新增带审批溯源的精确迁移白名单、只保存 HMAC 指纹的 append-only 限流事件，以及三个仅 `service_role` 可执行的原子迁移函数；迁移不预置任何白名单或用户。
+- 新增迁移源码 `20260811035138_zysyr_auth_rolling_migration.sql`：账号增加稳定登录名，新增带审批溯源的精确迁移白名单、只保存 HMAC 指纹的 append-only 限流事件，以及三个仅 `service_role` 可执行的原子迁移函数；基础迁移本身不预置任何白名单或用户。
 - 每个用户名 15 分钟最多 5 次、每个客户端最多 30 次，并分别以事务锁串行计数；错误统一响应以阻止账号枚举。首次激活会复核公司、员工、旧 ID、在职状态、Auth metadata、角色和范围，原子创建账号/授权并记录 `legacy_password_auth_activated` 审计事件。
-- 本地回归新增 `scripts/test-operations-auth-migration.js` 并纳入 pre-push；Sprint 0、Gate B、现有 Auth 范围测试均通过。当前未执行生产迁移、未部署函数、未添加管理员白名单、未创建 Auth 用户、未修改 `operations.html` 或旧登录。
+- 新增精确迁移 `20260811040207_zysyr_gate_c1_admin_shareholder_allowlist.sql`，只批准 `admin / ziyou` 与 `哈维 / xiangli` 两个既有管理员，以股东公司范围滚动迁移；执行前锁定 7 个查看/提问能力，审批记录和两条 allowlist 审计可追溯，不预创建 Auth 用户、账号或角色授权。
+- 生产已登记 `20260811040423_zysyr_auth_rolling_migration` 与 `20260811040458_zysyr_gate_c1_admin_shareholder_allowlist`；白名单 2、审批审计 2、异常映射 0，两张控制表强制 RLS、浏览器权限 0，三个迁移 RPC 仅 `service_role` 可执行。
+- `operations-auth-migrate` version 1 已部署并为 `ACTIVE`，线上源码与仓库逐字符一致；CORS 200、未知操作 400、非白名单假账号统一 403，探针事件仅保存 HMAC。Gate C Advisor 无 ERROR，只有无浏览器策略和新索引未使用的预期 INFO。
+- 部署后 Auth 用户、V2 账号、有效角色授权和激活审计仍为 0；旧员工 28、美管加同步记录 1,083、旧经营会话 7、费用/凭证 0。未修改 `operations.html`、旧 `operations-api` 或业务数据，管理员尚未本人首次迁移登录。
 
 ## 2026-08-11 · ZYSYR V2 Gate B 公司/门店/员工映射（已生产部署，App 保持 v415）
 
