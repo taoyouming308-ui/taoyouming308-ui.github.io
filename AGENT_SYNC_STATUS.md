@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v416 ZYSYR V2 Gate C2 双通道认证过渡（2026-08-11，待页面发布）
+
+- `operations.html` 保持用户名 + 现有密码；先由旧 `operations-api` 校验并建立兼容会话，只有返回角色为 `shareholder` 的账号才调用 `operations-auth-migrate`。普通员工继续旧登录，不进入白名单探测或预认证限流。
+- 新增 `operations-auth-bridge.js`：迁移 token 必须再通过 `operations-auth` 的用户 JWT/RLS 查询，并精确确认股东公司范围与集团看板能力；access/refresh token 以单一版本化本地记录保存，刷新时覆盖轮换后的 token，退出时同时注销 Auth 本地会话和旧经营会话。
+- 新 Auth 失败时不丢弃已经验证的旧经营会话，股东端明确显示旧登录过渡；成功显示 Supabase Auth 已验证。看板数据、费用、凭证、美管加收入只读和门店隔离仍走现有服务端范围，不在本 Gate 重写数据 API。
+- `operations-auth` 已生产部署为 version 1、`ACTIVE`、`verify_jwt=true`；无 token POST 返回预期 401 `UNAUTHORIZED_NO_AUTH_HEADER`。Gate C1 状态仍为白名单 2、Auth 用户/账号/授权 0，等待管理员本人首次正确登录。
+- 新增 `scripts/test-operations-auth-bridge.js` 并纳入 pre-push，模拟验证首次迁移、RLS 范围、refresh token 轮换、会话恢复和双注销；本机浏览器已确认 v416 登录布局与无需邮箱提示，内置浏览器未执行本机脚本，运行逻辑以 Node 模拟和语法回归为准。
+- v416 同步提升 `perm-app.html`、`frontdesk.html`、`operations.html`、`version.txt/json` 及既有资源缓存标记；员工端和前台无业务逻辑变化。
+- App version: v416
+
 ## v415 ZYSYR V2 Gate C1 用户名/现有密码滚动迁移（2026-08-11，已生产部署、页面未切换）
 
 - 用户确认经营驾驶舱登录不填写邮箱，沿用现有用户名和密码；旧密码只在首次迁移时校验一次，成功后交由 Supabase Auth 重新加密，内部 `.invalid` 邮箱只作系统标识且不向用户展示。

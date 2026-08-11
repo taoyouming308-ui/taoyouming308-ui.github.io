@@ -17,6 +17,7 @@ node scripts/test-frontdesk.js || exit 1
 node scripts/test-operations.js || exit 1
 node scripts/test-operations-auth.js || exit 1
 node scripts/test-operations-auth-migration.js || exit 1
+node scripts/test-operations-auth-bridge.js || exit 1
 node scripts/test-zysyr-sprint0.js || exit 1
 node scripts/test-zysyr-gate-b.js || exit 1
 node scripts/test-app-ui-system.js || exit 1

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-11 · v416 ZYSYR Gate C2 双通道认证过渡
+
+- 现有 `operations.html` 登录框保持“用户名 + 现有密码”，不要求邮箱；旧经营接口先验证账号并建立兼容会话，只有旧接口确认的股东账号才进入 Supabase Auth 滚动迁移，普通员工不会调用迁移端点或产生无效限流事件。
+- 新增独立 `operations-auth-bridge.js`：首次迁移后立即调用受用户 JWT 与 RLS 保护的 `operations-auth`，必须同时确认 `shareholder / company` 角色和 `dashboard.group.read / company` 能力；不使用 service role、旧密码摘要或 JWT user metadata 授权。
+- 浏览器认证桥保存并轮换 Supabase access/refresh token，过期前刷新并用新 refresh token 原子覆盖旧值；退出时立即清除本地 token，并与旧经营会话一起执行本地范围注销。
+- Auth 暂时不可用时股东仍可使用已验证的旧经营会话，页面明确显示“旧登录过渡”，避免营业中断；成功后显示“Supabase Auth 已验证”。现有收入只读、美管加边界、费用/凭证和门店范围继续由原经营接口承载，未提前重写数据层。
+- `operations-auth` version 1 已部署为 `ACTIVE` 且 `verify_jwt=true`；无 Authorization 请求由 Supabase 网关返回预期 401。新增桥接模拟回归覆盖首次迁移、V2 范围核对、refresh token 轮换、恢复与双会话退出。
+- 发布版本提升到 v416；`perm-app.html` 只同步版本和三个既有资源缓存标记，`frontdesk.html` 只同步页面版本，不改变员工端、前台、预约、收银或美管加业务逻辑。
+
 ## 2026-08-11 · ZYSYR V2 Gate C1 用户名/现有密码滚动迁移（已生产部署，App 保持 v415）
 
 - 用户确认不填写邮箱，继续使用现有用户名和密码；新增独立 `operations-auth-migrate`，只对显式白名单账号做一次旧密码校验，再由 Supabase Auth 以同一密码重新加密保存，内部不可投递邮箱不展示为业务联系方式。

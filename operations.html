@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="415">
+<html lang="zh-CN" data-version="416">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -26,13 +26,14 @@
       <div class="field"><label for="login-pass">密码</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
       <button class="primary" type="submit">安全登录</button>
       <div id="login-error" class="help" style="color:var(--red);margin-top:10px"></div>
+      <div class="help" style="margin-top:8px">股东账号首次登录会自动升级 Supabase Auth；仍使用原账号和现有密码，无需填写邮箱。</div>
       <div class="boundary">收入来自美管加已同步消费，只读展示；费用、历史导入和凭证保存在独立经营账。本系统不执行付款、退款、充值或自动收银。</div>
     </form>
   </section>
 
   <div id="app" class="app hidden">
     <header class="topbar">
-      <div class="mark">ZYSYR</div><div class="top-title"><strong>经营驾驶舱</strong><span>V1.0 · 可追溯经营数据</span></div>
+      <div class="mark">ZYSYR</div><div class="top-title"><strong>经营驾驶舱</strong><span>V2.0 · 可追溯经营数据</span></div>
       <div class="toolbar">
         <select id="store-select" aria-label="选择门店"></select>
         <input id="month" type="month" aria-label="统计月份">
@@ -103,11 +104,13 @@
   <div id="store-modal" class="modal hidden"><form id="store-form" class="modal-card"><div class="drawer-head"><h3>新增门店</h3><button type="button" class="ghost" onclick="toggleStoreModal(false)">关闭</button></div><div class="field"><label>门店名称</label><input id="store-name" required></div><div class="field"><label>城市 / 区域</label><input id="store-city"></div><button class="primary" type="submit">创建门店</button></form></div>
   <div id="toast" class="toast hidden"></div>
 
+  <script src="operations-auth-bridge.js?v=416"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
   var API=SUPABASE_URL+'/functions/v1/operations-api';
-  var state={session:localStorage.getItem('zysyr-operations-session-v1')||'',user:null,data:null,view:'dashboard',filter:'all'};
+  var authBridge=window.ZysyrAuthBridge?window.ZysyrAuthBridge.create({supabaseUrl:SUPABASE_URL,publishableKey:SUPABASE_KEY}):{login:function(){return Promise.reject(new Error('新认证组件暂未就绪'))},restore:function(){return Promise.resolve(null)},signOut:function(){return Promise.resolve()},clear:function(){}};
+  var state={session:localStorage.getItem('zysyr-operations-session-v1')||'',auth:null,authWarning:'',user:null,data:null,view:'dashboard',filter:'all'};
   function $(id){return document.getElementById(id)}
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]})}
   function money(value){return '¥'+Number(value||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -115,7 +118,8 @@
   async function api(operation,payload){var response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify(Object.assign({operation:operation,session_token:state.session},payload||{}))});var data=await response.json().catch(function(){return{error:'服务响应无效'}});if(!response.ok)throw new Error(data.error||'请求失败');return data}
   function monthRange(){var value=$('month').value;var parts=value.split('-');var last=new Date(Number(parts[0]),Number(parts[1]),0).getDate();return{start:value+'-01',end:value+'-'+String(last).padStart(2,'0')}}
   function currentStore(){return $('store-select').value||state.user.store||''}
-  function showLogin(message){state.session='';state.user=null;localStorage.removeItem('zysyr-operations-session-v1');$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=message||''}
+  function showLogin(message){state.session='';state.auth=null;state.authWarning='';state.user=null;localStorage.removeItem('zysyr-operations-session-v1');authBridge.signOut().catch(function(){authBridge.clear()});$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=message||''}
+  function renderUserCard(){var authLine=state.user.role==='shareholder'?'<br><span class="tag">'+(state.auth?'Supabase Auth 已验证':'旧登录过渡')+'</span>':'';var warning=state.authWarning?'<br><span style="color:var(--red)">'+esc(state.authWarning)+'</span>':'';$('user-card').innerHTML='<strong>'+esc(state.user.username)+'</strong><br>'+esc(state.user.role_label)+' · '+esc(state.user.position||'未填写岗位')+'<br>'+esc(state.user.personal_scope?'仅本人参与流水':(state.user.store||'集团视角'))+authLine+warning+'<br><button class="ghost" style="margin-top:9px" onclick="logout()">退出登录</button>'}
   function showApp(){
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
     var stores=state.user.stores||[];$('store-select').innerHTML=stores.map(function(store){return'<option>'+esc(store)+'</option>'}).join('');
@@ -123,13 +127,13 @@
     $('store-select').disabled=stores.length<2;
     $('new-store').classList.toggle('hidden',!state.user.can_create_store);
     document.querySelectorAll('.write-only').forEach(function(el){el.classList.toggle('hidden',!state.user.can_write_expense)});
-    $('user-card').innerHTML='<strong>'+esc(state.user.username)+'</strong><br>'+esc(state.user.role_label)+' · '+esc(state.user.position||'未填写岗位')+'<br>'+esc(state.user.personal_scope?'仅本人参与流水':(state.user.store||'集团视角'))+'<br><button class="ghost" style="margin-top:9px" onclick="logout()">退出登录</button>';
+    renderUserCard();
     $('income-label').textContent=state.user.personal_scope?'本人参与流水':'营业收入';
     $('overview-note').textContent=state.user.personal_scope?'仅展示本人参与的美管加已同步流水；不展示门店费用。':'所有数字均可点击查看明细与来源。';
   }
-  async function restoreSession(){if(!state.session){showLogin();return}try{var result=await api('session');state.user=result.user;showApp();await loadOverview()}catch(error){showLogin(error.message)}}
-  $('login-form').addEventListener('submit',async function(event){event.preventDefault();$('login-error').textContent='正在验证…';try{var result=await api('login',{username:$('login-name').value.trim(),password:$('login-pass').value});state.session=result.session_token;state.user=result.user;localStorage.setItem('zysyr-operations-session-v1',state.session);$('login-pass').value='';showApp();await loadOverview()}catch(error){$('login-error').textContent=error.message}});
-  async function logout(){try{await api('logout')}catch(_){}showLogin('已安全退出')}
+  async function restoreSession(){if(!state.session){showLogin();return}try{var result=await api('session');state.user=result.user;showApp();var authPromise=state.user.role==='shareholder'?authBridge.restore():Promise.resolve(null);await loadOverview();state.auth=await authPromise;renderUserCard()}catch(error){showLogin(error.message)}}
+  $('login-form').addEventListener('submit',async function(event){event.preventDefault();var username=$('login-name').value.trim();var password=$('login-pass').value;$('login-error').textContent='正在验证…';try{var result=await api('login',{username:username,password:password});state.session=result.session_token;state.user=result.user;state.auth=null;state.authWarning='';localStorage.setItem('zysyr-operations-session-v1',state.session);if(result.user.role==='shareholder'){$('login-error').textContent='旧账号验证通过，正在升级安全登录…';try{state.auth=await authBridge.login(username,password)}catch(_){state.authWarning='新认证暂未完成，当前已安全使用旧登录'}}$('login-pass').value='';showApp();await loadOverview();if(state.auth)toast('Supabase Auth 已验证');else if(state.authWarning)toast(state.authWarning)}catch(error){$('login-pass').value='';$('login-error').textContent=error.message}});
+  async function logout(){try{await Promise.allSettled([api('logout'),authBridge.signOut()])}catch(_){}showLogin('已安全退出')}
   function showView(name){if((name==='expense'||name==='import')&&!state.user.can_write_expense)return;state.view=name;document.querySelectorAll('.view').forEach(function(el){el.classList.add('hidden')});$('view-'+name).classList.remove('hidden');document.querySelectorAll('[data-view]').forEach(function(el){el.classList.toggle('active',el.dataset.view===name)})}
   document.querySelectorAll('[data-view]').forEach(function(el){el.addEventListener('click',function(){showView(el.dataset.view)})});
   async function loadOverview(){var range=monthRange();$('sync-status').textContent='读取中…';try{state.data=await api('overview',{store:currentStore(),start:range.start,end:range.end});renderAll();$('sync-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(error){$('sync-status').textContent=error.message;if(/登录|账号|离职/.test(error.message))showLogin(error.message)}}
