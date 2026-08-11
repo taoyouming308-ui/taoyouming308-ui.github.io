@@ -1,5 +1,17 @@
 # Agent Sync Status
 
+## v415 ZYSYR V2 Sprint 0 Auth/RBAC 基础（2026-08-11，未部署）
+
+- 用户确认 V2.0 直接升级现有 `perm-pages` 经营驾驶舱，不使用 Sites，并同意启用 Supabase Auth；旧账号后续只做短期只读过渡，不迁移现有弱密码表示。
+- 修改前备份 `ZYSYR_2026-08-11_102926.tar.gz` 已生成到本地配置目录并复制 iCloud；两份 SHA-256 均为 `3a0facfa81e1402b52b92bdba67707ac64b1893eefcbd81199464c0c146005d5`。
+- 新增 additive 迁移 `20260811024016_zysyr_v2_sprint0_auth_rbac_audit.sql`，不创建 company 或猜测门店映射，不回填旧费用审核状态，不删除/改类型/强制旧字段非空。
+- 新增 Supabase Auth/RBAC/RLS 基础：公司、账号映射、角色、能力、公司/门店 scope、员工归属、直接能力例外；股东无费用录入/审核/凭证上传能力，财务和店长按 V2.0 矩阵分权。
+- 新增 append-only audit/workflow/period-lock 事件、Trace/voucher link 写入闸门，以及旧费用/凭证的可空 UUID 租户键和凭证 SHA-256/版本元数据字段。
+- 新增未部署的 `operations-auth` Edge Function，只验证 Supabase bearer token，并用用户 JWT 走 Data API/RLS；源码不含 service role、旧密码或旧经营会话逻辑。
+- 本地 PostgreSQL 15 从空库三次应用旧基础迁移和新迁移成功；双公司/双门店 RLS、店长审计拒绝、authenticated 写拒绝、事件不可更新和外键索引遗漏 0 均通过。Supabase CLI lint 已连接本机临时库，但普通 PostgreSQL 镜像缺少 `plpgsql_check`；仓库没有运行中的 Supabase local stack，故 `migration list --local` 也无法连接。两项均未记为通过，且未转连生产。
+- 没有应用生产迁移、部署函数、切换登录、修改页面或写生产数据；现有未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不纳入本模块。
+- App version: v415
+
 ## v415 经营驾驶舱发型师业绩去重（2026-08-10）
 
 - 经营业绩由“同单所有参与员工都累加”改为“每单只归属一位在职发型师”：先按当前门店 `staff.position` 精确识别岗位包含“发型师”的账号，再按美管加 `staff` 原顺序取第一位唯一匹配者。

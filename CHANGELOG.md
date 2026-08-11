@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-11 · ZYSYR V2 Sprint 0 Auth/RBAC 基础（未部署，App 保持 v415）
+
+- 新增 additive 迁移 `20260811024016_zysyr_v2_sprint0_auth_rbac_audit.sql`：建立公司、Supabase Auth 账号映射、角色/能力/范围授权、员工门店归属、append-only 审计/工作流/锁账事件、Trace 基础和旧费用/凭证的可空 UUID 租户桥接字段。
+- 权限矩阵以 V2.0 为准：股东只有授权范围查看能力，不再获得费用录入、审核或凭证上传能力；财务可录入/审核，店长只能提交本店费用。按授权例外使用独立的 user capability grant，不从岗位文字或 JWT user metadata 推断。
+- 新增 `operations-auth` Edge Function 本地源码：只验证 Supabase access token，并用同一用户 JWT 查询受 RLS 保护的账号、角色、能力和门店；不读取旧 `staff.password_hash`，不使用 service role 代用户查询。
+- 迁移在三次全新 PostgreSQL 15 临时数据库中成功应用；双公司/双门店 RLS、普通认证用户写入拒绝、审计事件不可修改、角色权限和 0 个缺失外键索引均验证通过。普通 PostgreSQL 镜像缺少 Supabase lint 所需的 `plpgsql_check`，且仓库没有运行中的 Supabase local stack 可供 `migration list --local` 连接；两项未记为通过，也未转连生产。
+- 本次没有应用生产迁移、没有部署 Edge Function、没有切换登录或修改任何页面/业务数据；现有 v415 和美管加收入只读边界保持不变。
+
 ## 2026-08-10 · v415
 
 - 修复经营驾驶舱把美管加同一消费单内的技师、助理也重复计入业绩的问题；服务端现在读取当前门店在职员工岗位，只允许岗位明确包含“发型师”的人员进入业绩汇总。
