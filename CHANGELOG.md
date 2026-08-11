@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-11 · ZYSYR V2 Gate B 公司/门店/员工映射（待生产部署，App 保持 v415）
+
+- 用户批准将现有两店归入公司 `ZYSYR`（代码 `zysyr`）：向里造型代码 `xiangli`、自由手艺人代码 `ziyou`；迁移按门店唯一名称定位并使用数据库生成 UUID，不写死环境 UUID。
+- 新增原子迁移 `20260811033042_zysyr_gate_b_company_store_employee_mapping.sql`：计划创建 1 个公司、更新 2 个既有门店、从旧 `staff` 映射 27 名员工（24 在职、3 离职）、建立 24 条当前主门店归属、27 条旧 ID 映射和 1 条 append-only 审计事件。
+- 唯一无门店且无业务使用的 `staff.id=26 / test_staff` 明确排除，旧 `staff` 全表保持不变；未知入职/离职日期保持 `NULL`，归属生效日仅表示 V2 映射启用日，不冒充员工入职日。
+- 不创建 Supabase Auth 用户、账号映射、角色或能力授权，不部署 Edge Function、不切换登录、不修改页面；美管加、经营会话、费用和凭证只做事务前后计数保护，不作为会随同步变化的固定条数前置条件。
+
 ## 2026-08-11 · ZYSYR V2 Sprint 0 Auth/RBAC 基础（Gate A 已部署，App 保持 v415）
 
 - 新增 additive 迁移 `20260811024016_zysyr_v2_sprint0_auth_rbac_audit.sql`：建立公司、Supabase Auth 账号映射、角色/能力/范围授权、员工门店归属、append-only 审计/工作流/锁账事件、Trace 基础和旧费用/凭证的可空 UUID 租户桥接字段。

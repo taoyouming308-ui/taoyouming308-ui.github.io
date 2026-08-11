@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v415 ZYSYR V2 Gate B 公司/门店/员工映射（2026-08-11，待生产部署）
+
+- 用户批准公司 `ZYSYR / zysyr` 与两店代码映射：向里造型 `xiangli`、自由手艺人 `ziyou`；迁移按唯一名称定位门店，运行时获取新公司 UUID，不硬编码生产 UUID。
+- 新增迁移 `20260811033042_zysyr_gate_b_company_store_employee_mapping.sql`：目标为 1 公司、2 门店更新、27 员工（24 在职、3 离职）、24 当前主门店归属、27 旧 `staff.id` 映射和 1 条不可变审计事件。
+- `staff.id=26 / test_staff` 因无门店且无业务使用明确排除；旧 `staff` 不更新、不删除，未知入职/离职日期不猜测，保持 `NULL`。
+- 本 Gate 不创建 Auth 用户、账号映射、角色/能力授权，不部署函数、不切换登录、不改页面、不写美管加/经营会话/费用/凭证；迁移使用 5 秒锁超时、30 秒语句超时和失败即整单回滚的精确前后条件。
+- 新增 `scripts/test-zysyr-gate-b.js` 并纳入 pre-push，静态阻止 Auth/授权写入、旧员工更新、删除/截断/对象删除及固定美管加行数前置条件。
+- App version: v415
+
 ## v415 ZYSYR V2 Sprint 0 Auth/RBAC 基础（2026-08-11，Gate A 已部署）
 
 - 用户确认 V2.0 直接升级现有 `perm-pages` 经营驾驶舱，不使用 Sites，并同意启用 Supabase Auth；旧账号后续只做短期只读过渡，不迁移现有弱密码表示。
