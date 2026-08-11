@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v416 ZYSYR V2 Gate C2 双通道认证过渡（2026-08-11，待页面发布）
+## v416 ZYSYR V2 Gate C2 双通道认证过渡（2026-08-11，已发布）
 
 - `operations.html` 保持用户名 + 现有密码；先由旧 `operations-api` 校验并建立兼容会话，只有返回角色为 `shareholder` 的账号才调用 `operations-auth-migrate`。普通员工继续旧登录，不进入白名单探测或预认证限流。
 - 新增 `operations-auth-bridge.js`：迁移 token 必须再通过 `operations-auth` 的用户 JWT/RLS 查询，并精确确认股东公司范围与集团看板能力；access/refresh token 以单一版本化本地记录保存，刷新时覆盖轮换后的 token，退出时同时注销 Auth 本地会话和旧经营会话。
@@ -8,6 +8,8 @@
 - `operations-auth` 已生产部署为 version 1、`ACTIVE`、`verify_jwt=true`；无 token POST 返回预期 401 `UNAUTHORIZED_NO_AUTH_HEADER`。Gate C1 状态仍为白名单 2、Auth 用户/账号/授权 0，等待管理员本人首次正确登录。
 - 新增 `scripts/test-operations-auth-bridge.js` 并纳入 pre-push，模拟验证首次迁移、RLS 范围、refresh token 轮换、会话恢复和双注销；本机浏览器已确认 v416 登录布局与无需邮箱提示，内置浏览器未执行本机脚本，运行逻辑以 Node 模拟和语法回归为准。
 - v416 同步提升 `perm-app.html`、`frontdesk.html`、`operations.html`、`version.txt/json` 及既有资源缓存标记；员工端和前台无业务逻辑变化。
+- 功能提交 `1ab66ff` 已推送 GitHub `main`，完整 pre-push 通过。GitHub Pages 构建状态 `built` 且无错误；线上 `version.txt=416`，`operations.html` 已返回 v416、V2.0、无需邮箱提示和 `operations-auth-bridge.js?v=416`。线上桥接脚本 SHA-256 `4a4a3ba13edc8f347b7988726b6d039d4ecf5c459480d021b12bae6f29f3affd` 与仓库一致。
+- 发布后生产仍为白名单 2、Auth 用户/账号/有效授权/激活审计 0、迁移探针事件 2；员工 28、美管加记录 1,083、费用和凭证 0。尚无人被代登录，等待 `admin` 或 `哈维` 本人首次使用现有密码。
 - App version: v416
 
 ## v415 ZYSYR V2 Gate C1 用户名/现有密码滚动迁移（2026-08-11，已生产部署、页面未切换）
