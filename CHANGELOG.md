@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-11 · ZYSYR V2 Gate C 用户名/现有密码滚动迁移基础（本地完成，App 保持 v415）
+
+- 用户确认不填写邮箱，继续使用现有用户名和密码；新增独立 `operations-auth-migrate`，只对显式白名单账号做一次旧密码校验，再由 Supabase Auth 以同一密码重新加密保存，内部不可投递邮箱不展示为业务联系方式。
+- 新增未部署迁移 `20260811035138_zysyr_auth_rolling_migration.sql`：账号增加稳定登录名，新增带审批溯源的精确迁移白名单、只保存 HMAC 指纹的 append-only 限流事件，以及三个仅 `service_role` 可执行的原子迁移函数；迁移不预置任何白名单或用户。
+- 每个用户名 15 分钟最多 5 次、每个客户端最多 30 次，并分别以事务锁串行计数；错误统一响应以阻止账号枚举。首次激活会复核公司、员工、旧 ID、在职状态、Auth metadata、角色和范围，原子创建账号/授权并记录 `legacy_password_auth_activated` 审计事件。
+- 本地回归新增 `scripts/test-operations-auth-migration.js` 并纳入 pre-push；Sprint 0、Gate B、现有 Auth 范围测试均通过。当前未执行生产迁移、未部署函数、未添加管理员白名单、未创建 Auth 用户、未修改 `operations.html` 或旧登录。
+
 ## 2026-08-11 · ZYSYR V2 Gate B 公司/门店/员工映射（已生产部署，App 保持 v415）
 
 - 用户批准将现有两店归入公司 `ZYSYR`（代码 `zysyr`）：向里造型代码 `xiangli`、自由手艺人代码 `ziyou`；迁移按门店唯一名称定位并使用数据库生成 UUID，不写死环境 UUID。

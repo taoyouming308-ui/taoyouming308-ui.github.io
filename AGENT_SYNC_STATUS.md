@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v415 ZYSYR V2 Gate C 用户名/现有密码滚动迁移基础（2026-08-11，本地完成、未部署）
+
+- 用户确认经营驾驶舱登录不填写邮箱，沿用现有用户名和密码；旧密码只在首次迁移时校验一次，成功后交由 Supabase Auth 重新加密，内部 `.invalid` 邮箱只作系统标识且不向用户展示。
+- 新增未部署迁移 `20260811035138_zysyr_auth_rolling_migration.sql`：`zysyr_user_accounts.login_name`、带公司/员工/旧 ID/角色/范围和审批溯源的精确白名单、HMAC 指纹限流事件，以及三个空 `search_path`、仅 `service_role` 可执行的 SECURITY DEFINER 函数。迁移本身不写白名单、不创建用户或授权。
+- 新增未部署 `operations-auth-migrate`：仅开放 `password_login`；非白名单、错误密码、停用身份和映射冲突统一拒绝；每用户名 5 次/15 分钟、每客户端 30 次/15 分钟并分别锁定防并发绕过。首次激活原子创建 V2 账号/范围角色授权和不可变审计，后续登录再次复核 Auth / 账号 / 员工 / 公司 / 白名单绑定。
+- 生产只读核对仍为 Auth 用户 0、V2 账号 0、角色授权 0；24 名在职映射员工无邮箱/手机号，旧密码字段以 25 条 SHA-256 和 3 条其他格式存在，检查未输出密码值。`test_staff` 保持排除。
+- 本地 `operations-auth-migration`、现有 `operations-auth`、Sprint 0 与 Gate B 回归通过；`operations.html`、`operations-api`、旧员工和生产数据均未修改。下一生产动作必须另行批准两个管理员的股东公司范围白名单和函数部署。
+- App version: v415
+
 ## v415 ZYSYR V2 Gate B 公司/门店/员工映射（2026-08-11，已生产部署）
 
 - 用户批准公司 `ZYSYR / zysyr` 与两店代码映射：向里造型 `xiangli`、自由手艺人 `ziyou`；迁移按唯一名称定位门店，运行时获取新公司 UUID，不硬编码生产 UUID。
