@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v417 ZYSYR V2 Gate C3 管理员创建财务账号（2026-08-13，生产已部署、待页面发布）
+## v417 ZYSYR V2 Gate C3 管理员创建财务账号（2026-08-13，已生产发布）
 
 - 本地已新增受 Supabase Auth JWT/RLS 保护的 `operations-auth-admin`：只有持有公司范围 `finance_account.create` 高风险能力的管理员可创建财务账号；页面直接设置用户名、显示名称、密码和公司/门店范围，不要求业务邮箱。
 - 财务账号只创建 Supabase Auth 身份和 V2 `zysyr_user_accounts / zysyr_user_role_grants`，不写入旧 `staff.password_hash`；密码不进入 Postgres、审计、日志或响应。Auth 创建后数据库事务失败会删除新 Auth 用户，结果不确定时先回查账号再决定补偿。
@@ -9,7 +9,8 @@
 - 页面已增加仅授权管理员可见的“财务账号”入口、密码确认、强密码提示和公司/指定门店选择。专项回归覆盖 Auth Admin 边界、失败补偿、直接财务登录、JWT 范围、UI 能力门控和密码不落库。
 - 生产迁移已登记为 `20260813091814_zysyr_finance_account_admin_gate`：创建能力 1、`admin` 公司范围有效授权 1、启用审计 1、财务账号 0、Auth 用户 1；完成 RPC 对 `public/anon/authenticated` 无执行权限，仅 `service_role` 可执行。
 - 四个生产函数均为 `ACTIVE` 且与仓库源码逐字符一致：`operations-auth` v2 / `verify_jwt=true`、`operations-auth-migrate` v2 / 自定义密码认证、`operations-api` v3 / 兼容旧会话与 Auth JWT、`operations-auth-admin` v1 / `verify_jwt=true`。未登录探针为预期 401/400/403，未创建测试财务账号。
-- v417 同步提升 `perm-app.html`、`frontdesk.html`、`operations.html`、`version.txt/json` 和既有资源缓存标记；员工端和前台业务逻辑不变。发布后必须核验 GitHub Pages 版本、管理员入口代码、桥接脚本和生产函数/权限状态。
+- v417 同步提升 `perm-app.html`、`frontdesk.html`、`operations.html`、`version.txt/json` 和既有资源缓存标记；员工端和前台业务逻辑不变。功能提交 `b2bc44f` 已推送 GitHub `main`；线上 `version.txt=417`，登录页实机确认仍为“员工账号 + 密码”且明确无需邮箱，页面源码包含管理员“财务账号”入口、强密码确认和公司/门店范围设置。
+- 线上 `operations-auth-bridge.js?v=417` 与仓库 SHA-256 均为 `a8ce8f617e3ebf7562f885e90a975d7ac3a8ff7e07403998a2d88a42eee81c8c`；发布后再次核验管理员有效授权 1、财务账号 0、Auth 用户 1，完成 RPC 仍仅 `service_role` 可执行。四个函数日志仅出现主动安全探针的预期 401/400/403，未创建测试财务账号、未写入业务数据。
 - 未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不得纳入本模块。
 - App version: v417
 
