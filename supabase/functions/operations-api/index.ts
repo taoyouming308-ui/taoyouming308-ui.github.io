@@ -61,6 +61,79 @@ async function restRowsAll(path: string, maxRows = 10000): Promise<JsonRecord[]>
   throw new Error("当前日期范围记录超过 10000 条，请缩短日期范围后重试");
 }
 
+function scopeRole(scope: JsonRecord, code: string): JsonRecord | null {
+  const roles = Array.isArray(scope.roles) ? scope.roles as JsonRecord[] : [];
+  return roles.find((role) => cleanText(role.code, 80) === code
+    && role.scope && typeof role.scope === "object") || null;
+}
+
+function scopeCapability(scope: JsonRecord, code: string, scopeType: string, storeId: string): boolean {
+  const capabilities = Array.isArray(scope.capabilities) ? scope.capabilities as JsonRecord[] : [];
+  return capabilities.some((capability) => cleanText(capability.code, 100) === code
+    && Array.isArray(capability.scopes)
+    && (capability.scopes as JsonRecord[]).some((item) => cleanText(item.type, 20) === scopeType
+      && (scopeType === "company" || cleanText(item.store_id, 40) === storeId)));
+}
+
+async function authSession(request: Request): Promise<JsonRecord | null> {
+  const authorization = cleanText(request.headers.get("authorization"), 9000);
+  if (!/^Bearer\s+[^\s]+$/i.test(authorization)) return null;
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/operations-auth`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: authorization, "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error("Supabase Auth 登录已失效，请重新登录");
+  const scope = await response.json() as JsonRecord;
+  if (cleanText(scope.auth_boundary, 80) !== "supabase_auth_rls") throw new Error("Supabase Auth 权限范围无效");
+
+  const shareholder = scopeRole(scope, "shareholder");
+  const finance = scopeRole(scope, "finance");
+  let operationsRole = "";
+  let roleScope: JsonRecord = {};
+  if (shareholder && cleanText((shareholder.scope as JsonRecord).type, 20) === "company") {
+    operationsRole = "shareholder";
+    roleScope = shareholder.scope as JsonRecord;
+  } else if (finance) {
+    operationsRole = "finance";
+    roleScope = finance.scope as JsonRecord;
+  }
+  const scopeType = cleanText(roleScope.type, 20);
+  const storeId = scopeType === "store" ? cleanText(roleScope.store_id, 40) : "";
+  const authorized = operationsRole === "shareholder"
+    ? scopeCapability(scope, "dashboard.group.read", "company", "")
+    : operationsRole === "finance"
+      ? scopeCapability(scope, "dashboard.store.read", scopeType, storeId)
+        && scopeCapability(scope, "daily_report.write", scopeType, storeId)
+      : false;
+  if (!authorized || (scopeType !== "company" && scopeType !== "store")) {
+    throw new Error("Supabase Auth 经营角色无权进入驾驶舱");
+  }
+
+  const rawStores = Array.isArray(scope.stores) ? scope.stores as JsonRecord[] : [];
+  const scopedStores = rawStores.filter((store) => cleanText(store.status, 20) === "active"
+    && (scopeType === "company" || cleanText(store.id, 40) === storeId));
+  const user = scope.user && typeof scope.user === "object" ? scope.user as JsonRecord : {};
+  const capabilities = Array.isArray(scope.capabilities) ? scope.capabilities as JsonRecord[] : [];
+  const storeName = scopeType === "store"
+    ? cleanText(scopedStores.find((store) => cleanText(store.id, 40) === storeId)?.name, 100)
+    : "";
+  if (scopeType === "store" && !storeName) throw new Error("Supabase Auth 门店范围无效");
+
+  return {
+    username: cleanText(user.login_name, 80) || cleanText(user.display_name, 120),
+    role: `auth_${operationsRole}`,
+    position: roleLabel(operationsRole),
+    store: storeName,
+    operations_role: operationsRole,
+    auth_user_id: cleanText(user.auth_user_id, 40),
+    auth_account_id: cleanText(user.id, 40),
+    auth_scope_type: scopeType,
+    auth_store_id: storeId,
+    auth_stores: scopedStores.map((store) => cleanText(store.name, 100)).filter(Boolean),
+    auth_capabilities: capabilities.map((capability) => cleanText(capability.code, 100)).filter(Boolean),
+  };
+}
+
 function operationsRole(staff: JsonRecord): string {
   const role = cleanText(staff.role, 40);
   const position = cleanText(staff.position, 120);
@@ -76,10 +149,14 @@ function roleLabel(role: unknown): string {
 }
 
 function canWriteExpense(session: JsonRecord): boolean {
+  if (Array.isArray(session.auth_capabilities)) {
+    return (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "expense.create_submit");
+  }
   return ["shareholder", "finance", "store_manager"].includes(cleanText(session.operations_role, 40));
 }
 
 async function availableStores(session: JsonRecord): Promise<string[]> {
+  if (Array.isArray(session.auth_stores)) return (session.auth_stores as unknown[]).map((item) => cleanText(item, 100)).filter(Boolean);
   const assigned = cleanText(session.store, 100);
   if (cleanText(session.operations_role, 40) !== "shareholder") return assigned ? [assigned] : [];
   const rows = await restRows("zysyr_stores?select=name&status=eq.active&order=name.asc&limit=300");
@@ -97,6 +174,9 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     stores: await availableStores(session),
     can_write_expense: canWriteExpense(session),
     can_create_store: role === "shareholder",
+    can_manage_finance_accounts: Array.isArray(session.auth_capabilities)
+      && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "finance_account.create")
+      && cleanText(session.auth_scope_type, 20) === "company",
     personal_scope: role === "employee",
   };
 }
@@ -146,7 +226,9 @@ async function logout(payload: JsonRecord): Promise<JsonRecord> {
   return { logged_out: true };
 }
 
-async function requireSession(payload: JsonRecord): Promise<JsonRecord> {
+async function requireSession(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  const authenticated = await authSession(request);
+  if (authenticated) return authenticated;
   const token = cleanText(payload.session_token, 200);
   if (!token) throw new Error("请重新登录");
   const tokenHash = await sha256(token);
@@ -177,7 +259,9 @@ async function requireSession(payload: JsonRecord): Promise<JsonRecord> {
 async function selectedStore(session: JsonRecord, payload: JsonRecord): Promise<string> {
   const stores = await availableStores(session);
   const requested = cleanText(payload.store, 100);
-  const store = cleanText(session.operations_role, 40) === "shareholder" ? (requested || stores[0] || "") : cleanText(session.store, 100);
+  const companyScope = cleanText(session.operations_role, 40) === "shareholder"
+    || cleanText(session.auth_scope_type, 20) === "company";
+  const store = companyScope ? (requested || stores[0] || "") : cleanText(session.store, 100);
   if (!store || !stores.includes(store)) throw new Error("请选择有效门店");
   return store;
 }
@@ -440,7 +524,7 @@ Deno.serve(async (request: Request) => {
   try {
     if (operation === "login") return json(await login(payload));
     if (operation === "logout") return json(await logout(payload));
-    const session = await requireSession(payload);
+    const session = await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "expense_save") return json(await saveExpense(payload, session));

@@ -131,6 +131,14 @@ async function findAdminUser(email: string): Promise<JsonRecord | null> {
   return users.find((user) => cleanText(user.email, 320).toLowerCase() === email) || null;
 }
 
+async function findAdminUserById(authUserId: string): Promise<JsonRecord | null> {
+  if (!isUuid(authUserId)) return null;
+  const response = await serviceFetch(`/auth/v1/admin/users/${authUserId}`);
+  if (!response.ok) return null;
+  const body = await response.json() as JsonRecord;
+  return isUuid(body.id) ? body : (body.user && typeof body.user === "object" ? body.user as JsonRecord : null);
+}
+
 async function createOrRecoverAuthUser(
   email: string,
   password: string,
@@ -202,6 +210,56 @@ async function passwordLogin(req: Request, payload: JsonRecord): Promise<Respons
   if (!gate?.allowed) return json({ error: "尝试次数过多，请15分钟后再试", retry_after_seconds: 900 }, 429);
 
   try {
+    const directAccountRows = await restRows(
+      `zysyr_user_accounts?select=id,company_id,auth_user_id,employee_id,login_name,display_name,status&login_name=eq.${encodeURIComponent(username.toLocaleLowerCase("zh-CN"))}&status=eq.active&limit=2`,
+    );
+    if (directAccountRows.length === 1) {
+      const directAccount = directAccountRows[0];
+      const accountId = cleanText(directAccount.id, 40);
+      const authUserId = cleanText(directAccount.auth_user_id, 40);
+      const financeRoles = await restRows("zysyr_roles?select=id&code=eq.finance&status=eq.active&limit=1");
+      const financeRoleId = cleanText(financeRoles[0]?.id, 40);
+      const financeGrants = isUuid(accountId) && isUuid(financeRoleId)
+        ? await restRows(
+          `zysyr_user_role_grants?select=id,scope_type,store_id,valid_from,valid_to,revoked_at&user_account_id=eq.${accountId}&role_id=eq.${financeRoleId}&revoked_at=is.null&valid_from=lte.${new Date().toISOString().slice(0, 10)}&limit=2`,
+        )
+        : [];
+      const today = new Date().toISOString().slice(0, 10);
+      const activeFinanceGrant = financeGrants.find((grant) => {
+        const validTo = cleanText(grant.valid_to, 10);
+        const scopeType = cleanText(grant.scope_type, 20);
+        return (!validTo || validTo >= today)
+          && (scopeType === "company" || (scopeType === "store" && isUuid(grant.store_id)));
+      });
+
+      if (activeFinanceGrant) {
+        const authUser = await findAdminUserById(authUserId);
+        const appMetadata = authUser?.app_metadata && typeof authUser.app_metadata === "object"
+          ? authUser.app_metadata as JsonRecord
+          : {};
+        const email = cleanText(authUser?.email, 320).toLowerCase();
+        if (!authUser || !isUuid(authUserId)
+            || cleanText(appMetadata.zysyr_account_id, 40) !== accountId
+            || cleanText(appMetadata.zysyr_company_id, 40) !== cleanText(directAccount.company_id, 40)
+            || cleanText(appMetadata.zysyr_login_name, 80) !== username.toLocaleLowerCase("zh-CN")
+            || cleanText(appMetadata.zysyr_role, 40) !== "finance"
+            || !/^zysyr_account_[0-9a-f]{32}@auth\.zysyr\.invalid$/.test(email)) {
+          await recordResult(identityHash, clientHash, requestId, "failure", "direct_identity_mismatch");
+          return json({ error: GENERIC_LOGIN_ERROR }, 403);
+        }
+
+        const session = await signIn(email, password);
+        const sessionUser = session?.user && typeof session.user === "object" ? session.user as JsonRecord : {};
+        if (!session || cleanText(sessionUser.id, 40) !== authUserId) {
+          await recordResult(identityHash, clientHash, requestId, "failure", "auth_rejected");
+          return json({ error: GENERIC_LOGIN_ERROR }, 403);
+        }
+
+        await recordResult(identityHash, clientHash, requestId, "success", "direct_auth_login");
+        return json(sessionPayload(session, directAccount));
+      }
+    }
+
     const allowRows = await restRows(
       `zysyr_auth_migration_allowlist?select=id,company_id,employee_id,legacy_staff_id,login_name,role_id,scope_type,store_id,status,expires_at&login_name=eq.${encodeURIComponent(username)}&status=eq.approved&limit=1`,
     );

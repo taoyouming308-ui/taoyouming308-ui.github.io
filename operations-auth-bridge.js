@@ -39,11 +39,23 @@
       return body;
     }
 
+    function roleScope(scope,code){
+      if(!Array.isArray(scope.roles))return null;
+      var role=scope.roles.find(function(item){return item&&item.code===code&&item.scope&&(item.scope.type==='company'||item.scope.type==='store')});
+      return role&&role.scope||null;
+    }
+
+    function capabilityAt(scope,code,roleScopeValue){
+      return Array.isArray(scope.capabilities)&&scope.capabilities.some(function(capability){return capability&&capability.code===code&&Array.isArray(capability.scopes)&&capability.scopes.some(function(item){return item&&roleScopeValue&&item.type===roleScopeValue.type&&(item.type==='company'||item.store_id===roleScopeValue.store_id)})});
+    }
+
     async function verify(accessToken){
       var scope=await request(base+'/functions/v1/operations-auth',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+clean(accessToken)}});
-      var companyRole=Array.isArray(scope.roles)&&scope.roles.some(function(role){return role&&role.code==='shareholder'&&role.scope&&role.scope.type==='company'});
-      var groupRead=Array.isArray(scope.capabilities)&&scope.capabilities.some(function(capability){return capability&&capability.code==='dashboard.group.read'&&Array.isArray(capability.scopes)&&capability.scopes.some(function(item){return item&&item.type==='company'})});
-      if(scope.auth_boundary!=='supabase_auth_rls'||!companyRole||!groupRead)throw new Error('Supabase Auth 股东公司范围校验失败');
+      var shareholderScope=roleScope(scope,'shareholder');
+      var financeScope=roleScope(scope,'finance');
+      var shareholderOk=shareholderScope&&shareholderScope.type==='company'&&capabilityAt(scope,'dashboard.group.read',shareholderScope);
+      var financeOk=financeScope&&capabilityAt(scope,'dashboard.store.read',financeScope)&&capabilityAt(scope,'daily_report.write',financeScope);
+      if(scope.auth_boundary!=='supabase_auth_rls'||(!shareholderOk&&!financeOk))throw new Error('Supabase Auth 经营角色与范围校验失败');
       return scope;
     }
 
@@ -73,7 +85,21 @@
       if(value)await global.fetch(base+'/auth/v1/logout?scope=local',{method:'POST',headers:{'apikey':key,'Authorization':'Bearer '+value.session.access_token}});
     }
 
-    return{login:login,restore:restore,signOut:signOut,clear:clear,read:read};
+    async function createFinanceAccount(payload){
+      var value=read();
+      if(!value)value=await restore();
+      if(!value)throw new Error('请重新登录后创建财务账号');
+      return request(base+'/functions/v1/operations-auth-admin',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+value.session.access_token},body:JSON.stringify({
+        action:'create_finance_account',
+        login_name:clean(payload&&payload.login_name,80),
+        display_name:clean(payload&&payload.display_name,80),
+        password:String(payload&&payload.password==null?'':payload.password),
+        scope_type:clean(payload&&payload.scope_type,20),
+        store_id:clean(payload&&payload.store_id,40)||null
+      })});
+    }
+
+    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,clear:clear,read:read};
   }
 
   global.ZysyrAuthBridge={create:create,storageKey:STORAGE_KEY};

@@ -27,6 +27,8 @@ expect(source.includes('constantTimeHexEqual'), 'constant-time hash comparison m
 expect(source.includes('HMAC') && source.includes('identityHash') && source.includes('clientHash'), 'HMAC rate-limit fingerprints missing');
 expect(source.includes('zysyr_begin_auth_migration'), 'atomic rate-limit gate missing');
 expect(source.includes('zysyr_complete_auth_migration'), 'atomic account/grant completion missing');
+expect(source.includes('direct_auth_login') && source.includes('zysyr_account_id'), 'direct Supabase Auth finance login missing');
+expect(source.includes('role_id=eq.${financeRoleId}') && source.includes('direct_identity_mismatch'), 'direct finance role/identity verification missing');
 expect(source.includes('GENERIC_LOGIN_ERROR'), 'generic anti-enumeration error missing');
 expect(!source.includes('console.log'), 'credentials or success payloads must not be logged');
 expect(!source.includes('user_metadata'), 'user-editable metadata must not authorize migration');

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-13 · v417 ZYSYR Gate C3 管理员创建财务账号
+
+- 经营驾驶舱新增仅授权管理员可见的“财务账号”入口，可直接设置用户名、显示名称、密码，以及全部门店或指定门店范围；财务登录继续只填写用户名和密码，不要求业务邮箱。
+- 新增 `operations-auth-admin`：只接受 Supabase Auth 用户 JWT，并再次通过 `operations-auth` 的 RLS 结果确认公司范围 `finance_account.create` 高风险能力。密码只交给 Auth Admin，不写入旧 `staff.password_hash`、经营数据库、审计、日志或响应。
+- 新增原子 Gate C3 迁移：精确向已激活 `admin` 公司范围股东账号授予创建能力；完成 RPC 仅 `service_role` 可执行，并在同一事务创建 V2 账号、财务范围授权及不可变审计。Auth 已创建而数据库失败时会回查或删除新 Auth 用户，避免半账号。
+- `operations-auth-migrate` 支持管理员直接创建的财务 Auth 账号用用户名密码登录；`operations-auth` 返回稳定登录名；`operations-api` 接受并逐次复核用户 JWT、角色、能力和公司/门店范围。Auth 股东的费用写入改为服从 V2 `expense.create_submit` 能力，不再从旧角色文字推断。
+- 生产迁移登记为 `20260813091814_zysyr_finance_account_admin_gate`；迁移后创建能力 1、管理员有效授权 1、启用审计 1、财务账号 0、Auth 用户 1。完成 RPC 对 `public/anon/authenticated` 无执行权限，仅 `service_role` 可执行。
+- 四个生产函数均为 `ACTIVE` 且与仓库源码一致：`operations-auth` v2（JWT）、`operations-auth-migrate` v2（自定义密码入口）、`operations-api` v3（兼容旧会话与 Auth JWT）、`operations-auth-admin` v1（JWT）。未登录探针分别返回预期 401/400/403，未创建测试财务账号。
+- 发布版本提升到 v417；员工端与前台只同步版本和既有缓存标记，不改变预约、客户、收银或美管加业务逻辑。
+
 ## 2026-08-11 · v416 ZYSYR Gate C2 双通道认证过渡
 
 - 现有 `operations.html` 登录框保持“用户名 + 现有密码”，不要求邮箱；旧经营接口先验证账号并建立兼容会话，只有旧接口确认的股东账号才进入 Supabase Auth 滚动迁移，普通员工不会调用迁移端点或产生无效限流事件。

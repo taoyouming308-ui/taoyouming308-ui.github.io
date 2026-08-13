@@ -82,7 +82,7 @@ function scopeOf(row: JsonRecord): JsonRecord {
 
 async function loadScope(token: string, authUserId: string): Promise<JsonRecord> {
   const accounts = await restRows(
-    `zysyr_user_accounts?select=id,company_id,auth_user_id,employee_id,display_name,status,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
+    `zysyr_user_accounts?select=id,company_id,auth_user_id,employee_id,display_name,login_name,status,activated_at&auth_user_id=eq.${authUserId}&limit=1`,
     token,
   );
   const account = accounts[0];
@@ -177,6 +177,7 @@ async function loadScope(token: string, authUserId: string): Promise<JsonRecord>
       company_id: companyId,
       employee_id: isUuid(account.employee_id) ? cleanText(account.employee_id, 40) : null,
       display_name: cleanText(account.display_name, 120),
+      login_name: cleanText(account.login_name, 80),
     },
     roles: roleGrants.map((grant) => {
       const role = roleById.get(cleanText(grant.role_id, 40)) || {};
