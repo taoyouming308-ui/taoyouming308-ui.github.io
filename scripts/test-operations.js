@@ -10,6 +10,7 @@ const edge = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/
 const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/deno.json'), 'utf8');
 const foundation = fs.readFileSync(path.join(root, 'supabase/migrations/20260810022101_zysyr_operations_foundation.sql'), 'utf8');
 const reports = fs.readFileSync(path.join(root, 'supabase/migrations/20260813094949_zysyr_finance_report_uploads.sql'), 'utf8');
+const traceability = fs.readFileSync(path.join(root, 'supabase/migrations/20260813103623_zysyr_report_cell_traceability.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -27,6 +28,9 @@ expect(html.includes('底薪') && html.includes('提成') && html.includes('社�
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('业绩报表（每日）') && html.includes('月度盈亏表（每月）'), 'finance report upload entry missing');
 expect(html.includes('本报表消费凭证（可多选）') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
 expect(html.includes("api('report_upload'") && html.includes("openPrivate('report_url'") && html.includes("openPrivate('voucher_url'"), 'protected report and evidence flows missing');
+expect(html.includes("api('cell_trace'") && html.includes("api('cell_trace_save'") && html.includes("api('report_cells'"), 'cell-level trace UI flow missing');
+expect(html.includes('怎么算出来的') && html.includes('来自哪天、哪一行、谁上传') && html.includes('对应凭证'), 'shareholder trace drawer copy missing');
+expect(html.includes('trace-mismatch') && html.includes('trace-missing_evidence') && html.includes('trace-unlinked'), 'trace exception highlighting missing');
 expect(html.includes('股东视角 · 只读') && html.includes('财务视角 · 可上传'), 'shareholder and finance perspectives missing');
 expect(html.includes('不连接、不读取美管加') && html.includes('数值只取自本页所示财务上传原件'), 'finance-only source boundary copy missing');
 expect(!html.includes('kpi-income') && !html.includes('每日收支趋势') && !html.includes('发型师业绩</h3>'), 'automatic KPI, trend, or ranking UI must be removed');
@@ -42,6 +46,10 @@ expect(edge.includes('canUploadReports') && edge.includes('report.upload') && ed
 expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
 expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
 expect(edge.includes('workbookDisplay') && edge.includes('ExcelJS.Workbook') && edge.includes('model.merges'), 'Excel display projection missing');
+expect(edge.includes('formulaPrecedents') && edge.includes('reportCellLabel') && edge.includes('precedent_addresses'), 'cell formula and original-position parsing missing');
+expect(edge.includes('/向里/.test(storeName)') && edge.includes('["向里业绩报表", "业绩报表"]'), 'store-specific performance worksheet selection missing');
+expect(edge.includes('zysyr_register_report_upload') && edge.includes('zysyr_report_cells'), 'transactional report-cell registration missing');
+expect(edge.includes('cellTrace') && edge.includes('saveCellTrace') && edge.includes('zysyr_save_report_cell_trace'), 'cell trace query/save API missing');
 expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
 expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');
 expect(edge.includes('recordType === "report"') && edge.includes('zysyr_voucher_attachments'), 'report voucher association missing');
@@ -66,4 +74,19 @@ expect(reports.includes("record_type in ('expense', 'income', 'report')"), 'repo
 expect(reports.includes('zysyr_report_uploads_append_audit') && reports.includes("'finance_report', new.id, 'upload'"), 'transactional report audit trigger missing');
 expect(reports.includes('zysyr_report_uploads_protect_version') && reports.includes('finance report versions are immutable'), 'immutable report-version trigger missing');
 
-console.log('operations tests passed: finance-upload-only original report home');
+expect(traceability.includes('create table if not exists public.zysyr_report_cells'), 'report cell table missing');
+expect(traceability.includes('cell_address text not null') && traceability.includes('precedent_addresses jsonb'), 'cell position or formula precedents missing');
+expect(traceability.includes('create table if not exists public.zysyr_report_cell_trace_revisions'), 'trace revision table missing');
+expect(traceability.includes("status in ('matched', 'mismatch', 'missing_evidence', 'unlinked')"), 'trace reconciliation statuses missing');
+expect(traceability.includes('create table if not exists public.zysyr_report_cell_trace_sources') && traceability.includes('create table if not exists public.zysyr_report_cell_trace_evidence'), 'source/evidence link tables missing');
+expect(traceability.includes('report cell trace history is append-only'), 'trace history immutability trigger missing');
+expect(traceability.includes('create or replace function public.zysyr_register_report_upload') && traceability.includes("current_setting('request.jwt.claim.role', true)"), 'transactional service-only report registration missing');
+expect(traceability.includes('create or replace function public.zysyr_save_report_cell_trace'), 'trace save RPC missing');
+expect(traceability.includes("cap.code = 'report.upload'") && traceability.includes("report.report_type in ('daily', 'performance')"), 'finance scope or source report boundary missing');
+expect(traceability.includes("abs(v_delta) > 0.01") && traceability.includes("when v_evidence_count = 0 then 'missing_evidence'"), '0.01 reconciliation or evidence check missing');
+expect(traceability.includes("'report_cell_trace_revision'") && traceability.includes("'derived_from'") && traceability.includes("'evidenced_by'"), 'trace graph relations missing');
+['zysyr_report_cells', 'zysyr_report_cell_trace_revisions', 'zysyr_report_cell_trace_sources', 'zysyr_report_cell_trace_evidence'].forEach((table) => {
+  expect(traceability.includes(`alter table public.${table} enable row level security`) && traceability.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
+});
+
+console.log('operations tests passed: finance-upload-only original report home with cell-level traceability');

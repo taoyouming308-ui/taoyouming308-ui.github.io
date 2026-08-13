@@ -22,6 +22,11 @@ function cleanText(value: unknown, max = 500): string {
   return String(value ?? "").trim().slice(0, max);
 }
 
+function uuidIn(values: unknown[]): string {
+  const ids = Array.from(new Set(values.map((value) => cleanText(value, 40)).filter((value) => /^[0-9a-f-]{36}$/i.test(value))));
+  return `(${ids.join(",")})`;
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: cors });
 }
@@ -337,13 +342,65 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     list.push(voucher);
     voucherMap.set(key, list);
   }
-  const withEvidence: JsonRecord[] = reports.map((report) => ({ ...report, vouchers: voucherMap.get(cleanText(report.id, 80)) || [] }));
+  const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
+  const uploaders = uploaderFilter === "()" ? [] : await restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`);
+  const uploaderMap = new Map(uploaders.map((account) => [cleanText(account.id, 40), {
+    login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
+  }]));
+  const withEvidence: JsonRecord[] = reports.map((report) => ({
+    ...report,
+    uploaded_by: uploaderMap.get(cleanText(report.uploaded_by_user_id, 40)) || null,
+    vouchers: voucherMap.get(cleanText(report.id, 80)) || [],
+  }));
   const monthlyReport = withEvidence.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
     && cleanText(report.report_date, 10) === start) || null;
+  const cellTraceStatus: Record<string, string> = {};
+  const traceSummary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0 };
+  if (monthlyReport) {
+    const reportId = cleanText(monthlyReport.id, 40);
+    const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,cell_kind,numeric_value,precedent_addresses&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+    const cellFilter = uuidIn(cells.map((cell) => cell.id));
+    const revisions = cellFilter === "()" ? [] : await restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000);
+    const latest = new Map<string, string>();
+    for (const revision of revisions) {
+      const cellId = cleanText(revision.target_cell_id, 40);
+      if (!latest.has(cellId)) latest.set(cellId, cleanText(revision.status, 30));
+    }
+    const cellsByAddress = new Map(cells.map((cell) => [cleanText(cell.cell_address, 20), cell]));
+    const resolved = new Map<string, string>();
+    function resolveStatus(cell: JsonRecord, trail = new Set<string>()): string {
+      const id = cleanText(cell.id, 40);
+      if (resolved.has(id)) return resolved.get(id) as string;
+      if (trail.has(id)) return "mismatch";
+      if (cleanText(cell.cell_kind, 20) !== "formula") {
+        const status = latest.get(id) || "unlinked";
+        resolved.set(id, status);
+        return status;
+      }
+      const nextTrail = new Set(trail); nextTrail.add(id);
+      const addresses = Array.isArray(cell.precedent_addresses) ? cell.precedent_addresses as unknown[] : [];
+      const precedentStatuses = addresses.map((address) => cellsByAddress.get(cleanText(address, 20))).filter(Boolean)
+        .map((precedent) => resolveStatus(precedent as JsonRecord, nextTrail));
+      const status = !precedentStatuses.length || precedentStatuses.includes("unlinked") ? "unlinked"
+        : precedentStatuses.includes("mismatch") ? "mismatch"
+          : precedentStatuses.includes("missing_evidence") ? "missing_evidence" : "formula";
+      resolved.set(id, status);
+      return status;
+    }
+    for (const cell of cells) {
+      const address = cleanText(cell.cell_address, 20);
+      const status = resolveStatus(cell);
+      cellTraceStatus[address] = status;
+      traceSummary.total += 1;
+      if (Object.prototype.hasOwnProperty.call(traceSummary, status)) (traceSummary as Record<string, number>)[status] += 1;
+    }
+  }
   return {
     store: cleanText(store.name, 100), month, source_boundary: "finance_uploads_only",
     monthly_report: monthlyReport,
     reports: withEvidence,
+    cell_trace_status: cellTraceStatus,
+    trace_summary: traceSummary,
   };
 }
 
@@ -417,6 +474,7 @@ function excelCellText(value: unknown): string {
   if (typeof value !== "object") return cleanText(value, 500);
   const record = value as JsonRecord;
   if (record.result !== undefined) return excelCellText(record.result);
+  if (record.formula !== undefined) return `=${cleanText(record.formula, 490)}`;
   if (Array.isArray(record.richText)) return cleanText(record.richText.map((part) => cleanText((part as JsonRecord).text, 500)).join(""), 500);
   if (record.text !== undefined) return cleanText(record.text, 500);
   if (record.hyperlink !== undefined) return cleanText(record.hyperlink, 500);
@@ -438,7 +496,71 @@ function mergeCoordinates(text: string): JsonRecord {
   return { start_row: from.row - 1, start_col: from.column - 1, end_row: to.row - 1, end_col: to.column - 1 };
 }
 
-async function workbookDisplay(bytes: Uint8Array, reportType: string): Promise<JsonRecord> {
+function columnLetters(column: number): string {
+  let value = column;
+  let output = "";
+  while (value > 0) {
+    value -= 1;
+    output = String.fromCharCode(65 + (value % 26)) + output;
+    value = Math.floor(value / 26);
+  }
+  return output;
+}
+
+function numericCellValue(value: unknown): number | null {
+  const resolved = value && typeof value === "object" && (value as JsonRecord).result !== undefined
+    ? (value as JsonRecord).result
+    : value;
+  if (typeof resolved === "number" && Number.isFinite(resolved)) return Number(resolved.toFixed(4));
+  return null;
+}
+
+function formulaCellText(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const record = value as JsonRecord;
+  return cleanText(record.formula ?? record.sharedFormula, 2000);
+}
+
+function formulaPrecedents(formula: string, sheetName: string): string[] {
+  if (!formula || formula.includes("#REF!")) return [];
+  const found = new Set<string>();
+  const pattern = /(?:(?:'([^']+)'|([A-Za-z0-9_\u4e00-\u9fff]+))!)?\$?([A-Z]{1,3})\$?([1-9][0-9]{0,3})(?::\$?([A-Z]{1,3})\$?([1-9][0-9]{0,3}))?/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(formula.toUpperCase())) !== null) {
+    if (formula.slice(match.index + match[0].length).startsWith("(")) continue;
+    const referencedSheet = cleanText(match[1] || match[2], 120);
+    if (referencedSheet && referencedSheet !== sheetName.toUpperCase()) continue;
+    const start = mergeCoordinates(`${match[3]}${match[4]}:${match[5] || match[3]}${match[6] || match[4]}`);
+    const startRow = Number(start.start_row) + 1;
+    const endRow = Number(start.end_row) + 1;
+    const startColumn = Number(start.start_col) + 1;
+    const endColumn = Number(start.end_col) + 1;
+    if ((endRow - startRow + 1) * (endColumn - startColumn + 1) > 500) continue;
+    for (let row = startRow; row <= endRow; row += 1) {
+      for (let column = startColumn; column <= endColumn; column += 1) found.add(`${columnLetters(column)}${row}`);
+    }
+  }
+  return Array.from(found);
+}
+
+function reportCellLabel(values: string[][], row: number, column: number): string {
+  const parts: string[] = [];
+  for (let cursor = column - 1; cursor >= Math.max(1, column - 6); cursor -= 1) {
+    const value = cleanText(values[row - 1]?.[cursor - 1], 120);
+    if (value && !/^-?\d+(?:\.\d+)?$/.test(value) && !parts.includes(value)) parts.unshift(value);
+    if (parts.length >= 2) break;
+  }
+  for (let cursor = row - 1; cursor >= Math.max(1, row - 15); cursor -= 1) {
+    const value = cleanText(values[cursor - 1]?.[column - 1], 120);
+    if (value && !/^-?\d+(?:\.\d+)?$/.test(value) && !parts.includes(value)) {
+      parts.push(value);
+      break;
+    }
+  }
+  return cleanText(parts.join(" / "), 300);
+}
+
+async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = ""): Promise<JsonRecord> {
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(exactArrayBuffer(bytes));
@@ -448,7 +570,7 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string): Promise<J
   const preferred = reportType === "monthly_profit_loss"
     ? ["模版", "模板", "月盈亏统计"]
     : reportType === "performance"
-      ? ["业绩报表", "向里业绩报表"]
+      ? (/向里/.test(storeName) ? ["向里业绩报表", "业绩报表"] : ["业绩报表", "向里业绩报表"])
       : ["日报", "日报表"];
   const sheet = preferred.map((name) => workbook.getWorksheet(name)).find(Boolean) || workbook.worksheets[0];
   if (!sheet) throw new Error("Excel 文件中没有可读取的工作表");
@@ -462,10 +584,36 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string): Promise<J
       values[row - 1][column - 1] = excelCellText(sheet.getCell(row, column).value);
     }
   }
+  const cells: JsonRecord[] = [];
+  for (let row = 1; row <= rowCount; row += 1) {
+    for (let column = 1; column <= columnCount; column += 1) {
+      const source = sheet.getCell(row, column).value;
+      const formula = formulaCellText(source);
+      const numericValue = numericCellValue(source);
+      if (numericValue === null && !formula) continue;
+      const address = `${columnLetters(column)}${row}`;
+      const label = reportCellLabel(values, row, column);
+      const numberFormat = cleanText(sheet.getCell(row, column).numFmt, 80).toLowerCase();
+      if (!formula && (/(编号|序号|员工号|日期)/.test(label) || /(^|[^a-z])[ymdhis]+([^a-z]|$)/.test(numberFormat))) continue;
+      cells.push({
+        sheet_name: sheetName,
+        cell_address: address,
+        row_number: row,
+        column_number: column,
+        cell_kind: formula ? "formula" : "input",
+        display_value: values[row - 1][column - 1],
+        numeric_value: numericValue,
+        formula: formula || null,
+        precedent_addresses: formulaPrecedents(formula, sheetName),
+        label,
+      });
+    }
+  }
+  if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
   const model = sheet.model as unknown as JsonRecord;
   const merges = (Array.isArray(model.merges) ? model.merges : []).map((merge) => mergeCoordinates(cleanText(merge, 40)));
   const rangeText = `A1:${sheet.getCell(rowCount, columnCount).address}`;
-  return { sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount, values, merges };
+  return { sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount, values, merges, cells };
 }
 
 function reportDateValue(payload: JsonRecord, reportType: string): string {
@@ -493,14 +641,11 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("报表文件必须小于 10MB");
-  const displayData = await workbookDisplay(bytes, reportType);
+  const displayData = await workbookDisplay(bytes, reportType, cleanText(store.name, 100));
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const accountId = cleanText(session.auth_account_id, 40);
   if (!companyId || !storeId || !accountId) throw new Error("财务账号公司、门店或身份范围无效");
-  const previous = await restRows(`zysyr_report_uploads?select=id,version&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.${reportType}&report_date=eq.${reportDate}&order=version.desc&limit=1`);
-  const prior = previous[0];
-  const version = Number(prior?.version || 0) + 1;
   const extension = "xlsx";
   const objectPath = `${companyId}/${storeId}/${reportType}/${reportDate}/${crypto.randomUUID()}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
@@ -509,15 +654,17 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
     body: exactArrayBuffer(bytes),
   });
   if (!upload.ok) throw new Error(`报表原件上传失败 (${upload.status})`);
-  const metadata = await rest("zysyr_report_uploads", {
-    method: "POST", headers: { Prefer: "return=representation" },
+  const metadata = await rest("rpc/zysyr_register_report_upload", {
+    method: "POST",
     body: JSON.stringify({
-      company_id: companyId, store_id: storeId, report_type: reportType, report_date: reportDate,
-      template_code: reportType === "monthly_profit_loss" ? "zysyr_monthly_profit_loss_original" : `zysyr_${reportType}_original`,
-      template_version: 1, version, supersedes_report_id: prior?.id || null,
-      original_filename: filename || `report.${extension}`, mime_type: mime, size_bytes: bytes.length,
-      sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET, object_path: objectPath,
-      display_data: displayData, uploaded_by_user_id: accountId,
+      p_report: {
+        company_id: companyId, store_id: storeId, report_type: reportType, report_date: reportDate,
+        template_code: reportType === "monthly_profit_loss" ? "zysyr_monthly_profit_loss_original" : `zysyr_${reportType}_original`,
+        template_version: 1, original_filename: filename || `report.${extension}`, mime_type: mime,
+        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        object_path: objectPath, display_data: displayData, uploaded_by_user_id: accountId,
+      },
+      p_cells: Array.isArray(displayData.cells) ? displayData.cells : [],
     }),
   });
   if (!metadata.ok) {
@@ -526,14 +673,122 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
     });
     throw new Error(`报表登记失败 (${metadata.status})`);
   }
-  const rows = await metadata.json();
-  const saved = rows[0] as JsonRecord;
-  if (prior?.id) {
-    await rest(`zysyr_report_uploads?id=eq.${encodeURIComponent(cleanText(prior.id, 40))}&company_id=eq.${companyId}`, {
-      method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "superseded" }),
-    });
-  }
+  const saved = await metadata.json() as JsonRecord;
   return { saved, source_boundary: "finance_uploads_only", original_private: true };
+}
+
+function uuidArray(value: unknown, max: number): string[] {
+  if (!Array.isArray(value) || value.length > max) throw new Error("追溯选择数量无效");
+  const items = value.map((item) => cleanText(item, 40));
+  if (items.some((item) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item))) {
+    throw new Error("追溯记录标识无效");
+  }
+  return Array.from(new Set(items));
+}
+
+async function reportCells(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const reportId = cleanText(payload.report_id, 40);
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(reportId)}&limit=1`);
+  const report = reports[0];
+  if (!report) throw new Error("报表不存在或无权访问");
+  const [cells, vouchers, uploaders] = await Promise.all([
+    restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000),
+    restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&record_id=eq.${reportId}&order=uploaded_at.asc`, 1000),
+    restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=eq.${cleanText(report.uploaded_by_user_id, 40)}&limit=1`),
+  ]);
+  return { report: { ...report, uploaded_by: uploaders[0] || null }, cells, vouchers };
+}
+
+async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const reportId = cleanText(payload.report_id, 40);
+  const address = cleanText(payload.cell_address, 20).toUpperCase();
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&limit=1`);
+  const report = reports[0];
+  if (!report) throw new Error("月报不存在或无权访问");
+  const cells = await restRows(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
+  const target = cells[0];
+  if (!target) throw new Error("该位置不是可追溯的金额或公式单元格");
+  const uploaderRows = await restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=eq.${cleanText(report.uploaded_by_user_id, 40)}&limit=1`);
+  const result: JsonRecord = { target, report: { ...report, uploaded_by: uploaderRows[0] || null }, can_edit: canUploadReports(session) };
+
+  if (cleanText(target.cell_kind, 20) === "formula") {
+    const precedents = Array.isArray(target.precedent_addresses) ? target.precedent_addresses as unknown[] : [];
+    const addresses = precedents.map((item) => cleanText(item, 20)).filter((item) => /^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(item));
+    const addressFilter = addresses.length ? `(${addresses.join(",")})` : "()";
+    const sourceCells = addressFilter === "()" ? [] : await restRowsAll(`zysyr_report_cells?select=id,cell_address,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&report_id=eq.${reportId}&cell_address=in.${addressFilter}&order=row_number.asc,column_number.asc`, 1000);
+    const sourceFilter = uuidIn(sourceCells.map((cell) => cell.id));
+    const revisions = sourceFilter === "()" ? [] : await restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_amount,delta,evidence_count&company_id=eq.${companyId}&target_cell_id=in.${sourceFilter}&order=revision.desc`, 2000);
+    const revisionMap = new Map<string, JsonRecord>();
+    for (const revision of revisions) {
+      const key = cleanText(revision.target_cell_id, 40);
+      if (!revisionMap.has(key)) revisionMap.set(key, revision);
+    }
+    result.mode = "formula";
+    result.precedents = sourceCells.map((cell) => ({ ...cell, trace: revisionMap.get(cleanText(cell.id, 40)) || null }));
+    return result;
+  }
+
+  const revisions = await restRows(`zysyr_report_cell_trace_revisions?select=id,revision,expected_amount,source_amount,delta,status,source_count,evidence_count,created_by_user_id,created_at&company_id=eq.${companyId}&target_cell_id=eq.${cleanText(target.id, 40)}&order=revision.desc&limit=1`);
+  const revision = revisions[0] || null;
+  const sources: JsonRecord[] = [];
+  let evidence: JsonRecord[] = [];
+  if (revision) {
+    const [sourceLinks, evidenceLinks] = await Promise.all([
+      restRowsAll(`zysyr_report_cell_trace_sources?select=source_cell_id,source_amount&company_id=eq.${companyId}&trace_revision_id=eq.${cleanText(revision.id, 40)}&limit=500`, 500),
+      restRowsAll(`zysyr_report_cell_trace_evidence?select=voucher_id&company_id=eq.${companyId}&trace_revision_id=eq.${cleanText(revision.id, 40)}&limit=200`, 200),
+    ]);
+    const sourceFilter = uuidIn(sourceLinks.map((link) => link.source_cell_id));
+    const sourceCells = sourceFilter === "()" ? [] : await restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${sourceFilter}&limit=500`, 500);
+    const sourceReportFilter = uuidIn(sourceCells.map((cell) => cell.report_id));
+    const sourceReports = sourceReportFilter === "()" ? [] : await restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${sourceReportFilter}&limit=500`, 500);
+    const sourceUploaderFilter = uuidIn(sourceReports.map((item) => item.uploaded_by_user_id));
+    const sourceUploaders = sourceUploaderFilter === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${sourceUploaderFilter}&limit=500`, 500);
+    const reportMap = new Map(sourceReports.map((item) => [cleanText(item.id, 40), item]));
+    const accountMap = new Map(sourceUploaders.map((item) => [cleanText(item.id, 40), item]));
+    for (const cell of sourceCells) {
+      const sourceReport = reportMap.get(cleanText(cell.report_id, 40)) || {};
+      sources.push({ ...cell, report: { ...sourceReport, uploaded_by: accountMap.get(cleanText(sourceReport.uploaded_by_user_id, 40)) || null } });
+    }
+    const evidenceFilter = uuidIn(evidenceLinks.map((link) => link.voucher_id));
+    evidence = evidenceFilter === "()" ? [] : await restRowsAll(`zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${evidenceFilter}&limit=200`, 200);
+  }
+  result.mode = "input";
+  result.revision = revision;
+  result.sources = sources;
+  result.evidence = evidence;
+  return result;
+}
+
+async function saveCellTrace(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadReports(session)) throw new Error("只有财务账号可以设置月报数字追溯");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const targetCellId = cleanText(payload.target_cell_id, 40);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const target = await restRows(`zysyr_report_cells?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${targetCellId}&limit=1`);
+  if (!target.length || !actorId) throw new Error("目标单元格或财务身份无效");
+  const response = await rest("rpc/zysyr_save_report_cell_trace", {
+    method: "POST",
+    body: JSON.stringify({
+      p_target_cell_id: targetCellId,
+      p_source_cell_ids: uuidArray(payload.source_cell_ids, 500),
+      p_voucher_ids: uuidArray(payload.voucher_ids, 200),
+      p_actor_user_id: actorId,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({})) as JsonRecord;
+    throw new Error(cleanText(error.message ?? error.error, 500) || `追溯保存失败 (${response.status})`);
+  }
+  const saved = await response.json();
+  return { saved };
 }
 
 async function reportUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -658,6 +913,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "report_upload") return json(await uploadReport(payload, session));
+    if (operation === "report_cells") return json(await reportCells(payload, session));
+    if (operation === "cell_trace") return json(await cellTrace(payload, session));
+    if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
     if (operation === "report_url") return json(await reportUrl(payload, session));
     if (operation === "expense_save") return json(await saveExpense(payload, session));
     if (operation === "expense_import") return json(await importExpenses(payload, session));
