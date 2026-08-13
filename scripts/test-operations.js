@@ -7,58 +7,63 @@ const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
-const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260810022101_zysyr_operations_foundation.sql'), 'utf8');
+const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/deno.json'), 'utf8');
+const foundation = fs.readFileSync(path.join(root, 'supabase/migrations/20260810022101_zysyr_operations_foundation.sql'), 'utf8');
+const reports = fs.readFileSync(path.join(root, 'supabase/migrations/20260813094949_zysyr_finance_report_uploads.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
   if (!value) throw new Error(message);
 }
 
-const script = html.match(/<script>([\s\S]*?)<\/script>/);
-expect(script, 'operations inline script missing');
-new vm.Script(script[1], { filename: 'operations.html' });
-
-const primaryStylistSource = edge.match(/function resolvePrimaryHairstylist\([\s\S]*?\n\}/);
-expect(primaryStylistSource, 'primary hairstylist resolver missing');
-const primaryStylistContext = {};
-vm.runInNewContext(`${primaryStylistSource[0]}; globalThis.resolvePrimaryHairstylist = resolvePrimaryHairstylist;`, primaryStylistContext);
-const resolvePrimaryHairstylist = primaryStylistContext.resolvePrimaryHairstylist;
-expect(resolvePrimaryHairstylist(['无名', '王冰洲'], ['无名', '娄云']) === '无名', 'technician must not receive hairstylist performance');
-expect(resolvePrimaryHairstylist(['吴红红', '晓伟'], ['晓伟', '陈浩']) === '晓伟', 'hairstylist may appear after a technician in service staff');
-expect(resolvePrimaryHairstylist(['郭小康', '十一'], ['小康', '十一']) === '小康', 'one bill must resolve to the first matching hairstylist only');
-expect(resolvePrimaryHairstylist(['王冰洲'], ['无名', '娄云']) === '', 'technician-only service staff must not create performance');
+const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+expect(inlineScripts.length === 1, 'operations inline script missing or duplicated');
+new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
-expect(html.includes('经营驾驶舱') && html.includes('经营总览') && html.includes('收支明细'), 'operations core views missing');
-expect(html.includes('发型师业绩') && html.includes('每单只归一位发型师') && !html.includes('按参与流水'), 'hairstylist-only performance copy missing');
-expect(html.includes('即时待补凭证') && html.includes('data-filter="missing"'), 'urgent missing-voucher queue missing');
-expect(html.includes('美管加已同步消费') && html.includes('不执行付款、退款、充值或自动收银'), 'cashier read-only boundary missing');
-expect(html.includes("api('overview'") && html.includes("api('expense_save'") && html.includes("api('voucher_upload'"), 'protected data flows missing');
-expect(html.includes("api('expense_import'") && html.includes('重复内容会自动跳过'), 'history import flow missing');
-expect(html.includes("api('voucher_url'") && html.includes('打开私有凭证'), 'private voucher open flow missing');
-expect(!html.includes('SUPABASE_SERVICE_ROLE_KEY'), 'service role key must never appear in operations HTML');
-expect(html.includes('sb_publishable_'), 'browser must use a publishable Supabase key');
+expect(html.includes('原表月报') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
+expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
+expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
+expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('业绩报表（每日）') && html.includes('月度盈亏表（每月）'), 'finance report upload entry missing');
+expect(html.includes('本报表消费凭证（可多选）') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
+expect(html.includes("api('report_upload'") && html.includes("openPrivate('report_url'") && html.includes("openPrivate('voucher_url'"), 'protected report and evidence flows missing');
+expect(html.includes('股东视角 · 只读') && html.includes('财务视角 · 可上传'), 'shareholder and finance perspectives missing');
+expect(html.includes('不连接、不读取美管加') && html.includes('数值只取自本页所示财务上传原件'), 'finance-only source boundary copy missing');
+expect(!html.includes('kpi-income') && !html.includes('每日收支趋势') && !html.includes('发型师业绩</h3>'), 'automatic KPI, trend, or ranking UI must be removed');
+expect(!html.includes('美管加已同步消费') && !html.includes('income_read_only_from_mgj'), 'old Meiguanjia synchronization copy must be removed');
+expect(html.includes('无需填写邮箱') && html.includes('员工账号') && html.includes('密码'), 'username/password login copy missing');
+expect(html.includes('operations-auth-bridge.js?v=' + releaseVersion), 'versioned Auth bridge missing');
+expect(html.includes('sb_publishable_') && !html.includes('SUPABASE_SERVICE_ROLE_KEY'), 'frontend key boundary invalid');
 expect(admin.includes('href="operations.html"'), 'admin entry to operations missing');
 
 expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Function must keep service role server-side');
-expect(edge.includes('zysyr_operations_sessions') && edge.includes('requireSession'), 'revalidated operations session missing');
-expect(edge.includes('operationsRole') && edge.includes('personal_scope') && edge.includes('canWriteExpense'), 'role-based operations scope missing');
-expect(edge.includes('mgj_service_records') && edge.includes('income_read_only_from_mgj'), 'read-only Meiguanjia income source missing');
-expect(edge.includes('select=username,position') && edge.includes('isHairstylistPosition') && edge.includes('primary_hairstylist'), 'hairstylist-only performance scope missing');
-expect(edge.includes('if (!name || (personal && name !== username)) continue'), 'personal performance must remain hairstylist-only');
-expect(edge.includes('zysyr_expense_records') && edge.includes('cashier_untouched: true'), 'independent expense source or cashier boundary missing');
-expect(edge.includes('MAX_VOUCHER_BYTES') && edge.includes('/storage/v1/object/sign/'), 'private voucher constraints or signed link missing');
-expect(edge.includes('resolution=ignore-duplicates') && edge.includes('source_ref'), 'idempotent history import missing');
-expect(edge.includes('store !==') || edge.includes('stores.includes(store)'), 'server-side store authorization missing');
+expect(edge.includes('operations-auth') && edge.includes('requireSession'), 'Supabase Auth session validation missing');
+expect(edge.includes('canUploadReports') && edge.includes('report.upload') && edge.includes('operations_role') && edge.includes('finance'), 'finance-only report permission missing');
+expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
+expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
+expect(edge.includes('workbookDisplay') && edge.includes('ExcelJS.Workbook') && edge.includes('model.merges'), 'Excel display projection missing');
+expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
+expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');
+expect(edge.includes('recordType === "report"') && edge.includes('zysyr_voucher_attachments'), 'report voucher association missing');
+expect(!edge.includes('mgj_service_records') && !edge.includes('income_read_only_from_mgj'), 'operations API must not read Meiguanjia');
 expect(!edge.includes('SUPABASE_ANON_KEY'), 'Edge Function must not rely on a browser anon key');
 
-['zysyr_stores', 'zysyr_operations_sessions', 'zysyr_expense_records', 'zysyr_voucher_attachments'].forEach((table) => {
-  expect(migration.includes(`alter table public.${table} enable row level security`), `${table} RLS missing`);
-  expect(migration.includes(`revoke all on table public.${table} from public, anon, authenticated`), `${table} browser revoke missing`);
-  expect(migration.includes(`grant select, insert, update, delete on table public.${table} to service_role`), `${table} service-role grant missing`);
-});
-expect(migration.includes("'zysyr-vouchers'") && migration.includes('public, file_size_limit, allowed_mime_types'), 'private voucher bucket definition missing');
-expect(migration.includes('false,') && migration.includes("'image/jpeg'") && migration.includes("'application/pdf'"), 'voucher bucket privacy or MIME restrictions missing');
-expect(migration.includes('never creates or changes a Meiguanjia cashier transaction'), 'database cashier boundary comment missing');
+const denoConfig = JSON.parse(deno);
+expect(denoConfig.imports.exceljs === 'npm:exceljs@4.4.0', 'Excel parser dependency must be pinned');
 
-console.log('operations tests passed');
+['zysyr_stores', 'zysyr_operations_sessions', 'zysyr_expense_records', 'zysyr_voucher_attachments'].forEach((table) => {
+  expect(foundation.includes(`alter table public.${table} enable row level security`), `${table} foundation RLS missing`);
+});
+expect(reports.includes('create table if not exists public.zysyr_report_uploads'), 'report upload table missing');
+expect(reports.includes('company_id uuid not null') && reports.includes('store_id uuid not null'), 'report tenant keys missing');
+expect(reports.includes('unique (company_id, store_id, report_type, report_date, version)'), 'append-only report versions missing');
+expect(reports.includes('alter table public.zysyr_report_uploads enable row level security') && reports.includes('force row level security'), 'report RLS missing');
+expect(reports.includes("has_capability(company_id, store_id, 'dashboard.store.read')"), 'report read policy must enforce store scope');
+expect(reports.includes('revoke all on table public.zysyr_report_uploads from public, anon, authenticated, service_role'), 'report default grants not revoked');
+expect(reports.includes("'zysyr-reports'") && reports.includes('false,') && reports.includes('file_size_limit'), 'private report bucket missing');
+expect(reports.includes("('report.upload', '上传门店日报、业绩表和月度盈亏表'") && reports.includes("r.code = 'finance'"), 'finance report capability grant missing');
+expect(reports.includes("record_type in ('expense', 'income', 'report')"), 'report voucher record type missing');
+expect(reports.includes('zysyr_report_uploads_append_audit') && reports.includes("'finance_report', new.id, 'upload'"), 'transactional report audit trigger missing');
+expect(reports.includes('zysyr_report_uploads_protect_version') && reports.includes('finance report versions are immutable'), 'immutable report-version trigger missing');
+
+console.log('operations tests passed: finance-upload-only original report home');

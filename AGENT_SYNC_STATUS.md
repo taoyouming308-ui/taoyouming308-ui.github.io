@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v418 ZYSYR 原表月报纠偏（2026-08-13，本地候选，未提交、未推送、未部署）
+
+- 按用户提供的《盈亏表模板空白模版（自由手艺人）》中“模版”工作表重做经营驾驶舱首页：保留收入、支出、技术人员薪资、产品进货、零售产品成本、备用金、杂项和备注的原网格顺序；移除营业额 KPI、每日趋势和发型师排名。
+- ZYSYR 经营驾驶舱不再查询 `mgj_service_records`，也不再返回 `income_read_only_from_mgj`；“美发收入”等只作为原表栏目保留，数值来源边界改为 `finance_uploads_only`。
+- 新增本地迁移 `20260813094949_zysyr_finance_report_uploads.sql`：财务报表按公司、门店、类型、日期和版本追加保存，原 Excel 进入私有 `zysyr-reports`，保存 SHA-256、显示网格、上传人和审计；相同日期重传不覆盖旧版本。
+- 财务上传入口支持每日“日报表 + 业绩报表”、每月“月度盈亏表”，并可多选上传 JPG/PNG/PDF 消费凭证；凭证关联报表版本，股东只能按授权门店/月查看并通过 5 分钟签名地址打开原件。
+- 仅 `finance` 角色获得 `report.upload`；股东首页和档案只读。现有 Supabase Auth、用户名/现有密码滚动迁移、公司/门店范围、管理员创建财务账号、RLS 和追加审计底座继续保留。
+- 本地专项回归、Auth 桥回归、版本/发布完整性检查、Deno 2.5.6 类型检查均已通过；尚未执行迁移、函数部署、页面发布、线上探针或生产 Advisor。
+- 未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不得纳入本模块。
+- App version: v418
+
 ## v417 ZYSYR V2 Gate C3 管理员创建财务账号（2026-08-13，已生产发布）
 
 - 本地已新增受 Supabase Auth JWT/RLS 保护的 `operations-auth-admin`：只有持有公司范围 `finance_account.create` 高风险能力的管理员可创建财务账号；页面直接设置用户名、显示名称、密码和公司/门店范围，不要求业务邮箱。
