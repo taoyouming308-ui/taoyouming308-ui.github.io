@@ -1,11 +1,98 @@
 # Agent Sync Status
 
-## v418 向里客户历史导入数据维护（2026-08-20）
+## v425 向里客户历史导入数据维护（2026-08-20）
 
-- 新迁移 `20260820092434_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
-- `import_frontdesk_records` 继续保留单批 250 行、批次审计和 `service_role` 专用边界，并新增空门店拒绝；不改变已有历史记录、原始 `raw_row`、客户主档或美管加数据。
-- 本次保持 App v418，不修改前台业务逻辑；用于随后导入用户提供的向里造型 2026 客户工作簿。
-- 修复 GitHub `main` 现有 v418 发布遗漏：`frontdesk.html`、`operations.html` 的 `data-version`，以及经营认证桥和两个既有美感脚本缓存标记从 417 对齐到 418，仅恢复版本一致性，不改变业务功能。
+- 新迁移 `20260820205703_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
+- `import_frontdesk_records` 继续保留单批 250 行、批次审计和 `service_role` 专用边界，并新增空门店拒绝；不改变已有历史记录、原始 `raw_row`、客户主档、美管加数据或 v425 业务功能。
+- App version: v425
+
+## v425 ZYSYR V2 Sprint 3 财务业务闭环（2026-08-20，生产发布）
+
+- `20260820114519_zysyr_sprint3_finance_workflows.sql` 已补齐支出分类、支出提交/审核、备用金、支出付款、正式记录冲销、月报生成/复核/锁账/冲销解锁。所有公开写 RPC 仅授权 `service_role`，数据库重新核验 Auth 财务账号、公司、门店、能力、锁账和记录状态。
+- 每笔支出、备用金和付款必须选择至少一份同公司同门店、已人工审核通过的凭证；保存时同步建立 `voucher_links`、trace node/edge、workflow event 和 financial audit。旧 `expense_save` 已收口到正式 RPC，无凭证历史批量导入不再写库。
+- `operations-api` 新增 `finance_workbench` 及九个安全操作入口；页面新增财务专属“财务录入”，覆盖支出分类、支出、审核、备用金、付款、月报生成/复核/锁账/冲销。原表月报继续作为默认首页，首页仍读取财务上传原件，不读取美管加。
+- 正式月报按收入分类、支出分类和备用金方向生成不可变明细；备用金支出按原月报口径进入支出合计，备用金流入只保留资金记录、不虚增经营收入。系统建立 `盈亏 → 收支合计 → 分类明细 → 收入/支出/备用金记录 → 凭证` 追溯；付款是结算证明，不重复计入支出。
+- PostgreSQL 15 空库最终重放返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`、`SPRINT3_WORKFLOWS_RUNTIME_OK`。验证了星期一休息、凭证强制、财务允许/股东拒绝、部分/全额付款、超付拒绝、收入 1000/支出 120（含备用金 20）/盈亏 880、公式追溯、锁账拒写、月报冲销解锁及付款冲销恢复支出审核态；浏览器角色无这些写 RPC 权限。
+- 生产部署前生成 `ZYSYR_2026-08-20_202053.tar.gz` 并复制到 iCloud；Supabase 当日物理备份状态为 `COMPLETED`。没有修改远端迁移历史：10 个既有本地文件以 100% 相同 SHA-256 对齐生产登记时间戳，dry-run 只剩 v418–v425 七个新迁移。
+- 七个新迁移已成功应用，`migration list` 本地/远端完全一致，生产 `db lint --schema public --level error` 为 0。`operations-api` 已部署为 v4、`ACTIVE`、`verify_jwt=false`，继续由函数内部校验旧会话与 Supabase Auth；未登录探针返回预期 403“请重新登录”。页面随本版本推送 GitHub `main`，以线上 `version.txt=425` 和 `operations.html data-version=425` 传播核验为准。
+- 未创建测试账号、未写入生产财务业务记录，也未导入 2026 年 4 月真实资料；因此不宣称真实数据端到端验收通过。实际 OCR provider 仍未配置，凭证可人工录入候选并审核，但不能宣称自动 OCR 已上线。
+- App version: v425
+
+## v424 ZYSYR V2 Sprint 3 财务数据底座（2026-08-20，本地候选，未部署）
+
+- 继续按 V2.0 Sprint 顺序补 GAP：原有 XLSX/单元格层保留为不可变原始资料；新增 `zysyr_daily_reports / zysyr_daily_report_lines / zysyr_income_records / zysyr_expense_categories / zysyr_petty_cash_records / zysyr_payment_records / zysyr_metric_definitions / zysyr_monthly_reports / zysyr_monthly_report_lines` 正式业务层。旧 `zysyr_expense_records` 原地补分类、经办人、日报/单元格来源和付款操作者字段，未创建重复支出表。
+- 正式日报提交/审核及凭证关联全部经仅 `service_role` 可执行的 RPC，数据库同时复核财务角色、账号状态、公司、门店和能力；每个非备注金额必须指向同一门店、同一日报原件的具体单元格。股东、店长、旧用户名会话、跨店和跨公司均不能写。
+- 星期一默认 `is_business_day=false`，人工覆盖会单独标记来源；日报审核通过后从已核对收入行生成正式收入，不查询或同步美管加。已审核日报禁止覆盖，锁账月份禁止修改，日报/月报明细通过触发器保持不可变。
+- `zysyr_link_finance_voucher` 只接受已人工审核通过的凭证和当前范围内真实存在的正式记录，支持同一凭证多业务关联并写审计原因。v424 同时把 Sprint 0 审计 `sensitivity` 约束扩展为允许 `financial`，避免 Sprint 2/3 写审计时回滚。
+- `operations-api` 已接入 `daily_report_save / daily_report_review / finance_voucher_link` 并在 Edge 层再次要求 Auth 财务角色和能力。页面入口留到 v425；原表月报仍为默认首页，经营页不读取美管加，也没有营业额 KPI、趋势或排名。
+- 最终一次性 PostgreSQL 15 空库重放依次通过 v423 和 v424，返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`。断言覆盖复合外键、星期一规则、财务允许、股东/跨店拒绝、原表单元格来源、审核生成正式收入、已审核凭证关联、明细不可变、跨公司 RLS、浏览器无直接写权限和 RPC 最小授权；容器已自动删除。
+- 本轮未执行生产迁移、迁移 repair、Edge Function 部署、页面发布、生产数据写入或 GitHub 推送。v425 仍需完成支出、备用金、付款录入工作流、月报计算/锁账和不改变原表习惯的财务操作入口；当前不宣称 Sprint 3 完成。
+- App version: v424
+
+## v423 ZYSYR V2 Sprint 2 凭证中心（2026-08-20，本地候选，未部署）
+
+- V2.0 原文确认 Sprint 2 是“凭证中心”，因此本轮没有提前开发 Sprint 3 日报/收入/支出模块。原表月报继续作为默认首页，经营驾驶舱仍不读取美管加。
+- 新迁移 `20260820102856_zysyr_sprint2_voucher_center.sql` 将凭证改为可独立存在的一等对象，补齐 `ocr_status / audit_status / document_type / reviewer`；新增 provider-neutral OCR 任务和不可变人工审核版本，保存 raw JSON、候选字段、字段置信度、人工修正、审核人、原因和时间。
+- 财务上传通过仅 `service_role` 可执行的 `zysyr_register_voucher`：数据库再次核验 finance 角色、公司/门店范围和 `voucher.upload`，使用事务 advisory lock 阻断同公司相同 SHA-256，并在同事务建立 OCR 队列、可选报表 link 和审计。普通股东、店长、旧会话及跨店/跨公司写入均不获准。
+- 财务人工审核通过 `zysyr_review_voucher`：原图、OCR候选、置信度和人工修正同屏；每次审核追加新版本，同一凭证可多选关联当前门店多张已上传报表，修改前后、原因与关联写入审计。OCR provider 回调只能写候选，`audit_status` 在人工审核前保持 pending；Sprint 3 才生成正式财务业务记录。
+- `operations.html` 新增“凭证中心”，普通股东可按授权只读原件和审核结果，财务可独立上传和审核；原件仍使用私有桶与 5 分钟签名链接。相同文件前端预查、数据库事务再校验，不允许无声覆盖。
+- 最终多关联迁移已在一次性 PostgreSQL 15 完整重放并返回 `SPRINT2_RUNTIME_OK`：财务允许、普通股东/跨店拒绝、重复阻断、审核状态、不可变审核历史、同一凭证同时关联两张报表、审计快照、OCR候选不转正式、RLS 和浏览器无写 RPC 权限全部通过；测试容器已删除。完整 pre-push 已通过；浏览器已验证两张报表同时勾选、财务上传/审核、股东只读、原图与候选并排和零控制台错误。
+- 本轮未执行生产迁移、迁移 repair、函数部署、页面发布、生产业务写入或 GitHub 推送。生产既有迁移时间戳差异仍未处理；实际 OCR provider 尚未配置，当前队列允许财务人工录入审核，不能宣称自动识别已上线。
+- App version: v423
+
+## v422 ZYSYR V2 Sprint 1 基础资料与组织维护（2026-08-20，本地候选，未部署）
+
+- 继续按 V2.0 Sprint 1 补 GAP：原表月报仍为默认首页，新增独立“基础资料”入口；没有营业额卡片、趋势、排名或美管加读取。公司创建继续不扩展，财务账号继续使用既有 Gate C3 安全入口。
+- 新迁移 `20260820095920_zysyr_sprint1_employee_store_management.sql` 为员工和门店补齐创建/修改/软删除操作者 UUID、复合外键和覆盖索引；新增 `employee.write` 与公司范围 `org.store.write`。门店维护能力只自动授予现有 Gate C3 `finance_account.create` 精确管理员并记录授权审计，不授予普通股东；所有基础资料写入都会拒绝停用公司、停用门店、停用账号和无效授权。
+- 员工 RPC 要求当前门店 `employee.write`，跨店调动还必须同时具有原门店权限；门店 RPC 只接受公司范围 `org.store.write`。两者修改均需原因并将 before/after/actor/reason 与业务记录同事务写入 append-only 审计，浏览器角色无 RPC 执行权限。
+- `operations-api` 的目录读取增加当前门店员工和公司门店；新增 `employee_save / store_save`，旧 `store_create` 已收口到同一审计 RPC。Supabase Auth 店长仅接受门店范围，旧用户名会话不会获得任何目录写权限。
+- `operations.html` 新增员工、服务项目、产品、供应商、门店五个页签和统一新增/编辑表单。Gate C3 管理员股东可维护门店，普通股东仍只读；财务可维护当前门店员工和项目/产品/供应商。停用/离职保留历史，编辑原因进入审计；页面保存仍必须使用 Supabase Auth 用户名和现有密码会话。
+- 临时 PostgreSQL 15 已实际重放 v421/v422，并通过允许写入、跨公司拒绝、跨店移动双向校验、门店公司范围、停用公司拒绝、修改原因、审计快照与 RPC 最小授权测试；容器已停止并自动删除。本地浏览器验证股东/财务权限差异、原表月报默认首页、390px 手机滚动和零控制台错误。
+- 完整 pre-push 与版本/发布/模块边界回归全部通过，生产只读 `db lint --linked --schema public --level error` 无错误。本轮未执行生产迁移、迁移 repair、函数部署、页面发布、生产业务写入或 GitHub 推送；既有生产迁移历史差异没有处理，仍是后续生产 Gate 的阻断条件。
+- App version: v422
+
+## v421 ZYSYR V2 Sprint 1 基础数据第一阶段（2026-08-20，本地候选，未部署）
+
+- 按 V2.0 原文 Sprint 顺序开始补 GAP；本阶段复用已部署 Sprint 0 的公司、门店、账号、角色和员工表，仅新增仍缺失的 `zysyr_service_items / zysyr_products / zysyr_suppliers`，没有重做页面或改变纸质月报口径。
+- 新表均为公司级目录，包含精确数值类型、自然键去重、创建/修改/软删除溯源、完整外键索引、强制 RLS 和最小授权。授权股东/财务/店长可读；浏览器无直接写权限。
+- 新增仅 `service_role` 可执行的三个原子 RPC；数据库重新核验账号、公司、门店和能力范围，服务项目写要求 `daily_report.write`，产品/供应商写要求 `inventory.write`，写入与 `zysyr_audit_events` 的 before/after/reason 同事务完成。
+- `operations-api` 新增 `catalog / service_item_save / product_save / supplier_save`，旧经营会话不得写基础资料；现阶段没有新增页面入口，原表月报、财务上传、Gate D 和不读取美管加边界保持不变。
+- 新增 `scripts/test-zysyr-sprint1.js` 并接入 CI/pre-push。完整 pre-push、Node 语法、经营驾驶舱专项测试和静态安全断言已通过；本机临时 PostgreSQL 15 已实际执行迁移，并验证允许写入、跨公司越权拒绝、修改必须说明原因、审计快照、授权读取和跨公司 RLS 隔离，测试容器已停止并自动删除。生产只读 `db lint --linked --schema public --level error` 无错误。
+- 当前仍未执行生产迁移、迁移历史 repair、函数部署、页面发布、财务账号创建或生产业务数据写入；未重试此前被安全审查拦截的 GitHub 功能分支推送。线上仍为站点 v418 / 经营页 v417，既有 10 组迁移时间戳差异及 v418/v419 本地迁移继续是生产 Gate 前置阻断。
+- App version: v421
+
+## v420 ZYSYR Gate D P0 安全修复（2026-08-20，本地候选，未部署）
+
+- 开工前已获取最新 GitHub `main`；发现其在共同基线后新增 `6680d75`（v418 员工档案竞态、文本清理和上传类型校验），已审查并合并到 `feature/zysyr-operations`，保留 v419 原表月报/Gate D 全部内容。未跟踪 `aesthetic-coach-edge.ts` 保持未修改。
+- 修改前已生成并复制 iCloud 完整备份 `ZYSYR_2026-08-20_172211.tar.gz`；v419 恢复点仍为远端功能分支提交 `b33169b`。
+- Gate D 审计写入 `channel='web'` 已改为数据库约束允许的 `channel='api'`；凭证登记从不存在的 `version` 改为已部署的 `immutable_version=1`。
+- 费用写边界已收紧：旧经营会话（包括旧股东）全部只读；只有有 V2 账号 UUID 且具有 `expense.create_submit` 的 Supabase Auth 会话可写。新增、更新和历史导入全部绑定 `company_id/store_id`，更新过滤同时包含公司/门店，操作者写入 `created_by_user_id/updated_by_user_id`，新记录状态为 `draft`。
+- 生产只读核对：GitHub Pages `version.txt=418`，但线上 `operations.html data-version=417`，经营驾驶舱仍未切换原表月报/Gate D；线上 `operations-api` 仍为 v3，其他三个经营 Auth 函数仍为 Gate C3 版本，未部署本地函数。`supabase migration list --linked` 仍有 10 组同源码不同时间戳：`05031104→05032115`、`05032248→05032309`、`05034830→05040356`、`05045233→05050029`、`11024016→11031221`、`11031403→11032136`、`11033042→11033600`、`11035138→11040423`、`11040207→11040458`、`11053600→13091814`；`13094949/13103623` 只在本地。
+- 专项测试已覆盖旧股东拒绝、无 Auth 账号拒绝、Auth+费用能力允许、Auth 缺能力拒绝；经营驾驶舱回归、Deno 2.5.6 类型检查、版本/发布完整性和生产 `db lint --linked` 均通过。尝试启动本机 Supabase 真实迁移预演时需下载数百 MB 镜像且网络极慢，已主动取消并停止容器；因此数据库事务实跑仍是生产 Gate 前硬性未完成项。
+- 当前未执行生产迁移、`migration repair`、函数部署、页面发布、财务账号创建或业务数据写入。线上站点标记 v418，经营驾驶舱页面保持 v417。
+- App version: v420
+
+## v419 ZYSYR Gate D 月报单元格级追溯（2026-08-13，本地候选，未部署）
+
+- v418 恢复点已提交为 `e0a4047` 并推送到 GitHub 功能分支 `feature/zysyr-operations`；GitHub `main` 与线上 v417 未变化。当天完整归档已存在，备份脚本未重复创建。
+- 已用 artifact-tool 读取并渲染用户原始《业绩报表模版.xlsx》和《盈亏表模板空白模版（自由手艺人）xlsx.xlsx》；确认业绩表为两张 25 列工作表，月报首页使用“模版”工作表，保留原网格与原公式坐标。
+- 新增 Gate D 迁移 `20260813103623_zysyr_report_cell_traceability.sql`：不可变报表单元格、追加式追溯修订、来源单元格、凭证证据四表；全部按公司/门店 RLS 隔离，并通过仅 service role 可执行、同时复核 `report.upload` 范围的 RPC 写入。
+- 报表上传改为原件登记、版本递增、单元格解析、公式依赖和追溯节点同事务完成；财务可把月报输入金额关联到当月日报/业绩表具体单元格及具体凭证，差额大于 0.01 元、缺凭证和未关联分别标记。
+- 股东首页金额单元格可点击打开追溯抽屉；公式显示组成单元格，输入数字显示来源日期、原表行列、上传人、原 Excel 和凭证；财务可在同一抽屉追加新修订，旧链路不覆盖。
+- PostgreSQL 解析器已完整解析 40 条语句，Deno 2.5.6 类型检查、经营驾驶舱专项回归、版本/发布完整性检查均通过；本机浏览器已验证股东只读追溯、公式追溯、财务维护区和 390px 手机布局，控制台无错误。
+- 当前未执行生产迁移、函数部署或页面发布。`supabase db push --dry-run --linked` 在 Gate D 之前被既有迁移历史差异阻断：远端有 10 个生产登记版本、本地只有对应源码的不同时间戳；未执行 `migration repair` 或 `db pull`，生产前必须先独立核对并修复历史映射。
+- 未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不得纳入本模块。
+- App version: v419
+
+## v418 ZYSYR 原表月报纠偏（2026-08-13，本地候选，未提交、未推送、未部署）
+
+- 按用户提供的《盈亏表模板空白模版（自由手艺人）》中“模版”工作表重做经营驾驶舱首页：保留收入、支出、技术人员薪资、产品进货、零售产品成本、备用金、杂项和备注的原网格顺序；移除营业额 KPI、每日趋势和发型师排名。
+- ZYSYR 经营驾驶舱不再查询 `mgj_service_records`，也不再返回 `income_read_only_from_mgj`；“美发收入”等只作为原表栏目保留，数值来源边界改为 `finance_uploads_only`。
+- 新增本地迁移 `20260813094949_zysyr_finance_report_uploads.sql`：财务报表按公司、门店、类型、日期和版本追加保存，原 Excel 进入私有 `zysyr-reports`，保存 SHA-256、显示网格、上传人和审计；相同日期重传不覆盖旧版本。
+- 财务上传入口支持每日“日报表 + 业绩报表”、每月“月度盈亏表”，并可多选上传 JPG/PNG/PDF 消费凭证；凭证关联报表版本，股东只能按授权门店/月查看并通过 5 分钟签名地址打开原件。
+- 仅 `finance` 角色获得 `report.upload`；股东首页和档案只读。现有 Supabase Auth、用户名/现有密码滚动迁移、公司/门店范围、管理员创建财务账号、RLS 和追加审计底座继续保留。
+- 本地专项回归、Auth 桥回归、版本/发布完整性检查、Deno 2.5.6 类型检查均已通过；尚未执行迁移、函数部署、页面发布、线上探针或生产 Advisor。
+- 未跟踪 `aesthetic-coach-edge.ts` 保持未修改、不得纳入本模块。
 - App version: v418
 
 ## v417 ZYSYR V2 Gate C3 管理员创建财务账号（2026-08-13，已生产发布）

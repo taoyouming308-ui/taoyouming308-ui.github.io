@@ -5,8 +5,8 @@ const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const sourcePath = path.join(root, 'supabase/functions/operations-auth-migrate/index.ts');
-const migrationPath = path.join(root, 'supabase/migrations/20260811035138_zysyr_auth_rolling_migration.sql');
-const allowlistPath = path.join(root, 'supabase/migrations/20260811040207_zysyr_gate_c1_admin_shareholder_allowlist.sql');
+const migrationPath = path.join(root, 'supabase/migrations/20260811040423_zysyr_auth_rolling_migration.sql');
+const allowlistPath = path.join(root, 'supabase/migrations/20260811040458_zysyr_gate_c1_admin_shareholder_allowlist.sql');
 const source = fs.readFileSync(sourcePath, 'utf8');
 const migration = fs.readFileSync(migrationPath, 'utf8');
 const allowlist = fs.readFileSync(allowlistPath, 'utf8');

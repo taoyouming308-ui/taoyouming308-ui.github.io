@@ -9,13 +9,13 @@ const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'frontdesk-manifest.json'), 'utf8'));
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/frontdesk-api/index.ts'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
-const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805031104_frontdesk_customer_center.sql'), 'utf8');
-const indexMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805032248_frontdesk_import_batch_index.sql'), 'utf8');
-const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805034830_frontdesk_today_reception.sql'), 'utf8');
-const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805045233_frontdesk_reception_time.sql'), 'utf8');
+const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805032115_frontdesk_customer_center.sql'), 'utf8');
+const indexMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805032309_frontdesk_import_batch_index.sql'), 'utf8');
+const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805040356_frontdesk_today_reception.sql'), 'utf8');
+const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805050029_frontdesk_reception_time.sql'), 'utf8');
 const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
 const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
-const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820092434_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
+const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820205703_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);

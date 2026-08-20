@@ -21,6 +21,9 @@ node scripts/test-operations-auth-bridge.js || exit 1
 node scripts/test-operations-finance-account-admin.js || exit 1
 node scripts/test-zysyr-sprint0.js || exit 1
 node scripts/test-zysyr-gate-b.js || exit 1
+node scripts/test-zysyr-sprint1.js || exit 1
+node scripts/test-zysyr-sprint2.js || exit 1
+node scripts/test-zysyr-sprint3.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1

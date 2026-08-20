@@ -4,7 +4,7 @@ const path = require('path');
 
 const migrationPath = path.join(
   __dirname,
-  '../supabase/migrations/20260811033042_zysyr_gate_b_company_store_employee_mapping.sql',
+  '../supabase/migrations/20260811033600_zysyr_gate_b_company_store_employee_mapping.sql',
 );
 const sql = fs.readFileSync(migrationPath, 'utf8');
 
