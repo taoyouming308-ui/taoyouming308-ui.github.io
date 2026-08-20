@@ -107,6 +107,7 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
 
   const shareholder = scopeRole(scope, "shareholder");
   const finance = scopeRole(scope, "finance");
+  const storeManager = scopeRole(scope, "store_manager");
   let operationsRole = "";
   let roleScope: JsonRecord = {};
   if (shareholder && cleanText((shareholder.scope as JsonRecord).type, 20) === "company") {
@@ -115,6 +116,9 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
   } else if (finance) {
     operationsRole = "finance";
     roleScope = finance.scope as JsonRecord;
+  } else if (storeManager) {
+    operationsRole = "store_manager";
+    roleScope = storeManager.scope as JsonRecord;
   }
   const scopeType = cleanText(roleScope.type, 20);
   const storeId = scopeType === "store" ? cleanText(roleScope.store_id, 40) : "";
@@ -123,6 +127,8 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
     : operationsRole === "finance"
       ? scopeCapability(scope, "dashboard.store.read", scopeType, storeId)
         && scopeCapability(scope, "daily_report.write", scopeType, storeId)
+      : operationsRole === "store_manager"
+        ? scopeType === "store" && scopeCapability(scope, "dashboard.store.read", scopeType, storeId)
       : false;
   if (!authorized || (scopeType !== "company" && scopeType !== "store")) {
     throw new Error("Supabase Auth 经营角色无权进入驾驶舱");
@@ -208,7 +214,11 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     can_upload_reports: canUploadReports(session),
     can_manage_service_items: hasAuthCapability(session, "daily_report.write"),
     can_manage_inventory_catalog: hasAuthCapability(session, "inventory.write"),
-    can_create_store: role === "shareholder",
+    can_manage_employees: hasAuthCapability(session, "employee.write"),
+    can_manage_stores: hasAuthCapability(session, "org.store.write")
+      && cleanText(session.auth_scope_type, 20) === "company",
+    can_create_store: hasAuthCapability(session, "org.store.write")
+      && cleanText(session.auth_scope_type, 20) === "company",
     can_manage_finance_accounts: Array.isArray(session.auth_capabilities)
       && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "finance_account.create")
       && cleanText(session.auth_scope_type, 20) === "company",
@@ -342,12 +352,23 @@ async function catalog(payload: JsonRecord, session: JsonRecord): Promise<JsonRe
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   if (!companyId) throw new Error("基础资料公司范围无效");
-  const [serviceItems, products, suppliers] = await Promise.all([
+  const [serviceItems, products, suppliers, employees, stores] = await Promise.all([
     restRowsAll(`zysyr_service_items?select=id,name,category,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,category.asc,name.asc&limit=2000`, 2000),
     restRowsAll(`zysyr_products?select=id,name,category,unit,default_cost,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,category.asc,name.asc&limit=5000`, 5000),
     restRowsAll(`zysyr_suppliers?select=id,name,category,contact,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,name.asc&limit=2000`, 2000),
+    restRowsAll(`zysyr_employees?select=id,store_id,employee_code,name,position,level,join_date,leave_date,employment_status,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${cleanText(store.id, 40)}&deleted_at=is.null&order=employment_status.asc,employee_code.asc,name.asc&limit=2000`, 2000),
+    restRowsAll(`zysyr_stores?select=id,company_id,name,code,city,address,status,manager_employee_id,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,name.asc&limit=500`, 500),
   ]);
-  return { company_id: companyId, store: cleanText(store.name, 100), service_items: serviceItems, products, suppliers };
+  return {
+    company_id: companyId,
+    store_id: cleanText(store.id, 40),
+    store: cleanText(store.name, 100),
+    service_items: serviceItems,
+    products,
+    suppliers,
+    employees,
+    stores,
+  };
 }
 
 async function rpcSaved(path: string, body: JsonRecord): Promise<JsonRecord> {
@@ -359,7 +380,8 @@ async function rpcSaved(path: string, body: JsonRecord): Promise<JsonRecord> {
     if (code === "CHANGE_REASON_REQUIRED") throw new Error("修改基础资料必须填写原因");
     if (/FORBIDDEN$/.test(code)) throw new Error("当前账号没有该基础资料维护权限");
     if (/_NOT_FOUND$/.test(code)) throw new Error("基础资料不存在或已归档");
-    if (/_FIELDS_REQUIRED$|_NAME_REQUIRED$|_STATUS_INVALID$|_COST_INVALID$/.test(code)) throw new Error("基础资料字段无效");
+    if (/_FIELDS_REQUIRED$|_NAME_REQUIRED$|_STATUS_INVALID$|_COST_INVALID$|_DATE_INVALID$|_CODE_INVALID$|_MANAGER.*INVALID$/.test(code)) throw new Error("基础资料字段无效");
+    if (cleanText(error.code, 40) === "23505") throw new Error("编号或名称已存在，请更换后再保存");
     throw new Error(`基础资料保存失败 (${response.status})`);
   }
   const saved = Array.isArray(data) ? data[0] : data;
@@ -421,6 +443,60 @@ async function saveSupplier(payload: JsonRecord, session: JsonRecord): Promise<J
     p_name: cleanText(payload.name, 160),
     p_category: cleanText(payload.category, 100) || null,
     p_contact: cleanText(payload.contact, 300) || null,
+    p_status: cleanText(payload.status, 20) || "active",
+    p_reason: cleanText(payload.reason, 500) || null,
+  });
+  return { saved };
+}
+
+async function saveEmployee(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "employee.write")) throw new Error("当前账号没有员工维护权限");
+  const store = await selectedStoreInfo(session, payload);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const id = cleanText(payload.id, 40);
+  const joinDate = cleanText(payload.join_date, 10);
+  const leaveDate = cleanText(payload.leave_date, 10);
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("员工ID无效");
+  if (joinDate && !validDate(joinDate)) throw new Error("入职日期无效");
+  if (leaveDate && !validDate(leaveDate)) throw new Error("离职日期无效");
+  const saved = await rpcSaved("rpc/zysyr_upsert_employee", {
+    p_actor_user_id: actorId,
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_id: id || null,
+    p_employee_code: cleanText(payload.employee_code, 80),
+    p_name: cleanText(payload.name, 120),
+    p_position: cleanText(payload.position, 120),
+    p_level: cleanText(payload.level, 80) || null,
+    p_join_date: joinDate || null,
+    p_leave_date: leaveDate || null,
+    p_employment_status: cleanText(payload.employment_status, 20) || "active",
+    p_reason: cleanText(payload.reason, 500) || null,
+  });
+  return { saved };
+}
+
+async function saveStore(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "org.store.write") || cleanText(session.auth_scope_type, 20) !== "company") {
+    throw new Error("当前账号没有门店维护权限");
+  }
+  const contextStore = await selectedStoreInfo(session, payload);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const id = cleanText(payload.id, 40);
+  const managerId = cleanText(payload.manager_employee_id, 40);
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("门店ID无效");
+  if (managerId && !/^[0-9a-f-]{36}$/i.test(managerId)) throw new Error("负责人ID无效");
+  const code = cleanText(payload.code, 64).toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{1,63}$/.test(code)) throw new Error("门店编号仅支持小写字母、数字、横线和下划线");
+  const saved = await rpcSaved("rpc/zysyr_upsert_store", {
+    p_actor_user_id: actorId,
+    p_company_id: cleanText(contextStore.company_id, 40),
+    p_id: id || null,
+    p_name: cleanText(payload.name, 100),
+    p_code: code,
+    p_city: cleanText(payload.city, 100),
+    p_address: cleanText(payload.address, 300) || null,
+    p_manager_employee_id: managerId || null,
     p_status: cleanText(payload.status, 20) || "active",
     p_reason: cleanText(payload.reason, 500) || null,
   });
@@ -1010,17 +1086,7 @@ async function voucherUrl(payload: JsonRecord, session: JsonRecord): Promise<Jso
 }
 
 async function createStore(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  if (cleanText(session.operations_role, 40) !== "shareholder") throw new Error("只有股东账号可以新增门店");
-  const name = cleanText(payload.name, 100);
-  if (name.length < 2) throw new Error("请填写有效门店名称");
-  const response = await rest("zysyr_stores", {
-    method: "POST", headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ name, city: cleanText(payload.city, 100), created_by: session.username }),
-  });
-  if (response.status === 409) throw new Error("门店名称已存在");
-  if (!response.ok) throw new Error(`门店创建失败 (${response.status})`);
-  const rows = await response.json();
-  return { saved: rows[0] };
+  return saveStore(payload, session);
 }
 
 Deno.serve(async (request: Request) => {
@@ -1040,6 +1106,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "service_item_save") return json(await saveServiceItem(payload, session));
     if (operation === "product_save") return json(await saveProduct(payload, session));
     if (operation === "supplier_save") return json(await saveSupplier(payload, session));
+    if (operation === "employee_save") return json(await saveEmployee(payload, session));
+    if (operation === "store_save") return json(await saveStore(payload, session));
     if (operation === "report_upload") return json(await uploadReport(payload, session));
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "cell_trace") return json(await cellTrace(payload, session));

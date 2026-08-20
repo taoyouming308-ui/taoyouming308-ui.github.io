@@ -7,7 +7,12 @@ const migration = fs.readFileSync(
   path.join(root, 'supabase/migrations/20260820094055_zysyr_v2_sprint1_master_data.sql'),
   'utf8',
 );
+const employeeStoreMigration = fs.readFileSync(
+  path.join(root, 'supabase/migrations/20260820095920_zysyr_sprint1_employee_store_management.sql'),
+  'utf8',
+);
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
+const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -66,4 +71,47 @@ expect(api.includes('const store = await selectedStoreInfo(session, payload)'), 
 expect(api.includes('p_actor_user_id: actorId') && api.includes('p_company_id: cleanText(store.company_id, 40)') && api.includes('p_store_id: cleanText(store.id, 40)'), 'catalog API provenance/scope binding missing');
 expect(api.includes('catalogCostValue') && api.includes('最多四位小数'), 'product cost API precision validation missing');
 
-console.log('ZYSYR Sprint 1 master-data tests passed');
+function hasEmployeeStore(fragment) {
+  return employeeStoreMigration.includes(fragment);
+}
+
+expect(hasEmployeeStore("('employee.write', '维护授权范围员工资料', 'sensitive')"), 'employee write capability missing');
+expect(hasEmployeeStore("('org.store.write', '维护公司门店资料', 'high')"), 'store write capability missing');
+expect(!hasEmployeeStore("('shareholder', 'org.store.write')"), 'store write must not be granted to every shareholder');
+expect(hasEmployeeStore("creator_capability.code = 'finance_account.create'") && hasEmployeeStore("'inherited_from', 'finance_account.create'"), 'store write must inherit only the approved Gate C3 administrator boundary');
+expect(hasEmployeeStore("'store_administrator_enabled'") && hasEmployeeStore("channel,\n  entity_type"), 'store administrator capability audit missing');
+expect(hasEmployeeStore("('finance', 'employee.write')") && hasEmployeeStore("('store_manager', 'employee.write')"), 'employee write role mappings missing');
+expect(hasEmployeeStore('created_by_user_id uuid') && hasEmployeeStore('updated_by_user_id uuid'), 'employee/store actor provenance columns missing');
+expect(hasEmployeeStore('zysyr_stores_manager_employee_fkey'), 'store manager foreign key missing');
+expect(hasEmployeeStore('zysyr_stores_manager_employee_idx'), 'store manager foreign-key index missing');
+expect(hasEmployeeStore('create or replace function zysyr_private.account_has_company_capability'), 'company capability helper missing');
+expect(hasEmployeeStore('create or replace function zysyr_private.account_has_capability') && hasEmployeeStore("company.status = 'active'"), 'active-company write guard missing');
+expect(hasEmployeeStore("urg.scope_type = 'company'") && hasEmployeeStore("ucg.scope_type = 'company'"), 'company-only store permission guard missing');
+expect(hasEmployeeStore('create or replace function public.zysyr_upsert_employee'), 'employee audited RPC missing');
+expect(hasEmployeeStore('create or replace function public.zysyr_upsert_store'), 'store audited RPC missing');
+expect(hasEmployeeStore("'employee.write'") && hasEmployeeStore("'org.store.write'"), 'employee/store RPC capability checks missing');
+expect(hasEmployeeStore('v_before.store_id <> p_store_id') && hasEmployeeStore("'EMPLOYEE_SOURCE_STORE_FORBIDDEN'"), 'employee cross-store move guard missing');
+expect(hasEmployeeStore("'employee', v_after.id") && hasEmployeeStore("'personal'"), 'employee personal audit event missing');
+expect(hasEmployeeStore("'store', v_after.id") && hasEmployeeStore("p_actor_user_id, 'api'"), 'store audit event missing or channel invalid');
+expect(hasEmployeeStore('to_jsonb(v_before)') && hasEmployeeStore('to_jsonb(v_after)'), 'employee/store audit snapshots missing');
+expect(hasEmployeeStore('for update;') && hasEmployeeStore('CHANGE_REASON_REQUIRED'), 'employee/store update lock or reason missing');
+expect(!/grant execute on function public\.zysyr_upsert_(?:employee|store)[^;]+to authenticated;/is.test(employeeStoreMigration), 'employee/store RPC must not be browser-executable');
+expect(!/\bdelete\s+from\s+public\.zysyr_(?:employees|stores)\b/i.test(employeeStoreMigration), 'employee/store records must not be physically deleted');
+expect(!/mgj_service_records|from\s+public\.mgj_|join\s+public\.mgj_/i.test(employeeStoreMigration), 'employee/store management must not depend on Meiguanjia');
+
+expect(api.includes('operation === "employee_save"') && api.includes('rpc/zysyr_upsert_employee'), 'employee save API missing');
+expect(api.includes('operation === "store_save"') && api.includes('rpc/zysyr_upsert_store'), 'store save API missing');
+expect(api.includes('hasAuthCapability(session, "employee.write")'), 'employee API capability gate missing');
+expect(api.includes('hasAuthCapability(session, "org.store.write")') && api.includes('auth_scope_type, 20) !== "company"'), 'store API company-scope capability gate missing');
+expect(api.includes('async function createStore') && api.includes('return saveStore(payload, session)'), 'legacy store route must use the audited store RPC');
+expect(api.includes('zysyr_employees?select=') && api.includes('store_id=eq.${cleanText(store.id, 40)}'), 'employee catalog must stay within selected store');
+expect(api.includes('zysyr_stores?select=id,company_id,name,code,city,address,status'), 'company store catalog missing');
+
+expect(page.includes('data-view="monthly" class="active"'), 'original monthly report must remain the default home page');
+expect(page.includes('data-view="catalog">基础资料</button>'), 'basic-data navigation missing');
+expect(page.includes('data-catalog-tab="employees"') && page.includes('data-catalog-tab="stores"'), 'employee/store catalog tabs missing');
+expect(page.includes("operation:'employee_save'") && page.includes("operation:'store_save'"), 'catalog forms are not wired to employee/store APIs');
+expect(page.includes('停用与离职保留历史，不物理删除'), 'history-preserving UI boundary missing');
+expect(!/data-view="revenue"|id="(?:turnover|revenue)-|mgj_service_records/.test(page), 'operations home must not restore turnover cards or Meiguanjia data');
+
+console.log('ZYSYR Sprint 1 master-data and organization tests passed');

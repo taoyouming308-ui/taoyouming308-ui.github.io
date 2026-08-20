@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v422 ZYSYR V2 Sprint 1 基础资料与组织维护（2026-08-20，本地候选，未部署）
+
+- 继续按 V2.0 Sprint 1 补 GAP：原表月报仍为默认首页，新增独立“基础资料”入口；没有营业额卡片、趋势、排名或美管加读取。公司创建继续不扩展，财务账号继续使用既有 Gate C3 安全入口。
+- 新迁移 `20260820095920_zysyr_sprint1_employee_store_management.sql` 为员工和门店补齐创建/修改/软删除操作者 UUID、复合外键和覆盖索引；新增 `employee.write` 与公司范围 `org.store.write`。门店维护能力只自动授予现有 Gate C3 `finance_account.create` 精确管理员并记录授权审计，不授予普通股东；所有基础资料写入都会拒绝停用公司、停用门店、停用账号和无效授权。
+- 员工 RPC 要求当前门店 `employee.write`，跨店调动还必须同时具有原门店权限；门店 RPC 只接受公司范围 `org.store.write`。两者修改均需原因并将 before/after/actor/reason 与业务记录同事务写入 append-only 审计，浏览器角色无 RPC 执行权限。
+- `operations-api` 的目录读取增加当前门店员工和公司门店；新增 `employee_save / store_save`，旧 `store_create` 已收口到同一审计 RPC。Supabase Auth 店长仅接受门店范围，旧用户名会话不会获得任何目录写权限。
+- `operations.html` 新增员工、服务项目、产品、供应商、门店五个页签和统一新增/编辑表单。Gate C3 管理员股东可维护门店，普通股东仍只读；财务可维护当前门店员工和项目/产品/供应商。停用/离职保留历史，编辑原因进入审计；页面保存仍必须使用 Supabase Auth 用户名和现有密码会话。
+- 临时 PostgreSQL 15 已实际重放 v421/v422，并通过允许写入、跨公司拒绝、跨店移动双向校验、门店公司范围、停用公司拒绝、修改原因、审计快照与 RPC 最小授权测试；容器已停止并自动删除。本地浏览器验证股东/财务权限差异、原表月报默认首页、390px 手机滚动和零控制台错误。
+- 完整 pre-push 与版本/发布/模块边界回归全部通过，生产只读 `db lint --linked --schema public --level error` 无错误。本轮未执行生产迁移、迁移 repair、函数部署、页面发布、生产业务写入或 GitHub 推送；既有生产迁移历史差异没有处理，仍是后续生产 Gate 的阻断条件。
+- App version: v422
+
 ## v421 ZYSYR V2 Sprint 1 基础数据第一阶段（2026-08-20，本地候选，未部署）
 
 - 按 V2.0 原文 Sprint 顺序开始补 GAP；本阶段复用已部署 Sprint 0 的公司、门店、账号、角色和员工表，仅新增仍缺失的 `zysyr_service_items / zysyr_products / zysyr_suppliers`，没有重做页面或改变纸质月报口径。
