@@ -1684,7 +1684,9 @@ body {
       if (!file) { showToast('请选择图片'); return; }
       // 校验文件类型和大小
       var allowedTypes = ['image/jpeg','image/png','image/webp'];
-      if (allowedTypes.indexOf(file.type) === -1) { showToast('仅支持 JPG/PNG/WebP 格式'); document.getElementById('up-btn').disabled = false; return; }
+      var fname = String(file.name || '').toLowerCase();
+      var extOk = /\\.(jpe?g|png|webp)$/.test(fname);
+      if (file.type && allowedTypes.indexOf(file.type) === -1 && !extOk) { showToast('仅支持 JPG/PNG/WebP 格式'); document.getElementById('up-btn').disabled = false; return; }
       if (file.size > 10 * 1024 * 1024) { showToast('图片超过10MB，请压缩后上传'); document.getElementById('up-btn').disabled = false; return; }
       var category = document.getElementById('up-category').value;
       var btn = document.getElementById('up-btn');
@@ -10094,11 +10096,11 @@ function initApp() {
     lines.push('━━━ AI验证结果 ━━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push(' 整体等级：' + (rec.aiOverall || '—'));
     if (rec.aiDiagnosisText) {
-      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       lines.push(' 诊断说明：' + (diagClean || '—'));
     }
     if (rec.aiReference) {
-      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       lines.push(' 与发型师一致性：' + (refClean || '—'));
     }
     lines.push('');
@@ -10106,7 +10108,7 @@ function initApp() {
 
     // 从planResultHTML提取方案信息
     if (rec.planResultHTML) {
-      var planText = rec.planResultHTML.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      var planText = rec.planResultHTML.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       lines.push(' ▸ 方案：' + (planText || '—'));
     }
     lines.push(' ▸ 排杠：' + formatHairRodDetailsText(rec));
@@ -10188,11 +10190,11 @@ function initApp() {
     h += _sct('━━━ AI验证结果 ━━━━━━━━━━━━━━━━━━━━');
     h += _tr('整体等级', val(rec.aiOverall, {'1':'1级','2':'2级','3':'3级','4':'4级','5':'5级'}));
     if (rec.aiDiagnosisText) {
-      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      var diagClean = rec.aiDiagnosisText.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       h += _tr('诊断说明', diagClean || '—');
     }
     if (rec.aiReference) {
-      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\\s+/g,' ').trim();
+      var refClean = rec.aiReference.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
       h += _tr('一致性', refClean);
     }
 
@@ -11138,8 +11140,11 @@ function initApp() {
     html += '<div id="hair-form-tech-container" style="display:flex;flex-wrap:wrap;gap:4px;"></div>';
     html += '</div>';
     setTimeout(function(){
-      if (window.populateHairBarberSelect) window.populateHairBarberSelect(selectedBarber);
-      if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(selectedBarber, true);
+      // 已加载已有档案时（loadHairRecordData 已按 data.barber 设置），跳过覆盖，避免竞态篡改发型师
+      if (!_editingHairId && !_cloudEditingId) {
+        if (window.populateHairBarberSelect) window.populateHairBarberSelect(selectedBarber);
+        if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(selectedBarber, true);
+      }
     }, 500);
     html += '</div></div>';
 
