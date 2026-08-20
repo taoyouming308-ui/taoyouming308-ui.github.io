@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v424 ZYSYR V2 Sprint 3 财务数据底座（2026-08-20，本地候选，未部署）
+
+- 继续按 V2.0 Sprint 顺序补 GAP：原有 XLSX/单元格层保留为不可变原始资料；新增 `zysyr_daily_reports / zysyr_daily_report_lines / zysyr_income_records / zysyr_expense_categories / zysyr_petty_cash_records / zysyr_payment_records / zysyr_metric_definitions / zysyr_monthly_reports / zysyr_monthly_report_lines` 正式业务层。旧 `zysyr_expense_records` 原地补分类、经办人、日报/单元格来源和付款操作者字段，未创建重复支出表。
+- 正式日报提交/审核及凭证关联全部经仅 `service_role` 可执行的 RPC，数据库同时复核财务角色、账号状态、公司、门店和能力；每个非备注金额必须指向同一门店、同一日报原件的具体单元格。股东、店长、旧用户名会话、跨店和跨公司均不能写。
+- 星期一默认 `is_business_day=false`，人工覆盖会单独标记来源；日报审核通过后从已核对收入行生成正式收入，不查询或同步美管加。已审核日报禁止覆盖，锁账月份禁止修改，日报/月报明细通过触发器保持不可变。
+- `zysyr_link_finance_voucher` 只接受已人工审核通过的凭证和当前范围内真实存在的正式记录，支持同一凭证多业务关联并写审计原因。v424 同时把 Sprint 0 审计 `sensitivity` 约束扩展为允许 `financial`，避免 Sprint 2/3 写审计时回滚。
+- `operations-api` 已接入 `daily_report_save / daily_report_review / finance_voucher_link` 并在 Edge 层再次要求 Auth 财务角色和能力。页面入口留到 v425；原表月报仍为默认首页，经营页不读取美管加，也没有营业额 KPI、趋势或排名。
+- 最终一次性 PostgreSQL 15 空库重放依次通过 v423 和 v424，返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`。断言覆盖复合外键、星期一规则、财务允许、股东/跨店拒绝、原表单元格来源、审核生成正式收入、已审核凭证关联、明细不可变、跨公司 RLS、浏览器无直接写权限和 RPC 最小授权；容器已自动删除。
+- 本轮未执行生产迁移、迁移 repair、Edge Function 部署、页面发布、生产数据写入或 GitHub 推送。v425 仍需完成支出、备用金、付款录入工作流、月报计算/锁账和不改变原表习惯的财务操作入口；当前不宣称 Sprint 3 完成。
+- App version: v424
+
 ## v423 ZYSYR V2 Sprint 2 凭证中心（2026-08-20，本地候选，未部署）
 
 - V2.0 原文确认 Sprint 2 是“凭证中心”，因此本轮没有提前开发 Sprint 3 日报/收入/支出模块。原表月报继续作为默认首页，经营驾驶舱仍不读取美管加。

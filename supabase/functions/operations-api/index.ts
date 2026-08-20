@@ -358,6 +358,15 @@ function catalogCostValue(value: unknown): number | null {
   return cost;
 }
 
+function quantityValue(value: unknown): number | null {
+  const raw = cleanText(value, 40);
+  if (!raw) return null;
+  if (!/^\d+(?:\.\d{1,4})?$/.test(raw)) throw new Error("数量必须为非负数字，最多四位小数");
+  const quantity = Number(raw);
+  if (!Number.isFinite(quantity) || quantity < 0 || quantity >= 10000000000) throw new Error("数量超出允许范围");
+  return quantity;
+}
+
 async function catalog(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const role = cleanText(session.operations_role, 40);
   if (role !== "shareholder" && role !== "finance" && role !== "store_manager") throw new Error("当前角色无权查看基础资料");
@@ -1177,6 +1186,116 @@ async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   return { saved: Array.isArray(result) ? result[0] : result };
 }
 
+async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonRecord> {
+  const response = await rest(path, { method: "POST", body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = data && typeof data === "object" ? data as JsonRecord : {};
+    const code = cleanText(error.message ?? error.code, 160);
+    if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
+    if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
+    if (code === "APPROVED_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("已审核日报不能覆盖，必须先走冲销流程");
+    if (code === "DAILY_SOURCE_REPORT_NOT_FOUND") throw new Error("日报原件不存在、已被替代或不属于当前门店");
+    if (code === "DAILY_REPORT_SOURCE_CELL_NOT_FOUND") throw new Error("日报数字没有对应到当前原表单元格");
+    if (code === "APPROVED_VOUCHER_NOT_FOUND") throw new Error("凭证尚未人工审核通过或不属于当前门店");
+    if (code === "FINANCE_BUSINESS_RECORD_NOT_FOUND") throw new Error("正式财务记录不存在或不属于当前门店");
+    if (/_INVALID$|_REQUIRED$/.test(code)) throw new Error("正式财务记录字段不完整或格式无效");
+    if (/_NOT_FOUND$/.test(code)) throw new Error("正式财务记录不存在或不属于当前门店");
+    throw new Error(`正式财务记录保存失败 (${response.status})`);
+  }
+  const saved = Array.isArray(data) ? data[0] : data;
+  if (!saved || typeof saved !== "object") throw new Error("正式财务记录保存结果无效");
+  return saved as JsonRecord;
+}
+
+async function saveDailyReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) {
+    throw new Error("只有财务账号可以提交正式日报");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const sourceReportId = cleanText(payload.source_report_id, 40);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(sourceReportId) || !reason) throw new Error("请选择日报原件并填写提交原因");
+  if (!Array.isArray(payload.lines) || !payload.lines.length || payload.lines.length > 500) throw new Error("日报明细必须为 1 至 500 行");
+  const lines = (payload.lines as JsonRecord[]).map((line) => {
+    const lineType = cleanText(line.line_type, 30);
+    const metricCode = cleanText(line.metric_code, 64).toUpperCase();
+    const description = cleanText(line.description, 300);
+    const sourceCellId = cleanText(line.source_report_cell_id, 40);
+    if (!["income", "expense", "petty_cash", "payment", "note"].includes(lineType)
+      || !/^[A-Z][A-Z0-9_]{1,63}$/.test(metricCode) || !description) throw new Error("日报明细类型、指标或说明无效");
+    if (lineType === "note") return { line_type: lineType, metric_code: metricCode, description };
+    if (!/^[0-9a-f-]{36}$/i.test(sourceCellId)) throw new Error("每个日报数字都必须选择原表单元格");
+    return {
+      line_type: lineType,
+      metric_code: metricCode,
+      description,
+      amount: amountValue(line.amount),
+      quantity: quantityValue(line.quantity),
+      source_report_cell_id: sourceCellId,
+    };
+  });
+  const businessDay = typeof payload.is_business_day === "boolean" ? payload.is_business_day : null;
+  const saved = await financeRpcSaved("rpc/zysyr_save_daily_report", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_source_report_id: sourceReportId,
+    p_is_business_day: businessDay,
+    p_lines: lines,
+    p_reason: reason,
+  });
+  return { saved, formal_source: "finance_uploaded_daily_report", meiguanjia_used: false };
+}
+
+async function reviewDailyReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) {
+    throw new Error("只有财务账号可以审核正式日报");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const reportId = cleanText(payload.daily_report_id, 40);
+  const decision = cleanText(payload.decision, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(reportId) || !["approved", "rejected"].includes(decision) || !reason) {
+    throw new Error("请完整填写日报审核决定和原因");
+  }
+  const saved = await financeRpcSaved("rpc/zysyr_review_daily_report", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_daily_report_id: reportId,
+    p_decision: decision,
+    p_reason: reason,
+  });
+  return { saved, approved_income_materialized: decision === "approved", meiguanjia_used: false };
+}
+
+async function linkFinanceVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "voucher.review")) {
+    throw new Error("只有财务账号可以关联正式记录与凭证");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const voucherId = cleanText(payload.voucher_id, 40);
+  const businessId = cleanText(payload.business_id, 40);
+  const businessType = cleanText(payload.business_type, 40);
+  const relationType = cleanText(payload.relation_type, 30) || "evidence";
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(voucherId) || !/^[0-9a-f-]{36}$/i.test(businessId) || !reason) {
+    throw new Error("请选择凭证、正式记录并填写关联原因");
+  }
+  const saved = await financeRpcSaved("rpc/zysyr_link_finance_voucher", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_voucher_id: voucherId,
+    p_business_type: businessType,
+    p_business_id: businessId,
+    p_relation_type: relationType,
+    p_reason: reason,
+  });
+  return { saved };
+}
+
 async function voucherUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const voucherId = cleanText(payload.voucher_id, 80);
@@ -1228,6 +1347,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
+    if (operation === "daily_report_save") return json(await saveDailyReport(payload, session));
+    if (operation === "daily_report_review") return json(await reviewDailyReport(payload, session));
+    if (operation === "finance_voucher_link") return json(await linkFinanceVoucher(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);
