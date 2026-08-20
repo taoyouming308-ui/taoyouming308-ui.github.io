@@ -2,7 +2,7 @@
 
 ## v425 向里客户历史导入数据维护（2026-08-20）
 
-- 新迁移 `20260820205703_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
+- 新迁移 `20260820125932_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
 - `import_frontdesk_records` 继续保留单批 250 行、批次审计和 `service_role` 专用边界，并新增空门店拒绝；不改变已有历史记录、原始 `raw_row`、客户主档、美管加数据或 v425 业务功能。
 - App version: v425
 

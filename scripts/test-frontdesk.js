@@ -15,7 +15,7 @@ const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/
 const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805050029_frontdesk_reception_time.sql'), 'utf8');
 const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
 const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
-const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820205703_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
+const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820125932_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
