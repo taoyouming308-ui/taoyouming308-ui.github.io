@@ -5,12 +5,12 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const migrationPath = path.join(
   root,
-  'supabase/migrations/20260811024016_zysyr_v2_sprint0_auth_rbac_audit.sql',
+  'supabase/migrations/20260811031221_zysyr_v2_sprint0_auth_rbac_audit.sql',
 );
 const sql = fs.readFileSync(migrationPath, 'utf8');
 const fkIndexMigrationPath = path.join(
   root,
-  'supabase/migrations/20260811031403_zysyr_sprint0_fk_covering_indexes.sql',
+  'supabase/migrations/20260811032136_zysyr_sprint0_fk_covering_indexes.sql',
 );
 const fkIndexSql = fs.readFileSync(fkIndexMigrationPath, 'utf8');
 

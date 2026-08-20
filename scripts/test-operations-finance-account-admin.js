@@ -8,7 +8,7 @@ const sourcePath = path.join(root, 'supabase/functions/operations-auth-admin/ind
 const source = fs.readFileSync(sourcePath, 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const authScope = fs.readFileSync(path.join(root, 'supabase/functions/operations-auth/index.ts'), 'utf8');
-const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260811053600_zysyr_finance_account_admin_gate.sql'), 'utf8');
+const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260813091814_zysyr_finance_account_admin_gate.sql'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 
 function expect(value, message) {
