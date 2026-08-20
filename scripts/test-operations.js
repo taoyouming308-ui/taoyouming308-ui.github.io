@@ -52,8 +52,8 @@ expect(edge.includes('zysyr_register_report_upload') && edge.includes('zysyr_rep
 expect(edge.includes('cellTrace') && edge.includes('saveCellTrace') && edge.includes('zysyr_save_report_cell_trace'), 'cell trace query/save API missing');
 expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
 expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');
-expect(edge.includes('recordType === "report"') && edge.includes('zysyr_voucher_attachments'), 'report voucher association missing');
-expect(edge.includes('immutable_version: 1') && !edge.includes('sha256: await sha256Bytes(bytes), version: 1'), 'voucher immutable version field mismatch');
+expect(edge.includes('recordType === "report"') && edge.includes('rpc/zysyr_register_voucher'), 'report voucher association missing');
+expect(edge.includes('p_sha256: digest') && !edge.includes('sha256: await sha256Bytes(bytes), version: 1'), 'voucher digest or immutable version flow invalid');
 expect(edge.includes('Boolean(cleanText(session.auth_account_id, 40))') && !edge.includes('["shareholder", "finance", "store_manager"].includes'), 'legacy expense role fallback must remain disabled');
 expect(edge.includes('const store = await selectedStoreInfo(session, payload)') && edge.includes('company_id: companyId, store_id: storeId, store: storeName'), 'expense writes must bind company/store UUIDs');
 expect(edge.includes('&company_id=eq.${companyId}&store_id=eq.${storeId}') && edge.includes('created_by_user_id: actorId') && edge.includes('updated_by_user_id: actorId'), 'expense update filter or actor provenance missing');

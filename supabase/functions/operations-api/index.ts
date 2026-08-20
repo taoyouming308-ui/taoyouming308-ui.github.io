@@ -187,6 +187,16 @@ function canUploadReports(session: JsonRecord): boolean {
     && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "report.upload");
 }
 
+function canUploadVouchers(session: JsonRecord): boolean {
+  return cleanText(session.operations_role, 40) === "finance"
+    && hasAuthCapability(session, "voucher.upload");
+}
+
+function canReviewVouchers(session: JsonRecord): boolean {
+  return cleanText(session.operations_role, 40) === "finance"
+    && hasAuthCapability(session, "voucher.review");
+}
+
 function hasAuthCapability(session: JsonRecord, capability: string): boolean {
   return Boolean(cleanText(session.auth_account_id, 40))
     && Array.isArray(session.auth_capabilities)
@@ -212,6 +222,8 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     stores: await availableStores(session),
     can_write_expense: canWriteExpense(session),
     can_upload_reports: canUploadReports(session),
+    can_upload_vouchers: canUploadVouchers(session),
+    can_review_vouchers: canReviewVouchers(session),
     can_manage_service_items: hasAuthCapability(session, "daily_report.write"),
     can_manage_inventory_catalog: hasAuthCapability(session, "inventory.write"),
     can_manage_employees: hasAuthCapability(session, "employee.write"),
@@ -1017,20 +1029,17 @@ function storagePath(path: string): string {
 
 async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
-  const recordType = cleanText(payload.record_type, 20);
+  const recordType = cleanText(payload.record_type, 20) || "unassigned";
   const recordId = cleanText(payload.record_id, 100);
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 80);
-  if (!recordId || !["expense", "income", "report"].includes(recordType)) throw new Error("凭证关联记录无效");
-  if (recordType === "report" && !canUploadReports(session)) throw new Error("只有财务账号可以上传报表消费凭证");
-  if (recordType !== "report" && !canWriteExpense(session)) throw new Error("当前角色没有凭证上传权限");
+  if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
+  if (!["unassigned", "report"].includes(recordType)
+    || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
+    || (recordType === "unassigned" && recordId)) throw new Error("凭证关联记录无效");
   if (!["image/jpeg", "image/png", "application/pdf"].includes(mime)) throw new Error("凭证仅支持 JPG、PNG 或 PDF");
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
-  if (recordType === "expense") {
-    const records = await restRows(`zysyr_expense_records?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(recordId)}&limit=1`);
-    if (!records.length) throw new Error("费用记录不存在或无权访问");
-  }
   if (recordType === "report") {
     const reports = await restRows(`zysyr_report_uploads?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(recordId)}&limit=1`);
     if (!reports.length) throw new Error("报表不存在或无权关联消费凭证");
@@ -1038,33 +1047,134 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("凭证文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("凭证文件必须小于 10MB");
+  const digest = await sha256Bytes(bytes);
+  const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
+  if (duplicates.length) throw new Error(`该文件已上传：${cleanText(duplicates[0].original_filename, 200) || "同一凭证"}`);
   const extension = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png" : "jpg";
-  const objectPath = `${companyId}/${storeId}/${recordType}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+  const voucherId = crypto.randomUUID();
+  const objectPath = `${companyId}/${storeId}/voucher-center/${new Date().toISOString().slice(0, 10)}/${voucherId}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
     method: "POST",
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
     body: exactArrayBuffer(bytes),
   });
   if (!upload.ok) throw new Error(`凭证上传失败 (${upload.status})`);
-  const metadata = await rest("zysyr_voucher_attachments", {
-    method: "POST", headers: { Prefer: "return=representation" },
+  const metadata = await rest("rpc/zysyr_register_voucher", {
+    method: "POST",
     body: JSON.stringify({
-      company_id: companyId, store_id: storeId, store: cleanText(store.name, 100),
-      record_type: recordType, record_id: recordId, object_path: objectPath,
-      original_filename: filename || `voucher.${extension}`, mime_type: mime, size_bytes: bytes.length,
-      sha256: await sha256Bytes(bytes), immutable_version: 1,
-      note: cleanText(payload.note, 500), uploaded_by: session.username,
-      uploaded_by_user_id: cleanText(session.auth_account_id, 40) || null,
+      p_actor_user_id: cleanText(session.auth_account_id, 40),
+      p_company_id: companyId,
+      p_store_id: storeId,
+      p_id: voucherId,
+      p_record_type: recordType,
+      p_record_id: recordId || null,
+      p_object_path: objectPath,
+      p_original_filename: filename || `voucher.${extension}`,
+      p_mime_type: mime,
+      p_size_bytes: bytes.length,
+      p_sha256: digest,
+      p_note: cleanText(payload.note, 500),
     }),
   });
   if (!metadata.ok) {
     await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
       method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
     });
+    const error = await metadata.json().catch(() => ({})) as JsonRecord;
+    const code = cleanText(error.message ?? error.code, 120);
+    if (code === "VOUCHER_DUPLICATE_FILE" || cleanText(error.code, 20) === "23505") throw new Error("相同凭证已经上传，请直接关联已有凭证");
+    if (code === "VOUCHER_UPLOAD_FORBIDDEN") throw new Error("当前账号没有凭证上传权限");
     throw new Error(`凭证登记失败 (${metadata.status})`);
   }
-  const rows = await metadata.json();
-  return { saved: rows[0], private: true };
+  const result = await metadata.json();
+  return { saved: Array.isArray(result) ? result[0] : result, private: true, ocr_candidate_only: true };
+}
+
+async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "voucher.read")) throw new Error("当前账号没有凭证查看权限");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月份无效");
+  const start = `${month}-01`;
+  const endDate = new Date(`${start}T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const vouchers = await restRowsAll(`zysyr_voucher_attachments?select=id,record_type,record_id,original_filename,mime_type,size_bytes,note,sha256,ocr_status,audit_status,document_type,uploaded_by_user_id,uploaded_at,reviewed_by_user_id,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&uploaded_at=gte.${start}T00:00:00Z&uploaded_at=lt.${end}T00:00:00Z&order=uploaded_at.desc&limit=2000`, 2000);
+  const voucherFilter = uuidIn(vouchers.map((voucher) => voucher.id));
+  const [tasks, reviews, links, reports] = await Promise.all([
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,provider,status,attempt,candidate_fields,field_confidences,error_message,queued_at,started_at,completed_at&company_id=eq.${companyId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=4000`, 4000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_reviews?select=id,voucher_id,review_version,decision,document_type,candidate_fields,corrected_fields,field_confidences,reason,reviewer_user_id,reviewed_at&company_id=eq.${companyId}&voucher_id=in.${voucherFilter}&order=review_version.desc&limit=4000`, 4000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=id,voucher_id,business_type,business_id,relation_type,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&unlinked_at=is.null&limit=4000`, 4000),
+    restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`, 1000),
+  ]);
+  const accountFilter = uuidIn(vouchers.flatMap((voucher) => [voucher.uploaded_by_user_id, voucher.reviewed_by_user_id]));
+  const accounts = accountFilter === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${accountFilter}&limit=1000`, 1000);
+  const accountMap = new Map(accounts.map((account) => [cleanText(account.id, 40), account]));
+  const latestTask = new Map<string, JsonRecord>();
+  for (const task of tasks) if (!latestTask.has(cleanText(task.voucher_id, 40))) latestTask.set(cleanText(task.voucher_id, 40), task);
+  const latestReview = new Map<string, JsonRecord>();
+  for (const review of reviews) if (!latestReview.has(cleanText(review.voucher_id, 40))) latestReview.set(cleanText(review.voucher_id, 40), review);
+  const linkMap = new Map<string, JsonRecord[]>();
+  for (const link of links) {
+    const key = cleanText(link.voucher_id, 40);
+    linkMap.set(key, [...(linkMap.get(key) || []), link]);
+  }
+  return {
+    vouchers: vouchers.map((voucher) => ({
+      ...voucher,
+      uploaded_by: accountMap.get(cleanText(voucher.uploaded_by_user_id, 40)) || null,
+      reviewed_by: accountMap.get(cleanText(voucher.reviewed_by_user_id, 40)) || null,
+      latest_ocr_task: latestTask.get(cleanText(voucher.id, 40)) || null,
+      latest_review: latestReview.get(cleanText(voucher.id, 40)) || null,
+      links: linkMap.get(cleanText(voucher.id, 40)) || [],
+    })),
+    reports,
+    can_upload: canUploadVouchers(session),
+    can_review: canReviewVouchers(session),
+    ocr_provider_configured: false,
+  };
+}
+
+async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canReviewVouchers(session)) throw new Error("只有财务账号可以审核凭证");
+  const store = await selectedStoreInfo(session, payload);
+  const voucherId = cleanText(payload.voucher_id, 40);
+  const decision = cleanText(payload.decision, 20);
+  const documentType = cleanText(payload.document_type, 40);
+  const reportIds = uuidArray(payload.report_ids ?? [], 100);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(voucherId) || !["approved", "rejected"].includes(decision) || !reason) throw new Error("请完整填写审核决定和原因");
+  const corrected = payload.corrected_fields && typeof payload.corrected_fields === "object" && !Array.isArray(payload.corrected_fields)
+    ? payload.corrected_fields as JsonRecord : {};
+  const confidences = payload.field_confidences && typeof payload.field_confidences === "object" && !Array.isArray(payload.field_confidences)
+    ? payload.field_confidences as JsonRecord : {};
+  const response = await rest("rpc/zysyr_review_voucher", {
+    method: "POST",
+    body: JSON.stringify({
+      p_actor_user_id: cleanText(session.auth_account_id, 40),
+      p_company_id: cleanText(store.company_id, 40),
+      p_store_id: cleanText(store.id, 40),
+      p_voucher_id: voucherId,
+      p_decision: decision,
+      p_document_type: documentType,
+      p_corrected_fields: corrected,
+      p_field_confidences: confidences,
+      p_report_ids: reportIds,
+      p_reason: reason,
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = result && typeof result === "object" ? result as JsonRecord : {};
+    const code = cleanText(error.message ?? error.code, 120);
+    if (code === "VOUCHER_REVIEW_FORBIDDEN") throw new Error("当前账号没有凭证审核权限");
+    if (code === "REPORT_NOT_FOUND") throw new Error("关联报表不存在或不属于当前门店");
+    if (/_INVALID$/.test(code)) throw new Error("凭证审核字段无效");
+    throw new Error(`凭证审核失败 (${response.status})`);
+  }
+  return { saved: Array.isArray(result) ? result[0] : result };
 }
 
 async function voucherUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1116,6 +1226,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "expense_save") return json(await saveExpense(payload, session));
     if (operation === "expense_import") return json(await importExpenses(payload, session));
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
+    if (operation === "voucher_center") return json(await voucherCenter(payload, session));
+    if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);
