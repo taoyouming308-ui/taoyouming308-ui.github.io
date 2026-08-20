@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v425 ZYSYR V2 Sprint 3 财务业务闭环（2026-08-20，本地候选，未部署）
+
+- `20260820114519_zysyr_sprint3_finance_workflows.sql` 已补齐支出分类、支出提交/审核、备用金、支出付款、正式记录冲销、月报生成/复核/锁账/冲销解锁。所有公开写 RPC 仅授权 `service_role`，数据库重新核验 Auth 财务账号、公司、门店、能力、锁账和记录状态。
+- 每笔支出、备用金和付款必须选择至少一份同公司同门店、已人工审核通过的凭证；保存时同步建立 `voucher_links`、trace node/edge、workflow event 和 financial audit。旧 `expense_save` 已收口到正式 RPC，无凭证历史批量导入不再写库。
+- `operations-api` 新增 `finance_workbench` 及九个安全操作入口；页面新增财务专属“财务录入”，覆盖支出分类、支出、审核、备用金、付款、月报生成/复核/锁账/冲销。原表月报继续作为默认首页，首页仍读取财务上传原件，不读取美管加。
+- 正式月报按收入分类、支出分类和备用金方向生成不可变明细；备用金支出按原月报口径进入支出合计，备用金流入只保留资金记录、不虚增经营收入。系统建立 `盈亏 → 收支合计 → 分类明细 → 收入/支出/备用金记录 → 凭证` 追溯；付款是结算证明，不重复计入支出。
+- PostgreSQL 15 空库最终重放返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`、`SPRINT3_WORKFLOWS_RUNTIME_OK`。验证了星期一休息、凭证强制、财务允许/股东拒绝、部分/全额付款、超付拒绝、收入 1000/支出 120（含备用金 20）/盈亏 880、公式追溯、锁账拒写、月报冲销解锁及付款冲销恢复支出审核态；浏览器角色无这些写 RPC 权限。
+- 当前仍是本地候选：未执行生产迁移、迁移 repair、Edge Function 部署、页面发布、生产数据写入或 GitHub 推送。2026 年 4 月真实资料尚未导入，不宣称真实数据验收通过。
+- App version: v425
+
 ## v424 ZYSYR V2 Sprint 3 财务数据底座（2026-08-20，本地候选，未部署）
 
 - 继续按 V2.0 Sprint 顺序补 GAP：原有 XLSX/单元格层保留为不可变原始资料；新增 `zysyr_daily_reports / zysyr_daily_report_lines / zysyr_income_records / zysyr_expense_categories / zysyr_petty_cash_records / zysyr_payment_records / zysyr_metric_definitions / zysyr_monthly_reports / zysyr_monthly_report_lines` 正式业务层。旧 `zysyr_expense_records` 原地补分类、经办人、日报/单元格来源和付款操作者字段，未创建重复支出表。

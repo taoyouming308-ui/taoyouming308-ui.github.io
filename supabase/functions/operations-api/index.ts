@@ -221,6 +221,12 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     store: session.store || "",
     stores: await availableStores(session),
     can_write_expense: canWriteExpense(session),
+    can_manage_finance_workbench: cleanText(session.operations_role, 40) === "finance"
+      && hasAuthCapability(session, "expense.create_submit"),
+    can_review_expenses: hasAuthCapability(session, "expense.approve"),
+    can_confirm_payments: hasAuthCapability(session, "payment.confirm"),
+    can_lock_reports: hasAuthCapability(session, "report.lock"),
+    can_adjust_confirmed_finance: hasAuthCapability(session, "confirmed_finance.adjust"),
     can_upload_reports: canUploadReports(session),
     can_upload_vouchers: canUploadVouchers(session),
     can_review_vouchers: canReviewVouchers(session),
@@ -527,7 +533,7 @@ async function saveStore(payload: JsonRecord, session: JsonRecord): Promise<Json
 async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const month = cleanText(payload.month, 7);
-  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月份无效");
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
   const start = `${month}-01`;
   const endDate = new Date(`${start}T00:00:00Z`);
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
@@ -608,79 +614,198 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   };
 }
 
-async function saveExpense(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  if (!canWriteExpense(session)) throw new Error("当前角色没有费用录入权限");
-  const store = await selectedStoreInfo(session, payload);
-  const companyId = cleanText(store.company_id, 40);
-  const storeId = cleanText(store.id, 40);
-  const storeName = cleanText(store.name, 100);
-  const actorId = cleanText(session.auth_account_id, 40);
-  if (!companyId || !storeId || !actorId) throw new Error("费用账号公司、门店或身份范围无效");
-  const expenseDate = cleanText(payload.expense_date, 10);
-  const category = cleanText(payload.category, 80);
-  const summary = cleanText(payload.summary, 500);
-  if (!validDate(expenseDate) || !category || !summary) throw new Error("请完整填写日期、类别和摘要");
-  const record = {
-    company_id: companyId, store_id: storeId, store: storeName,
-    expense_date: expenseDate, category, summary,
-    counterparty: cleanText(payload.counterparty, 160), amount: amountValue(payload.amount),
-    payment_method: cleanText(payload.payment_method, 80), updated_by: session.username,
-    updated_by_user_id: actorId,
-    updated_at: new Date().toISOString(),
-  };
-  const id = cleanText(payload.id, 80);
-  const response = id
-    ? await rest(`zysyr_expense_records?id=eq.${encodeURIComponent(id)}&company_id=eq.${companyId}&store_id=eq.${storeId}`, {
-      method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(record),
-    })
-    : await rest("zysyr_expense_records", {
-      method: "POST", headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        ...record, source: "manual", workflow_status: "draft",
-        created_by: session.username, created_by_user_id: actorId,
-      }),
-    });
-  if (!response.ok) throw new Error(`费用保存失败 (${response.status})`);
-  const rows = await response.json();
-  if (!Array.isArray(rows) || rows.length !== 1) throw new Error("费用记录不存在或保存失败");
-  return { saved: rows[0], cashier_untouched: true };
+function requireFinanceCapability(session: JsonRecord, capability: string, message: string): void {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, capability)) {
+    throw new Error(message);
+  }
 }
 
-async function importExpenses(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  if (!canWriteExpense(session)) throw new Error("当前角色没有历史导入权限");
+function uuidValue(value: unknown, message: string, optional = false): string | null {
+  const id = cleanText(value, 40);
+  if (!id && optional) return null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error(message);
+  return id;
+}
+
+function voucherIdValues(value: unknown): string[] {
+  if (!Array.isArray(value) || !value.length || value.length > 20) throw new Error("每笔财务记录必须选择 1 至 20 份已审核凭证");
+  return Array.from(new Set(value.map((id) => uuidValue(id, "凭证编号无效") as string)));
+}
+
+async function financeWorkbench(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance") throw new Error("只有财务账号可以进入财务录入区");
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
-  const storeName = cleanText(store.name, 100);
-  const actorId = cleanText(session.auth_account_id, 40);
-  if (!companyId || !storeId || !actorId) throw new Error("费用账号公司、门店或身份范围无效");
-  const filename = cleanText(payload.filename, 200) || "history.csv";
-  const input = Array.isArray(payload.rows) ? payload.rows.slice(0, 250) : [];
-  if (!input.length) throw new Error("没有可导入的历史记录");
-  const rows = [];
-  for (let index = 0; index < input.length; index += 1) {
-    const row = (input[index] || {}) as JsonRecord;
-    const expenseDate = cleanText(row.expense_date, 10);
-    const category = cleanText(row.category, 80);
-    const summary = cleanText(row.summary, 500);
-    if (!validDate(expenseDate) || !category || !summary) throw new Error(`第 ${index + 1} 行日期、类别或摘要无效`);
-    const amount = amountValue(row.amount);
-    const normalized = [companyId, storeId, expenseDate, category, amount.toFixed(2), summary, cleanText(row.counterparty, 160), cleanText(row.payment_method, 80)].join("|");
-    rows.push({
-      company_id: companyId, store_id: storeId, store: storeName,
-      expense_date: expenseDate, category, summary, amount,
-      counterparty: cleanText(row.counterparty, 160), payment_method: cleanText(row.payment_method, 80),
-      source: "history_import", source_ref: await sha256(normalized), workflow_status: "draft",
-      created_by: session.username, updated_by: session.username,
-      created_by_user_id: actorId, updated_by_user_id: actorId,
-    });
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const start = `${month}-01`;
+  const endDate = new Date(`${start}T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const [categories, expenses, pettyCash, payments, monthlyReports, vouchers, uploadedMonthlyReports, employees] = await Promise.all([
+    restRowsAll(`zysyr_expense_categories?select=id,code,name,report_section,sort_order,status&company_id=eq.${companyId}&order=status.asc,sort_order.asc,name.asc&limit=1000`, 1000),
+    restRowsAll(`zysyr_expense_records?select=id,expense_date,expense_category_id,category,counterparty,summary,amount,payment_method,workflow_status,submitted_at,approved_at,paid_at,daily_report_line_id&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&expense_date=gte.${start}&expense_date=lt.${end}&order=expense_date.desc,created_at.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,status,daily_report_line_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&order=transaction_date.desc,created_at.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_payment_records?select=id,payment_date,business_type,business_id,payee,amount,payment_method,payment_reference,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&payment_date=gte.${start}&payment_date=lt.${end}&order=payment_date.desc,created_at.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_monthly_reports?select=id,period_month,version,source_report_id,status,generated_at,reviewed_at,locked_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${start}&order=version.desc&limit=100`, 100),
+    restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&audit_status=eq.approved&order=uploaded_at.desc&limit=2000`, 2000),
+    restRowsAll(`zysyr_report_uploads?select=id,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&status=eq.active&report_date=eq.${start}&order=version.desc&limit=100`, 100),
+    restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&order=employment_status.asc,employee_code.asc&limit=1000`, 1000),
+  ]);
+  const reportIds = monthlyReports.map((report) => cleanText(report.id, 40));
+  const monthlyLines = reportIds.length
+    ? await restRowsAll(`zysyr_monthly_report_lines?select=id,monthly_report_id,line_number,metric_code,metric_name,amount,calculation_method,calculation_expression,source_count&company_id=eq.${companyId}&store_id=eq.${storeId}&monthly_report_id=in.${uuidIn(reportIds)}&order=monthly_report_id,line_number.asc&limit=5000`, 5000)
+    : [];
+  const paidByExpense: Record<string, number> = {};
+  for (const payment of payments) {
+    if (cleanText(payment.business_type, 30) === "expense" && cleanText(payment.status, 20) === "confirmed") {
+      const id = cleanText(payment.business_id, 40);
+      paidByExpense[id] = (paidByExpense[id] || 0) + Number(payment.amount || 0);
+    }
   }
-  const response = await rest("zysyr_expense_records?on_conflict=source_ref", {
-    method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" }, body: JSON.stringify(rows),
+  return {
+    company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
+    categories, expenses, petty_cash: pettyCash, payments, monthly_reports: monthlyReports,
+    monthly_lines: monthlyLines, approved_vouchers: vouchers,
+    uploaded_monthly_reports: uploadedMonthlyReports, employees, paid_by_expense: paidByExpense,
+    permissions: {
+      create_expense: hasAuthCapability(session, "expense.create_submit"),
+      approve_expense: hasAuthCapability(session, "expense.approve"),
+      confirm_payment: hasAuthCapability(session, "payment.confirm"),
+      lock_report: hasAuthCapability(session, "report.lock"),
+      reverse: hasAuthCapability(session, "confirmed_finance.adjust"),
+    },
+    source_boundary: "finance_uploads_only", meiguanjia_used: false,
+  };
+}
+
+async function saveExpenseCategory(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.create_submit", "当前账号没有支出分类维护权限");
+  const store = await selectedStoreInfo(session, payload);
+  const id = uuidValue(payload.id, "支出分类编号无效", true);
+  const reason = cleanText(payload.reason, 500);
+  const saved = await financeRpcSaved("rpc/zysyr_upsert_expense_category", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_id: id, p_code: cleanText(payload.code, 64).toUpperCase(),
+    p_name: cleanText(payload.name, 120), p_report_section: cleanText(payload.report_section, 120),
+    p_sort_order: Number.isInteger(Number(payload.sort_order)) ? Number(payload.sort_order) : 0,
+    p_status: cleanText(payload.status, 20) || "active", p_reason: reason || null,
   });
-  if (!response.ok) throw new Error(`历史导入失败 (${response.status})`);
-  const inserted = await response.json();
-  return { filename, submitted: rows.length, imported: Array.isArray(inserted) ? inserted.length : 0, duplicates: rows.length - (Array.isArray(inserted) ? inserted.length : 0) };
+  return { saved };
+}
+
+async function submitExpense(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.create_submit", "只有财务账号可以提交正式支出");
+  const store = await selectedStoreInfo(session, payload);
+  const expenseDate = cleanText(payload.expense_date, 10);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(expenseDate) || !reason || !cleanText(payload.summary, 500)) throw new Error("请完整填写支出日期、摘要和提交原因");
+  const saved = await financeRpcSaved("rpc/zysyr_submit_expense", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_expense_date: expenseDate,
+    p_expense_category_id: uuidValue(payload.expense_category_id, "请选择支出分类"),
+    p_counterparty: cleanText(payload.counterparty, 160), p_summary: cleanText(payload.summary, 500),
+    p_amount: amountValue(payload.amount), p_payment_method: cleanText(payload.payment_method, 80),
+    p_operator_employee_id: uuidValue(payload.operator_employee_id, "经办员工无效", true),
+    p_daily_report_line_id: uuidValue(payload.daily_report_line_id, "日报明细无效", true),
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved, formal_source: "finance_submitted_expense", cashier_untouched: true, meiguanjia_used: false };
+}
+
+async function reviewExpense(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.approve", "当前账号没有支出审核权限");
+  const store = await selectedStoreInfo(session, payload);
+  const decision = cleanText(payload.decision, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!["approved", "rejected"].includes(decision) || !reason) throw new Error("请填写支出审核决定和原因");
+  const saved = await financeRpcSaved("rpc/zysyr_review_expense", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_expense_id: uuidValue(payload.expense_id, "支出编号无效"),
+    p_decision: decision, p_reason: reason,
+  });
+  return { saved };
+}
+
+async function recordPettyCash(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.create_submit", "只有财务账号可以登记备用金");
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.transaction_date, 10);
+  const direction = cleanText(payload.direction, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !["inflow", "outflow"].includes(direction) || !reason) throw new Error("请完整填写备用金日期、方向和原因");
+  const saved = await financeRpcSaved("rpc/zysyr_record_petty_cash", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_transaction_date: date, p_direction: direction,
+    p_category: cleanText(payload.category, 120), p_summary: cleanText(payload.summary, 500),
+    p_amount: amountValue(payload.amount), p_daily_report_line_id: uuidValue(payload.daily_report_line_id, "日报明细无效", true),
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved };
+}
+
+async function confirmExpensePayment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "payment.confirm", "当前账号没有付款确认权限");
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.payment_date, 10);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !reason) throw new Error("请完整填写付款日期和确认原因");
+  const saved = await financeRpcSaved("rpc/zysyr_confirm_expense_payment", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_expense_id: uuidValue(payload.expense_id, "支出编号无效"),
+    p_payment_date: date, p_payee: cleanText(payload.payee, 160), p_amount: amountValue(payload.amount),
+    p_payment_method: cleanText(payload.payment_method, 80), p_payment_reference: cleanText(payload.payment_reference, 100) || null,
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved };
+}
+
+async function reverseFinanceRecord(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "当前账号没有已确认财务记录冲销权限");
+  const store = await selectedStoreInfo(session, payload);
+  const recordType = cleanText(payload.record_type, 40);
+  const reason = cleanText(payload.reason, 500);
+  if (!["income_record", "expense_record", "petty_cash_record", "payment_record"].includes(recordType) || !reason) throw new Error("冲销类型或原因无效");
+  const saved = await financeRpcSaved("rpc/zysyr_reverse_finance_record", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_record_type: recordType,
+    p_record_id: uuidValue(payload.record_id, "财务记录编号无效"), p_reason: reason,
+  });
+  return { saved };
+}
+
+async function generateMonthlyReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "report.lock", "当前账号没有月报生成或锁账权限");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !reason) throw new Error("请选择月份并填写生成原因");
+  const saved = await financeRpcSaved("rpc/zysyr_generate_monthly_report", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_period_month: `${month}-01`,
+    p_source_report_id: uuidValue(payload.source_report_id, "月报原件编号无效", true), p_reason: reason,
+  });
+  return { saved, meiguanjia_used: false };
+}
+
+async function transitionMonthlyReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const action = cleanText(payload.action, 20);
+  requireFinanceCapability(session, action === "reverse" ? "confirmed_finance.adjust" : "report.lock", "当前账号没有月报审核、锁账或冲销权限");
+  const store = await selectedStoreInfo(session, payload);
+  const reason = cleanText(payload.reason, 500);
+  if (!["review", "lock", "reverse"].includes(action) || !reason) throw new Error("请选择月报操作并填写原因");
+  const saved = await financeRpcSaved("rpc/zysyr_transition_monthly_report", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_monthly_report_id: uuidValue(payload.monthly_report_id, "月报编号无效"),
+    p_action: action, p_reason: reason,
+  });
+  return { saved };
+}
+
+async function importExpenses(_payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.create_submit", "当前账号没有支出录入权限");
+  throw new Error("历史支出不能无凭证批量写入；请在财务录入区逐笔选择已审核凭证后提交");
 }
 
 function decodeBase64(value: string): Uint8Array {
@@ -1198,6 +1323,11 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_SOURCE_REPORT_NOT_FOUND") throw new Error("日报原件不存在、已被替代或不属于当前门店");
     if (code === "DAILY_REPORT_SOURCE_CELL_NOT_FOUND") throw new Error("日报数字没有对应到当前原表单元格");
     if (code === "APPROVED_VOUCHER_NOT_FOUND") throw new Error("凭证尚未人工审核通过或不属于当前门店");
+    if (code === "APPROVED_VOUCHER_REQUIRED") throw new Error("每笔正式财务记录必须关联已审核凭证");
+    if (code === "PAYMENT_EXCEEDS_EXPENSE") throw new Error("本次付款会超过支出金额");
+    if (code === "EXPENSE_HAS_CONFIRMED_PAYMENT") throw new Error("该支出已有确认付款，请先冲销付款记录");
+    if (code === "MONTHLY_TRANSITION_NOT_ALLOWED") throw new Error("月报当前状态不允许执行此操作");
+    if (code === "CURRENT_MONTHLY_REPORT_EXISTS") throw new Error("本月已有未冲销的正式月报，请先完成或冲销现有版本");
     if (code === "FINANCE_BUSINESS_RECORD_NOT_FOUND") throw new Error("正式财务记录不存在或不属于当前门店");
     if (/_INVALID$|_REQUIRED$/.test(code)) throw new Error("正式财务记录字段不完整或格式无效");
     if (/_NOT_FOUND$/.test(code)) throw new Error("正式财务记录不存在或不属于当前门店");
@@ -1342,8 +1472,16 @@ Deno.serve(async (request: Request) => {
     if (operation === "cell_trace") return json(await cellTrace(payload, session));
     if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
     if (operation === "report_url") return json(await reportUrl(payload, session));
-    if (operation === "expense_save") return json(await saveExpense(payload, session));
+    if (operation === "finance_workbench") return json(await financeWorkbench(payload, session));
+    if (operation === "expense_category_save") return json(await saveExpenseCategory(payload, session));
+    if (operation === "expense_save" || operation === "expense_submit") return json(await submitExpense(payload, session));
     if (operation === "expense_import") return json(await importExpenses(payload, session));
+    if (operation === "expense_review") return json(await reviewExpense(payload, session));
+    if (operation === "petty_cash_record") return json(await recordPettyCash(payload, session));
+    if (operation === "expense_payment_confirm") return json(await confirmExpensePayment(payload, session));
+    if (operation === "finance_record_reverse") return json(await reverseFinanceRecord(payload, session));
+    if (operation === "monthly_generate") return json(await generateMonthlyReport(payload, session));
+    if (operation === "monthly_transition") return json(await transitionMonthlyReport(payload, session));
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));

@@ -55,8 +55,8 @@ expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/
 expect(edge.includes('recordType === "report"') && edge.includes('rpc/zysyr_register_voucher'), 'report voucher association missing');
 expect(edge.includes('p_sha256: digest') && !edge.includes('sha256: await sha256Bytes(bytes), version: 1'), 'voucher digest or immutable version flow invalid');
 expect(edge.includes('Boolean(cleanText(session.auth_account_id, 40))') && !edge.includes('["shareholder", "finance", "store_manager"].includes'), 'legacy expense role fallback must remain disabled');
-expect(edge.includes('const store = await selectedStoreInfo(session, payload)') && edge.includes('company_id: companyId, store_id: storeId, store: storeName'), 'expense writes must bind company/store UUIDs');
-expect(edge.includes('&company_id=eq.${companyId}&store_id=eq.${storeId}') && edge.includes('created_by_user_id: actorId') && edge.includes('updated_by_user_id: actorId'), 'expense update filter or actor provenance missing');
+expect(edge.includes('async function submitExpense(') && edge.includes('p_company_id: cleanText(store.company_id, 40)') && edge.includes('p_store_id: cleanText(store.id, 40)'), 'formal expense RPC must bind company/store UUIDs');
+expect(edge.includes('rpc/zysyr_submit_expense') && !/rest\("zysyr_expense_records"[\s\S]{0,300}method:\s*"POST"/.test(edge), 'expense writes must use the audited database RPC instead of direct table writes');
 const expensePermissionSource = edge.match(/function canWriteExpense\(session: JsonRecord\): boolean \{[\s\S]*?\n\}/);
 expect(expensePermissionSource, 'expense permission function missing');
 const permissionContext = {
