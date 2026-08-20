@@ -1,13 +1,15 @@
 # Agent Sync Status
 
-## v425 ZYSYR V2 Sprint 3 财务业务闭环（2026-08-20，本地候选，未部署）
+## v425 ZYSYR V2 Sprint 3 财务业务闭环（2026-08-20，生产发布）
 
 - `20260820114519_zysyr_sprint3_finance_workflows.sql` 已补齐支出分类、支出提交/审核、备用金、支出付款、正式记录冲销、月报生成/复核/锁账/冲销解锁。所有公开写 RPC 仅授权 `service_role`，数据库重新核验 Auth 财务账号、公司、门店、能力、锁账和记录状态。
 - 每笔支出、备用金和付款必须选择至少一份同公司同门店、已人工审核通过的凭证；保存时同步建立 `voucher_links`、trace node/edge、workflow event 和 financial audit。旧 `expense_save` 已收口到正式 RPC，无凭证历史批量导入不再写库。
 - `operations-api` 新增 `finance_workbench` 及九个安全操作入口；页面新增财务专属“财务录入”，覆盖支出分类、支出、审核、备用金、付款、月报生成/复核/锁账/冲销。原表月报继续作为默认首页，首页仍读取财务上传原件，不读取美管加。
 - 正式月报按收入分类、支出分类和备用金方向生成不可变明细；备用金支出按原月报口径进入支出合计，备用金流入只保留资金记录、不虚增经营收入。系统建立 `盈亏 → 收支合计 → 分类明细 → 收入/支出/备用金记录 → 凭证` 追溯；付款是结算证明，不重复计入支出。
 - PostgreSQL 15 空库最终重放返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`、`SPRINT3_WORKFLOWS_RUNTIME_OK`。验证了星期一休息、凭证强制、财务允许/股东拒绝、部分/全额付款、超付拒绝、收入 1000/支出 120（含备用金 20）/盈亏 880、公式追溯、锁账拒写、月报冲销解锁及付款冲销恢复支出审核态；浏览器角色无这些写 RPC 权限。
-- 当前仍是本地候选：未执行生产迁移、迁移 repair、Edge Function 部署、页面发布、生产数据写入或 GitHub 推送。2026 年 4 月真实资料尚未导入，不宣称真实数据验收通过。
+- 生产部署前生成 `ZYSYR_2026-08-20_202053.tar.gz` 并复制到 iCloud；Supabase 当日物理备份状态为 `COMPLETED`。没有修改远端迁移历史：10 个既有本地文件以 100% 相同 SHA-256 对齐生产登记时间戳，dry-run 只剩 v418–v425 七个新迁移。
+- 七个新迁移已成功应用，`migration list` 本地/远端完全一致，生产 `db lint --schema public --level error` 为 0。`operations-api` 已部署为 v4、`ACTIVE`、`verify_jwt=false`，继续由函数内部校验旧会话与 Supabase Auth；未登录探针返回预期 403“请重新登录”。页面随本版本推送 GitHub `main`，以线上 `version.txt=425` 和 `operations.html data-version=425` 传播核验为准。
+- 未创建测试账号、未写入生产财务业务记录，也未导入 2026 年 4 月真实资料；因此不宣称真实数据端到端验收通过。实际 OCR provider 仍未配置，凭证可人工录入候选并审核，但不能宣称自动 OCR 已上线。
 - App version: v425
 
 ## v424 ZYSYR V2 Sprint 3 财务数据底座（2026-08-20，本地候选，未部署）
