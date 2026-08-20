@@ -53,6 +53,24 @@ expect(edge.includes('cellTrace') && edge.includes('saveCellTrace') && edge.incl
 expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
 expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');
 expect(edge.includes('recordType === "report"') && edge.includes('zysyr_voucher_attachments'), 'report voucher association missing');
+expect(edge.includes('immutable_version: 1') && !edge.includes('sha256: await sha256Bytes(bytes), version: 1'), 'voucher immutable version field mismatch');
+expect(edge.includes('Boolean(cleanText(session.auth_account_id, 40))') && !edge.includes('["shareholder", "finance", "store_manager"].includes'), 'legacy expense role fallback must remain disabled');
+expect(edge.includes('const store = await selectedStoreInfo(session, payload)') && edge.includes('company_id: companyId, store_id: storeId, store: storeName'), 'expense writes must bind company/store UUIDs');
+expect(edge.includes('&company_id=eq.${companyId}&store_id=eq.${storeId}') && edge.includes('created_by_user_id: actorId') && edge.includes('updated_by_user_id: actorId'), 'expense update filter or actor provenance missing');
+const expensePermissionSource = edge.match(/function canWriteExpense\(session: JsonRecord\): boolean \{[\s\S]*?\n\}/);
+expect(expensePermissionSource, 'expense permission function missing');
+const permissionContext = {
+  cleanText(value, max = 500) { return String(value ?? '').trim().slice(0, max); },
+};
+vm.createContext(permissionContext);
+vm.runInContext(expensePermissionSource[0]
+  .replace('session: JsonRecord', 'session')
+  .replace(': boolean', '')
+  .replace(/ as unknown\[\]/g, ''), permissionContext);
+expect(permissionContext.canWriteExpense({ operations_role: 'shareholder' }) === false, 'legacy shareholder expense write must be denied');
+expect(permissionContext.canWriteExpense({ operations_role: 'finance', auth_capabilities: ['expense.create_submit'] }) === false, 'capability without Auth account must be denied');
+expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_capabilities: ['expense.create_submit'] }) === true, 'authorized Auth expense write must be allowed');
+expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_capabilities: ['dashboard.store.read'] }) === false, 'Auth account without expense capability must be denied');
 expect(!edge.includes('mgj_service_records') && !edge.includes('income_read_only_from_mgj'), 'operations API must not read Meiguanjia');
 expect(!edge.includes('SUPABASE_ANON_KEY'), 'Edge Function must not rely on a browser anon key');
 
@@ -85,6 +103,7 @@ expect(traceability.includes('create or replace function public.zysyr_save_repor
 expect(traceability.includes("cap.code = 'report.upload'") && traceability.includes("report.report_type in ('daily', 'performance')"), 'finance scope or source report boundary missing');
 expect(traceability.includes("abs(v_delta) > 0.01") && traceability.includes("when v_evidence_count = 0 then 'missing_evidence'"), '0.01 reconciliation or evidence check missing');
 expect(traceability.includes("'report_cell_trace_revision'") && traceability.includes("'derived_from'") && traceability.includes("'evidenced_by'"), 'trace graph relations missing');
+expect(traceability.includes("p_actor_user_id, 'api',") && !traceability.includes("p_actor_user_id, 'web',"), 'trace audit channel must satisfy the audit-event constraint');
 ['zysyr_report_cells', 'zysyr_report_cell_trace_revisions', 'zysyr_report_cell_trace_sources', 'zysyr_report_cell_trace_evidence'].forEach((table) => {
   expect(traceability.includes(`alter table public.${table} enable row level security`) && traceability.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
 });

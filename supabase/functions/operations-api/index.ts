@@ -170,10 +170,9 @@ function roleLabel(role: unknown): string {
 }
 
 function canWriteExpense(session: JsonRecord): boolean {
-  if (Array.isArray(session.auth_capabilities)) {
-    return (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "expense.create_submit");
-  }
-  return ["shareholder", "finance", "store_manager"].includes(cleanText(session.operations_role, 40));
+  return Boolean(cleanText(session.auth_account_id, 40))
+    && Array.isArray(session.auth_capabilities)
+    && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "expense.create_submit");
 }
 
 function canUploadReports(session: JsonRecord): boolean {
@@ -406,25 +405,35 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
 
 async function saveExpense(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!canWriteExpense(session)) throw new Error("当前角色没有费用录入权限");
-  const store = await selectedStore(session, payload);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const storeName = cleanText(store.name, 100);
+  const actorId = cleanText(session.auth_account_id, 40);
+  if (!companyId || !storeId || !actorId) throw new Error("费用账号公司、门店或身份范围无效");
   const expenseDate = cleanText(payload.expense_date, 10);
   const category = cleanText(payload.category, 80);
   const summary = cleanText(payload.summary, 500);
   if (!validDate(expenseDate) || !category || !summary) throw new Error("请完整填写日期、类别和摘要");
   const record = {
-    store, expense_date: expenseDate, category, summary,
+    company_id: companyId, store_id: storeId, store: storeName,
+    expense_date: expenseDate, category, summary,
     counterparty: cleanText(payload.counterparty, 160), amount: amountValue(payload.amount),
     payment_method: cleanText(payload.payment_method, 80), updated_by: session.username,
+    updated_by_user_id: actorId,
     updated_at: new Date().toISOString(),
   };
   const id = cleanText(payload.id, 80);
   const response = id
-    ? await rest(`zysyr_expense_records?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`, {
+    ? await rest(`zysyr_expense_records?id=eq.${encodeURIComponent(id)}&company_id=eq.${companyId}&store_id=eq.${storeId}`, {
       method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(record),
     })
     : await rest("zysyr_expense_records", {
       method: "POST", headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ ...record, source: "manual", created_by: session.username }),
+      body: JSON.stringify({
+        ...record, source: "manual", workflow_status: "draft",
+        created_by: session.username, created_by_user_id: actorId,
+      }),
     });
   if (!response.ok) throw new Error(`费用保存失败 (${response.status})`);
   const rows = await response.json();
@@ -434,7 +443,12 @@ async function saveExpense(payload: JsonRecord, session: JsonRecord): Promise<Js
 
 async function importExpenses(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!canWriteExpense(session)) throw new Error("当前角色没有历史导入权限");
-  const store = await selectedStore(session, payload);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const storeName = cleanText(store.name, 100);
+  const actorId = cleanText(session.auth_account_id, 40);
+  if (!companyId || !storeId || !actorId) throw new Error("费用账号公司、门店或身份范围无效");
   const filename = cleanText(payload.filename, 200) || "history.csv";
   const input = Array.isArray(payload.rows) ? payload.rows.slice(0, 250) : [];
   if (!input.length) throw new Error("没有可导入的历史记录");
@@ -446,12 +460,14 @@ async function importExpenses(payload: JsonRecord, session: JsonRecord): Promise
     const summary = cleanText(row.summary, 500);
     if (!validDate(expenseDate) || !category || !summary) throw new Error(`第 ${index + 1} 行日期、类别或摘要无效`);
     const amount = amountValue(row.amount);
-    const normalized = [store, expenseDate, category, amount.toFixed(2), summary, cleanText(row.counterparty, 160), cleanText(row.payment_method, 80)].join("|");
+    const normalized = [companyId, storeId, expenseDate, category, amount.toFixed(2), summary, cleanText(row.counterparty, 160), cleanText(row.payment_method, 80)].join("|");
     rows.push({
-      store, expense_date: expenseDate, category, summary, amount,
+      company_id: companyId, store_id: storeId, store: storeName,
+      expense_date: expenseDate, category, summary, amount,
       counterparty: cleanText(row.counterparty, 160), payment_method: cleanText(row.payment_method, 80),
-      source: "history_import", source_ref: await sha256(normalized), created_by: session.username,
-      updated_by: session.username,
+      source: "history_import", source_ref: await sha256(normalized), workflow_status: "draft",
+      created_by: session.username, updated_by: session.username,
+      created_by_user_id: actorId, updated_by_user_id: actorId,
     });
   }
   const response = await rest("zysyr_expense_records?on_conflict=source_ref", {
@@ -852,7 +868,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       company_id: companyId, store_id: storeId, store: cleanText(store.name, 100),
       record_type: recordType, record_id: recordId, object_path: objectPath,
       original_filename: filename || `voucher.${extension}`, mime_type: mime, size_bytes: bytes.length,
-      sha256: await sha256Bytes(bytes), version: 1,
+      sha256: await sha256Bytes(bytes), immutable_version: 1,
       note: cleanText(payload.note, 500), uploaded_by: session.username,
       uploaded_by_user_id: cleanText(session.auth_account_id, 40) || null,
     }),

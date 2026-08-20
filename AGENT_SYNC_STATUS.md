@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## v420 ZYSYR Gate D P0 安全修复（2026-08-20，本地候选，未部署）
+
+- 开工前已获取最新 GitHub `main`；发现其在共同基线后新增 `6680d75`（v418 员工档案竞态、文本清理和上传类型校验），已审查并合并到 `feature/zysyr-operations`，保留 v419 原表月报/Gate D 全部内容。未跟踪 `aesthetic-coach-edge.ts` 保持未修改。
+- 修改前已生成并复制 iCloud 完整备份 `ZYSYR_2026-08-20_172211.tar.gz`；v419 恢复点仍为远端功能分支提交 `b33169b`。
+- Gate D 审计写入 `channel='web'` 已改为数据库约束允许的 `channel='api'`；凭证登记从不存在的 `version` 改为已部署的 `immutable_version=1`。
+- 费用写边界已收紧：旧经营会话（包括旧股东）全部只读；只有有 V2 账号 UUID 且具有 `expense.create_submit` 的 Supabase Auth 会话可写。新增、更新和历史导入全部绑定 `company_id/store_id`，更新过滤同时包含公司/门店，操作者写入 `created_by_user_id/updated_by_user_id`，新记录状态为 `draft`。
+- 生产只读核对：GitHub Pages `version.txt=418`，但线上 `operations.html data-version=417`，经营驾驶舱仍未切换原表月报/Gate D；线上 `operations-api` 仍为 v3，其他三个经营 Auth 函数仍为 Gate C3 版本，未部署本地函数。`supabase migration list --linked` 仍有 10 组同源码不同时间戳：`05031104→05032115`、`05032248→05032309`、`05034830→05040356`、`05045233→05050029`、`11024016→11031221`、`11031403→11032136`、`11033042→11033600`、`11035138→11040423`、`11040207→11040458`、`11053600→13091814`；`13094949/13103623` 只在本地。
+- 专项测试已覆盖旧股东拒绝、无 Auth 账号拒绝、Auth+费用能力允许、Auth 缺能力拒绝；经营驾驶舱回归、Deno 2.5.6 类型检查、版本/发布完整性和生产 `db lint --linked` 均通过。尝试启动本机 Supabase 真实迁移预演时需下载数百 MB 镜像且网络极慢，已主动取消并停止容器；因此数据库事务实跑仍是生产 Gate 前硬性未完成项。
+- 当前未执行生产迁移、`migration repair`、函数部署、页面发布、财务账号创建或业务数据写入。线上站点标记 v418，经营驾驶舱页面保持 v417。
+- App version: v420
+
 ## v419 ZYSYR Gate D 月报单元格级追溯（2026-08-13，本地候选，未部署）
 
 - v418 恢复点已提交为 `e0a4047` 并推送到 GitHub 功能分支 `feature/zysyr-operations`；GitHub `main` 与线上 v417 未变化。当天完整归档已存在，备份脚本未重复创建。

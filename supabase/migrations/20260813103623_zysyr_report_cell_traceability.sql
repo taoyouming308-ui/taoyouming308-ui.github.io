@@ -443,7 +443,7 @@ begin
     company_id, store_id, actor_type, actor_user_id, channel,
     entity_type, entity_id, action, after_json
   ) values (
-    v_target.company_id, v_target.store_id, 'user', p_actor_user_id, 'web',
+    v_target.company_id, v_target.store_id, 'user', p_actor_user_id, 'api',
     'report_cell_trace', v_saved.id, 'revise',
     jsonb_build_object('target_cell_id', v_target.id, 'revision', v_saved.revision,
       'status', v_saved.status, 'expected_amount', v_saved.expected_amount,
