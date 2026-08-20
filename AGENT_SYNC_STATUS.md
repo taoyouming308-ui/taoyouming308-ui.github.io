@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v421 ZYSYR V2 Sprint 1 基础数据第一阶段（2026-08-20，本地候选，未部署）
+
+- 按 V2.0 原文 Sprint 顺序开始补 GAP；本阶段复用已部署 Sprint 0 的公司、门店、账号、角色和员工表，仅新增仍缺失的 `zysyr_service_items / zysyr_products / zysyr_suppliers`，没有重做页面或改变纸质月报口径。
+- 新表均为公司级目录，包含精确数值类型、自然键去重、创建/修改/软删除溯源、完整外键索引、强制 RLS 和最小授权。授权股东/财务/店长可读；浏览器无直接写权限。
+- 新增仅 `service_role` 可执行的三个原子 RPC；数据库重新核验账号、公司、门店和能力范围，服务项目写要求 `daily_report.write`，产品/供应商写要求 `inventory.write`，写入与 `zysyr_audit_events` 的 before/after/reason 同事务完成。
+- `operations-api` 新增 `catalog / service_item_save / product_save / supplier_save`，旧经营会话不得写基础资料；现阶段没有新增页面入口，原表月报、财务上传、Gate D 和不读取美管加边界保持不变。
+- 新增 `scripts/test-zysyr-sprint1.js` 并接入 CI/pre-push。完整 pre-push、Node 语法、经营驾驶舱专项测试和静态安全断言已通过；本机临时 PostgreSQL 15 已实际执行迁移，并验证允许写入、跨公司越权拒绝、修改必须说明原因、审计快照、授权读取和跨公司 RLS 隔离，测试容器已停止并自动删除。生产只读 `db lint --linked --schema public --level error` 无错误。
+- 当前仍未执行生产迁移、迁移历史 repair、函数部署、页面发布、财务账号创建或生产业务数据写入；未重试此前被安全审查拦截的 GitHub 功能分支推送。线上仍为站点 v418 / 经营页 v417，既有 10 组迁移时间戳差异及 v418/v419 本地迁移继续是生产 Gate 前置阻断。
+- App version: v421
+
 ## v420 ZYSYR Gate D P0 安全修复（2026-08-20，本地候选，未部署）
 
 - 开工前已获取最新 GitHub `main`；发现其在共同基线后新增 `6680d75`（v418 员工档案竞态、文本清理和上传类型校验），已审查并合并到 `feature/zysyr-operations`，保留 v419 原表月报/Gate D 全部内容。未跟踪 `aesthetic-coach-edge.ts` 保持未修改。

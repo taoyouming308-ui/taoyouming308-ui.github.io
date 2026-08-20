@@ -181,6 +181,12 @@ function canUploadReports(session: JsonRecord): boolean {
     && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "report.upload");
 }
 
+function hasAuthCapability(session: JsonRecord, capability: string): boolean {
+  return Boolean(cleanText(session.auth_account_id, 40))
+    && Array.isArray(session.auth_capabilities)
+    && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === capability);
+}
+
 async function availableStores(session: JsonRecord): Promise<string[]> {
   if (Array.isArray(session.auth_stores)) return (session.auth_stores as unknown[]).map((item) => cleanText(item, 100)).filter(Boolean);
   const assigned = cleanText(session.store, 100);
@@ -200,6 +206,8 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     stores: await availableStores(session),
     can_write_expense: canWriteExpense(session),
     can_upload_reports: canUploadReports(session),
+    can_manage_service_items: hasAuthCapability(session, "daily_report.write"),
+    can_manage_inventory_catalog: hasAuthCapability(session, "inventory.write"),
     can_create_store: role === "shareholder",
     can_manage_finance_accounts: Array.isArray(session.auth_capabilities)
       && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "finance_account.create")
@@ -317,6 +325,106 @@ function amountValue(value: unknown): number {
   const amount = Number(raw);
   if (!Number.isFinite(amount) || amount < 0 || amount > 9999999999.99) throw new Error("金额超出允许范围");
   return amount;
+}
+
+function catalogCostValue(value: unknown): number | null {
+  const raw = cleanText(value, 40);
+  if (!raw) return null;
+  if (!/^\d+(?:\.\d{1,4})?$/.test(raw)) throw new Error("参考成本必须为非负数字，最多四位小数");
+  const cost = Number(raw);
+  if (!Number.isFinite(cost) || cost < 0 || cost >= 10000000000) throw new Error("参考成本超出允许范围");
+  return cost;
+}
+
+async function catalog(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const role = cleanText(session.operations_role, 40);
+  if (role !== "shareholder" && role !== "finance" && role !== "store_manager") throw new Error("当前角色无权查看基础资料");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  if (!companyId) throw new Error("基础资料公司范围无效");
+  const [serviceItems, products, suppliers] = await Promise.all([
+    restRowsAll(`zysyr_service_items?select=id,name,category,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,category.asc,name.asc&limit=2000`, 2000),
+    restRowsAll(`zysyr_products?select=id,name,category,unit,default_cost,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,category.asc,name.asc&limit=5000`, 5000),
+    restRowsAll(`zysyr_suppliers?select=id,name,category,contact,status,created_at,updated_at&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,name.asc&limit=2000`, 2000),
+  ]);
+  return { company_id: companyId, store: cleanText(store.name, 100), service_items: serviceItems, products, suppliers };
+}
+
+async function rpcSaved(path: string, body: JsonRecord): Promise<JsonRecord> {
+  const response = await rest(path, { method: "POST", body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = data && typeof data === "object" ? data as JsonRecord : {};
+    const code = cleanText(error.message, 120) || cleanText(error.code, 40);
+    if (code === "CHANGE_REASON_REQUIRED") throw new Error("修改基础资料必须填写原因");
+    if (/FORBIDDEN$/.test(code)) throw new Error("当前账号没有该基础资料维护权限");
+    if (/_NOT_FOUND$/.test(code)) throw new Error("基础资料不存在或已归档");
+    if (/_FIELDS_REQUIRED$|_NAME_REQUIRED$|_STATUS_INVALID$|_COST_INVALID$/.test(code)) throw new Error("基础资料字段无效");
+    throw new Error(`基础资料保存失败 (${response.status})`);
+  }
+  const saved = Array.isArray(data) ? data[0] : data;
+  if (!saved || typeof saved !== "object") throw new Error("基础资料保存结果无效");
+  return saved as JsonRecord;
+}
+
+async function saveServiceItem(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有项目维护权限");
+  const store = await selectedStoreInfo(session, payload);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const id = cleanText(payload.id, 40);
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("服务项目ID无效");
+  const saved = await rpcSaved("rpc/zysyr_upsert_service_item", {
+    p_actor_user_id: actorId,
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_id: id || null,
+    p_name: cleanText(payload.name, 160),
+    p_category: cleanText(payload.category, 100),
+    p_status: cleanText(payload.status, 20) || "active",
+    p_reason: cleanText(payload.reason, 500) || null,
+  });
+  return { saved };
+}
+
+async function saveProduct(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "inventory.write")) throw new Error("当前账号没有产品维护权限");
+  const store = await selectedStoreInfo(session, payload);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const id = cleanText(payload.id, 40);
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("产品ID无效");
+  const saved = await rpcSaved("rpc/zysyr_upsert_product", {
+    p_actor_user_id: actorId,
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_id: id || null,
+    p_name: cleanText(payload.name, 160),
+    p_category: cleanText(payload.category, 100),
+    p_unit: cleanText(payload.unit, 40),
+    p_default_cost: catalogCostValue(payload.default_cost),
+    p_status: cleanText(payload.status, 20) || "active",
+    p_reason: cleanText(payload.reason, 500) || null,
+  });
+  return { saved };
+}
+
+async function saveSupplier(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "inventory.write")) throw new Error("当前账号没有供应商维护权限");
+  const store = await selectedStoreInfo(session, payload);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const id = cleanText(payload.id, 40);
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) throw new Error("供应商ID无效");
+  const saved = await rpcSaved("rpc/zysyr_upsert_supplier", {
+    p_actor_user_id: actorId,
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_id: id || null,
+    p_name: cleanText(payload.name, 160),
+    p_category: cleanText(payload.category, 100) || null,
+    p_contact: cleanText(payload.contact, 300) || null,
+    p_status: cleanText(payload.status, 20) || "active",
+    p_reason: cleanText(payload.reason, 500) || null,
+  });
+  return { saved };
 }
 
 async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -928,6 +1036,10 @@ Deno.serve(async (request: Request) => {
     const session = await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "overview") return json(await overview(payload, session));
+    if (operation === "catalog") return json(await catalog(payload, session));
+    if (operation === "service_item_save") return json(await saveServiceItem(payload, session));
+    if (operation === "product_save") return json(await saveProduct(payload, session));
+    if (operation === "supplier_save") return json(await saveSupplier(payload, session));
     if (operation === "report_upload") return json(await uploadReport(payload, session));
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "cell_trace") return json(await cellTrace(payload, session));

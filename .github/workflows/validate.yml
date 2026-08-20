@@ -53,6 +53,9 @@ jobs:
           node scripts/test-operations-auth-migration.js
           node scripts/test-operations-auth-bridge.js
           node scripts/test-operations-finance-account-admin.js
+          node scripts/test-zysyr-sprint0.js
+          node scripts/test-zysyr-gate-b.js
+          node scripts/test-zysyr-sprint1.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance
