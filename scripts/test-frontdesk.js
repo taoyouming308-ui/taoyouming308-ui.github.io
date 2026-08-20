@@ -15,6 +15,7 @@ const receptionMigration = fs.readFileSync(path.join(root, 'supabase/migrations/
 const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805045233_frontdesk_reception_time.sql'), 'utf8');
 const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
 const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
+const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820092434_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -193,5 +194,9 @@ expect(ledgerEditMigration.includes('frontdesk_import_records') && ledgerEditMig
 expect(ledgerAmountMigration.includes('amount numeric(12,2)') && ledgerAmountMigration.includes('payment_summary text'), 'today ledger amount columns missing');
 expect(ledgerAmountMigration.includes('raw_row') && ledgerAmountMigration.includes('does not create or change a Meiguanjia cashier transaction'), 'ledger amount source boundary comments missing');
 expect(ledgerAmountMigration.includes('enable row level security') && ledgerAmountMigration.includes('revoke all on table public.frontdesk_today_customers from public, anon, authenticated'), 'ledger amount migration must preserve server-only access');
+expect(storeDedupeMigration.includes('unique (store, row_hash)'), 'historical import uniqueness must include store');
+expect(storeDedupeMigration.includes('on conflict (store, row_hash) do nothing'), 'historical import upsert must use the store-scoped key');
+expect(storeDedupeMigration.includes("or coalesce(trim(p_store), '') = ''"), 'historical imports must reject an empty store');
+expect(storeDedupeMigration.includes('from public, anon, authenticated') && storeDedupeMigration.includes('to service_role'), 'store-scoped import RPC must remain service-role only');
 
 console.log('frontdesk tests passed');

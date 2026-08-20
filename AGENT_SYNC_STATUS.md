@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v418 向里客户历史导入数据维护（2026-08-20）
+
+- 新迁移 `20260820092434_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
+- `import_frontdesk_records` 继续保留单批 250 行、批次审计和 `service_role` 专用边界，并新增空门店拒绝；不改变已有历史记录、原始 `raw_row`、客户主档或美管加数据。
+- 本次保持 App v418，不修改前台业务逻辑；用于随后导入用户提供的向里造型 2026 客户工作簿。
+- 修复 GitHub `main` 现有 v418 发布遗漏：`frontdesk.html`、`operations.html` 的 `data-version`，以及经营认证桥和两个既有美感脚本缓存标记从 417 对齐到 418，仅恢复版本一致性，不改变业务功能。
+- App version: v418
+
 ## v417 ZYSYR V2 Gate C3 管理员创建财务账号（2026-08-13，已生产发布）
 
 - 本地已新增受 Supabase Auth JWT/RLS 保护的 `operations-auth-admin`：只有持有公司范围 `finance_account.create` 高风险能力的管理员可创建财务账号；页面直接设置用户名、显示名称、密码和公司/门店范围，不要求业务邮箱。
