@@ -18,14 +18,15 @@ expect(source.includes('/functions/v1/operations-auth'), 'RLS scope verification
 expect(source.includes('/functions/v1/operations-auth-admin'), 'secure finance-account administration endpoint missing');
 expect(source.includes('/auth/v1/token?grant_type=refresh_token'), 'refresh token rotation missing');
 expect(source.includes('/auth/v1/logout?scope=local'), 'local Supabase sign-out missing');
-expect(source.includes("roleScope(scope,'shareholder')") && source.includes("roleScope(scope,'finance')"), 'shareholder/finance Auth role verification missing');
+expect(source.includes("roleScope(scope,'shareholder')") && source.includes("roleScope(scope,'finance')")
+  && source.includes("roleScope(scope,'store_manager')") && source.includes("roleScope(scope,'employee')"), 'all operations Auth role verification missing');
 expect(source.includes("capabilityAt(scope,'dashboard.group.read'") && source.includes("capabilityAt(scope,'daily_report.write'"), 'role capability verification missing');
 expect(source.includes("scope.auth_boundary!=='supabase_auth_rls'"), 'RLS boundary verification missing');
 expect(!/SERVICE_ROLE|service_role|password_hash|legacy_staff_/.test(source), 'browser Auth bridge must not contain privileged or legacy identity material');
 expect(!/console\.(?:log|error)/.test(source), 'Auth bridge must not log tokens or credentials');
 
 expect(html.includes(`operations-auth-bridge.js?v=${releaseVersion}`), 'versioned Auth bridge script missing from operations page');
-expect(html.includes("user.role==='shareholder'||user.role==='finance'"), 'administrator and finance Auth transition guard missing');
+expect(html.includes("['shareholder','finance','store_manager','employee']"), 'all operations roles Auth transition guard missing');
 expect(html.includes("authBridge.login(username,password)"), 'shareholder Auth migration call missing');
 expect(html.includes("window.ZysyrAuthBridge?") && html.includes("新认证组件暂未就绪"), 'legacy login fallback for bridge loading failure missing');
 expect(html.includes("api('login',{username:username,password:password})"), 'legacy session must remain first for no-downtime transition');
@@ -35,6 +36,7 @@ expect(html.includes('仍填写用户名和密码，无需填写邮箱'), 'no-em
 expect(html.includes("Promise.allSettled([api('logout'),authBridge.signOut()])"), 'dual-session logout missing');
 expect(html.includes('id="finance-account-form"') && html.includes('创建并立即启用'), 'administrator finance-account form missing');
 expect(html.includes("authBridge.createFinanceAccount"), 'finance-account form is not wired to the secure Auth bridge');
+expect(html.includes("authBridge.createWorkforceAccount"), 'workforce-account form is not wired to the secure Auth bridge');
 expect(html.includes("hasAuthCapability('finance_account.create')"), 'finance-account entry must be capability-gated');
 
 async function runBridgeFlow() {
@@ -82,6 +84,12 @@ async function runBridgeFlow() {
   const adminCall = calls.find((call) => call.url.includes('operations-auth-admin'));
   expect(adminCall && adminCall.options.headers.Authorization === 'Bearer access-one', 'finance account creation must use the administrator JWT');
   expect(JSON.parse(adminCall.options.body).password === 'SafePass123', 'password must only be sent in the protected request body');
+  const workforce = await bridge.createWorkforceAccount({ login_name: 'employee01', display_name: '员工一', password: 'SafePass123',
+    role_code: 'employee', store_id: '00000000-0000-0000-0000-000000000002', employee_id: '00000000-0000-0000-0000-000000000003' });
+  expect(workforce.created.status === 'active', 'workforce account response missing');
+  const workforceCall = calls.filter((call) => call.url.includes('operations-auth-admin')).pop();
+  expect(JSON.parse(workforceCall.options.body).action === 'create_workforce_account', 'workforce action missing');
+  expect(JSON.parse(workforceCall.options.body).employee_id === '00000000-0000-0000-0000-000000000003', 'employee binding missing');
 
   const expired = bridge.read();
   expired.session.expires_at = 1;

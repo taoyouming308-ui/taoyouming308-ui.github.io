@@ -53,9 +53,14 @@
       var scope=await request(base+'/functions/v1/operations-auth',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+clean(accessToken)}});
       var shareholderScope=roleScope(scope,'shareholder');
       var financeScope=roleScope(scope,'finance');
+      var managerScope=roleScope(scope,'store_manager');
+      var employeeScope=roleScope(scope,'employee');
       var shareholderOk=shareholderScope&&shareholderScope.type==='company'&&capabilityAt(scope,'dashboard.group.read',shareholderScope);
       var financeOk=financeScope&&capabilityAt(scope,'dashboard.store.read',financeScope)&&capabilityAt(scope,'daily_report.write',financeScope);
-      if(scope.auth_boundary!=='supabase_auth_rls'||(!shareholderOk&&!financeOk))throw new Error('Supabase Auth 经营角色与范围校验失败');
+      var managerOk=managerScope&&managerScope.type==='store'&&capabilityAt(scope,'dashboard.store.read',managerScope);
+      var employeeId=scope.user&&clean(scope.user.employee_id,40);
+      var employeeOk=employeeScope&&employeeScope.type==='store'&&capabilityAt(scope,'employee.self.read',employeeScope)&&/^[0-9a-f-]{36}$/i.test(employeeId);
+      if(scope.auth_boundary!=='supabase_auth_rls'||(!shareholderOk&&!financeOk&&!managerOk&&!employeeOk))throw new Error('Supabase Auth 经营角色与范围校验失败');
       return scope;
     }
 
@@ -99,7 +104,22 @@
       })});
     }
 
-    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,clear:clear,read:read};
+    async function createWorkforceAccount(payload){
+      var value=read();
+      if(!value)value=await restore();
+      if(!value)throw new Error('请重新登录后创建经营账号');
+      return request(base+'/functions/v1/operations-auth-admin',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+value.session.access_token},body:JSON.stringify({
+        action:'create_workforce_account',
+        login_name:clean(payload&&payload.login_name,80),
+        display_name:clean(payload&&payload.display_name,80),
+        password:String(payload&&payload.password==null?'':payload.password),
+        role_code:clean(payload&&payload.role_code,30),
+        store_id:clean(payload&&payload.store_id,40),
+        employee_id:clean(payload&&payload.employee_id,40)
+      })});
+    }
+
+    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,clear:clear,read:read};
   }
 
   global.ZysyrAuthBridge={create:create,storageKey:STORAGE_KEY};

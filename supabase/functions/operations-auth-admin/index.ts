@@ -96,9 +96,91 @@ async function deleteAuthUser(authUserId: string): Promise<void> {
 
 async function completedAccount(accountId: string, authUserId: string): Promise<JsonRecord | null> {
   const rows = await restRows(
-    `zysyr_user_accounts?select=id,login_name,display_name,status&id=eq.${accountId}&auth_user_id=eq.${authUserId}&limit=1`,
+    `zysyr_user_accounts?select=id,login_name,display_name,employee_id,status&id=eq.${accountId}&auth_user_id=eq.${authUserId}&limit=1`,
   );
   return rows[0] || null;
+}
+
+async function createWorkforceAccount(req: Request, payload: JsonRecord): Promise<Response> {
+  const token = bearerToken(req);
+  const scope = await authScope(token);
+  const user = scope.user && typeof scope.user === "object" ? scope.user as JsonRecord : {};
+  const actorAuthUserId = cleanText(user.auth_user_id, 40);
+  const companyId = cleanText(user.company_id, 40);
+  if (cleanText(scope.auth_boundary, 80) !== "supabase_auth_rls" || !isUuid(actorAuthUserId)
+      || !isUuid(companyId) || !hasCompanyCapability(scope, "workforce_account.create")) {
+    throw new Error("只有已授权管理员可以创建店长或员工账号");
+  }
+  const username = loginName(payload.login_name);
+  const displayName = cleanText(payload.display_name, 80);
+  if (displayName.length < 2) throw new Error("请填写至少2个字的姓名或称呼");
+  const password = passwordValue(payload.password);
+  const roleCode = cleanText(payload.role_code, 30);
+  const storeId = cleanText(payload.store_id, 40);
+  const employeeId = cleanText(payload.employee_id, 40);
+  if (!["store_manager", "employee"].includes(roleCode)) throw new Error("请选择店长或员工角色");
+  if (!isUuid(storeId) || !isUuid(employeeId)) throw new Error("请选择所属门店和对应员工");
+  const stores = Array.isArray(scope.stores) ? scope.stores as JsonRecord[] : [];
+  if (!stores.some((store) => cleanText(store.id, 40) === storeId
+      && cleanText(store.company_id, 40) === companyId && cleanText(store.status, 20) === "active")) {
+    throw new Error("所选门店不在管理员授权范围内");
+  }
+  const [employees, accounts, legacyStaff] = await Promise.all([
+    restRows(`zysyr_employees?select=id,name,employment_status,deleted_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${employeeId}&limit=1`),
+    restRows(`zysyr_user_accounts?select=id,login_name,employee_id&company_id=eq.${companyId}&limit=1000`),
+    restRows("staff?select=id,username&limit=1000"),
+  ]);
+  const employee = employees[0];
+  if (!employee || cleanText(employee.employment_status, 30) !== "active" || employee.deleted_at) {
+    throw new Error("所选员工不是该门店的在职员工");
+  }
+  if (accounts.some((account) => cleanText(account.employee_id, 40) === employeeId)) {
+    return json({ error: "该员工已经绑定登录账号" }, 409);
+  }
+  if (accounts.some((account) => cleanText(account.login_name, 80).toLocaleLowerCase("zh-CN") === username)
+      || legacyStaff.some((staff) => cleanText(staff.username, 80).toLocaleLowerCase("zh-CN") === username)) {
+    return json({ error: "该账号已存在，请更换账号" }, 409);
+  }
+  const requestId = crypto.randomUUID();
+  const accountId = crypto.randomUUID();
+  const email = `zysyr_account_${accountId.replaceAll("-", "")}@auth.zysyr.invalid`;
+  const authResponse = await serviceFetch("/auth/v1/admin/users", { method: "POST", body: JSON.stringify({
+    email, password, email_confirm: true,
+    app_metadata: { zysyr_account_id: accountId, zysyr_company_id: companyId,
+      zysyr_login_name: username, zysyr_role: roleCode, zysyr_store_id: storeId,
+      zysyr_employee_id: employeeId, zysyr_provisioning: "admin_direct_v2" },
+  }) });
+  if (!authResponse.ok) throw new Error(`auth_admin_create_${authResponse.status}`);
+  const authBody = await authResponse.json() as JsonRecord;
+  const authUser = isUuid(authBody.id) ? authBody
+    : authBody.user && typeof authBody.user === "object" ? authBody.user as JsonRecord : {};
+  const authUserId = cleanText(authUser.id, 40);
+  if (!isUuid(authUserId)) throw new Error("auth_admin_create_invalid_user");
+  let completed: JsonRecord | null = null;
+  try {
+    const rpcResponse = await serviceFetch("/rest/v1/rpc/zysyr_admin_complete_workforce_account", {
+      method: "POST", body: JSON.stringify({ p_actor_auth_user_id: actorAuthUserId,
+        p_account_id: accountId, p_auth_user_id: authUserId, p_login_name: username,
+        p_display_name: displayName, p_role_code: roleCode, p_store_id: storeId,
+        p_employee_id: employeeId, p_request_id: requestId }),
+    });
+    if (rpcResponse.ok) completed = await rpcResponse.json() as JsonRecord;
+    else completed = await completedAccount(accountId, authUserId);
+  } catch { completed = await completedAccount(accountId, authUserId).catch(() => null); }
+  if (!completed || cleanText(completed.status, 20) !== "active"
+      || cleanText(completed.employee_id, 40) !== employeeId) {
+    try { await deleteAuthUser(authUserId); } catch (cleanupError) {
+      console.error("operations-auth-admin workforce cleanup", requestId, cleanText(cleanupError, 100));
+    }
+    throw new Error("经营账号创建未完成，已安全回滚，请重试");
+  }
+  return json({ created: { account_id: cleanText(completed.account_id || completed.id, 40) || accountId,
+    login_name: cleanText(completed.login_name, 80) || username,
+    display_name: cleanText(completed.display_name, 80) || displayName,
+    role: roleCode, scope_type: "store", store_id: storeId,
+    store_name: cleanText(completed.store_name, 100) || null,
+    employee_id: employeeId, employee_name: cleanText(completed.employee_name, 100) || cleanText(employee.name, 100),
+    status: "active" } });
 }
 
 async function createFinanceAccount(req: Request, payload: JsonRecord): Promise<Response> {
@@ -221,14 +303,13 @@ Deno.serve(async (req: Request) => {
     return json({ error: "请求格式错误" }, 400);
   }
 
-  if (cleanText(payload.action, 40) !== "create_finance_account") {
-    return json({ error: "不支持的操作" }, 400);
-  }
-
   try {
-    return await createFinanceAccount(req, payload);
+    const action = cleanText(payload.action, 40);
+    if (action === "create_finance_account") return await createFinanceAccount(req, payload);
+    if (action === "create_workforce_account") return await createWorkforceAccount(req, payload);
+    return json({ error: "不支持的操作" }, 400);
   } catch (error) {
-    const message = cleanText(error instanceof Error ? error.message : error, 300) || "财务账号创建失败";
+    const message = cleanText(error instanceof Error ? error.message : error, 300) || "经营账号创建失败";
     const status = /重新登录|认证/.test(message) ? 401 : /只有已授权|权限范围/.test(message) ? 403 : 400;
     return json({ error: message }, status);
   }

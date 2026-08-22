@@ -33,7 +33,7 @@ expect(html.includes('怎么算出来的') && html.includes('来自哪天、哪�
 expect(html.includes('trace-mismatch') && html.includes('trace-missing_evidence') && html.includes('trace-unlinked'), 'trace exception highlighting missing');
 expect(html.includes('股东视角 · 只读') && html.includes('财务视角 · 可上传'), 'shareholder and finance perspectives missing');
 expect(html.includes('不连接、不读取美管加') && html.includes('数值只取自本页所示财务上传原件'), 'finance-only source boundary copy missing');
-expect(!html.includes('kpi-income') && !html.includes('每日收支趋势') && !html.includes('发型师业绩</h3>'), 'automatic KPI, trend, or ranking UI must be removed');
+expect(!html.includes('kpi-income') && !html.includes('每日收支趋势') && !html.includes('data-view="revenue"'), 'automatic KPI, trend, or ranking UI must be removed');
 expect(!html.includes('美管加已同步消费') && !html.includes('income_read_only_from_mgj'), 'old Meiguanjia synchronization copy must be removed');
 expect(html.includes('无需填写邮箱') && html.includes('员工账号') && html.includes('密码'), 'username/password login copy missing');
 expect(html.includes('operations-auth-bridge.js?v=' + releaseVersion), 'versioned Auth bridge missing');

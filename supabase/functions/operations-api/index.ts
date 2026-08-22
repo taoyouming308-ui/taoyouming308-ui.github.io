@@ -108,6 +108,7 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
   const shareholder = scopeRole(scope, "shareholder");
   const finance = scopeRole(scope, "finance");
   const storeManager = scopeRole(scope, "store_manager");
+  const employee = scopeRole(scope, "employee");
   let operationsRole = "";
   let roleScope: JsonRecord = {};
   if (shareholder && cleanText((shareholder.scope as JsonRecord).type, 20) === "company") {
@@ -119,6 +120,9 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
   } else if (storeManager) {
     operationsRole = "store_manager";
     roleScope = storeManager.scope as JsonRecord;
+  } else if (employee) {
+    operationsRole = "employee";
+    roleScope = employee.scope as JsonRecord;
   }
   const scopeType = cleanText(roleScope.type, 20);
   const storeId = scopeType === "store" ? cleanText(roleScope.store_id, 40) : "";
@@ -129,7 +133,10 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
         && scopeCapability(scope, "daily_report.write", scopeType, storeId)
       : operationsRole === "store_manager"
         ? scopeType === "store" && scopeCapability(scope, "dashboard.store.read", scopeType, storeId)
-      : false;
+        : operationsRole === "employee"
+          ? scopeType === "store" && scopeCapability(scope, "employee.self.read", scopeType, storeId)
+            && /^[0-9a-f-]{36}$/i.test(cleanText((scope.user as JsonRecord)?.employee_id, 40))
+          : false;
   if (!authorized || (scopeType !== "company" && scopeType !== "store")) {
     throw new Error("Supabase Auth 经营角色无权进入驾驶舱");
   }
@@ -152,6 +159,7 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
     operations_role: operationsRole,
     auth_user_id: cleanText(user.auth_user_id, 40),
     auth_account_id: cleanText(user.id, 40),
+    auth_employee_id: cleanText(user.employee_id, 40),
     auth_company_id: cleanText(user.company_id, 40),
     auth_scope_type: scopeType,
     auth_store_id: storeId,
@@ -227,11 +235,20 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     can_confirm_payments: hasAuthCapability(session, "payment.confirm"),
     can_lock_reports: hasAuthCapability(session, "report.lock"),
     can_adjust_confirmed_finance: hasAuthCapability(session, "confirmed_finance.adjust"),
+    can_read_salary: hasAuthCapability(session, "salary.read"),
+    can_manage_payroll: role === "finance" && hasAuthCapability(session, "salary.write_approve"),
+    can_view_personal_payroll: role === "employee"
+      && /^[0-9a-f-]{36}$/i.test(cleanText(session.auth_employee_id, 40)),
     can_upload_reports: canUploadReports(session),
+    can_import_photo_reports: role === "finance" && hasAuthCapability(session, "daily_report.write"),
     can_upload_vouchers: canUploadVouchers(session),
     can_review_vouchers: canReviewVouchers(session),
     can_manage_service_items: hasAuthCapability(session, "daily_report.write"),
     can_manage_inventory_catalog: hasAuthCapability(session, "inventory.write"),
+    can_manage_inventory: hasAuthCapability(session, "inventory.write"),
+    can_read_ai_analysis: hasAuthCapability(session, "ai_insight.read"),
+    can_create_question: hasAuthCapability(session, "question.create"),
+    can_respond_question: hasAuthCapability(session, "question.respond"),
     can_manage_employees: hasAuthCapability(session, "employee.write"),
     can_manage_stores: hasAuthCapability(session, "org.store.write")
       && cleanText(session.auth_scope_type, 20) === "company",
@@ -239,6 +256,9 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
       && cleanText(session.auth_scope_type, 20) === "company",
     can_manage_finance_accounts: Array.isArray(session.auth_capabilities)
       && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "finance_account.create")
+      && cleanText(session.auth_scope_type, 20) === "company",
+    can_manage_workforce_accounts: Array.isArray(session.auth_capabilities)
+      && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === "workforce_account.create")
       && cleanText(session.auth_scope_type, 20) === "company",
     personal_scope: role === "employee",
   };
@@ -353,6 +373,22 @@ function amountValue(value: unknown): number {
   const amount = Number(raw);
   if (!Number.isFinite(amount) || amount < 0 || amount > 9999999999.99) throw new Error("金额超出允许范围");
   return amount;
+}
+
+function signedAmountValue(value: unknown): number {
+  const raw = cleanText(value, 40);
+  if (!/^-?\d+(?:\.\d{1,2})?$/.test(raw)) throw new Error("调整金额最多两位小数");
+  const amount = Number(raw);
+  if (!Number.isFinite(amount) || Math.abs(amount) > 9999999999.99) throw new Error("调整金额超出允许范围");
+  return amount;
+}
+
+function rateValue(value: unknown): number {
+  const raw = cleanText(value, 40);
+  if (!/^\d+(?:\.\d{1,4})?$/.test(raw)) throw new Error("提成比例必须为 0 至 1，最多四位小数");
+  const rate = Number(raw);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 1) throw new Error("提成比例必须为 0 至 1");
+  return rate;
 }
 
 function catalogCostValue(value: unknown): number | null {
@@ -915,6 +951,8 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
   }
   const preferred = reportType === "monthly_profit_loss"
     ? ["模版", "模板", "月盈亏统计"]
+    : reportType === "salary"
+      ? ["工资", "工资表", "工资明细"]
     : reportType === "performance"
       ? (/向里/.test(storeName) ? ["向里业绩报表", "业绩报表"] : ["业绩报表", "向里业绩报表"])
       : ["日报", "日报表"];
@@ -964,7 +1002,7 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
 
 function reportDateValue(payload: JsonRecord, reportType: string): string {
   const raw = cleanText(payload.report_date, 10);
-  if (reportType === "monthly_profit_loss") {
+  if (reportType === "monthly_profit_loss" || reportType === "salary") {
     const month = /^\d{4}-\d{2}$/.test(raw) ? raw : cleanText(payload.month, 7);
     if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("请选择月报月份");
     return `${month}-01`;
@@ -977,12 +1015,12 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
   if (!canUploadReports(session)) throw new Error("只有财务账号可以上传门店报表");
   const store = await selectedStoreInfo(session, payload);
   const reportType = cleanText(payload.report_type, 40);
-  if (!["daily", "performance", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
+  if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
   const reportDate = reportDateValue(payload, reportType);
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 120);
   if (mime !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-    throw new Error("日报、业绩表和月度盈亏表请上传 XLSX 文件");
+    throw new Error("日报、业绩表、工资表和月度盈亏表请上传 XLSX 文件");
   }
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
@@ -1267,8 +1305,24 @@ async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<
     reports,
     can_upload: canUploadVouchers(session),
     can_review: canReviewVouchers(session),
-    ocr_provider_configured: false,
+    ocr_provider_configured: Boolean(Deno.env.get("SILICONFLOW_API_KEY")),
   };
+}
+
+async function retryVoucherOcr(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canReviewVouchers(session)) throw new Error("只有当前门店财务账号可以重新发起 OCR");
+  const store = await selectedStoreInfo(session, payload);
+  const voucherId = uuidValue(payload.voucher_id, "凭证无效");
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写重新识别原因");
+  const saved = await financeRpcSaved("rpc/zysyr_retry_voucher_ocr", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40),
+    p_voucher_id: voucherId,
+    p_reason: reason,
+  });
+  return { saved, candidate_only: true, human_review_required: true };
 }
 
 async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1329,6 +1383,22 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "MONTHLY_TRANSITION_NOT_ALLOWED") throw new Error("月报当前状态不允许执行此操作");
     if (code === "CURRENT_MONTHLY_REPORT_EXISTS") throw new Error("本月已有未冲销的正式月报，请先完成或冲销现有版本");
     if (code === "FINANCE_BUSINESS_RECORD_NOT_FOUND") throw new Error("正式财务记录不存在或不属于当前门店");
+    if (code === "PERFORMANCE_HAIRSTYLIST_ONLY") throw new Error("只有岗位为发型师的员工才能计入业绩和提成");
+    if (code === "COMMISSION_RULE_REQUIRED") throw new Error("该员工本月业绩没有可用的提成规则，请先维护规则");
+    if (code === "COMMISSION_RULE_AMBIGUOUS") throw new Error("同一业绩匹配到多条提成规则，请先停用重复规则");
+    if (code === "SALARY_CONFIRMED_REVERSE_REQUIRED") throw new Error("已审核或已支付工资不能覆盖，必须先冲销");
+    if (code === "SALARY_REVERSE_REQUIRED") throw new Error("该记录已进入已确认工资，请先冲销工资");
+    if (code === "PAYROLL_DEPENDENCY_REVERSE_FIRST") throw new Error("该考勤已关联奖罚，请先冲销奖罚记录");
+    if (code === "SALARY_TRANSITION_NOT_ALLOWED") throw new Error("工资当前状态不允许执行此操作");
+    if (code === "INVENTORY_SCOPE_FORBIDDEN") throw new Error("当前账号没有该门店采购和库存维护权限");
+    if (code === "INSUFFICIENT_INVENTORY") throw new Error("当前结存不足，不能消耗、报损或员工自购");
+    if (code === "RECEIPT_EXCEEDS_ORDER") throw new Error("累计到货数量不能超过采购数量");
+    if (code === "PURCHASE_ORDER_NOT_APPROVED") throw new Error("采购单尚未批准，不能办理入库");
+    if (code === "PURCHASE_ORDER_TRANSITION_INVALID") throw new Error("采购单当前状态不允许执行此操作");
+    if (code === "PAYMENT_EXCEEDS_PURCHASE_ORDER") throw new Error("本次付款会超过采购单金额");
+    if (code === "PAYMENT_EXCEEDS_EMPLOYEE_PURCHASE") throw new Error("本次收款会超过员工自购应收金额");
+    if (code === "INVENTORY_REVERSAL_REQUIRES_LATEST_TRANSACTION") throw new Error("该产品之后已有库存变动，请从最新一笔开始冲销");
+    if (code === "EMPLOYEE_PURCHASE_HAS_PAYMENT") throw new Error("员工自购已有确认收款，请先冲销收款记录");
     if (/_INVALID$|_REQUIRED$/.test(code)) throw new Error("正式财务记录字段不完整或格式无效");
     if (/_NOT_FOUND$/.test(code)) throw new Error("正式财务记录不存在或不属于当前门店");
     throw new Error(`正式财务记录保存失败 (${response.status})`);
@@ -1426,6 +1496,444 @@ async function linkFinanceVoucher(payload: JsonRecord, session: JsonRecord): Pro
   return { saved };
 }
 
+function requirePayrollRead(session: JsonRecord): void {
+  const role = cleanText(session.operations_role, 40);
+  const selfEmployee = role === "employee" && /^[0-9a-f-]{36}$/i.test(cleanText(session.auth_employee_id, 40));
+  if (!selfEmployee && !hasAuthCapability(session, "salary.read")) {
+    throw new Error("当前账号没有工资查看权限");
+  }
+}
+
+function requirePayrollWrite(session: JsonRecord): void {
+  requireFinanceCapability(session, "salary.write_approve", "只有财务账号可以维护、审核和支付工资");
+}
+
+async function payrollCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollRead(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const start = `${month}-01`;
+  const endDate = new Date(`${start}T00:00:00Z`); endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const employeeId = cleanText(session.operations_role, 40) === "employee"
+    ? cleanText(session.auth_employee_id, 40) : cleanText(payload.employee_id, 40);
+  const employeeFilter = employeeId ? `&employee_id=eq.${employeeId}` : "";
+  const [employees, salaries, attendance, checks, penaltyRewards, performance, rules] = await Promise.all([
+    restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null${employeeId ? `&id=eq.${employeeId}` : ""}&order=employee_code.asc&limit=1000`, 1000),
+    restRowsAll(`zysyr_salaries?select=id,employee_id,salary_month,version,source_report_id,base_salary,commission_amount,bonus_amount,deduction_amount,social_security,other_adjustment,final_salary,status,generated_at,approved_at,paid_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_month=eq.${start}${employeeFilter}&order=employee_id.asc,version.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_attendance_records?select=id,employee_id,attendance_date,attendance_type,minutes,note,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&attendance_date=gte.${start}&attendance_date=lt.${end}${employeeFilter}&order=attendance_date.desc,created_at.desc&limit=5000`, 5000),
+    restRowsAll(`zysyr_check_records?select=id,employee_id,check_date,check_type,item_name,result,note,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&check_date=gte.${start}&check_date=lt.${end}${employeeFilter}&order=check_date.desc,created_at.desc&limit=5000`, 5000),
+    restRowsAll(`zysyr_penalty_reward_records?select=id,employee_id,record_date,record_type,reason,amount,source_type,source_id,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&record_date=gte.${start}&record_date=lt.${end}${employeeFilter}&order=record_date.desc,created_at.desc&limit=5000`, 5000),
+    restRowsAll(`zysyr_performance_records?select=id,employee_id,business_date,service_item_code,revenue_amount,customer_count,source_type,source_report_cell_id,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&business_date=gte.${start}&business_date=lt.${end}${employeeFilter}&order=business_date.desc,created_at.desc&limit=5000`, 5000),
+    cleanText(session.operations_role, 40) === "employee" ? Promise.resolve([]) : restRowsAll(`zysyr_commission_rules?select=id,store_id,position,service_item_code,rate,effective_from,effective_to,status,updated_at&company_id=eq.${companyId}&or=(store_id.is.null,store_id.eq.${storeId})&order=status.asc,effective_from.desc&limit=1000`, 1000),
+  ]);
+  const salaryIds = salaries.map((salary) => salary.id);
+  const details = salaryIds.length ? await restRowsAll(`zysyr_salary_details?select=id,salary_id,line_number,line_type,source_type,source_id,commission_rule_id,source_report_cell_id,amount,note&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_id=in.${uuidIn(salaryIds)}&order=salary_id,line_number.asc&limit=10000`, 10000) : [];
+  const sourceCellIds = Array.from(new Set([
+    ...performance.map((item) => item.source_report_cell_id),
+    ...details.map((item) => item.source_report_cell_id),
+  ].map((value) => cleanText(value, 40)).filter(Boolean)));
+  const sourceCells = sourceCellIds.length ? await restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,display_value,numeric_value,label&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(sourceCellIds)}&limit=10000`, 10000) : [];
+  const entityIds = Array.from(new Set([
+    ...salaries.map((item) => item.id), ...attendance.map((item) => item.id), ...checks.map((item) => item.id),
+    ...penaltyRewards.map((item) => item.id), ...performance.map((item) => item.id),
+  ]));
+  const voucherLinks = entityIds.length ? await restRowsAll(`zysyr_voucher_links?select=voucher_id,business_type,business_id,relation_type,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(entityIds)}&unlinked_at=is.null&limit=10000`, 10000) : [];
+  const voucherIds = Array.from(new Set(voucherLinks.map((link) => link.voucher_id)));
+  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=5000`, 5000) : [];
+  const writable = cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "salary.write_approve");
+  const approvedVouchers = writable ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&audit_status=eq.approved&order=uploaded_at.desc&limit=2000`, 2000) : [];
+  const salaryReports = writable ? await restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=in.(salary,performance)&status=eq.active&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`, 1000) : [];
+  return {
+    company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
+    employees, salaries, salary_details: details, attendance, checks,
+    penalty_rewards: penaltyRewards, performance, commission_rules: rules,
+    source_cells: sourceCells, voucher_links: voucherLinks, vouchers,
+    approved_vouchers: approvedVouchers, salary_reports: salaryReports,
+    personal_scope: cleanText(session.operations_role, 40) === "employee",
+    permissions: { read: true, write: writable },
+    performance_rule: "hairstylist_only", source_boundary: "finance_uploads_only",
+    meiguanjia_used: false,
+  };
+}
+
+async function recordAttendance(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.attendance_date, 10);
+  const type = cleanText(payload.attendance_type, 30);
+  const minutes = Number(payload.minutes || 0);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !["normal","late","leave","absent","early_leave"].includes(type)
+    || !Number.isInteger(minutes) || minutes < 0 || !reason) throw new Error("请完整填写考勤类型、日期、分钟数和登记原因");
+  const saved = await financeRpcSaved("rpc/zysyr_record_attendance", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_employee_id: uuidValue(payload.employee_id, "请选择员工"),
+    p_attendance_date: date, p_attendance_type: type, p_minutes: minutes,
+    p_note: cleanText(payload.note, 500), p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved, formal_source: "finance_confirmed_attendance" };
+}
+
+async function recordCheck(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.check_date, 10);
+  const type = cleanText(payload.check_type, 30);
+  const result = cleanText(payload.result, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !["appearance","hygiene","service_discipline","other"].includes(type)
+    || !["pass","fail"].includes(result) || !cleanText(payload.item_name, 160) || !reason) {
+    throw new Error("请完整填写检查日期、类型、项目、结果和登记原因");
+  }
+  const saved = await financeRpcSaved("rpc/zysyr_record_check", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_employee_id: uuidValue(payload.employee_id, "请选择员工"),
+    p_check_date: date, p_check_type: type, p_item_name: cleanText(payload.item_name, 160),
+    p_result: result, p_note: cleanText(payload.note, 500),
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved, formal_source: "finance_confirmed_check" };
+}
+
+async function recordPenaltyReward(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.record_date, 10);
+  const type = cleanText(payload.record_type, 20);
+  const sourceType = cleanText(payload.source_type, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !["reward","penalty"].includes(type)
+    || !["attendance","check","manual"].includes(sourceType) || !reason
+    || !cleanText(payload.record_reason, 500)) throw new Error("请完整填写奖罚类型、日期、事由、来源和登记原因");
+  const saved = await financeRpcSaved("rpc/zysyr_record_penalty_reward", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_employee_id: uuidValue(payload.employee_id, "请选择员工"),
+    p_record_date: date, p_record_type: type, p_record_reason: cleanText(payload.record_reason, 500),
+    p_amount: amountValue(payload.amount), p_source_type: sourceType,
+    p_source_id: uuidValue(payload.source_id, "来源记录无效", sourceType === "manual"),
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved, structured_record: true };
+}
+
+async function recordPerformance(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const date = cleanText(payload.business_date, 10);
+  const sourceType = cleanText(payload.source_type, 30);
+  const customerCount = Number(payload.customer_count || 0);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(date) || !["daily_report","service_order","import"].includes(sourceType)
+    || !Number.isInteger(customerCount) || customerCount < 0 || !reason) throw new Error("请完整填写业绩日期、来源、客数和登记原因");
+  const saved = await financeRpcSaved("rpc/zysyr_record_performance", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_employee_id: uuidValue(payload.employee_id, "请选择员工"),
+    p_business_date: date, p_service_item_code: cleanText(payload.service_item_code, 80) || null,
+    p_revenue_amount: amountValue(payload.revenue_amount), p_customer_count: customerCount,
+    p_source_type: sourceType, p_source_report_cell_id: uuidValue(payload.source_report_cell_id, "请选择业绩原表单元格"),
+    p_reason: reason,
+  });
+  return { saved, performance_rule: "hairstylist_only", meiguanjia_used: false };
+}
+
+async function saveCommissionRule(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const start = cleanText(payload.effective_from, 10); const end = cleanText(payload.effective_to, 10);
+  const reason = cleanText(payload.reason, 500);
+  if (!validDate(start) || (end && !validDate(end)) || !reason) throw new Error("请完整填写提成规则生效日期和修改原因");
+  const saved = await financeRpcSaved("rpc/zysyr_upsert_commission_rule", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_rule_store_id: payload.company_wide === true ? null : cleanText(store.id, 40),
+    p_rule_id: uuidValue(payload.id, "提成规则编号无效", true), p_position: cleanText(payload.position, 120) || null,
+    p_service_item_code: cleanText(payload.service_item_code, 80) || null, p_rate: rateValue(payload.rate),
+    p_effective_from: start, p_effective_to: end || null, p_status: cleanText(payload.status, 20) || "active",
+    p_reason: reason,
+  });
+  return { saved, guessed_rate: false };
+}
+
+async function generateSalary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.salary_month, 10); const reason = cleanText(payload.reason, 500);
+  if (!validDate(month) || !/^\d{4}-\d{2}-01$/.test(month) || !reason) throw new Error("请选择工资月份并填写生成原因");
+  const saved = await financeRpcSaved("rpc/zysyr_generate_salary", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_employee_id: uuidValue(payload.employee_id, "请选择员工"),
+    p_salary_month: month, p_source_report_id: uuidValue(payload.source_report_id, "请选择工资原表"),
+    p_base_salary: amountValue(payload.base_salary),
+    p_base_source_cell_id: uuidValue(payload.base_source_cell_id, "请选择底薪对应单元格", Number(payload.base_salary) === 0),
+    p_social_security: amountValue(payload.social_security),
+    p_social_security_source_cell_id: uuidValue(payload.social_security_source_cell_id, "请选择社保对应单元格", Number(payload.social_security) === 0),
+    p_other_adjustment: signedAmountValue(payload.other_adjustment ?? 0),
+    p_other_adjustment_source_cell_id: uuidValue(payload.other_adjustment_source_cell_id, "请选择其他调整对应单元格", Number(payload.other_adjustment || 0) === 0),
+    p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+  });
+  return { saved, decomposed: true, guessed_rate: false };
+}
+
+async function transitionSalary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const action = cleanText(payload.action, 20); const reason = cleanText(payload.reason, 500);
+  if (!["approve","pay","reverse"].includes(action) || !reason) throw new Error("请选择工资操作并填写原因");
+  const paymentDate = cleanText(payload.payment_date, 10);
+  if (action === "pay" && (!validDate(paymentDate) || !cleanText(payload.payment_method, 80))) throw new Error("支付工资必须填写支付日期和方式");
+  const saved = await financeRpcSaved("rpc/zysyr_transition_salary", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_salary_id: uuidValue(payload.salary_id, "工资记录无效"),
+    p_action: action, p_payment_date: action === "pay" ? paymentDate : null,
+    p_payment_method: action === "pay" ? cleanText(payload.payment_method, 80) : null,
+    p_payment_reference: action === "pay" ? cleanText(payload.payment_reference, 160) || null : null,
+    p_voucher_ids: action === "pay" ? voucherIdValues(payload.voucher_ids) : [], p_reason: reason,
+  });
+  return { saved };
+}
+
+async function reversePayrollRecord(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const type = cleanText(payload.entity_type, 40); const reason = cleanText(payload.reason, 500);
+  if (!["attendance_record","check_record","penalty_reward","performance_record"].includes(type) || !reason) throw new Error("请选择待冲销记录并填写原因");
+  const saved = await financeRpcSaved("rpc/zysyr_reverse_payroll_record", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_entity_type: type,
+    p_entity_id: uuidValue(payload.entity_id, "待冲销记录无效"), p_reason: reason,
+  });
+  return { saved };
+}
+
+function requireInventoryWrite(session: JsonRecord): void {
+  if (!hasAuthCapability(session, "inventory.write")) throw new Error("当前账号没有采购和库存维护权限");
+}
+
+function inventoryQuantity(value: unknown): number {
+  const quantity = quantityValue(value);
+  if (quantity === null || quantity <= 0) throw new Error("数量必须大于 0，最多四位小数");
+  return quantity;
+}
+
+async function inventoryCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const role = cleanText(session.operations_role, 40);
+  if (role !== "shareholder" && role !== "finance" && role !== "store_manager") throw new Error("当前角色无权查看采购库存");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40); const storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const start = `${month}-01`; const endDate = new Date(`${start}T00:00:00Z`); endDate.setUTCMonth(endDate.getUTCMonth()+1);
+  const end = endDate.toISOString().slice(0,10);
+  const [products,suppliers,employees,orders,balances,transactions,usage,purchases,receipts,approvedVouchers,companyStores,stockTransfers] = await Promise.all([
+    restRowsAll(`zysyr_products?select=id,name,category,unit,default_cost,status&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,category.asc,name.asc&limit=5000`,5000),
+    restRowsAll(`zysyr_suppliers?select=id,name,category,contact,status&company_id=eq.${companyId}&deleted_at=is.null&order=status.asc,name.asc&limit=2000`,2000),
+    restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&order=employee_code.asc&limit=2000`,2000),
+    restRowsAll(`zysyr_purchase_orders?select=id,supplier_id,order_number,order_date,expected_date,status,receipt_status,payment_status,total_amount,notes,created_at,approved_at&company_id=eq.${companyId}&store_id=eq.${storeId}&order_date=gte.${start}&order_date=lt.${end}&order=order_date.desc,created_at.desc&limit=2000`,2000),
+    restRowsAll(`zysyr_inventory_balances?select=id,product_id,quantity,moving_average_cost,inventory_value,last_posting_sequence,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&order=updated_at.desc&limit=5000`,5000),
+    restRowsAll(`zysyr_inventory_transactions?select=id,product_id,business_date,posted_at,posting_sequence,transaction_type,direction,quantity,unit_cost,total_cost,quantity_before,quantity_after,average_cost_before,average_cost_after,source_type,source_id,status,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&business_date=gte.${start}&business_date=lt.${end}&order=posting_sequence.desc&limit=5000`,5000),
+    restRowsAll(`zysyr_usage_records?select=id,product_id,employee_id,usage_date,usage_type,quantity,unit_cost,total_cost,notes,status,inventory_transaction_id,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&usage_date=gte.${start}&usage_date=lt.${end}&order=usage_date.desc,created_at.desc&limit=5000`,5000),
+    restRowsAll(`zysyr_employee_purchases?select=id,employee_id,product_id,purchase_date,quantity,unit_price,amount,inventory_unit_cost,inventory_cost,payment_status,paid_amount,status,inventory_transaction_id,notes,approved_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&purchase_date=gte.${start}&purchase_date=lt.${end}&order=purchase_date.desc,created_at.desc&limit=5000`,5000),
+    restRowsAll(`zysyr_goods_receipts?select=id,purchase_order_id,receipt_number,receipt_date,status,total_amount,posted_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&receipt_date=gte.${start}&receipt_date=lt.${end}&order=receipt_date.desc,created_at.desc&limit=3000`,3000),
+    hasAuthCapability(session,"inventory.write") ? restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&audit_status=eq.approved&order=uploaded_at.desc&limit=2000`,2000) : Promise.resolve([]),
+    restRowsAll(`zysyr_stores?select=id,name,code,status&company_id=eq.${companyId}&deleted_at=is.null&order=name.asc&limit=500`,500),
+    restRowsAll(`zysyr_stock_transfers?select=id,source_store_id,destination_store_id,transfer_number,transfer_date,status,total_cost,notes,posted_at,reverse_reason&company_id=eq.${companyId}&or=(source_store_id.eq.${storeId},destination_store_id.eq.${storeId})&transfer_date=gte.${start}&transfer_date=lt.${end}&order=transfer_date.desc,created_at.desc&limit=3000`,3000),
+  ]);
+  const orderIds=orders.map((item)=>item.id); const receiptIds=receipts.map((item)=>item.id); const employeePurchaseIds=purchases.map((item)=>item.id); const stockTransferIds=stockTransfers.map((item)=>item.id);
+  const [orderLines,receiptLines,purchasePayments,employeePurchasePayments,stockTransferLines] = await Promise.all([
+    orderIds.length ? restRowsAll(`zysyr_purchase_order_lines?select=id,purchase_order_id,line_number,product_id,ordered_quantity,unit_cost,line_amount&company_id=eq.${companyId}&store_id=eq.${storeId}&purchase_order_id=in.${uuidIn(orderIds)}&order=purchase_order_id,line_number.asc&limit=10000`,10000) : Promise.resolve([]),
+    receiptIds.length ? restRowsAll(`zysyr_goods_receipt_lines?select=id,goods_receipt_id,purchase_order_line_id,product_id,quantity,unit_cost,line_amount&company_id=eq.${companyId}&store_id=eq.${storeId}&goods_receipt_id=in.${uuidIn(receiptIds)}&limit=10000`,10000) : Promise.resolve([]),
+    orderIds.length ? restRowsAll(`zysyr_payment_records?select=id,business_id,payment_date,payee,amount,payment_method,payment_reference,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_type=eq.purchase&business_id=in.${uuidIn(orderIds)}&limit=5000`,5000) : Promise.resolve([]),
+    employeePurchaseIds.length ? restRowsAll(`zysyr_employee_purchase_payments?select=id,employee_purchase_id,payment_date,amount,payment_method,payment_reference,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&employee_purchase_id=in.${uuidIn(employeePurchaseIds)}&limit=5000`,5000) : Promise.resolve([]),
+    stockTransferIds.length ? restRowsAll(`zysyr_stock_transfer_lines?select=id,stock_transfer_id,line_number,product_id,quantity,unit_cost,total_cost,source_transaction_id,destination_transaction_id&company_id=eq.${companyId}&stock_transfer_id=in.${uuidIn(stockTransferIds)}&order=stock_transfer_id,line_number.asc&limit=10000`,10000) : Promise.resolve([]),
+  ]);
+  const businessIds=Array.from(new Set([...receipts,...usage,...purchases,...purchasePayments,...employeePurchasePayments,...stockTransfers].map((item)=>item.id)));
+  const voucherLinks=businessIds.length ? await restRowsAll(`zysyr_voucher_links?select=voucher_id,business_type,business_id,relation_type,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(businessIds)}&unlinked_at=is.null&limit=10000`,10000) : [];
+  const authorizedStoreNames=await availableStores(session); const authorizedStores=companyStores.filter((item)=>authorizedStoreNames.includes(cleanText(item.name,100)));
+  return {company_id:companyId,store_id:storeId,store:cleanText(store.name,100),month,products,suppliers,employees,
+    purchase_orders:orders,purchase_order_lines:orderLines,goods_receipts:receipts,goods_receipt_lines:receiptLines,
+    balances,transactions,usage_records:usage,employee_purchases:purchases,purchase_payments:purchasePayments,
+    employee_purchase_payments:employeePurchasePayments,stock_transfers:stockTransfers,stock_transfer_lines:stockTransferLines,
+    authorized_stores:authorizedStores,voucher_links:voucherLinks,approved_vouchers:approvedVouchers,permissions:{read:true,write:hasAuthCapability(session,"inventory.write")},
+    costing_method:"moving_average",source_boundary:"finance_uploaded_records_only",meiguanjia_used:false};
+}
+
+async function savePurchaseOrder(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload);
+  const date=cleanText(payload.order_date,10); const expected=cleanText(payload.expected_date,10); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||(expected&&!validDate(expected))||!cleanText(payload.order_number,100)||!reason) throw new Error("请完整填写采购单号、日期、供应商和保存原因");
+  if(!Array.isArray(payload.lines)||!payload.lines.length||payload.lines.length>500) throw new Error("采购明细必须为 1 至 500 行");
+  const lines=(payload.lines as JsonRecord[]).map((line)=>({product_id:uuidValue(line.product_id,"请选择产品"),quantity:inventoryQuantity(line.quantity),unit_cost:catalogCostValue(line.unit_cost)??0}));
+  const saved=await financeRpcSaved("rpc/zysyr_save_purchase_order",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),
+    p_id:uuidValue(payload.id,"采购单编号无效",true),p_supplier_id:uuidValue(payload.supplier_id,"请选择供应商"),p_order_number:cleanText(payload.order_number,100),p_order_date:date,
+    p_expected_date:expected||null,p_lines:lines,p_notes:cleanText(payload.notes,500)||null,p_reason:reason});
+  return {saved,receipt_independent_from_payment:true,meiguanjia_used:false};
+}
+
+async function transitionPurchaseOrder(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload); const action=cleanText(payload.action,20); const reason=cleanText(payload.reason,500);
+  if(!["submit","approve","reject","cancel"].includes(action)||!reason) throw new Error("请选择采购单操作并填写原因");
+  const saved=await financeRpcSaved("rpc/zysyr_transition_purchase_order",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_purchase_order_id:uuidValue(payload.purchase_order_id,"采购单无效"),p_action:action,p_reason:reason});
+  return {saved};
+}
+
+async function postGoodsReceipt(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload); const date=cleanText(payload.receipt_date,10); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||!cleanText(payload.receipt_number,100)||!reason||!Array.isArray(payload.lines)||(payload.lines as unknown[]).length===0) throw new Error("请完整填写入库单号、日期、明细和原因");
+  const lines=(payload.lines as JsonRecord[]).map((line)=>({purchase_order_line_id:uuidValue(line.purchase_order_line_id,"采购明细无效"),quantity:inventoryQuantity(line.quantity)}));
+  const saved=await financeRpcSaved("rpc/zysyr_post_goods_receipt",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_purchase_order_id:uuidValue(payload.purchase_order_id,"采购单无效"),p_receipt_number:cleanText(payload.receipt_number,100),p_receipt_date:date,p_lines:lines,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason});
+  return {saved,costing_method:"moving_average",partial_receipt_supported:true};
+}
+
+async function recordInventoryUsage(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload); const date=cleanText(payload.usage_date,10); const type=cleanText(payload.usage_type,30); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||!["salon_service","daily_consumable","damage","other"].includes(type)||!reason) throw new Error("请完整填写消耗日期、类型和登记原因");
+  const saved=await financeRpcSaved("rpc/zysyr_record_usage",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_product_id:uuidValue(payload.product_id,"请选择产品"),p_employee_id:uuidValue(payload.employee_id,"员工无效",true),p_usage_date:date,p_usage_type:type,p_quantity:inventoryQuantity(payload.quantity),p_notes:cleanText(payload.notes,500)||null,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason});
+  return {saved,cost_from_inventory_snapshot:true};
+}
+
+async function recordEmployeePurchase(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload); const date=cleanText(payload.purchase_date,10); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||!reason) throw new Error("请完整填写员工自购日期和登记原因");
+  const saved=await financeRpcSaved("rpc/zysyr_record_employee_purchase",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_employee_id:uuidValue(payload.employee_id,"请选择员工"),p_product_id:uuidValue(payload.product_id,"请选择产品"),p_purchase_date:date,p_quantity:inventoryQuantity(payload.quantity),p_unit_price:catalogCostValue(payload.unit_price)??0,p_notes:cleanText(payload.notes,500)||null,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason});
+  return {saved,inventory_cost_from_snapshot:true};
+}
+
+async function confirmInventoryPayment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store=await selectedStoreInfo(session,payload); const kind=cleanText(payload.payment_kind,30); const date=cleanText(payload.payment_date,10); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||!reason||!cleanText(payload.payment_method,80)) throw new Error("请完整填写收付款日期、方式和登记原因");
+  if(kind==="purchase") {
+    requireFinanceCapability(session,"payment.confirm","只有财务账号可以确认采购付款");
+    const saved=await financeRpcSaved("rpc/zysyr_confirm_purchase_payment",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_purchase_order_id:uuidValue(payload.business_id,"采购单无效"),p_payment_date:date,p_amount:amountValue(payload.amount),p_payment_method:cleanText(payload.payment_method,80),p_payment_reference:cleanText(payload.payment_reference,160)||null,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason}); return {saved,payment_kind:kind};
+  }
+  requireInventoryWrite(session);
+  const saved=await financeRpcSaved("rpc/zysyr_confirm_employee_purchase_payment",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_employee_purchase_id:uuidValue(payload.business_id,"员工自购记录无效"),p_payment_date:date,p_amount:amountValue(payload.amount),p_payment_method:cleanText(payload.payment_method,80),p_payment_reference:cleanText(payload.payment_reference,160)||null,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason}); return {saved,payment_kind:"employee_purchase"};
+}
+
+async function reverseInventoryRecord(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const store=await selectedStoreInfo(session,payload); const type=cleanText(payload.business_type,40); const reason=cleanText(payload.reason,500);
+  if(!["goods_receipt","usage_record","employee_purchase","stock_transfer"].includes(type)||!reason) throw new Error("请选择库存记录并填写冲销原因");
+  const saved=await financeRpcSaved("rpc/zysyr_reverse_inventory_record",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_business_type:type,p_business_id:uuidValue(payload.business_id,"库存记录无效"),p_reason:reason}); return {saved};
+}
+
+async function postStockTransfer(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireInventoryWrite(session); const source=await selectedStoreInfo(session,payload); const destinationId=uuidValue(payload.destination_store_id,"请选择目标门店");
+  const date=cleanText(payload.transfer_date,10); const reason=cleanText(payload.reason,500);
+  if(!validDate(date)||!cleanText(payload.transfer_number,100)||!reason||!Array.isArray(payload.lines)||(payload.lines as unknown[]).length===0) throw new Error("请完整填写调拨单号、日期、产品和原因");
+  const lines=(payload.lines as JsonRecord[]).map((line)=>({product_id:uuidValue(line.product_id,"请选择调拨产品"),quantity:inventoryQuantity(line.quantity)}));
+  const saved=await financeRpcSaved("rpc/zysyr_post_stock_transfer",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(source.company_id,40),p_source_store_id:cleanText(source.id,40),p_destination_store_id:destinationId,p_transfer_number:cleanText(payload.transfer_number,100),p_transfer_date:date,p_lines:lines,p_notes:cleanText(payload.notes,500)||null,p_voucher_ids:voucherIdValues(payload.voucher_ids),p_reason:reason}); return {saved,cost_from_source_snapshot:true};
+}
+
+async function reverseInventoryPayment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store=await selectedStoreInfo(session,payload); const type=cleanText(payload.payment_type,30); const reason=cleanText(payload.reason,500);
+  if(!["purchase","employee_purchase"].includes(type)||!reason) throw new Error("请选择收付款并填写冲销原因");
+  if(type==="purchase") requireFinanceCapability(session,"payment.confirm","只有财务账号可以冲销采购付款"); else requireInventoryWrite(session);
+  const saved=await financeRpcSaved("rpc/zysyr_reverse_inventory_payment",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:cleanText(store.company_id,40),p_store_id:cleanText(store.id,40),p_payment_type:type,p_payment_id:uuidValue(payload.payment_id,"收付款记录无效"),p_reason:reason}); return {saved};
+}
+
+async function analysisCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "ai_insight.read") && !hasAuthCapability(session, "question.create")
+    && !hasAuthCapability(session, "question.respond")) throw new Error("当前账号没有经营分析或问答权限");
+  const store = await selectedStoreInfo(session, payload);
+  const month = parseMonth(payload.month);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const next = new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth() + 1);
+  const end = next.toISOString().slice(0, 10);
+  const reports = await restRowsAll(`zysyr_monthly_reports?select=id,period_month,version,status,created_at,locked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=gte.${month}-01&period_month=lt.${end}&order=version.desc&limit=100`, 100);
+  const reportFilter = uuidIn(reports.map((row) => row.id));
+  const [runs, questions] = await Promise.all([
+    reportFilter === "()" ? [] : restRowsAll(`zysyr_ai_analysis_runs?select=id,monthly_report_id,analysis_type,status,provider,model,prompt_version,attempt,snapshot_sha256,output_json,error_message,requested_by_user_id,requested_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&monthly_report_id=in.${reportFilter}&order=requested_at.desc&limit=1000`, 1000),
+    reportFilter === "()" ? [] : restRowsAll(`zysyr_questions?select=id,monthly_report_id,title,body,status,created_by_user_id,created_at,answered_at&company_id=eq.${companyId}&store_id=eq.${storeId}&monthly_report_id=in.${reportFilter}&order=created_at.desc&limit=1000`, 1000),
+  ]);
+  const questionFilter = uuidIn(questions.map((row) => row.id));
+  const messages = questionFilter === "()" ? [] : await restRowsAll(`zysyr_question_messages?select=id,question_id,sender_user_id,sender_role,body,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&question_id=in.${questionFilter}&order=created_at.asc,id.asc&limit=5000`, 5000);
+  return { month, store_id: storeId, monthly_reports: reports, analysis_runs: runs, questions, question_messages: messages,
+    permissions: { request_analysis: hasAuthCapability(session, "ai_insight.read"), create_question: hasAuthCapability(session, "question.create"), respond_question: hasAuthCapability(session, "question.respond") },
+    ai_provider_configured: Boolean(Deno.env.get("ZYSYR_AI_API_KEY")), evidence_mode: "immutable_monthly_snapshot", meiguanjia_used: false };
+}
+
+async function requestAiAnalysis(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "ai_insight.read")) throw new Error("当前账号没有发起经营分析的权限");
+  const store = await selectedStoreInfo(session, payload), reason = cleanText(payload.reason, 500);
+  const type = cleanText(payload.analysis_type, 40) || "monthly_operations";
+  if (!reason || !["monthly_operations", "variance", "voucher_completeness"].includes(type)) throw new Error("请选择分析类型并填写原因");
+  const saved = await financeRpcSaved("rpc/zysyr_request_ai_analysis", { p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_monthly_report_id: uuidValue(payload.monthly_report_id, "请选择正式月报"), p_analysis_type: type, p_reason: reason });
+  return { saved, read_only: true, citations_required: true };
+}
+
+async function createQuestion(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "question.create")) throw new Error("当前账号没有发起问题的权限");
+  const store = await selectedStoreInfo(session, payload), title = cleanText(payload.title, 160), body = cleanText(payload.body, 2000);
+  if (!title || !body) throw new Error("请填写问题标题和内容");
+  const saved = await financeRpcSaved("rpc/zysyr_create_question", { p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_monthly_report_id: uuidValue(payload.monthly_report_id, "请选择正式月报"), p_title: title, p_body: body });
+  return { saved, evidence_snapshot_preserved: true };
+}
+
+async function respondQuestion(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "question.respond")) throw new Error("当前账号没有回复经营问题的权限");
+  const store = await selectedStoreInfo(session, payload), body = cleanText(payload.body, 2000);
+  if (!body) throw new Error("请填写回复内容");
+  const saved = await financeRpcSaved("rpc/zysyr_respond_question", { p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_question_id: uuidValue(payload.question_id, "问题无效"), p_body: body });
+  return { saved, evidence_snapshot_preserved: true };
+}
+
+async function importCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有真实日报导入权限");
+  const store=await selectedStoreInfo(session,payload), month=parseMonth(payload.month), companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40);
+  const next=new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth()+1); const end=next.toISOString().slice(0,10);
+  const [batches,vouchers,dailyReports]=await Promise.all([
+    restRowsAll(`zysyr_import_batches?select=id,report_date,import_type,status,raw_row_count,mapped_row_count,payload_sha256,source_voucher_id,source_report_id,reason,error_message,created_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=created_at.desc&limit=1000`,1000),
+    restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,ocr_status,audit_status,document_type,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&audit_status=eq.approved&document_type=eq.daily_report&order=reviewed_at.desc&limit=1000`,1000),
+    restRowsAll(`zysyr_daily_reports?select=id,report_date,version,status,source_report_id,submitted_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`,1000),
+  ]);
+  const batchFilter=uuidIn(batches.map((row)=>row.id));
+  const [conflicts,reconciliations]=await Promise.all([
+    batchFilter==="()"?[]:restRowsAll(`zysyr_import_conflicts?select=id,import_batch_id,conflict_type,existing_entity_type,existing_entity_id,details,resolution_status,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=created_at.desc&limit=2000`,2000),
+    batchFilter==="()"?[]:restRowsAll(`zysyr_reconciliation_reports?select=id,import_batch_id,daily_report_id,status,source_row_count,business_row_count,source_amount,business_amount,delta,generated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=generated_at.desc&limit=1000`,1000),
+  ]);
+  return {month,batches,vouchers,daily_reports:dailyReports,conflicts,reconciliations,permissions:{import:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")},meiguanjia_used:false};
+}
+
+async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role,40)!=="finance"||!hasAuthCapability(session,"daily_report.write")) throw new Error("只有当前门店财务账号可以导入真实日报图片");
+  const store=await selectedStoreInfo(session,payload), companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), accountId=cleanText(session.auth_account_id,40);
+  const reportDate=cleanText(payload.report_date,10), reason=cleanText(payload.reason,500), voucherId=uuidValue(payload.voucher_id,"请选择已审核日报图片");
+  if(!validDate(reportDate)||!reason||!Array.isArray(payload.rows)||(payload.rows as unknown[]).length<1||(payload.rows as unknown[]).length>1000) throw new Error("请填写日期、来源图片、导入明细和原因");
+  const rows=(payload.rows as JsonRecord[]).map((row)=>({line_type:cleanText(row.line_type,30),metric_code:cleanText(row.metric_code,64).toUpperCase(),description:cleanText(row.description,300),amount:cleanText(row.line_type,30)==="note"?null:amountValue(row.amount),quantity:row.quantity==null?null:Number(row.quantity)}));
+  if(!rows.some((row)=>row.line_type!=="note")) throw new Error("日报至少要有一行金额明细");
+  const batch=await financeRpcSaved("rpc/zysyr_create_photo_import_batch",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_report_date:reportDate,p_source_voucher_id:voucherId,p_rows:rows,p_reason:reason});
+  if(cleanText(batch.status,30)==="conflict") return {batch,imported:false,conflict:true,message:"发现现有日报或行校验问题，未覆盖任何数据"};
+  const voucherRows=await restRows(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&audit_status=eq.approved&document_type=eq.daily_report&limit=1`);
+  const voucher=voucherRows[0]; if(!voucher) throw new Error("已审核日报图片不存在或不属于当前门店");
+  const download=await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(cleanText(voucher.object_path,500))}`,{headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`}});
+  if(!download.ok) throw new Error(`日报原图读取失败 (${download.status})`); const bytes=new Uint8Array(await download.arrayBuffer());
+  if(!bytes.length||bytes.length>MAX_REPORT_BYTES) throw new Error("日报原图必须小于 10MB");
+  const mime=cleanText(voucher.mime_type,80); if(!["image/jpeg","image/png"].includes(mime)) throw new Error("真实日报导入当前支持 JPG 或 PNG");
+  const values:[[string,string],...string[][]]=[["项目","金额"],...rows.map((row)=>[row.description,row.line_type==="note"?"":String(row.amount)])];
+  const cells=rows.map((row,index)=>row.line_type==="note"?null:{sheet_name:"人工复核日报",cell_address:`B${index+2}`,row_number:index+2,column_number:2,cell_kind:"input",display_value:String(row.amount),numeric_value:row.amount,formula:null,precedent_addresses:[],label:row.description}).filter(Boolean) as JsonRecord[];
+  const displayData={sheet_name:"人工复核日报",range:`A1:B${rows.length+1}`,rows:rows.length+1,columns:2,values,merges:[],cells,source_kind:"approved_daily_photo",source_voucher_id:voucherId};
+  const extension=mime==="image/png"?"png":"jpg", objectPath=`${companyId}/${storeId}/daily/${reportDate}/${crypto.randomUUID()}.${extension}`;
+  const upload=await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`,{method:"POST",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,"Content-Type":mime,"x-upsert":"false"},body:exactArrayBuffer(bytes)});
+  if(!upload.ok) throw new Error(`日报原图归档失败 (${upload.status})`);
+  const metadata=await rest("rpc/zysyr_register_report_upload",{method:"POST",body:JSON.stringify({p_report:{company_id:companyId,store_id:storeId,report_type:"daily",report_date:reportDate,template_code:"zysyr_daily_photo_reviewed",template_version:1,original_filename:cleanText(voucher.original_filename,200),mime_type:mime,size_bytes:bytes.length,sha256:await sha256Bytes(bytes),bucket_id:REPORT_BUCKET,object_path:objectPath,display_data:displayData,uploaded_by_user_id:accountId},p_cells:cells})});
+  if(!metadata.ok){await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`,{method:"DELETE",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`}});throw new Error(`日报图片登记失败 (${metadata.status})`)}
+  const reportData=await metadata.json() as JsonRecord, report=Array.isArray(reportData)?reportData[0]:reportData, reportId=uuidValue((report as JsonRecord).id,"日报图片登记结果无效");
+  await financeRpcSaved("rpc/zysyr_attach_import_report",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_import_batch_id:batch.id,p_source_report_id:reportId});
+  const importRows=await restRowsAll(`zysyr_import_rows?select=row_number,mapped_json,source_report_cell_id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batch.id}&order=row_number.asc&limit=1000`,1000);
+  const lines=importRows.map((row)=>({...(row.mapped_json as JsonRecord),source_report_cell_id:row.source_report_cell_id||null}));
+  const daily=await financeRpcSaved("rpc/zysyr_save_daily_report",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_source_report_id:reportId,p_is_business_day:payload.is_business_day==null?null:Boolean(payload.is_business_day),p_lines:lines,p_reason:reason});
+  const reconciliation=await financeRpcSaved("rpc/zysyr_finalize_daily_import",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_import_batch_id:batch.id,p_daily_report_id:daily.id});
+  return {batch_id:batch.id,report,daily_report:daily,reconciliation,imported:cleanText(reconciliation.status,30)==="matched",source_boundary:"approved_photo_human_review",meiguanjia_used:false};
+}
+
 async function voucherUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const voucherId = cleanText(payload.voucher_id, 80);
@@ -1460,6 +1968,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "logout") return json(await logout(payload));
     const session = await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
+    if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
+      throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
+    }
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));
     if (operation === "service_item_save") return json(await saveServiceItem(payload, session));
@@ -1485,9 +1996,35 @@ Deno.serve(async (request: Request) => {
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
+    if (operation === "voucher_ocr_retry") return json(await retryVoucherOcr(payload, session));
     if (operation === "daily_report_save") return json(await saveDailyReport(payload, session));
     if (operation === "daily_report_review") return json(await reviewDailyReport(payload, session));
     if (operation === "finance_voucher_link") return json(await linkFinanceVoucher(payload, session));
+    if (operation === "payroll_center") return json(await payrollCenter(payload, session));
+    if (operation === "attendance_record") return json(await recordAttendance(payload, session));
+    if (operation === "check_record") return json(await recordCheck(payload, session));
+    if (operation === "penalty_reward_record") return json(await recordPenaltyReward(payload, session));
+    if (operation === "performance_record") return json(await recordPerformance(payload, session));
+    if (operation === "commission_rule_save") return json(await saveCommissionRule(payload, session));
+    if (operation === "salary_generate") return json(await generateSalary(payload, session));
+    if (operation === "salary_transition") return json(await transitionSalary(payload, session));
+    if (operation === "payroll_record_reverse") return json(await reversePayrollRecord(payload, session));
+    if (operation === "inventory_center") return json(await inventoryCenter(payload, session));
+    if (operation === "purchase_order_save") return json(await savePurchaseOrder(payload, session));
+    if (operation === "purchase_order_transition") return json(await transitionPurchaseOrder(payload, session));
+    if (operation === "goods_receipt_post") return json(await postGoodsReceipt(payload, session));
+    if (operation === "inventory_usage_record") return json(await recordInventoryUsage(payload, session));
+    if (operation === "employee_purchase_record") return json(await recordEmployeePurchase(payload, session));
+    if (operation === "inventory_payment_confirm") return json(await confirmInventoryPayment(payload, session));
+    if (operation === "inventory_record_reverse") return json(await reverseInventoryRecord(payload, session));
+    if (operation === "stock_transfer_post") return json(await postStockTransfer(payload, session));
+    if (operation === "inventory_payment_reverse") return json(await reverseInventoryPayment(payload, session));
+    if (operation === "analysis_center") return json(await analysisCenter(payload, session));
+    if (operation === "ai_analysis_request") return json(await requestAiAnalysis(payload, session));
+    if (operation === "question_create") return json(await createQuestion(payload, session));
+    if (operation === "question_respond") return json(await respondQuestion(payload, session));
+    if (operation === "import_center") return json(await importCenter(payload, session));
+    if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);

@@ -56,6 +56,13 @@ jobs:
           node scripts/test-zysyr-sprint0.js
           node scripts/test-zysyr-gate-b.js
           node scripts/test-zysyr-sprint1.js
+          node scripts/test-zysyr-sprint2.js
+          node scripts/test-zysyr-sprint3.js
+          node scripts/test-zysyr-sprint3-workflows.js
+          node scripts/test-zysyr-sprint4.js
+          node scripts/test-zysyr-sprint5.js
+          node scripts/test-zysyr-sprint6.js
+          node scripts/test-zysyr-sprint7.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance

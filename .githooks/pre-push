@@ -24,6 +24,11 @@ node scripts/test-zysyr-gate-b.js || exit 1
 node scripts/test-zysyr-sprint1.js || exit 1
 node scripts/test-zysyr-sprint2.js || exit 1
 node scripts/test-zysyr-sprint3.js || exit 1
+node scripts/test-zysyr-sprint3-workflows.js || exit 1
+node scripts/test-zysyr-sprint4.js || exit 1
+node scripts/test-zysyr-sprint5.js || exit 1
+node scripts/test-zysyr-sprint6.js || exit 1
+node scripts/test-zysyr-sprint7.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
