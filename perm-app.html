@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="429">
+<html lang="zh-CN" data-version="430">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3068,9 +3068,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=429"></script>
-<script src="hair-vision-training.v1.js?v=429"></script>
-<script src="aesthetic-growth.v2.js?v=429"></script>
+<script src="aesthetic-knowledge.v1.js?v=430"></script>
+<script src="hair-vision-training.v1.js?v=430"></script>
+<script src="aesthetic-growth.v2.js?v=430"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6608,7 +6608,6 @@ function initApp() {
     localStorage.removeItem('booking-barber');
     localStorage.removeItem('booking-store');
     localStorage.removeItem('booking-session');
-    localStorage.removeItem('install_guide_done');
     BOOKING_BARBER = '';
     location.reload();
   };
@@ -7025,7 +7024,7 @@ function initApp() {
       var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
       html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
       html += '<div class="row"><span class="label">到店</span><span class="val">'+((p.visits||0) > 0 ? (p.visits||0)+'次' : '未知')+'</span></div>';
-      html += '<div class="row"><span class="label">均消</span><span class="val">'+((p.avg_fee||0)>0 ? '¥'+(p.avg_fee||0).toFixed(0) : '未知')+'</span></div>';
+      html += '<div class="row"><span class="label">均消</span><span class="val">'+((Number(p.avg_fee)||0)>0 ? '¥'+(Number(p.avg_fee)||0).toFixed(0) : '未知')+'</span></div>';
       // 总消费优先用 total_consumption（现金页路径有），兜底用 total_12m
       var totalConsumption = (p.total_consumption || 0) > 0 ? p.total_consumption : (p.total_12m || 0);
       html += '<div class="row"><span class="label">总消费</span><span class="val">¥'+(Number(totalConsumption||0)).toFixed(0)+'</span></div>';
