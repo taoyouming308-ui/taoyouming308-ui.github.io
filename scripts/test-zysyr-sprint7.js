@@ -12,6 +12,7 @@ for(const name of ['zysyr_create_photo_import_batch','zysyr_attach_import_report
 expect(migration.includes('existing_daily_report')&&migration.includes('payload_sha256')&&migration.includes('IMPORT_RECONCILIATION_MISMATCH'),'conflict/hash/reconciliation controls missing');
 expect(migration.includes("'income_record'")&&migration.includes("'source_document'"),'income-to-voucher trace missing');
 for(const operation of ['import_center','photo_daily_import'])expect(api.includes(`operation === "${operation}"`),`${operation} API route missing`);
+expect(api.includes('zysyr-date.mjs')&&api.includes('parseMonth(payload.month)'),'shared month parser missing');
 expect(api.includes('source_boundary:"approved_photo_human_review"')&&api.includes('meiguanjia_used:false'),'photo import source boundary missing');
 expect(page.includes('data-view="monthly" class="active"'),'original monthly home changed');expect(page.includes('data-view="import"')&&page.includes('id="view-import"'),'photo import UI missing');expect(page.includes('系统先做冲突检查')&&page.includes('逐行对账报告'),'import safety copy missing');
 const scripts=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];expect(scripts.length===1,'inline script missing');new vm.Script(scripts[0][1],{filename:'operations.html'});

@@ -24,6 +24,8 @@ expect(migration.includes('AI_CITATION_NOT_IN_SNAPSHOT') && migration.includes('
 expect(migration.includes('dead_letter') && migration.includes('lease_token') && migration.includes('next_attempt_at'), 'OCR retry/lease/dead-letter missing');
 expect(migration.includes('normalize_ocr_task_lease') && migration.includes('OCR_ALREADY_HUMAN_REVIEWED'), 'OCR human-review concurrency guard missing');
 expect(ocr.includes('PaddlePaddle/PaddleOCR-VL-1.5') && ocr.includes('candidate_only: true') && ocr.includes('human_review_required: true'), 'PaddleOCR candidate worker boundary missing');
+expect(ocr.includes('zysyr-ocr-candidates.mjs') && ocr.includes('zysyr-voucher-v2-safe-structured'), 'safe structured OCR parser missing');
+expect(ocr.includes('EdgeRuntime.waitUntil') && api.includes('voucher_ocr_wake') && api.includes('wakeVoucherOcrInBackground'), 'automatic OCR queue wake missing');
 expect(ai.includes('read_only: true') && ai.includes('citations_required: true') && ai.includes('evidence_snapshot'), 'read-only AI worker boundary missing');
 for (const operation of ['voucher_ocr_retry','analysis_center','ai_analysis_request','question_create','question_respond']) expect(api.includes(`operation === "${operation}"`), `${operation} API route missing`);
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly home changed');

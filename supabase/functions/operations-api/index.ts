@@ -1,8 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
+import { parseMonth } from "../_shared/zysyr-date.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
 const SESSION_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
@@ -78,6 +80,34 @@ async function restRowsAll(path: string, maxRows = 10000): Promise<JsonRecord[]>
     if (page.length < pageSize) return rows;
   }
   throw new Error("当前日期范围记录超过 10000 条，请缩短日期范围后重试");
+}
+
+async function invokeVoucherOcrWorker(limit = 3): Promise<JsonRecord> {
+  if (!WORKER_SECRET) throw new Error("OCR后台任务密钥未配置");
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(5, Math.trunc(limit))) : 3;
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/voucher-ocr-worker`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": "application/json",
+      "x-worker-secret": WORKER_SECRET,
+    },
+    body: JSON.stringify({ limit: safeLimit }),
+  });
+  const data = await response.json().catch(() => ({})) as JsonRecord;
+  if (!response.ok) throw new Error(`OCR后台任务启动失败 (${response.status})`);
+  return data;
+}
+
+function wakeVoucherOcrInBackground(limit = 3): void {
+  if (!WORKER_SECRET) {
+    console.error("voucher-ocr-worker wake skipped: ZYSYR_WORKER_SECRET missing");
+    return;
+  }
+  EdgeRuntime.waitUntil(invokeVoucherOcrWorker(limit).catch((error) => {
+    console.error("voucher-ocr-worker wake failed", (error as Error).message);
+  }));
 }
 
 function scopeRole(scope: JsonRecord, code: string): JsonRecord | null {
@@ -1259,7 +1289,9 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
     throw new Error(`凭证登记失败 (${metadata.status})`);
   }
   const result = await metadata.json();
-  return { saved: Array.isArray(result) ? result[0] : result, private: true, ocr_candidate_only: true };
+  const saved = Array.isArray(result) ? result[0] : result;
+  wakeVoucherOcrInBackground(3);
+  return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: true };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1322,7 +1354,15 @@ async function retryVoucherOcr(payload: JsonRecord, session: JsonRecord): Promis
     p_voucher_id: voucherId,
     p_reason: reason,
   });
-  return { saved, candidate_only: true, human_review_required: true };
+  wakeVoucherOcrInBackground(3);
+  return { saved, candidate_only: true, human_review_required: true, ocr_worker_wake_requested: true };
+}
+
+async function wakeVoucherOcr(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canReviewVouchers(session)) throw new Error("只有财务账号可以启动 OCR 队列");
+  await selectedStoreInfo(session, payload);
+  const result = await invokeVoucherOcrWorker(Number(payload.limit || 3));
+  return { ...result, manual_wake: true, human_review_required: true };
 }
 
 async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1997,6 +2037,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
     if (operation === "voucher_ocr_retry") return json(await retryVoucherOcr(payload, session));
+    if (operation === "voucher_ocr_wake") return json(await wakeVoucherOcr(payload, session));
     if (operation === "daily_report_save") return json(await saveDailyReport(payload, session));
     if (operation === "daily_report_review") return json(await reviewDailyReport(payload, session));
     if (operation === "finance_voucher_link") return json(await linkFinanceVoucher(payload, session));

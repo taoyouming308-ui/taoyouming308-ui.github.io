@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v431 三项 P0 修复与 4 月验收前置稳定（2026-08-24，发布候选）
+
+- `import_center` 与 `analysis_center` 已改为共用严格月份解析器，消除线上 `parseMonth is not defined`，并拒绝非 `YYYY-MM` 输入。
+- 凭证上传/重试会立即后台唤醒 `voucher-ocr-worker`，worker 有界续跑覆盖延迟重试；财务另有 `voucher_ocr_wake` 恢复排队任务。密钥仅在 Edge 环境使用。
+- OCR 解析不再从 PaddleOCR 坐标文本猜金额或日期。只有合法结构化 JSON 才产生候选字段；非结构化结果保留清洗后的全文，但日期和金额置空，等待财务对照原图人工确认。
+- `ZYSYR_P0_RUNTIME_OK`、Sprint 6/7、经营页、前台页、认证桥、版本同步、发布完整性和 diff 检查均通过；发布前备份为 `ZYSYR_2026-08-24_160018.tar.gz`。
+- 当前下一 Gate：部署 OCR worker、部署 operations API、发布 v431；随后只用既有单张 4 月凭证验证排队消费和候选安全性，通过后再导入 26 张日报及其余真实资料。
+- App version: v431
+
 ## v429 ZYSYR V2 OCR、AI、真实图片导入与对账（2026-08-22，本地候选，未部署）
 
 - v428：OCR 任务支持租约、重试、死信和人工重发；PaddleOCR worker 只生成候选及置信度。AI 只读正式月报快照，输出引用在数据库按月报行 ID 与金额精确核验；问题/回复保存证据快照且消息不可修改。
