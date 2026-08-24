@@ -11,6 +11,7 @@ const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/
 const foundation = fs.readFileSync(path.join(root, 'supabase/migrations/20260810022101_zysyr_operations_foundation.sql'), 'utf8');
 const reports = fs.readFileSync(path.join(root, 'supabase/migrations/20260813094949_zysyr_finance_report_uploads.sql'), 'utf8');
 const traceability = fs.readFileSync(path.join(root, 'supabase/migrations/20260813103623_zysyr_report_cell_traceability.sql'), 'utf8');
+const dailySheet = fs.readFileSync(path.join(root, 'supabase/migrations/20260824174500_zysyr_daily_sheet_review_gate.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -27,6 +28,10 @@ expect(html.includes('美发收入') && html.includes('普通美发产品') && h
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('业绩报表（每日）') && html.includes('月度盈亏表（每月）'), 'finance report upload entry missing');
 expect(html.includes('本报表消费凭证（可多选）') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
+expect(html.includes('原图对照电子日报') && html.includes('自动识别并生成同版电子表格'), 'image-aligned daily review entry missing');
+expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
+expect(html.includes("api('daily_sheet_create'") && html.includes("api('daily_sheet_save'") && html.includes("api('daily_sheet_confirm'"), 'daily sheet create/edit/confirm flow missing');
+expect(html.includes('daily-original-image') && html.includes('data-daily-cell') && html.includes('manual-edit'), 'side-by-side original image or editable cell grid missing');
 expect(html.includes("api('report_upload'") && html.includes("openPrivate('report_url'") && html.includes("openPrivate('voucher_url'"), 'protected report and evidence flows missing');
 expect(html.includes("api('cell_trace'") && html.includes("api('cell_trace_save'") && html.includes("api('report_cells'"), 'cell-level trace UI flow missing');
 expect(html.includes('怎么算出来的') && html.includes('来自哪天、哪一行、谁上传') && html.includes('对应凭证'), 'shareholder trace drawer copy missing');
@@ -73,6 +78,10 @@ expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_ca
 expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_capabilities: ['dashboard.store.read'] }) === false, 'Auth account without expense capability must be denied');
 expect(!edge.includes('mgj_service_records') && !edge.includes('income_read_only_from_mgj'), 'operations API must not read Meiguanjia');
 expect(!edge.includes('SUPABASE_ANON_KEY'), 'Edge Function must not rely on a browser anon key');
+expect(edge.includes('Deno.env.get("OPENAI_API_KEY")') && edge.includes('https://api.openai.com/v1/responses'), 'OpenAI vision integration missing');
+expect(edge.includes('json_schema') && edge.includes('input_image') && edge.includes('store: false'), 'structured image extraction boundary missing');
+expect(edge.includes('dailySheetSeeds') && edge.includes('staff_value') && edge.includes('payment_cashflow'), 'exact daily template cell mapping missing');
+expect(edge.includes('旧版手工文本导入已停用'), 'unsafe text-only photo import must be disabled');
 
 const denoConfig = JSON.parse(deno);
 expect(denoConfig.imports.exceljs === 'npm:exceljs@4.4.0', 'Excel parser dependency must be pinned');
@@ -107,5 +116,16 @@ expect(traceability.includes("p_actor_user_id, 'api',") && !traceability.include
 ['zysyr_report_cells', 'zysyr_report_cell_trace_revisions', 'zysyr_report_cell_trace_sources', 'zysyr_report_cell_trace_evidence'].forEach((table) => {
   expect(traceability.includes(`alter table public.${table} enable row level security`) && traceability.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
 });
+
+['zysyr_daily_sheet_drafts', 'zysyr_daily_sheet_cells', 'zysyr_daily_sheet_cell_changes', 'zysyr_daily_sheet_versions'].forEach((table) => {
+  expect(dailySheet.includes(`create table public.${table}`), `${table} missing`);
+  expect(dailySheet.includes(`alter table public.${table} enable row level security`) && dailySheet.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
+});
+expect(dailySheet.includes('company_id uuid not null') && dailySheet.includes('store_id uuid not null'), 'daily sheet tenant keys missing');
+expect(dailySheet.includes('zysyr_daily_sheet_changes_append_only') && dailySheet.includes('zysyr_daily_sheet_versions_append_only'), 'daily sheet immutable audit/version triggers missing');
+expect(dailySheet.includes('staff_row_mismatches') && dailySheet.includes('category_mismatches') && dailySheet.includes('payment_method_total'), 'independent database controls missing');
+expect(dailySheet.includes("and cell.cell_role = 'staff_value' and zysyr_private.daily_sheet_cell_value(cell) > 0"), 'formal income must use atomic stylist cells only');
+expect(dailySheet.includes('DAILY_SHEET_CONTROL_MISMATCH') && dailySheet.includes("v_approved := public.zysyr_review_daily_report"), 'database-gated final confirmation missing');
+expect(dailySheet.includes("'meiguanjia_used', false"), 'daily confirmation must preserve Meiguanjia boundary');
 
 console.log('operations tests passed: finance-upload-only original report home with cell-level traceability');

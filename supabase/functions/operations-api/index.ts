@@ -5,11 +5,45 @@ import { parseMonth } from "../_shared/zysyr-date.mjs";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+const DAILY_GRID_MODEL = Deno.env.get("ZYSYR_DAILY_GRID_MODEL") || "gpt-5.6-sol";
 const SESSION_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
 const REPORT_BUCKET = "zysyr-reports";
 const MAX_REPORT_BYTES = 10 * 1024 * 1024;
+
+const STYLIST_COLUMNS = [
+  ["dianping_group", "点评团"], ["douyin", "抖音"], ["wash_cut_blow", "洗剪吹"],
+  ["makeup_styling", "彩妆/造型"], ["perm", "烫发"], ["color", "染发"],
+  ["treatment", "护理"], ["technical_care", "技护"], ["scalp_care", "头皮护理"],
+  ["beirou_care", "倍柔护理"], ["extensions", "接发"], ["retail", "美发零售"],
+  ["essence_products", "精华产品"], ["wig_custom", "假发定制/发片"],
+  ["beauty_aids", "美发辅助品"], ["makeup_jewelry", "彩妆+首饰"],
+  ["home_fragrance", "家居品和香氛"],
+] as const;
+const TECHNICIAN_COLUMNS = [
+  ["extensions", "接发"], ["styling", "造型"], ["base_perm", "基础烫发"],
+  ["technical_perm", "技术烫发"], ["base_color", "基础染发"],
+  ["technical_color", "技术染发"], ["base_treatment", "基础护理"],
+  ["treatment", "护理"], ["technical_care", "技护"], ["scalp_care", "头皮护理"],
+  ["beirou_care", "倍柔护理"], ["zhenhei_care", "臻黑护理"], ["retail", "美发零售"],
+  ["essence_products", "精华产品"], ["wig_custom", "假发订制/发片"],
+  ["beauty_aids", "美发辅助品"], ["makeup_jewelry", "彩妆+首饰"],
+  ["home_fragrance", "家居品和香氛"],
+] as const;
+const SUMMARY_COLUMNS = [
+  ["stylist_total", "发型师栏"], ["technician_total", "技师栏"], ["nail_total", "美甲师栏"],
+  ["frontdesk_total", "前台栏"], ["actual_total", "实做"], ["treatment_card", "疗程卡"],
+  ["qualification_card", "资格卡"], ["membership_card", "会籍卡"],
+  ["card_subtotal", "卡类小计"], ["grand_total", "总计"],
+] as const;
+const PAYMENT_COLUMNS = [
+  ["cash", "现金"], ["public_card", "公-刷卡"], ["public_qr", "公-支微"],
+  ["private_card", "私-刷卡"], ["private_qr", "私-支微"], ["alipay", "支付宝"],
+  ["wechat", "微信"], ["douyin", "抖音"], ["group_buy", "团购"],
+  ["cash_flow", "现金流"], ["card_consumption", "卡金消费"], ["total", "总计"],
+] as const;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -47,6 +81,165 @@ function exactArrayBuffer(value: Uint8Array): ArrayBuffer {
 async function sha256Bytes(value: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", exactArrayBuffer(value));
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function bytesBase64(value: Uint8Array): string {
+  let binary = "";
+  for (let offset = 0; offset < value.length; offset += 0x8000) {
+    binary += String.fromCharCode(...value.subarray(offset, offset + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function effectiveCellValue(cell: JsonRecord): number | null {
+  const raw = cell.manual_override ? cell.corrected_numeric : cell.ocr_numeric;
+  if (raw == null || raw === "") return null;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric * 100) / 100 : null;
+}
+
+function safeCellText(value: unknown, max = 120): string {
+  return cleanText(value, max).replace(/[|\r\n]/g, " ");
+}
+
+function normalizedName(value: unknown): string {
+  return cleanText(value, 80).replace(/[\s·•._-]+/g, "").toLowerCase();
+}
+
+function dailyGridResponseText(raw: JsonRecord): string {
+  if (typeof raw.output_text === "string") return raw.output_text;
+  const output = Array.isArray(raw.output) ? raw.output as JsonRecord[] : [];
+  for (const item of output) {
+    const content = Array.isArray(item.content) ? item.content as JsonRecord[] : [];
+    for (const part of content) if (cleanText(part.type, 40) === "output_text" && typeof part.text === "string") return part.text;
+  }
+  return "";
+}
+
+function dailyGridJsonSchema(): JsonRecord {
+  return {
+    type: "object", additionalProperties: false,
+    required: ["report_date", "cells", "notes"],
+    properties: {
+      report_date: { type: ["string", "null"] },
+      notes: { type: "string" },
+      cells: {
+        type: "array",
+        items: {
+          type: "object", additionalProperties: false,
+          required: ["section_code", "row_label", "column_code", "value", "ocr_text", "confidence", "bbox"],
+          properties: {
+            section_code: { type: "string", enum: ["stylist", "technician", "product", "summary", "payment"] },
+            row_label: { type: "string" }, column_code: { type: "string" },
+            value: { type: ["number", "null"] }, ocr_text: { type: "string" },
+            confidence: { type: "number", minimum: 0, maximum: 1 },
+            bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
+          },
+        },
+      },
+    },
+  };
+}
+
+async function extractDailyGrid(bytes: Uint8Array, mime: string): Promise<JsonRecord> {
+  if (!OPENAI_API_KEY) throw new Error("OpenAI 图片识别密钥未配置");
+  const stylistCodes = [...STYLIST_COLUMNS.map((item) => item[0]), "subtotal", "old_count", "new_count", "card_count", "treatment_card_count"];
+  const technicianCodes = [...TECHNICIAN_COLUMNS.map((item) => item[0]), "subtotal"];
+  const prompt = `你正在读取“自由手艺人业绩报表”原始照片。先自动纠正旋转和透视，再逐格抄录；不要推测看不清的数字。只返回 schema 指定的 JSON。
+section_code=stylist：发型师大表的每位员工行、底部小计行。员工 row_label 写姓名；底部项目小计 row_label 固定写“小计”。column_code 只能用 ${stylistCodes.join(",")}。
+section_code=technician：技师大表的每位员工行、底部小计行。column_code 只能用 ${technicianCodes.join(",")}。
+section_code=product：左下产品零售/美甲产品小表，row_label 写姓名或“小计”，column_code 用 normal_product,essence_product,other_product,retail_subtotal,nail,product,subtotal。
+section_code=summary：中下汇总栏，row_label 固定“汇总”，column_code 只能用 ${SUMMARY_COLUMNS.map((item) => item[0]).join(",")}。
+section_code=payment：右下支付栏，row_label 固定“支付”，column_code 只能用 ${PAYMENT_COLUMNS.map((item) => item[0]).join(",")}。
+只返回照片中存在的数值单元格；空白格不要返回。金额和计数都保持原数字。subtotal/小计/实做/现金流/总计必须按原表抄录，不能用你自己计算的结果替代。bbox 使用归一化 [x1,y1,x2,y2]，范围 0 到 1。`;
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: DAILY_GRID_MODEL, store: false,
+      input: [{ role: "user", content: [
+        { type: "input_text", text: prompt },
+        { type: "input_image", image_url: `data:${mime};base64,${bytesBase64(bytes)}`, detail: "high" },
+      ] }],
+      text: { format: { type: "json_schema", name: "zysyr_daily_grid", strict: true, schema: dailyGridJsonSchema() } },
+    }),
+  });
+  const raw = await response.json().catch(() => ({})) as JsonRecord;
+  if (!response.ok) {
+    const error = raw.error && typeof raw.error === "object" ? raw.error as JsonRecord : {};
+    throw new Error(`OpenAI 图片识别失败 (${response.status})：${cleanText(error.message, 300) || "请检查密钥、余额和模型权限"}`);
+  }
+  const text = dailyGridResponseText(raw);
+  if (!text) throw new Error("OpenAI 图片识别没有返回结构化单元格");
+  let parsed: JsonRecord;
+  try { parsed = JSON.parse(text) as JsonRecord; } catch { throw new Error("OpenAI 图片识别结果不是有效 JSON"); }
+  return { parsed, response_id: raw.id || null, model: raw.model || DAILY_GRID_MODEL, usage: raw.usage || null };
+}
+
+type DailyCellSeed = {
+  section_code: string; row_key: string; row_label: string; column_code: string; column_label: string;
+  row_number: number; column_number: number; cell_role: string; ocr_text: string | null;
+  ocr_numeric: number | null; confidence: number | null; bbox: unknown; source_method: string;
+};
+
+function dailySheetSeeds(extraction: JsonRecord): DailyCellSeed[] {
+  const parsed = extraction.parsed && typeof extraction.parsed === "object" ? extraction.parsed as JsonRecord : {};
+  const detected = Array.isArray(parsed.cells) ? parsed.cells as JsonRecord[] : [];
+  const sectionRows = (section: string, fallbackCount: number) => {
+    const names: string[] = [];
+    detected.filter((cell) => cleanText(cell.section_code, 30) === section)
+      .map((cell) => safeCellText(cell.row_label, 80)).filter((name) => name && name !== "小计")
+      .forEach((name) => { if (!names.some((item) => normalizedName(item) === normalizedName(name))) names.push(name); });
+    while (names.length < fallbackCount) names.push(`第${names.length + 1}行`);
+    return names.slice(0, fallbackCount);
+  };
+  const stylistNames = sectionRows("stylist", 10), technicianNames = sectionRows("technician", 8);
+  const productNames = sectionRows("product", 4);
+  const seeds: DailyCellSeed[] = [];
+  const detectedCell = (section: string, rowLabel: string, columnCode: string): JsonRecord | null => detected.find((cell) =>
+    cleanText(cell.section_code, 30) === section && normalizedName(cell.row_label) === normalizedName(rowLabel)
+      && cleanText(cell.column_code, 80) === columnCode) || null;
+  const add = (section: string, rowKey: string, rowLabel: string, columnCode: string, columnLabel: string,
+    rowNumber: number, columnNumber: number, role: string) => {
+    const hit = detectedCell(section, rowLabel, columnCode);
+    const numeric = hit && hit.value != null && Number.isFinite(Number(hit.value)) && Number(hit.value) >= 0
+      ? Math.round(Number(hit.value) * 100) / 100 : null;
+    seeds.push({ section_code: section, row_key: rowKey, row_label: rowLabel, column_code: columnCode,
+      column_label: columnLabel, row_number: rowNumber, column_number: columnNumber, cell_role: role,
+      ocr_text: hit ? safeCellText(hit.ocr_text, 120) : null, ocr_numeric: numeric,
+      confidence: hit && Number.isFinite(Number(hit.confidence)) ? Math.max(0, Math.min(1, Number(hit.confidence))) : null,
+      bbox: hit && Array.isArray(hit.bbox) ? hit.bbox : null, source_method: hit ? "openai_vision" : "blank_template" });
+  };
+  stylistNames.forEach((name, rowIndex) => {
+    STYLIST_COLUMNS.forEach((column, columnIndex) => add("stylist", `stylist_${rowIndex + 1}`, name,
+      column[0], column[1], 2 + rowIndex, 2 + columnIndex, "staff_value"));
+    add("stylist", `stylist_${rowIndex + 1}`, name, "subtotal", "小计", 2 + rowIndex, 19, "staff_total");
+    [["old_count", "老"], ["new_count", "新"], ["card_count", "卡类"], ["treatment_card_count", "疗程卡"]].forEach((column, index) =>
+      add("stylist", `stylist_${rowIndex + 1}`, name, column[0], column[1], 2 + rowIndex, 20 + index, "staff_count"));
+  });
+  STYLIST_COLUMNS.forEach((column, index) => add("stylist", "stylist_category_total", "小计",
+    column[0], column[1], 12, 2 + index, "category_total"));
+  add("stylist", "stylist_category_total", "小计", "subtotal", "小计", 12, 19, "summary_value");
+  technicianNames.forEach((name, rowIndex) => {
+    TECHNICIAN_COLUMNS.forEach((column, columnIndex) => add("technician", `technician_${rowIndex + 1}`, name,
+      column[0], column[1], 15 + rowIndex, 2 + columnIndex, "technician_value"));
+    add("technician", `technician_${rowIndex + 1}`, name, "subtotal", "小计", 15 + rowIndex, 20, "technician_total");
+  });
+  TECHNICIAN_COLUMNS.forEach((column, index) => add("technician", "technician_category_total", "小计",
+    column[0], column[1], 23, 2 + index, "technician_category_total"));
+  add("technician", "technician_category_total", "小计", "subtotal", "小计", 23, 20, "technician_total");
+  const productColumns = [["normal_product", "普通产品"], ["essence_product", "精华产品"],
+    ["other_product", "其他产品"], ["retail_subtotal", "零售小计"], ["nail", "美甲"],
+    ["product", "产品"], ["subtotal", "小计"]];
+  productNames.forEach((name, rowIndex) => productColumns.forEach((column, columnIndex) =>
+    add("product", `product_${rowIndex + 1}`, name, column[0], column[1], 25 + rowIndex,
+      1 + columnIndex, column[0] === "retail_subtotal" || column[0] === "subtotal" ? "product_total" : "product_value")));
+  SUMMARY_COLUMNS.forEach((column, index) => add("summary", "summary", "汇总", column[0], column[1], 30, 1 + index,
+    column[0] === "actual_total" ? "summary_actual" : column[0] === "grand_total" ? "summary_grand" : "summary_value"));
+  PAYMENT_COLUMNS.forEach((column, index) => add("payment", "payment", "支付", column[0], column[1], 33, 1 + index,
+    column[0] === "cash_flow" ? "payment_cashflow" : column[0] === "card_consumption" ? "payment_card_consumption"
+      : column[0] === "total" ? "payment_total" : "payment_method"));
+  return seeds;
 }
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
@@ -1416,6 +1609,12 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "APPROVED_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("已审核日报不能覆盖，必须先走冲销流程");
     if (code === "DAILY_SOURCE_REPORT_NOT_FOUND") throw new Error("日报原件不存在、已被替代或不属于当前门店");
     if (code === "DAILY_REPORT_SOURCE_CELL_NOT_FOUND") throw new Error("日报数字没有对应到当前原表单元格");
+    if (code === "DAILY_SHEET_CONTROL_MISMATCH") throw new Error("员工行、项目列、实做或支付合计不一致，已禁止入账");
+    if (code === "EXISTING_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("当天已有正式日报，必须先冲销后再确认新版本");
+    if (code === "DAILY_SHEET_ALREADY_CONFIRMED") throw new Error("这张电子日报已经最终确认，不能重复入账");
+    if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
+    if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
+    if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
     if (code === "APPROVED_VOUCHER_NOT_FOUND") throw new Error("凭证尚未人工审核通过或不属于当前门店");
     if (code === "APPROVED_VOUCHER_REQUIRED") throw new Error("每笔正式财务记录必须关联已审核凭证");
     if (code === "PAYMENT_EXCEEDS_EXPENSE") throw new Error("本次付款会超过支出金额");
@@ -1925,53 +2124,163 @@ async function respondQuestion(payload: JsonRecord, session: JsonRecord): Promis
   return { saved, evidence_snapshot_preserved: true };
 }
 
+async function signedStorageUrl(bucket: string, objectPath: string): Promise<string> {
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${storagePath(bucket)}/${storagePath(objectPath)}`, {
+    method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ expiresIn: 300 }),
+  });
+  if (!response.ok) throw new Error(`原始图片链接生成失败 (${response.status})`);
+  const signed = await response.json() as JsonRecord;
+  const path = cleanText(signed.signedURL ?? signed.signedUrl, 2000);
+  if (!path) throw new Error("原始图片链接生成失败");
+  return path.startsWith("http") ? path : `${SUPABASE_URL}/storage/v1${path}`;
+}
+
+async function approvedDailyVoucher(companyId: string, storeId: string, voucherId: string): Promise<JsonRecord> {
+  const rows = await restRows(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&audit_status=eq.approved&document_type=eq.daily_report&limit=1`);
+  if (!rows[0]) throw new Error("请选择当前门店已审核通过的日报原图");
+  return rows[0];
+}
+
+async function voucherImageBytes(voucher: JsonRecord): Promise<Uint8Array> {
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(cleanText(voucher.object_path, 500))}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`日报原图读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("日报原图必须小于 10MB");
+  const mime = cleanText(voucher.mime_type, 80);
+  if (!["image/jpeg", "image/png"].includes(mime)) throw new Error("电子日报当前支持 JPG 或 PNG 原图");
+  return bytes;
+}
+
+async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
+  const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const draft = drafts[0];
+  if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
+  const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
+  return { draft, cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
+    original_image_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
+    original_filename: voucher.original_filename, image_url_expires_in: 300,
+    model_candidates_only: true, final_confirmation_required: true, meiguanjia_used: false };
+}
+
+async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) {
+    throw new Error("只有当前门店财务账号可以识别日报图片");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText(payload.report_date, 10);
+  const voucherId = uuidValue(payload.voucher_id, "请选择已审核日报原图"), reason = cleanText(payload.reason, 500);
+  if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和识别原因");
+  const voucher = await approvedDailyVoucher(companyId, storeId, voucherId);
+  const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&source_voucher_id=eq.${voucherId}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
+  if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
+  const bytes = await voucherImageBytes(voucher), mime = cleanText(voucher.mime_type, 80);
+  const extraction = await extractDailyGrid(bytes, mime);
+  const parsed = extraction.parsed as JsonRecord;
+  const detectedDate = cleanText(parsed.report_date, 10);
+  const saved = await financeRpcSaved("rpc/zysyr_create_daily_sheet_draft", {
+    p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId,
+    p_report_date: reportDate, p_source_voucher_id: voucherId,
+    p_ocr_provider: "openai-responses-vision", p_ocr_model: cleanText(extraction.model, 120) || DAILY_GRID_MODEL,
+    p_ocr_raw_result: { response_id: extraction.response_id, model: extraction.model, usage: extraction.usage,
+      report_date: parsed.report_date ?? null, notes: cleanText(parsed.notes, 2000), detected_cell_count: Array.isArray(parsed.cells) ? parsed.cells.length : 0 },
+    p_cells: dailySheetSeeds(extraction), p_reason: reason,
+  });
+  const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
+  return { ...result, detected_date: validDate(detectedDate) ? detectedDate : null,
+    date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
+}
+
+async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
+  const store = await selectedStoreInfo(session, payload), draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
+  return dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId);
+}
+
+async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) throw new Error("只有财务账号可以修改电子日报");
+  const store = await selectedStoreInfo(session, payload), reason = cleanText(payload.reason, 500);
+  const draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
+  if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
+  const cells = (payload.cells as JsonRecord[]).map((cell) => {
+    const id = uuidValue(cell.id, "电子日报单元格无效");
+    if (cell.value == null || cell.value === "") return { id, value: null };
+    const value = Number(cell.value);
+    if (!Number.isFinite(value) || value < 0 || value > 999999999999.99) throw new Error("电子日报金额或计数无效");
+    return { id, value: Math.round(value * 100) / 100 };
+  });
+  const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: cells, p_reason: reason,
+  });
+  return { saved, ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)) };
+}
+
+async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) throw new Error("只有财务账号可以最终确认电子日报");
+  const store = await selectedStoreInfo(session, payload), companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const actorId = cleanText(session.auth_account_id, 40), draftId = uuidValue(payload.draft_id, "电子日报草稿无效"), reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("最终确认必须填写复核说明");
+  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
+  const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
+  if (validation.valid !== true) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
+  const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
+  const bytes = await voucherImageBytes(voucher), mime = cleanText(voucher.mime_type, 80);
+  const extension = mime === "image/png" ? "png" : "jpg";
+  const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${crypto.randomUUID()}.${extension}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": mime, "x-upsert": "false" }, body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`电子日报原图归档失败 (${upload.status})`);
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_numeric,corrected_numeric,manual_override,confidence,bbox,source_method&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
+  const displayData = { sheet_name: "原图电子日报", range: "A1:AD60", rows: 60, columns: 30, values: [], merges: [],
+    cells: cells.map((cell) => ({ ...cell, numeric_value: effectiveCellValue(cell) })),
+    source_kind: "approved_daily_photo_review_grid", source_voucher_id: draft.source_voucher_id,
+    validation, original_image_preserved: true };
+  try {
+    const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_sheet", {
+      p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId,
+      p_report: { original_filename: cleanText(voucher.original_filename, 200), mime_type: mime,
+        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        object_path: objectPath, display_data: displayData },
+      p_is_business_day: payload.is_business_day == null ? null : Boolean(payload.is_business_day), p_reason: reason,
+    });
+    return { saved, confirmed: true, formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
+  } catch (error) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    }).catch(() => null);
+    throw error;
+  }
+}
+
 async function importCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有真实日报导入权限");
   const store=await selectedStoreInfo(session,payload), month=parseMonth(payload.month), companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40);
   const next=new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth()+1); const end=next.toISOString().slice(0,10);
-  const [batches,vouchers,dailyReports]=await Promise.all([
+  const [batches,vouchers,dailyReports,drafts]=await Promise.all([
     restRowsAll(`zysyr_import_batches?select=id,report_date,import_type,status,raw_row_count,mapped_row_count,payload_sha256,source_voucher_id,source_report_id,reason,error_message,created_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=created_at.desc&limit=1000`,1000),
     restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,ocr_status,audit_status,document_type,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&audit_status=eq.approved&document_type=eq.daily_report&order=reviewed_at.desc&limit=1000`,1000),
     restRowsAll(`zysyr_daily_reports?select=id,report_date,version,status,source_report_id,submitted_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`,1000),
+    restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=report_date.desc,created_at.desc&limit=1000`,1000),
   ]);
   const batchFilter=uuidIn(batches.map((row)=>row.id));
   const [conflicts,reconciliations]=await Promise.all([
     batchFilter==="()"?[]:restRowsAll(`zysyr_import_conflicts?select=id,import_batch_id,conflict_type,existing_entity_type,existing_entity_id,details,resolution_status,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=created_at.desc&limit=2000`,2000),
     batchFilter==="()"?[]:restRowsAll(`zysyr_reconciliation_reports?select=id,import_batch_id,daily_report_id,status,source_row_count,business_row_count,source_amount,business_amount,delta,generated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=generated_at.desc&limit=1000`,1000),
   ]);
-  return {month,batches,vouchers,daily_reports:dailyReports,conflicts,reconciliations,permissions:{import:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")},meiguanjia_used:false};
+  return {month,batches,vouchers,daily_reports:dailyReports,drafts,conflicts,reconciliations,permissions:{import:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")},daily_grid_provider_configured:Boolean(OPENAI_API_KEY),daily_grid_model:DAILY_GRID_MODEL,meiguanjia_used:false};
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  if (cleanText(session.operations_role,40)!=="finance"||!hasAuthCapability(session,"daily_report.write")) throw new Error("只有当前门店财务账号可以导入真实日报图片");
-  const store=await selectedStoreInfo(session,payload), companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), accountId=cleanText(session.auth_account_id,40);
-  const reportDate=cleanText(payload.report_date,10), reason=cleanText(payload.reason,500), voucherId=uuidValue(payload.voucher_id,"请选择已审核日报图片");
-  if(!validDate(reportDate)||!reason||!Array.isArray(payload.rows)||(payload.rows as unknown[]).length<1||(payload.rows as unknown[]).length>1000) throw new Error("请填写日期、来源图片、导入明细和原因");
-  const rows=(payload.rows as JsonRecord[]).map((row)=>({line_type:cleanText(row.line_type,30),metric_code:cleanText(row.metric_code,64).toUpperCase(),description:cleanText(row.description,300),amount:cleanText(row.line_type,30)==="note"?null:amountValue(row.amount),quantity:row.quantity==null?null:Number(row.quantity)}));
-  if(!rows.some((row)=>row.line_type!=="note")) throw new Error("日报至少要有一行金额明细");
-  const batch=await financeRpcSaved("rpc/zysyr_create_photo_import_batch",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_report_date:reportDate,p_source_voucher_id:voucherId,p_rows:rows,p_reason:reason});
-  if(cleanText(batch.status,30)==="conflict") return {batch,imported:false,conflict:true,message:"发现现有日报或行校验问题，未覆盖任何数据"};
-  const voucherRows=await restRows(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&audit_status=eq.approved&document_type=eq.daily_report&limit=1`);
-  const voucher=voucherRows[0]; if(!voucher) throw new Error("已审核日报图片不存在或不属于当前门店");
-  const download=await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(cleanText(voucher.object_path,500))}`,{headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`}});
-  if(!download.ok) throw new Error(`日报原图读取失败 (${download.status})`); const bytes=new Uint8Array(await download.arrayBuffer());
-  if(!bytes.length||bytes.length>MAX_REPORT_BYTES) throw new Error("日报原图必须小于 10MB");
-  const mime=cleanText(voucher.mime_type,80); if(!["image/jpeg","image/png"].includes(mime)) throw new Error("真实日报导入当前支持 JPG 或 PNG");
-  const values:[[string,string],...string[][]]=[["项目","金额"],...rows.map((row)=>[row.description,row.line_type==="note"?"":String(row.amount)])];
-  const cells=rows.map((row,index)=>row.line_type==="note"?null:{sheet_name:"人工复核日报",cell_address:`B${index+2}`,row_number:index+2,column_number:2,cell_kind:"input",display_value:String(row.amount),numeric_value:row.amount,formula:null,precedent_addresses:[],label:row.description}).filter(Boolean) as JsonRecord[];
-  const displayData={sheet_name:"人工复核日报",range:`A1:B${rows.length+1}`,rows:rows.length+1,columns:2,values,merges:[],cells,source_kind:"approved_daily_photo",source_voucher_id:voucherId};
-  const extension=mime==="image/png"?"png":"jpg", objectPath=`${companyId}/${storeId}/daily/${reportDate}/${crypto.randomUUID()}.${extension}`;
-  const upload=await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`,{method:"POST",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,"Content-Type":mime,"x-upsert":"false"},body:exactArrayBuffer(bytes)});
-  if(!upload.ok) throw new Error(`日报原图归档失败 (${upload.status})`);
-  const metadata=await rest("rpc/zysyr_register_report_upload",{method:"POST",body:JSON.stringify({p_report:{company_id:companyId,store_id:storeId,report_type:"daily",report_date:reportDate,template_code:"zysyr_daily_photo_reviewed",template_version:1,original_filename:cleanText(voucher.original_filename,200),mime_type:mime,size_bytes:bytes.length,sha256:await sha256Bytes(bytes),bucket_id:REPORT_BUCKET,object_path:objectPath,display_data:displayData,uploaded_by_user_id:accountId},p_cells:cells})});
-  if(!metadata.ok){await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`,{method:"DELETE",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`}});throw new Error(`日报图片登记失败 (${metadata.status})`)}
-  const reportData=await metadata.json() as JsonRecord, report=Array.isArray(reportData)?reportData[0]:reportData, reportId=uuidValue((report as JsonRecord).id,"日报图片登记结果无效");
-  await financeRpcSaved("rpc/zysyr_attach_import_report",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_import_batch_id:batch.id,p_source_report_id:reportId});
-  const importRows=await restRowsAll(`zysyr_import_rows?select=row_number,mapped_json,source_report_cell_id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batch.id}&order=row_number.asc&limit=1000`,1000);
-  const lines=importRows.map((row)=>({...(row.mapped_json as JsonRecord),source_report_cell_id:row.source_report_cell_id||null}));
-  const daily=await financeRpcSaved("rpc/zysyr_save_daily_report",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_source_report_id:reportId,p_is_business_day:payload.is_business_day==null?null:Boolean(payload.is_business_day),p_lines:lines,p_reason:reason});
-  const reconciliation=await financeRpcSaved("rpc/zysyr_finalize_daily_import",{p_actor_user_id:accountId,p_company_id:companyId,p_store_id:storeId,p_import_batch_id:batch.id,p_daily_report_id:daily.id});
-  return {batch_id:batch.id,report,daily_report:daily,reconciliation,imported:cleanText(reconciliation.status,30)==="matched",source_boundary:"approved_photo_human_review",meiguanjia_used:false};
+  void payload; void session;
+  throw new Error("旧版手工文本导入已停用；请使用原图与同版电子表格复核流程");
 }
 
 async function voucherUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -2065,6 +2374,10 @@ Deno.serve(async (request: Request) => {
     if (operation === "question_create") return json(await createQuestion(payload, session));
     if (operation === "question_respond") return json(await respondQuestion(payload, session));
     if (operation === "import_center") return json(await importCenter(payload, session));
+    if (operation === "daily_sheet_create") return json(await createDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
