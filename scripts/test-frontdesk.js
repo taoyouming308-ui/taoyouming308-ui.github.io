@@ -108,6 +108,7 @@ expect(html.includes('当日接待') && html.includes('历史导入') && html.in
 expect(html.includes("api('ledger_records'") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
 expect(html.includes("api('ledger_records',payload)") && html.includes('payload.phone_suffix=suffix') && html.includes('payload.business_date=date') && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix and date query flow missing');
 expect(html.includes('id="ledger-date"') && html.includes("$('ledger-date').addEventListener('change'"), 'ledger date filter missing');
+expect(html.includes('id="ledger-search-btn"') && html.includes("$('ledger-search-btn').addEventListener('click'"), 'ledger search button missing');
 expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');

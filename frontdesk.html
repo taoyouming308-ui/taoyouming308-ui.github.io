@@ -117,7 +117,7 @@
       <section class="view hidden" id="view-import">
         <div class="view-head"><div><h2>客户数据表</h2><p>以电脑表格查看“当日接待”和“历史导入”；来源分开显示，不覆盖美管加或后台客户原始档案。</p></div></div>
         <div class="card ledger-card">
-          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" placeholder="姓名、完整手机号、手机后4位、项目或发型师"><input class="date-input" id="ledger-date" type="date" title="按日期筛选"><select class="ledger-filter" id="ledger-source"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
+          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" placeholder="姓名、完整手机号、手机后4位、项目或发型师"><input class="date-input" id="ledger-date" type="date" title="按日期筛选"><button class="primary" id="ledger-search-btn" type="button">搜索</button><select class="ledger-filter" id="ledger-source"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
           <div class="ledger-boundary"><span><b>项目 / 发型师 / 技师 / 助理：</b>两类记录都可补充修改</span><span><b>历史导入：</b>保留原 CSV 和来源批次，修改会记录操作人</span><span>所有修改仅作用于前台独立数据表，不修改美管加或后台客户原始信息</span></div>
           <div class="ledger-table-wrap" id="ledger-table"><div class="empty">正在读取客户数据表…</div></div>
         </div>
@@ -329,7 +329,7 @@
       try{var data=await api('ledger_records',payload);if(request!==state.ledgerRequest)return;state.ledgerRows=data.rows||[];renderLedger();}
       catch(e){if(request!==state.ledgerRequest)return;$('ledger-count').textContent='读取失败';$('ledger-table').innerHTML='<div class="empty danger"><b>客户数据表读取失败</b>'+esc(e.message)+'</div>';}
     }
-    $('ledger-search').addEventListener('input',function(){var suffix=phoneSuffixQuery(this.value);if(suffix!==state.ledgerPhoneSuffix)loadLedger(suffix);else renderLedger();});$('ledger-date').addEventListener('change',function(){loadLedger();});$('ledger-source').addEventListener('change',renderLedger);$('ledger-refresh').addEventListener('click',function(){loadLedger();});
+    $('ledger-search').addEventListener('input',function(){var suffix=phoneSuffixQuery(this.value);if(suffix!==state.ledgerPhoneSuffix)loadLedger(suffix);else renderLedger();});$('ledger-search-btn').addEventListener('click',function(){loadLedger();});$('ledger-date').addEventListener('change',function(){loadLedger();});$('ledger-source').addEventListener('change',renderLedger);$('ledger-refresh').addEventListener('click',function(){loadLedger();});
 
     function parseCSV(text){
       text=String(text||'').replace(/^\uFEFF/,'');var first=(text.split(/\r?\n/,1)[0]||''),delimiter=first.indexOf('\t')>=0?'\t':',';var rows=[],row=[],cell='',quoted=false;
