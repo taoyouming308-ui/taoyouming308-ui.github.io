@@ -5,7 +5,7 @@
 - 客户数据表新增“日期”筛选框，可按日期精确查找客户（历史导入按 `visit_date`、当日接待按 `business_date`），可与姓名/手机号后4位、来源筛选叠加；前后端都做日期格式校验，不改变来源标签与可编辑字段。
 - 今日预约页点击客户卡打开“客户接待信息”抽屉后，新增红色“新客”按钮；点击即标记该客户为首次到店并保存到 `frontdesk_today_customers.is_new_customer`，再次点击取消。未登记过接待的客户会自动建立一条“已经到店”的独立接待记录；只写前台独立数据，不修改客户主档与美管加收银。
 - 新迁移 `20260825150000_frontdesk_new_customer_flag.sql`；`frontdesk-api` 新增 `today_mark_new_customer` 操作，`dashboard`/`ledger_records` 返回 `is_new_customer` 且台账支持日期过滤；`test-frontdesk.js` 已覆盖新增字段、日期筛选与按钮流程。
-- 版本保持 v432（仅前台页面与 Edge Function 变更，未改动主 App `perm-app.html`）；上线前需先应用迁移并部署 `frontdesk-api`。
+- 版本保持 v432（仅前台页面与 Edge Function 变更，未改动主 App `perm-app.html`）；前端已推送 `github/main` 上线，仍需应用迁移并部署 `frontdesk-api`。
 
 ## 2026-08-24 · v432 原图同版电子日报与最终确认 Gate（生产发布）
 

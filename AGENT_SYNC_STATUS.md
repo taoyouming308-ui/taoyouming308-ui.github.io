@@ -7,7 +7,7 @@
 - 新增迁移 `20260825150000_frontdesk_new_customer_flag.sql`（`is_new_customer boolean not null default false`，读写仍仅 `service_role`）。
 - `frontdesk-api` Edge Function：`dashboard`/`ledger_records` 返回 `is_new_customer`，`ledger_records` 支持 `business_date` 日期过滤，新增 `today_mark_new_customer` 操作（PATCH 已有记录或新建最小接待记录）。
 - `scripts/test-frontdesk.js` 已同步新增断言并通过；`check-version-sync`、`check-release-integrity`、`check-agent-sync-status` 均通过。
-- 尚未执行：Supabase 生产迁移、`frontdesk-api` Edge Function 部署、Git 提交与推送；上线前需先应用迁移并部署函数，否则前端“新客”按钮会返回“不支持的操作”。
+- 已执行：Git 提交并推送至 `github/main`（`5731d16..3665400`），前端 `frontdesk.html` 已上线，线上实测包含 `ledger-date`、`新客`、`today_mark_new_customer`。尚未执行：Supabase 生产迁移、`frontdesk-api` Edge Function 部署；完成前“新客”按钮会返回“不支持的操作”、日期筛选不生效。
 - App version: v432
 
 ## v432 原图同版电子日报与最终确认 Gate（2026-08-24，生产发布）
