@@ -113,6 +113,7 @@ expect(html.includes('id="ledger-search-btn"') && html.includes("$('ledger-searc
 expect(html.includes('!date||row.business_date===date'), 'ledger date filter must also filter client-side');
 expect(html.includes('id="today-new-customer-note"') && html.includes("new_customer_note:$('today-new-customer-note').value.trim()"), 'new-customer note field missing');
 expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
+expect(html.includes('source-tag new">新客') && html.includes('row.is_new_customer'), 'ledger new-customer red tag missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');
 expect(html.includes("amount:$('ledger-amount').value") && html.includes("payment_summary:$('ledger-payment-summary').value.trim()"), 'ledger amount fields must be submitted');
