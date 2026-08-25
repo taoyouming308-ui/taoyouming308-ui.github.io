@@ -114,6 +114,7 @@ expect(html.includes('!date||row.business_date===date'), 'ledger date filter mus
 expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
 expect(html.includes('source-tag new">新客') && html.includes('row.is_new_customer'), 'ledger new-customer red tag missing');
 expect(html.includes('shampoo-btn') && html.includes('toggleShampooQualified') && html.includes("api('today_mark_shampoo_qualified'"), 'shampoo qualified toggle missing');
+expect(html.includes('table-shampoo') && html.includes("row.row_type==='today'"), 'ledger shampoo qualified row button missing');
 expect(html.includes('id="shampoo-month"') && html.includes('shampoo_qualification_stats') && html.includes('renderShampooStats'), 'shampoo qualification stats view missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');
