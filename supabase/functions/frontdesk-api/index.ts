@@ -253,7 +253,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,new_customer_note,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
   const [bookings, services, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
@@ -699,7 +699,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
     store,
   );
   const receptionPath = withStore(
-    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,new_customer_note,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}${rawDate ? `&business_date=eq.${encodeURIComponent(rawDate)}` : ""}`,
+    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}${rawDate ? `&business_date=eq.${encodeURIComponent(rawDate)}` : ""}`,
     "store",
     store,
   );
@@ -750,7 +750,6 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       notes: row.reception_notes,
       visit_source: row.visit_source,
       is_new_customer: row.is_new_customer === true,
-      new_customer_note: row.new_customer_note || '',
       created_by: row.created_by,
       updated_by: row.updated_by,
       source_detail: "独立接待信息",
