@@ -16,6 +16,7 @@ const receptionTimeMigration = fs.readFileSync(path.join(root, 'supabase/migrati
 const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260805123808_frontdesk_ledger_edit_fields.sql'), 'utf8');
 const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
 const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820125932_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
+const newCustomerMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260825150000_frontdesk_new_customer_flag.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -105,7 +106,9 @@ expect(html.includes('电脑前台为主') && manifest.description.includes('电
 expect(html.includes('id="ledger-table"') && html.includes('class="ledger-table"'), 'customer ledger table missing');
 expect(html.includes('当日接待') && html.includes('历史导入') && html.includes('所有修改仅作用于前台独立数据表'), 'ledger source boundary missing');
 expect(html.includes("api('ledger_records'") && html.includes('loadLedger') && html.includes('renderLedger'), 'customer ledger read flow missing');
-expect(html.includes("api('ledger_records',suffix?{phone_suffix:suffix}:{})") && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix query flow missing');
+expect(html.includes("api('ledger_records',payload)") && html.includes('payload.phone_suffix=suffix') && html.includes('payload.business_date=date') && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix and date query flow missing');
+expect(html.includes('id="ledger-date"') && html.includes("$('ledger-date').addEventListener('change'"), 'ledger date filter missing');
+expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');
 expect(html.includes("amount:$('ledger-amount').value") && html.includes("payment_summary:$('ledger-payment-summary').value.trim()"), 'ledger amount fields must be submitted');
@@ -133,6 +136,7 @@ expect(edge.includes('frontdesk_sessions') && edge.includes('requireSession'), '
 expect(edge.includes('const SESSION_DAYS = 3650') && edge.includes('staff?select=username,role,position,store,active,employment_status'), 'persistent revalidated device session missing');
 expect(edge.includes('availableStores') && edge.includes('请先选择分店'), 'server-side multi-store handling missing');
 expect(edge.includes('today_customer_save') && edge.includes('frontdesk_today_customers'), 'daily reception API missing');
+expect(edge.includes('operation === "today_mark_new_customer"') && edge.includes('async function markNewCustomer') && edge.includes('is_new_customer'), 'new-customer mark API missing');
 expect(edge.includes('service_intent,amount,payment_summary,reception_notes'), 'dashboard must return saved reception amount fields');
 expect(edge.includes('arrival_time') && edge.includes('到店时间无效'), 'validated daily reception time missing');
 expect(edge.includes('reservation_time') && edge.includes('order=arrival_time.asc.nullslast'), 'schedule time sources or ordering missing');
@@ -198,5 +202,6 @@ expect(storeDedupeMigration.includes('unique (store, row_hash)'), 'historical im
 expect(storeDedupeMigration.includes('on conflict (store, row_hash) do nothing'), 'historical import upsert must use the store-scoped key');
 expect(storeDedupeMigration.includes("or coalesce(trim(p_store), '') = ''"), 'historical imports must reject an empty store');
 expect(storeDedupeMigration.includes('from public, anon, authenticated') && storeDedupeMigration.includes('to service_role'), 'store-scoped import RPC must remain service-role only');
+expect(newCustomerMigration.includes('is_new_customer boolean not null default false') && newCustomerMigration.includes('frontdesk_today_customers'), 'new-customer flag migration missing');
 
 console.log('frontdesk tests passed');

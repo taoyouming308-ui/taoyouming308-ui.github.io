@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v432 前台客户中心增强：客户数据表日期筛选 + 新客标记（2026-08-25，本地候选，未部署）
+
+- 客户数据表（`frontdesk.html` 的“客户数据表”视图）新增“日期”筛选框，可按 `visit_date`（历史导入）和 `business_date`（当日接待）精确按日期查找客户；可与姓名/手机号后4位、来源筛选叠加，前后端都做格式校验，不改动来源标签和可编辑字段。
+- 今日预约页点击客户卡打开“客户接待信息”抽屉后，新增红色“新客”按钮；点击即标记该客户为首次到店并保存到 `frontdesk_today_customers.is_new_customer`，再次点击取消。未登记过接待的客户会自动建立一条“已经到店”的独立接待记录；只写前台独立数据，不修改 `customer_profiles` 或美管加收银。
+- 新增迁移 `20260825150000_frontdesk_new_customer_flag.sql`（`is_new_customer boolean not null default false`，读写仍仅 `service_role`）。
+- `frontdesk-api` Edge Function：`dashboard`/`ledger_records` 返回 `is_new_customer`，`ledger_records` 支持 `business_date` 日期过滤，新增 `today_mark_new_customer` 操作（PATCH 已有记录或新建最小接待记录）。
+- `scripts/test-frontdesk.js` 已同步新增断言并通过；`check-version-sync`、`check-release-integrity`、`check-agent-sync-status` 均通过。
+- 尚未执行：Supabase 生产迁移、`frontdesk-api` Edge Function 部署、Git 提交与推送；上线前需先应用迁移并部署函数，否则前端“新客”按钮会返回“不支持的操作”。
+- App version: v432
+
 ## v432 原图同版电子日报与最终确认 Gate（2026-08-24，生产发布）
 
 - 财务上传并审核日报照片后，在“真实资料导入”打开原图与同版电子表格；OpenAI 只预填候选，财务可直接改格，原图不覆盖。

@@ -334,6 +334,55 @@ async function saveTodayCustomer(payload: JsonRecord, session: JsonRecord): Prom
   return { saved: saved[0] };
 }
 
+async function markNewCustomer(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const isNew = payload.is_new_customer === true;
+  const stamp = {
+    is_new_customer: isNew,
+    updated_by: cleanText(session.username, 80),
+    updated_at: new Date().toISOString(),
+  };
+  const id = cleanText(payload.id, 60);
+  if (id) {
+    const response = await rest(`frontdesk_today_customers?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`, {
+      method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(stamp),
+    });
+    if (!response.ok) throw new Error(`新客标记保存失败 (${response.status})`);
+    const saved = await response.json();
+    if (!Array.isArray(saved) || saved.length !== 1) throw new Error("当天接待记录不存在或已变化");
+    return { saved: true, is_new_customer: isNew, reception: saved[0] };
+  }
+  const businessDate = cleanText(payload.business_date, 10);
+  const customerName = cleanText(payload.customer_name, 160);
+  const customerPhone = cleanPhone(payload.customer_phone);
+  const barberName = cleanText(payload.barber_name, 120);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate)) throw new Error("接待日期无效");
+  if (!customerName && !customerPhone) throw new Error("请填写客户姓名或手机号");
+  if (!barberName) throw new Error("请选择发型师");
+  const response = await rest("frontdesk_today_customers", {
+    method: "POST", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      business_date: businessDate,
+      store,
+      customer_name: customerName || "未命名客户",
+      customer_phone: customerPhone,
+      barber_name: barberName,
+      visit_source: "walkin",
+      service_intent: "",
+      reception_notes: "",
+      status: "arrived",
+      is_new_customer: isNew,
+      created_by: cleanText(session.username, 80),
+      updated_by: cleanText(session.username, 80),
+    }),
+  });
+  if (!response.ok) throw new Error(`新客标记保存失败 (${response.status})`);
+  const saved = await response.json();
+  if (!Array.isArray(saved) || !saved.length) throw new Error("新客标记没有保存成功");
+  return { saved: true, is_new_customer: isNew, reception: saved[0] };
+}
+
 function remainingPackageCount(value: unknown, store: string): number {
   const rows = Array.isArray(value) ? value : [];
   return rows.reduce((count, item) => {
@@ -636,16 +685,21 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
   if (!store) throw new Error("请先选择分店");
   const rawPhoneSuffix = cleanText(payload.phone_suffix, 20);
   if (rawPhoneSuffix && !/^\d{4}$/.test(rawPhoneSuffix)) throw new Error("手机号后4位格式错误");
+  const rawDate = cleanText(payload.business_date, 10);
+  if (rawDate && !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) throw new Error("日期格式错误");
   const phoneSuffixFilter = rawPhoneSuffix
     ? `&customer_phone=ilike.${encodeURIComponent(`*${rawPhoneSuffix}`)}`
     : "";
+  const dateFilter = rawDate
+    ? `&visit_date=eq.${encodeURIComponent(rawDate)}`
+    : "";
   const importedPath = withStore(
-    `frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,updated_by,created_at,updated_at&order=visit_date.desc,created_at.desc&limit=1000${phoneSuffixFilter}`,
+    `frontdesk_import_records?select=id,visit_date,customer_name,customer_phone,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,source_file,updated_by,created_at,updated_at&order=visit_date.desc,created_at.desc&limit=1000${phoneSuffixFilter}${dateFilter}`,
     "store",
     store,
   );
   const receptionPath = withStore(
-    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}`,
+    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}${rawDate ? `&business_date=eq.${encodeURIComponent(rawDate)}` : ""}`,
     "store",
     store,
   );
@@ -671,6 +725,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       package_note: row.package_note,
       status: "已导入",
       notes: "",
+      is_new_customer: false,
       source_detail: row.source_file,
       updated_by: row.updated_by,
       created_at: row.created_at,
@@ -694,6 +749,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       status: row.status,
       notes: row.reception_notes,
       visit_source: row.visit_source,
+      is_new_customer: row.is_new_customer === true,
       created_by: row.created_by,
       updated_by: row.updated_by,
       source_detail: "独立接待信息",
@@ -710,6 +766,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
     imported_count: imported.length,
     today_count: reception.length,
     phone_suffix: rawPhoneSuffix,
+    business_date: rawDate,
     original_customer_profiles_untouched: true,
   };
 }
@@ -818,6 +875,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "dashboard") return json(await dashboard(payload, session));
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
+    if (operation === "today_mark_new_customer") return json(await markNewCustomer(payload, session));
     if (operation === "customer_search") return json(await customerSearch(payload, session));
     if (operation === "customer_detail") return json(await customerDetail(payload, session));
     if (operation === "import_rows") return json(await importRows(payload, session));
