@@ -253,7 +253,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     "shop_name",
     store,
   );
-  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
+  const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,shampoo_qualified,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
   const [bookings, services, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
@@ -381,6 +381,56 @@ async function markNewCustomer(payload: JsonRecord, session: JsonRecord): Promis
   const saved = await response.json();
   if (!Array.isArray(saved) || !saved.length) throw new Error("新客标记没有保存成功");
   return { saved: true, is_new_customer: isNew, reception: saved[0] };
+}
+
+async function markShampooQualified(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const id = cleanText(payload.id, 60);
+  if (!id) throw new Error("请先登记当天接待并填写助理");
+  const qualified = payload.shampoo_qualified === true;
+  const response = await rest(`frontdesk_today_customers?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`, {
+    method: "PATCH", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ shampoo_qualified: qualified, updated_by: cleanText(session.username, 80), updated_at: new Date().toISOString() }),
+  });
+  if (!response.ok) throw new Error(`洗发合格标记保存失败 (${response.status})`);
+  const saved = await response.json();
+  if (!Array.isArray(saved) || saved.length !== 1) throw new Error("当天接待记录不存在或已变化");
+  return { saved: true, shampoo_qualified: qualified, reception: saved[0] };
+}
+
+async function shampooQualificationStats(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("月份格式错误，应为 YYYY-MM");
+  const year = Number(month.slice(0, 4));
+  const mon = Number(month.slice(5, 7));
+  if (!year || mon < 1 || mon > 12) throw new Error("月份格式错误，应为 YYYY-MM");
+  const start = `${month}-01`;
+  const next = new Date(Date.UTC(year, mon, 1)).toISOString().slice(0, 10);
+  const path = withStore(
+    `frontdesk_today_customers?select=assistant_name,shampoo_qualified&business_date=gte.${start}&business_date=lt.${next}&order=assistant_name.asc&limit=2000`,
+    "store",
+    store,
+  );
+  const rows = await restRows(path);
+  const map = new Map<string, { total: number; qualified: number }>();
+  for (const row of rows) {
+    const name = cleanText(row.assistant_name, 120);
+    if (!name) continue;
+    const stat = map.get(name) || { total: 0, qualified: 0 };
+    stat.total += 1;
+    if (row.shampoo_qualified === true) stat.qualified += 1;
+    map.set(name, stat);
+  }
+  const stats = Array.from(map.entries()).map(([name, stat]) => ({
+    assistant: name,
+    total: stat.total,
+    qualified: stat.qualified,
+    rate: stat.total > 0 ? Math.round((stat.qualified / stat.total) * 1000) / 10 : 0,
+  })).sort((a, b) => String(a.assistant).localeCompare(String(b.assistant), "zh-CN"));
+  return { month, store, stats };
 }
 
 function remainingPackageCount(value: unknown, store: string): number {
@@ -699,7 +749,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
     store,
   );
   const receptionPath = withStore(
-    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}${rawDate ? `&business_date=eq.${encodeURIComponent(rawDate)}` : ""}`,
+    `frontdesk_today_customers?select=id,business_date,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,shampoo_qualified,created_by,updated_by,created_at,updated_at&order=business_date.desc,arrival_time.desc.nullslast,created_at.desc&limit=1000${phoneSuffixFilter}${rawDate ? `&business_date=eq.${encodeURIComponent(rawDate)}` : ""}`,
     "store",
     store,
   );
@@ -726,6 +776,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       status: "已导入",
       notes: "",
       is_new_customer: false,
+      shampoo_qualified: false,
       source_detail: row.source_file,
       updated_by: row.updated_by,
       created_at: row.created_at,
@@ -750,6 +801,7 @@ async function ledgerRecords(payload: JsonRecord, session: JsonRecord): Promise<
       notes: row.reception_notes,
       visit_source: row.visit_source,
       is_new_customer: row.is_new_customer === true,
+      shampoo_qualified: row.shampoo_qualified === true,
       created_by: row.created_by,
       updated_by: row.updated_by,
       source_detail: "独立接待信息",
@@ -876,12 +928,14 @@ Deno.serve(async (request: Request) => {
     if (operation === "dashboard") return json(await dashboard(payload, session));
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "today_mark_new_customer") return json(await markNewCustomer(payload, session));
+    if (operation === "today_mark_shampoo_qualified") return json(await markShampooQualified(payload, session));
     if (operation === "customer_search") return json(await customerSearch(payload, session));
     if (operation === "customer_detail") return json(await customerDetail(payload, session));
     if (operation === "import_rows") return json(await importRows(payload, session));
     if (operation === "import_batches") return json(await importBatches(session));
     if (operation === "ledger_records") return json(await ledgerRecords(payload, session));
     if (operation === "ledger_record_save") return json(await saveLedgerRecord(payload, session));
+    if (operation === "shampoo_qualification_stats") return json(await shampooQualificationStats(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";
