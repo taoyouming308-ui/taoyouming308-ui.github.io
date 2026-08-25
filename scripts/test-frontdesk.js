@@ -17,6 +17,7 @@ const ledgerEditMigration = fs.readFileSync(path.join(root, 'supabase/migrations
 const ledgerAmountMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260806035941_frontdesk_ledger_amount_fields.sql'), 'utf8');
 const storeDedupeMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820125932_frontdesk_import_store_scoped_dedupe.sql'), 'utf8');
 const newCustomerMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260825150000_frontdesk_new_customer_flag.sql'), 'utf8');
+const newCustomerNoteMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260825160000_frontdesk_new_customer_note.sql'), 'utf8');
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -109,6 +110,8 @@ expect(html.includes("api('ledger_records'") && html.includes('loadLedger') && h
 expect(html.includes("api('ledger_records',payload)") && html.includes('payload.phone_suffix=suffix') && html.includes('payload.business_date=date') && html.includes('phoneSuffixQuery') && html.includes('endsWith(suffix)'), 'ledger phone-suffix and date query flow missing');
 expect(html.includes('id="ledger-date"') && html.includes("$('ledger-date').addEventListener('change'"), 'ledger date filter missing');
 expect(html.includes('id="ledger-search-btn"') && html.includes("$('ledger-search-btn').addEventListener('click'"), 'ledger search button missing');
+expect(html.includes('!date||row.business_date===date'), 'ledger date filter must also filter client-side');
+expect(html.includes('id="today-new-customer-note"') && html.includes("new_customer_note:$('today-new-customer-note').value.trim()"), 'new-customer note field missing');
 expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
 expect(html.includes('id="ledger-amount"') && html.includes('id="ledger-payment-summary"') && html.includes('实际金额（元）') && html.includes('金额说明'), 'ledger amount edit fields missing');
@@ -138,6 +141,7 @@ expect(edge.includes('const SESSION_DAYS = 3650') && edge.includes('staff?select
 expect(edge.includes('availableStores') && edge.includes('请先选择分店'), 'server-side multi-store handling missing');
 expect(edge.includes('today_customer_save') && edge.includes('frontdesk_today_customers'), 'daily reception API missing');
 expect(edge.includes('operation === "today_mark_new_customer"') && edge.includes('async function markNewCustomer') && edge.includes('is_new_customer'), 'new-customer mark API missing');
+expect(edge.includes('new_customer_note'), 'edge function must persist new-customer note');
 expect(edge.includes('service_intent,amount,payment_summary,reception_notes'), 'dashboard must return saved reception amount fields');
 expect(edge.includes('arrival_time') && edge.includes('到店时间无效'), 'validated daily reception time missing');
 expect(edge.includes('reservation_time') && edge.includes('order=arrival_time.asc.nullslast'), 'schedule time sources or ordering missing');
@@ -204,5 +208,6 @@ expect(storeDedupeMigration.includes('on conflict (store, row_hash) do nothing')
 expect(storeDedupeMigration.includes("or coalesce(trim(p_store), '') = ''"), 'historical imports must reject an empty store');
 expect(storeDedupeMigration.includes('from public, anon, authenticated') && storeDedupeMigration.includes('to service_role'), 'store-scoped import RPC must remain service-role only');
 expect(newCustomerMigration.includes('is_new_customer boolean not null default false') && newCustomerMigration.includes('frontdesk_today_customers'), 'new-customer flag migration missing');
+expect(newCustomerNoteMigration.includes('new_customer_note text not null default') && newCustomerNoteMigration.includes('frontdesk_today_customers'), 'new-customer note migration missing');
 
 console.log('frontdesk tests passed');
