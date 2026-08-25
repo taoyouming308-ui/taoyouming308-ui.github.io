@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-25 · 前台客户中心增强：日期筛选 + 新客标记 + 洗发合格率（生产部署）
+
+- 客户数据表新增“日期”筛选框，可按日期精确查找客户（历史导入按 `visit_date`、当日接待按 `business_date`），并与姓名/手机号后4位、来源筛选叠加；前后端都做日期格式校验。
+- 今日预约页客户抽屉新增红色“新客”按钮（`is_new_customer`）与绿色“洗发合格”按钮（`shampoo_qualified`），一键打标签、再点取消；客户数据表里新客客户名字旁显示红色“新客”标签。
+- 新增「洗发合格率」统计页：按月一键统计各助理的洗发次数、合格次数与合格率（百分比，≥80% 绿 / 60~79% 金 / <60% 红）；口径为凡有“助理”的接待记录都算一次洗发。
+- `frontdesk-api` 新增 `today_mark_new_customer`、`today_mark_shampoo_qualified`、`shampoo_qualification_stats` 操作，`ledger_records` 支持 `business_date` 日期过滤；迁移 `20260825150000`（`is_new_customer`）与 `20260825170000`（`shampoo_qualified`）已在生产手动应用。
+- 版本保持 v432（仅前台页面与 Edge Function 变更，未改动主 App `perm-app.html`）。
+
 ## 2026-08-25 · 前台客户中心增强：客户数据表日期筛选 + 新客标记（本地候选，未部署）
 
 - 客户数据表新增“日期”筛选框，可按日期精确查找客户（历史导入按 `visit_date`、当日接待按 `business_date`），可与姓名/手机号后4位、来源筛选叠加；前后端都做日期格式校验，不改变来源标签与可编辑字段。

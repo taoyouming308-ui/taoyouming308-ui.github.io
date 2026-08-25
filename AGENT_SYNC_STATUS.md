@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## v432 前台客户中心增强：客户数据表日期筛选 + 新客标记（2026-08-25，本地候选，未部署）
+## v432 前台客户中心增强：日期筛选 + 新客标记 + 洗发合格率（2026-08-25，生产部署）
 
 - 客户数据表（`frontdesk.html` 的“客户数据表”视图）新增“日期”筛选框，可按 `visit_date`（历史导入）和 `business_date`（当日接待）精确按日期查找客户；可与姓名/手机号后4位、来源筛选叠加，前后端都做格式校验，不改动来源标签和可编辑字段。
 - 今日预约页点击客户卡打开“客户接待信息”抽屉后，新增红色“新客”按钮；点击即标记该客户为首次到店并保存到 `frontdesk_today_customers.is_new_customer`，再次点击取消。未登记过接待的客户会自动建立一条“已经到店”的独立接待记录；只写前台独立数据，不修改 `customer_profiles` 或美管加收银。
@@ -8,6 +8,7 @@
 - `frontdesk-api` Edge Function：`dashboard`/`ledger_records` 返回 `is_new_customer`，`ledger_records` 支持 `business_date` 日期过滤，新增 `today_mark_new_customer` 操作（PATCH 已有记录或新建最小接待记录）。
 - `scripts/test-frontdesk.js` 已同步新增断言并通过；`check-version-sync`、`check-release-integrity`、`check-agent-sync-status` 均通过。
 - 已执行：Git 提交并推送至 `github/main`，前端 `frontdesk.html` 已上线；`frontdesk-api` Edge Function 已部署（`ACTIVE`，version 16），线上实测 `today_mark_new_customer`、`ledger_records`（带 `business_date`）已由“不支持的操作”变为“请重新登录”（新代码已生效）。`is_new_customer` 列已由用户在生产 SQL Editor 手动应用。功能现已端到端可用。
+- 新增「洗发合格」快捷按钮（抽屉内绿色按钮）与「洗发合格率」统计页（按月一键统计各助理合格率百分比）：`today_mark_shampoo_qualified` / `shampoo_qualification_stats` 操作已部署，迁移 `20260825170000_frontdesk_shampoo_qualified.sql`（`shampoo_qualified boolean`）已由用户在生产 SQL Editor 手动应用。
 - App version: v432
 
 ## v432 原图同版电子日报与最终确认 Gate（2026-08-24，生产发布）
