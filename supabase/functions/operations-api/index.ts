@@ -5,8 +5,6 @@ import { parseMonth } from "../_shared/zysyr-date.mjs";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-const DAILY_GRID_MODEL = Deno.env.get("ZYSYR_DAILY_GRID_MODEL") || "gpt-5.6-sol";
 const SESSION_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
@@ -83,16 +81,8 @@ async function sha256Bytes(value: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function bytesBase64(value: Uint8Array): string {
-  let binary = "";
-  for (let offset = 0; offset < value.length; offset += 0x8000) {
-    binary += String.fromCharCode(...value.subarray(offset, offset + 0x8000));
-  }
-  return btoa(binary);
-}
-
 function effectiveCellValue(cell: JsonRecord): number | null {
-  const raw = cell.manual_override ? cell.corrected_numeric : cell.ocr_numeric;
+  const raw = cell.manual_override ? cell.corrected_numeric : null;
   if (raw == null || raw === "") return null;
   const numeric = Number(raw);
   return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric * 100) / 100 : null;
@@ -104,76 +94,6 @@ function safeCellText(value: unknown, max = 120): string {
 
 function normalizedName(value: unknown): string {
   return cleanText(value, 80).replace(/[\s·•._-]+/g, "").toLowerCase();
-}
-
-function dailyGridResponseText(raw: JsonRecord): string {
-  if (typeof raw.output_text === "string") return raw.output_text;
-  const output = Array.isArray(raw.output) ? raw.output as JsonRecord[] : [];
-  for (const item of output) {
-    const content = Array.isArray(item.content) ? item.content as JsonRecord[] : [];
-    for (const part of content) if (cleanText(part.type, 40) === "output_text" && typeof part.text === "string") return part.text;
-  }
-  return "";
-}
-
-function dailyGridJsonSchema(): JsonRecord {
-  return {
-    type: "object", additionalProperties: false,
-    required: ["report_date", "cells", "notes"],
-    properties: {
-      report_date: { type: ["string", "null"] },
-      notes: { type: "string" },
-      cells: {
-        type: "array",
-        items: {
-          type: "object", additionalProperties: false,
-          required: ["section_code", "row_label", "column_code", "value", "ocr_text", "confidence", "bbox"],
-          properties: {
-            section_code: { type: "string", enum: ["stylist", "technician", "product", "summary", "payment"] },
-            row_label: { type: "string" }, column_code: { type: "string" },
-            value: { type: ["number", "null"] }, ocr_text: { type: "string" },
-            confidence: { type: "number", minimum: 0, maximum: 1 },
-            bbox: { type: "array", items: { type: "number" }, minItems: 4, maxItems: 4 },
-          },
-        },
-      },
-    },
-  };
-}
-
-async function extractDailyGrid(bytes: Uint8Array, mime: string): Promise<JsonRecord> {
-  if (!OPENAI_API_KEY) throw new Error("OpenAI 图片识别密钥未配置");
-  const stylistCodes = [...STYLIST_COLUMNS.map((item) => item[0]), "subtotal", "old_count", "new_count", "card_count", "treatment_card_count"];
-  const technicianCodes = [...TECHNICIAN_COLUMNS.map((item) => item[0]), "subtotal"];
-  const prompt = `你正在读取“自由手艺人业绩报表”原始照片。先自动纠正旋转和透视，再逐格抄录；不要推测看不清的数字。只返回 schema 指定的 JSON。
-section_code=stylist：发型师大表的每位员工行、底部小计行。员工 row_label 写姓名；底部项目小计 row_label 固定写“小计”。column_code 只能用 ${stylistCodes.join(",")}。
-section_code=technician：技师大表的每位员工行、底部小计行。column_code 只能用 ${technicianCodes.join(",")}。
-section_code=product：左下产品零售/美甲产品小表，row_label 写姓名或“小计”，column_code 用 normal_product,essence_product,other_product,retail_subtotal,nail,product,subtotal。
-section_code=summary：中下汇总栏，row_label 固定“汇总”，column_code 只能用 ${SUMMARY_COLUMNS.map((item) => item[0]).join(",")}。
-section_code=payment：右下支付栏，row_label 固定“支付”，column_code 只能用 ${PAYMENT_COLUMNS.map((item) => item[0]).join(",")}。
-只返回照片中存在的数值单元格；空白格不要返回。金额和计数都保持原数字。subtotal/小计/实做/现金流/总计必须按原表抄录，不能用你自己计算的结果替代。bbox 使用归一化 [x1,y1,x2,y2]，范围 0 到 1。`;
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: DAILY_GRID_MODEL, store: false,
-      input: [{ role: "user", content: [
-        { type: "input_text", text: prompt },
-        { type: "input_image", image_url: `data:${mime};base64,${bytesBase64(bytes)}`, detail: "high" },
-      ] }],
-      text: { format: { type: "json_schema", name: "zysyr_daily_grid", strict: true, schema: dailyGridJsonSchema() } },
-    }),
-  });
-  const raw = await response.json().catch(() => ({})) as JsonRecord;
-  if (!response.ok) {
-    const error = raw.error && typeof raw.error === "object" ? raw.error as JsonRecord : {};
-    throw new Error(`OpenAI 图片识别失败 (${response.status})：${cleanText(error.message, 300) || "请检查密钥、余额和模型权限"}`);
-  }
-  const text = dailyGridResponseText(raw);
-  if (!text) throw new Error("OpenAI 图片识别没有返回结构化单元格");
-  let parsed: JsonRecord;
-  try { parsed = JSON.parse(text) as JsonRecord; } catch { throw new Error("OpenAI 图片识别结果不是有效 JSON"); }
-  return { parsed, response_id: raw.id || null, model: raw.model || DAILY_GRID_MODEL, usage: raw.usage || null };
 }
 
 type DailyCellSeed = {
@@ -196,19 +116,12 @@ function dailySheetSeeds(extraction: JsonRecord): DailyCellSeed[] {
   const stylistNames = sectionRows("stylist", 10), technicianNames = sectionRows("technician", 8);
   const productNames = sectionRows("product", 4);
   const seeds: DailyCellSeed[] = [];
-  const detectedCell = (section: string, rowLabel: string, columnCode: string): JsonRecord | null => detected.find((cell) =>
-    cleanText(cell.section_code, 30) === section && normalizedName(cell.row_label) === normalizedName(rowLabel)
-      && cleanText(cell.column_code, 80) === columnCode) || null;
   const add = (section: string, rowKey: string, rowLabel: string, columnCode: string, columnLabel: string,
     rowNumber: number, columnNumber: number, role: string) => {
-    const hit = detectedCell(section, rowLabel, columnCode);
-    const numeric = hit && hit.value != null && Number.isFinite(Number(hit.value)) && Number(hit.value) >= 0
-      ? Math.round(Number(hit.value) * 100) / 100 : null;
     seeds.push({ section_code: section, row_key: rowKey, row_label: rowLabel, column_code: columnCode,
       column_label: columnLabel, row_number: rowNumber, column_number: columnNumber, cell_role: role,
-      ocr_text: hit ? safeCellText(hit.ocr_text, 120) : null, ocr_numeric: numeric,
-      confidence: hit && Number.isFinite(Number(hit.confidence)) ? Math.max(0, Math.min(1, Number(hit.confidence))) : null,
-      bbox: hit && Array.isArray(hit.bbox) ? hit.bbox : null, source_method: hit ? "openai_vision" : "blank_template" });
+      ocr_text: null, ocr_numeric: null, confidence: null,
+      bbox: undefined, source_method: "blank_template" });
   };
   stylistNames.forEach((name, rowIndex) => {
     STYLIST_COLUMNS.forEach((column, columnIndex) => add("stylist", `stylist_${rowIndex + 1}`, name,
@@ -1604,6 +1517,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
   if (!response.ok) {
     const error = data && typeof data === "object" ? data as JsonRecord : {};
     const code = cleanText(error.message ?? error.code, 160);
+    const sqlState = cleanText(error.code, 20);
+    console.error("finance rpc failed", path, response.status, sqlState);
     if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
     if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
     if (code === "APPROVED_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("已审核日报不能覆盖，必须先走冲销流程");
@@ -1615,6 +1530,12 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
+    if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "22003") throw new Error("图片中存在超出单元格允许范围的数字，已停止保存候选草稿");
+    if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "23514") {
+      const constraint = code.match(/constraint \"([a-z0-9_]+)\"/i)?.[1] || "unknown_check";
+      throw new Error(`图片候选单元格未通过数据库格式校验（${constraint}），已停止保存草稿`);
+    }
+    if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "23505") throw new Error("图片候选中存在重复单元格，已停止保存草稿");
     if (code === "APPROVED_VOUCHER_NOT_FOUND") throw new Error("凭证尚未人工审核通过或不属于当前门店");
     if (code === "APPROVED_VOUCHER_REQUIRED") throw new Error("每笔正式财务记录必须关联已审核凭证");
     if (code === "PAYMENT_EXCEEDS_EXPENSE") throw new Error("本次付款会超过支出金额");
@@ -2163,36 +2084,60 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   return { draft, cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     original_image_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
     original_filename: voucher.original_filename, image_url_expires_in: 300,
-    model_candidates_only: true, final_confirmation_required: true, meiguanjia_used: false };
+    manual_entry_only: true, ai_values_excluded: true, final_confirmation_required: true, meiguanjia_used: false };
 }
 
 async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) {
-    throw new Error("只有当前门店财务账号可以识别日报图片");
+    throw new Error("只有当前门店财务账号可以创建电子日报");
   }
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText(payload.report_date, 10);
   const voucherId = uuidValue(payload.voucher_id, "请选择已审核日报原图"), reason = cleanText(payload.reason, 500);
-  if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和识别原因");
-  const voucher = await approvedDailyVoucher(companyId, storeId, voucherId);
+  if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和建表原因");
+  await approvedDailyVoucher(companyId, storeId, voucherId);
   const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&source_voucher_id=eq.${voucherId}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
   if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
-  const bytes = await voucherImageBytes(voucher), mime = cleanText(voucher.mime_type, 80);
-  const extraction = await extractDailyGrid(bytes, mime);
+  const employees = await restRowsAll(`zysyr_employees?select=name,position,employee_code&company_id=eq.${companyId}&store_id=eq.${storeId}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
+  const nameSeeds: JsonRecord[] = [];
+  for (const employee of employees) {
+    const position = cleanText(employee.position, 120), name = safeCellText(employee.name, 80);
+    if (!name) continue;
+    if (/技师|技工|助理/.test(position)) nameSeeds.push({ section_code: "technician", row_label: name, column_code: "subtotal", value: null });
+    else if (/发型师|设计师|店长/.test(position)) nameSeeds.push({ section_code: "stylist", row_label: name, column_code: "subtotal", value: null });
+  }
+  const extraction: JsonRecord = { parsed: { report_date: reportDate, notes: "人工逐格填写空白日报模板", cells: nameSeeds },
+    response_id: null, model: "manual-entry-v1", usage: null };
+  return saveDailySheetExtraction({ companyId, storeId, actorId, reportDate, voucherId, reason,
+    extraction, provider: "manual-entry" });
+}
+
+async function saveDailySheetExtraction(input: {
+  companyId: string; storeId: string; actorId: string; reportDate: string; voucherId: string;
+  reason: string; extraction: JsonRecord; provider?: string;
+}): Promise<JsonRecord> {
+  const { companyId, storeId, actorId, reportDate, voucherId, reason, extraction } = input;
   const parsed = extraction.parsed as JsonRecord;
   const detectedDate = cleanText(parsed.report_date, 10);
   const saved = await financeRpcSaved("rpc/zysyr_create_daily_sheet_draft", {
     p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId,
     p_report_date: reportDate, p_source_voucher_id: voucherId,
-    p_ocr_provider: "openai-responses-vision", p_ocr_model: cleanText(extraction.model, 120) || DAILY_GRID_MODEL,
-    p_ocr_raw_result: { response_id: extraction.response_id, model: extraction.model, usage: extraction.usage,
-      report_date: parsed.report_date ?? null, notes: cleanText(parsed.notes, 2000), detected_cell_count: Array.isArray(parsed.cells) ? parsed.cells.length : 0 },
+    p_ocr_provider: cleanText(input.provider, 120) || "manual-entry",
+    p_ocr_model: cleanText(extraction.model, 120) || "manual-entry-v1",
+    p_ocr_raw_result: { source: "employee_master_and_blank_template", ai_recognition_enabled: false,
+      report_date: parsed.report_date ?? null, notes: cleanText(parsed.notes, 2000),
+      seeded_row_count: Array.isArray(parsed.cells) ? parsed.cells.length : 0 },
     p_cells: dailySheetSeeds(extraction), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
   return { ...result, detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
+}
+
+async function importDailySheetExtraction(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  void payload; void session;
+  throw new Error("日报AI候选导入已停用；请对照原图人工填写电子表格");
 }
 
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -2224,7 +2169,7 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) throw new Error("只有财务账号可以最终确认电子日报");
   const store = await selectedStoreInfo(session, payload), companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const actorId = cleanText(session.auth_account_id, 40), draftId = uuidValue(payload.draft_id, "电子日报草稿无效"), reason = cleanText(payload.reason, 500);
-  if (!reason) throw new Error("最终确认必须填写复核说明");
+  if (!reason || payload.reviewed_all !== true) throw new Error("最终确认前必须逐格核对原图并填写复核说明");
   const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
@@ -2275,7 +2220,9 @@ async function importCenter(payload: JsonRecord, session: JsonRecord): Promise<J
     batchFilter==="()"?[]:restRowsAll(`zysyr_import_conflicts?select=id,import_batch_id,conflict_type,existing_entity_type,existing_entity_id,details,resolution_status,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=created_at.desc&limit=2000`,2000),
     batchFilter==="()"?[]:restRowsAll(`zysyr_reconciliation_reports?select=id,import_batch_id,daily_report_id,status,source_row_count,business_row_count,source_amount,business_amount,delta,generated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=in.${batchFilter}&order=generated_at.desc&limit=1000`,1000),
   ]);
-  return {month,batches,vouchers,daily_reports:dailyReports,drafts,conflicts,reconciliations,permissions:{import:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")},daily_grid_provider_configured:Boolean(OPENAI_API_KEY),daily_grid_model:DAILY_GRID_MODEL,meiguanjia_used:false};
+  return {month,batches,vouchers,daily_reports:dailyReports,drafts,conflicts,reconciliations,
+    permissions:{import:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")},
+    manual_entry_only:true,ai_recognition_enabled:false,meiguanjia_used:false};
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -2375,6 +2322,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "question_respond") return json(await respondQuestion(payload, session));
     if (operation === "import_center") return json(await importCenter(payload, session));
     if (operation === "daily_sheet_create") return json(await createDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_import_candidates") return json(await importDailySheetExtraction(payload, session));
     if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
