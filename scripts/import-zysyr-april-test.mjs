@@ -145,6 +145,63 @@ async function uploadDailies(auth) {
   return results;
 }
 
+async function verifyDailies(auth) {
+  const expectedDates = Object.keys(dailyFiles).sort();
+  const closedMondays = ["2026-04-06", "2026-04-13", "2026-04-20", "2026-04-27"];
+  const [month, center] = await Promise.all([
+    api("daily_sheet_month", { store: STORE, month: "2026-04" }, auth),
+    api("import_center", { store: STORE, month: "2026-04" }, auth),
+  ]);
+  const days = Array.isArray(month.days) ? month.days : [];
+  const actualDates = days.map((day) => day.report_date).sort();
+  const sourceVoucherIds = new Set(days.map((day) => day.source_voucher_id).filter(Boolean));
+  const importedVouchers = (center.vouchers || []).filter((voucher) => sourceVoucherIds.has(voucher.id));
+  const missingDates = expectedDates.filter((date) => !actualDates.includes(date));
+  const unexpectedDates = actualDates.filter((date) => !expectedDates.includes(date));
+  const mondayEntries = actualDates.filter((date) => closedMondays.includes(date));
+  const invalidVouchers = importedVouchers.filter((voucher) =>
+    voucher.audit_status !== "approved" || voucher.document_type !== "daily_report"
+  );
+  const ocrStatuses = importedVouchers.reduce((counts, voucher) => {
+    const status = voucher.ocr_status || "none";
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {});
+  const sampleDay = days.find((day) => day.report_date === "2026-04-26") || days[0];
+  const sample = sampleDay?.draft_id
+    ? await api("daily_sheet_read", { store: STORE, draft_id: sampleDay.draft_id }, auth)
+    : null;
+  const result = {
+    store: STORE,
+    expected_daily_count: expectedDates.length,
+    actual_daily_count: days.length,
+    draft_count: days.filter((day) => day.status === "draft").length,
+    confirmed_count: days.filter((day) => day.status === "confirmed").length,
+    missing_dates: missingDates,
+    unexpected_dates: unexpectedDates,
+    monday_entries: mondayEntries,
+    imported_voucher_count: importedVouchers.length,
+    invalid_voucher_count: invalidVouchers.length,
+    ocr_statuses: ocrStatuses,
+    sample: sample ? {
+      report_date: sample.draft?.report_date,
+      draft_status: sample.draft?.status,
+      cell_count: sample.cells?.length || 0,
+      source_voucher_id: sample.draft?.source_voucher_id,
+      original_filename: sample.original_filename,
+      has_original_image_url: Boolean(sample.original_image_url),
+    } : null,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  if (missingDates.length || unexpectedDates.length || mondayEntries.length || invalidVouchers.length
+    || days.length !== expectedDates.length || importedVouchers.length !== expectedDates.length
+    || !sample || sample.cells?.length !== 459 || !sample.original_image_url
+    || importedVouchers.some((voucher) => voucher.ocr_status !== "reviewed")) {
+    fail("4月日报生产逻辑核验未通过");
+  }
+  return result;
+}
+
 if (MODE === "plan") {
   await plan();
 } else {
@@ -156,6 +213,8 @@ if (MODE === "plan") {
   } else if (MODE === "upload-dailies") {
     const results = await uploadDailies(loginResult);
     console.log(JSON.stringify({ completed: true, daily_count: results.length, drafts: results }));
+  } else if (MODE === "verify-dailies") {
+    await verifyDailies(loginResult);
   } else {
     fail(`未知模式：${MODE}`);
   }
