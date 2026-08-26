@@ -870,7 +870,7 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
   const end = endDate.toISOString().slice(0, 10);
   const records = await restRowsAll(
-    `zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,daily_report_id,daily_report_line_id,source_report_cell_id,status,confirmed_by_user_id,confirmed_at,reversed_at,reverse_reason,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&order=transaction_date.desc,created_at.desc&limit=5000`,
+    `zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,voucher_number,recipient,daily_report_id,daily_report_line_id,source_report_cell_id,status,confirmed_by_user_id,confirmed_at,reversed_at,reverse_reason,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&order=transaction_date.desc,created_at.desc&limit=5000`,
     5000,
   );
   const recordIds = records.map((row) => cleanText(row.id, 40)).filter(Boolean);
@@ -902,10 +902,13 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
     ...sourceCells.map((row) => cleanText(row.report_id, 40)),
   ].filter(Boolean)));
   const sourceReports = reportIds.length ? await restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(reportIds)}&limit=5000`, 5000) : [];
+  const openingRows = await restRowsAll(`zysyr_cash_opening_balances?select=amount&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&limit=1`, 1);
+  const openingBalance = openingRows.length ? Number(openingRows[0].amount || 0) : 0;
   return {
     company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
     records, daily_reports: dailyReports, daily_lines: dailyLines, source_cells: sourceCells,
     source_reports: sourceReports, voucher_links: voucherLinks, vouchers, users,
+    opening_balance: openingBalance,
     permissions: { read: true }, source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
   };
 }
@@ -971,6 +974,19 @@ async function recordPettyCash(payload: JsonRecord, session: JsonRecord): Promis
     p_category: cleanText(payload.category, 120), p_summary: cleanText(payload.summary, 500),
     p_amount: amountValue(payload.amount), p_daily_report_line_id: uuidValue(payload.daily_report_line_id, "日报明细无效", true),
     p_voucher_ids: voucherIdValues(payload.voucher_ids), p_reason: reason,
+    p_voucher_number: cleanText(payload.voucher_number, 160) || null, p_recipient: cleanText(payload.recipient, 120) || null,
+  });
+  return { saved };
+}
+
+async function saveCashOpeningBalance(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "expense.create_submit", "只有财务账号可以登记上月结余");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const saved = await financeRpcSaved("rpc/zysyr_upsert_cash_opening_balance", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_month: month, p_amount: amountValue(payload.amount),
   });
   return { saved };
 }
@@ -2587,6 +2603,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "expense_import") return json(await importExpenses(payload, session));
     if (operation === "expense_review") return json(await reviewExpense(payload, session));
     if (operation === "petty_cash_record") return json(await recordPettyCash(payload, session));
+    if (operation === "cash_opening_balance_save") return json(await saveCashOpeningBalance(payload, session));
     if (operation === "expense_payment_confirm") return json(await confirmExpensePayment(payload, session));
     if (operation === "finance_record_reverse") return json(await reverseFinanceRecord(payload, session));
     if (operation === "monthly_generate") return json(await generateMonthlyReport(payload, session));

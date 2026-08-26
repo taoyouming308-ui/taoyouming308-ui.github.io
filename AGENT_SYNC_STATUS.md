@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v446 现金收支表补台账字段与股东追溯（2026-08-26，本地候选未发布）
+
+- 台账新增“凭证编号”“领款人”手工字段：新增行可填凭证编号、领款人，凭证列“＋上传”上传消费凭证；保存后记录带 voucher_number / recipient。
+- 表格左上角新增“上月结余”登记（财务可编辑），结余 = 上月结余 + 存入 - 支出；新增 `cash_opening_balance_save` 接口与 `zysyr_cash_opening_balances` 表。
+- 股东/店长只读可见：`finance-workbench-entry` 对 `can_manage_finance_workbench || can_read_petty_cash_reports` 显示；股东视图隐藏新增/上传/保存/冲销，保留金额溯源与“凭证”打开按钮。
+- 迁移 `20260826183000_zysyr_cash_ledger_fields.sql` 增加两个字段与新表，并重写 `zysyr_record_petty_cash`（新增 p_voucher_number、p_recipient）与 `zysyr_upsert_cash_opening_balance`；需 `supabase db push` 与重新部署 `operations-api`。未提交、未推送、未发布。
+- App version: v446
+
 ## v445 财务简化为单张现金收支表（2026-08-26，本地候选未发布）
 
 - “财务”一级页面只保留一张“现金 / 备用金收支记录”表（图片格式），不再有表格外上传卡片与折叠面板：末行为登记行（日期、说明、借方金额=存入、贷方金额=支出、科目下拉、已审核凭证多选），保存调用现有 petty_cash_record。
