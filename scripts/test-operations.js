@@ -99,6 +99,7 @@ expect(!edge.includes('Deno.env.get("MOONSHOT_API_KEY")') && !edge.includes('/ch
 expect(edge.includes('model: "manual-entry-v1"') && edge.includes('provider: "manual-entry"'), 'manual blank-template provider markers missing');
 expect(edge.includes('source_method: "blank_template"') && edge.includes('ocr_numeric: null') && edge.includes('ai_recognition_enabled: false'), 'blank manual seed boundary missing');
 expect(edge.includes('日报AI候选导入已停用') && edge.includes('请对照原图人工填写电子表格'), 'AI candidate import must remain disabled');
+expect(edge.includes('const skipOcr = payload.skip_ocr === true') && edge.includes('manual_review_only: skipOcr'), 'manual daily originals must be able to skip OCR wake');
 expect(edge.includes('payload.reviewed_all !== true'), 'server-side full-image review attestation missing');
 expect(edge.includes('dailySheetSeeds') && edge.includes('staff_value') && edge.includes('payment_cashflow'), 'exact daily template cell mapping missing');
 expect(edge.includes('旧版手工文本导入已停用'), 'unsafe text-only photo import must be disabled');

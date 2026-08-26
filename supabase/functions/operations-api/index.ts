@@ -1548,6 +1548,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const recordId = cleanText(payload.record_id, 100);
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 80);
+  const skipOcr = payload.skip_ocr === true;
   if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
   if (!["unassigned", "report"].includes(recordType)
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
@@ -1603,8 +1604,9 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   }
   const result = await metadata.json();
   const saved = Array.isArray(result) ? result[0] : result;
-  wakeVoucherOcrInBackground(3);
-  return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: true };
+  if (!skipOcr) wakeVoucherOcrInBackground(3);
+  return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: !skipOcr,
+    manual_review_only: skipOcr };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
