@@ -1,5 +1,6 @@
 {
   "imports": {
-    "exceljs": "npm:exceljs@4.4.0"
+    "exceljs": "npm:exceljs@4.4.0",
+    "jszip": "npm:jszip@3.10.1"
   }
 }

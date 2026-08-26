@@ -13,6 +13,8 @@ const reports = fs.readFileSync(path.join(root, 'supabase/migrations/20260813094
 const traceability = fs.readFileSync(path.join(root, 'supabase/migrations/20260813103623_zysyr_report_cell_traceability.sql'), 'utf8');
 const dailySheet = fs.readFileSync(path.join(root, 'supabase/migrations/20260824174500_zysyr_daily_sheet_review_gate.sql'), 'utf8');
 const dailyManualOnly = fs.readFileSync(path.join(root, 'supabase/migrations/20260825161033_zysyr_daily_manual_entry_only.sql'), 'utf8');
+const dailyEditable = fs.readFileSync(path.join(root, 'supabase/migrations/20260826120000_zysyr_daily_sheet_editable_upsert.sql'), 'utf8');
+const docxLineage = fs.readFileSync(path.join(root, 'supabase/migrations/20260826045929_zysyr_v436_docx_and_report_lineage.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -27,16 +29,21 @@ expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'ope
 expect(html.includes('原表月报') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
 expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
+expect(html.includes('data-view="salary-report"') && html.includes('data-view="petty-cash-report"'), 'salary and petty-cash report navigation missing');
+expect(html.indexOf('data-view="daily-report"') < html.indexOf('data-view="salary-report"') && html.indexOf('data-view="salary-report"') < html.indexOf('data-view="petty-cash-report"'), 'salary and petty-cash report navigation order invalid');
+expect(html.includes("api('payroll_center'") && html.includes('工资报表（点击数字查看来源）') && html.includes('完整追溯'), 'read-only salary report or trace entry missing');
+expect(html.includes("api('petty_cash_report'") && html.includes('日报与原表来源') && html.includes('原始凭证'), 'petty-cash report or source trace missing');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('业绩报表（每日）') && html.includes('月度盈亏表（每月）'), 'finance report upload entry missing');
 expect(html.includes('本报表消费凭证（可多选）') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
-expect(html.includes('不进行 AI 识别') && html.includes('全部由财务人工逐格填写'), 'manual-only daily source boundary missing');
+expect(html.includes('不进行 AI 识别') && html.includes('获授权门店账号或财务人工逐格填写'), 'manual-only daily source boundary missing');
 expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
 expect(html.includes("api('daily_sheet_create'") && html.includes("api('daily_sheet_save'") && html.includes("api('daily_sheet_confirm'"), 'daily sheet create/edit/confirm flow missing');
 expect(html.includes('daily-original-image') && html.includes('data-daily-cell') && html.includes('manual-edit'), 'side-by-side original image or editable cell grid missing');
 expect(html.includes('daily-zoom-in') && html.includes('daily-reviewed-all') && html.includes('control-mismatch'), 'manual transcription zoom, attestation, or mismatch marking missing');
 expect(html.includes("api('report_upload'") && html.includes("openPrivate('report_url'") && html.includes("openPrivate('voucher_url'"), 'protected report and evidence flows missing');
 expect(html.includes("api('cell_trace'") && html.includes("api('cell_trace_save'") && html.includes("api('report_cells'"), 'cell-level trace UI flow missing');
+expect(html.includes("api('report_lineage'") && html.includes('data-report-lineage') && html.includes('被哪些月报数字采用'), 'forward/reverse report lineage UI missing');
 expect(html.includes('怎么算出来的') && html.includes('来自哪天、哪一行、谁上传') && html.includes('对应凭证'), 'shareholder trace drawer copy missing');
 expect(html.includes('trace-mismatch') && html.includes('trace-missing_evidence') && html.includes('trace-unlinked'), 'trace exception highlighting missing');
 expect(html.includes('股东视角 · 只读') && html.includes('财务视角 · 可上传'), 'shareholder and finance perspectives missing');
@@ -54,16 +61,23 @@ expect(edge.includes('canUploadReports') && edge.includes('report.upload') && ed
 expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
 expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
 expect(edge.includes('workbookDisplay') && edge.includes('ExcelJS.Workbook') && edge.includes('model.merges'), 'Excel display projection missing');
+expect(edge.includes('docxDisplay') && edge.includes('JSZip.loadAsync') && edge.includes('word/document.xml'), 'DOCX editable-table projection missing');
 expect(edge.includes('formulaPrecedents') && edge.includes('reportCellLabel') && edge.includes('precedent_addresses'), 'cell formula and original-position parsing missing');
 expect(edge.includes('/向里/.test(storeName)') && edge.includes('["向里业绩报表", "业绩报表"]'), 'store-specific performance worksheet selection missing');
 expect(edge.includes('zysyr_register_report_upload') && edge.includes('zysyr_report_cells'), 'transactional report-cell registration missing');
 expect(edge.includes('cellTrace') && edge.includes('saveCellTrace') && edge.includes('zysyr_save_report_cell_trace'), 'cell trace query/save API missing');
+expect(edge.includes('reportLineage') && edge.includes('zysyr_salary_details') && edge.includes('monthly_targets'), 'cross-report lineage API missing');
 expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
 expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');
 expect(edge.includes('recordType === "report"') && edge.includes('rpc/zysyr_register_voucher'), 'report voucher association missing');
 expect(edge.includes('p_sha256: digest') && !edge.includes('sha256: await sha256Bytes(bytes), version: 1'), 'voucher digest or immutable version flow invalid');
 expect(edge.includes('Boolean(cleanText(session.auth_account_id, 40))') && !edge.includes('["shareholder", "finance", "store_manager"].includes'), 'legacy expense role fallback must remain disabled');
 expect(edge.includes('async function submitExpense(') && edge.includes('p_company_id: cleanText(store.company_id, 40)') && edge.includes('p_store_id: cleanText(store.id, 40)'), 'formal expense RPC must bind company/store UUIDs');
+expect(edge.includes('async function pettyCashReport(') && edge.includes('can_read_petty_cash_reports'), 'read-only petty-cash report capability missing');
+const pettyCashReportSource = edge.match(/async function pettyCashReport\([\s\S]*?\n\}/);
+expect(pettyCashReportSource && pettyCashReportSource[0].includes('dashboard.store.read'), 'petty-cash report must require store dashboard permission');
+expect(pettyCashReportSource && pettyCashReportSource[0].includes('company_id=eq.${companyId}&store_id=eq.${storeId}'), 'petty-cash report queries must bind company and store scope');
+expect(pettyCashReportSource && pettyCashReportSource[0].includes('zysyr_voucher_links') && pettyCashReportSource[0].includes('zysyr_report_cells') && pettyCashReportSource[0].includes('zysyr_daily_report_lines'), 'petty-cash report source and voucher lineage missing');
 expect(edge.includes('rpc/zysyr_submit_expense') && !/rest\("zysyr_expense_records"[\s\S]{0,300}method:\s*"POST"/.test(edge), 'expense writes must use the audited database RPC instead of direct table writes');
 const expensePermissionSource = edge.match(/function canWriteExpense\(session: JsonRecord\): boolean \{[\s\S]*?\n\}/);
 expect(expensePermissionSource, 'expense permission function missing');
@@ -91,6 +105,7 @@ expect(edge.includes('旧版手工文本导入已停用'), 'unsafe text-only pho
 
 const denoConfig = JSON.parse(deno);
 expect(denoConfig.imports.exceljs === 'npm:exceljs@4.4.0', 'Excel parser dependency must be pinned');
+expect(denoConfig.imports.jszip === 'npm:jszip@3.10.1', 'DOCX ZIP parser dependency must be pinned');
 
 ['zysyr_stores', 'zysyr_operations_sessions', 'zysyr_expense_records', 'zysyr_voucher_attachments'].forEach((table) => {
   expect(foundation.includes(`alter table public.${table} enable row level security`), `${table} foundation RLS missing`);
@@ -135,5 +150,11 @@ expect(dailySheet.includes('DAILY_SHEET_CONTROL_MISMATCH') && dailySheet.include
 expect(dailySheet.includes("'meiguanjia_used', false"), 'daily confirmation must preserve Meiguanjia boundary');
 expect(dailyManualOnly.includes('when p_cell.manual_override then p_cell.corrected_numeric') && dailyManualOnly.includes('else null::numeric'), 'database totals must use manual values only');
 expect(dailyManualOnly.includes('update public.zysyr_daily_sheet_drafts') && dailyManualOnly.includes('daily_sheet_validation'), 'existing draft validations must be recalculated under manual-only rules');
+expect(dailyEditable.includes("v_has_value := v_item ? 'value'") && dailyEditable.includes('manual_text = v_text_after'), 'manual daily cells must support explicit clear and text persistence');
+expect(dailyEditable.includes('v_section := v_cell.section_code') && dailyEditable.includes('and section_code = v_section and row_key = v_row_key'), 'daily edits must trust database cell identity and update row labels consistently');
+expect(dailyEditable.includes('before_text') && dailyEditable.includes('after_text') && dailyEditable.includes('before_label') && dailyEditable.includes('after_label'), 'daily text and label audit values missing');
+expect(docxLineage.includes('wordprocessingml.document') && docxLineage.includes("report.report_type in ('daily', 'performance', 'salary')"), 'DOCX constraint or salary-to-monthly source boundary missing');
+expect(docxLineage.includes('daily_sheet_version_text_snapshot') && docxLineage.includes("'manual_text', cell.manual_text"), 'confirmed manual text snapshot missing');
+expect(docxLineage.includes('assert_daily_entry_scope') && docxLineage.includes("'daily_report.write'"), 'authorized store daily-entry scope missing');
 
 console.log('operations tests passed: finance-upload-only original report home with cell-level traceability');

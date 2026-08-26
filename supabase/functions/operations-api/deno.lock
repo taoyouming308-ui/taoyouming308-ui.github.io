@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@supabase/functions-js@*": "2.112.3",
     "npm:exceljs@4.4.0": "4.4.0",
+    "npm:jszip@3.10.1": "3.10.1",
     "npm:openai@^4.52.5": "4.104.0"
   },
   "jsr": {
