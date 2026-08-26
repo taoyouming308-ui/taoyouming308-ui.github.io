@@ -887,6 +887,16 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
   ]);
   const voucherIds = Array.from(new Set(voucherLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=5000`, 5000) : [];
+  const reviewRows = voucherIds.length ? await restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,corrected_fields&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${uuidIn(voucherIds)}&order=review_version.desc&limit=10000`, 10000) : [];
+  const voucherNumberByVoucher = new Map<string, string>();
+  for (const review of reviewRows) {
+    const reviewVoucherId = cleanText(review.voucher_id, 40);
+    const corrected: Record<string, unknown> = (review.corrected_fields && typeof review.corrected_fields === "object")
+      ? review.corrected_fields as Record<string, unknown> : {};
+    const docNo = corrected.document_number ? String(corrected.document_number) : "";
+    if (docNo && !voucherNumberByVoucher.has(reviewVoucherId)) voucherNumberByVoucher.set(reviewVoucherId, docNo);
+  }
+  for (const voucher of vouchers) voucher.document_number = voucherNumberByVoucher.get(cleanText(voucher.id, 40)) || "";
   const reportIds = Array.from(new Set([
     ...dailyReports.map((row) => cleanText(row.source_report_id, 40)),
     ...sourceCells.map((row) => cleanText(row.report_id, 40)),
