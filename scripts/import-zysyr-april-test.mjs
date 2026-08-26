@@ -7,6 +7,7 @@ const API = "https://pdssrmpeiuwvxzsgschm.supabase.co/functions/v1/operations-ap
 const KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t";
 const DATA_ROOT = "/Users/a1/Desktop/ZYSYR_Codex_完整交付包_V2.0_含原始资料及4月验收样本/ZYSYR_Codex_完整交付包";
 const DAILY_DIR = path.join(DATA_ROOT, "03_2026年4月真实数据验收样本_日报");
+const BUSINESS_DIR = path.join(DATA_ROOT, "02_原始业务资料附件");
 const STORE = process.env.ZYSYR_IMPORT_STORE || "自由手艺人";
 const USERNAME = process.env.ZYSYR_IMPORT_USERNAME || "ZYSYR";
 const PASSWORD = process.env.ZYSYR_IMPORT_PASSWORD || "";
@@ -41,6 +42,21 @@ const dailyFiles = {
   "2026-04-30": "4F96B571-84A8-4C41-B4FD-C1FBD1F62B6C.jpeg",
 };
 
+const reviewedBusinessEvidence = {
+  "IMG_3726181C-5DB4-42C0-9F72-F6A1F713D3D2.jpeg": {
+    document_type: "purchase", document_date: "2026-04-02", amount: 216,
+    counterparty: "杭州艺尚美容美发用品", document_number: "BDS260402803971195074",
+  },
+  "IMG_40554F09-65E9-4CD1-9664-D42A97EB21D7.jpeg": {
+    document_type: "purchase", document_date: "2026-04-14", amount: 4077,
+    counterparty: "杭汐美学贸易商行", document_number: "XS-2026-04-14-2111",
+  },
+  "IMG_8A630BFD-6219-427A-B3DE-D5C07A7E5929.jpeg": {
+    document_type: "purchase", document_date: "2026-04-03", amount: 54,
+    counterparty: "员工自购物品", document_number: null,
+  },
+};
+
 function fail(message) {
   throw new Error(message);
 }
@@ -63,6 +79,20 @@ async function api(operation, payload = {}, auth = {}) {
   const result = await response.json().catch(() => ({}));
   if (!response.ok) fail(`${operation}: ${result.error || response.status}`);
   return result;
+}
+
+async function apiRetry(operation, payload, auth, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await api(operation, payload, auth);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts || !/\b(502|503|504)\b/.test(String(error?.message || error))) throw error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
+  }
+  throw lastError;
 }
 
 async function login() {
@@ -202,6 +232,66 @@ async function verifyDailies(auth) {
   return result;
 }
 
+async function uploadBusinessEvidence(auth) {
+  const filenames = (await fs.readdir(BUSINESS_DIR)).filter((name) => /\.jpe?g$/i.test(name)).sort();
+  if (filenames.length !== 44) fail(`业务资料应为44张，当前为${filenames.length}张`);
+  const center = await api("voucher_center", { store: STORE, month: new Date().toISOString().slice(0, 7) }, auth);
+  const byHash = new Map((center.vouchers || []).map((voucher) => [voucher.sha256, voucher]));
+  const results = [];
+  for (const sourceName of filenames) {
+    const file = path.join(BUSINESS_DIR, sourceName);
+    const bytes = await fs.readFile(file);
+    const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+    let voucher = byHash.get(digest);
+    if (!voucher) {
+      const uploaded = await api("voucher_upload", {
+        store: STORE,
+        record_type: "unassigned",
+        record_id: "",
+        filename: sourceName,
+        mime_type: "image/jpeg",
+        skip_ocr: true,
+        base64: bytes.toString("base64"),
+        note: `2026年4月逻辑验收 · 原始业务资料附件 · SHA256 ${digest}`,
+      }, auth);
+      voucher = uploaded.saved;
+      byHash.set(digest, voucher);
+    }
+    const reviewed = reviewedBusinessEvidence[sourceName];
+    const decision = reviewed ? "approved" : "rejected";
+    const documentType = reviewed?.document_type || "other";
+    if (voucher.audit_status !== decision || voucher.document_type !== documentType) {
+      await apiRetry("voucher_review", {
+        store: STORE,
+        voucher_id: voucher.id,
+        decision,
+        document_type: documentType,
+        corrected_fields: reviewed ? {
+          document_date: reviewed.document_date,
+          amount: reviewed.amount,
+          counterparty: reviewed.counterparty,
+          document_number: reviewed.document_number,
+          test_period: "2026-04",
+        } : { test_period: "2026-04", source_filename: sourceName },
+        field_confidences: {},
+        report_ids: [],
+        reason: reviewed
+          ? "4月逻辑验收：人工直接查看原图并登记清晰可辨的日期、合计和单据来源；用于追溯链测试，最终金额仍待财务复核。"
+          : "4月逻辑验收：原图已完整留底，但尚未逐张完成人工分类与金额复核；本次退回待审，不进入正式账。",
+      }, auth);
+    }
+    const result = { source_name: sourceName, voucher_id: voucher.id, audit_status: decision,
+      document_type: reviewed?.document_type || "other", sha256: digest };
+    results.push(result);
+    console.log(JSON.stringify(result));
+  }
+  const summary = { completed: true, evidence_count: results.length,
+    approved_for_logic_test: results.filter((item) => item.audit_status === "approved").length,
+    held_for_manual_review: results.filter((item) => item.audit_status === "rejected").length };
+  console.log(JSON.stringify(summary));
+  return results;
+}
+
 if (MODE === "plan") {
   await plan();
 } else {
@@ -215,6 +305,8 @@ if (MODE === "plan") {
     console.log(JSON.stringify({ completed: true, daily_count: results.length, drafts: results }));
   } else if (MODE === "verify-dailies") {
     await verifyDailies(loginResult);
+  } else if (MODE === "upload-business-evidence") {
+    await uploadBusinessEvidence(loginResult);
   } else {
     fail(`未知模式：${MODE}`);
   }
