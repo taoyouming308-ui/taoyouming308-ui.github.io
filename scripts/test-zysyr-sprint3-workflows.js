@@ -43,9 +43,9 @@ expect(api.includes('hasAuthCapability(session, "expense.create_submit")'), 'fin
 
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly report is no longer the default home page');
 expect(page.includes('data-view="finance-workbench" class="finance-workbench-entry hidden"'), 'finance workbench navigation missing');
-expect(page.includes('id="expense-form"') && page.includes('id="petty-cash-form"') && page.includes('id="payment-form"'), 'finance forms missing');
+expect(page.includes('id="finance-ledger-save"') && page.includes('id="ledger-debit"') && page.includes('id="ledger-credit"'), 'finance ledger forms missing');
 expect(page.includes('id="monthly-close-form"'), 'monthly close form missing');
-expect(page.includes('已审核支出凭证（可多选）') && page.includes('已审核付款凭证（可多选）'), 'voucher selection UI missing');
+expect(page.includes('id="ledger-vouchers"') && page.includes('已审核付款凭证（可多选）'), 'voucher selection UI missing');
 expect(!/data-view="revenue"|mgj_service_records/.test(page), 'turnover UI or Meiguanjia source returned');
 
 console.log('ZYSYR_SPRINT3_WORKFLOWS_STATIC_OK');

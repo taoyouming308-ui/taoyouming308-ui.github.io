@@ -56,7 +56,7 @@ expect(api.includes('该文件已上传') && api.includes('相同凭证已经上
 const inlineScripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(inlineScripts.length === 1, 'operations inline script missing or duplicated');
 new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
-expect(page.includes('data-view="upload" class="finance-upload hidden">财务上传</button>'), 'finance-upload navigation missing');
+expect(page.includes('id="finance-open-upload"') && page.includes('id="view-upload"'), 'finance-upload secondary entry missing');
 expect(page.includes('id="view-upload"') && page.includes('财务上传原始凭证'), 'finance-upload voucher page missing');
 expect(page.includes('原图是事实来源') && page.includes('OCR候选与置信度'), 'side-by-side review guidance missing');
 expect(page.includes("api('voucher_center'") && page.includes("api('voucher_review'"), 'voucher-center UI API wiring missing');
