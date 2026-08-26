@@ -29,8 +29,8 @@ expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'ope
 expect(html.includes('原表月报') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
 expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
-expect(html.includes('data-view="salary-report"') && html.includes('data-view="petty-cash-report"'), 'salary and petty-cash report navigation missing');
-expect(html.indexOf('data-view="daily-report"') < html.indexOf('data-view="salary-report"') && html.indexOf('data-view="salary-report"') < html.indexOf('data-view="petty-cash-report"'), 'salary and petty-cash report navigation order invalid');
+expect(html.includes('data-view="salary-report"') && html.includes('id="view-finance-workbench"') && html.includes('petty-cash-report-summary'), 'salary report navigation and finance-workbench petty-cash detail missing');
+expect(html.indexOf('data-view="daily-report"') < html.indexOf('data-view="salary-report"'), 'salary report navigation order invalid');
 expect(html.includes("api('payroll_center'") && html.includes('工资报表（点击数字查看来源）') && html.includes('完整追溯'), 'read-only salary report or trace entry missing');
 expect(html.includes("api('petty_cash_report'") && html.includes('日报与原表来源') && html.includes('原始凭证'), 'petty-cash report or source trace missing');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('工资表（每月）') && html.includes('月度盈亏表（每月）') && !html.includes('业绩报表（每日）'), 'finance report upload entry missing');
