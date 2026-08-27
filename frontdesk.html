@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="451">
+<html lang="zh-CN" data-version="453">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
@@ -44,6 +44,106 @@
     @media(min-width:1200px){.view{padding:30px 36px 48px}.customer-layout{grid-template-columns:390px minmax(0,1fr)}.drawer{width:min(840px,72vw)}}
     @media(max-width:900px){.shell{grid-template-columns:84px minmax(0,1fr)}.brand{min-width:0}.brand h1{font-size:16px}.brand small,.nav-btn b,.scope{display:none}.nav-btn{justify-content:center;padding:12px}.nav-btn span{width:36px;height:36px}.customer-layout{grid-template-columns:300px minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}.history-row{grid-template-columns:90px 1fr 70px}.history-row .staff{display:none}.import-grid{grid-template-columns:1fr}.store-select{max-width:120px}.ledger-toolbar{flex-wrap:wrap}.ledger-toolbar .search-input{width:100%}.ledger-count{margin-left:0}}
     @media(max-width:680px){html,body{overflow:auto}.shell{display:block}.shell header{position:sticky;top:0}.head-status,.head-user{display:none}aside{position:fixed;bottom:0;left:0;right:0;height:74px;z-index:10;padding:8px;background:rgba(17,17,15,.96);border:1px solid var(--line)}nav{grid-template-columns:repeat(4,1fr)}.nav-btn{display:grid;place-items:center;padding:4px;font-size:10px}.nav-btn b{display:block}.nav-btn span{height:30px;width:30px}.view{padding:20px 14px 100px;min-height:calc(100vh - 80px)}.view-head{align-items:flex-start;flex-wrap:wrap}.view-head .actions{width:100%;margin-left:0}.schedule-legend{display:none}.schedule-scroll{max-height:560px}.customer-layout{display:block;height:auto}.search-pane{height:360px;margin-bottom:12px}.detail-pane{min-height:500px}.summary-grid{grid-template-columns:repeat(2,1fr)}.packages{grid-template-columns:1fr}.ledger-table-wrap{max-height:520px}.ledger-filter{flex:1}}
+    @media(max-width:680px){
+      html,body{overscroll-behavior-y:contain}
+      .shell{display:block;min-height:100dvh}
+      .shell header{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:8px 10px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;z-index:12;border-bottom:1px solid var(--line)}
+      .brand{flex:1 1 auto;min-width:0;gap:9px}
+      .brand .mark{width:36px;height:36px;font-size:18px;border-radius:11px}
+      .brand h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .brand small,.head-status,.head-user{display:none}
+      .store-select{order:2;flex:1 1 100%;max-width:none;width:100%;padding:9px 12px;border-radius:10px}
+      header .ghost{flex:0 0 auto;padding:9px 11px;font-size:12px;white-space:nowrap}
+      aside{position:fixed;bottom:0;left:0;right:0;height:calc(62px + env(safe-area-inset-bottom));z-index:10;padding:6px 8px env(safe-area-inset-bottom);background:rgba(17,17,15,.97);border-top:1px solid var(--line);border-right:0}
+      nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;height:100%}
+      .nav-btn{display:grid;place-items:center;padding:4px 2px;font-size:10px;gap:2px;text-align:center}
+      .nav-btn b{display:block;font-weight:700;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .nav-btn span{width:28px;height:28px;font-size:14px}
+      .view{height:auto;min-height:100dvh;padding:18px 12px calc(92px + env(safe-area-inset-bottom));overflow:visible}
+      .view-head{display:flex;align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:14px}
+      .view-head h2{font-size:22px}
+      .view-head p{margin:4px 0 0;font-size:11px;line-height:1.55}
+      .view-head .actions{width:100%;margin-left:0;display:flex;flex-wrap:wrap;gap:8px}
+      .view-head .actions .primary,.view-head .actions .date-input,.view-head .actions .ledger-filter,.view-head .actions select,.view-head .actions button,.view-head .actions input{flex:1 1 130px;min-width:0;width:auto}
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+      .kpi{padding:12px;border-radius:14px}
+      .kpi strong{font-size:22px}
+      .card{border-radius:15px}
+      .card-head{flex-wrap:wrap;padding:12px 13px;gap:8px}
+      .card-head h3{font-size:14px}
+      .card-head small{width:100%;order:2;font-size:10px}
+      .schedule-controls{margin-left:0;order:3;width:100%;justify-content:flex-end}
+      .schedule-legend{display:none}
+      .schedule-scroll{max-height:calc(100dvh - 300px);min-height:280px}
+      .scroll-step{width:42px;height:38px}
+      .customer-layout{display:block;height:auto}
+      .search-pane{height:auto;max-height:42vh;margin-bottom:12px;display:flex;flex-direction:column}
+      .search-box{padding:10px;gap:7px}
+      .result-list{height:auto;max-height:calc(42vh - 66px);overflow:auto}
+      .detail-pane{min-height:0;overflow:visible}
+      .detail-content{padding:14px}
+      .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .summary-box strong{font-size:16px}
+      .packages{grid-template-columns:1fr}
+      .history-row{grid-template-columns:82px minmax(0,1fr) 70px;gap:8px;font-size:11px}
+      .history-row .staff{display:none}
+      .ledger-toolbar{display:grid;grid-template-columns:1fr;gap:9px;padding:12px 13px}
+      .ledger-toolbar .search-input,.ledger-toolbar .date-input,.ledger-toolbar .primary,.ledger-toolbar .ledger-filter,.ledger-toolbar .ghost{width:100%;flex:none;min-width:0}
+      .ledger-count{margin-left:0;text-align:left}
+      .ledger-boundary{display:block;padding:10px 13px;line-height:1.65}
+      .ledger-boundary span{display:block;margin-bottom:5px}
+      .ledger-table-wrap{max-height:none;min-height:0}
+      .import-section-title{display:block}
+      .import-grid{grid-template-columns:1fr;gap:12px}
+      .drop{padding:22px 16px}
+      .import-actions{flex-wrap:wrap;gap:8px}
+      .import-actions .primary{flex:1 1 100%}
+      .notice{font-size:11px;padding:12px}
+      .overlay{justify-content:stretch}
+      .drawer{width:100%;max-width:none;height:100dvh;padding:calc(12px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));border-left:0;border-radius:0}
+      .drawer-head h3{font-size:17px}
+      .drawer-close{width:42px;height:42px}
+      .form-grid{grid-template-columns:1fr;gap:11px}
+      .form-grid .wide{grid-column:auto}
+      .today-summary{grid-template-columns:1fr;gap:7px;padding:12px}
+      .drawer-actions{flex-wrap:wrap;gap:7px}
+      .drawer-actions .primary,.drawer-actions .new-customer-btn,.drawer-actions .shampoo-btn{flex:1 1 120px;padding:11px 10px;font-size:12px}
+      .form-actions{display:flex;gap:8px;margin-top:16px}
+      .form-actions .ghost,.form-actions .primary{flex:1;padding:12px 14px}
+      .form-field input,.form-field select,.form-field textarea,.field input,.field select,.search-input,.date-input,.ledger-filter{padding:12px;font-size:16px}
+      .login{padding:16px}
+      .login-box{padding:24px 18px;border-radius:20px}
+      .login-box h2{font-size:24px;margin:18px 0 4px}
+      .toast{left:14px;right:14px;bottom:calc(82px + env(safe-area-inset-bottom));max-width:none;text-align:center}
+      .mobile-ledger-list{display:grid;gap:10px;padding:12px}
+      .mobile-ledger-card{background:#12120f;border:1px solid var(--line);border-radius:13px;padding:12px}
+      .mobile-ledger-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+      .mobile-ledger-time{color:var(--muted);font-size:11px}
+      .mobile-ledger-name{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:760;flex-wrap:wrap}
+      .mobile-ledger-phone{color:var(--muted);font-size:11px;font-weight:400}
+      .mobile-ledger-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;margin:11px 0 0;padding:0}
+      .mobile-ledger-grid div{min-width:0}
+      .mobile-ledger-grid dt{color:var(--muted);font-size:10px;margin:0 0 2px}
+      .mobile-ledger-grid dd{margin:0;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+      .mobile-ledger-notes{margin-top:9px;padding-top:9px;border-top:1px solid #2a2a25;color:var(--muted);font-size:11px;line-height:1.55}
+      .mobile-ledger-actions{display:flex;gap:8px;margin-top:10px}
+      .mobile-ledger-actions .table-edit,.mobile-ledger-actions .table-shampoo{flex:1;text-align:center;padding:10px 12px;font-size:12px}
+      .mobile-stats-list{display:grid;gap:10px;padding:12px}
+      .mobile-stat-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#12120f;border:1px solid var(--line);border-radius:13px;padding:13px}
+      .mobile-stat-card b{font-size:14px}
+      .mobile-stat-card span{display:block;margin-top:4px;color:var(--muted);font-size:11px}
+      .mobile-stat-card strong{font-size:20px;font-weight:800}
+    }
+    @media(max-width:560px){
+      .brand .mark{width:32px;height:32px;font-size:16px}
+      .brand h1{font-size:14px}
+      .view{padding-left:10px;padding-right:10px}
+      .kpi strong{font-size:20px}
+      .schedule-barber strong{font-size:13px}
+      .history-row{grid-template-columns:76px minmax(0,1fr) 64px}
+      .mobile-ledger-grid{grid-template-columns:1fr}
+      .mobile-ledger-head{align-items:flex-start;flex-direction:column}
+    }
   </style>
 </head>
 <body>
@@ -156,6 +256,7 @@
     var STORE_KEY = 'zysyr-frontdesk-store-v1';
     var state = { session:null, store:'', dashboard:null, todayRows:[], selected:null, importRows:[], importFile:'', ledgerRows:[], ledgerPhoneSuffix:'', ledgerDate:'', ledgerRequest:0, showingAll:false, drawerData:null, view:'today' };
     var $ = function(id){ return document.getElementById(id); };
+    function isMobileView(){ return typeof window!=='undefined' && window.matchMedia && window.matchMedia('(max-width:680px)').matches; }
 
     function esc(value){ return String(value == null ? '' : value).replace(/[&<>'"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]; }); }
     function phone(value){ return String(value || '').replace(/\D/g,'').slice(-20); }
@@ -271,7 +372,8 @@
     function renderResults(rows){if(!rows.length){$('customer-results').innerHTML='<div class="empty"><b>没有查到客户</b>请检查姓名或手机号</div>';return;}$('customer-results').innerHTML=rows.map(function(row,index){return '<button class="result" type="button" data-index="'+index+'"><div class="result-top"><span class="result-name">'+esc(row.name||'未命名客户')+'</span><span class="result-phone">'+esc(row.phone||'无手机号')+'</span></div><div class="result-meta"><span>最近 '+esc(row.last_visit||'—')+'</span><span>'+esc((row.shops||[]).join('、'))+'</span>'+(row.remaining_packages?'<span style="color:var(--gold2)">'+esc(row.remaining_packages)+' 个套餐有余项</span>':'')+'</div></button>';}).join('');$('customer-results').querySelectorAll('.result').forEach(function(button){button.addEventListener('click',function(){var row=rows[Number(button.dataset.index)];$('customer-results').querySelectorAll('.result').forEach(function(el){el.classList.remove('on');});button.classList.add('on');openCustomer(row);});});}
     $('customer-search-btn').addEventListener('click',searchCustomers);$('customer-query').addEventListener('keydown',function(event){if(event.key==='Enter')searchCustomers();});
 
-    async function openCustomer(customer){state.selected=customer;state.showingAll=false;$('customer-detail').innerHTML='<div class="detail-empty">正在读取全部消费与套餐数据…</div>';try{var data=await api('customer_detail',{phone:customer.phone||'',name:customer.name||''});renderCustomer(data,'customer-detail');}catch(e){$('customer-detail').innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
+    async function openCustomer(customer){state.selected=customer;state.showingAll=false;$('customer-detail').innerHTML='<div class="detail-empty">正在读取全部消费与套餐数据…</div>';try{var data=await api('customer_detail',{phone:customer.phone||'',name:customer.name||''});renderCustomer(data,'customer-detail');scrollCustomerDetailIntoView();}catch(e){$('customer-detail').innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
+    function scrollCustomerDetailIntoView(){if(!isMobileView())return;setTimeout(function(){var detail=$('customer-detail');if(detail&&detail.scrollIntoView)detail.scrollIntoView({behavior:'smooth',block:'start'});},80);}
     function renderCustomer(data,targetId,today){
       targetId=targetId||'customer-detail';var target=$(targetId);
       var customer=data.customer||{},summary=data.summary||{},legacy=data.historical_import||{},quality=data.data_quality||{},packages=data.packages||[],timeline=data.timeline||[],shown=state.showingAll?timeline:timeline.slice(0,80),initial=(customer.name||'客').slice(0,1);
@@ -327,9 +429,17 @@
       var rows=state.ledgerRows.filter(function(row){return (source==='all'||row.row_type===source)&&(!date||row.business_date===date)&&ledgerRowMatchesQuery(row,query);});
       $('ledger-count').textContent='显示 '+rows.length+' 条 / 共 '+state.ledgerRows.length+' 条';
       if(!rows.length){$('ledger-table').innerHTML='<div class="empty"><b>没有符合条件的记录</b>可以清空筛选条件后重试</div>';return;}
-      $('ledger-table').innerHTML='<table class="ledger-table"><thead><tr><th>来源</th><th>日期 / 时间</th><th>客户</th><th>手机号</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>金额 / 说明</th><th>状态</th><th>备注</th><th>操作</th></tr></thead><tbody>'+rows.map(function(row){var time=[row.business_date,row.arrival_time].filter(Boolean).join(' '),audit=row.updated_by?('最近修改：'+row.updated_by+(row.updated_at?' · '+new Date(row.updated_at).toLocaleString('zh-CN'):'')).trim():'';return '<tr><td><span class="source-tag '+(row.row_type==='today'?'today':'imported')+'">'+esc(row.source)+'</span></td><td>'+esc(time||'—')+'</td><td><b>'+esc(row.customer_name||'未命名客户')+'</b>'+(row.is_new_customer?' <span class="source-tag new">新客</span>':'')+'</td><td>'+esc(row.customer_phone||'—')+'</td><td>'+esc(row.service_items||'—')+'</td><td>'+esc(row.barber_name||'—')+'</td><td>'+esc(row.technician_name||'—')+'</td><td>'+esc(row.assistant_name||'—')+'</td><td>'+esc(ledgerAmountLabel(row))+'</td><td>'+esc(ledgerStatusLabel(row.status))+'</td><td class="notes">'+esc(row.notes||row.source_detail||'—')+(audit?'<div class="sub">'+esc(audit)+'</div>':'')+'</td><td><button class="table-edit" type="button" data-record="'+esc(row.record_id)+'" data-type="'+esc(row.row_type)+'">编辑</button>'+(row.row_type==='today'?' <button class="table-shampoo'+(row.shampoo_qualified?' on':'')+'" type="button" data-record="'+esc(row.record_id)+'">'+(row.shampoo_qualified?'洗发合格 ✓':'洗发合格')+'</button>':'')+'</td></tr>';}).join('')+'</tbody></table>';
+      if(isMobileView()){$('ledger-table').innerHTML=renderLedgerCards(rows);}
+      else{$('ledger-table').innerHTML='<table class="ledger-table"><thead><tr><th>来源</th><th>日期 / 时间</th><th>客户</th><th>手机号</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>金额 / 说明</th><th>状态</th><th>备注</th><th>操作</th></tr></thead><tbody>'+rows.map(function(row){var time=[row.business_date,row.arrival_time].filter(Boolean).join(' '),audit=row.updated_by?('最近修改：'+row.updated_by+(row.updated_at?' · '+new Date(row.updated_at).toLocaleString('zh-CN'):'')).trim():'';return '<tr><td><span class="source-tag '+(row.row_type==='today'?'today':'imported')+'">'+esc(row.source)+'</span></td><td>'+esc(time||'—')+'</td><td><b>'+esc(row.customer_name||'未命名客户')+'</b>'+(row.is_new_customer?' <span class="source-tag new">新客</span>':'')+'</td><td>'+esc(row.customer_phone||'—')+'</td><td>'+esc(row.service_items||'—')+'</td><td>'+esc(row.barber_name||'—')+'</td><td>'+esc(row.technician_name||'—')+'</td><td>'+esc(row.assistant_name||'—')+'</td><td>'+esc(ledgerAmountLabel(row))+'</td><td>'+esc(ledgerStatusLabel(row.status))+'</td><td class="notes">'+esc(row.notes||row.source_detail||'—')+(audit?'<div class="sub">'+esc(audit)+'</div>':'')+'</td><td><button class="table-edit" type="button" data-record="'+esc(row.record_id)+'" data-type="'+esc(row.row_type)+'">编辑</button>'+(row.row_type==='today'?' <button class="table-shampoo'+(row.shampoo_qualified?' on':'')+'" type="button" data-record="'+esc(row.record_id)+'">'+(row.shampoo_qualified?'洗发合格 ✓':'洗发合格')+'</button>':'')+'</td></tr>';}).join('')+'</tbody></table>';}
       $('ledger-table').querySelectorAll('.table-edit').forEach(function(button){button.addEventListener('click',function(){var row=state.ledgerRows.find(function(item){return String(item.record_id)===String(button.dataset.record)&&item.row_type===button.dataset.type;});if(row)openLedgerForm(row);});});
       $('ledger-table').querySelectorAll('.table-shampoo').forEach(function(button){button.addEventListener('click',async function(){var row=state.ledgerRows.find(function(item){return String(item.record_id)===String(button.dataset.record)&&item.row_type==='today';});if(!row)return;try{await api('today_mark_shampoo_qualified',{id:row.record_id,shampoo_qualified:!row.shampoo_qualified});toast(row.shampoo_qualified?'已取消洗发合格':'已标记洗发合格');await loadLedger();}catch(e){toast(e.message,true);}});});
+    }
+    function renderLedgerCards(rows){
+      return '<div class="mobile-ledger-list">'+rows.map(function(row){
+        var time=[row.business_date,row.arrival_time].filter(Boolean).join(' '),audit=row.updated_by?('最近修改：'+row.updated_by+(row.updated_at?' · '+new Date(row.updated_at).toLocaleString('zh-CN'):'')).trim():'';
+        var field=function(label,value){return '<div><dt>'+esc(label)+'</dt><dd>'+esc(value||'—')+'</dd></div>';};
+        return '<article class="mobile-ledger-card"><div class="mobile-ledger-head"><span class="source-tag '+(row.row_type==='today'?'today':'imported')+'">'+esc(row.source)+'</span><span class="mobile-ledger-time">'+esc(time||'—')+'</span></div><div class="mobile-ledger-name">'+esc(row.customer_name||'未命名客户')+(row.is_new_customer?' <span class="source-tag new">新客</span>':'')+'<span class="mobile-ledger-phone">'+esc(row.customer_phone||'—')+'</span></div><dl class="mobile-ledger-grid">'+field('项目',row.service_items)+field('发型师',row.barber_name)+field('技师',row.technician_name)+field('助理',row.assistant_name)+field('金额 / 说明',ledgerAmountLabel(row))+field('状态',ledgerStatusLabel(row.status))+'</dl><div class="mobile-ledger-notes">'+esc(row.notes||row.source_detail||'—')+(audit?'<div class="sub">'+esc(audit)+'</div>':'')+'</div><div class="mobile-ledger-actions"><button class="table-edit" type="button" data-record="'+esc(row.record_id)+'" data-type="'+esc(row.row_type)+'">编辑</button>'+(row.row_type==='today'?' <button class="table-shampoo'+(row.shampoo_qualified?' on':'')+'" type="button" data-record="'+esc(row.record_id)+'">'+(row.shampoo_qualified?'洗发合格 ✓':'洗发合格')+'</button>':'')+'</div></article>';
+      }).join('')+'</div>';
     }
     function openLedgerForm(row){$('ledger-record-type').value=row.row_type;$('ledger-record-id').value=row.record_id;$('ledger-record-customer').textContent=[row.customer_name,row.customer_phone].filter(Boolean).join(' · ')||'未命名客户';$('ledger-record-source').textContent=row.source||row.row_type;$('ledger-service').value=row.service_items||'';$('ledger-barber').value=row.barber_name||'';$('ledger-technician').value=row.technician_name||'';$('ledger-assistant').value=row.assistant_name||'';$('ledger-amount').value=Number(row.amount)>0?String(Number(row.amount)):'';$('ledger-payment-summary').value=row.payment_summary||'';$('ledger-notes').value=row.notes||'';$('ledger-notes-field').classList.toggle('hidden',row.row_type!=='today');$('ledger-form-overlay').classList.remove('hidden');}
     $('ledger-form').addEventListener('submit',async function(event){event.preventDefault();var btn=$('ledger-save-btn');setBusy(btn,true,'正在保存…');try{await api('ledger_record_save',{row_type:$('ledger-record-type').value,record_id:$('ledger-record-id').value,service_items:$('ledger-service').value.trim(),barber_name:$('ledger-barber').value.trim(),technician_name:$('ledger-technician').value.trim(),assistant_name:$('ledger-assistant').value.trim(),amount:$('ledger-amount').value,payment_summary:$('ledger-payment-summary').value.trim(),notes:$('ledger-notes').value.trim()});closeOverlay('ledger-form-overlay');toast('金额和说明已保存到前台数据表，原始表格和美管加未修改');await Promise.all([loadLedger(),loadDashboard()]);}catch(e){toast(e.message,true);}finally{setBusy(btn,false);}});
@@ -364,7 +474,7 @@
 
     (function(){var now=new Date(),y=now.getFullYear(),m=now.getMonth(),opts=[];for(var i=0;i<12;i++){var d=new Date(y,m-i,1),yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0');opts.push('<option value="'+yy+'-'+mm+'">'+yy+'年'+mm+'月</option>');}$('shampoo-month').innerHTML=opts.join('');})();$('shampoo-stats-btn').addEventListener('click',loadShampooStats);
     async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});renderShampooStats(data);}catch(e){$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
-    function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}
+    function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
     document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
     setInterval(function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();},60000);
     restoreSession();

@@ -136,7 +136,7 @@ expect(!html.includes('SUPABASE_SERVICE_ROLE_KEY'), 'service role key must never
 expect(admin.includes('href="frontdesk.html"'), 'admin entry to frontdesk missing');
 
 expect(manifest.start_url === 'frontdesk.html', 'frontdesk manifest start_url mismatch');
-expect(manifest.display === 'standalone' && manifest.orientation === 'landscape', 'frontdesk iPad PWA settings missing');
+expect(manifest.display === 'standalone' && manifest.orientation === 'any', 'frontdesk mobile PWA settings missing');
 
 expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Function must read service role from environment');
 expect(edge.includes('frontdesk_sessions') && edge.includes('requireSession'), 'protected frontdesk session missing');

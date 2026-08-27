@@ -1,5 +1,10 @@
 # Agent Sync Status
 
+## v453 前台收银中心手机端适配（2026-08-27，已发布）
+- 前端 `frontdesk.html` 四个视图增加移动端断点与触屏布局；客户数据表和洗发合格率在手机端切换为卡片视图，桌面宽表保留。
+- `frontdesk-manifest.json` orientation 由 `landscape` 改为 `any`，支持手机竖屏与横屏；`scripts/test-frontdesk.js` 对应断言同步更新。
+- 仅前端静态页、PWA manifest、测试和版本号；未改动前台查询/辅助接待边界、未写美管加收银数据。App version: v453。
+
 ## v451 日报空白表先建后传原图（2026-08-27，本地候选未发布）
 - 月报表数字点击改为二级页面 `view-cell-trace`：openCellTrace 进入全屏溯源页（来源明细 + 原始凭证），财务显示“去录入”跳转备用金明细；其余追溯抽屉逻辑不变。
 

@@ -1,11 +1,11 @@
 {
   "name": "ZYSYR 前台客户中心",
   "short_name": "前台客户中心",
-  "description": "电脑前台客户查询、到店动态、数据表格与历史消费档案，同时适配 iPad",
+  "description": "电脑前台客户查询、到店动态、数据表格与历史消费档案，适配手机、iPad 和电脑",
   "start_url": "frontdesk.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#0d0d0c",
   "theme_color": "#11110f",
   "icons": [
