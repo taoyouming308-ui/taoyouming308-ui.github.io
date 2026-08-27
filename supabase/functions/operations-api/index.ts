@@ -919,6 +919,68 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 }
 
 
+
+function columnNumberBack(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i += 1) n = n * 26 + text.charCodeAt(i) - 64;
+  return n - 1;
+}
+
+async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "report.lock", "只有财务可以编辑月报金额");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  let reportId = uuidValue(payload.report_id, "月报编号无效", true);
+  const displayData = (payload.display_data && typeof payload.display_data === "object") ? payload.display_data as JsonRecord : null;
+  const cells = Array.isArray(payload.cells) ? payload.cells as JsonRecord[] : [];
+  if (!cells.length) throw new Error("没有可保存的金额修改");
+  if (!reportId) {
+    const ins = await rest("zysyr_report_uploads", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        company_id: companyId, store_id: storeId, report_type: "monthly_profit_loss",
+        report_date: `${month}-01`, template_code: "monthly_manual", template_version: 1,
+        version: 1, status: "draft", original_filename: "手工填写月报", mime_type: "application/json",
+        size_bytes: 0, sha256: `manual-${crypto.randomUUID()}`, display_data: displayData,
+        uploaded_by_user_id: cleanText(session.auth_account_id, 40),
+      }),
+    });
+    const created = await ins.json().catch(() => ({})) as JsonRecord;
+    reportId = cleanText(created.id, 40);
+    if (!reportId) throw new Error("手工月报创建失败");
+  }
+  for (const cell of cells) {
+    const address = cleanText(cell.address, 20);
+    const value = cleanText(cell.value, 100);
+    if (!/^[A-Z]{1,3}[0-9]+$/.test(address)) continue;
+    const letters = address.replace(/[0-9]/g, "").toUpperCase();
+    const rowNumber = Number(address.replace(/[A-Z]/g, ""));
+    const numeric = value === "" ? null : Number(value);
+    const existing = await restRows(`zysyr_report_cells?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
+    if (existing[0]) {
+      await rest(`zysyr_report_cells?company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${existing[0].id}`, {
+        method: "PATCH", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ display_value: value, numeric_value: numeric }),
+      });
+    } else {
+      await rest("zysyr_report_cells", {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          company_id: companyId, store_id: storeId, report_id: reportId, sheet_name: "月报",
+          cell_address: address, row_number: rowNumber, column_number: columnNumberBack(letters) + 1,
+          cell_kind: "input", display_value: value, numeric_value: numeric, label: address,
+        }),
+      });
+    }
+  }
+  return { saved: true, report_id: reportId };
+}
+
+
 async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -2765,6 +2827,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
+    if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
     if (operation === "shareholder_registration_list") return json(await shareholderRegistrationList(payload, session));
     if (operation === "shareholder_registration_review") return json(await shareholderRegistrationReview(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));

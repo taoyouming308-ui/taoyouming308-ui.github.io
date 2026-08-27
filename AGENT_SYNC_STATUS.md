@@ -11,6 +11,15 @@
 - `frontdesk-manifest.json` orientation 由 `landscape` 改为 `any`，支持手机竖屏与横屏；`scripts/test-frontdesk.js` 对应断言同步更新。
 - 仅前端静态页、PWA manifest、测试和版本号；未改动前台查询/辅助接待边界、未写美管加收银数据。App version: v453。
 
+
+## v452 月报表数字可编辑与数字级凭证上传（2026-08-27，本地候选未发布）
+
+- 前端 `renderSheet` 增加 editable 模式：财务视角下数值格渲染为 input（data-monthly-cell + data-r/c），oninput 写回 `state.monthlyEditValues`；月报表页新增“保存金额”按钮（finance-upload 可见）。
+- 保存调用 `monthly_cell_save`：无 report_id 时创建手工月报（monthly_profit_loss draft + display_data），随后按 cell_address upsert `zysyr_report_cells` 的 display_value/numeric_value。
+- 月报表数字点击进入 `view-cell-trace` 二级页；财务显示“上传凭证”，调用 `voucher_upload`（record_type=report）关联月报；股东只读溯源。
+- 仅新增接口与前端交互，不改数据库结构；需重新部署 `operations-api`。未提交、未推送、未发布。
+- App version: v452
+
 ## v451 日报空白表先建后传原图（2026-08-27，本地候选未发布）
 - 月报表数字点击改为二级页面 `view-cell-trace`：openCellTrace 进入全屏溯源页（来源明细 + 原始凭证），财务显示“去录入”跳转备用金明细；其余追溯抽屉逻辑不变。
 
