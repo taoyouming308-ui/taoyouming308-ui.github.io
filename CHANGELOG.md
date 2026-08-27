@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-27 · v449 股东自助注册与老板审核（本地候选，未发布）
+
+- 登录页新增“股东注册”入口：股东填写登录账号、姓名、密码提交，进入待审核，暂不能登录。
+- “经营账号”页新增“待审核股东注册”区，老板可查看申请并通过/拒绝；通过后创建股东账号（全部门店权限），拒绝则作废。
+- 新增迁移 `zysyr_shareholder_registrations`；`operations-api` 新增 `shareholder_register`（公开）、`shareholder_registration_list`、`shareholder_registration_review` 接口。
+- 需重新部署 `operations-api` 与执行数据库迁移；未提交、未推送、未发布。
+- App version: v449
+
 ## 2026-08-27 · v448 月报表股东已阅 + 股东账号创建（本地候选，未发布）
 
 - 月报表顶部新增“股东已阅”区：显示已确认股东名单与时间；股东账号可点“确认已阅”，表示已知晓本月经营情况，同一股东同月只记一次，重复确认更新已阅时间。

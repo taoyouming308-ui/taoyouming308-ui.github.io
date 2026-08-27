@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v449 股东自助注册与老板审核（2026-08-27，本地候选未发布）
+
+- 登录页新增“股东注册”表单（登录账号、姓名、密码、确认密码），提交调用公开接口 `shareholder_register`：用 service role 创建 Supabase Auth 用户（app_metadata zysyr_role=shareholder），并写入 `zysyr_shareholder_registrations`（status=pending）。
+- “经营账号”页新增“待审核股东注册”区：老板通过调用 `shareholder_registration_review`（approved 时复用 `zysyr_admin_complete_shareholder_account` 建号并授权，rejected 时删除 Auth 用户），列表来自 `shareholder_registration_list`。
+- 迁移 `20260827160000_zysyr_shareholder_registrations.sql`；需 `supabase db push` 与重新部署 `operations-api`。
+- 未提交、未推送、未发布。
+- App version: v449
+
 ## v448 月报表股东已阅 + 股东账号创建（2026-08-27，本地候选未发布）
 
 - 月报表 `report-state` 新增“股东已阅”区块：有月报时展示已阅名单（股东姓名 + 时间），股东角色显示“确认已阅”，调用 `report_acknowledge`（仅 `operations_role=shareholder`），写入 `zysyr_report_acknowledgements`，同一股东同月唯一。

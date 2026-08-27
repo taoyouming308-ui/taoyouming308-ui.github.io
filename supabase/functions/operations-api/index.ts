@@ -406,6 +406,111 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
   };
 }
 
+
+async function shareholderRegister(payload: JsonRecord): Promise<JsonRecord> {
+  const username = cleanText(payload.login_name, 80);
+  const displayName = cleanText(payload.display_name, 80);
+  const password = cleanText(payload.password, 200);
+  const scopeType = cleanText(payload.scope_type, 20);
+  const storeId = cleanText(payload.store_id, 40) || null;
+  if (!/^[a-z0-9_一-龥-]{2,40}$/.test(username)) throw new Error("登录名需为2至40位字母、数字、下划线或中文");
+  if (displayName.length < 2 || displayName.length > 80) throw new Error("请填写2至80个字的姓名或称呼");
+  if (password.length < 10 || password.length > 72) throw new Error("密码需为10至72位");
+  if (!["company", "store"].includes(scopeType)) throw new Error("请选择权限范围");
+  if (scopeType === "store" && !storeId) throw new Error("请选择所属门店");
+  let companyId = "";
+  if (storeId) {
+    const rows = await restRows(`zysyr_stores?select=company_id&id=eq.${encodeURIComponent(storeId)}&status=eq.active&limit=1`);
+    companyId = cleanText(rows[0]?.company_id, 40);
+  } else {
+    const rows = await restRows(`zysyr_stores?select=company_id&status=eq.active&limit=1`);
+    companyId = cleanText(rows[0]?.company_id, 40);
+  }
+  if (!companyId) throw new Error("门店信息无效");
+  const existing = await restRows(`zysyr_user_accounts?select=id&company_id=eq.${companyId}&login_name=eq.${encodeURIComponent(username)}&limit=1`);
+  const pending = await restRows(`zysyr_shareholder_registrations?select=id&company_id=eq.${companyId}&login_name=eq.${encodeURIComponent(username)}&status=eq.pending&limit=1`);
+  const legacy = await restRows(`staff?select=id&username=eq.${encodeURIComponent(username)}&limit=1`);
+  if (existing.length || pending.length || legacy.length) throw new Error("该账号已存在，请更换账号");
+  const accountId = crypto.randomUUID();
+  const email = `zysyr_account_${accountId.replaceAll("-", "")}@auth.zysyr.invalid`;
+  const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email, password, email_confirm: true,
+      app_metadata: {
+        zysyr_account_id: accountId, zysyr_company_id: companyId, zysyr_login_name: username,
+        zysyr_role: "shareholder", zysyr_provisioning: "shareholder_self_registration",
+      },
+    }),
+  });
+  if (!authResponse.ok) throw new Error(`账号注册失败 (${authResponse.status})`);
+  const authBody = await authResponse.json() as JsonRecord;
+  const authUser = authBody.id ? authBody : (authBody.user && typeof authBody.user === "object" ? authBody.user as JsonRecord : {});
+  const authUserId = cleanText(authUser.id, 40);
+  if (!authUserId) throw new Error("账号注册未完成");
+  const ins = await rest("zysyr_shareholder_registrations", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      id: accountId, company_id: companyId, login_name: username, display_name: displayName,
+      auth_user_id: authUserId, scope_type: scopeType, store_id: scopeType === "store" ? storeId : null,
+      status: "pending",
+    }),
+  });
+  if (!ins.ok) throw new Error("注册申请保存失败");
+  return { submitted: true, message: "注册申请已提交，等待老板审核" };
+}
+
+async function shareholderRegistrationList(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "finance_account.create")) throw new Error("只有老板或管理员可以审核股东注册");
+  const companyId = cleanText(session.auth_company_id, 40);
+  if (!companyId) throw new Error("无法确认公司范围");
+  const rows = await restRowsAll(`zysyr_shareholder_registrations?select=id,company_id,login_name,display_name,scope_type,store_id,status,requested_at&company_id=eq.${companyId}&status=eq.pending&order=requested_at.desc&limit=500`, 500);
+  return { registrations: rows };
+}
+
+async function shareholderRegistrationReview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "finance_account.create")) throw new Error("只有老板或管理员可以审核股东注册");
+  const companyId = cleanText(session.auth_company_id, 40);
+  const registrationId = cleanText(payload.registration_id, 40);
+  const decision = cleanText(payload.decision, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[0-9a-f-]{36}$/i.test(registrationId) || !["approved", "rejected"].includes(decision)) throw new Error("审核参数无效");
+  const rows = await restRows(`zysyr_shareholder_registrations?select=id,company_id,login_name,display_name,auth_user_id,scope_type,store_id,status&company_id=eq.${companyId}&id=eq.${registrationId}&status=eq.pending&limit=1`);
+  const registration = rows[0];
+  if (!registration) throw new Error("该注册申请不存在或已处理");
+  if (decision === "rejected") {
+    const authUserId = cleanText(registration.auth_user_id, 40);
+    if (authUserId) {
+      await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUserId}`, {
+        method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+    }
+    const upd = await rest(`zysyr_shareholder_registrations?company_id=eq.${companyId}&id=eq.${registrationId}`, {
+      method: "PATCH", headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "rejected", reviewed_by_user_id: cleanText(session.auth_account_id, 40) || null, reviewed_at: new Date().toISOString(), review_reason: reason || null }),
+    });
+    if (!upd.ok) throw new Error("拒绝状态保存失败");
+    return { reviewed: true, decision: "rejected" };
+  }
+  const accountId = crypto.randomUUID();
+  const newAuthUserId = cleanText(registration.auth_user_id, 40);
+  const actorAuthUserId = cleanText(session.auth_user_id, 40);
+  const rpc = await financeRpcSaved("rpc/zysyr_admin_complete_shareholder_account", {
+    p_actor_auth_user_id: actorAuthUserId, p_account_id: accountId, p_auth_user_id: newAuthUserId,
+    p_login_name: cleanText(registration.login_name, 80), p_display_name: cleanText(registration.display_name, 80),
+    p_scope_type: cleanText(registration.scope_type, 20), p_store_id: cleanText(registration.store_id, 40) || null,
+    p_request_id: crypto.randomUUID(),
+  });
+  const upd = await rest(`zysyr_shareholder_registrations?company_id=eq.${companyId}&id=eq.${registrationId}`, {
+    method: "PATCH", headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ status: "approved", reviewed_by_user_id: cleanText(session.auth_account_id, 40) || null, reviewed_at: new Date().toISOString(), review_reason: reason || null }),
+  });
+  if (!upd.ok) throw new Error("通过状态保存失败");
+  return { reviewed: true, decision: "approved", saved: rpc };
+}
+
 async function login(payload: JsonRecord): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
@@ -2598,6 +2703,7 @@ Deno.serve(async (request: Request) => {
   const operation = cleanText(payload.operation, 40);
   try {
     if (operation === "login") return json(await login(payload));
+    if (operation === "shareholder_register") return json(await shareholderRegister(payload));
     if (operation === "logout") return json(await logout(payload));
     const session = await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
@@ -2606,6 +2712,8 @@ Deno.serve(async (request: Request) => {
     }
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
+    if (operation === "shareholder_registration_list") return json(await shareholderRegistrationList(payload, session));
+    if (operation === "shareholder_registration_review") return json(await shareholderRegistrationReview(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));
     if (operation === "service_item_save") return json(await saveServiceItem(payload, session));
     if (operation === "product_save") return json(await saveProduct(payload, session));
