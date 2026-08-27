@@ -14,7 +14,7 @@ expect(migration.includes("'income_record'")&&migration.includes("'source_docume
 for(const operation of ['import_center','photo_daily_import'])expect(api.includes(`operation === "${operation}"`),`${operation} API route missing`);
 expect(api.includes('zysyr-date.mjs')&&api.includes('parseMonth(payload.month)'),'shared month parser missing');
 expect(api.includes('source_kind: "approved_daily_photo_review_grid"')&&api.includes('旧版手工文本导入已停用')&&api.includes('meiguanjia_used: false'),'review-grid photo source boundary missing');
-expect(page.includes('data-view="monthly" class="active"'),'original monthly home changed');expect(page.includes('data-view="import"')&&page.includes('id="view-import"'),'photo import UI missing');expect(page.includes('原图永久保留')&&page.includes('任一差异都会禁止入账'),'review-grid safety copy missing');
+expect(page.includes('data-view="monthly" class="active"'),'original monthly home changed');expect(page.includes('id="daily-open-import"')&&page.includes('id="view-import"'),'photo import UI missing');expect(page.includes('原图永久保留')&&page.includes('任一差异都会禁止入账'),'review-grid safety copy missing');
 const scripts=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];expect(scripts.length===1,'inline script missing');new vm.Script(scripts[0][1],{filename:'operations.html'});
 expect(runtime.includes('DUPLICATE_DAILY_CONFLICT_MISSING')&&runtime.includes('IMPORTED_INCOME_VOUCHER_TRACE_MISSING')&&runtime.includes('IMPORT_CROSS_STORE_WAS_NOT_BLOCKED'),'critical runtime cases missing');
 console.log('ZYSYR_SPRINT7_IMPORT_RECONCILIATION_STATIC_OK');

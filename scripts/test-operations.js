@@ -26,7 +26,7 @@ expect(inlineScripts.length === 1, 'operations inline script missing or duplicat
 new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
-expect(html.includes('原表月报') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
+expect(html.includes('月报表') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
 expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
 expect(html.includes('data-view="salary-report"') && html.includes('id="view-finance-workbench"') && html.includes('petty-cash-report-summary'), 'salary report navigation and finance-workbench petty-cash detail missing');

@@ -108,7 +108,7 @@ expect(api.includes('zysyr_employees?select=') && api.includes('store_id=eq.${cl
 expect(api.includes('zysyr_stores?select=id,company_id,name,code,city,address,status'), 'company store catalog missing');
 
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly report must remain the default home page');
-expect(page.includes('data-view="catalog">基础资料</button>'), 'basic-data navigation missing');
+expect(page.includes('id="view-catalog"') && page.includes('基础资料'), 'basic-data view missing');
 expect(page.includes('data-catalog-tab="employees"') && page.includes('data-catalog-tab="stores"'), 'employee/store catalog tabs missing');
 expect(page.includes("operation:'employee_save'") && page.includes("operation:'store_save'"), 'catalog forms are not wired to employee/store APIs');
 expect(page.includes('停用与离职保留历史，不物理删除'), 'history-preserving UI boundary missing');
