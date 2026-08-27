@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## v451 日报空白表先建后传原图（2026-08-27，本地候选未发布）
+- 月报表数字点击改为二级页面 `view-cell-trace`：openCellTrace 进入全屏溯源页（来源明细 + 原始凭证），财务显示“去录入”跳转备用金明细；其余追溯抽屉逻辑不变。
+
+- 前端“填写日报”表单的“已审核日报原图”改为可选，空提示改为“暂不选择原图，先生成空白表”，并新增“上传日报表原图”按钮（调用 voucher_upload，note=日报表原图，上传后刷新）。
+- 后端 `createDailySheetDraft` 的 voucher_id 改为可选：无原图时不校验 approved voucher，按 report_date 查重；`saveDailySheetExtraction` voucherId 类型改为可空。
+- 迁移 `20260827170000_zysyr_daily_sheet_blank_before_voucher.sql`：`zysyr_daily_sheet_drafts.source_voucher_id` drop not null，并重写 `zysyr_create_daily_sheet_draft` 支持 p_source_voucher_id 为 null。
+- 确认入账仍要求原图留底（不在本次放宽）。需 `supabase db push` 与重新部署 `operations-api`。
+- App version: v451
+
 ## v450 月报表跨期汇总（2026-08-27，本地候选未发布）
 
 - 月报表页新增汇总条：按钮“开启汇总 / 关闭汇总”，预设近 3/6/12 月、全年，以及自定义起止月份。

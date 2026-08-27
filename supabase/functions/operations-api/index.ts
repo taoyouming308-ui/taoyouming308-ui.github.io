@@ -2505,10 +2505,10 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText(payload.report_date, 10);
-  const voucherId = uuidValue(payload.voucher_id, "请选择已审核日报原图"), reason = cleanText(payload.reason, 500);
+  const voucherId = uuidValue(payload.voucher_id, "请选择已审核日报原图", true), reason = cleanText(payload.reason, 500);
   if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和建表原因");
-  await approvedDailyVoucher(companyId, storeId, voucherId);
-  const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&source_voucher_id=eq.${voucherId}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
+  if (voucherId) await approvedDailyVoucher(companyId, storeId, voucherId);
+  const existing = voucherId ? await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&source_voucher_id=eq.${voucherId}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`) : await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=eq.${reportDate}&source_voucher_id=is.null&status=eq.draft&order=created_at.desc&limit=1`);
   if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
   const employees = await restRowsAll(`zysyr_employees?select=name,position,employee_code&company_id=eq.${companyId}&store_id=eq.${storeId}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
   const nameSeeds: JsonRecord[] = [];
@@ -2525,7 +2525,7 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
 }
 
 async function saveDailySheetExtraction(input: {
-  companyId: string; storeId: string; actorId: string; reportDate: string; voucherId: string;
+  companyId: string; storeId: string; actorId: string; reportDate: string; voucherId: string | null;
   reason: string; extraction: JsonRecord; provider?: string; storeName?: string;
 }): Promise<JsonRecord> {
   const { companyId, storeId, actorId, reportDate, voucherId, reason, extraction } = input;
