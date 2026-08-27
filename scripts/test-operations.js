@@ -34,7 +34,7 @@ expect(html.indexOf('data-view="daily-report"') < html.indexOf('data-view="salar
 expect(html.includes("api('payroll_center'") && html.includes('工资报表（点击数字查看来源）') && html.includes('完整追溯'), 'read-only salary report or trace entry missing');
 expect(html.includes("api('petty_cash_report'") && html.includes('日报与原表来源') && html.includes('原始凭证'), 'petty-cash report or source trace missing');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('工资表（每月）') && html.includes('月度盈亏表（每月）') && !html.includes('业绩报表（每日）'), 'finance report upload entry missing');
-expect(html.includes('本报表消费凭证（可多选）') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
+expect(html.includes('报表图片上传') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
 expect(html.includes('不进行 AI 识别') && html.includes('获授权门店账号或财务人工逐格填写'), 'manual-only daily source boundary missing');
 expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
