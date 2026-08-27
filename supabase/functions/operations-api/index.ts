@@ -783,13 +783,34 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       if (Object.prototype.hasOwnProperty.call(traceSummary, status)) (traceSummary as Record<string, number>)[status] += 1;
     }
   }
+  const acknowledgements = await restRowsAll(`zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`, 500);
+  const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
+  const ackUsers = ackUserIds.length ? await restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`) : [];
+  const ackUserMap = new Map(ackUsers.map((account) => [cleanText(account.id, 40), {
+    login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
+  }]));
+  const acknowledgementsWithUsers = acknowledgements.map((row) => ({ ...row, user: ackUserMap.get(cleanText(row.user_id, 40)) || null }));
   return {
     store: cleanText(store.name, 100), month, source_boundary: "finance_uploads_only",
     monthly_report: monthlyReport,
     reports: withEvidence,
     cell_trace_status: cellTraceStatus,
     trace_summary: traceSummary,
+    acknowledgements: acknowledgementsWithUsers,
   };
+}
+
+async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "shareholder") throw new Error("只有股东账号可以确认已阅");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const saved = await financeRpcSaved("rpc/zysyr_acknowledge_report", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_month: month,
+    p_monthly_report_id: uuidValue(payload.monthly_report_id, "月报编号无效", true),
+  });
+  return { saved };
 }
 
 function requireFinanceCapability(session: JsonRecord, capability: string, message: string): void {
@@ -2584,6 +2605,7 @@ Deno.serve(async (request: Request) => {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
     }
     if (operation === "overview") return json(await overview(payload, session));
+    if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));
     if (operation === "service_item_save") return json(await saveServiceItem(payload, session));
     if (operation === "product_save") return json(await saveProduct(payload, session));

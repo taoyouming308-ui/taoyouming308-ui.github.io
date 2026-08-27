@@ -119,7 +119,21 @@
       })});
     }
 
-    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,clear:clear,read:read};
+    async function createShareholderAccount(payload){
+      var value=read();
+      if(!value)value=await restore();
+      if(!value)throw new Error('请重新登录后创建股东账号');
+      return request(base+'/functions/v1/operations-auth-admin',{method:'POST',headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+value.session.access_token},body:JSON.stringify({
+        action:'create_shareholder_account',
+        login_name:clean(payload&&payload.login_name,80),
+        display_name:clean(payload&&payload.display_name,80),
+        password:String(payload&&payload.password==null?'':payload.password),
+        scope_type:clean(payload&&payload.scope_type,20),
+        store_id:clean(payload&&payload.store_id,40)||null
+      })});
+    }
+
+    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,createShareholderAccount:createShareholderAccount,clear:clear,read:read};
   }
 
   global.ZysyrAuthBridge={create:create,storageKey:STORAGE_KEY};

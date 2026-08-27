@@ -291,6 +291,101 @@ async function createFinanceAccount(req: Request, payload: JsonRecord): Promise<
   });
 }
 
+async function createShareholderAccount(req: Request, payload: JsonRecord): Promise<Response> {
+  const token = bearerToken(req);
+  const scope = await authScope(token);
+  const user = scope.user && typeof scope.user === "object" ? scope.user as JsonRecord : {};
+  const actorAuthUserId = cleanText(user.auth_user_id, 40);
+  const companyId = cleanText(user.company_id, 40);
+  if (cleanText(scope.auth_boundary, 80) !== "supabase_auth_rls"
+      || !isUuid(actorAuthUserId)
+      || !isUuid(companyId)
+      || !hasCompanyCapability(scope, "finance_account.create")) {
+    throw new Error("只有已授权管理员可以创建股东账号");
+  }
+  const username = loginName(payload.login_name);
+  const displayName = cleanText(payload.display_name, 80);
+  if (displayName.length < 2) throw new Error("请填写至少2个字的姓名或称呼");
+  const password = passwordValue(payload.password);
+  const scopeType = cleanText(payload.scope_type, 20);
+  const storeId = cleanText(payload.store_id, 40);
+  if (scopeType !== "company" && scopeType !== "store") throw new Error("请选择股东权限范围");
+  if (scopeType === "store" && !isUuid(storeId)) throw new Error("请选择股东所属门店");
+  const stores = Array.isArray(scope.stores) ? scope.stores as JsonRecord[] : [];
+  if (scopeType === "store" && !stores.some((store) => cleanText(store.id, 40) === storeId
+      && cleanText(store.company_id, 40) === companyId
+      && cleanText(store.status, 20) === "active")) {
+    throw new Error("所选门店不在管理员授权范围内");
+  }
+  const [accounts, legacyStaff] = await Promise.all([
+    restRows(`zysyr_user_accounts?select=id,login_name&company_id=eq.${companyId}&limit=1000`),
+    restRows("staff?select=id,username&limit=1000"),
+  ]);
+  if (accounts.some((account) => cleanText(account.login_name, 80).toLocaleLowerCase("zh-CN") === username)
+      || legacyStaff.some((staff) => cleanText(staff.username, 80).toLocaleLowerCase("zh-CN") === username)) {
+    return json({ error: "该账号已存在，请更换账号" }, 409);
+  }
+  const requestId = crypto.randomUUID();
+  const accountId = crypto.randomUUID();
+  const email = `zysyr_account_${accountId.replaceAll("-", "")}@auth.zysyr.invalid`;
+  const authResponse = await serviceFetch("/auth/v1/admin/users", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      app_metadata: {
+        zysyr_account_id: accountId,
+        zysyr_company_id: companyId,
+        zysyr_login_name: username,
+        zysyr_role: "shareholder",
+        zysyr_provisioning: "admin_direct_v1",
+      },
+    }),
+  });
+  if (!authResponse.ok) throw new Error(`auth_admin_create_${authResponse.status}`);
+  const authBody = await authResponse.json() as JsonRecord;
+  const authUser = isUuid(authBody.id) ? authBody : authBody.user && typeof authBody.user === "object" ? authBody.user as JsonRecord : {};
+  const authUserId = cleanText(authUser.id, 40);
+  if (!isUuid(authUserId)) throw new Error("auth_admin_create_invalid_user");
+  let completed: JsonRecord | null = null;
+  try {
+    const rpcResponse = await serviceFetch("/rest/v1/rpc/zysyr_admin_complete_shareholder_account", {
+      method: "POST",
+      body: JSON.stringify({
+        p_actor_auth_user_id: actorAuthUserId,
+        p_account_id: accountId,
+        p_auth_user_id: authUserId,
+        p_login_name: username,
+        p_display_name: displayName,
+        p_scope_type: scopeType,
+        p_store_id: scopeType === "store" ? storeId : null,
+        p_request_id: requestId,
+      }),
+    });
+    if (rpcResponse.ok) completed = await rpcResponse.json() as JsonRecord;
+    else completed = await completedAccount(accountId, authUserId);
+  } catch {
+    completed = await completedAccount(accountId, authUserId).catch(() => null);
+  }
+  if (!completed || cleanText(completed.status, 20) !== "active") {
+    try { await deleteAuthUser(authUserId); } catch (cleanupError) { console.error("operations-auth-admin shareholder cleanup", requestId, cleanText(cleanupError, 100)); }
+    throw new Error("股东账号创建未完成，已安全回滚，请重试");
+  }
+  return json({
+    created: {
+      account_id: cleanText(completed.account_id || completed.id, 40) || accountId,
+      login_name: cleanText(completed.login_name, 80) || username,
+      display_name: cleanText(completed.display_name, 80) || displayName,
+      role: "shareholder",
+      scope_type: cleanText(completed.scope_type, 20) || scopeType,
+      store_id: cleanText(completed.store_id, 40) || null,
+      store_name: cleanText(completed.store_name, 100) || null,
+      status: "active",
+    },
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "仅支持 POST" }, 405);
@@ -307,6 +402,7 @@ Deno.serve(async (req: Request) => {
     const action = cleanText(payload.action, 40);
     if (action === "create_finance_account") return await createFinanceAccount(req, payload);
     if (action === "create_workforce_account") return await createWorkforceAccount(req, payload);
+    if (action === "create_shareholder_account") return await createShareholderAccount(req, payload);
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = cleanText(error instanceof Error ? error.message : error, 300) || "经营账号创建失败";

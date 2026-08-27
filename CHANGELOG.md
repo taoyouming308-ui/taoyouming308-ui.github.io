@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-27 · v448 月报表股东已阅 + 股东账号创建（本地候选，未发布）
+
+- 月报表顶部新增“股东已阅”区：显示已确认股东名单与时间；股东账号可点“确认已阅”，表示已知晓本月经营情况，同一股东同月只记一次，重复确认更新已阅时间。
+- 恢复驾驶舱“经营账号”入口（仅管理员/老板可见），账号角色新增“股东”；股东账号支持全部门店或指定门店权限范围，创建后拥有股东只读能力。
+- 新增迁移：`zysyr_report_acknowledgements`（已阅记录）、`zysyr_acknowledge_report` RPC、`zysyr_admin_complete_shareholder_account` RPC；`overview` 返回已阅名单，新增 `report_acknowledge` 接口，`operations-auth-admin` 与登录桥接支持创建股东账号。
+- 需重新部署 `operations-api` 与 `operations-auth-admin`，并执行数据库迁移；未提交、未推送、未发布。
+- App version: v448
+
+
 ## 2026-08-27 · v447 填写日报并入日报表（本地候选，未发布）
 
 - 左侧导航移除独立“填写日报”菜单；“日报表”月视图新增“填写日报”二级入口，点击进入原图对照人工电子日报填写页，并可返回日报表。

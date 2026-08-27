@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## v448 月报表股东已阅 + 股东账号创建（2026-08-27，本地候选未发布）
+
+- 月报表 `report-state` 新增“股东已阅”区块：有月报时展示已阅名单（股东姓名 + 时间），股东角色显示“确认已阅”，调用 `report_acknowledge`（仅 `operations_role=shareholder`），写入 `zysyr_report_acknowledgements`，同一股东同月唯一。
+- 恢复“经营账号”入口（`.finance-account-admin`，仅管理员显示），角色下拉新增“股东”；股东不绑定员工、权限范围可选全部门店或指定门店，前端路由到 `createShareholderAccount`。
+- 登录桥接新增 `createShareholderAccount`；`operations-auth-admin` 新增 `create_shareholder_account` action 与 `zysyr_admin_complete_shareholder_account` RPC（复用财务账号完成逻辑，role=shareholder，通过 shareholder role 继承只读能力矩阵）。
+- 迁移：`20260827130000_zysyr_report_acknowledgements.sql`、`20260827140000_zysyr_shareholder_account_complete.sql`。需 `supabase db push` 与重新部署 `operations-api`、`operations-auth-admin`。
+- 未提交、未推送、未发布。
+- App version: v448
+
+
 ## v447 填写日报并入日报表（2026-08-27，本地候选未发布）
 
 - 左侧导航删除“填写日报”一级菜单；“日报表”月视图工具栏新增“填写日报”按钮（class import-entry，按 can_import_photo_reports 控制显示），点击进入二级“原图对照人工电子日报”页，页面新增“返回日报表”。
