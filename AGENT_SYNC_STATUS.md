@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## v454 前台收银中心横屏手机适配（2026-08-27，已发布）
+- 补充 `(max-width:900px) and (orientation:landscape) and (max-height:500px)` 断点：横屏手机使用紧凑左栏，时间表、客户档案、表单抽屉按矮屏高度重排。
+- 横屏手机客户数据表和洗发合格率也切换为卡片视图；竖屏与桌面表格逻辑保持不变。
+- 仅前端静态页与版本号，不改动前台查询/辅助接待边界、不写美管加收银数据。App version: v454。
+
+
 ## v453 前台收银中心手机端适配（2026-08-27，已发布）
 - 前端 `frontdesk.html` 四个视图增加移动端断点与触屏布局；客户数据表和洗发合格率在手机端切换为卡片视图，桌面宽表保留。
 - `frontdesk-manifest.json` orientation 由 `landscape` 改为 `any`，支持手机竖屏与横屏；`scripts/test-frontdesk.js` 对应断言同步更新。

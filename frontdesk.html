@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="453">
+<html lang="zh-CN" data-version="454">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
@@ -134,6 +134,37 @@
       .mobile-stat-card span{display:block;margin-top:4px;color:var(--muted);font-size:11px}
       .mobile-stat-card strong{font-size:20px;font-weight:800}
     }
+    @media(max-width:900px) and (orientation:landscape) and (max-height:500px){
+      .shell{grid-template-columns:72px minmax(0,1fr);grid-template-rows:58px minmax(0,1fr)}
+      header{padding:calc(6px + env(safe-area-inset-top)) 12px 6px;gap:10px}
+      .brand .mark{width:32px;height:32px;font-size:16px}
+      .brand h1{font-size:15px}
+      .store-select{max-width:132px}
+      aside{padding:10px 6px calc(8px + env(safe-area-inset-bottom))}
+      nav{gap:5px}
+      .nav-btn{padding:8px 4px}
+      .nav-btn span{width:30px;height:30px}
+      .view{padding:16px 14px 20px}
+      .view-head{margin-bottom:13px;gap:12px}
+      .view-head h2{font-size:23px}
+      .view-head p{font-size:11px}
+      .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+      .kpi{padding:11px}
+      .kpi strong{font-size:20px}
+      .schedule-scroll{max-height:calc(100dvh - 190px);min-height:220px}
+      .customer-layout{grid-template-columns:minmax(250px,320px) minmax(0,1fr)}
+      .history-row{grid-template-columns:86px minmax(0,1fr) 66px}
+      .ledger-table-wrap{max-height:calc(100dvh - 220px)}
+      .drawer{width:min(720px,78vw);max-width:none;height:auto;max-height:calc(100dvh - 24px)}
+      .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .form-grid .wide{grid-column:span 2}
+      .today-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .mobile-ledger-list{display:grid;gap:8px;padding:10px 12px}
+      .mobile-ledger-card{padding:10px 11px}
+      .mobile-ledger-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .mobile-stats-list{display:grid;gap:8px;padding:10px 12px}
+      .mobile-stat-card{padding:11px}
+    }
     @media(max-width:560px){
       .brand .mark{width:32px;height:32px;font-size:16px}
       .brand h1{font-size:14px}
@@ -256,7 +287,7 @@
     var STORE_KEY = 'zysyr-frontdesk-store-v1';
     var state = { session:null, store:'', dashboard:null, todayRows:[], selected:null, importRows:[], importFile:'', ledgerRows:[], ledgerPhoneSuffix:'', ledgerDate:'', ledgerRequest:0, showingAll:false, drawerData:null, view:'today' };
     var $ = function(id){ return document.getElementById(id); };
-    function isMobileView(){ return typeof window!=='undefined' && window.matchMedia && window.matchMedia('(max-width:680px)').matches; }
+    function isMobileView(){ if(typeof window==='undefined'||!window.matchMedia)return false; return window.matchMedia('(max-width:680px), (max-width:900px) and (orientation:landscape) and (max-height:500px)').matches; }
 
     function esc(value){ return String(value == null ? '' : value).replace(/[&<>'"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]; }); }
     function phone(value){ return String(value || '').replace(/\D/g,'').slice(-20); }
@@ -373,7 +404,7 @@
     $('customer-search-btn').addEventListener('click',searchCustomers);$('customer-query').addEventListener('keydown',function(event){if(event.key==='Enter')searchCustomers();});
 
     async function openCustomer(customer){state.selected=customer;state.showingAll=false;$('customer-detail').innerHTML='<div class="detail-empty">正在读取全部消费与套餐数据…</div>';try{var data=await api('customer_detail',{phone:customer.phone||'',name:customer.name||''});renderCustomer(data,'customer-detail');scrollCustomerDetailIntoView();}catch(e){$('customer-detail').innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
-    function scrollCustomerDetailIntoView(){if(!isMobileView())return;setTimeout(function(){var detail=$('customer-detail');if(detail&&detail.scrollIntoView)detail.scrollIntoView({behavior:'smooth',block:'start'});},80);}
+    function isPortraitPhone(){ return typeof window!=='undefined' && window.matchMedia && window.matchMedia('(max-width:680px)').matches; } function scrollCustomerDetailIntoView(){if(!isPortraitPhone())return;setTimeout(function(){var detail=$('customer-detail');if(detail&&detail.scrollIntoView)detail.scrollIntoView({behavior:'smooth',block:'start'});},80);}
     function renderCustomer(data,targetId,today){
       targetId=targetId||'customer-detail';var target=$(targetId);
       var customer=data.customer||{},summary=data.summary||{},legacy=data.historical_import||{},quality=data.data_quality||{},packages=data.packages||[],timeline=data.timeline||[],shown=state.showingAll?timeline:timeline.slice(0,80),initial=(customer.name||'客').slice(0,1);
