@@ -918,6 +918,58 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
   return { saved };
 }
 
+
+async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const startMonth = cleanText(payload.start_month, 7);
+  const endMonth = cleanText(payload.end_month, 7);
+  if (!/^\d{4}-\d{2}$/.test(startMonth) || !/^\d{4}-\d{2}$/.test(endMonth) || startMonth > endMonth) throw new Error("月份范围无效");
+  const months: string[] = [];
+  const cursor = new Date(`${startMonth}-01T00:00:00Z`);
+  const endCursor = new Date(`${endMonth}-01T00:00:00Z`);
+  while (cursor <= endCursor) {
+    months.push(cursor.toISOString().slice(0, 7));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  const endDate = new Date(`${endMonth}-01T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const endStr = endDate.toISOString().slice(0, 10);
+  const rows = await restRowsAll(`zysyr_report_uploads?select=id,report_date,version,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=gte.${startMonth}-01&report_date=lt.${endStr}&order=report_date.desc,version.desc&limit=5000`, 5000);
+  const latest = new Map<string, JsonRecord>();
+  for (const row of rows) {
+    const month = cleanText(row.report_date, 10).slice(0, 7);
+    if (!latest.has(month)) latest.set(month, row);
+  }
+  const ordered = months.map((month) => latest.get(month)).filter(Boolean);
+  if (!ordered.length) return { start_month: startMonth, end_month: endMonth, months: [], display_data: null };
+  const baseDisplay = ordered[0].display_data && typeof ordered[0].display_data === "object" ? ordered[0].display_data as JsonRecord : {};
+  const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
+  for (let i = 1; i < ordered.length; i += 1) {
+    const display = ordered[i].display_data && typeof ordered[i].display_data === "object" ? ordered[i].display_data as JsonRecord : {};
+    const values = Array.isArray(display.values) ? display.values as unknown[] : [];
+    for (let r = 0; r < baseValues.length; r += 1) {
+      const rowArr = baseValues[r] as unknown[];
+      for (let c = 0; c < rowArr.length; c += 1) {
+        const cur = rowArr[c];
+        const other = Array.isArray(values[r]) ? (values[r] as unknown[])[c] : null;
+        const nCur = Number(cur);
+        const nOther = Number(other);
+        if (cur !== null && cur !== "" && other !== null && other !== "" && !Number.isNaN(nCur) && !Number.isNaN(nOther)) {
+          rowArr[c] = nCur + nOther;
+        }
+      }
+    }
+  }
+  return {
+    start_month: startMonth, end_month: endMonth,
+    months: ordered.map((row) => cleanText(row.report_date, 10).slice(0, 7)),
+    display_data: { ...baseDisplay, values: baseValues },
+  };
+}
+
+
 function requireFinanceCapability(session: JsonRecord, capability: string, message: string): void {
   if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, capability)) {
     throw new Error(message);
@@ -2712,6 +2764,7 @@ Deno.serve(async (request: Request) => {
     }
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
+    if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "shareholder_registration_list") return json(await shareholderRegistrationList(payload, session));
     if (operation === "shareholder_registration_review") return json(await shareholderRegistrationReview(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));

@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## v450 月报表跨期汇总（2026-08-27，本地候选未发布）
+
+- 月报表页新增汇总条：按钮“开启汇总 / 关闭汇总”，预设近 3/6/12 月、全年，以及自定义起止月份。
+- 汇总逻辑：`monthly_summary` 读取范围内每月最新版本的月度盈亏表 `display_data`，以首月为模板逐格累加可解析数值，文本栏目保留；前端 `renderSheet(..., noTrace)` 渲染累计表。
+- 仅新增只读接口与前端汇总模式，不改数据库结构；需重新部署 `operations-api` 并推前端。未提交、未推送、未发布。
+- App version: v450
+
 ## v449 股东自助注册与老板审核（2026-08-27，本地候选未发布）
 
 - 登录页新增“股东注册”表单（登录账号、姓名、密码、确认密码），提交调用公开接口 `shareholder_register`：用 service role 创建 Supabase Auth 用户（app_metadata zysyr_role=shareholder），并写入 `zysyr_shareholder_registrations`（status=pending）。
