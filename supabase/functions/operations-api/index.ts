@@ -2476,6 +2476,16 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "SALARY_REVERSE_REQUIRED") throw new Error("该记录已进入已确认工资，请先冲销工资");
     if (code === "PAYROLL_DEPENDENCY_REVERSE_FIRST") throw new Error("该考勤已关联奖罚，请先冲销奖罚记录");
     if (code === "SALARY_TRANSITION_NOT_ALLOWED") throw new Error("工资当前状态不允许执行此操作");
+    if (code === "SALARY_SHEET_LOCKED" || code === "SALARY_SHEET_NOT_DRAFT") throw new Error("工资表已确认锁定，不能直接修改");
+    if (code === "SALARY_ORIGINAL_REPORT_REQUIRED") throw new Error("确认工资前必须先上传并保留原始工资报表");
+    if (code === "SALARY_SHEET_EMPLOYEE_OR_TOTAL_INVALID") throw new Error("工资表存在未绑定员工或实发工资小于零的行，请先核对");
+    if (code === "SALARY_SHEET_DUPLICATE_EMPLOYEE") throw new Error("同一名员工不能在本月工资表中重复出现");
+    if (code === "SALARY_PAID_REVERSAL_REQUIRED") throw new Error("工资已支付，不能直接重开；请先按正式冲销流程处理");
+    if (code === "SALARY_UNLOCK_APPROVER_REQUIRED") throw new Error("只有公司范围管理员可以审批工资修改申请");
+    if (code === "SALARY_UNLOCK_SELF_APPROVAL_FORBIDDEN") throw new Error("申请人不能审批自己的工资修改申请");
+    if (code === "SALARY_UNLOCK_REQUEST_ALREADY_DECIDED") throw new Error("该工资修改申请已处理，不能重复审批");
+    if (code === "SALARY_REVISION_APPROVAL_REQUIRED") throw new Error("请先提交工资修改申请，并等待管理员批准");
+    if (code === "SALARY_SHEET_HISTORY_IMMUTABLE") throw new Error("工资修改历史不可覆盖或删除");
     if (code === "INVENTORY_SCOPE_FORBIDDEN") throw new Error("当前账号没有该门店采购和库存维护权限");
     if (code === "INSUFFICIENT_INVENTORY") throw new Error("当前结存不足，不能消耗、报损或员工自购");
     if (code === "RECEIPT_EXCEEDS_ORDER") throw new Error("累计到货数量不能超过采购数量");
@@ -2609,7 +2619,7 @@ async function payrollCenter(payload: JsonRecord, session: JsonRecord): Promise<
   const employeeFilter = employeeId ? `&employee_id=eq.${employeeId}` : "";
   const [employees, salaries, attendance, checks, penaltyRewards, performance, rules] = await Promise.all([
     restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null${employeeId ? `&id=eq.${employeeId}` : ""}&order=employee_code.asc&limit=1000`, 1000),
-    restRowsAll(`zysyr_salaries?select=id,employee_id,salary_month,version,source_report_id,base_salary,commission_amount,bonus_amount,deduction_amount,social_security,other_adjustment,final_salary,status,generated_at,approved_at,paid_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_month=eq.${start}${employeeFilter}&order=employee_id.asc,version.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_salaries?select=id,employee_id,salary_month,version,source_report_id,source_salary_sheet_id,source_salary_sheet_row_id,base_salary,commission_amount,bonus_amount,deduction_amount,social_security,other_adjustment,final_salary,status,generated_at,approved_at,paid_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_month=eq.${start}${employeeFilter}&order=employee_id.asc,version.desc&limit=3000`, 3000),
     restRowsAll(`zysyr_attendance_records?select=id,employee_id,attendance_date,attendance_type,minutes,note,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&attendance_date=gte.${start}&attendance_date=lt.${end}${employeeFilter}&order=attendance_date.desc,created_at.desc&limit=5000`, 5000),
     restRowsAll(`zysyr_check_records?select=id,employee_id,check_date,check_type,item_name,result,note,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&check_date=gte.${start}&check_date=lt.${end}${employeeFilter}&order=check_date.desc,created_at.desc&limit=5000`, 5000),
     restRowsAll(`zysyr_penalty_reward_records?select=id,employee_id,record_date,record_type,reason,amount,source_type,source_id,status,confirmed_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&record_date=gte.${start}&record_date=lt.${end}${employeeFilter}&order=record_date.desc,created_at.desc&limit=5000`, 5000),
@@ -2644,6 +2654,214 @@ async function payrollCenter(payload: JsonRecord, session: JsonRecord): Promise<
     performance_rule: "hairstylist_only", source_boundary: "finance_uploads_only",
     meiguanjia_used: false,
   };
+}
+
+const SALARY_SHEET_ROW_SELECT = [
+  "id", "sheet_id", "row_number", "employee_id", "position", "employee_name",
+  "base_salary", "seniority_salary", "position_salary", "meal_allowance",
+  "performance_commission", "delivery_card_commission", "overtime_activity_allowance",
+  "supplemental_adjustment", "gross_pay", "product_cost", "late_early_deduction",
+  "shooting_deduction", "leave_deduction", "growth_deduction", "employee_purchase",
+  "employee_social_security", "total_deductions", "net_pay", "notes", "updated_at",
+].join(",");
+
+async function salarySheetData(companyId: string, storeId: string, sheetId: string): Promise<JsonRecord> {
+  const sheets = await restRows(`zysyr_salary_sheet_drafts?select=id,salary_month,version,supersedes_sheet_id,revision_request_id,status,edit_revision,confirmed_by_user_id,confirmed_at,confirmation_reason,locked_by_user_id,locked_at,lock_reason,reversed_by_user_id,reversed_at,reverse_reason,created_by_user_id,updated_by_user_id,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${sheetId}&limit=1`);
+  const sheet = sheets[0];
+  if (!sheet) throw new Error("工资电子表不存在或不属于当前门店");
+  const [rows, links, changes, unlockRequests, formalSalaries] = await Promise.all([
+    restRowsAll(`zysyr_salary_sheet_rows?select=${SALARY_SHEET_ROW_SELECT}&company_id=eq.${companyId}&store_id=eq.${storeId}&sheet_id=eq.${sheetId}&order=row_number.asc&limit=300`, 300),
+    restRowsAll(`zysyr_salary_sheet_attachments?select=id,voucher_id,attachment_kind,note,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&sheet_id=eq.${sheetId}&order=linked_at.desc&limit=300`, 300),
+    restRowsAll(`zysyr_salary_sheet_changes?select=id,row_id,revision,field_code,before_text,after_text,before_amount,after_amount,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&sheet_id=eq.${sheetId}&order=changed_at.desc,id.desc&limit=2000`, 2000),
+    restRowsAll(`zysyr_salary_sheet_unlock_requests?select=id,sheet_id,requested_by_user_id,request_reason,requested_at,status,decided_by_user_id,decision_reason,decided_at,consumed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&sheet_id=eq.${sheetId}&order=requested_at.desc&limit=200`, 200),
+    restRowsAll(`zysyr_salaries?select=id,employee_id,salary_month,version,source_salary_sheet_id,source_salary_sheet_row_id,base_salary,commission_amount,bonus_amount,deduction_amount,social_security,other_adjustment,final_salary,status,approved_at,paid_at,reverse_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&source_salary_sheet_id=eq.${sheetId}&order=employee_id.asc,version.desc&limit=1000`, 1000),
+  ]);
+  const voucherIds = [...new Set(links.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean))];
+  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=300`, 300) : [];
+  const actorIds = [...new Set([
+    ...changes.map((change) => cleanText(change.changed_by_user_id, 40)),
+    ...links.map((link) => cleanText(link.linked_by_user_id, 40)),
+    ...unlockRequests.flatMap((request) => [cleanText(request.requested_by_user_id, 40), cleanText(request.decided_by_user_id, 40)]),
+    cleanText(sheet.created_by_user_id, 40), cleanText(sheet.updated_by_user_id, 40),
+    cleanText(sheet.confirmed_by_user_id, 40), cleanText(sheet.locked_by_user_id, 40),
+  ].filter(Boolean))];
+  const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=500`, 500) : [];
+  const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
+  const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
+  const attachments = await Promise.all(vouchers.map(async (voucher) => ({
+    ...voucher, ...(linkMap.get(cleanText(voucher.id, 40)) || {}),
+    uploaded_by_name: actorMap.get(cleanText(voucher.uploaded_by_user_id, 40)) || cleanText(voucher.uploaded_by, 120) || "已授权账号",
+    private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)), url_expires_in: 300,
+  })));
+  const formalSalaryIds = formalSalaries.map((salary) => cleanText(salary.id, 40)).filter(Boolean);
+  const salaryDetails = formalSalaryIds.length ? await restRowsAll(`zysyr_salary_details?select=id,salary_id,line_number,line_type,source_type,source_id,commission_rule_id,source_report_cell_id,amount,note&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_id=in.${uuidIn(formalSalaryIds)}&order=salary_id.asc,line_number.asc&limit=5000`, 5000) : [];
+  const rowMap = new Map(rows.map((row) => [cleanText(row.id, 40), row]));
+  return {
+    sheet, rows, attachments, formal_salaries: formalSalaries, salary_details: salaryDetails,
+    history: changes.map((change) => ({
+      ...change, row_number: rowMap.get(cleanText(change.row_id, 40))?.row_number ?? null,
+      employee_name: rowMap.get(cleanText(change.row_id, 40))?.employee_name ?? "",
+      changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号",
+    })),
+    unlock_requests: unlockRequests.map((request) => ({
+      ...request,
+      requested_by_name: actorMap.get(cleanText(request.requested_by_user_id, 40)) || "已授权账号",
+      decided_by_name: actorMap.get(cleanText(request.decided_by_user_id, 40)) || null,
+    })),
+    original_count: attachments.filter((item) => cleanText(item.attachment_kind, 40) === "original_report").length,
+    template_code: "自由手艺人工资表-21列", manual_entry_only: true,
+    ai_recognition_enabled: false, meiguanjia_used: false,
+  };
+}
+
+function salarySheetPayloadRows(value: unknown): JsonRecord[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 300) throw new Error("工资表行数无效");
+  return value.map((raw) => {
+    const row = raw && typeof raw === "object" ? raw as JsonRecord : {};
+    return {
+      id: uuidValue(row.id, "工资表行编号无效"),
+      employee_id: uuidValue(row.employee_id, "员工编号无效", true),
+      position: cleanText(row.position, 120), employee_name: cleanText(row.employee_name, 160),
+      base_salary: amountValue(row.base_salary ?? 0), seniority_salary: amountValue(row.seniority_salary ?? 0),
+      position_salary: amountValue(row.position_salary ?? 0), meal_allowance: amountValue(row.meal_allowance ?? 0),
+      performance_commission: amountValue(row.performance_commission ?? 0),
+      delivery_card_commission: amountValue(row.delivery_card_commission ?? 0),
+      overtime_activity_allowance: amountValue(row.overtime_activity_allowance ?? 0),
+      supplemental_adjustment: signedAmountValue(row.supplemental_adjustment ?? 0),
+      product_cost: amountValue(row.product_cost ?? 0), late_early_deduction: amountValue(row.late_early_deduction ?? 0),
+      shooting_deduction: amountValue(row.shooting_deduction ?? 0), leave_deduction: amountValue(row.leave_deduction ?? 0),
+      growth_deduction: amountValue(row.growth_deduction ?? 0), employee_purchase: amountValue(row.employee_purchase ?? 0),
+      employee_social_security: amountValue(row.employee_social_security ?? 0), notes: cleanText(row.notes, 1000),
+    };
+  });
+}
+
+async function salarySheetRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollRead(session);
+  if (cleanText(session.operations_role, 40) === "employee") throw new Error("员工账号只能在工资中心查看本人数据");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  let sheetId = cleanText(payload.sheet_id, 40);
+  if (sheetId) uuidValue(sheetId, "工资电子表编号无效");
+  if (!sheetId) {
+    const sheets = await restRowsAll(`zysyr_salary_sheet_drafts?select=id,status,version&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_month=eq.${month}-01&order=version.desc&limit=100`, 100);
+    const current = sheets.find((sheet) => ["draft", "locked"].includes(cleanText(sheet.status, 20))) || sheets[0];
+    sheetId = cleanText(current?.id, 40);
+  }
+  const employees = await restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&order=employee_code.asc,name.asc&limit=1000`, 1000);
+  const writable = cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "salary.write_approve");
+  if (!sheetId) return { month, sheet: null, rows: [], attachments: [], history: [], unlock_requests: [], employees,
+    original_count: 0, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+    permissions: { read: true, write: writable, create: writable, upload_original: writable,
+      confirm_lock: writable, request_unlock: writable, approve_unlock: false } };
+  const data = await salarySheetData(companyId, storeId, sheetId);
+  const sheet = data.sheet as JsonRecord;
+  const isDraft = cleanText(sheet.status, 20) === "draft";
+  const canApprove = cleanText(session.operations_role, 40) === "shareholder" && hasAuthCapability(session, "finance_account.create");
+  return { ...data, month, employees, readonly: !(writable && isDraft), current_user_id: cleanText(session.auth_account_id, 40),
+    permissions: { read: true, write: writable && isDraft, create: writable, upload_original: writable && cleanText(sheet.status, 20) !== "reversed",
+      confirm_lock: writable && isDraft, request_unlock: writable && cleanText(sheet.status, 20) === "locked", approve_unlock: canApprove } };
+}
+
+async function createSalarySheet(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写新建工资表原因");
+  const saved = await financeRpcSaved("rpc/zysyr_create_salary_sheet", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_salary_month: `${month}-01`, p_reason: reason,
+  });
+  return salarySheetRead({ store: cleanText(store.name, 120), month, sheet_id: saved.id }, session);
+}
+
+async function saveSalarySheet(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload), sheetId = uuidValue(payload.sheet_id, "工资电子表编号无效") as string;
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写工资修改原因");
+  await financeRpcSaved("rpc/zysyr_save_salary_sheet", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_sheet_id: sheetId, p_rows: salarySheetPayloadRows(payload.rows), p_reason: reason,
+  });
+  return salarySheetRead({ store: cleanText(store.name, 120), month: parseMonth(payload.month), sheet_id: sheetId }, session);
+}
+
+async function uploadSalarySheetAttachment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requirePayrollWrite(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const sheetId = uuidValue(payload.sheet_id, "请选择需要绑定的电子工资表") as string;
+  const filename = cleanText(payload.filename, 200), mime = cleanText(payload.mime_type, 120);
+  const attachmentKind = cleanText(payload.attachment_kind, 40) || "original_report";
+  const note = cleanText(payload.note, 500) || "上传并绑定原始工资报表";
+  const allowed = ["image/jpeg", "image/png", "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if (!allowed.includes(mime)) throw new Error("原始工资报表支持 JPG、PNG、PDF、XLSX 或 DOCX");
+  if (!filename || !["original_report", "supporting_document", "payment_proof"].includes(attachmentKind)) throw new Error("原始工资附件信息无效");
+  const sheets = await restRows(`zysyr_salary_sheet_drafts?select=id,salary_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${sheetId}&limit=1`);
+  if (!sheets[0] || cleanText(sheets[0].status, 20) === "reversed") throw new Error("工资电子表不存在或已被替代");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始工资附件内容无效"); }
+  if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("原始工资附件必须小于 10MB");
+  const digest = await sha256Bytes(bytes);
+  const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
+  if (duplicates.length) throw new Error(`该原始资料已上传：${cleanText(duplicates[0].original_filename, 200) || "同一文件"}`);
+  const extension = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png"
+    : mime.includes("spreadsheetml") ? "xlsx" : mime.includes("wordprocessingml") ? "docx" : "jpg";
+  const voucherId = crypto.randomUUID(), month = cleanText(sheets[0].salary_month, 10).slice(0, 7);
+  const objectPath = `${companyId}/${storeId}/salary-sheets/${month}/${sheetId}/${voucherId}.${extension}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+    body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`原始工资附件上传失败 (${upload.status})`);
+  const response = await rest("rpc/zysyr_register_salary_sheet_attachment", { method: "POST", body: JSON.stringify({
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId,
+    p_sheet_id: sheetId, p_voucher_id: voucherId, p_object_path: objectPath,
+    p_original_filename: filename, p_mime_type: mime, p_size_bytes: bytes.length,
+    p_sha256: digest, p_attachment_kind: attachmentKind, p_note: note,
+  }) });
+  if (!response.ok) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
+      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    });
+    const error = await response.json().catch(() => ({})) as JsonRecord;
+    const code = cleanText(error.message ?? error.code, 120);
+    if (code === "VOUCHER_DUPLICATE_FILE" || cleanText(error.code, 20) === "23505") throw new Error("相同原始工资资料已经上传，无需重复补传");
+    throw new Error(`原始工资附件登记失败 (${response.status})`);
+  }
+  return { ...(await salarySheetRead({ store: cleanText(store.name, 120), month, sheet_id: sheetId }, session)), attachment_uploaded: true };
+}
+
+async function salarySheetAction(payload: JsonRecord, session: JsonRecord, action: string): Promise<JsonRecord> {
+  const store = await selectedStoreInfo(session, payload), sheetId = uuidValue(payload.sheet_id, "工资电子表编号无效") as string;
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40), reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写操作原因");
+  if (action === "confirm") {
+    requirePayrollWrite(session);
+    await financeRpcSaved("rpc/zysyr_confirm_and_lock_salary_sheet", { p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId, p_sheet_id: sheetId, p_reason: reason });
+  } else if (action === "request_unlock") {
+    requirePayrollWrite(session);
+    await financeRpcSaved("rpc/zysyr_request_salary_sheet_unlock", { p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId, p_sheet_id: sheetId, p_reason: reason });
+  } else if (action === "begin_revision") {
+    requirePayrollWrite(session);
+    const saved = await financeRpcSaved("rpc/zysyr_begin_salary_sheet_revision", { p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId, p_sheet_id: sheetId, p_reason: reason });
+    return salarySheetRead({ store: cleanText(store.name, 120), month: parseMonth(payload.month), sheet_id: saved.id }, session);
+  } else throw new Error("不支持的工资表操作");
+  return salarySheetRead({ store: cleanText(store.name, 120), month: parseMonth(payload.month), sheet_id: sheetId }, session);
+}
+
+async function decideSalarySheetUnlock(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (cleanText(session.operations_role, 40) !== "shareholder" || !hasAuthCapability(session, "finance_account.create")) throw new Error("只有公司范围管理员可以审批工资修改申请");
+  const store = await selectedStoreInfo(session, payload), decision = cleanText(payload.decision, 20), reason = cleanText(payload.reason, 500);
+  if (!["approved", "rejected"].includes(decision) || !reason) throw new Error("请填写审批决定和原因");
+  await financeRpcSaved("rpc/zysyr_decide_salary_sheet_unlock", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_request_id: uuidValue(payload.request_id, "工资修改申请编号无效"), p_decision: decision, p_reason: reason,
+  });
+  return salarySheetRead({ store: cleanText(store.name, 120), month: parseMonth(payload.month), sheet_id: uuidValue(payload.sheet_id, "工资电子表编号无效") }, session);
 }
 
 async function recordAttendance(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3431,6 +3649,14 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_report_review") return json(await reviewDailyReport(payload, session));
     if (operation === "finance_voucher_link") return json(await linkFinanceVoucher(payload, session));
     if (operation === "payroll_center") return json(await payrollCenter(payload, session));
+    if (operation === "salary_sheet_read") return json(await salarySheetRead(payload, session));
+    if (operation === "salary_sheet_create") return json(await createSalarySheet(payload, session));
+    if (operation === "salary_sheet_save") return json(await saveSalarySheet(payload, session));
+    if (operation === "salary_sheet_attachment_upload") return json(await uploadSalarySheetAttachment(payload, session));
+    if (operation === "salary_sheet_confirm_lock") return json(await salarySheetAction(payload, session, "confirm"));
+    if (operation === "salary_sheet_unlock_request") return json(await salarySheetAction(payload, session, "request_unlock"));
+    if (operation === "salary_sheet_revision_begin") return json(await salarySheetAction(payload, session, "begin_revision"));
+    if (operation === "salary_sheet_unlock_decide") return json(await decideSalarySheetUnlock(payload, session));
     if (operation === "attendance_record") return json(await recordAttendance(payload, session));
     if (operation === "check_record") return json(await recordCheck(payload, session));
     if (operation === "penalty_reward_record") return json(await recordPenaltyReward(payload, session));

@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260828030414_zysyr_daily_calendar_editor_and_attachments.sql'), 'utf8');
+const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 function expect(value, message) { if (!value) throw new Error(message); }
 
 for (const marker of ['待填写', '缺少原始日报', '数据异常', '已锁定', '营业收入 ¥']) {
@@ -44,5 +45,5 @@ expect(api.includes('daily_unlock_approved') && page.includes("api('monthly_cell
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');
 new vm.Script(scripts[0][1], { filename: 'operations.html' });
-expect(page.includes('data-version="457"') && page.includes('operations-auth-bridge.js?v=457'), 'v457 cache markers missing');
+expect(page.includes(`data-version="${releaseVersion}"`) && page.includes(`operations-auth-bridge.js?v=${releaseVersion}`), 'current cache markers missing');
 console.log('ZYSYR_DAILY_CALENDAR_V457_STATIC_OK');

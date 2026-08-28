@@ -31,8 +31,12 @@ expect(html.includes('美发收入') && html.includes('普通美发产品') && h
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
 expect(html.includes('data-view="salary-report"') && html.includes('id="view-finance-workbench"') && html.includes('petty-cash-report-summary'), 'salary report navigation and finance-workbench petty-cash detail missing');
 expect(html.indexOf('data-view="daily-report"') < html.indexOf('data-view="salary-report"'), 'salary report navigation order invalid');
-expect(html.includes("api('payroll_center'") && html.includes('工资报表（点击数字查看来源）') && html.includes('完整追溯'), 'read-only salary report or trace entry missing');
+expect(html.includes("api('payroll_center'") && html.includes("api('salary_sheet_read'")
+  && html.includes('原始工资报表 / 原始附件（永久留底）') && html.includes('openSalarySheetRowTrace'),
+  'editable paper salary sheet or trace entry missing');
 expect(html.includes("api('petty_cash_report'") && html.includes('日报与原表来源') && html.includes('原始凭证'), 'petty-cash report or source trace missing');
+expect(html.includes("$('finance-workbench-status').textContent='正在读取备用金明细与凭证…'")
+  && !html.includes("$('petty-cash-report-status')"), 'finance-workbench status target is missing or stale');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('工资表（每月）') && html.includes('月度盈亏表（每月）') && !html.includes('业绩报表（每日）'), 'finance report upload entry missing');
 expect(html.includes('报表图片上传') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
