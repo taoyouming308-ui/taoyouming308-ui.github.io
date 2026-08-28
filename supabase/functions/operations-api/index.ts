@@ -1919,7 +1919,8 @@ async function monthlyCellBusinessDetails(
     : [{ business_type: row.business_type, business_id: row.business_id }]);
   const ids = linkTargets.map((row) => row.business_id);
   const links = ids.length ? await restRowsAll(`zysyr_voucher_links?select=voucher_id,business_type,business_id,relation_type,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(ids)}&unlinked_at=is.null&limit=10000`, 10000) : [];
-  const voucherIds = Array.from(new Set(links.map((row) => row.voucher_id)));
+  const pendingRequests = ids.length ? await restRowsAll(`zysyr_business_voucher_link_requests?select=id,voucher_id,business_type,business_id,relation_type,status,reason,requested_by_user_id,requested_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(ids)}&status=eq.pending&limit=10000`, 10000) : [];
+  const voucherIds = Array.from(new Set([...links, ...pendingRequests].map((row) => row.voucher_id)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=10000`, 10000) : [];
   const voucherMap = new Map(vouchers.map((row) => [cleanText(row.id, 40), row]));
   return unique.map((detail) => {
@@ -1933,7 +1934,11 @@ async function monthlyCellBusinessDetails(
       const voucher = voucherMap.get(cleanText(link.voucher_id, 40));
       if (voucher) detailVoucherMap.set(cleanText(voucher.id, 40), voucher);
     }
-    return { ...detail, vouchers: Array.from(detailVoucherMap.values()) };
+    const detailPending = pendingRequests.filter((request) => detailTargets.some((target) =>
+      cleanText(request.business_type, 60) === cleanText(target.business_type, 60)
+      && cleanText(request.business_id, 40) === cleanText(target.business_id, 40)))
+      .map((request) => ({ ...request, voucher: voucherMap.get(cleanText(request.voucher_id, 40)) || null }));
+    return { ...detail, vouchers: Array.from(detailVoucherMap.values()), pending_vouchers: detailPending };
   });
 }
 
@@ -1969,6 +1974,7 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
     target: effectiveTarget,
     report: { ...report, uploaded_by: uploaderRows[0] || null },
     can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
+    can_upload_vouchers: canUploadVouchers(session),
     amount_history: amountHistory,
   };
 
@@ -2164,6 +2170,27 @@ function storagePath(path: string): string {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
+async function assertBusinessVoucherTarget(
+  companyId: string,
+  storeId: string,
+  businessType: string,
+  businessId: string,
+): Promise<void> {
+  const specs: Record<string, { table: string; state: string }> = {
+    income_record: { table: "zysyr_income_records", state: "status=eq.approved" },
+    expense_record: { table: "zysyr_expense_records", state: "workflow_status=in.(approved,paid)&deleted_at=is.null" },
+    petty_cash_record: { table: "zysyr_petty_cash_records", state: "status=eq.confirmed" },
+    salary: { table: "zysyr_salaries", state: "status=in.(approved,paid)" },
+    goods_receipt: { table: "zysyr_goods_receipts", state: "status=eq.posted" },
+    usage_record: { table: "zysyr_usage_records", state: "status=eq.confirmed" },
+    employee_purchase: { table: "zysyr_employee_purchases", state: "status=eq.approved" },
+  };
+  const spec = specs[businessType];
+  if (!spec || !/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error("凭证关联的业务记录无效");
+  const rows = await restRows(`${spec.table}?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${businessId}&${spec.state}&limit=1`);
+  if (!rows.length) throw new Error("业务记录不存在、已冲销或不属于当前门店");
+}
+
 async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const recordType = cleanText(payload.record_type, 20) || "unassigned";
@@ -2173,6 +2200,9 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const skipOcr = payload.skip_ocr === true;
   const monthlyCellId = uuidValue(payload.monthly_cell_id, "月报单元格编号无效", true);
   const monthlyCellReason = cleanText(payload.monthly_cell_reason ?? payload.note, 500);
+  const businessType = cleanText(payload.business_type, 40);
+  const businessId = cleanText(payload.business_id, 40);
+  const businessLinkReason = cleanText(payload.business_link_reason ?? payload.note, 500);
   if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
   if (!["unassigned", "report"].includes(recordType)
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
@@ -2180,6 +2210,12 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   if (!["image/jpeg", "image/png", "application/pdf"].includes(mime)) throw new Error("凭证仅支持 JPG、PNG 或 PDF");
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
+  if (businessType || businessId) {
+    if (recordType !== "unassigned" || !businessType || !businessId || !businessLinkReason) {
+      throw new Error("补传业务凭证时必须指定当前业务记录和补传原因");
+    }
+    await assertBusinessVoucherTarget(companyId, storeId, businessType, businessId);
+  }
   if (recordType === "report") {
     const reports = await restRows(`zysyr_report_uploads?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(recordId)}&limit=1`);
     if (!reports.length) throw new Error("报表不存在或无权关联消费凭证");
@@ -2235,6 +2271,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const saved = Array.isArray(result) ? result[0] : result;
   let cellLinked = false;
   let cellLinkError = "";
+  let businessLinkRequest: JsonRecord | null = null;
   if (monthlyCellId) {
     try {
       await financeRpcSaved("rpc/zysyr_attach_monthly_cell_voucher", {
@@ -2247,9 +2284,17 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       cellLinkError = error instanceof Error ? error.message : "凭证已上传，但单元格关联失败";
     }
   }
+  if (businessType && businessId) {
+    businessLinkRequest = await financeRpcSaved("rpc/zysyr_request_business_voucher_link", {
+      p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+      p_store_id: storeId, p_voucher_id: voucherId, p_business_type: businessType,
+      p_business_id: businessId, p_relation_type: "evidence", p_reason: businessLinkReason,
+    });
+  }
   if (!skipOcr) wakeVoucherOcrInBackground(3);
   return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: !skipOcr,
-    manual_review_only: skipOcr, cell_linked: cellLinked, cell_link_error: cellLinkError || null };
+    manual_review_only: skipOcr, cell_linked: cellLinked, cell_link_error: cellLinkError || null,
+    business_link_request: businessLinkRequest };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -2355,7 +2400,7 @@ async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<
     ? payload.corrected_fields as JsonRecord : {};
   const confidences = payload.field_confidences && typeof payload.field_confidences === "object" && !Array.isArray(payload.field_confidences)
     ? payload.field_confidences as JsonRecord : {};
-  const response = await rest("rpc/zysyr_review_voucher", {
+  const response = await rest("rpc/zysyr_review_voucher_and_resolve_links", {
     method: "POST",
     body: JSON.stringify({
       p_actor_user_id: cleanText(session.auth_account_id, 40),
@@ -2379,7 +2424,8 @@ async function reviewVoucher(payload: JsonRecord, session: JsonRecord): Promise<
     if (/_INVALID$/.test(code)) throw new Error("凭证审核字段无效");
     throw new Error(`凭证审核失败 (${response.status})`);
   }
-  return { saved: Array.isArray(result) ? result[0] : result };
+  const normalized = Array.isArray(result) ? result[0] : result;
+  return { saved: normalized.voucher ?? normalized, business_links: normalized.business_links ?? null };
 }
 
 async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonRecord> {
