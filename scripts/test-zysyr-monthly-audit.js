@@ -27,6 +27,7 @@ expect(migration.includes('zysyr_monthly_cell_revisions_append_only'), 'amount h
 expect(migration.includes('zysyr_monthly_cell_revision_vouchers_append_only'), 'voucher history append-only trigger missing');
 expect(migration.includes('MONTHLY_FORMULA_EDIT_FORBIDDEN'), 'formula/total edit rejection missing');
 expect(migration.includes('MONTHLY_CELL_AGGREGATE_EDIT_FORBIDDEN'), 'derived aggregate edit rejection missing');
+expect(migration.includes('MONTHLY_IDENTIFIER_EDIT_FORBIDDEN'), 'fixed identifier edit rejection missing');
 expect(migration.includes('MONTHLY_UNLOCK_SELF_APPROVAL_FORBIDDEN'), 'four-eyes locked-month approval missing');
 expect(migration.includes("set status = 'consumed', consumed_at = now()"), 'one-time unlock consumption missing');
 expect(migration.includes("'monthly_report_cell', v_cell.id, 'amount_change'"), 'before/after audit event missing');
@@ -77,6 +78,7 @@ expect(page.includes('data-business-voucher-upload') && page.includes('审核通
 expect(page.includes('monthly_cell_id:target.id'), 'cell-specific voucher upload payload missing');
 expect(page.includes('Object.keys(state.monthlyDirty'), 'dirty-only monthly save missing');
 expect(page.includes("cell.cell_kind==='input'") && page.includes('isAggregate') && page.includes('isTotal'), 'derived cells must not render as editable');
+expect(page.includes('isMonthlyFixedIdentifier') && page.includes('!isIdentifier'), 'identifier columns must stay fixed and non-traceable');
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly report must remain default home');
 expect(!/data-view="revenue"|mgj_service_records/.test(page), 'turnover UI or Meiguanjia source returned');
 

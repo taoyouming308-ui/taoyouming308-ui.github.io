@@ -378,6 +378,10 @@ begin
        or coalesce(v_cell.label, '') ~ '(小计|合计|总计|盈亏)' then
       raise exception using errcode = '55000', message = 'MONTHLY_FORMULA_EDIT_FORBIDDEN';
     end if;
+    if coalesce(v_cell.label, '') ~ '(编号|序号|员工号)'
+       or coalesce(v_cell.display_value, '') ~ '^0[0-9]+$' then
+      raise exception using errcode = '55000', message = 'MONTHLY_IDENTIFIER_EDIT_FORBIDDEN';
+    end if;
     if coalesce((
       select trace.source_count
       from public.zysyr_report_cell_trace_revisions trace

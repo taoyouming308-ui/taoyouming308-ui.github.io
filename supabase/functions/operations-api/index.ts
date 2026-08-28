@@ -2461,6 +2461,7 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "CURRENT_MONTHLY_REPORT_EXISTS") throw new Error("本月已有未冲销的正式月报，请先完成或冲销现有版本");
     if (code === "MONTHLY_FORMULA_EDIT_FORBIDDEN") throw new Error("小计、合计、盈亏和公式金额由系统自动计算，不能直接修改");
     if (code === "MONTHLY_CELL_AGGREGATE_EDIT_FORBIDDEN") throw new Error("该金额由二级明细自动汇总，请进入二级明细修改具体记录");
+    if (code === "MONTHLY_IDENTIFIER_EDIT_FORBIDDEN") throw new Error("编号、序号和员工号是固定标识，不能作为金额修改");
     if (code === "MONTHLY_CELL_AMOUNT_UNCHANGED") throw new Error("填写的金额与当前金额相同，无需保存");
     if (code === "MONTHLY_UNLOCK_APPROVAL_REQUIRED") throw new Error("该月份已锁账，请先提交修改申请并等待管理员授权");
     if (code === "MONTHLY_PERIOD_NOT_LOCKED") throw new Error("该月份尚未锁账，不需要申请解锁修改");
