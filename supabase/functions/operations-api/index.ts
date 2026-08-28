@@ -2989,27 +2989,110 @@ async function approvedDailyVoucher(companyId: string, storeId: string, voucherI
   return rows[0];
 }
 
-async function voucherImageBytes(voucher: JsonRecord): Promise<Uint8Array> {
+async function voucherSourceBytes(voucher: JsonRecord): Promise<Uint8Array> {
   const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(cleanText(voucher.object_path, 500))}`, {
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
   });
-  if (!response.ok) throw new Error(`日报原图读取失败 (${response.status})`);
+  if (!response.ok) throw new Error(`原始日报读取失败 (${response.status})`);
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("日报原图必须小于 10MB");
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("原始日报必须小于 10MB");
   const mime = cleanText(voucher.mime_type, 80);
-  if (!["image/jpeg", "image/png"].includes(mime)) throw new Error("电子日报当前支持 JPG 或 PNG 原图");
+  if (!["image/jpeg", "image/png", "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(mime)) {
+    throw new Error("原始日报支持 JPG、PNG、PDF 或 XLSX");
+  }
   return bytes;
+}
+
+async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有上传日报原件权限");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const draftId = uuidValue(payload.draft_id, "请选择需要绑定的电子日报");
+  const filename = cleanText(payload.filename, 200), mime = cleanText(payload.mime_type, 120);
+  const attachmentKind = cleanText(payload.attachment_kind, 40) || "original_report";
+  const note = cleanText(payload.note, 500) || "上传并绑定原始日报附件";
+  const allowed = ["image/jpeg", "image/png", "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
+  if (!allowed.includes(mime)) throw new Error("原始日报支持 JPG、PNG、PDF 或 XLSX");
+  if (!filename) throw new Error("原始日报文件名无效");
+  const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,report_date,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  if (!drafts[0]) throw new Error("电子日报不存在或不属于当前门店");
+  if (cleanText(drafts[0].status, 20) === "cancelled") throw new Error("已取消的日报不能补传原件");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始日报文件内容无效"); }
+  if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("原始日报文件必须小于 10MB");
+  const digest = await sha256Bytes(bytes);
+  const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
+  if (duplicates.length) throw new Error(`该原始资料已上传：${cleanText(duplicates[0].original_filename, 200) || "同一文件"}`);
+  const extension = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png"
+    : mime.includes("spreadsheetml") ? "xlsx" : "jpg";
+  const voucherId = crypto.randomUUID();
+  const reportDate = cleanText(drafts[0].report_date, 10);
+  const objectPath = `${companyId}/${storeId}/daily-sheets/${reportDate}/${draftId}/${voucherId}.${extension}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+    body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`原始日报上传失败 (${upload.status})`);
+  const registered = await rest("rpc/zysyr_register_daily_sheet_attachment", {
+    method: "POST", body: JSON.stringify({
+      p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+      p_store_id: storeId, p_draft_id: draftId, p_voucher_id: voucherId,
+      p_object_path: objectPath, p_original_filename: filename, p_mime_type: mime,
+      p_size_bytes: bytes.length, p_sha256: digest, p_attachment_kind: attachmentKind, p_note: note,
+    }),
+  });
+  if (!registered.ok) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
+      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    });
+    const error = await registered.json().catch(() => ({})) as JsonRecord;
+    const code = cleanText(error.message ?? error.code, 120);
+    if (code === "VOUCHER_DUPLICATE_FILE" || cleanText(error.code, 20) === "23505") throw new Error("相同原始资料已经上传，无需重复补传");
+    if (code === "DAILY_ENTRY_SCOPE_FORBIDDEN") throw new Error("当前账号无权为该门店上传日报原件");
+    throw new Error(`原始日报登记失败 (${registered.status})`);
+  }
+  return { ...(await dailySheetData(companyId, storeId, draftId)), attachment_uploaded: true,
+    readonly: false, permissions: { write: true, upload_original: true },
+    ai_recognition_enabled: false, formal_cells_unchanged: true };
 }
 
 async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
-  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
-  const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
+  const reportDate = cleanText(draft.report_date, 10), month = reportDate.slice(0, 7);
+  const [cells, links, changes, locks] = await Promise.all([
+    restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
+    restRowsAll(`zysyr_daily_sheet_attachments?select=id,voucher_id,attachment_kind,note,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=linked_at.desc&limit=200`, 200),
+    restRowsAll(`zysyr_daily_sheet_cell_changes?select=id,cell_id,revision,before_value,after_value,before_text,after_text,before_label,after_label,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=changed_at.desc&limit=500`, 500),
+    restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,locked_at,unlock_reason&company_id=eq.${companyId}&period_month=eq.${month}-01&status=eq.locked&limit=100`, 100),
+  ]);
+  const voucherIds = links.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean);
+  const legacyVoucherId = cleanText(draft.source_voucher_id, 40);
+  if (legacyVoucherId && !voucherIds.includes(legacyVoucherId)) voucherIds.push(legacyVoucherId);
+  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=200`, 200) : [];
+  const actorIds = [...new Set(changes.map((change) => cleanText(change.changed_by_user_id, 40)).filter(Boolean))];
+  const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=200`, 200) : [];
+  const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
+  const cellMap = new Map(cells.map((cell) => [cleanText(cell.id, 40), cell]));
+  const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
+  const attachments = await Promise.all(vouchers.map(async (voucher) => ({ ...voucher,
+    ...(linkMap.get(cleanText(voucher.id, 40)) || { attachment_kind: "original_report", linked_at: voucher.uploaded_at }),
+    private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
+    url_expires_in: 300,
+  })));
+  const primary = attachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || attachments[0] || null;
   return { draft, cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
-    original_image_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
-    original_filename: voucher.original_filename, image_url_expires_in: 300,
+    attachments, original_image_url: primary?.private_url ?? null,
+    original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
+    history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
+      return { ...change, section_code: cell.section_code ?? null, row_label: cell.row_label ?? null,
+        column_label: cell.column_label ?? null,
+        changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }),
+    locked: locks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId),
     manual_entry_only: true, ai_values_excluded: true, final_confirmation_required: true, meiguanjia_used: false };
 }
 
@@ -3021,7 +3104,7 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   const voucherId = uuidValue(payload.voucher_id, "请选择已审核日报原图", true), reason = cleanText(payload.reason, 500);
   if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和建表原因");
   if (voucherId) await approvedDailyVoucher(companyId, storeId, voucherId);
-  const existing = voucherId ? await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&source_voucher_id=eq.${voucherId}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`) : await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=eq.${reportDate}&source_voucher_id=is.null&status=eq.draft&order=created_at.desc&limit=1`);
+  const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=eq.${reportDate}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
   if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
   const employees = await restRowsAll(`zysyr_employees?select=name,position,employee_code&company_id=eq.${companyId}&store_id=eq.${storeId}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
   const nameSeeds: JsonRecord[] = [];
@@ -3055,7 +3138,8 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
-  return { ...result, detected_date: validDate(detectedDate) ? detectedDate : null,
+  return { ...result, readonly: false, permissions: { write: true, upload_original: true },
+    detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
 
@@ -3067,7 +3151,8 @@ async function importDailySheetExtraction(payload: JsonRecord, session: JsonReco
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
   const store = await selectedStoreInfo(session, payload), draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
-  return dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId);
+  return { ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)),
+    readonly: false, permissions: { write: true, upload_original: true } };
 }
 
 async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3105,7 +3190,8 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
     p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: cells, p_reason: reason,
   });
-  return { saved, ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)) };
+  return { saved, ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)),
+    readonly: false, permissions: { write: true, upload_original: true } };
 }
 
 async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3118,8 +3204,9 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
   if (validation.valid !== true) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
-  const bytes = await voucherImageBytes(voucher), mime = cleanText(voucher.mime_type, 80);
-  const extension = mime === "image/png" ? "png" : "jpg";
+  const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);
+  const extension = mime === "image/png" ? "png" : mime === "application/pdf" ? "pdf"
+    : mime.includes("spreadsheetml") ? "xlsx" : "jpg";
   const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${crypto.randomUUID()}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
     method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
@@ -3129,7 +3216,8 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
   const displayData = { sheet_name: "原图电子日报", range: "A1:AD60", rows: 60, columns: 30, values: [], merges: [],
     cells: cells.map((cell) => ({ ...cell, numeric_value: effectiveCellValue(cell) })),
-    source_kind: "approved_daily_photo_review_grid", source_voucher_id: draft.source_voucher_id,
+    source_kind: "approved_daily_photo_review_grid", source_format: mime,
+    source_voucher_id: draft.source_voucher_id,
     validation, original_image_preserved: true };
   try {
     const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_sheet", {
@@ -3182,10 +3270,22 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const next = new Date(`${month}-01T00:00:00Z`); next.setUTCMonth(next.getUTCMonth() + 1);
   const end = next.toISOString().slice(0, 10);
-  const [dailyReports, drafts] = await Promise.all([
+  const [dailyReports, drafts, periodLocks] = await Promise.all([
     restRowsAll(`zysyr_daily_reports?select=id,report_date,version,status,source_report_id,submitted_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`, 1000),
     restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,created_at,updated_at,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${month}-01&report_date=lt.${end}&order=report_date.desc,created_at.desc&limit=1000`, 1000),
+    restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,locked_at&company_id=eq.${companyId}&period_month=eq.${month}-01&status=eq.locked&limit=100`, 100),
   ]);
+  const locked = periodLocks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId);
+  const draftIds = drafts.map((draft) => cleanText(draft.id, 40)).filter(Boolean);
+  const attachmentLinks = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_attachments?select=draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [];
+  const attachmentVoucherIds = [...new Set(attachmentLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean))];
+  const attachmentVouchers = attachmentVoucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(attachmentVoucherIds)}&limit=5000`, 5000) : [];
+  const attachmentStatus = new Map(attachmentVouchers.map((voucher) => [cleanText(voucher.id, 40), cleanText(voucher.audit_status, 20)]));
+  const linksByDraft = new Map<string, JsonRecord[]>();
+  for (const link of attachmentLinks) {
+    const draftId = cleanText(link.draft_id, 40), list = linksByDraft.get(draftId) || [];
+    list.push(link); linksByDraft.set(draftId, list);
+  }
   const reportIds = dailyReports.map((report) => cleanText(report.id, 40)).filter(Boolean);
   const formalLines = reportIds.length
     ? await restRowsAll(`zysyr_daily_report_lines?select=daily_report_id,line_type,amount&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_report_id=in.${uuidIn(reportIds)}&line_type=eq.income&limit=10000`, 10000)
@@ -3198,15 +3298,23 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   const byDate = new Map<string, JsonRecord>();
   for (const draft of drafts) {
     const date = cleanText(draft.report_date, 10);
+    if (byDate.has(date)) continue;
     const validation = (draft.validation_result ?? {}) as JsonRecord;
     const total = dailySheetTotal(validation.grand_total) ?? dailySheetTotal(validation.staff_atomic_total);
+    const dailyLinks = linksByDraft.get(cleanText(draft.id, 40)) || [];
+    const originalCount = dailyLinks.length + (draft.source_voucher_id && !dailyLinks.some((link) => cleanText(link.voucher_id, 40) === cleanText(draft.source_voucher_id, 40)) ? 1 : 0);
+    const approvedOriginalCount = dailyLinks.filter((link) => attachmentStatus.get(cleanText(link.voucher_id, 40)) === "approved").length
+      + (draft.source_voucher_id && !dailyLinks.some((link) => cleanText(link.voucher_id, 40) === cleanText(draft.source_voucher_id, 40)) ? 1 : 0);
     byDate.set(date, { report_date: date, draft_id: draft.id, source_voucher_id: draft.source_voucher_id,
       status: cleanText(draft.status, 20), grand_total: total, edit_revision: Number(draft.edit_revision ?? 0),
-      confirmed_at: draft.confirmed_at ?? null, source: "electronic" });
+      confirmed_at: draft.confirmed_at ?? null, source: "electronic", original_count: originalCount,
+      approved_original_count: approvedOriginalCount, missing_original: originalCount === 0,
+      has_anomaly: validation.valid === false, locked });
   }
   for (const report of dailyReports) {
     const date = cleanText(report.report_date, 10);
     const existing = byDate.get(date);
+    if (existing && existing.source === "formal") continue;
     if (existing) { existing.daily_report_id = report.id; existing.source_report_id = report.source_report_id;
       existing.version = Number(report.version ?? 1); existing.formal_status = cleanText(report.status, 20);
       if (existing.grand_total == null) existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
@@ -3215,10 +3323,12 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     byDate.set(date, { report_date: date, draft_id: null, daily_report_id: report.id,
       source_report_id: report.source_report_id, version: Number(report.version ?? 1),
       status: formalStatus === "approved" || formalStatus === "locked" ? "confirmed" : formalStatus,
-      grand_total: formalTotals.get(cleanText(report.id, 40)) ?? null, source: "formal" });
+      grand_total: formalTotals.get(cleanText(report.id, 40)) ?? null, source: "formal",
+      original_count: report.source_report_id ? 1 : 0, approved_original_count: report.source_report_id ? 1 : 0,
+      missing_original: !report.source_report_id, has_anomaly: false, locked });
   }
   const days = [...byDate.values()].sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  return { month, days, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+  return { month, days, locked, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
     permissions: { write: hasAuthCapability(session, "daily_report.write") } };
 }
 
@@ -3229,7 +3339,11 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const draftId = uuidValue(payload.draft_id, "请选择日报草稿");
-  return { ...(await dailySheetData(companyId, storeId, draftId)), readonly: true };
+  const data = await dailySheetData(companyId, storeId, draftId);
+  const writable = hasAuthCapability(session, "daily_report.write")
+    && cleanText((data.draft as JsonRecord).status, 20) === "draft" && data.locked !== true;
+  return { ...data, readonly: !writable, permissions: { write: writable,
+    upload_original: hasAuthCapability(session, "daily_report.write") } };
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3344,6 +3458,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
