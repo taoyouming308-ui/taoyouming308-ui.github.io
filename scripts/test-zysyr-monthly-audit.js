@@ -48,6 +48,13 @@ for (const operation of [
 expect(api.includes('effectiveMonthlyDisplay(') && api.includes('safeFormulaValue('), 'effective amount/formula projection missing');
 expect(api.includes('confirmed_finance.adjust') && api.includes('finance_account.create'), 'finance/admin separation missing');
 expect(api.includes('monthly_cell_id') && api.includes('zysyr_attach_monthly_cell_voucher'), 'direct cell voucher supplement missing');
+expect(api.includes('monthlyCellBusinessDetails(') && api.includes('business_total_mismatch'), 'formal business detail drill-down missing');
+for (const source of ['zysyr_income_records', 'zysyr_expense_records', 'zysyr_petty_cash_records', 'zysyr_salaries', 'zysyr_goods_receipts', 'zysyr_usage_records', 'zysyr_employee_purchases']) {
+  expect(api.includes(source), `${source} monthly drill-down missing`);
+}
+expect(api.includes('business_type: "daily_report"') && api.includes('business_type: "daily_report_line"'), 'income-to-daily voucher lineage missing');
+expect(api.includes('/技术人员/.test(label)') && api.includes('/后勤人员/.test(label)'), 'technical/back-office salary classification missing');
+expect(api.includes('select=id,name,category,unit') && !api.includes('zysyr_products?select=id,sku'), 'product drill-down must use master-data fields');
 expect(!api.includes('method: "PATCH", headers: { Prefer: "return=minimal" },\n        body: JSON.stringify({ display_value: value, numeric_value: numeric })'), 'immutable source cell PATCH returned');
 
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
@@ -56,6 +63,7 @@ new vm.Script(scripts[0][1], { filename: 'operations.html' });
 expect(page.includes('保存金额修改') && page.includes('申请修改锁账月份'), 'monthly revision controls missing');
 expect(page.includes('data-unlock-decision') && page.includes('批准一次修改'), 'administrator decision UI missing');
 expect(page.includes('amount_history') && page.includes('金额修改记录（永久留痕）'), 'shareholder audit history UI missing');
+expect(page.includes('二级业务明细 → 单笔记录 → 原始凭证'), 'business detail voucher drill-down UI missing');
 expect(page.includes('monthly_cell_id:target.id'), 'cell-specific voucher upload payload missing');
 expect(page.includes('Object.keys(state.monthlyDirty'), 'dirty-only monthly save missing');
 expect(page.includes("cell.cell_kind==='input'") && page.includes('isAggregate') && page.includes('isTotal'), 'derived cells must not render as editable');

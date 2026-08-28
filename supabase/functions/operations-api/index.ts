@@ -1790,6 +1790,153 @@ async function reportCells(payload: JsonRecord, session: JsonRecord): Promise<Js
   return { report: { ...report, uploaded_by: uploaders[0] || null }, cells, vouchers };
 }
 
+async function monthlyCellBusinessDetails(
+  companyId: string,
+  storeId: string,
+  periodMonth: string,
+  labelValue: unknown,
+): Promise<JsonRecord[]> {
+  const label = cleanText(labelValue, 300);
+  const compactLabel = label.replace(/[\s/／·]/g, "");
+  const start = `${periodMonth.slice(0, 7)}-01`;
+  const endDate = new Date(`${start}T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const details: JsonRecord[] = [];
+
+  if (/(美发收入|普通美发产品|产品收入|零售收入|其他收入)/.test(label)) {
+    const rows = await restRowsAll(`zysyr_income_records?select=id,income_date,category_code,summary,amount,payment_method,daily_report_id,daily_report_line_id,status,approved_at&company_id=eq.${companyId}&store_id=eq.${storeId}&income_date=gte.${start}&income_date=lt.${end}&status=eq.approved&order=income_date.asc,created_at.asc&limit=5000`, 5000);
+    const matched = rows.filter((row) => {
+      const code = cleanText(row.category_code, 80).toUpperCase();
+      const summary = cleanText(row.summary, 200);
+      if (/美发收入/.test(label)) return code === "INCOME_SERVICE" || /美发|服务/.test(summary);
+      if (/(普通美发产品|产品收入|零售收入)/.test(label)) return /RETAIL|PRODUCT/.test(code) || /产品|零售/.test(summary);
+      return /OTHER/.test(code) || /其他/.test(summary);
+    });
+    for (const row of matched) details.push({
+      business_type: "income_record", business_id: row.id, business_date: row.income_date,
+      category: row.summary, description: [row.category_code, row.payment_method].filter(Boolean).join(" · "),
+      amount: row.amount, status: row.status, raw: row,
+      voucher_targets: [
+        { business_type: "income_record", business_id: row.id },
+        { business_type: "daily_report", business_id: row.daily_report_id },
+        { business_type: "daily_report_line", business_id: row.daily_report_line_id },
+      ],
+    });
+  }
+
+  const categories = await restRowsAll(`zysyr_expense_categories?select=id,name,report_section&company_id=eq.${companyId}&status=eq.active&limit=1000`, 1000);
+  const matchedCategoryIds = categories.filter((category) => {
+    const name = cleanText(category.name, 120).replace(/\s/g, "");
+    const section = cleanText(category.report_section, 120).replace(/\s/g, "");
+    return (name.length >= 2 && compactLabel.includes(name)) || (section.length >= 2 && compactLabel.includes(section));
+  }).map((category) => category.id);
+  if (matchedCategoryIds.length) {
+    const expenses = await restRowsAll(`zysyr_expense_records?select=id,expense_date,category,counterparty,summary,amount,payment_method,workflow_status,submitted_at,approved_at,paid_at&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&workflow_status=in.(approved,paid)&expense_category_id=in.${uuidIn(matchedCategoryIds)}&expense_date=gte.${start}&expense_date=lt.${end}&order=expense_date.asc,created_at.asc&limit=3000`, 3000);
+    for (const row of expenses) details.push({
+      business_type: "expense_record", business_id: row.id, business_date: row.expense_date,
+      category: row.category, description: [row.counterparty, row.summary].filter(Boolean).join(" · "),
+      amount: row.amount, status: row.workflow_status, raw: row,
+    });
+  }
+  if (/备用金/.test(label)) {
+    const rows = await restRowsAll(`zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,voucher_number,recipient,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&direction=eq.outflow&status=eq.confirmed&order=transaction_date.asc,created_at.asc&limit=3000`, 3000);
+    for (const row of rows) details.push({
+      business_type: "petty_cash_record", business_id: row.id, business_date: row.transaction_date,
+      category: row.category, description: [row.summary, row.recipient].filter(Boolean).join(" · "),
+      amount: row.amount, status: row.status, raw: row,
+    });
+  }
+  if (/(人工|技术人员|后勤人员|工资|社保|底薪|提成)/.test(label)) {
+    const salaries = await restRowsAll(`zysyr_salaries?select=id,employee_id,salary_month,version,status,base_salary,commission_amount,bonus_amount,deduction_amount,social_security,other_adjustment,final_salary,source_report_id,approved_at,paid_at&company_id=eq.${companyId}&store_id=eq.${storeId}&salary_month=eq.${start}&status=in.(approved,paid)&order=employee_id.asc,version.desc&limit=3000`, 3000);
+    const employeeIds = Array.from(new Set(salaries.map((row) => row.employee_id)));
+    const employees = employeeIds.length ? await restRowsAll(`zysyr_employees?select=id,employee_code,name,position&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(employeeIds)}&limit=3000`, 3000) : [];
+    const employeeMap = new Map(employees.map((row) => [cleanText(row.id, 40), row]));
+    const matchedEmployeeIds = new Set(employees
+      .filter((employee) => {
+        const employeeName = cleanText(employee.name, 120).replace(/\s/g, "");
+        return employeeName.length >= 2 && compactLabel.includes(employeeName);
+      })
+      .map((employee) => cleanText(employee.id, 40)));
+    const technicalPosition = (employee: JsonRecord): boolean => /发型师|技师|助理/.test(cleanText(employee.position, 120));
+    for (const row of salaries) {
+      const employee = employeeMap.get(cleanText(row.employee_id, 40)) || {};
+      if (matchedEmployeeIds.size && !matchedEmployeeIds.has(cleanText(row.employee_id, 40))) continue;
+      if (!matchedEmployeeIds.size && /技术人员/.test(label) && !technicalPosition(employee)) continue;
+      if (!matchedEmployeeIds.size && /后勤人员/.test(label) && technicalPosition(employee)) continue;
+      const amount = /社保/.test(label) ? row.social_security
+        : /底薪/.test(label) ? row.base_salary
+          : /提成/.test(label) ? row.commission_amount : row.final_salary;
+      details.push({
+        business_type: "salary", business_id: row.id, business_date: row.salary_month,
+        category: "工资", description: `${cleanText(employee.employee_code, 40)} ${cleanText(employee.name, 120)} · ${cleanText(employee.position, 120)}`.trim(),
+        amount, status: row.status, raw: row,
+      });
+    }
+  }
+  if (/(产品进货|采购|进货)/.test(label)) {
+    const rows = await restRowsAll(`zysyr_goods_receipts?select=id,purchase_order_id,receipt_number,receipt_date,status,total_amount,posted_at&company_id=eq.${companyId}&store_id=eq.${storeId}&receipt_date=gte.${start}&receipt_date=lt.${end}&status=eq.posted&order=receipt_date.asc,created_at.asc&limit=3000`, 3000);
+    const orderIds = Array.from(new Set(rows.map((row) => row.purchase_order_id)));
+    const orders = orderIds.length ? await restRowsAll(`zysyr_purchase_orders?select=id,supplier_id,order_number&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(orderIds)}&limit=3000`, 3000) : [];
+    const orderMap = new Map(orders.map((row) => [cleanText(row.id, 40), row]));
+    const supplierIds = Array.from(new Set(orders.map((row) => row.supplier_id)));
+    const suppliers = supplierIds.length ? await restRowsAll(`zysyr_suppliers?select=id,name&company_id=eq.${companyId}&id=in.${uuidIn(supplierIds)}&limit=3000`, 3000) : [];
+    const supplierMap = new Map(suppliers.map((row) => [cleanText(row.id, 40), row]));
+    for (const row of rows) {
+      const order = orderMap.get(cleanText(row.purchase_order_id, 40)) || {};
+      details.push({
+      business_type: "goods_receipt", business_id: row.id, business_date: row.receipt_date,
+      category: "产品进货", description: `${cleanText(supplierMap.get(cleanText(order.supplier_id, 40))?.name, 120)} · ${cleanText(order.order_number, 120)} · 入库 ${cleanText(row.receipt_number, 120)}`,
+      amount: row.total_amount, status: row.status, raw: row,
+    });
+    }
+  }
+  if (/(产品成本|消耗品|消耗成本|美发消耗|日用消耗|食品成本)/.test(label)) {
+    const rows = await restRowsAll(`zysyr_usage_records?select=id,product_id,employee_id,usage_date,usage_type,quantity,unit_cost,total_cost,notes,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&usage_date=gte.${start}&usage_date=lt.${end}&status=eq.confirmed&order=usage_date.asc,created_at.asc&limit=5000`, 5000);
+    const productIds = Array.from(new Set(rows.map((row) => row.product_id)));
+    const products = productIds.length ? await restRowsAll(`zysyr_products?select=id,name,category,unit&company_id=eq.${companyId}&id=in.${uuidIn(productIds)}&limit=5000`, 5000) : [];
+    const productMap = new Map(products.map((row) => [cleanText(row.id, 40), row]));
+    for (const row of rows) {
+      const product = productMap.get(cleanText(row.product_id, 40)) || {};
+      details.push({
+        business_type: "usage_record", business_id: row.id, business_date: row.usage_date,
+        category: cleanText(product.category, 120) || "产品消耗", description: `${cleanText(product.name, 160)} · 数量 ${row.quantity} ${cleanText(product.unit, 40)}`.trim(),
+        amount: row.total_cost, status: row.status, raw: row,
+      });
+    }
+  }
+  if (/(员工自购|自购)/.test(label)) {
+    const rows = await restRowsAll(`zysyr_employee_purchases?select=id,employee_id,product_id,purchase_date,quantity,unit_price,amount,inventory_cost,payment_status,paid_amount,status,approved_at&company_id=eq.${companyId}&store_id=eq.${storeId}&purchase_date=gte.${start}&purchase_date=lt.${end}&status=eq.approved&order=purchase_date.asc,created_at.asc&limit=3000`, 3000);
+    for (const row of rows) details.push({
+      business_type: "employee_purchase", business_id: row.id, business_date: row.purchase_date,
+      category: "员工自购", description: `数量 ${row.quantity} · 已收 ${row.paid_amount}`,
+      amount: row.amount, status: row.payment_status, raw: row,
+    });
+  }
+  const unique = Array.from(new Map(details.map((row) => [`${row.business_type}:${row.business_id}`, row])).values());
+  const linkTargets = unique.flatMap((row) => Array.isArray(row.voucher_targets) && row.voucher_targets.length
+    ? row.voucher_targets as JsonRecord[]
+    : [{ business_type: row.business_type, business_id: row.business_id }]);
+  const ids = linkTargets.map((row) => row.business_id);
+  const links = ids.length ? await restRowsAll(`zysyr_voucher_links?select=voucher_id,business_type,business_id,relation_type,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(ids)}&unlinked_at=is.null&limit=10000`, 10000) : [];
+  const voucherIds = Array.from(new Set(links.map((row) => row.voucher_id)));
+  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=10000`, 10000) : [];
+  const voucherMap = new Map(vouchers.map((row) => [cleanText(row.id, 40), row]));
+  return unique.map((detail) => {
+    const detailTargets = Array.isArray(detail.voucher_targets) && detail.voucher_targets.length
+      ? detail.voucher_targets as JsonRecord[]
+      : [{ business_type: detail.business_type, business_id: detail.business_id }];
+    const detailVoucherMap = new Map<string, JsonRecord>();
+    for (const link of links.filter((link) => detailTargets.some((target) =>
+        cleanText(link.business_type, 60) === cleanText(target.business_type, 60)
+        && cleanText(link.business_id, 40) === cleanText(target.business_id, 40)))) {
+      const voucher = voucherMap.get(cleanText(link.voucher_id, 40));
+      if (voucher) detailVoucherMap.set(cleanText(voucher.id, 40), voucher);
+    }
+    return { ...detail, vouchers: Array.from(detailVoucherMap.values()) };
+  });
+}
+
 async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -1882,9 +2029,17 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
   result.revision = revision;
   result.sources = sources;
   result.evidence = evidence;
+  const businessDetails = await monthlyCellBusinessDetails(
+    companyId, storeId, cleanText(report.report_date, 10), target.label,
+  );
+  result.business_details = businessDetails;
+  result.business_total = Number(businessDetails.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
   const anomalies: string[] = [];
   if (!evidence.length) anomalies.push("missing_voucher");
   if (revision && cleanText(revision.status, 30) === "mismatch") anomalies.push("detail_total_mismatch");
+  if (businessDetails.length && Math.abs(Number(result.business_total) - Number(effectiveTarget.numeric_value || 0)) > 0.01) {
+    anomalies.push("business_total_mismatch");
+  }
   if (latestAmountRevision && Number(latestAmountRevision.after_amount) !== Number(target.numeric_value)) {
     anomalies.push("amount_revised");
     const before = Math.abs(Number(latestAmountRevision.before_amount || 0));
