@@ -11,7 +11,7 @@ function expect(value, message) { if (!value) throw new Error(message); }
 for (const marker of ['待填写', '缺少原始日报', '数据异常', '已锁定', '营业收入 ¥']) {
   expect(page.includes(marker), `calendar status missing: ${marker}`);
 }
-for (const id of ['daily-detail-grid', 'daily-detail-upload', 'daily-detail-attachments', 'daily-detail-history', 'daily-detail-reason']) {
+for (const id of ['daily-detail-grid', 'daily-detail-upload', 'daily-detail-attachments', 'daily-detail-history', 'daily-detail-reason', 'daily-detail-unlock']) {
   expect(page.includes(`id="${id}"`), `daily detail control missing: ${id}`);
 }
 expect(page.includes('上传不会读取或覆盖电子表格'), 'manual-entry boundary copy missing');
@@ -25,6 +25,8 @@ for (const marker of [
   'zysyr_daily_sheet_attachments_append_only',
   'zysyr_register_daily_sheet_attachment',
   'zysyr_daily_sheet_changes_require_unlocked',
+  'zysyr_daily_sheet_consume_unlock',
+  'zysyr_monthly_cell_unlock_requests',
   'alter column source_sha256 drop not null',
 ]) expect(migration.includes(marker), `migration safeguard missing: ${marker}`);
 expect(/revoke execute on function public\.zysyr_register_daily_sheet_attachment[\s\S]*?from public, anon, authenticated, service_role/.test(migration), 'daily attachment RPC browser revoke missing');
@@ -37,6 +39,7 @@ expect(api.includes('operation === "daily_sheet_attachment_upload"'), 'daily att
 expect(api.includes('formal_cells_unchanged: true') && api.includes('ai_recognition_enabled: false'), 'attachment/formal-value boundary missing');
 expect(api.includes('zysyr_daily_sheet_cell_changes?select=') && api.includes('changed_by_name'), 'daily change history missing');
 expect(api.includes('zysyr_period_locks?select=') && api.includes('missing_original'), 'lock or completeness state missing');
+expect(api.includes('daily_unlock_approved') && page.includes("api('monthly_cell_unlock_request'"), 'locked daily approval path missing');
 
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');

@@ -119,7 +119,14 @@ begin
   if not found then
     raise exception using errcode = 'P0002', message = 'DAILY_SHEET_DRAFT_NOT_FOUND';
   end if;
-  if zysyr_private.period_is_locked(new.company_id, new.store_id, v_report_date) then
+  if zysyr_private.period_is_locked(new.company_id, new.store_id, v_report_date)
+     and not exists (
+       select 1 from public.zysyr_monthly_cell_unlock_requests request
+       where request.company_id = new.company_id and request.store_id = new.store_id
+         and request.period_month = date_trunc('month', v_report_date)::date
+         and request.requested_by_user_id = new.changed_by_user_id
+         and request.status = 'approved' and request.consumed_at is null
+     ) then
     raise exception using errcode = '55000', message = 'FINANCE_PERIOD_LOCKED';
   end if;
   return new;
@@ -132,6 +139,48 @@ revoke execute on function zysyr_private.enforce_daily_sheet_change_unlocked()
 create trigger zysyr_daily_sheet_changes_require_unlocked
   before insert on public.zysyr_daily_sheet_cell_changes
   for each row execute function zysyr_private.enforce_daily_sheet_change_unlocked();
+
+create or replace function zysyr_private.consume_daily_sheet_unlock()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_request public.zysyr_monthly_cell_unlock_requests;
+begin
+  if new.edit_revision <= old.edit_revision
+     or not zysyr_private.period_is_locked(new.company_id, new.store_id, new.report_date) then
+    return new;
+  end if;
+  select * into v_request from public.zysyr_monthly_cell_unlock_requests request
+  where request.company_id = new.company_id and request.store_id = new.store_id
+    and request.period_month = date_trunc('month', new.report_date)::date
+    and request.requested_by_user_id = new.updated_by_user_id
+    and request.status = 'approved' and request.consumed_at is null
+  order by request.decided_at, request.id limit 1 for update;
+  if not found then
+    raise exception using errcode = '55000', message = 'FINANCE_PERIOD_LOCKED';
+  end if;
+  update public.zysyr_monthly_cell_unlock_requests
+  set status = 'consumed', consumed_at = now()
+  where company_id = new.company_id and id = v_request.id;
+  insert into public.zysyr_audit_events(
+    company_id, store_id, actor_type, actor_user_id, channel,
+    entity_type, entity_id, action, before_json, after_json, reason, sensitivity
+  ) values (
+    new.company_id, new.store_id, 'user', new.updated_by_user_id, 'api',
+    'daily_sheet_draft', new.id, 'unlock_consume',
+    jsonb_build_object('revision', old.edit_revision, 'unlock_request_id', v_request.id),
+    jsonb_build_object('revision', new.edit_revision, 'unlock_request_id', v_request.id),
+    v_request.request_reason, 'financial'
+  );
+  return new;
+end
+$$;
+
+revoke execute on function zysyr_private.consume_daily_sheet_unlock()
+  from public, anon, authenticated, service_role;
+
+create trigger zysyr_daily_sheet_consume_unlock
+  after update of edit_revision on public.zysyr_daily_sheet_drafts
+  for each row execute function zysyr_private.consume_daily_sheet_unlock();
 
 create or replace function zysyr_private.link_approved_daily_attachment()
 returns trigger language plpgsql security definer set search_path = '' as $$

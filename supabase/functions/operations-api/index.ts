@@ -3054,8 +3054,7 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     if (code === "DAILY_ENTRY_SCOPE_FORBIDDEN") throw new Error("当前账号无权为该门店上传日报原件");
     throw new Error(`原始日报登记失败 (${registered.status})`);
   }
-  return { ...(await dailySheetData(companyId, storeId, draftId)), attachment_uploaded: true,
-    readonly: false, permissions: { write: true, upload_original: true },
+  return { ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)), attachment_uploaded: true,
     ai_recognition_enabled: false, formal_cells_unchanged: true };
 }
 
@@ -3150,9 +3149,7 @@ async function importDailySheetExtraction(payload: JsonRecord, session: JsonReco
 
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
-  const store = await selectedStoreInfo(session, payload), draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
-  return { ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)),
-    readonly: false, permissions: { write: true, upload_original: true } };
+  return dailySheetRead(payload, session);
 }
 
 async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3190,8 +3187,7 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
     p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: cells, p_reason: reason,
   });
-  return { saved, ...(await dailySheetData(cleanText(store.company_id, 40), cleanText(store.id, 40), draftId)),
-    readonly: false, permissions: { write: true, upload_original: true } };
+  return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
 }
 
 async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3340,10 +3336,15 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const draftId = uuidValue(payload.draft_id, "请选择日报草稿");
   const data = await dailySheetData(companyId, storeId, draftId);
+  const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText((data.draft as JsonRecord).report_date, 10);
+  const approvals = data.locked === true && actorId ? await restRowsAll(`zysyr_monthly_cell_unlock_requests?select=id,status,decided_at,decision_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${reportDate.slice(0, 7)}-01&requested_by_user_id=eq.${actorId}&status=eq.approved&consumed_at=is.null&limit=10`, 10) : [];
+  const hasUnlockApproval = approvals.length > 0;
   const writable = hasAuthCapability(session, "daily_report.write")
-    && cleanText((data.draft as JsonRecord).status, 20) === "draft" && data.locked !== true;
+    && cleanText((data.draft as JsonRecord).status, 20) === "draft"
+    && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable,
-    upload_original: hasAuthCapability(session, "daily_report.write") } };
+    upload_original: hasAuthCapability(session, "daily_report.write") },
+    daily_unlock_approved: hasUnlockApproval, daily_unlock_request_id: approvals[0]?.id ?? null };
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
