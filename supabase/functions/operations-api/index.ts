@@ -845,19 +845,37 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     uploaded_by: uploaderMap.get(cleanText(report.uploaded_by_user_id, 40)) || null,
     vouchers: voucherMap.get(cleanText(report.id, 80)) || [],
   }));
-  const monthlyReport = withEvidence.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
+  let monthlyReport = withEvidence.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
     && cleanText(report.report_date, 10) === start) || null;
   const cellTraceStatus: Record<string, string> = {};
+  const cellTraceSourceCount: Record<string, number> = {};
   const traceSummary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0 };
+  let monthlyCellRevisions: JsonRecord[] = [];
+  let monthlyPeriodLocked = false;
   if (monthlyReport) {
     const reportId = cleanText(monthlyReport.id, 40);
-    const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,cell_kind,numeric_value,precedent_addresses&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+    const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
-    const revisions = cellFilter === "()" ? [] : await restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000);
+    const [revisions, amountRevisions, locks] = await Promise.all([
+      cellFilter === "()" ? [] : restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000),
+      cellFilter === "()" ? [] : restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=source_cell_id.asc,revision.desc`, 5000),
+      restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
+    ]);
+    monthlyCellRevisions = Array.from(latestMonthlyCellRevisionMap(amountRevisions).values());
+    monthlyPeriodLocked = locks.some((lock) => cleanText(lock.scope_type, 20) === "company"
+      || cleanText(lock.store_id, 40) === storeId);
+    monthlyReport = {
+      ...monthlyReport,
+      display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions),
+    };
     const latest = new Map<string, string>();
+    const latestSourceCount = new Map<string, number>();
     for (const revision of revisions) {
       const cellId = cleanText(revision.target_cell_id, 40);
-      if (!latest.has(cellId)) latest.set(cellId, cleanText(revision.status, 30));
+      if (!latest.has(cellId)) {
+        latest.set(cellId, cleanText(revision.status, 30));
+        latestSourceCount.set(cellId, Number(revision.source_count || 0));
+      }
     }
     const cellsByAddress = new Map(cells.map((cell) => [cleanText(cell.cell_address, 20), cell]));
     const resolved = new Map<string, string>();
@@ -884,6 +902,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       const address = cleanText(cell.cell_address, 20);
       const status = resolveStatus(cell);
       cellTraceStatus[address] = status;
+      cellTraceSourceCount[address] = latestSourceCount.get(cleanText(cell.id, 40)) || 0;
       traceSummary.total += 1;
       if (Object.prototype.hasOwnProperty.call(traceSummary, status)) (traceSummary as Record<string, number>)[status] += 1;
     }
@@ -895,12 +914,29 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
   const acknowledgementsWithUsers = acknowledgements.map((row) => ({ ...row, user: ackUserMap.get(cleanText(row.user_id, 40)) || null }));
+  let unlockRequests: JsonRecord[] = [];
+  const actorId = cleanText(session.auth_account_id, 40);
+  if (monthlyReport && (cleanText(session.operations_role, 40) === "finance" || hasAuthCapability(session, "finance_account.create"))) {
+    const ownFilter = hasAuthCapability(session, "finance_account.create") ? "" : `&requested_by_user_id=eq.${actorId}`;
+    unlockRequests = await restRowsAll(`zysyr_monthly_cell_unlock_requests?select=id,period_month,status,requested_by_user_id,request_reason,requested_at,decided_by_user_id,decision_reason,decided_at,consumed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${start}${ownFilter}&order=requested_at.desc&limit=100`, 100);
+    const accountIds = Array.from(new Set(unlockRequests.flatMap((row) => [row.requested_by_user_id, row.decided_by_user_id]).filter(Boolean)));
+    const accounts = accountIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(accountIds)}&limit=200`, 200) : [];
+    const accountMap = new Map(accounts.map((account) => [cleanText(account.id, 40), account]));
+    unlockRequests = unlockRequests.map((row) => ({ ...row,
+      requested_by: accountMap.get(cleanText(row.requested_by_user_id, 40)) || null,
+      decided_by: accountMap.get(cleanText(row.decided_by_user_id, 40)) || null,
+    }));
+  }
   return {
     store: cleanText(store.name, 100), month, source_boundary: "finance_uploads_only",
     monthly_report: monthlyReport,
     reports: withEvidence,
     cell_trace_status: cellTraceStatus,
+    cell_trace_source_count: cellTraceSourceCount,
     trace_summary: traceSummary,
+    monthly_cell_revisions: monthlyCellRevisions,
+    monthly_period_locked: monthlyPeriodLocked,
+    monthly_unlock_requests: unlockRequests,
     acknowledgements: acknowledgementsWithUsers,
   };
 }
@@ -920,64 +956,176 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 
-function columnNumberBack(text: string): number {
-  let n = 0;
-  for (let i = 0; i < text.length; i += 1) n = n * 26 + text.charCodeAt(i) - 64;
-  return n - 1;
+function latestMonthlyCellRevisionMap(revisions: JsonRecord[]): Map<string, JsonRecord> {
+  const latest = new Map<string, JsonRecord>();
+  for (const revision of revisions) {
+    const cellId = cleanText(revision.source_cell_id, 40);
+    if (cellId && !latest.has(cellId)) latest.set(cellId, revision);
+  }
+  return latest;
+}
+
+function safeFormulaValue(formula: string, precedents: unknown[], values: Map<string, number>): number | null {
+  const addresses = (Array.isArray(precedents) ? precedents : [])
+    .map((item) => cleanText(item, 20).toUpperCase())
+    .filter((item) => /^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(item));
+  if (/^=?\s*SUM\s*\([^)]*\)\s*$/i.test(formula) && addresses.length) {
+    return Number(addresses.reduce((sum, address) => sum + (values.get(address) || 0), 0).toFixed(4));
+  }
+  let expression = formula.replace(/^=/, "").replace(/\$?([A-Z]{1,3})\$?([1-9][0-9]{0,3})/g, (_match, letters, row) => {
+    return String(values.get(`${letters}${row}`) || 0);
+  });
+  if (!/^[0-9+\-*/().\s]+$/.test(expression) || expression.length > 500) return null;
+  const tokens = expression.match(/\d+(?:\.\d+)?|[()+\-*/]/g) || [];
+  let index = 0;
+  function primary(): number {
+    const token = tokens[index++];
+    if (token === "(") {
+      const value = addSubtract();
+      if (tokens[index++] !== ")") throw new Error("formula");
+      return value;
+    }
+    if (token === "+") return primary();
+    if (token === "-") return -primary();
+    const value = Number(token);
+    if (!Number.isFinite(value)) throw new Error("formula");
+    return value;
+  }
+  function multiplyDivide(): number {
+    let value = primary();
+    while (tokens[index] === "*" || tokens[index] === "/") {
+      const operator = tokens[index++];
+      const right = primary();
+      value = operator === "*" ? value * right : value / right;
+    }
+    return value;
+  }
+  function addSubtract(): number {
+    let value = multiplyDivide();
+    while (tokens[index] === "+" || tokens[index] === "-") {
+      const operator = tokens[index++];
+      const right = multiplyDivide();
+      value = operator === "+" ? value + right : value - right;
+    }
+    return value;
+  }
+  try {
+    const result = addSubtract();
+    return index === tokens.length && Number.isFinite(result) ? Number(result.toFixed(4)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[]): JsonRecord {
+  const source = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
+  const display = JSON.parse(JSON.stringify(source)) as JsonRecord;
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const displayCells = Array.isArray(display.cells) ? display.cells as JsonRecord[] : [];
+  const latest = latestMonthlyCellRevisionMap(revisions);
+  const numericByAddress = new Map<string, number>();
+  const cellByAddress = new Map<string, JsonRecord>();
+  for (const cell of cells) {
+    const address = cleanText(cell.cell_address, 20).toUpperCase();
+    if (!address) continue;
+    cellByAddress.set(address, cell);
+    const original = Number(cell.numeric_value);
+    const revision = latest.get(cleanText(cell.id, 40));
+    const effective = revision ? Number(revision.after_amount) : original;
+    if (Number.isFinite(effective)) numericByAddress.set(address, effective);
+  }
+  for (let pass = 0; pass < 8; pass += 1) {
+    let changed = false;
+    for (const cell of cells) {
+      if (cleanText(cell.cell_kind, 20) !== "formula") continue;
+      const address = cleanText(cell.cell_address, 20).toUpperCase();
+      const calculated = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
+      if (calculated !== null && numericByAddress.get(address) !== calculated) {
+        numericByAddress.set(address, calculated); changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  const effectiveCells: Record<string, JsonRecord> = {};
+  for (const [address, cell] of cellByAddress.entries()) {
+    const numeric = numericByAddress.get(address);
+    const revision = latest.get(cleanText(cell.id, 40)) || null;
+    const row = Number(cell.row_number) - 1;
+    const column = Number(cell.column_number) - 1;
+    if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = numeric;
+    const displayCell = displayCells.find((item) => cleanText(item.cell_address, 20).toUpperCase() === address);
+    if (displayCell && numeric !== undefined) {
+      displayCell.numeric_value = numeric;
+      displayCell.display_value = String(numeric);
+    }
+    effectiveCells[address] = {
+      source_cell_id: cell.id, original_amount: cell.numeric_value,
+      effective_amount: numeric ?? cell.numeric_value, revision,
+    };
+  }
+  display.values = values;
+  display.cells = displayCells;
+  display.effective_cells = effectiveCells;
+  return display;
 }
 
 async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  requireFinanceCapability(session, "report.lock", "只有财务可以编辑月报金额");
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备已确认财务调整权限的财务账号可以修改月报金额");
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const month = cleanText(payload.month, 7);
   if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
-  let reportId = uuidValue(payload.report_id, "月报编号无效", true);
-  const displayData = (payload.display_data && typeof payload.display_data === "object") ? payload.display_data as JsonRecord : null;
+  const reportId = uuidValue(payload.report_id, "月报编号无效");
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写本次金额修改原因");
   const cells = Array.isArray(payload.cells) ? payload.cells as JsonRecord[] : [];
-  if (!cells.length) throw new Error("没有可保存的金额修改");
-  if (!reportId) {
-    const ins = await rest("zysyr_report_uploads", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        company_id: companyId, store_id: storeId, report_type: "monthly_profit_loss",
-        report_date: `${month}-01`, template_code: "monthly_manual", template_version: 1,
-        version: 1, status: "draft", original_filename: "手工填写月报", mime_type: "application/json",
-        size_bytes: 0, sha256: `manual-${crypto.randomUUID()}`, display_data: displayData,
-        uploaded_by_user_id: cleanText(session.auth_account_id, 40),
-      }),
-    });
-    const created = await ins.json().catch(() => ({})) as JsonRecord;
-    reportId = cleanText(created.id, 40);
-    if (!reportId) throw new Error("手工月报创建失败");
-  }
-  for (const cell of cells) {
-    const address = cleanText(cell.address, 20);
-    const value = cleanText(cell.value, 100);
-    if (!/^[A-Z]{1,3}[0-9]+$/.test(address)) continue;
-    const letters = address.replace(/[0-9]/g, "").toUpperCase();
-    const rowNumber = Number(address.replace(/[A-Z]/g, ""));
-    const numeric = value === "" ? null : Number(value);
-    const existing = await restRows(`zysyr_report_cells?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
-    if (existing[0]) {
-      await rest(`zysyr_report_cells?company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${existing[0].id}`, {
-        method: "PATCH", headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ display_value: value, numeric_value: numeric }),
-      });
-    } else {
-      await rest("zysyr_report_cells", {
-        method: "POST", headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({
-          company_id: companyId, store_id: storeId, report_id: reportId, sheet_name: "月报",
-          cell_address: address, row_number: rowNumber, column_number: columnNumberBack(letters) + 1,
-          cell_kind: "input", display_value: value, numeric_value: numeric, label: address,
-        }),
-      });
+  if (!cells.length || cells.length > 50) throw new Error("每次请选择 1 至 50 个有变化的金额保存");
+  const changes = cells.map((cell) => {
+    const address = cleanText(cell.address ?? cell.cell_address, 20).toUpperCase();
+    const amount = cleanText(cell.value ?? cell.after_amount, 100);
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address) || !/^-?\d{1,14}(?:\.\d{1,4})?$/.test(amount)) {
+      throw new Error(`月报单元格 ${address || "未知"} 的金额格式无效`);
     }
+    return { cell_address: address, after_amount: amount, cell_label: cleanText(cell.label, 300) };
+  });
+  const saved = await financeRpcSaved("rpc/zysyr_revise_monthly_cells", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_report_id: reportId, p_changes: changes,
+    p_voucher_ids: uuidArray(Array.isArray(payload.voucher_ids) ? payload.voucher_ids : [], 20), p_reason: reason,
+  });
+  return { saved, report_id: reportId };
+}
+
+async function requestMonthlyCellUnlock(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有财务可以申请修改已锁账月份");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !reason) throw new Error("请选择锁账月份并填写申请原因");
+  const saved = await financeRpcSaved("rpc/zysyr_request_monthly_cell_unlock", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_period_month: `${month}-01`, p_reason: reason,
+  });
+  return { saved };
+}
+
+async function decideMonthlyCellUnlock(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "finance_account.create") || cleanText(session.auth_scope_type, 20) !== "company") {
+    throw new Error("只有公司范围管理员可以审批锁账修改申请");
   }
-  return { saved: true, report_id: reportId };
+  const store = await selectedStoreInfo(session, payload);
+  const decision = cleanText(payload.decision, 20);
+  const reason = cleanText(payload.reason, 500);
+  if (!["approved", "rejected"].includes(decision) || !reason) throw new Error("请选择审批结果并填写审批原因");
+  const saved = await financeRpcSaved("rpc/zysyr_decide_monthly_cell_unlock", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40),
+    p_request_id: uuidValue(payload.request_id, "锁账修改申请编号无效"),
+    p_decision: decision, p_reason: reason,
+  });
+  return { saved };
 }
 
 
@@ -1006,10 +1154,21 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
   }
   const ordered = months.map((month) => latest.get(month)).filter(Boolean);
   if (!ordered.length) return { start_month: startMonth, end_month: endMonth, months: [], display_data: null };
-  const baseDisplay = ordered[0].display_data && typeof ordered[0].display_data === "object" ? ordered[0].display_data as JsonRecord : {};
+  const reportIds = ordered.map((row) => row.id);
+  const reportFilter = uuidIn(reportIds);
+  const [allCells, allRevisions] = await Promise.all([
+    restRowsAll(`zysyr_report_cells?select=id,report_id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
+    restRowsAll(`zysyr_monthly_cell_revisions?select=id,report_id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=source_cell_id.asc,revision.desc&limit=10000`, 10000),
+  ]);
+  const effectiveReports = ordered.map((row) => ({ ...row,
+    display_data: effectiveMonthlyDisplay(row.display_data,
+      allCells.filter((cell) => cleanText(cell.report_id, 40) === cleanText(row.id, 40)),
+      allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40))),
+  }));
+  const baseDisplay = effectiveReports[0].display_data && typeof effectiveReports[0].display_data === "object" ? effectiveReports[0].display_data as JsonRecord : {};
   const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
-  for (let i = 1; i < ordered.length; i += 1) {
-    const display = ordered[i].display_data && typeof ordered[i].display_data === "object" ? ordered[i].display_data as JsonRecord : {};
+  for (let i = 1; i < effectiveReports.length; i += 1) {
+    const display = effectiveReports[i].display_data && typeof effectiveReports[i].display_data === "object" ? effectiveReports[i].display_data as JsonRecord : {};
     const values = Array.isArray(display.values) ? display.values as unknown[] : [];
     for (let r = 0; r < baseValues.length; r += 1) {
       const rowArr = baseValues[r] as unknown[];
@@ -1026,7 +1185,7 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
   }
   return {
     start_month: startMonth, end_month: endMonth,
-    months: ordered.map((row) => cleanText(row.report_date, 10).slice(0, 7)),
+    months: effectiveReports.map((row) => cleanText(row.report_date, 10).slice(0, 7)),
     display_data: { ...baseDisplay, values: baseValues },
   };
 }
@@ -1643,8 +1802,28 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
   const cells = await restRows(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
   const target = cells[0];
   if (!target) throw new Error("该位置不是可追溯的金额或公式单元格");
-  const uploaderRows = await restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=eq.${cleanText(report.uploaded_by_user_id, 40)}&limit=1`);
-  const result: JsonRecord = { target, report: { ...report, uploaded_by: uploaderRows[0] || null }, can_edit: canUploadReports(session) };
+  const [uploaderRows, amountRevisions] = await Promise.all([
+    restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=eq.${cleanText(report.uploaded_by_user_id, 40)}&limit=1`),
+    restRowsAll(`zysyr_monthly_cell_revisions?select=id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,unlock_request_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&source_cell_id=eq.${cleanText(target.id, 40)}&order=revision.desc&limit=500`, 500),
+  ]);
+  const latestAmountRevision = amountRevisions[0] || null;
+  const actorIds = Array.from(new Set(amountRevisions.map((row) => cleanText(row.actor_user_id, 40)).filter(Boolean)));
+  const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=500`, 500) : [];
+  const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), actor]));
+  const amountHistory = amountRevisions.map((revision) => ({ ...revision,
+    actor: actorMap.get(cleanText(revision.actor_user_id, 40)) || null,
+  }));
+  const effectiveTarget = { ...target,
+    original_numeric_value: target.numeric_value,
+    numeric_value: latestAmountRevision ? latestAmountRevision.after_amount : target.numeric_value,
+    latest_amount_revision: latestAmountRevision,
+  };
+  const result: JsonRecord = {
+    target: effectiveTarget,
+    report: { ...report, uploaded_by: uploaderRows[0] || null },
+    can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
+    amount_history: amountHistory,
+  };
 
   if (cleanText(target.cell_kind, 20) === "formula") {
     const precedents = Array.isArray(target.precedent_addresses) ? target.precedent_addresses as unknown[] : [];
@@ -1653,13 +1832,19 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
     const sourceCells = addressFilter === "()" ? [] : await restRowsAll(`zysyr_report_cells?select=id,cell_address,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&report_id=eq.${reportId}&cell_address=in.${addressFilter}&order=row_number.asc,column_number.asc`, 1000);
     const sourceFilter = uuidIn(sourceCells.map((cell) => cell.id));
     const revisions = sourceFilter === "()" ? [] : await restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_amount,delta,evidence_count&company_id=eq.${companyId}&target_cell_id=in.${sourceFilter}&order=revision.desc`, 2000);
+    const sourceAmountRevisions = sourceFilter === "()" ? [] : await restRowsAll(`zysyr_monthly_cell_revisions?select=source_cell_id,revision,after_amount&company_id=eq.${companyId}&store_id=eq.${storeId}&source_cell_id=in.${sourceFilter}&order=source_cell_id.asc,revision.desc`, 2000);
+    const sourceAmountMap = latestMonthlyCellRevisionMap(sourceAmountRevisions);
     const revisionMap = new Map<string, JsonRecord>();
     for (const revision of revisions) {
       const key = cleanText(revision.target_cell_id, 40);
       if (!revisionMap.has(key)) revisionMap.set(key, revision);
     }
     result.mode = "formula";
-    result.precedents = sourceCells.map((cell) => ({ ...cell, trace: revisionMap.get(cleanText(cell.id, 40)) || null }));
+    result.precedents = sourceCells.map((cell) => ({ ...cell,
+      numeric_value: sourceAmountMap.get(cleanText(cell.id, 40))?.after_amount ?? cell.numeric_value,
+      original_numeric_value: cell.numeric_value,
+      trace: revisionMap.get(cleanText(cell.id, 40)) || null,
+    }));
     return result;
   }
 
@@ -1687,10 +1872,26 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
     const evidenceFilter = uuidIn(evidenceLinks.map((link) => link.voucher_id));
     evidence = evidenceFilter === "()" ? [] : await restRowsAll(`zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${evidenceFilter}&limit=200`, 200);
   }
+  if (latestAmountRevision) {
+    const revisionLinks = await restRowsAll(`zysyr_monthly_cell_revision_vouchers?select=voucher_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&revision_id=eq.${cleanText(latestAmountRevision.id, 40)}&limit=200`, 200);
+    const revisionVoucherIds = uuidIn(revisionLinks.map((link) => link.voucher_id));
+    const revisionEvidence = revisionVoucherIds === "()" ? [] : await restRowsAll(`zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${revisionVoucherIds}&limit=200`, 200);
+    evidence = Array.from(new Map([...evidence, ...revisionEvidence].map((voucher) => [cleanText(voucher.id, 40), voucher])).values());
+  }
   result.mode = "input";
   result.revision = revision;
   result.sources = sources;
   result.evidence = evidence;
+  const anomalies: string[] = [];
+  if (!evidence.length) anomalies.push("missing_voucher");
+  if (revision && cleanText(revision.status, 30) === "mismatch") anomalies.push("detail_total_mismatch");
+  if (latestAmountRevision && Number(latestAmountRevision.after_amount) !== Number(target.numeric_value)) {
+    anomalies.push("amount_revised");
+    const before = Math.abs(Number(latestAmountRevision.before_amount || 0));
+    const delta = Math.abs(Number(latestAmountRevision.delta || 0));
+    if (delta >= Math.max(1000, before * 0.5)) anomalies.push("unusual_adjustment");
+  }
+  result.anomalies = anomalies;
   return result;
 }
 
@@ -1815,6 +2016,8 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 80);
   const skipOcr = payload.skip_ocr === true;
+  const monthlyCellId = uuidValue(payload.monthly_cell_id, "月报单元格编号无效", true);
+  const monthlyCellReason = cleanText(payload.monthly_cell_reason ?? payload.note, 500);
   if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
   if (!["unassigned", "report"].includes(recordType)
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
@@ -1825,6 +2028,11 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   if (recordType === "report") {
     const reports = await restRows(`zysyr_report_uploads?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(recordId)}&limit=1`);
     if (!reports.length) throw new Error("报表不存在或无权关联消费凭证");
+  }
+  if (monthlyCellId) {
+    if (recordType !== "report" || !recordId || !monthlyCellReason) throw new Error("补传月报单元格凭证时必须填写关联报表和补传原因");
+    const cells = await restRows(`zysyr_report_cells?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${recordId}&id=eq.${monthlyCellId}&limit=1`);
+    if (!cells.length) throw new Error("月报单元格不存在或不属于当前报表");
   }
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("凭证文件内容无效"); }
@@ -1870,9 +2078,23 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   }
   const result = await metadata.json();
   const saved = Array.isArray(result) ? result[0] : result;
+  let cellLinked = false;
+  let cellLinkError = "";
+  if (monthlyCellId) {
+    try {
+      await financeRpcSaved("rpc/zysyr_attach_monthly_cell_voucher", {
+        p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+        p_store_id: storeId, p_source_cell_id: monthlyCellId,
+        p_voucher_id: voucherId, p_reason: monthlyCellReason,
+      });
+      cellLinked = true;
+    } catch (error) {
+      cellLinkError = error instanceof Error ? error.message : "凭证已上传，但单元格关联失败";
+    }
+  }
   if (!skipOcr) wakeVoucherOcrInBackground(3);
   return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: !skipOcr,
-    manual_review_only: skipOcr };
+    manual_review_only: skipOcr, cell_linked: cellLinked, cell_link_error: cellLinkError || null };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1906,6 +2128,24 @@ async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<
     const key = cleanText(link.voucher_id, 40);
     linkMap.set(key, [...(linkMap.get(key) || []), link]);
   }
+  const cellVoucherLinks = voucherFilter === "()" ? [] : await restRowsAll(`zysyr_monthly_cell_revision_vouchers?select=voucher_id,revision_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&limit=10000`, 10000);
+  const cellRevisionFilter = uuidIn(cellVoucherLinks.map((link) => link.revision_id));
+  const cellRevisions = cellRevisionFilter === "()" ? [] : await restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,report_id,period_month,cell_address,cell_label,revision,revision_type,after_amount,reason,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${cellRevisionFilter}&limit=10000`, 10000);
+  const cellRevisionMap = new Map(cellRevisions.map((revision) => [cleanText(revision.id, 40), revision]));
+  const cellLinkMap = new Map<string, JsonRecord[]>();
+  for (const link of cellVoucherLinks) {
+    const revision = cellRevisionMap.get(cleanText(link.revision_id, 40));
+    if (!revision) continue;
+    const key = cleanText(link.voucher_id, 40);
+    const existing = cellLinkMap.get(key) || [];
+    const sourceCellId = cleanText(revision.source_cell_id, 40);
+    const foundIndex = existing.findIndex((item) => cleanText(item.source_cell_id, 40) === sourceCellId);
+    if (foundIndex < 0 || Number(existing[foundIndex].revision || 0) < Number(revision.revision || 0)) {
+      if (foundIndex >= 0) existing.splice(foundIndex, 1);
+      existing.push(revision);
+    }
+    cellLinkMap.set(key, existing);
+  }
   return {
     vouchers: vouchers.map((voucher) => ({
       ...voucher,
@@ -1914,6 +2154,7 @@ async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<
       latest_ocr_task: latestTask.get(cleanText(voucher.id, 40)) || null,
       latest_review: latestReview.get(cleanText(voucher.id, 40)) || null,
       links: linkMap.get(cleanText(voucher.id, 40)) || [],
+      monthly_cells: cellLinkMap.get(cleanText(voucher.id, 40)) || [],
     })),
     reports,
     can_upload: canUploadVouchers(session),
@@ -2017,6 +2258,15 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "EXPENSE_HAS_CONFIRMED_PAYMENT") throw new Error("该支出已有确认付款，请先冲销付款记录");
     if (code === "MONTHLY_TRANSITION_NOT_ALLOWED") throw new Error("月报当前状态不允许执行此操作");
     if (code === "CURRENT_MONTHLY_REPORT_EXISTS") throw new Error("本月已有未冲销的正式月报，请先完成或冲销现有版本");
+    if (code === "MONTHLY_FORMULA_EDIT_FORBIDDEN") throw new Error("小计、合计、盈亏和公式金额由系统自动计算，不能直接修改");
+    if (code === "MONTHLY_CELL_AGGREGATE_EDIT_FORBIDDEN") throw new Error("该金额由二级明细自动汇总，请进入二级明细修改具体记录");
+    if (code === "MONTHLY_CELL_AMOUNT_UNCHANGED") throw new Error("填写的金额与当前金额相同，无需保存");
+    if (code === "MONTHLY_UNLOCK_APPROVAL_REQUIRED") throw new Error("该月份已锁账，请先提交修改申请并等待管理员授权");
+    if (code === "MONTHLY_PERIOD_NOT_LOCKED") throw new Error("该月份尚未锁账，不需要申请解锁修改");
+    if (code === "MONTHLY_UNLOCK_APPROVER_REQUIRED") throw new Error("只有公司范围管理员可以审批锁账修改申请");
+    if (code === "MONTHLY_UNLOCK_SELF_APPROVAL_FORBIDDEN") throw new Error("申请人不能审批自己的锁账修改申请");
+    if (code === "MONTHLY_UNLOCK_REQUEST_ALREADY_DECIDED") throw new Error("该锁账修改申请已处理，不能重复审批");
+    if (code === "MONTHLY_CELL_HISTORY_IMMUTABLE") throw new Error("历史修订记录不可覆盖或删除");
     if (code === "FINANCE_BUSINESS_RECORD_NOT_FOUND") throw new Error("正式财务记录不存在或不属于当前门店");
     if (code === "PERFORMANCE_HAIRSTYLIST_ONLY") throw new Error("只有岗位为发型师的员工才能计入业绩和提成");
     if (code === "COMMISSION_RULE_REQUIRED") throw new Error("该员工本月业绩没有可用的提成规则，请先维护规则");
@@ -2828,6 +3078,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
+    if (operation === "monthly_cell_unlock_request") return json(await requestMonthlyCellUnlock(payload, session));
+    if (operation === "monthly_cell_unlock_decide") return json(await decideMonthlyCellUnlock(payload, session));
     if (operation === "shareholder_registration_list") return json(await shareholderRegistrationList(payload, session));
     if (operation === "shareholder_registration_review") return json(await shareholderRegistrationReview(payload, session));
     if (operation === "catalog") return json(await catalog(payload, session));

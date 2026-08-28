@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v455 财务端月报金额修订、锁账授权与单元格凭证审计（2026-08-28，recovery 候选未发布）
+- 月报原始上传单元格继续保持不可变；财务修改金额改为追加 `zysyr_monthly_cell_revisions`，永久保存修改前/后金额、差额、原因、人员、时间、门店、月份和凭证数量。
+- 公式、小计、合计、盈亏及已有二级来源明细的汇总格禁止强改；有效修订会覆盖展示值并安全重算可解析的 SUM / 四则公式，跨月汇总同样读取有效值。
+- 锁账月份采用财务申请、公司范围管理员审批、禁止自批、一次授权消费后失效；月份本身不解除锁定。
+- 数字溯源新增修改历史、异常提示和单元格级凭证补传；凭证中心可反向显示该凭证被计入的月份、月报栏目、单元格和有效金额。
+- 新迁移 `20260828020852_zysyr_monthly_finance_audit_closure.sql`、`operations-api`、`operations.html` 和静态测试已完成；Supabase dry-run 只列出本迁移，完整 pre-push 回归通过。
+- 仅推送 GitHub recovery 分支；未迁移生产数据库、未部署 Edge Function、未更新 GitHub main、未发布线上页面。App version: v455
+
 ## v454 前台收银中心横屏手机适配（2026-08-27，已发布）
 - 补充 `(max-width:900px) and (orientation:landscape) and (max-height:500px)` 断点：横屏手机使用紧凑左栏，时间表、客户档案、表单抽屉按矮屏高度重排。
 - 横屏手机客户数据表和洗发合格率也切换为卡片视图；竖屏与桌面表格逻辑保持不变。
