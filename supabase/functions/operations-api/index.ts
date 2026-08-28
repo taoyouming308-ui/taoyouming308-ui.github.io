@@ -6,7 +6,7 @@ import { parseMonth } from "../_shared/zysyr-date.mjs";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 3650;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
 const REPORT_BUCKET = "zysyr-reports";

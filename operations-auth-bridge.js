@@ -64,18 +64,41 @@
       return scope;
     }
 
-    async function refresh(value){
+    var refreshing=null;
+    function refresh(fallback){
+      if(refreshing)return refreshing;
+      refreshing=Promise.resolve().then(function(){
+        if(global.navigator&&global.navigator.locks&&global.navigator.locks.request){
+          return global.navigator.locks.request('zysyr-operations-auth-refresh',function(){return refreshOnce(fallback)});
+        }
+        return refreshOnce(fallback);
+      });
+      refreshing.then(function(){refreshing=null},function(){refreshing=null});
+      return refreshing;
+    }
+
+    async function refreshOnce(fallback){
+      var value=read()||fallback;
+      if(!value||!value.session||!clean(value.session.refresh_token))throw new Error('登录已过期，请重新登录');
       var body=await request(base+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'Content-Type':'application/json','apikey':key},body:JSON.stringify({refresh_token:value.session.refresh_token})});
       return persist(body,value.scope);
+    }
+
+    async function ensureFresh(){
+      var value=read();if(!value)return null;
+      if(!value.session.expires_at||value.session.expires_at<=Math.floor(Date.now()/1000)+60){
+        try{return await refresh(value)}catch(_){return read()}
+      }
+      return value;
     }
 
     async function restore(){
       var value=read();if(!value)return null;
       try{
         if(!value.session.expires_at||value.session.expires_at<=Math.floor(Date.now()/1000)+60)value=await refresh(value);
-        try{value.scope=await verify(value.session.access_token)}catch(error){if(error.status!==401)throw error;value=await refresh(value);value.scope=await verify(value.session.access_token)}
+        try{value.scope=await verify(value.session.access_token)}catch(error){if(!error.status||error.status!==401)throw error;value=await refresh(value);value.scope=await verify(value.session.access_token)}
         return persist(value.session,value.scope);
-      }catch(_){clear();return null}
+      }catch(error){if(error&&error.status)clear();return null}
     }
 
     async function login(username,password){
@@ -133,7 +156,7 @@
       })});
     }
 
-    return{login:login,restore:restore,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,createShareholderAccount:createShareholderAccount,clear:clear,read:read};
+    return{login:login,restore:restore,ensureFresh:ensureFresh,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,createShareholderAccount:createShareholderAccount,clear:clear,read:read};
   }
 
   global.ZysyrAuthBridge={create:create,storageKey:STORAGE_KEY};
