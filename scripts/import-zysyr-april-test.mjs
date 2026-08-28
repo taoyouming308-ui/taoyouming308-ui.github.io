@@ -11,6 +11,7 @@ const BUSINESS_DIR = path.join(DATA_ROOT, "02_原始业务资料附件");
 const STORE = process.env.ZYSYR_IMPORT_STORE || "自由手艺人";
 const USERNAME = process.env.ZYSYR_IMPORT_USERNAME || "ZYSYR";
 const PASSWORD = process.env.ZYSYR_IMPORT_PASSWORD || "";
+const MONTHLY_FILE = process.env.ZYSYR_MONTHLY_FILE || "/Users/a1/Desktop/盈亏表模板空白模版（自由手艺人）xlsx.xlsx";
 const MODE = process.argv[2] || "plan";
 
 const dailyFiles = {
@@ -292,6 +293,52 @@ async function uploadBusinessEvidence(auth) {
   return results;
 }
 
+async function uploadMonthlyReport(auth) {
+  const month = "2026-04";
+  const bytes = await fs.readFile(MONTHLY_FILE);
+  if (bytes.length > 10 * 1024 * 1024) fail("月报文件必须小于 10MB");
+  const filename = path.basename(MONTHLY_FILE);
+  if (!/\.xlsx$/i.test(filename)) fail("试跑月报仅支持 XLSX 文件");
+  const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+  const uploaded = await api("report_upload", {
+    store: STORE,
+    report_type: "monthly_profit_loss",
+    report_date: month,
+    month,
+    filename,
+    mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    base64: bytes.toString("base64"),
+  }, auth);
+  const saved = uploaded.saved;
+  if (!saved?.id || !saved.version) fail("月报上传未返回保存记录");
+  console.log(JSON.stringify({ uploaded: true, report_id: saved.id, version: saved.version,
+    report_date: saved.report_date, original_filename: saved.original_filename, sha256: digest }));
+  const [overview, cells] = await Promise.all([
+    api("overview", { store: STORE, month }, auth),
+    api("report_cells", { store: STORE, report_id: saved.id }, auth),
+  ]);
+  const monthly = overview.monthly_report || null;
+  const result = {
+    store: STORE,
+    month,
+    has_monthly_report: Boolean(monthly),
+    monthly_report_type: monthly?.report_type || null,
+    monthly_report_date: monthly?.report_date || null,
+    monthly_version: monthly?.version || null,
+    monthly_filename: monthly?.original_filename || null,
+    trace_summary: overview.cell_trace_summary || null,
+    report_cell_count: cells.cells?.length || 0,
+    report_voucher_count: cells.vouchers?.length || 0,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  if (!monthly || monthly.report_type !== "monthly_profit_loss"
+    || monthly.report_date !== `${month}-01` || monthly.version !== saved.version
+    || (overview.cell_trace_summary?.total || 0) <= 0 || !cells.cells?.length) {
+    fail("4月月报空白模板试跑核验未通过");
+  }
+  return result;
+}
+
 if (MODE === "plan") {
   await plan();
 } else {
@@ -307,6 +354,8 @@ if (MODE === "plan") {
     await verifyDailies(loginResult);
   } else if (MODE === "upload-business-evidence") {
     await uploadBusinessEvidence(loginResult);
+  } else if (MODE === "upload-monthly-report") {
+    await uploadMonthlyReport(loginResult);
   } else {
     fail(`未知模式：${MODE}`);
   }
