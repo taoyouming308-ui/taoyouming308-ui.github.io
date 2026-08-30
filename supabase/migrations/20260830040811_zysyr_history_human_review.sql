@@ -160,6 +160,7 @@ declare
   v_month date := date_trunc('month', p_period_month)::date;
   v_total integer;
   v_confirmed integer;
+  v_invalid integer;
 begin
   perform zysyr_private.assert_finance_scope(
     p_actor_user_id, p_company_id, p_store_id, 'expense.create_submit'
@@ -176,8 +177,8 @@ begin
     raise exception using errcode = 'P0002', message = 'HISTORY_IMPORT_MONTH_NOT_REVIEWABLE';
   end if;
   select count(*)::integer,
-    count(*) filter (where review_status = 'confirmed')::integer
-  into v_total, v_confirmed
+    count(*) filter (where validation_status = 'invalid')::integer
+  into v_total, v_invalid
   from public.zysyr_history_import_rows row_item
   where row_item.company_id = p_company_id and row_item.store_id = p_store_id
     and row_item.import_batch_id = p_import_batch_id
@@ -186,15 +187,47 @@ begin
   if v_total = 0 then
     raise exception using errcode = 'P0002', message = 'HISTORY_IMPORT_MONTH_HAS_NO_ROWS';
   end if;
-  if v_confirmed <> v_total then
-    raise exception using errcode = '23514', message = 'HISTORY_IMPORT_MONTH_REVIEW_INCOMPLETE';
+  if v_invalid > 0 then
+    raise exception using errcode = '23514', message = 'HISTORY_IMPORT_MONTH_HAS_INVALID_ROWS';
   end if;
+
+  update public.zysyr_history_import_rows row_item set
+    corrected_json = coalesce(row_item.corrected_json, row_item.mapped_json),
+    validation_status = 'valid',
+    validation_issues = '[]'::jsonb,
+    review_status = 'confirmed',
+    reviewed_by_user_id = p_actor_user_id,
+    reviewed_at = now(),
+    review_note = btrim(p_reason),
+    reviewed_snapshot = coalesce(row_item.corrected_json, row_item.mapped_json),
+    updated_at = now()
+  where row_item.company_id = p_company_id and row_item.store_id = p_store_id
+    and row_item.import_batch_id = p_import_batch_id
+    and coalesce(row_item.corrected_json, row_item.mapped_json)->>'period_month'
+      = to_char(v_month, 'YYYY-MM-DD');
+  get diagnostics v_confirmed = row_count;
+
+  update public.zysyr_history_import_batches batch set
+    valid_row_count = counts.valid_count,
+    warning_row_count = counts.warning_count,
+    invalid_row_count = counts.invalid_count
+  from (
+    select count(*) filter (where validation_status = 'valid')::integer valid_count,
+      count(*) filter (where validation_status = 'warning')::integer warning_count,
+      count(*) filter (where validation_status = 'invalid')::integer invalid_count
+    from public.zysyr_history_import_rows row_item
+    where row_item.company_id = p_company_id
+      and row_item.import_batch_id = p_import_batch_id
+  ) counts
+  where batch.company_id = p_company_id and batch.id = p_import_batch_id;
+
   insert into public.zysyr_history_import_events(
     company_id, store_id, import_batch_id, action, after_json, reason, actor_user_id
   ) values (
     p_company_id, p_store_id, p_import_batch_id, 'month_review',
     jsonb_build_object('period_month', v_month, 'confirmed_rows', v_confirmed,
-      'total_rows', v_total), btrim(p_reason), p_actor_user_id
+      'total_rows', v_total, 'review_mode', 'whole_source_sheet'),
+    btrim(p_reason), p_actor_user_id
   );
   insert into public.zysyr_audit_events(
     company_id, store_id, actor_type, actor_user_id, channel, entity_type,
@@ -202,11 +235,13 @@ begin
   ) values (
     p_company_id, p_store_id, 'user', p_actor_user_id, 'import',
     'history_import_batch', p_import_batch_id, 'month_review',
-    jsonb_build_object('period_month', v_month, 'confirmed_rows', v_confirmed),
+    jsonb_build_object('period_month', v_month, 'confirmed_rows', v_confirmed,
+      'review_mode', 'whole_source_sheet'),
     btrim(p_reason), 'financial'
   );
   return jsonb_build_object('period_month', v_month, 'confirmed_rows', v_confirmed,
-    'total_rows', v_total, 'formal_ledger_written', false);
+    'total_rows', v_total, 'review_mode', 'whole_source_sheet',
+    'formal_ledger_written', false);
 end $$;
 
 create or replace function public.zysyr_confirm_history_import(

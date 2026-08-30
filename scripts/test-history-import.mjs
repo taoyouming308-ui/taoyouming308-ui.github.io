@@ -102,6 +102,10 @@ assert.match(humanReviewMigration, /review_status in \('pending', 'confirmed', '
 assert.match(humanReviewMigration, /zysyr_review_history_import_row/);
 assert.match(humanReviewMigration, /zysyr_confirm_history_import_month/);
 assert.match(humanReviewMigration, /HISTORY_IMPORT_HUMAN_REVIEW_INCOMPLETE/);
+assert.match(humanReviewMigration, /HISTORY_IMPORT_MONTH_HAS_INVALID_ROWS/);
+assert.match(humanReviewMigration, /review_mode', 'whole_source_sheet'/);
+assert.match(humanReviewMigration, /review_status = 'confirmed'/);
+assert.doesNotMatch(humanReviewMigration, /HISTORY_IMPORT_MONTH_REVIEW_INCOMPLETE/);
 assert.match(humanReviewMigration, /formal_ledger_written/);
 
 console.log("history import parser tests passed");

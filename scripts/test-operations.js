@@ -119,14 +119,14 @@ expect(edge.includes('historyImportSheetPreview') && edge.includes('historyImpor
   && edge.includes('historyImportMonthConfirm') && edge.includes('zysyr_review_history_import_row'),
   'history importer must expose source workbook layout and finance human review endpoints');
 expect(html.includes('history_import_sheet_preview') && html.includes('history_import_review')
-  && html.includes('history_import_month_confirm') && html.includes('按原 Excel 版式逐格核对'),
-  'history importer must render the source workbook instead of technical field-only rows');
+  && html.includes('history_import_month_confirm') && html.includes('按月份审核整张原表'),
+  'history importer must render the whole original monthly workbook instead of technical field-only rows');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
-  && html.includes('点击筛选'),
-  'history summary cards must filter and jump to the source cell');
+  && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
+  'history summary cards must filter whole months and keep exception jumps to source cells');
 expect(html.includes('review-target') && html.includes('review-confirmed')
-  && html.includes('本月全部核对完成'),
-  'history workbook review progress and month confirmation controls missing');
+  && html.includes('确认本月整张原表无误') && html.includes('无需逐项确认'),
+  'whole-month source workbook review and one-click month confirmation controls missing');
 expect(html.includes('自由手艺人业绩报表') && html.includes('向里造型业绩报表')
   && html.includes('彩妆／造型') && html.includes('假发定制／发片'),
   'daily electronic sheet must preserve original workbook titles and labels');
