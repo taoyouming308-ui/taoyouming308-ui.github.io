@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
+import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -3593,6 +3594,221 @@ async function createStore(payload: JsonRecord, session: JsonRecord): Promise<Js
   return saveStore(payload, session);
 }
 
+const HISTORY_IMPORT_TYPES = new Set(["monthly_profit_loss", "salary", "petty_cash", "employee_purchase"]);
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function historyImportFinance(session: JsonRecord): void {
+  requireFinanceCapability(session, "expense.create_submit", "只有财务账号可以预览和确认历史数据导入");
+}
+
+async function historyImportPreview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const accountId = cleanText(session.auth_account_id, 40);
+  const importType = cleanText(payload.import_type, 60);
+  const filename = cleanText(payload.filename, 200);
+  const mime = cleanText(payload.mime_type, 120);
+  const reason = cleanText(payload.reason, 500);
+  const year = Number(cleanText(payload.year, 4));
+  const periodStart = cleanText(payload.period_start, 7);
+  const periodEnd = cleanText(payload.period_end, 7);
+  if (!HISTORY_IMPORT_TYPES.has(importType)) throw new Error("请选择正确的历史数据类型");
+  if (mime !== XLSX_MIME || !/\.xlsx$/i.test(filename)) throw new Error("历史结构化数据请上传 XLSX 原文件");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("历史数据年份无效");
+  if (!/^\d{4}-\d{2}$/.test(periodStart) || !/^\d{4}-\d{2}$/.test(periodEnd)
+      || periodStart > periodEnd) throw new Error("请选择正确的历史导入起止月份");
+  if (!reason) throw new Error("请填写本次导入预览原因");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("历史 Excel 文件内容无效"); }
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("历史 Excel 文件必须小于 10MB");
+  const workbook = new ExcelJS.Workbook();
+  try { await workbook.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("历史 Excel 文件无法识别或已损坏"); }
+  const [employees, products] = await Promise.all([
+    restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&limit=3000`, 3000),
+    restRowsAll(`zysyr_products?select=id,name,category,status&company_id=eq.${companyId}&deleted_at=is.null&limit=5000`, 5000),
+  ]);
+  const preview = parseHistoricalWorkbook(workbook, {
+    import_type: importType, year, period_start: periodStart, period_end: periodEnd,
+    target_store_label: cleanText(store.name, 120), employees, products,
+  }) as JsonRecord;
+  const parsedRows = Array.isArray(preview.rows) ? preview.rows as JsonRecord[] : [];
+  const rows: JsonRecord[] = [];
+  for (const row of parsedRows) {
+    const raw = row.raw && typeof row.raw === "object" ? row.raw as JsonRecord : {};
+    rows.push({ ...row, row_hash: await sha256(JSON.stringify(raw)) });
+  }
+  const sourceHash = await sha256Bytes(bytes);
+  const objectPath = `${companyId}/${storeId}/history-import/${importType}/${sourceHash}/${crypto.randomUUID()}.xlsx`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+    body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`历史 Excel 原件上传失败 (${upload.status})`);
+  try {
+    const saved = await rpcSaved("rpc/zysyr_stage_history_import", {
+      p_actor_user_id: accountId, p_company_id: companyId, p_store_id: storeId,
+      p_import_type: importType, p_source_filename: filename, p_source_mime_type: mime,
+      p_source_size_bytes: bytes.length, p_source_sha256: sourceHash,
+      p_source_bucket_id: REPORT_BUCKET, p_source_object_path: objectPath,
+      p_source_store_label: cleanText(preview.source_store_label, 160) || null,
+      p_target_store_label: cleanText(store.name, 120), p_period_start: cleanText(preview.period_start, 10),
+      p_period_end: cleanText(preview.period_end, 10), p_rows: rows,
+      p_source_warnings: Array.isArray(preview.source_warnings) ? preview.source_warnings : [],
+      p_preview_summary: preview.summary && typeof preview.summary === "object" ? preview.summary : {},
+      p_reason: reason,
+    });
+    return { batch: saved, preview: { ...preview, rows }, formal_ledger_written: false, original_private: true };
+  } catch (error) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    });
+    throw error;
+  }
+}
+
+async function historyImportRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const batches = await restRowsAll(`zysyr_history_import_batches?select=id,import_type,source_filename,source_sha256,source_store_label,target_store_label,period_start,period_end,status,raw_row_count,valid_row_count,warning_row_count,invalid_row_count,imported_row_count,failed_row_count,source_warnings,preview_summary,reason,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at,confirmation_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&order=created_at.desc&limit=100`, 100);
+  const requested = cleanText(payload.import_batch_id, 40);
+  const batchId = requested || cleanText(batches[0]?.id, 40);
+  if (batchId && !batches.some((batch) => cleanText(batch.id, 40) === batchId)) throw new Error("历史导入批次不存在或不属于当前门店");
+  if (!batchId) return { batches, rows: [], evidence: [], links: [], events: [], formal_ledger_written: false };
+  const [rows, evidence, links, events] = await Promise.all([
+    restRowsAll(`zysyr_history_import_rows?select=id,import_batch_id,source_sheet,source_row_number,source_locator,row_hash,raw_json,mapped_json,corrected_json,validation_status,validation_issues,import_status,target_business_type,target_business_id,import_error,imported_at,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_row_number.asc&limit=5000`, 5000),
+    restRowsAll(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,original_filename,mime_type,size_bytes,sha256,embedded_asset_count,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=period_month.asc,uploaded_at.asc&limit=1000`, 1000),
+    restRowsAll(`zysyr_history_import_row_evidence?select=id,import_batch_id,import_row_id,evidence_id,source_locator,link_level,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=linked_at.asc&limit=10000`, 10000),
+    restRowsAll(`zysyr_history_import_events?select=id,import_batch_id,import_row_id,action,before_json,after_json,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=10000`, 10000),
+  ]);
+  return { batches, selected_batch_id: batchId, rows, evidence, links, events, formal_ledger_written: false };
+}
+
+async function historyImportCorrect(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const corrected = payload.corrected_json;
+  if (!corrected || typeof corrected !== "object" || Array.isArray(corrected)) throw new Error("修正后的字段格式无效");
+  const status = cleanText(payload.validation_status, 20);
+  if (!["valid", "warning", "invalid"].includes(status)) throw new Error("修正后的校验状态无效");
+  const issues = Array.isArray(payload.validation_issues) ? payload.validation_issues : [];
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("修正历史数据必须填写原因");
+  const saved = await rpcSaved("rpc/zysyr_correct_history_import_row", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_import_row_id: uuidValue(payload.import_row_id, "历史明细编号无效"),
+    p_corrected_json: corrected, p_validation_status: status,
+    p_validation_issues: issues, p_reason: reason,
+  });
+  return { saved, formal_ledger_written: false };
+}
+
+async function historyImportConfirm(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("确认历史数据映射必须填写原因");
+  const saved = await rpcSaved("rpc/zysyr_confirm_history_import", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_import_batch_id: uuidValue(payload.import_batch_id, "历史导入批次编号无效"), p_reason: reason,
+  });
+  return { saved, status: "ready", formal_ledger_written: false };
+}
+
+async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const accountId = cleanText(session.auth_account_id, 40);
+  const batchId = uuidValue(payload.import_batch_id, "历史导入批次编号无效") as string;
+  const period = parseMonth(cleanText(payload.period_month, 7));
+  const periodMonth = `${period}-01`;
+  const filename = cleanText(payload.filename, 200);
+  const mime = cleanText(payload.mime_type, 120);
+  const reason = cleanText(payload.reason, 500);
+  const extensionByMime: Record<string, string> = {
+    [DOCX_MIME]: "docx", "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png",
+  };
+  const extension = extensionByMime[mime];
+  if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) throw new Error("凭证包支持 DOCX、PDF、JPG 或 PNG");
+  if (!reason) throw new Error("上传历史凭证包必须填写说明");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("历史凭证包内容无效"); }
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个历史凭证包必须小于 10MB");
+  let embeddedAssetCount = 0;
+  if (mime === DOCX_MIME) {
+    try {
+      const archive = await JSZip.loadAsync(exactArrayBuffer(bytes));
+      embeddedAssetCount = Object.keys(archive.files).filter((path) => /^word\/media\/[^/]+$/i.test(path) && !archive.files[path].dir).length;
+    } catch { throw new Error("Word 凭证包无法读取或已损坏"); }
+    if (!embeddedAssetCount) throw new Error("Word 凭证包中没有原始图片");
+  }
+  const fileHash = await sha256Bytes(bytes);
+  const objectPath = `${companyId}/${storeId}/history-import/${batchId}/evidence/${periodMonth}/${fileHash}.${extension}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+    body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`历史凭证包上传失败 (${upload.status})`);
+  let registered = false;
+  try {
+    const saved = await rpcSaved("rpc/zysyr_register_history_import_evidence", {
+      p_actor_user_id: accountId, p_company_id: companyId, p_store_id: storeId,
+      p_import_batch_id: batchId, p_period_month: periodMonth, p_evidence_kind: "voucher_bundle",
+      p_original_filename: filename, p_mime_type: mime, p_size_bytes: bytes.length, p_sha256: fileHash,
+      p_bucket_id: REPORT_BUCKET, p_object_path: objectPath, p_embedded_asset_count: embeddedAssetCount,
+      p_reason: reason,
+    });
+    registered = true;
+    try {
+      const linkedRows = await restRowsAll(`zysyr_history_import_row_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&evidence_id=eq.${cleanText(saved.id, 40)}&limit=5000`, 5000);
+      return { saved, linked_rows: linkedRows.length, link_level: "bundle_only", formal_ledger_written: false };
+    } catch {
+      return { saved, linked_rows: null, link_level: "bundle_only", link_count_check_failed: true,
+        formal_ledger_written: false };
+    }
+  } catch (error) {
+    if (!registered) {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+        method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+    }
+    throw error;
+  }
+}
+
+async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const kind = cleanText(payload.file_kind, 20);
+  const id = uuidValue(payload.id, "历史文件编号无效") as string;
+  const table = kind === "source" ? "zysyr_history_import_batches" : kind === "evidence" ? "zysyr_history_import_evidence" : "";
+  if (!table) throw new Error("历史文件类型无效");
+  const rows = await restRows(`${table}?select=${kind === "source" ? "source_bucket_id,source_object_path,source_filename" : "bucket_id,object_path,original_filename"}&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${id}&limit=1`);
+  if (!rows[0]) throw new Error("历史原件不存在或无权查看");
+  const bucket = cleanText(kind === "source" ? rows[0].source_bucket_id : rows[0].bucket_id, 100);
+  const path = cleanText(kind === "source" ? rows[0].source_object_path : rows[0].object_path, 500);
+  const filename = cleanText(kind === "source" ? rows[0].source_filename : rows[0].original_filename, 200);
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${storagePath(bucket)}/${storagePath(path)}`, {
+    method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ expiresIn: 300 }),
+  });
+  if (!response.ok) throw new Error(`历史原件链接生成失败 (${response.status})`);
+  const signed = await response.json() as JsonRecord;
+  const signedPath = cleanText(signed.signedURL || signed.signedUrl || signed.path, 2000);
+  return { url: signedPath.startsWith("http") ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`, filename, expires_in: 300 };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
@@ -3690,6 +3906,12 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
+    if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
+    if (operation === "history_import_read") return json(await historyImportRead(payload, session));
+    if (operation === "history_import_correct") return json(await historyImportCorrect(payload, session));
+    if (operation === "history_import_confirm") return json(await historyImportConfirm(payload, session));
+    if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
+    if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);

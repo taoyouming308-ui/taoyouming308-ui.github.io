@@ -15,6 +15,7 @@ const dailySheet = fs.readFileSync(path.join(root, 'supabase/migrations/20260824
 const dailyManualOnly = fs.readFileSync(path.join(root, 'supabase/migrations/20260825161033_zysyr_daily_manual_entry_only.sql'), 'utf8');
 const dailyEditable = fs.readFileSync(path.join(root, 'supabase/migrations/20260826120000_zysyr_daily_sheet_editable_upsert.sql'), 'utf8');
 const docxLineage = fs.readFileSync(path.join(root, 'supabase/migrations/20260826045929_zysyr_v436_docx_and_report_lineage.sql'), 'utf8');
+const historyImport = fs.readFileSync(path.join(root, 'supabase/migrations/20260830021731_zysyr_history_import_staging.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -39,6 +40,9 @@ expect(html.includes("$('finance-workbench-status').textContent='正在读取备
   && !html.includes("$('petty-cash-report-status')"), 'finance-workbench status target is missing or stale');
 expect(html.includes('财务上传') && html.includes('日报表（每日）') && html.includes('工资表（每月）') && html.includes('月度盈亏表（每月）') && !html.includes('业绩报表（每日）'), 'finance report upload entry missing');
 expect(html.includes('报表图片上传') && html.includes("record_type:'report'"), 'report voucher upload flow missing');
+expect(html.includes('data-view="history-import"') && html.includes('生成预览（不入正式账）')
+  && html.includes("api('history_import_preview'") && html.includes("api('history_import_evidence_upload'"),
+  'historical import preview or evidence flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
 expect(html.includes('不进行 AI 识别') && html.includes('获授权门店账号或财务人工逐格填写'), 'manual-only daily source boundary missing');
 expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
@@ -107,6 +111,13 @@ expect(edge.includes('const skipOcr = payload.skip_ocr === true') && edge.includ
 expect(edge.includes('payload.reviewed_all !== true'), 'server-side full-image review attestation missing');
 expect(edge.includes('dailySheetSeeds') && edge.includes('staff_value') && edge.includes('payment_cashflow'), 'exact daily template cell mapping missing');
 expect(edge.includes('旧版手工文本导入已停用'), 'unsafe text-only photo import must be disabled');
+expect(edge.includes('parseHistoricalWorkbook') && edge.includes('historyImportPreview')
+  && edge.includes('formal_ledger_written: false'), 'history importer must stage preview without formal ledger writes');
+expect(edge.includes('period_start: periodStart') && edge.includes('period_end: periodEnd')
+  && html.includes('history-import-start') && html.includes('history-import-end'),
+  'history importer must require an explicit month range');
+expect(edge.includes('^word\\/media\\/[^/]+$') && edge.includes('zysyr_register_history_import_evidence'),
+  'Word evidence bundle inspection or atomic evidence registration missing');
 
 const denoConfig = JSON.parse(deno);
 expect(denoConfig.imports.exceljs === 'npm:exceljs@4.4.0', 'Excel parser dependency must be pinned');
@@ -161,5 +172,21 @@ expect(dailyEditable.includes('before_text') && dailyEditable.includes('after_te
 expect(docxLineage.includes('wordprocessingml.document') && docxLineage.includes("report.report_type in ('daily', 'performance', 'salary')"), 'DOCX constraint or salary-to-monthly source boundary missing');
 expect(docxLineage.includes('daily_sheet_version_text_snapshot') && docxLineage.includes("'manual_text', cell.manual_text"), 'confirmed manual text snapshot missing');
 expect(docxLineage.includes('assert_daily_entry_scope') && docxLineage.includes("'daily_report.write'"), 'authorized store daily-entry scope missing');
+
+['zysyr_history_import_batches', 'zysyr_history_import_rows', 'zysyr_history_import_evidence',
+  'zysyr_history_import_row_evidence', 'zysyr_history_import_events'].forEach((table) => {
+  expect(historyImport.includes(`create table public.${table}`), `${table} missing`);
+  expect(historyImport.includes(`alter table public.${table} enable row level security`)
+    && historyImport.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
+});
+expect(historyImport.includes('raw_json jsonb not null') && historyImport.includes('mapped_json jsonb not null')
+  && historyImport.includes('corrected_json jsonb'), 'history raw, mapped, or corrected row state missing');
+expect(historyImport.includes('HISTORY_IMPORT_SOURCE_IMMUTABLE')
+  && historyImport.includes('HISTORY_IMPORT_RECORD_APPEND_ONLY'), 'history source or evidence audit immutability missing');
+expect(historyImport.includes('zysyr_stage_history_import') && historyImport.includes('zysyr_confirm_history_import')
+  && historyImport.includes('zysyr_register_history_import_evidence')
+  && historyImport.includes("'bundle_only'"), 'history staging, confirmation, or month-bundle lineage missing');
+expect(!historyImport.includes('unique (company_id, store_id, import_batch_id, row_hash)'),
+  'legitimate identical source rows must not be rejected by row hash');
 
 console.log('operations tests passed: finance-upload-only original report home with cell-level traceability');
