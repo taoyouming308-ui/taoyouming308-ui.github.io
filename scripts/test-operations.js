@@ -16,6 +16,7 @@ const dailyManualOnly = fs.readFileSync(path.join(root, 'supabase/migrations/202
 const dailyEditable = fs.readFileSync(path.join(root, 'supabase/migrations/20260826120000_zysyr_daily_sheet_editable_upsert.sql'), 'utf8');
 const docxLineage = fs.readFileSync(path.join(root, 'supabase/migrations/20260826045929_zysyr_v436_docx_and_report_lineage.sql'), 'utf8');
 const historyImport = fs.readFileSync(path.join(root, 'supabase/migrations/20260830021731_zysyr_history_import_staging.sql'), 'utf8');
+const historyLedger = fs.readFileSync(path.join(root, 'supabase/migrations/20260830070134_zysyr_history_formal_ledger.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -121,6 +122,12 @@ expect(edge.includes('historyImportSheetPreview') && edge.includes('historyImpor
 expect(html.includes('history_import_sheet_preview') && html.includes('history_import_review')
   && html.includes('history_import_month_confirm') && html.includes('按月份审核整张原表'),
   'history importer must render the whole original monthly workbook instead of technical field-only rows');
+expect(html.includes("api('history_import_post'") && html.includes("api('history_ledger_revise'")
+  && html.includes('正式入账（保留待核对提示）') && html.includes('不会覆盖最初上传的数据'),
+  'formal history posting or versioned correction UI missing');
+expect(edge.includes('historyImportPost') && edge.includes('historyLedgerRevise')
+  && edge.includes('zysyr_history_ledger_entries') && edge.includes('zysyr_history_ledger_revisions'),
+  'formal history ledger API or read projection missing');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
   'history summary cards must filter whole months and keep exception jumps to source cells');
@@ -205,5 +212,24 @@ expect(historyImport.includes('zysyr_stage_history_import') && historyImport.inc
   && historyImport.includes("'bundle_only'"), 'history staging, confirmation, or month-bundle lineage missing');
 expect(!historyImport.includes('unique (company_id, store_id, import_batch_id, row_hash)'),
   'legitimate identical source rows must not be rejected by row hash');
+
+['zysyr_history_ledger_entries', 'zysyr_history_ledger_revisions'].forEach((table) => {
+  expect(historyLedger.includes(`create table public.${table}`), `${table} missing`);
+  expect(historyLedger.includes(`alter table public.${table} enable row level security`)
+    && historyLedger.includes(`alter table public.${table} force row level security`), `${table} RLS missing`);
+});
+expect(historyLedger.includes('zysyr_post_history_import_batch')
+  && historyLedger.includes('zysyr_revise_history_ledger_entry')
+  && historyLedger.includes('zysyr_reverse_history_ledger_entry'),
+  'formal posting, revision, or reversal RPC missing');
+expect(historyLedger.includes("target_business_type = 'history_ledger'")
+  && historyLedger.includes('HISTORY_LEDGER_ROW_COUNT_MISMATCH'),
+  'formal row lineage or atomic count guard missing');
+expect(historyLedger.includes('HISTORY_LEDGER_POSTING_IMMUTABLE')
+  && historyLedger.includes('zysyr_history_ledger_revisions_immutable'),
+  'formal posting snapshot or revision history must be immutable');
+expect(historyLedger.includes('from public, anon, authenticated, service_role')
+  && historyLedger.includes('to service_role'),
+  'formal ledger RPC/table grants must be restricted to server-side service role');
 
 console.log('operations tests passed: finance-upload-only original report home with cell-level traceability');

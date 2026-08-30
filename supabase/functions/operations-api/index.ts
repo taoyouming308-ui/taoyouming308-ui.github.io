@@ -3708,14 +3708,20 @@ async function historyImportRead(payload: JsonRecord, session: JsonRecord): Prom
   const requested = cleanText(payload.import_batch_id, 40);
   const batchId = requested || cleanText(batches[0]?.id, 40);
   if (batchId && !batches.some((batch) => cleanText(batch.id, 40) === batchId)) throw new Error("历史导入批次不存在或不属于当前门店");
-  if (!batchId) return { batches, rows: [], evidence: [], links: [], events: [], formal_ledger_written: false };
-  const [rows, evidence, links, events] = await Promise.all([
+  if (!batchId) return { batches, rows: [], evidence: [], links: [], events: [], ledger_entries: [], ledger_revisions: [], formal_ledger_written: false };
+  const [rows, evidence, links, events, ledgerEntries, ledgerRevisions] = await Promise.all([
     restRowsAll(`zysyr_history_import_rows?select=id,import_batch_id,source_sheet,source_row_number,source_locator,row_hash,raw_json,mapped_json,corrected_json,validation_status,validation_issues,review_status,reviewed_by_user_id,reviewed_at,review_note,reviewed_snapshot,import_status,target_business_type,target_business_id,import_error,imported_at,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_row_number.asc&limit=5000`, 5000),
     restRowsAll(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,original_filename,mime_type,size_bytes,sha256,embedded_asset_count,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=period_month.asc,uploaded_at.asc&limit=1000`, 1000),
     restRowsAll(`zysyr_history_import_row_evidence?select=id,import_batch_id,import_row_id,evidence_id,source_locator,link_level,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=linked_at.asc&limit=10000`, 10000),
     restRowsAll(`zysyr_history_import_events?select=id,import_batch_id,import_row_id,action,before_json,after_json,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=10000`, 10000),
+    restRowsAll(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,source_sheet,source_locator,posted_payload,current_payload,posted_validation_status,posted_validation_issues,posted_review_status,posted_with_warning,status,version,posted_by_user_id,posted_at,last_modified_by_user_id,last_modified_at,reversed_at,reversal_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_locator.asc&limit=5000`, 5000),
+    restRowsAll(`zysyr_history_ledger_revisions?select=id,ledger_entry_id,import_batch_id,import_row_id,version,action,before_payload,after_payload,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=10000`, 10000),
   ]);
-  return { batches, selected_batch_id: batchId, rows, evidence, links, events, formal_ledger_written: false };
+  return {
+    batches, selected_batch_id: batchId, rows, evidence, links, events,
+    ledger_entries: ledgerEntries, ledger_revisions: ledgerRevisions,
+    formal_ledger_written: ledgerEntries.length > 0,
+  };
 }
 
 async function historyImportSheetPreview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3842,6 +3848,52 @@ async function historyImportConfirm(payload: JsonRecord, session: JsonRecord): P
     p_import_batch_id: uuidValue(payload.import_batch_id, "历史导入批次编号无效"), p_reason: reason,
   });
   return { saved, status: "ready", formal_ledger_written: false };
+}
+
+async function historyImportPost(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("正式入账必须填写原因");
+  const saved = await rpcSaved("rpc/zysyr_post_history_import_batch", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_import_batch_id: uuidValue(payload.import_batch_id, "历史导入批次编号无效"),
+    p_allow_unreviewed: payload.allow_unreviewed === true, p_reason: reason,
+  });
+  return { saved, status: "completed", formal_ledger_written: true };
+}
+
+async function historyLedgerRevise(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const currentPayload = payload.current_payload;
+  if (!currentPayload || typeof currentPayload !== "object" || Array.isArray(currentPayload)) {
+    throw new Error("正式账修订后的字段格式无效");
+  }
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("修改正式账必须填写原因");
+  const saved = await rpcSaved("rpc/zysyr_revise_history_ledger_entry", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_ledger_entry_id: uuidValue(payload.ledger_entry_id, "正式账明细编号无效"),
+    p_current_payload: currentPayload, p_reason: reason,
+  });
+  return { saved, formal_ledger_written: true };
+}
+
+async function historyLedgerReverse(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("冲正正式账必须填写原因");
+  const saved = await rpcSaved("rpc/zysyr_reverse_history_ledger_entry", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_ledger_entry_id: uuidValue(payload.ledger_entry_id, "正式账明细编号无效"),
+    p_reason: reason,
+  });
+  return { saved, formal_ledger_written: true };
 }
 
 async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4035,6 +4087,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_import_month_confirm") return json(await historyImportMonthConfirm(payload, session));
     if (operation === "history_import_correct") return json(await historyImportCorrect(payload, session));
     if (operation === "history_import_confirm") return json(await historyImportConfirm(payload, session));
+    if (operation === "history_import_post") return json(await historyImportPost(payload, session));
+    if (operation === "history_ledger_revise") return json(await historyLedgerRevise(payload, session));
+    if (operation === "history_ledger_reverse") return json(await historyLedgerReverse(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));

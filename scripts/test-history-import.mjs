@@ -108,4 +108,20 @@ assert.match(humanReviewMigration, /review_status = 'confirmed'/);
 assert.doesNotMatch(humanReviewMigration, /HISTORY_IMPORT_MONTH_REVIEW_INCOMPLETE/);
 assert.match(humanReviewMigration, /formal_ledger_written/);
 
+const formalLedgerMigration = fs.readFileSync(new URL(
+  "../supabase/migrations/20260830070134_zysyr_history_formal_ledger.sql", import.meta.url,
+), "utf8");
+assert.match(formalLedgerMigration, /create table public\.zysyr_history_ledger_entries/);
+assert.match(formalLedgerMigration, /create table public\.zysyr_history_ledger_revisions/);
+assert.match(formalLedgerMigration, /zysyr_post_history_import_batch/);
+assert.match(formalLedgerMigration, /zysyr_revise_history_ledger_entry/);
+assert.match(formalLedgerMigration, /zysyr_reverse_history_ledger_entry/);
+assert.match(formalLedgerMigration, /unique \(company_id, store_id, import_row_id\)/);
+assert.match(formalLedgerMigration, /HISTORY_LEDGER_ROW_COUNT_MISMATCH/);
+assert.match(formalLedgerMigration, /posted_with_warning/);
+assert.match(formalLedgerMigration, /target_business_type = 'history_ledger'/);
+assert.match(formalLedgerMigration, /force row level security/);
+assert.match(formalLedgerMigration, /to service_role/);
+assert.doesNotMatch(formalLedgerMigration, /grant (insert|update|delete)/i);
+
 console.log("history import parser tests passed");
