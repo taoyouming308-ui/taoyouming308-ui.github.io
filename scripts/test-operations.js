@@ -110,9 +110,26 @@ expect(edge.includes('日报AI候选导入已停用') && edge.includes('请对�
 expect(edge.includes('const skipOcr = payload.skip_ocr === true') && edge.includes('manual_review_only: skipOcr'), 'manual daily originals must be able to skip OCR wake');
 expect(edge.includes('payload.reviewed_all !== true'), 'server-side full-image review attestation missing');
 expect(edge.includes('dailySheetSeeds') && edge.includes('staff_value') && edge.includes('payment_cashflow'), 'exact daily template cell mapping missing');
+expect(edge.includes('column_widths: columnWidths') && edge.includes('row_heights: rowHeights')
+  && edge.includes('cell_styles: cellStyles'), 'uploaded Excel layout metadata must be retained');
 expect(edge.includes('旧版手工文本导入已停用'), 'unsafe text-only photo import must be disabled');
 expect(edge.includes('parseHistoricalWorkbook') && edge.includes('historyImportPreview')
   && edge.includes('formal_ledger_written: false'), 'history importer must stage preview without formal ledger writes');
+expect(edge.includes('historyImportSheetPreview') && edge.includes('historyImportReview')
+  && edge.includes('historyImportMonthConfirm') && edge.includes('zysyr_review_history_import_row'),
+  'history importer must expose source workbook layout and finance human review endpoints');
+expect(html.includes('history_import_sheet_preview') && html.includes('history_import_review')
+  && html.includes('history_import_month_confirm') && html.includes('按原 Excel 版式逐格核对'),
+  'history importer must render the source workbook instead of technical field-only rows');
+expect(html.includes('data-history-filter') && html.includes('data-history-jump')
+  && html.includes('点击筛选'),
+  'history summary cards must filter and jump to the source cell');
+expect(html.includes('review-target') && html.includes('review-confirmed')
+  && html.includes('本月全部核对完成'),
+  'history workbook review progress and month confirmation controls missing');
+expect(html.includes('自由手艺人业绩报表') && html.includes('向里造型业绩报表')
+  && html.includes('彩妆／造型') && html.includes('假发定制／发片'),
+  'daily electronic sheet must preserve original workbook titles and labels');
 expect(edge.includes('period_start: periodStart') && edge.includes('period_end: periodEnd')
   && html.includes('history-import-start') && html.includes('history-import-end'),
   'history importer must require an explicit month range');

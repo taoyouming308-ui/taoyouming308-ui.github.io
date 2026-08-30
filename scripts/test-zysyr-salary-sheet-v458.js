@@ -16,7 +16,8 @@ const fields = [
   '自购', '社保（员工缴）', '应扣', '实发', '备注／签字',
 ];
 for (const label of fields) expect(page.includes(`label:'${label}'`), `original salary field missing: ${label}`);
-expect(page.includes('salary-paper') && page.includes('colspan="21"'), '21-column paper layout missing');
+expect(page.includes('salary-paper') && page.includes('colspan="7"></td><td colspan="11">自由手艺人工资表</td><td colspan="3">月份：'),
+  'original A:G + H:R title + S:U month layout missing');
 expect(page.includes('应发 = 基本工资 + 工龄工资 + 岗位工资')
   && page.includes('应扣 = 成本 + 迟到／早退 + 拍摄 + 请假 + 成长 + 自购 + 社保（员工缴）')
   && page.includes('实发 = 应发 - 应扣'), 'approved salary formulas missing from UI');

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { parseHistoricalWorkbook } from "../supabase/functions/_shared/zysyr-history-import.mjs";
 
 function columnLetters(column) {
@@ -93,5 +94,14 @@ const mismatch = parseHistoricalWorkbook(workbook(sheet("01", [
 ])), { import_type: "petty_cash", year: 2026, target_store_label: "自由手艺人", employees: [], products: [] });
 assert.equal(mismatch.source_warnings[0].code, "source_store_label_mismatch");
 assert.equal(mismatch.source_warnings[0].severity, "warning");
+
+const humanReviewMigration = fs.readFileSync(new URL(
+  "../supabase/migrations/20260830040811_zysyr_history_human_review.sql", import.meta.url,
+), "utf8");
+assert.match(humanReviewMigration, /review_status in \('pending', 'confirmed', 'needs_correction'\)/);
+assert.match(humanReviewMigration, /zysyr_review_history_import_row/);
+assert.match(humanReviewMigration, /zysyr_confirm_history_import_month/);
+assert.match(humanReviewMigration, /HISTORY_IMPORT_HUMAN_REVIEW_INCOMPLETE/);
+assert.match(humanReviewMigration, /formal_ledger_written/);
 
 console.log("history import parser tests passed");

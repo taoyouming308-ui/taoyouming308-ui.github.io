@@ -1606,8 +1606,37 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
   if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
   const model = sheet.model as unknown as JsonRecord;
   const merges = (Array.isArray(model.merges) ? model.merges : []).map((merge) => mergeCoordinates(cleanText(merge, 40)));
+  const columnWidths = Array.from({ length: columnCount }, (_item, index) =>
+    Math.max(2, Math.min(80, Number(sheet.getColumn(index + 1).width || 10))));
+  const rowHeights = Array.from({ length: rowCount }, (_item, index) =>
+    Math.max(12, Math.min(120, Number(sheet.getRow(index + 1).height || 20))));
+  const cellStyles: JsonRecord[] = [];
+  for (let row = 1; row <= rowCount; row += 1) {
+    for (let column = 1; column <= columnCount; column += 1) {
+      const cell = sheet.getCell(row, column);
+      const fill = cell.fill as unknown as { fgColor?: { argb?: string } };
+      const fillArgb = cleanText(fill?.fgColor?.argb, 8);
+      const horizontal = cleanText(cell.alignment?.horizontal, 30);
+      const vertical = cleanText(cell.alignment?.vertical, 30);
+      const bold = cell.font?.bold === true;
+      const wrapText = cell.alignment?.wrapText === true;
+      if (!fillArgb && !horizontal && !vertical && !bold && !wrapText) continue;
+      cellStyles.push({
+        cell_address: `${columnLetters(column)}${row}`,
+        fill: /^[0-9A-F]{8}$/i.test(fillArgb) ? fillArgb : null,
+        horizontal: horizontal || null,
+        vertical: vertical || null,
+        bold,
+        wrap_text: wrapText,
+      });
+    }
+  }
   const rangeText = `A1:${sheet.getCell(rowCount, columnCount).address}`;
-  return { sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount, values, merges, cells };
+  return {
+    sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount,
+    values, merges, cells, column_widths: columnWidths, row_heights: rowHeights,
+    cell_styles: cellStyles,
+  };
 }
 
 function xmlText(value: string): string {
@@ -3681,12 +3710,105 @@ async function historyImportRead(payload: JsonRecord, session: JsonRecord): Prom
   if (batchId && !batches.some((batch) => cleanText(batch.id, 40) === batchId)) throw new Error("历史导入批次不存在或不属于当前门店");
   if (!batchId) return { batches, rows: [], evidence: [], links: [], events: [], formal_ledger_written: false };
   const [rows, evidence, links, events] = await Promise.all([
-    restRowsAll(`zysyr_history_import_rows?select=id,import_batch_id,source_sheet,source_row_number,source_locator,row_hash,raw_json,mapped_json,corrected_json,validation_status,validation_issues,import_status,target_business_type,target_business_id,import_error,imported_at,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_row_number.asc&limit=5000`, 5000),
+    restRowsAll(`zysyr_history_import_rows?select=id,import_batch_id,source_sheet,source_row_number,source_locator,row_hash,raw_json,mapped_json,corrected_json,validation_status,validation_issues,review_status,reviewed_by_user_id,reviewed_at,review_note,reviewed_snapshot,import_status,target_business_type,target_business_id,import_error,imported_at,created_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_row_number.asc&limit=5000`, 5000),
     restRowsAll(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,original_filename,mime_type,size_bytes,sha256,embedded_asset_count,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=period_month.asc,uploaded_at.asc&limit=1000`, 1000),
     restRowsAll(`zysyr_history_import_row_evidence?select=id,import_batch_id,import_row_id,evidence_id,source_locator,link_level,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=linked_at.asc&limit=10000`, 10000),
     restRowsAll(`zysyr_history_import_events?select=id,import_batch_id,import_row_id,action,before_json,after_json,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=10000`, 10000),
   ]);
   return { batches, selected_batch_id: batchId, rows, evidence, links, events, formal_ledger_written: false };
+}
+
+async function historyImportSheetPreview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const batchId = uuidValue(payload.import_batch_id, "历史导入批次编号无效") as string;
+  const batches = await restRows(`zysyr_history_import_batches?select=id,source_bucket_id,source_object_path,source_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&limit=1`);
+  const batch = batches[0];
+  if (!batch) throw new Error("历史导入批次不存在或不属于当前门店");
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(cleanText(batch.source_bucket_id, 100))}/${storagePath(cleanText(batch.source_object_path, 500))}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`历史 Excel 原件读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const workbook = new ExcelJS.Workbook();
+  try { await workbook.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("历史 Excel 原件无法读取"); }
+  const sheetNames = workbook.worksheets.map((item) => cleanText(item.name, 120));
+  const requested = cleanText(payload.source_sheet, 120);
+  const sheet = workbook.getWorksheet(requested || sheetNames[0]);
+  if (!sheet || !sheetNames.includes(cleanText(sheet.name, 120))) throw new Error("历史 Excel 工作表不存在");
+  const rowCount = Math.min(sheet.actualRowCount || sheet.rowCount || 0, 200);
+  const columnCount = Math.min(sheet.actualColumnCount || sheet.columnCount || 0, 40);
+  if (!rowCount || !columnCount) throw new Error("历史 Excel 工作表为空");
+  const cells: JsonRecord[] = [];
+  for (let row = 1; row <= rowCount; row += 1) {
+    for (let column = 1; column <= columnCount; column += 1) {
+      const cell = sheet.getCell(row, column);
+      const value = displayValue(cell);
+      const formula = formulaText(cell);
+      if ((value === null || value === "") && !formula) continue;
+      const font = cell.font || {};
+      const alignment = cell.alignment || {};
+      const fill = cell.fill && cell.fill.type === "pattern"
+        ? cell.fill as unknown as { fgColor?: { argb?: string } } : null;
+      cells.push({
+        row, column, address: cell.address, value, formula: formula || null,
+        number_format: cleanText(cell.numFmt, 100) || null,
+        bold: Boolean(font.bold),
+        horizontal: cleanText(alignment.horizontal, 20) || null,
+        fill: cleanText(fill?.fgColor?.argb, 12) || null,
+      });
+    }
+  }
+  const merges = Array.isArray(sheet.model?.merges) ? sheet.model.merges.map((item) => cleanText(item, 40)) : [];
+  const columnWidths: number[] = [];
+  for (let column = 1; column <= columnCount; column += 1) {
+    columnWidths.push(Math.max(6, Math.min(32, Number(sheet.getColumn(column).width) || 10)));
+  }
+  const rowHeights: number[] = [];
+  for (let row = 1; row <= rowCount; row += 1) {
+    rowHeights.push(Math.max(18, Math.min(72, Number(sheet.getRow(row).height) || 24)));
+  }
+  return {
+    batch_id: batchId, source_filename: cleanText(batch.source_filename, 200),
+    sheet_names: sheetNames, selected_sheet: cleanText(sheet.name, 120),
+    row_count: rowCount, column_count: columnCount, cells, merges,
+    column_widths: columnWidths, row_heights: rowHeights,
+    formal_ledger_written: false, source_immutable: true,
+  };
+}
+
+async function historyImportReview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const corrected = payload.corrected_json;
+  if (!corrected || typeof corrected !== "object" || Array.isArray(corrected)) throw new Error("复核后的字段格式无效");
+  const reviewStatus = cleanText(payload.review_status, 30);
+  if (!["confirmed", "needs_correction"].includes(reviewStatus)) throw new Error("请选择正确的人工复核结果");
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("人工复核必须填写说明");
+  const saved = await rpcSaved("rpc/zysyr_review_history_import_row", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_import_row_id: uuidValue(payload.import_row_id, "历史明细编号无效"),
+    p_corrected_json: corrected, p_review_status: reviewStatus, p_reason: reason,
+  });
+  return { saved, formal_ledger_written: false };
+}
+
+async function historyImportMonthConfirm(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("月份核对完成必须填写说明");
+  const saved = await rpcSaved("rpc/zysyr_confirm_history_import_month", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_import_batch_id: uuidValue(payload.import_batch_id, "历史导入批次编号无效"),
+    p_period_month: `${parseMonth(cleanText(payload.period_month, 7))}-01`, p_reason: reason,
+  });
+  return { saved, formal_ledger_written: false };
 }
 
 async function historyImportCorrect(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3908,6 +4030,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
     if (operation === "history_import_read") return json(await historyImportRead(payload, session));
+    if (operation === "history_import_sheet_preview") return json(await historyImportSheetPreview(payload, session));
+    if (operation === "history_import_review") return json(await historyImportReview(payload, session));
+    if (operation === "history_import_month_confirm") return json(await historyImportMonthConfirm(payload, session));
     if (operation === "history_import_correct") return json(await historyImportCorrect(payload, session));
     if (operation === "history_import_confirm") return json(await historyImportConfirm(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
