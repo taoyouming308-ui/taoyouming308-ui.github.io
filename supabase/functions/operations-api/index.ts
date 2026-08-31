@@ -50,6 +50,7 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
   "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "private, no-store",
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -2446,6 +2447,23 @@ function storagePath(path: string): string {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
+function rasterMime(path: string): string {
+  const extension = cleanText(path, 500).split(".").pop()?.toLowerCase();
+  return extension === "jpg" || extension === "jpeg" ? "image/jpeg"
+    : extension === "png" ? "image/png"
+    : extension === "webp" ? "image/webp"
+    : extension === "gif" ? "image/gif" : "";
+}
+
+function bytesBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunk, bytes.length)));
+  }
+  return btoa(binary);
+}
+
 async function assertBusinessVoucherTarget(
   companyId: string,
   storeId: string,
@@ -4260,6 +4278,66 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   }
 }
 
+async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const evidenceId = uuidValue(payload.evidence_id, "历史凭证编号无效") as string;
+  const rows = await restRows(`zysyr_history_import_evidence?select=id,original_filename,mime_type,size_bytes,embedded_asset_count,bucket_id,object_path&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${evidenceId}&limit=1`);
+  const evidence = rows[0];
+  if (!evidence) throw new Error("历史凭证不存在或无权查看");
+  const bucket = cleanText(evidence.bucket_id, 100);
+  const objectPath = cleanText(evidence.object_path, 500);
+  const filename = cleanText(evidence.original_filename, 200);
+  const mime = cleanText(evidence.mime_type, 120);
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucket)}/${storagePath(objectPath)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`原始凭证图片读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (mime.startsWith("image/") && ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mime)) {
+    return { filename, mime_type: mime, embedded_asset_count: 1,
+      images: [{ index: 1, filename, mime_type: mime, data_url: `data:${mime};base64,${bytesBase64(bytes)}` }] };
+  }
+  if (mime !== DOCX_MIME) {
+    return { filename, mime_type: mime, embedded_asset_count: Number(evidence.embedded_asset_count || 0),
+      images: [], file_url: await signedStorageUrl(bucket, objectPath), expires_in: 300 };
+  }
+  let archive: JSZip;
+  try { archive = await JSZip.loadAsync(exactArrayBuffer(bytes)); } catch { throw new Error("Word 凭证包无法读取或已损坏"); }
+  const available = Object.keys(archive.files).filter((path) => /^word\/media\/[^/]+$/i.test(path) && !archive.files[path].dir && rasterMime(path));
+  const natural = (a: string, b: string) => a.localeCompare(b, "zh-CN", { numeric: true, sensitivity: "base" });
+  const ordered: string[] = [];
+  try {
+    const relXml = await archive.file("word/_rels/document.xml.rels")?.async("string") || "";
+    const documentXml = await archive.file("word/document.xml")?.async("string") || "";
+    const targets = new Map<string, string>();
+    for (const tag of relXml.match(/<Relationship\b[^>]*>/gi) || []) {
+      const id = tag.match(/\bId="([^"]+)"/i)?.[1];
+      const target = tag.match(/\bTarget="([^"]+)"/i)?.[1];
+      if (id && target && /(?:^|\/)media\//i.test(target)) targets.set(id, target.replace(/^\.\.\//, ""));
+    }
+    for (const match of documentXml.matchAll(/\br:embed="([^"]+)"/g)) {
+      const target = targets.get(match[1]);
+      if (!target) continue;
+      const path = target.startsWith("word/") ? target : `word/${target}`;
+      if (available.includes(path) && !ordered.includes(path)) ordered.push(path);
+    }
+  } catch { /* Fall back to the package's natural media order. */ }
+  available.sort(natural).forEach((path) => { if (!ordered.includes(path)) ordered.push(path); });
+  const images: JsonRecord[] = [];
+  for (let index = 0; index < ordered.length; index += 1) {
+    const path = ordered[index];
+    const imageMime = rasterMime(path);
+    const base64 = await archive.file(path)?.async("base64");
+    if (!base64 || !imageMime) continue;
+    images.push({ index: index + 1, filename: path.split("/").pop(), mime_type: imageMime,
+      data_url: `data:${imageMime};base64,${base64}` });
+  }
+  if (!images.length) throw new Error("Word 凭证包中没有可显示的 JPG、PNG、WEBP 或 GIF 原图");
+  return { filename, mime_type: mime, embedded_asset_count: images.length, images };
+}
+
 async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -4391,6 +4469,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_ledger_revise") return json(await historyLedgerRevise(payload, session));
     if (operation === "history_ledger_reverse") return json(await historyLedgerReverse(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
+    if (operation === "history_evidence_images") return json(await historyEvidenceImages(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));

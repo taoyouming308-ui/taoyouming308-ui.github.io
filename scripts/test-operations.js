@@ -141,12 +141,17 @@ expect(html.includes("api('history_ledger_revise'") && html.includes('data-open-
   'history amount revision or original-file trace action missing');
 expect(html.includes('salary-employee-name') && html.includes("employee.name+' · '"),
   'salary report must show employee names before internal employee codes');
-expect(html.includes('monthly-trace-open') && html.includes('的明细与原始凭证')
-  && html.includes('white-space:nowrap!important'),
-  'monthly amount cells must expose a single-click voucher action and keep long amounts on one line');
+expect(!html.includes('monthly-trace-open') && html.includes('monthly-edit-toggle')
+  && html.includes('openMonthlyVoucher(cell.dataset.traceCell)')
+  && html.includes('voucher-gallery-list') && html.includes('white-space:nowrap!important'),
+  'monthly amount cells must not be covered by voucher buttons and must open original images directly');
 expect(edge.includes('historyEvidenceWithScope') && edge.includes('trace_link_level')
   && html.includes('本月支出凭证包'),
   'historical cell trace must identify month-bundle voucher scope without pretending an exact page link');
+expect(edge.includes('historyEvidenceImages') && edge.includes('word\\/media\\/')
+  && edge.includes('history_evidence_images') && edge.includes('Cache-Control')
+  && html.includes("api('history_evidence_images'") && html.includes('当前关联范围'),
+  'private historical voucher images must be extracted for direct gallery display with truthful bundle scope');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
   'history summary cards must filter whole months and keep exception jumps to source cells');
