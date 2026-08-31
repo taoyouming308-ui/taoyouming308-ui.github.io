@@ -128,6 +128,17 @@ expect(html.includes("api('history_import_post'") && html.includes("api('history
 expect(edge.includes('historyImportPost') && edge.includes('historyLedgerRevise')
   && edge.includes('zysyr_history_ledger_entries') && edge.includes('zysyr_history_ledger_revisions'),
   'formal history ledger API or read projection missing');
+expect(edge.includes('historicalMonthlyReport') && edge.includes('historyMonthEntries')
+  && edge.includes('historyEvidenceForEntries') && edge.includes('historicalCellTrace'),
+  'history ledger monthly projection or evidence trace missing');
+expect(edge.includes('history_records: historyRecords') && edge.includes('historical_employee_purchases:historicalEmployeePurchases')
+  && edge.includes('historical: true, history_entries: historyEntries'),
+  'history salary, petty cash, or employee purchase module projection missing');
+expect(html.includes('历史原表正式账') && html.includes('历史正式备用金明细')
+  && html.includes('历史员工自购（正式账，只读；不重复扣减当前库存）'),
+  'history module tables or no-double-counting copy missing');
+expect(html.includes("api('history_ledger_revise'") && html.includes('data-open-history-file'),
+  'history amount revision or original-file trace action missing');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
   'history summary cards must filter whole months and keep exception jumps to source cells');

@@ -814,6 +814,90 @@ async function saveStore(payload: JsonRecord, session: JsonRecord): Promise<Json
   return { saved };
 }
 
+async function historyMonthEntries(companyId: string, storeId: string, month: string, entryType = ""): Promise<JsonRecord[]> {
+  const typeFilter = entryType ? `&entry_type=eq.${encodeURIComponent(entryType)}` : "";
+  return restRowsAll(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,source_sheet,source_locator,posted_payload,current_payload,posted_validation_status,posted_validation_issues,posted_review_status,posted_with_warning,status,version,posted_by_user_id,posted_at,last_modified_by_user_id,last_modified_at&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01&status=eq.posted${typeFilter}&order=source_sheet.asc,source_locator.asc&limit=5000`, 5000);
+}
+
+async function historyEvidenceForEntries(companyId: string, storeId: string, entries: JsonRecord[]): Promise<JsonRecord> {
+  const rowIds = entries.map((row) => row.import_row_id).filter(Boolean);
+  const links = rowIds.length ? await restRowsAll(`zysyr_history_import_row_evidence?select=id,import_batch_id,import_row_id,evidence_id,source_locator,link_level,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_row_id=in.${uuidIn(rowIds)}&limit=10000`, 10000) : [];
+  const evidenceIds = Array.from(new Set(links.map((row) => row.evidence_id).filter(Boolean)));
+  const evidence = evidenceIds.length ? await restRowsAll(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,original_filename,mime_type,size_bytes,sha256,embedded_asset_count,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(evidenceIds)}&limit=1000`, 1000) : [];
+  return { links, evidence };
+}
+
+async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
+  const entries = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
+  if (!entries.length) return null;
+  const batchId = cleanText(entries[0].import_batch_id, 40);
+  const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
+  const batch = batches[0];
+  if (!batch) return null;
+  const sheetCounts = new Map<string, number>();
+  for (const entry of entries) {
+    const name = cleanText(entry.source_sheet, 120);
+    if (name) sheetCounts.set(name, (sheetCounts.get(name) || 0) + 1);
+  }
+  const sheetName = Array.from(sheetCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(cleanText(batch.source_bucket_id, 100))}/${storagePath(cleanText(batch.source_object_path, 500))}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`历史月报原件读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const display = await workbookDisplay(bytes, "monthly_profit_loss", storeName, sheetName);
+  const entryByAddress = new Map(entries.map((entry) => [cleanText((entry.current_payload as JsonRecord)?.cell_address, 20).toUpperCase(), entry]));
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const cells = Array.isArray(display.cells) ? display.cells as JsonRecord[] : [];
+  for (const cell of cells) {
+    const address = cleanText(cell.cell_address, 20).toUpperCase();
+    const entry = entryByAddress.get(address);
+    if (!entry) continue;
+    const current = entry.current_payload && typeof entry.current_payload === "object" ? entry.current_payload as JsonRecord : {};
+    const amount = current.amount === null || current.amount === undefined || current.amount === "" ? null : Number(current.amount);
+    cell.id = entry.id;
+    cell.historical_ledger_entry_id = entry.id;
+    cell.numeric_value = amount !== null && Number.isFinite(amount) ? amount : cell.numeric_value;
+    cell.display_value = cell.numeric_value === null || cell.numeric_value === undefined ? cell.display_value : String(cell.numeric_value);
+    cell.formula = cleanText(current.formula, 2000) || cell.formula || null;
+    cell.cell_kind = cleanText(current.cell_kind, 30) || cell.cell_kind;
+    cell.label = cleanText(current.label, 300) || cell.label;
+    const rowIndex = Number(cell.row_number) - 1, columnIndex = Number(cell.column_number) - 1;
+    if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
+  }
+  const evidenceData = await historyEvidenceForEntries(companyId, storeId, entries);
+  const linkCounts = new Map<string, number>();
+  for (const link of evidenceData.links as JsonRecord[]) {
+    const rowId = cleanText(link.import_row_id, 40);
+    linkCounts.set(rowId, (linkCounts.get(rowId) || 0) + 1);
+  }
+  const traceStatus: Record<string, string> = {}, sourceCount: Record<string, number> = {};
+  const summary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0 };
+  for (const entry of entries) {
+    const current = entry.current_payload as JsonRecord;
+    const address = cleanText(current?.cell_address, 20).toUpperCase();
+    if (!address) continue;
+    const isFormula = cleanText(current?.cell_kind, 20) === "formula";
+    const count = linkCounts.get(cleanText(entry.import_row_id, 40)) || 0;
+    const status = isFormula ? "formula" : count ? "matched" : "missing_evidence";
+    traceStatus[address] = status; sourceCount[address] = 0;
+    summary.total += 1; (summary as Record<string, number>)[status] += 1;
+  }
+  const uploaderIds = Array.from(new Set([batch.created_by_user_id, batch.confirmed_by_user_id].filter(Boolean)));
+  const uploaders = uploaderIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(uploaderIds)}&limit=20`, 20) : [];
+  const uploader = uploaders.find((row) => row.id === batch.confirmed_by_user_id) || uploaders[0] || null;
+  return {
+    id: batch.id, historical: true, history_batch_id: batch.id,
+    report_type: "monthly_profit_loss", report_date: `${month}-01`, template_code: "history_original_v1",
+    template_version: 1, version: Math.max(1, ...entries.map((row) => Number(row.version || 1))), status: "posted",
+    original_filename: batch.source_filename, mime_type: batch.source_mime_type, size_bytes: batch.source_size_bytes,
+    sha256: batch.source_sha256, display_data: display, uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
+    uploaded_at: batch.confirmed_at || batch.created_at, uploaded_by: uploader, vouchers: evidenceData.evidence,
+    history_entries: entries, history_evidence: evidenceData.evidence, history_evidence_links: evidenceData.links,
+    cell_trace_status: traceStatus, cell_trace_source_count: sourceCount, trace_summary: summary,
+  };
+}
+
 async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const month = cleanText(payload.month, 7);
@@ -908,6 +992,15 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       if (Object.prototype.hasOwnProperty.call(traceSummary, status)) (traceSummary as Record<string, number>)[status] += 1;
     }
   }
+  if (!monthlyReport) {
+    const historical = await historicalMonthlyReport(companyId, storeId, month, cleanText(store.name, 120));
+    if (historical) {
+      monthlyReport = historical;
+      Object.assign(cellTraceStatus, historical.cell_trace_status as Record<string, string> || {});
+      Object.assign(cellTraceSourceCount, historical.cell_trace_source_count as Record<string, number> || {});
+      Object.assign(traceSummary, historical.trace_summary as Record<string, number> || {});
+    }
+  }
   const acknowledgements = await restRowsAll(`zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`, 500);
   const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
   const ackUsers = ackUserIds.length ? await restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`) : [];
@@ -931,7 +1024,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   return {
     store: cleanText(store.name, 100), month, source_boundary: "finance_uploads_only",
     monthly_report: monthlyReport,
-    reports: withEvidence,
+    reports: monthlyReport && monthlyReport.historical ? [...withEvidence, monthlyReport] : withEvidence,
     cell_trace_status: cellTraceStatus,
     cell_trace_source_count: cellTraceSourceCount,
     trace_summary: traceSummary,
@@ -1304,10 +1397,26 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
   const sourceReports = reportIds.length ? await restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(reportIds)}&limit=5000`, 5000) : [];
   const openingRows = await restRowsAll(`zysyr_cash_opening_balances?select=amount&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&limit=1`, 1);
   const openingBalance = openingRows.length ? Number(openingRows[0].amount || 0) : 0;
+  const historyEntries = await historyMonthEntries(companyId, storeId, month, "petty_cash");
+  const historyEvidence = await historyEvidenceForEntries(companyId, storeId, historyEntries);
+  const historyRecords = historyEntries.map((entry) => {
+    const current = entry.current_payload as JsonRecord;
+    return {
+      id: entry.id, history_ledger_entry_id: entry.id, import_row_id: entry.import_row_id,
+      transaction_date: current.transaction_date, direction: current.direction || "outflow",
+      category: current.category || "未分类", summary: current.summary || "历史备用金明细",
+      amount: current.amount, voucher_number: current.source_sequence || null,
+      recipient: current.handled_by_name || null, status: "confirmed", confirmed_by_user_id: entry.posted_by_user_id,
+      confirmed_at: entry.posted_at, source_locator: entry.source_locator, version: entry.version,
+      historical: true,
+    };
+  });
   return {
     company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
     records, daily_reports: dailyReports, daily_lines: dailyLines, source_cells: sourceCells,
     source_reports: sourceReports, voucher_links: voucherLinks, vouchers, users,
+    history_records: historyRecords, history_evidence: historyEvidence.evidence,
+    history_evidence_links: historyEvidence.links,
     opening_balance: openingBalance,
     permissions: { read: true }, source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
   };
@@ -1552,7 +1661,7 @@ function reportCellLabel(values: string[][], row: number, column: number): strin
   return cleanText(parts.join(" / "), 300);
 }
 
-async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = ""): Promise<JsonRecord> {
+async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(exactArrayBuffer(bytes));
@@ -1566,7 +1675,8 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
     : reportType === "performance"
       ? (/向里/.test(storeName) ? ["向里业绩报表", "业绩报表"] : ["业绩报表", "向里业绩报表"])
       : ["日报", "日报表"];
-  const sheet = preferred.map((name) => workbook.getWorksheet(name)).find(Boolean) || workbook.worksheets[0];
+  const sheet = (requestedSheet ? workbook.getWorksheet(requestedSheet) : null)
+    || preferred.map((name) => workbook.getWorksheet(name)).find(Boolean) || workbook.worksheets[0];
   if (!sheet) throw new Error("Excel 文件中没有可读取的工作表");
   const sheetName = cleanText(sheet.name, 120);
   const rowCount = sheet.actualRowCount || sheet.rowCount || 1;
@@ -1972,6 +2082,113 @@ async function monthlyCellBusinessDetails(
   });
 }
 
+function historyBusinessAmount(entry: JsonRecord, monthlyLabel: string): number | null {
+  const current = entry.current_payload && typeof entry.current_payload === "object" ? entry.current_payload as JsonRecord : {};
+  const label = monthlyLabel.replace(/\s+/g, "");
+  if (entry.entry_type === "salary") {
+    const employee = cleanText(current.employee_name, 120).replace(/\s+/g, "");
+    if (employee && !label.includes(employee) && !/(人工|工资|技术人员|后勤)/.test(label)) return null;
+    const field = /社保/.test(label) ? "social_security"
+      : /成本/.test(label) ? "product_cost"
+        : /底薪/.test(label) ? "base_salary"
+          : /提成/.test(label) ? "performance_commission"
+            : /扣款|成长|迟到|请假/.test(label) ? "total_deduction" : "net_pay";
+    const value = Number(current[field]);
+    return Number.isFinite(value) ? value : null;
+  }
+  if (entry.entry_type === "petty_cash") {
+    const category = cleanText(current.category, 120).replace(/\s+/g, "");
+    const summary = cleanText(current.summary, 200).replace(/\s+/g, "");
+    if (category && !label.includes(category) && !category.includes(label) && !label.includes("备用金") && !summary.includes(label)) return null;
+    const value = Number(current.amount); return Number.isFinite(value) ? value : null;
+  }
+  if (entry.entry_type === "employee_purchase") {
+    const employee = cleanText(current.employee_name, 120).replace(/\s+/g, "");
+    const product = cleanText(current.product_name, 160).replace(/\s+/g, "");
+    if (!/自购|外卖/.test(label) && !(employee && label.includes(employee)) && !(product && label.includes(product))) return null;
+    const value = Number(current.employee_purchase_price); return Number.isFinite(value) ? value : null;
+  }
+  return null;
+}
+
+async function historicalCellTrace(companyId: string, storeId: string, reportId: string, address: string, session: JsonRecord): Promise<JsonRecord> {
+  const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at,period_start,period_end&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&import_type=eq.monthly_profit_loss&status=eq.completed&limit=1`);
+  const batch = batches[0];
+  if (!batch) throw new Error("月报不存在或无权访问");
+  const month = cleanText((session as JsonRecord).__trace_month, 7);
+  const entries = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
+  const entry = entries.find((row) => cleanText((row.current_payload as JsonRecord)?.cell_address, 20).toUpperCase() === address);
+  if (!entry) throw new Error("该位置不是可追溯的历史金额或公式单元格");
+  const current = entry.current_payload as JsonRecord;
+  const locator = cleanText(entry.source_locator, 120);
+  const rowMatch = address.match(/(\d+)$/), columnMatch = address.match(/^([A-Z]+)/);
+  const columnNumber = columnMatch ? columnMatch[1].split("").reduce((sum, char) => sum * 26 + char.charCodeAt(0) - 64, 0) : 0;
+  const revisionRows = await restRowsAll(`zysyr_history_ledger_revisions?select=id,version,action,before_payload,after_payload,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&ledger_entry_id=eq.${cleanText(entry.id, 40)}&order=version.desc&limit=500`, 500);
+  const actorIds = Array.from(new Set(revisionRows.map((row) => row.actor_user_id).filter(Boolean)));
+  const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=500`, 500) : [];
+  const actorMap = new Map(actors.map((row) => [cleanText(row.id, 40), row]));
+  const evidenceData = await historyEvidenceForEntries(companyId, storeId, [entry]);
+  const target = {
+    id: entry.id, historical_ledger_entry_id: entry.id, sheet_name: entry.source_sheet,
+    cell_address: address, row_number: Number(rowMatch?.[1] || 0), column_number: columnNumber,
+    cell_kind: current.cell_kind, display_value: current.amount, numeric_value: current.amount,
+    original_numeric_value: (entry.posted_payload as JsonRecord)?.amount, formula: current.formula,
+    precedent_addresses: formulaPrecedents(cleanText(current.formula, 2000), cleanText(entry.source_sheet, 120)),
+    label: current.label, source_locator: locator,
+  };
+  const report = {
+    id: batch.id, historical: true, report_type: "monthly_profit_loss", report_date: `${month}-01`,
+    version: entry.version, original_filename: batch.source_filename,
+    uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
+    uploaded_at: batch.confirmed_at || batch.created_at,
+  };
+  const result: JsonRecord = {
+    target, report, historical: true,
+    can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
+    can_upload_vouchers: false,
+    amount_history: revisionRows.map((row) => ({
+      id: row.id, revision: row.version, revision_type: row.action,
+      before_amount: (row.before_payload as JsonRecord)?.amount,
+      after_amount: (row.after_payload as JsonRecord)?.amount,
+      delta: Number((row.after_payload as JsonRecord)?.amount || 0) - Number((row.before_payload as JsonRecord)?.amount || 0),
+      reason: row.reason, actor_user_id: row.actor_user_id, actor: actorMap.get(cleanText(row.actor_user_id, 40)) || null,
+      created_at: row.created_at,
+    })),
+    evidence: evidenceData.evidence,
+    history_evidence_links: evidenceData.links,
+  };
+  if (cleanText(current.cell_kind, 20) === "formula") {
+    const precedents = target.precedent_addresses as string[];
+    result.mode = "formula";
+    result.precedents = entries.filter((row) => precedents.includes(cleanText((row.current_payload as JsonRecord)?.cell_address, 20).toUpperCase())).map((row) => {
+      const item = row.current_payload as JsonRecord;
+      return { id: row.id, historical_ledger_entry_id: row.id, cell_address: item.cell_address, cell_kind: item.cell_kind,
+        display_value: item.amount, numeric_value: item.amount, formula: item.formula, label: item.label, source_locator: row.source_locator };
+    });
+    return result;
+  }
+  const moduleEntries = await historyMonthEntries(companyId, storeId, month);
+  const matched = moduleEntries.filter((row) => row.entry_type !== "monthly_profit_loss").map((row) => {
+    const amount = historyBusinessAmount(row, cleanText(current.label, 300));
+    return amount === null ? null : { business_type: `history_${row.entry_type}`, business_id: row.id, history_ledger_entry_id: row.id,
+      date: (row.current_payload as JsonRecord)?.transaction_date || row.period_month,
+      title: (row.current_payload as JsonRecord)?.employee_name || (row.current_payload as JsonRecord)?.summary || (row.current_payload as JsonRecord)?.product_name || row.entry_type,
+      description: row.source_locator, amount, source_locator: row.source_locator, import_row_id: row.import_row_id };
+  }).filter(Boolean) as JsonRecord[];
+  const detailEvidence = matched.length ? await historyEvidenceForEntries(companyId, storeId, moduleEntries.filter((row) => matched.some((detail) => detail.business_id === row.id))) : { links: [], evidence: [] };
+  result.mode = "input";
+  result.revision = { status: (evidenceData.evidence as JsonRecord[]).length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
+  result.sources = [];
+  result.business_details = matched;
+  result.business_total = Number(matched.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+  const allEvidence = Array.from(new Map([...(evidenceData.evidence as JsonRecord[]), ...(detailEvidence.evidence as JsonRecord[])].map((row) => [cleanText(row.id, 40), row])).values());
+  result.evidence = allEvidence;
+  result.revision = { status: allEvidence.length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
+  result.history_evidence_links = [...(evidenceData.links as JsonRecord[]), ...(detailEvidence.links as JsonRecord[])];
+  result.anomalies = allEvidence.length ? [] : ["missing_voucher"];
+  return result;
+}
+
 async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -1980,7 +2197,10 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
   const address = cleanText(payload.cell_address, 20).toUpperCase();
   const reports = await restRows(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&limit=1`);
   const report = reports[0];
-  if (!report) throw new Error("月报不存在或无权访问");
+  if (!report) {
+    (session as JsonRecord).__trace_month = parseMonth(cleanText(payload.month, 7));
+    return historicalCellTrace(companyId, storeId, reportId, address, session);
+  }
   const cells = await restRows(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
   const target = cells[0];
   if (!target) throw new Error("该位置不是可追溯的金额或公式单元格");
@@ -2118,9 +2338,16 @@ async function reportUrl(payload: JsonRecord, session: JsonRecord): Promise<Json
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const rows = await restRows(`zysyr_report_uploads?select=id,object_path,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(reportId)}&limit=1`);
-  const report = rows[0];
-  if (!report) throw new Error("报表不存在或无权访问");
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${REPORT_BUCKET}/${storagePath(cleanText(report.object_path, 500))}`, {
+  let report = rows[0];
+  let bucket = REPORT_BUCKET;
+  if (!report) {
+    const batches = await restRows(`zysyr_history_import_batches?select=id,source_bucket_id,source_object_path,source_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${encodeURIComponent(reportId)}&status=eq.completed&limit=1`);
+    const batch = batches[0];
+    if (!batch) throw new Error("报表不存在或无权访问");
+    bucket = cleanText(batch.source_bucket_id, 100);
+    report = { object_path: batch.source_object_path, original_filename: batch.source_filename };
+  }
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${storagePath(bucket)}/${storagePath(cleanText(report.object_path, 500))}`, {
     method: "POST",
     headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ expiresIn: 300 }),
@@ -2781,10 +3008,54 @@ async function salarySheetRead(payload: JsonRecord, session: JsonRecord): Promis
   }
   const employees = await restRowsAll(`zysyr_employees?select=id,employee_code,name,position,employment_status&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&order=employee_code.asc,name.asc&limit=1000`, 1000);
   const writable = cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "salary.write_approve");
-  if (!sheetId) return { month, sheet: null, rows: [], attachments: [], history: [], unlock_requests: [], employees,
-    original_count: 0, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
-    permissions: { read: true, write: writable, create: writable, upload_original: writable,
-      confirm_lock: writable, request_unlock: writable, approve_unlock: false } };
+  if (!sheetId) {
+    const historyEntries = await historyMonthEntries(companyId, storeId, month, "salary");
+    if (historyEntries.length) {
+      const batchId = cleanText(historyEntries[0].import_batch_id, 40);
+      const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
+      const batch = batches[0] || {};
+      const evidenceData = await historyEvidenceForEntries(companyId, storeId, historyEntries);
+      const revisions = await restRowsAll(`zysyr_history_ledger_revisions?select=id,ledger_entry_id,version,action,before_payload,after_payload,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=5000`, 5000);
+      const rows = historyEntries.map((entry, index) => {
+        const current = entry.current_payload as JsonRecord;
+        return {
+          id: entry.id, sheet_id: batchId, row_number: index + 1, historical: true,
+          history_ledger_entry_id: entry.id, import_row_id: entry.import_row_id, source_locator: entry.source_locator,
+          employee_id: current.employee_id || null, position: current.position || "", employee_name: current.employee_name || "",
+          base_salary: current.base_salary || 0, seniority_salary: current.seniority_salary || 0,
+          position_salary: current.position_salary || 0, meal_allowance: current.meal_allowance || 0,
+          performance_commission: current.performance_commission || 0,
+          delivery_card_commission: current.delivery_card_commission || 0,
+          overtime_activity_allowance: current.overtime_activity_allowance || 0,
+          supplemental_adjustment: current.supplemental_adjustment || 0,
+          product_cost: current.product_cost || 0, late_early_deduction: current.late_early_deduction || 0,
+          shooting_deduction: current.shooting_deduction || 0, leave_deduction: current.leave_deduction || 0,
+          growth_deduction: current.growth_deduction || 0,
+          employee_purchase: current.employee_purchase_deduction || 0,
+          employee_social_security: current.social_security || 0,
+          gross_pay: current.gross_pay || 0, total_deductions: current.total_deduction || 0,
+          net_pay: current.net_pay || 0, notes: current.notes || "",
+        };
+      });
+      const attachments = [batch.id ? { id: batch.id, history_file_kind: "source", original_filename: batch.source_filename,
+        mime_type: XLSX_MIME, attachment_kind: "original_report", uploaded_by: batch.confirmed_by_user_id || batch.created_by_user_id,
+        uploaded_at: batch.confirmed_at || batch.created_at } : null,
+        ...(evidenceData.evidence as JsonRecord[]).map((item) => ({ ...item, history_file_kind: "evidence", attachment_kind: "original_report" }))].filter(Boolean);
+      return {
+        month, historical: true, history_entries: historyEntries, history_evidence_links: evidenceData.links,
+        history_ledger_revisions: revisions,
+        sheet: { id: batchId, historical: true, salary_month: `${month}-01`, version: Math.max(...historyEntries.map((row) => Number(row.version || 1))), status: "locked", edit_revision: revisions.length },
+        rows, attachments, history: [], unlock_requests: [], employees, formal_salaries: [], salary_details: [],
+        original_count: attachments.length, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+        permissions: { read: true, write: false, create: writable, upload_original: false,
+          confirm_lock: false, request_unlock: false, approve_unlock: false },
+      };
+    }
+    return { month, sheet: null, rows: [], attachments: [], history: [], unlock_requests: [], employees,
+      original_count: 0, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+      permissions: { read: true, write: writable, create: writable, upload_original: writable,
+        confirm_lock: writable, request_unlock: writable, approve_unlock: false } };
+  }
   const data = await salarySheetData(companyId, storeId, sheetId);
   const sheet = data.sheet as JsonRecord;
   const isDraft = cleanText(sheet.status, 20) === "draft";
@@ -3086,10 +3357,21 @@ async function inventoryCenter(payload: JsonRecord, session: JsonRecord): Promis
   ]);
   const businessIds=Array.from(new Set([...receipts,...usage,...purchases,...purchasePayments,...employeePurchasePayments,...stockTransfers].map((item)=>item.id)));
   const voucherLinks=businessIds.length ? await restRowsAll(`zysyr_voucher_links?select=voucher_id,business_type,business_id,relation_type,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_id=in.${uuidIn(businessIds)}&unlinked_at=is.null&limit=10000`,10000) : [];
+  const historicalEmployeePurchaseEntries=await historyMonthEntries(companyId,storeId,month,"employee_purchase");
+  const historicalEmployeePurchaseEvidence=await historyEvidenceForEntries(companyId,storeId,historicalEmployeePurchaseEntries);
+  const historicalEmployeePurchases=historicalEmployeePurchaseEntries.map((entry)=>{const current=entry.current_payload as JsonRecord;return{
+    id:entry.id,history_ledger_entry_id:entry.id,import_row_id:entry.import_row_id,historical:true,
+    purchase_date:current.transaction_date,employee_id:current.employee_id||null,employee_name:current.employee_name||"未映射员工",
+    product_id:current.product_id||null,product_name:current.product_name||"未映射产品",quantity:null,
+    unit_price:current.employee_purchase_price,amount:current.employee_purchase_price,inventory_cost:current.inventory_cost,
+    retail_price:current.retail_price,payment_status:"historical",status:"posted",source_locator:entry.source_locator,version:entry.version};});
   const authorizedStoreNames=await availableStores(session); const authorizedStores=companyStores.filter((item)=>authorizedStoreNames.includes(cleanText(item.name,100)));
   return {company_id:companyId,store_id:storeId,store:cleanText(store.name,100),month,products,suppliers,employees,
     purchase_orders:orders,purchase_order_lines:orderLines,goods_receipts:receipts,goods_receipt_lines:receiptLines,
     balances,transactions,usage_records:usage,employee_purchases:purchases,purchase_payments:purchasePayments,
+    historical_employee_purchases:historicalEmployeePurchases,
+    historical_employee_purchase_evidence:historicalEmployeePurchaseEvidence.evidence,
+    historical_employee_purchase_evidence_links:historicalEmployeePurchaseEvidence.links,
     employee_purchase_payments:employeePurchasePayments,stock_transfers:stockTransfers,stock_transfer_lines:stockTransferLines,
     authorized_stores:authorizedStores,voucher_links:voucherLinks,approved_vouchers:approvedVouchers,permissions:{read:true,write:hasAuthCapability(session,"inventory.write")},
     costing_method:"moving_average",source_boundary:"finance_uploaded_records_only",meiguanjia_used:false};
@@ -3960,7 +4242,6 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
 }
 
 async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  historyImportFinance(session);
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
