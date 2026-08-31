@@ -139,6 +139,14 @@ expect(html.includes('历史原表正式账') && html.includes('历史正式备�
   'history module tables or no-double-counting copy missing');
 expect(html.includes("api('history_ledger_revise'") && html.includes('data-open-history-file'),
   'history amount revision or original-file trace action missing');
+expect(html.includes('salary-employee-name') && html.includes("employee.name+' · '"),
+  'salary report must show employee names before internal employee codes');
+expect(html.includes('monthly-trace-open') && html.includes('的明细与原始凭证')
+  && html.includes('white-space:nowrap!important'),
+  'monthly amount cells must expose a single-click voucher action and keep long amounts on one line');
+expect(edge.includes('historyEvidenceWithScope') && edge.includes('trace_link_level')
+  && html.includes('本月支出凭证包'),
+  'historical cell trace must identify month-bundle voucher scope without pretending an exact page link');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
   'history summary cards must filter whole months and keep exception jumps to source cells');

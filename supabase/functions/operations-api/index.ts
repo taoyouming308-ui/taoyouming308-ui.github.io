@@ -827,6 +827,22 @@ async function historyEvidenceForEntries(companyId: string, storeId: string, ent
   return { links, evidence };
 }
 
+function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
+  const links = Array.isArray(data.links) ? data.links as JsonRecord[] : [];
+  const evidence = Array.isArray(data.evidence) ? data.evidence as JsonRecord[] : [];
+  return evidence.map((item) => {
+    const matching = links.filter((link) => cleanText(link.evidence_id, 40) === cleanText(item.id, 40));
+    const exact = matching.find((link) => cleanText(link.link_level, 30) !== "bundle_only");
+    const selected = exact || matching[0] || {};
+    return {
+      ...item,
+      trace_link_level: cleanText(selected.link_level, 30) || "unlinked",
+      trace_source_locator: cleanText(selected.source_locator, 160) || null,
+      trace_asset_count: Number(item.embedded_asset_count || 0),
+    };
+  });
+}
+
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
   const entries = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
   if (!entries.length) return null;
@@ -2154,7 +2170,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
       reason: row.reason, actor_user_id: row.actor_user_id, actor: actorMap.get(cleanText(row.actor_user_id, 40)) || null,
       created_at: row.created_at,
     })),
-    evidence: evidenceData.evidence,
+    evidence: historyEvidenceWithScope(evidenceData),
     history_evidence_links: evidenceData.links,
   };
   if (cleanText(current.cell_kind, 20) === "formula") {
@@ -2181,7 +2197,10 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   result.sources = [];
   result.business_details = matched;
   result.business_total = Number(matched.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
-  const allEvidence = Array.from(new Map([...(evidenceData.evidence as JsonRecord[]), ...(detailEvidence.evidence as JsonRecord[])].map((row) => [cleanText(row.id, 40), row])).values());
+  const allEvidence = Array.from(new Map([
+    ...historyEvidenceWithScope(detailEvidence),
+    ...historyEvidenceWithScope(evidenceData),
+  ].map((row) => [cleanText(row.id, 40), row])).values());
   result.evidence = allEvidence;
   result.revision = { status: allEvidence.length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
   result.history_evidence_links = [...(evidenceData.links as JsonRecord[]), ...(detailEvidence.links as JsonRecord[])];
