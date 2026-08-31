@@ -17,6 +17,7 @@ function sheet(name, matrix) {
   return {
     name,
     actualRowCount: matrix.length,
+    rowCount: matrix.length,
     actualColumnCount: Math.max(...matrix.map((row) => row.length)),
     getCell(row, column) {
       const value = matrix[row - 1]?.[column - 1] ?? null;
@@ -62,6 +63,19 @@ const petty = parseHistoricalWorkbook(workbook(sheet("01", [
 assert.equal(petty.rows.length, 1);
 assert.equal(petty.rows[0].mapped.transaction_date, "2026-01-01");
 assert.equal(petty.rows[0].mapped.amount, 21.8);
+
+const pettyTailRows = sheet("01", [
+  ["自由手艺人门店备用金明细"],
+  [46023, 1, "柠檬", null, 21.8, "食品", "小爱", null],
+  [null, null, null, null, null, null, null, null],
+  [46024, 2, "吸管", null, 16.72, "日用品", "小爱", null],
+]);
+pettyTailRows.actualRowCount = 2;
+const pettyWithUnderreportedActualRows = parseHistoricalWorkbook(workbook(pettyTailRows), {
+  import_type: "petty_cash", year: 2026, target_store_label: "自由手艺人", employees: [], products: [],
+});
+assert.equal(pettyWithUnderreportedActualRows.rows.length, 2);
+assert.equal(pettyWithUnderreportedActualRows.rows[1].mapped.summary, "吸管");
 
 const purchases = parseHistoricalWorkbook(workbook(sheet("2026.1", [
   ["日期", "产品"],

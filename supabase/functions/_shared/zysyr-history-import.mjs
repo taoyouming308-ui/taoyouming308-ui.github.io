@@ -248,7 +248,10 @@ function parsePettyCash(workbook, context) {
   for (const sheet of workbook.worksheets) {
     const periodMonth = monthFromSheet(sheet.name, context.year);
     if (!periodMonth) continue;
-    const rowCount = Math.min(sheet.actualRowCount || sheet.rowCount || 0, 500);
+    // ExcelJS may under-report actualRowCount when valid rows follow formula or
+    // formatting gaps. Use the larger physical/model row count so tail detail
+    // rows in the original petty-cash sheet are not silently dropped.
+    const rowCount = Math.min(Math.max(sheet.actualRowCount || 0, sheet.rowCount || 0), 500);
     for (let rowNumber = 2; rowNumber <= rowCount; rowNumber += 1) {
       const transactionDate = excelDate(sheet.getCell(rowNumber, 1), periodMonth);
       const summary = text(displayValue(sheet.getCell(rowNumber, 3)), 500);
