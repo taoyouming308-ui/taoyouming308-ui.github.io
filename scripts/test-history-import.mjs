@@ -139,7 +139,7 @@ assert.match(formalLedgerMigration, /to service_role/);
 assert.doesNotMatch(formalLedgerMigration, /grant (insert|update|delete)/i);
 
 const exactPettyVoucherMigration = fs.readFileSync(new URL(
-  "../supabase/migrations/20260831183000_zysyr_petty_cash_exact_voucher_links.sql", import.meta.url,
+  "../supabase/migrations/20260831054417_zysyr_petty_cash_exact_voucher_links.sql", import.meta.url,
 ), "utf8");
 assert.match(exactPettyVoucherMigration, /link_level = 'page_confirmed'/);
 assert.match(exactPettyVoucherMigration, /v_after <> 111/);
@@ -147,6 +147,16 @@ assert.match(exactPettyVoucherMigration, /03!A14:H14/);
 assert.match(exactPettyVoucherMigration, /04!A15:H15/);
 assert.match(exactPettyVoucherMigration, /06!A15:H15/);
 assert.match(exactPettyVoucherMigration, /array\[23, 18, 18, 16, 17, 18\]/);
+
+const exactProfitLossVoucherMigration = fs.readFileSync(new URL(
+  "../supabase/migrations/20260904150000_zysyr_profit_loss_exact_voucher_links.sql", import.meta.url,
+), "utf8");
+assert.match(exactProfitLossVoucherMigration, /array\[40, 10, 14, 11, 11, 12\]/);
+assert.match(exactProfitLossVoucherMigration, /v_after <> 33/);
+assert.match(exactProfitLossVoucherMigration, /'verified_monthly_cells', 29/);
+assert.match(exactProfitLossVoucherMigration, /'verified_original_images', 31/);
+assert.match(exactProfitLossVoucherMigration, /'kept_for_manual_review', 67/);
+assert.match(exactProfitLossVoucherMigration, /3月!C40：原表列为美管加150/);
 
 const operationsPage = fs.readFileSync(new URL("../operations.html", import.meta.url), "utf8");
 assert.match(operationsPage, /function exactHistoryImages\(file\)/);
