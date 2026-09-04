@@ -138,4 +138,26 @@ assert.match(formalLedgerMigration, /force row level security/);
 assert.match(formalLedgerMigration, /to service_role/);
 assert.doesNotMatch(formalLedgerMigration, /grant (insert|update|delete)/i);
 
+const exactPettyVoucherMigration = fs.readFileSync(new URL(
+  "../supabase/migrations/20260831183000_zysyr_petty_cash_exact_voucher_links.sql", import.meta.url,
+), "utf8");
+assert.match(exactPettyVoucherMigration, /link_level = 'page_confirmed'/);
+assert.match(exactPettyVoucherMigration, /v_after <> 111/);
+assert.match(exactPettyVoucherMigration, /03!A14:H14/);
+assert.match(exactPettyVoucherMigration, /04!A15:H15/);
+assert.match(exactPettyVoucherMigration, /06!A15:H15/);
+assert.match(exactPettyVoucherMigration, /array\[23, 18, 18, 16, 17, 18\]/);
+
+const operationsPage = fs.readFileSync(new URL("../operations.html", import.meta.url), "utf8");
+assert.match(operationsPage, /function exactHistoryImages\(file\)/);
+assert.match(operationsPage, /file\.trace_link_level!==['"]page_confirmed['"]/);
+assert.match(operationsPage, /exactHistoryImages\(file\)\.forEach/);
+assert.match(operationsPage, /trace_missing_exact_count/);
+
+const operationsApi = fs.readFileSync(new URL(
+  "../supabase/functions/operations-api/index.ts", import.meta.url,
+), "utf8");
+assert.match(operationsApi, /trace_source_locators: exactLocators/);
+assert.match(operationsApi, /trace_missing_exact_count:/);
+
 console.log("history import parser tests passed");

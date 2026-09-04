@@ -833,12 +833,18 @@ function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
   const evidence = Array.isArray(data.evidence) ? data.evidence as JsonRecord[] : [];
   return evidence.map((item) => {
     const matching = links.filter((link) => cleanText(link.evidence_id, 40) === cleanText(item.id, 40));
-    const exact = matching.find((link) => cleanText(link.link_level, 30) !== "bundle_only");
-    const selected = exact || matching[0] || {};
+    const exact = matching.filter((link) => cleanText(link.link_level, 30) !== "bundle_only");
+    const exactRowIds = new Set(exact.map((link) => cleanText(link.import_row_id, 40)).filter(Boolean));
+    const bundleRowIds = new Set(matching.filter((link) => cleanText(link.link_level, 30) === "bundle_only")
+      .map((link) => cleanText(link.import_row_id, 40)).filter(Boolean));
+    const exactLocators = Array.from(new Set(exact.map((link) => cleanText(link.source_locator, 160)).filter(Boolean)));
+    const selected = exact[0] || matching[0] || {};
     return {
       ...item,
       trace_link_level: cleanText(selected.link_level, 30) || "unlinked",
-      trace_source_locator: cleanText(selected.source_locator, 160) || null,
+      trace_source_locator: exactLocators[0] || cleanText(selected.source_locator, 160) || null,
+      trace_source_locators: exactLocators,
+      trace_missing_exact_count: Array.from(bundleRowIds).filter((rowId) => !exactRowIds.has(rowId)).length,
       trace_asset_count: Number(item.embedded_asset_count || 0),
     };
   });
