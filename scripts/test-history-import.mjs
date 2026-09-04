@@ -153,11 +153,16 @@ assert.match(operationsPage, /function exactHistoryImages\(file\)/);
 assert.match(operationsPage, /file\.trace_link_level!==['"]page_confirmed['"]/);
 assert.match(operationsPage, /exactHistoryImages\(file\)\.forEach/);
 assert.match(operationsPage, /trace_missing_exact_count/);
+assert.match(operationsPage, /file\.evidence_source===['"]voucher_attachment['"]/);
 
 const operationsApi = fs.readFileSync(new URL(
   "../supabase/functions/operations-api/index.ts", import.meta.url,
 ), "utf8");
 assert.match(operationsApi, /trace_source_locators: exactLocators/);
 assert.match(operationsApi, /trace_missing_exact_count:/);
+assert.match(operationsApi, /async function historicalDailyIncomeSources/);
+assert.match(operationsApi, /business_type: ["']daily_sheet["']/);
+assert.match(operationsApi, /daily_source_total = dailyIncome\.total/);
+assert.match(operationsApi, /daily_source_reconciled = dailyReconciled/);
 
 console.log("history import parser tests passed");

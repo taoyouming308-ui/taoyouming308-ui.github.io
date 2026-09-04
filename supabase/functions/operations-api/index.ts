@@ -2134,6 +2134,38 @@ function historyBusinessAmount(entry: JsonRecord, monthlyLabel: string): number 
   return null;
 }
 
+async function historicalDailyIncomeSources(companyId: string, storeId: string, month: string, monthlyLabel: string): Promise<JsonRecord> {
+  if (!/(美发收入|营业收入)/.test(monthlyLabel.replace(/\s+/g, ""))) return { details: [], evidence: [], total: 0 };
+  const start = `${month}-01`;
+  const next = new Date(`${start}T00:00:00Z`);
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  const end = next.toISOString().slice(0, 10);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
+  const draftIds = drafts.map((row) => cleanText(row.id, 40)).filter(Boolean);
+  if (!draftIds.length) return { details: [], evidence: [], total: 0 };
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.summary&row_key=eq.summary&column_code=eq.actual_total&cell_role=eq.summary_actual&manual_override=eq.true&limit=100`, 100);
+  const amountByDraft = new Map(cells.map((cell) => [cleanText(cell.draft_id, 40), Number(cell.corrected_numeric)]));
+  const verifiedDrafts = drafts.filter((draft) => Number.isFinite(amountByDraft.get(cleanText(draft.id, 40))));
+  const voucherIds = Array.from(new Set(verifiedDrafts.map((draft) => cleanText(draft.source_voucher_id, 40)).filter(Boolean)));
+  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,size_bytes,uploaded_at,document_type,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&audit_status=eq.approved&limit=100`, 100) : [];
+  const voucherMap = new Map(vouchers.map((voucher) => [cleanText(voucher.id, 40), voucher]));
+  const details = verifiedDrafts.map((draft) => ({
+    business_type: "daily_sheet", business_id: draft.id, daily_sheet_id: draft.id,
+    date: draft.report_date, title: `${draft.report_date} 日报`, description: "原始日报人工录入总额",
+    amount: amountByDraft.get(cleanText(draft.id, 40)), source_voucher_id: draft.source_voucher_id,
+    source_locator: `日报/${draft.report_date}`, status: draft.status, validation_result: draft.validation_result,
+  }));
+  const evidence = verifiedDrafts.map((draft) => {
+    const voucher = voucherMap.get(cleanText(draft.source_voucher_id, 40));
+    return voucher ? {
+      ...voucher, evidence_source: "voucher_attachment", trace_link_level: "page_confirmed",
+      trace_source_locator: `日报/${draft.report_date}`, trace_source_locators: [`日报/${draft.report_date}`],
+      trace_missing_exact_count: 0, trace_asset_count: 1, daily_sheet_id: draft.id, report_date: draft.report_date,
+    } : null;
+  }).filter(Boolean) as JsonRecord[];
+  return { details, evidence, total: Number(details.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4)) };
+}
+
 async function historicalCellTrace(companyId: string, storeId: string, reportId: string, address: string, session: JsonRecord): Promise<JsonRecord> {
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at,period_start,period_end&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&import_type=eq.monthly_profit_loss&status=eq.completed&limit=1`);
   const batch = batches[0];
@@ -2191,26 +2223,34 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     return result;
   }
   const moduleEntries = await historyMonthEntries(companyId, storeId, month);
-  const matched = moduleEntries.filter((row) => row.entry_type !== "monthly_profit_loss").map((row) => {
+  const ledgerMatched = moduleEntries.filter((row) => row.entry_type !== "monthly_profit_loss").map((row) => {
     const amount = historyBusinessAmount(row, cleanText(current.label, 300));
     return amount === null ? null : { business_type: `history_${row.entry_type}`, business_id: row.id, history_ledger_entry_id: row.id,
       date: (row.current_payload as JsonRecord)?.transaction_date || row.period_month,
       title: (row.current_payload as JsonRecord)?.employee_name || (row.current_payload as JsonRecord)?.summary || (row.current_payload as JsonRecord)?.product_name || row.entry_type,
       description: row.source_locator, amount, source_locator: row.source_locator, import_row_id: row.import_row_id };
   }).filter(Boolean) as JsonRecord[];
-  const detailEvidence = matched.length ? await historyEvidenceForEntries(companyId, storeId, moduleEntries.filter((row) => matched.some((detail) => detail.business_id === row.id))) : { links: [], evidence: [] };
+  const dailyIncome = await historicalDailyIncomeSources(companyId, storeId, month, cleanText(current.label, 300));
+  const dailyReconciled = (dailyIncome.details as JsonRecord[]).length > 0
+    && Math.abs(Number(dailyIncome.total || 0) - Number(current.amount || 0)) <= 0.01;
+  const matched = dailyReconciled ? dailyIncome.details as JsonRecord[] : ledgerMatched;
+  const detailEvidence = ledgerMatched.length ? await historyEvidenceForEntries(companyId, storeId, moduleEntries.filter((row) => ledgerMatched.some((detail) => detail.business_id === row.id))) : { links: [], evidence: [] };
   result.mode = "input";
   result.revision = { status: (evidenceData.evidence as JsonRecord[]).length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
   result.sources = [];
   result.business_details = matched;
   result.business_total = Number(matched.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
   const allEvidence = Array.from(new Map([
+    ...(dailyReconciled ? dailyIncome.evidence as JsonRecord[] : []),
     ...historyEvidenceWithScope(detailEvidence),
     ...historyEvidenceWithScope(evidenceData),
   ].map((row) => [cleanText(row.id, 40), row])).values());
   result.evidence = allEvidence;
   result.revision = { status: allEvidence.length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
   result.history_evidence_links = [...(evidenceData.links as JsonRecord[]), ...(detailEvidence.links as JsonRecord[])];
+  result.daily_source_count = (dailyIncome.details as JsonRecord[]).length;
+  result.daily_source_total = dailyIncome.total;
+  result.daily_source_reconciled = dailyReconciled;
   result.anomalies = allEvidence.length ? [] : ["missing_voucher"];
   return result;
 }
