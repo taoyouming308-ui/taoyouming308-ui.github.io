@@ -114,6 +114,7 @@ expect(html.includes('!date||row.business_date===date'), 'ledger date filter mus
 expect(html.includes('new-customer-btn') && html.includes('新客') && html.includes('toggleNewCustomer') && html.includes("api('today_mark_new_customer'"), 'frontdesk new-customer toggle missing');
 expect(html.includes('source-tag new">新客') && html.includes('row.is_new_customer'), 'ledger new-customer red tag missing');
 expect(html.includes('shampoo-btn') && html.includes('toggleShampooQualified') && html.includes("api('today_mark_shampoo_qualified'"), 'shampoo qualified toggle missing');
+expect(html.includes('delete-today-record') && html.includes('删除当天记录') && html.includes('deleteTodayRecord') && html.includes("api('today_customer_delete'"), 'today reception delete button missing');
 expect(html.includes('table-shampoo') && html.includes("row.row_type==='today'"), 'ledger shampoo qualified row button missing');
 expect(html.includes('id="shampoo-month"') && html.includes('shampoo_qualification_stats') && html.includes('renderShampooStats'), 'shampoo qualification stats view missing');
 expect(html.includes("api('ledger_record_save'") && html.includes('openLedgerForm') && html.includes('项目 / 发型师 / 技师 / 助理'), 'ledger editable staff/project flow missing');
@@ -145,6 +146,10 @@ expect(edge.includes('availableStores') && edge.includes('请先选择分店'), 
 expect(edge.includes('today_customer_save') && edge.includes('frontdesk_today_customers'), 'daily reception API missing');
 expect(edge.includes('operation === "today_mark_new_customer"') && edge.includes('async function markNewCustomer') && edge.includes('is_new_customer'), 'new-customer mark API missing');
 expect(edge.includes('operation === "today_mark_shampoo_qualified"') && edge.includes('async function markShampooQualified') && edge.includes('shampoo_qualified'), 'shampoo qualified mark API missing');
+expect(edge.includes('operation === "today_customer_delete"') && edge.includes('async function deleteTodayCustomer'), 'daily reception delete API missing');
+const deleteFunction = edge.slice(edge.indexOf('async function deleteTodayCustomer'), edge.indexOf('async function shampooQualificationStats'));
+expect(deleteFunction.includes('selectedStore(session, payload)') && deleteFunction.includes('store=eq.${encodeURIComponent(store)}'), 'daily reception delete must be store-scoped');
+expect(deleteFunction.includes('method: "DELETE"') && deleteFunction.includes('frontdesk_today_customers') && !deleteFunction.includes('customer_profiles') && !deleteFunction.includes('frontdesk_import_records'), 'daily reception delete must only remove today reception rows');
 expect(edge.includes('operation === "shampoo_qualification_stats"') && edge.includes('async function shampooQualificationStats'), 'shampoo qualification stats API missing');
 expect(edge.includes('service_intent,amount,payment_summary,reception_notes'), 'dashboard must return saved reception amount fields');
 expect(edge.includes('arrival_time') && edge.includes('到店时间无效'), 'validated daily reception time missing');

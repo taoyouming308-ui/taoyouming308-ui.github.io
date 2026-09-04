@@ -399,6 +399,20 @@ async function markShampooQualified(payload: JsonRecord, session: JsonRecord): P
   return { saved: true, shampoo_qualified: qualified, reception: saved[0] };
 }
 
+async function deleteTodayCustomer(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  if (!store) throw new Error("请先选择分店");
+  const id = cleanText(payload.id, 60);
+  if (!id) throw new Error("缺少当天接待记录编号");
+  const response = await rest(`frontdesk_today_customers?id=eq.${encodeURIComponent(id)}&store=eq.${encodeURIComponent(store)}`, {
+    method: "DELETE", headers: { Prefer: "return=representation" },
+  });
+  if (!response.ok) throw new Error(`当天接待记录删除失败 (${response.status})`);
+  const deleted = await response.json();
+  if (!Array.isArray(deleted) || deleted.length !== 1) throw new Error("当天接待记录不存在或已变化");
+  return { deleted: true, id };
+}
+
 async function shampooQualificationStats(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
@@ -929,6 +943,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "today_mark_new_customer") return json(await markNewCustomer(payload, session));
     if (operation === "today_mark_shampoo_qualified") return json(await markShampooQualified(payload, session));
+    if (operation === "today_customer_delete") return json(await deleteTodayCustomer(payload, session));
     if (operation === "customer_search") return json(await customerSearch(payload, session));
     if (operation === "customer_detail") return json(await customerDetail(payload, session));
     if (operation === "import_rows") return json(await importRows(payload, session));
