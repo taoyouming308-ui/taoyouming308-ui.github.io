@@ -1,12 +1,13 @@
 # Agent Sync Status
 
-## v471 向里造型历史月报月份页签修复（2026-09-05，发布中）
+## v471 向里造型历史月报月份页签修复（2026-09-05，已发布）
 
 - 基于已发布 GitHub main `bfc8293`。App version: v471。
 - 已定位向里造型历史月报 1—4 月错误显示为东方福邸 2020 年年度表的原因：原工作表名称带尾部空格，而历史账保存的是清理后的月份名；精确查找失败后错误回退到第一张年度汇总表。
 - `operations-api` 现在按清理后的工作表名匹配真实页签，历史数据预览也使用相同规则；不修改原始工作簿、正式金额、凭证关联或审计记录。
 - 本地验证：`node scripts/test-operations.js`、`node scripts/check-version-sync.js`、`node scripts/check-release-integrity.js`、`git diff --check` 全部通过；原工作簿确认 1—4 月页签实际名称分别带 1、2、2、1 个尾部空格，规范化后均唯一匹配对应月份。
-- 生产验证：`operations-api` 已部署为 version 39，状态 ACTIVE，`verify_jwt=false` 保持不变；GitHub Pages v471 待推送后验证。
+- 生产验证：`operations-api` 已部署为 version 39，状态 ACTIVE，`verify_jwt=false` 保持不变；GitHub main 已更新到 `e6498e5`，GitHub Pages 已核验 `version.txt=471`、`operations.html data-version=471`。
+- Safari 登录态逐月核验通过：向里造型 1—4 月均显示对应的“向里造型 太合商业中心 店 X月盈亏统计”，未再显示“东方福邸店 2020 年度盈亏统计”或 `#REF!`；关键值分别为 1 月 `140332 / 144217.36 / 151714.86 / -7497.50`，2 月 `108860 / 110953.84 / 90625.18 / 20328.66`，3 月 `83770 / 86840 / 73231.38 / 13608.62`，4 月 `139528 / 139884 / 134032.08 / 5851.92`，与原始向里工作簿一致。
 
 ## v470 月报原始凭证同页预览与后续补传定位（2026-09-05，已发布）
 
