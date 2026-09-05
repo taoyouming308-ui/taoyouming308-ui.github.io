@@ -5,6 +5,10 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
+const voucherCore = fs.readFileSync(path.join(root, 'operations-voucher-preview.js'), 'utf8');
+const voucherView = fs.readFileSync(path.join(root, 'operations-voucher-view.js'), 'utf8');
+new vm.Script(voucherCore);
+new vm.Script(voucherView);
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/deno.json'), 'utf8');
@@ -18,6 +22,7 @@ const docxLineage = fs.readFileSync(path.join(root, 'supabase/migrations/2026082
 const historyImport = fs.readFileSync(path.join(root, 'supabase/migrations/20260830021731_zysyr_history_import_staging.sql'), 'utf8');
 const historyLedger = fs.readFileSync(path.join(root, 'supabase/migrations/20260830070134_zysyr_history_formal_ledger.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
+require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'test-operations-voucher-preview.js')], { stdio: 'inherit' });
 
 function expect(value, message) {
   if (!value) throw new Error(message);
@@ -145,12 +150,24 @@ expect(!html.includes('monthly-trace-open') && html.includes('monthly-edit-toggl
   && html.includes('openMonthlyVoucher(cell.dataset.traceCell)')
   && html.includes('voucher-gallery-list') && html.includes('white-space:nowrap!important'),
   'monthly amount cells must not be covered by voucher buttons and must open original images directly');
+expect(html.includes('collectMonthlyVoucherTrace') && voucherCore.includes("trace.mode === 'formula'")
+  && html.includes('scroll-snap-type:x mandatory') && voucherView.includes('左右滑动查看')
+  && html.includes('return openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
+  'formula totals must collect descendant vouchers into a swipeable second-level gallery');
+expect(html.includes('上传并定位凭证') && html.includes('monthly_cell_id:target.id')
+  && html.includes("record_type:'report',record_id:report.id")
+  && edge.includes('zysyr_attach_monthly_cell_voucher')
+  && edge.includes('source_cell_id=eq.${cleanText(target.id, 40)}'),
+  'future finance uploads from a monthly amount must remain scoped and reopen on that exact cell');
+expect(html.includes('这是 Excel 定位，不是凭证编号') && html.includes('trace-source-details')
+  && !html.includes("'原始凭证 · '+address"),
+  'Excel cell addresses must be hidden behind source-location details instead of looking like voucher numbers');
 expect(edge.includes('historyEvidenceWithScope') && edge.includes('trace_link_level')
   && html.includes('本月支出凭证包'),
   'historical cell trace must identify month-bundle voucher scope without pretending an exact page link');
 expect(edge.includes('historyEvidenceImages') && edge.includes('word\\/media\\/')
   && edge.includes('history_evidence_images') && edge.includes('Cache-Control')
-  && html.includes("api('history_evidence_images'") && html.includes('当前关联范围'),
+  && html.includes("api('history_evidence_images'") && voucherView.includes('当前关联范围'),
   'private historical voucher images must be extracted for direct gallery display with truthful bundle scope');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),

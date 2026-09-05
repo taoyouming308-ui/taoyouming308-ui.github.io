@@ -159,10 +159,12 @@ assert.match(exactProfitLossVoucherMigration, /'kept_for_manual_review', 67/);
 assert.match(exactProfitLossVoucherMigration, /3月!C40：原表列为美管加150/);
 
 const operationsPage = fs.readFileSync(new URL("../operations.html", import.meta.url), "utf8");
-assert.match(operationsPage, /function exactHistoryImages\(file\)/);
-assert.match(operationsPage, /file\.trace_link_level!==['"]page_confirmed['"]/);
-assert.match(operationsPage, /exactHistoryImages\(file\)\.forEach/);
-assert.match(operationsPage, /trace_missing_exact_count/);
+const voucherPreview = fs.readFileSync(new URL("../operations-voucher-preview.js", import.meta.url), "utf8");
+const voucherView = fs.readFileSync(new URL("../operations-voucher-view.js", import.meta.url), "utf8");
+assert.match(voucherPreview, /function selectImages\(file\)/);
+assert.match(voucherPreview, /file\.trace_link_level !== ['"]page_confirmed['"]/);
+assert.match(voucherView, /core\.selectImages\(file\)/);
+assert.match(voucherView, /trace_missing_exact_count/);
 assert.match(operationsPage, /file\.evidence_source===['"]voucher_attachment['"]/);
 
 const operationsApi = fs.readFileSync(new URL(
