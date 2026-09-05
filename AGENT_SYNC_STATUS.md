@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## v471 向里造型历史月报月份页签修复（2026-09-05，发布中）
+
+- 基于已发布 GitHub main `bfc8293`。App version: v471。
+- 已定位向里造型历史月报 1—4 月错误显示为东方福邸 2020 年年度表的原因：原工作表名称带尾部空格，而历史账保存的是清理后的月份名；精确查找失败后错误回退到第一张年度汇总表。
+- `operations-api` 现在按清理后的工作表名匹配真实页签，历史数据预览也使用相同规则；不修改原始工作簿、正式金额、凭证关联或审计记录。
+- 本地验证：`node scripts/test-operations.js`、`node scripts/check-version-sync.js`、`node scripts/check-release-integrity.js`、`git diff --check` 全部通过；原工作簿确认 1—4 月页签实际名称分别带 1、2、2、1 个尾部空格，规范化后均唯一匹配对应月份。
+- 生产验证：`operations-api` 已部署为 version 39，状态 ACTIVE，`verify_jwt=false` 保持不变；GitHub Pages v471 待推送后验证。
+
 ## v470 月报原始凭证同页预览与后续补传定位（2026-09-05，已发布）
 
 - 基于已核对的 GitHub main `b10c5f6`。App version: v470。仅发布展示与交互修复，不改正式账、原始文件、既有凭证关系、认证或数据库。

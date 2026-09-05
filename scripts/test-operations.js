@@ -75,6 +75,9 @@ expect(edge.includes('canUploadReports') && edge.includes('report.upload') && ed
 expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
 expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
 expect(edge.includes('workbookDisplay') && edge.includes('ExcelJS.Workbook') && edge.includes('model.merges'), 'Excel display projection missing');
+expect(edge.includes('worksheetByCleanName(workbook, requestedSheet)')
+  && edge.includes('worksheetByCleanName(workbook, requested || sheetNames[0])'),
+  'historical workbook sheets with trailing spaces must resolve to the requested month');
 expect(edge.includes('docxDisplay') && edge.includes('JSZip.loadAsync') && edge.includes('word/document.xml'), 'DOCX editable-table projection missing');
 expect(edge.includes('formulaPrecedents') && edge.includes('reportCellLabel') && edge.includes('precedent_addresses'), 'cell formula and original-position parsing missing');
 expect(edge.includes('/向里/.test(storeName)') && edge.includes('["向里业绩报表", "业绩报表"]'), 'store-specific performance worksheet selection missing');

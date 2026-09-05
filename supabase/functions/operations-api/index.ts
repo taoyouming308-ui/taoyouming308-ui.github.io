@@ -1684,6 +1684,12 @@ function reportCellLabel(values: string[][], row: number, column: number): strin
   return cleanText(parts.join(" / "), 300);
 }
 
+function worksheetByCleanName(workbook: ExcelJS.Workbook, requestedName: string): ExcelJS.Worksheet | undefined {
+  const target = cleanText(requestedName, 120).toLocaleLowerCase();
+  if (!target) return undefined;
+  return workbook.worksheets.find((item) => cleanText(item.name, 120).toLocaleLowerCase() === target);
+}
+
 async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
   const workbook = new ExcelJS.Workbook();
   try {
@@ -1698,8 +1704,8 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
     : reportType === "performance"
       ? (/向里/.test(storeName) ? ["向里业绩报表", "业绩报表"] : ["业绩报表", "向里业绩报表"])
       : ["日报", "日报表"];
-  const sheet = (requestedSheet ? workbook.getWorksheet(requestedSheet) : null)
-    || preferred.map((name) => workbook.getWorksheet(name)).find(Boolean) || workbook.worksheets[0];
+  const sheet = (requestedSheet ? worksheetByCleanName(workbook, requestedSheet) : undefined)
+    || preferred.map((name) => worksheetByCleanName(workbook, name)).find(Boolean) || workbook.worksheets[0];
   if (!sheet) throw new Error("Excel 文件中没有可读取的工作表");
   const sheetName = cleanText(sheet.name, 120);
   const rowCount = sheet.actualRowCount || sheet.rowCount || 1;
@@ -4107,7 +4113,7 @@ async function historyImportSheetPreview(payload: JsonRecord, session: JsonRecor
   try { await workbook.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("历史 Excel 原件无法读取"); }
   const sheetNames = workbook.worksheets.map((item) => cleanText(item.name, 120));
   const requested = cleanText(payload.source_sheet, 120);
-  const sheet = workbook.getWorksheet(requested || sheetNames[0]);
+  const sheet = worksheetByCleanName(workbook, requested || sheetNames[0]);
   if (!sheet || !sheetNames.includes(cleanText(sheet.name, 120))) throw new Error("历史 Excel 工作表不存在");
   const rowCount = Math.min(sheet.actualRowCount || sheet.rowCount || 0, 200);
   const columnCount = Math.min(sheet.actualColumnCount || sheet.columnCount || 0, 40);
