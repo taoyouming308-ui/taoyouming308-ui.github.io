@@ -60,6 +60,13 @@ const loadSource = app.slice(loadStart, loadEnd);
 expect(loadStart >= 0 && loadEnd > loadStart, 'booking loader missing');
 expect(loadSource.includes("employeeBookingsApi('today_bookings'"), 'booking loader does not use merged API');
 expect(!loadSource.includes('/rest/v1/bookings?'), 'main booking list still bypasses the protected merged API');
+const pickerStart = app.indexOf('window.loadHairBookingPickerDate = function(dateKey)');
+const pickerEnd = app.indexOf('window.pickBookingCustomerFromNode', pickerStart);
+const pickerSource = app.slice(pickerStart, pickerEnd);
+expect(pickerStart >= 0 && pickerEnd > pickerStart, 'hair booking picker loader missing');
+expect(pickerSource.includes("employeeBookingsApi('today_bookings'"), 'hair booking picker does not use merged API');
+expect(!pickerSource.includes('/rest/v1/bookings?'), 'hair booking picker still reads Meiguanjia bookings directly');
+expect(pickerSource.includes('source_label') && pickerSource.includes('前台到店') && pickerSource.includes('美管加预约'), 'hair booking picker source labels missing');
 expect(app.includes("employeeBookingsApi('login'") && app.includes("employeeBookingsApi('session'"), 'employee login/session API flow missing');
 expect(!app.slice(app.indexOf('window.doAppLogin'), app.indexOf('window.showBarberPicker')).includes('password_hash=eq.'), 'employee password proof must not be placed in a Data API URL');
 

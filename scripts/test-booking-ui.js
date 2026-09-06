@@ -53,7 +53,13 @@ assert(render.includes('booking-empty') && !render.includes('📭'), 'empty book
 assert(render.includes('bi-source') && render.includes('前台到店') && render.includes('美管加预约'), 'booking rows must show their source');
 assert(app.includes("employeeBookingsApi('today_bookings'"), 'today appointments must load through the protected merged endpoint');
 assert(app.includes('EMPLOYEE_BOOKINGS_ENDPOINT'), 'employee bookings endpoint is missing');
-assert(app.includes('bookings?select=id,customer_name,customer_phone'), 'hair booking picker does not retain booking ids');
+const pickerStart = app.indexOf('window.loadHairBookingPickerDate = function(dateKey)');
+const pickerEnd = app.indexOf('window.pickBookingCustomerFromNode', pickerStart);
+const picker = app.slice(pickerStart, pickerEnd);
+assert(pickerStart >= 0 && pickerEnd > pickerStart, 'hair booking picker loader not found');
+assert(picker.includes("employeeBookingsApi('today_bookings'"), 'hair booking picker must use the protected merged endpoint');
+assert(!picker.includes('/rest/v1/bookings?'), 'hair booking picker still bypasses the merged endpoint');
+assert(picker.includes('source_label') && picker.includes('前台到店') && picker.includes('美管加预约'), 'hair booking picker must show the customer source');
 assert(app.includes("var key = r.id ? 'booking:' + r.id"), 'hair booking picker still merges separate booking ids');
 assert(app.includes("var barberName = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';"), 'hair booking picker must use the authenticated account, not the editable form barber');
 assert(!app.includes("var barberName = recordBarberValueFromFields({}) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';"), 'hair booking picker must not let a stale form barber hide the current account bookings');
