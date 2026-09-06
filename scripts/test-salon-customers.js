@@ -14,5 +14,5 @@ throws(()=>domain.openAccount(state,{customerId:customer.id,type:'package',name:
 expect(state.audit.map(e=>e.action).join(',')==='create,open,open,freeze','append-only audit events missing');
 expect(domain.searchCustomers(state,'1380000','frozen').length===1,'customer search/status filter failed');
 const restored=domain.deserialize(domain.serialize(state));expect(restored.customers.length===1&&restored.accounts.length===2,'offline persistence failed');
-const html=fs.readFileSync('salon-app.html','utf8');expect(/data-salon-version="0\.[2-9]\.[0-9]+-test"/.test(html),'salon version missing');expect(html.includes('保存顾客档案')&&html.includes('开立会员账户')&&html.includes('data-freeze'),'customer UI actions missing');
+const html=fs.readFileSync('salon-app.html','utf8');expect(/data-salon-version="0\.(?:[2-9]|[1-9][0-9]+)\.[0-9]+-test"/.test(html),'salon version missing');expect(html.includes('保存顾客档案')&&html.includes('开立会员账户')&&html.includes('data-freeze'),'customer UI actions missing');
 if(failures.length){console.error('salon customer tests failed:\n- '+failures.join('\n- '));process.exit(1)}console.log('salon customer tests passed');

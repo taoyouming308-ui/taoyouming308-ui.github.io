@@ -10,6 +10,6 @@ domain.setAppointmentStatus(state,first.id,'arrived');domain.setAppointmentStatu
 domain.setQueueStatus(state,state.queue[0].id,'serving');domain.setQueueStatus(state,state.queue[0].id,'completed');domain.setQueueStatus(state,state.queue[0].id,'waiting');expect(state.queue[0].round===2,'completed return must advance round');
 throws(()=>domain.setAppointmentStatus(state,first.id,'no_show'),'不能从arrived');expect(state.audit.length>=9,'schedule audit events missing');
 const restored=domain.deserialize(domain.serialize(state));expect(restored.appointments.length===2&&restored.queue.length===2,'offline schedule persistence failed');
-const html=fs.readFileSync('salon-app.html','utf8');expect(/data-salon-version="0\.[3-9]\.[0-9]+-test"/.test(html),'salon scheduling version missing');['创建预约','休假 / 不可预约','轮牌队列','开始服务','爽约'].forEach(x=>expect(html.includes(x),x+' UI missing'));
+const html=fs.readFileSync('salon-app.html','utf8');expect(/data-salon-version="0\.(?:[3-9]|[1-9][0-9]+)\.[0-9]+-test"/.test(html),'salon scheduling version missing');['创建预约','休假 / 不可预约','轮牌队列','开始服务','爽约'].forEach(x=>expect(html.includes(x),x+' UI missing'));
 expect(html.includes("btn.dataset.qstatus==='completed'")&&html.includes("btn.dataset.queue,'waiting'"),'service completion must automatically return to waiting queue');
 if(failures.length){console.error('salon scheduling tests failed:\n- '+failures.join('\n- '));process.exit(1)}console.log('salon scheduling tests passed');
