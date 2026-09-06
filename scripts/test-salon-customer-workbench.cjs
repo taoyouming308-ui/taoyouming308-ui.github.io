@@ -21,6 +21,8 @@ const {startServer}=require('./salon-local-integration.cjs');
   customer.on('request',r=>{if(r.url().endsWith('/api/salon-customer'))customerToken=r.headers().authorization;});
   staff.on('request',r=>{if(r.url().endsWith('/api/salon'))staffToken=r.headers().authorization;});
   await customer.goto(app.url+'/customer');await customer.locator('#connect').click();await customer.getByText('已连接合成顾客，仅显示本人数据。',{exact:true}).waitFor();
+  const timeCheck=await customer.evaluate(async()=>{const t=await import('/packages/salon-core/store-time.mjs');return {shanghai:t.storeTimeToInstant('2026-09-07T00:15','Asia/Shanghai'),gap:t.resolveStoreTime('2026-03-08T02:30','America/New_York').status,fold:t.resolveStoreTime('2026-11-01T01:30','America/New_York').instants.length};});
+  assert.deepEqual(timeCheck,{shanghai:'2026-09-06T16:15:00.000Z',gap:'nonexistent',fold:2});
   await customer.locator('#booking').selectOption(String(b.bookingRequestId));await customer.locator('#starts').fill(target.slice(0,16));await customer.locator('#reason').fill('合成行程变化');
   let dropped=false;
   await customer.route('**/api/salon-customer',async route=>{if(!dropped&&route.request().postDataJSON().operation==='reschedule_request'){dropped=true;await route.fetch();await route.abort('failed');}else await route.continue();});

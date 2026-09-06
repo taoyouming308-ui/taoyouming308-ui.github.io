@@ -1,5 +1,6 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
+import {instantToStoreInput,storeTimeToInstant} from './store-time.mjs';
 const $=id=>document.getElementById(id);
 let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
@@ -103,12 +104,12 @@ for(const [id,decision] of [['approveChange','approved'],['rejectChange','reject
 });
 $('rescheduleRequest').onchange=()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value));
- $('rescheduleStart').value=selected?new Date(selected.startsAt).toISOString().slice(0,16):'';
+ $('rescheduleStart').value=selected?instantToStoreInput(selected.startsAt,'UTC'):'';
 };
 $('rescheduleBooking').onclick=()=>run(async()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value)),reason=$('rescheduleReason').value.trim(),value=$('rescheduleStart').value;
  if(!selected||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择本店预约，填写 UTC 新时间与原因');
- await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:value+':00Z',reason},async()=>{
+ await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:storeTimeToInstant(value,'UTC'),reason},async()=>{
   await refresh();$('rescheduleReason').value='';status('改期成功，原预约与档期已同步更新。');
  });
 });

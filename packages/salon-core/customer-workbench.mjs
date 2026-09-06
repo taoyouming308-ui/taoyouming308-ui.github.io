@@ -1,4 +1,5 @@
 // Local-only customer lab. No production endpoint/SDK, storage, or client-selected identity.
+import {instantToStoreInput,storeTimeToInstant} from './store-time.mjs';
 const $=id=>document.getElementById(id);
 let token=null,rows=[],pending=null,busy=false,epoch=0,logoutPending=false;
 const status=value=>{$('status').textContent=value;};
@@ -41,11 +42,11 @@ $('connect').onclick=()=>run(async()=>{
  if(!response.ok||session.environment!=='synthetic-local-only'||typeof session.token!=='string')throw Error('不是合成测试环境');
  token=session.token;epoch++;await read('context');await refresh();status('已连接合成顾客，仅显示本人数据。');
 });
-$('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').value);$('starts').value=row?new Date(row.starts_at).toISOString().slice(0,16):'';};
+$('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').value);$('starts').value=row?instantToStoreInput(row.starts_at,'UTC'):'';};
 $('submit').onclick=()=>run(async()=>{
  const row=rows.find(r=>String(r.id)===$('booking').value),value=$('starts').value,reason=$('reason').value.trim();
  if(!row||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择预约并填写 UTC 时间和原因');
- pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:value+':00Z',reason,requestKey:crypto.randomUUID()});
+ pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:storeTimeToInstant(value,'UTC'),reason,requestKey:crypto.randomUUID()});
  await submitPending();
 });
 $('retry').onclick=()=>run(async()=>{if(pending)await submitPending();});

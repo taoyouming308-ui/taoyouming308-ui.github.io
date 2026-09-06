@@ -60,6 +60,7 @@ async function startServer(){
   const {createSalonCustomerHandler}=await import('../supabase/functions/_shared/salon-customer-api-core.mjs');
   const customerHandler=createSalonCustomerHandler({verifyUser:async token=>customerTokens.has(token)?{id:'22222222-2222-4222-8222-222222222222'}:null,invoke:async(name,args)=>rpc(name,args)});
   const files={'/customer':'salon-customer-workbench.html','/packages/salon-core/customer-workbench.mjs':'packages/salon-core/customer-workbench.mjs','/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
+  files['/packages/salon-core/store-time.mjs']='packages/salon-core/store-time.mjs';
   const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review','booking_reschedule','reschedule_requests','reschedule_review']);
   const customerAllowed=new Set(['context','bookings','reschedule_requests','reschedule_request']);
   server=http.createServer(async(req,res)=>{
