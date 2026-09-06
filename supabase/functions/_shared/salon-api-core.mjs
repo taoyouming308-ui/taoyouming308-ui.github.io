@@ -9,6 +9,9 @@ const OPERATIONS={
   finance_entry:{rpc:'salon_add_finance_entry'},operating_report:{rpc:'salon_get_operating_report'},
   staff_create:{rpc:'salon_create_staff'},staff_status:{rpc:'salon_set_staff_status'},commission_rule:{rpc:'salon_create_commission_rule'},payroll_generate:{rpc:'salon_generate_payroll'},payroll_review:{rpc:'salon_review_payroll'},payrolls:{rpc:'salon_list_payroll'},
   role_create:{rpc:'salon_create_role'},role_status:{rpc:'salon_set_role_status'},staff_assign:{rpc:'salon_assign_staff_store_role'},staff_transfer:{rpc:'salon_transfer_staff'},stores:{rpc:'salon_list_staff_stores'},audit:{rpc:'salon_list_audit_events'},
+  customer_bind:{rpc:'salon_bind_customer_identity'},work_create:{rpc:'salon_create_work'},work_submit:{rpc:'salon_submit_work'},work_review:{rpc:'salon_review_work'},works:{rpc:'salon_list_works'},
+  review_moderate:{rpc:'salon_moderate_review'},reviews:{rpc:'salon_list_reviews'},campaign_create:{rpc:'salon_create_campaign'},campaign_status:{rpc:'salon_set_campaign_status'},campaigns:{rpc:'salon_list_campaigns'},
+  booking_review:{rpc:'salon_review_customer_booking'},booking_requests:{rpc:'salon_list_customer_bookings'},
   context:{read:true},order_receipt:{read:true},order_detail:{read:true},refunds:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
@@ -16,6 +19,7 @@ function text(value,max=160){return String(value==null?'':value).trim().slice(0,
 function integer(value,label,optional=false){if(optional&&(value==null||value===''))return null;const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw new Error(label+'无效');return n}
 function nonnegative(value,label){const n=Number(value==null||value===''?0:value);if(!Number.isFinite(n)||n<0)throw new Error(label+'无效');return n}
 function requestKey(value){const key=text(value,120);if(key.length<16||!/^[A-Za-z0-9._:-]+$/.test(key))throw new Error('请求幂等键无效');return key}
+function uuid(value,label){const v=text(value,40);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v))throw new Error(label+'无效');return v}
 function bearer(request){const value=request.headers.get('Authorization')||'';const match=value.match(/^Bearer\s+(.+)$/i);if(!match||match[1].length<20)throw new Error('请重新登录');return match[1]}
 function errorCode(message){if(/请重新登录|登录已过期/.test(message))return'AUTH_REQUIRED';if(/账号|员工|停用/.test(message))return'STAFF_INACTIVE';if(/不支持/.test(message))return'UNSUPPORTED_OPERATION';if(/数据库请求失败/.test(message))return'DATABASE_OPERATION_FAILED';return'VALIDATION_ERROR'}
 
@@ -113,6 +117,24 @@ export function createSalonHandler(deps){return async function(request){
       const reason=text(payload.reason,500);if(!reason)throw new Error('角色分配原因不能为空');args={...common,p_target_staff_id:integer(payload.staffId,'员工'),p_role_id:integer(payload.roleId,'角色'),p_request_key:requestKey(payload.requestKey),p_reason:reason};
     }else if(operation==='staff_transfer'){
       const reason=text(payload.reason,500),date=text(payload.effectiveDate,10);if(!reason||!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new Error('调店参数无效');args={...common,p_target_staff_id:integer(payload.staffId,'员工'),p_target_store_id:integer(payload.targetStoreId,'目标门店'),p_target_role_id:integer(payload.targetRoleId,'目标角色'),p_request_key:requestKey(payload.requestKey),p_effective_date:date,p_reason:reason};
+    }else if(operation==='customer_bind'){
+      const reason=text(payload.reason,500);if(!reason)throw new Error('绑定原因不能为空');args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_auth_user_id:uuid(payload.authUserId,'顾客登录账号'),p_request_key:requestKey(payload.requestKey),p_reason:reason};
+    }else if(operation==='work_create'){
+      const title=text(payload.title,120),asset=text(payload.assetRef,500);if(!title||!asset)throw new Error('作品标题或资源引用无效');args={...common,p_request_key:requestKey(payload.requestKey),p_customer_id:integer(payload.customerId,'顾客',true),p_order_id:integer(payload.orderId,'订单',true),p_consent_id:integer(payload.consentId,'授权',true),p_title:title,p_description:text(payload.description,1000),p_asset_ref:asset};
+    }else if(operation==='work_submit'){
+      args={...common,p_work_id:integer(payload.workId,'作品'),p_request_key:requestKey(payload.requestKey)};
+    }else if(operation==='work_review'){
+      const decision=text(payload.decision,20),reason=text(payload.reason,500);if(!['published','rejected'].includes(decision)||!reason)throw new Error('作品审核决定或说明无效');args={...common,p_work_id:integer(payload.workId,'作品'),p_request_key:requestKey(payload.requestKey),p_decision:decision,p_reason:reason};
+    }else if(operation==='works'||operation==='reviews'||operation==='campaigns'||operation==='booking_requests'){
+      args={...common,p_status:text(payload.status,30),p_limit:Math.min(integer(payload.limit||200,'数量'),500)};
+    }else if(operation==='review_moderate'){
+      const status=text(payload.status,20),reason=text(payload.reason,500);if(!['published','hidden'].includes(status)||!reason)throw new Error('评价处理状态或原因无效');args={...common,p_review_id:integer(payload.reviewId,'评价'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else if(operation==='campaign_create'){
+      const name=text(payload.name,120),channel=text(payload.channel,30),from=text(payload.startsOn,10),to=text(payload.endsOn,10),audience=payload.audience&&typeof payload.audience==='object'&&!Array.isArray(payload.audience)?payload.audience:{};if(!name||!['in_app','wechat_manual','sms_manual'].includes(channel)||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(from)||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(to))throw new Error('营销活动参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_name:name,p_channel:channel,p_audience_json:audience,p_message_template:text(payload.messageTemplate,1000),p_starts_on:from,p_ends_on:to};
+    }else if(operation==='campaign_status'){
+      const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','paused','ended','cancelled'].includes(status)||!reason)throw new Error('活动状态或原因无效');args={...common,p_campaign_id:integer(payload.campaignId,'活动'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else if(operation==='booking_review'){
+      const decision=text(payload.decision,20),reason=text(payload.reason,500);if(!['confirmed','rejected'].includes(decision)||!reason)throw new Error('预约处理决定或原因无效');args={...common,p_booking_request_id:integer(payload.bookingRequestId,'预约申请'),p_request_key:requestKey(payload.requestKey),p_decision:decision,p_staff_id:integer(payload.staffId,'手艺人',decision!=='confirmed'),p_reason:reason};
     }else if(operation==='stores'){
       args={p_actor_staff_id:actor,p_organization_id:org};
     }else{
