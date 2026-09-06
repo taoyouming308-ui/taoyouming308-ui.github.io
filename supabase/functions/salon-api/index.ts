@@ -41,6 +41,9 @@ const handler=createSalonHandler({
       ]);
       return{order:orders[0],payments:await paymentsResponse.json(),memberLedger:await ledgerResponse.json()};
     }
+    if(operation==="order_detail"){
+      const response=await admin("rpc/salon_get_order",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_order_id:Number(scope.orderId)})});return response.json();
+    }
     const itemFilter=scope.catalogItemId?`&catalog_item_id=eq.${Number(scope.catalogItemId)}`:"";
     const response=await admin(`salon_inventory_balances?select=catalog_item_id,quantity,updated_at&organization_id=eq.${org}&store_id=eq.${store}${itemFilter}&order=catalog_item_id.asc&limit=500`);
     return response.json();

@@ -5,7 +5,8 @@ const OPERATIONS={
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
   catalog_create:{rpc:'salon_create_catalog_item'},catalog_enable:{rpc:'salon_enable_catalog_item'},catalog_status:{rpc:'salon_set_catalog_status'},inventory_count:{rpc:'salon_count_inventory'},
   member_open:{rpc:'salon_open_member_account'},member_recharge:{rpc:'salon_recharge_member_account'},member_status:{rpc:'salon_set_member_status'},
-  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
+  order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines'},order_status:{rpc:'salon_set_order_status'},
+  context:{read:true},order_receipt:{read:true},order_detail:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
 function text(value,max=160){return String(value==null?'':value).trim().slice(0,max)}
@@ -30,6 +31,7 @@ export function createSalonHandler(deps){return async function(request){
     const common={p_actor_staff_id:integer(staff.id,'员工'),p_organization_id:integer(staff.organization_id,'组织'),p_store_id:integer(staff.store_id,'门店')};
     if(operation==='context')return finish(200,{data:{staffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,displayName:text(staff.display_name,100)}});
     if(operation==='order_receipt')return finish(200,{data:await deps.read('order_receipt',{organizationId:common.p_organization_id,storeId:common.p_store_id,orderId:integer(payload.orderId,'订单')})});
+    if(operation==='order_detail')return finish(200,{data:await deps.read('order_detail',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,orderId:integer(payload.orderId,'订单')})});
     if(operation==='inventory')return finish(200,{data:await deps.read('inventory',{organizationId:common.p_organization_id,storeId:common.p_store_id,catalogItemId:integer(payload.catalogItemId,'商品',true)})});
     if(operation==='customers')return finish(200,{data:await deps.read('customers',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,query:text(payload.query,100),status:text(payload.status,20),limit:Math.min(integer(payload.limit||100,'数量'),200)})});
     if(operation==='catalog')return finish(200,{data:await deps.read('catalog',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,itemType:text(payload.itemType,20),status:text(payload.status,20),query:text(payload.query,100),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
@@ -71,8 +73,14 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_account_type:accountType,p_account_no:accountNo,p_display_name:name,p_usable_scope:scope,p_expires_on:text(payload.expiresOn,10)||null};
     }else if(operation==='member_recharge'){
       const reason=text(payload.reason,500);if(!reason)throw new Error('充值原因不能为空');args={...common,p_account_id:integer(payload.accountId,'会员账户'),p_request_key:requestKey(payload.requestKey),p_paid_amount:nonnegative(payload.paidAmount,'实收金额'),p_cash_added:nonnegative(payload.cashAdded,'本金增加'),p_bonus_added:nonnegative(payload.bonusAdded,'赠送增加'),p_units_added:nonnegative(payload.unitsAdded,'次数增加'),p_payment_method:text(payload.paymentMethod,30),p_external_reference:text(payload.externalReference,100),p_reason:reason};
-    }else{
+    }else if(operation==='member_status'){
       const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','frozen'].includes(status)||!reason)throw new Error('会员账户状态或原因无效');args={...common,p_account_id:integer(payload.accountId,'会员账户'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else if(operation==='order_create'){
+      args={...common,p_request_key:requestKey(payload.requestKey),p_customer_id:integer(payload.customerId,'顾客',true),p_appointment_id:integer(payload.appointmentId,'预约',true),p_notes:text(payload.notes,500)};
+    }else if(operation==='order_lines'){
+      if(!Array.isArray(payload.lines)||!payload.lines.length||payload.lines.length>100)throw new Error('订单明细必须为1至100项');args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_lines:payload.lines,p_discount_reason:text(payload.discountReason,500)};
+    }else{
+      const status=text(payload.status,30),reason=text(payload.reason,500);args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
