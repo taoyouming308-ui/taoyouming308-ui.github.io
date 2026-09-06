@@ -17,6 +17,7 @@ async function admin(path:string,init:RequestInit={}){const response=await fetch
 const handler=createSalonHandler({
   verifyUser:async(token:string)=>{const response=await fetch(`${url}/auth/v1/user`,{headers:{apikey:publishable,Authorization:`Bearer ${token}`}});if(!response.ok)return null;return response.json()},
   findStaff:async(userId:string)=>{const response=await admin(`salon_staff?select=id,organization_id,store_id,display_name,employment_status&auth_user_id=eq.${encodeURIComponent(userId)}&limit=2`);const rows=await response.json();if(!Array.isArray(rows)||rows.length!==1)return null;return rows[0]},
+  resolveStore:async(scope:{actorStaffId:number;organizationId:number;requestedStoreId:number})=>{const response=await admin("rpc/salon_resolve_staff_store",{method:"POST",body:JSON.stringify({p_actor_staff_id:scope.actorStaffId,p_organization_id:scope.organizationId,p_requested_store_id:scope.requestedStoreId})});return response.json()},
   invoke:async(rpc:string,args:Record<string,unknown>)=>{const response=await admin(`rpc/${rpc}`,{method:"POST",body:JSON.stringify(args)});return response.json()},
   read:async(operation:string,scope:Record<string,unknown>)=>{
     const org=Number(scope.organizationId),store=Number(scope.storeId);

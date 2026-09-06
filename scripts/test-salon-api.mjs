@@ -6,6 +6,7 @@ const calls=[],logs=[];
 const handler=createSalonHandler({
   verifyUser:async token=>token==='valid-user-token-123456789'?{id:'auth-user-1'}:null,
   findStaff:async id=>id==='auth-user-1'?{id:7,organization_id:3,store_id:9,display_name:'员工甲',employment_status:'active'}:null,
+  resolveStore:async scope=>scope.requestedStoreId===10?10:9,
   invoke:async(rpc,args)=>{calls.push({rpc,args});return{ok:true,rpc}},
   read:async(operation,scope)=>{calls.push({operation,scope});return[{ok:true}]},
   log:async row=>logs.push(row),
@@ -22,7 +23,7 @@ result=await handler(request({operation:'refund_execute',refundRequestId:51,requ
 assert.equal(result.status,200);assert.equal(calls[1].rpc,'salon_execute_refund_request');
 result=await handler(request({operation:'inventory_move',catalogItemId:8,requestKey:'inventory-request-001',movementType:'sale',quantity:1,orderId:4,reason:'订单销售'}));
 assert.equal(result.status,200);assert.equal(calls[2].rpc,'salon_move_inventory');
-result=await handler(request({operation:'context'}));assert.equal(result.status,200);assert.deepEqual(result.body.data,{staffId:7,organizationId:3,storeId:9,displayName:'员工甲'});
+result=await handler(request({operation:'context'}));assert.equal(result.status,200);assert.deepEqual(result.body.data,{staffId:7,organizationId:3,storeId:9,homeStoreId:9,displayName:'员工甲'});
 result=await handler(request({operation:'order_receipt',orderId:4,storeId:999}));assert.equal(result.status,200);assert.deepEqual(calls.at(-1).scope,{organizationId:3,storeId:9,orderId:4});
 result=await handler(request({operation:'inventory',catalogItemId:8}));assert.equal(result.status,200);assert.equal(calls.at(-1).scope.storeId,9);
 result=await handler(request({operation:'customer_create',requestKey:'customer-create-0001',displayName:'测试顾客',phone:'138 0000 0000',ownerStaffId:7,source:'walkin',tags:['新客']}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_create_customer');assert.equal(calls.at(-1).args.p_store_id,9);
@@ -52,6 +53,12 @@ result=await handler(request({operation:'commission_rule',requestKey:'commission
 result=await handler(request({operation:'payroll_generate',requestKey:'payroll-generate-01',staffId:8,month:'2026-09-01',bonus:200,deduction:100,reason:'月度调整'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_generate_payroll');
 result=await handler(request({operation:'payroll_review',requestKey:'payroll-review-001',payrollId:61,decision:'approved',reason:'核对通过'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_review_payroll');
 result=await handler(request({operation:'payrolls',month:'2026-09-01',storeId:999}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_list_payroll');assert.equal(calls.at(-1).args.p_store_id,9);
+result=await handler(request({operation:'role_create',requestKey:'role-create-00001',name:'区域经理',dataScope:'organization',permissions:['reports/read','audit/read']}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_create_role');
+result=await handler(request({operation:'role_status',requestKey:'role-status-00001',roleId:5,status:'disabled',reason:'停用测试'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_set_role_status');
+result=await handler(request({operation:'staff_assign',requestKey:'staff-assign-00001',staffId:8,roleId:5,reason:'跨店授权',storeId:10}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_assign_staff_store_role');assert.equal(calls.at(-1).args.p_store_id,10);
+result=await handler(request({operation:'staff_transfer',requestKey:'staff-transfer-001',staffId:8,targetStoreId:10,targetRoleId:5,effectiveDate:'2026-09-06',reason:'正式调店'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_transfer_staff');
+result=await handler(request({operation:'stores'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_list_staff_stores');
+result=await handler(request({operation:'audit',entityType:'staff',limit:50,storeId:10}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_list_audit_events');assert.equal(calls.at(-1).args.p_store_id,10);
 result=await handler(request({operation:'refunds',status:'submitted',limit:50,storeId:999}));assert.equal(result.status,200);assert.equal(calls.at(-1).scope.storeId,9);
 result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'short'}));assert.equal(result.status,400);
 result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0002',payments:[]}));assert.equal(result.status,400);
