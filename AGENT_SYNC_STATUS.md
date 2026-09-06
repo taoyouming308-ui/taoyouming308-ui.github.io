@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## Salon API 会话与门店边界（2026-09-06，开发分支）
+
+- 新增独立 `salon-api` Edge Function 和可单测的请求核心，只开放收银、整单退款与库存移动三个白名单操作。
+- 接口要求 `Authorization: Bearer <用户会话 JWT>` 并实时调用 Supabase Auth 验证；随后用 `auth_user_id` 唯一查找在职 Salon 员工，组织、员工和门店参数全部由服务端填入，不相信客户端自报身份。
+- 新增 Salon 员工与 Supabase Auth 用户绑定迁移；不复用现有员工端姓名/密码会话，避免独立开发阶段提前耦合三个既有板块。
+- 后端优先读取新式 publishable/secret keys，兼容旧环境变量；secret/service role 只存在 Edge Function 环境，不进入浏览器代码、响应或仓库配置。
+- CORS 必须通过 `SALON_ALLOWED_ORIGINS` 明确配置来源；未配置时拒绝跨域浏览器请求。所有响应禁止缓存。
+- Auth 身份迁移已在临时 PostgreSQL 15 回放，重复绑定同一用户会被唯一约束拒绝；接口核心单测与 TypeScript/ESM 语法检查通过，临时容器已删除。
+- 本机没有独立 Deno CLI，因此尚未声明 Edge Runtime 启动验收完成；本批不部署函数、不设置生产密钥、不绑定真实账号。
+
 ## Salon Core 数据库整单退款冲正（2026-09-06，开发分支）
 
 - 新增 `20260906063629_salon_refund_reversal.sql`：会员扣款流水通过 `payment_id` 精确关联原支付，不再按订单和账户猜测原流水。
