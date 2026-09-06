@@ -1,5 +1,6 @@
 // Local-only customer lab. No production endpoint/SDK, storage, or client-selected identity.
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
+import {withRequestDeadline} from './request-deadline.mjs';
 let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
 let token=null,rows=[],pending=null,busy=false,epoch=0,logoutPending=false;
@@ -9,7 +10,7 @@ function render(){ $('panel').disabled=busy||!token||!!pending||logoutPending;$(
 function lock(){token=null;pending=null;epoch++;clear();}
 async function api(body){
  const revision=epoch;let response,result;
- try{response=await fetch('/api/salon-customer',{method:'POST',redirect:'error',cache:'no-store',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});result=await response.json();}
+ try{result=await withRequestDeadline(async signal=>{response=await fetch('/api/salon-customer',{method:'POST',redirect:'error',cache:'no-store',signal,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});return response.json();});}
  catch{throw Error('结果未知，请按原请求重试，不要重复新建。');}
  if(revision!==epoch)throw Error('会话已改变，请重新读取。');
  if(!response.ok||result.error){

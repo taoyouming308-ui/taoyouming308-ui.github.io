@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const {startServer}=require('./salon-local-integration.cjs');
+const timeoutMode=process.env.SALON_TEST_TIMEOUT==='1';
 (async()=>{let app,browser;try{
  app=await startServer();
  app.sql(`insert into public.salon_customers(organization_id,display_name) values(1,'合成顾客');
@@ -23,6 +24,22 @@ const {startServer}=require('./salon-local-integration.cjs');
   const original=app.sql(`select starts_at from public.salon_customer_booking_requests where id=${b.bookingRequestId}`),target=new Date(Date.parse(original)+48*3600000).toISOString();
   const customer=await browser.newPage({viewport:{width,height:844},timezoneId:'America/Los_Angeles'}),staff=await browser.newPage({viewport:{width,height:844},timezoneId:'Asia/Tokyo'}),errors=[];
   for(const page of [customer,staff]){page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',route=>new URL(route.request().url()).origin===app.url?route.continue():route.abort());}
+  if(timeoutMode)for(const page of [customer,staff])await page.addInitScript(()=>{
+   const nativeFetch=window.fetch.bind(window),nativeTimer=window.setTimeout.bind(window);let stalled=false;
+   // Accelerate only the application's 30s deadline. Server still handles the real request.
+   window.setTimeout=(fn,ms,...args)=>nativeTimer(fn,ms===30000?1000:ms,...args);
+   window.fetch=async(input,options)=>{
+    const response=await nativeFetch(input,options);
+    const operation=options?.body?JSON.parse(options.body).operation:null;
+    if(window.__salonTimeoutBody&&JSON.parse(options?.body||'{}').requestKey===window.__salonTimeoutBody.requestKey)
+     window.__salonTimeoutRetryBody=JSON.parse(options.body);
+    if(!stalled&&response.ok&&['reschedule_request','reschedule_review'].includes(operation)&&!(operation==='reschedule_review'&&JSON.parse(options.body).decision==='rejected')){
+     stalled=true;window.__salonTimeoutBody=JSON.parse(options.body);
+     return new Promise(()=>{}); // deliberately ignore abort after server commit
+    }
+    return response;
+   };
+  });
   let customerToken,staffToken;
   customer.on('request',r=>{if(r.url().endsWith('/api/salon-customer'))customerToken=r.headers().authorization;});
   staff.on('request',r=>{if(r.url().endsWith('/api/salon'))staffToken=r.headers().authorization;});
@@ -32,9 +49,10 @@ const {startServer}=require('./salon-local-integration.cjs');
   assert.match(await customer.locator('#timeZone').textContent(),/Asia\/Shanghai/);
   await customer.locator('#booking').selectOption(String(b.bookingRequestId));assert.equal(await customer.locator('#starts').inputValue(),instantToStoreInput(new Date(original).toISOString(),'Asia/Shanghai'));await customer.locator('#starts').fill(instantToStoreInput(target,'Asia/Shanghai'));await customer.locator('#reason').fill('合成行程变化');
   let dropped=false;
-  await customer.route('**/api/salon-customer',async route=>{if(!dropped&&route.request().postDataJSON().operation==='reschedule_request'){dropped=true;await route.fetch();await route.abort('failed');}else await route.continue();});
+  if(!timeoutMode)await customer.route('**/api/salon-customer',async route=>{if(!dropped&&route.request().postDataJSON().operation==='reschedule_request'){dropped=true;await route.fetch();await route.abort('failed');}else await route.continue();});
   await customer.locator('#submit').click();await customer.locator('#retry:not([disabled])').waitFor();assert.equal(await customer.locator('#submit').isDisabled(),true);assert.equal(await customer.locator('#connect').isDisabled(),true);
   await customer.locator('#retry').click();await customer.getByText('申请已提交，原档期保留，等待门店确认。',{exact:true}).waitFor();
+  if(timeoutMode)assert.equal(await customer.evaluate(()=>JSON.stringify(window.__salonTimeoutBody)===JSON.stringify(window.__salonTimeoutRetryBody)),true);
   assert.equal(app.sql(`select starts_at from public.salon_customer_booking_requests where id=${b.bookingRequestId}`),original);
   const id=app.sql(`select id from public.salon_booking_change_requests where booking_request_id=${b.bookingRequestId}`);assert.match(id,/^\d+$/);
   await staff.goto(app.url);await staff.locator('#connect').click();await staff.getByText('已连接临时数据库；所有操作只影响本次合成数据。',{exact:true}).waitFor();
@@ -48,8 +66,9 @@ const {startServer}=require('./salon-local-integration.cjs');
    await staff.locator('#rejectChange').click();await staff.getByText('改期申请已拒绝，原预约保留。',{exact:true}).waitFor();
    assert.equal(app.sql(`select starts_at from public.salon_customer_booking_requests where id=${b.bookingRequestId}`),original);
   }else{
-   let lost=false;await staff.route('**/api/salon',async route=>{if(!lost&&route.request().postDataJSON().operation==='reschedule_review'){lost=true;await route.fetch();await route.abort('failed');}else await route.continue();});
+   let lost=false;if(!timeoutMode)await staff.route('**/api/salon',async route=>{if(!lost&&route.request().postDataJSON().operation==='reschedule_review'){lost=true;await route.fetch();await route.abort('failed');}else await route.continue();});
    await staff.locator('#approveChange').click();await staff.locator('#retry:not([disabled])').waitFor();await staff.locator('#retry').click();await staff.getByText('改期申请已批准，预约已更新。',{exact:true}).waitFor();
+   if(timeoutMode)assert.equal(await staff.evaluate(()=>JSON.stringify(window.__salonTimeoutBody)===JSON.stringify(window.__salonTimeoutRetryBody)),true);
    assert.equal(Date.parse(app.sql(`select starts_at from public.salon_customer_booking_requests where id=${b.bookingRequestId}`)),Date.parse(target));
   }
   await customer.locator('#refresh').click();await customer.getByText('已刷新本人数据。',{exact:true}).waitFor();assert.match(await customer.locator('#results').textContent(),width===390?/已拒绝/:/已批准/);
@@ -79,5 +98,5 @@ const {startServer}=require('./salon-local-integration.cjs');
  app.sql("update public.salon_customer_auth_identities set status='disabled' where customer_id=1");
  await revoked.locator('#refresh').click();await revoked.getByText(/会话已锁定/).waitFor();assert.equal(await revoked.locator('#submit').isDisabled(),true);assert.equal(await revoked.locator('#results li').count(),0);
  await revoked.locator('#connect').click();await revoked.getByText(/会话已锁定/).waitFor();assert.equal(app.sql('select count(*) from public.salon_customers'),'1');await revoked.close();
- console.log('Dual workbench passed: 1280/390 customer→HTTP→SQL→staff→customer, both lost-response retries, conflict/reject, isolated tokens, store clear and logout');
+ console.log(`Dual workbench passed (${timeoutMode?'timeout after server commit':'lost response'}): 1280/390 customer→HTTP→SQL→staff→customer, retries, conflict/reject, isolated tokens, store clear and logout`);
 }finally{if(browser)await browser.close();if(app)await app.close();}})().catch(e=>{console.error(e);process.exitCode=1});

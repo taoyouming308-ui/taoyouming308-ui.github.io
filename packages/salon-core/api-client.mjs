@@ -1,4 +1,5 @@
 // Explicit transport boundary. No storage, inferred IDs, automatic retries or offline fallback.
+import {withRequestDeadline} from './request-deadline.mjs';
 export class SalonClientError extends Error {
   constructor(code, message, requestId = null) { super(message); this.code = code; this.requestId = requestId; }
 }
@@ -28,7 +29,9 @@ export function mapRows(resource, rows, scope) {
 }
 const reads = new Set(['context', 'stores', 'customers', 'catalog', 'order_detail', 'booking_requests', 'reschedule_requests', 'store_time']);
 const writes = new Set(['customer_create', 'order_create', 'order_lines', 'booking_cancel_review', 'booking_reschedule', 'reschedule_review']);
-export function createSalonClient({ endpoint, getAccessToken, fetchImpl = globalThis.fetch, makeKey = () => crypto.randomUUID(), onAuthFailure = () => {} }) {
+export function createSalonClient({ endpoint, getAccessToken, fetchImpl = globalThis.fetch, makeKey = () => crypto.randomUUID(), onAuthFailure = () => {}, requestTimeoutMs = 30000 }) {
+  if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 120000)
+    fail('INVALID_TIMEOUT', '请求等待时间必须在 1—120000 毫秒之间');
   const url = new URL(endpoint);
   if (url.username || url.password || url.search || url.hash ||
       (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))))
@@ -46,9 +49,11 @@ export function createSalonClient({ endpoint, getAccessToken, fetchImpl = global
     if (typeof token !== 'string' || token.length < 20) fail('AUTH_REQUIRED', '请重新登录');
     let response, payload;
     try {
-      response = await fetchImpl(url.href, { method: 'POST', redirect: 'error', cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-      payload = await response.json();
+      payload = await withRequestDeadline(async signal => {
+        response = await fetchImpl(url.href, { method: 'POST', redirect: 'error', cache: 'no-store', signal,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+        return response.json();
+      }, requestTimeoutMs);
     } catch {
       current(epoch);
       if (response?.status === 401) { invalidateAuth(); fail('AUTH_REQUIRED', '登录已失效，请重新连接'); }
