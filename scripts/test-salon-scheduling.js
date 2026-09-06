@@ -1,0 +1,15 @@
+const domain=require('../packages/salon-core/scheduling-domain.js');const fs=require('fs');
+const state=domain.emptyState(),failures=[];const expect=(ok,msg)=>{if(!ok)failures.push(msg)};const throws=(fn,text)=>{try{fn();failures.push('expected error: '+text)}catch(e){if(!String(e.message).includes(text))failures.push('wrong error: '+e.message)}};
+const a=domain.addStaff(state,{name:'甲手艺人',station:'1号位'}),b=domain.addStaff(state,{name:'乙手艺人',station:'2号位'});throws(()=>domain.addStaff(state,{name:'甲手艺人'}),'已经存在');
+domain.addLeave(state,{staffId:b.id,startsAt:'2026-09-07T10:00',endsAt:'2026-09-07T12:00',reason:'休假'});
+throws(()=>domain.createAppointment(state,{staffId:b.id,customerName:'顾客乙',service:'剪发',startsAt:'2026-09-07T10:30',duration:60}),'休假');
+const first=domain.createAppointment(state,{staffId:a.id,customerName:'顾客甲',service:'烫发',startsAt:'2026-09-07T10:00',duration:120,specified:false});
+throws(()=>domain.createAppointment(state,{staffId:a.id,customerName:'冲突顾客',service:'剪发',startsAt:'2026-09-07T11:00',duration:30}),'已有预约');
+const specified=domain.createAppointment(state,{staffId:b.id,customerName:'指定顾客',service:'染发',startsAt:'2026-09-07T13:00',duration:90,specified:true});
+domain.setAppointmentStatus(state,first.id,'arrived');domain.setAppointmentStatus(state,specified.id,'arrived');expect(state.queue.length===2,'arrival must enqueue');expect(domain.orderedQueue(state)[0].specified===true,'specified guest must be clearly separated');
+domain.setQueueStatus(state,state.queue[0].id,'serving');domain.setQueueStatus(state,state.queue[0].id,'completed');domain.setQueueStatus(state,state.queue[0].id,'waiting');expect(state.queue[0].round===2,'completed return must advance round');
+throws(()=>domain.setAppointmentStatus(state,first.id,'no_show'),'不能从arrived');expect(state.audit.length>=9,'schedule audit events missing');
+const restored=domain.deserialize(domain.serialize(state));expect(restored.appointments.length===2&&restored.queue.length===2,'offline schedule persistence failed');
+const html=fs.readFileSync('salon-app.html','utf8');expect(html.includes('data-salon-version="0.3.0-test"'),'salon scheduling version missing');['创建预约','休假 / 不可预约','轮牌队列','开始服务','爽约'].forEach(x=>expect(html.includes(x),x+' UI missing'));
+expect(html.includes("btn.dataset.qstatus==='completed'")&&html.includes("btn.dataset.queue,'waiting'"),'service completion must automatically return to waiting queue');
+if(failures.length){console.error('salon scheduling tests failed:\n- '+failures.join('\n- '));process.exit(1)}console.log('salon scheduling tests passed');
