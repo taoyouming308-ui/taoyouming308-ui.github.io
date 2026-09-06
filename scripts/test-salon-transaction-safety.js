@@ -1,0 +1,21 @@
+const fs=require('fs');
+const migration=fs.readFileSync('supabase/migrations/20260906062903_salon_transaction_safety.sql','utf8');
+const failures=[];const expect=(ok,msg)=>{if(!ok)failures.push(msg)};
+['salon_operation_requests','salon_inventory_balances','salon_inventory_ledger'].forEach(name=>expect(migration.includes('public.'+name),name+' missing'));
+['salon_checkout_order','salon_move_inventory'].forEach(name=>{
+  expect(migration.includes('function public.'+name),name+' function missing');
+  expect(new RegExp('revoke execute on function public\\.'+name+'[\\s\\S]*?from public,anon,authenticated','i').test(migration),name+' browser execute revoke missing');
+  expect(new RegExp('grant execute on function public\\.'+name+'[\\s\\S]*?to service_role','i').test(migration),name+' service-role grant missing');
+});
+expect(/unique\s*\(organization_id,\s*request_key\)/i.test(migration),'organization-scoped idempotency uniqueness missing');
+expect((migration.match(/for update/g)||[]).length>=2,'order and balance row locks missing');
+expect(/order by a\.id for update/i.test(migration),'member accounts must lock in stable order');
+expect(/if v_after<0 then raise exception '库存不足/i.test(migration),'non-negative inventory guard missing');
+expect(/assert_staff_permission[\s\S]*?s\.store_id=p_store_id/i.test(migration),'staff store permission boundary missing');
+expect(/force row level security/i.test(migration),'RLS force missing');
+expect(/revoke all on table public\.%I from public,anon,authenticated/i.test(migration),'browser table grants not revoked');
+expect(!/security definer/i.test(migration),'transaction functions must not bypass RLS with security definer');
+expect(!/raw_user_meta_data|user_metadata/i.test(migration),'user-editable metadata must not authorize writes');
+expect(/response_json=v_response,completed_at=now\(\)/i.test(migration),'idempotent response completion missing');
+if(failures.length){console.error('salon transaction safety tests failed:\n- '+failures.join('\n- '));process.exit(1)}
+console.log('salon transaction safety tests passed: service-only RPC, idempotency, row locks, store permission, RLS');
