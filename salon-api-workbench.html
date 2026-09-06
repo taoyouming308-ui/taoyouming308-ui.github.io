@@ -4,7 +4,7 @@
 *{box-sizing:border-box}body{margin:0;background:#101820;color:#ecf1f6;font:16px system-ui}main{max-width:880px;margin:auto;padding:24px}h1{font-size:26px}section{background:#1d2a36;padding:20px;margin:16px 0;border-radius:12px}button,input,select{font:inherit;min-height:44px;border-radius:8px;padding:10px;max-width:100%}button{background:#c3eab2;border:0;cursor:pointer}button:disabled{opacity:.5;cursor:default}label{display:block;margin:12px 0}input,select{width:100%;margin-top:6px}p{line-height:1.6}#status{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#bfcedb}fieldset{border:0;padding:0;margin:0}nav{display:flex;gap:12px;flex-wrap:wrap}
 </style></head><body><main>
 <h1>门店业务 · 本机联调</h1><p>合成数据专用：页面 → HTTP → 真实业务处理器 → 临时 PostgreSQL。不是正式登录、真实收款或上线验收；不会导入旧原型数据。</p>
-<nav><button id="connect">连接本机测试环境</button><button id="retry" disabled>按原请求重试</button></nav>
+<nav><button id="connect">连接本机测试环境</button><button id="retry" disabled>按原请求重试</button><button id="logout" disabled>退出本次测试会话</button></nav>
 <p id="status" role="status">请先运行 node scripts/salon-local-integration.cjs，并打开终端给出的地址。</p>
 <fieldset id="panel" disabled>
 <section><h2>1 · 选择门店</h2><label>授权门店<select id="store"></select></label><small>切店清空顾客、项目和订单选择，不按姓名匹配跨店对象。</small></section>

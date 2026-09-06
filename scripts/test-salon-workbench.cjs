@@ -7,7 +7,8 @@ const {startServer}=require('./salon-local-integration.cjs');
  try{
   app=await startServer();browser=await chromium.launch({channel:'chrome',headless:true});
   for(const width of [1280,390]){
-   const page=await browser.newPage({viewport:{width,height:844}});activePage=page;const errors=[];
+   const page=await browser.newPage({viewport:{width,height:844}});activePage=page;const errors=[];let lastToken;
+   page.on('request',request=>{if(request.url().endsWith('/__salon_test_user'))lastToken=request.headers().authorization;});
    page.on('pageerror',error=>errors.push(error.message));
    await page.route('**/*',route=>new URL(route.request().url()).origin===app.url?route.continue():route.abort());
    await page.goto(app.url);await page.locator('#connect').click();
@@ -42,13 +43,32 @@ const {startServer}=require('./salon-local-integration.cjs');
    },customerId);
    assert.deepEqual(boundary.slice(0,3),[403,403,0]);assert.ok(boundary[3]<=boundary[4]);assert.deepEqual(errors,[]);
    assert.equal(boundary[5],400,'another store cannot create an order for this customer');
+   await page.evaluate(()=>localStorage.setItem('unrelated-app-sentinel','keep'));
+   const oldToken=lastToken;
+   let lostLogout=false;
+   await page.route('**/__salon_test_logout',async route=>{
+    if(!lostLogout){lostLogout=true;await route.fetch();await route.abort('failed');}else await route.continue();
+   });
+   await page.locator('#logout').click();await page.getByText(/本页面已锁定，但服务器退出未确认/).waitFor();
+   assert.equal(await page.locator('#connect').isDisabled(),true);
+   await page.locator('#logout').click();await page.getByText('已退出本次测试会话；旧请求不能继续提交。',{exact:true}).waitFor();
+   assert.equal(await page.locator('#createCustomer').isDisabled(),true);assert.equal(await page.locator('#customer option').count(),1);
+   assert.equal(await page.locator('#name').inputValue(),'');
+   assert.equal(await page.evaluate(()=>localStorage.getItem('unrelated-app-sentinel')),'keep');
+   assert.equal((await fetch(app.url+'/__salon_test_user',{method:'POST',headers:{Authorization:oldToken}})).status,403);
+   await page.locator('#connect').click();await page.getByText('已连接临时数据库；所有操作只影响本次合成数据。',{exact:true}).waitFor();
+   assert.notEqual(lastToken,oldToken,'new test login has a distinct session');
+   await fetch(app.url+'/__salon_test_logout',{method:'POST',headers:{Authorization:lastToken}});
+   await page.locator('#name').fill('不应写入的合成顾客');
+   await page.locator('#createCustomer').click();await page.getByText('会话已锁定，旧业务选择已清除；请重新连接。',{exact:true}).waitFor();
+   assert.equal(await page.locator('#createCustomer').isDisabled(),true);
    await page.close();
   }
   assert.equal(app.sql('select count(*) from public.salon_customers;'),'2');
   assert.equal(app.sql('select count(*) from public.salon_orders;'),'2');
   assert.equal((await fetch(app.url+'/__salon_test_session',{method:'POST',headers:{Origin:'https://untrusted.example'}})).status,403);
   assert.equal((await fetch(app.url+'/api/salon',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"operation":"context"}'})).status,403);
-  console.log('Workbench: 1280/390 browser → HTTP → real handler → PostgreSQL, lost response replay and store boundaries passed');
+  console.log('Workbench: 1280/390 browser → HTTP → real handler → PostgreSQL, retry/store boundaries, logout and revoked-session guards passed');
  }catch(error){if(activePage&&!activePage.isClosed())console.error('Workbench status:',await activePage.locator('#status').textContent());throw error;}
  finally{if(browser)await browser.close();if(app)await app.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

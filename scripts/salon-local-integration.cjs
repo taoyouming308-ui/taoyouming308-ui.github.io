@@ -6,7 +6,7 @@ const http=require('node:http');
 const {randomUUID}=require('node:crypto');
 const root=path.resolve(__dirname,'..');
 async function startServer(){
- const container=`salon-workbench-${process.pid}-${Date.now()}`,token=randomUUID();
+ const container=`salon-workbench-${process.pid}-${Date.now()}`,tokens=new Set();
  let created=false,server;
  const docker=(args,input)=>execFileSync('docker',args,{input,encoding:'utf8',timeout:120000,maxBuffer:8*1024*1024,stdio:['pipe','pipe','pipe']});
  const sql=input=>docker(['exec','-i',container,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-qAt'],input).trim();
@@ -44,7 +44,7 @@ async function startServer(){
   };
   const {createSalonHandler}=await import('../supabase/functions/_shared/salon-api-core.mjs');
   const handler=createSalonHandler({
-   verifyUser:async supplied=>supplied===token?{id:'11111111-1111-4111-8111-111111111111'}:null,
+   verifyUser:async supplied=>tokens.has(supplied)?{id:'11111111-1111-4111-8111-111111111111'}:null,
    findStaff:async()=>JSON.parse(sql('select to_jsonb(s) from public.salon_staff s where id=1;')),
    resolveStore:async s=>rpc('salon_resolve_staff_store',{p_actor_staff_id:s.actorStaffId,p_organization_id:s.organizationId,p_requested_store_id:s.requestedStoreId}),
    invoke:async(name,args)=>rpc(name,args),
@@ -56,7 +56,7 @@ async function startServer(){
     throw Error('本机工作台未开放该读取');
    }
   });
-  const files={'/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
+  const files={'/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
   const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail']);
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;
@@ -68,7 +68,17 @@ async function startServer(){
     return res.end(fs.readFileSync(path.join(root,files[route])));
    }
    if(req.method!=='POST')return reply(405,{error:'POST required'});
-   if(route==='/__salon_test_session')return reply(200,{environment:'synthetic-local-only',token});
+   if(route==='/__salon_test_session'){
+    const token=randomUUID();tokens.add(token);
+    return reply(200,{environment:'synthetic-local-only',token,user:{id:'11111111-1111-4111-8111-111111111111'},expires_at:Math.floor(Date.now()/1000)+3600});
+   }
+   if(route==='/__salon_test_user'||route==='/__salon_test_logout'){
+    const token=(req.headers.authorization||'').replace(/^Bearer /,'');
+    // A lost successful logout response must be retryable without resurrecting a session.
+    if(route==='/__salon_test_logout'&&/^[0-9a-f-]{36}$/.test(token)){tokens.delete(token);return reply(200,{data:{}});}
+    if(!tokens.has(token))return reply(403,{error:'合成会话失效'});
+    return reply(200,{data:{user:{id:'11111111-1111-4111-8111-111111111111'}}});
+   }
    if(route!=='/api/salon')return reply(404,{error:'Not found'});
    try{
     let body='',bytes=0;

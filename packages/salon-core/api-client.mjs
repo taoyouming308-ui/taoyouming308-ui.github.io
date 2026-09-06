@@ -28,7 +28,7 @@ export function mapRows(resource, rows, scope) {
 }
 const reads = new Set(['context', 'stores', 'customers', 'catalog', 'order_detail']);
 const writes = new Set(['customer_create', 'order_create', 'order_lines']);
-export function createSalonClient({ endpoint, getAccessToken, fetchImpl = globalThis.fetch, makeKey = () => crypto.randomUUID() }) {
+export function createSalonClient({ endpoint, getAccessToken, fetchImpl = globalThis.fetch, makeKey = () => crypto.randomUUID(), onAuthFailure = () => {} }) {
   const url = new URL(endpoint);
   if (url.username || url.password || url.search || url.hash ||
       (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname))))
@@ -37,6 +37,10 @@ export function createSalonClient({ endpoint, getAccessToken, fetchImpl = global
   const tickets = new WeakMap();
   const snapshot = () => scope && Object.freeze({ ...scope });
   const current = epoch => { if (generation !== epoch) fail('STALE_SCOPE', '门店或身份已变化，请重新读取'); };
+  const invalidateAuth = () => {
+    scope = null; generation++;
+    try { onAuthFailure(); } catch { /* A failed UI listener must not restore access. */ }
+  };
   async function send(body, epoch) {
     const token = await getAccessToken(); current(epoch);
     if (typeof token !== 'string' || token.length < 20) fail('AUTH_REQUIRED', '请重新登录');
@@ -45,11 +49,18 @@ export function createSalonClient({ endpoint, getAccessToken, fetchImpl = global
       response = await fetchImpl(url.href, { method: 'POST', redirect: 'error', cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
       payload = await response.json();
-    } catch { current(epoch); fail('OUTCOME_UNKNOWN', '未收到有效结果；写入请使用原请求重试，不要新建请求'); }
+    } catch {
+      current(epoch);
+      if (response?.status === 401) { invalidateAuth(); fail('AUTH_REQUIRED', '登录已失效，请重新连接'); }
+      fail('OUTCOME_UNKNOWN', '未收到有效结果；写入请使用原请求重试，不要新建请求');
+    }
     current(epoch);
     if (!response.ok || payload?.error) {
       const error = new SalonClientError('API_REJECTED', payload?.error || '接口拒绝请求', payload?.requestId);
       error.httpStatus = response.status;
+      if (response.status === 401 || ['AUTH_REQUIRED', 'STAFF_INACTIVE'].includes(payload?.code)) {
+        invalidateAuth();
+      }
       throw error;
     }
     if (!payload || !Object.hasOwn(payload, 'data')) fail('OUTCOME_UNKNOWN', '返回格式无效，请核对原请求');

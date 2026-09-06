@@ -1,6 +1,7 @@
-import {createSalonClient,mapRows,serverId} from './api-client.mjs';
+import {mapRows,serverId} from './api-client.mjs';
+import {createSalonSession} from './session-controller.mjs';
 const $=id=>document.getElementById(id);
-let client,token,customers=[],items=[],orderId=null,retry=null;
+let client,customers=[],items=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
 function options(id,rows,label){
  const select=$(id);select.replaceChildren(new Option('请选择',''));
@@ -13,10 +14,11 @@ async function refresh(){
  options('customer',customers,row=>row.displayName);options('item',items,row=>`${row.name} · ¥${(row.listPriceCents/100).toFixed(2)}`);
 }
 async function run(action){
+ const epoch=viewRevision;
  $('panel').disabled=true;$('connect').disabled=true;$('retry').disabled=true;
  try{await action();}
- catch(error){status(`${error.message}${error.requestId?'\n追踪号：'+error.requestId:''}${retry?'\n当前原请求保留；请先重试核对，不要另建业务。':''}`);}
- finally{$('panel').disabled=!client?.scope||Boolean(retry);$('connect').disabled=Boolean(retry);$('retry').disabled=!retry;}
+ catch(error){if(epoch===viewRevision)status(`${error.message}${error.requestId?'\n追踪号：'+error.requestId:''}${retry?'\n当前原请求保留；请先重试核对，不要另建业务。':''}`);}
+ finally{if(epoch===viewRevision){$('panel').disabled=!client?.scope||Boolean(retry);$('connect').disabled=Boolean(retry);$('retry').disabled=!retry;$('logout').disabled=!client?.scope;}}
 }
 async function mutate(operation,fields,onSuccess){
  const ticket=client.prepare(operation,fields);
@@ -35,15 +37,33 @@ async function mutate(operation,fields,onSuccess){
 }
 $('connect').onclick=()=>run(async()=>{
  if(location.protocol!=='http:'||location.hostname!=='127.0.0.1')throw Error('仅允许专用本机测试服务，不能连接线上或直接打开文件');
- clear();client?.disconnect();
+ clear();client?.dispose();
  const response=await fetch('/__salon_test_session',{method:'POST',cache:'no-store',redirect:'error'});
  const session=await response.json();if(!response.ok||session.environment!=='synthetic-local-only')throw Error('不是合成测试环境');
- token=session.token;client=createSalonClient({endpoint:location.origin+'/api/salon',getAccessToken:()=>token});
+ // Synthetic provider with the same four auth methods; never a production SDK login.
+ let localSession={access_token:session.token,user:session.user,expires_at:session.expires_at},listener=()=>{};
+ const auth={
+  getSession:async()=>({data:{session:localSession}}),
+  getUser:async token=>{
+   const response=await fetch('/__salon_test_user',{method:'POST',headers:{Authorization:`Bearer ${token}`},cache:'no-store',redirect:'error'});
+   return response.ok?response.json():{error:true};
+  },
+  onAuthStateChange:callback=>{listener=callback;return {data:{subscription:{unsubscribe:()=>{listener=()=>{};}}}};},
+  signOut:async()=>{
+   const response=await fetch('/__salon_test_logout',{method:'POST',headers:{Authorization:`Bearer ${localSession?.access_token}`},redirect:'error'});
+   if(!response.ok)return {error:true};localSession=null;listener('SIGNED_OUT',null);return {error:null};
+  },
+ };
+ client=createSalonSession({auth,endpoint:location.origin+'/api/salon',onReset:reason=>{
+  if(reason==='DISPOSED')return;
+  viewRevision++;clear();$('name').value='';options('store',[],()=>{});$('panel').disabled=true;$('retry').disabled=true;$('connect').disabled=signingOut;
+  status('会话已锁定，旧业务选择已清除；请重新连接。');
+ }});
  await client.connect();
  const result=await client.read('stores');options('store',result.data.map(row=>({id:serverId(row.store_id),name:row.name})),row=>row.name);
  $('store').value=String(client.scope.storeId);await refresh();status('已连接临时数据库；所有操作只影响本次合成数据。');
 });
-$('store').onchange=()=>run(async()=>{const id=$('store').value;clear();client.disconnect();await client.connect(serverId(id));await refresh();status('已切换门店，旧选择已清除。');});
+$('store').onchange=()=>run(async()=>{const id=$('store').value;clear();if(!id){client.disconnect();return;}await client.connect(serverId(id));await refresh();status('已切换门店，旧选择已清除。');});
 $('createCustomer').onclick=()=>run(async()=>{
  const displayName=$('name').value.trim();if(!displayName)throw Error('请输入合成顾客姓名');
  await mutate('customer_create',{displayName,source:'other'},async data=>{await refresh();$('customer').value=String(serverId(data.customerId));});
@@ -65,4 +85,10 @@ $('saveLines').onclick=()=>run(async()=>{
  });
 });
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
+$('logout').onclick=async()=>{
+ signingOut=true;let completed=false;$('logout').disabled=true;$('connect').disabled=true;
+ try{await client.signOut();completed=true;$('logout').disabled=true;status('已退出本次测试会话；旧请求不能继续提交。');}
+ catch(error){status(error.message);$('logout').disabled=false;}
+ finally{signingOut=false;$('connect').disabled=!completed;}
+};
 window.addEventListener('beforeunload',event=>{if(retry){event.preventDefault();event.returnValue='';}});

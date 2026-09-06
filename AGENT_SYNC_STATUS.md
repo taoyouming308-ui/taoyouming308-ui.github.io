@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## Salon D1 第七批：会话保护与本机退出验证（2026-09-06）
+
+- 新增 `packages/salon-core/session-controller.mjs`，通过注入 Auth 的 `getSession/getUser/onAuthStateChange/signOut` 接口管理身份；不使用客户端 metadata 授权，不初始化生产 SDK，不复用旧 App 登录。
+- 门店上下文仍由真实 API 校验；换人/退出/过期/密码恢复/用户更新使旧请求失效，鉴权失败清空 API scope。同用户令牌刷新和重复 SIGNED_IN 不破坏请求幂等键。Auth 事件回调同步执行，异步验证及业务响应带会话代数检查。
+- 本机工作台增加退出，合成会话独立发号和撤销；未知退出结果保持锁定，原会话可重试退出，绝不把错误提示当成服务端退出成功。正常退出不删除其他 App 的 localStorage。
+- `node scripts/test-salon-session.mjs` 及全部 `test-salon-*.js/.mjs` 通过；显式 `test-salon-workbench.cjs` 在 1280/390 验证建档/开单、丢包幂等、门店边界、退出丢包重试、撤销会话后禁止写入及保留其他 App 存储。临时 PG 容器清理完成。
+- 测试修正了 fieldset 的禁用断言，改为直接验证业务按钮不可操作；合成退出接口支持已撤销令牌的幂等重试，不复活会话。
+- 尚未完成：专用 Supabase 测试项目/测试员工绑定/登录方式和 SDK 初始化、真实 Auth/Edge、跨刷新及退出时未知写入的恢复。已向用户询问是否有专用测试环境；未索取密码/服务密钥。本机令牌即时撤销不代表正式 JWT 即时失效。
+- 仍为独立开发分支和 v476，不合并 main、不部署、不触碰三个旧 App 及真实业务。后续可继续独立业务流程开发，真实登录验收须先明确测试环境。
+
 ## Salon D1 第六批：统一数据层与本机联调（2026-09-06）
 
 - 新增 `api-client.mjs` 和独立 `salon-api-workbench.html`；仅本机临时数据库联调，不改 `salon-app.html` 原型及现有三个 App。
