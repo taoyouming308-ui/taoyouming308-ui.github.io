@@ -4,6 +4,7 @@
 
 - App version: v477。收尾时发现 github/main 新增 `e9629d6`，已在独立分支合入这项既有员工会话网络错误处理及版本更新；三文件与 Salon 本批无重叠。未由本任务发布 main。
 - Salon 本批基于 v476 开始，随基线同步至 v477；时区事务功能仍仅独立分支，不部署迁移/Edge，不把 Salon 功能合并到现有三个 App。
+- 独立分支推送被 pre-push 阻止：上游 `e9629d6` 的 version.txt=477，但 frontdesk.html data-version=476，`test-frontdesk.js:92` 要求一致。已只读确认 github/main 同样不一致；未改前台页面或绕过 hook。Salon 功能提交 `4d2c63f` 已在本地，远端独立分支仍为 `b33d563`。需要上游修复或用户另行授权范围后，重跑完整检查再备份；本批不能报告已推送。
 
 ## Salon G06 第七批：时区版本事务保护（2026-09-06）
 
