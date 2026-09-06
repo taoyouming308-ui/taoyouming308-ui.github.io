@@ -6,6 +6,7 @@ const OPERATIONS={
   member_open:{rpc:'salon_open_member_account'},member_recharge:{rpc:'salon_recharge_member_account'},member_status:{rpc:'salon_set_member_status'},
   order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines'},order_status:{rpc:'salon_set_order_status'},
   refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_request'},refund_execute:{rpc:'salon_execute_refund_request'},
+  finance_entry:{rpc:'salon_add_finance_entry'},operating_report:{rpc:'salon_get_operating_report'},
   context:{read:true},order_receipt:{read:true},order_detail:{read:true},refunds:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
@@ -83,8 +84,12 @@ export function createSalonHandler(deps){return async function(request){
       const type=text(payload.refundType,20),reason=text(payload.reason,500);if(!reason)throw new Error('退款原因不能为空');args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_refund_type:type,p_reason:reason,p_lines:Array.isArray(payload.lines)?payload.lines:[],p_payments:Array.isArray(payload.payments)?payload.payments:[]};
     }else if(operation==='refund_review'){
       const decision=text(payload.decision,20),reason=text(payload.reason,500);if(!reason)throw new Error('审批意见不能为空');args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey),p_decision:decision,p_reason:reason};
-    }else{
+    }else if(operation==='refund_execute'){
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey)};
+    }else if(operation==='finance_entry'){
+      const type=text(payload.entryType,20),category=text(payload.category,100),note=text(payload.note,500),amount=Number(payload.amount);if(!['income','expense'].includes(type)||!category||!note||!Number.isFinite(amount)||amount<=0)throw new Error('收支记录参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_entry_date:text(payload.entryDate,10),p_entry_type:type,p_category:category,p_amount:amount,p_note:note};
+    }else{
+      const from=text(payload.dateFrom,10),to=text(payload.dateTo,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to))throw new Error('报表日期范围无效');args={...common,p_date_from:from,p_date_to:to};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
