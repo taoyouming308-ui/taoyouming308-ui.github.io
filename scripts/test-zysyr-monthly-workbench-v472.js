@@ -7,13 +7,14 @@ const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260905073551_zysyr_monthly_evidence_workbench.sql'), 'utf8');
+const directEvidence = fs.readFileSync(path.join(root, 'supabase/migrations/20260906122116_zysyr_history_monthly_direct_evidence.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 function expect(value, message) { if (!value) throw new Error(message); }
 
 for (const marker of [
-  '填写 / 修改金额', '上传本月资料', 'monthly-material-form', '月报金额工作台',
-  '上传并定位凭证', '本项目凭证要求', '必须有凭证', '原始报表即可', '无需凭证',
-  '查看组成明细（', '关闭的是“强制上传图片凭证”',
+  '编辑金额', '保存本月修改', '上传原表 / 凭证', 'monthly-material-form', '金额与原始凭证',
+  '上传这个数字的凭证', '是否需要凭证', '这个项目不需要凭证', '必须上传凭证', '有原始报表即可', '无需凭证',
+  '查看组成明细（', 'report-focus', 'minReadable=phone ? .68 : .7',
 ]) expect(page.includes(marker), `monthly workbench UI missing: ${marker}`);
 
 expect(page.includes("record_type:'report',record_id:report.id,monthly_cell_id:target.id")
@@ -22,8 +23,24 @@ expect(page.includes("report_type:type,report_date:date,month:$('month').value")
   && page.includes('日报日期必须属于当前月份'), 'monthly materials must remain scoped to the active store and month');
 expect(page.includes("cell.onclick=function(){openMonthlyVoucher(cell.dataset.traceCell)}")
   && page.includes("typeof value==='number'"), 'only numeric report amounts should open the monthly workbench');
-expect(page.includes("state.user.role!=='finance'||!!report.historical||data.evidence_policy==='none'"),
+expect(page.includes("state.user.role!=='finance'||!data.can_upload_vouchers||data.evidence_policy==='none'"),
   'no-evidence policy must remove the forced voucher upload action');
+expect(page.includes("api('history_ledger_evidence_upload'")
+  && api.includes('async function historyLedgerEvidenceUpload(')
+  && api.includes('rpc/zysyr_attach_history_ledger_evidence'),
+  'historical monthly amounts must accept direct evidence uploads');
+expect(directEvidence.includes('create or replace function public.zysyr_attach_history_ledger_evidence')
+  && directEvidence.includes("entry.status = 'posted'")
+  && directEvidence.includes("entry.entry_type = 'monthly_profit_loss'")
+  && directEvidence.includes("'page_confirmed'")
+  && directEvidence.includes("'evidence_upload'")
+  && directEvidence.includes("'evidence_link'"),
+  'historical evidence must append an exact link and audit events without rewriting posted amounts');
+expect(/revoke execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?from public, anon, authenticated/.test(directEvidence)
+  && /grant execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?to service_role/.test(directEvidence),
+  'historical evidence RPC must remain server-only');
+expect(api.includes('entry_type=eq.monthly_profit_loss'),
+  'direct historical evidence upload must only target posted monthly report entries');
 
 for (const policy of ['voucher_required', 'source_report', 'none']) {
   expect(api.includes(`"${policy}"`) && migration.includes(`'${policy}'`), `evidence policy missing: ${policy}`);

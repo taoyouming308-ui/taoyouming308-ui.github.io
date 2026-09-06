@@ -157,11 +157,13 @@ expect(html.includes('collectMonthlyVoucherTrace') && voucherCore.includes("trac
   && html.includes('scroll-snap-type:x mandatory') && voucherView.includes('左右滑动查看')
   && html.includes('return openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
   'formula totals must collect descendant vouchers into a swipeable second-level gallery');
-expect(html.includes('上传并定位凭证') && html.includes('monthly_cell_id:target.id')
+expect(html.includes('上传这个数字的凭证') && html.includes('monthly_cell_id:target.id')
   && html.includes("record_type:'report',record_id:report.id")
+  && html.includes("api('history_ledger_evidence_upload'")
+  && edge.includes('async function historyLedgerEvidenceUpload(')
   && edge.includes('zysyr_attach_monthly_cell_voucher')
   && edge.includes('source_cell_id=eq.${cleanText(target.id, 40)}'),
-  'future finance uploads from a monthly amount must remain scoped and reopen on that exact cell');
+  'current and historical finance uploads from a monthly amount must remain scoped and reopen on that exact cell');
 expect(html.includes('这是 Excel 定位，不是凭证编号') && html.includes('trace-source-details')
   && !html.includes("'原始凭证 · '+address"),
   'Excel cell addresses must be hidden behind source-location details instead of looking like voucher numbers');

@@ -2262,7 +2262,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   const result: JsonRecord = {
     target, report, historical: true,
     can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
-    can_upload_vouchers: false,
+    can_upload_vouchers: cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
     can_manage_evidence_rules: hasAuthCapability(session, "finance_account.create"),
     evidence_policy: evidencePolicy,
     evidence_rule: ruleRows.find((rule) => cleanText(rule.cell_address, 20).toUpperCase() === address) || null,
@@ -4454,6 +4454,72 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   }
 }
 
+async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const accountId = cleanText(session.auth_account_id, 40);
+  const ledgerEntryId = uuidValue(payload.ledger_entry_id, "历史月报金额编号无效") as string;
+  const filename = cleanText(payload.filename, 200);
+  const mime = cleanText(payload.mime_type, 120);
+  const reason = cleanText(payload.reason, 500);
+  const extensionByMime: Record<string, string> = {
+    "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png",
+  };
+  const extension = extensionByMime[mime];
+  if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) {
+    throw new Error("原始凭证支持 JPG、PNG 或 PDF");
+  }
+  if (!reason) throw new Error("补传原始凭证必须填写原因");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始凭证内容无效"); }
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个原始凭证必须小于 10MB");
+
+  const entries = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&entry_type=eq.monthly_profit_loss&status=eq.posted&limit=1`);
+  const entry = entries[0];
+  if (!entry) throw new Error("历史月报金额不存在或无权修改");
+  const fileHash = await sha256Bytes(bytes);
+  const batchId = cleanText(entry.import_batch_id, 40);
+  const existing = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`);
+  const objectPath = `${companyId}/${storeId}/history-import/${batchId}/direct/${fileHash}.${extension}`;
+  let uploaded = false;
+  if (!existing[0]) {
+    const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+      body: exactArrayBuffer(bytes),
+    });
+    if (!upload.ok && upload.status !== 409) throw new Error(`原始凭证上传失败 (${upload.status})`);
+    uploaded = upload.ok;
+  }
+  try {
+    const saved = await rpcSaved("rpc/zysyr_attach_history_ledger_evidence", {
+      p_actor_user_id: accountId,
+      p_company_id: companyId,
+      p_store_id: storeId,
+      p_ledger_entry_id: ledgerEntryId,
+      p_original_filename: filename,
+      p_mime_type: mime,
+      p_size_bytes: bytes.length,
+      p_sha256: fileHash,
+      p_bucket_id: REPORT_BUCKET,
+      p_object_path: objectPath,
+      p_reason: reason,
+    });
+    return { saved, reused: Boolean(existing[0]), linked: true, formal_ledger_amount_changed: false };
+  } catch (error) {
+    if (uploaded) {
+      const registered = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`).catch(() => []);
+      if (!registered[0]) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+          method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+        });
+      }
+    }
+    throw error;
+  }
+}
+
 async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -4646,6 +4712,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_ledger_revise") return json(await historyLedgerRevise(payload, session));
     if (operation === "history_ledger_reverse") return json(await historyLedgerReverse(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
+    if (operation === "history_ledger_evidence_upload") return json(await historyLedgerEvidenceUpload(payload, session));
     if (operation === "history_evidence_images") return json(await historyEvidenceImages(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
