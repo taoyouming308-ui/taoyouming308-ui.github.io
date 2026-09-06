@@ -50,6 +50,9 @@ assert(app.includes('booking-date-title'), 'selected booking date heading is mis
 assert(app.includes('window.showBookingPicker = function()') && app.includes('var dateKey = getLocalDateStr();'), 'hair booking picker must open on the current local date');
 assert(!app.includes("localStorage.getItem('hair-booking-picker-date') || BOOKING_DATE"), 'hair booking picker must not reopen on a stale saved date');
 assert(render.includes('booking-empty') && !render.includes('📭'), 'empty booking state is not minimal');
+assert(render.includes('bi-source') && render.includes('前台到店') && render.includes('美管加预约'), 'booking rows must show their source');
+assert(app.includes("employeeBookingsApi('today_bookings'"), 'today appointments must load through the protected merged endpoint');
+assert(app.includes('EMPLOYEE_BOOKINGS_ENDPOINT'), 'employee bookings endpoint is missing');
 assert(app.includes('bookings?select=id,customer_name,customer_phone'), 'hair booking picker does not retain booking ids');
 assert(app.includes("var key = r.id ? 'booking:' + r.id"), 'hair booking picker still merges separate booking ids');
 assert(app.includes("var barberName = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';"), 'hair booking picker must use the authenticated account, not the editable form barber');

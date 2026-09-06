@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="471">
+<html lang="zh-CN" data-version="472">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1798,6 +1798,9 @@ body {
       .booking-item .bi-name { color:#111; font-size:17px; line-height:1.25; font-weight:680; letter-spacing:-.2px; min-width:0; }
       .booking-item .bi-barber { flex:0 0 auto; color:#9a9a96; font-size:11px; line-height:1.3; text-align:right; }
       .booking-item .bi-meta { color:#a0a09b; font-size:12px; line-height:1.4; margin-top:4px; }
+      .booking-item .bi-source { display:inline-flex; align-items:center; width:max-content; min-height:20px; margin-top:7px; padding:2px 7px; border-radius:999px; font-size:10px; line-height:1; font-weight:650; }
+      .booking-item .bi-source.meiguanjia { color:#686864; background:#f1f1ee; }
+      .booking-item .bi-source.frontdesk { color:#176347; background:#e9f5ef; }
       .booking-item .bi-service-row,
       .booking-item .bi-note-row { display:flex; align-items:baseline; gap:8px; margin-top:11px; font-size:12px; line-height:1.5; }
       .booking-item .bi-info-label { flex:0 0 auto; color:#aaa9a4; }
@@ -3068,9 +3071,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=471"></script>
-<script src="hair-vision-training.v1.js?v=471"></script>
-<script src="aesthetic-growth.v2.js?v=471"></script>
+<script src="aesthetic-knowledge.v1.js?v=472"></script>
+<script src="hair-vision-training.v1.js?v=472"></script>
+<script src="aesthetic-growth.v2.js?v=472"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -3134,6 +3137,7 @@ const PERM_STYLES = [
    ───────────────────────────────────────── */
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
+const EMPLOYEE_BOOKINGS_ENDPOINT = SUPABASE_URL + '/functions/v1/employee-bookings-api';
 
 let PERM_DATA_CACHE = [];
 let DATA_LOADING = false;
@@ -6357,6 +6361,32 @@ function initApp() {
   var AUTHENTICATED_STAFF = null;
   var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
+  function employeeBookingsApi(operation, payload) {
+    var body = Object.assign({}, payload || {}, { operation: operation });
+    return fetch(EMPLOYEE_BOOKINGS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify(body)
+    }).then(function(response) {
+      return response.json().catch(function(){ return {}; }).then(function(data) {
+        if (!response.ok || data.error) {
+          var error = new Error(data.error || ('请求失败 (' + response.status + ')'));
+          error.status = response.status;
+          throw error;
+        }
+        return data;
+      });
+    });
+  }
+
+  function clearBookingSession() {
+    localStorage.removeItem('booking-session');
+    localStorage.removeItem('booking-barber');
+    localStorage.removeItem('booking-store');
+    AUTHENTICATED_STAFF = null;
+    BOOKING_BARBER = '';
+  }
+
   // ★ 设备ID（每个手机唯一，存在localStorage）
   var DEVICE_ID = localStorage.getItem('booking-device-id');
   if (!DEVICE_ID) {
@@ -6367,34 +6397,27 @@ function initApp() {
   function checkIdentity() {
     var session = null;
     try { session = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch(e) {}
-    if (!session || !session.username || !session.store || !session.loggedAt ||
+    if (!session || !session.username || !session.store || !session.session_token || !session.loggedAt ||
         Date.now() - Number(session.loggedAt) > APP_SESSION_MAX_AGE) {
-      localStorage.removeItem('booking-session');
-      localStorage.removeItem('booking-barber');
-      localStorage.removeItem('booking-store');
+      clearBookingSession();
       showIdentityModal();
       return;
     }
     applyAuthenticatedIdentity(session, false);
-    fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active,store,position&username=eq.' + encodeURIComponent(session.username) + '&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.ok ? r.json() : []; }).then(function(rows) {
-      if (!rows.length || rows[0].active === false || rows[0].store !== session.store) {
-        localStorage.removeItem('booking-session');
-        localStorage.removeItem('booking-barber');
-        localStorage.removeItem('booking-store');
-        AUTHENTICATED_STAFF = null;
-        BOOKING_BARBER = '';
-        showIdentityModal();
-      } else {
-        applyAuthenticatedIdentity({
-          username: rows[0].username,
-          store: rows[0].store,
-          position: rows[0].position || session.position || '',
-          loggedAt: Date.now()
-        }, true);
-      }
-    }).catch(function() {});
+    employeeBookingsApi('session', { session_token: session.session_token }).then(function(data) {
+      var user = data.user || {};
+      applyAuthenticatedIdentity({
+        username: user.username,
+        store: user.store,
+        position: user.position || session.position || '',
+        session_token: session.session_token,
+        expires_at: data.expires_at || session.expires_at || '',
+        loggedAt: Date.now()
+      }, true);
+    }).catch(function() {
+      clearBookingSession();
+      showIdentityModal();
+    });
   }
 
   function applyAuthenticatedIdentity(staff, persist) {
@@ -6403,6 +6426,8 @@ function initApp() {
       username: staff.username,
       store: staff.store,
       position: staff.position || '',
+      session_token: staff.session_token || '',
+      expires_at: staff.expires_at || '',
       loggedAt: Number(staff.loggedAt) || Date.now()
     };
     BOOKING_BARBER = AUTHENTICATED_STAFF.username;
@@ -6480,29 +6505,14 @@ function initApp() {
     var pass = document.getElementById('login-pass').value;
     var errEl = document.getElementById('login-error');
     if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
-    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
-      errEl.textContent = '当前浏览器不支持安全登录，请升级浏览器或使用 Safari/Chrome';
-      errEl.style.display = '';
-      return;
-    }
     var btn = document.getElementById('login-submit-btn');
     if (btn) btn.disabled = true;
     try {
-      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
-      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active,store,position&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      var rows = await r.json();
-      if (rows && rows.length > 0 && rows[0].active !== false) {
-        selectIdentity(rows[0].username, rows[0].store, rows[0].position || '');
-      } else {
-        errEl.textContent = '姓名或密码错误，或账号未通过审核';
-        errEl.style.display = '';
-      }
+      var data = await employeeBookingsApi('login', { username: name, password: pass });
+      var user = data.user || {};
+      selectIdentity(user.username, user.store, user.position || '', data.session_token, data.expires_at);
     } catch(e) {
-      errEl.textContent = '登录失败，请重试';
+      errEl.textContent = e.message || '登录失败，请重试';
       errEl.style.display = '';
     }
     if (btn) btn.disabled = false;
@@ -6542,13 +6552,13 @@ function initApp() {
     document.getElementById('reg-submit-btn').onclick = window.registerEmployee;
   };
 
-  window.selectIdentity = function(name, store, position) {
-    if (!name || !store) {
+  window.selectIdentity = function(name, store, position, sessionToken, expiresAt) {
+    if (!name || !store || !sessionToken) {
       showIdentityModal();
       showLoginForm();
       return;
     }
-    applyAuthenticatedIdentity({ username: name, store: store, position: position, loggedAt: Date.now() }, true);
+    applyAuthenticatedIdentity({ username: name, store: store, position: position, session_token: sessionToken, expires_at: expiresAt || '', loggedAt: Date.now() }, true);
     var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
     if (modal) modal.remove();
     // ★ 存到Supabase，管理员可在后台修改
@@ -6605,10 +6615,9 @@ function initApp() {
 
   window.logoutAccount = function(){
     if (!confirm('确定退出当前账号？')) return;
-    localStorage.removeItem('booking-barber');
-    localStorage.removeItem('booking-store');
-    localStorage.removeItem('booking-session');
-    BOOKING_BARBER = '';
+    var token = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
+    if (token) employeeBookingsApi('logout', { session_token: token }).catch(function() {});
+    clearBookingSession();
     location.reload();
   };
 
@@ -6644,17 +6653,21 @@ function initApp() {
       list.innerHTML = '<div class="booking-loading">加载中...</div>';
     }
 
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=id,customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,status,date&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(rows){
-      rows = Array.isArray(rows) ? rows : [];
+    var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
+    if (!sessionToken) {
+      clearBookingSession();
+      showIdentityModal();
+      return;
+    }
+    employeeBookingsApi('today_bookings', { session_token: sessionToken, date: BOOKING_DATE })
+    .then(function(data){
+      var rows = Array.isArray(data.rows) ? data.rows : [];
       rows = rows.filter(isVisibleCustomerBooking);
       if (BOOKING_BARBER) {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
       // ★ 数据签名：只有数据变了才更新DOM，避免每5秒闪屏
-      var sig = BOOKING_SHOP + ':' + BOOKING_DATE + ':' + (BOOKING_BARBER || 'all') + '|' + rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.customer_phone||'')+':'+(r.time_label||'')+':'+(r.reservation_time||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')}).join('|');
+      var sig = BOOKING_SHOP + ':' + BOOKING_DATE + ':' + (BOOKING_BARBER || 'all') + '|' + rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.customer_phone||'')+':'+(r.time_label||'')+':'+(r.reservation_time||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')+':'+(r.source||'')}).join('|');
       if (sig === window._bookingSig) { return; }
       window._bookingSig = sig;
 
@@ -6663,6 +6676,10 @@ function initApp() {
       try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch(e) {}
       renderBookings(rows, list, false);
     }).catch(function(e){
+      if (e && e.status === 403) {
+        clearBookingSession();
+        showIdentityModal();
+      }
       // ★ 网络失败时：有缓存就保留，无缓存才显示错误
       if (!cached || cached.length === 0) {
         list.innerHTML = '<div class="no-results"><div class="icon">⚠️</div>网络离线，请检查连接</div>';
@@ -6690,6 +6707,7 @@ function initApp() {
       html += '<div class="booking-item' + (isReal ? ' real-customer' : '') + '">';
       html += '<div class="bi-time-column"><div class="bi-time">'+esc(r.time_label || '—')+'</div></div>';
       html += '<div class="bi-body"><div class="bi-heading"><div class="bi-name">'+esc(r.customer_name || '待定')+'</div><div class="bi-barber">'+esc(r.barber_name ? '发型师 · ' + r.barber_name : '')+'</div></div>';
+      html += '<div class="bi-source '+(r.source === 'frontdesk' ? 'frontdesk' : 'meiguanjia')+'">'+esc(r.source_label || (r.source === 'frontdesk' ? '前台到店' : '美管加预约'))+'</div>';
       if (r.customer_phone) html += '<div class="bi-meta">'+esc(maskPhone(r.customer_phone))+'</div>';
 
       var serviceRaw = r.service_name || '';

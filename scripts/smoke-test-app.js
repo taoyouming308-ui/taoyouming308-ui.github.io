@@ -80,9 +80,9 @@ const identitySource = identityStart >= 0 && identityEnd > identityStart
 if (!html.includes('var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;')) {
   fail('employee login session must use a 30-day maximum age');
 }
-if (!identitySource.includes('rows[0].active === false') ||
-    !identitySource.includes('rows[0].store !== session.store')) {
-  fail('employee session renewal must still revoke disabled or moved staff');
+if (!identitySource.includes('session.session_token') ||
+    !identitySource.includes("employeeBookingsApi('session'")) {
+  fail('employee session must be revalidated by the protected bookings API');
 }
 if (!identitySource.includes('loggedAt: Date.now()') ||
     !identitySource.includes('applyAuthenticatedIdentity({')) {
