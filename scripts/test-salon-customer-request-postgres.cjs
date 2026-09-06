@@ -28,6 +28,7 @@ async function main(){
   sql(fs.readFileSync(path.join(root,'scripts/test-salon-customer-request-ownership.sql'),'utf8'));
   sql(fs.readFileSync(path.join(root,'scripts/test-salon-staff-replay-and-customer-reads.sql'),'utf8'));
   sql(fs.readFileSync(path.join(root,'scripts/test-salon-financial-request-replay.sql'),'utf8'));
+  sql(fs.readFileSync(path.join(root,'scripts/test-salon-masterdata-replay-role-expiry.sql'),'utf8'));
   const call=(key,evidence)=>`set role service_role;select public.salon_customer_set_consent('11111111-1111-4111-8111-111111111111',1,1,'${key}','marketing_messages',true,'{}','${evidence}');`;
   const same=await Promise.all([concurrent(call('concurrent-same-001','test-only')),concurrent(call('concurrent-same-001','test-only'))]);
   assert.equal(same[0],same[1],'same-key concurrent requests must return same result');
@@ -65,6 +66,14 @@ async function main(){
   assert.equal(sql(`select count(*) from public.salon_orders where id in (${second},${third}) and status='awaiting_payment';`).trim(),'1');
   assert.equal(sql(`select count(*) from public.salon_operation_requests where organization_id=${fin.org} and request_key in ('fin-race-balance-2','fin-race-balance-3');`).trim(),'1');
   assert.equal(sql(`select quantity from public.salon_inventory_balances where store_id=${fin.store} and catalog_item_id=${fin.item};`).trim(),'6.000');
+  const master=JSON.parse(sql("select jsonb_build_object('org',s.organization_id,'store',s.id,'actor',a.id) from public.salon_stores s join public.salon_staff a on a.organization_id=s.organization_id and a.staff_no='MASTER-ROOT' where s.code='MASTER-B';").trim());
+  const commission=(key,rate)=>`set role service_role;select public.salon_create_commission_rule(${master.actor},${master.org},${master.store},'${key}','service','合成并发提成',${rate},current_date,null);`;
+  const rules=await Promise.allSettled([concurrent(commission('master-concurrent-rule-a',40)),concurrent(commission('master-concurrent-rule-b',50))]);
+  assert.equal(rules.filter(r=>r.status==='fulfilled').length,1);
+  assert.match(rules.find(r=>r.status==='rejected').reason.stderr,/已有提成规则/);
+  assert.equal(sql(`select count(*) from public.salon_commission_rules where organization_id=${master.org} and store_id=${master.store} and category='service';`).trim(),'1');
+  assert.equal(sql("select has_function_privilege('service_role','public.salon_refund_order(bigint,bigint,bigint,bigint,text,text)','execute');").trim(),'f');
+  console.log('master-data PostgreSQL passed: 16 guarded operations, active initial assignments, expired/future privilege denial, concurrent rule overlap prevention');
   console.log('financial PostgreSQL passed: 12 transaction replays, balance/stock restoration, same-request single debit, concurrent balance shortage rollback');
   console.log('Salon request PostgreSQL passed: staff/customer ownership, replay, rollback, restricted reads, real-role access, concurrent identical and conflicting requests');
  }finally{
