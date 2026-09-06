@@ -13,6 +13,7 @@ node scripts/test-hair-save-durability.js || exit 1
 node scripts/test-customer-archive-rendering.js || exit 1
 node scripts/test-admin-workflow.js || exit 1
 node scripts/test-booking-ui.js || exit 1
+node scripts/test-employee-bookings.mjs || exit 1
 node scripts/test-frontdesk.js || exit 1
 node scripts/test-operations.js || exit 1
 node scripts/test-history-import.mjs || exit 1

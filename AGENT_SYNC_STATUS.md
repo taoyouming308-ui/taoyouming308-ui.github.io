@@ -11,6 +11,14 @@
 - 生产迁移 `20260905073551` 已应用并与本地迁移清单对齐；`operations-api` 已部署为 version 40、状态 `ACTIVE`，`verify_jwt=false` 保持不变。
 - 当前状态：数据库与财务接口已部署；等待推送 GitHub main，并完成 GitHub Pages 与匿名鉴权边界验证。
 
+## v472 员工今日预约只读合并前台到店客户（2026-09-06，已发布）
+
+- 基于已核对的 GitHub main `7e16ce2`。App version: v472。
+- 「自由手艺人」App 的「今日预约」改为经独立员工预约接口读取：只返回当前有效员工所属门店、本人发型师姓名和所选日期的数据。
+- 列表只读合并 `bookings`（美管加预约）与 `frontdesk_today_customers`（前台到店），不向任一来源表写数据；同手机号优先去重，无手机号时才按姓名、发型师和时间去重。
+- 预约卡片明确标记「美管加预约」或「前台到店」。新增独立 30 天员工会话，浏览器不再把密码摘要放进 Data API 查询地址；升级后员工需重新登录一次。
+- 生产验证：`employee-bookings-api` version 1 为 ACTIVE，`verify_jwt=false` 并由函数内部员工会话认证；临时员工和前台记录端到端测试显示「前台到店」，清理后员工、会话、前台测试记录及 `bookings` 测试行均为 0。GitHub main 已发布提交 `6d8b539`，Pages 已核验 `version.txt=472`、页面含受保护合并入口和来源标签。
+
 ## v471 向里造型历史月报月份页签修复（2026-09-05，已发布）
 
 - 基于已发布 GitHub main `bfc8293`。App version: v471。
