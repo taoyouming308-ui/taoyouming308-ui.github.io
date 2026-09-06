@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## Salon D1 第六批：统一数据层与本机联调（2026-09-06）
+
+- 新增 `api-client.mjs` 和独立 `salon-api-workbench.html`；仅本机临时数据库联调，不改 `salon-app.html` 原型及现有三个 App。
+- 客户端显式 endpoint/身份门店、服务端数字 ID、元/分精确映射；冻结请求参数与请求号，双击合并、失败原号重试、门店切换旧响应拒收。未知结果时工作台限制新操作，明确拒绝后才允许改参重提。
+- `scripts/salon-local-integration.cjs` 仅绑定 127.0.0.1，创建专属合成 PostgreSQL 容器，回放全部 Salon 迁移；复用实际接口处理器，数据库调用使用 service_role。合成 Auth、白名单操作、同源/Host 校验，不读取生产凭据，不提供支付操作。
+- `test-salon-workbench.cjs` 显式运行：1280/390 浏览器→HTTP→处理器→真实 SQL；建档、订单、明细回读、响应丢失重试、门店隔离、脚本字符显示、无本地存储。测试结束清理专属容器；强制终止残留的处理见 `docs/salon-local-api-workbench.md`。
+- `test-salon-api-client.mjs` 及既有全部 Salon `.js/.mjs` 回归通过。测试中修复顾客来源枚举与已知拒绝后的页面解锁逻辑。
+- 范围限制：只证明本机合成链路，不证明真实 Supabase Auth/Edge 或支付；原 13 模块仍是离线原型，跨刷新请求恢复与全部模块联调待办。D1 和全 App 尚未完成。v476 不变，仅独立分支备份，不上线或合并 main。
+
 ## Salon D1 第五批：主数据与角色有效期（2026-09-06）
 
 - 新迁移 `20260906095754_salon_masterdata_replay_role_expiry.sql` 覆盖余下 16 类顾客/项目/订单/员工/提成/角色带请求号写入。新覆盖测试扫描累计迁移的最终函数定义，确认 36 类员工 request-key 写入均校验操作者和全部参数；废弃的 `salon_refund_order` 仍无 service_role 执行权限。

@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {createSalonClient,serverId,amountToCents,mapRows} from '../packages/salon-core/api-client.mjs';
+const token='synthetic-token-not-production';
+const calls=[];let lose=false,hold=null;
+const response=data=>new Response(JSON.stringify({data,requestId:'trace'}),{status:200});
+const client=createSalonClient({endpoint:'http://127.0.0.1:1234/api',getAccessToken:()=>token,fetchImpl:async(_,options)=>{
+ const body=JSON.parse(options.body);calls.push(body);
+ assert.equal(options.redirect,'error');
+ if(body.operation==='context')return response({organizationId:1,storeId:body.storeId||1,staffId:1});
+ if(hold)return hold;
+ if(lose){lose=false;throw Error('lost response');}
+ return response({customerId:5});
+}});
+for(const value of ['offline-1',0,-1,1.2,'01','9007199254740993',null])assert.throws(()=>serverId(value));
+assert.equal(serverId('12'),12);assert.equal(amountToCents('12.34'),1234);assert.equal(amountToCents(0.29),29);
+for(const value of [-1,'1.001','NaN','1e2'])assert.throws(()=>amountToCents(value));
+assert.throws(()=>createSalonClient({endpoint:'http://production.example/api',getAccessToken:()=>token}));
+await client.connect();
+const fields={displayName:'before',tags:['one']};const ticket=client.prepare('customer_create',fields);fields.displayName='after';fields.tags.push('two');
+lose=true;await assert.rejects(client.submit(ticket),{code:'OUTCOME_UNKNOWN'});
+await client.submit(ticket);assert.deepEqual(calls.at(-1),calls.at(-2));assert.equal(calls.at(-1).displayName,'before');assert.deepEqual(calls.at(-1).tags,['one']);
+let resolve;hold=new Promise(r=>{resolve=r;});
+const first=client.submit(ticket),second=client.submit(ticket);assert.equal(first,second);await Promise.resolve();resolve(response({customerId:5}));await first;hold=null;
+assert.throws(()=>client.prepare('checkout',{}));assert.throws(()=>client.prepare('customer_create',{storeId:2}));
+let release;hold=new Promise(r=>{release=r;});const oldRead=client.read('customers');await Promise.resolve();
+await client.connect(2);release(response([]));await assert.rejects(oldRead,{code:'STALE_SCOPE'});hold=null;
+assert.throws(()=>client.submit(ticket),{code:'STALE_SCOPE'});
+const rows=mapRows('catalog',[{catalog_item_id:1,name:'商品',list_price:'12.34'}],client.scope);assert.equal(rows[0].storeId,2);assert.equal(rows[0].listPriceCents,1234);
+client.disconnect();await assert.rejects(client.read('customers'));assert.equal(client.scope,null);
+console.log('Salon API client: mapping, frozen retries, duplicate clicks and stale scope passed');
