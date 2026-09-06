@@ -1,4 +1,5 @@
 const OPERATIONS={
+  store_time:{rpc:'salon_get_store_time_context'},
   reschedule_review:{rpc:'salon_review_reschedule_request'},reschedule_requests:{rpc:'salon_list_reschedule_requests'},
   checkout:{rpc:'salon_checkout_order',fields:['orderId','requestKey','payments']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
@@ -49,7 +50,9 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='members')return finish(200,{data:await deps.read('members',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,customerId:integer(payload.customerId,'顾客',true),status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     if(operation==='refunds')return finish(200,{data:await deps.read('refunds',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     let args;
-    if(operation==='checkout'){
+    if(operation==='store_time'){
+      args=common;
+    }else if(operation==='checkout'){
       if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
       args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_payments:payload.payments};
     }else if(operation==='inventory_move'){

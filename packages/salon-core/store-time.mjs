@@ -24,6 +24,10 @@ function instantMillis(value){
  return Date.parse(value);
 }
 export function instantToStoreInput(instant,timeZone){return parts(instantMillis(instant),formatter(timeZone)).slice(0,16);}
+export function storeTimeContext(data,organizationId,storeId){
+ if(!data||data.organizationId!==organizationId||data.storeId!==storeId)fail('INVALID_TIME_CONTEXT','时区配置与当前门店不一致，请重新读取');
+ formatter(data.timeZone);return data.timeZone;
+}
 export function formatStoreInstant(instant,timeZone){
  const ms=instantMillis(instant),local=parts(ms,formatter(timeZone));
  const offset=Math.round((Date.parse(local+'Z')-Math.floor(ms/1000)*1000)/60000),absolute=Math.abs(offset);

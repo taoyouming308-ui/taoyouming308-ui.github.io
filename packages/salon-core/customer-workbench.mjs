@@ -1,10 +1,11 @@
 // Local-only customer lab. No production endpoint/SDK, storage, or client-selected identity.
-import {instantToStoreInput,storeTimeToInstant} from './store-time.mjs';
+import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
+let timeZone=null;
 const $=id=>document.getElementById(id);
 let token=null,rows=[],pending=null,busy=false,epoch=0,logoutPending=false;
 const status=value=>{$('status').textContent=value;};
-function clear(){rows=[];$('booking').replaceChildren(new Option('请选择',''));$('results').replaceChildren();$('starts').value='';$('reason').value='';}
-function render(){ $('panel').disabled=busy||!token||!!pending||logoutPending;$('connect').disabled=busy||!!token||!!pending||logoutPending;$('retry').disabled=busy||!pending||logoutPending;$('logout').disabled=busy||!token; }
+function clear(){timeZone=null;$('timeZone').textContent='门店时区未加载';rows=[];$('booking').replaceChildren(new Option('请选择',''));$('results').replaceChildren();$('starts').value='';$('reason').value='';}
+function render(){ $('panel').disabled=busy||!token||!!pending||logoutPending;$('connect').disabled=busy||!!token||!!pending||logoutPending;$('retry').disabled=busy||!pending||logoutPending;$('logout').disabled=busy||!token;for(const id of ['booking','starts','submit'])$(id).disabled=!timeZone; }
 function lock(){token=null;pending=null;epoch++;clear();}
 async function api(body){
  const revision=epoch;let response,result;
@@ -21,12 +22,14 @@ async function api(body){
 }
 const read=operation=>api({operation,organizationId:1,storeId:1});
 async function refresh(){
+ timeZone=null;$('timeZone').textContent='正在读取门店时区';
+ const config=await read('store_time'),zone=storeTimeContext(config,1,1);
  const [bookings,changes]=await Promise.all([read('bookings'),read('reschedule_requests')]);
  if(!Array.isArray(bookings)||!Array.isArray(changes))throw Error('本人列表格式无效');
- clear();rows=bookings.filter(r=>r.status==='confirmed');
- for(const row of rows)$('booking').add(new Option(`预约 ${row.id} · ${row.starts_at} UTC`,String(row.id)));
+ clear();timeZone=zone;$('timeZone').textContent=`当前门店时区：${zone}（不使用设备时区）`;rows=bookings.filter(r=>r.status==='confirmed');
+ for(const row of rows)$('booking').add(new Option(`预约 ${row.id} · ${formatStoreInstant(row.starts_at,timeZone)}`,String(row.id)));
  const labels={submitted:'待门店确认',approved:'已批准',rejected:'已拒绝'};
- for(const row of changes){const li=document.createElement('li');li.textContent=`申请 ${row.id} · 预约 ${row.booking_request_id} · ${labels[row.status]||row.status} · ${row.expected_starts_at} → ${row.new_starts_at} · ${row.decision_reason||row.request_reason}`;$('results').append(li);}
+ for(const row of changes){const li=document.createElement('li');li.textContent=`申请 ${row.id} · 预约 ${row.booking_request_id} · ${labels[row.status]||row.status} · ${formatStoreInstant(row.expected_starts_at,timeZone)} → ${formatStoreInstant(row.new_starts_at,timeZone)} · ${row.decision_reason||row.request_reason}`;$('results').append(li);}
  if(!changes.length){const li=document.createElement('li');li.textContent='暂无改期申请';$('results').append(li);}
 }
 async function run(action){if(busy)return;busy=true;render();try{await action();}catch(e){status(e.message);}finally{busy=false;render();}}
@@ -42,11 +45,12 @@ $('connect').onclick=()=>run(async()=>{
  if(!response.ok||session.environment!=='synthetic-local-only'||typeof session.token!=='string')throw Error('不是合成测试环境');
  token=session.token;epoch++;await read('context');await refresh();status('已连接合成顾客，仅显示本人数据。');
 });
-$('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').value);$('starts').value=row?instantToStoreInput(row.starts_at,'UTC'):'';};
+$('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').value);$('starts').value=row?instantToStoreInput(row.starts_at,timeZone):'';};
 $('submit').onclick=()=>run(async()=>{
  const row=rows.find(r=>String(r.id)===$('booking').value),value=$('starts').value,reason=$('reason').value.trim();
- if(!row||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择预约并填写 UTC 时间和原因');
- pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:storeTimeToInstant(value,'UTC'),reason,requestKey:crypto.randomUUID()});
+ if(!row||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择预约并填写门店时间和原因');
+ const config=await read('store_time');if(!timeZone||storeTimeContext(config,1,1)!==timeZone)throw Error('门店时区已变化或未加载，请刷新本人数据后重新填写');
+ pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:storeTimeToInstant(value,timeZone),reason,requestKey:crypto.randomUUID()});
  await submitPending();
 });
 $('retry').onclick=()=>run(async()=>{if(pending)await submitPending();});

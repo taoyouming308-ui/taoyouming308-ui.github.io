@@ -63,6 +63,7 @@ async function startServer(){
   files['/packages/salon-core/store-time.mjs']='packages/salon-core/store-time.mjs';
   const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review','booking_reschedule','reschedule_requests','reschedule_review']);
   const customerAllowed=new Set(['context','bookings','reschedule_requests','reschedule_request']);
+  allowed.add('store_time');customerAllowed.add('store_time');
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;
    const reply=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};

@@ -6,6 +6,7 @@ const {startServer}=require('./salon-local-integration.cjs');
  let app,browser,page,counter=0;
  try{
   app=await startServer();
+  const {instantToStoreInput}=await import('../packages/salon-core/store-time.mjs');
   app.sql(`insert into public.salon_customers(organization_id,display_name) values(1,'合成改期顾客');
    insert into public.salon_customer_store_relations(organization_id,store_id,customer_id) values(1,1,1);
    insert into public.salon_customer_auth_identities(organization_id,customer_id,auth_user_id) values(1,1,'22222222-2222-4222-8222-222222222222');
@@ -33,14 +34,14 @@ const {startServer}=require('./salon-local-integration.cjs');
    if(width===390){
     const blocked=shifted(b.starts,24);
     app.sql(`insert into public.salon_schedule_blocks(organization_id,store_id,staff_id,block_type,starts_at,ends_at) values(1,1,1,'leave','${blocked}','${shifted(blocked,1)}');`);
-    await page.locator('#rescheduleStart').fill(blocked.slice(0,16));await page.locator('#rescheduleBooking').click();
+    await page.locator('#rescheduleStart').fill(instantToStoreInput(blocked,'Asia/Shanghai'));await page.locator('#rescheduleBooking').click();
     await page.getByText(/新档期与预约或休假冲突，原预约保持不变/).waitFor();assert.deepEqual(state(b),before);assert.equal(auditCount(b),0);
    }
    let dropped=false;
    await page.route('**/api/salon',async route=>{
     if(!dropped&&route.request().postDataJSON().operation==='booking_reschedule'){dropped=true;await route.fetch();await route.abort('failed');}else await route.continue();
    });
-   await page.locator('#rescheduleStart').fill(target.slice(0,16));await page.locator('#rescheduleBooking').click();
+   await page.locator('#rescheduleStart').fill(instantToStoreInput(target,'Asia/Shanghai'));await page.locator('#rescheduleBooking').click();
    await page.locator('#retry:not([disabled])').waitFor();await page.locator('#retry').click();
    await page.getByText('改期成功，原预约与档期已同步更新。',{exact:true}).waitFor();
    const after=state(b);assert.equal(Date.parse(after.starts),Date.parse(target));assert.equal(Date.parse(after.ends)-Date.parse(after.starts),1800000);assert.equal(after.aligned,true);assert.equal(after.staff,before.staff);assert.equal(after.blockId,before.blockId);assert.equal(auditCount(b),1);

@@ -1,4 +1,5 @@
 const OPERATIONS={
+  store_time:{rpc:'salon_customer_get_store_time_context'},
   reschedule_request:{rpc:'salon_customer_request_reschedule'},reschedule_requests:{rpc:'salon_customer_list_reschedules'},
   context:{rpc:'salon_customer_get_context'},booking_options:{rpc:'salon_customer_list_booking_options'},works:{rpc:'salon_customer_list_public_works'},bookings:{rpc:'salon_customer_list_bookings'},
   consent_set:{rpc:'salon_customer_set_consent'},booking_create:{rpc:'salon_customer_request_booking'},booking_cancel:{rpc:'salon_customer_request_booking_cancel'},review_create:{rpc:'salon_customer_create_review'},

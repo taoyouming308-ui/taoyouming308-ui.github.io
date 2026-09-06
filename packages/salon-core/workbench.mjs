@@ -1,6 +1,7 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
-import {instantToStoreInput,storeTimeToInstant} from './store-time.mjs';
+import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
+let timeZone=null;
 const $=id=>document.getElementById(id);
 let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
@@ -9,24 +10,31 @@ function options(id,rows,label){
  const select=$(id);select.replaceChildren(new Option('请选择',''));
  for(const row of rows)select.add(new Option(label(row),String(row.id)));
 }
-function clear(){options('changeRequest',[],()=>{});$('changeReason').value='';customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
+function clear(){timeZone=null;$('timeZone').textContent='门店时区未加载';options('changeRequest',[],()=>{});$('changeReason').value='';customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
 async function refresh(){
+ timeZone=null;$('timeZone').textContent='正在读取门店时区';
+ const config=await client.read('store_time');
+ timeZone=storeTimeContext(config.data,client.scope.organizationId,client.scope.storeId);$('timeZone').textContent=`当前门店时区：${timeZone}（不使用设备时区）`;
  const changes=await client.read('reschedule_requests',{status:'submitted'});
- options('changeRequest',changes.data,row=>`申请 ${row.id} · 预约 ${row.booking_request_id} · ${row.expected_starts_at} → ${row.new_starts_at} · ${row.request_reason}`);
+ options('changeRequest',changes.data,row=>`申请 ${row.id} · 预约 ${row.booking_request_id} · ${formatStoreInstant(row.expected_starts_at,timeZone)} → ${formatStoreInstant(row.new_starts_at,timeZone)} · ${row.request_reason}`);
  const [customerResult,itemResult,cancelResult,rescheduleResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'}),client.read('booking_requests',{status:'confirmed'})]);
  customers=mapRows('customers',customerResult.data,client.scope);items=mapRows('catalog',itemResult.data,client.scope);
  options('customer',customers,row=>row.displayName);options('item',items,row=>`${row.name} · ¥${(row.listPriceCents/100).toFixed(2)}`);
  cancelRequests=cancelResult.data.map(row=>({id:serverId(row.id),startsAt:row.starts_at}));
- options('cancelRequest',cancelRequests,row=>`申请 ${row.id} · ${row.startsAt}`);
+ options('cancelRequest',cancelRequests,row=>`申请 ${row.id} · ${formatStoreInstant(row.startsAt,timeZone)}`);
  rescheduleRequests=rescheduleResult.data.map(row=>({id:serverId(row.id),startsAt:row.starts_at,endsAt:row.ends_at,version:row.reschedule_version}));
- options('rescheduleRequest',rescheduleRequests,row=>`申请 ${row.id} · ${row.startsAt}`);$('rescheduleStart').value='';
+ options('rescheduleRequest',rescheduleRequests,row=>`申请 ${row.id} · ${formatStoreInstant(row.startsAt,timeZone)}`);$('rescheduleStart').value='';
+}
+async function verifyTimeZone(){
+ const result=await client.read('store_time'),current=storeTimeContext(result.data,client.scope.organizationId,client.scope.storeId);
+ if(!timeZone||current!==timeZone)throw Error('门店时区已变化或未加载，请刷新本店数据后重新填写');
 }
 async function run(action){
  const epoch=viewRevision;
  $('panel').disabled=true;$('connect').disabled=true;$('retry').disabled=true;
  try{await action();}
  catch(error){if(epoch===viewRevision)status(`${error.message}${error.requestId?'\n追踪号：'+error.requestId:''}${retry?'\n当前原请求保留；请先重试核对，不要另建业务。':''}`);}
- finally{if(epoch===viewRevision){$('panel').disabled=!client?.scope||Boolean(retry);$('connect').disabled=Boolean(retry);$('retry').disabled=!retry;$('logout').disabled=!client?.scope;}}
+ finally{if(epoch===viewRevision){$('panel').disabled=!client?.scope||Boolean(retry);$('connect').disabled=Boolean(retry);$('retry').disabled=!retry;$('logout').disabled=!client?.scope;for(const id of ['rescheduleRequest','rescheduleStart','rescheduleBooking','changeRequest','approveChange','rejectChange'])$(id).disabled=!timeZone;}}
 }
 async function mutate(operation,fields,onSuccess){
  const ticket=client.prepare(operation,fields);
@@ -98,18 +106,20 @@ $('changeRequest').onchange=()=>{$('changeDetails').textContent=$('changeRequest
 for(const [id,decision] of [['approveChange','approved'],['rejectChange','rejected']])$(id).onclick=()=>run(async()=>{
  const changeRequestId=serverId($('changeRequest').value),reason=$('changeReason').value.trim();
  if(!reason)throw Error('请填写改期复核原因');
+ await verifyTimeZone();
  await mutate('reschedule_review',{changeRequestId,decision,reason},async()=>{
   await refresh();$('changeReason').value='';status(decision==='approved'?'改期申请已批准，预约已更新。':'改期申请已拒绝，原预约保留。');
  });
 });
 $('rescheduleRequest').onchange=()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value));
- $('rescheduleStart').value=selected?instantToStoreInput(selected.startsAt,'UTC'):'';
+ $('rescheduleStart').value=selected?instantToStoreInput(selected.startsAt,timeZone):'';
 };
 $('rescheduleBooking').onclick=()=>run(async()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value)),reason=$('rescheduleReason').value.trim(),value=$('rescheduleStart').value;
- if(!selected||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择本店预约，填写 UTC 新时间与原因');
- await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:storeTimeToInstant(value,'UTC'),reason},async()=>{
+ if(!selected||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择本店预约，填写门店新时间与原因');
+ await verifyTimeZone();
+ await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:storeTimeToInstant(value,timeZone),reason},async()=>{
   await refresh();$('rescheduleReason').value='';status('改期成功，原预约与档期已同步更新。');
  });
 });
