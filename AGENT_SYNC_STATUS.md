@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## Salon 未知结果只读核对第一批（2026-09-06）
+
+- CLI 创建 20260906124222_salon_staff_request_lookup.sql，仅新增 STABLE / SECURITY INVOKER 只读 RPC；精确匹配组织、店、原员工、操作、请求号，重新校验资源 read/write 权限，缺少身份证明的旧回执不返回。
+- 员工 API、统一客户端与本机白名单接 request_lookup，首批只覆盖 customer_create/order_create/order_lines。最小历史回执或 unconfirmed；不返回业务正文/金额/隐私，不重放写入、不认领请求、不开放浏览器表权限。
+- unconfirmed 不是失败或补单授权；committed 不是当前订单状态/支付凭证。既有 41 个员工写入指纹入口计数不变。接口契约测试通过；临时 PG/HTTP 专项与回归结果以测试回执为准。
+- 已通过：核对专项 PG/HTTP（含 READ ONLY 事务、跨会话、两类权限独立撤销、停职、跨范围、旧回执、提交中/回滚和数据快照不变）、全部 Salon JS/MJS、员工工作台及主数据/资金/顾客请求临时 PG 回归；专用容器已清理。专项初版系统字段拼接类型已修正后重跑。
+- 已按 Supabase/PostgreSQL 技能核对官方函数权限与变更摘要，尝试本地 Advisor 未能连接默认数据库；未改连生产，未运行线上 Advisor，未部署迁移/Edge。
+- 待办：待核对元数据清单、刷新/重新登录后的页面、顾客与其他操作支持、正式登录及完整验收。刷新恢复尚未完成。v477，独立分支，不推 main、不上线、不接三个旧 App。
+
 ## Salon 会话等待与退出恢复（2026-09-06）
 
 - session-controller 的 getSession/getUser/signOut 各自最多等待 30 秒；超时仍按既有身份失败/退出未确认路径处理，不伪造 SDK 可取消或 JWT 即时撤销能力。

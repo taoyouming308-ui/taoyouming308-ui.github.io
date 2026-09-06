@@ -12,6 +12,16 @@ const handler=createSalonHandler({
   log:async row=>logs.push(row),
 });
 const request=(body,token='valid-user-token-123456789')=>new Request('http://local/salon-api',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+for(const targetOperation of ['customer_create','order_create','order_lines']){
+ const query={operation:'request_lookup',targetOperation,requestKey:'lookup-api-000001',storeId:10,actorStaffId:999,organizationId:999};
+ assert.equal((await handler(request(query))).status,200);
+ assert.deepEqual(calls.at(-1),{rpc:'salon_lookup_staff_request',args:{p_actor_staff_id:7,p_organization_id:3,p_store_id:10,p_lookup_key:'lookup-api-000001',p_target_operation:targetOperation}});
+}
+for(const patch of [{requestKey:'x'},{requestKey:'x'.repeat(121)},{requestKey:12},{requestKey:' padded-request-001'},{targetOperation:'checkout'},{targetOperation:'__proto__'},{targetOperation:null}]){
+ const count=calls.length;
+ assert.equal((await handler(request({operation:'request_lookup',targetOperation:'order_create',requestKey:'lookup-api-000001',...patch}))).status,400);
+ assert.equal(calls.length,count);
+}
 const changeReview={expectedTimeZone:'Asia/Shanghai',expectedTimeVersion:0,operation:'reschedule_review',storeId:9,changeRequestId:31,requestKey:'staff-change-00001',decision:'approved',reason:'确认改期',actorStaffId:999};
 assert.equal((await handler(request({operation:'store_time',storeId:10,actorStaffId:999,organizationId:999}))).status,200);assert.equal(calls.at(-1).rpc,'salon_get_store_time_context');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:10});
 assert.equal((await handler(request(changeReview))).status,200);assert.equal(calls.at(-1).rpc,'salon_review_reschedule_with_time');assert.equal(calls.at(-1).args.p_actor_staff_id,7);
