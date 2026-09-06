@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN" data-salon-version="0.1.0-test">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>自由手艺人 · 门店经营系统（离线测试）</title>
+<style>
+:root{--bg:#0f1115;--panel:#181b21;--line:#2b3039;--text:#f2f3f5;--muted:#9299a6;--gold:#d8b36b;--blue:#6aa9ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.app{display:grid;grid-template-columns:230px 1fr;min-height:100dvh}.side{border-right:1px solid var(--line);padding:20px 14px;background:#121419}.brand{padding:4px 10px 18px}.brand b{font-size:18px}.brand small{display:block;color:var(--gold);margin-top:6px}.nav{display:grid;gap:5px}.nav button{border:0;background:transparent;color:var(--muted);padding:11px 12px;border-radius:9px;text-align:left}.nav button.on{background:#252a33;color:#fff}.main{padding:24px}.top{display:flex;gap:12px;align-items:center;margin-bottom:20px}.top h1{font-size:24px;margin:0}.badge{margin-left:auto;color:var(--gold);border:1px solid #5c4c2f;border-radius:999px;padding:7px 11px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}.card h3{margin:0 0 8px}.card p{margin:0;color:var(--muted);line-height:1.7}.card em{display:inline-block;margin-top:12px;color:var(--blue);font-style:normal;font-size:12px}.empty{margin-top:18px;border:1px dashed var(--line);padding:32px;border-radius:14px;color:var(--muted);text-align:center}@media(max-width:760px){.app{display:block}.side{position:sticky;top:0;z-index:2;border-right:0;border-bottom:1px solid var(--line);padding:10px}.brand{padding:4px 6px 10px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.main{padding:16px}.grid{grid-template-columns:1fr 1fr}.top{align-items:flex-start}.badge{font-size:11px}}@media(max-width:440px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="app"><aside class="side"><div class="brand"><b>自由手艺人</b><small>门店经营系统 · 离线开发版</small></div><nav class="nav" id="nav"></nav></aside><main class="main"><div class="top"><div><h1 id="title">经营桌面</h1><div style="color:var(--muted);margin-top:5px" id="purpose">完整业务闭环总览</div></div><span class="badge">不连接生产数据</span></div><div class="grid" id="features"></div><div class="empty">当前为独立开发外壳。后续模块将在此分批接入，完成全部离线测试后才与员工端、前台、悦西智营合并。</div></main></div>
+<script>
+const modules=[
+ {name:'经营桌面',purpose:'待办、预约、服务、收款与预警总览',features:['今日预约','待接待','服务中','待收款','库存预警','交班提醒']},
+ {name:'顾客会员',purpose:'顾客档案、会员卡和关系维护',features:['顾客查询','顾客档案','储值卡','次卡/疗程','套餐','冻结记录']},
+ {name:'预约排客',purpose:'预约、休假、轮牌和工位协同',features:['预约日历','创建预约','休假设置','轮牌队列','工位状态','爽约记录']},
+ {name:'开单收银',purpose:'从开单、服务到结算的订单主链',features:['会员消费','散客消费','开卡充值','组合支付','退款冲正','交班']},
+ {name:'服务现场',purpose:'无纸化服务过程和履约状态',features:['进行中服务','服务时间线','服务前后照','项目配方','服务完成','回访任务']},
+ {name:'项目商品',purpose:'项目、商品、价目和卡项配置',features:['服务项目','商品资料','分类','价目表','会员价','套餐规则']},
+ {name:'库存管理',purpose:'入库、出库、调拨、盘点和预警',features:['库存余量','采购入库','销售/耗用','门店调拨','盘点','安全库存']},
+ {name:'员工组织',purpose:'员工生命周期、门店、角色和工位',features:['员工资料','入离职','调店','角色权限','考勤','工位']},
+ {name:'业绩工资',purpose:'业绩分配、提成、奖罚和工资试算',features:['业绩分配','员工业绩','提成规则','工资方案','奖罚','工资单']},
+ {name:'财务报表',purpose:'营业、资金、卡金与经营报表',features:['营业汇总','收款流水','卡金流水','支出收入','日报','月报']},
+ {name:'作品评价',purpose:'作品授权、审核、评价和打赏',features:['作品库','顾客授权','作品审核','评价记录','打赏记录','回访']},
+ {name:'营销顾客端',purpose:'顾客自助预约、通知和营销',features:['顾客端','自助预约','消息通知','优惠券/红包','活动','效果归因']},
+ {name:'系统设置',purpose:'多门店、审批、日志与基础参数',features:['组织门店','管理员','权限','审批','操作日志','参数设置']}
+];
+const nav=document.getElementById('nav'),features=document.getElementById('features');
+function render(index){const item=modules[index];document.getElementById('title').textContent=item.name;document.getElementById('purpose').textContent=item.purpose;[...nav.children].forEach((b,i)=>b.classList.toggle('on',i===index));features.innerHTML=item.features.map((name,i)=>`<article class="card"><h3>${name}</h3><p>${item.purpose}</p><em>${i<3?'P0 / 开发排期中':'P1-P2 / 后续批次'}</em></article>`).join('')}
+modules.forEach((m,i)=>{const b=document.createElement('button');b.type='button';b.textContent=m.name;b.onclick=()=>render(i);nav.appendChild(b)});render(0);
+</script></body></html>
