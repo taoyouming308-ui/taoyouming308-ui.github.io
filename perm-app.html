@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="476">
+<html lang="zh-CN" data-version="477">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3071,9 +3071,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=476"></script>
-<script src="hair-vision-training.v1.js?v=476"></script>
-<script src="aesthetic-growth.v2.js?v=476"></script>
+<script src="aesthetic-knowledge.v1.js?v=477"></script>
+<script src="hair-vision-training.v1.js?v=477"></script>
+<script src="aesthetic-growth.v2.js?v=477"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6414,9 +6414,15 @@ function initApp() {
         expires_at: data.expires_at || session.expires_at || '',
         loggedAt: Date.now()
       }, true);
-    }).catch(function() {
-      clearBookingSession();
-      showIdentityModal();
+    }).catch(function(e) {
+      // 仅服务器明确判定会话失效(403)才清会话+弹登录；网络/瞬时错误保留本地缓存身份，
+      // 与 loadBookings 的 403-only 处理一致，避免弱网/离线时被锁在工作台外
+      if (e && e.status === 403) {
+        clearBookingSession();
+        showIdentityModal();
+      } else {
+        console.warn('[identity] 会话校验失败(非403)，保留本地身份，下次进预约自动重试', e && e.message);
+      }
     });
   }
 
