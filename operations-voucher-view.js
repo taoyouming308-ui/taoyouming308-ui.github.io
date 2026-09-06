@@ -49,14 +49,15 @@
       update();
     }
     async function mount(data, address, context, body) {
-      var request = ++generation, details = document.createElement('details');
+      var request = ++generation, details = document.createElement('details'), ruleCards = Array.from(body.querySelectorAll('.evidence-rule-card'));
       details.className = 'trace-source-details voucher-trace-details';
-      details.innerHTML = '<summary>查看金额构成、来源与修改记录（本页展开）</summary>';
+      ruleCards.forEach(function (card) { card.remove(); });
+      details.innerHTML = '<summary>需要时查看金额来源、组成明细和修改记录</summary>';
       while (body.firstChild) details.appendChild(body.firstChild);
       var gallery = document.createElement('section'); gallery.className = 'monthly-voucher-preview';
       var target = data.target || {}, header = '<div class="voucher-gallery-summary"><strong>' + esc(target.label || '月报金额') + ' · ' + options.amount(target.numeric_value == null ? target.display_value : target.numeric_value) + '</strong><small>已关联原件直接显示在下方。多张图片可左右滑动查看，点击图片可放大。原件不等于已核对，缺口会单独提示。</small><details class="trace-source-details"><summary>查看原表定位</summary><div>月报原表单元格 ' + esc(address) + '。这是 Excel 定位，不是凭证编号。</div></details></div>';
       gallery.innerHTML = header + '<div class="voucher-gallery-loading">正在收集组成项目的原始凭证…</div>';
-      body.appendChild(gallery); body.appendChild(details);
+      body.appendChild(gallery); ruleCards.forEach(function (card) { body.appendChild(card); }); body.appendChild(details);
       function active() { return request === generation && gallery.isConnected && options.isCurrent(context); }
       try {
         var collected = await core.collect(data, address, function (cell) { return options.trace(cell, context); }, { active: active });
@@ -69,8 +70,8 @@
         gallery.innerHTML = header + (warnings.length ? '<div class="candidate-warning">' + esc(warnings.join('；')) + '。<button class="ghost" data-retry-trace>重新读取</button></div>' : '') + '<div class="help">已读取 ' + collected.leaf_count + ' 个组成项目，关联原件 ' + collected.evidence.length + ' 份。仅展示已有关系，不按文件名猜测关联。</div>';
         var retryTrace = gallery.querySelector('[data-retry-trace]'); if (retryTrace) retryTrace.onclick = function () { options.reopen(address); };
         if (!collected.evidence.length) {
-          gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。未用月报汇总表代替消费凭证；请在下方展开来源核对缺口。</div>');
-          details.open = true; return;
+          gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。可以直接上传凭证，或将该项目设置为“不需要凭证”；组成明细仍保留在下方，按需展开。</div>');
+          return;
         }
         var hosts = collected.evidence.map(function (file) {
           var host = document.createElement('section'); host.className = 'trace-card voucher-file-preview';

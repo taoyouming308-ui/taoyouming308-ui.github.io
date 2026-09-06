@@ -19,13 +19,19 @@ async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch({ channel: 'chrome', headless: true });
-  for (const width of [1280, 390]) {
-    const page = await browser.newPage({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390 });
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    const { width, height } = viewport;
+    const page = await browser.newPage({ viewport, isMobile: width !== 1280, hasTouch: width !== 1280 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
     await page.locator('[data-trace-cell="C3"]').first().waitFor();
+    if (width > height && height <= 620) {
+      assert.equal(await page.locator('body').evaluate(element => element.classList.contains('report-focus')), true, 'report view must activate landscape focus mode');
+      assert.equal(await page.locator('.sidebar').evaluate(element => getComputedStyle(element).display), 'none', 'landscape report must use the full width instead of keeping the sidebar');
+      assert.equal(await page.locator('.sheet-scroll').evaluate(element => element.getBoundingClientRect().height >= innerHeight - 90), true, 'landscape monthly sheet must fill the available screen height');
+    }
     await page.evaluate(() => {
       const canvas = document.createElement('canvas'); canvas.width = 700; canvas.height = 900;
       const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 700, 900);
@@ -59,7 +65,7 @@ async function run() {
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null);
     assert.match(await page.locator('.monthly-voucher-preview').innerText(), /本月整包凭证/);
     assert.doesNotMatch(await page.locator('#cell-trace-page-title').innerText(), /C3/);
-    if (process.env.ZYSYR_VOUCHER_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.ZYSYR_VOUCHER_SCREENSHOTS, 'zysyr-voucher-preview-' + width + '.png'), fullPage: true });
+    if (process.env.ZYSYR_VOUCHER_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.ZYSYR_VOUCHER_SCREENSHOTS, 'zysyr-voucher-preview-' + width + 'x' + height + '.png'), fullPage: true });
     const first = page.locator('.voucher-file-preview').first();
     await first.locator('[data-step="1"]').click();
     await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]').textContent === '2 / 2');
@@ -80,6 +86,7 @@ async function run() {
     await page.evaluate(() => { window.fixtureMode = 'missing'; openCellTrace('C3'); });
     await page.getByText('当前金额没有关联可预览的原始凭证。', { exact: false }).waitFor();
     assert.equal(await page.locator('.monthly-voucher-preview img').count(), 0);
+    assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null, 'missing evidence must not force-open complex source details');
     // Missing exact pages and a broken bundle must not hide usable evidence.
     await page.evaluate(() => {
       const raw = api;
@@ -94,7 +101,7 @@ async function run() {
     await page.locator('.monthly-voucher-preview img').waitFor();
     assert.equal(await page.locator('.monthly-voucher-preview img').count(), 1);
     assert.deepEqual(errors, []);
-    console.log('voucher browser passed: ' + width + 'px, direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
+    console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();
   }
 }

@@ -1,0 +1,10 @@
+-- Production-history marker only.
+--
+-- This data-only migration was applied directly to production on 2026-09-04
+-- after human verification of Xiangli petty-cash and profit/loss voucher image
+-- positions. Its statements contain production row identifiers and guarded
+-- one-time inserts, so they must never be replayed into another environment.
+--
+-- The immutable results remain in the production audit and evidence tables.
+-- This marker restores local/remote migration-history alignment without
+-- rewriting, duplicating, or fabricating any financial evidence link.
