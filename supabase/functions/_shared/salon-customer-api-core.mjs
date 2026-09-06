@@ -15,7 +15,7 @@ export function createSalonCustomerHandler(deps){return async function(request){
  const finish=async(status,body)=>{const code=body?.error?errorCode(body.error):null,outcome=status<300?'success':status<500?'rejected':'failed';try{await deps.log?.({request_id:requestId,auth_user_id:userId,organization_id:organizationId,store_id:storeId,staff_id:null,operation,outcome,http_status:status,error_code:code,duration_ms:Math.max(0,Date.now()-started)})}catch{}return{status,body:{...(body||{}),requestId}}};
  try{
   const user=await deps.verifyUser(bearer(request));if(!user?.id)throw new Error('登录已过期，请重新登录');userId=user.id;
-  const payload=await request.json();operation=text(payload.operation,40);const spec=OPERATIONS[operation];if(!spec)throw new Error('不支持的操作');
+  const payload=await request.json();if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('请求内容无效');operation=text(payload.operation,40);const spec=Object.hasOwn(OPERATIONS,operation)?OPERATIONS[operation]:null;if(!spec)throw new Error('不支持的操作');
   let args={p_auth_user_id:userId};
   if(operation!=='context'){organizationId=integer(payload.organizationId,'组织');storeId=integer(payload.storeId,'门店');args={...args,p_organization_id:organizationId,p_store_id:storeId}}
   if(operation==='works'||operation==='bookings')args={...args,p_limit:Math.min(integer(payload.limit||100,'数量'),200)};

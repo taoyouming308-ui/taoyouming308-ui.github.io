@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## Salon D1 第一批：身份与敏感读取边界（2026-09-06，独立开发）
+
+- 新迁移 `20260906093100_salon_identity_request_boundaries.sql`：小票 orders/read、库存 inventory/read 专门 RPC；共享员工权限检查同时验证组织、门店、员工和有效期。新增库存读取权限需显式授予，不能以库存写入权限自动替代。
+- API 每次解析所选门店（含默认店），要求解析结果严格等于请求门店；两端仅接受自身白名单操作与对象请求体。小票和库存不再通过 Edge 原始表读取旁路权限。
+- 验证：全部 `test-salon-*.js/.mjs` 通过，包含 1280px / 390px 本地原型浏览器；全部 Salon 迁移在 PostgreSQL 15 临时实例回放成功，本批 SQL 使用真实 service_role（BYPASSRLS）执行授权/越权测试，authenticated/anon 直连被拒绝。临时容器和模拟数据已清除。
+- 尚未完成：D1 全量幂等与顾客归属修复、角色管理边界进一步复核、ID 映射及页面/API 联调。本批不表示整个系统安全审计或真实支付验收通过。
+- 数据范围仅合成测试；未读取业务隐私，未修改现有三个 App；v476 不变。仅允许独立分支备份，不合并 main，不部署迁移/函数。
+
 ## Salon 整体业务逻辑基线（2026-09-06，仅文档）
 
 - 用户最新要求先一次性梳理整个 App 逻辑，再集中开发。本次只新增 `docs/salon-app-business-logic-master-plan.md`，未变更业务代码、数据库或生产环境；App 版本仍为 v476。

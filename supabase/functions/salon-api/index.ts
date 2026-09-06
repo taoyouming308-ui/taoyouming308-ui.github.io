@@ -37,20 +37,15 @@ const handler=createSalonHandler({
       const response=await admin("rpc/salon_list_refund_requests",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_status:String(scope.status||""),p_limit:Number(scope.limit||200)})});return response.json();
     }
     if(operation==="order_receipt"){
-      const orderId=Number(scope.orderId),orderResponse=await admin(`salon_orders?select=id,order_no,status,subtotal,discount_total,payable_total,paid_at&organization_id=eq.${org}&store_id=eq.${store}&id=eq.${orderId}&limit=1`),orders=await orderResponse.json();
-      if(!Array.isArray(orders)||orders.length!==1)throw new Error("订单不存在或不属于当前门店");
-      const [paymentsResponse,ledgerResponse]=await Promise.all([
-        admin(`salon_payments?select=id,payment_method,amount,tendered_amount,change_amount,external_reference,member_units,status,reversal_of_id,confirmed_at&organization_id=eq.${org}&store_id=eq.${store}&order_id=eq.${orderId}&order=id.asc&limit=100`),
-        admin(`salon_account_ledger?select=id,entry_type,cash_delta,bonus_delta,units_delta,reversal_of_id,occurred_at&organization_id=eq.${org}&store_id=eq.${store}&order_id=eq.${orderId}&order=id.asc&limit=100`),
-      ]);
-      return{order:orders[0],payments:await paymentsResponse.json(),memberLedger:await ledgerResponse.json()};
+      const response=await admin("rpc/salon_get_order_receipt",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_order_id:Number(scope.orderId)})});return response.json();
     }
     if(operation==="order_detail"){
       const response=await admin("rpc/salon_get_order",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_order_id:Number(scope.orderId)})});return response.json();
     }
-    const itemFilter=scope.catalogItemId?`&catalog_item_id=eq.${Number(scope.catalogItemId)}`:"";
-    const response=await admin(`salon_inventory_balances?select=catalog_item_id,quantity,updated_at&organization_id=eq.${org}&store_id=eq.${store}${itemFilter}&order=catalog_item_id.asc&limit=500`);
-    return response.json();
+    if(operation==="inventory"){
+      const response=await admin("rpc/salon_list_inventory_balances",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_catalog_item_id:scope.catalogItemId==null?null:Number(scope.catalogItemId)})});return response.json();
+    }
+    throw new Error("不支持的读取操作");
   },
   log:async(row:Record<string,unknown>)=>{await admin("salon_api_request_logs",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(row)})},
 });
