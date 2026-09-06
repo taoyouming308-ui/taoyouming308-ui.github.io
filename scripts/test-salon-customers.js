@@ -1,0 +1,18 @@
+const domain=require('../packages/salon-core/customer-domain.js');
+const fs=require('fs');
+const state=domain.emptyState();
+const failures=[];const expect=(ok,msg)=>{if(!ok)failures.push(msg)};const throws=(fn,text)=>{try{fn();failures.push('expected error: '+text)}catch(e){if(!String(e.message).includes(text))failures.push('wrong error: '+e.message)}};
+const customer=domain.createCustomer(state,{name:'测试顾客',phone:'138-0000-0000',store:'测试门店',owner:'测试员工',source:'appointment',tags:'新客, 烫发'});
+expect(customer.phone==='13800000000','phone normalization failed');
+expect(state.relations[0].store==='测试门店'&&state.relations[0].tags.length===2,'store relation or tags missing');
+throws(()=>domain.createCustomer(state,{name:'重复顾客',phone:'13800000000',store:'测试门店'}),'已经建档');
+const stored=domain.openAccount(state,{customerId:customer.id,type:'stored_value',name:'储值金',amount:'500'});
+const times=domain.openAccount(state,{customerId:customer.id,type:'times_card',name:'护理十次卡',units:'10'});
+expect(stored.cashBalance===500&&times.remainingUnits===10,'member account opening failed');
+domain.setCustomerFrozen(state,customer.id,true,'测试冻结');
+throws(()=>domain.openAccount(state,{customerId:customer.id,type:'package',name:'套餐',units:'3'}),'冻结顾客');
+expect(state.audit.map(e=>e.action).join(',')==='create,open,open,freeze','append-only audit events missing');
+expect(domain.searchCustomers(state,'1380000','frozen').length===1,'customer search/status filter failed');
+const restored=domain.deserialize(domain.serialize(state));expect(restored.customers.length===1&&restored.accounts.length===2,'offline persistence failed');
+const html=fs.readFileSync('salon-app.html','utf8');expect(html.includes('data-salon-version="0.2.0-test"'),'salon version missing');expect(html.includes('保存顾客档案')&&html.includes('开立会员账户')&&html.includes('data-freeze'),'customer UI actions missing');
+if(failures.length){console.error('salon customer tests failed:\n- '+failures.join('\n- '));process.exit(1)}console.log('salon customer tests passed');
