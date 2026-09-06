@@ -1,0 +1,15 @@
+const domain=require('../packages/salon-core/order-domain.js');
+const customerDomain=require('../packages/salon-core/customer-domain.js');
+const fs=require('fs');
+const failures=[];const expect=(ok,msg)=>{if(!ok)failures.push(msg)};const throws=(fn,text)=>{try{fn();failures.push('expected error: '+text)}catch(error){if(!String(error.message).includes(text))failures.push('wrong error: '+error.message)}};
+const customers=customerDomain.emptyState(),customer=customerDomain.createCustomer(customers,{name:'收银测试客',phone:'13800000008',store:'测试店'}),account=customerDomain.openAccount(customers,{customerId:customer.id,type:'stored_value',name:'储值卡',amount:500});
+const state=domain.emptyState(),order=domain.createOrder(state,{customerId:customer.id,customerName:customer.name,store:'测试店'});
+const line=domain.addLine(state,order.id,{type:'service',name:'剪发',staff:'测试手艺人',unitPrice:180,quantity:1});domain.addLine(state,order.id,{type:'product',name:'造型品',unitPrice:80,quantity:2});expect(order.subtotal===340&&order.total===340,'order total failed');
+domain.setDiscount(state,order.id,40);expect(order.total===300,'discount failed');domain.removeLine(state,order.id,line.id);expect(order.total===120,'remove line and floor total failed');
+throws(()=>domain.checkout(state,customers,order.id,[{method:'cash',amount:100}]),'支付合计');expect(state.payments.length===0&&account.cashBalance===500,'failed checkout must not mutate balances');
+domain.checkout(state,customers,order.id,[{method:'member_value',amount:100,accountId:account.id},{method:'wechat',amount:20}]);expect(order.status==='paid'&&account.cashBalance===400,'combined checkout or member debit failed');expect(state.payments.length===2&&state.accountLedger.length===1,'immutable payment or ledger missing');
+throws(()=>domain.checkout(state,customers,order.id,[{method:'cash',amount:120}]),'只有草稿');expect(state.payments.length===2&&account.cashBalance===400,'duplicate checkout must not mutate');
+const receipt=domain.receipt(state,order.id);expect(receipt.payments.length===2&&receipt.ledger[0].balanceAfter===400,'receipt trace failed');expect(domain.deserialize(domain.serialize(state)).orders[0].status==='paid','offline persistence failed');
+const frozenOrder=domain.createOrder(state,{customerId:customer.id,customerName:customer.name,store:'测试店'});domain.addLine(state,frozenOrder.id,{name:'护理',unitPrice:50,quantity:1});customerDomain.setCustomerFrozen(customers,customer.id,true,'测试');throws(()=>domain.checkout(state,customers,frozenOrder.id,[{method:'member_value',amount:50,accountId:account.id}]),'不可扣款');
+const html=fs.readFileSync('salon-app.html','utf8');['创建新单','加入订单','组合支付','确认收银','储值卡扣款','收款凭证'].forEach(label=>expect(html.includes(label),label+' UI missing'));
+if(failures.length){console.error('salon order tests failed:\n- '+failures.join('\n- '));process.exit(1)}console.log('salon order tests passed');
