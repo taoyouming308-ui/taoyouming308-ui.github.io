@@ -32,6 +32,7 @@ node scripts/test-zysyr-sprint6.js || exit 1
 node scripts/test-zysyr-sprint7.js || exit 1
 node scripts/test-zysyr-daily-calendar-v457.js || exit 1
 node scripts/test-zysyr-salary-sheet-v458.js || exit 1
+node scripts/test-zysyr-monthly-workbench-v472.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1

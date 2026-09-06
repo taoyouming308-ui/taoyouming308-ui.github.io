@@ -850,6 +850,43 @@ function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
   });
 }
 
+const MONTHLY_EVIDENCE_POLICIES = new Set(["voucher_required", "source_report", "none"]);
+
+function defaultMonthlyEvidencePolicy(cell: JsonRecord): string {
+  const kind = cleanText(cell.cell_kind, 30);
+  const label = cleanText(cell.label, 300).replace(/[\s/／·]/g, "");
+  const amount = Number(cell.numeric_value);
+  if (kind === "formula" || /小计|合计|总计|盈亏/.test(label) || (Number.isFinite(amount) && amount === 0)) return "none";
+  if (/美发收入|营业收入|产品收入|其他收入|技术人员|后勤人员|人工|工资|底薪|提成|饭补|社保|奖金|补贴|扣款/.test(label)) {
+    return "source_report";
+  }
+  if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出/.test(label)) {
+    return "voucher_required";
+  }
+  return "source_report";
+}
+
+async function monthlyEvidenceRules(
+  companyId: string,
+  storeId: string,
+  templateCode: string,
+): Promise<JsonRecord[]> {
+  if (!templateCode) return [];
+  return restRowsAll(`zysyr_monthly_evidence_rules?select=id,template_code,cell_address,cell_label,evidence_policy,reason,updated_by_user_id,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&template_code=eq.${encodeURIComponent(templateCode)}&order=cell_address.asc&limit=5000`, 5000);
+}
+
+function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Record<string, string> {
+  const overrides = new Map(rules.map((rule) => [cleanText(rule.cell_address, 20).toUpperCase(), cleanText(rule.evidence_policy, 30)]));
+  const output: Record<string, string> = {};
+  for (const cell of cells) {
+    const address = cleanText(cell.cell_address, 20).toUpperCase();
+    if (!address) continue;
+    const override = overrides.get(address);
+    output[address] = override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
+  }
+  return output;
+}
+
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
   const entries = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
   if (!entries.length) return null;
@@ -889,20 +926,24 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
   }
   const evidenceData = await historyEvidenceForEntries(companyId, storeId, entries);
+  const evidenceRules = await monthlyEvidenceRules(companyId, storeId, "history_original_v1");
+  const evidencePolicies = monthlyEvidencePolicyMap(cells, evidenceRules);
   const linkCounts = new Map<string, number>();
   for (const link of evidenceData.links as JsonRecord[]) {
     const rowId = cleanText(link.import_row_id, 40);
     linkCounts.set(rowId, (linkCounts.get(rowId) || 0) + 1);
   }
   const traceStatus: Record<string, string> = {}, sourceCount: Record<string, number> = {};
-  const summary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0 };
+  const summary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0, source_report: 0, not_required: 0 };
   for (const entry of entries) {
     const current = entry.current_payload as JsonRecord;
     const address = cleanText(current?.cell_address, 20).toUpperCase();
     if (!address) continue;
     const isFormula = cleanText(current?.cell_kind, 20) === "formula";
     const count = linkCounts.get(cleanText(entry.import_row_id, 40)) || 0;
-    const status = isFormula ? "formula" : count ? "matched" : "missing_evidence";
+    const policy = evidencePolicies[address] || defaultMonthlyEvidencePolicy(current || {});
+    const status = isFormula ? "formula" : policy === "none" ? "not_required"
+      : policy === "source_report" ? "source_report" : count ? "matched" : "missing_evidence";
     traceStatus[address] = status; sourceCount[address] = 0;
     summary.total += 1; (summary as Record<string, number>)[status] += 1;
   }
@@ -918,6 +959,7 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     uploaded_at: batch.confirmed_at || batch.created_at, uploaded_by: uploader, vouchers: evidenceData.evidence,
     history_entries: entries, history_evidence: evidenceData.evidence, history_evidence_links: evidenceData.links,
     cell_trace_status: traceStatus, cell_trace_source_count: sourceCount, trace_summary: summary,
+    monthly_evidence_rules: evidenceRules, monthly_evidence_policy: evidencePolicies,
   };
 }
 
@@ -957,19 +999,24 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     && cleanText(report.report_date, 10) === start) || null;
   const cellTraceStatus: Record<string, string> = {};
   const cellTraceSourceCount: Record<string, number> = {};
-  const traceSummary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0 };
+  const traceSummary = { total: 0, matched: 0, mismatch: 0, missing_evidence: 0, unlinked: 0, formula: 0, source_report: 0, not_required: 0 };
+  let monthlyEvidenceRuleRows: JsonRecord[] = [];
+  let monthlyEvidencePolicies: Record<string, string> = {};
   let monthlyCellRevisions: JsonRecord[] = [];
   let monthlyPeriodLocked = false;
   if (monthlyReport) {
     const reportId = cleanText(monthlyReport.id, 40);
     const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+    monthlyEvidenceRuleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120));
+    monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
     const [revisions, amountRevisions, locks] = await Promise.all([
       cellFilter === "()" ? [] : restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000),
       cellFilter === "()" ? [] : restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=source_cell_id.asc,revision.desc`, 5000),
       restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
     ]);
-    monthlyCellRevisions = Array.from(latestMonthlyCellRevisionMap(amountRevisions).values());
+    const latestAmountRevisionByCell = latestMonthlyCellRevisionMap(amountRevisions);
+    monthlyCellRevisions = Array.from(latestAmountRevisionByCell.values());
     monthlyPeriodLocked = locks.some((lock) => cleanText(lock.scope_type, 20) === "company"
       || cleanText(lock.store_id, 40) === storeId);
     monthlyReport = {
@@ -992,7 +1039,12 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       if (resolved.has(id)) return resolved.get(id) as string;
       if (trail.has(id)) return "mismatch";
       if (cleanText(cell.cell_kind, 20) !== "formula") {
-        const status = latest.get(id) || "unlinked";
+        const policy = monthlyEvidencePolicies[cleanText(cell.cell_address, 20).toUpperCase()] || defaultMonthlyEvidencePolicy(cell);
+        const traced = latest.get(id) || "unlinked";
+        const uploadedVoucherCount = Number(latestAmountRevisionByCell.get(id)?.voucher_count || 0);
+        const status = policy === "none" ? "not_required"
+          : policy === "source_report" ? (traced === "mismatch" ? "mismatch" : latestSourceCount.get(id) ? "source_report" : "unlinked")
+            : traced === "unlinked" && uploadedVoucherCount > 0 ? "matched" : traced;
         resolved.set(id, status);
         return status;
       }
@@ -1000,9 +1052,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       const addresses = Array.isArray(cell.precedent_addresses) ? cell.precedent_addresses as unknown[] : [];
       const precedentStatuses = addresses.map((address) => cellsByAddress.get(cleanText(address, 20))).filter(Boolean)
         .map((precedent) => resolveStatus(precedent as JsonRecord, nextTrail));
-      const status = !precedentStatuses.length || precedentStatuses.includes("unlinked") ? "unlinked"
-        : precedentStatuses.includes("mismatch") ? "mismatch"
-          : precedentStatuses.includes("missing_evidence") ? "missing_evidence" : "formula";
+      const status = precedentStatuses.includes("mismatch") ? "mismatch" : "formula";
       resolved.set(id, status);
       return status;
     }
@@ -1022,6 +1072,8 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       Object.assign(cellTraceStatus, historical.cell_trace_status as Record<string, string> || {});
       Object.assign(cellTraceSourceCount, historical.cell_trace_source_count as Record<string, number> || {});
       Object.assign(traceSummary, historical.trace_summary as Record<string, number> || {});
+      monthlyEvidenceRuleRows = historical.monthly_evidence_rules as JsonRecord[] || [];
+      monthlyEvidencePolicies = historical.monthly_evidence_policy as Record<string, string> || {};
     }
   }
   const acknowledgements = await restRowsAll(`zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`, 500);
@@ -1051,6 +1103,8 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     cell_trace_status: cellTraceStatus,
     cell_trace_source_count: cellTraceSourceCount,
     trace_summary: traceSummary,
+    monthly_evidence_rules: monthlyEvidenceRuleRows,
+    monthly_evidence_policy: monthlyEvidencePolicies,
     monthly_cell_revisions: monthlyCellRevisions,
     monthly_period_locked: monthlyPeriodLocked,
     monthly_unlock_requests: unlockRequests,
@@ -2197,6 +2251,8 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     precedent_addresses: formulaPrecedents(cleanText(current.formula, 2000), cleanText(entry.source_sheet, 120)),
     label: current.label, source_locator: locator,
   };
+  const ruleRows = await monthlyEvidenceRules(companyId, storeId, "history_original_v1");
+  const evidencePolicy = monthlyEvidencePolicyMap([target], ruleRows)[address] || defaultMonthlyEvidencePolicy(target);
   const report = {
     id: batch.id, historical: true, report_type: "monthly_profit_loss", report_date: `${month}-01`,
     version: entry.version, original_filename: batch.source_filename,
@@ -2207,6 +2263,9 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     target, report, historical: true,
     can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
     can_upload_vouchers: false,
+    can_manage_evidence_rules: hasAuthCapability(session, "finance_account.create"),
+    evidence_policy: evidencePolicy,
+    evidence_rule: ruleRows.find((rule) => cleanText(rule.cell_address, 20).toUpperCase() === address) || null,
     amount_history: revisionRows.map((row) => ({
       id: row.id, revision: row.version, revision_type: row.action,
       before_amount: (row.before_payload as JsonRecord)?.amount,
@@ -2252,12 +2311,14 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     ...historyEvidenceWithScope(evidenceData),
   ].map((row) => [cleanText(row.id, 40), row])).values());
   result.evidence = allEvidence;
-  result.revision = { status: allEvidence.length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
+  result.revision = { status: evidencePolicy === "none" ? "not_required"
+    : evidencePolicy === "source_report" ? "source_report"
+      : allEvidence.length ? "matched" : "missing_evidence", source_amount: current.amount, delta: 0 };
   result.history_evidence_links = [...(evidenceData.links as JsonRecord[]), ...(detailEvidence.links as JsonRecord[])];
   result.daily_source_count = (dailyIncome.details as JsonRecord[]).length;
   result.daily_source_total = dailyIncome.total;
   result.daily_source_reconciled = dailyReconciled;
-  result.anomalies = allEvidence.length ? [] : ["missing_voucher"];
+  result.anomalies = evidencePolicy === "voucher_required" && !allEvidence.length ? ["missing_voucher"] : [];
   return result;
 }
 
@@ -2267,7 +2328,7 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
   const storeId = cleanText(store.id, 40);
   const reportId = cleanText(payload.report_id, 40);
   const address = cleanText(payload.cell_address, 20).toUpperCase();
-  const reports = await restRows(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&limit=1`);
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_type,report_date,template_code,version,original_filename,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&limit=1`);
   const report = reports[0];
   if (!report) {
     (session as JsonRecord).__trace_month = parseMonth(cleanText(payload.month, 7));
@@ -2292,11 +2353,16 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
     numeric_value: latestAmountRevision ? latestAmountRevision.after_amount : target.numeric_value,
     latest_amount_revision: latestAmountRevision,
   };
+  const ruleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(report.template_code, 120));
+  const evidencePolicy = monthlyEvidencePolicyMap([effectiveTarget], ruleRows)[address] || defaultMonthlyEvidencePolicy(effectiveTarget);
   const result: JsonRecord = {
     target: effectiveTarget,
     report: { ...report, uploaded_by: uploaderRows[0] || null },
     can_edit: cleanText(session.operations_role, 40) === "finance" && hasAuthCapability(session, "confirmed_finance.adjust"),
     can_upload_vouchers: canUploadVouchers(session),
+    can_manage_evidence_rules: hasAuthCapability(session, "finance_account.create"),
+    evidence_policy: evidencePolicy,
+    evidence_rule: ruleRows.find((rule) => cleanText(rule.cell_address, 20).toUpperCase() === address) || null,
     amount_history: amountHistory,
   };
 
@@ -2362,8 +2428,12 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
   );
   result.business_details = businessDetails;
   result.business_total = Number(businessDetails.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+  if (evidencePolicy === "none") result.revision = { ...(revision || {}), status: "not_required" };
+  if (evidencePolicy === "source_report") result.revision = { ...(revision || {}),
+    status: revision && cleanText(revision.status, 30) === "mismatch" ? "mismatch" : sources.length ? "source_report" : "unlinked" };
   const anomalies: string[] = [];
-  if (!evidence.length) anomalies.push("missing_voucher");
+  if (evidencePolicy === "voucher_required" && !evidence.length) anomalies.push("missing_voucher");
+  if (evidencePolicy === "source_report" && !sources.length) anomalies.push("missing_source_report");
   if (revision && cleanText(revision.status, 30) === "mismatch") anomalies.push("detail_total_mismatch");
   if (businessDetails.length && Math.abs(Number(result.business_total) - Number(effectiveTarget.numeric_value || 0)) > 0.01) {
     anomalies.push("business_total_mismatch");
@@ -2401,6 +2471,60 @@ async function saveCellTrace(payload: JsonRecord, session: JsonRecord): Promise<
     throw new Error(cleanText(error.message ?? error.error, 500) || `追溯保存失败 (${response.status})`);
   }
   const saved = await response.json();
+  return { saved };
+}
+
+async function saveMonthlyEvidenceRule(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "finance_account.create")) throw new Error("只有管理员可以修改凭证要求");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const reportId = uuidValue(payload.report_id, "月报编号无效") as string;
+  const address = cleanText(payload.cell_address, 20).toUpperCase();
+  const policy = cleanText(payload.evidence_policy, 30);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address)
+      || !MONTHLY_EVIDENCE_POLICIES.has(policy) || !reason) {
+    throw new Error("请选择凭证规则并填写修改原因");
+  }
+
+  const reports = await restRows(`zysyr_report_uploads?select=id,template_code&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&report_type=eq.monthly_profit_loss&limit=1`);
+  let templateCode = cleanText(reports[0]?.template_code, 120);
+  let label = cleanText(payload.cell_label, 300);
+  if (reports[0]) {
+    const cells = await restRows(`zysyr_report_cells?select=cell_address,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&cell_address=eq.${encodeURIComponent(address)}&limit=1`);
+    if (!cells[0]) throw new Error("该月报金额不存在或不属于当前门店");
+    label = cleanText(cells[0].label, 300) || label;
+  } else {
+    const batches = await restRows(`zysyr_history_import_batches?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&import_type=eq.monthly_profit_loss&status=eq.completed&limit=1`);
+    if (!batches[0]) throw new Error("月报不存在或不属于当前门店");
+    templateCode = "history_original_v1";
+  }
+  if (!templateCode) throw new Error("月报模板信息缺失，不能保存凭证规则");
+
+  const response = await rest("rpc/zysyr_save_monthly_evidence_rule", {
+    method: "POST",
+    body: JSON.stringify({
+      p_actor_user_id: cleanText(session.auth_account_id, 40),
+      p_company_id: companyId,
+      p_store_id: storeId,
+      p_template_code: templateCode,
+      p_cell_address: address,
+      p_cell_label: label,
+      p_evidence_policy: policy,
+      p_reason: reason,
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = data && typeof data === "object" ? data as JsonRecord : {};
+    const code = cleanText(error.message ?? error.code, 160);
+    if (code === "MONTHLY_EVIDENCE_RULE_ADMIN_REQUIRED") throw new Error("只有管理员可以修改凭证要求");
+    if (code === "MONTHLY_EVIDENCE_RULE_STORE_INVALID") throw new Error("当前门店无效或已停用");
+    if (code === "MONTHLY_EVIDENCE_RULE_INVALID") throw new Error("凭证规则或修改原因无效");
+    throw new Error(`凭证规则保存失败 (${response.status})`);
+  }
+  const saved = Array.isArray(data) ? data[0] : data;
   return { saved };
 }
 
@@ -4448,6 +4572,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_lineage") return json(await reportLineage(payload, session));
     if (operation === "cell_trace") return json(await cellTrace(payload, session));
     if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
+    if (operation === "monthly_evidence_rule_save") return json(await saveMonthlyEvidenceRule(payload, session));
     if (operation === "report_url") return json(await reportUrl(payload, session));
     if (operation === "finance_workbench") return json(await financeWorkbench(payload, session));
     if (operation === "petty_cash_report") return json(await pettyCashReport(payload, session));
