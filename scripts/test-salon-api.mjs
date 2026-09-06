@@ -12,9 +12,9 @@ const handler=createSalonHandler({
   log:async row=>logs.push(row),
 });
 const request=(body,token='valid-user-token-123456789')=>new Request('http://local/salon-api',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
-const changeReview={operation:'reschedule_review',storeId:9,changeRequestId:31,requestKey:'staff-change-00001',decision:'approved',reason:'确认改期',actorStaffId:999};
+const changeReview={expectedTimeZone:'Asia/Shanghai',expectedTimeVersion:0,operation:'reschedule_review',storeId:9,changeRequestId:31,requestKey:'staff-change-00001',decision:'approved',reason:'确认改期',actorStaffId:999};
 assert.equal((await handler(request({operation:'store_time',storeId:10,actorStaffId:999,organizationId:999}))).status,200);assert.equal(calls.at(-1).rpc,'salon_get_store_time_context');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:10});
-assert.equal((await handler(request(changeReview))).status,200);assert.equal(calls.at(-1).rpc,'salon_review_reschedule_request');assert.equal(calls.at(-1).args.p_actor_staff_id,7);
+assert.equal((await handler(request(changeReview))).status,200);assert.equal(calls.at(-1).rpc,'salon_review_reschedule_with_time');assert.equal(calls.at(-1).args.p_actor_staff_id,7);
 assert.equal((await handler(request({...changeReview,decision:'confirmed'}))).status,400);
 assert.equal((await handler(request({operation:'reschedule_requests',storeId:9,limit:999}))).status,200);assert.equal(calls.at(-1).args.p_limit,200);
 
@@ -27,9 +27,10 @@ for(const decision of ['approved','rejected']){
 }
 for(const fields of [{decision:'confirmed',reason:'test'},{decision:'approved',reason:''}])assert.equal((await handler(request({operation:'booking_cancel_review',bookingRequestId:23,requestKey:'cancel-api-test-0002',...fields}))).status,400);
 calls.length=0;
-const reschedule={operation:'booking_reschedule',bookingRequestId:23,requestKey:'reschedule-api-test',expectedVersion:0,expectedStartsAt:'2026-10-01T01:00:00+00:00',expectedEndsAt:'2026-10-01T01:30:00+00:00',newStartsAt:'2026-10-02T09:00:00+08:00',reason:'合成改期'};
-assert.equal((await handler(request(reschedule))).status,200);assert.equal(calls.at(-1).rpc,'salon_reschedule_booking');
-assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_booking_request_id:23,p_request_key:'reschedule-api-test',p_expected_starts_at:reschedule.expectedStartsAt,p_expected_ends_at:reschedule.expectedEndsAt,p_expected_version:0,p_new_starts_at:reschedule.newStartsAt,p_reason:'合成改期'});
+const reschedule={expectedTimeZone:'Asia/Shanghai',expectedTimeVersion:0,operation:'booking_reschedule',bookingRequestId:23,requestKey:'reschedule-api-test',expectedVersion:0,expectedStartsAt:'2026-10-01T01:00:00+00:00',expectedEndsAt:'2026-10-01T01:30:00+00:00',newStartsAt:'2026-10-02T09:00:00+08:00',reason:'合成改期'};
+assert.equal((await handler(request(reschedule))).status,200);assert.equal(calls.at(-1).rpc,'salon_reschedule_booking_with_time');
+assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_booking_request_id:23,p_request_key:'reschedule-api-test',p_expected_starts_at:reschedule.expectedStartsAt,p_expected_ends_at:reschedule.expectedEndsAt,p_expected_version:0,p_new_starts_at:reschedule.newStartsAt,p_reason:'合成改期',p_expected_time_zone:'Asia/Shanghai',p_expected_time_version:0});
+for(const patch of [{expectedTimeVersion:null},{expectedTimeVersion:'0'},{expectedTimeZone:''},{expectedTimeVersion:-1}])assert.equal((await handler(request({...reschedule,...patch}))).status,400);
 for(const expectedVersion of [null,-1,1.2,'0',2147483648])assert.equal((await handler(request({...reschedule,expectedVersion}))).status,400);
 for(const field of ['expectedStartsAt','expectedEndsAt','newStartsAt'])for(const bad of ['2026-10-02T09:00','infinity','2026-99-02T09:00:00Z',null])assert.equal((await handler(request({...reschedule,[field]:bad}))).status,400);
 assert.equal((await handler(request({...reschedule,reason:''}))).status,400);

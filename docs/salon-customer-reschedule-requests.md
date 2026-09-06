@@ -47,4 +47,4 @@ NODE_PATH=/Users/a1/.cache/codex-runtimes/codex-primary-runtime/dependencies/nod
 
 测试自动准备合成预约：1280/390 桌面/手机，提交与批准成功响应丢失后原请求重试、手机冲突拒绝、双方状态回读、令牌混用拒绝、门店切换清理、退出撤销和账号停用清空。门店选择申请后显示可换行详情，顾客需主动刷新结果；未接消息推送。
 
-已接鉴权门店时区读取和双端显示/输入，详见 salon-store-time.md；配置变更事务内保护尚未完成。仍需正式顾客 Auth/SDK 登录与测试项目配置、消息通知及业务例外。原 13 模块未因此全部接入正式接口。线上 Advisor 与生产验收均未执行；不得据此标记 G06 或全 App 完成，不合并三个旧 App。
+已接鉴权门店时区读取和双端显示/输入，以及三个改期 API 的配置版本事务内保护，详见 salon-store-time.md。请求须同时传 expectedTimeZone/expectedTimeVersion。仍需前后端时区规则一致性、正式顾客 Auth/SDK 登录与测试项目配置、消息通知及业务例外。原 13 模块未因此全部接入正式接口。线上 Advisor 与生产验收均未执行；不得据此标记 G06 或全 App 完成，不合并三个旧 App。

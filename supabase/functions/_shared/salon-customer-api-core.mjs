@@ -1,6 +1,6 @@
 const OPERATIONS={
   store_time:{rpc:'salon_customer_get_store_time_context'},
-  reschedule_request:{rpc:'salon_customer_request_reschedule'},reschedule_requests:{rpc:'salon_customer_list_reschedules'},
+  reschedule_request:{rpc:'salon_customer_reschedule_with_time'},reschedule_requests:{rpc:'salon_customer_list_reschedules'},
   context:{rpc:'salon_customer_get_context'},booking_options:{rpc:'salon_customer_list_booking_options'},works:{rpc:'salon_customer_list_public_works'},bookings:{rpc:'salon_customer_list_bookings'},
   consent_set:{rpc:'salon_customer_set_consent'},booking_create:{rpc:'salon_customer_request_booking'},booking_cancel:{rpc:'salon_customer_request_booking_cancel'},review_create:{rpc:'salon_customer_create_review'},
 };
@@ -32,6 +32,11 @@ export function createSalonCustomerHandler(deps){return async function(request){
    const reason=text(payload.reason,500);if(!reason)throw new Error('取消原因不能为空');args={...args,p_booking_request_id:integer(payload.bookingRequestId,'预约申请'),p_request_key:requestKey(payload.requestKey),p_reason:reason};
   }else if(operation==='review_create'){
    const rating=Number(payload.rating);if(!Number.isInteger(rating)||rating<1||rating>5)throw new Error('评分需为1至5分');args={...args,p_request_key:requestKey(payload.requestKey),p_order_id:integer(payload.orderId,'订单'),p_staff_id:integer(payload.staffId,'服务人员'),p_rating:rating,p_comment:text(payload.comment,1000),p_is_anonymous:payload.isAnonymous===true,p_tip_amount:nonnegative(payload.tipAmount,'打赏意向金额')};
+  }
+  if(operation==='reschedule_request'){
+   const zone=payload.expectedTimeZone,version=payload.expectedTimeVersion;
+   if(typeof zone!=='string'||!zone||zone!==zone.trim()||zone.length>100||!Number.isInteger(version)||version<0||version>2147483647)throw Error('门店时区和版本无效，请刷新后重试');
+   args={...args,p_expected_time_zone:zone,p_expected_time_version:version};
   }
   return finish(200,{data:await deps.invoke(spec.rpc,args)});
  }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='CUSTOMER_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code,operation})}

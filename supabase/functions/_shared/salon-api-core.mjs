@@ -1,6 +1,6 @@
 const OPERATIONS={
   store_time:{rpc:'salon_get_store_time_context'},
-  reschedule_review:{rpc:'salon_review_reschedule_request'},reschedule_requests:{rpc:'salon_list_reschedule_requests'},
+  reschedule_review:{rpc:'salon_review_reschedule_with_time'},reschedule_requests:{rpc:'salon_list_reschedule_requests'},
   checkout:{rpc:'salon_checkout_order',fields:['orderId','requestKey','payments']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
@@ -13,7 +13,7 @@ const OPERATIONS={
   role_create:{rpc:'salon_create_role'},role_status:{rpc:'salon_set_role_status'},staff_assign:{rpc:'salon_assign_staff_store_role'},staff_transfer:{rpc:'salon_transfer_staff'},stores:{rpc:'salon_list_staff_stores'},audit:{rpc:'salon_list_audit_events'},
   customer_bind:{rpc:'salon_bind_customer_identity'},work_create:{rpc:'salon_create_work'},work_submit:{rpc:'salon_submit_work'},work_review:{rpc:'salon_review_work'},works:{rpc:'salon_list_works'},
   review_moderate:{rpc:'salon_moderate_review'},reviews:{rpc:'salon_list_reviews'},campaign_create:{rpc:'salon_create_campaign'},campaign_status:{rpc:'salon_set_campaign_status'},campaigns:{rpc:'salon_list_campaigns'},
-  booking_review:{rpc:'salon_review_customer_booking'},booking_cancel_review:{rpc:'salon_review_booking_cancel'},booking_reschedule:{rpc:'salon_reschedule_booking'},booking_requests:{rpc:'salon_list_customer_bookings'},
+  booking_review:{rpc:'salon_review_customer_booking'},booking_cancel_review:{rpc:'salon_review_booking_cancel'},booking_reschedule:{rpc:'salon_reschedule_booking_with_time'},booking_requests:{rpc:'salon_list_customer_bookings'},
   context:{read:true},order_receipt:{read:true},order_detail:{read:true},refunds:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
@@ -153,6 +153,11 @@ export function createSalonHandler(deps){return async function(request){
       args={p_actor_staff_id:actor,p_organization_id:org};
     }else{
       args={...common,p_entity_type:text(payload.entityType,60),p_limit:Math.min(integer(payload.limit||200,'数量'),500)};
+    }
+    if(operation==='booking_reschedule'||operation==='reschedule_review'){
+      const zone=payload.expectedTimeZone,version=payload.expectedTimeVersion;
+      if(typeof zone!=='string'||!zone||zone!==zone.trim()||zone.length>100||!Number.isInteger(version)||version<0||version>2147483647)throw Error('门店时区和版本无效，请刷新后重试');
+      args={...args,p_expected_time_zone:zone,p_expected_time_version:version};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}

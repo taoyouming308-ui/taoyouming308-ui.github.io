@@ -9,13 +9,13 @@ let covered=0;
 for(const [name,source] of definitions){
  const signature=source.match(/^create (?:or replace )?function public\.\w+\(([\s\S]*?)\)\s*returns/)?.[1];
  if(!signature?.includes('p_actor_staff_id')||!signature.includes('p_request_key')||name==='salon_refund_order')continue;
- const guard=source.match(/\w+:=salon_private\.claim_staff_request\([\s\S]*?\);/)?.[0];assert.ok(guard,name+' bypasses staff fingerprint');
+ const guard=source.match(/\w+:=salon_private\.claim_staff_request\([\s\S]*?\);/)?.[0]||source.match(/perform salon_private\.claim_time_context\([\s\S]*?\);/)?.[0];assert.ok(guard,name+' bypasses staff fingerprint');
  for(const p of signature.split(',').map(s=>s.trim().split(/\s+/)[0]).filter(p=>p!=='p_request_key'))
   assert.ok(guard.includes("'"+p+"',"+p),'missing payload parameter '+name+'.'+p);
  assert.doesNotMatch(source,/:=salon_private\.claim_request\(/);
  covered++;
 }
-assert.equal(covered,39,'all current employee request-key mutations must be guarded');
+assert.equal(covered,41,'all current employee request-key mutations must be guarded');
 for(const name of ['salon_create_role','salon_list_payroll']){
  const source=definitions.get(name);assert.match(source,/a\.effective_from<=current_date/);assert.match(source,/a\.effective_to>=current_date/);
 }

@@ -1,6 +1,6 @@
 // Local-only customer lab. No production endpoint/SDK, storage, or client-selected identity.
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
-let timeZone=null;
+let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
 let token=null,rows=[],pending=null,busy=false,epoch=0,logoutPending=false;
 const status=value=>{$('status').textContent=value;};
@@ -26,7 +26,7 @@ async function refresh(){
  const config=await read('store_time'),zone=storeTimeContext(config,1,1);
  const [bookings,changes]=await Promise.all([read('bookings'),read('reschedule_requests')]);
  if(!Array.isArray(bookings)||!Array.isArray(changes))throw Error('本人列表格式无效');
- clear();timeZone=zone;$('timeZone').textContent=`当前门店时区：${zone}（不使用设备时区）`;rows=bookings.filter(r=>r.status==='confirmed');
+ clear();timeZone=zone;timeVersion=config.timeVersion;$('timeZone').textContent=`当前门店时区：${zone}（不使用设备时区）`;rows=bookings.filter(r=>r.status==='confirmed');
  for(const row of rows)$('booking').add(new Option(`预约 ${row.id} · ${formatStoreInstant(row.starts_at,timeZone)}`,String(row.id)));
  const labels={submitted:'待门店确认',approved:'已批准',rejected:'已拒绝'};
  for(const row of changes){const li=document.createElement('li');li.textContent=`申请 ${row.id} · 预约 ${row.booking_request_id} · ${labels[row.status]||row.status} · ${formatStoreInstant(row.expected_starts_at,timeZone)} → ${formatStoreInstant(row.new_starts_at,timeZone)} · ${row.decision_reason||row.request_reason}`;$('results').append(li);}
@@ -49,8 +49,8 @@ $('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').va
 $('submit').onclick=()=>run(async()=>{
  const row=rows.find(r=>String(r.id)===$('booking').value),value=$('starts').value,reason=$('reason').value.trim();
  if(!row||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择预约并填写门店时间和原因');
- const config=await read('store_time');if(!timeZone||storeTimeContext(config,1,1)!==timeZone)throw Error('门店时区已变化或未加载，请刷新本人数据后重新填写');
- pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:storeTimeToInstant(value,timeZone),reason,requestKey:crypto.randomUUID()});
+ const config=await read('store_time');if(!timeZone||storeTimeContext(config,1,1)!==timeZone||config.timeVersion!==timeVersion)throw Error('门店时区已变化或未加载，请刷新本人数据后重新填写');
+ pending=Object.freeze({operation:'reschedule_request',organizationId:1,storeId:1,bookingRequestId:row.id,expectedStartsAt:row.starts_at,expectedEndsAt:row.ends_at,expectedVersion:row.reschedule_version,newStartsAt:storeTimeToInstant(value,timeZone),reason,requestKey:crypto.randomUUID(),expectedTimeZone:timeZone,expectedTimeVersion:timeVersion});
  await submitPending();
 });
 $('retry').onclick=()=>run(async()=>{if(pending)await submitPending();});

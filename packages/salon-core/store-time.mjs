@@ -26,6 +26,7 @@ function instantMillis(value){
 export function instantToStoreInput(instant,timeZone){return parts(instantMillis(instant),formatter(timeZone)).slice(0,16);}
 export function storeTimeContext(data,organizationId,storeId){
  if(!data||data.organizationId!==organizationId||data.storeId!==storeId)fail('INVALID_TIME_CONTEXT','时区配置与当前门店不一致，请重新读取');
+ if(!Number.isInteger(data.timeVersion)||data.timeVersion<0||data.timeVersion>2147483647)fail('INVALID_TIME_CONTEXT','时区配置缺少有效版本，请重新读取');
  formatter(data.timeZone);return data.timeZone;
 }
 export function formatStoreInstant(instant,timeZone){

@@ -1,7 +1,7 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
-let timeZone=null;
+let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
 let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
@@ -14,7 +14,7 @@ function clear(){timeZone=null;$('timeZone').textContent='门店时区未加载'
 async function refresh(){
  timeZone=null;$('timeZone').textContent='正在读取门店时区';
  const config=await client.read('store_time');
- timeZone=storeTimeContext(config.data,client.scope.organizationId,client.scope.storeId);$('timeZone').textContent=`当前门店时区：${timeZone}（不使用设备时区）`;
+ timeZone=storeTimeContext(config.data,client.scope.organizationId,client.scope.storeId);timeVersion=config.data.timeVersion;$('timeZone').textContent=`当前门店时区：${timeZone}（不使用设备时区）`;
  const changes=await client.read('reschedule_requests',{status:'submitted'});
  options('changeRequest',changes.data,row=>`申请 ${row.id} · 预约 ${row.booking_request_id} · ${formatStoreInstant(row.expected_starts_at,timeZone)} → ${formatStoreInstant(row.new_starts_at,timeZone)} · ${row.request_reason}`);
  const [customerResult,itemResult,cancelResult,rescheduleResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'}),client.read('booking_requests',{status:'confirmed'})]);
@@ -27,7 +27,7 @@ async function refresh(){
 }
 async function verifyTimeZone(){
  const result=await client.read('store_time'),current=storeTimeContext(result.data,client.scope.organizationId,client.scope.storeId);
- if(!timeZone||current!==timeZone)throw Error('门店时区已变化或未加载，请刷新本店数据后重新填写');
+ if(!timeZone||current!==timeZone||result.data.timeVersion!==timeVersion)throw Error('门店时区已变化或未加载，请刷新本店数据后重新填写');
 }
 async function run(action){
  const epoch=viewRevision;
@@ -107,7 +107,7 @@ for(const [id,decision] of [['approveChange','approved'],['rejectChange','reject
  const changeRequestId=serverId($('changeRequest').value),reason=$('changeReason').value.trim();
  if(!reason)throw Error('请填写改期复核原因');
  await verifyTimeZone();
- await mutate('reschedule_review',{changeRequestId,decision,reason},async()=>{
+ await mutate('reschedule_review',{changeRequestId,decision,reason,expectedTimeZone:timeZone,expectedTimeVersion:timeVersion},async()=>{
   await refresh();$('changeReason').value='';status(decision==='approved'?'改期申请已批准，预约已更新。':'改期申请已拒绝，原预约保留。');
  });
 });
@@ -119,7 +119,7 @@ $('rescheduleBooking').onclick=()=>run(async()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value)),reason=$('rescheduleReason').value.trim(),value=$('rescheduleStart').value;
  if(!selected||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择本店预约，填写门店新时间与原因');
  await verifyTimeZone();
- await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:storeTimeToInstant(value,timeZone),reason},async()=>{
+ await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:storeTimeToInstant(value,timeZone),reason,expectedTimeZone:timeZone,expectedTimeVersion:timeVersion},async()=>{
   await refresh();$('rescheduleReason').value='';status('改期成功，原预约与档期已同步更新。');
  });
 });
