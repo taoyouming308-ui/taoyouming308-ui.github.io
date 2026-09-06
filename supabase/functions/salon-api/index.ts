@@ -20,6 +20,10 @@ const handler=createSalonHandler({
   invoke:async(rpc:string,args:Record<string,unknown>)=>{const response=await admin(`rpc/${rpc}`,{method:"POST",body:JSON.stringify(args)});return response.json()},
   read:async(operation:string,scope:Record<string,unknown>)=>{
     const org=Number(scope.organizationId),store=Number(scope.storeId);
+    if(operation==="customers"){
+      const response=await admin("rpc/salon_list_customers",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_query:String(scope.query||""),p_status:String(scope.status||""),p_limit:Number(scope.limit||100)})});
+      return response.json();
+    }
     if(operation==="order_receipt"){
       const orderId=Number(scope.orderId),orderResponse=await admin(`salon_orders?select=id,order_no,status,subtotal,discount_total,payable_total,paid_at&organization_id=eq.${org}&store_id=eq.${store}&id=eq.${orderId}&limit=1`),orders=await orderResponse.json();
       if(!Array.isArray(orders)||orders.length!==1)throw new Error("订单不存在或不属于当前门店");

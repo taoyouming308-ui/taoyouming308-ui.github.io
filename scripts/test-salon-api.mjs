@@ -25,6 +25,10 @@ assert.equal(result.status,200);assert.equal(calls[2].rpc,'salon_move_inventory'
 result=await handler(request({operation:'context'}));assert.equal(result.status,200);assert.deepEqual(result.body.data,{staffId:7,organizationId:3,storeId:9,displayName:'员工甲'});
 result=await handler(request({operation:'order_receipt',orderId:4,storeId:999}));assert.equal(result.status,200);assert.deepEqual(calls.at(-1).scope,{organizationId:3,storeId:9,orderId:4});
 result=await handler(request({operation:'inventory',catalogItemId:8}));assert.equal(result.status,200);assert.equal(calls.at(-1).scope.storeId,9);
+result=await handler(request({operation:'customer_create',requestKey:'customer-create-0001',displayName:'测试顾客',phone:'138 0000 0000',ownerStaffId:7,source:'walkin',tags:['新客']}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_create_customer');assert.equal(calls.at(-1).args.p_store_id,9);
+result=await handler(request({operation:'customer_status',requestKey:'customer-status-0001',customerId:12,status:'frozen',reason:'顾客申请'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_set_customer_status');
+result=await handler(request({operation:'customer_relation',requestKey:'customer-relation-01',customerId:12,ownerStaffId:7,source:'referral',tags:['重点']}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_update_customer_relation');
+result=await handler(request({operation:'customers',query:'13800000000',status:'active',limit:50,storeId:999}));assert.equal(result.status,200);assert.deepEqual(calls.at(-1).scope,{actorStaffId:7,organizationId:3,storeId:9,query:'13800000000',status:'active',limit:50});
 result=await handler(request({operation:'refund',orderId:4,requestKey:'short',reason:'顾客取消'}));assert.equal(result.status,400);
 result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0002',payments:[]}));assert.equal(result.status,400);
 result=await handler(request({operation:'unknown'}));assert.equal(result.status,400);
@@ -42,6 +46,7 @@ assert.match(edge,/\/auth\/v1\/user/);assert.match(edge,/SALON_ALLOWED_ORIGINS/)
 assert.match(edge,/salon_api_request_logs/);assert.match(edge,/X-Request-ID/);
 assert.doesNotMatch(edge,/user_metadata|raw_user_meta_data/);
 assert.doesNotMatch(edge,/service_role.{0,80}(console|Response|body)/i);
+assert.match(edge,/rpc\/salon_list_customers/);assert.doesNotMatch(edge,/select=.*phone_normalized/,'customer list must not select raw phones in Edge code');
 assert.match(migration,/auth_user_id uuid/);assert.match(migration,/unique index salon_staff_auth_user_org_idx/);
 const logMigration=fs.readFileSync('supabase/migrations/20260906064812_salon_api_request_log.sql','utf8'),logColumns=logMigration.match(/create table public\.salon_api_request_logs\(([\s\S]*?)\);/i)?.[1]||'';assert.ok(logColumns);assert.doesNotMatch(logColumns,/payload|phone|customer_name|amount/i);
 console.log('salon api tests passed: scoped reads, stable errors, request ids, metadata-only logs, secret boundary');

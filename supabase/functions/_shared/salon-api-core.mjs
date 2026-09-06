@@ -2,7 +2,8 @@ const OPERATIONS={
   checkout:{rpc:'salon_checkout_order',fields:['orderId','requestKey','payments']},
   refund:{rpc:'salon_refund_order',fields:['orderId','requestKey','reason']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
-  context:{read:true},order_receipt:{read:true},inventory:{read:true},
+  customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
+  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},
 };
 
 function text(value,max=160){return String(value==null?'':value).trim().slice(0,max)}
@@ -27,6 +28,7 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='context')return finish(200,{data:{staffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,displayName:text(staff.display_name,100)}});
     if(operation==='order_receipt')return finish(200,{data:await deps.read('order_receipt',{organizationId:common.p_organization_id,storeId:common.p_store_id,orderId:integer(payload.orderId,'订单')})});
     if(operation==='inventory')return finish(200,{data:await deps.read('inventory',{organizationId:common.p_organization_id,storeId:common.p_store_id,catalogItemId:integer(payload.catalogItemId,'商品',true)})});
+    if(operation==='customers')return finish(200,{data:await deps.read('customers',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,query:text(payload.query,100),status:text(payload.status,20),limit:Math.min(integer(payload.limit||100,'数量'),200)})});
     let args;
     if(operation==='checkout'){
       if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
@@ -34,10 +36,20 @@ export function createSalonHandler(deps){return async function(request){
     }else if(operation==='refund'){
       const reason=text(payload.reason,500);if(!reason)throw new Error('退款原因不能为空');
       args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_reason:reason};
-    }else{
+    }else if(operation==='inventory_move'){
       const movementType=text(payload.movementType,30),quantity=Number(payload.quantity),reason=text(payload.reason,500);
       if(!['receive','sale','consume','refund'].includes(movementType)||!Number.isFinite(quantity)||quantity<=0||!reason)throw new Error('库存操作参数无效');
       args={...common,p_catalog_item_id:integer(payload.catalogItemId,'商品'),p_request_key:requestKey(payload.requestKey),p_movement_type:movementType,p_quantity:quantity,p_order_id:integer(payload.orderId,'订单',true),p_reason:reason};
+    }else if(operation==='customer_create'){
+      const name=text(payload.displayName,100),phone=text(payload.phone,30),source=text(payload.source||'walkin',30),tags=Array.isArray(payload.tags)?payload.tags.map(x=>text(x,30)):[];
+      if(!name)throw new Error('顾客姓名不能为空');
+      args={...common,p_request_key:requestKey(payload.requestKey),p_display_name:name,p_phone:phone||null,p_birthday:text(payload.birthday,10)||null,p_owner_staff_id:integer(payload.ownerStaffId,'负责人',true),p_source:source,p_tags:tags};
+    }else if(operation==='customer_status'){
+      const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','frozen'].includes(status)||!reason)throw new Error('顾客状态或变更原因无效');
+      args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else{
+      const source=text(payload.source||'walkin',30),tags=Array.isArray(payload.tags)?payload.tags.map(x=>text(x,30)):[];
+      args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_owner_staff_id:integer(payload.ownerStaffId,'负责人',true),p_source:source,p_tags:tags};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
