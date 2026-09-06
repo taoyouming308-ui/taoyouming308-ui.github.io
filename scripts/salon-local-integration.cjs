@@ -58,7 +58,7 @@ async function startServer(){
    }
   });
   const files={'/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
-  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review']);
+  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review','booking_reschedule']);
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;
    const reply=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};

@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## Salon G06 第二批：门店改期与版本保护（2026-09-06）
+
+- CLI 新迁移 `20260906111701_salon_booking_reschedule.sql`：新增 `reschedule_version`、精确操作白名单项及 `salon_reschedule_booking`。员工 API 新增 `booking_reschedule`，全部 38 类员工带请求号写入指纹覆盖通过。
+- 仅已确认、未到店、无关联订单且原手艺人/档期有效的申请可改期；同手艺人/同时长，结束时间服务器计算。要求 scheduling/write 与 customer_portal/manage；时间必须带时区且在未来。
+- 请求→申请→预约→手艺人 NO KEY UPDATE→档期锁顺序；排斥约束验证替换区间，失败整笔回滚，允许与自己的原时间部分重叠。保留旧/新时间与版本审计，不删历史数据。
+- 输入原时间和改期版本，阻止并发编辑覆盖及改走再改回后的 ABA 旧页面覆盖。正常同键重试只记录一次；新参数、撤权或旧版本均不能覆盖当前预约。
+- 本机工作台增加已确认预约改期，控件明确 UTC 测试时区；复用会话、切店清理和原请求重试。现有顾客本人查询已验证可读取新时间，尚未接顾客页面或消息送达。
+- `test-salon-booking-reschedule.cjs`：1280/390、浏览器 Asia/Shanghai 时区、真实 HTTP/处理器/临时 PG、冲突回滚、丢包重试、旧时段复用、同键/同预约/同新时段并发、原档期重叠、ABA版本和权限/状态边界通过。测试容器已清除。
+- 取消复核、工作台、全部数据库请求回归（含会员/资金/订单）、全部 Salon `.js/.mjs` 通过；未运行线上 Advisor，未部署 Auth/Edge 或迁移。
+- 剩余：顾客自助改期申请/确认、换手艺人、正式门店时区、通知、已到店/订单关联例外、真实登录和全模块接入。G06/全 App 尚未完成。v476，仅独立分支备份，不合并 main、不动三个旧 App 及真实数据。
+
 ## Salon G06 第一批：取消复核与开单互斥（2026-09-06）
 
 - CLI 创建本地迁移 `20260906105531_salon_booking_cancel_review.sql`；新增 `salon_review_booking_cancel` 与员工 API `booking_cancel_review`，精确扩展操作类型白名单，不放开浏览器表写权限。

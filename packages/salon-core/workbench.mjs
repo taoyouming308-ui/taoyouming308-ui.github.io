@@ -1,19 +1,21 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
 const $=id=>document.getElementById(id);
-let client,customers=[],items=[],cancelRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
+let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
 function options(id,rows,label){
  const select=$(id);select.replaceChildren(new Option('请选择',''));
  for(const row of rows)select.add(new Option(label(row),String(row.id)));
 }
-function clear(){customers=[];items=[];cancelRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
+function clear(){customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
 async function refresh(){
- const [customerResult,itemResult,cancelResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'})]);
+ const [customerResult,itemResult,cancelResult,rescheduleResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'}),client.read('booking_requests',{status:'confirmed'})]);
  customers=mapRows('customers',customerResult.data,client.scope);items=mapRows('catalog',itemResult.data,client.scope);
  options('customer',customers,row=>row.displayName);options('item',items,row=>`${row.name} · ¥${(row.listPriceCents/100).toFixed(2)}`);
  cancelRequests=cancelResult.data.map(row=>({id:serverId(row.id),startsAt:row.starts_at}));
  options('cancelRequest',cancelRequests,row=>`申请 ${row.id} · ${row.startsAt}`);
+ rescheduleRequests=rescheduleResult.data.map(row=>({id:serverId(row.id),startsAt:row.starts_at,endsAt:row.ends_at,version:row.reschedule_version}));
+ options('rescheduleRequest',rescheduleRequests,row=>`申请 ${row.id} · ${row.startsAt}`);$('rescheduleStart').value='';
 }
 async function run(action){
  const epoch=viewRevision;
@@ -87,6 +89,17 @@ $('saveLines').onclick=()=>run(async()=>{
  });
 });
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
+$('rescheduleRequest').onchange=()=>{
+ const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value));
+ $('rescheduleStart').value=selected?new Date(selected.startsAt).toISOString().slice(0,16):'';
+};
+$('rescheduleBooking').onclick=()=>run(async()=>{
+ const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value)),reason=$('rescheduleReason').value.trim(),value=$('rescheduleStart').value;
+ if(!selected||!reason||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('请选择本店预约，填写 UTC 新时间与原因');
+ await mutate('booking_reschedule',{bookingRequestId:selected.id,expectedStartsAt:selected.startsAt,expectedEndsAt:selected.endsAt,expectedVersion:selected.version,newStartsAt:value+':00Z',reason},async()=>{
+  await refresh();$('rescheduleReason').value='';status('改期成功，原预约与档期已同步更新。');
+ });
+});
 for(const [id,decision] of [['approveCancel','approved'],['rejectCancel','rejected']])$(id).onclick=()=>run(async()=>{
  const selected=cancelRequests.find(row=>row.id===Number($('cancelRequest').value)),reason=$('cancelReason').value.trim();
  if(!selected||!reason)throw Error('请选择本店待复核申请并填写处理原因');

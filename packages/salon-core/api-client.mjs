@@ -27,7 +27,7 @@ export function mapRows(resource, rows, scope) {
   });
 }
 const reads = new Set(['context', 'stores', 'customers', 'catalog', 'order_detail', 'booking_requests']);
-const writes = new Set(['customer_create', 'order_create', 'order_lines', 'booking_cancel_review']);
+const writes = new Set(['customer_create', 'order_create', 'order_lines', 'booking_cancel_review', 'booking_reschedule']);
 export function createSalonClient({ endpoint, getAccessToken, fetchImpl = globalThis.fetch, makeKey = () => crypto.randomUUID(), onAuthFailure = () => {} }) {
   const url = new URL(endpoint);
   if (url.username || url.password || url.search || url.hash ||
