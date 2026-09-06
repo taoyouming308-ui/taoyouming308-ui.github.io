@@ -7,7 +7,7 @@ const http=require('node:http');
 const {randomUUID}=require('node:crypto');
 const root=path.resolve(__dirname,'..');
 async function startServer(){
- const container=`salon-workbench-${process.pid}-${Date.now()}`,tokens=new Set();
+ const container=`salon-workbench-${process.pid}-${Date.now()}`,tokens=new Set(),customerTokens=new Set();
  let created=false,server;
  const docker=(args,input)=>execFileSync('docker',args,{input,encoding:'utf8',timeout:120000,maxBuffer:8*1024*1024,stdio:['pipe','pipe','pipe']});
  const sql=input=>docker(['exec','-i',container,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-qAt'],input).trim();
@@ -57,18 +57,29 @@ async function startServer(){
     throw Error('本机工作台未开放该读取');
    }
   });
-  const files={'/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
-  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review','booking_reschedule']);
+  const {createSalonCustomerHandler}=await import('../supabase/functions/_shared/salon-customer-api-core.mjs');
+  const customerHandler=createSalonCustomerHandler({verifyUser:async token=>customerTokens.has(token)?{id:'22222222-2222-4222-8222-222222222222'}:null,invoke:async(name,args)=>rpc(name,args)});
+  const files={'/customer':'salon-customer-workbench.html','/packages/salon-core/customer-workbench.mjs':'packages/salon-core/customer-workbench.mjs','/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
+  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review','booking_reschedule','reschedule_requests','reschedule_review']);
+  const customerAllowed=new Set(['context','bookings','reschedule_requests','reschedule_request']);
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;
    const reply=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
    if(req.headers.host!==new URL(origin).host||(req.headers.origin&&req.headers.origin!==origin)||req.headers['sec-fetch-site']==='cross-site')return reply(403,{error:'本机同源访问限定'});
    const route=req.url;
    if(req.method==='GET'&&Object.hasOwn(files,route)){
-    res.writeHead(200,{'Content-Type':route==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"});
+    res.writeHead(200,{'Content-Type':files[route].endsWith('.html')?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"});
     return res.end(fs.readFileSync(path.join(root,files[route])));
    }
    if(req.method!=='POST')return reply(405,{error:'POST required'});
+   if(route==='/__salon_test_customer_session'){
+    const token=randomUUID();customerTokens.add(token);
+    return reply(200,{environment:'synthetic-local-only',token});
+   }
+   if(route==='/__salon_test_customer_logout'){
+    const token=(req.headers.authorization||'').replace(/^Bearer /,'');
+    customerTokens.delete(token);return reply(200,{data:{}});
+   }
    if(route==='/__salon_test_session'){
     const token=randomUUID();tokens.add(token);
     return reply(200,{environment:'synthetic-local-only',token,user:{id:'11111111-1111-4111-8111-111111111111'},expires_at:Math.floor(Date.now()/1000)+3600});
@@ -80,13 +91,14 @@ async function startServer(){
     if(!tokens.has(token))return reply(403,{error:'合成会话失效'});
     return reply(200,{data:{user:{id:'11111111-1111-4111-8111-111111111111'}}});
    }
-   if(route!=='/api/salon')return reply(404,{error:'Not found'});
+   if(route!=='/api/salon'&&route!=='/api/salon-customer')return reply(404,{error:'Not found'});
    try{
     let body='',bytes=0;
     for await(const chunk of req){bytes+=chunk.length;if(bytes>32768)return reply(413,{error:'Payload too large'});body+=chunk;}
     const payload=JSON.parse(body);
-    if(!allowed.has(payload?.operation))return reply(403,{error:'本机工作台未开放该操作'});
-    const result=await handler(new Request(origin+route,{method:'POST',headers:{Authorization:req.headers.authorization||'','Content-Type':'application/json'},body}));
+    const customer=route==='/api/salon-customer';
+    if(!(customer?customerAllowed:allowed).has(payload?.operation))return reply(403,{error:'本机工作台未开放该操作'});
+    const result=await (customer?customerHandler:handler)(new Request(origin+route,{method:'POST',headers:{Authorization:req.headers.authorization||'','Content-Type':'application/json'},body}));
     reply(result.status,result.body);
    }catch{return reply(400,{error:'本机请求失败'});}
   });

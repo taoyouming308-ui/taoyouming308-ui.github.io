@@ -4,11 +4,14 @@ const $=id=>document.getElementById(id);
 let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
 function options(id,rows,label){
+ if(id==='changeRequest')$('changeDetails').textContent='选择申请后查看原时间、新时间与申请原因。';
  const select=$(id);select.replaceChildren(new Option('请选择',''));
  for(const row of rows)select.add(new Option(label(row),String(row.id)));
 }
-function clear(){customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
+function clear(){options('changeRequest',[],()=>{});$('changeReason').value='';customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
 async function refresh(){
+ const changes=await client.read('reschedule_requests',{status:'submitted'});
+ options('changeRequest',changes.data,row=>`申请 ${row.id} · 预约 ${row.booking_request_id} · ${row.expected_starts_at} → ${row.new_starts_at} · ${row.request_reason}`);
  const [customerResult,itemResult,cancelResult,rescheduleResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'}),client.read('booking_requests',{status:'confirmed'})]);
  customers=mapRows('customers',customerResult.data,client.scope);items=mapRows('catalog',itemResult.data,client.scope);
  options('customer',customers,row=>row.displayName);options('item',items,row=>`${row.name} · ¥${(row.listPriceCents/100).toFixed(2)}`);
@@ -89,6 +92,15 @@ $('saveLines').onclick=()=>run(async()=>{
  });
 });
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
+$('refresh').onclick=()=>run(async()=>{await refresh();status('已刷新本店数据。');});
+$('changeRequest').onchange=()=>{$('changeDetails').textContent=$('changeRequest').value?$('changeRequest').selectedOptions[0].textContent:'请选择申请';};
+for(const [id,decision] of [['approveChange','approved'],['rejectChange','rejected']])$(id).onclick=()=>run(async()=>{
+ const changeRequestId=serverId($('changeRequest').value),reason=$('changeReason').value.trim();
+ if(!reason)throw Error('请填写改期复核原因');
+ await mutate('reschedule_review',{changeRequestId,decision,reason},async()=>{
+  await refresh();$('changeReason').value='';status(decision==='approved'?'改期申请已批准，预约已更新。':'改期申请已拒绝，原预约保留。');
+ });
+});
 $('rescheduleRequest').onchange=()=>{
  const selected=rescheduleRequests.find(row=>row.id===Number($('rescheduleRequest').value));
  $('rescheduleStart').value=selected?new Date(selected.startsAt).toISOString().slice(0,16):'';
