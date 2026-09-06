@@ -7,6 +7,7 @@ const OPERATIONS={
   order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines'},order_status:{rpc:'salon_set_order_status'},
   refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_request'},refund_execute:{rpc:'salon_execute_refund_request'},
   finance_entry:{rpc:'salon_add_finance_entry'},operating_report:{rpc:'salon_get_operating_report'},
+  staff_create:{rpc:'salon_create_staff'},staff_status:{rpc:'salon_set_staff_status'},commission_rule:{rpc:'salon_create_commission_rule'},payroll_generate:{rpc:'salon_generate_payroll'},payroll_review:{rpc:'salon_review_payroll'},payrolls:{rpc:'salon_list_payroll'},
   context:{read:true},order_receipt:{read:true},order_detail:{read:true},refunds:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
@@ -88,8 +89,20 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey)};
     }else if(operation==='finance_entry'){
       const type=text(payload.entryType,20),category=text(payload.category,100),note=text(payload.note,500),amount=Number(payload.amount);if(!['income','expense'].includes(type)||!category||!note||!Number.isFinite(amount)||amount<=0)throw new Error('收支记录参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_entry_date:text(payload.entryDate,10),p_entry_type:type,p_category:category,p_amount:amount,p_note:note};
-    }else{
+    }else if(operation==='operating_report'){
       const from=text(payload.dateFrom,10),to=text(payload.dateTo,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to))throw new Error('报表日期范围无效');args={...common,p_date_from:from,p_date_to:to};
+    }else if(operation==='staff_create'){
+      const no=text(payload.staffNo,40),name=text(payload.displayName,100),salary=Number(payload.baseSalary||0);if(!no||!name||!Number.isFinite(salary)||salary<0)throw new Error('员工资料参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_staff_no:no,p_display_name:name,p_role_id:integer(payload.roleId,'角色',true),p_position:text(payload.position,100),p_level_name:text(payload.levelName,100),p_base_salary:salary};
+    }else if(operation==='staff_status'){
+      const status=text(payload.status,30),reason=text(payload.reason,500);if(!['active','leave','departed'].includes(status)||!reason)throw new Error('员工状态或变更原因无效');args={...common,p_target_staff_id:integer(payload.staffId,'员工'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else if(operation==='commission_rule'){
+      const category=text(payload.category,20),name=text(payload.name,100),rate=Number(payload.rate),from=text(payload.validFrom,10),to=text(payload.validTo,10);if(!['service','product'].includes(category)||!name||!Number.isFinite(rate)||rate<0||rate>100||!/^\d{4}-\d{2}-\d{2}$/.test(from)||(to&&!/^\d{4}-\d{2}-\d{2}$/.test(to)))throw new Error('提成规则参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_category:category,p_name:name,p_rate:rate,p_valid_from:from,p_valid_to:to||null};
+    }else if(operation==='payroll_generate'){
+      const month=text(payload.month,10),bonus=Number(payload.bonus||0),deduction=Number(payload.deduction||0),reason=text(payload.reason,500);if(!/^\d{4}-\d{2}-01$/.test(month)||!Number.isFinite(bonus)||bonus<0||!Number.isFinite(deduction)||deduction<0||((bonus>0||deduction>0)&&!reason))throw new Error('工资试算参数无效');args={...common,p_staff_id:integer(payload.staffId,'员工'),p_request_key:requestKey(payload.requestKey),p_month:month,p_bonus:bonus,p_deduction:deduction,p_reason:reason};
+    }else if(operation==='payroll_review'){
+      const decision=text(payload.decision,20),reason=text(payload.reason,500);if(!['approved','rejected'].includes(decision)||!reason)throw new Error('工资审批决定或意见无效');args={...common,p_payroll_id:integer(payload.payrollId,'工资单'),p_request_key:requestKey(payload.requestKey),p_decision:decision,p_reason:reason};
+    }else{
+      const month=text(payload.month,10);if(month&&!/^\d{4}-\d{2}-01$/.test(month))throw new Error('工资月份无效');args={...common,p_month:month||null};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
