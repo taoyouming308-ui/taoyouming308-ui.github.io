@@ -18,8 +18,8 @@ result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkou
 assert.equal(result.status,200);assert.equal(calls[0].rpc,'salon_checkout_order');
 assert.deepEqual({actor:calls[0].args.p_actor_staff_id,org:calls[0].args.p_organization_id,store:calls[0].args.p_store_id},{actor:7,org:3,store:9},'identity and store must come from server staff binding');
 assert.equal('staffId' in calls[0].args,false);assert.equal(calls[0].args.p_order_id,4);
-result=await handler(request({operation:'refund',orderId:4,requestKey:'refund-request-00001',reason:'顾客取消'}));
-assert.equal(result.status,200);assert.equal(calls[1].rpc,'salon_refund_order');
+result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'refund-execute-0001'}));
+assert.equal(result.status,200);assert.equal(calls[1].rpc,'salon_execute_refund_request');
 result=await handler(request({operation:'inventory_move',catalogItemId:8,requestKey:'inventory-request-001',movementType:'sale',quantity:1,orderId:4,reason:'订单销售'}));
 assert.equal(result.status,200);assert.equal(calls[2].rpc,'salon_move_inventory');
 result=await handler(request({operation:'context'}));assert.equal(result.status,200);assert.deepEqual(result.body.data,{staffId:7,organizationId:3,storeId:9,displayName:'员工甲'});
@@ -45,16 +45,16 @@ result=await handler(request({operation:'order_detail',orderId:41,storeId:999}))
 result=await handler(request({operation:'refund_request',requestKey:'refund-apply-0001',orderId:41,refundType:'partial',reason:'部分退货',lines:[{orderLineId:5,quantity:1,amount:80}],payments:[{originalPaymentId:9,amount:80}]}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_submit_refund_request');
 result=await handler(request({operation:'refund_review',requestKey:'refund-review-001',refundRequestId:51,decision:'approved',reason:'核对通过'}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_review_refund_request');
 result=await handler(request({operation:'refunds',status:'submitted',limit:50,storeId:999}));assert.equal(result.status,200);assert.equal(calls.at(-1).scope.storeId,9);
-result=await handler(request({operation:'refund',orderId:4,requestKey:'short',reason:'顾客取消'}));assert.equal(result.status,400);
+result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'short'}));assert.equal(result.status,400);
 result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0002',payments:[]}));assert.equal(result.status,400);
 result=await handler(request({operation:'unknown'}));assert.equal(result.status,400);
-result=await handler(request({operation:'refund',orderId:4,requestKey:'refund-request-00002',reason:'x'},'invalid-user-token-123456'));assert.equal(result.status,403);
+result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'refund-execute-0002'},'invalid-user-token-123456'));assert.equal(result.status,403);
 assert.ok(logs.every(log=>!('token'in log)&&!('payments'in log)&&!('amount'in log)),'request logs must not contain credentials or business payloads');
 assert.ok(logs.every(log=>typeof log.request_id==='string'&&log.request_id.length>20));
 assert.equal(logs.find(log=>log.operation==='unknown').error_code,'UNSUPPORTED_OPERATION');
 
 const failing=createSalonHandler({verifyUser:async()=>({id:'auth-user-1'}),findStaff:async()=>({id:7,organization_id:3,store_id:9,employment_status:'active'}),invoke:async()=>{throw new Error('数据库请求失败 (500) secret internal detail')}});
-result=await failing(request({operation:'refund',orderId:4,requestKey:'refund-request-00003',reason:'测试'}));assert.equal(result.status,500);assert.equal(result.body.code,'DATABASE_OPERATION_FAILED');assert.equal(result.body.error,'操作未完成，请稍后重试');assert.doesNotMatch(JSON.stringify(result.body),/secret internal detail/);
+result=await failing(request({operation:'refund_execute',refundRequestId:51,requestKey:'refund-execute-0003'}));assert.equal(result.status,500);assert.equal(result.body.code,'DATABASE_OPERATION_FAILED');assert.equal(result.body.error,'操作未完成，请稍后重试');assert.doesNotMatch(JSON.stringify(result.body),/secret internal detail/);
 
 const edge=fs.readFileSync('supabase/functions/salon-api/index.ts','utf8');
 const migration=fs.readFileSync('supabase/migrations/20260906064313_salon_auth_identity.sql','utf8');

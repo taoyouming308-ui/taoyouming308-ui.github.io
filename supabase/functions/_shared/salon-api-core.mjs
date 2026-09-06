@@ -1,12 +1,11 @@
 const OPERATIONS={
   checkout:{rpc:'salon_checkout_order',fields:['orderId','requestKey','payments']},
-  refund:{rpc:'salon_refund_order',fields:['orderId','requestKey','reason']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
   catalog_create:{rpc:'salon_create_catalog_item'},catalog_enable:{rpc:'salon_enable_catalog_item'},catalog_status:{rpc:'salon_set_catalog_status'},inventory_count:{rpc:'salon_count_inventory'},
   member_open:{rpc:'salon_open_member_account'},member_recharge:{rpc:'salon_recharge_member_account'},member_status:{rpc:'salon_set_member_status'},
   order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines'},order_status:{rpc:'salon_set_order_status'},
-  refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_request'},
+  refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_request'},refund_execute:{rpc:'salon_execute_refund_request'},
   context:{read:true},order_receipt:{read:true},order_detail:{read:true},refunds:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
@@ -42,9 +41,6 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='checkout'){
       if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
       args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_payments:payload.payments};
-    }else if(operation==='refund'){
-      const reason=text(payload.reason,500);if(!reason)throw new Error('退款原因不能为空');
-      args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_reason:reason};
     }else if(operation==='inventory_move'){
       const movementType=text(payload.movementType,30),quantity=Number(payload.quantity),reason=text(payload.reason,500);
       if(!['receive','sale','consume','refund'].includes(movementType)||!Number.isFinite(quantity)||quantity<=0||!reason)throw new Error('库存操作参数无效');
@@ -85,8 +81,10 @@ export function createSalonHandler(deps){return async function(request){
       const status=text(payload.status,30),reason=text(payload.reason,500);args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
     }else if(operation==='refund_request'){
       const type=text(payload.refundType,20),reason=text(payload.reason,500);if(!reason)throw new Error('退款原因不能为空');args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_refund_type:type,p_reason:reason,p_lines:Array.isArray(payload.lines)?payload.lines:[],p_payments:Array.isArray(payload.payments)?payload.payments:[]};
-    }else{
+    }else if(operation==='refund_review'){
       const decision=text(payload.decision,20),reason=text(payload.reason,500);if(!reason)throw new Error('审批意见不能为空');args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey),p_decision:decision,p_reason:reason};
+    }else{
+      args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey)};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}

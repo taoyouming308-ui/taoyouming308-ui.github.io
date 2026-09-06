@@ -1,0 +1,30 @@
+\set ON_ERROR_STOP on
+set role service_role;
+insert into public.salon_organizations(name) values('退款执行测试机构');
+insert into public.salon_stores(organization_id,code,name) values(1,'A','甲店'),(1,'B','乙店');
+insert into public.salon_roles(organization_id,name,data_scope) values(1,'退款执行人','store');
+insert into public.salon_role_permissions(role_id,resource,action) values(1,'orders','refund_execute'),(1,'inventory','write');
+insert into public.salon_staff(organization_id,store_id,role_id,staff_no,display_name) values(1,1,1,'A01','甲店执行人'),(1,2,1,'B01','乙店执行人');
+insert into public.salon_customers(organization_id,display_name,status) values(1,'测试会员','active');
+insert into public.salon_catalog_items(organization_id,item_type,code,name,category,list_price) values(1,'service','S1','服务','服务',100),(1,'product','P1','商品','商品',50);
+insert into public.salon_inventory_balances(organization_id,store_id,catalog_item_id,quantity) values(1,1,2,8);
+insert into public.salon_member_accounts(organization_id,customer_id,account_type,account_no,display_name,home_store_id,usable_scope,status,cash_balance) values(1,1,'stored_value','SV1','储值卡',1,'store','active',400);
+insert into public.salon_orders(organization_id,store_id,order_no,customer_id,status,subtotal,payable_total,paid_at) values(1,1,'O1',1,'paid',200,200,now());
+insert into public.salon_order_lines(organization_id,order_id,catalog_item_id,quantity,unit_price,line_total,item_code,item_name,item_type) values(1,1,1,1,100,100,'S1','服务','service'),(1,1,2,2,50,100,'P1','商品','product');
+insert into public.salon_payments(organization_id,store_id,order_id,payment_method,amount,tendered_amount,status,member_account_id,confirmed_at) values(1,1,1,'member_value',100,100,'confirmed',1,now()),(1,1,1,'cash',100,100,'confirmed',null,now());
+insert into public.salon_account_ledger(organization_id,store_id,account_id,order_id,payment_id,entry_type,cash_delta,reason) values(1,1,1,1,1,'consume',-100,'原会员扣款');
+insert into public.salon_inventory_ledger(organization_id,store_id,catalog_item_id,movement_type,quantity_delta,quantity_before,quantity_after,order_id,reason) values(1,1,2,'sale',-2,10,8,1,'原销售出库');
+insert into public.salon_refund_requests(organization_id,store_id,order_id,refund_type,status,requested_amount,reason,created_by_staff_id,reviewed_by_staff_id,reviewed_at) values(1,1,1,'partial','approved',50,'第一次部分退款',1,2,now()),(1,1,1,'partial','approved',50,'第二次部分退款',1,2,now()),(1,1,1,'partial','approved',100,'商品退款',1,2,now()),(1,1,1,'partial','submitted',10,'未审批退款',1,null,null);
+insert into public.salon_refund_request_lines values(1,1,1,1,50,'S1','服务','service'),(1,2,1,1,50,'S1','服务','service'),(1,3,2,2,100,'P1','商品','product'),(1,4,1,1,10,'S1','服务','service');
+insert into public.salon_refund_request_payments values(1,1,1,50,0,'member_value'),(1,2,1,50,0,'member_value'),(1,3,2,100,0,'cash'),(1,4,2,10,0,'cash');
+do $$ declare first jsonb;retry jsonb;blocked boolean;begin
+ first:=public.salon_execute_refund_request(1,1,1,1,'refund-execute-0001');retry:=public.salon_execute_refund_request(1,1,1,1,'refund-execute-0001');
+ if first<>retry or (first->>'orderStatus')<>'paid' or (select refunded_total from public.salon_orders where id=1)<>50 or (select cash_balance from public.salon_member_accounts where id=1)<>450 or (select status from public.salon_payments where id=1)<>'confirmed' or (select count(*) from public.salon_payments where reversal_of_id=1)<>1 then raise exception 'first partial refund failed';end if;
+ perform public.salon_execute_refund_request(1,1,1,2,'refund-execute-0002');
+ if (select refunded_total from public.salon_orders where id=1)<>100 or (select cash_balance from public.salon_member_accounts where id=1)<>500 or (select status from public.salon_payments where id=1)<>'reversed' or (select count(*) from public.salon_account_ledger where reversal_of_id=1)<>2 then raise exception 'second partial refund failed';end if;
+ perform public.salon_execute_refund_request(1,1,1,3,'refund-execute-0003');
+ if (select status from public.salon_orders where id=1)<>'reversed' or (select refunded_total from public.salon_orders where id=1)<>200 or (select status from public.salon_payments where id=2)<>'reversed' or (select quantity from public.salon_inventory_balances where catalog_item_id=2)<>10 or (select count(*) from public.salon_inventory_ledger where reversal_of_id=1 and refund_request_id=3)<>1 then raise exception 'final refund failed';end if;
+ blocked:=false;begin perform public.salon_execute_refund_request(1,1,1,4,'refund-not-approved1');exception when others then blocked:=sqlerrm like '%不可执行%';end;if not blocked or (select status from public.salon_refund_requests where id=4)<>'submitted' then raise exception 'unapproved refund executed';end if;
+ blocked:=false;begin perform public.salon_execute_refund_request(2,1,2,4,'refund-cross-store01');exception when others then blocked:=sqlerrm like '%不可执行%';end;if not blocked then raise exception 'cross-store refund executed';end if;
+end $$;
+reset role;
