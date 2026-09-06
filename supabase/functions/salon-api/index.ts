@@ -32,6 +32,9 @@ const handler=createSalonHandler({
       const response=await admin("rpc/salon_list_member_accounts",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_customer_id:scope.customerId==null?null:Number(scope.customerId),p_status:String(scope.status||""),p_limit:Number(scope.limit||200)})});
       return response.json();
     }
+    if(operation==="refunds"){
+      const response=await admin("rpc/salon_list_refund_requests",{method:"POST",body:JSON.stringify({p_actor_staff_id:Number(scope.actorStaffId),p_organization_id:org,p_store_id:store,p_status:String(scope.status||""),p_limit:Number(scope.limit||200)})});return response.json();
+    }
     if(operation==="order_receipt"){
       const orderId=Number(scope.orderId),orderResponse=await admin(`salon_orders?select=id,order_no,status,subtotal,discount_total,payable_total,paid_at&organization_id=eq.${org}&store_id=eq.${store}&id=eq.${orderId}&limit=1`),orders=await orderResponse.json();
       if(!Array.isArray(orders)||orders.length!==1)throw new Error("订单不存在或不属于当前门店");
