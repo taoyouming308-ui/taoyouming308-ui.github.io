@@ -47,3 +47,13 @@ Ctrl+C 正常退出会删除该容器和其中合成数据。强制杀进程或�
 会话结束时旧请求票据失效，但不能据此断言已经发出的数据库写入回滚。中途退出、刷新后的未知结果核对和跨会话恢复仍须补充，不允许盲目新建同一业务。
 
 实现参考（2026-09-06 核对）：[Auth 事件](https://supabase.com/docs/reference/javascript/auth-onauthstatechange)、[getSession](https://supabase.com/docs/reference/javascript/auth-getsession)、[signOut](https://supabase.com/docs/reference/javascript/auth-signout)。
+
+## 会话等待异常保护（2026-09-06）
+
+- 每次 getSession、getUser、signOut 独立等待最多 30 秒；这是每一步上限，不是完整连接流程总耗时。Auth 方法不添加未定义的 AbortSignal 参数，超时后底层 SDK 可能继续执行。
+- 会话读取或身份验证超时即锁定并清除业务上下文，重新连接必须重新验证身份；迟到结果不设置身份，不发送后续业务请求。
+- 退出开始就锁定。超时/失败只开放“重试退出”，迟到 SIGNED_OUT/SIGNED_IN 事件和迟到成功结果都不能解除退出待确认状态。手动退出重试确认后才能重新连接。
+- 两端本机合成登录包含 fetch 和响应正文的超时保护；顾客退出请求同样有等待上限。合成员工退出保留原测试令牌用于重试，不读取其他 App 存储。
+- 专项：`NODE_PATH=/Users/a1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/test-salon-session-timeouts.cjs`，验证 1280/390 员工/顾客端登录响应与正文卡住、身份验证超时、退出迟到锁定、原合成令牌重试及再次连接。测试无业务写入，容器正常结束后清理。
+- 安全检查：未新增依赖/密钥/数据库权限，不使用 user_metadata 授权；保留 getUser 服务端验证和 local 范围退出。未运行线上 Advisor、未部署 Auth/Edge。真实 JWT 不等于本机可即时撤销的合成令牌，正式撤销策略仍需独立验收。
+- 本批只恢复可控的等待/退出交互，不恢复已失效请求票据；刷新、账号过期和跨设备后的未知写入核对仍待开发。

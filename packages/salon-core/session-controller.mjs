@@ -1,8 +1,10 @@
 import {createSalonClient,SalonClientError} from './api-client.mjs';
+import {withRequestDeadline} from './request-deadline.mjs';
 
 // Takes an explicitly initialized, Salon-only Supabase-compatible auth provider.
 // This adapter never selects a project, signs users up, reads legacy storage or grants roles.
-export function createSalonSession({auth,endpoint,fetchImpl,onReset=()=>{},now=()=>Date.now()}) {
+export function createSalonSession({auth,endpoint,fetchImpl,onReset=()=>{},now=()=>Date.now(),authTimeoutMs=30000}) {
+  if(!Number.isInteger(authTimeoutMs)||authTimeoutMs<1||authTimeoutMs>120000)throw new RangeError('Auth 等待时间无效');
   for(const method of ['getSession','getUser','onAuthStateChange','signOut'])
     if(typeof auth?.[method]!=='function')throw new Error(`缺少 Auth 接口 ${method}`);
   let identity=null,revision=0,disposed=false,recovery=false,logoutPending=false,logoutFailed=false;
@@ -18,7 +20,7 @@ export function createSalonSession({auth,endpoint,fetchImpl,onReset=()=>{},now=(
   async function verify(epoch,expectedUser) {
     check(epoch);
     let result;
-    try{result=await auth.getSession();}catch{check(epoch);invalidate('AUTH_UNAVAILABLE');throw error('AUTH_REQUIRED','无法取得会话，请重新登录');}
+    try{result=await withRequestDeadline(()=>auth.getSession(),authTimeoutMs);}catch{check(epoch);invalidate('AUTH_UNAVAILABLE');throw error('AUTH_REQUIRED','无法取得会话，请重新登录');}
     check(epoch);
     const session=result?.data?.session;
     if(result?.error||!session?.user?.id||typeof session.access_token!=='string'||session.access_token.length<20||
@@ -26,7 +28,7 @@ export function createSalonSession({auth,endpoint,fetchImpl,onReset=()=>{},now=(
       invalidate('SESSION_EXPIRED');throw error('AUTH_REQUIRED','登录已过期，请重新登录');
     }
     let verified;
-    try{verified=await auth.getUser(session.access_token);}catch{check(epoch);invalidate('AUTH_UNAVAILABLE');throw error('AUTH_REQUIRED','无法验证会话，请重新登录');}
+    try{verified=await withRequestDeadline(()=>auth.getUser(session.access_token),authTimeoutMs);}catch{check(epoch);invalidate('AUTH_UNAVAILABLE');throw error('AUTH_REQUIRED','无法验证会话，请重新登录');}
     check(epoch);
     const userId=verified?.data?.user?.id;
     if(verified?.error||!userId||userId!==session.user.id||(expectedUser&&userId!==expectedUser)) {
@@ -68,7 +70,8 @@ export function createSalonSession({auth,endpoint,fetchImpl,onReset=()=>{},now=(
       if(logoutPending)throw error('SIGNOUT_PENDING','退出请求正在处理中');
       logoutPending=true;invalidate('SIGNED_OUT');
       try{
-        const result=await auth.signOut({scope:'local'});
+        // SDK calls may keep running after the deadline; their late result cannot unlock us.
+        const result=await withRequestDeadline(()=>auth.signOut({scope:'local'}),authTimeoutMs);
         if(result?.error)throw result.error;
         logoutFailed=false;
       }catch{logoutFailed=true;throw error('SIGNOUT_UNCONFIRMED','本页面已锁定，但服务器退出未确认；请重试退出，不要视为令牌已撤销');}

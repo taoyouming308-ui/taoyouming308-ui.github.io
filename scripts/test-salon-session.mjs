@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import {createSalonSession} from '../packages/salon-core/session-controller.mjs';
 
 const makeSession=(id='user-a',token='synthetic-access-token-a')=>({access_token:token,expires_at:2000,user:{id}});
-function fixture(){
- let session=makeSession(),listener=()=>{},userOverride=null,pendingUser=null,pendingHTTP=null,logoutError=false,unsubscribed=false;
+function fixture(authTimeoutMs=30000){
+ let session=makeSession(),listener=()=>{},userOverride=null,pendingUser=null,pendingSession=null,pendingLogout=null,pendingHTTP=null,logoutError=false,unsubscribed=false;
  const calls=[],resets=[];
  const auth={
-  getSession:async()=>({data:{session}}),
+  getSession:async()=>pendingSession||({data:{session}}),
   getUser:async()=>pendingUser||({data:{user:{id:userOverride||session?.user.id}}}),
   onAuthStateChange:fn=>{listener=fn;return {data:{subscription:{unsubscribe:()=>{unsubscribed=true;}}}};},
-  signOut:async options=>{assert.deepEqual(options,{scope:'local'});if(logoutError)return {error:true};session=null;listener('SIGNED_OUT',null);return {};},
+  signOut:async options=>{assert.deepEqual(options,{scope:'local'});if(pendingLogout)return pendingLogout;if(logoutError)return {error:true};session=null;listener('SIGNED_OUT',null);return {};},
  };
- const controller=createSalonSession({auth,endpoint:'http://127.0.0.1:1234/api',now:()=>1000000,onReset:reason=>resets.push(reason),fetchImpl:async(_,options)=>{
+ const controller=createSalonSession({auth,endpoint:'http://127.0.0.1:1234/api',authTimeoutMs,now:()=>1000000,onReset:reason=>resets.push(reason),fetchImpl:async(_,options)=>{
   const body=JSON.parse(options.body);calls.push({body,token:options.headers.Authorization});
   if(pendingHTTP)return pendingHTTP;
   const data=body.operation==='context'?{organizationId:1,storeId:body.storeId||1,staffId:1}:[];
@@ -19,6 +19,7 @@ function fixture(){
  }});
  return {controller,calls,resets,emit:(event,next)=>{session=next;assert.equal(listener(event,next),undefined,'auth callbacks must remain synchronous');},
   setSession:value=>{session=value;},setUser:value=>{userOverride=value;},setPendingUser:value=>{pendingUser=value;},setPendingHTTP:value=>{pendingHTTP=value;},
+  setPendingSession:value=>{pendingSession=value;},setPendingLogout:value=>{pendingLogout=value;},
   setLogoutError:value=>{logoutError=value;},get unsubscribed(){return unsubscribed;}};
 }
 {
@@ -69,4 +70,29 @@ function fixture(){
  const f=fixture(),c=f.controller;await c.connect();f.setPendingHTTP(Promise.resolve(new Response('Unauthorized',{status:401})));
  await assert.rejects(c.read('customers'),{code:'AUTH_REQUIRED'});assert.equal(c.scope,null);
 }
-console.log('Salon session: verified identity, refresh, logout, expiry, account switch, stale in-flight work and recovery guards passed');
+for(const method of ['setPendingSession','setPendingUser']){
+ const f=fixture(20),c=f.controller;let release;
+ f[method](new Promise(resolve=>{release=resolve;}));
+ await assert.rejects(c.connect(),{code:'AUTH_REQUIRED'});assert.equal(c.scope,null);assert.equal(f.calls.length,0);
+ release(method==='setPendingSession'?{data:{session:makeSession()}}:{data:{user:{id:'user-a'}}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(c.scope,null,'late verification cannot restore scope');
+ f[method](null);await c.connect();assert.equal(c.scope.storeId,1);c.dispose();
+}
+{
+ const f=fixture(20),c=f.controller;await c.connect();const ticket=c.prepare('customer_create',{displayName:'不应发送'});
+ f.setPendingUser(new Promise(()=>{}));const count=f.calls.length;
+ await assert.rejects(c.submit(ticket),{code:'AUTH_REQUIRED'});assert.equal(f.calls.length,count);assert.equal(c.scope,null);c.dispose();
+}
+{
+ const f=fixture(20),c=f.controller;await c.connect();let release;
+ f.setPendingLogout(new Promise(resolve=>{release=resolve;}));
+ const first=c.signOut();await assert.rejects(c.signOut(),{code:'SIGNOUT_PENDING'});
+ await assert.rejects(first,{code:'SIGNOUT_UNCONFIRMED'});
+ assert.equal(c.scope,null);await assert.rejects(c.connect(),{code:'AUTH_REQUIRED'});
+ release({});f.emit('SIGNED_OUT',null);f.emit('SIGNED_IN',makeSession());
+ await new Promise(resolve=>setImmediate(resolve));
+ await assert.rejects(c.connect(),{code:'AUTH_REQUIRED'});assert.equal(c.scope,null,'late success and events cannot clear unconfirmed logout');
+ f.setPendingLogout(null);await c.signOut();f.setSession(makeSession());await c.connect();assert.equal(c.scope.storeId,1);c.dispose();
+}
+for(const timeout of [0,-1,NaN,Infinity,1.5,'30',120001])assert.throws(()=>fixture(timeout),RangeError);
+console.log('Salon session: verified identity, refresh, logout, expiry, account switch, auth deadlines, late results and recovery guards passed');

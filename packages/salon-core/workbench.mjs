@@ -1,9 +1,10 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
+import {withRequestDeadline} from './request-deadline.mjs';
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
 let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
-let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
+let client,customers=[],items=[],cancelRequests=[],rescheduleRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false,logoutUnconfirmed=false;
 const status=text=>{$('status').textContent=text;};
 function options(id,rows,label){
  if(id==='changeRequest')$('changeDetails').textContent='选择申请后查看原时间、新时间与申请原因。';
@@ -30,6 +31,7 @@ async function verifyTimeZone(){
  if(!timeZone||current!==timeZone||result.data.timeVersion!==timeVersion)throw Error('门店时区已变化或未加载，请刷新本店数据后重新填写');
 }
 async function run(action){
+ if(signingOut||logoutUnconfirmed){status('退出未确认，请重试退出；禁止继续业务。');return;}
  const epoch=viewRevision;
  $('panel').disabled=true;$('connect').disabled=true;$('retry').disabled=true;
  try{await action();}
@@ -54,8 +56,10 @@ async function mutate(operation,fields,onSuccess){
 $('connect').onclick=()=>run(async()=>{
  if(location.protocol!=='http:'||location.hostname!=='127.0.0.1')throw Error('仅允许专用本机测试服务，不能连接线上或直接打开文件');
  clear();client?.dispose();
- const response=await fetch('/__salon_test_session',{method:'POST',cache:'no-store',redirect:'error'});
- const session=await response.json();if(!response.ok||session.environment!=='synthetic-local-only')throw Error('不是合成测试环境');
+ const session=await withRequestDeadline(async signal=>{
+  const response=await fetch('/__salon_test_session',{method:'POST',cache:'no-store',redirect:'error',signal});
+  const result=await response.json();if(!response.ok||result.environment!=='synthetic-local-only')throw Error('不是合成测试环境');return result;
+ });
  // Synthetic provider with the same four auth methods; never a production SDK login.
  let localSession={access_token:session.token,user:session.user,expires_at:session.expires_at},listener=()=>{};
  const auth={
@@ -66,14 +70,15 @@ $('connect').onclick=()=>run(async()=>{
   },
   onAuthStateChange:callback=>{listener=callback;return {data:{subscription:{unsubscribe:()=>{listener=()=>{};}}}};},
   signOut:async()=>{
-   const response=await fetch('/__salon_test_logout',{method:'POST',headers:{Authorization:`Bearer ${localSession?.access_token}`},redirect:'error'});
+   // Keep the original synthetic token for retry even if a late completion cleared localSession.
+   const response=await fetch('/__salon_test_logout',{method:'POST',headers:{Authorization:`Bearer ${session.token}`},redirect:'error'});
    if(!response.ok)return {error:true};localSession=null;listener('SIGNED_OUT',null);return {error:null};
   },
  };
  client=createSalonSession({auth,endpoint:location.origin+'/api/salon',onReset:reason=>{
   if(reason==='DISPOSED')return;
-  viewRevision++;clear();$('name').value='';options('store',[],()=>{});$('panel').disabled=true;$('retry').disabled=true;$('connect').disabled=signingOut;
-  status('会话已锁定，旧业务选择已清除；请重新连接。');
+  viewRevision++;clear();$('name').value='';options('store',[],()=>{});$('panel').disabled=true;$('retry').disabled=true;$('connect').disabled=signingOut||logoutUnconfirmed;
+  status(logoutUnconfirmed?'退出未确认，请重试退出；禁止继续业务。':'会话已锁定，旧业务选择已清除；请重新连接。');
  }});
  await client.connect();
  const result=await client.read('stores');options('store',result.data.map(row=>({id:serverId(row.store_id),name:row.name})),row=>row.name);
@@ -131,9 +136,10 @@ for(const [id,decision] of [['approveCancel','approved'],['rejectCancel','reject
  });
 });
 $('logout').onclick=async()=>{
- signingOut=true;let completed=false;$('logout').disabled=true;$('connect').disabled=true;
- try{await client.signOut();completed=true;$('logout').disabled=true;status('已退出本次测试会话；旧请求不能继续提交。');}
+ if(signingOut)return;
+ signingOut=true;logoutUnconfirmed=true;let completed=false;$('logout').disabled=true;$('connect').disabled=true;
+ try{await client.signOut();completed=true;logoutUnconfirmed=false;$('logout').disabled=true;status('已退出本次测试会话；旧请求不能继续提交。');}
  catch(error){status(error.message);$('logout').disabled=false;}
  finally{signingOut=false;$('connect').disabled=!completed;}
 };
-window.addEventListener('beforeunload',event=>{if(retry){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(retry||logoutUnconfirmed){event.preventDefault();event.returnValue='';}});

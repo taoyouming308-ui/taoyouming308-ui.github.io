@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## Salon 会话等待与退出恢复（2026-09-06）
+
+- session-controller 的 getSession/getUser/signOut 各自最多等待 30 秒；超时仍按既有身份失败/退出未确认路径处理，不伪造 SDK 可取消或 JWT 即时撤销能力。
+- 两端合成登录有正文等待上限；顾客退出有请求等待上限。员工页面独立保留 logoutUnconfirmed，防止迟到退出事件重新启用连接；本机原合成令牌保留用于手动退出重试，其他 App 存储不动。
+- 会话单测新增读取/验证超时、写入前验证失败零发送、迟到结果、并发退出和手动恢复；新增 test-salon-session-timeouts.cjs 覆盖 1280/390 员工/顾客两端。本批验收结果以测试回执为准。
+- 已通过：全部 Salon JS/MJS、既有员工开单工作台及顾客改期双端 HTTP/PG 回归、会话超时专项；专项确认原令牌重试、迟到结果不解锁、可重新连接且业务写入为零。测试容器正常清理。初版专项的 fieldset 判断和取消后读取响应流问题已修正后重跑通过。
+- 已核对 Supabase 官方 changelog、getUser/signOut 文档及技能安全清单。未增加依赖、密钥、数据库权限或业务写接口，未运行线上 Advisor 或部署 Auth/Edge。
+- 未完成：正式登录、跨刷新/跨会话未知写入核对、其他业务模块接入与完整验收。v477 不变，仅 feature/meiguanjia-parity-v1，不推 main、不上线、不合并三个旧 App。
+
 ## Salon 业务请求超时保护（2026-09-06）
 
 - 员工客户端和顾客业务 API 共用 request-deadline.mjs，30 秒覆盖 fetch 与 JSON 正文；超时发出 AbortSignal 并停止等待，但不假设服务器已回滚。不自动重试，不清除原写入参数/请求号。

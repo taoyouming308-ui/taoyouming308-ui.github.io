@@ -42,8 +42,10 @@ async function submitPending(){
 }
 $('connect').onclick=()=>run(async()=>{
  if(location.protocol!=='http:'||location.hostname!=='127.0.0.1')throw Error('仅允许专用本机合成测试服务');
- const response=await fetch('/__salon_test_customer_session',{method:'POST',redirect:'error',cache:'no-store'}),session=await response.json();
- if(!response.ok||session.environment!=='synthetic-local-only'||typeof session.token!=='string')throw Error('不是合成测试环境');
+ const session=await withRequestDeadline(async signal=>{
+  const response=await fetch('/__salon_test_customer_session',{method:'POST',redirect:'error',cache:'no-store',signal}),result=await response.json();
+  if(!response.ok||result.environment!=='synthetic-local-only'||typeof result.token!=='string')throw Error('不是合成测试环境');return result;
+ });
  token=session.token;epoch++;await read('context');await refresh();status('已连接合成顾客，仅显示本人数据。');
 });
 $('booking').onchange=()=>{const row=rows.find(r=>String(r.id)===$('booking').value);$('starts').value=row?instantToStoreInput(row.starts_at,timeZone):'';};
@@ -58,8 +60,10 @@ $('retry').onclick=()=>run(async()=>{if(pending)await submitPending();});
 $('refresh').onclick=()=>run(async()=>{await refresh();status('已刷新本人数据。');});
 $('logout').onclick=()=>run(async()=>{
  logoutPending=true;clear();pending=null;
- const response=await fetch('/__salon_test_customer_logout',{method:'POST',headers:{Authorization:`Bearer ${token}`},redirect:'error'});
- if(!response.ok)throw Error('退出未确认，请重试退出；禁止继续业务。');
+ try{
+  const response=await withRequestDeadline(signal=>fetch('/__salon_test_customer_logout',{method:'POST',headers:{Authorization:`Bearer ${token}`},redirect:'error',signal}));
+  if(!response.ok)throw Error('退出失败');
+ }catch{throw Error('退出未确认，请重试退出；禁止继续业务。');}
  lock();logoutPending=false;status('顾客会话已退出，旧令牌已撤销。');
 });
 window.addEventListener('beforeunload',e=>{if(pending||logoutPending){e.preventDefault();e.returnValue='';}});
