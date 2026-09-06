@@ -57,6 +57,7 @@ const edge=fs.readFileSync('supabase/functions/salon-api/index.ts','utf8');
 const migration=fs.readFileSync('supabase/migrations/20260906064313_salon_auth_identity.sql','utf8');
 assert.match(edge,/\/auth\/v1\/user/);assert.match(edge,/SALON_ALLOWED_ORIGINS/);
 assert.match(edge,/salon_api_request_logs/);assert.match(edge,/X-Request-ID/);
+assert.match(edge,/tendered_amount,change_amount,external_reference/,'receipt payment evidence missing');
 assert.doesNotMatch(edge,/user_metadata|raw_user_meta_data/);
 assert.doesNotMatch(edge,/service_role.{0,80}(console|Response|body)/i);
 assert.match(edge,/rpc\/salon_list_customers/);assert.doesNotMatch(edge,/select=.*phone_normalized/,'customer list must not select raw phones in Edge code');

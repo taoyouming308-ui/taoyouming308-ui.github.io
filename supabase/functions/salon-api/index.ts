@@ -36,7 +36,7 @@ const handler=createSalonHandler({
       const orderId=Number(scope.orderId),orderResponse=await admin(`salon_orders?select=id,order_no,status,subtotal,discount_total,payable_total,paid_at&organization_id=eq.${org}&store_id=eq.${store}&id=eq.${orderId}&limit=1`),orders=await orderResponse.json();
       if(!Array.isArray(orders)||orders.length!==1)throw new Error("订单不存在或不属于当前门店");
       const [paymentsResponse,ledgerResponse]=await Promise.all([
-        admin(`salon_payments?select=id,payment_method,amount,member_units,status,reversal_of_id,confirmed_at&organization_id=eq.${org}&store_id=eq.${store}&order_id=eq.${orderId}&order=id.asc&limit=100`),
+        admin(`salon_payments?select=id,payment_method,amount,tendered_amount,change_amount,external_reference,member_units,status,reversal_of_id,confirmed_at&organization_id=eq.${org}&store_id=eq.${store}&order_id=eq.${orderId}&order=id.asc&limit=100`),
         admin(`salon_account_ledger?select=id,entry_type,cash_delta,bonus_delta,units_delta,reversal_of_id,occurred_at&organization_id=eq.${org}&store_id=eq.${store}&order_id=eq.${orderId}&order=id.asc&limit=100`),
       ]);
       return{order:orders[0],payments:await paymentsResponse.json(),memberLedger:await ledgerResponse.json()};
