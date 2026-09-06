@@ -3,11 +3,13 @@ const OPERATIONS={
   refund:{rpc:'salon_refund_order',fields:['orderId','requestKey','reason']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
-  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},
+  catalog_create:{rpc:'salon_create_catalog_item'},catalog_enable:{rpc:'salon_enable_catalog_item'},catalog_status:{rpc:'salon_set_catalog_status'},inventory_count:{rpc:'salon_count_inventory'},
+  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},
 };
 
 function text(value,max=160){return String(value==null?'':value).trim().slice(0,max)}
 function integer(value,label,optional=false){if(optional&&(value==null||value===''))return null;const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw new Error(label+'无效');return n}
+function nonnegative(value,label){const n=Number(value==null||value===''?0:value);if(!Number.isFinite(n)||n<0)throw new Error(label+'无效');return n}
 function requestKey(value){const key=text(value,120);if(key.length<16||!/^[A-Za-z0-9._:-]+$/.test(key))throw new Error('请求幂等键无效');return key}
 function bearer(request){const value=request.headers.get('Authorization')||'';const match=value.match(/^Bearer\s+(.+)$/i);if(!match||match[1].length<20)throw new Error('请重新登录');return match[1]}
 function errorCode(message){if(/请重新登录|登录已过期/.test(message))return'AUTH_REQUIRED';if(/账号|员工|停用/.test(message))return'STAFF_INACTIVE';if(/不支持/.test(message))return'UNSUPPORTED_OPERATION';if(/数据库请求失败/.test(message))return'DATABASE_OPERATION_FAILED';return'VALIDATION_ERROR'}
@@ -29,6 +31,7 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='order_receipt')return finish(200,{data:await deps.read('order_receipt',{organizationId:common.p_organization_id,storeId:common.p_store_id,orderId:integer(payload.orderId,'订单')})});
     if(operation==='inventory')return finish(200,{data:await deps.read('inventory',{organizationId:common.p_organization_id,storeId:common.p_store_id,catalogItemId:integer(payload.catalogItemId,'商品',true)})});
     if(operation==='customers')return finish(200,{data:await deps.read('customers',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,query:text(payload.query,100),status:text(payload.status,20),limit:Math.min(integer(payload.limit||100,'数量'),200)})});
+    if(operation==='catalog')return finish(200,{data:await deps.read('catalog',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,itemType:text(payload.itemType,20),status:text(payload.status,20),query:text(payload.query,100),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     let args;
     if(operation==='checkout'){
       if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
@@ -47,9 +50,20 @@ export function createSalonHandler(deps){return async function(request){
     }else if(operation==='customer_status'){
       const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','frozen'].includes(status)||!reason)throw new Error('顾客状态或变更原因无效');
       args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
-    }else{
+    }else if(operation==='customer_relation'){
       const source=text(payload.source||'walkin',30),tags=Array.isArray(payload.tags)?payload.tags.map(x=>text(x,30)):[];
       args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_owner_staff_id:integer(payload.ownerStaffId,'负责人',true),p_source:source,p_tags:tags};
+    }else if(operation==='catalog_create'){
+      const itemType=text(payload.itemType,20),code=text(payload.code,40),name=text(payload.name,100);if(!code||!name)throw new Error('项目商品编号或名称无效');
+      args={...common,p_request_key:requestKey(payload.requestKey),p_code:code,p_item_type:itemType,p_name:name,p_category:text(payload.category,100),p_list_price:nonnegative(payload.listPrice,'售价'),p_member_price:nonnegative(payload.memberPrice,'会员价'),p_cost_price:nonnegative(payload.costPrice,'成本'),p_unit:text(payload.unit||'次',20),p_duration_minutes:payload.durationMinutes==null?null:integer(payload.durationMinutes,'服务时长'),p_stock_tracked:payload.stockTracked===true,p_safety_stock:nonnegative(payload.safetyStock,'安全库存')};
+    }else if(operation==='catalog_enable'){
+      args={...common,p_catalog_item_id:integer(payload.catalogItemId,'项目商品'),p_request_key:requestKey(payload.requestKey),p_stock_tracked:payload.stockTracked===true,p_safety_stock:nonnegative(payload.safetyStock,'安全库存')};
+    }else if(operation==='catalog_status'){
+      const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','disabled'].includes(status)||!reason)throw new Error('项目商品状态或原因无效');
+      args={...common,p_catalog_item_id:integer(payload.catalogItemId,'项目商品'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
+    }else{
+      const counted=Number(payload.counted),reason=text(payload.reason,500);if(!Number.isFinite(counted)||counted<0||!reason)throw new Error('盘点数量或原因无效');
+      args={...common,p_catalog_item_id:integer(payload.catalogItemId,'商品'),p_request_key:requestKey(payload.requestKey),p_counted:counted,p_reason:reason};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
