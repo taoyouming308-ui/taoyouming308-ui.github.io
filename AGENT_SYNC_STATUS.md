@@ -1,5 +1,10 @@
 # Agent Sync Status
 
+## 独立分支基线同步（2026-09-06）
+
+- App version: v477。收尾时发现 github/main 新增 `e9629d6`，已在独立分支合入这项既有员工会话网络错误处理及版本更新；三文件与 Salon 本批无重叠。未由本任务发布 main。
+- Salon 本批基于 v476 开始，随基线同步至 v477；时区事务功能仍仅独立分支，不部署迁移/Edge，不把 Salon 功能合并到现有三个 App。
+
 ## Salon G06 第七批：时区版本事务保护（2026-09-06）
 
 - CLI 新迁移 `20260906120718_salon_time_context_transactions.sql`：timezone_version 及自动递增触发器；新增强制 RLS 的请求时区上下文表，仅存完整参数摘要/原时区版本/完成标记，不放开浏览器权限。
