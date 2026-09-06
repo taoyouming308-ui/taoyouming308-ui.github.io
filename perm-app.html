@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="474">
+<html lang="zh-CN" data-version="475">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3071,9 +3071,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=474"></script>
-<script src="hair-vision-training.v1.js?v=474"></script>
-<script src="aesthetic-growth.v2.js?v=474"></script>
+<script src="aesthetic-knowledge.v1.js?v=475"></script>
+<script src="hair-vision-training.v1.js?v=475"></script>
+<script src="aesthetic-growth.v2.js?v=475"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -10888,12 +10888,15 @@ function initApp() {
     // 客户列表必须按当前登录身份查找；表单内的发型师可以被编辑或保留上一次的值，
     // 不能参与预约筛选，否则预约页与发质分析表会看到两套不同的客户列表。
     var barberName = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || BOOKING_BARBER || localStorage.getItem('booking-barber') || '';
-    var barberFilter = barberName ? '&barber_name=eq.' + encodeURIComponent(barberName) : '';
-    var shopFilter = BOOKING_SHOP ? '&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=id,customer_name,customer_phone,barber_name,shop_name,time_label,reservation_time,service_name,notes,date&date=eq.' + encodeURIComponent(dateKey) + shopFilter + barberFilter + '&order=reservation_time.asc', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
-      rows = Array.isArray(rows) ? rows : [];
+    var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
+    if (!sessionToken) {
+      clearBookingSession();
+      list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">请重新登录后选择客户</div>';
+      showIdentityModal();
+      return;
+    }
+    employeeBookingsApi('today_bookings', { session_token: sessionToken, date: dateKey }).then(function(data) {
+      var rows = Array.isArray(data.rows) ? data.rows : [];
       if (barberName) rows = rows.filter(function(r){ return r.barber_name === barberName; });
       var seen = {};
       var unique = [];
@@ -10907,7 +10910,7 @@ function initApp() {
         unique.push(r);
       }
       if (!unique.length) {
-        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无预约</div>';
+        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">' + esc(dateKey) + ' 暂无预约或前台到店客户</div>';
         return;
       }
       var html = '';
@@ -10916,14 +10919,21 @@ function initApp() {
         var meta = [r.time_label || '', r.customer_phone || '', r.barber_name || ''].filter(Boolean).join(' · ');
         var service = [r.service_name || '', r.notes || ''].filter(Boolean).join(' / ');
         html += '<button type="button" data-booking-id="'+escAttr(r.id||'')+'" data-bdate="'+escAttr(r.date||dateKey)+'" data-barber="'+escAttr(r.barber_name||'')+'" data-name="'+escAttr(r.customer_name||'')+'" data-phone="'+escAttr(r.customer_phone||'')+'" onclick="pickBookingCustomerFromNode(this)" style="display:block;width:100%;text-align:left;padding:10px;background:var(--surface-light);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--font);">';
-        html += '<div style="font-size:13px;font-weight:600;color:var(--text);">' + esc(r.customer_name) + '</div>';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<div style="font-size:13px;font-weight:600;color:var(--text);">' + esc(r.customer_name) + '</div>' +
+          '<span style="flex-shrink:0;font-size:9px;color:var(--accent);">' + esc(r.source_label || (r.source === 'frontdesk' ? '前台到店' : '美管加预约')) + '</span>' +
+        '</div>';
         html += '<div style="font-size:11px;color:var(--text-secondary);">' + esc(meta || dateKey) + '</div>';
         if (service) html += '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">' + esc(service) + '</div>';
         html += '</button>';
       }
       list.innerHTML = html;
-    }).catch(function() {
-      list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">加载预约失败</div>';
+    }).catch(function(e) {
+      if (e && e.status === 403) {
+        clearBookingSession();
+        showIdentityModal();
+      }
+      list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">加载预约和前台到店客户失败</div>';
     });
   };
 
