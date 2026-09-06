@@ -4,7 +4,8 @@ const OPERATIONS={
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
   catalog_create:{rpc:'salon_create_catalog_item'},catalog_enable:{rpc:'salon_enable_catalog_item'},catalog_status:{rpc:'salon_set_catalog_status'},inventory_count:{rpc:'salon_count_inventory'},
-  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},
+  member_open:{rpc:'salon_open_member_account'},member_recharge:{rpc:'salon_recharge_member_account'},member_status:{rpc:'salon_set_member_status'},
+  context:{read:true},order_receipt:{read:true},inventory:{read:true},customers:{read:true},catalog:{read:true},members:{read:true},
 };
 
 function text(value,max=160){return String(value==null?'':value).trim().slice(0,max)}
@@ -32,6 +33,7 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='inventory')return finish(200,{data:await deps.read('inventory',{organizationId:common.p_organization_id,storeId:common.p_store_id,catalogItemId:integer(payload.catalogItemId,'商品',true)})});
     if(operation==='customers')return finish(200,{data:await deps.read('customers',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,query:text(payload.query,100),status:text(payload.status,20),limit:Math.min(integer(payload.limit||100,'数量'),200)})});
     if(operation==='catalog')return finish(200,{data:await deps.read('catalog',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,itemType:text(payload.itemType,20),status:text(payload.status,20),query:text(payload.query,100),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
+    if(operation==='members')return finish(200,{data:await deps.read('members',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,customerId:integer(payload.customerId,'顾客',true),status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     let args;
     if(operation==='checkout'){
       if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
@@ -61,9 +63,16 @@ export function createSalonHandler(deps){return async function(request){
     }else if(operation==='catalog_status'){
       const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','disabled'].includes(status)||!reason)throw new Error('项目商品状态或原因无效');
       args={...common,p_catalog_item_id:integer(payload.catalogItemId,'项目商品'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
-    }else{
+    }else if(operation==='inventory_count'){
       const counted=Number(payload.counted),reason=text(payload.reason,500);if(!Number.isFinite(counted)||counted<0||!reason)throw new Error('盘点数量或原因无效');
       args={...common,p_catalog_item_id:integer(payload.catalogItemId,'商品'),p_request_key:requestKey(payload.requestKey),p_counted:counted,p_reason:reason};
+    }else if(operation==='member_open'){
+      const accountType=text(payload.accountType,30),accountNo=text(payload.accountNo,50),name=text(payload.displayName,100),scope=text(payload.usableScope||'store',20);if(!accountNo||!name)throw new Error('会员账户参数无效');
+      args={...common,p_customer_id:integer(payload.customerId,'顾客'),p_request_key:requestKey(payload.requestKey),p_account_type:accountType,p_account_no:accountNo,p_display_name:name,p_usable_scope:scope,p_expires_on:text(payload.expiresOn,10)||null};
+    }else if(operation==='member_recharge'){
+      const reason=text(payload.reason,500);if(!reason)throw new Error('充值原因不能为空');args={...common,p_account_id:integer(payload.accountId,'会员账户'),p_request_key:requestKey(payload.requestKey),p_paid_amount:nonnegative(payload.paidAmount,'实收金额'),p_cash_added:nonnegative(payload.cashAdded,'本金增加'),p_bonus_added:nonnegative(payload.bonusAdded,'赠送增加'),p_units_added:nonnegative(payload.unitsAdded,'次数增加'),p_payment_method:text(payload.paymentMethod,30),p_external_reference:text(payload.externalReference,100),p_reason:reason};
+    }else{
+      const status=text(payload.status,20),reason=text(payload.reason,500);if(!['active','frozen'].includes(status)||!reason)throw new Error('会员账户状态或原因无效');args={...common,p_account_id:integer(payload.accountId,'会员账户'),p_request_key:requestKey(payload.requestKey),p_status:status,p_reason:reason};
     }
     return finish(200,{data:await deps.invoke(spec.rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}

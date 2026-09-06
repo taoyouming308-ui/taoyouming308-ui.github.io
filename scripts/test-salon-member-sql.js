@@ -1,0 +1,5 @@
+const fs=require('fs'),sql=fs.readFileSync('supabase/migrations/20260906071257_salon_member_account_operations.sql','utf8'),bad=[];const ok=(x,m)=>{if(!x)bad.push(m)};
+['salon_member_recharges','salon_open_member_account','salon_recharge_member_account','salon_set_member_status','salon_list_member_accounts'].forEach(x=>ok(sql.includes(x),x+' missing'));
+ok(/members','write/.test(sql)&&/members','recharge/.test(sql)&&/members','read/.test(sql),'member permissions missing');ok(/for update/.test(sql),'account row lock missing');ok(/salon_account_ledger_recharge_idx/.test(sql),'one-to-one recharge ledger constraint missing');
+ok(/usable_scope in \('store','organization'\)/.test(sql),'usable scope constraint missing');ok(/force row level security/i.test(sql),'RLS missing');ok(!/security definer/i.test(sql),'functions must use invoker');ok((sql.match(/revoke execute on function/g)||[]).length===4,'function revokes missing');
+if(bad.length){console.error('salon member SQL tests failed:\n- '+bad.join('\n- '));process.exit(1)}console.log('salon member SQL tests passed: lifecycle, recharge evidence, scope, locks, permissions');
