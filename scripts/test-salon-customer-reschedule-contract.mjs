@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read=name=>fs.readFileSync('supabase/migrations/'+name,'utf8');
+const old=read('20260906093809_salon_customer_request_ownership.sql');
+const source=read('20260906113627_salon_customer_reschedule_requests.sql');
+const helper=s=>s.match(/create (?:or replace )?function salon_private\.claim_customer_request\([\s\S]*?end\$\$;/)[0].replace('or replace ','').replace(/--[^\n]*/g,'').replace(/\s+/g,'');
+assert.equal(helper(source),helper(old).replace("'consent_set','booking_request'","'consent_set','booking_request','booking_change_request'"),'existing customer claim semantics must be preserved');
+const fn=source.match(/create function public\.salon_customer_request_reschedule\(([\s\S]*?)end\$\$;/)[0];
+const signature=fn.match(/reschedule\((.*?)\)\nreturns/)[1];
+const claim=fn.match(/v_op:=salon_private\.claim_customer_request\([\s\S]*?\);/)[0];
+for(const param of signature.split(',').map(x=>x.split(' ')[0]).filter(x=>x!=='p_request_key'))assert.ok(claim.includes(`'${param}',${param}`),param+' must be fingerprinted');
+assert.ok(fn.indexOf('仅可申请修改本人的预约')<fn.indexOf('return v_op.response_json'));
+assert.doesNotMatch(fn,/update public\.salon_(appointments|schedule_blocks|customer_booking_requests)/);
+assert.match(source,/force row level security/);
+console.log('Customer reschedule contract passed: unchanged existing claim semantics, full fingerprint, ownership before replay, proposal-only writes');

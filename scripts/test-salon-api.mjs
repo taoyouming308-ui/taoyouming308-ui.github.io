@@ -12,6 +12,10 @@ const handler=createSalonHandler({
   log:async row=>logs.push(row),
 });
 const request=(body,token='valid-user-token-123456789')=>new Request('http://local/salon-api',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+const changeReview={operation:'reschedule_review',storeId:9,changeRequestId:31,requestKey:'staff-change-00001',decision:'approved',reason:'确认改期',actorStaffId:999};
+assert.equal((await handler(request(changeReview))).status,200);assert.equal(calls.at(-1).rpc,'salon_review_reschedule_request');assert.equal(calls.at(-1).args.p_actor_staff_id,7);
+assert.equal((await handler(request({...changeReview,decision:'confirmed'}))).status,400);
+assert.equal((await handler(request({operation:'reschedule_requests',storeId:9,limit:999}))).status,200);assert.equal(calls.at(-1).args.p_limit,200);
 
 let result=await handler(new Request('http://local/salon-api',{method:'POST'}));
 assert.equal(result.status,403,'missing bearer token must be rejected');

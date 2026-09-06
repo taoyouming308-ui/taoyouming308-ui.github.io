@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## Salon G06 第三批：顾客改期申请后端（2026-09-06）
+
+- 新迁移 `20260906113627_salon_customer_reschedule_requests.sql`，独立申请记录与待处理唯一约束；申请不占新档，批准调用已有原子改期，拒绝仅更新申请。完整指纹、本人归属、双员工权限与审计；顾客请求守卫仅扩展白名单。
+- 顾客 API：reschedule_request/reschedule_requests；员工 API：reschedule_review/reschedule_requests。身份均服务端验证，时间带时区、版本整数、查询白名单字段。员工请求指纹覆盖增至 39 类。
+- 新临时 PG 合成测试通过：原档保留、批准/拒绝、同键并发、复核竞争、冲突回滚、旧版本、身份重绑/停用、跨顾客/门店与撤权重试；API 和守卫契约测试通过。测试不读取真实顾客或资金。
+- 全部 Salon `.js/.mjs`、既有改期/取消/工作台桌面与手机浏览器、顾客请求/主数据/会员资金临时 PG 回归通过；专用测试容器按脚本清理。版本同步、发布完整性、交接检查通过。
+- 尚未接新增顾客页面和门店复核控件；新流程尚未做真实 HTTP 双身份浏览器验收。下一步按 docs/salon-customer-reschedule-requests.md 接本机页面并做丢包/会话/手机测试。G06 与全 App 未完成。
+- v476 不变；不部署迁移/Edge/Auth，不运行线上 Advisor，不合并 main，不动三个旧 App。
+
 ## Salon G06 第二批：门店改期与版本保护（2026-09-06）
 
 - CLI 新迁移 `20260906111701_salon_booking_reschedule.sql`：新增 `reschedule_version`、精确操作白名单项及 `salon_reschedule_booking`。员工 API 新增 `booking_reschedule`，全部 38 类员工带请求号写入指纹覆盖通过。
