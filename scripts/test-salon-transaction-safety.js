@@ -1,5 +1,6 @@
 const fs=require('fs');
 const migration=fs.readFileSync('supabase/migrations/20260906062903_salon_transaction_safety.sql','utf8');
+const refundMigration=fs.readFileSync('supabase/migrations/20260906063629_salon_refund_reversal.sql','utf8');
 const failures=[];const expect=(ok,msg)=>{if(!ok)failures.push(msg)};
 ['salon_operation_requests','salon_inventory_balances','salon_inventory_ledger'].forEach(name=>expect(migration.includes('public.'+name),name+' missing'));
 ['salon_checkout_order','salon_move_inventory'].forEach(name=>{
@@ -17,5 +18,12 @@ expect(/revoke all on table public\.%I from public,anon,authenticated/i.test(mig
 expect(!/security definer/i.test(migration),'transaction functions must not bypass RLS with security definer');
 expect(!/raw_user_meta_data|user_metadata/i.test(migration),'user-editable metadata must not authorize writes');
 expect(/response_json=v_response,completed_at=now\(\)/i.test(migration),'idempotent response completion missing');
+expect(refundMigration.includes('function public.salon_refund_order'),'refund function missing');
+expect(/salon_payments_one_reversal_idx/i.test(refundMigration),'payment one-reversal constraint missing');
+expect(/salon_account_ledger_payment_idx/i.test(refundMigration),'payment-to-member-ledger exact link missing');
+expect(/salon_inventory_ledger_one_reversal_idx/i.test(refundMigration),'inventory one-reversal constraint missing');
+expect(/movement_type='sale'[\s\S]*?reversal_of_id is null/i.test(refundMigration),'refund must return only original sale movements');
+expect(/revoke execute on function public\.salon_refund_order[\s\S]*?from public,anon,authenticated/i.test(refundMigration),'browser refund execute revoke missing');
+expect(!/security definer/i.test(refundMigration),'refund function must not bypass RLS with security definer');
 if(failures.length){console.error('salon transaction safety tests failed:\n- '+failures.join('\n- '));process.exit(1)}
 console.log('salon transaction safety tests passed: service-only RPC, idempotency, row locks, store permission, RLS');
