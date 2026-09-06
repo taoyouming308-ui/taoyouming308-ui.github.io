@@ -1,17 +1,19 @@
 import {mapRows,serverId} from './api-client.mjs';
 import {createSalonSession} from './session-controller.mjs';
 const $=id=>document.getElementById(id);
-let client,customers=[],items=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
+let client,customers=[],items=[],cancelRequests=[],orderId=null,retry=null,viewRevision=0,signingOut=false;
 const status=text=>{$('status').textContent=text;};
 function options(id,rows,label){
  const select=$(id);select.replaceChildren(new Option('请选择',''));
  for(const row of rows)select.add(new Option(label(row),String(row.id)));
 }
-function clear(){customers=[];items=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
+function clear(){customers=[];items=[];cancelRequests=[];orderId=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
 async function refresh(){
- const [customerResult,itemResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'})]);
+ const [customerResult,itemResult,cancelResult]=await Promise.all([client.read('customers'),client.read('catalog',{status:'active'}),client.read('booking_requests',{status:'cancel_requested'})]);
  customers=mapRows('customers',customerResult.data,client.scope);items=mapRows('catalog',itemResult.data,client.scope);
  options('customer',customers,row=>row.displayName);options('item',items,row=>`${row.name} · ¥${(row.listPriceCents/100).toFixed(2)}`);
+ cancelRequests=cancelResult.data.map(row=>({id:serverId(row.id),startsAt:row.starts_at}));
+ options('cancelRequest',cancelRequests,row=>`申请 ${row.id} · ${row.startsAt}`);
 }
 async function run(action){
  const epoch=viewRevision;
@@ -85,6 +87,13 @@ $('saveLines').onclick=()=>run(async()=>{
  });
 });
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
+for(const [id,decision] of [['approveCancel','approved'],['rejectCancel','rejected']])$(id).onclick=()=>run(async()=>{
+ const selected=cancelRequests.find(row=>row.id===Number($('cancelRequest').value)),reason=$('cancelReason').value.trim();
+ if(!selected||!reason)throw Error('请选择本店待复核申请并填写处理原因');
+ await mutate('booking_cancel_review',{bookingRequestId:selected.id,decision,reason},async data=>{
+  await refresh();$('cancelReason').value='';status(data.status==='cancelled'?'取消已批准，档期已释放。':'取消已拒绝，原预约和档期保留。');
+ });
+});
 $('logout').onclick=async()=>{
  signingOut=true;let completed=false;$('logout').disabled=true;$('connect').disabled=true;
  try{await client.signOut();completed=true;$('logout').disabled=true;status('已退出本次测试会话；旧请求不能继续提交。');}

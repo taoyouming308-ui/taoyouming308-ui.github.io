@@ -15,6 +15,13 @@ const request=(body,token='valid-user-token-123456789')=>new Request('http://loc
 
 let result=await handler(new Request('http://local/salon-api',{method:'POST'}));
 assert.equal(result.status,403,'missing bearer token must be rejected');
+for(const decision of ['approved','rejected']){
+ const tested=await handler(request({operation:'booking_cancel_review',bookingRequestId:23,decision,reason:'合成复核',requestKey:'cancel-api-test-0001',actorStaffId:999,organizationId:999}));
+ assert.equal(tested.status,200);assert.equal(calls.at(-1).rpc,'salon_review_booking_cancel');
+ assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_booking_request_id:23,p_request_key:'cancel-api-test-0001',p_decision:decision,p_reason:'合成复核'});
+}
+for(const fields of [{decision:'confirmed',reason:'test'},{decision:'approved',reason:''}])assert.equal((await handler(request({operation:'booking_cancel_review',bookingRequestId:23,requestKey:'cancel-api-test-0002',...fields}))).status,400);
+calls.length=0;
 result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0001',payments:[{method:'cash',amount:120}],p_store_id:999}));
 assert.equal(result.status,200);assert.equal(calls[0].rpc,'salon_checkout_order');
 assert.deepEqual({actor:calls[0].args.p_actor_staff_id,org:calls[0].args.p_organization_id,store:calls[0].args.p_store_id},{actor:7,org:3,store:9},'identity and store must come from server staff binding');

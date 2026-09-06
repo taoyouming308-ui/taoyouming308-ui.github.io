@@ -1,5 +1,6 @@
 // Local synthetic DB only. No cloud credentials, published DB ports or production adapters.
-const {execFileSync}=require('node:child_process');
+const {execFileSync,execFile}=require('node:child_process');
+const {promisify}=require('node:util');
 const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
@@ -21,7 +22,7 @@ async function startServer(){
   sql(`insert into public.salon_organizations(name) values('本机合成机构');
    insert into public.salon_stores(organization_id,code,name) values(1,'TEST-A','合成甲店'),(1,'TEST-B','合成乙店'),(1,'TEST-C','未授权合成店');
    insert into public.salon_roles(organization_id,name,data_scope) values(1,'本机测试店员','store');
-   insert into public.salon_role_permissions(role_id,resource,action) values(1,'customers','read'),(1,'customers','write'),(1,'catalog','read'),(1,'orders','write'),(1,'orders','read');
+   insert into public.salon_role_permissions(role_id,resource,action) values(1,'customers','read'),(1,'customers','write'),(1,'catalog','read'),(1,'orders','write'),(1,'orders','read'),(1,'customer_portal','manage'),(1,'scheduling','write');
    insert into public.salon_staff(organization_id,store_id,role_id,staff_no,display_name) values(1,1,1,'LOCAL','合成店员');
    insert into public.salon_staff_store_roles(organization_id,staff_id,store_id,role_id,reason) values(1,1,1,1,'合成测试'),(1,1,2,1,'合成测试');
    insert into public.salon_catalog_items(organization_id,item_type,code,name,list_price) values(1,'product','TEST-P','合成商品',12.34);
@@ -57,7 +58,7 @@ async function startServer(){
    }
   });
   const files={'/':'salon-api-workbench.html','/packages/salon-core/api-client.mjs':'packages/salon-core/api-client.mjs','/packages/salon-core/session-controller.mjs':'packages/salon-core/session-controller.mjs','/packages/salon-core/workbench.mjs':'packages/salon-core/workbench.mjs'};
-  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail']);
+  const allowed=new Set(['context','stores','customers','catalog','customer_create','order_create','order_lines','order_detail','booking_requests','booking_cancel_review']);
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;
    const reply=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(body));};
@@ -90,7 +91,8 @@ async function startServer(){
    }catch{return reply(400,{error:'本机请求失败'});}
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
-  return {url:`http://127.0.0.1:${server.address().port}`,close,sql};
+  const asyncSql=async input=>(await promisify(execFile)('docker',['exec',container,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-qAt','-c',input],{encoding:'utf8',timeout:20000,maxBuffer:1024*1024})).stdout.trim();
+  return {url:`http://127.0.0.1:${server.address().port}`,close,sql,asyncSql};
  }catch(error){await close();throw error;}
 }
 module.exports={startServer};

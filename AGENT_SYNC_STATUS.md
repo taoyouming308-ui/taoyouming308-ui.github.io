@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## Salon G06 第一批：取消复核与开单互斥（2026-09-06）
+
+- CLI 创建本地迁移 `20260906105531_salon_booking_cancel_review.sql`；新增 `salon_review_booking_cancel` 与员工 API `booking_cancel_review`，精确扩展操作类型白名单，不放开浏览器表写权限。
+- 复核需要 `customer_portal/manage` + `scheduling/write`，每次重放重新校验权限和操作者/全部参数。累计 37 类员工带请求号写入均通过覆盖检查。
+- 待处理取消申请仅在正式预约 confirmed、无关联订单且档期组织/店/员工归属有效时可处理：批准取消预约与占用，拒绝恢复申请 confirmed；两者保存处理原因及追加审计。已到店、结束、订单关联等情况不自动退款或删除记录。
+- 带预约开单调整为先声明请求、再锁预约和检查 confirmed/arrived；与取消互斥，失败整笔回滚。既有已完成开单请求仍可同参重放。
+- 工作台新增本店待取消申请和批准/拒绝入口；复用会话/切店/原请求重试，退出或切店清除原因。顾客本人查询验证能读取状态和复核原因，未实现顾客页面提示或外部通知发送。
+- 新 `test-salon-booking-cancel.cjs` 验证桌面批准、手机拒绝、档期/查询结果、同键并发、改决定、四轮开单/取消竞争、已到店/已关联订单、跨店、撤权重放、service_role 与浏览器角色权限；临时容器清理完成。开发时修复遗漏的操作类型白名单项。
+- 既有 `test-salon-customer-request-postgres.cjs`（含资金/会员/主数据并发）、全部 `.js/.mjs` Salon 测试及原工作台桌面/手机测试通过。未运行线上 Advisor，不宣称真实 Auth/Edge 或生产验收。
+- 剩余：原子改期、通知/顾客页面接入、已到店及订单关联例外处理；G06 尚未全部完成。正式登录仍待专用测试环境。v476，独立分支备份，不合并 main、不部署、不动三个旧 App 和真实数据。
+
 ## Salon D1 第七批：会话保护与本机退出验证（2026-09-06）
 
 - 新增 `packages/salon-core/session-controller.mjs`，通过注入 Auth 的 `getSession/getUser/onAuthStateChange/signOut` 接口管理身份；不使用客户端 metadata 授权，不初始化生产 SDK，不复用旧 App 登录。
