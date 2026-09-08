@@ -1,4 +1,5 @@
 const OPERATIONS={
+  partial_cash_refund_request:{rpc:'salon_request_partial_cash_refund'},
   cash_refund_source:{rpc:'salon_get_cash_refund_source'},cash_refund_request:{rpc:'salon_request_cash_refund'},
   refund_queue:{rpc:'salon_list_refund_review_queue'},refund_detail:{rpc:'salon_get_refund_review'},
   cash_checkout:{rpc:'salon_checkout_cash'},
@@ -58,11 +59,16 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='cash_refund_source'){
       if(!Number.isSafeInteger(payload.orderId)||payload.orderId<=0)throw new Error('订单编号无效');
       args={...common,p_order_id:integer(payload.orderId,'订单')};
-    }else if(operation==='cash_refund_request'){
+    }else if(['cash_refund_request','partial_cash_refund_request'].includes(operation)){
       if(!Number.isSafeInteger(payload.orderId)||payload.orderId<=0)throw new Error('订单编号无效');
       if(typeof payload.reason!=='string'||!payload.reason.trim()||payload.reason.length>500||!payload.expectedSnapshot||typeof payload.expectedSnapshot!=='object'||Array.isArray(payload.expectedSnapshot))throw new Error('退款原因或核对快照无效');
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求幂等键无效');
       args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:payload.requestKey,p_reason:payload.reason.trim(),p_expected_snapshot:payload.expectedSnapshot};
+      if(operation==='partial_cash_refund_request'){
+        if(!Array.isArray(payload.lines)||!payload.lines.length||payload.lines.length>100)throw new Error('部分退款明细无效');
+        const ids=new Set();for(const row of payload.lines){if(!row||!Number.isSafeInteger(row.orderLineId)||row.orderLineId<=0||ids.has(row.orderLineId)||typeof row.quantity!=='string'||!/^\d{1,9}\.\d{3}$/.test(row.quantity)||Number(row.quantity)<=0||typeof row.amount!=='string'||!/^\d{1,10}\.\d{2}$/.test(row.amount)||Number(row.amount)<=0)throw new Error('部分退款明细格式无效');ids.add(row.orderLineId);}
+        args.p_lines=payload.lines.map(({orderLineId,quantity,amount})=>({orderLineId,quantity,amount}));
+      }
     }else if(operation==='refund_detail'){
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请')};
     }else if(operation==='refund_queue'){
@@ -77,7 +83,7 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_status:state,p_before_id:payload.beforeId??null};
     }else if(operation==='request_lookup'){
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求核对编号无效');
-      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
+      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
       args={...common,p_lookup_key:payload.requestKey,p_target_operation:payload.targetOperation};
     }else if(operation==='store_time'){
       args=common;

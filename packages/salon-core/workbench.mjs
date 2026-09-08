@@ -11,6 +11,7 @@ import {createCashPreview,renderCashPreview} from './cash-preview.mjs';
 import {verifyCashReceipt,verifyCashLookup,renderCashReceipt} from './cash-receipt.mjs';
 import {refundStates,refundPage,inspectRefund,verifyRefundDecision,renderRefund} from './refund-review.mjs';
 import {cashRefundSource,verifyCashRefundReceipt,verifyCashRefundReadback,renderCashRefundSource} from './refund-request.mjs';
+import {partialRefundProposal,verifyPartialRefundReceipt,verifyPartialRefundReadback,renderPartialRefundEditor} from './partial-refund.mjs';
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
 let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
@@ -20,8 +21,9 @@ let orderVersion=null;
 const editor=createDraftEditor();
 let loadedFlow=null;
 let refundRecord=null,refundNext=null,refundListedStatus='';
-let cashRefundDraft=null;
-function clearCashRefundSource(){cashRefundDraft=null;$('cashRefundSource').replaceChildren();$('cashRefundReason').value='';$('submitCashRefund').disabled=true;}
+let cashRefundDraft=null,partialRows=null,partialProposal=null;
+function clearPartialPreview(){partialProposal=null;$('partialRefundSummary').textContent='';if($('cashRefundMode').value==='partial')$('submitCashRefund').disabled=true;}
+function clearCashRefundSource(){cashRefundDraft=null;partialRows=null;clearPartialPreview();$('partialRefundEditor').replaceChildren();$('previewPartialRefund').disabled=true;$('cashRefundSource').replaceChildren();$('cashRefundReason').value='';$('submitCashRefund').disabled=true;}
 function clearRefundDetail(){refundRecord=null;$('refundDetail').replaceChildren();$('refundReason').value='';$('approveRefund').disabled=true;$('rejectRefund').disabled=true;}
 function clearRefunds(){clearRefundDetail();refundNext=null;$('nextRefunds').disabled=true;$('refundSelection').replaceChildren(new Option('请选择',''));$('refundListStatus').textContent='请查询本店退款申请。';}
 function showRefund(record){clearRefundDetail();refundRecord=record;renderRefund($('refundDetail'),record);$('approveRefund').disabled=!record.canApprove;$('rejectRefund').disabled=!record.canReview;}
@@ -151,7 +153,8 @@ async function mutate(operation,fields,onSuccess){
   }
   if(tracked){
    try{
-    const id=serverId(result.data?.[operation==='customer_create'?'customerId':['refund_review','cash_refund_request'].includes(operation)?'refundRequestId':'orderId']);
+    const id=serverId(result.data?.[operation==='customer_create'?'customerId':['refund_review','cash_refund_request','partial_cash_refund_request'].includes(operation)?'refundRequestId':'orderId']);
+    if(operation==='partial_cash_refund_request')verifyPartialRefundReceipt(result.data,ticket.requestKey,client.scope,partialRefundProposal(fields.expectedSnapshot,fields.lines,client.scope));
     if(operation==='cash_refund_request')verifyCashRefundReceipt(result.data,ticket.requestKey,client.scope,fields.expectedSnapshot);
     if(operation==='refund_review')verifyRefundDecision(result.data,fields.refundRequestId,client.scope,fields.decision);
     if(['order_lines','order_status','cash_checkout'].includes(operation)&&id!==fields.orderId)throw Error('返回订单不匹配，请继续核对原请求。');
@@ -237,16 +240,36 @@ $('saveLines').onclick=()=>run(async()=>{
 $('addItem').onclick=()=>{try{editor.add(items.find(row=>row.id===Number($('item').value)));renderEditor();}catch(error){status(error.message);}};
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
 $('cashRefundOrderId').oninput=clearCashRefundSource;
+$('cashRefundMode').onchange=()=>{clearCashRefundSource();const partial=$('cashRefundMode').value==='partial';$('partialRefundEditor').hidden=$('previewPartialRefund').hidden=!partial;$('submitCashRefund').textContent=partial?'提交部分退款申请（不退款）':'提交全额退款申请（不退款）';};
+$('previewPartialRefund').onclick=()=>run(async()=>{
+ clearPartialPreview();if(!cashRefundDraft||!partialRows)throw Error('请先读取原单');
+ partialProposal=partialRefundProposal(cashRefundDraft,partialRows(),client.scope);
+ $('partialRefundSummary').textContent=partialProposal.lines.map(row=>`明细 ${row.orderLineId}：数量 ${row.quantity}，申请 ¥${row.amount}`).join('；')+`。合计 ¥${partialProposal.amount}，全部分配到原现金支付 ${partialProposal.paymentId}。仅申请，不退款或返库。`;
+ $('submitCashRefund').disabled=false;status('部分退款分配已核对，填写原因后可提交申请。');
+});
 $('loadCashRefund').onclick=()=>run(async()=>{
  clearCashRefundSource();
  const id=serverId($('cashRefundOrderId').value);
  cashRefundDraft=cashRefundSource((await client.read('cash_refund_source',{orderId:id})).data,id,client.scope);
+ if($('cashRefundMode').value==='partial'){
+  partialRows=renderPartialRefundEditor($('partialRefundEditor'),cashRefundDraft,clearPartialPreview);$('previewPartialRefund').disabled=false;
+  status('已读取部分退款原单，请选择明细并填写数量、金额，再核对分配。');return;
+ }
  renderCashRefundSource($('cashRefundSource'),cashRefundDraft);$('submitCashRefund').disabled=false;
  status('已核对现金全退原单，请填写申请原因；尚未提交或退款。');
 });
 $('submitCashRefund').onclick=()=>run(async()=>{
  const source=cashRefundDraft,reason=$('cashRefundReason').value.trim();
  if(!source||source.orderId!==serverId($('cashRefundOrderId').value)||!reason||reason.length>500)throw Error('请重新读取原单并填写退款原因');
+ if($('cashRefundMode').value==='partial'){
+  const proposal=partialProposal;if(!proposal)throw Error('请先核对部分退款分配');
+  if(!confirm(`订单 ${source.orderId} · 申请部分退款 ¥${proposal.amount}？只创建申请，不执行退款或返库。`))return;
+  await mutate('partial_cash_refund_request',{orderId:source.orderId,reason,expectedSnapshot:source,lines:proposal.lines},async(data,ticket)=>{
+   const receipt=verifyPartialRefundReceipt(data,ticket.requestKey,client.scope,proposal);
+   const current=verifyPartialRefundReadback((await client.read('refund_detail',{refundRequestId:receipt.refundRequestId})).data,receipt,client.scope,source,reason);
+   clearRefunds();showRefund(current);status('现金部分退款申请已保存并回读确认，等待其他员工审批；未执行退款或返库。');
+  });return;
+ }
  if(!confirm(`订单 ${source.orderId} · 申请全额退款 ¥${source.amount}？只创建申请，不执行退款。`))return;
  await mutate('cash_refund_request',{orderId:source.orderId,reason,expectedSnapshot:source},async(data,ticket)=>{
   const receipt=verifyCashRefundReceipt(data,ticket.requestKey,client.scope,source);
@@ -336,6 +359,15 @@ $('lookupRequest').onclick=()=>run(async()=>{
  const result=(await client.read('request_lookup',{requestKey:ticket.requestKey,targetOperation:ticket.operation})).data;
  if(result?.operation!==ticket.operation)throw Error('核对结果不匹配，原请求继续保留。');
  if(result.status==='unconfirmed'){status('尚未确认结果，原请求保留；这不代表失败，禁止重新提交。');return;}
+ if(ticket.operation==='partial_cash_refund_request'){
+  if(result.status!=='committed'||result.resourceType!=='refund_request'||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('部分退款申请核对结果不完整，原请求保留');
+  const receipt=verifyPartialRefundReceipt(result.receipt,ticket.requestKey,client.scope);
+  if(serverId(result.resourceId)!==receipt.refundRequestId)throw Error('申请编号不匹配，原请求保留');
+  const current=verifyPartialRefundReadback((await client.read('refund_detail',{refundRequestId:receipt.refundRequestId})).data,receipt,client.scope);
+  clearCashRefundSource();clearRefunds();showRefund(current);
+  try{pendingJournal.acknowledge(ticket);}catch(error){journalFault=true;throw error;}
+  status(`原部分退款申请已核对；当前申请：${refundStates[current.snapshot.refund.status]}。未重新提交或执行退款。`);return;
+ }
  if(ticket.operation==='cash_refund_request'){
   if(result.status!=='committed'||result.resourceType!=='refund_request'||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('退款申请核对结果不完整，原请求保留');
   const receipt=verifyCashRefundReceipt(result.receipt,ticket.requestKey,client.scope);

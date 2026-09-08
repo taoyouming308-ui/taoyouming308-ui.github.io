@@ -1,6 +1,8 @@
 # Salon Core
 
-`refund-review.mjs` 与本机工作台接通退款申请队列、原支付分配核对及双人审批。refund_review 必须携带完整读取快照，事务内比较后更新审批；原键重试/刷新只读恢复。批准不执行退款或返库，不读会员余额；申请和执行页面仍待完成。见 `../../docs/salon-refund-review.md`。
+`partial-refund.mjs` 接首次单笔现金部分退款：逐项数量/金额 → 冻结分配预览 → 快照提交 → 回读及原请求恢复。与 `refund-request.mjs` 全退入口分开，数量不代表返库验收。已退过订单、多次在途申请与执行未开放，见 `../../docs/salon-partial-cash-refund.md`。
+
+`refund-review.mjs` 与本机工作台接通退款申请队列、原支付分配核对及双人审批。refund_review 必须携带完整读取快照，事务内比较后更新审批；原键重试/刷新只读恢复。批准不执行退款或返库，不读会员余额；现金全退和首次部分退款已有申请入口，其他支付方式与执行页面仍待完成。见 `../../docs/salon-refund-review.md`。
 
 `cash-preview.mjs` 为现金全额收银预览，预览本身不写业务。确认后通过新 cash_checkout 版本接口原子生成现金支付/商品出库，`cash-receipt.mjs` 核对原请求与具体支付记录后再清单。丢包原键重试，刷新只读恢复；不读会员余额、不接混合/电子支付。旧 checkout 仍不向本机客户端开放。详见 `../../docs/salon-cash-checkout.md`。
 
