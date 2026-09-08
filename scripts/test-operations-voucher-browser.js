@@ -168,11 +168,12 @@ async function run() {
         if (operation === 'monthly_income_adjustment_save') { window.fixtureCalls.push({ operation, ...payload }); return { saved: true, source_reports_unchanged: true }; }
         const result = await raw(operation, payload);
         if (operation === 'cell_trace') {
-          result.item_category = window.fixtureCategory;
+          result.item_category = window.fixtureCategory === 'purchase_summary' && payload.cell_address !== 'C3'
+            ? 'expense' : window.fixtureCategory;
           result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '财务费用 / 银/支/微/团手续费', purchase_summary: '产品成本 / 产品进货' }[window.fixtureCategory];
           result.can_edit = true;
-          result.can_upload_vouchers = window.fixtureCategory === 'expense';
-          result.can_manage_business_evidence_rules = window.fixtureCategory === 'expense';
+          result.can_upload_vouchers = result.item_category === 'expense';
+          result.can_manage_business_evidence_rules = result.item_category === 'expense';
           if (window.fixtureCategory === 'purchase_summary') result.purchase_components = [
             { cell_address: 'G31', label: '产品进货 / 歌薇 / 合计', numeric_value: 1280, cell_kind: 'input' },
             { cell_address: 'G35', label: '产品进货 / 杭汐 / 合计', numeric_value: 960, cell_kind: 'input' },
@@ -198,11 +199,13 @@ async function run() {
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
     const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
     assert.equal(adjustment.after_amount, '45'); assert.equal(adjustment.expected_before, 30);
-    for (const category of ['salary', 'total']) {
-      await page.evaluate(async category => { window.fixtureCategory = category; await openCellTrace('C3'); }, category);
-      assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload,#monthly-inline-amount').count(), 0, category);
-      assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
-    }
+    await page.evaluate(async () => { window.fixtureCategory = 'salary'; await openCellTrace('C3'); });
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0, 'salary never requires vouchers');
+    assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
+    await page.evaluate(async () => { window.fixtureCategory = 'total'; await openCellTrace('C3'); });
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload,#monthly-inline-amount').count(), 0, 'totals stay read-only and voucher-free');
+    assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
     await page.evaluate(async () => { window.fixtureCategory = 'income'; state.data.monthly_period_was_locked = true; await openCellTrace('C3'); });
     assert.equal(await page.locator('#monthly-inline-amount').count(), 0);
     assert.equal(await page.locator('#monthly-inline-unlock').count(), 1, 'income adjustment must respect month locks');
@@ -211,6 +214,7 @@ async function run() {
     assert.equal(await page.locator('[data-simple-rule]').count(), 1);
     await page.evaluate(async () => { window.fixtureCategory = 'expense'; await openCellTrace('C3'); });
     await page.locator('[data-root-voucher-upload]').waitFor();
+    await page.locator('#monthly-inline-amount').waitFor();
     assert.match(await page.locator('.monthly-simple-workbench').innerText(), /这项支出的凭证[\s\S]*不必先进入组成项/);
     await page.evaluate(async () => { window.fixtureCategory = 'purchase_summary'; await openCellTrace('C3'); });
     await page.locator('.purchase-detail-row').first().waitFor();
@@ -218,6 +222,11 @@ async function run() {
     assert.match(await page.locator('.monthly-simple-workbench').innerText(), /歌薇[\s\S]*1,280\.00[\s\S]*杭汐[\s\S]*960\.00/);
     assert.match(await page.locator('.monthly-simple-workbench').innerText(), /另有 1 项、合计 128\.00 没有被当前汇总公式计入/);
     assert.equal(await page.locator('[data-root-voucher-upload],#monthly-inline-upload,.monthly-voucher-preview').count(), 0, 'purchase summary itself must not require a voucher');
+    await page.locator('.purchase-detail-row').first().click();
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('#monthly-inline-preview-button').count(), 1, 'one product detail must be editable inside the monthly drawer');
+    assert.equal(await page.locator('#monthly-inline-upload').count(), 1, 'one product detail keeps only its own voucher entry');
+    assert.equal(await page.evaluate(() => state.trace.address), 'G31', 'product detail routing must stay on the selected product cell');
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();

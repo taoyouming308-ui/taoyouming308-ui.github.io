@@ -54,6 +54,38 @@
       };
     }
   }
+  function attachMonthlyAdjustmentEditor(host, data, rootAddress, context) {
+    var target = data.target, adjustment = data.monthly_adjustment || {
+      base_amount: target.numeric_value, adjustment_delta: 0, revision: 0
+    };
+    var editable = Object.assign({}, data, {
+      mode: 'input', sources: [], revision: null,
+      target: Object.assign({}, target, { cell_kind: 'input' })
+    });
+    attachEditor(host, editable, rootAddress, context);
+    host.insertAdjacentHTML('afterbegin', '<div class="help">原报表金额 ' + formatAmount(adjustment.base_amount)
+      + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta)
+      + '。修改只追加审计记录，不覆盖原日报、工资表、月报原件或原凭证。</div>');
+    var save = document.getElementById('monthly-inline-save');
+    if (!save) return;
+    save.onclick = async function () {
+      var amount = document.getElementById('monthly-inline-amount').value.trim();
+      var reason = document.getElementById('monthly-inline-reason').value.trim();
+      if (!reason || save.dataset.previewAmount !== amount) { toast('请填写原因并先预览修改'); return; }
+      if (!voucherContextCurrent(context) || state.trace.address !== target.cell_address) return;
+      save.disabled = true;
+      try {
+        if (isLocalPreview()) { toast('本地预览不修改正式账'); return; }
+        await api('monthly_income_adjustment_save', Object.assign({}, context, {
+          cell_address: target.cell_address, after_amount: amount,
+          expected_before: target.numeric_value, expected_revision: adjustment.revision, reason: reason
+        }));
+        toast('月报金额已保存，原始报表保持不变');
+        if (voucherContextCurrent(context)) { await loadOverview(); await openCellTrace(rootAddress); }
+      } catch (error) { toast(error.message); }
+      finally { if (save.isConnected) save.disabled = false; }
+    };
+  }
   function attachRules(host, data) {
     var rows = data.business_details || [];
     host.innerHTML = '<h4>凭证要求</h4>' + (rows.length ? rows.map(function (row) {
@@ -62,7 +94,7 @@
         + ' · ' + formatAmount(row.amount) + '</span><span><input type="checkbox" data-simple-rule="' + esc(row.business_id)
         + '" data-type="' + esc(row.business_type) + '" ' + (waived ? '' : 'checked ')
         + (data.can_manage_business_evidence_rules ? '' : 'disabled ') + '> 此笔需要凭证</span></label>';
-    }).join('') : '<div class="help">请选择上方的组成金额，逐笔设置凭证要求。</div>');
+    }).join('') : '<div class="help">当前金额尚未匹配到正式业务明细；可在上方直接上传当前金额的凭证，或先补齐对应业务记录。</div>');
     host.querySelectorAll('[data-simple-rule]').forEach(function (input) {
       input.onchange = async function () {
         var required = input.checked, context = voucherContext(); input.disabled = true;
@@ -84,30 +116,11 @@
     var category = data.item_category, target = data.target, editor = box.querySelector('[data-amount-editor]');
     document.getElementById('cell-trace-page-title').textContent = (target.label || '月报金额') + ' · ' + (category === 'income' ? '编辑收入' : category === 'salary' ? '工资' : '自动汇总');
     box.querySelector('[data-rules]').remove();
-    if (category === 'income') {
-      var adjustment = data.monthly_adjustment || { base_amount: target.numeric_value, adjustment_delta: 0, revision: 0 };
-      var editable = Object.assign({}, data, { mode: 'input', can_upload_vouchers: false, sources: [], revision: null,
-        target: Object.assign({}, target, { cell_kind: 'input' }) });
-      attachEditor(editor, editable, target.cell_address, context);
-      editor.insertAdjacentHTML('afterbegin', '<div class="help">原报表口径 ' + formatAmount(adjustment.base_amount) + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta) + '。调整只影响月报，不修改日报原数。</div>');
-      var save = document.getElementById('monthly-inline-save');
-      if (save) save.onclick = async function () {
-        var amount = document.getElementById('monthly-inline-amount').value.trim(), reason = document.getElementById('monthly-inline-reason').value.trim();
-        if (!reason || save.dataset.previewAmount !== amount) { toast('请填写原因并先预览修改'); return; }
-        if (!voucherContextCurrent(context) || state.trace.address !== target.cell_address) return;
-        save.disabled = true;
-        try {
-          if (isLocalPreview()) { toast('本地预览不修改正式账'); return; }
-          await api('monthly_income_adjustment_save', Object.assign({}, context, { cell_address: target.cell_address,
-            after_amount: amount, expected_before: target.numeric_value, expected_revision: adjustment.revision, reason: reason }));
-          toast('月报调整已保存，日报原数保持不变');
-          if (voucherContextCurrent(context)) { await loadOverview(); await openCellTrace(target.cell_address); }
-        } catch (error) { toast(error.message); }
-        finally { if (save.isConnected) save.disabled = false; }
-      };
+    if (category === 'income' || category === 'salary') {
+      attachMonthlyAdjustmentEditor(editor, data, target.cell_address, context);
     } else {
       editor.innerHTML = '<h4>' + esc(target.label || '月报金额') + ' · ' + formatAmount(target.numeric_value) + '</h4><div class="help">'
-        + (category === 'salary' ? '以工资表为依据，无需另外上传凭证。' : category === 'fixed' ? '原表固定编号，不可修改。' : '由组成项目自动计算，无需上传凭证。') + '</div>';
+        + (category === 'fixed' ? '原表固定编号，不可修改。' : '由组成项目自动计算，无需上传凭证。') + '</div>';
     }
     var sourceView = category === 'salary' ? 'salary-report' : category === 'income' ? 'daily-report' : '';
     var canRead = category === 'salary' ? state.user.can_read_salary_reports : state.user.can_read_daily_reports;
@@ -169,6 +182,11 @@
     if (data.mode !== 'formula') { attachEditor(editor, data, rootAddress, context); attachRules(rules, data); return; }
     if (data.item_category === 'expense' && data.can_upload_vouchers) {
       box.querySelector('[data-root-actions]').innerHTML = '<h4>这项支出的凭证</h4><div class="help">直接上传到当前月报金额；不必先进入组成项。</div><div class="trace-actions"><button type="button" class="secondary" data-root-voucher-upload>上传凭证图片 / PDF</button></div>';
+    }
+    if (data.item_category === 'expense') {
+      attachMonthlyAdjustmentEditor(editor, data, rootAddress, context);
+      attachRules(rules, data);
+      return;
     }
     var choose = box.querySelector('[data-composition]');
     choose.innerHTML = '<h4>修改组成金额</h4><div class="help">正在读取可填写的组成项…</div>';

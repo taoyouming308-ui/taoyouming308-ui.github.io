@@ -855,6 +855,8 @@ const MONTHLY_EVIDENCE_POLICIES = new Set(["voucher_required", "source_report", 
 function monthlyItemCategory(cell: JsonRecord): string {
   const label = cleanText(cell.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/");
   if (/编号|序号|员工号/.test(label)) return "fixed";
+  // True summary rows start with their summary label. A right-side detail may
+  // legitimately end in "/ 合计" because that is the column header.
   if (/^(小计|合计|总计|盈亏)(\/|$)/.test(label)) return "total";
   // The original sheet's entire 主营 block is income, including product/dorm entries.
   if (/^主营|美发收入|营业收入|产品收入|其他收入|总收入/.test(label)) return "income";
@@ -2097,6 +2099,28 @@ async function businessEvidenceRulesForDetails(
   });
 }
 
+function normalizeMonthlyMatchLabel(value: unknown): string {
+  return cleanText(value, 300).replace(/其它/g, "其他")
+    .replace(/[\s/／·、，,()（）:_：.-]/g, "").toLocaleLowerCase();
+}
+
+function matchedMonthlyExpenseCategoryIds(categories: JsonRecord[], labelValue: unknown): unknown[] {
+  const compactLabel = normalizeMonthlyMatchLabel(labelValue);
+  const named = categories.map((category) => ({
+    ...category,
+    normalized_name: normalizeMonthlyMatchLabel(category.name),
+    normalized_section: normalizeMonthlyMatchLabel(category.report_section),
+  })).filter((category) => category.normalized_name.length >= 2 && compactLabel.includes(category.normalized_name));
+  const concrete = named.some((category) => category.normalized_name !== category.normalized_section)
+    ? named.filter((category) => category.normalized_name !== category.normalized_section) : named;
+  const longestName = concrete.reduce((length, category) => Math.max(length, category.normalized_name.length), 0);
+  if (longestName) return concrete.filter((category) => category.normalized_name.length === longestName).map((category) => category.id);
+  return categories.filter((category) => {
+    const section = normalizeMonthlyMatchLabel(category.report_section);
+    return section.length >= 2 && compactLabel === section;
+  }).map((category) => category.id);
+}
+
 async function monthlyCellBusinessDetails(
   companyId: string,
   storeId: string,
@@ -2104,7 +2128,7 @@ async function monthlyCellBusinessDetails(
   labelValue: unknown,
 ): Promise<JsonRecord[]> {
   const label = cleanText(labelValue, 300);
-  const compactLabel = label.replace(/[\s/／·]/g, "");
+  const compactLabel = normalizeMonthlyMatchLabel(label);
   const start = `${periodMonth.slice(0, 7)}-01`;
   const endDate = new Date(`${start}T00:00:00Z`);
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
@@ -2133,12 +2157,12 @@ async function monthlyCellBusinessDetails(
   }
 
   const categories = await restRowsAll(`zysyr_expense_categories?select=id,name,report_section&company_id=eq.${companyId}&status=eq.active&limit=1000`, 1000);
-  const matchedCategoryIds = categories.filter((category) => {
-    const name = cleanText(category.name, 120).replace(/\s/g, "");
-    const section = cleanText(category.report_section, 120).replace(/\s/g, "");
-    return (name.length >= 2 && compactLabel.includes(name)) || (section.length >= 2 && compactLabel.includes(section));
-  }).map((category) => category.id);
-  if (matchedCategoryIds.length) {
+  // Prefer the longest concrete item name. Matching report_section together
+  // with the name previously made e.g. "财务费用 / 管理费" open every row in
+  // the 财务费用 section. Section fallback is only for a genuine section cell.
+  const matchedCategoryIds = matchedMonthlyExpenseCategoryIds(categories, label);
+  const isPurchaseLabel = /(产品进货|采购|进货)/.test(label);
+  if (matchedCategoryIds.length && !isPurchaseLabel) {
     const expenses = await restRowsAll(`zysyr_expense_records?select=id,expense_date,category,counterparty,summary,amount,payment_method,workflow_status,submitted_at,approved_at,paid_at&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&workflow_status=in.(approved,paid)&expense_category_id=in.${uuidIn(matchedCategoryIds)}&expense_date=gte.${start}&expense_date=lt.${end}&order=expense_date.asc,created_at.asc&limit=3000`, 3000);
     for (const row of expenses) details.push({
       business_type: "expense_record", business_id: row.id, business_date: row.expense_date,
@@ -2183,19 +2207,42 @@ async function monthlyCellBusinessDetails(
   }
   if (/(产品进货|采购|进货)/.test(label)) {
     const rows = await restRowsAll(`zysyr_goods_receipts?select=id,purchase_order_id,receipt_number,receipt_date,status,total_amount,posted_at&company_id=eq.${companyId}&store_id=eq.${storeId}&receipt_date=gte.${start}&receipt_date=lt.${end}&status=eq.posted&order=receipt_date.asc,created_at.asc&limit=3000`, 3000);
+    const receiptIds = Array.from(new Set(rows.map((row) => row.id)));
+    const receiptLines = receiptIds.length ? await restRowsAll(`zysyr_goods_receipt_lines?select=id,goods_receipt_id,product_id,quantity,unit_cost,line_amount&company_id=eq.${companyId}&store_id=eq.${storeId}&goods_receipt_id=in.${uuidIn(receiptIds)}&limit=10000`, 10000) : [];
+    const productIds = Array.from(new Set(receiptLines.map((row) => row.product_id)));
+    const products = productIds.length ? await restRowsAll(`zysyr_products?select=id,name,category,unit&company_id=eq.${companyId}&id=in.${uuidIn(productIds)}&limit=5000`, 5000) : [];
+    const productMap = new Map(products.map((row) => [cleanText(row.id, 40), row]));
+    const namedProducts = products.map((product) => ({ product, key: normalizeMonthlyMatchLabel(product.name) }))
+      .filter((item) => item.key.length >= 2 && (compactLabel.includes(item.key) || item.key.includes(compactLabel)));
+    const longestProductName = namedProducts.reduce((length, item) => Math.max(length, item.key.length), 0);
+    const matchedProductIds = new Set(namedProducts.filter((item) => item.key.length === longestProductName)
+      .map((item) => cleanText(item.product.id, 40)));
+    const specificProductKey = compactLabel
+      .replace(/产品成本|产品进货|采购|进货|小计|合计|总计|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}月/g, "");
+    const hasSpecificProduct = specificProductKey.length >= 2;
     const orderIds = Array.from(new Set(rows.map((row) => row.purchase_order_id)));
     const orders = orderIds.length ? await restRowsAll(`zysyr_purchase_orders?select=id,supplier_id,order_number&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(orderIds)}&limit=3000`, 3000) : [];
     const orderMap = new Map(orders.map((row) => [cleanText(row.id, 40), row]));
     const supplierIds = Array.from(new Set(orders.map((row) => row.supplier_id)));
     const suppliers = supplierIds.length ? await restRowsAll(`zysyr_suppliers?select=id,name&company_id=eq.${companyId}&id=in.${uuidIn(supplierIds)}&limit=3000`, 3000) : [];
     const supplierMap = new Map(suppliers.map((row) => [cleanText(row.id, 40), row]));
-    for (const row of rows) {
+    const rowMap = new Map(rows.map((row) => [cleanText(row.id, 40), row]));
+    for (const line of receiptLines) {
+      if (hasSpecificProduct && !matchedProductIds.size) continue;
+      if (matchedProductIds.size && !matchedProductIds.has(cleanText(line.product_id, 40))) continue;
+      const row = rowMap.get(cleanText(line.goods_receipt_id, 40));
+      if (!row) continue;
       const order = orderMap.get(cleanText(row.purchase_order_id, 40)) || {};
+      const product = productMap.get(cleanText(line.product_id, 40)) || {};
       details.push({
-      business_type: "goods_receipt", business_id: row.id, business_date: row.receipt_date,
-      category: "产品进货", description: `${cleanText(supplierMap.get(cleanText(order.supplier_id, 40))?.name, 120)} · ${cleanText(order.order_number, 120)} · 入库 ${cleanText(row.receipt_number, 120)}`,
-      amount: row.total_amount, status: row.status, raw: row,
-    });
+        business_type: "goods_receipt", business_id: row.id, detail_id: line.id, business_date: row.receipt_date,
+        category: cleanText(product.name, 160) || "产品进货",
+        description: `${cleanText(supplierMap.get(cleanText(order.supplier_id, 40))?.name, 120)} · ${cleanText(order.order_number, 120)} · 入库 ${cleanText(row.receipt_number, 120)} · 数量 ${line.quantity} ${cleanText(product.unit, 40)}`.trim(),
+        amount: line.line_amount, status: row.status, raw: { receipt: row, line, product },
+        voucher_targets: [
+          { business_type: "goods_receipt", business_id: row.id },
+        ],
+      });
     }
   }
   if (/(产品成本|消耗品|消耗成本|美发消耗|日用消耗|食品成本)/.test(label)) {
@@ -2220,7 +2267,8 @@ async function monthlyCellBusinessDetails(
       amount: row.amount, status: row.payment_status, raw: row,
     });
   }
-  const unique = Array.from(new Map(details.map((row) => [`${row.business_type}:${row.business_id}`, row])).values());
+  const unique = Array.from(new Map(details.map((row) => [cleanText(row.detail_id, 40)
+    || `${row.business_type}:${row.business_id}`, row])).values());
   const linkTargets = unique.flatMap((row) => Array.isArray(row.voucher_targets) && row.voucher_targets.length
     ? row.voucher_targets as JsonRecord[]
     : [{ business_type: row.business_type, business_id: row.business_id }]);
@@ -2410,6 +2458,20 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
       result.purchase_components = candidates.filter((item) => formulaDetailAddresses.has(item.cell_address));
       result.purchase_unincluded_components = candidates.filter((item) => !formulaDetailAddresses.has(item.cell_address) && Number(item.numeric_value) !== 0);
     }
+    if (monthlyItemCategory(target) === "expense") {
+      const evidence = historyEvidenceWithScope(evidenceData);
+      const details = await businessEvidenceRulesForDetails(companyId, storeId, [{
+        business_type: "history_monthly_profit_loss", business_id: entry.id,
+        history_ledger_entry_id: entry.id, date: `${month}-01`, title: cleanText(current.label, 300) || address,
+        description: `月报直接录入 · ${locator}`, amount: current.amount,
+        source_locator: locator, import_row_id: entry.import_row_id,
+        has_evidence: Boolean(evidence.length), vouchers: evidence, pending_vouchers: [],
+      }]);
+      result.business_details = details;
+      result.business_total = Number(details.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+      result.anomalies = details.some((row) => cleanText(row.evidence_policy, 30) !== "none" && !row.has_evidence)
+        ? ["missing_voucher"] : [];
+    }
     return result;
   }
   const moduleEntries = await historyMonthEntries(companyId, storeId, month);
@@ -2540,6 +2602,26 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
         && cell.numeric_value !== null && cell.numeric_value !== "" && Number.isFinite(Number(cell.numeric_value)));
       result.purchase_components = candidates.filter((cell) => formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()));
       result.purchase_unincluded_components = candidates.filter((cell) => !formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()) && Number(cell.numeric_value) !== 0);
+    }
+    if (monthlyItemCategory(target) === "expense") {
+      const traceRows = await restRows(`zysyr_report_cell_trace_revisions?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&target_cell_id=eq.${cleanText(target.id, 40)}&order=revision.desc&limit=1`);
+      const traceId = cleanText(traceRows[0]?.id, 40);
+      const traceEvidenceLinks = traceId ? await restRowsAll(`zysyr_report_cell_trace_evidence?select=voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&trace_revision_id=eq.${traceId}&limit=200`, 200) : [];
+      const amountEvidenceLinks = latestAmountRevision ? await restRowsAll(`zysyr_monthly_cell_revision_vouchers?select=voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&revision_id=eq.${cleanText(latestAmountRevision.id, 40)}&limit=200`, 200) : [];
+      const evidenceIds = uuidIn([...traceEvidenceLinks, ...amountEvidenceLinks].map((link) => link.voucher_id));
+      const directEvidence = evidenceIds === "()" ? [] : await restRowsAll(`zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${evidenceIds}&limit=200`, 200);
+      let details = await monthlyCellBusinessDetails(companyId, storeId, cleanText(report.report_date, 10), target.label);
+      if (!details.length) details = await businessEvidenceRulesForDetails(companyId, storeId, [{
+        business_type: "report_cell", business_id: target.id,
+        business_date: cleanText(report.report_date, 10), category: cleanText(target.label, 300) || address,
+        description: `月报直接录入 · ${address}`, amount: effectiveTarget.numeric_value,
+        status: "confirmed", vouchers: directEvidence, pending_vouchers: [], has_evidence: Boolean(directEvidence.length),
+      }]);
+      result.evidence = directEvidence;
+      result.business_details = details;
+      result.business_total = Number(details.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+      result.anomalies = details.some((row) => cleanText(row.evidence_policy, 30) !== "none"
+        && !(row.vouchers as JsonRecord[] || []).length && !row.has_evidence) ? ["missing_voucher"] : [];
     }
     return result;
   }
@@ -2747,14 +2829,16 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
     if (data.revision) (data.revision as JsonRecord).status = "not_required";
     for (const row of data.business_details as JsonRecord[] || []) row.evidence_policy = "none";
   }
-  if (data.historical && category !== "income") return data;
+  const canUseMonthlyAdjustment = ["income", "salary"].includes(category)
+    || (category === "expense" && cleanText(target.cell_kind, 20) === "formula");
+  if (!canUseMonthlyAdjustment) return data;
   // Match the overview's derived amount, including nested formulas and deltas.
   const store = await selectedStoreInfo(session, payload);
   const month = cleanText((data.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (effective) target.numeric_value = effective.numeric_value;
-  if (category === "income") {
+  if (canUseMonthlyAdjustment) {
     const all = context.adjustments as JsonRecord[];
     const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
     const latest = history[0] || null;
@@ -2768,17 +2852,21 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
 }
 
 async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备财务调整权限的财务账号可以修改收入");
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备财务调整权限的财务账号可以修改月报金额");
   const store = await selectedStoreInfo(session, payload);
   const after = cleanText(payload.after_amount, 100), reason = cleanText(payload.reason, 500);
   if (!/^-?\d{1,14}(?:\.\d{1,4})?$/.test(after) || !reason) throw new Error("请填写有效金额和修改原因");
   const trace = await cellTrace(payload, session);
   const target = trace.target as JsonRecord;
-  if (monthlyItemCategory(target) !== "income") throw new Error("月报调整只适用于收入项目");
+  const category = monthlyItemCategory(target);
+  const formulaExpense = category === "expense" && cleanText(target.cell_kind, 20) === "formula";
+  if (!["income", "salary"].includes(category) && !formulaExpense) {
+    throw new Error("编号、小计、合计、盈亏和产品进货汇总不能直接修改，请修改对应明细");
+  }
   const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
-  if (!effective) throw new Error("收入来源不存在，请刷新月报");
+  if (!effective) throw new Error("月报金额来源不存在，请刷新月报");
   const adjustments = context.adjustments as JsonRecord[], prior = adjustments.find(row => row.source_id === target.id);
   const before = Number(effective.numeric_value), base = Number((before - Number(prior?.adjustment_delta || 0)).toFixed(4));
   if (payload.expected_before === null || payload.expected_before === undefined || before !== Number(payload.expected_before)

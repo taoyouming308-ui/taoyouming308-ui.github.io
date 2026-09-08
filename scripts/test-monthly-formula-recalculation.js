@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { stripTypeScriptTypes } = require('node:module');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
-const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay'];
+const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds'];
 const snippets = names.map(name => {
   const start = source.indexOf('function ' + name + '(');
   const end = source.indexOf('\n}', start) + 2;
@@ -61,13 +61,25 @@ for (const [label, kind, category, policy] of [
   assert.equal(sandbox.defaultMonthlyEvidencePolicy(cell), policy, label);
 }
 console.log('Income adjustment added once, source preservation, rollup and real monthly category labels passed');
+const expenseCategories = [
+  { id: 'section-all', name: '财务费用', report_section: '财务费用' },
+  { id: 'management', name: '管理费', report_section: '财务费用' },
+  { id: 'fee-short', name: '手续费', report_section: '财务费用' },
+  { id: 'fee-exact', name: '银/支/微/团手续费', report_section: '财务费用' },
+  { id: 'rent', name: '房租', report_section: '房租' },
+  { id: 'property', name: '物业费', report_section: '房租' },
+];
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '财务费用 / 管理费 / Nov.')), ['management']);
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '财务费用 / 银/支/微/团手续费 / Nov.')), ['fee-exact']);
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '房租 / 物业费 / Nov.')), ['property']);
+console.log('Monthly expense routing: longest concrete item wins and section-wide leakage is blocked');
 const apiStart = source.indexOf('async function monthlyIncomeAdjustmentSave(');
 const apiEnd = source.indexOf('\n}', apiStart) + 2;
-let writes = [], category = '主营 / 美发收入';
+let writes = [], category = '主营 / 美发收入', kind = 'formula';
 Object.assign(sandbox, {
   requireFinanceCapability: session => { if (session.role !== 'finance') throw Error('denied'); },
   selectedStoreInfo: async () => ({ id: 'store-A', company_id: 'company-A' }),
-  cellTrace: async () => ({ historical: true, target: { id: 'income-A', label: category }, report: { id: 'report-A', report_date: '2026-06-01' } }),
+  cellTrace: async () => ({ historical: true, target: { id: 'income-A', label: category, cell_kind: kind }, report: { id: 'report-A', report_date: '2026-06-01' } }),
   monthlyAdjustmentContext: async () => ({ cells: [{ id: 'income-A', numeric_value: 120 }], versions: { 'income-A': 1 }, adjustments: [{ id: 'adjust-1', source_id: 'income-A', revision: 1, adjustment_delta: 20 }] }),
   financeRpcSaved: async (rpc, payload) => { writes.push({ rpc, payload }); return payload; },
 });
@@ -77,13 +89,22 @@ vm.runInContext(stripTypeScriptTypes(source.slice(apiStart, apiEnd)), sandbox);
   await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'shareholder' }), /denied/);
   await assert.rejects(sandbox.monthlyIncomeAdjustmentSave({ ...payload, expected_before: 100 }, { role: 'finance' }), /修改/);
   category = '房租';
-  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance' }), /收入/);
+  kind = 'input';
+  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance' }), /编号|小计|合计|产品进货/);
   assert.equal(writes.length, 0);
   category = '主营 / 美发收入';
+  kind = 'formula';
   await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
   assert.equal(writes.length, 1);
   assert.equal(writes[0].payload.p_base_amount, 100, 'never trust client baseline');
   assert.equal(writes[0].payload.p_store_id, 'store-A');
   assert.equal(writes[0].rpc, 'rpc/zysyr_save_monthly_income_adjustment', 'never calls source amount mutation RPC');
-  console.log('Income API: finance-only, stale preview denial, income-only, server-derived baseline and scoped adjustment RPC passed');
+  category = '人工 / 技术人员';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  category = '财务费用 / 银/支/微/团手续费';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  assert.equal(writes.length, 3);
+  category = '产品成本 / 产品进货';
+  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance' }), /编号|小计|合计|产品进货/);
+  console.log('Monthly adjustment API: finance-only, stale preview denial, salary/formula-expense support and read-only summary guards passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
