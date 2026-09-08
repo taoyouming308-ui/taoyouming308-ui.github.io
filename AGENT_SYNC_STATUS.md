@@ -1,13 +1,15 @@
 # Agent Sync Status
 
-## v482 月报项目分类与独立收入调整（2026-09-08，本地验证，未上线）
+## v482 月报项目分类与独立收入调整（2026-09-08，已发布）
 
 - 基于 GitHub main `dd25b5c`。App version: v482。用户确认按项目性质区分凭证要求，并同意收入直接编辑后单独记录月报调整、不覆盖日报原数。
 - 收入、工资、后勤、小计合计及盈亏不显示额外凭证上传与缺凭证提示；工资进入同门店同月工资表，收入进入直接编辑、原因、预览、保存。普通支出保留凭证预览上传及单笔例外开关。
 - 新增只追加的 `zysyr_monthly_income_adjustments`：原表数据加最新累计调整额形成月报显示，重新计算受影响合计；原日报、工资、月报原件和凭证不改写。修改前后、差额、原因、操作人和锁账授权留痕。
 - 后端保留原财务角色与门店权限；SQL 验证真实来源类型、收入分类、完整来源版本/调整版本快照、锁账和一次性审批。旧月报金额覆盖接口拒绝收入，要求走独立调整入口。
 - 真实 PostgreSQL 隔离测试通过收入限定、原数保持、RLS/角色、越权、版本冲突、只追加审计和一次授权消费；电脑/手机竖屏/横屏合成数据交互通过。公式计算测试覆盖截图的 C3=R28-S28、调整不重复累计和上下游原值保持。
-- 迁移 `20260908060844_zysyr_monthly_income_adjustments.sql` 仅为本地候选，未应用生产；函数与页面未部署，生产仍为 v481。本次未写入任何生产财务数据。
+- 用户明确授权上线后，迁移 `20260908060844_zysyr_monthly_income_adjustments.sql` 已应用生产，dry-run 确认迁移对齐；错误级数据库 lint 为 0。新表 RLS/强制 RLS 均开启，只追加触发器存在，匿名读取、浏览器直接插入及浏览器直接调用调整 RPC 均未授权；核验时调整记录为 0，本次未写入任何生产财务金额。
+- `operations-api` version 45 为 ACTIVE，保持原有内部会话鉴权和 `verify_jwt=false`；匿名 overview 返回 403“请重新登录”。GitHub main 已发布 `b485f3a`，Validate shared app `34197942805` 与 Pages `34197942167` 均成功；CDN 确认 version.txt=482、页面 data-version=482 及收入调整、工资免额外凭证代码。
+- 已知旧安全告警：Supabase security advisors 仍有 14 项 ERROR，涉及 hair_types、perm_data、perm_styles、staff、barber_identities、bookings、customer_profiles、zysyr_cash_opening_balances、zysyr_report_acknowledgements、zysyr_shareholder_registrations 的 RLS 未启用/策略未生效。本次新增调整对象无对应告警；未擅自变更这些旧模块的权限，需单独评估修复，不能将 lint=0 描述为全库安全告警清零。
 
 ## v481 月报金额二级页简化与图片确认保存（2026-09-08，已发布）
 
