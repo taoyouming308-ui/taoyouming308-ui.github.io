@@ -100,7 +100,7 @@ async function run() {
       create table zysyr_daily_sheet_cells(id uuid,company_id uuid,store_id uuid,draft_id uuid,cell_role text,
         ocr_numeric numeric,ocr_text text,corrected_numeric numeric,manual_override boolean default false,
         confidence numeric,source_method text,bbox jsonb,updated_by_user_id uuid,updated_at timestamptz,
-        constraint zysyr_daily_sheet_cells_source_method_check check(source_method in ('openai_vision','paddle_ocr','blank_template')),
+        constraint zysyr_daily_sheet_cells_source_method_check check(source_method in ('openai_vision','kimi_vision','paddle_ocr','blank_template')),
         primary key(company_id,store_id,id));
       create function zysyr_private.daily_sheet_cell_value(zysyr_daily_sheet_cells) returns numeric language sql as $$select case when $1.manual_override then $1.corrected_numeric else $1.ocr_numeric end$$;
       create function zysyr_private.daily_sheet_validation(uuid,uuid,uuid) returns jsonb language sql as $$select jsonb_build_object('valid',true,'grand_total',coalesce(sum(zysyr_private.daily_sheet_cell_value(c)),0)) from public.zysyr_daily_sheet_cells c where c.company_id=$1 and c.store_id=$2 and c.draft_id=$3$$;`);
