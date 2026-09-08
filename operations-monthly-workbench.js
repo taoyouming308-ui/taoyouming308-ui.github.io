@@ -63,6 +63,12 @@
       target: Object.assign({}, target, { cell_kind: 'input' })
     });
     attachEditor(host, editable, rootAddress, context);
+    if (target.daily_rollup) {
+      var daily=target.daily_rollup;
+      host.insertAdjacentHTML('beforeend','<div class="candidate-warning">已确认日报 '+Number(daily.confirmed_days)+' 天，合计 '+formatAmount(daily.amount)+'；原月报 '+formatAmount(target.original_report_amount)+'，差额 '+formatAmount(Number(daily.amount)-Number(target.original_report_amount))+'。仅统计已确认日期，请核对是否录齐。</div><div data-daily-sources></div>');
+      var sources=host.querySelector('[data-daily-sources]');
+      (daily.days||[]).forEach(function(day){var button=document.createElement('button');button.type='button';button.className='ghost';button.textContent=day.date+' · '+formatAmount(day.amount);button.onclick=async function(){closeMonthlyWorkbench();document.getElementById('daily-month').value=day.date.slice(0,7);await showView('daily-report');await openDailyReportDay(day.date,day.draft_id);};sources.appendChild(button);});
+    }
     host.insertAdjacentHTML('afterbegin', '<div class="help">原报表金额 ' + formatAmount(adjustment.base_amount)
       + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta)
       + '。修改只追加审计记录，不覆盖原日报、工资表、月报原件或原凭证。</div>');

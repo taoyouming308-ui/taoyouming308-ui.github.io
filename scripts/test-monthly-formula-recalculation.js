@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { stripTypeScriptTypes } = require('node:module');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
-const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds'];
+const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds', 'isDailyIncomeCell'];
 const snippets = names.map(name => {
   const start = source.indexOf('function ' + name + '(');
   const end = source.indexOf('\n}', start) + 2;
@@ -73,6 +73,13 @@ assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCate
 assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '财务费用 / 银/支/微/团手续费 / Nov.')), ['fee-exact']);
 assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '房租 / 物业费 / Nov.')), ['property']);
 console.log('Monthly expense routing: longest concrete item wins and section-wide leakage is blocked');
+const dailySource=[row('C3',100,'R28-S28'),row('C8',100,'SUM(C3:C4)')];
+dailySource[0].current_payload.label='主营 / 美发收入';
+const dailyResult=sandbox.effectiveHistoryMonthlyEntries(dailySource,[],{amount:250,confirmed_days:2});
+assert.equal(dailyResult[0].current_payload.amount,250);
+assert.equal(dailyResult[1].current_payload.amount,250);
+assert.equal(dailySource[0].current_payload.amount,100);
+assert.equal(dailyResult[0].current_payload.original_report_amount,100);
 const apiStart = source.indexOf('async function monthlyIncomeAdjustmentSave(');
 const apiEnd = source.indexOf('\n}', apiStart) + 2;
 let writes = [], category = '主营 / 美发收入', kind = 'formula';

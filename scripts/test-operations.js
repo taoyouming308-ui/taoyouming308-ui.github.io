@@ -112,7 +112,7 @@ expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_ca
 expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_capabilities: ['dashboard.store.read'] }) === false, 'Auth account without expense capability must be denied');
 expect(!edge.includes('mgj_service_records') && !edge.includes('income_read_only_from_mgj'), 'operations API must not read Meiguanjia');
 expect(!edge.includes('SUPABASE_ANON_KEY'), 'Edge Function must not rely on a browser anon key');
-expect(!edge.includes('Deno.env.get("MOONSHOT_API_KEY")') && !edge.includes('/chat/completions'), 'daily API must not call an AI vision provider');
+expect(edge.includes('async function recognizeDailySheet(') && edge.includes('candidate_only:true,formal_data_unchanged:true'), 'daily vision must return candidates only');
 expect(edge.includes('model: "manual-entry-v1"') && edge.includes('provider: "manual-entry"'), 'manual blank-template provider markers missing');
 expect(edge.includes('source_method: "blank_template"') && edge.includes('ocr_numeric: null') && edge.includes('ai_recognition_enabled: false'), 'blank manual seed boundary missing');
 expect(edge.includes('日报AI候选导入已停用') && edge.includes('请对照原图人工填写电子表格'), 'AI candidate import must remain disabled');

@@ -3,6 +3,8 @@ import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
+import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-recognition.mjs";
+import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -899,7 +901,7 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
 
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month));
+    await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month));
   if (!entries.length) return null;
   const batchId = cleanText(entries[0].import_batch_id, 40);
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
@@ -934,6 +936,7 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     cell.cell_kind = cleanText(current.cell_kind, 30) || cell.cell_kind;
     cell.label = cleanText(current.label, 300) || cell.label;
     cell.item_category = monthlyItemCategory(cell);
+    if (current.daily_rollup) { cell.daily_rollup = current.daily_rollup; cell.original_report_amount = current.original_report_amount; }
     const rowIndex = Number(cell.row_number) - 1, columnIndex = Number(cell.column_number) - 1;
     if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
   }
@@ -1034,7 +1037,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthlyReport = {
       ...monthlyReport,
       display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
-        await monthlyIncomeAdjustments(companyId, storeId, month)),
+        await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month)),
     };
     const latest = new Map<string, string>();
     const latestSourceCount = new Map<string, number>();
@@ -1141,7 +1144,7 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 // Derived values are computed on read; the immutable source and revisions stay intact.
-function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord[] {
+function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = [], daily: JsonRecord | null = null): JsonRecord[] {
   const adjustmentMap = new Map<string, number>();
   for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const rows = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
@@ -1160,6 +1163,12 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
       const value = Number((base + delta).toFixed(4));
       if (delta) changed.add(address);
       item.amount = value; values.set(address, value); return value;
+    }
+    if (daily && isDailyIncomeCell(item)) {
+      changed.add(address);
+      item.original_report_amount = item.amount;
+      item.daily_rollup = daily;
+      return finish(Number(daily.amount));
     }
     if (item.cell_kind !== "formula") {
       const value = Number(item.amount);
@@ -1248,7 +1257,7 @@ function safeFormulaValue(formula: string, precedents: unknown[], values: Map<st
   }
 }
 
-function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord {
+function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[], adjustments: JsonRecord[] = [], daily: JsonRecord | null = null): JsonRecord {
   const adjustmentMap = new Map<string, number>();
   for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const source = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
@@ -1264,13 +1273,14 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
     cellByAddress.set(address, cell);
     const original = Number(cell.numeric_value);
     const revision = latest.get(cleanText(cell.id, 40));
-    const effective = revision ? Number(revision.after_amount) : original;
+    const effective = daily && isDailyIncomeCell(cell) ? Number(daily.amount) : revision ? Number(revision.after_amount) : original;
     if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4)));
   }
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false;
     for (const cell of cells) {
       if (cleanText(cell.cell_kind, 20) !== "formula") continue;
+      if (daily && isDailyIncomeCell(cell)) continue;
       const address = cleanText(cell.cell_address, 20).toUpperCase();
       const base = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
       const calculated = base === null ? null : Number((base + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4));
@@ -1292,6 +1302,7 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
       displayCell.numeric_value = numeric;
       displayCell.display_value = String(numeric);
       displayCell.item_category = monthlyItemCategory(cell);
+      if (daily && isDailyIncomeCell(cell)) { displayCell.daily_rollup = daily; displayCell.original_report_amount = cell.numeric_value; }
     }
     effectiveCells[address] = {
       source_cell_id: cell.id, original_amount: cell.numeric_value,
@@ -1403,7 +1414,7 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
     display_data: effectiveMonthlyDisplay(row.display_data,
       allCells.filter((cell) => cleanText(cell.report_id, 40) === cleanText(row.id, 40)),
       allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40)),
-      await monthlyIncomeAdjustments(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7))),
+      await monthlyIncomeAdjustments(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7)), await confirmedDailyRollup(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7))),
   })));
   const baseDisplay = effectiveReports[0].display_data && typeof effectiveReports[0].display_data === "object" ? effectiveReports[0].display_data as JsonRecord : {};
   const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
@@ -2365,7 +2376,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   if (!batch) throw new Error("月报不存在或无权访问");
   const month = cleanText((session as JsonRecord).__trace_month, 7);
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month));
+    await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month));
   const entry = entries.find((row) => cleanText((row.current_payload as JsonRecord)?.cell_address, 20).toUpperCase() === address);
   if (!entry) throw new Error("该位置不是可追溯的历史金额或公式单元格");
   const current = entry.current_payload as JsonRecord;
@@ -2802,20 +2813,36 @@ async function monthlyIncomeAdjustments(companyId: string, storeId: string, mont
   return restRowsAll(`zysyr_monthly_income_adjustments?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01&order=revision.desc,created_at.desc`, 10000);
 }
 
+function isDailyIncomeCell(cell: JsonRecord): boolean {
+  const label = cleanText(cell.label,300).replace(/\s/g,"").replace(/[／·]/g,"/");
+  return /^(主营\/)?(美发收入|营业收入)(\/|$)/.test(label);
+}
+
+async function confirmedDailyRollup(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
+  const start = `${month}-01`, end = new Date(`${start}T00:00:00Z`); end.setUTCMonth(end.getUTCMonth()+1);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
+  if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
+  const ids = uuidIn(drafts.map(row=>row.id));
+  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.summary&column_code=eq.grand_total&limit=100`,100);
+  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error("已确认日报缺少唯一有效总计，暂停月报汇总");return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
+  return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,source:"confirmed_daily_grand_total",incomplete_warning:"仅汇总已确认日报；请核对营业日是否全部录齐。"};
+}
+
 // Capture the entire source revision set. The SQL writer verifies it under the
 // month lock, rejecting concurrent edits rather than silently overwriting them.
 async function monthlyAdjustmentContext(companyId: string, storeId: string, month: string, reportId: string, historical: boolean): Promise<JsonRecord> {
   const adjustments = await monthlyIncomeAdjustments(companyId, storeId, month);
+  const daily = await confirmedDailyRollup(companyId, storeId, month);
   if (historical) {
     const source = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
-    return { adjustments, versions: Object.fromEntries(source.map(row => [String(row.id), row.version])),
-      cells: effectiveHistoryMonthlyEntries(source, adjustments).filter(row => row.import_batch_id === reportId)
+    return { adjustments, daily, versions: Object.fromEntries(source.map(row => [String(row.id), row.version])),
+      cells: effectiveHistoryMonthlyEntries(source, adjustments, daily).filter(row => row.import_batch_id === reportId)
         .map(row => ({ ...row.current_payload as JsonRecord, id: row.id, numeric_value: (row.current_payload as JsonRecord).amount })) };
   }
   const cells = await restRowsAll(`zysyr_report_cells?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}`, 5000);
   const revisions = await restRowsAll(`zysyr_monthly_cell_revisions?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=revision.desc`, 10000);
-  const display = effectiveMonthlyDisplay({ cells, values: [] }, cells, revisions, adjustments);
-  return { adjustments, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
+  const display = effectiveMonthlyDisplay({ cells: cells.map(cell=>({...cell})), values: [] }, cells, revisions, adjustments, daily);
+  return { adjustments, daily, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
 }
 
 async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -2838,6 +2865,7 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (effective) target.numeric_value = effective.numeric_value;
+  if (effective?.daily_rollup) { target.daily_rollup = effective.daily_rollup; target.original_report_amount = effective.original_report_amount; }
   if (canUseMonthlyAdjustment) {
     const all = context.adjustments as JsonRecord[];
     const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
@@ -2871,12 +2899,14 @@ async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRec
   const before = Number(effective.numeric_value), base = Number((before - Number(prior?.adjustment_delta || 0)).toFixed(4));
   if (payload.expected_before === null || payload.expected_before === undefined || before !== Number(payload.expected_before)
     || Number(payload.expected_revision) !== Number(prior?.revision || 0)) throw new Error("金额已被其他人修改，请重新打开后预览");
-  const saved = await financeRpcSaved("rpc/zysyr_save_monthly_income_adjustment", {
+  const dailyLinked = Boolean(effective.daily_rollup);
+  const saved = await financeRpcSaved(dailyLinked ? "rpc/zysyr_save_daily_linked_monthly_adjustment" : "rpc/zysyr_save_monthly_income_adjustment", {
     p_actor_user_id: session.auth_account_id, p_company_id: store.company_id, p_store_id: store.id,
     p_source_kind: trace.historical ? "history" : "report", p_source_id: target.id, p_period_month: `${month}-01`,
     p_expected_versions: context.versions,
     p_expected_adjustments: Object.fromEntries(adjustments.map(row => [String(row.id), row.revision])),
     p_base_amount: base, p_before_amount: before, p_after_amount: after, p_reason: reason,
+    ...(dailyLinked ? {p_daily_versions:Object.fromEntries(((context.daily as JsonRecord).days as JsonRecord[]).map(row=>[String(row.draft_id),row.revision]))} : {}),
   });
   return { saved, source_reports_unchanged: true };
 }
@@ -4266,6 +4296,45 @@ async function importDailySheetExtraction(payload: JsonRecord, session: JsonReco
   throw new Error("日报AI候选导入已停用；请对照原图人工填写电子表格");
 }
 
+async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有日报识别权限");
+  const store = await selectedStoreInfo(session, payload);
+  const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
+  const sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
+  const draft = sheet.draft as JsonRecord;
+  if (draft.status !== "draft" || sheet.locked) throw new Error("已确认或锁账日报不能自动识别覆盖");
+  const key = Deno.env.get("MOONSHOT_API_KEY");
+  if (!key) throw new Error("日报识别服务尚未配置，请先手工填写");
+  const attachment = (sheet.attachments as JsonRecord[]).find(item =>
+    String(item.voucher_id || item.id) === String(payload.voucher_id) && item.attachment_kind === "original_report");
+  if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
+  const cells = (sheet.cells as JsonRecord[]).filter(cell => !["signature", "unclosed_order", "note"].includes(String(cell.cell_role)));
+  const bytes = await voucherSourceBytes(attachment);
+  let binary = "";
+  for (let offset=0; offset<bytes.length; offset+=8192) binary += String.fromCharCode(...bytes.subarray(offset,offset+8192));
+  const model = Deno.env.get("ZYSYR_DAILY_GRID_MODEL") || "kimi-k2.6";
+  const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+    method:"POST", headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},
+    signal:AbortSignal.timeout(90000),
+    body:JSON.stringify({model,max_tokens:16000,response_format:{type:"json_object"},thinking:{type:"disabled"},messages:[{role:"user",content:[
+      {type:"text",text:dailyRecognitionPrompt({store:store.name,date:draft.report_date,cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,column:cell.column_label,role:cell.cell_role}))})},
+      {type:"image_url",image_url:{url:`data:${attachment.mime_type};base64,${btoa(binary)}`}},
+    ]}]})
+  });
+  if (!response.ok) throw new Error(`日报识别暂不可用（${response.status}），原图已保留，可稍后重试`);
+  const result = await response.json();
+  if (result.choices?.[0]?.finish_reason !== "stop") throw new Error("识别结果不完整，请重试或分张上传");
+  let parsed;
+  try { parsed = JSON.parse(result.choices[0].message.content); } catch { throw new Error("识别没有返回有效表格，请重试"); }
+  const candidate = validateDailyCandidates(parsed,cells,String(draft.report_date),String(store.name));
+  const latest = await dailySheetData(String(store.company_id),String(store.id),draftId);
+  if ((latest.draft as JsonRecord).edit_revision !== draft.edit_revision || (latest.draft as JsonRecord).status !== "draft" || latest.locked) throw new Error("识别期间日报已变化，请刷新后重试");
+  const auditId = crypto.randomUUID();
+  const audit = await rest("zysyr_audit_events",{method:"POST",body:JSON.stringify({id:auditId,company_id:store.company_id,store_id:store.id,actor_type:"user",actor_user_id:session.auth_account_id,channel:"api",entity_type:"daily_sheet",entity_id:draftId,action:"daily_recognition_candidate",after_json:{...candidate,model,voucher_id:payload.voucher_id,source_sha256:attachment.sha256,edit_revision:draft.edit_revision},reason:"识别原图生成待人工复核候选，未写入正式日报",sensitivity:"financial"})});
+  if (!audit.ok) throw new Error("识别记录保存失败，未填入电子日报，请重试");
+  return {...candidate,audit_id:auditId,draft_id:draftId,edit_revision:draft.edit_revision,candidate_only:true,formal_data_unchanged:true};
+}
+
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
   return dailySheetRead(payload, session);
@@ -5075,6 +5144,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_recognize") return json(await recognizeDailySheet(payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));

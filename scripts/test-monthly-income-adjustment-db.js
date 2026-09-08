@@ -92,7 +92,14 @@ async function run() {
     sql(`select id from zysyr_save_business_evidence_rule('${id(3)}','${id(1)}','${id(2)}','report_cell','${id(14)}',false,'此笔无需凭证');`);
     assert.equal(sql(`select evidence_policy from zysyr_business_evidence_rules where business_id='${id(14)}'`),'none');
     expectFailure(`select id from zysyr_save_business_evidence_rule('${id(3)}','${id(1)}','${id(2)}','report_cell','${id(15)}',false,'错误关闭小计凭证');`, /RECORD_NOT_FOUND/);
-    console.log('PostgreSQL: source preservation, append-only audit, salary/formula-expense adjustments, read-only totals, conflicts, locks, RLS and role denial passed');
+    sql('alter table zysyr_daily_sheet_drafts add column report_date date, add column edit_revision integer, add column status text;');
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260908094822_daily_rollup_adjustment_snapshot.sql'),'utf8'));
+    sql(`insert into zysyr_daily_sheet_drafts values('${id(30)}','${id(1)}','${id(2)}','2026-06-01',1,'confirmed');`);
+    const linked = snapshot => `select id from zysyr_save_daily_linked_monthly_adjustment('${id(3)}','${id(1)}','${id(2)}','history','${id(10)}','2026-06-01',${currentVersions},${adjustmentSnapshot()},80,85,90,'日报快照测试',${snapshot});`;
+    expectFailure(linked("'{}'::jsonb"),/DATA_CHANGED_RELOAD/);
+    sql(linked(`'{"${id(30)}":1}'::jsonb`));
+    expectFailure('set role authenticated;'+linked(`'{"${id(30)}":1}'::jsonb`),/permission denied/);
+    console.log('PostgreSQL: source preservation, audit, locks, RLS, daily snapshot stale rejection and role denial passed');
   } finally { docker(['stop',name]); }
 }
 run().catch(error => { console.error(error.stderr ? String(error.stderr) : error); process.exitCode=1; });

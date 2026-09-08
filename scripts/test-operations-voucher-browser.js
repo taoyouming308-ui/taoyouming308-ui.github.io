@@ -228,6 +228,24 @@ async function run() {
     assert.equal(await page.locator('#monthly-inline-preview-button').count(), 1, 'one product detail must be editable inside the monthly drawer');
     assert.equal(await page.locator('#monthly-inline-upload').count(), 1, 'one product detail keeps only its own voucher entry');
     assert.equal(await page.evaluate(() => state.trace.address), 'G31', 'product detail routing must stay on the selected product cell');
+    await page.evaluate(() => {
+      closeMonthlyWorkbench();state.imports.sheet=previewDailySheetData();state.imports.dirty={};state.imports.dirtyLabels={};
+      document.querySelectorAll('.view').forEach(node=>node.classList.add('hidden'));document.getElementById('view-daily-report').classList.remove('hidden');state.view='daily-report';
+      const sheet=state.imports.sheet;window.fixtureDailyExisting=sheet.cells.find(cell=>cell.effective_numeric!=null);window.fixtureDailyBlank=sheet.cells.find(cell=>cell.effective_numeric==null);
+      sheet.cells.forEach(cell=>{if(cell.effective_numeric!=null){cell.manual_override=true;cell.corrected_numeric=cell.effective_numeric;}});
+      const raw=api;api=async function(operation,payload){if(operation==='daily_sheet_recognize'){window.fixtureCalls.push({operation,...payload});return {audit_id:'test-audit',cells:[{id:window.fixtureDailyExisting.id,value:999,confidence:1},{id:window.fixtureDailyBlank.id,value:123,confidence:.6}],warnings:[]};}return raw(operation,payload);};
+      renderDailySheetDetail();
+    });
+    const originalSrc=await page.locator('#daily-detail-image').getAttribute('src');
+    await page.locator('#daily-report-detail [data-turn="90"]').click();
+    assert.match(await page.locator('#daily-detail-image').getAttribute('style'),/rotate\(90deg\)/);
+    assert.equal(await page.locator('#daily-detail-image').getAttribute('src'),originalSrc,'rotation never rewrites original image');
+    await page.locator('#daily-recognize').click();
+    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('已填入 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
+    assert.equal(await page.locator('#daily-detail-reviewed').isChecked(),false);
+    assert.equal(await page.evaluate(()=>window.fixtureCalls.filter(row=>row.operation==='daily_sheet_confirm').length),0);
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();
