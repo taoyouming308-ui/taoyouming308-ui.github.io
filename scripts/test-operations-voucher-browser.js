@@ -172,6 +172,7 @@ async function run() {
             ? 'expense' : window.fixtureCategory;
           result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '财务费用 / 银/支/微/团手续费', purchase_summary: '产品成本 / 产品进货' }[window.fixtureCategory];
           result.can_edit = true;
+          if (window.fixtureCategory === 'purchase_summary' && payload.cell_address !== 'C3') result.target.label = '产品进货 / 歌薇 / 合计';
           result.can_upload_vouchers = result.item_category === 'expense';
           result.can_manage_business_evidence_rules = result.item_category === 'expense';
           if (window.fixtureCategory === 'purchase_summary') result.purchase_components = [
