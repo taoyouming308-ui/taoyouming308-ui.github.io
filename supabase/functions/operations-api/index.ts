@@ -4315,16 +4315,17 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
     String(item.voucher_id || item.id) === String(payload.voucher_id) && item.attachment_kind === "original_report");
   if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
   const cells = (sheet.cells as JsonRecord[]).filter(cell => !["signature", "unclosed_order", "note"].includes(String(cell.cell_role)));
-  const bytes = await voucherSourceBytes(attachment);
-  let binary = "";
-  for (let offset=0; offset<bytes.length; offset+=8192) binary += String.fromCharCode(...bytes.subarray(offset,offset+8192));
+  // Let the model fetch the short-lived private URL directly. Historical daily
+  // photos are often 5-8 MB; converting them to base64 inside the Edge Function
+  // adds ~33% payload size and can exhaust the request window before inference.
+  const recognitionUrl = await signedStorageUrl(VOUCHER_BUCKET,cleanText(attachment.object_path,500));
   const model = Deno.env.get("ZYSYR_DAILY_GRID_MODEL") || "kimi-k2.6";
   const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
     method:"POST", headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},
     signal:AbortSignal.timeout(90000),
     body:JSON.stringify({model,max_tokens:16000,response_format:{type:"json_object"},thinking:{type:"disabled"},messages:[{role:"user",content:[
       {type:"text",text:dailyRecognitionPrompt({store:store.name,date:draft.report_date,cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,column:cell.column_label,role:cell.cell_role}))})},
-      {type:"image_url",image_url:{url:`data:${attachment.mime_type};base64,${btoa(binary)}`}},
+      {type:"image_url",image_url:{url:recognitionUrl}},
     ]}]})
   });
   if (!response.ok) throw new Error(`日报识别暂不可用（${response.status}），原图已保留，可稍后重试`);
