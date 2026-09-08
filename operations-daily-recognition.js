@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var busy = false, request = 0;
+  var busy = false, batchBusy = false, request = 0;
   function mountRotation(imageId) {
     var img = document.getElementById(imageId);
     if (!img || img.dataset.rotationReady) return;
@@ -43,13 +43,42 @@
       var result=await api('daily_sheet_recognize',{store:store,draft_id:draftId,voucher_id:item.voucher_id||item.id});
       if(generation!==request||currentStore()!==store||state.imports.sheet.draft.id!==draftId)return;
       if(dailySheetDirtyCount()){status.textContent='识别期间有手工修改，本次结果未填入；请保存后重试。';return;}
-      var filled=0,skipped=0,uncertain=0,byId=new Map((result.cells||[]).map(function(row){return [row.id,row];}));
-      document.querySelectorAll('#daily-detail-grid [data-daily-cell]').forEach(function(input){var row=byId.get(input.dataset.dailyCell);if(!row)return;if(input.value!==''){skipped++;return;}input.value=String(row.value);input.dispatchEvent(new Event('input',{bubbles:true}));input.style.background=row.confidence<.85?'#ffe1ba':'#fff5c2';input.title='识别候选，请对照原图核对';filled++;if(row.confidence<.85)uncertain++;});
+      var filled=Number(result.saved&&result.saved.saved_cells||0),skipped=Number(result.saved&&result.saved.manual_cells_preserved||0),uncertain=(result.cells||[]).filter(function(row){return Number(row.confidence)<.85;}).length;
+      state.imports.sheet=result.sheet;state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
+      status.hidden=false;
       document.getElementById('daily-detail-reviewed').checked=false;
-      document.getElementById('daily-detail-reason').value='核对原图识别草稿 '+result.audit_id;
-      renderDailyDetailControls();status.textContent='已填入 '+filled+' 格；保留已有 '+skipped+' 格；'+uncertain+' 格识别不确定。请对照原图核对、修改并保存，最终确认后才入账。'+(result.date_unconfirmed?' 原图日期未识别，请核对。':'')+(result.store_unconfirmed?' 原图门店未识别，请核对。':'')+(result.warnings||[]).join('；');
+      document.getElementById('daily-detail-reason').value='对照日报原图核对图片识别草稿';
+      renderDailyDetailControls();status.textContent='识别草稿已保存 '+filled+' 格；保留财务已填 '+skipped+' 格；'+uncertain+' 格识别不确定。黄色数字请对照原图核对，最终确认后才入账。'+(result.date_unconfirmed?' 原图日期未识别，请核对。':'')+(result.store_unconfirmed?' 原图门店未识别，请核对。':'')+(result.warnings||[]).join('；');
     }catch(error){if(generation===request){status.hidden=false;status.textContent=error.message+'；原图已留底，电子数据未被自动覆盖。';}}
     finally{busy=false;button.disabled=false;}
   };
   button.onclick=function(){window.recognizeCurrentDaily();};
+
+  var monthBar=document.querySelector('#view-daily-report>.daily-month-bar');
+  var batch=document.createElement('button');batch.type='button';batch.className='secondary';batch.id='daily-recognize-month';batch.textContent='识别本月待核对原图';monthBar.appendChild(batch);
+  var batchStatus=document.createElement('span');batchStatus.id='daily-recognize-month-status';batchStatus.className='help';monthBar.appendChild(batchStatus);
+  async function recognizeDraft(day){
+    var sheet=await api('daily_sheet_read',{store:currentStore(),draft_id:day.draft_id});
+    var item=(sheet.attachments||[]).find(function(row){return row.attachment_kind==='original_report'&&['image/jpeg','image/png'].includes(row.mime_type);});
+    if(!item)throw Error('没有可识别的 JPG/PNG 原图');
+    return api('daily_sheet_recognize',{store:currentStore(),draft_id:day.draft_id,voucher_id:item.voucher_id||item.id});
+  }
+  batch.onclick=async function(){
+    if(batchBusy||isLocalPreview())return;
+    var month=state.dailyReportMonth||{},targets=(month.days||[]).filter(function(day){return day.status==='draft'&&day.draft_id&&Number(day.approved_original_count||0)>0&&!day.recognition_saved;});
+    if(!targets.length){toast('本月没有待识别的日报原图');return;}
+    if(!window.confirm('将识别 '+targets.length+' 天原图并保存为待核对草稿，不会自动正式确认。继续吗？'))return;
+    batchBusy=true;batch.disabled=true;var ok=0,failed=[];
+    try{
+      for(var i=0;i<targets.length;i++){
+        batchStatus.textContent='正在识别 '+(i+1)+'/'+targets.length+'：'+targets[i].report_date;
+        try{await recognizeDraft(targets[i]);ok++;}catch(error){failed.push(targets[i].report_date+'：'+error.message);}
+      }
+      await loadDailyReportOverview();batchStatus.textContent='已保存待核对草稿 '+ok+' 天'+(failed.length?'，失败 '+failed.length+' 天':'，全部完成');
+      if(failed.length)toast('部分日报识别失败，可稍后重试：'+failed.slice(0,3).join('；'));
+      else toast('本月日报识别草稿已保存，请财务逐日核对后最终确认');
+    }finally{batchBusy=false;batch.disabled=false;}
+  };
+  var calendarBase=renderDailyReportCalendar;
+  renderDailyReportCalendar=function(data){calendarBase(data);var r=data.recognition||{};batch.hidden=!(data.permissions&&data.permissions.write);batchStatus.textContent=r.eligible_days==null?'':'识别草稿 '+r.recognized_days+'/'+r.eligible_days+' 天，待识别 '+r.pending_days+' 天';};
 })();

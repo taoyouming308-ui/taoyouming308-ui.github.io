@@ -87,7 +87,7 @@ async function sha256Bytes(value: Uint8Array): Promise<string> {
 }
 
 function effectiveCellValue(cell: JsonRecord): number | null {
-  const raw = cell.manual_override ? cell.corrected_numeric : null;
+  const raw = cell.manual_override ? cell.corrected_numeric : cell.ocr_numeric;
   if (raw == null || raw === "") return null;
   const numeric = Number(raw);
   return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric * 100) / 100 : null;
@@ -3320,6 +3320,12 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "EXISTING_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("当天已有正式日报，必须先冲销后再确认新版本");
     if (code === "DAILY_SHEET_ALREADY_CONFIRMED") throw new Error("这张电子日报已经最终确认，不能重复入账");
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
+    if (code === "DAILY_SHEET_CHANGED_RELOAD") throw new Error("识别期间日报已被修改，请刷新后重试");
+    if (code === "DAILY_VOUCHER_NOT_LINKED") throw new Error("所选原图没有绑定到当前日报");
+    if (code === "DAILY_RECOGNITION_INPUT_INVALID" || code === "DAILY_RECOGNITION_CELL_INVALID"
+      || code === "DAILY_RECOGNITION_CELL_ROLE_INVALID" || code === "DAILY_RECOGNITION_VALUE_INVALID") {
+      throw new Error("图片识别结果格式异常，未保存任何候选数字");
+    }
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "22003") throw new Error("图片中存在超出单元格允许范围的数字，已停止保存候选草稿");
@@ -4241,7 +4247,7 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
         column_label: cell.column_label ?? null,
         changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }),
     locked: locks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId),
-    manual_entry_only: true, ai_values_excluded: true, final_confirmation_required: true, meiguanjia_used: false };
+    manual_entry_only: false, ai_candidates_review_only: true, final_confirmation_required: true, meiguanjia_used: false };
 }
 
 async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4329,10 +4335,15 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   const candidate = validateDailyCandidates(parsed,cells,String(draft.report_date),String(store.name));
   const latest = await dailySheetData(String(store.company_id),String(store.id),draftId);
   if ((latest.draft as JsonRecord).edit_revision !== draft.edit_revision || (latest.draft as JsonRecord).status !== "draft" || latest.locked) throw new Error("识别期间日报已变化，请刷新后重试");
-  const auditId = crypto.randomUUID();
-  const audit = await rest("zysyr_audit_events",{method:"POST",body:JSON.stringify({id:auditId,company_id:store.company_id,store_id:store.id,actor_type:"user",actor_user_id:session.auth_account_id,channel:"api",entity_type:"daily_sheet",entity_id:draftId,action:"daily_recognition_candidate",after_json:{...candidate,model,voucher_id:payload.voucher_id,source_sha256:attachment.sha256,edit_revision:draft.edit_revision},reason:"识别原图生成待人工复核候选，未写入正式日报",sensitivity:"financial"})});
-  if (!audit.ok) throw new Error("识别记录保存失败，未填入电子日报，请重试");
-  return {...candidate,audit_id:auditId,draft_id:draftId,edit_revision:draft.edit_revision,candidate_only:true,formal_data_unchanged:true};
+  const saved = await financeRpcSaved("rpc/zysyr_apply_daily_sheet_recognition_candidates", {
+    p_actor_user_id: cleanText(session.auth_account_id,40), p_company_id: cleanText(store.company_id,40),
+    p_store_id: cleanText(store.id,40), p_draft_id: draftId,
+    p_voucher_id: cleanText(payload.voucher_id,40), p_expected_revision: Number(draft.edit_revision),
+    p_candidates: candidate.cells, p_model: model,
+  });
+  const refreshed = await dailySheetRead({store:cleanText(store.name,120),draft_id:draftId},session);
+  return {...candidate,saved,sheet:refreshed,draft_id:draftId,edit_revision:saved.revision,
+    candidate_only:true,formal_data_unchanged:true,finance_confirmation_required:true};
 }
 
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4512,7 +4523,15 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       missing_original: !report.source_report_id, has_anomaly: false, locked });
   }
   const days = [...byDate.values()].sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  return { month, days, locked, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+  const candidateDraftIds = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=eq.kimi_vision_candidate&limit=10000`,10000) : [];
+  const recognizedDraftIds = new Set(candidateDraftIds.map((cell)=>cleanText(cell.draft_id,40)));
+  for (const day of days) day.recognition_saved = recognizedDraftIds.has(cleanText(day.draft_id,40));
+  const draftDays = days.filter((day)=>day.status === "draft" && Boolean(day.draft_id));
+  const recognizableDays = draftDays.filter((day)=>Number(day.approved_original_count || 0) > 0);
+  const recognizedDays = recognizableDays.filter((day)=>day.recognition_saved === true);
+  return { month, days, locked, manual_entry_only: false, ai_recognition_enabled: true, meiguanjia_used: false,
+    recognition:{eligible_days:recognizableDays.length,recognized_days:recognizedDays.length,
+      pending_days:recognizableDays.length-recognizedDays.length,confirmed_days:days.filter((day)=>day.status==="confirmed").length},
     permissions: { write: hasAuthCapability(session, "daily_report.write") } };
 }
 

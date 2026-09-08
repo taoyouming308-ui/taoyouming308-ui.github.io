@@ -233,7 +233,7 @@ async function run() {
       document.querySelectorAll('.view').forEach(node=>node.classList.add('hidden'));document.getElementById('view-daily-report').classList.remove('hidden');state.view='daily-report';
       const sheet=state.imports.sheet;window.fixtureDailyExisting=sheet.cells.find(cell=>cell.effective_numeric!=null);window.fixtureDailyBlank=sheet.cells.find(cell=>cell.effective_numeric==null);
       sheet.cells.forEach(cell=>{if(cell.effective_numeric!=null){cell.manual_override=true;cell.corrected_numeric=cell.effective_numeric;}});
-      const raw=api;api=async function(operation,payload){if(operation==='daily_sheet_recognize'){window.fixtureCalls.push({operation,...payload});return {audit_id:'test-audit',cells:[{id:window.fixtureDailyExisting.id,value:999,confidence:1},{id:window.fixtureDailyBlank.id,value:123,confidence:.6}],warnings:[]};}return raw(operation,payload);};
+      const raw=api;api=async function(operation,payload){if(operation==='daily_sheet_recognize'){window.fixtureCalls.push({operation,...payload});var next=structuredClone(state.imports.sheet),blank=next.cells.find(cell=>cell.id===window.fixtureDailyBlank.id);blank.ocr_numeric=123;blank.ocr_text='123';blank.confidence=.6;blank.source_method='kimi_vision_candidate';next.draft.edit_revision++;return {saved:{saved_cells:1,manual_cells_preserved:1},sheet:next,cells:[{id:window.fixtureDailyExisting.id,value:999,confidence:1},{id:window.fixtureDailyBlank.id,value:123,confidence:.6}],warnings:[]};}return raw(operation,payload);};
       renderDailySheetDetail();
     });
     const originalSrc=await page.locator('#daily-detail-image').getAttribute('src');
@@ -241,9 +241,10 @@ async function run() {
     assert.match(await page.locator('#daily-detail-image').getAttribute('style'),/rotate\(90deg\)/);
     assert.equal(await page.locator('#daily-detail-image').getAttribute('src'),originalSrc,'rotation never rewrites original image');
     await page.locator('#daily-recognize').click();
-    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('已填入 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
+    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('识别草稿已保存 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').classList.contains('recognition-candidate')),true);
     assert.equal(await page.locator('#daily-detail-reviewed').isChecked(),false);
     assert.equal(await page.evaluate(()=>window.fixtureCalls.filter(row=>row.operation==='daily_sheet_confirm').length),0);
     assert.deepEqual(errors, []);

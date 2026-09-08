@@ -92,13 +92,39 @@ async function run() {
     sql(`select id from zysyr_save_business_evidence_rule('${id(3)}','${id(1)}','${id(2)}','report_cell','${id(14)}',false,'此笔无需凭证');`);
     assert.equal(sql(`select evidence_policy from zysyr_business_evidence_rules where business_id='${id(14)}'`),'none');
     expectFailure(`select id from zysyr_save_business_evidence_rule('${id(3)}','${id(1)}','${id(2)}','report_cell','${id(15)}',false,'错误关闭小计凭证');`, /RECORD_NOT_FOUND/);
-    sql('alter table zysyr_daily_sheet_drafts add column report_date date, add column edit_revision integer, add column status text;');
+    sql(`alter table zysyr_daily_sheet_drafts add column report_date date, add column edit_revision integer,
+      add column status text, add column source_voucher_id uuid, add column validation_result jsonb default '{}'::jsonb,
+      add column ocr_provider text, add column ocr_model text, add column updated_by_user_id uuid, add column updated_at timestamptz;
+      create table zysyr_voucher_attachments(id uuid,company_id uuid,store_id uuid,audit_status text,document_type text,primary key(company_id,store_id,id));
+      create table zysyr_daily_sheet_attachments(company_id uuid,store_id uuid,draft_id uuid,voucher_id uuid,attachment_kind text);
+      create table zysyr_daily_sheet_cells(id uuid,company_id uuid,store_id uuid,draft_id uuid,cell_role text,
+        ocr_numeric numeric,ocr_text text,corrected_numeric numeric,manual_override boolean default false,
+        confidence numeric,source_method text,bbox jsonb,updated_by_user_id uuid,updated_at timestamptz,
+        constraint zysyr_daily_sheet_cells_source_method_check check(source_method in ('openai_vision','paddle_ocr','blank_template')),
+        primary key(company_id,store_id,id));
+      create function zysyr_private.daily_sheet_cell_value(zysyr_daily_sheet_cells) returns numeric language sql as $$select case when $1.manual_override then $1.corrected_numeric else $1.ocr_numeric end$$;
+      create function zysyr_private.daily_sheet_validation(uuid,uuid,uuid) returns jsonb language sql as $$select jsonb_build_object('valid',true,'grand_total',coalesce(sum(zysyr_private.daily_sheet_cell_value(c)),0)) from public.zysyr_daily_sheet_cells c where c.company_id=$1 and c.store_id=$2 and c.draft_id=$3$$;`);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260908094822_daily_rollup_adjustment_snapshot.sql'),'utf8'));
-    sql(`insert into zysyr_daily_sheet_drafts values('${id(30)}','${id(1)}','${id(2)}','2026-06-01',1,'confirmed');`);
+    sql(`insert into zysyr_daily_sheet_drafts(id,company_id,store_id,report_date,edit_revision,status) values('${id(30)}','${id(1)}','${id(2)}','2026-06-01',1,'confirmed');`);
     const linked = snapshot => `select id from zysyr_save_daily_linked_monthly_adjustment('${id(3)}','${id(1)}','${id(2)}','history','${id(10)}','2026-06-01',${currentVersions},${adjustmentSnapshot()},80,85,90,'日报快照测试',${snapshot});`;
     expectFailure(linked("'{}'::jsonb"),/DATA_CHANGED_RELOAD/);
     sql(linked(`'{"${id(30)}":1}'::jsonb`));
     expectFailure('set role authenticated;'+linked(`'{"${id(30)}":1}'::jsonb`),/permission denied/);
+    sql(`insert into zysyr_voucher_attachments values('${id(31)}','${id(1)}','${id(2)}','approved','daily_report');
+      insert into zysyr_daily_sheet_drafts(id,company_id,store_id,report_date,edit_revision,status,source_voucher_id,updated_by_user_id)
+      values('${id(32)}','${id(1)}','${id(2)}','2026-06-02',0,'draft','${id(31)}','${id(3)}');
+      insert into zysyr_daily_sheet_cells(id,company_id,store_id,draft_id,cell_role,source_method,updated_by_user_id)
+      values('${id(33)}','${id(1)}','${id(2)}','${id(32)}','staff_value','blank_template','${id(3)}'),
+        ('${id(34)}','${id(1)}','${id(2)}','${id(32)}','staff_value','blank_template','${id(3)}');
+      update zysyr_daily_sheet_cells set corrected_numeric=20,manual_override=true where id='${id(34)}';`);
+    const recognize=`select zysyr_apply_daily_sheet_recognition_candidates('${id(3)}','${id(1)}','${id(2)}','${id(32)}','${id(31)}',0,
+      '[{"id":"${id(33)}","value":10,"confidence":0.9},{"id":"${id(34)}","value":99,"confidence":1}]','kimi-k2.6');`;
+    sql(recognize);
+    assert.equal(sql(`select ocr_numeric from zysyr_daily_sheet_cells where id='${id(33)}'`),'10');
+    assert.equal(sql(`select corrected_numeric from zysyr_daily_sheet_cells where id='${id(34)}'`),'20');
+    assert.equal(sql(`select edit_revision from zysyr_daily_sheet_drafts where id='${id(32)}'`),'1');
+    expectFailure(recognize,/CHANGED_RELOAD/);
+    expectFailure(`set role authenticated;${recognize}`,/permission denied/);
     console.log('PostgreSQL: source preservation, audit, locks, RLS, daily snapshot stale rejection and role denial passed');
   } finally { docker(['stop',name]); }
 }
