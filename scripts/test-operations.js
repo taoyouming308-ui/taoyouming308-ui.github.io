@@ -61,7 +61,7 @@ expect(html.includes("api('report_lineage'") && html.includes('data-report-linea
 expect(html.includes('怎么算出来的') && html.includes('来自哪天、哪一行、谁上传') && html.includes('对应凭证'), 'shareholder trace drawer copy missing');
 expect(html.includes('trace-mismatch') && html.includes('trace-missing_evidence') && html.includes('trace-unlinked'), 'trace exception highlighting missing');
 expect(html.includes('股东视角 · 只读') && html.includes('财务视角 · 可上传'), 'shareholder and finance perspectives missing');
-expect(html.includes('不连接、不读取美管加') && html.includes('数值只取自本页所示财务上传原件'), 'finance-only source boundary copy missing');
+expect(html.includes('不连接、不读取美管加') && html.includes('财务上传的原表数据及财务确认的月报调整') && html.includes('调整不覆盖日报原数'), 'finance-only source and monthly-only adjustment boundary copy missing');
 expect(!html.includes('kpi-income') && !html.includes('每日收支趋势') && !html.includes('data-view="revenue"'), 'automatic KPI, trend, or ranking UI must be removed');
 expect(!html.includes('美管加已同步消费') && !html.includes('income_read_only_from_mgj'), 'old Meiguanjia synchronization copy must be removed');
 expect(html.includes('无需填写邮箱') && html.includes('员工账号') && html.includes('密码'), 'username/password login copy missing');
