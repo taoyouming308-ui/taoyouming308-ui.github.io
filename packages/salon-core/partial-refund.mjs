@@ -1,6 +1,7 @@
 import {serverId,amountToCents} from './api-client.mjs';
 import {cashRefundSource,verifyCashRefundReceipt} from './refund-request.mjs';
 import {inspectRefund} from './refund-review.mjs';
+import {cashRefundAvailability} from './refund-availability.mjs';
 const fail=()=>{throw Error('部分退款数量、金额或原单核对不匹配');};
 const fixed=(value,digits)=>{if(typeof value!=='string'||!new RegExp(`^\\d{1,${digits===2?10:9}}\\.\\d{${digits}}$`).test(value))fail();return Number(value.replace('.',''));};
 const freeze=x=>{if(x&&typeof x==='object'){Object.values(x).forEach(freeze);Object.freeze(x);}return x;};
@@ -12,8 +13,10 @@ function allocations(lines){
 }
 export function partialRefundProposal(source,lines,scope){
  cashRefundSource(source,source.orderId,scope);
+ if(source.availableAmount!==undefined)cashRefundAvailability(source,source.orderId,scope);
  const total=allocations(lines);
- for(const row of lines){const original=source.lines.find(l=>l.id===row.orderLineId);if(!original||fixed(row.quantity,3)>fixed(original.quantity,3)||fixed(row.amount,2)>fixed(original.amount,2))fail();}
+ for(const row of lines){const original=source.lines.find(l=>l.id===row.orderLineId);if(!original||fixed(row.quantity,3)>fixed(original.availableQuantity??original.quantity,3)||fixed(row.amount,2)>fixed(original.availableAmount??original.amount,2))fail();}
+ if(source.availableAmount!==undefined&&total>fixed(source.availableAmount,2))fail();
  if(total>=amountToCents(source.amount))throw Error('部分退款合计须小于原单应收；全额请使用全退入口');
  return freeze({orderId:source.orderId,paymentId:source.paymentId,originalAmount:source.amount,amount:(total/100).toFixed(2),lines:structuredClone(lines)});
 }
@@ -33,9 +36,11 @@ export function verifyPartialRefundReadback(data,receipt,scope,source=null,reaso
 export function renderPartialRefundEditor(container,source,onChange){
  const doc=container.ownerDocument,fragment=doc.createDocumentFragment(),inputs=[];
  const heading=doc.createElement('p');heading.textContent=`原单 ${source.number} · 原现金支付 ${source.paymentId} · 原应收 ¥${source.amount}。勾选项目后分别填写申请数量、金额；不会按当前售价或数量自动计算退款金额。`;fragment.append(heading);
+ if(source.availableAmount!==undefined){const summary=doc.createElement('p');summary.textContent=`已执行退款 ¥${source.executedAmount} · 在途申请占用 ¥${source.pendingAmount} · 当前可申请 ¥${source.availableAmount}。在途不代表已退钱，数量耗尽的明细即使有金额余额也不能继续申请。`;fragment.append(summary);}
  for(const row of source.lines){
   const box=doc.createElement('fieldset'),legend=doc.createElement('legend');box.style.minWidth='0';box.style.overflowWrap='anywhere';legend.textContent=`${row.name} · 原数量 ${row.quantity} · 原金额 ¥${row.amount}`;box.append(legend);
   const selected=doc.createElement('input'),selectionLabel=doc.createElement('label');selected.type='checkbox';selected.style.width='auto';selected.setAttribute('aria-label',`选择退款明细 ${row.id}`);selectionLabel.append(selected,doc.createTextNode('申请退此项'));box.append(selectionLabel);
+  if(row.availableAmount!==undefined){const quota=doc.createElement('p');quota.textContent=`已执行：${row.executedQuantity} / ¥${row.executedAmount}；在途占用：${row.pendingQuantity} / ¥${row.pendingAmount}；可申请：${row.availableQuantity} / ¥${row.availableAmount}`;box.append(quota);selected.disabled=Number(row.availableQuantity)<=0||Number(row.availableAmount)<=0;}
   const quantity=doc.createElement('input'),amount=doc.createElement('input');
   for(const [el,label,max] of [[quantity,'申请退款数量（最多三位小数）',13],[amount,'申请退款金额（最多两位小数）',13]]){const l=doc.createElement('label');l.textContent=label;el.inputMode='decimal';el.maxLength=max;el.disabled=true;l.append(el);box.append(l);el.oninput=onChange;}
   selected.onchange=()=>{quantity.disabled=amount.disabled=!selected.checked;onChange();};

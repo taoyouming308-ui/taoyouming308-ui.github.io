@@ -1,5 +1,7 @@
 # Salon Core
 
+`refund-availability.mjs` 接单笔现金的已执行、在途占用与剩余数量/金额核对。部分退款入口升级为额度快照后多次申请；历史分配/反向支付/订单累计不一致时拒绝继续。全退入口限制不变，不开放实际执行，见 `../../docs/salon-cash-refund-availability.md`。
+
 `partial-refund.mjs` 接首次单笔现金部分退款：逐项数量/金额 → 冻结分配预览 → 快照提交 → 回读及原请求恢复。与 `refund-request.mjs` 全退入口分开，数量不代表返库验收。已退过订单、多次在途申请与执行未开放，见 `../../docs/salon-partial-cash-refund.md`。
 
 `refund-review.mjs` 与本机工作台接通退款申请队列、原支付分配核对及双人审批。refund_review 必须携带完整读取快照，事务内比较后更新审批；原键重试/刷新只读恢复。批准不执行退款或返库，不读会员余额；现金全退和首次部分退款已有申请入口，其他支付方式与执行页面仍待完成。见 `../../docs/salon-refund-review.md`。

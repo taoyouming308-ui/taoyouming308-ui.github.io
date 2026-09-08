@@ -74,6 +74,7 @@ async function startServer(){
   allowed.add('order_status');
   allowed.add('cash_checkout');
   allowed.add('cash_refund_source');allowed.add('cash_refund_request');
+  allowed.add('cash_refund_availability');files['/packages/salon-core/refund-availability.mjs']='packages/salon-core/refund-availability.mjs';
   allowed.add('partial_cash_refund_request');files['/packages/salon-core/partial-refund.mjs']='packages/salon-core/partial-refund.mjs';
   files['/packages/salon-core/refund-request.mjs']='packages/salon-core/refund-request.mjs';
   for(const op of ['refund_queue','refund_detail','refund_review'])allowed.add(op);

@@ -1,4 +1,5 @@
 const OPERATIONS={
+  cash_refund_availability:{rpc:'salon_get_cash_refund_availability'},
   partial_cash_refund_request:{rpc:'salon_request_partial_cash_refund'},
   cash_refund_source:{rpc:'salon_get_cash_refund_source'},cash_refund_request:{rpc:'salon_request_cash_refund'},
   refund_queue:{rpc:'salon_list_refund_review_queue'},refund_detail:{rpc:'salon_get_refund_review'},
@@ -56,7 +57,7 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='members')return finish(200,{data:await deps.read('members',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,customerId:integer(payload.customerId,'顾客',true),status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     if(operation==='refunds')return finish(200,{data:await deps.read('refunds',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     let args;
-    if(operation==='cash_refund_source'){
+    if(['cash_refund_source','cash_refund_availability'].includes(operation)){
       if(!Number.isSafeInteger(payload.orderId)||payload.orderId<=0)throw new Error('订单编号无效');
       args={...common,p_order_id:integer(payload.orderId,'订单')};
     }else if(['cash_refund_request','partial_cash_refund_request'].includes(operation)){

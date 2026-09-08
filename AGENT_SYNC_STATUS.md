@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## Salon 现金剩余额度与多次退款申请（2026-09-08）
+
+- App version: v481。CLI 新建 20260908070633_salon_cash_refund_availability.sql：单笔原现金支付、历史申请/反向支付/订单已退累计交叉核对，逐行已执行/在途/可申请数量和金额、原单与明细历史索引、service_role-only 只读入口。历史不一致或超核对上限拒绝，不自动修账。
+- 部分退款改用完整额度快照，多次申请仍锁原单与原支付后 CAS；全参数指纹、原键与刷新恢复不变；旧全退限制不放宽。请求函数计数仍 47，不是模块数。只申请，不退款/返库。
+- 模型/API、全量 Salon JS/MJS 和 PG 专项通过：三次合成执行累计到归零、在途占用、驳回释放、旧快照、跨店/撤权、反向支付与合计损坏拒绝、只读事务；浏览器及旧流程最终回归状态见本批文档。
+- 按 Supabase/Postgres 技能采用最小权限、索引和锁序。默认本机 Advisor 实例不可用，未完成且未切生产。真实退款/返库、撤销入口、会员与组合支付、正式 Auth/Edge 和原三 App 整合仍未完成。
+- 今日备份已确认，仅 feature/meiguanjia-parity-v1；不推 main、不部署，详见 docs/salon-cash-refund-availability.md。
+
 ## Salon 首次现金部分退款申请（2026-09-08）
 
 - App version: v481。CLI 新建 20260908064655_salon_partial_cash_refund_request.sql；复用首次现金原单读取、分别填写数量/金额、锁后快照比较、单笔现金合计分配、完整员工指纹与审计回滚，service_role-only。请求函数覆盖 47（不是模块数）。
