@@ -852,18 +852,21 @@ function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
 
 const MONTHLY_EVIDENCE_POLICIES = new Set(["voucher_required", "source_report", "none"]);
 
+function monthlyItemCategory(cell: JsonRecord): string {
+  const label = cleanText(cell.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/");
+  if (/编号|序号|员工号/.test(label)) return "fixed";
+  if (/^(小计|合计|总计|盈亏)(\/|$)/.test(label)) return "total";
+  // The original sheet's entire 主营 block is income, including product/dorm entries.
+  if (/^主营|美发收入|营业收入|产品收入|其他收入|总收入/.test(label)) return "income";
+  if (/^技术人员|^后勤|^发型师\/|^人工\/|工资|底薪|提成|饭补|薪酬/.test(label)) return "salary";
+  if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|产品消耗|零售产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出|费用|鲜花/.test(label)) return "expense";
+  if (cell.cell_kind === "formula" || /小计|合计|盈亏/.test(label)) return "total";
+  return "source";
+}
+
 function defaultMonthlyEvidencePolicy(cell: JsonRecord): string {
-  const kind = cleanText(cell.cell_kind, 30);
-  const label = cleanText(cell.label, 300).replace(/[\s/／·]/g, "");
-  const amount = Number(cell.numeric_value);
-  if (kind === "formula" || /小计|合计|总计|盈亏/.test(label) || (Number.isFinite(amount) && amount === 0)) return "none";
-  if (/美发收入|营业收入|产品收入|其他收入|技术人员|后勤人员|人工|工资|底薪|提成|饭补|社保|奖金|补贴|扣款/.test(label)) {
-    return "source_report";
-  }
-  if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出/.test(label)) {
-    return "voucher_required";
-  }
-  return "source_report";
+  const category = monthlyItemCategory(cell);
+  return category === "expense" ? "voucher_required" : category === "source" ? "source_report" : "none";
 }
 
 async function monthlyEvidenceRules(
@@ -882,13 +885,16 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
     const address = cleanText(cell.cell_address, 20).toUpperCase();
     if (!address) continue;
     const override = overrides.get(address);
-    output[address] = override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
+    const category = monthlyItemCategory(cell);
+    output[address] = ["income", "salary", "total", "fixed"].includes(category) ? "none"
+      : override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
   }
   return output;
 }
 
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
-  const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"));
+  const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
+    await monthlyIncomeAdjustments(companyId, storeId, month));
   if (!entries.length) return null;
   const batchId = cleanText(entries[0].import_batch_id, 40);
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
@@ -922,6 +928,7 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     cell.formula = cleanText(current.formula, 2000) || cell.formula || null;
     cell.cell_kind = cleanText(current.cell_kind, 30) || cell.cell_kind;
     cell.label = cleanText(current.label, 300) || cell.label;
+    cell.item_category = monthlyItemCategory(cell);
     const rowIndex = Number(cell.row_number) - 1, columnIndex = Number(cell.column_number) - 1;
     if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
   }
@@ -1021,7 +1028,8 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       || cleanText(lock.store_id, 40) === storeId);
     monthlyReport = {
       ...monthlyReport,
-      display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions),
+      display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
+        await monthlyIncomeAdjustments(companyId, storeId, month)),
     };
     const latest = new Map<string, string>();
     const latestSourceCount = new Map<string, number>();
@@ -1128,7 +1136,9 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 // Derived values are computed on read; the immutable source and revisions stay intact.
-function effectiveHistoryMonthlyEntries(entries: JsonRecord[]): JsonRecord[] {
+function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord[] {
+  const adjustmentMap = new Map<string, number>();
+  for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const rows = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
   const byAddress = new Map(rows.map((row) => [cleanText(row.current_payload.cell_address, 20).toUpperCase(), row]));
   const values = new Map<string, number>();
@@ -1140,11 +1150,17 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[]): JsonRecord[] {
     const row = byAddress.get(address);
     if (!row) return 0; // Empty Excel cells contribute zero.
     const item = row.current_payload;
+    const delta = adjustmentMap.get(String(row.id)) || 0;
+    function finish(base: number): number {
+      const value = Number((base + delta).toFixed(4));
+      if (delta) changed.add(address);
+      item.amount = value; values.set(address, value); return value;
+    }
     if (item.cell_kind !== "formula") {
       const value = Number(item.amount);
       if (!Number.isFinite(value)) return null;
       if (Number((row.posted_payload as JsonRecord)?.amount) !== value) changed.add(address);
-      values.set(address, value); return value;
+      return finish(value);
     }
     visiting.add(address);
     const formula = cleanText(item.formula, 2000);
@@ -1154,12 +1170,12 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[]): JsonRecord[] {
     if (!refs.some((ref) => changed.has(ref))) {
       visiting.delete(address);
       const cached = Number(item.amount);
-      if (Number.isFinite(cached)) { values.set(address, cached); return cached; }
+      if (Number.isFinite(cached)) return finish(cached);
       return null;
     }
     const value = valid ? safeFormulaValue(formula, refs, values) : null;
     visiting.delete(address);
-    if (value !== null) { item.amount = value; values.set(address, value); changed.add(address); }
+    if (value !== null) { changed.add(address); return finish(value); }
     return value;
   }
   for (const address of byAddress.keys()) evaluate(address);
@@ -1227,7 +1243,9 @@ function safeFormulaValue(formula: string, precedents: unknown[], values: Map<st
   }
 }
 
-function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[]): JsonRecord {
+function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord {
+  const adjustmentMap = new Map<string, number>();
+  for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const source = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
   const display = JSON.parse(JSON.stringify(source)) as JsonRecord;
   const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
@@ -1242,14 +1260,15 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
     const original = Number(cell.numeric_value);
     const revision = latest.get(cleanText(cell.id, 40));
     const effective = revision ? Number(revision.after_amount) : original;
-    if (Number.isFinite(effective)) numericByAddress.set(address, effective);
+    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4)));
   }
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false;
     for (const cell of cells) {
       if (cleanText(cell.cell_kind, 20) !== "formula") continue;
       const address = cleanText(cell.cell_address, 20).toUpperCase();
-      const calculated = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
+      const base = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
+      const calculated = base === null ? null : Number((base + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4));
       if (calculated !== null && numericByAddress.get(address) !== calculated) {
         numericByAddress.set(address, calculated); changed = true;
       }
@@ -1267,6 +1286,7 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
     if (displayCell && numeric !== undefined) {
       displayCell.numeric_value = numeric;
       displayCell.display_value = String(numeric);
+      displayCell.item_category = monthlyItemCategory(cell);
     }
     effectiveCells[address] = {
       source_cell_id: cell.id, original_amount: cell.numeric_value,
@@ -1291,6 +1311,10 @@ async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promis
   if (!reason) throw new Error("请填写本次金额修改原因");
   const cells = Array.isArray(payload.cells) ? payload.cells as JsonRecord[] : [];
   if (!cells.length || cells.length > 50) throw new Error("每次请选择 1 至 50 个有变化的金额保存");
+  const sourceCells = await restRowsAll(`zysyr_report_cells?select=cell_address,label,cell_kind&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}`, 5000);
+  if (cells.some(change => sourceCells.some(cell => cell.cell_address === cleanText(change.address ?? change.cell_address, 20).toUpperCase() && monthlyItemCategory(cell) === "income"))) {
+    throw new Error("收入请点击月报金额，通过月报调整预览并保存，原始报表保持不变");
+  }
   const changes = cells.map((cell) => {
     const address = cleanText(cell.address ?? cell.cell_address, 20).toUpperCase();
     const amount = cleanText(cell.value ?? cell.after_amount, 100);
@@ -1370,11 +1394,12 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
     restRowsAll(`zysyr_report_cells?select=id,report_id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
     restRowsAll(`zysyr_monthly_cell_revisions?select=id,report_id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=source_cell_id.asc,revision.desc&limit=10000`, 10000),
   ]);
-  const effectiveReports = ordered.map((row) => ({ ...row,
+  const effectiveReports = await Promise.all(ordered.map(async (row) => ({ ...row,
     display_data: effectiveMonthlyDisplay(row.display_data,
       allCells.filter((cell) => cleanText(cell.report_id, 40) === cleanText(row.id, 40)),
-      allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40))),
-  }));
+      allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40)),
+      await monthlyIncomeAdjustments(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7))),
+  })));
   const baseDisplay = effectiveReports[0].display_data && typeof effectiveReports[0].display_data === "object" ? effectiveReports[0].display_data as JsonRecord : {};
   const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
   for (let i = 1; i < effectiveReports.length; i += 1) {
@@ -2288,7 +2313,8 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   const batch = batches[0];
   if (!batch) throw new Error("月报不存在或无权访问");
   const month = cleanText((session as JsonRecord).__trace_month, 7);
-  const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"));
+  const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
+    await monthlyIncomeAdjustments(companyId, storeId, month));
   const entry = entries.find((row) => cleanText((row.current_payload as JsonRecord)?.cell_address, 20).toUpperCase() === address);
   if (!entry) throw new Error("该位置不是可追溯的历史金额或公式单元格");
   const current = entry.current_payload as JsonRecord;
@@ -2656,6 +2682,83 @@ async function saveBusinessEvidenceRule(payload: JsonRecord, session: JsonRecord
   return { saved };
 }
 
+async function monthlyIncomeAdjustments(companyId: string, storeId: string, month: string): Promise<JsonRecord[]> {
+  return restRowsAll(`zysyr_monthly_income_adjustments?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01&order=revision.desc,created_at.desc`, 10000);
+}
+
+// Capture the entire source revision set. The SQL writer verifies it under the
+// month lock, rejecting concurrent edits rather than silently overwriting them.
+async function monthlyAdjustmentContext(companyId: string, storeId: string, month: string, reportId: string, historical: boolean): Promise<JsonRecord> {
+  const adjustments = await monthlyIncomeAdjustments(companyId, storeId, month);
+  if (historical) {
+    const source = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
+    return { adjustments, versions: Object.fromEntries(source.map(row => [String(row.id), row.version])),
+      cells: effectiveHistoryMonthlyEntries(source, adjustments).filter(row => row.import_batch_id === reportId)
+        .map(row => ({ ...row.current_payload as JsonRecord, id: row.id, numeric_value: (row.current_payload as JsonRecord).amount })) };
+  }
+  const cells = await restRowsAll(`zysyr_report_cells?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}`, 5000);
+  const revisions = await restRowsAll(`zysyr_monthly_cell_revisions?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=revision.desc`, 10000);
+  const display = effectiveMonthlyDisplay({ cells, values: [] }, cells, revisions, adjustments);
+  return { adjustments, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
+}
+
+async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const target = data.target as JsonRecord;
+  const category = monthlyItemCategory(target);
+  data.item_category = category;
+  if (["income", "salary", "total", "fixed"].includes(category)) {
+    data.evidence_policy = "none"; data.can_upload_vouchers = false;
+    data.can_manage_business_evidence_rules = false; data.can_manage_evidence_rules = false;
+    data.anomalies = (data.anomalies as string[] || []).filter(item => item !== "missing_voucher");
+    if (data.revision) (data.revision as JsonRecord).status = "not_required";
+    for (const row of data.business_details as JsonRecord[] || []) row.evidence_policy = "none";
+  }
+  if (data.historical && category !== "income") return data;
+  // Match the overview's derived amount, including nested formulas and deltas.
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText((data.report as JsonRecord).report_date, 10).slice(0, 7);
+  const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
+  const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
+  if (effective) target.numeric_value = effective.numeric_value;
+  if (category === "income") {
+    const all = context.adjustments as JsonRecord[];
+    const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
+    const latest = history[0] || null;
+    const actorIds = uuidIn(history.map(row => row.actor_user_id));
+    const actors = actorIds === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,display_name,login_name&company_id=eq.${store.company_id}&id=in.${actorIds}`, 500);
+    data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(latest?.adjustment_delta || 0)).toFixed(4)),
+      adjustment_delta: latest?.adjustment_delta || 0, revision: latest?.revision || 0 };
+    data.amount_history = [...history.map(row => ({ ...row, revision_type: "月报调整", delta: Number(row.after_amount) - Number(row.before_amount), actor: actors.find(actor => actor.id === row.actor_user_id) || null })), ...(data.amount_history as JsonRecord[] || [])];
+  }
+  return data;
+}
+
+async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备财务调整权限的财务账号可以修改收入");
+  const store = await selectedStoreInfo(session, payload);
+  const after = cleanText(payload.after_amount, 100), reason = cleanText(payload.reason, 500);
+  if (!/^-?\d{1,14}(?:\.\d{1,4})?$/.test(after) || !reason) throw new Error("请填写有效金额和修改原因");
+  const trace = await cellTrace(payload, session);
+  const target = trace.target as JsonRecord;
+  if (monthlyItemCategory(target) !== "income") throw new Error("月报调整只适用于收入项目");
+  const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
+  const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
+  const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
+  if (!effective) throw new Error("收入来源不存在，请刷新月报");
+  const adjustments = context.adjustments as JsonRecord[], prior = adjustments.find(row => row.source_id === target.id);
+  const before = Number(effective.numeric_value), base = Number((before - Number(prior?.adjustment_delta || 0)).toFixed(4));
+  if (payload.expected_before === null || payload.expected_before === undefined || before !== Number(payload.expected_before)
+    || Number(payload.expected_revision) !== Number(prior?.revision || 0)) throw new Error("金额已被其他人修改，请重新打开后预览");
+  const saved = await financeRpcSaved("rpc/zysyr_save_monthly_income_adjustment", {
+    p_actor_user_id: session.auth_account_id, p_company_id: store.company_id, p_store_id: store.id,
+    p_source_kind: trace.historical ? "history" : "report", p_source_id: target.id, p_period_month: `${month}-01`,
+    p_expected_versions: context.versions,
+    p_expected_adjustments: Object.fromEntries(adjustments.map(row => [String(row.id), row.revision])),
+    p_base_amount: base, p_before_amount: before, p_after_amount: after, p_reason: reason,
+  });
+  return { saved, source_reports_unchanged: true };
+}
+
 async function historyMonthlyCellSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备已确认财务调整权限的财务账号可以修改月报金额");
   const store = await selectedStoreInfo(session, payload);
@@ -2664,6 +2767,9 @@ async function historyMonthlyCellSave(payload: JsonRecord, session: JsonRecord):
   if (!/^-?\d{1,14}(?:\.\d{1,4})?$/.test(amountText) || !reason) {
     throw new Error("请填写有效金额和本次修改原因");
   }
+  const entryId = uuidValue(payload.ledger_entry_id, "历史月报金额编号无效");
+  const sources = await restRows(`zysyr_history_ledger_entries?select=current_payload&company_id=eq.${store.company_id}&store_id=eq.${store.id}&id=eq.${entryId}&entry_type=eq.monthly_profit_loss&status=eq.posted&limit=1`);
+  if (sources[0] && monthlyItemCategory(sources[0].current_payload as JsonRecord) === "income") throw new Error("收入请通过月报调整保存，不直接覆盖原表金额");
   const saved = await rpcSaved("rpc/zysyr_revise_history_monthly_cell", {
     p_actor_user_id: cleanText(session.auth_account_id, 40),
     p_company_id: cleanText(store.company_id, 40),
@@ -4784,7 +4890,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_upload") return json(await uploadReport(payload, session));
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "report_lineage") return json(await reportLineage(payload, session));
-    if (operation === "cell_trace") return json(await cellTrace(payload, session));
+    if (operation === "cell_trace") return json(await finishMonthlyTrace(await cellTrace(payload, session), payload, session));
+    if (operation === "monthly_income_adjustment_save") return json(await monthlyIncomeAdjustmentSave(payload, session));
     if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
     if (operation === "monthly_evidence_rule_save") return json(await saveMonthlyEvidenceRule(payload, session));
     if (operation === "business_evidence_rule_save") return json(await saveBusinessEvidenceRule(payload, session));

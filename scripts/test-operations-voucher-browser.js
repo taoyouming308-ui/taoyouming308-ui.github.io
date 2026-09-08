@@ -159,6 +159,51 @@ async function run() {
     await page.getByText('这份原件暂时未能读取：', { exact: false }).waitFor();
     await page.locator('.monthly-voucher-preview img').waitFor();
     assert.equal(await page.locator('.monthly-voucher-preview img').count(), 1);
+    // Latest confirmed policy: income is edited directly as a monthly-only
+    // adjustment, wages/totals have no voucher UI, expenses retain it.
+    await page.evaluate(() => {
+      window.fixtureMode = 'formula'; window.fixtureCategory = 'income';
+      const raw = api;
+      api = async function (operation, payload) {
+        if (operation === 'monthly_income_adjustment_save') { window.fixtureCalls.push({ operation, ...payload }); return { saved: true, source_reports_unchanged: true }; }
+        const result = await raw(operation, payload);
+        if (operation === 'cell_trace') {
+          result.item_category = window.fixtureCategory;
+          result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '房租' }[window.fixtureCategory];
+          result.can_edit = true;
+          if (window.fixtureCategory !== 'expense') { result.can_upload_vouchers = false; result.can_manage_business_evidence_rules = false; }
+          result.monthly_adjustment = { base_amount: 30, adjustment_delta: 0, revision: 0 };
+        }
+        return result;
+      };
+      return openCellTrace('C3');
+    });
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('[aria-label="选择组成金额"]').count(), 0, 'income formula must expose direct amount editing');
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0);
+    await page.locator('#monthly-inline-amount').fill('45');
+    await page.locator('#monthly-inline-reason').fill('月报调整，不修改日报');
+    await page.locator('#monthly-inline-preview-button').click();
+    assert.match(await page.locator('#monthly-inline-delta').innerText(), /15.00/);
+    if (process.env.ZYSYR_VOUCHER_SCREENSHOTS) {
+      await page.locator('#toast').waitFor({ state: 'hidden' });
+      await page.screenshot({ path: path.join(process.env.ZYSYR_VOUCHER_SCREENSHOTS, 'zysyr-income-adjustment-' + width + 'x' + height + '.png') });
+    }
+    await page.locator('#monthly-inline-save').click();
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
+    const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
+    assert.equal(adjustment.after_amount, '45'); assert.equal(adjustment.expected_before, 30);
+    for (const category of ['salary', 'total']) {
+      await page.evaluate(async category => { window.fixtureCategory = category; await openCellTrace('C3'); }, category);
+      assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload,#monthly-inline-amount').count(), 0, category);
+      assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
+    }
+    await page.evaluate(async () => { window.fixtureCategory = 'income'; state.data.monthly_period_was_locked = true; await openCellTrace('C3'); });
+    assert.equal(await page.locator('#monthly-inline-amount').count(), 0);
+    assert.equal(await page.locator('#monthly-inline-unlock').count(), 1, 'income adjustment must respect month locks');
+    await page.evaluate(async () => { state.data.monthly_period_was_locked = false; window.fixtureCategory = 'expense'; await openCellTrace('C4'); });
+    await page.locator('#monthly-inline-upload').waitFor();
+    assert.equal(await page.locator('[data-simple-rule]').count(), 1);
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();

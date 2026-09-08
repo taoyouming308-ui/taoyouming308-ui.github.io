@@ -79,14 +79,60 @@
       };
     });
   }
+  function renderReportOnly(box, data, context) {
+    var category = data.item_category, target = data.target, editor = box.querySelector('[data-amount-editor]');
+    document.getElementById('cell-trace-page-title').textContent = (target.label || '月报金额') + ' · ' + (category === 'income' ? '编辑收入' : category === 'salary' ? '工资' : '自动汇总');
+    box.querySelector('[data-rules]').remove();
+    if (category === 'income') {
+      var adjustment = data.monthly_adjustment || { base_amount: target.numeric_value, adjustment_delta: 0, revision: 0 };
+      var editable = Object.assign({}, data, { mode: 'input', can_upload_vouchers: false, sources: [], revision: null,
+        target: Object.assign({}, target, { cell_kind: 'input' }) });
+      attachEditor(editor, editable, target.cell_address, context);
+      editor.insertAdjacentHTML('afterbegin', '<div class="help">原报表口径 ' + formatAmount(adjustment.base_amount) + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta) + '。调整只影响月报，不修改日报原数。</div>');
+      var save = document.getElementById('monthly-inline-save');
+      if (save) save.onclick = async function () {
+        var amount = document.getElementById('monthly-inline-amount').value.trim(), reason = document.getElementById('monthly-inline-reason').value.trim();
+        if (!reason || save.dataset.previewAmount !== amount) { toast('请填写原因并先预览修改'); return; }
+        if (!voucherContextCurrent(context) || state.trace.address !== target.cell_address) return;
+        save.disabled = true;
+        try {
+          if (isLocalPreview()) { toast('本地预览不修改正式账'); return; }
+          await api('monthly_income_adjustment_save', Object.assign({}, context, { cell_address: target.cell_address,
+            after_amount: amount, expected_before: target.numeric_value, expected_revision: adjustment.revision, reason: reason }));
+          toast('月报调整已保存，日报原数保持不变');
+          if (voucherContextCurrent(context)) { await loadOverview(); await openCellTrace(target.cell_address); }
+        } catch (error) { toast(error.message); }
+        finally { if (save.isConnected) save.disabled = false; }
+      };
+    } else {
+      editor.innerHTML = '<h4>' + esc(target.label || '月报金额') + ' · ' + formatAmount(target.numeric_value) + '</h4><div class="help">'
+        + (category === 'salary' ? '以工资表为依据，无需另外上传凭证。' : category === 'fixed' ? '原表固定编号，不可修改。' : '由组成项目自动计算，无需上传凭证。') + '</div>';
+    }
+    var sourceView = category === 'salary' ? 'salary-report' : category === 'income' ? 'daily-report' : '';
+    var canRead = category === 'salary' ? state.user.can_read_salary_reports : state.user.can_read_daily_reports;
+    if (sourceView && canRead) {
+      editor.insertAdjacentHTML('beforeend', '<button class="secondary" type="button" data-source-report>查看本月' + (category === 'salary' ? '工资表' : '日报表') + '</button>');
+      editor.querySelector('[data-source-report]').onclick = function () { closeMonthlyWorkbench(); showView(sourceView); };
+    }
+    var history = data.amount_history || [];
+    if (history.length) box.insertAdjacentHTML('beforeend', '<details class="trace-source-details"><summary>修改记录（' + history.length + '）</summary>' + history.map(function (row) {
+      return '<div class="trace-row"><div>' + esc(row.created_at || '') + ' · ' + esc(row.actor && (row.actor.display_name || row.actor.login_name) || '财务')
+        + '<small>' + esc(row.reason || '') + '</small></div><strong>' + formatAmount(row.before_amount) + ' → ' + formatAmount(row.after_amount) + '</strong></div>';
+    }).join('') + '</details>');
+  }
   renderCellTrace = function (data) {
     disposePhoto(); originalRender(data);
     var body = document.getElementById('cell-trace-body');
+    var reportOnly = ['income', 'salary', 'total', 'fixed'].includes(data.item_category);
+    var description = document.getElementById('cell-trace-page-title').nextElementSibling;
+    if (description) description.textContent = reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
+    if (reportOnly) body.innerHTML = '';
     body.querySelectorAll('.monthly-inline-editor,.business-detail-card').forEach(function (node) { node.remove(); });
     var box = document.createElement('section'); box.className = 'trace-card monthly-simple-workbench';
     var context = voucherContext(), rootAddress = data.target.cell_address;
     box.innerHTML = '<div data-composition></div><div data-amount-editor></div><div data-rules></div>';
     body.prepend(box);
+    if (reportOnly) { renderReportOnly(box, data, context); return; }
     var editor = box.querySelector('[data-amount-editor]'), rules = box.querySelector('[data-rules]');
     if (data.mode !== 'formula') { attachEditor(editor, data, rootAddress, context); attachRules(rules, data); return; }
     var choose = box.querySelector('[data-composition]');

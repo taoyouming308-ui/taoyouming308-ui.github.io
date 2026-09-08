@@ -49,6 +49,7 @@
       update();
     }
     async function mount(data, address, context, body) {
+      if (['income', 'salary', 'total', 'fixed'].includes(data.item_category)) { generation++; return; }
       var request = ++generation, details = document.createElement('details'), workbenchCards = Array.from(body.querySelectorAll('.monthly-simple-workbench'));
       if (!workbenchCards.length) workbenchCards = Array.from(body.querySelectorAll('.monthly-inline-editor,.business-detail-card'));
       details.className = 'trace-source-details voucher-trace-details';
