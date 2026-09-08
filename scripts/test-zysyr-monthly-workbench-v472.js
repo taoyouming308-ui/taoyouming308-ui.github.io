@@ -6,6 +6,7 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
+const workbench = fs.readFileSync(path.join(root, 'operations-monthly-workbench.js'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260905073551_zysyr_monthly_evidence_workbench.sql'), 'utf8');
 const detailMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908023351_zysyr_monthly_cell_detail_workbench.sql'), 'utf8');
 const directCellRuleMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908034635_zysyr_report_cell_evidence_rule.sql'), 'utf8');
@@ -16,6 +17,7 @@ function expect(value, message) { if (!value) throw new Error(message); }
 for (const marker of [
   '上传原表 / 凭证', 'monthly-material-form', '金额处理',
   '上传这个数字的凭证', '编辑金额', 'monthly-inline-amount', '预览修改', '确认保存', '上传凭证图片 / PDF',
+  '确认保存这次修改',
   '逐笔收入 / 开支与凭证', '此笔不需要凭证（只影响这一笔）', 'business_evidence_rule_save',
   'report-focus', 'minReadable=phone ? .68 : .7',
 ]) expect(page.includes(marker), `monthly workbench UI missing: ${marker}`);
@@ -106,6 +108,11 @@ expect(api.includes('business_type: "history_monthly_profit_loss"')
   && api.includes('business_type: "report_cell"')
   && api.includes('if (!businessDetails.length && !sources.length)'),
   'direct historical and current monthly inputs must appear as one independently controlled record');
+expect(api.includes('return "purchase_summary"')
+  && api.includes('result.purchase_components')
+  && api.includes('["income", "salary", "total", "fixed", "purchase_summary"]')
+  && workbench.includes('产品进货明细') && workbench.includes('data-root-voucher-upload'),
+  'product purchase summary must bypass summary vouchers and return original purchase detail cells');
 
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');

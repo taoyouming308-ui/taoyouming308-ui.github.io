@@ -859,6 +859,9 @@ function monthlyItemCategory(cell: JsonRecord): string {
   // The original sheet's entire 主营 block is income, including product/dorm entries.
   if (/^主营|美发收入|营业收入|产品收入|其他收入|总收入/.test(label)) return "income";
   if (/^技术人员|^后勤|^发型师\/|^人工\/|工资|底薪|提成|饭补|薪酬/.test(label)) return "salary";
+  // C31 is only the left-side summary. Its evidence belongs to the right-side
+  // 产品进货 detail rows, so never treat this summary as one expense voucher.
+  if (/^产品成本\/产品进货(?:\/|$)/.test(label)) return "purchase_summary";
   if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|产品消耗|零售产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出|费用|鲜花/.test(label)) return "expense";
   if (cell.cell_kind === "formula" || /小计|合计|盈亏/.test(label)) return "total";
   return "source";
@@ -886,7 +889,7 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
     if (!address) continue;
     const override = overrides.get(address);
     const category = monthlyItemCategory(cell);
-    output[address] = ["income", "salary", "total", "fixed"].includes(category) ? "none"
+    output[address] = ["income", "salary", "total", "fixed", "purchase_summary"].includes(category) ? "none"
       : override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
   }
   return output;
@@ -2387,6 +2390,26 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     }
     precedents.forEach(visit);
     result.editable_components = leaves;
+    if (monthlyItemCategory(target) === "purchase_summary") {
+      const detailColumn = cleanText(precedents[0], 20).match(/^([A-Z]+)/)?.[1] || "G";
+      const formulaDetailAddresses = new Set(precedents.flatMap((ref) => {
+        const summaryRow = byAddress.get(ref);
+        const summaryItem = summaryRow?.current_payload as JsonRecord | undefined;
+        return summaryItem?.cell_kind === "formula"
+          ? formulaPrecedents(cleanText(summaryItem.formula, 2000), cleanText(summaryRow?.source_sheet, 120)) : [ref];
+      }));
+      const candidates = entries.map((row) => {
+        const item = row.current_payload as JsonRecord;
+        return { id: row.id, historical_ledger_entry_id: row.id,
+          cell_address: cleanText(item.cell_address, 20).toUpperCase(), cell_kind: item.cell_kind,
+          display_value: item.amount, numeric_value: item.amount, formula: item.formula,
+          label: item.label, source_locator: row.source_locator };
+      }).filter((item) => item.cell_address.startsWith(detailColumn)
+        && /^产品进货\//.test(cleanText(item.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/"))
+        && item.numeric_value !== null && item.numeric_value !== "" && Number.isFinite(Number(item.numeric_value)));
+      result.purchase_components = candidates.filter((item) => formulaDetailAddresses.has(item.cell_address));
+      result.purchase_unincluded_components = candidates.filter((item) => !formulaDetailAddresses.has(item.cell_address) && Number(item.numeric_value) !== 0);
+    }
     return result;
   }
   const moduleEntries = await historyMonthEntries(companyId, storeId, month);
@@ -2507,6 +2530,17 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
       original_numeric_value: cell.numeric_value,
       trace: revisionMap.get(cleanText(cell.id, 40)) || null,
     }));
+    if (monthlyItemCategory(target) === "purchase_summary") {
+      const detailColumn = cleanText(addresses[0], 20).match(/^([A-Z]+)/)?.[1] || "G";
+      const purchaseCells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+      const formulaDetailAddresses = new Set(sourceCells.flatMap((cell) => cleanText(cell.cell_kind, 20) === "formula"
+        ? formulaPrecedents(cleanText(cell.formula, 2000), cleanText(target.sheet_name, 120)) : [cleanText(cell.cell_address, 20).toUpperCase()]));
+      const candidates = purchaseCells.filter((cell) => cleanText(cell.cell_address, 20).toUpperCase().startsWith(detailColumn)
+        && /^产品进货\//.test(cleanText(cell.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/"))
+        && cell.numeric_value !== null && cell.numeric_value !== "" && Number.isFinite(Number(cell.numeric_value)));
+      result.purchase_components = candidates.filter((cell) => formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()));
+      result.purchase_unincluded_components = candidates.filter((cell) => !formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()) && Number(cell.numeric_value) !== 0);
+    }
     return result;
   }
 
@@ -2706,7 +2740,7 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
   const target = data.target as JsonRecord;
   const category = monthlyItemCategory(target);
   data.item_category = category;
-  if (["income", "salary", "total", "fixed"].includes(category)) {
+  if (["income", "salary", "total", "fixed", "purchase_summary"].includes(category)) {
     data.evidence_policy = "none"; data.can_upload_vouchers = false;
     data.can_manage_business_evidence_rules = false; data.can_manage_evidence_rules = false;
     data.anomalies = (data.anomalies as string[] || []).filter(item => item !== "missing_voucher");

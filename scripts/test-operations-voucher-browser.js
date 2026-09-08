@@ -169,9 +169,14 @@ async function run() {
         const result = await raw(operation, payload);
         if (operation === 'cell_trace') {
           result.item_category = window.fixtureCategory;
-          result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '房租' }[window.fixtureCategory];
+          result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '财务费用 / 银/支/微/团手续费', purchase_summary: '产品成本 / 产品进货' }[window.fixtureCategory];
           result.can_edit = true;
-          if (window.fixtureCategory !== 'expense') { result.can_upload_vouchers = false; result.can_manage_business_evidence_rules = false; }
+          result.can_upload_vouchers = window.fixtureCategory === 'expense';
+          result.can_manage_business_evidence_rules = window.fixtureCategory === 'expense';
+          if (window.fixtureCategory === 'purchase_summary') result.purchase_components = [
+            { cell_address: 'G31', label: '产品进货 / 歌薇 / 合计', numeric_value: 1280, cell_kind: 'input' },
+            { cell_address: 'G35', label: '产品进货 / 杭汐 / 合计', numeric_value: 960, cell_kind: 'input' },
+          ], result.purchase_unincluded_components = [{ cell_address: 'G32', label: '产品进货 / 新欧芭 / 合计', numeric_value: 128, cell_kind: 'input' }];
           result.monthly_adjustment = { base_amount: 30, adjustment_delta: 0, revision: 0 };
         }
         return result;
@@ -204,6 +209,15 @@ async function run() {
     await page.evaluate(async () => { state.data.monthly_period_was_locked = false; window.fixtureCategory = 'expense'; await openCellTrace('C4'); });
     await page.locator('#monthly-inline-upload').waitFor();
     assert.equal(await page.locator('[data-simple-rule]').count(), 1);
+    await page.evaluate(async () => { window.fixtureCategory = 'expense'; await openCellTrace('C3'); });
+    await page.locator('[data-root-voucher-upload]').waitFor();
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /这项支出的凭证[\s\S]*不必先进入组成项/);
+    await page.evaluate(async () => { window.fixtureCategory = 'purchase_summary'; await openCellTrace('C3'); });
+    await page.locator('.purchase-detail-row').first().waitFor();
+    assert.equal(await page.locator('.purchase-detail-row').count(), 2, 'purchase summary must open the original product detail rows');
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /歌薇[\s\S]*1,280\.00[\s\S]*杭汐[\s\S]*960\.00/);
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /另有 1 项、合计 128\.00 没有被当前汇总公式计入/);
+    assert.equal(await page.locator('[data-root-voucher-upload],#monthly-inline-upload,.monthly-voucher-preview').count(), 0, 'purchase summary itself must not require a voucher');
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();

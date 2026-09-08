@@ -23,6 +23,7 @@
     return cell.label || known && known.label || '原表 ' + cell.cell_address;
   }
   async function components(data, context) {
+    if (Array.isArray(data.purchase_components)) return data.purchase_components;
     if (Array.isArray(data.editable_components)) return data.editable_components;
     var queue = (data.precedents || []).slice(), seen = new Set(), result = [];
     while (queue.length && seen.size < 240 && voucherContextCurrent(context)) {
@@ -120,21 +121,55 @@
         + '<small>' + esc(row.reason || '') + '</small></div><strong>' + formatAmount(row.before_amount) + ' → ' + formatAmount(row.after_amount) + '</strong></div>';
     }).join('') + '</details>');
   }
+  function renderPurchaseSummary(box, data, context) {
+    var target = data.target, list = box.querySelector('[data-composition]'), excluded = data.purchase_unincluded_components || [];
+    document.getElementById('cell-trace-page-title').textContent = (target.label || '产品进货') + ' · 进货明细';
+    box.querySelector('[data-amount-editor]').remove(); box.querySelector('[data-rules]').remove();
+    list.innerHTML = '<h4>产品进货明细</h4><div class="help">汇总金额由下列原表明细自动合计，汇总格本身无需上传凭证。正在读取明细…</div>';
+    components(data, context).then(function (cells) {
+      if (!box.isConnected || !voucherContextCurrent(context)) return;
+      var seen = new Set();
+      cells = cells.filter(function (cell) {
+        var key = cell.cell_address || (labelFor(cell) + ':' + cell.numeric_value);
+        if (!Number.isFinite(Number(cell.numeric_value)) || Number(cell.numeric_value) === 0 || seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+      if (!cells.length) {
+        list.innerHTML = '<h4>产品进货明细</h4><div class="candidate-warning">原表没有读到可展示的产品进货明细，请核对本月原表。</div>';
+        return;
+      }
+      var excludedTotal = excluded.reduce(function (sum, cell) { return sum + Number(cell.numeric_value || 0); }, 0);
+      list.innerHTML = '<h4>产品进货明细（' + cells.length + ' 项）</h4><div class="help">点击任意一项，直接编辑该明细并查看或上传它自己的凭证。</div>'
+        + (excluded.length ? '<div class="candidate-warning">原表另有 ' + excluded.length + ' 项、合计 ' + formatAmount(excludedTotal) + ' 没有被当前汇总公式计入，请财务核对原表公式。</div>' : '')
+        + '<div class="purchase-detail-list">'
+        + cells.map(function (cell) { return '<button type="button" class="purchase-detail-row" data-purchase-cell="' + esc(cell.cell_address) + '"><span>'
+          + esc(labelFor(cell).replace(/^产品进货\s*[\/／]\s*/, '').replace(/\s*[\/／]\s*合计$/, '')) + '</span><strong>'
+          + formatAmount(cell.numeric_value) + '</strong><small>查看 / 编辑 / 凭证</small></button>'; }).join('') + '</div>';
+      list.querySelectorAll('[data-purchase-cell]').forEach(function (button) {
+        button.onclick = function () { openCellTrace(button.dataset.purchaseCell); };
+      });
+    }).catch(function (error) { if (box.isConnected) list.innerHTML = '<div class="candidate-warning">进货明细读取失败：' + esc(error.message) + '</div>'; });
+  }
   renderCellTrace = function (data) {
     disposePhoto(); originalRender(data);
     var body = document.getElementById('cell-trace-body');
-    var reportOnly = ['income', 'salary', 'total', 'fixed'].includes(data.item_category);
+    var reportOnly = ['income', 'salary', 'total', 'fixed', 'purchase_summary'].includes(data.item_category);
     var description = document.getElementById('cell-trace-page-title').nextElementSibling;
-    if (description) description.textContent = reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
+    if (description) description.textContent = data.item_category === 'purchase_summary' ? '直接查看原表产品进货明细；凭证绑定在明细上。'
+      : reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
     if (reportOnly) body.innerHTML = '';
     body.querySelectorAll('.monthly-inline-editor,.business-detail-card').forEach(function (node) { node.remove(); });
     var box = document.createElement('section'); box.className = 'trace-card monthly-simple-workbench';
     var context = voucherContext(), rootAddress = data.target.cell_address;
-    box.innerHTML = '<div data-composition></div><div data-amount-editor></div><div data-rules></div>';
+    box.innerHTML = '<div data-root-actions></div><div data-composition></div><div data-amount-editor></div><div data-rules></div>';
     body.prepend(box);
+    if (data.item_category === 'purchase_summary') { renderPurchaseSummary(box, data, context); return; }
     if (reportOnly) { renderReportOnly(box, data, context); return; }
     var editor = box.querySelector('[data-amount-editor]'), rules = box.querySelector('[data-rules]');
     if (data.mode !== 'formula') { attachEditor(editor, data, rootAddress, context); attachRules(rules, data); return; }
+    if (data.item_category === 'expense' && data.can_upload_vouchers) {
+      box.querySelector('[data-root-actions]').innerHTML = '<h4>这项支出的凭证</h4><div class="help">直接上传到当前月报金额；不必先进入组成项。</div><div class="trace-actions"><button type="button" class="secondary" data-root-voucher-upload>上传凭证图片 / PDF</button></div>';
+    }
     var choose = box.querySelector('[data-composition]');
     choose.innerHTML = '<h4>修改组成金额</h4><div class="help">正在读取可填写的组成项…</div>';
     components(data, context).then(function (cells) {
@@ -161,11 +196,11 @@
 
   // Capture all upload entries inside the amount drawer before legacy auto-upload handlers.
   document.getElementById('view-cell-trace').addEventListener('click', function (event) {
-    var button = event.target.closest('#cell-trace-upload-voucher,#monthly-inline-upload,[data-business-voucher-upload]');
+    var button = event.target.closest('#cell-trace-upload-voucher,#monthly-inline-upload,[data-root-voucher-upload],[data-business-voucher-upload]');
     if (!button) return;
     event.preventDefault(); event.stopImmediatePropagation();
     var workbench = button.closest('.monthly-simple-workbench');
-    var data = workbench ? workbench.selectedTrace : state.trace.data;
+    var data = button.hasAttribute('data-root-voucher-upload') ? state.trace.data : workbench ? workbench.selectedTrace : state.trace.data;
     var context = voucherContext(), target = data && data.target;
     var rootAddress = state.trace.address;
     if (!target || !data.can_upload_vouchers) { toast('当前账号不能上传凭证'); return; }
