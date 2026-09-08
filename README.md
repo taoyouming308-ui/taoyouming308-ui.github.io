@@ -4,6 +4,8 @@
 
 ## 本地启动
 
+Salon 独立门店工作台目前仅作合成数据测试，不是线上员工端替代品。本批现金全退申请与审批衔接范围见 [现金全额退款申请](docs/salon-cash-refund-request.md)，启动及限制见 [本机工作台](docs/salon-local-api-workbench.md)。未开放真实退款或合并原三个 App。
+
 ```sh
 python3 -m http.server 8000
 ```

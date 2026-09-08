@@ -10,6 +10,7 @@ import {orderFlow,renderOrderFlow} from './order-flow.mjs';
 import {createCashPreview,renderCashPreview} from './cash-preview.mjs';
 import {verifyCashReceipt,verifyCashLookup,renderCashReceipt} from './cash-receipt.mjs';
 import {refundStates,refundPage,inspectRefund,verifyRefundDecision,renderRefund} from './refund-review.mjs';
+import {cashRefundSource,verifyCashRefundReceipt,verifyCashRefundReadback,renderCashRefundSource} from './refund-request.mjs';
 import {instantToStoreInput,storeTimeToInstant,formatStoreInstant,storeTimeContext} from './store-time.mjs';
 let timeZone=null,timeVersion=null;
 const $=id=>document.getElementById(id);
@@ -19,6 +20,8 @@ let orderVersion=null;
 const editor=createDraftEditor();
 let loadedFlow=null;
 let refundRecord=null,refundNext=null,refundListedStatus='';
+let cashRefundDraft=null;
+function clearCashRefundSource(){cashRefundDraft=null;$('cashRefundSource').replaceChildren();$('cashRefundReason').value='';$('submitCashRefund').disabled=true;}
 function clearRefundDetail(){refundRecord=null;$('refundDetail').replaceChildren();$('refundReason').value='';$('approveRefund').disabled=true;$('rejectRefund').disabled=true;}
 function clearRefunds(){clearRefundDetail();refundNext=null;$('nextRefunds').disabled=true;$('refundSelection').replaceChildren(new Option('请选择',''));$('refundListStatus').textContent='请查询本店退款申请。';}
 function showRefund(record){clearRefundDetail();refundRecord=record;renderRefund($('refundDetail'),record);$('approveRefund').disabled=!record.canApprove;$('rejectRefund').disabled=!record.canReview;}
@@ -33,7 +36,7 @@ let cash=createCashPreview(),cashConfirmation=null;
 function clearCashResult(){cashConfirmation=null;$('cashConfirm').disabled=true;$('cashResult').replaceChildren();}
 function resetCash(){cash.clear();$('cashTendered').value='';clearCashResult();}
 function hydrateEditor(data,scope){const next=orderFlow(data,scope),nextCash=createCashPreview();nextCash.load(data,scope);editor.load(data,scope);loadedFlow=next;resetCash();cash=nextCash;}
-function resetEditor(){editor.clear();loadedFlow=null;resetCash();clearRefunds();}
+function resetEditor(){editor.clear();loadedFlow=null;resetCash();clearRefunds();clearCashRefundSource();$('cashRefundOrderId').value='';}
 let nextOrderId=null,listedStatus='';
 for(const [value,label] of Object.entries(orderStates))$('orderFilter').add(new Option(label,value));
 function clearOrderList(){nextOrderId=null;$('orderList').replaceChildren();$('nextOrders').disabled=true;$('orderListStatus').textContent='请查询本店订单。';}
@@ -94,6 +97,7 @@ function options(id,rows,label){
 }
 function clear(){clearOrderList();resetEditor();renderEditor();timeZone=null;$('timeZone').textContent='门店时区未加载';options('changeRequest',[],()=>{});$('changeReason').value='';customers=[];items=[];cancelRequests=[];rescheduleRequests=[];orderId=null;orderVersion=null;retry=null;options('customer',[],()=>{});options('item',[],()=>{});options('cancelRequest',[],()=>{});options('rescheduleRequest',[],()=>{});$('rescheduleStart').value='';$('rescheduleReason').value='';$('cancelReason').value='';$('order').textContent='尚未创建订单';$('saveLines').disabled=true;}
 async function refresh(){
+ clearCashRefundSource();
  clearRefunds();
  clearCashResult();
  clearOrderList();
@@ -125,6 +129,7 @@ async function run(action){
  finally{running=false;if(epoch===viewRevision){$('panel').disabled=!client?.scope||Boolean(retry);$('connect').disabled=Boolean(retry);$('retry').disabled=!retry;$('logout').disabled=!client?.scope;for(const id of ['rescheduleRequest','rescheduleStart','rescheduleBooking','changeRequest','approveChange','rejectChange'])$(id).disabled=!timeZone;renderRecovery();}}
 }
 async function mutate(operation,fields,onSuccess){
+ clearCashRefundSource();
  clearRefundDetail();
  clearCashResult();
  clearOrderList();
@@ -146,7 +151,8 @@ async function mutate(operation,fields,onSuccess){
   }
   if(tracked){
    try{
-    const id=serverId(result.data?.[operation==='customer_create'?'customerId':operation==='refund_review'?'refundRequestId':'orderId']);
+    const id=serverId(result.data?.[operation==='customer_create'?'customerId':['refund_review','cash_refund_request'].includes(operation)?'refundRequestId':'orderId']);
+    if(operation==='cash_refund_request')verifyCashRefundReceipt(result.data,ticket.requestKey,client.scope,fields.expectedSnapshot);
     if(operation==='refund_review')verifyRefundDecision(result.data,fields.refundRequestId,client.scope,fields.decision);
     if(['order_lines','order_status','cash_checkout'].includes(operation)&&id!==fields.orderId)throw Error('返回订单不匹配，请继续核对原请求。');
     if(operation==='cash_checkout')verifyCashReceipt(result.data,client.scope,ticket.requestKey,{orderId:fields.orderId,version:fields.expectedVersion,payable:fields.amount,tendered:fields.tendered,change:fields.change});
@@ -230,6 +236,24 @@ $('saveLines').onclick=()=>run(async()=>{
 });
 $('addItem').onclick=()=>{try{editor.add(items.find(row=>row.id===Number($('item').value)));renderEditor();}catch(error){status(error.message);}};
 $('retry').onclick=()=>run(async()=>{if(retry)await retry();});
+$('cashRefundOrderId').oninput=clearCashRefundSource;
+$('loadCashRefund').onclick=()=>run(async()=>{
+ clearCashRefundSource();
+ const id=serverId($('cashRefundOrderId').value);
+ cashRefundDraft=cashRefundSource((await client.read('cash_refund_source',{orderId:id})).data,id,client.scope);
+ renderCashRefundSource($('cashRefundSource'),cashRefundDraft);$('submitCashRefund').disabled=false;
+ status('已核对现金全退原单，请填写申请原因；尚未提交或退款。');
+});
+$('submitCashRefund').onclick=()=>run(async()=>{
+ const source=cashRefundDraft,reason=$('cashRefundReason').value.trim();
+ if(!source||source.orderId!==serverId($('cashRefundOrderId').value)||!reason||reason.length>500)throw Error('请重新读取原单并填写退款原因');
+ if(!confirm(`订单 ${source.orderId} · 申请全额退款 ¥${source.amount}？只创建申请，不执行退款。`))return;
+ await mutate('cash_refund_request',{orderId:source.orderId,reason,expectedSnapshot:source},async(data,ticket)=>{
+  const receipt=verifyCashRefundReceipt(data,ticket.requestKey,client.scope,source);
+  const current=verifyCashRefundReadback((await client.read('refund_detail',{refundRequestId:receipt.refundRequestId})).data,receipt,client.scope,source,reason);
+  clearRefunds();showRefund(current);status('现金全额退款申请已保存并回读确认，等待其他员工审批；未执行退款或返库。');
+ });
+});
 $('listRefunds').onclick=()=>run(()=>loadRefundPage());
 $('nextRefunds').onclick=()=>run(async()=>{if(refundNext!==null&&refundListedStatus===$('refundFilter').value)await loadRefundPage(refundNext);});
 $('refundFilter').onchange=clearRefunds;
@@ -312,6 +336,15 @@ $('lookupRequest').onclick=()=>run(async()=>{
  const result=(await client.read('request_lookup',{requestKey:ticket.requestKey,targetOperation:ticket.operation})).data;
  if(result?.operation!==ticket.operation)throw Error('核对结果不匹配，原请求继续保留。');
  if(result.status==='unconfirmed'){status('尚未确认结果，原请求保留；这不代表失败，禁止重新提交。');return;}
+ if(ticket.operation==='cash_refund_request'){
+  if(result.status!=='committed'||result.resourceType!=='refund_request'||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('退款申请核对结果不完整，原请求保留');
+  const receipt=verifyCashRefundReceipt(result.receipt,ticket.requestKey,client.scope);
+  if(serverId(result.resourceId)!==receipt.refundRequestId)throw Error('退款申请编号不匹配，原请求保留');
+  const current=verifyCashRefundReadback((await client.read('refund_detail',{refundRequestId:receipt.refundRequestId})).data,receipt,client.scope);
+  clearCashRefundSource();clearRefunds();showRefund(current);
+  try{pendingJournal.acknowledge(ticket);}catch(error){journalFault=true;throw error;}
+  status(`原全退申请已核对；当前申请：${refundStates[current.snapshot.refund.status]}。未重新提交或执行退款。`);return;
+ }
  if(ticket.operation==='refund_review'){
   if(result.status!=='committed'||result.resourceType!=='refund_request'||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('退款审批核对结果不完整，原请求保留');
   const id=serverId(result.resourceId),receipt=verifyRefundDecision(result.receipt,id,client.scope);
