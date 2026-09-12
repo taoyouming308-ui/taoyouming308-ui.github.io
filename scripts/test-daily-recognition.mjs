@@ -3,7 +3,10 @@ import {validateDailyCandidates} from '../supabase/functions/_shared/daily-recog
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
-const cells=[{id:'a'},{id:'b'}];
+const cells=[
+  {id:'a',section_code:'stylist',row_key:'stylist_1',cell_role:'staff_value'},
+  {id:'b',section_code:'technician',row_key:'technician_1',cell_role:'unclosed_order'},
+];
 const run=value=>validateDailyCandidates(value,cells,'2026-04-01','向里造型');
 assert.equal(run({cells:[{id:'a',value:0,confidence:.8}]}).cells[0].value,0);
 assert.equal(run({cells:[{id:'a',value:null}]}).cells.length,0);
@@ -14,6 +17,11 @@ assert.throws(()=>run({cells:[{id:'a',value:1},{id:'a',value:2}]}),/重复/);
 assert.throws(()=>run({cells:[{id:'a',value:'100'}]}),/金额/);
 assert.throws(()=>run({cells:[{id:'a',value:-1}]}),/金额/);
 assert.equal(run({cells:[]}).date_unconfirmed,true);
+const full=run({cells:[{id:'a',value:12,confidence:.9}],text_cells:[{id:'b',value:'A102',confidence:.8}],row_names:[{section:'stylist',row_key:'stylist_1',name:'陈晨',confidence:.95}]});
+assert.equal(full.text_cells[0].value,'A102');
+assert.equal(full.row_names[0].name,'陈晨');
+assert.throws(()=>run({cells:[],text_cells:[{id:'a',value:'错误列'}]}),/文字格/);
+assert.throws(()=>run({cells:[],row_names:[{section:'stylist',row_key:'stylist_category_total',name:'错误'}]}),/姓名行/);
 console.log('Daily candidate validation passed: wrong store/date, unknown/duplicate cells, blank/zero, invalid amounts.');
 const source=fs.readFileSync(new URL('../supabase/functions/operations-api/index.ts',import.meta.url),'utf8');
 const definitions=['cleanText','uuidIn','effectiveCellValue','confirmedDailyRollup'].map(name=>{const start=source.indexOf((name==='confirmedDailyRollup'?'async ':'')+'function '+name+'(');return source.slice(start,source.indexOf('\n}',start)+2);}).join('\n');

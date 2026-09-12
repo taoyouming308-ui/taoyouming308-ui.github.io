@@ -3323,9 +3323,13 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_SHEET_CHANGED_RELOAD") throw new Error("识别期间日报已被修改，请刷新后重试");
     if (code === "DAILY_VOUCHER_NOT_LINKED") throw new Error("所选原图没有绑定到当前日报");
     if (code === "DAILY_RECOGNITION_INPUT_INVALID" || code === "DAILY_RECOGNITION_CELL_INVALID"
-      || code === "DAILY_RECOGNITION_CELL_ROLE_INVALID" || code === "DAILY_RECOGNITION_VALUE_INVALID") {
-      throw new Error("图片识别结果格式异常，未保存任何候选数字");
+      || code === "DAILY_RECOGNITION_CELL_ROLE_INVALID" || code === "DAILY_RECOGNITION_VALUE_INVALID"
+      || code === "DAILY_RECOGNITION_TEXT_INVALID" || code === "DAILY_RECOGNITION_NAME_INVALID") {
+      throw new Error("图片识别结果格式异常，未保存任何候选内容");
     }
+    if (code === "DAILY_RECOGNITION_NO_IMAGES") throw new Error("本月没有已审核的 JPG/PNG 日报原图");
+    if (code === "DAILY_RECOGNITION_JOB_NOT_FOUND" || code === "DAILY_RECOGNITION_ITEM_NOT_FOUND") throw new Error("日报识别任务不存在或不属于当前门店");
+    if (code === "DAILY_RECOGNITION_JOB_ACTION_INVALID") throw new Error("当前状态不能执行这个任务操作，请刷新后重试");
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "22003") throw new Error("图片中存在超出单元格允许范围的数字，已停止保存候选草稿");
@@ -4219,7 +4223,7 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
   const reportDate = cleanText(draft.report_date, 10), month = reportDate.slice(0, 7);
   const [cells, links, changes, locks] = await Promise.all([
-    restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
+    restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,row_label_source_method,row_label_confidence,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
     restRowsAll(`zysyr_daily_sheet_attachments?select=id,voucher_id,attachment_kind,note,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=linked_at.desc&limit=200`, 200),
     restRowsAll(`zysyr_daily_sheet_cell_changes?select=id,cell_id,revision,before_value,after_value,before_text,after_text,before_label,after_label,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=changed_at.desc&limit=500`, 500),
     restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,locked_at,unlock_reason&company_id=eq.${companyId}&period_month=eq.${month}-01&status=eq.locked&limit=100`, 100),
@@ -4317,7 +4321,7 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   const attachment = (sheet.attachments as JsonRecord[]).find(item =>
     String(item.voucher_id || item.id) === String(payload.voucher_id) && item.attachment_kind === "original_report");
   if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
-  const cells = (sheet.cells as JsonRecord[]).filter(cell => !["signature", "unclosed_order", "note"].includes(String(cell.cell_role)));
+  const cells = (sheet.cells as JsonRecord[]).filter(cell => String(cell.cell_role) !== "signature");
   // Let OpenAI fetch the short-lived private URL directly. Historical daily
   // photos are often 5-8 MB; converting them to base64 inside the Edge Function
   // adds ~33% payload size and can exhaust the request window before inference.
@@ -4328,7 +4332,7 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
     signal:AbortSignal.timeout(125000),
     body:JSON.stringify({store:store.name,report_date:draft.report_date,image_url:recognitionUrl,
       cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,
-        column:cell.column_label,role:cell.cell_role}))})
+        column:cell.column_label,role:cell.cell_role,row_number:cell.row_number,column_number:cell.column_number}))})
   });
   if (!response.ok) {
     const message = cleanText(await response.text(),1000);
@@ -4347,12 +4351,77 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
     p_actor_user_id: cleanText(session.auth_account_id,40), p_company_id: cleanText(store.company_id,40),
     p_store_id: cleanText(store.id,40), p_draft_id: draftId,
     p_voucher_id: cleanText(payload.voucher_id,40), p_expected_revision: Number(draft.edit_revision),
-    p_candidates: candidate.cells, p_model: cleanText(result.model,120) || expectedModel,
+    p_candidates: {cells:candidate.cells,text_cells:candidate.text_cells,row_names:candidate.row_names},
+    p_model: cleanText(result.model,120) || expectedModel,
   });
   const refreshed = await dailySheetRead({store:cleanText(store.name,120),draft_id:draftId},session);
   return {...candidate,saved,sheet:refreshed,draft_id:draftId,edit_revision:saved.revision,
     provider:"codex-local",model:cleanText(result.model,120) || expectedModel,
     candidate_only:true,formal_data_unchanged:true,finance_confirmation_required:true};
+}
+
+async function dailyRecognitionJobData(companyId: string, storeId: string, month: string, requestedJobId?: string | null): Promise<JsonRecord> {
+  const jobFilter = requestedJobId ? `&id=eq.${requestedJobId}` : "";
+  const jobs = await restRows(`zysyr_daily_recognition_jobs?select=id,period_month,status,total_count,success_count,failed_count,current_report_date,created_at,started_at,finished_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01${jobFilter}&order=created_at.desc&limit=1`);
+  const job = jobs[0] || null;
+  if (!job) return { job: null, items: [], remaining_count: 0, completed_count: 0 };
+  const items = await restRowsAll(`zysyr_daily_recognition_job_items?select=id,draft_id,voucher_id,report_date,status,attempt_count,candidate_count,error_message,started_at,finished_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&job_id=eq.${cleanText(job.id, 40)}&order=report_date.asc&limit=1000`, 1000);
+  const remaining = items.filter((item) => ["queued", "running"].includes(cleanText(item.status, 30))).length;
+  return { job, items, remaining_count: remaining,
+    completed_count: items.filter((item) => ["succeeded", "failed", "skipped"].includes(cleanText(item.status, 30))).length };
+}
+
+async function dailyRecognitionJobRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "voucher.read") && !hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有查看日报识别进度权限");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const jobId = payload.job_id ? uuidValue(payload.job_id, "日报识别任务编号无效") : null;
+  return { month, ...(await dailyRecognitionJobData(cleanText(store.company_id,40), cleanText(store.id,40), month, jobId)),
+    permissions:{write:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")} };
+}
+
+async function dailyRecognitionJobStart(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以启动整月日报识别");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), actorId=cleanText(session.auth_account_id,40);
+  const saved = await financeRpcSaved("rpc/zysyr_start_daily_recognition_job", {
+    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_period_month:`${month}-01`
+  });
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,cleanText(saved.id,40))),permissions:{write:true}};
+}
+
+async function dailyRecognitionJobNext(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以执行整月日报识别");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), actorId=cleanText(session.auth_account_id,40);
+  const jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  const claimed = await financeRpcSaved("rpc/zysyr_claim_daily_recognition_item", {
+    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId
+  });
+  const item = claimed.item as JsonRecord | null;
+  if (!item) return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),item_result:null,permissions:{write:true}};
+  let succeeded=false, candidateCount=0, errorMessage="", recognized:JsonRecord|null=null;
+  try {
+    recognized=await recognizeDailySheet({store:cleanText(store.name,120),draft_id:item.draft_id,voucher_id:item.voucher_id},session);
+    const saved=(recognized.saved||{}) as JsonRecord;
+    candidateCount=Number(saved.saved_cells||0)+Number(saved.saved_text_cells||0)+Number(saved.saved_row_names||0);
+    succeeded=true;
+  } catch (error) { errorMessage=cleanText((error as Error).message||"识别失败",500); }
+  await financeRpcSaved("rpc/zysyr_finish_daily_recognition_item", {
+    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,
+    p_item_id:cleanText(item.id,40),p_succeeded:succeeded,p_candidate_count:candidateCount,p_error_message:errorMessage||null
+  });
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),
+    item_result:{report_date:item.report_date,succeeded,candidate_count:candidateCount,error:errorMessage||null,
+      numeric_count:Number((recognized?.saved as JsonRecord)?.saved_cells||0),text_count:Number((recognized?.saved as JsonRecord)?.saved_text_cells||0),name_count:Number((recognized?.saved as JsonRecord)?.saved_row_names||0)},permissions:{write:true}};
+}
+
+async function dailyRecognitionJobControl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以控制整月日报识别");
+  const store=await selectedStoreInfo(session,payload),month=parseMonth(payload.month),action=cleanText(payload.action,30);
+  if (!["pause","resume","retry_failed"].includes(action)) throw new Error("日报识别任务操作无效");
+  const companyId=cleanText(store.company_id,40),storeId=cleanText(store.id,40),jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  await financeRpcSaved("rpc/zysyr_control_daily_recognition_job",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,p_action:action});
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),permissions:{write:true}};
 }
 
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -5173,6 +5242,10 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
     if (operation === "daily_sheet_recognize") return json(await recognizeDailySheet(payload, session));
+    if (operation === "daily_recognition_job_start") return json(await dailyRecognitionJobStart(payload, session));
+    if (operation === "daily_recognition_job_read") return json(await dailyRecognitionJobRead(payload, session));
+    if (operation === "daily_recognition_job_next") return json(await dailyRecognitionJobNext(payload, session));
+    if (operation === "daily_recognition_job_control") return json(await dailyRecognitionJobControl(payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));

@@ -33,6 +33,9 @@ node scripts/test-zysyr-sprint5.js || exit 1
 node scripts/test-zysyr-sprint6.js || exit 1
 node scripts/test-zysyr-sprint7.js || exit 1
 node scripts/test-zysyr-daily-calendar-v457.js || exit 1
+node scripts/test-daily-recognition.mjs || exit 1
+node scripts/test-zysyr-daily-full-recognition-v489.js || exit 1
+python3 -m unittest scripts/test_zysyr_daily_codex_bridge.py || exit 1
 node scripts/test-zysyr-salary-sheet-v458.js || exit 1
 node scripts/test-zysyr-monthly-workbench-v472.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
