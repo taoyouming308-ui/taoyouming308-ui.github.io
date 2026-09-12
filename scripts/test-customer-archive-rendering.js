@@ -21,6 +21,9 @@ const required = [
   ["perm note input", 'id="hair-form-perm-notes"'],
   ["perm note save", "permNotes: F['hair-form-perm-notes'] || ''"],
   ["perm note restore", "setVal('hair-form-perm-notes', data.permNotes)"],
+  ["archive identity guard", "var archiveIdentity = canonicalizeHairRecordIdentity(record);"],
+  ["archive top-level customer name sync", "customer_name: record.customerName"],
+  ["archive top-level customer phone sync", "customer_phone: record.customerPhone"],
 ];
 
 const forbidden = [

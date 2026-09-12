@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="486">
+<html lang="zh-CN" data-version="487">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3071,9 +3071,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=486"></script>
-<script src="hair-vision-training.v1.js?v=486"></script>
-<script src="aesthetic-growth.v2.js?v=486"></script>
+<script src="aesthetic-knowledge.v1.js?v=487"></script>
+<script src="hair-vision-training.v1.js?v=487"></script>
+<script src="aesthetic-growth.v2.js?v=487"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7998,8 +7998,36 @@ function initApp() {
     });
   }
 
+  function canonicalizeHairRecordIdentity(record) {
+    record = record || {};
+    var rawName = String(record.customerName || '').trim();
+    var rawPhone = String(record.customerPhone || '').trim();
+    var nameDigits = rawName.replace(/\D/g, '');
+    var phoneDigits = rawPhone.replace(/\D/g, '');
+    if (nameDigits.length === 11 && phoneDigits.length !== 11 && rawPhone) {
+      var swappedName = rawPhone;
+      rawPhone = nameDigits;
+      rawName = swappedName;
+      phoneDigits = rawPhone;
+    }
+    if (!rawName || phoneDigits.length !== 11) {
+      return { valid: false, message: '顾客姓名和11位手机号必须完整，才能保存到客户历史档案' };
+    }
+    record.customerName = rawName;
+    record.customerPhone = phoneDigits;
+    record.customerNameNormalized = rawName.replace(/\s+/g, '').toLowerCase();
+    record.customerPhoneNormalized = phoneDigits;
+    record.customerKey = phoneDigits;
+    record.formFields = record.formFields && typeof record.formFields === 'object' ? record.formFields : {};
+    record.formFields['hair-form-name'] = rawName;
+    record.formFields['hair-form-phone'] = phoneDigits;
+    return { valid: true, name: rawName, phone: phoneDigits };
+  }
+
   // 保存成功必须同时满足：云端写入成功，并且按记录 ID 回读到完全一致的原表。
   function persistAndVerifyHairRecord(record) {
+    var identity = canonicalizeHairRecordIdentity(record);
+    if (!identity.valid) return Promise.reject(new Error(identity.message));
     var expected = JSON.parse(JSON.stringify(record || {}));
     if (!expected.id) return Promise.reject(new Error('缺少发质档案编号'));
     var endpoint = SUPABASE_URL + '/rest/v1/hair_records?on_conflict=id';
@@ -8040,6 +8068,10 @@ function initApp() {
       var saved = rows && rows[0];
       if (!saved || String(saved.id || '') !== String(expected.id)) {
         throw new Error('云端回读未找到本次档案');
+      }
+      if (String(saved.customer_name || '') !== String(expected.customerName || '') ||
+          String(saved.customer_phone || '') !== String(expected.customerPhone || '')) {
+        throw new Error('云端回读的顾客身份与本次原表不一致');
       }
       if (stableHairRecordJson(saved.record_data || {}) !== stableHairRecordJson(expected)) {
         throw new Error('云端回读内容与本次原表不一致');
@@ -10794,6 +10826,11 @@ function initApp() {
       alert('这张发质分析表还没有实际发质、烫染或护理内容，不能归档');
       return;
     }
+    var archiveIdentity = canonicalizeHairRecordIdentity(record);
+    if (!archiveIdentity.valid) {
+      alert('❌ ' + archiveIdentity.message + '\n请重新选择顾客或补全手机号后再保存。');
+      return;
+    }
 
     // PATCH 云端记录，标记已完成
     var archiveSaveBtn = document.getElementById('hair-save-btn');
@@ -10806,6 +10843,10 @@ function initApp() {
       method: 'PATCH',
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        customer_name: record.customerName,
+        customer_phone: record.customerPhone,
+        technician: record.technician || '',
+        barber: record.barber || '',
         status: archiveStatus,
         record_data: record
       })

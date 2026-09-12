@@ -90,6 +90,22 @@ async function run() {
   assert(calls[0].options.method === 'POST' && calls[1].options.method === 'GET', 'cloud write must be followed by readback');
   assert(calls[1].options.cache === 'no-store', 'readback must bypass stale caches');
 
+  const invalidRecord = Object.assign({}, record, { id: 'hair-missing-phone', customerPhone: '' });
+  const callsBeforeInvalid = calls.length;
+  let invalidRejected = false;
+  try { await context.persistAndVerifyHairRecord(invalidRecord); } catch (_) { invalidRejected = true; }
+  assert(invalidRejected && calls.length === callsBeforeInvalid, 'unidentified customer archive must reject before cloud write');
+
+  const swappedRecord = Object.assign({}, record, {
+    id: 'hair-swapped-identity',
+    customerName: '15558177502',
+    customerPhone: '杨抠抠',
+    formFields: {},
+  });
+  await context.persistAndVerifyHairRecord(swappedRecord);
+  assert(swappedRecord.customerName === '杨抠抠' && swappedRecord.customerPhone === '15558177502', 'clearly swapped customer identity must be repaired before save');
+  assert(swappedRecord.formFields['hair-form-name'] === '杨抠抠' && swappedRecord.formFields['hair-form-phone'] === '15558177502', 'canonical identity must be synchronized into form fields');
+
   context.fetch = async function() {
     return { ok: false, status: 400, text: async () => 'invalid row' };
   };
@@ -112,7 +128,7 @@ async function run() {
   try { await context.persistAndVerifyHairRecord(record); } catch (_) { rejected = true; }
   assert(phase === 2 && rejected, 'mismatched readback must reject the save');
 
-  console.log('hair save durability test ok: local fallback, cloud write, exact readback, retry path');
+  console.log('hair save durability test ok: identity guard, local fallback, cloud write, exact readback, retry path');
 }
 
 run().catch((error) => fail(error && error.stack ? error.stack : String(error)));
