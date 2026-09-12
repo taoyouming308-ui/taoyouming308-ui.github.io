@@ -50,7 +50,9 @@ expect(html.includes('data-view="history-import"') && html.includes('生成预�
   && html.includes("api('history_import_preview'") && html.includes("api('history_import_evidence_upload'"),
   'historical import preview or evidence flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
-expect(html.includes('不进行 AI 识别') && html.includes('获授权门店账号或财务人工逐格填写'), 'manual-only daily source boundary missing');
+expect(html.includes('本机 Codex 只把原图数字填成待审核候选')
+  && html.includes('财务必须逐格核对、修改并最终确认后，才会正式入账'),
+  'local Codex candidate-only daily source boundary missing');
 expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
 expect(html.includes("api('daily_sheet_create'") && html.includes("api('daily_sheet_save'") && html.includes("api('daily_sheet_confirm'"), 'daily sheet create/edit/confirm flow missing');
 expect(html.includes('daily-original-image') && html.includes('data-daily-cell') && html.includes('manual-edit'), 'side-by-side original image or editable cell grid missing');
@@ -71,6 +73,11 @@ expect(admin.includes('href="operations.html"'), 'admin entry to operations miss
 
 expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Function must keep service role server-side');
 expect(edge.includes('operations-auth') && edge.includes('requireSession'), 'Supabase Auth session validation missing');
+expect(edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_URL') && edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_TOKEN')
+  && edge.includes('codex_local_candidate'), 'local Codex bridge or candidate source missing');
+expect(edge.includes('只有财务账号可以最终确认电子日报')
+  && edge.includes('最终确认前必须逐格核对原图并填写复核说明'),
+  'finance review gate must remain mandatory after Codex recognition');
 expect(edge.includes('canUploadReports') && edge.includes('report.upload') && edge.includes('operations_role') && edge.includes('finance'), 'finance-only report permission missing');
 expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
 expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
