@@ -1,0 +1,19 @@
+--- plan_server.py
++++ plan_server.py
+@@ -7,6 +7,7 @@
+ import json, urllib.request, urllib.parse, urllib.error, ssl, re, time, os, tempfile, base64, subprocess, uuid
+ from http.server import HTTPServer, BaseHTTPRequestHandler
+ from aesthetic_coach_endpoint import handle_aesthetic_coach
++from zysyr_daily_codex_bridge import handle_daily_codex_recognition
+ 
+ CONFIG = "/Users/a1/.hermes/meiguanjia-config.json"
+ SERVER = "vip12.meiguanjia.net"
+@@ -382,6 +383,8 @@
+             self.do_hair_analysis()
+         elif path == "/api/aesthetic-coach":
+             handle_aesthetic_coach(self, OPENROUTER_KEY, supabase_get)
++        elif path == "/api/zysyr-daily-recognize":
++            handle_daily_codex_recognition(self)
+         elif path == "/api/save-hair-analysis":
+             self.do_save_hair_analysis()
+         else:
