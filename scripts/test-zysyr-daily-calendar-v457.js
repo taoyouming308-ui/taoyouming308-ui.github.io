@@ -46,4 +46,6 @@ const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');
 new vm.Script(scripts[0][1], { filename: 'operations.html' });
 expect(page.includes(`data-version="${releaseVersion}"`) && page.includes(`operations-auth-bridge.js?v=${releaseVersion}`), 'current cache markers missing');
+expect(page.includes('id="daily-month" class="hidden" aria-hidden="true" tabindex="-1"'), 'duplicate daily month selector must stay visually hidden');
+expect(page.includes("mainMonth=$('month').value||currentMonthInput()") && page.includes('[main,input].forEach'), 'daily calendar must use and update the single top month selector');
 console.log('ZYSYR_DAILY_CALENDAR_V457_STATIC_OK');
