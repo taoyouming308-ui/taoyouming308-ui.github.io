@@ -245,7 +245,10 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
     method: "POST",
     headers: { apikey: SERVICE_KEY, Authorization: authorization, "Content-Type": "application/json" },
   });
-  if (!response.ok) throw new Error("Supabase Auth 登录已失效，请重新登录");
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) throw new Error("Supabase Auth 登录已失效，请重新登录");
+    throw new Error("认证服务暂时不可用，请稍后自动重试");
+  }
   const scope = await response.json() as JsonRecord;
   if (cleanText(scope.auth_boundary, 80) !== "supabase_auth_rls") throw new Error("Supabase Auth 权限范围无效");
 
@@ -561,7 +564,15 @@ async function logout(payload: JsonRecord): Promise<JsonRecord> {
 }
 
 async function requireSession(payload: JsonRecord, request: Request): Promise<JsonRecord> {
-  const authenticated = await authSession(request);
+  let authenticated: JsonRecord | null = null;
+  try {
+    authenticated = await authSession(request);
+  } catch (error) {
+    // A temporary Auth outage must not destroy a still-valid legacy transition
+    // session. Confirmed invalid/revoked JWTs are never allowed to fall back.
+    if ((error as Error).message !== "认证服务暂时不可用，请稍后自动重试"
+      || !cleanText(payload.session_token, 200)) throw error;
+  }
   if (authenticated) return authenticated;
   const token = cleanText(payload.session_token, 200);
   if (!token) throw new Error("请重新登录");
@@ -5269,7 +5280,15 @@ Deno.serve(async (request: Request) => {
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";
-    const authError = /登录|账号|密码|权限|离职|无权/.test(message);
-    return json({ error: message }, authError ? 403 : 400);
+    const accountDisabled = /账号已停用|离职/.test(message);
+    const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message);
+    const authTemporary = message === "认证服务暂时不可用，请稍后自动重试";
+    const permissionDenied = /权限|无权/.test(message);
+    const code = accountDisabled ? "AUTH_ACCOUNT_DISABLED"
+      : sessionInvalid ? "AUTH_SESSION_INVALID"
+      : authTemporary ? "AUTH_TEMPORARY"
+      : permissionDenied ? "PERMISSION_DENIED"
+      : "REQUEST_FAILED";
+    return json({ error: message, code }, authTemporary ? 503 : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
   }
 });

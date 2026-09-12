@@ -6,6 +6,7 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'operations-auth-bridge.js'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
+const apiSource = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 
 function expect(value, message) {
@@ -18,6 +19,7 @@ expect(source.includes('/functions/v1/operations-auth'), 'RLS scope verification
 expect(source.includes('/functions/v1/operations-auth-admin'), 'secure finance-account administration endpoint missing');
 expect(source.includes('/auth/v1/token?grant_type=refresh_token'), 'refresh token rotation missing');
 expect(source.includes('/auth/v1/logout?scope=local'), 'local Supabase sign-out missing');
+expect(source.includes('forceRefresh:forceRefresh') && source.includes('confirmedInvalid(error)'), 'durable refresh recovery boundary missing');
 expect(source.includes("roleScope(scope,'shareholder')") && source.includes("roleScope(scope,'finance')")
   && source.includes("roleScope(scope,'store_manager')") && source.includes("roleScope(scope,'employee')"), 'all operations Auth role verification missing');
 expect(source.includes("capabilityAt(scope,'dashboard.group.read'") && source.includes("capabilityAt(scope,'daily_report.write'"), 'role capability verification missing');
@@ -38,6 +40,11 @@ expect(html.includes('id="finance-account-form"') && html.includes('创建并立
 expect(html.includes("authBridge.createFinanceAccount"), 'finance-account form is not wired to the secure Auth bridge');
 expect(html.includes("authBridge.createWorkforceAccount"), 'workforce-account form is not wired to the secure Auth bridge');
 expect(html.includes("hasAuthCapability('finance_account.create')"), 'finance-account entry must be capability-gated');
+expect(html.includes('isSessionInvalidError(error)') && html.includes("error.code==='AUTH_TEMPORARY'"), 'page must distinguish invalid sessions from transient outages');
+expect(html.includes("setInterval(maintainSession,20*60*1000)") && html.includes("window.addEventListener('online',maintainSession)"), 'foreground and online session renewal missing');
+expect(html.includes("showLoginSoft('数据暂时加载失败，登录状态仍然保留')"), 'initial data failure must not clear a successful login');
+expect(apiSource.includes('AUTH_SESSION_INVALID') && apiSource.includes('AUTH_ACCOUNT_DISABLED') && apiSource.includes('AUTH_TEMPORARY'), 'operations API auth error codes missing');
+expect(apiSource.includes('认证服务暂时不可用，请稍后自动重试'), 'temporary Auth outage handling missing');
 
 async function runBridgeFlow() {
   const values = new Map();
@@ -104,7 +111,38 @@ async function runBridgeFlow() {
   expect(calls.some((call) => call.url.includes('/auth/v1/logout?scope=local')), 'Supabase local sign-out was not requested');
 }
 
-runBridgeFlow().then(() => {
+async function runRestoreFailureFlow(status, body, shouldRemain) {
+  const values = new Map();
+  const storageKey = 'zysyr-operations-auth-v1';
+  values.set(storageKey, JSON.stringify({
+    session: { access_token: 'expired-access', refresh_token: 'saved-refresh', expires_at: 1, token_type: 'bearer' },
+    scope: null,
+  }));
+  const localStorage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  const window = { localStorage, fetch: async () => response(status, body) };
+  window.window = window;
+  function response(code, responseBody) {
+    return { ok: code >= 200 && code < 300, status: code, json: async () => responseBody };
+  }
+  vm.runInNewContext(source, { window, Date, JSON, Math, String, Error, Promise });
+  const bridge = window.ZysyrAuthBridge.create({ supabaseUrl: 'https://example.supabase.co', publishableKey: 'sb_publishable_test' });
+  let result = null;
+  let failure = null;
+  try { result = await bridge.restore(); } catch (error) { failure = error; }
+  if (shouldRemain) {
+    expect(failure && failure.status === status, 'transient refresh failure must be surfaced for automatic retry');
+    expect(bridge.read() && bridge.read().session.refresh_token === 'saved-refresh', 'transient refresh failure cleared the saved login');
+  } else {
+    expect(result === null && bridge.read() === null, 'confirmed invalid refresh token must clear the saved login');
+  }
+}
+
+runBridgeFlow().then(() => runRestoreFailureFlow(503, { error: 'temporary outage' }, true))
+  .then(() => runRestoreFailureFlow(400, { error_code: 'refresh_token_not_found', error: 'invalid refresh token' }, false)).then(() => {
   console.log('operations Auth bridge tests passed');
 }).catch((error) => {
   console.error(error);
