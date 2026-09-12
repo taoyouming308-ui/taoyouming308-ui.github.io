@@ -8,13 +8,14 @@
 - 已按唯一证据修复两条历史记录：YC 单字符手机号误录、杨抠抠姓名与手机号写反；全量复查 496 条有效档案，其中 490 条可关联顾客主档，剩余 6 条身份缺失或冲突，不猜测归属、不自动写入。
 - 完整 pre-push 门禁通过；GitHub main 功能提交 `3853b5d`，Validate shared app `34690024340` 与 Pages `34690023792` 均成功。线上无缓存核验 `version.txt=487`、员工端 `data-version=487`、身份校验与顶层姓名/手机号同步代码均已生效。
 
-## v488 本机 Codex 日报识别候选（2026-09-12，待发布）
+## v488 本机 Codex 日报识别候选（2026-09-12，已发布）
 
 - App version: v488。基于 GitHub main v487，日报 JPG/PNG 识别改走本机已登录 Codex，不再调用 Kimi 或需要独立 OpenAI API 额度。
 - Supabase 只向带 Bearer 鉴权的本机桥接发送短期签名原图地址与当前日报单元格清单；桥接限定同一 Supabase 项目、JPG/PNG、文件大小和单并发，Codex 以只读、临时会话及结构化输出运行。
 - 识别结果仅保存为 `codex_local_candidate` 待审核候选，不覆盖财务手填值，不自动确认或入账；财务必须对照永久保留的原图逐格修改、保存并最终确认。
-- 真实自由手艺人 2026-01-01 日报的本机预处理测试可在约 47 秒返回候选；清晰汇总值置信度较高，模糊支付值保持较低置信度，仍需财务核对。
-- 生产迁移 `20260912103006_codex_local_daily_recognition_candidates.sql` 已应用且迁移历史一致；`operations-api` version 52 为 ACTIVE，保持 `verify_jwt=false` 与内部会话鉴权，匿名 overview 返回 403“请重新登录”。页面及 GitHub main 状态以本节后续发布记录为准。
+- 真实自由手艺人 2026-01-03 纸质日报复测成功：返回日期、门店和 6 个待审核数字，实做/总计均为 978 且置信度 0.98，模糊支付及员工格为 0.55—0.72，明确保持 `candidate_only=true`；误选的员工自购单没有生成日报数字，未猜测写入。
+- 生产迁移 `20260912103006_codex_local_daily_recognition_candidates.sql` 已应用且迁移历史一致；`operations-api` version 52 为 ACTIVE，保持 `verify_jwt=false` 与内部会话鉴权，匿名 overview 返回 403“请重新登录”。
+- 完整 pre-push 门禁通过；GitHub main 提交 `39bc5d3`，Validate shared app `34690339052` 与 Pages `34690338762` 均成功。线上无缓存核验 `version.txt=488`、页面 `data-version=488`、本机 Codex 候选提示及 `operations-daily-recognition.js?v=488` 均已生效。
 
 ## v486 客户发质历史档案数据源修复（2026-09-12，已发布）
 
