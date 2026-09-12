@@ -16,7 +16,17 @@
 - 修复前生产只读核对美管加客户 ID `69829744`（手机尾号 `0216`）：`hair_records` 有3条有效档案（2026-07-04、2026-07-31、2026-09-12），旧队列可见记录为0。本次未写入或修改任何生产客户数据，无数据库迁移或 Edge Function 部署。
 - 新增回归覆盖历史入口使用完整 `hair_records`、传递姓名兜底、渲染3条不同日期档案并可打开完整表。完整 pre-push 门禁通过；GitHub main 功能提交 `145ce6e`，Validate shared app `34687950205` 和 Pages `34687950044` 均成功。CDN 无缓存核验 `version.txt=486`、员工端 `data-version=486`、历史入口不含旧队列查询且包含完整原表入口。
 
-## v485 日报原图旋转、识别候选与月报汇总（开发完成，待发布）
+## v486 日报图片切换 OpenAI（开发记录，后续由本机 Codex 方案替代）
+
+- App version: v486。基于 GitHub main v485，开发分支 `feature/zysyr-openai-daily-v486`。
+- 用户明确要求停止 Kimi，现有历史日报和以后新上传日报均改用 Codex/OpenAI 图片能力。线上自动处理通过 Supabase Edge Function 调用 OpenAI Responses API，默认模型 `gpt-5.6-sol`；Codex 桌面任务不作为常驻生产服务。
+- 新请求只读取服务端 `OPENAI_API_KEY`，不再读取 `MOONSHOT_API_KEY` 或访问 Moonshot API；OpenAI 请求设置 `store=false`，原图使用短时私有 URL 和高细节输入。
+- 识别仍只写 `openai_vision_candidate` 待核对候选，保留财务手填值、门店和日期校验、修订号并发保护、原始凭证关系及永久审计；财务最终确认前不进入正式日报或月报。
+- 生产 secrets 只读核验已存在 `OPENAI_API_KEY`。静态边界测试、隔离 PostgreSQL 权限/门店/凭证/审计测试，以及 1280×900、390×844、844×390 浏览器回归均通过。
+- 生产迁移 `20260912084504_openai_daily_recognition_candidates.sql` 已应用且本地/远端历史一致；`operations-api` version 50 为 ACTIVE、`verify_jwt=false`，匿名 `overview` 实测返回 403“请重新登录”，内部会话鉴权仍生效。
+- 该直接 API 方案未推送 GitHub main，因生产实测额度不可用，后续由本机 Codex 候选识别方案替代。
+
+## v485 日报原图旋转、识别候选与月报汇总（2026-09-08，已发布）
 
 - App version: v485。基于已上线 v484，开发分支 feature/zysyr-daily-recognition-v485。
 - 用户授权上传日报后识别填表，并明确选择历史月份也改用已确认日报汇总、原月报金额保留核对。只映射主营美发/营业收入格，其余收入分类保持原表；人工月报调整额仍单独累加并审计。

@@ -4309,30 +4309,38 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   const sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
   const draft = sheet.draft as JsonRecord;
   if (draft.status !== "draft" || sheet.locked) throw new Error("已确认或锁账日报不能自动识别覆盖");
-  const key = Deno.env.get("MOONSHOT_API_KEY");
+  const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) throw new Error("日报识别服务尚未配置，请先手工填写");
   const attachment = (sheet.attachments as JsonRecord[]).find(item =>
     String(item.voucher_id || item.id) === String(payload.voucher_id) && item.attachment_kind === "original_report");
   if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
   const cells = (sheet.cells as JsonRecord[]).filter(cell => !["signature", "unclosed_order", "note"].includes(String(cell.cell_role)));
-  // Let the model fetch the short-lived private URL directly. Historical daily
+  // Let OpenAI fetch the short-lived private URL directly. Historical daily
   // photos are often 5-8 MB; converting them to base64 inside the Edge Function
   // adds ~33% payload size and can exhaust the request window before inference.
   const recognitionUrl = await signedStorageUrl(VOUCHER_BUCKET,cleanText(attachment.object_path,500));
-  const model = Deno.env.get("ZYSYR_DAILY_GRID_MODEL") || "kimi-k2.6";
-  const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+  const model = Deno.env.get("ZYSYR_DAILY_GRID_OPENAI_MODEL") || "gpt-5.6-sol";
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method:"POST", headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},
     signal:AbortSignal.timeout(90000),
-    body:JSON.stringify({model,max_tokens:16000,response_format:{type:"json_object"},thinking:{type:"disabled"},messages:[{role:"user",content:[
-      {type:"text",text:dailyRecognitionPrompt({store:store.name,date:draft.report_date,cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,column:cell.column_label,role:cell.cell_role}))})},
-      {type:"image_url",image_url:{url:recognitionUrl}},
-    ]}]})
+    body:JSON.stringify({model,store:false,reasoning:{effort:"none"},max_output_tokens:16000,
+      text:{verbosity:"low",format:{type:"json_object"}},input:[{role:"user",content:[
+        {type:"input_text",text:dailyRecognitionPrompt({store:store.name,date:draft.report_date,cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,column:cell.column_label,role:cell.cell_role}))})},
+        {type:"input_image",image_url:recognitionUrl,detail:"high"},
+      ]}]})
   });
-  if (!response.ok) throw new Error(`日报识别暂不可用（${response.status}），原图已保留，可稍后重试`);
+  if (!response.ok) {
+    const message = cleanText(await response.text(),1000);
+    console.error("daily OpenAI recognition failed",response.status,message);
+    throw new Error(`日报识别暂不可用（${response.status}），原图已保留，可稍后重试`);
+  }
   const result = await response.json();
-  if (result.choices?.[0]?.finish_reason !== "stop") throw new Error("识别结果不完整，请重试或分张上传");
+  if (result.status !== "completed") throw new Error("识别结果不完整，请重试或分张上传");
+  const outputText = (Array.isArray(result.output) ? result.output : [])
+    .flatMap((item: JsonRecord) => Array.isArray(item.content) ? item.content : [])
+    .find((item: JsonRecord) => item.type === "output_text")?.text;
   let parsed;
-  try { parsed = JSON.parse(result.choices[0].message.content); } catch { throw new Error("识别没有返回有效表格，请重试"); }
+  try { parsed = JSON.parse(String(outputText || "")); } catch { throw new Error("识别没有返回有效表格，请重试"); }
   const candidate = validateDailyCandidates(parsed,cells,String(draft.report_date),String(store.name));
   const latest = await dailySheetData(String(store.company_id),String(store.id),draftId);
   if ((latest.draft as JsonRecord).edit_revision !== draft.edit_revision || (latest.draft as JsonRecord).status !== "draft" || latest.locked) throw new Error("识别期间日报已变化，请刷新后重试");
@@ -4524,7 +4532,7 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       missing_original: !report.source_report_id, has_anomaly: false, locked });
   }
   const days = [...byDate.values()].sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  const candidateDraftIds = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=eq.kimi_vision_candidate&limit=10000`,10000) : [];
+  const candidateDraftIds = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=in.(openai_vision_candidate,kimi_vision_candidate)&limit=10000`,10000) : [];
   const recognizedDraftIds = new Set(candidateDraftIds.map((cell)=>cleanText(cell.draft_id,40)));
   for (const day of days) day.recognition_saved = recognizedDraftIds.has(cleanText(day.draft_id,40));
   const draftDays = days.filter((day)=>day.status === "draft" && Boolean(day.draft_id));

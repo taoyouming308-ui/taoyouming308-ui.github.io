@@ -105,6 +105,7 @@ async function run() {
       create function zysyr_private.daily_sheet_cell_value(zysyr_daily_sheet_cells) returns numeric language sql as $$select case when $1.manual_override then $1.corrected_numeric else $1.ocr_numeric end$$;
       create function zysyr_private.daily_sheet_validation(uuid,uuid,uuid) returns jsonb language sql as $$select jsonb_build_object('valid',true,'grand_total',coalesce(sum(zysyr_private.daily_sheet_cell_value(c)),0)) from public.zysyr_daily_sheet_cells c where c.company_id=$1 and c.store_id=$2 and c.draft_id=$3$$;`);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260908094822_daily_rollup_adjustment_snapshot.sql'),'utf8'));
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260912084504_openai_daily_recognition_candidates.sql'),'utf8'));
     sql(`insert into zysyr_daily_sheet_drafts(id,company_id,store_id,report_date,edit_revision,status) values('${id(30)}','${id(1)}','${id(2)}','2026-06-01',1,'confirmed');`);
     const linked = snapshot => `select id from zysyr_save_daily_linked_monthly_adjustment('${id(3)}','${id(1)}','${id(2)}','history','${id(10)}','2026-06-01',${currentVersions},${adjustmentSnapshot()},80,85,90,'日报快照测试',${snapshot});`;
     expectFailure(linked("'{}'::jsonb"),/DATA_CHANGED_RELOAD/);
@@ -118,11 +119,13 @@ async function run() {
         ('${id(34)}','${id(1)}','${id(2)}','${id(32)}','staff_value','blank_template','${id(3)}');
       update zysyr_daily_sheet_cells set corrected_numeric=20,manual_override=true where id='${id(34)}';`);
     const recognize=`select zysyr_apply_daily_sheet_recognition_candidates('${id(3)}','${id(1)}','${id(2)}','${id(32)}','${id(31)}',0,
-      '[{"id":"${id(33)}","value":10,"confidence":0.9},{"id":"${id(34)}","value":99,"confidence":1}]','kimi-k2.6');`;
+      '[{"id":"${id(33)}","value":10,"confidence":0.9},{"id":"${id(34)}","value":99,"confidence":1}]','gpt-5.6-sol');`;
     sql(recognize);
     assert.equal(sql(`select ocr_numeric from zysyr_daily_sheet_cells where id='${id(33)}'`),'10');
+    assert.equal(sql(`select source_method from zysyr_daily_sheet_cells where id='${id(33)}'`),'openai_vision_candidate');
     assert.equal(sql(`select corrected_numeric from zysyr_daily_sheet_cells where id='${id(34)}'`),'20');
     assert.equal(sql(`select edit_revision from zysyr_daily_sheet_drafts where id='${id(32)}'`),'1');
+    assert.equal(sql(`select ocr_provider from zysyr_daily_sheet_drafts where id='${id(32)}'`),'openai');
     expectFailure(recognize,/CHANGED_RELOAD/);
     expectFailure(`set role authenticated;${recognize}`,/permission denied/);
     console.log('PostgreSQL: source preservation, audit, locks, RLS, daily snapshot stale rejection and role denial passed');
