@@ -1,12 +1,12 @@
 # Agent Sync Status
 
-## v490 经营驾驶舱长期登录容错（2026-09-12，生产后端已部署，静态页待发布）
+## v490 经营驾驶舱长期登录容错（2026-09-12，已发布）
 
-- App version: v490。基于 GitHub main v489，只修复经营驾驶舱账号会话恢复与自动续期；生产函数已部署，静态页待推送 GitHub main。
+- App version: v490。基于 GitHub main v489，只修复经营驾驶舱账号会话恢复与自动续期；生产函数和静态页均已发布。
 - 根因是页面把首页数据加载失败、网络抖动及 Auth 服务临时错误误判成登录失效，随后调用退出并删除本地会话；既有 Supabase refresh token 和 3650 天兼容会话本身并非主要问题。
 - 普通网络错误、429 和服务端 5xx 现在保留登录并按 3 秒到 60 秒退避自动恢复；页面重新可见、网络重新上线和每 20 分钟都会主动检查续期。请求若遇到明确的 access token 失效，会单次刷新后重试原请求。
 - 只有用户主动退出、refresh token 被明确判定无效、账号停用或离职时才清除本地登录；权限不足不会被当成掉线。Supabase Auth 暂时不可用时，有效的旧过渡会话仍可继续使用，但被撤销的 JWT 不允许降级绕过。
-- 故障注入与完整 pre-push 门禁均已通过。`operations-api` version 54 为 ACTIVE，继续保持 `verify_jwt=false` 与内部会话鉴权；匿名 overview 返回 403、`AUTH_SESSION_INVALID`。待推送静态 v490 并验证 GitHub Actions、Pages 与 CDN 缓存版本。
+- 故障注入与完整 pre-push 门禁均已通过。`operations-api` version 54 为 ACTIVE，继续保持 `verify_jwt=false` 与内部会话鉴权；匿名 overview 返回 403、`AUTH_SESSION_INVALID`。GitHub main 功能提交 `29ace51` 与部署记录提交 `77922e6` 已发布，Validate shared app `34695399034` 与 Pages `34695398572` 均成功；CDN 无缓存核验 `version.txt=490`、页面与 Auth 桥接的续期、重连和错误分类代码均已生效。
 
 ## v489 日报完整候选与可恢复进度（2026-09-12，已发布）
 
