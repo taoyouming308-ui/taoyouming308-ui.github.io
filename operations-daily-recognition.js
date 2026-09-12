@@ -26,7 +26,7 @@
   var monthlyBase=renderMonthlyAuditControls;
   renderMonthlyAuditControls=function(){monthlyBase();var report=state.data.monthly_report,cell=report&&(report.display_data.cells||[]).find(function(row){return row.daily_rollup;});if(!cell)return;var box=document.createElement('div');box.className='candidate-warning';box.textContent='主营收入来自已确认日报 '+cell.daily_rollup.confirmed_days+' 天：'+formatAmount(cell.daily_rollup.amount)+'；原月报：'+formatAmount(cell.original_report_amount)+'。请核对日报是否录齐，点击收入可查看具体日期。';document.getElementById('report-state').appendChild(box);};
   var upload=document.getElementById('daily-detail-upload');
-  var button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='识别原图填入电子日报';button.id='daily-recognize';upload.after(button);
+  var button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Codex识别原图';button.id='daily-recognize';upload.after(button);
   var status=document.createElement('div');status.id='daily-recognition-status';status.className='candidate-warning';status.hidden=true;document.getElementById('daily-detail-grid').before(status);
   var renderBase=renderDailySheetDetail;
   renderDailySheetDetail=function(){request++;renderBase();var sheet=state.imports.sheet;button.hidden=!(sheet&&sheet.permissions&&sheet.permissions.write&&sheet.draft.status==='draft'&&!sheet.locked);status.hidden=true;};
@@ -37,7 +37,7 @@
     var item=voucherId?items.find(function(row){return (row.voucher_id||row.id)===voucherId;}):items.find(function(row){return row.private_url===document.getElementById('daily-detail-image').getAttribute('src');})||items[0];
     if(!item){toast('请先上传或选中当天 JPG/PNG 日报原图');return;}
     var generation=++request,store=currentStore(),draftId=sheet.draft.id;
-    busy=true;button.disabled=true;status.hidden=false;status.textContent='正在识别，请稍候。原有数字会保留，识别只填空白格。';
+    busy=true;button.disabled=true;status.hidden=false;status.textContent='Codex正在识别，请稍候。原有数字会保留，识别只填空白格。';
     try{
       if(isLocalPreview())throw Error('本地预览不调用付费识别服务');
       var result=await api('daily_sheet_recognize',{store:store,draft_id:draftId,voucher_id:item.voucher_id||item.id});
@@ -55,7 +55,7 @@
   button.onclick=function(){window.recognizeCurrentDaily();};
 
   var monthBar=document.querySelector('#view-daily-report>.daily-month-bar');
-  var batch=document.createElement('button');batch.type='button';batch.className='secondary';batch.id='daily-recognize-month';batch.textContent='识别本月待核对原图';monthBar.appendChild(batch);
+  var batch=document.createElement('button');batch.type='button';batch.className='secondary';batch.id='daily-recognize-month';batch.textContent='Codex识别本月原图';monthBar.appendChild(batch);
   var batchStatus=document.createElement('span');batchStatus.id='daily-recognize-month-status';batchStatus.className='help';monthBar.appendChild(batchStatus);
   async function recognizeDraft(day){
     var sheet=await api('daily_sheet_read',{store:currentStore(),draft_id:day.draft_id});

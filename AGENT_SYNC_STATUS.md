@@ -1,6 +1,16 @@
 # Agent Sync Status
 
-## v485 日报原图旋转、识别候选与月报汇总（开发完成，待发布）
+## v486 日报图片切换 Codex/OpenAI（后端已部署，待页面发布与单图验证）
+
+- App version: v486。基于 GitHub main v485，开发分支 `feature/zysyr-openai-daily-v486`。
+- 用户明确要求停止 Kimi，现有历史日报和以后新上传日报均改用 Codex/OpenAI 图片能力。线上自动处理通过 Supabase Edge Function 调用 OpenAI Responses API，默认模型 `gpt-5.6-sol`；Codex 桌面任务不作为常驻生产服务。
+- 新请求只读取服务端 `OPENAI_API_KEY`，不再读取 `MOONSHOT_API_KEY` 或访问 Moonshot API；OpenAI 请求设置 `store=false`，原图使用短时私有 URL 和高细节输入。
+- 识别仍只写 `openai_vision_candidate` 待核对候选，保留财务手填值、门店和日期校验、修订号并发保护、原始凭证关系及永久审计；财务最终确认前不进入正式日报或月报。
+- 生产 secrets 只读核验已存在 `OPENAI_API_KEY`。静态边界测试、隔离 PostgreSQL 权限/门店/凭证/审计测试，以及 1280×900、390×844、844×390 浏览器回归均通过。
+- 生产迁移 `20260912084504_openai_daily_recognition_candidates.sql` 已应用且本地/远端历史一致；`operations-api` version 50 为 ACTIVE、`verify_jwt=false`，匿名 `overview` 实测返回 403“请重新登录”，内部会话鉴权仍生效。
+- 尚未推送 GitHub main、未调用真实 OpenAI 图片识别，也未批量处理历史原图；发布页面后先由有效财务会话触发一张真实日报验证，避免未验证前产生批量费用。
+
+## v485 日报原图旋转、识别候选与月报汇总（2026-09-08，已发布）
 
 - App version: v485。基于已上线 v484，开发分支 feature/zysyr-daily-recognition-v485。
 - 用户授权上传日报后识别填表，并明确选择历史月份也改用已确认日报汇总、原月报金额保留核对。只映射主营美发/营业收入格，其余收入分类保持原表；人工月报调整额仍单独累加并审计。
