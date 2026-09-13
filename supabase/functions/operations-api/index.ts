@@ -164,15 +164,35 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
 }
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-  });
+  try {
+    return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+      },
+    });
+  } catch {
+    // Never return fetch's URL (which can contain hundreds of record IDs) to the UI.
+    // Do not retry writes automatically: a lost response does not mean no write occurred.
+    throw new Error("财务数据连接暂时失败，请刷新后重试；如刚保存，请先核对保存结果");
+  }
+}
+
+function publicRequestError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "请求失败";
+  if (message.length > 400 || /https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message)) {
+    return "财务数据连接暂时失败，请刷新后重试；如刚保存，请先核对保存结果";
+  }
+  return message || "请求失败";
+}
+
+function monthlyTraceRevisionsPath(companyId: string, storeId: string, reportId: string): string {
+  // Filter by the existing FK, not an IN list growing with every empty amount slot.
+  // The URL stays bounded regardless of how many cells the original sheet contains.
+  return `zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count,cell:zysyr_report_cells!inner(report_id)&company_id=eq.${companyId}&store_id=eq.${storeId}&cell.report_id=eq.${reportId}&order=revision.desc`;
 }
 
 async function restRows(path: string): Promise<JsonRecord[]> {
@@ -1038,7 +1058,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
     const [revisions, amountRevisions, locks] = await Promise.all([
-      cellFilter === "()" ? [] : restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000),
+      cellFilter === "()" ? [] : restRowsAll(monthlyTraceRevisionsPath(companyId, storeId, reportId), 5000),
       cellFilter === "()" ? [] : restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=source_cell_id.asc,revision.desc`, 5000),
       restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
     ]);
@@ -5648,16 +5668,18 @@ Deno.serve(async (request: Request) => {
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
-    const message = (error as Error).message || "请求失败";
+    const message = publicRequestError(error);
     const accountDisabled = /账号已停用|离职/.test(message);
     const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message);
     const authTemporary = message === "认证服务暂时不可用，请稍后自动重试";
+    const dataTemporary = message.startsWith("财务数据连接暂时失败");
     const permissionDenied = /权限|无权/.test(message);
     const code = accountDisabled ? "AUTH_ACCOUNT_DISABLED"
       : sessionInvalid ? "AUTH_SESSION_INVALID"
       : authTemporary ? "AUTH_TEMPORARY"
+      : dataTemporary ? "DATA_TEMPORARY"
       : permissionDenied ? "PERMISSION_DENIED"
       : "REQUEST_FAILED";
-    return json({ error: message, code }, authTemporary ? 503 : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
+    return json({ error: message, code }, (authTemporary || dataTemporary) ? 503 : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
   }
 });

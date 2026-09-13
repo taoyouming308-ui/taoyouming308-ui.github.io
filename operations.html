@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="498">
+<html lang="zh-CN" data-version="499">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -356,9 +356,9 @@
   <div id="voucher-modal" class="catalog-modal hidden" aria-hidden="true"><div class="catalog-dialog voucher-dialog"><div class="catalog-dialog-head"><div><h3 id="voucher-review-title">凭证详情</h3><div id="voucher-review-meta" class="help"></div></div><button id="voucher-review-close" class="ghost" type="button">关闭</button></div><div class="voucher-review-grid"><div id="voucher-preview" class="voucher-preview"><div class="help">正在生成私有预览…</div></div><div class="voucher-fields"><div class="candidate-warning">左侧原图是事实来源；右侧字段是 OCR 候选或人工修正。只有财务点击审核后才记录审核结论。</div><div id="voucher-candidate" class="confidence-list"></div><form id="voucher-review-form"><div class="field"><label for="voucher-document-type">资料类型</label><select id="voucher-document-type" required><option value="daily_report">日报</option><option value="performance_report">业绩表</option><option value="expense">支出</option><option value="purchase">采购</option><option value="salary">工资</option><option value="petty_cash">备用金</option><option value="attendance_check">考勤/检查</option><option value="payment">付款凭证</option><option value="other">其他</option></select></div><div class="form-grid"><div class="field"><label for="voucher-field-date">日期</label><input id="voucher-field-date" type="date"></div><div class="field"><label for="voucher-field-amount">金额</label><input id="voucher-field-amount" type="number" min="0" step="0.01"></div><div class="field"><label for="voucher-field-counterparty">供应商/收款方</label><input id="voucher-field-counterparty" maxlength="200"></div><div class="field"><label for="voucher-field-number">单据号</label><input id="voucher-field-number" maxlength="100"></div></div><div class="field"><label>关联已上传报表（可多选，也可不选）</label><div id="voucher-report-link" class="trace-list"><div class="help">本月暂无可关联报表。</div></div></div><div class="field"><label for="voucher-decision">审核结论</label><select id="voucher-decision"><option value="approved">核对通过</option><option value="rejected">退回/不通过</option></select></div><div class="field"><label for="voucher-review-reason">审核说明（写入审计）</label><textarea id="voucher-review-reason" maxlength="500" required placeholder="例如：已逐项对照原图，金额与日期已修正"></textarea></div><div class="actions"><button class="primary" type="submit">保存审核结论</button></div><div id="voucher-review-result" class="help form-result"></div></form><div id="voucher-readonly" class="help hidden" style="margin-top:14px">当前为只读视角，可查看原件、OCR候选和财务审核结果。</div></div></div></div></div>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="operations-auth-bridge.js?v=498"></script>
-  <script src="operations-voucher-preview.js?v=498"></script>
-  <script src="operations-voucher-view.js?v=498"></script>
+  <script src="operations-auth-bridge.js?v=499"></script>
+  <script src="operations-voucher-preview.js?v=499"></script>
+  <script src="operations-voucher-view.js?v=499"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -369,7 +369,7 @@
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]})}
   function toast(message){$('toast').textContent=message;$('toast').classList.remove('hidden');setTimeout(function(){$('toast').classList.add('hidden')},2800)}
   function authAccessToken(){var session=state.auth&&state.auth.session;if(!session||!session.access_token)return'';return session.expires_at&&Number(session.expires_at)<=Math.floor(Date.now()/1000)+10?'':session.access_token}
-  function apiError(data,status){var error=new Error(data&&data.error||'请求失败');error.status=status;error.code=data&&data.code||'';return error}
+  function apiError(data,status){var message=String(data&&data.error||'请求失败');if(message.length>400||/https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message))message='财务数据暂时加载失败，请点击刷新重试';var error=new Error(message);error.status=status;error.code=data&&data.code||'';return error}
   function isSessionInvalidError(error){return !!(error&&(error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED'||/^(Supabase Auth 登录已失效|请重新登录|登录已过期|账号已停用|账号.*离职)/.test(error.message||'')))}
   async function api(operation,payload,retried){var refreshError=null;if(state.auth&&authBridge.ensureFresh){try{var refreshed=await authBridge.ensureFresh();if(refreshed)state.auth=refreshed}catch(error){refreshError=error;state.auth=authBridge.read&&authBridge.read()||state.auth}}var headers={'Content-Type':'application/json','apikey':SUPABASE_KEY},token=authAccessToken();if(!token&&refreshError&&!state.session)throw refreshError;if(token)headers.Authorization='Bearer '+token;var response=await fetch(API,{method:'POST',headers:headers,body:JSON.stringify(Object.assign({operation:operation,session_token:state.session},payload||{}))});var data=await response.json().catch(function(){return{error:'服务响应无效'}});if(!response.ok){var error=apiError(data,response.status);if(!retried&&isSessionInvalidError(error)&&state.auth&&authBridge.forceRefresh){try{var forced=await authBridge.forceRefresh();if(!forced){var lost=new Error('登录已失效，请重新登录');lost.code='AUTH_SESSION_INVALID';throw lost}state.auth=forced;return api(operation,payload,true)}catch(refreshFailure){throw refreshFailure}}throw error}return data}
   function currentStore(){return $('store-select').value||(state.user&&state.user.store)||''}
@@ -584,7 +584,40 @@
   function monthRange(preset){var now=new Date(),y=now.getFullYear(),m=now.getMonth()+1,fmt=function(yy,mm){return yy+'-'+String(mm).padStart(2,'0')},shift=function(monthsBack){var d=new Date(y,m-1-monthsBack,1);return fmt(d.getFullYear(),d.getMonth()+1)};if(preset==='3')return{start:shift(2),end:fmt(y,m)};if(preset==='6')return{start:shift(5),end:fmt(y,m)};if(preset==='12')return{start:shift(11),end:fmt(y,m)};if(preset==='year')return{start:y+'-01',end:y+'-12'};return null}
   async function loadMonthlySummary(start,end){$('monthly-summary-status').textContent='正在汇总…';try{var result=isLocalPreview()?{months:[start],display_data:(state.data.monthly_report&&state.data.monthly_report.display_data)||blankMonthlyTemplate()}:await api('monthly_summary',{store:currentStore(),start_month:start,end_month:end});if(result.display_data){$('monthly-title').textContent='月报表汇总 '+start.slice(0,4)+'年'+start.slice(5,7)+'月 - '+end.slice(0,4)+'年'+end.slice(5,7)+'月';renderSheet(result.display_data,true)}$('monthly-summary-status').textContent='已汇总 '+result.months.length+' 个月'}catch(error){$('monthly-summary-status').textContent=error.message}}
 
-  async function loadOverview(){$('sync-status').textContent='读取财务上传记录…';try{state.data=await api('overview',{store:currentStore(),month:$('month').value});state.data.monthly_period_was_locked=Boolean(state.data.monthly_period_locked);if(hasMonthlyApproval())state.data.monthly_period_locked=false;renderAll();renderMonthlyAuditControls();$('sync-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(error){$('sync-status').textContent=error.message;if(isSessionInvalidError(error))showLogin(error.message);else if(error.code==='AUTH_TEMPORARY'||Number(error.status)>=500)scheduleSessionRestore()}}
+  async function loadOverview(){
+    var store=currentStore(),month=$('month').value,requestId=(state.monthlyLoadRequest||0)+1;
+    state.monthlyLoadRequest=requestId;state.monthlyOverviewReady=false;
+    $('sync-status').textContent='读取财务上传记录…';
+    $('monthly-edit-toggle').disabled=true;$('monthly-save-cells').disabled=true;
+    $('monthly-sheet').style.pointerEvents='none';
+    var isCurrent=function(){return requestId===state.monthlyLoadRequest&&store===currentStore()&&month===$('month').value};
+    try{
+      var data=await api('overview',{store:store,month:month});
+      if(!isCurrent())return false;
+      state.data=data;state.monthlyOverviewReady=true;
+      state.data.monthly_period_was_locked=Boolean(state.data.monthly_period_locked);
+      if(hasMonthlyApproval())state.data.monthly_period_locked=false;
+      renderAll();renderMonthlyAuditControls();
+      $('sync-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+      return true;
+    }catch(error){
+      if(!isCurrent())return false;
+      var message=apiError({error:error.message,code:error.code},error.status).message;
+      $('sync-status').textContent=message;
+      // A failed read is not an empty month, and must never enable draft creation.
+      state.data={};state.monthlyEditMode=false;state.monthlyDirty={};
+      $('report-state').textContent='月报暂未读取成功，请点击上方「刷新」重试。';
+      $('monthly-sheet').innerHTML='<div class="empty">月报加载失败，未显示其他门店或月份的数据。</div>';
+      if(isSessionInvalidError(error))showLogin(message);
+      return false;
+    }finally{
+      if(isCurrent()){
+        $('monthly-edit-toggle').disabled=!state.monthlyOverviewReady;
+        $('monthly-save-cells').disabled=!state.monthlyOverviewReady;
+        $('monthly-sheet').style.pointerEvents=state.monthlyOverviewReady?'':'none';
+      }
+    }
+  }
 
   function voucherAuditLabel(value){return{pending:'待人工审核',approved:'已审核',rejected:'已退回'}[value]||value||'待人工审核'}
   function voucherOcrLabel(value){return{pending:'待OCR/可人工录入',processing:'候选待复核',reviewed:'已人工复核',failed:'OCR失败'}[value]||value||'待OCR'}
@@ -800,7 +833,33 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
 
   $('payment-form').addEventListener('submit',async function(event){event.preventDefault();var button=event.submitter;button.disabled=true;$('payment-result').textContent='正在确认付款并关联凭证…';try{if(isLocalPreview())throw new Error('本地预览不写入数据库');await api('expense_payment_confirm',{store:currentStore(),expense_id:$('payment-expense').value,payment_date:$('payment-date').value,amount:$('payment-amount').value,payee:$('payment-payee').value,payment_method:$('payment-method').value,payment_reference:$('payment-reference').value,voucher_ids:selectedValues('payment-vouchers'),reason:$('payment-reason').value});event.target.reset();setDefaultDates();await loadFinanceWorkbench();toast('付款已确认')}catch(error){$('payment-result').textContent=error.message}finally{button.disabled=false}});
   $('monthly-close-form').addEventListener('submit',async function(event){event.preventDefault();var button=event.submitter;button.disabled=true;$('monthly-close-result').textContent='正在从正式记录生成月报…';try{if(isLocalPreview())throw new Error('本地预览不写入数据库');await api('monthly_generate',{store:currentStore(),month:$('month').value,source_report_id:$('monthly-source-report').value||null,reason:$('monthly-reason').value});$('monthly-reason').value='';await loadFinanceWorkbench();toast('正式月报已生成，请复核后锁账')}catch(error){$('monthly-close-result').textContent=error.message}finally{button.disabled=false}});
-    $('monthly-edit-toggle').addEventListener('click',async function(){if(!state.data.monthly_report){var button=this;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}toast('正在建立本月电子月报…');await api('monthly_draft_create',{store:currentStore(),month:$('month').value});await loadOverview();state.monthlyEditMode=true;renderMonthlyAuditControls(true);toast('本月月报已建立，可直接填写金额并保存')}catch(error){toast(error.message)}finally{button.disabled=false}return}if(state.monthlyEditMode&&Object.keys(state.monthlyDirty||{}).length){toast('请先保存本月修改，再结束编辑');return}if(!state.monthlyEditMode){var editButton=this;editButton.disabled=true;try{if(!isLocalPreview()){toast('正在准备原表全部金额格…');var prepared=await api('monthly_editable_slots_prepare',{store:currentStore(),month:$('month').value,report_id:state.data.monthly_report.id});if(Number(prepared.prepared||0)>0)await loadOverview()}state.monthlyEditMode=true;renderMonthlyAuditControls(true);toast('所有金额格已可填写；编号、姓名和文字栏保持固定')}catch(error){toast(error.message)}finally{editButton.disabled=false}return}state.monthlyEditMode=false;renderMonthlyAuditControls(true);toast('已结束编辑；点击金额可直接看原始凭证')});
+    $('monthly-edit-toggle').addEventListener('click',async function(){
+      var button=this,store=currentStore(),month=$('month').value;
+      if(state.monthlyOverviewReady===false){toast('请先刷新，成功读取当月月报后再编辑');return}
+      if(state.monthlyEditMode&&Object.keys(state.monthlyDirty||{}).length){toast('请先保存本月修改，再结束编辑');return}
+      if(state.monthlyEditMode){state.monthlyEditMode=false;renderMonthlyAuditControls(true);toast('已结束编辑；点击金额可直接看原始凭证');return}
+      button.disabled=true;
+      try{
+        var report=state.data.monthly_report;
+        if(!isLocalPreview()){
+          if(!report){
+            toast('正在建立本月电子月报…');
+            await api('monthly_draft_create',{store:store,month:month});
+          }else if(!report.historical){
+            toast('正在准备原表全部金额格…');
+            await api('monthly_editable_slots_prepare',{store:store,month:month,report_id:report.id});
+          }
+          if(store!==currentStore()||month!==$('month').value)return;
+          // Always read back, even when preparation was already applied by an earlier attempt.
+          if(!await loadOverview())return;
+          if(!state.data.monthly_report)throw new Error('当月月报未读取到，请刷新后重试');
+        }else if(!report){toast('本地预览不写入数据库');return}
+        if(store!==currentStore()||month!==$('month').value)return;
+        state.monthlyEditMode=true;renderMonthlyAuditControls(true);
+        toast(report?'所有金额格已可填写；编号、姓名和文字栏保持固定':'本月月报已建立，可直接填写金额并保存');
+      }catch(error){toast(apiError({error:error.message},error.status).message)}
+      finally{button.disabled=state.monthlyOverviewReady===false}
+    });
     $('monthly-save-cells').addEventListener('click',async function(){var cells=Object.keys(state.monthlyDirty||{}).map(function(address){return state.monthlyDirty[address]});if(!cells.length){toast('没有金额发生变化');return}var reason=window.prompt('请输入本次修改原因（会永久保存在操作审计中）：');if(!reason)return;var button=this,saved=0;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}for(var i=0;i<cells.length;i++){await saveMonthlyAmountAdjustment(cells[i],reason+'（月报 '+cells[i].address+'）');saved++}state.monthlyEditMode=false;toast(saved+' 个金额已保存；原金额、公式与差额均已永久留痕');await loadOverview()}catch(error){toast((saved?'已保存 '+saved+' 个；':'')+error.message);await loadOverview()}finally{button.disabled=false}});
     $('monthly-unlock-request').addEventListener('click',async function(){var reason=window.prompt('请输入申请修改锁账月份的原因：');if(!reason)return;var button=this;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}await api('monthly_cell_unlock_request',{store:currentStore(),month:$('month').value,reason:reason});toast('申请已提交，等待公司管理员审批');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}});
   $('monthly-summary-toggle').addEventListener('click',function(){state.monthlySummary=state.monthlySummary||{active:false};state.monthlySummary.active=!state.monthlySummary.active;$('monthly-summary-range').classList.toggle('hidden',!state.monthlySummary.active);$('monthly-summary-toggle').textContent=state.monthlySummary.active?'关闭汇总':'开启汇总';if(state.monthlySummary.active){var r=monthRange($('monthly-summary-preset').value);loadMonthlySummary(r.start,r.end)}else{loadOverview()}});
@@ -814,7 +873,7 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-monthly-workbench.js?v=498"></script>
-  <script src="operations-daily-recognition.js?v=498"></script>
+  <script src="operations-monthly-workbench.js?v=499"></script>
+  <script src="operations-daily-recognition.js?v=499"></script>
 </body>
 </html>

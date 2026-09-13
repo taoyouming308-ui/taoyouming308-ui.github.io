@@ -17,6 +17,8 @@ node scripts/test-employee-bookings.mjs || exit 1
 node scripts/test-frontdesk.js || exit 1
 node scripts/test-operations.js || exit 1
 node scripts/test-monthly-formula-recalculation.js || exit 1
+node scripts/test-monthly-load-recovery-v499.js || exit 1
+node scripts/test-monthly-load-browser-v499.js || exit 1
 node scripts/test-history-import.mjs || exit 1
 node scripts/test-operations-auth.js || exit 1
 node scripts/test-operations-auth-migration.js || exit 1
