@@ -15,7 +15,7 @@ for (const marker of ['monthlyCellRoutesToPettyCash', 'openMonthlyPettyCashDetai
 for (const marker of ['return "petty_cash_summary"', '"purchase_summary", "petty_cash_summary"']) {
   assert.ok(api.includes(marker), 'missing API petty summary marker ' + marker);
 }
-for (const view of ['finance-workbench', 'archive', 'history-import']) {
+for (const view of ['salary-report', 'finance-workbench', 'archive', 'history-import']) {
   assert.match(html, new RegExp('data-view="' + view + '"[^>]*style="display:none"'), view + ' must stay hidden in navigation');
 }
 
@@ -42,7 +42,7 @@ let browser;
   await page.goto(origin + '/operations.html?preview=1&role=finance');
   await page.waitForFunction(() => state.user && state.user.role === 'finance' && state.data.monthly_report);
 
-  for (const view of ['finance-workbench', 'archive', 'history-import']) {
+  for (const view of ['salary-report', 'finance-workbench', 'archive', 'history-import']) {
     assert.equal(await page.locator(`.nav [data-view="${view}"]`).evaluate(node => getComputedStyle(node).display), 'none');
   }
 
@@ -78,7 +78,7 @@ let browser;
   assert.equal(result.financeVisible, true);
   assert.equal(result.traceHidden, true);
   assert.deepEqual(errors, []);
-  console.log('v501 browser: petty summary direct navigation, scoped month/store, hidden low-frequency nav and detail-cell guard passed');
+  console.log('v502 browser: petty summary direct navigation, scoped month/store, hidden salary/low-frequency nav and detail-cell guard passed');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
