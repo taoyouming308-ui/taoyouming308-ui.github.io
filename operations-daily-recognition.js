@@ -19,9 +19,9 @@
       var scale=Math.min(1,availableWidth/rotatedWidth,availableHeight/rotatedHeight)*zoom;
       var w=img.naturalWidth*scale,h=img.naturalHeight*scale;
       frame.style.width=(rotatedWidth*scale)+'px';frame.style.height=(rotatedHeight*scale)+'px';
-      Object.assign(img.style,{position:'absolute',maxWidth:'none',width:w+'px',height:h+'px',left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)'});
+      Object.assign(img.style,{position:'absolute',display:'block',maxWidth:'none',width:w+'px',height:h+'px',left:'50%',top:'50%',margin:'0',transformOrigin:'center center',transform:'translate(-50%,-50%) rotate('+angle+'deg)'});
       tools.hidden=!img.getAttribute('src');
-      if(recenter)requestAnimationFrame(function(){stage.scrollLeft=Math.max(0,(stage.scrollWidth-stage.clientWidth)/2);stage.scrollTop=0;});
+      if(recenter)requestAnimationFrame(function(){requestAnimationFrame(function(){stage.scrollLeft=Math.max(0,(stage.scrollWidth-stage.clientWidth)/2);stage.scrollTop=Math.max(0,(stage.scrollHeight-stage.clientHeight)/2);});});
     }
     tools.querySelectorAll('[data-turn]').forEach(function(button){button.onclick=function(){autoDirection=false;angle=normalized(angle+Number(button.dataset.turn));fit(true);};});
     tools.querySelector('[data-auto-straighten]').onclick=function(){autoDirection=true;zoom=1;fit(true);};
