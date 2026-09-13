@@ -1,11 +1,13 @@
 # Agent Sync Status
 
-## v492 日报识别按日期核对与单日重试（2026-09-13，待发布）
+## v492 日报识别按日期核对与单日重试（2026-09-13，已发布）
 
 - App version: v492。基于 GitHub main v491，只完善经营驾驶舱日报识别进度的核对入口与失败处理。
 - 绿色“待财务核对”日期整块可点击，直接进入对应日期电子日报；电子表格与原始日报图片同时展示，供财务逐格核对、修改、保存和最终确认。
 - 红色“失败”日期整块可点击，展开完整失败原因、已尝试次数和“重新识别这一天”按钮；单日重试不会重复处理本月其他日期，失败原因与重试操作永久写入审计。
 - 单日重试继续受 `daily_report.write`、公司、门店、任务和日期五重范围限制；浏览器角色不能直接执行 RPC。识别结果仍只保存为待核对候选，不自动确认或入账。
+- 生产迁移 `20260913022849_daily_recognition_single_item_retry.sql` 已应用；`operations-api` version 55 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名 overview 实测返回 403 `AUTH_SESSION_INVALID`。新 RPC 的 `anon/authenticated/service_role` 执行权限实测为 `false/false/true`。
+- 隔离 PostgreSQL 验证了精准单日重试、其他失败日期不受影响、审计记录、权限边界与浏览器直连拒绝；完整 pre-push 门禁通过。GitHub main 功能提交 `e772035`，Validate shared app `34733417548` 与 Pages `34733417022` 均成功；CDN 无缓存核验 `version.txt=492`、页面与单日跳转/重试代码均已生效。
 
 ## v491 日报页面单一月份入口（2026-09-12，已发布）
 
