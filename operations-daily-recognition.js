@@ -6,11 +6,18 @@
     if (!img || img.dataset.rotationReady) return;
     img.dataset.rotationReady = '1';
     var stage = img.parentElement, frame = document.createElement('div'), tools = document.createElement('div');
-    tools.className = 'compact-actions daily-rotation-tools'; tools.innerHTML = '<button type="button" class="ghost" data-turn="-90">向左转</button><button type="button" class="ghost" data-auto-straighten>自动摆正</button><button type="button" class="ghost" data-turn="90">向右转</button>';
+    tools.className = 'compact-actions daily-rotation-tools'; tools.innerHTML = '<button type="button" class="ghost" data-turn="-90">向左转</button><button type="button" class="ghost" data-auto-straighten>自动摆正</button><button type="button" class="ghost" data-turn="90">向右转</button><button type="button" class="primary" data-save-orientation hidden>保存方向</button><span class="help" data-orientation-status></span>';
     stage.parentElement.insertBefore(tools,stage); stage.insertBefore(frame,img); frame.appendChild(img);
-    frame.className='daily-rotation-frame'; var angle=0,zoom=1,autoDirection=true;
+    frame.className='daily-rotation-frame'; var angle=0,zoom=1,autoDirection=true,savedAngle=null,dirty=false,context=null,contextUrl='';
+    var saveButton=tools.querySelector('[data-save-orientation]'),saveStatus=tools.querySelector('[data-orientation-status]');
     function normalized(value){return ((value%360)+360)%360;}
     function automaticAngle(){return img.naturalHeight>img.naturalWidth?90:0;}
+    function updateSaveState(){
+      var allowed=context&&context.canSave&&context.attachmentId;
+      saveButton.hidden=!allowed;saveButton.disabled=!dirty;
+      saveButton.textContent=dirty?'保存方向':'方向已保存';
+      saveStatus.textContent=allowed?(dirty?'旋转后请保存':'退出后仍保持当前方向'):'';
+    }
     function fit(recenter) {
       if (!img.naturalWidth) return;
       if(autoDirection)angle=automaticAngle();
@@ -23,13 +30,46 @@
       tools.hidden=!img.getAttribute('src');
       if(recenter)requestAnimationFrame(function(){requestAnimationFrame(function(){stage.scrollLeft=Math.max(0,(stage.scrollWidth-stage.clientWidth)/2);stage.scrollTop=Math.max(0,(stage.scrollHeight-stage.clientHeight)/2);});});
     }
-    tools.querySelectorAll('[data-turn]').forEach(function(button){button.onclick=function(){autoDirection=false;angle=normalized(angle+Number(button.dataset.turn));fit(true);};});
-    tools.querySelector('[data-auto-straighten]').onclick=function(){autoDirection=true;zoom=1;fit(true);};
+    function markChanged(){dirty=savedAngle===null||normalized(angle)!==savedAngle;updateSaveState();}
+    tools.querySelectorAll('[data-turn]').forEach(function(button){button.onclick=function(){autoDirection=false;angle=normalized(angle+Number(button.dataset.turn));markChanged();fit(true);};});
+    tools.querySelector('[data-auto-straighten]').onclick=function(){autoDirection=true;zoom=1;fit(true);autoDirection=false;markChanged();};
+    saveButton.onclick=async function(){
+      if(!context||!context.canSave||!context.attachmentId||!dirty)return;
+      saveButton.disabled=true;saveButton.textContent='正在保存…';saveStatus.textContent='正在保存这张图片的方向';
+      try{
+        if(!isLocalPreview())await api('daily_attachment_orientation_save',{store:currentStore(),draft_id:context.draftId,attachment_id:context.attachmentId,degrees:normalized(angle),reason:'财务调整日报原图显示方向'});
+        savedAngle=normalized(angle);dirty=false;
+        var sheet=state.imports.sheet,item=(sheet&&sheet.attachments||[]).find(function(row){return row.id===context.attachmentId;});
+        if(item){item.display_rotation_degrees=savedAngle;item.display_orientation={degrees:savedAngle};}
+        updateSaveState();toast('图片方向已保存，退出或刷新后仍会保持');
+      }catch(error){dirty=true;updateSaveState();saveStatus.textContent='保存失败：'+error.message;toast(error.message);}
+    };
     img.__setRotationZoom=function(value){zoom=Math.max(.6,Math.min(2.4,Number(value)||1));fit(true);};
-    img.addEventListener('load',function(){autoDirection=true;zoom=1;fit(true);});window.addEventListener('resize',function(){fit(false);});
-    new MutationObserver(function(){autoDirection=true;angle=0;zoom=1;if(img.complete)fit(true);}).observe(img,{attributes:true,attributeFilter:['src']});if(img.complete)fit(true);
+    img.__setOrientationContext=function(value){
+      context=value||null;contextUrl=img.getAttribute('src')||'';zoom=1;dirty=false;
+      savedAngle=context&&context.savedDegrees!==null&&context.savedDegrees!==undefined?normalized(Number(context.savedDegrees)):null;
+      if(savedAngle===null){autoDirection=true;angle=0;}else{autoDirection=false;angle=savedAngle;}
+      updateSaveState();if(img.complete)fit(true);
+    };
+    img.addEventListener('load',function(){zoom=1;if(savedAngle===null){autoDirection=true;angle=0;}else{autoDirection=false;angle=savedAngle;}fit(true);});window.addEventListener('resize',function(){fit(false);});
+    new MutationObserver(function(){if((img.getAttribute('src')||'')!==contextUrl){context=null;contextUrl='';savedAngle=null;dirty=false;autoDirection=true;angle=0;zoom=1;updateSaveState();}if(img.complete)fit(true);}).observe(img,{attributes:true,attributeFilter:['src']});if(img.complete)fit(true);
   }
   mountRotation('daily-detail-image');mountRotation('daily-original-image');
+  window.setDailyImageOrientationContext=function(imageId,item,sheet){
+    var image=document.getElementById(imageId);if(!image||!image.__setOrientationContext)return;
+    image.__setOrientationContext(item?{draftId:sheet&&sheet.draft&&sheet.draft.id,attachmentId:item.id,
+      savedDegrees:item.display_rotation_degrees,canSave:Boolean(sheet&&sheet.permissions&&sheet.permissions.save_orientation&&item.voucher_id)}:null);
+  };
+  var attachmentsBase=renderDailyDetailAttachments;
+  renderDailyDetailAttachments=function(){
+    attachmentsBase();var sheet=state.imports.sheet,items=sheet&&sheet.attachments||[];
+    var images=items.filter(function(item){return ['image/jpeg','image/png'].includes(item.mime_type);});
+    var current=images.find(function(item){return item.private_url===document.getElementById('daily-detail-image').getAttribute('src');})||images[0];
+    window.setDailyImageOrientationContext('daily-detail-image',current,sheet);
+    document.querySelectorAll('[data-daily-attachment]').forEach(function(control){control.addEventListener('click',function(){var item=items[Number(control.dataset.dailyAttachment)];if(item&&['image/jpeg','image/png'].includes(item.mime_type))window.setDailyImageOrientationContext('daily-detail-image',item,sheet);});});
+  };
+  var sheetRenderBase=renderDailySheet;
+  renderDailySheet=function(noScroll){sheetRenderBase(noScroll);var sheet=state.imports.sheet,items=sheet&&sheet.attachments||[];var item=items.find(function(row){return row.private_url===sheet.original_image_url;})||items.find(function(row){return ['image/jpeg','image/png'].includes(row.mime_type);});window.setDailyImageOrientationContext('daily-original-image',item,sheet);};
   var monthlyBase=renderMonthlyAuditControls;
   renderMonthlyAuditControls=function(){monthlyBase();var report=state.data.monthly_report,cell=report&&(report.display_data.cells||[]).find(function(row){return row.daily_rollup;});if(!cell)return;var box=document.createElement('div');box.className='candidate-warning';box.textContent='主营收入来自已确认日报 '+cell.daily_rollup.confirmed_days+' 天：'+formatAmount(cell.daily_rollup.amount)+'；原月报：'+formatAmount(cell.original_report_amount)+'。请核对日报是否录齐，点击收入可查看具体日期。';document.getElementById('report-state').appendChild(box);};
   var upload=document.getElementById('daily-detail-upload');

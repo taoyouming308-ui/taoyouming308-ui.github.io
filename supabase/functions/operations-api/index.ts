@@ -4380,13 +4380,22 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   const legacyVoucherId = cleanText(draft.source_voucher_id, 40);
   if (legacyVoucherId && !voucherIds.includes(legacyVoucherId)) voucherIds.push(legacyVoucherId);
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=200`, 200) : [];
+  const attachmentIds = links.map((link) => cleanText(link.id, 40)).filter(Boolean);
+  const orientations = attachmentIds.length ? await restRowsAll(`zysyr_daily_attachment_orientation_revisions?select=id,daily_sheet_attachment_id,revision,degrees,reason,changed_by_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_sheet_attachment_id=in.${uuidIn(attachmentIds)}&order=revision.desc&limit=1000`, 1000) : [];
   const actorIds = [...new Set(changes.map((change) => cleanText(change.changed_by_user_id, 40)).filter(Boolean))];
   const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=200`, 200) : [];
   const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
   const cellMap = new Map(cells.map((cell) => [cleanText(cell.id, 40), cell]));
   const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
+  const orientationMap = new Map<string, JsonRecord>();
+  for (const orientation of orientations) {
+    const attachmentId = cleanText(orientation.daily_sheet_attachment_id, 40);
+    if (!orientationMap.has(attachmentId)) orientationMap.set(attachmentId, orientation);
+  }
   const attachments = await Promise.all(vouchers.map(async (voucher) => ({ ...voucher,
     ...(linkMap.get(cleanText(voucher.id, 40)) || { attachment_kind: "original_report", linked_at: voucher.uploaded_at }),
+    display_orientation: orientationMap.get(cleanText((linkMap.get(cleanText(voucher.id, 40)) || {}).id, 40)) || null,
+    display_rotation_degrees: orientationMap.get(cleanText((linkMap.get(cleanText(voucher.id, 40)) || {}).id, 40))?.degrees ?? null,
     private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
     url_expires_in: 300,
   })));
@@ -4444,7 +4453,7 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
-  return { ...result, readonly: false, permissions: { write: true, upload_original: true },
+  return { ...result, readonly: false, permissions: { write: true, upload_original: true, save_orientation: true },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -4793,8 +4802,25 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable,
-    upload_original: hasAuthCapability(session, "daily_report.write") },
+    upload_original: hasAuthCapability(session, "daily_report.write"),
+    save_orientation: hasAuthCapability(session, "daily_report.write") },
     daily_unlock_approved: hasUnlockApproval, daily_unlock_request_id: approvals[0]?.id ?? null };
+}
+
+async function saveDailyAttachmentOrientation(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有保存日报图片方向的权限");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
+  const attachmentId = uuidValue(payload.attachment_id, "请选择要保存方向的日报图片") as string;
+  const degrees = Number(payload.degrees);
+  if (![0, 90, 180, 270].includes(degrees)) throw new Error("图片方向必须是 0、90、180 或 270 度");
+  const saved = await financeRpcSaved("rpc/zysyr_save_daily_attachment_orientation", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_draft_id: draftId, p_attachment_id: attachmentId,
+    p_degrees: degrees, p_reason: cleanText(payload.reason, 500) || "调整日报原图显示方向",
+  });
+  return { saved, source_object_unchanged: true };
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -5414,6 +5440,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_recognition_job_control") return json(await dailyRecognitionJobControl(payload, session));
     if (operation === "daily_recognition_item_retry") return json(await dailyRecognitionItemRetry(payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
+    if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));

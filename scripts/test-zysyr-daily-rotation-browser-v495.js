@@ -17,7 +17,7 @@ async function run(){
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     await page.goto(origin+'/operations.html?preview=1&role=finance');
-    await page.evaluate(()=>{showView('import');document.getElementById('daily-review-workspace').classList.remove('hidden');const image=document.getElementById('daily-original-image');image.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="white"/><rect x="20" y="20" width="1160" height="760" fill="none" stroke="black" stroke-width="20"/></svg>')});
+    await page.evaluate(()=>{showView('import');document.getElementById('daily-review-workspace').classList.remove('hidden');const image=document.getElementById('daily-original-image');image.src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="white"/><rect x="20" y="20" width="1160" height="760" fill="none" stroke="black" stroke-width="20"/></svg>');state.imports.sheet={draft:{id:'preview-draft'},permissions:{save_orientation:true},attachments:[{id:'preview-attachment',voucher_id:'preview-voucher',display_rotation_degrees:null}]};setDailyImageOrientationContext('daily-original-image',state.imports.sheet.attachments[0],state.imports.sheet)});
     await page.locator('#daily-original-image').evaluate(image=>image.decode());
     const stage=page.locator('#daily-original-stage'),tools=stage.locator('xpath=preceding-sibling::*[1]');
     async function metrics(){await page.waitForTimeout(180);return page.evaluate(()=>{const image=document.getElementById('daily-original-image'),frame=image.parentElement,stage=frame.parentElement,ir=image.getBoundingClientRect(),fr=frame.getBoundingClientRect();return{imageCenterX:(ir.left+ir.right)/2,imageCenterY:(ir.top+ir.bottom)/2,frameCenterX:(fr.left+fr.right)/2,frameCenterY:(fr.top+fr.bottom)/2,transform:image.style.transform,origin:image.style.transformOrigin,scrollLeft:stage.scrollLeft,scrollTop:stage.scrollTop,expectedLeft:Math.max(0,(stage.scrollWidth-stage.clientWidth)/2),expectedTop:Math.max(0,(stage.scrollHeight-stage.clientHeight)/2)}})}
@@ -25,6 +25,11 @@ async function run(){
     await tools.locator('[data-turn="90"]').click();let after=await metrics();
     assert.match(after.transform,/rotate\(90deg\)/);assert.equal(after.origin,'center center');assert.equal(centered(after),true,'right rotation must remain centered');
     assert.ok(Math.abs(after.scrollLeft-after.expectedLeft)<2&&Math.abs(after.scrollTop-after.expectedTop)<2,'right rotation must recenter both axes');
+    const save=tools.locator('[data-save-orientation]');assert.equal(await save.isVisible(),true,'finance must see save orientation');assert.equal(await save.isEnabled(),true,'rotation must enable save');
+    await save.click();assert.equal(await save.isEnabled(),false,'saved direction must no longer be dirty');
+    assert.equal(await page.evaluate(()=>state.imports.sheet.attachments[0].display_rotation_degrees),90,'saved direction must update attachment state');
+    await page.evaluate(()=>setDailyImageOrientationContext('daily-original-image',state.imports.sheet.attachments[0],state.imports.sheet));after=await metrics();
+    assert.match(after.transform,/rotate\(90deg\)/,'reopening the image must restore the saved direction');
     await tools.locator('[data-turn="-90"]').click();after=await metrics();
     assert.match(after.transform,/rotate\(0deg\)/);assert.equal(centered(after),true,'left rotation must return to centered origin');
     await tools.locator('[data-turn="-90"]').click();after=await metrics();
