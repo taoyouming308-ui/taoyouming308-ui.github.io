@@ -162,7 +162,7 @@ expect(!html.includes('monthly-trace-open') && html.includes('monthly-edit-toggl
   'monthly amount cells must not be covered by voucher buttons and must open original images directly');
 expect(html.includes('collectMonthlyVoucherTrace') && voucherCore.includes("trace.mode === 'formula'")
   && html.includes('scroll-snap-type:x mandatory') && voucherView.includes('左右滑动查看')
-  && html.includes('return openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
+  && html.includes(':openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
   'formula totals must collect descendant vouchers into a swipeable second-level gallery');
 expect(html.includes('上传这个数字的凭证') && html.includes('monthly_cell_id:target.id')
   && html.includes("record_type:'report',record_id:report.id")

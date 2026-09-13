@@ -897,6 +897,9 @@ function monthlyItemCategory(cell: JsonRecord): string {
   // C31 is only the left-side summary. Its evidence belongs to the right-side
   // 产品进货 detail rows, so never treat this summary as one expense voucher.
   if (/^产品成本\/产品进货(?:\/|$)/.test(label)) return "purchase_summary";
+  // The left-side 备用金 amount is a summary/navigation cell. Individual
+  // records and their vouchers live in the current month's petty-cash ledger.
+  if (/(^|\/)备用金$/.test(label)) return "petty_cash_summary";
   if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|产品消耗|零售产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出|费用|鲜花/.test(label)) return "expense";
   if (cell.cell_kind === "formula" || /小计|合计|盈亏/.test(label)) return "total";
   return "source";
@@ -924,7 +927,7 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
     if (!address) continue;
     const override = overrides.get(address);
     const category = monthlyItemCategory(cell);
-    output[address] = ["income", "salary", "total", "fixed", "purchase_summary"].includes(category) ? "none"
+    output[address] = ["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"].includes(category) ? "none"
       : override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
   }
   return output;
@@ -3389,7 +3392,7 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
   const target = data.target as JsonRecord;
   const category = monthlyItemCategory(target);
   data.item_category = category;
-  if (["income", "salary", "total", "fixed", "purchase_summary"].includes(category)) {
+  if (["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"].includes(category)) {
     data.evidence_policy = "none"; data.can_upload_vouchers = false;
     data.can_manage_business_evidence_rules = false; data.can_manage_evidence_rules = false;
     data.anomalies = (data.anomalies as string[] || []).filter(item => item !== "missing_voucher");

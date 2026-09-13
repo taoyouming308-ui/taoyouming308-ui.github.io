@@ -110,7 +110,7 @@ expect(api.includes('business_type: "history_monthly_profit_loss"')
   'direct historical and current monthly inputs must appear as one independently controlled record');
 expect(api.includes('return "purchase_summary"')
   && api.includes('result.purchase_components')
-  && api.includes('["income", "salary", "total", "fixed", "purchase_summary"]')
+  && api.includes('["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"]')
   && workbench.includes('产品进货明细') && workbench.includes('data-root-voucher-upload'),
   'product purchase summary must bypass summary vouchers and return original purchase detail cells');
 
