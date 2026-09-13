@@ -2098,6 +2098,28 @@ async function monthlyDraftWorkbook(
     if (!Array.isArray(row)) return;
     row.forEach((value, columnIndex) => { sheet.getCell(rowIndex + 1, columnIndex + 1).value = value as never; });
   });
+  // display.values contains the last rendered results as plain text, including
+  // numeric cells that older parsers skipped when a distant "编号" header was
+  // present on the same row. Clear every numeric-looking business value before
+  // restoring known formulas below. Columns explicitly headed as an identifier
+  // or date keep their fixed sequence values.
+  const fixedValueColumns = new Set<number>();
+  values.forEach((row) => {
+    if (!Array.isArray(row)) return;
+    row.forEach((value, columnIndex) => {
+      if (/^(编号|序号|员工号|日期)$/.test(cleanText(value, 40).replace(/\s/g, ""))) {
+        fixedValueColumns.add(columnIndex + 1);
+      }
+    });
+  });
+  for (let row = 1; row <= sheet.rowCount; row += 1) {
+    for (let column = 1; column <= sheet.columnCount; column += 1) {
+      if (fixedValueColumns.has(column)) continue;
+      const target = sheet.getCell(row, column);
+      const rendered = cleanText(target.value, 80).replace(/[,¥￥]/g, "");
+      if (/^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(rendered)) target.value = 0;
+    }
+  }
   const title = sheet.getCell(1, 1);
   if (typeof title.value === "string" && /盈亏|月报/.test(title.value)) {
     title.value = `${storeName}   ${month} 月盈亏统计`;
@@ -2137,7 +2159,12 @@ async function monthlyDraftWorkbook(
     const target = sheet.getCell(address);
     if (cleanText(sourceCell.cell_kind, 20) === "formula") {
       const formula = cleanText(sourceCell.formula, 500).replace(/^=/, "");
-      if (formula) target.value = { formula, result: 0 };
+      // A formula made only from literal numbers is old-period business data
+      // disguised as a formula (for example "59.9+240+..."). It must not be
+      // carried into a fresh month. Preserve only formulas that actually refer
+      // to other cells so the new month can recalculate from new inputs.
+      if (formula && formulaPrecedents(formula, sheetName).length) target.value = { formula, result: 0 };
+      else target.value = 0;
     } else if (monthlyItemCategory(sourceCell) !== "fixed") {
       target.value = 0;
     }
@@ -2153,9 +2180,14 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
   const month = cleanText(payload.month, 7);
   if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
-  const exactPath = `zysyr_report_uploads?select=id,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&order=version.desc&limit=1`;
+  const exactPath = `zysyr_report_uploads?select=id,report_date,version,original_filename,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&order=version.desc&limit=1`;
   const existing = (await restRows(exactPath))[0];
-  if (existing) return { saved: existing, created: false };
+  const existingDisplay = existing?.display_data && typeof existing.display_data === "object"
+    ? existing.display_data as JsonRecord : {};
+  const rebuildStale = payload.rebuild_stale === true
+    && /^\系\统\电\子\月\报\草\稿_/.test(cleanText(existing?.original_filename, 200))
+    && Number(existingDisplay.draft_reset_policy_version || 0) < 3;
+  if (existing && !rebuildStale) return { saved: existing, created: false };
   const sources = await restRows(`zysyr_report_uploads?select=id,report_date,template_code,template_version,original_filename,mime_type,size_bytes,sha256,bucket_id,object_path,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=lt.${month}-01&status=eq.active&order=report_date.desc,version.desc&limit=1`);
   let source = sources[0] || null;
   let sourceCells = source
@@ -2194,6 +2226,8 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
   displayData.source_template_filename = cleanText(source.original_filename, 200);
   displayData.source_template_report_date = cleanText(source.report_date, 10);
   displayData.source_template_sha256 = sourceSha256;
+  displayData.fresh_period_values_reset = true;
+  displayData.draft_reset_policy_version = 3;
   const metadata = await rest("rpc/zysyr_register_report_upload", {
     method: "POST",
     body: JSON.stringify({
