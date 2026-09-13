@@ -2210,9 +2210,17 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
     }),
   });
   if (!metadata.ok) {
+    const failure = await metadata.clone().json().catch(() => ({} as JsonRecord)) as JsonRecord;
+    const databaseCode = cleanText(failure.code, 30);
+    const databaseMessage = cleanText(failure.message, 220);
+    console.error("monthly draft registration failed", {
+      status: metadata.status, code: databaseCode, message: databaseMessage,
+      company_id: companyId, store_id: storeId, month,
+    });
     const raced = (await restRows(exactPath))[0];
     if (raced) return { saved: raced, created: false };
-    throw new Error(`电子月报草稿登记失败 (${metadata.status})`);
+    if (databaseMessage === "finance report upload scope denied") throw new Error("当前财务账号没有建立月报的门店权限");
+    throw new Error(`电子月报草稿登记失败 (${databaseCode || metadata.status})`);
   }
   return { saved: await metadata.json(), created: true };
 }
