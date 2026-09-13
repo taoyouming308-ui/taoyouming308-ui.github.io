@@ -73,18 +73,21 @@ async function run() {
     assert.equal(sql('select count(*) from zysyr_monthly_income_adjustments'),'4');
     const workspaceMigration = fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260908153000_zysyr_monthly_finance_workspace_adjustments.sql'),'utf8');
     sql(workspaceMigration.slice(0, workspaceMigration.indexOf('-- A formula can still represent')));
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913054249_zysyr_monthly_all_amount_cells_editable.sql'),'utf8'));
     sql(`insert into zysyr_history_ledger_entries values
       ('${id(10)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"人工 / 技术人员","cell_address":"C20","cell_kind":"formula","amount":80,"formula":"N23"}',1),
       ('${id(11)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"财务费用 / 银/支/微/团手续费","cell_address":"C27","cell_kind":"formula","amount":20,"formula":"10+10"}',1),
       ('${id(12)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"产品成本 / 产品进货","cell_address":"C31","cell_kind":"formula","amount":50,"formula":"G43"}',1),
-      ('${id(13)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"小计 / Nov.","cell_address":"C30","cell_kind":"formula","amount":20,"formula":"SUM(C25:C29)"}',1);`);
+      ('${id(13)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"小计 / Nov.","cell_address":"C30","cell_kind":"formula","amount":20,"formula":"SUM(C25:C29)"}',1),
+      ('${id(16)}','${id(1)}','${id(2)}','2026-06-01','monthly_profit_loss','posted','${id(5)}','{"label":"员工编号 / 01","cell_address":"E3","cell_kind":"input","amount":1}',1);`);
     const currentVersions = `(select coalesce(jsonb_object_agg(id::text,version),'{}'::jsonb) from zysyr_history_ledger_entries where company_id='${id(1)}' and store_id='${id(2)}' and period_month='2026-06-01' and entry_type='monthly_profit_loss' and status='posted')`;
     sql(call({source:id(10),before:80,after:85,base:80,snapshot:currentVersions,adjustments:adjustmentSnapshot()}));
     sql(call({source:id(11),before:20,after:22,base:20,snapshot:currentVersions,adjustments:adjustmentSnapshot()}));
-    expectFailure(call({source:id(12),before:50,after:55,base:50,snapshot:currentVersions,adjustments:adjustmentSnapshot()}), /TARGET_READ_ONLY/);
-    expectFailure(call({source:id(13),before:20,after:25,base:20,snapshot:currentVersions,adjustments:adjustmentSnapshot()}), /TARGET_READ_ONLY/);
-    assert.equal(sql('select count(*) from zysyr_monthly_income_adjustments'),'6');
-    assert.equal(sql("select count(*) from zysyr_audit_events where entity_type='monthly_value_adjustment'"),'2');
+    sql(call({source:id(12),before:50,after:55,base:50,snapshot:currentVersions,adjustments:adjustmentSnapshot()}));
+    sql(call({source:id(13),before:20,after:25,base:20,snapshot:currentVersions,adjustments:adjustmentSnapshot()}));
+    expectFailure(call({source:id(16),before:1,after:2,base:1,snapshot:currentVersions,adjustments:adjustmentSnapshot()}), /TARGET_READ_ONLY/);
+    assert.equal(sql('select count(*) from zysyr_monthly_income_adjustments'),'8');
+    assert.equal(sql("select count(*) from zysyr_audit_events where entity_type='monthly_value_adjustment'"),'4');
     sql(workspaceMigration.slice(workspaceMigration.indexOf('-- A formula can still represent')));
     sql(`insert into zysyr_report_cells values
       ('${id(14)}','${id(1)}','${id(2)}','${id(7)}','C27','财务费用 / 银/支/微/团手续费',20,'formula'),

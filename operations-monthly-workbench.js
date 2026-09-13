@@ -132,11 +132,10 @@
     var category = data.item_category, target = data.target, editor = box.querySelector('[data-amount-editor]');
     document.getElementById('cell-trace-page-title').textContent = (target.label || '月报金额') + ' · ' + (category === 'income' ? '编辑收入' : category === 'salary' ? '工资' : '自动汇总');
     box.querySelector('[data-rules]').remove();
-    if (category === 'income' || category === 'salary') {
+    if (category !== 'fixed') {
       attachMonthlyAdjustmentEditor(editor, data, target.cell_address, context);
     } else {
-      editor.innerHTML = '<h4>' + esc(target.label || '月报金额') + ' · ' + formatAmount(target.numeric_value) + '</h4><div class="help">'
-        + (category === 'fixed' ? '原表固定编号，不可修改。' : '由组成项目自动计算，无需上传凭证。') + '</div>';
+      editor.innerHTML = '<h4>' + esc(target.label || '固定内容') + '</h4><div class="help">编号、姓名和文字标签固定，不可修改。</div>';
     }
     var sourceView = category === 'salary' ? 'salary-report' : category === 'income' ? 'daily-report' : '';
     var canRead = category === 'salary' ? state.user.can_read_salary_reports : state.user.can_read_daily_reports;
@@ -151,9 +150,10 @@
     }).join('') + '</details>');
   }
   function renderPurchaseSummary(box, data, context) {
-    var target = data.target, list = box.querySelector('[data-composition]'), excluded = data.purchase_unincluded_components || [];
+    var target = data.target, list = box.querySelector('[data-composition]'), editor = box.querySelector('[data-amount-editor]'), excluded = data.purchase_unincluded_components || [];
     document.getElementById('cell-trace-page-title').textContent = (target.label || '产品进货') + ' · 进货明细';
-    box.querySelector('[data-amount-editor]').remove(); box.querySelector('[data-rules]').remove();
+    box.querySelector('[data-rules]').remove();
+    attachMonthlyAdjustmentEditor(editor, data, target.cell_address, context);
     list.innerHTML = '<h4>产品进货明细</h4><div class="help">汇总金额由下列原表明细自动合计，汇总格本身无需上传凭证。正在读取明细…</div>';
     components(data, context).then(function (cells) {
       if (!box.isConnected || !voucherContextCurrent(context)) return;

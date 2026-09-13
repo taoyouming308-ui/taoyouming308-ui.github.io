@@ -3049,8 +3049,9 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
     if (data.revision) (data.revision as JsonRecord).status = "not_required";
     for (const row of data.business_details as JsonRecord[] || []) row.evidence_policy = "none";
   }
-  const canUseMonthlyAdjustment = ["income", "salary"].includes(category)
-    || (category === "expense" && cleanText(target.cell_kind, 20) === "formula");
+  // Every numeric monthly cell is adjustable. The adjustment layer preserves
+  // the uploaded value/formula and keeps identifiers outside the mutation path.
+  const canUseMonthlyAdjustment = category !== "fixed";
   if (!canUseMonthlyAdjustment) return data;
   // Match the overview's derived amount, including nested formulas and deltas.
   const store = await selectedStoreInfo(session, payload);
@@ -3080,10 +3081,7 @@ async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRec
   const trace = await cellTrace(payload, session);
   const target = trace.target as JsonRecord;
   const category = monthlyItemCategory(target);
-  const formulaExpense = category === "expense" && cleanText(target.cell_kind, 20) === "formula";
-  if (!["income", "salary"].includes(category) && !formulaExpense) {
-    throw new Error("编号、小计、合计、盈亏和产品进货汇总不能直接修改，请修改对应明细");
-  }
+  if (category === "fixed") throw new Error("编号、姓名和文字标签是固定内容，不能修改");
   const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);

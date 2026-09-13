@@ -34,9 +34,9 @@ expect(page.includes("classList.toggle('hidden',!data.can_upload_vouchers)")
 expect(page.includes('monthly-inline-preview-button') && page.includes('save.dataset.previewAmount')
   && page.includes("toast('金额已经变化，请重新预览')"),
   'amount changes must be previewed and revalidated before confirmation');
-expect(page.includes("api('history_monthly_cell_save'") && api.includes('async function historyMonthlyCellSave(')
-  && api.includes('rpc/zysyr_revise_history_monthly_cell'),
-  'historical monthly input must use the amount-only revision path from the detail page');
+expect(page.includes('saveMonthlyAmountAdjustment') && page.includes("api('monthly_income_adjustment_save'")
+  && api.includes('async function monthlyIncomeAdjustmentSave('),
+  'historical and current monthly amounts must share the append-only adjustment path');
 expect(page.includes("api('history_ledger_evidence_upload'")
   && api.includes('async function historyLedgerEvidenceUpload(')
   && api.includes('rpc/zysyr_attach_history_ledger_evidence'),

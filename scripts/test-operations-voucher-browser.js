@@ -27,6 +27,16 @@ async function run() {
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
     await page.locator('[data-trace-cell="C3"]').first().waitFor();
+    await page.locator('#monthly-edit-toggle').waitFor();
+    await page.waitForTimeout(100);
+    await page.evaluate(() => { state.monthlyEditMode = true; renderSheet(state.data.monthly_report.display_data, false, true); });
+    await page.locator('input[data-monthly-cell="C3"]').waitFor();
+    assert.equal(await page.locator('input[data-monthly-cell="C8"]').count(), 1, 'income subtotal formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="C52"]').count(), 1, 'expense total formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="C53"]').count(), 1, 'profit/loss formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="E3"]').count(), 0, 'employee number must remain fixed');
+    await page.evaluate(() => { state.monthlyEditMode = false; renderSheet(state.data.monthly_report.display_data, false, false); });
+    await page.locator('[data-trace-cell="C3"]').first().waitFor();
     if (width > height && height <= 620) {
       assert.equal(await page.locator('body').evaluate(element => element.classList.contains('report-focus')), true, 'report view must activate landscape focus mode');
       assert.equal(await page.locator('.sidebar').evaluate(element => getComputedStyle(element).display), 'none', 'landscape report must use the full width instead of keeping the sidebar');
@@ -47,12 +57,12 @@ async function run() {
         if (operation === 'cell_trace') {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
-          if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
-          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: 'bundle_only' }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
+          if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
+          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: 'bundle_only' }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
         }
         if (operation === 'history_evidence_images') return { filename: '模拟凭证包.docx', images: [{ filename: 'image1.png', data_url: image }, { filename: 'image2.png', data_url: image }] };
         if (operation === 'voucher_url') return { filename: '模拟日报.png', url: image };
-        if (operation === 'business_evidence_rule_save' || operation === 'history_monthly_cell_save' || operation === 'history_ledger_evidence_upload') return { saved: true };
+        if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload') return { saved: true };
         if (operation === 'overview') return state.data;
         throw Error('Unexpected API or write attempted: ' + operation);
       };
@@ -97,8 +107,8 @@ async function run() {
     assert.equal(await page.locator('#monthly-inline-preview').isVisible(), true, 'amount confirmation preview must be visible before save');
     assert.match(await page.locator('#monthly-inline-preview').innerText(), /修改前[\s\S]*30\.00[\s\S]*修改后[\s\S]*31\.00[\s\S]*差额[\s\S]*\+1\.00/);
     await page.locator('#monthly-inline-save').click();
-    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_monthly_cell_save'));
-    const amountCall = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'history_monthly_cell_save'));
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
+    const amountCall = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
     assert.equal(amountCall.after_amount, '31');
     // A selected image remains local until explicit confirmation, and cancel has no write.
     const photo = { name: 'synthetic-receipt.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', 'base64') };
@@ -127,7 +137,7 @@ async function run() {
     await page.locator('#monthly-inline-amount').fill('32');
     await page.locator('#monthly-inline-preview-button').click();
     await page.locator('#monthly-inline-save').click();
-    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_monthly_cell_save' && call.after_amount === '32') && state.trace.address === 'C3');
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save' && call.after_amount === '32') && state.trace.address === 'C3');
     await page.locator('[aria-label="选择组成金额"]').waitFor();
     await page.locator('#monthly-inline-upload').waitFor();
     chooser = page.waitForEvent('filechooser');
@@ -198,14 +208,15 @@ async function run() {
     }
     await page.locator('#monthly-inline-save').click();
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
-    const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
+    const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save' && call.after_amount === '45'));
     assert.equal(adjustment.after_amount, '45'); assert.equal(adjustment.expected_before, 30);
     await page.evaluate(async () => { window.fixtureCategory = 'salary'; await openCellTrace('C3'); });
     await page.locator('#monthly-inline-amount').waitFor();
     assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0, 'salary never requires vouchers');
     assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
     await page.evaluate(async () => { window.fixtureCategory = 'total'; await openCellTrace('C3'); });
-    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload,#monthly-inline-amount').count(), 0, 'totals stay read-only and voucher-free');
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0, 'totals are editable but voucher-free');
     assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
     await page.evaluate(async () => { window.fixtureCategory = 'income'; state.data.monthly_period_was_locked = true; await openCellTrace('C3'); });
     assert.equal(await page.locator('#monthly-inline-amount').count(), 0);
@@ -223,6 +234,7 @@ async function run() {
     assert.match(await page.locator('.monthly-simple-workbench').innerText(), /歌薇[\s\S]*1,280\.00[\s\S]*杭汐[\s\S]*960\.00/);
     assert.match(await page.locator('.monthly-simple-workbench').innerText(), /另有 1 项、合计 128\.00 没有被当前汇总公式计入/);
     assert.equal(await page.locator('[data-root-voucher-upload],#monthly-inline-upload,.monthly-voucher-preview').count(), 0, 'purchase summary itself must not require a voucher');
+    assert.equal(await page.locator('#monthly-inline-amount').count(), 1, 'purchase summary amount must also be adjustable');
     await page.locator('.purchase-detail-row').first().click();
     await page.locator('#monthly-inline-amount').waitFor();
     assert.equal(await page.locator('#monthly-inline-preview-button').count(), 1, 'one product detail must be editable inside the monthly drawer');

@@ -77,7 +77,8 @@ expect(page.includes('逐笔收入 / 开支与凭证'), 'business detail voucher
 expect(page.includes('data-business-voucher-upload') && page.includes('审核通过后将自动绑定当前明细'), 'inline missing-voucher upload UI missing');
 expect(page.includes('monthly_cell_id:target.id'), 'cell-specific voucher upload payload missing');
 expect(page.includes('Object.keys(state.monthlyDirty'), 'dirty-only monthly save missing');
-expect(page.includes("cell.cell_kind==='input'") && page.includes('isAggregate') && page.includes('isTotal'), 'derived cells must not render as editable');
+expect(page.includes("cell.cell_kind==='formula'") && page.includes('saveMonthlyAmountAdjustment')
+  && page.includes("monthly_income_adjustment_save"), 'every numeric input/formula cell must use the audited adjustment path');
 expect(page.includes('isMonthlyFixedIdentifier') && page.includes('!isIdentifier'), 'identifier columns must stay fixed and non-traceable');
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly report must remain default home');
 expect(!/data-view="revenue"|mgj_service_records/.test(page), 'turnover UI or Meiguanjia source returned');
