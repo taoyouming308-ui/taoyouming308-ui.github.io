@@ -35,6 +35,12 @@ async function run() {
     assert.equal(await page.locator('input[data-monthly-cell="C52"]').count(), 1, 'expense total formula must be editable');
     assert.equal(await page.locator('input[data-monthly-cell="C53"]').count(), 1, 'profit/loss formula must be editable');
     assert.equal(await page.locator('input[data-monthly-cell="E3"]').count(), 0, 'employee number must remain fixed');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').count(), 1, 'blank staff salary slot must be a real editable amount input');
+    assert.equal(await page.locator('input[data-monthly-cell="M12"]').count(), 1, 'blank staff social-security slot must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').inputValue(), '', 'untouched blank amount must remain visually blank');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').evaluate(node => getComputedStyle(node).boxShadow !== 'none'), true, 'blank amount input must keep a visible boundary');
+    assert.equal(await page.locator('input[data-monthly-cell="F12"]').count(), 0, 'employee name must remain fixed even when blank');
+    assert.equal(await page.locator('input[data-monthly-cell="O12"]').count(), 0, 'staff note cell must remain text, not an amount input');
     await page.evaluate(() => { state.monthlyEditMode = false; renderSheet(state.data.monthly_report.display_data, false, false); });
     await page.locator('[data-trace-cell="C3"]').first().waitFor();
     if (width > height && height <= 620) {

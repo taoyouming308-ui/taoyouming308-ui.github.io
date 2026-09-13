@@ -1033,7 +1033,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   let monthlyPeriodLocked = false;
   if (monthlyReport) {
     const reportId = cleanText(monthlyReport.id, 40);
-    const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+    const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
     monthlyEvidenceRuleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120));
     monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
@@ -1306,13 +1306,29 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
   for (const [address, cell] of cellByAddress.entries()) {
     const numeric = numericByAddress.get(address);
     const revision = latest.get(cleanText(cell.id, 40)) || null;
+    const hasAdjustment = adjustmentMap.has(cleanText(cell.id, 40));
+    const untouchedBlank = cleanText(cell.cell_kind, 20) === "input"
+      && cleanText(cell.display_value, 100) === "" && Number(cell.numeric_value) === 0
+      && !revision && !hasAdjustment && !(daily && isDailyIncomeCell(cell));
     const row = Number(cell.row_number) - 1;
     const column = Number(cell.column_number) - 1;
-    if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = numeric;
-    const displayCell = displayCells.find((item) => cleanText(item.cell_address, 20).toUpperCase() === address);
-    if (displayCell && numeric !== undefined) {
+    if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = untouchedBlank ? "" : numeric;
+    let displayCell = displayCells.find((item) => cleanText(item.cell_address, 20).toUpperCase() === address);
+    if (!displayCell) {
+      displayCell = {
+        sheet_name: cleanText(cell.sheet_name, 120) || cleanText(display.sheet_name, 120) || "模版",
+        cell_address: address, row_number: cell.row_number, column_number: cell.column_number,
+        cell_kind: cell.cell_kind, display_value: untouchedBlank ? "" : String(numeric ?? ""),
+        numeric_value: numeric ?? cell.numeric_value, formula: cell.formula || null,
+        precedent_addresses: Array.isArray(cell.precedent_addresses) ? cell.precedent_addresses : [],
+        label: cell.label, editable_blank: untouchedBlank,
+      };
+      displayCells.push(displayCell);
+    }
+    if (numeric !== undefined) {
       displayCell.numeric_value = numeric;
-      displayCell.display_value = String(numeric);
+      displayCell.display_value = untouchedBlank ? "" : String(numeric);
+      displayCell.editable_blank = untouchedBlank;
       displayCell.item_category = monthlyItemCategory(cell);
       if (daily && isDailyIncomeCell(cell)) { displayCell.daily_rollup = daily; displayCell.original_report_amount = cell.numeric_value; }
     }
@@ -1325,6 +1341,26 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
   display.cells = displayCells;
   display.effective_cells = effectiveCells;
   return display;
+}
+
+async function prepareMonthlyEditableSlots(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备月报金额调整权限的财务账号可以开始编辑");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  const reportId = uuidValue(payload.report_id, "月报编号无效") as string;
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_date,report_type,status,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&limit=1`);
+  const report = reports[0];
+  if (!report) throw new Error("当月月报不存在、已被替代或不属于当前门店");
+  const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc&limit=5000`, 5000);
+  const missing = monthlyEditableBlankCells(report.display_data, cells);
+  if (!missing.length) return { prepared: 0, report_id: reportId };
+  const saved = await financeRpcSaved("rpc/zysyr_prepare_monthly_editable_slots", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_report_id: reportId, p_cells: missing,
+  });
+  return { ...saved, report_id: reportId };
 }
 
 async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1419,7 +1455,7 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
   const reportIds = ordered.map((row) => row.id);
   const reportFilter = uuidIn(reportIds);
   const [allCells, allRevisions] = await Promise.all([
-    restRowsAll(`zysyr_report_cells?select=id,report_id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
+    restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
     restRowsAll(`zysyr_monthly_cell_revisions?select=id,report_id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=source_cell_id.asc,revision.desc&limit=10000`, 10000),
   ]);
   const effectiveReports = await Promise.all(ordered.map(async (row) => ({ ...row,
@@ -1830,6 +1866,108 @@ function reportCellLabel(values: string[][], row: number, column: number): strin
   return cleanText(parts.join(" / "), 300);
 }
 
+function monthlyEditableBlankCells(displayData: unknown, existingCells: JsonRecord[] = []): JsonRecord[] {
+  const display = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const rows = Math.max(Number(display.rows || 0), values.length);
+  const columns = Math.max(Number(display.columns || 0), ...values.map((row) => Array.isArray(row) ? row.length : 0));
+  const sheetName = cleanText(display.sheet_name, 120) || "模版";
+  if (!rows || !columns) return [];
+  const valueAt = (row: number, column: number): string => cleanText(values[row - 1]?.[column - 1], 300);
+  const merges = Array.isArray(display.merges) ? display.merges as JsonRecord[] : [];
+  const covered = new Set<string>();
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, endRow = Number(merge.end_row) + 1;
+    const startColumn = Number(merge.start_col) + 1, endColumn = Number(merge.end_col) + 1;
+    if (![startRow, endRow, startColumn, endColumn].every(Number.isInteger)) continue;
+    for (let row = startRow; row <= endRow; row += 1) {
+      for (let column = startColumn; column <= endColumn; column += 1) {
+        if (row !== startRow || column !== startColumn) covered.add(`${row}:${column}`);
+      }
+    }
+  }
+  const known = new Set(existingCells.map((cell) => cleanText(cell.cell_address, 20).toUpperCase()).filter(Boolean));
+  const blank: JsonRecord[] = [];
+  const add = (row: number, column: number, label: string): void => {
+    if (row < 1 || row > rows || column < 1 || column > columns || covered.has(`${row}:${column}`)) return;
+    const address = `${columnLetters(column)}${row}`;
+    if (known.has(address) || valueAt(row, column)) return;
+    known.add(address);
+    blank.push({
+      sheet_name: sheetName, cell_address: address, row_number: row, column_number: column,
+      cell_kind: "input", display_value: "", numeric_value: 0, formula: null,
+      precedent_addresses: [], label: cleanText(label || address, 300), editable_blank: true,
+    });
+  };
+
+  // The original monthly sheet has one left-side amount column immediately
+  // after 收入类别/支出类别. A visually blank amount remains a real input.
+  let leftHeaderRow = 0, leftLabelColumn = 0;
+  for (let row = 1; row <= Math.min(rows, 15) && !leftHeaderRow; row += 1) {
+    for (let column = 1; column < columns; column += 1) {
+      if (/^(收入类别|支出类别)$/.test(valueAt(row, column))) {
+        leftHeaderRow = row; leftLabelColumn = column; break;
+      }
+    }
+  }
+  if (leftHeaderRow && leftLabelColumn) {
+    for (let row = leftHeaderRow + 1; row <= rows; row += 1) {
+      const label = valueAt(row, leftLabelColumn);
+      if (!label || /^(收入类别|支出类别|备注[:：]?)$/.test(label)) continue;
+      add(row, leftLabelColumn + 1, label);
+    }
+  }
+
+  // Staff rows: 编号/姓名 are fixed, every column between 姓名 and 备注 is
+  // monetary. This includes reserved blank employee rows in the paper form.
+  let staffHeaderRow = 0, idColumn = 0, nameColumn = 0, noteColumn = 0;
+  for (let row = 1; row <= Math.min(rows, 12) && !staffHeaderRow; row += 1) {
+    const rowValues = Array.from({ length: columns }, (_item, index) => valueAt(row, index + 1));
+    const idIndex = rowValues.findIndex((value) => /^(编号|序号|员工号)$/.test(value));
+    const nameIndex = rowValues.findIndex((value) => value === "姓名");
+    if (idIndex >= 0 && nameIndex === idIndex + 1) {
+      staffHeaderRow = row; idColumn = idIndex + 1; nameColumn = nameIndex + 1;
+      const noteIndex = rowValues.findIndex((value, index) => index > nameIndex && /^(备注|说明)$/.test(value));
+      noteColumn = noteIndex >= 0 ? noteIndex + 1 : columns + 1;
+    }
+  }
+  if (staffHeaderRow && idColumn && nameColumn) {
+    const categoryColumn = idColumn - 1;
+    let stopRow = rows + 1;
+    for (let row = staffHeaderRow + 1; row <= rows; row += 1) {
+      if (valueAt(row, categoryColumn) === "合计") { stopRow = row; break; }
+    }
+    for (let row = staffHeaderRow + 1; row < stopRow; row += 1) {
+      const rowMarker = [valueAt(row, categoryColumn), valueAt(row, idColumn), valueAt(row, nameColumn)].join("/");
+      if (/(^|\/)(小计|合计)(\/|$)/.test(rowMarker)) continue;
+      const group = merges.find((merge) => Number(merge.start_col) + 1 === categoryColumn
+        && row >= Number(merge.start_row) + 1 && row <= Number(merge.end_row) + 1);
+      const groupLabel = group ? valueAt(Number(group.start_row) + 1, categoryColumn) : valueAt(row, categoryColumn);
+      const person = valueAt(row, nameColumn) || `第${row}行`;
+      for (let column = nameColumn + 1; column < noteColumn; column += 1) {
+        const heading = valueAt(staffHeaderRow, column) || columnLetters(column);
+        add(row, column, `${groupLabel || "人员"} / ${person} / ${heading}`);
+      }
+    }
+  }
+
+  // Four right-side detail blocks use vertically merged section headings and
+  // horizontally merged label/amount cells. Only the top-left amount cell is editable.
+  const detailOffsets: Record<string, number> = { "产品进货": 3, "零售产品成本": 3, "备用金": 4, "杂项": 4 };
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, endRow = Number(merge.end_row) + 1;
+    const startColumn = Number(merge.start_col) + 1;
+    const groupLabel = valueAt(startRow, startColumn);
+    const amountOffset = detailOffsets[groupLabel];
+    if (!amountOffset || endRow <= startRow) continue;
+    for (let row = startRow; row <= endRow; row += 1) {
+      const rowLabel = valueAt(row, startColumn + 1) || `第${row}行`;
+      add(row, startColumn + amountOffset, `${groupLabel} / ${rowLabel} / 金额`);
+    }
+  }
+  return blank;
+}
+
 function worksheetByCleanName(workbook: ExcelJS.Workbook, requestedName: string): ExcelJS.Worksheet | undefined {
   const target = cleanText(requestedName, 120).toLocaleLowerCase();
   if (!target) return undefined;
@@ -1888,7 +2026,6 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
       });
     }
   }
-  if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
   const model = sheet.model as unknown as JsonRecord;
   const merges = (Array.isArray(model.merges) ? model.merges : []).map((merge) => mergeCoordinates(cleanText(merge, 40)));
   const columnWidths = Array.from({ length: columnCount }, (_item, index) =>
@@ -1917,11 +2054,14 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
     }
   }
   const rangeText = `A1:${sheet.getCell(rowCount, columnCount).address}`;
-  return {
+  const display: JsonRecord = {
     sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount,
     values, merges, cells, column_widths: columnWidths, row_heights: rowHeights,
     cell_styles: cellStyles,
   };
+  if (reportType === "monthly_profit_loss") cells.push(...monthlyEditableBlankCells(display, cells));
+  if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
+  return display;
 }
 
 function xmlText(value: string): string {
@@ -3539,6 +3679,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "MONTHLY_CELL_AGGREGATE_EDIT_FORBIDDEN") throw new Error("该金额由二级明细自动汇总，请进入二级明细修改具体记录");
     if (code === "MONTHLY_IDENTIFIER_EDIT_FORBIDDEN") throw new Error("编号、序号和员工号是固定标识，不能作为金额修改");
     if (code === "MONTHLY_CELL_AMOUNT_UNCHANGED") throw new Error("填写的金额与当前金额相同，无需保存");
+    if (code === "MONTHLY_EDITABLE_SLOT_REPORT_NOT_FOUND") throw new Error("当月月报不存在、已被替代或不属于当前门店");
+    if (code === "MONTHLY_EDITABLE_SLOT_PAYLOAD_INVALID") throw new Error("月报空白金额位格式异常，请刷新后重试");
     if (code === "MONTHLY_UNLOCK_APPROVAL_REQUIRED") throw new Error("该月份已锁账，请先提交修改申请并等待管理员授权");
     if (code === "MONTHLY_PERIOD_NOT_LOCKED") throw new Error("该月份尚未锁账，不需要申请解锁修改");
     if (code === "MONTHLY_UNLOCK_APPROVER_REQUIRED") throw new Error("只有公司范围管理员可以审批锁账修改申请");
@@ -5399,6 +5541,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
     if (operation === "monthly_draft_create") return json(await createMonthlyDraft(payload, session));
+    if (operation === "monthly_editable_slots_prepare") return json(await prepareMonthlyEditableSlots(payload, session));
     if (operation === "history_monthly_cell_save") return json(await historyMonthlyCellSave(payload, session));
     if (operation === "monthly_cell_unlock_request") return json(await requestMonthlyCellUnlock(payload, session));
     if (operation === "monthly_cell_unlock_decide") return json(await decideMonthlyCellUnlock(payload, session));
