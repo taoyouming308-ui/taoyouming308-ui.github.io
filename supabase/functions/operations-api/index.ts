@@ -2079,6 +2079,143 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
   return { saved, source_boundary: "finance_uploads_only", original_private: true };
 }
 
+async function monthlyDraftWorkbook(
+  source: JsonRecord,
+  sourceCells: JsonRecord[],
+  month: string,
+  storeName: string,
+): Promise<Uint8Array> {
+  const display = source.display_data && typeof source.display_data === "object"
+    ? source.display_data as JsonRecord : {};
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  if (!values.length || !sourceCells.length) throw new Error("最近一期月报缺少可复制的电子表格结构");
+  const workbook = new ExcelJS.Workbook();
+  workbook.calcProperties.fullCalcOnLoad = true;
+  const sheetName = cleanText(display.sheet_name, 31) || "月报表";
+  const sheet = workbook.addWorksheet(sheetName);
+  values.forEach((row, rowIndex) => {
+    if (!Array.isArray(row)) return;
+    row.forEach((value, columnIndex) => { sheet.getCell(rowIndex + 1, columnIndex + 1).value = value as never; });
+  });
+  const title = sheet.getCell(1, 1);
+  if (typeof title.value === "string" && /盈亏|月报/.test(title.value)) {
+    title.value = `${storeName}   ${month} 月盈亏统计`;
+  }
+  if (sheet.rowCount >= 2 && sheet.columnCount >= 3) sheet.getCell(2, 3).value = `${month.slice(5, 7)}月`;
+  const widths = Array.isArray(display.column_widths) ? display.column_widths as unknown[] : [];
+  widths.forEach((width, index) => { if (Number(width) > 0) sheet.getColumn(index + 1).width = Number(width); });
+  const heights = Array.isArray(display.row_heights) ? display.row_heights as unknown[] : [];
+  heights.forEach((height, index) => { if (Number(height) > 0) sheet.getRow(index + 1).height = Number(height); });
+  const styles = Array.isArray(display.cell_styles) ? display.cell_styles as JsonRecord[] : [];
+  for (const style of styles) {
+    const address = cleanText(style.cell_address, 20).toUpperCase();
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address)) continue;
+    const cell = sheet.getCell(address);
+    const fill = cleanText(style.fill, 8);
+    if (/^[0-9A-F]{8}$/i.test(fill)) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+    cell.alignment = {
+      ...cell.alignment,
+      horizontal: cleanText(style.horizontal, 30) as ExcelJS.Alignment["horizontal"] || undefined,
+      vertical: cleanText(style.vertical, 30) as ExcelJS.Alignment["vertical"] || undefined,
+      wrapText: style.wrap_text === true,
+    };
+    if (style.bold === true) cell.font = { ...cell.font, bold: true };
+  }
+  const merges = Array.isArray(display.merges) ? display.merges as JsonRecord[] : [];
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, startColumn = Number(merge.start_col) + 1;
+    const endRow = Number(merge.end_row) + 1, endColumn = Number(merge.end_col) + 1;
+    if ([startRow, startColumn, endRow, endColumn].every(Number.isInteger)
+      && startRow > 0 && startColumn > 0 && endRow >= startRow && endColumn >= startColumn) {
+      try { sheet.mergeCells(startRow, startColumn, endRow, endColumn); } catch { /* keep usable cells if source merge is malformed */ }
+    }
+  }
+  for (const sourceCell of sourceCells) {
+    const address = cleanText(sourceCell.cell_address, 20).toUpperCase();
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address)) continue;
+    const target = sheet.getCell(address);
+    if (cleanText(sourceCell.cell_kind, 20) === "formula") {
+      const formula = cleanText(sourceCell.formula, 500).replace(/^=/, "");
+      if (formula) target.value = { formula, result: 0 };
+    } else if (monthlyItemCategory(sourceCell) !== "fixed") {
+      target.value = 0;
+    }
+  }
+  const output = await workbook.xlsx.writeBuffer();
+  return new Uint8Array(output);
+}
+
+async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadReports(session)) throw new Error("只有财务账号可以建立当月电子月报");
+  requireFinanceCapability(session, "confirmed_finance.adjust", "当前财务账号没有月报金额编辑权限");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const exactPath = `zysyr_report_uploads?select=id,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&order=version.desc&limit=1`;
+  const existing = (await restRows(exactPath))[0];
+  if (existing) return { saved: existing, created: false };
+  const sources = await restRows(`zysyr_report_uploads?select=id,report_date,template_code,template_version,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=lt.${month}-01&status=eq.active&order=report_date.desc,version.desc&limit=1`);
+  let source = sources[0] || null;
+  let sourceCells = source
+    ? await restRowsAll(`zysyr_report_cells?select=cell_address,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${source.id}&order=row_number.asc,column_number.asc&limit=5000`, 5000)
+    : [];
+  if (!source) {
+    const historicalPeriods = await restRows(`zysyr_history_ledger_entries?select=period_month&company_id=eq.${companyId}&store_id=eq.${storeId}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=lt.${month}-01&order=period_month.desc&limit=1`);
+    const sourceMonth = cleanText(historicalPeriods[0]?.period_month, 10).slice(0, 7);
+    const historical = sourceMonth ? await historicalMonthlyReport(companyId, storeId, sourceMonth, cleanText(store.name, 100)) : null;
+    if (historical) {
+      source = historical;
+      const historicalDisplay = historical.display_data && typeof historical.display_data === "object"
+        ? historical.display_data as JsonRecord : {};
+      sourceCells = Array.isArray(historicalDisplay.cells) ? historicalDisplay.cells as JsonRecord[] : [];
+      const priorEntries = await restRowsAll(`zysyr_history_ledger_entries?select=period_month,current_payload&company_id=eq.${companyId}&store_id=eq.${storeId}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=lt.${month}-01&order=period_month.desc&limit=5000`, 5000);
+      const byAddress = new Map(sourceCells.map((cell) => [cleanText(cell.cell_address, 20).toUpperCase(), cell]));
+      for (const entry of priorEntries) {
+        const cell = entry.current_payload && typeof entry.current_payload === "object" ? entry.current_payload as JsonRecord : null;
+        const address = cleanText(cell?.cell_address, 20).toUpperCase();
+        if (cell && /^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address) && !byAddress.has(address)) byAddress.set(address, cell);
+      }
+      sourceCells = Array.from(byAddress.values());
+    }
+  }
+  if (!source || !sourceCells.length) throw new Error("该门店还没有可复制的原版月报，请先上传一次月报模板");
+  const bytes = await monthlyDraftWorkbook(source, sourceCells, month, cleanText(store.name, 100));
+  const displayData = await workbookDisplay(bytes, "monthly_profit_loss", cleanText(store.name, 100));
+  const objectPath = `${companyId}/${storeId}/monthly_profit_loss/${month}-01/${crypto.randomUUID()}.xlsx`;
+  const mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+    body: exactArrayBuffer(bytes),
+  });
+  if (!upload.ok) throw new Error(`电子月报草稿建立失败 (${upload.status})`);
+  const metadata = await rest("rpc/zysyr_register_report_upload", {
+    method: "POST",
+    body: JSON.stringify({
+      p_report: {
+        company_id: companyId, store_id: storeId, report_type: "monthly_profit_loss", report_date: `${month}-01`,
+        template_code: cleanText(source.template_code, 120) || "zysyr_monthly_profit_loss_original",
+        template_version: Number(source.template_version || 1),
+        original_filename: `系统电子月报草稿_${month}.xlsx`, mime_type: mime,
+        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        object_path: objectPath, display_data: displayData,
+        uploaded_by_user_id: cleanText(session.auth_account_id, 40),
+      },
+      p_cells: Array.isArray(displayData.cells) ? displayData.cells : [],
+    }),
+  });
+  if (!metadata.ok) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    });
+    const raced = (await restRows(exactPath))[0];
+    if (raced) return { saved: raced, created: false };
+    throw new Error(`电子月报草稿登记失败 (${metadata.status})`);
+  }
+  return { saved: await metadata.json(), created: true };
+}
+
 function uuidArray(value: unknown, max: number): string[] {
   if (!Array.isArray(value) || value.length > max) throw new Error("追溯选择数量无效");
   const items = value.map((item) => cleanText(item, 40));
@@ -5192,6 +5329,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
+    if (operation === "monthly_draft_create") return json(await createMonthlyDraft(payload, session));
     if (operation === "history_monthly_cell_save") return json(await historyMonthlyCellSave(payload, session));
     if (operation === "monthly_cell_unlock_request") return json(await requestMonthlyCellUnlock(payload, session));
     if (operation === "monthly_cell_unlock_decide") return json(await decideMonthlyCellUnlock(payload, session));

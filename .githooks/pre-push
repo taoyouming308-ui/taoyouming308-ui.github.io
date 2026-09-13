@@ -38,6 +38,7 @@ node scripts/test-zysyr-daily-full-recognition-v489.js || exit 1
 python3 -m unittest scripts/test_zysyr_daily_codex_bridge.py || exit 1
 node scripts/test-zysyr-salary-sheet-v458.js || exit 1
 node scripts/test-zysyr-monthly-workbench-v472.js || exit 1
+node scripts/test-zysyr-monthly-new-period-v494.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
