@@ -2220,6 +2220,8 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
     const raced = (await restRows(exactPath))[0];
     if (raced) return { saved: raced, created: false };
     if (databaseMessage === "finance report upload scope denied") throw new Error("当前财务账号没有建立月报的门店权限");
+    if (databaseMessage === "service role required") throw new Error("后台服务身份校验失败，请联系管理员");
+    if (databaseMessage === "report cell count out of range") throw new Error("月报数字单元格超出安全范围，请联系管理员");
     throw new Error(`电子月报草稿登记失败 (${databaseCode || metadata.status})`);
   }
   return { saved: await metadata.json(), created: true };

@@ -6,6 +6,7 @@ const root=path.resolve(__dirname,'..');
 const client=fs.readFileSync(path.join(root,'operations-daily-recognition.js'),'utf8');
 const api=fs.readFileSync(path.join(root,'supabase/functions/operations-api/index.ts'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260913033822_daily_attachment_orientation_revisions.sql'),'utf8');
+const compatibilityMigration=fs.readFileSync(path.join(root,'supabase/migrations/20260913052000_zysyr_service_role_claims_compat.sql'),'utf8');
 const expect=(value,message)=>{if(!value)throw Error(message)};
 
 new vm.Script(client,{filename:'operations-daily-recognition.js'});
@@ -22,5 +23,7 @@ for(const marker of ['create table public.zysyr_daily_attachment_orientation_rev
 expect(/revoke all on table public\.zysyr_daily_attachment_orientation_revisions[\s\S]*?from public, anon, authenticated, service_role/.test(migration),'orientation history grants are too broad');
 expect(/revoke execute on function public\.zysyr_save_daily_attachment_orientation[\s\S]*?from public, anon, authenticated, service_role/.test(migration),'orientation RPC is browser accessible');
 expect(migration.includes("current_setting('request.jwt.claim.role', true)"),'service-role RPC guard missing');
+expect(compatibilityMigration.includes("current_setting('request.jwt.claims', true)"),'full JWT claims compatibility missing');
+expect(compatibilityMigration.includes('zysyr_private.request_role()'),'shared request-role guard missing');
 expect(migration.includes("degrees in (0, 90, 180, 270)"),'orientation degree constraint missing');
 console.log('ZYSYR daily attachment orientation persistence checks passed');

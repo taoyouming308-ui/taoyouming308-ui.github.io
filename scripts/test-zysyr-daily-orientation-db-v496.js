@@ -21,13 +21,19 @@ async function run(){
       create function zysyr_private.has_capability(uuid,uuid,text) returns boolean language sql as $$select true$$;
       create function zysyr_private.assert_daily_entry_scope(uuid,uuid,uuid) returns void language plpgsql as $$begin if $1<>'${id(5)}' or $2<>'${id(1)}' or $3<>'${id(2)}' then raise exception 'SCOPE';end if;end$$;
       create function zysyr_private.protect_report_trace_history() returns trigger language plpgsql as $$begin raise exception 'append-only';end$$;
+      create function zysyr_register_report_upload(jsonb,jsonb) returns jsonb language plpgsql security definer set search_path='' as $$begin
+        if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then raise exception 'service role required'; end if;
+        return jsonb_build_object('saved', true);
+      end$$;
       insert into zysyr_daily_sheet_drafts values('${id(1)}','${id(2)}','${id(3)}');
       insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(4)}','image/jpeg');
       insert into zysyr_user_accounts values('${id(1)}','${id(5)}');
       insert into zysyr_daily_sheet_attachments values('${id(6)}','${id(1)}','${id(2)}','${id(3)}','${id(4)}');`);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913033822_daily_attachment_orientation_revisions.sql'),'utf8'));
-    sql(`select set_config('request.jwt.claim.role','service_role',false);select zysyr_save_daily_attachment_orientation('${id(5)}','${id(1)}','${id(2)}','${id(3)}','${id(6)}',90::smallint,'向右摆正');`);
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913052000_zysyr_service_role_claims_compat.sql'),'utf8'));
+    sql(`select set_config('request.jwt.claim.role','',false);select set_config('request.jwt.claims','{"role":"service_role"}',false);select zysyr_save_daily_attachment_orientation('${id(5)}','${id(1)}','${id(2)}','${id(3)}','${id(6)}',90::smallint,'向右摆正');`);
     assert.equal(sql(`select revision||'|'||degrees from zysyr_daily_attachment_orientation_revisions`),'1|90');
+    assert.match(sql(`select set_config('request.jwt.claim.role','',false);select set_config('request.jwt.claims','{"role":"service_role"}',false);select zysyr_register_report_upload('{}','[]')->>'saved'`),/true$/);
     sql(`select set_config('request.jwt.claim.role','service_role',false);select zysyr_save_daily_attachment_orientation('${id(5)}','${id(1)}','${id(2)}','${id(3)}','${id(6)}',180::smallint,'再次摆正');`);
     assert.equal(sql(`select revision||'|'||degrees from zysyr_daily_attachment_orientation_revisions order by revision`),'1|90\n2|180');
     sql(`select set_config('request.jwt.claim.role','service_role',false);select zysyr_save_daily_attachment_orientation('${id(5)}','${id(1)}','${id(2)}','${id(3)}','${id(6)}',180::smallint,'重复保存');`);
