@@ -1,12 +1,13 @@
 # Agent Sync Status
 
-## v497 月报所有金额格可编辑（2026-09-13，发布中）
+## v497 月报所有金额格可编辑（2026-09-13，已发布）
 
 - App version: v497。按用户确认范围，编号、员工姓名和所有文字标签保持固定；月报中已有的收入、支出、工资、产品进货、公式、小计、合计及盈亏等金额格全部开放给具备 `confirmed_finance.adjust` 权限的财务编辑。
 - 首页“编辑金额”模式与金额二级页使用同一套只追加调整：预览后保存，保留原始报表金额、公式、日报、工资表、明细和凭证，仅叠加人工调整并重新计算相关公式；记录修改前后、差额、原因、操作人和时间。
 - 修复两层旧限制：`operations.html` 不再只生成普通输入框，`operations-monthly-workbench.js` 不再把合计和产品进货汇总二次改回只读；已有月报的“编辑金额”按钮不再被错误隐藏。
 - 新迁移 `20260913054249_zysyr_monthly_all_amount_cells_editable.sql` 继续执行财务能力、公司/门店、月份、来源、并发快照、锁账授权及 service-role-only RPC 校验；编号/序号/员工号仍被数据库拒绝。
-- 本地静态回归、完整发布门禁、隔离 PostgreSQL 与 1280×900、390×844、844×390 浏览器回归通过；Supabase migration dry-run 显示远端已对齐。生产迁移已应用；`operations-api` version 64 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码已核验新金额规则，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；迁移后安全与性能顾问均无 error。待推送 GitHub main 并核验线上 v497。本次开发和测试未修改任何生产财务金额。
+- 本地静态回归、完整发布门禁、隔离 PostgreSQL 与 1280×900、390×844、844×390 浏览器回归通过；Supabase migration dry-run 显示远端已对齐。生产迁移已应用；`operations-api` version 64 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码已核验新金额规则，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；迁移后安全与性能顾问均无 error。本次开发和测试未修改任何生产财务金额。
+- GitHub main 功能提交 `b489994` 的 Validate shared app `34741274853` 与 Pages `34741274282` 均成功；CDN 无缓存核验 `version.txt=497`、`operations.html data-version=497`、统一金额调整入口及工作台 `category !== 'fixed'` 分支已经生效。
 
 ## v496 日报原图方向保存与新月编辑修复（2026-09-13，已发布）
 
