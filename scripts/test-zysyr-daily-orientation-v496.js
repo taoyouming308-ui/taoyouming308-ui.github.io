@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const client=fs.readFileSync(path.join(root,'operations-daily-recognition.js'),'utf8');
 const api=fs.readFileSync(path.join(root,'supabase/functions/operations-api/index.ts'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260913033822_daily_attachment_orientation_revisions.sql'),'utf8');
-const compatibilityMigration=fs.readFileSync(path.join(root,'supabase/migrations/20260913052000_zysyr_service_role_claims_compat.sql'),'utf8');
+const compatibilityMigration=fs.readFileSync(path.join(root,'supabase/migrations/20260913043516_zysyr_service_role_claims_compat.sql'),'utf8');
 const expect=(value,message)=>{if(!value)throw Error(message)};
 
 new vm.Script(client,{filename:'operations-daily-recognition.js'});
