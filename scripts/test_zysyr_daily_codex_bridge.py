@@ -57,12 +57,17 @@ class DailyCodexBridgeTests(unittest.TestCase):
         self.assertIn("未结单号", prompt)
         self.assertIn("空白仍为空白", prompt)
 
-    def test_recognition_is_limited_to_one_local_codex_process(self):
-        self.assertTrue(bridge._RECOGNITION_SLOT.acquire(blocking=False))
+    def test_recognition_parallelism_is_bounded(self):
+        acquired = []
         try:
+            for _ in range(bridge._MAX_PARALLEL_RECOGNITIONS):
+                acquired.append(bridge._RECOGNITION_SLOT.acquire(blocking=False))
+            self.assertTrue(all(acquired))
             self.assertFalse(bridge._RECOGNITION_SLOT.acquire(blocking=False))
         finally:
-            bridge._RECOGNITION_SLOT.release()
+            for success in acquired:
+                if success:
+                    bridge._RECOGNITION_SLOT.release()
 
     def test_overlapping_crop_duplicates_keep_highest_confidence_candidate(self):
         numeric_id = "00000000-0000-0000-0000-000000000001"

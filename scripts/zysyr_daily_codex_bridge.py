@@ -27,7 +27,8 @@ MAX_CELLS = 1000
 DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_ALLOWED_HOST = "pdssrmpeiuwvxzsgschm.supabase.co"
 _KEYCHAIN_TOKEN: Optional[str] = None
-_RECOGNITION_SLOT = threading.BoundedSemaphore(1)
+_MAX_PARALLEL_RECOGNITIONS = max(1, min(2, int(os.getenv("ZYSYR_DAILY_CODEX_PARALLEL", "2"))))
+_RECOGNITION_SLOT = threading.BoundedSemaphore(_MAX_PARALLEL_RECOGNITIONS)
 
 
 def _send(handler: Any, payload: dict[str, Any], status: int = 200) -> None:
