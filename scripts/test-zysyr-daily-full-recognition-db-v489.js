@@ -25,16 +25,20 @@ async function run(){
       create function zysyr_private.daily_sheet_validation(uuid,uuid,uuid) returns jsonb language sql as $$select jsonb_build_object('valid',true)$$;
       insert into zysyr_stores values('${id(1)}','${id(2)}','自由手艺人');insert into zysyr_user_accounts values('${id(1)}','${id(3)}');
       insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(5)}','approved','daily_report','image/jpeg');
+      insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(9)}','approved','daily_report','image/jpeg');
       insert into zysyr_daily_sheet_drafts values('${id(1)}','${id(2)}','${id(4)}','2026-01-03','draft','${id(5)}',0,'{}',null,null,'${id(3)}',now());
+      insert into zysyr_daily_sheet_drafts values('${id(1)}','${id(2)}','${id(10)}','2026-01-04','draft','${id(9)}',0,'{}',null,null,'${id(3)}',now());
       insert into zysyr_daily_sheet_attachments values('${id(1)}','${id(2)}','${id(4)}','${id(5)}','original_report',now());
+      insert into zysyr_daily_sheet_attachments values('${id(1)}','${id(2)}','${id(10)}','${id(9)}','original_report',now());
       insert into zysyr_daily_sheet_cells values
        ('${id(1)}','${id(2)}','${id(4)}','${id(6)}','stylist','stylist_1','第1行','perm','烫发',3,2,'staff_value',null,null,null,null,false,null,null,'blank_template','${id(3)}',now()),
        ('${id(1)}','${id(2)}','${id(4)}','${id(7)}','technician','technician_1','第1行','unclosed_order','未结单号',16,23,'unclosed_order',null,null,null,null,false,null,null,'blank_template','${id(3)}',now()),
        ('${id(1)}','${id(2)}','${id(4)}','${id(8)}','stylist','stylist_2','人工姓名','perm','烫发',4,2,'staff_value',null,null,88,null,true,null,null,'blank_template','${id(3)}',now());
       insert into zysyr_daily_sheet_cell_changes(company_id,store_id,draft_id,cell_id,before_label,after_label) values('${id(1)}','${id(2)}','${id(4)}','${id(8)}','第2行','人工姓名');`);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260912120743_daily_full_fidelity_recognition_jobs.sql'),'utf8'));
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913022849_daily_recognition_single_item_retry.sql'),'utf8'));
     const job=JSON.parse(sql(`select zysyr_start_daily_recognition_job('${id(3)}','${id(1)}','${id(2)}','2026-01-01');`));
-    assert.equal(job.total_count,1);
+    assert.equal(job.total_count,2);
     const claim=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));
     assert.equal(claim.item.report_date,'2026-01-03');
     const candidates=JSON.stringify({cells:[{id:id(6),value:123.45,confidence:.94}],text_cells:[{id:id(7),value:'A108',confidence:.8}],row_names:[{section:'stylist',row_key:'stylist_1',name:'陈晨',confidence:.96},{section:'stylist',row_key:'stylist_2',name:'错误覆盖',confidence:.9}]});
@@ -44,9 +48,19 @@ async function run(){
     assert.equal(sql(`select ocr_text from zysyr_daily_sheet_cells where id='${id(7)}'`),'A108');
     assert.equal(sql(`select row_label||'|'||corrected_numeric from zysyr_daily_sheet_cells where id='${id(8)}'`),'人工姓名|88');
     const second=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));assert.equal(second.item,null);
-    const finished=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${claim.item.id}',true,3,null);`));assert.equal(finished.status,'completed');
+    const firstFailed=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${claim.item.id}',false,0,'原图表格不完整');`));assert.equal(firstFailed.status,'running');
+    const other=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));assert.equal(other.item.report_date,'2026-01-04');
+    const bothFailed=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${other.item.id}',false,0,'图片模糊');`));assert.equal(bothFailed.status,'completed_with_errors');assert.equal(bothFailed.failed_count,2);
+    const retried=JSON.parse(sql(`select zysyr_retry_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${claim.item.id}');`));assert.equal(retried.status,'running');assert.equal(retried.failed_count,1);
+    assert.equal(sql(`select report_date||'|'||status from zysyr_daily_recognition_job_items where job_id='${job.id}' order by report_date`),'2026-01-03|queued\n2026-01-04|failed');
+    assert.equal(sql(`select action||'|'||(before_json->>'error_message') from zysyr_audit_events where entity_id='${claim.item.id}'`),'daily_recognition_item_retried|原图表格不完整');
+    const retryClaim=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));assert.equal(retryClaim.item.id,claim.item.id);assert.equal(retryClaim.item.attempt_count,2);
+    const finished=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}',true,3,null);`));assert.equal(finished.status,'completed_with_errors');assert.equal(finished.failed_count,1);
+    assert.throws(()=>sql(`select zysyr_retry_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}');`),/DAILY_RECOGNITION_ITEM_NOT_FAILED/);
+    assert.throws(()=>sql(`select zysyr_retry_daily_recognition_item('${id(30)}','${id(1)}','${id(2)}','${job.id}','${other.item.id}');`),/SCOPE/);
+    assert.equal(sql(`select has_function_privilege('authenticated','zysyr_retry_daily_recognition_item(uuid,uuid,uuid,uuid,uuid)','execute')`),'f');
     assert.throws(()=>sql(`set role authenticated;select * from zysyr_daily_recognition_jobs;`),/permission denied/);
-    console.log('PostgreSQL daily recognition: durable progress, exact candidates, manual preservation and browser denial passed');
+    console.log('PostgreSQL daily recognition: durable progress, exact candidates, isolated single-day retry, audit and browser denial passed');
   }finally{docker(['stop',name]);}
 }
 run().catch(error=>{console.error(error.stderr?String(error.stderr):error);process.exitCode=1});

@@ -7,10 +7,11 @@ const page=fs.readFileSync(path.join(root,'operations.html'),'utf8');
 const client=fs.readFileSync(path.join(root,'operations-daily-recognition.js'),'utf8');
 const api=fs.readFileSync(path.join(root,'supabase/functions/operations-api/index.ts'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260912120743_daily_full_fidelity_recognition_jobs.sql'),'utf8');
+const retryMigration=fs.readFileSync(path.join(root,'supabase/migrations/20260913022849_daily_recognition_single_item_retry.sql'),'utf8');
 const expect=(value,message)=>{if(!value)throw Error(message)};
 
 new vm.Script(client,{filename:'operations-daily-recognition.js'});
-for(const marker of ['daily_recognition_job_start','daily_recognition_job_read','daily_recognition_job_next','daily_recognition_job_control']){
+for(const marker of ['daily_recognition_job_start','daily_recognition_job_read','daily_recognition_job_next','daily_recognition_job_control','daily_recognition_item_retry']){
   expect(api.includes(`operation === "${marker}"`),`API route missing: ${marker}`);
   expect(client.includes(`api('${marker}'`),`client call missing: ${marker}`);
 }
@@ -24,6 +25,12 @@ expect(migration.includes('not manual_override'),'manual value preservation miss
 expect(client.includes('退出本页后进度仍会保存'),'persistent progress guidance missing');
 expect(client.includes("['running','pending'].includes(result.job.status)"),'automatic resume missing');
 expect(client.includes('saved_row_names')&&client.includes('saved_text_cells'),'full recognition counts missing');
+expect(client.includes('data-recognition-review')&&client.includes('openDailyReportDay(item.report_date,item.draft_id'),'successful date does not open its daily report');
+expect(client.includes('data-recognition-failure')&&client.includes('失败原因：'),'failed date does not expose its exact reason');
+expect(client.includes("api('daily_recognition_item_retry'")&&client.includes('重新识别这一天'),'single-day retry action missing');
+expect(retryMigration.includes('zysyr_retry_daily_recognition_item'),'single-day retry RPC missing');
+expect(retryMigration.includes("status<>'failed'")&&retryMigration.includes('attempt_count>=10'),'single-day retry state safeguards missing');
+expect(/revoke all on function public\.zysyr_retry_daily_recognition_item[\s\S]*?from public,anon,authenticated/.test(retryMigration),'single-day retry RPC is browser accessible');
 expect(page.includes("cell.ocr_text==null?cell.manual_text:cell.ocr_text"),'recognized text candidate is not rendered');
 expect(page.includes("row_label_source_method==='codex_local_candidate'"),'recognized name candidate is not highlighted');
 console.log('ZYSYR daily full-fidelity candidates and durable month progress checks passed');

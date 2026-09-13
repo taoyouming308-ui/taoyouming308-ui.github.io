@@ -4435,6 +4435,19 @@ async function dailyRecognitionJobControl(payload: JsonRecord, session: JsonReco
   return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),permissions:{write:true}};
 }
 
+async function dailyRecognitionItemRetry(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以重试当天日报识别");
+  const store=await selectedStoreInfo(session,payload),month=parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40),storeId=cleanText(store.id,40);
+  const jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  const itemId=uuidValue(payload.item_id,"日报识别日期编号无效") as string;
+  await financeRpcSaved("rpc/zysyr_retry_daily_recognition_item",{
+    p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:companyId,
+    p_store_id:storeId,p_job_id:jobId,p_item_id:itemId
+  });
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),permissions:{write:true}};
+}
+
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
   return dailySheetRead(payload, session);
@@ -5257,6 +5270,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_recognition_job_read") return json(await dailyRecognitionJobRead(payload, session));
     if (operation === "daily_recognition_job_next") return json(await dailyRecognitionJobNext(payload, session));
     if (operation === "daily_recognition_job_control") return json(await dailyRecognitionJobControl(payload, session));
+    if (operation === "daily_recognition_item_retry") return json(await dailyRecognitionItemRetry(payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));

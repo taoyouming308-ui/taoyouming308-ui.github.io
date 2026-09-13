@@ -66,15 +66,28 @@
     currentJob=data&&data.job?data:null;
     if(!currentJob){jobPanel.classList.add('hidden');return;}
     var job=data.job,items=data.items||[],done=Number(data.completed_count||0),total=Number(job.total_count||0),remaining=Number(data.remaining_count||0);
-    var list=items.map(function(item){var label={queued:'等待',running:'正在识别',succeeded:'待财务核对',failed:'失败',skipped:'已跳过'}[item.status]||item.status;return '<div class="daily-recognition-item '+esc(item.status)+'"><span>'+esc(item.report_date)+'</span><strong>'+esc(label)+'</strong><span>'+(item.status==='succeeded'?esc(item.candidate_count)+' 项候选':esc(item.error_message||''))+'</span></div>';}).join('');
+    var list=items.map(function(item){
+      var label={queued:'等待',running:'正在识别',succeeded:'待财务核对',failed:'失败',skipped:'已跳过'}[item.status]||item.status;
+      var actionable=item.status==='succeeded'||item.status==='failed',tag=actionable?'button':'div';
+      var action=item.status==='succeeded'?'data-recognition-review="'+esc(item.id)+'"':item.status==='failed'?'data-recognition-failure="'+esc(item.id)+'"':'';
+      var detail=item.status==='succeeded'?esc(item.candidate_count)+' 项候选 · 点击核对':item.status==='failed'?'点击查看原因并重试':esc(item.error_message||'');
+      return '<'+tag+(actionable?' type="button"':'')+' class="daily-recognition-item '+esc(item.status)+'" '+action+'><span>'+esc(item.report_date)+'</span><strong>'+esc(label)+'</strong><span>'+detail+'</span></'+tag+'>';
+    }).join('');
     var actions='';
     if(data.permissions&&data.permissions.write){
       if(job.status==='running'||job.status==='pending')actions='<button type="button" class="ghost" data-job-action="pause">暂停</button>';
       else if(job.status==='paused')actions='<button type="button" class="secondary" data-job-action="resume">继续识别</button>';
       else if(job.status==='completed_with_errors')actions='<button type="button" class="secondary" data-job-action="retry_failed">重试失败日期</button>';
     }
-    jobPanel.classList.remove('hidden');jobPanel.innerHTML='<div class="finance-record-head"><div><strong>本月日报识别进度：'+esc(jobStatusText(job.status))+'</strong><div class="help">已处理 '+done+'/'+total+' 天 · 成功 '+esc(job.success_count)+' 天 · 失败 '+esc(job.failed_count)+' 天 · 剩余 '+remaining+' 天'+(job.current_report_date?' · 当前 '+esc(job.current_report_date):'')+'</div></div><div class="compact-actions">'+actions+'</div></div><progress max="'+Math.max(total,1)+'" value="'+done+'"></progress><div class="daily-recognition-items">'+list+'</div><div class="help">退出本页后进度仍会保存；回来会从未完成日期继续。所有结果只是待核对草稿，不会自动入账。</div>';
+    jobPanel.classList.remove('hidden');jobPanel.innerHTML='<div class="finance-record-head"><div><strong>本月日报识别进度：'+esc(jobStatusText(job.status))+'</strong><div class="help">已处理 '+done+'/'+total+' 天 · 成功 '+esc(job.success_count)+' 天 · 失败 '+esc(job.failed_count)+' 天 · 剩余 '+remaining+' 天'+(job.current_report_date?' · 当前 '+esc(job.current_report_date):'')+'</div></div><div class="compact-actions">'+actions+'</div></div><progress max="'+Math.max(total,1)+'" value="'+done+'"></progress><div class="daily-recognition-items">'+list+'</div><div id="daily-recognition-failure-detail" class="daily-recognition-failure-detail hidden"></div><div class="help">绿色日期可直接进入当天电子日报核对；红色日期可查看失败原因并只重试当天。退出本页后进度仍会保存；所有结果只是待核对草稿，不会自动入账。</div>';
     jobPanel.querySelectorAll('[data-job-action]').forEach(function(control){control.onclick=async function(){control.disabled=true;try{var result=await api('daily_recognition_job_control',{store:currentStore(),month:selectedMonth(),job_id:job.id,action:control.dataset.jobAction});renderJob(result);if(control.dataset.jobAction!=='pause')runJob(result);}catch(error){toast(error.message)}finally{control.disabled=false;}};});
+    jobPanel.querySelectorAll('[data-recognition-review]').forEach(function(control){control.onclick=function(){var item=items.find(function(row){return row.id===control.dataset.recognitionReview;});if(item)openDailyReportDay(item.report_date,item.draft_id,'',false);};});
+    jobPanel.querySelectorAll('[data-recognition-failure]').forEach(function(control){control.onclick=function(){
+      var item=items.find(function(row){return row.id===control.dataset.recognitionFailure;}),detail=jobPanel.querySelector('#daily-recognition-failure-detail');if(!item||!detail)return;
+      detail.classList.remove('hidden');detail.innerHTML='<div><strong>'+esc(item.report_date)+' 识别失败</strong><div class="help">失败原因：'+esc(item.error_message||'识别服务未返回有效结果')+'</div><div class="help">已尝试 '+esc(item.attempt_count||0)+' 次；重试只处理这一天，不会重复识别其他日期。</div></div>'+(data.permissions&&data.permissions.write&&Number(item.attempt_count||0)<10?'<button type="button" class="secondary" data-retry-recognition-item="'+esc(item.id)+'">重新识别这一天</button>':'<span class="voucher-status failed">已达重试上限，请联系管理员检查原图</span>');
+      var retry=detail.querySelector('[data-retry-recognition-item]');if(retry)retry.onclick=async function(){retry.disabled=true;retry.textContent='正在重新识别…';try{var result=await api('daily_recognition_item_retry',{store:currentStore(),month:selectedMonth(),job_id:job.id,item_id:item.id});batchStatus.textContent=item.report_date+' 已加入单日重试';renderJob(result);runJob(result);}catch(error){toast(error.message);retry.disabled=false;retry.textContent='重新识别这一天';}};
+      detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+    };});
   }
   function stillOnJob(key){return state.view==='daily-report'&&currentJobKey()===key;}
   async function runJob(data){
