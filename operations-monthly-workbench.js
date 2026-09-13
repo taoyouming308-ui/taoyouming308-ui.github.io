@@ -1,6 +1,16 @@
 /* Finance controls for the selected amount. Files stay local until confirmation. */
 (function () {
   'use strict';
+  var originalRenderAll = renderAll;
+  renderAll = function () {
+    originalRenderAll();
+    var report = state.data.monthly_report;
+    var button = document.querySelector('#report-state [data-open-report]');
+    if (button && report && report.display_data && report.display_data.source_object_reused === true) {
+      button.textContent = '打开来源模板';
+      button.title = '本月金额保存在电子月报中；这里打开的是本门店留存的原版月报模板';
+    }
+  };
   var originalRender = renderCellTrace;
   var pendingURL = null, pendingGeneration = 0;
   function disposePhoto() {

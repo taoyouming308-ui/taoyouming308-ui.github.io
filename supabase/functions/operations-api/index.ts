@@ -981,7 +981,8 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     report_type: "monthly_profit_loss", report_date: `${month}-01`, template_code: "history_original_v1",
     template_version: 1, version: Math.max(1, ...entries.map((row) => Number(row.version || 1))), status: "posted",
     original_filename: batch.source_filename, mime_type: batch.source_mime_type, size_bytes: batch.source_size_bytes,
-    sha256: batch.source_sha256, display_data: display, uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
+    sha256: batch.source_sha256, bucket_id: batch.source_bucket_id, object_path: batch.source_object_path,
+    display_data: display, uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
     uploaded_at: batch.confirmed_at || batch.created_at, uploaded_by: uploader, vouchers: evidenceData.evidence,
     history_entries: entries, history_evidence: evidenceData.evidence, history_evidence_links: evidenceData.links,
     cell_trace_status: traceStatus, cell_trace_source_count: sourceCount, trace_summary: summary,
@@ -2155,7 +2156,7 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
   const exactPath = `zysyr_report_uploads?select=id,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&order=version.desc&limit=1`;
   const existing = (await restRows(exactPath))[0];
   if (existing) return { saved: existing, created: false };
-  const sources = await restRows(`zysyr_report_uploads?select=id,report_date,template_code,template_version,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=lt.${month}-01&status=eq.active&order=report_date.desc,version.desc&limit=1`);
+  const sources = await restRows(`zysyr_report_uploads?select=id,report_date,template_code,template_version,original_filename,mime_type,size_bytes,sha256,bucket_id,object_path,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=lt.${month}-01&status=eq.active&order=report_date.desc,version.desc&limit=1`);
   let source = sources[0] || null;
   let sourceCells = source
     ? await restRowsAll(`zysyr_report_cells?select=cell_address,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${source.id}&order=row_number.asc,column_number.asc&limit=5000`, 5000)
@@ -2182,14 +2183,17 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
   if (!source || !sourceCells.length) throw new Error("该门店还没有可复制的原版月报，请先上传一次月报模板");
   const bytes = await monthlyDraftWorkbook(source, sourceCells, month, cleanText(store.name, 100));
   const displayData = await workbookDisplay(bytes, "monthly_profit_loss", cleanText(store.name, 100));
-  const objectPath = `${companyId}/${storeId}/monthly_profit_loss/${month}-01/${crypto.randomUUID()}.xlsx`;
-  const mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
-    method: "POST",
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
-    body: exactArrayBuffer(bytes),
-  });
-  if (!upload.ok) throw new Error(`电子月报草稿建立失败 (${upload.status})`);
+  const sourceBucket = cleanText(source.bucket_id, 100), sourceObjectPath = cleanText(source.object_path, 500);
+  const sourceSha256 = cleanText(source.sha256, 64), sourceMime = cleanText(source.mime_type, 120);
+  const sourceSize = Number(source.size_bytes || 0);
+  if (!sourceBucket || !sourceObjectPath || !/^[0-9a-f]{64}$/i.test(sourceSha256)
+    || !sourceMime || !Number.isInteger(sourceSize) || sourceSize <= 0) {
+    throw new Error("来源月报模板的原文件信息不完整，请管理员检查历史资料");
+  }
+  displayData.source_object_reused = true;
+  displayData.source_template_filename = cleanText(source.original_filename, 200);
+  displayData.source_template_report_date = cleanText(source.report_date, 10);
+  displayData.source_template_sha256 = sourceSha256;
   const metadata = await rest("rpc/zysyr_register_report_upload", {
     method: "POST",
     body: JSON.stringify({
@@ -2197,18 +2201,15 @@ async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Pro
         company_id: companyId, store_id: storeId, report_type: "monthly_profit_loss", report_date: `${month}-01`,
         template_code: cleanText(source.template_code, 120) || "zysyr_monthly_profit_loss_original",
         template_version: Number(source.template_version || 1),
-        original_filename: `系统电子月报草稿_${month}.xlsx`, mime_type: mime,
-        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
-        object_path: objectPath, display_data: displayData,
+        original_filename: `系统电子月报草稿_${month}（来源模板）`, mime_type: sourceMime,
+        size_bytes: sourceSize, sha256: sourceSha256, bucket_id: sourceBucket,
+        object_path: sourceObjectPath, display_data: displayData,
         uploaded_by_user_id: cleanText(session.auth_account_id, 40),
       },
       p_cells: Array.isArray(displayData.cells) ? displayData.cells : [],
     }),
   });
   if (!metadata.ok) {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
-      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    });
     const raced = (await restRows(exactPath))[0];
     if (raced) return { saved: raced, created: false };
     throw new Error(`电子月报草稿登记失败 (${metadata.status})`);
