@@ -64,6 +64,26 @@ class DailyCodexBridgeTests(unittest.TestCase):
         finally:
             bridge._RECOGNITION_SLOT.release()
 
+    def test_overlapping_crop_duplicates_keep_highest_confidence_candidate(self):
+        numeric_id = "00000000-0000-0000-0000-000000000001"
+        text_id = "00000000-0000-0000-0000-000000000002"
+        cells = bridge._clean_cells([
+            {"id": numeric_id, "section": "stylist", "row": "stylist_1", "name": "第1行",
+             "column": "烫染", "role": "staff_value", "row_number": 3, "column_number": 4},
+            {"id": text_id, "section": "other", "row": "note", "name": "备注",
+             "column": "备注", "role": "note", "row_number": 34, "column_number": 1},
+        ])
+        parsed = {"cells": [
+            {"id": numeric_id, "numeric_value": 128, "text_value": None, "confidence": 0.61, "note": "上部"},
+            {"id": numeric_id, "numeric_value": 123, "text_value": None, "confidence": 0.94, "note": "中部"},
+            {"id": text_id, "numeric_value": None, "text_value": "核对", "confidence": 0.82, "note": "下部"},
+            {"id": text_id, "numeric_value": None, "text_value": "模糊", "confidence": 0.32, "note": "重叠"},
+        ], "rows": []}
+        numeric, text, rows = bridge._normalize_recognition_output(parsed, cells)
+        self.assertEqual(numeric, [{"id": numeric_id, "value": 123.0, "confidence": 0.94, "note": "中部"}])
+        self.assertEqual(text, [{"id": text_id, "value": "核对", "confidence": 0.82, "note": "下部"}])
+        self.assertEqual(rows, [])
+
 
 if __name__ == "__main__":
     unittest.main()

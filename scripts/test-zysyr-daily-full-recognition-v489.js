@@ -16,6 +16,12 @@ for(const marker of ['daily_recognition_job_start','daily_recognition_job_read',
   expect(api.includes(`operation === "${marker}"`),`API route missing: ${marker}`);
   expect(client.includes(`api('${marker}'`),`client call missing: ${marker}`);
 }
+expect(api.includes('operation === "daily_recognition_worker_read"')&&api.includes('operation === "daily_recognition_worker_next"'),'authenticated local worker routes missing');
+expect(api.includes('x-zysyr-daily-worker')&&api.includes('constantTimeSecretMatch'),'local worker secret check missing');
+expect(api.includes('requested_by_user_id')&&api.includes('status=eq.active'),'worker must preserve the authorized finance actor');
+expect(api.includes('store: cleanText(store.name, 100)'),'worker finance session must retain its selected store');
+expect(!page.includes('x-zysyr-daily-worker'),'local worker credential must never be exposed to the browser');
+expect(api.includes('transient=errorMessage.includes("已有日报正在识别，请稍后重试")'),'busy local bridge must not create a false failed day');
 for(const marker of ['zysyr_daily_recognition_jobs','zysyr_daily_recognition_job_items','enable row level security','force row level security','zysyr_claim_daily_recognition_item','zysyr_finish_daily_recognition_item']){
   expect(migration.includes(marker),`durable job safeguard missing: ${marker}`);
 }

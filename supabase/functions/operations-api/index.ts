@@ -75,6 +75,17 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function constantTimeSecretMatch(supplied: string, expected: string): Promise<boolean> {
+  if (!supplied || !expected) return false;
+  const [left, right] = await Promise.all([sha256(supplied), sha256(expected)]);
+  let difference = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  }
+  return difference === 0;
+}
+
 function exactArrayBuffer(value: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(value.byteLength);
   copy.set(value);
@@ -4757,7 +4768,10 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     throw new Error(`原始日报登记失败 (${registered.status})`);
   }
   return { ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)), attachment_uploaded: true,
-    ai_recognition_enabled: false, formal_cells_unchanged: true };
+    ai_recognition_enabled: ["image/jpeg", "image/png"].includes(mime),
+    automatic_recognition_requested_by_client: ["image/jpeg", "image/png"].includes(mime)
+      && cleanText(drafts[0].status, 20) === "draft",
+    candidate_only: true, finance_confirmation_required: true, formal_cells_unchanged: true };
 }
 
 async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
@@ -4955,20 +4969,70 @@ async function dailyRecognitionJobNext(payload: JsonRecord, session: JsonRecord)
   });
   const item = claimed.item as JsonRecord | null;
   if (!item) return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),item_result:null,permissions:{write:true}};
-  let succeeded=false, candidateCount=0, errorMessage="", recognized:JsonRecord|null=null;
+  let succeeded=false, candidateCount=0, errorMessage="", transient=false, recognized:JsonRecord|null=null;
   try {
     recognized=await recognizeDailySheet({store:cleanText(store.name,120),draft_id:item.draft_id,voucher_id:item.voucher_id},session);
     const saved=(recognized.saved||{}) as JsonRecord;
     candidateCount=Number(saved.saved_cells||0)+Number(saved.saved_text_cells||0)+Number(saved.saved_row_names||0);
     succeeded=true;
-  } catch (error) { errorMessage=cleanText((error as Error).message||"识别失败",500); }
-  await financeRpcSaved("rpc/zysyr_finish_daily_recognition_item", {
-    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,
-    p_item_id:cleanText(item.id,40),p_succeeded:succeeded,p_candidate_count:candidateCount,p_error_message:errorMessage||null
-  });
+  } catch (error) {
+    errorMessage=cleanText((error as Error).message||"识别失败",500);
+    transient=errorMessage.includes("已有日报正在识别，请稍后重试");
+  }
+  if (!transient) {
+    await financeRpcSaved("rpc/zysyr_finish_daily_recognition_item", {
+      p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,
+      p_item_id:cleanText(item.id,40),p_succeeded:succeeded,p_candidate_count:candidateCount,p_error_message:errorMessage||null
+    });
+  }
   return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),
-    item_result:{report_date:item.report_date,succeeded,candidate_count:candidateCount,error:errorMessage||null,
+    item_result:{report_date:item.report_date,succeeded,transient,candidate_count:candidateCount,error:errorMessage||null,
       numeric_count:Number((recognized?.saved as JsonRecord)?.saved_cells||0),text_count:Number((recognized?.saved as JsonRecord)?.saved_text_cells||0),name_count:Number((recognized?.saved as JsonRecord)?.saved_row_names||0)},permissions:{write:true}};
+}
+
+async function dailyRecognitionWorkerContext(payload: JsonRecord, request: Request): Promise<{
+  jobId: string; month: string; store: JsonRecord; session: JsonRecord;
+}> {
+  const expected = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN"), 500);
+  const supplied = cleanText(request.headers.get("x-zysyr-daily-worker"), 500);
+  if (!await constantTimeSecretMatch(supplied, expected)) throw new Error("日报识别后台执行器认证失败");
+  const jobId = uuidValue(payload.job_id, "日报识别任务编号无效") as string;
+  const jobs = await restRows(`zysyr_daily_recognition_jobs?select=id,company_id,store_id,period_month,requested_by_user_id,status&id=eq.${jobId}&limit=1`);
+  const job = jobs[0];
+  if (!job) throw new Error("日报识别任务不存在");
+  const companyId = cleanText(job.company_id, 40), storeId = cleanText(job.store_id, 40);
+  const actorId = cleanText(job.requested_by_user_id, 40);
+  const [stores, actors] = await Promise.all([
+    restRows(`zysyr_stores?select=id,company_id,name,code,status&id=eq.${storeId}&company_id=eq.${companyId}&status=eq.active&limit=1`),
+    restRows(`zysyr_user_accounts?select=id,company_id,status&id=eq.${actorId}&company_id=eq.${companyId}&status=eq.active&limit=1`),
+  ]);
+  const store = stores[0];
+  if (!store || !actors[0]) throw new Error("日报识别任务原财务账号或门店已停用");
+  const session: JsonRecord = {
+    operations_role: "finance", auth_account_id: actorId, auth_company_id: companyId,
+    auth_scope_type: "store", auth_store_id: storeId,
+    store: cleanText(store.name, 100),
+    auth_stores: [cleanText(store.name, 100)], auth_store_records: [store],
+    auth_capabilities: ["daily_report.write", "voucher.read"],
+  };
+  return { jobId, month: cleanText(job.period_month, 10).slice(0, 7), store, session };
+}
+
+async function dailyRecognitionWorkerRead(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  const context = await dailyRecognitionWorkerContext(payload, request);
+  return {
+    month: context.month,
+    ...(await dailyRecognitionJobData(
+      cleanText(context.store.company_id, 40), cleanText(context.store.id, 40), context.month, context.jobId,
+    )),
+  };
+}
+
+async function dailyRecognitionWorkerNext(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  const context = await dailyRecognitionWorkerContext(payload, request);
+  return dailyRecognitionJobNext({
+    store: cleanText(context.store.name, 100), month: context.month, job_id: context.jobId,
+  }, context.session);
 }
 
 async function dailyRecognitionJobControl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -5741,6 +5805,8 @@ Deno.serve(async (request: Request) => {
     if (operation === "login") return json(await login(payload));
     if (operation === "shareholder_register") return json(await shareholderRegister(payload));
     if (operation === "logout") return json(await logout(payload));
+    if (operation === "daily_recognition_worker_read") return json(await dailyRecognitionWorkerRead(payload, request));
+    if (operation === "daily_recognition_worker_next") return json(await dailyRecognitionWorkerNext(payload, request));
     const session = await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {

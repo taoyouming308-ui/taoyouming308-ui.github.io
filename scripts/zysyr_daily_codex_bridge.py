@@ -232,6 +232,92 @@ def _prepare_images(image_path: Path, work_path: Path) -> list[Path]:
     return images
 
 
+def _normalize_recognition_output(
+    parsed: dict[str, Any], cells: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    """Keep one best candidate per paper cell and one name per paper row.
+
+    The three enlarged crops intentionally overlap. Vision can therefore return
+    the same cell more than once even though the prompt asks it not to. The Edge
+    Function must remain strict, so this trusted local boundary resolves crop
+    duplicates deterministically before the candidate is sent back.
+    """
+    allowed = {cell["id"]: cell for cell in cells}
+    allowed_rows = {
+        (cell["section"], cell["row"])
+        for cell in cells
+        if cell["section"] in {"stylist", "technician", "product"}
+        and cell["row"] not in {"stylist_category_total", "technician_category_total"}
+    }
+    best_cells: dict[str, dict[str, Any]] = {}
+    for item in parsed.get("cells", []):
+        if not isinstance(item, dict):
+            continue
+        cell_id = str(item.get("id", "")).strip()
+        if cell_id not in allowed:
+            continue
+        try:
+            confidence = float(item.get("confidence", 0))
+        except (TypeError, ValueError):
+            continue
+        if not 0 <= confidence <= 1:
+            continue
+        role = allowed[cell_id]["role"]
+        candidate: dict[str, Any] | None = None
+        numeric = item.get("numeric_value")
+        text_value = item.get("text_value")
+        if numeric is not None and role not in {"unclosed_order", "note", "signature"}:
+            try:
+                value = float(numeric)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= value <= 999999999999.99:
+                candidate = {
+                    "id": cell_id, "value": round(value, 2), "confidence": confidence,
+                    "note": str(item.get("note", ""))[:300], "kind": "numeric",
+                }
+        elif isinstance(text_value, str) and text_value.strip() and role in {"unclosed_order", "note"}:
+            candidate = {
+                "id": cell_id, "value": text_value.strip()[:500], "confidence": confidence,
+                "note": str(item.get("note", ""))[:300], "kind": "text",
+            }
+        current = best_cells.get(cell_id)
+        if candidate and (current is None or confidence > float(current["confidence"])):
+            best_cells[cell_id] = candidate
+
+    order = {cell["id"]: index for index, cell in enumerate(cells)}
+    ordered = sorted(best_cells.values(), key=lambda item: order[item["id"]])
+    candidates = [
+        {key: value for key, value in item.items() if key != "kind"}
+        for item in ordered if item["kind"] == "numeric"
+    ]
+    text_candidates = [
+        {key: value for key, value in item.items() if key != "kind"}
+        for item in ordered if item["kind"] == "text"
+    ]
+
+    best_rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for item in parsed.get("rows", []):
+        if not isinstance(item, dict):
+            continue
+        key = (str(item.get("section", "")), str(item.get("row_key", "")))
+        name = str(item.get("name", "")).strip()[:120]
+        try:
+            confidence = float(item.get("confidence", 0))
+        except (TypeError, ValueError):
+            continue
+        if key not in allowed_rows or not name or not 0 <= confidence <= 1:
+            continue
+        current = best_rows.get(key)
+        if current is None or confidence > float(current["confidence"]):
+            best_rows[key] = {
+                "section": key[0], "row_key": key[1], "name": name,
+                "confidence": confidence, "note": str(item.get("note", ""))[:300],
+            }
+    row_names = list(best_rows.values())
+    return candidates, text_candidates, row_names
+
+
 def _run_codex(image_path: Path, store: str, report_date: str, cells: list[dict[str, Any]]) -> dict[str, Any]:
     codex_bin = os.getenv("ZYSYR_CODEX_BIN", "/Users/a1/.local/bin/codex")
     model = os.getenv("ZYSYR_DAILY_CODEX_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
@@ -266,40 +352,7 @@ def _run_codex(image_path: Path, store: str, report_date: str, cells: list[dict[
             detail = result.stderr.decode("utf-8", errors="replace")[-500:].strip()
             raise RuntimeError("Codex识别失败：" + (detail or f"退出码 {result.returncode}"))
         parsed = json.loads(output_path.read_text(encoding="utf-8"))
-    allowed = {cell["id"]: cell for cell in cells}
-    allowed_rows = {(cell["section"], cell["row"]) for cell in cells
-                    if cell["section"] in {"stylist", "technician", "product"}
-                    and cell["row"] not in {"stylist_category_total", "technician_category_total"}}
-    candidates: list[dict[str, Any]] = []
-    text_candidates: list[dict[str, Any]] = []
-    for item in parsed.get("cells", []):
-        cell_id = item.get("id")
-        if cell_id not in allowed:
-            continue
-        confidence = float(item.get("confidence", 0))
-        if not 0 <= confidence <= 1:
-            continue
-        numeric = item.get("numeric_value")
-        text_value = item.get("text_value")
-        if numeric is not None and allowed[cell_id]["role"] not in {"unclosed_order", "note", "signature"}:
-            value = float(numeric)
-            if 0 <= value <= 999999999999.99:
-                candidates.append({"id": cell_id, "value": round(value, 2), "confidence": confidence,
-                                   "note": str(item.get("note", ""))[:300]})
-        elif isinstance(text_value, str) and text_value.strip() and allowed[cell_id]["role"] in {"unclosed_order", "note"}:
-            text_candidates.append({"id": cell_id, "value": text_value.strip()[:500], "confidence": confidence,
-                                    "note": str(item.get("note", ""))[:300]})
-    row_names: list[dict[str, Any]] = []
-    seen_rows: set[tuple[str, str]] = set()
-    for item in parsed.get("rows", []):
-        key = (str(item.get("section", "")), str(item.get("row_key", "")))
-        name = str(item.get("name", "")).strip()[:120]
-        confidence = float(item.get("confidence", 0))
-        if key not in allowed_rows or key in seen_rows or not name or not 0 <= confidence <= 1:
-            continue
-        seen_rows.add(key)
-        row_names.append({"section": key[0], "row_key": key[1], "name": name,
-                          "confidence": confidence, "note": str(item.get("note", ""))[:300]})
+    candidates, text_candidates, row_names = _normalize_recognition_output(parsed, cells)
     if not candidates and not text_candidates and not row_names:
         raise ValueError("Codex没有读到可确认的日报内容，请旋转或重拍原图")
     return {
