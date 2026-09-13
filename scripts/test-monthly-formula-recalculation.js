@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { stripTypeScriptTypes } = require('node:module');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
-const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds', 'isDailyIncomeCell'];
+const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'reportCellLabel', 'monthlyEditableNameCells', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds', 'isDailyIncomeCell'];
 const snippets = names.map(name => {
   const start = source.indexOf('function ' + name + '(');
   const end = source.indexOf('\n}', start) + 2;

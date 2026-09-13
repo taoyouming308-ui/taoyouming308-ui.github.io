@@ -11,7 +11,7 @@ let real = null;
 if (process.env.ZYSYR_MONTHLY_FIXTURE) {
   real = JSON.parse(fs.readFileSync(process.env.ZYSYR_MONTHLY_FIXTURE, 'utf8'));
   const source = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
-  const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'monthlyItemCategory', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'isDailyIncomeCell'];
+  const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'reportCellLabel', 'monthlyEditableNameCells', 'safeFormulaValue', 'monthlyItemCategory', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'isDailyIncomeCell'];
   const code = names.map(name => { const start = source.indexOf('function ' + name + '('); return source.slice(start, source.indexOf('\n}', start) + 2); }).join('\n');
   const context = vm.createContext({});
   vm.runInContext(stripTypeScriptTypes(code), context);

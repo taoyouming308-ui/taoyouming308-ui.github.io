@@ -17,7 +17,7 @@ expect(api.includes('operation === "monthly_editable_slots_prepare"'), 'blank am
 expect(api.includes('untouchedBlank ? "" : numeric'), 'untouched amount slots must remain visually blank');
 expect(page.includes("api('monthly_editable_slots_prepare'"), 'finance edit mode does not prepare existing reports');
 expect(page.includes('monthly-empty-amount'), 'blank amount input boundary is missing');
-expect(page.includes('所有金额格已可填写；编号、姓名和文字栏保持固定'), 'finance confirmation text is missing');
+expect(page.includes('金额和名称格已可填写；编号、栏目标题和汇总名称保持固定'), 'finance confirmation text is missing');
 expect(migration.includes('zysyr_private.request_role()') && migration.includes("'service_role'"), 'privileged RPC service-role guard is missing');
 expect(migration.includes("assert_finance_scope") && migration.includes("'confirmed_finance.adjust'"), 'finance scope guard is missing');
 expect(migration.includes('on conflict (company_id, report_id, sheet_name, cell_address) do nothing'), 'slot preparation must be idempotent');

@@ -30,7 +30,7 @@ expect(migration.includes('zysyr_report_uploads_owned_object_path_key')&&migrati
 expect(migration.includes("or report_type = 'monthly_profit_loss'"),'only monthly electronic drafts may share retained source objects');
 expect(api.includes('operation === "monthly_draft_create"'),'monthly draft route missing');
 expect(page.includes('开始填写本月月报')&&page.includes("api('monthly_draft_create'"),'new-month finance action missing');
-expect(page.includes('本月月报已建立，可直接填写金额并保存'),'new-month editing confirmation missing');
+expect(page.includes('本月月报已建立，可直接填写金额、名称并保存'),'new-month editing confirmation missing');
 const scripts=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length===1,'operations inline script missing or duplicated');
 new vm.Script(scripts[0][1],{filename:'operations.html'});
