@@ -609,6 +609,7 @@
       $('report-state').textContent='月报暂未读取成功，请点击上方「刷新」重试。';
       $('monthly-sheet').innerHTML='<div class="empty">月报加载失败，未显示其他门店或月份的数据。</div>';
       if(isSessionInvalidError(error))showLogin(message);
+      else if(error.code==='AUTH_TEMPORARY')scheduleSessionRestore();
       return false;
     }finally{
       if(isCurrent()){
