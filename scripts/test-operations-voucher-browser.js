@@ -237,11 +237,15 @@ async function run() {
       renderDailySheetDetail();
     });
     const originalSrc=await page.locator('#daily-detail-image').getAttribute('src');
+    const rotationBefore=await page.locator('#daily-detail-image').getAttribute('style');
     await page.locator('#daily-report-detail [data-turn="90"]').click();
-    assert.match(await page.locator('#daily-detail-image').getAttribute('style'),/rotate\(90deg\)/);
+    const rotationAfter=await page.locator('#daily-detail-image').getAttribute('style');
+    assert.notEqual(rotationAfter,rotationBefore,'right rotation must change the displayed direction');
+    assert.match(rotationAfter,/translate\(-50%, -50%\) rotate\([0-9]+deg\)/);
+    assert.equal(await page.evaluate(()=>{const stage=document.getElementById('daily-detail-preview').getBoundingClientRect(),image=document.getElementById('daily-detail-image').getBoundingClientRect();return image.right>stage.left&&image.left<stage.right&&image.bottom>stage.top&&image.top<stage.bottom;}),true,'rotated daily original must remain visible inside its preview');
     assert.equal(await page.locator('#daily-detail-image').getAttribute('src'),originalSrc,'rotation never rewrites original image');
     await page.locator('#daily-recognize').click();
-    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('识别草稿已保存 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
+    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('识别草稿已保存：数字 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').classList.contains('recognition-candidate')),true);

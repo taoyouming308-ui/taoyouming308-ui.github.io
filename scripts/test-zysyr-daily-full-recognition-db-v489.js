@@ -37,6 +37,7 @@ async function run(){
       insert into zysyr_daily_sheet_cell_changes(company_id,store_id,draft_id,cell_id,before_label,after_label) values('${id(1)}','${id(2)}','${id(4)}','${id(8)}','第2行','人工姓名');`);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260912120743_daily_full_fidelity_recognition_jobs.sql'),'utf8'));
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913022849_daily_recognition_single_item_retry.sql'),'utf8'));
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20260913030006_daily_recognition_rerun_completed.sql'),'utf8'));
     const job=JSON.parse(sql(`select zysyr_start_daily_recognition_job('${id(3)}','${id(1)}','${id(2)}','2026-01-01');`));
     assert.equal(job.total_count,2);
     const claim=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));
@@ -56,11 +57,15 @@ async function run(){
     assert.equal(sql(`select action||'|'||(before_json->>'error_message') from zysyr_audit_events where entity_id='${claim.item.id}'`),'daily_recognition_item_retried|原图表格不完整');
     const retryClaim=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));assert.equal(retryClaim.item.id,claim.item.id);assert.equal(retryClaim.item.attempt_count,2);
     const finished=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}',true,3,null);`));assert.equal(finished.status,'completed_with_errors');assert.equal(finished.failed_count,1);
-    assert.throws(()=>sql(`select zysyr_retry_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}');`),/DAILY_RECOGNITION_ITEM_NOT_FAILED/);
+    const rerunSuccess=JSON.parse(sql(`select zysyr_retry_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}');`));assert.equal(rerunSuccess.status,'running');assert.equal(rerunSuccess.success_count,0);assert.equal(rerunSuccess.failed_count,1);
+    assert.equal(sql(`select status||'|'||candidate_count from zysyr_daily_recognition_job_items where id='${retryClaim.item.id}'`),'queued|0');
+    assert.throws(()=>sql(`select zysyr_retry_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${retryClaim.item.id}');`),/DAILY_RECOGNITION_ITEM_NOT_COMPLETED/);
+    const rerunClaim=JSON.parse(sql(`select zysyr_claim_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}');`));assert.equal(rerunClaim.item.attempt_count,3);
+    const rerunFinished=JSON.parse(sql(`select zysyr_finish_daily_recognition_item('${id(3)}','${id(1)}','${id(2)}','${job.id}','${rerunClaim.item.id}',true,4,null);`));assert.equal(rerunFinished.status,'completed_with_errors');assert.equal(rerunFinished.success_count,1);
     assert.throws(()=>sql(`select zysyr_retry_daily_recognition_item('${id(30)}','${id(1)}','${id(2)}','${job.id}','${other.item.id}');`),/SCOPE/);
     assert.equal(sql(`select has_function_privilege('authenticated','zysyr_retry_daily_recognition_item(uuid,uuid,uuid,uuid,uuid)','execute')`),'f');
     assert.throws(()=>sql(`set role authenticated;select * from zysyr_daily_recognition_jobs;`),/permission denied/);
-    console.log('PostgreSQL daily recognition: durable progress, exact candidates, isolated single-day retry, audit and browser denial passed');
+    console.log('PostgreSQL daily recognition: durable progress, exact candidates, success-or-failure rerun, audit and browser denial passed');
   }finally{docker(['stop',name]);}
 }
 run().catch(error=>{console.error(error.stderr?String(error.stderr):error);process.exitCode=1});

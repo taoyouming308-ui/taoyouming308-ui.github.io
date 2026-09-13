@@ -4377,9 +4377,13 @@ async function dailyRecognitionJobData(companyId: string, storeId: string, month
   const job = jobs[0] || null;
   if (!job) return { job: null, items: [], remaining_count: 0, completed_count: 0 };
   const items = await restRowsAll(`zysyr_daily_recognition_job_items?select=id,draft_id,voucher_id,report_date,status,attempt_count,candidate_count,error_message,started_at,finished_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&job_id=eq.${cleanText(job.id, 40)}&order=report_date.asc&limit=1000`, 1000);
-  const remaining = items.filter((item) => ["queued", "running"].includes(cleanText(item.status, 30))).length;
-  return { job, items, remaining_count: remaining,
-    completed_count: items.filter((item) => ["succeeded", "failed", "skipped"].includes(cleanText(item.status, 30))).length };
+  const draftIds = [...new Set(items.map((item) => cleanText(item.draft_id, 40)).filter(Boolean))];
+  const drafts = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_drafts?select=id,status&id=in.(${draftIds.join(",")})&company_id=eq.${companyId}&store_id=eq.${storeId}&limit=1000`, 1000) : [];
+  const draftStatus = new Map(drafts.map((draft) => [cleanText(draft.id, 40), cleanText(draft.status, 30)]));
+  const displayItems = items.map((item) => ({...item,draft_status:draftStatus.get(cleanText(item.draft_id,40))||null}));
+  const remaining = displayItems.filter((item) => ["queued", "running"].includes(cleanText(item.status, 30))).length;
+  return { job, items:displayItems, remaining_count: remaining,
+    completed_count: displayItems.filter((item) => ["succeeded", "failed", "skipped"].includes(cleanText(item.status, 30))).length };
 }
 
 async function dailyRecognitionJobRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {

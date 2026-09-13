@@ -6,21 +6,28 @@
     if (!img || img.dataset.rotationReady) return;
     img.dataset.rotationReady = '1';
     var stage = img.parentElement, frame = document.createElement('div'), tools = document.createElement('div');
-    tools.className = 'compact-actions'; tools.innerHTML = '<button type="button" class="ghost" data-turn="-90">向左旋转</button><button type="button" class="ghost" data-turn="90">向右旋转</button><button type="button" class="ghost" data-turn="0">恢复方向</button>';
+    tools.className = 'compact-actions daily-rotation-tools'; tools.innerHTML = '<button type="button" class="ghost" data-turn="-90">向左转</button><button type="button" class="ghost" data-auto-straighten>自动摆正</button><button type="button" class="ghost" data-turn="90">向右转</button>';
     stage.parentElement.insertBefore(tools,stage); stage.insertBefore(frame,img); frame.appendChild(img);
-    frame.style.position='relative'; var angle=0;
-    function fit() {
+    frame.className='daily-rotation-frame'; var angle=0,zoom=1,autoDirection=true;
+    function normalized(value){return ((value%360)+360)%360;}
+    function automaticAngle(){return img.naturalHeight>img.naturalWidth?90:0;}
+    function fit(recenter) {
       if (!img.naturalWidth) return;
-      var swapped=Math.abs(angle%180)===90, width=Math.max(240,stage.clientWidth-20);
-      var scale=Math.min(1,width/(swapped?img.naturalHeight:img.naturalWidth));
+      if(autoDirection)angle=automaticAngle();
+      var swapped=normalized(angle)%180===90,rotatedWidth=swapped?img.naturalHeight:img.naturalWidth,rotatedHeight=swapped?img.naturalWidth:img.naturalHeight;
+      var availableWidth=Math.max(240,stage.clientWidth-28),availableHeight=Math.max(260,Math.min(window.innerHeight*.68,720));
+      var scale=Math.min(1,availableWidth/rotatedWidth,availableHeight/rotatedHeight)*zoom;
       var w=img.naturalWidth*scale,h=img.naturalHeight*scale;
-      frame.style.width=(swapped?h:w)+'px';frame.style.height=(swapped?w:h)+'px';
+      frame.style.width=(rotatedWidth*scale)+'px';frame.style.height=(rotatedHeight*scale)+'px';
       Object.assign(img.style,{position:'absolute',maxWidth:'none',width:w+'px',height:h+'px',left:'50%',top:'50%',transform:'translate(-50%,-50%) rotate('+angle+'deg)'});
       tools.hidden=!img.getAttribute('src');
+      if(recenter)requestAnimationFrame(function(){stage.scrollLeft=Math.max(0,(stage.scrollWidth-stage.clientWidth)/2);stage.scrollTop=0;});
     }
-    tools.querySelectorAll('[data-turn]').forEach(function(button){button.onclick=function(){angle=Number(button.dataset.turn)===0?0:(angle+Number(button.dataset.turn))%360;fit();};});
-    img.addEventListener('load',fit);window.addEventListener('resize',fit);
-    new MutationObserver(function(){angle=0;fit();}).observe(img,{attributes:true,attributeFilter:['src']});fit();
+    tools.querySelectorAll('[data-turn]').forEach(function(button){button.onclick=function(){autoDirection=false;angle=normalized(angle+Number(button.dataset.turn));fit(true);};});
+    tools.querySelector('[data-auto-straighten]').onclick=function(){autoDirection=true;zoom=1;fit(true);};
+    img.__setRotationZoom=function(value){zoom=Math.max(.6,Math.min(2.4,Number(value)||1));fit(true);};
+    img.addEventListener('load',function(){autoDirection=true;zoom=1;fit(true);});window.addEventListener('resize',function(){fit(false);});
+    new MutationObserver(function(){autoDirection=true;angle=0;zoom=1;if(img.complete)fit(true);}).observe(img,{attributes:true,attributeFilter:['src']});if(img.complete)fit(true);
   }
   mountRotation('daily-detail-image');mountRotation('daily-original-image');
   var monthlyBase=renderMonthlyAuditControls;
@@ -62,16 +69,22 @@
   function selectedMonth(){return document.getElementById('daily-month').value||currentMonthInput();}
   function currentJobKey(){return currentStore()+'|'+selectedMonth();}
   function jobStatusText(value){return {pending:'准备中',running:'识别中',paused:'已暂停',completed:'已完成',completed_with_errors:'部分失败'}[value]||value||'未开始';}
+  async function retryRecognitionItem(job,item,control){
+    if(control){control.disabled=true;control.textContent='正在重新识别…';}
+    try{var result=await api('daily_recognition_item_retry',{store:currentStore(),month:selectedMonth(),job_id:job.id,item_id:item.id});batchStatus.textContent=item.report_date+' 已加入单日重新识别；财务手工修改会保留';renderJob(result);runJob(result);}catch(error){toast(error.message);if(control){control.disabled=false;control.textContent='重新识别';}}
+  }
   function renderJob(data){
     currentJob=data&&data.job?data:null;
     if(!currentJob){jobPanel.classList.add('hidden');return;}
     var job=data.job,items=data.items||[],done=Number(data.completed_count||0),total=Number(job.total_count||0),remaining=Number(data.remaining_count||0);
     var list=items.map(function(item){
       var label={queued:'等待',running:'正在识别',succeeded:'待财务核对',failed:'失败',skipped:'已跳过'}[item.status]||item.status;
-      var actionable=item.status==='succeeded'||item.status==='failed',tag=actionable?'button':'div';
+      var completed=item.status==='succeeded'||item.status==='failed',canRerun=completed&&item.draft_status==='draft'&&Number(item.attempt_count||0)<10;
       var action=item.status==='succeeded'?'data-recognition-review="'+esc(item.id)+'"':item.status==='failed'?'data-recognition-failure="'+esc(item.id)+'"':'';
-      var detail=item.status==='succeeded'?esc(item.candidate_count)+' 项候选 · 点击核对':item.status==='failed'?'点击查看原因并重试':esc(item.error_message||'');
-      return '<'+tag+(actionable?' type="button"':'')+' class="daily-recognition-item '+esc(item.status)+'" '+action+'><span>'+esc(item.report_date)+'</span><strong>'+esc(label)+'</strong><span>'+detail+'</span></'+tag+'>';
+      var detail=item.status==='succeeded'?esc(item.candidate_count)+' 项候选 · 点击核对':item.status==='failed'?'点击查看失败原因':esc(item.error_message||'');
+      var main=completed?'<button type="button" class="daily-recognition-main" '+action+'><span>'+esc(item.report_date)+'</span><strong>'+esc(label)+'</strong><span>'+detail+'</span></button>':'<div class="daily-recognition-main"><span>'+esc(item.report_date)+'</span><strong>'+esc(label)+'</strong><span>'+detail+'</span></div>';
+      var rerun=canRerun?'<button type="button" class="ghost daily-recognition-rerun" data-recognition-rerun="'+esc(item.id)+'">重新识别</button>':completed&&item.draft_status!=='draft'?'<span class="help">已确认</span>':completed?'<span class="help">已达上限</span>':'';
+      return '<div class="daily-recognition-item '+esc(item.status)+'">'+main+rerun+'</div>';
     }).join('');
     var actions='';
     if(data.permissions&&data.permissions.write){
@@ -79,15 +92,15 @@
       else if(job.status==='paused')actions='<button type="button" class="secondary" data-job-action="resume">继续识别</button>';
       else if(job.status==='completed_with_errors')actions='<button type="button" class="secondary" data-job-action="retry_failed">重试失败日期</button>';
     }
-    jobPanel.classList.remove('hidden');jobPanel.innerHTML='<div class="finance-record-head"><div><strong>本月日报识别进度：'+esc(jobStatusText(job.status))+'</strong><div class="help">已处理 '+done+'/'+total+' 天 · 成功 '+esc(job.success_count)+' 天 · 失败 '+esc(job.failed_count)+' 天 · 剩余 '+remaining+' 天'+(job.current_report_date?' · 当前 '+esc(job.current_report_date):'')+'</div></div><div class="compact-actions">'+actions+'</div></div><progress max="'+Math.max(total,1)+'" value="'+done+'"></progress><div class="daily-recognition-items">'+list+'</div><div id="daily-recognition-failure-detail" class="daily-recognition-failure-detail hidden"></div><div class="help">绿色日期可直接进入当天电子日报核对；红色日期可查看失败原因并只重试当天。退出本页后进度仍会保存；所有结果只是待核对草稿，不会自动入账。</div>';
+    jobPanel.classList.remove('hidden');jobPanel.innerHTML='<div class="finance-record-head"><div><strong>本月日报识别进度：'+esc(jobStatusText(job.status))+'</strong><div class="help">已处理 '+done+'/'+total+' 天 · 成功 '+esc(job.success_count)+' 天 · 失败 '+esc(job.failed_count)+' 天 · 剩余 '+remaining+' 天'+(job.current_report_date?' · 当前 '+esc(job.current_report_date):'')+'</div></div><div class="compact-actions">'+actions+'</div></div><progress max="'+Math.max(total,1)+'" value="'+done+'"></progress><div class="daily-recognition-items">'+list+'</div><div id="daily-recognition-failure-detail" class="daily-recognition-failure-detail hidden"></div><div class="help">成功和失败日期都可单独重新识别；财务手工修改不会被覆盖。绿色日期可进入当天日报核对，红色日期可查看失败原因。退出本页后进度仍会保存；所有机器结果只是待核对草稿，不会自动入账。</div>';
     jobPanel.querySelectorAll('[data-job-action]').forEach(function(control){control.onclick=async function(){control.disabled=true;try{var result=await api('daily_recognition_job_control',{store:currentStore(),month:selectedMonth(),job_id:job.id,action:control.dataset.jobAction});renderJob(result);if(control.dataset.jobAction!=='pause')runJob(result);}catch(error){toast(error.message)}finally{control.disabled=false;}};});
     jobPanel.querySelectorAll('[data-recognition-review]').forEach(function(control){control.onclick=function(){var item=items.find(function(row){return row.id===control.dataset.recognitionReview;});if(item)openDailyReportDay(item.report_date,item.draft_id,'',false);};});
     jobPanel.querySelectorAll('[data-recognition-failure]').forEach(function(control){control.onclick=function(){
       var item=items.find(function(row){return row.id===control.dataset.recognitionFailure;}),detail=jobPanel.querySelector('#daily-recognition-failure-detail');if(!item||!detail)return;
-      detail.classList.remove('hidden');detail.innerHTML='<div><strong>'+esc(item.report_date)+' 识别失败</strong><div class="help">失败原因：'+esc(item.error_message||'识别服务未返回有效结果')+'</div><div class="help">已尝试 '+esc(item.attempt_count||0)+' 次；重试只处理这一天，不会重复识别其他日期。</div></div>'+(data.permissions&&data.permissions.write&&Number(item.attempt_count||0)<10?'<button type="button" class="secondary" data-retry-recognition-item="'+esc(item.id)+'">重新识别这一天</button>':'<span class="voucher-status failed">已达重试上限，请联系管理员检查原图</span>');
-      var retry=detail.querySelector('[data-retry-recognition-item]');if(retry)retry.onclick=async function(){retry.disabled=true;retry.textContent='正在重新识别…';try{var result=await api('daily_recognition_item_retry',{store:currentStore(),month:selectedMonth(),job_id:job.id,item_id:item.id});batchStatus.textContent=item.report_date+' 已加入单日重试';renderJob(result);runJob(result);}catch(error){toast(error.message);retry.disabled=false;retry.textContent='重新识别这一天';}};
+      detail.classList.remove('hidden');detail.innerHTML='<div><strong>'+esc(item.report_date)+' 识别失败</strong><div class="help">失败原因：'+esc(item.error_message||'识别服务未返回有效结果')+'</div><div class="help">已尝试 '+esc(item.attempt_count||0)+' 次；重新识别只处理这一天，不会重复处理其他日期。</div></div>';
       detail.scrollIntoView({behavior:'smooth',block:'nearest'});
     };});
+    jobPanel.querySelectorAll('[data-recognition-rerun]').forEach(function(control){control.onclick=function(){var item=items.find(function(row){return row.id===control.dataset.recognitionRerun;});if(item)retryRecognitionItem(job,item,control);};});
   }
   function stillOnJob(key){return state.view==='daily-report'&&currentJobKey()===key;}
   async function runJob(data){
