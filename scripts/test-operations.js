@@ -246,6 +246,13 @@ expect(dailyManualOnly.includes('update public.zysyr_daily_sheet_drafts') && dai
 expect(dailyEditable.includes("v_has_value := v_item ? 'value'") && dailyEditable.includes('manual_text = v_text_after'), 'manual daily cells must support explicit clear and text persistence');
 expect(dailyEditable.includes('v_section := v_cell.section_code') && dailyEditable.includes('and section_code = v_section and row_key = v_row_key'), 'daily edits must trust database cell identity and update row labels consistently');
 expect(dailyEditable.includes('before_text') && dailyEditable.includes('after_text') && dailyEditable.includes('before_label') && dailyEditable.includes('after_label'), 'daily text and label audit values missing');
+expect(html.includes("confirmButton.dataset.blockReason=blockReason")
+  && html.includes("confirmButton.disabled=!canConfirm||status==='confirmed'")
+  && html.includes("查看未能入账原因"),
+  'blocked daily confirmation must remain tappable and explain why posting is unavailable');
+expect(html.includes("querySelector('.control-mismatch')")
+  && html.includes("scrollIntoView({behavior:'smooth',block:'center'})"),
+  'blocked daily confirmation must locate the first mismatched cell');
 expect(docxLineage.includes('wordprocessingml.document') && docxLineage.includes("report.report_type in ('daily', 'performance', 'salary')"), 'DOCX constraint or salary-to-monthly source boundary missing');
 expect(docxLineage.includes('daily_sheet_version_text_snapshot') && docxLineage.includes("'manual_text', cell.manual_text"), 'confirmed manual text snapshot missing');
 expect(docxLineage.includes('assert_daily_entry_scope') && docxLineage.includes("'daily_report.write'"), 'authorized store daily-entry scope missing');
