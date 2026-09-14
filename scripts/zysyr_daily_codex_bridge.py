@@ -27,6 +27,7 @@ MAX_IMAGE_BYTES = 12 * 1024 * 1024
 MAX_CELLS = 1000
 DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_REASONING_EFFORT = "low"
+CODEX_SECTION_TIMEOUT_SECONDS = 190
 DEFAULT_ALLOWED_HOST = "pdssrmpeiuwvxzsgschm.supabase.co"
 _KEYCHAIN_TOKEN: Optional[str] = None
 _MAX_PARALLEL_RECOGNITIONS = max(1, min(2, int(os.getenv("ZYSYR_DAILY_CODEX_PARALLEL", "2"))))
@@ -238,7 +239,8 @@ def _run_codex_section(
     with _CODEX_PROCESS_SLOT:
         result = subprocess.run(
             command, input=_prompt(store, report_date, cells, label).encode("utf-8"),
-            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=115, env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            timeout=CODEX_SECTION_TIMEOUT_SECONDS, env=env,
         )
     if result.returncode != 0:
         detail = result.stderr.decode("utf-8", errors="replace")[-500:].strip()

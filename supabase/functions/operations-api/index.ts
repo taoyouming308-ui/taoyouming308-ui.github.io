@@ -4895,7 +4895,7 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   const expectedModel = Deno.env.get("ZYSYR_DAILY_CODEX_MODEL") || "gpt-5.5";
   const response = await fetch(bridgeUrl, {
     method:"POST", headers:{Authorization:`Bearer ${bridgeToken}`,"Content-Type":"application/json"},
-    signal:AbortSignal.timeout(125000),
+    signal:AbortSignal.timeout(205000),
     body:JSON.stringify({store:store.name,report_date:draft.report_date,image_url:recognitionUrl,
       cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,
         column:cell.column_label,role:cell.cell_role,row_number:cell.row_number,column_number:cell.column_number}))})
