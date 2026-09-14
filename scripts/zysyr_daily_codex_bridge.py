@@ -31,7 +31,11 @@ DEFAULT_ALLOWED_HOST = "pdssrmpeiuwvxzsgschm.supabase.co"
 _KEYCHAIN_TOKEN: Optional[str] = None
 _MAX_PARALLEL_RECOGNITIONS = max(1, min(2, int(os.getenv("ZYSYR_DAILY_CODEX_PARALLEL", "2"))))
 _RECOGNITION_SLOT = threading.BoundedSemaphore(_MAX_PARALLEL_RECOGNITIONS)
-_CODEX_PROCESS_SLOT = threading.BoundedSemaphore(4)
+# Each report is split into three independent physical sections. Allow both
+# accepted reports to start all three section calls immediately; otherwise the
+# second report waits for the first report's slots and can exceed the Edge
+# Function's 125-second request window even when every individual call succeeds.
+_CODEX_PROCESS_SLOT = threading.BoundedSemaphore(_MAX_PARALLEL_RECOGNITIONS * 3)
 
 
 def _send(handler: Any, payload: dict[str, Any], status: int = 200) -> None:
