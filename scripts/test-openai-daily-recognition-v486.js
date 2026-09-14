@@ -26,12 +26,12 @@ expect(bridge.includes('/storage/v1/object/sign/'), 'bridge must only accept sig
 expect(bridge.includes('DEFAULT_ALLOWED_HOST'), 'bridge Supabase host allowlist missing');
 expect(bridge.includes('--sandbox", "read-only"') && bridge.includes('--ephemeral'), 'Codex bridge must be read-only and ephemeral');
 expect(bridge.includes('--output-schema'), 'structured Codex output missing');
-expect(bridge.includes('threading.BoundedSemaphore(1)'), 'local Codex concurrency guard missing');
+expect(bridge.includes('_MAX_PARALLEL_RECOGNITIONS') && bridge.includes('threading.BoundedSemaphore(_MAX_PARALLEL_RECOGNITIONS)'), 'local Codex concurrency guard missing');
 expect(bridge.includes('/usr/local/bin:/opt/homebrew/bin:'), 'launchd Node PATH repair missing');
 expect(migration.includes('codex_local_candidate'), 'local Codex candidate source missing');
 expect(migration.includes("ocr_provider=''codex-local''"), 'local Codex provider audit missing');
 expect(page.includes("['codex_local_candidate','openai_vision_candidate','kimi_vision_candidate']"), 'candidate review highlighting missing');
-expect(page.includes("daily_grid_model:'gpt-5.6-luna'"), 'preview provider label is stale');
+expect(api.includes('ZYSYR_DAILY_CODEX_MODEL') && api.includes('|| "gpt-5.5"'), 'Codex model fallback is stale');
 expect(page.includes('本机 Codex 只把原图数字填成待审核候选'), 'candidate-only finance guidance missing');
 
 console.log('Local Codex daily recognition static checks passed');

@@ -4892,7 +4892,7 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   // photos are often 5-8 MB; converting them to base64 inside the Edge Function
   // adds ~33% payload size and can exhaust the request window before inference.
   const recognitionUrl = await signedStorageUrl(VOUCHER_BUCKET,cleanText(attachment.object_path,500));
-  const expectedModel = Deno.env.get("ZYSYR_DAILY_CODEX_MODEL") || "gpt-5.6-luna";
+  const expectedModel = Deno.env.get("ZYSYR_DAILY_CODEX_MODEL") || "gpt-5.5";
   const response = await fetch(bridgeUrl, {
     method:"POST", headers:{Authorization:`Bearer ${bridgeToken}`,"Content-Type":"application/json"},
     signal:AbortSignal.timeout(125000),

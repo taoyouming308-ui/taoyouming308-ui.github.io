@@ -1,9 +1,16 @@
 import os
 import sys
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 import zysyr_daily_codex_bridge as bridge
+
+
+def subprocess_result(*, stdout="", returncode=0):
+    return type("Completed", (), {"stdout": stdout, "stderr": b"", "returncode": returncode})()
 
 
 class Headers(dict):
@@ -56,6 +63,28 @@ class DailyCodexBridgeTests(unittest.TestCase):
         self.assertIn("姓名栏", prompt)
         self.assertIn("未结单号", prompt)
         self.assertIn("空白仍为空白", prompt)
+        self.assertIn("同一条横向网格线", prompt)
+        self.assertIn('"row_number":3', prompt)
+
+    def test_image_pixels_are_auto_oriented_before_section_crops(self):
+        commands = []
+
+        def fake_run(command, **kwargs):
+            commands.append(command)
+            if "identify" in command:
+                return subprocess_result(stdout="4000 5000", returncode=0)
+            Path(command[-1]).touch()
+            return subprocess_result(returncode=0)
+
+        with tempfile.TemporaryDirectory() as work, mock.patch.object(bridge.subprocess, "run", side_effect=fake_run):
+            source = Path(work) / "source.jpg"
+            source.touch()
+            images = bridge._prepare_images(source, Path(work))
+        self.assertEqual(set(images), {"stylist", "technician", "lower"})
+        self.assertEqual(len(images["stylist"]), 2)
+        self.assertIn("-auto-orient", commands[0])
+        self.assertEqual(commands[0][commands[0].index("+set") + 1], "orientation")
+        self.assertNotIn("-rotate", commands[0])
 
     def test_recognition_parallelism_is_bounded(self):
         acquired = []
