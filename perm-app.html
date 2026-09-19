@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="504">
+<html lang="zh-CN" data-version="505">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3071,9 +3071,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=504"></script>
-<script src="hair-vision-training.v1.js?v=504"></script>
-<script src="aesthetic-growth.v2.js?v=504"></script>
+<script src="aesthetic-knowledge.v1.js?v=505"></script>
+<script src="hair-vision-training.v1.js?v=505"></script>
+<script src="aesthetic-growth.v2.js?v=505"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7429,7 +7429,9 @@ function initApp() {
     var info = hairRecordPersonText(rec || {});
     var batches = rec && Array.isArray(rec.careOutboundBatches) ? rec.careOutboundBatches : [];
     var outboundText = '';
-    if (batches.length) {
+    if (!CARE_OUTBOUND_AUTOMATIC_ENABLED) {
+      outboundText = '自动出库已关闭，请员工在美管加手动出库';
+    } else if (batches.length) {
       outboundText = '护理出库：查询中';
     } else if (rec && rec.careOutboundStatus === 'disabled') {
       outboundText = rec.careOutboundMessage || '护理出库：本门店暂未启用';
@@ -7444,7 +7446,7 @@ function initApp() {
       '<div>' + esc(info.line2) + '</div>' +
       outboundHtml +
       '</div>';
-    if (batches.length) refreshCareOutboundStatus(rec);
+    if (CARE_OUTBOUND_AUTOMATIC_ENABLED && batches.length) refreshCareOutboundStatus(rec);
   }
 
   function renderHairRodArchiveTable(rec) {
@@ -8582,6 +8584,7 @@ function initApp() {
   }
 
   var CARE_OUTBOUND_PROTOCOL_VERSION = 2;
+  var CARE_OUTBOUND_AUTOMATIC_ENABLED = false;
   var CARE_OUTBOUND_ENABLED_SHOP = '自由手艺人';
 
   function careOutboundStableId(value) {
@@ -8689,6 +8692,7 @@ function initApp() {
   }
 
   function submitCareOutboundPending(record, pending) {
+    if (!CARE_OUTBOUND_AUTOMATIC_ENABLED) return Promise.resolve({ record: record, queued: false, skipped: true, count: 0 });
     var queueRows = careOutboundPendingRows(pending);
     var queueIds = queueRows.map(function(row) { return row.id; });
     return fetch(SUPABASE_URL + '/rest/v1/care_outbound_queue?on_conflict=id', {
@@ -8731,6 +8735,7 @@ function initApp() {
   }
 
   function recoverCareOutboundPending(record) {
+    if (!CARE_OUTBOUND_AUTOMATIC_ENABLED) return Promise.resolve({ record: record, queued: false, skipped: true, count: 0 });
     var pending = record && record.careOutboundPending;
     if (!pending || !pending.queuedAt || !Array.isArray(pending.items) || !pending.items.length) {
       return Promise.resolve(null);
@@ -8759,6 +8764,8 @@ function initApp() {
 
   function enqueueCareOutboundForRecord(record) {
     record = record || {};
+    // 保留历史批次和快照供核对；关闭后新保存及旧任务恢复都不再入队。
+    if (!CARE_OUTBOUND_AUTOMATIC_ENABLED) return Promise.resolve({ record: record, queued: false, skipped: true, count: 0 });
     if (record.careOutboundPending) return recoverCareOutboundPending(record);
     var currentTotals = careUsageTotals(record.careUsage);
     var currentMap = careUsageMap(currentTotals);
@@ -8819,6 +8826,11 @@ function initApp() {
 
   function refreshCareOutboundStatus(record) {
     var el = document.getElementById('hair-outbound-status');
+    if (!CARE_OUTBOUND_AUTOMATIC_ENABLED) {
+      stopCareOutboundStatusPoll();
+      if (el) el.textContent = '自动出库已关闭，请员工在美管加手动出库';
+      return;
+    }
     var batches = record && Array.isArray(record.careOutboundBatches) ? record.careOutboundBatches : [];
     var latest = batches.length ? batches[batches.length - 1] : null;
     var ids = latest && Array.isArray(latest.ids) ? latest.ids.filter(function(id) { return id !== undefined && id !== null; }) : [];

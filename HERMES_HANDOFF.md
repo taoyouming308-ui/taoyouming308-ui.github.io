@@ -1,5 +1,12 @@
 # Hermes Handoff
 
+## v505 护理改为员工手动出库（2026-09-19）
+
+- 用户明确要求关闭自由手艺人 App 向美管加自动出库。App 总开关关闭，`scripts/care_outbound_store_config.json` 的 `runtime_enabled=false`，两个门店均 `enabled=false`。
+- 本机 `com.freecraftsman.care-outbound` 已 disable 并 bootout，实际配置已同步且哈希一致。禁止按下方 v344 历史实验说明重新启用；重新启用必须有用户新的明确授权。
+- 护理明细继续保存用于统计；历史出库批次、待处理元数据与已审核记录均保留供人工核对，不自动补发。
+- 后台月报使用 `admin-care-monthly.js`，按品牌独立汇总与分页读取；护理统计不等于美管加已审核出库量。
+
 ## v344 护理自动出库实验
 
 - 仅自由手艺人启用协议配置；向里造型护理数据继续保存，但 App 不生成出库任务。

@@ -531,7 +531,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <!-- 月度护理用量统计 -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
     <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📊 月度统计</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">汇总数据由客户护理明细相加得出。点击发型师行的“编辑用量”，进入该发型师当月明细逐条更正。</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">欧拉裴、歌薇酸性护理、歌薇上色水分别统计，单位为克（g）。下方按品牌列出产品／色号明细；点击“编辑用量”可核对当月记录。自动出库已关闭，请员工在美管加手动出库。</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
@@ -549,6 +549,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="care-stat-summary" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+    <div id="care-stat-brand-details"></div>
   </div>
 </div>
 
@@ -640,6 +641,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
 <script src="aesthetic-knowledge.v1.js?v=388"></script>
+<script src="admin-care-monthly.js?v=505"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -4375,146 +4377,54 @@ function initCareMonthSelects() {
   }
 }
 
+var careMonthlyRequest = 0;
 window.loadCareMonthlyStats = function() {
+  var request = ++careMonthlyRequest;
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
   var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
   var store = currentAdminStore() || (document.getElementById('care-month-store')||{}).value || '';
-
   var tbody = document.getElementById('care-stat-tbody');
   var thead = document.getElementById('care-stat-thead');
-  if (!tbody || !thead) return;
-
+  var details = document.getElementById('care-stat-brand-details');
+  var summary = document.getElementById('care-stat-summary');
+  if (!tbody || !thead || !details) return;
+  thead.innerHTML = '';
+  tbody.innerHTML = '<tr><td>加载中...</td></tr>';
+  details.innerHTML = '';
+  summary.textContent = '';
+  ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id) {
+    document.getElementById(id).textContent = '—';
+  });
   var fromDate = year + '-' + String(month).padStart(2, '0') + '-01';
   var toDate = parseInt(month) === 12
     ? (parseInt(year) + 1) + '-01-01'
     : year + '-' + String(parseInt(month) + 1).padStart(2, '0') + '-01';
-
-  // 并行拉取：产品列表（列头）+ 护理记录
-  Promise.all([
-    fetchCareProducts(),
-    fetch(SUPABASE_URL + '/rest/v1/care_records?select=shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (store ? '&shop_name=eq.' + encodeURIComponent(store) : '') + '&limit=5000', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return ensureOk(r, '加载护理记录失败'); }).then(function(r){ return r.json(); })
-  ])
-  .then(function(results) {
-    var productRows = results[0] || [];
-    var careRows = results[1] || [];
-
-    // 构建列头（所有brand+product的组合）
-    var allProducts = [];
-    var productSet = {};
-    for (var pi = 0; pi < productRows.length; pi++) {
-      var key = productRows[pi].brand + '-' + productRows[pi].product_name;
-      allProducts.push({ brand: productRows[pi].brand, product: productRows[pi].product_name, key: key });
-      productSet[key] = 0;
-    }
-
-    if (!careRows || careRows.length === 0) {
-      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th><th>操作</th></tr>';
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
-      document.getElementById('care-stat-summary').textContent = '该月暂无记录';
-      return;
-    }
-
-    // 在JS里分组汇总：按 shop_name + barber
-    var stats = {};
-    for (var ri = 0; ri < careRows.length; ri++) {
-      var cr = careRows[ri];
-      var shopName = cr.shop_name || '';
-      var barber = cr.barber || '未知';
-      // 按门店过滤
-      if (store && shopName !== store) continue;
-      var key = shopName + '|' + barber;
-      if (!stats[key]) {
-        stats[key] = { store: shopName, barber: barber, products: JSON.parse(JSON.stringify(productSet)), total: 0 };
-      }
-      var pk = cr.brand + '-' + cr.product;
-      if (stats[key].products[pk] !== undefined) {
-        var grams = parseFloat(cr.grams) || 0;
-        stats[key].products[pk] += grams;
-        stats[key].total += grams;
-      } else {
-        // 该产品不在care_products表中，仍显示
-        if (stats[key].products[pk] === undefined) {
-          stats[key].products[pk] = (parseFloat(cr.grams) || 0);
-          stats[key].total += (parseFloat(cr.grams) || 0);
-          // 添加到列头
-          var newKey = pk;
-          var found = false;
-          for (var ai = 0; ai < allProducts.length; ai++) {
-            if (allProducts[ai].key === newKey) { found = true; break; }
-          }
-          if (!found) {
-            allProducts.push({ brand: cr.brand, product: cr.product, key: newKey });
-          }
-        }
-      }
-    }
-
-    // ★ 更新顶部概览卡片
-    var totalRecords = careRows.length;
-    var totalGrams = 0;
-    var barberCount = Object.keys(stats).length;
-    for (var si = 0; si < careRows.length; si++) {
-      totalGrams += parseFloat(careRows[si].grams) || 0;
-    }
-    var recEl = document.getElementById('care-total-records');
-    if (recEl) recEl.textContent = totalRecords;
-    var gramEl = document.getElementById('care-total-grams');
-    if (gramEl) gramEl.textContent = totalGrams.toFixed(1) + 'g';
-    var barberEl = document.getElementById('care-total-barbers');
-    if (barberEl) barberEl.textContent = barberCount;
-
-    // 构建表头
-    var headerHtml = '<tr><th>门店</th><th>发型师</th>';
-    for (var ai = 0; ai < allProducts.length; ai++) {
-      headerHtml += '<th style="white-space:nowrap;">' + esc(allProducts[ai].brand) + '<br>' + esc(allProducts[ai].product) + '</th>';
-    }
-    headerHtml += '<th>合计(g)</th><th style="min-width:82px;">操作</th></tr>';
-    thead.innerHTML = headerHtml;
-
-    // 构建表格行
-    var keys = Object.keys(stats);
-    if (keys.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
-      document.getElementById('care-stat-summary').textContent = '该月暂无记录';
-      ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
-        var el = document.getElementById(id);
-        if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+  var url = SUPABASE_URL + '/rest/v1/care_records?select=id,shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (store ? '&shop_name=eq.' + encodeURIComponent(store) : '');
+  return Promise.all([fetchCareProducts(), CareMonthly.fetchRows(fetch, url, { apikey: SUPABASE_KEY })])
+    .then(function(results) {
+      if (request !== careMonthlyRequest) return;
+      var report = CareMonthly.build(results[0] || [], results[1], store);
+      var html = CareMonthly.render(report);
+      thead.innerHTML = html.header;
+      tbody.innerHTML = html.body;
+      details.innerHTML = html.details;
+      tbody.querySelectorAll('[data-care-person]').forEach(function(button) {
+        button.onclick = function() {
+          var person = report.people[Number(button.dataset.carePerson)];
+          openCareMonthlyEditor(person.store, person.barber);
+        };
       });
-      return;
-    }
-
-    var bodyHtml = '';
-    var grandTotal = 0;
-    keys.sort();
-    for (var ski = 0; ski < keys.length; ski++) {
-      var s = stats[keys[ski]];
-      bodyHtml += '<tr>';
-      bodyHtml += '<td>' + esc(s.store || '—') + '</td>';
-      bodyHtml += '<td>' + esc(s.barber) + '</td>';
-      for (var ai2 = 0; ai2 < allProducts.length; ai2++) {
-        var val = s.products[allProducts[ai2].key] || 0;
-        bodyHtml += '<td style="text-align:right;">' + (val > 0 ? val.toFixed(1) : '—') + '</td>';
-      }
-      var rowTotal = s.total || 0;
-      bodyHtml += '<td style="text-align:right;font-weight:600;">' + rowTotal.toFixed(1) + '</td>';
-      bodyHtml += '<td><button type="button" class="btn-edit" onclick="openCareMonthlyEditor(\'' + escAttr(s.store || '') + '\',\'' + escAttr(s.barber) + '\')" style="white-space:nowrap;padding:4px 8px;font-size:11px;">编辑用量</button></td>';
-      bodyHtml += '</tr>';
-      grandTotal += rowTotal;
-    }
-    tbody.innerHTML = bodyHtml;
-    document.getElementById('care-stat-summary').textContent = year + '年' + month + '月 · 共 ' + keys.length + ' 条记录 · 护理用量合计 ' + grandTotal.toFixed(1) + 'g';
-  })
-  .catch(function(e) {
-    thead.innerHTML = '';
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:30px;">加载失败: ' + e.message + '</td></tr>';
-    document.getElementById('care-stat-summary').textContent = '加载失败';
-    ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
-      var el = document.getElementById(id);
-      if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+      document.getElementById('care-total-records').textContent = report.count;
+      document.getElementById('care-total-grams').textContent = CareMonthly.amount(report.total) + 'g';
+      document.getElementById('care-total-barbers').textContent = report.people.length;
+      summary.textContent = year + '年' + month + '月 · ' + report.count + '条用量明细 · ' + report.people.length + '位发型师 · 各品牌用量分别汇总';
+    }).catch(function(error) {
+      if (request !== careMonthlyRequest) return;
+      thead.innerHTML = '';
+      tbody.innerHTML = '<tr><td style="color:var(--danger);padding:20px;">' + esc(error.message || '加载失败') + '</td></tr>';
+      details.innerHTML = '';
+      summary.textContent = '加载失败，请重新查询';
     });
-  });
 };
 
 // ===== 护理记录明细 =====
