@@ -267,11 +267,11 @@ async function run() {
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').classList.contains('recognition-candidate')),true);
-    assert.equal(await page.locator('#daily-detail-reviewed').isChecked(),false);
+    assert.equal(await page.locator('#daily-detail-reviewed').count(),0);
     assert.equal(await page.locator('#daily-detail-confirm').isEnabled(),true,'invalid saved daily sheet must keep an actionable explanation button');
-    assert.equal(await page.locator('#daily-detail-confirm').innerText(),'查看未能入账原因');
+    assert.equal(await page.locator('#daily-detail-confirm').innerText(),'入账');
     await page.locator('#daily-detail-confirm').click();
-    assert.match(await page.locator('#toast').innerText(),/内部合计仍有差异/);
+    assert.match(await page.locator('#toast').innerText(),/请核对/);
     assert.equal(await page.evaluate(()=>window.fixtureCalls.filter(row=>row.operation==='daily_sheet_confirm').length),0);
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');

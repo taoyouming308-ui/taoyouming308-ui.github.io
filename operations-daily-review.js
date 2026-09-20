@@ -1,144 +1,265 @@
-/* Keep OCR suggestions distinct from finance-reviewed daily-sheet values. */
+/* Daily sheet actions: save a draft, or explicitly review and post it once. */
 (function () {
   'use strict';
+  var active = null;
+  var disabledControls = new Map();
+  var uncertainPosts = new Set();
+  var saveButtons = ['daily-detail-save', 'daily-detail-save-top'].map(function (id) { return document.getElementById(id); });
+  var postButtons = ['daily-detail-confirm', 'daily-detail-confirm-top'].map(function (id) { return document.getElementById(id); });
 
+  function grid() { return document.getElementById('daily-detail-grid'); }
   function pendingCandidates() {
-    var root = document.getElementById('daily-detail-grid');
-    if (!root) return [];
-    return Array.from(root.querySelectorAll('input.recognition-candidate[data-daily-cell][type="number"],input.recognition-candidate[data-row-label-input]'))
-      .filter(function (input) {
-        return input.value.trim() !== '' && !input.classList.contains('manual-edit');
-      });
+    return Array.from(grid().querySelectorAll('input.recognition-candidate[data-daily-cell][type="number"],input.recognition-candidate[data-row-label-input]'))
+      .filter(function (input) { return input.value.trim() !== '' && !input.classList.contains('manual-edit'); });
   }
-
   function notice(message) {
     var element = document.getElementById('daily-detail-note');
     element.textContent = message;
     element.classList.toggle('hidden', !message);
   }
-
-  function controlDifferences(controls) {
+  function context() {
+    var sheet = state.imports.sheet;
+    return { id: String(sheet.draft.id), date: String(sheet.draft.report_date), store: currentStore() };
+  }
+  function contextKey(ctx) { return JSON.stringify([ctx.store, ctx.id]); }
+  function isCurrent(ctx) {
+    var sheet = state.imports.sheet;
+    return !!sheet && String(sheet.draft.id) === ctx.id && String(sheet.draft.report_date) === ctx.date && currentStore() === ctx.store;
+  }
+  function applySheet(ctx, sheet) {
+    if (!isCurrent(ctx) || !sheet || String(sheet.draft.id) !== ctx.id || String(sheet.draft.report_date) !== ctx.date) {
+      throw new Error('当前门店或日报已变化，请重新打开核对');
+    }
+    state.imports.sheet = sheet;
+    state.imports.dirty = {};
+    state.imports.dirtyLabels = {};
+    renderDailySheetDetail();
+  }
+  function lockControls() {
+    if (!active) return;
+    document.querySelectorAll('#app button,#app input,#app select,#app textarea').forEach(function (element) {
+      if (!disabledControls.has(element)) disabledControls.set(element, element.disabled);
+      element.disabled = true;
+    });
+  }
+  function begin(kind) {
+    if (active) return false;
+    active = kind;
+    renderDailyDetailControls();
+    return true;
+  }
+  function end() {
+    disabledControls.forEach(function (disabled, element) { element.disabled = disabled; });
+    disabledControls.clear();
+    active = null;
+    if (state.imports.sheet) renderDailyDetailControls();
+  }
+  function showProblem(message) {
+    notice(message);
+    toast(message);
+    var target = grid().querySelector('.control-mismatch') || document.getElementById('daily-detail-confirm-help');
+    if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (target.focus) target.focus(); }
+  }
+  function controlDifferences(c) {
     var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
     return [
-      ['summary_actual', '实做', controls.actual, controls.staffAtomic, '员工合计'],
-      ['summary_grand', '汇总总计', controls.grand, controls.staffAtomic, '员工合计'],
-      ['payment_cashflow', '现金流', controls.cashflow, controls.methodTotal, '支付方式合计'],
-      ['payment_total', '支付总计', controls.payment, controls.cashflow == null ? null : controls.cashflow + controls.card, '现金流＋卡金消费'],
+      ['summary_actual', '实做', c.actual, c.staffAtomic, '员工合计'],
+      ['summary_grand', '汇总总计', c.grand, c.staffAtomic, '员工合计'],
+      ['payment_cashflow', '现金流', c.cashflow, c.methodTotal, '支付方式合计'],
+      ['payment_total', '支付总计', c.payment, c.cashflow == null ? null : c.cashflow + c.card, '现金流＋卡金消费'],
     ].filter(function (item) {
       return item[2] == null || item[3] == null || Math.abs(item[2] - item[3]) > 0.01;
     }).map(function (item) {
       return { role: item[0], message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) };
     });
   }
+  function localBlockReason() {
+    var sheet = state.imports.sheet, c = calculateDailyControls(grid());
+    if (sheet.draft.status === 'confirmed') return '这张日报已入账。';
+    if (!(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance') return '仅财务账号可以入账。';
+    if (sheet.locked) return '本月已锁账，暂不能入账；请先完成解锁审批。';
+    var approved = !!sheet.draft.source_voucher_id || (sheet.attachments || []).some(function (item) {
+      return item.audit_status === 'approved' && item.document_type === 'daily_report';
+    });
+    if (!approved) return '请先上传当天原始日报，并完成原件审核。';
+    if (!c.valid) {
+      var differences = controlDifferences(c);
+      return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
+    }
+    return '';
+  }
 
   var renderControlsBase = renderDailyDetailControls;
   renderDailyDetailControls = function () {
     renderControlsBase();
-    var sheet = state.imports.sheet;
-    var pending = pendingCandidates().length;
-    var dirty = dailySheetDirtyCount();
-    var validation = sheet.draft.validation_result || {};
-    var reviewed = document.getElementById('daily-detail-reviewed').checked;
-    var writable = sheet.permissions && sheet.permissions.write;
-    var root = document.getElementById('daily-detail-grid');
-    var differences = controlDifferences(calculateDailyControls(root));
-    root.querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
+    var sheet = state.imports.sheet, confirmed = sheet.draft.status === 'confirmed';
+    var uncertain = uncertainPosts.has(contextKey(context()));
+    var writable = sheet.permissions && sheet.permissions.write && !confirmed && !uncertain && (!sheet.locked || sheet.daily_unlock_approved);
+    var dirty = dailySheetDirtyCount(), pending = pendingCandidates().length;
+    var differences = controlDifferences(calculateDailyControls(grid()));
+    grid().querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
       var issue = differences.find(function (item) { return item.role === input.dataset.role; });
       input.setAttribute('aria-label', (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel);
-      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) {
-        input.classList.toggle('control-mismatch', !!issue);
-      }
+      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) input.classList.toggle('control-mismatch', !!issue);
+      input.readOnly = !writable;
     });
-    var candidateHelp = document.getElementById('daily-detail-candidates');
-    candidateHelp.textContent = pending
-      ? '黄色数字／姓名中仍有 ' + pending + ' 格仅是机器候选，尚未全部计入后台校验或人工核对记录。请对照原图修改错格，再勾选逐格核对并点击“采纳已核对候选”；此操作只保存候选，不会入账。'
-      : '当前没有待采纳的数字或姓名候选；最终入账仍需财务确认。';
-    var adopt = document.getElementById('daily-detail-adopt');
-    adopt.disabled = !writable || !reviewed || pending === 0;
-    adopt.textContent = pending ? '采纳已核对候选（' + pending + '）' : '无待采纳候选';
-    if (sheet.draft.status === 'confirmed' || dirty || !writable || (sheet.locked && !sheet.daily_unlock_approved)) return;
-    var missing = Array.isArray(validation.missing_controls) ? validation.missing_controls : [];
-    var candidateReason = pending ? '还有 ' + pending + ' 个机器候选数字／姓名未采纳；核对后点击“采纳已核对候选”保存，再最终确认入账。' : '';
-    var reason = differences.length
-      ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' + candidateReason
-      : pending
-      ? candidateReason
-      : validation.valid !== true
-        ? (missing.length ? '后台仍缺少已核对的 ' + missing.join('、') : '后台校验仍未通过，请核对四组合计。')
-        : '';
-    if (!reason) return;
-    var confirm = document.getElementById('daily-detail-confirm');
-    confirm.dataset.blockReason = reason;
-    confirm.classList.add('blocked-action');
-    confirm.textContent = '查看未能入账原因';
-    document.getElementById('daily-detail-confirm-help').textContent = reason;
+    grid().querySelectorAll('[data-row-label-input]').forEach(function (input) { input.readOnly = !writable; });
+    var help = document.getElementById('daily-detail-candidates');
+    help.textContent = pending && !confirmed ? '黄色为识别内容，请对照原图核对；点击“入账”时会一并保存核对结果。' : '';
+    help.classList.toggle('hidden', !help.textContent);
+    var reason = localBlockReason();
+    document.getElementById('daily-detail-confirm-help').textContent = confirmed
+      ? '已入账，已计入当天及月报；更正需走修订流程。'
+      : uncertain ? '上次入账结果待查询；点击“入账”先查询结果。'
+      : reason || '保存草稿：留存修改，可继续编辑。入账：核对后计入当天和月报。';
+    postButtons.forEach(function (button) {
+      button.textContent = confirmed ? '已入账' : active === 'post' ? '正在入账…' : '入账';
+      button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active;
+      button.dataset.blockReason = confirmed ? '' : reason;
+      button.classList.toggle('blocked-action', !confirmed && !!reason);
+      button.title = confirmed ? '此日报已经入账' : '核对后保存并入账，自动更新月报';
+    });
+    saveButtons.forEach(function (button) {
+      button.textContent = active === 'save' ? '正在保存…' : '保存草稿';
+      button.disabled = !writable || dirty === 0 || !!active;
+    });
+    if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
+    lockControls();
   };
-  var reviewedCheckbox = document.getElementById('daily-detail-reviewed');
-  reviewedCheckbox.removeEventListener('change', renderControlsBase);
-  reviewedCheckbox.addEventListener('change', renderDailyDetailControls);
 
   var lastDraftId = '';
   var renderDetailBase = renderDailySheetDetail;
   renderDailySheetDetail = function () {
-    var draftId = String(state.imports.sheet && state.imports.sheet.draft.id || '');
-    if (lastDraftId !== draftId) notice('');
-    lastDraftId = draftId;
+    var id = String(state.imports.sheet && state.imports.sheet.draft.id || '');
+    if (lastDraftId !== id) { notice(''); document.getElementById('daily-detail-reason').value = ''; }
+    lastDraftId = id;
     renderDetailBase();
   };
 
+  function reviewedValues() {
+    return JSON.stringify(Array.from(grid().querySelectorAll('[data-daily-cell],[data-new-cell],[data-row-label-input]')).map(function (input) {
+      var key = [input.dataset.section, input.dataset.rowKey || input.dataset.rowLabelInput, input.dataset.columnCode || 'row_label'];
+      var value = input.type === 'number' && input.value.trim() !== '' ? Number(input.value) : input.value.trim();
+      return [key, value];
+    }).sort(function (a, b) { return JSON.stringify(a[0]).localeCompare(JSON.stringify(b[0])); }));
+  }
+  async function persistDraft(ctx, reason) {
+    if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新打开');
+    if (!dailySheetDirtyCount()) return;
+    var cells = collectDailySheetCells(grid());
+    var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, cells: cells, reason: reason });
+    applySheet(ctx, result);
+  }
+  async function refreshCalendar(ctx) {
+    var data = await api('daily_sheet_month', { store: ctx.store, month: ctx.date.slice(0, 7) });
+    if (!isCurrent(ctx)) return;
+    state.dailyReportMonth = data;
+    renderDailyReportCalendar(data);
+  }
   var saveBase = saveDailyReportDetail;
-  var saveButtons = [document.getElementById('daily-detail-save'), document.getElementById('daily-detail-save-top')];
-  saveButtons.forEach(function (button) {
-    button.removeEventListener('click', saveBase);
-  });
-  var saving = false;
+  saveButtons.forEach(function (button) { button.removeEventListener('click', saveBase); });
   saveDailyReportDetail = async function () {
+    if (active || !state.imports.sheet) return false;
+    if (uncertainPosts.has(contextKey(context()))) { showProblem('请先点击“入账”查询上次结果，再继续编辑。'); return false; }
+    if (!dailySheetDirtyCount()) { notice('草稿已保存；核对完成后可点击“入账”。'); return true; }
     var sheet = state.imports.sheet;
-    if (saving) {
-      notice('上一笔电子日报修改仍在保存，请等待结果。');
-      return false;
+    if (!(sheet.permissions && sheet.permissions.write) || sheet.draft.status !== 'draft' || (sheet.locked && !sheet.daily_unlock_approved)) {
+      showProblem('当前日报不可编辑，请检查账号权限或锁账状态。'); return false;
     }
-    if (!sheet || dailySheetDirtyCount() === 0) {
-      notice('没有待保存的修改；黄色机器候选仍须逐格核对并采纳。');
+    if (isLocalPreview() || String(sheet.draft.id).indexOf('preview') === 0) {
+      notice('当前是本地预览，没有保存到后台。'); return false;
+    }
+    var ctx = context(), reason = document.getElementById('daily-detail-reason').value.trim() || '保存电子日报草稿';
+    begin('save');
+    notice('正在保存草稿…');
+    try {
+      await persistDraft(ctx, reason);
+      notice('保存成功。草稿可继续编辑，尚未入账。');
+      try { await refreshCalendar(ctx); } catch (_) { notice('草稿已保存；月历刷新失败，可稍后刷新。'); }
       return true;
-    }
-    var date = String(sheet.draft.report_date);
-    var store = currentStore();
-    notice('正在保存 ' + date + ' 的电子日报，请稍候…');
-    var preview = isLocalPreview() || String(sheet.draft.id).indexOf('preview') === 0;
-    saving = true;
-    var saved = false;
-    try {
-      saved = await saveBase();
     } catch (error) {
-      notice('保存失败：' + error.message + '。本页未保存的格子仍在。');
+      if (isCurrent(ctx)) showProblem('保存失败：' + error.message + '。修改仍保留在页面中。');
       return false;
-    } finally {
-      saving = false;
-    }
-    if (!saved) {
-      notice('保存未完成：请查看提示，并确认修改原因、网络与账号权限；本页未保存的格子仍在。');
-      return false;
-    }
-    var revision = Number(state.imports.sheet.draft.edit_revision || 0);
-    var remaining = pendingCandidates().length;
-    notice(preview
-      ? '当前是本地预览，修改没有写入后台，也没有入账。'
-      : '保存成功 · 修订 v' + revision + (remaining ? ' · 还有 ' + remaining + ' 个机器候选未核对' : ' · 已重新校验') + '。保存草稿不会自动入账。');
-    if (preview) return true;
-    try {
-      if (store === currentStore() && state.dailyReportMonth && state.dailyReportMonth.month === date.slice(0, 7)) {
-        state.dailyReportMonth = await api('daily_sheet_month', { store: store, month: date.slice(0, 7) });
-        renderDailyReportCalendar(state.dailyReportMonth);
-      }
-    } catch (error) {
-      notice('电子日报已保存（修订 v' + revision + '），但月历刷新失败：' + error.message + '。可点击“刷新”重试。');
-    }
-    return true;
+    } finally { end(); }
   };
-  saveButtons.forEach(function (button) {
-    button.addEventListener('click', saveDailyReportDetail);
-  });
+  saveButtons.forEach(function (button) { button.addEventListener('click', saveDailyReportDetail); });
+
+  async function finishPosted(ctx, result) {
+    uncertainPosts.delete(contextKey(ctx));
+    if (!isCurrent(ctx)) return;
+    if (result) applySheet(ctx, result);
+    else { state.imports.sheet.draft.status = 'confirmed'; renderDailySheetDetail(); }
+    notice('入账成功 · ' + ctx.store + ' · ' + ctx.date + '。已计入当天及月报。');
+    toast('日报入账成功');
+    try { await refreshCalendar(ctx); } catch (_) { notice('入账成功，月历刷新失败；稍后刷新即可查看金额。'); }
+  }
+
+  window.confirmDailyReportDetail = async function () {
+    if (active || !state.imports.sheet || state.imports.sheet.draft.status === 'confirmed') return;
+    var ctx = context(), sheet = state.imports.sheet;
+    if (!(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance') { showProblem('仅财务账号可以入账。'); return; }
+    if (uncertainPosts.has(contextKey(ctx))) {
+      begin('post');
+      try {
+        var current = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+        if (current.draft.status === 'confirmed') await finishPosted(ctx, current);
+        else {
+          applySheet(ctx, current);
+          uncertainPosts.delete(contextKey(ctx));
+          notice('已查询：日报仍为草稿，请核对后再次点击“入账”。');
+        }
+      } catch (_) { notice('暂时无法查询上次入账结果，请恢复网络后再点击“入账”查询。'); }
+      finally { end(); }
+      return;
+    }
+    var reason = localBlockReason();
+    if (reason) { showProblem(reason); return; }
+    if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
+    var c = calculateDailyControls(grid());
+    if (!window.confirm('确认入账？\n\n门店：' + ctx.store + '\n日期：' + ctx.date + '\n金额：¥' + Number(c.grand).toFixed(2) + '\n\n点击“确定”表示：我已逐格核对原图，确认姓名、金额、空白格及支付方式正确。\n系统将保存本页修改与已核对的识别内容，通过校验后入账并计入月报。')) return;
+    var snapshot = reviewedValues();
+    var saveReason = document.getElementById('daily-detail-reason').value.trim() || '财务逐格核对原图并确认入账';
+    begin('post');
+    var submitted = false;
+    notice('正在保存并校验日报…');
+    try {
+      pendingCandidates().forEach(function (input) {
+        if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
+        else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
+        input.classList.add('manual-edit');
+      });
+      if (dailySheetDirtyCount()) await persistDraft(ctx, saveReason);
+      else applySheet(ctx, await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }));
+      if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新核对');
+      if (state.imports.sheet.draft.status === 'confirmed') { await finishPosted(ctx, state.imports.sheet); return; }
+      if (reviewedValues() !== snapshot) throw new Error('后台回读内容与刚才核对的内容不同，请重新核对后入账');
+      reason = localBlockReason();
+      if (reason) throw new Error(reason);
+      var validation = state.imports.sheet.draft.validation_result || {};
+      if (validation.valid !== true || pendingCandidates().length) {
+        var missing = Array.isArray(validation.missing_controls) ? validation.missing_controls.join('、') : '';
+        throw new Error(missing ? '后台校验未通过，需核对：' + missing : '后台校验尚未通过，请核对合计或未核对的识别内容');
+      }
+      notice('校验通过，正在入账…');
+      submitted = true;
+      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, is_business_day: null, reviewed_all: true, reason: saveReason });
+      var posted = null;
+      try { posted = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }); } catch (_) {}
+      await finishPosted(ctx, posted && posted.draft.status === 'confirmed' ? posted : null);
+    } catch (error) {
+      if (submitted) {
+        try {
+          var recovered = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+          if (recovered.draft.status === 'confirmed') { await finishPosted(ctx, recovered); return; }
+          applySheet(ctx, recovered);
+          showProblem('入账未完成：' + error.message + '。草稿已保存，可核对后重试。');
+        } catch (_) {
+          uncertainPosts.add(contextKey(ctx));
+          if (isCurrent(ctx)) notice('暂未收到入账结果。再次点击“入账”会先查询结果，避免重复提交。');
+        }
+      } else if (isCurrent(ctx)) showProblem('尚未入账：' + error.message + '。请核对后重试。');
+    } finally { end(); }
+  };
 
   var renderCalendarBase = renderDailyReportCalendar;
   renderDailyReportCalendar = function (data) {
@@ -149,26 +270,6 @@
       if (cell) cell.textContent = '待确认参考金额 ¥' + Number(day.grand_total).toFixed(2);
     });
   };
-
-  document.getElementById('daily-detail-adopt').addEventListener('click', async function () {
-    var sheet = state.imports.sheet;
-    if (!sheet || !(sheet.permissions && sheet.permissions.write)) return;
-    if (!document.getElementById('daily-detail-reviewed').checked) {
-      notice('请先逐格对照原始日报，再勾选核对确认。');
-      return;
-    }
-    var candidates = pendingCandidates();
-    if (!candidates.length) return;
-    if (!window.confirm('确认已逐格对照原图，并采纳这 ' + candidates.length + ' 个黄色数字／姓名？此操作仅保存草稿和审计记录，不会正式入账。')) return;
-    candidates.forEach(function (input) {
-      if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
-      else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
-      input.classList.add('manual-edit');
-    });
-    renderDailyDetailControls();
-    await saveDailyReportDetail();
-  });
-
   var renderMonthlyBase = renderSheet;
   renderSheet = function (display, noTrace, editable) {
     renderMonthlyBase(display, noTrace, editable);

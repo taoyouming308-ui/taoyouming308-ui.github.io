@@ -93,7 +93,6 @@
       var filled=Number(result.saved&&result.saved.saved_cells||0),textFilled=Number(result.saved&&result.saved.saved_text_cells||0),nameFilled=Number(result.saved&&result.saved.saved_row_names||0),skipped=Number(result.saved&&result.saved.manual_cells_preserved||0),uncertain=[].concat(result.cells||[],result.text_cells||[],result.row_names||[]).filter(function(row){return Number(row.confidence)<.85;}).length;
       state.imports.sheet=result.sheet;state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
       status.hidden=false;
-      document.getElementById('daily-detail-reviewed').checked=false;
       document.getElementById('daily-detail-reason').value='对照日报原图核对图片识别草稿';
       renderDailyDetailControls();status.textContent='识别草稿已保存：数字 '+filled+' 格、姓名 '+nameFilled+' 行、文字 '+textFilled+' 格；保留财务已填 '+skipped+' 项；'+uncertain+' 项识别不确定。黄色内容请对照原图核对，最终确认后才入账。'+(result.date_unconfirmed?' 原图日期未识别，请核对。':'')+(result.store_unconfirmed?' 原图门店未识别，请核对。':'')+(result.warnings||[]).join('；');
     }catch(error){if(generation===request){status.hidden=false;status.textContent=error.message+'；原图已留底，电子数据未被自动覆盖。';}}
