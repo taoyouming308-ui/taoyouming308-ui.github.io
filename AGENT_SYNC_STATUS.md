@@ -5,7 +5,8 @@
 - App version: v512。生产只读确认用户反馈的日报草稿已保存且金额校验通过，但仍存在未覆盖的旧候选；显式清空未写 manual_override 导致回显。隔离数据库复现旧行为，修复所有显式值（含 null）的人工覆盖及 value_reviewed 审计，不修补或猜测既有财务值。
 - 页面先验证保存回读再替换编辑器；异常保留输入；导航、后台刷新不丢编辑，月历显示草稿已保存待入账。公司说明／备注不重复生成行且能回读。
 - 用户明确同意修复报表权限：3 张表启用 RLS 并撤销 public/anon/authenticated 直连；4 个 SECURITY DEFINER RPC 撤销 public/anon/authenticated EXECUTE，保留 service_role。仅更改保护策略，不动数据。
-- 完整发布门禁及隔离回归通过。迁移 20260920110534／20260920110545 已应用，生产只读回查 zysyr 表 RLS 全启用、匿名／普通登录直接可执行的 zysyr 特权函数为 0；正常 service_role 访问保留。operations-api v81 部署源码与本地一致。线上静态资源核验在发布后补记。
+- 完整发布门禁及隔离回归通过。迁移 20260920110534／20260920110545 已应用，生产只读回查 zysyr 表 RLS 全启用、匿名／普通登录直接可执行的 zysyr 特权函数为 0；正常 service_role 访问保留。operations-api v81 部署源码与本地一致。
+- 功能提交 92c314d 已发布，Validate 35507600921／Pages 35507600665 成功。线上无缓存核验 version.txt=512，operations.html、operations-daily-review.js、operations-daily-recognition.js 与本地逐字一致。未登录日报只读请求返回 403 / AUTH_SESSION_INVALID。生产日报状态未代改。
 - 尚不等于多人／多端并发编辑及真实 iOS 设备已验收；工程归档不等于数据库／原图灾备，全面上线仍需恢复演练，详见上线检查报告。
 
 ## v511 报表完整适配屏幕（2026-09-20）
