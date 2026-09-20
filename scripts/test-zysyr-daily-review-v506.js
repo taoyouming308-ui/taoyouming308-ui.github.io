@@ -53,6 +53,7 @@ function element() {
       toggle: (name, force) => { if (force === undefined ? !classes.has(name) : force) classes.add(name); else classes.delete(name); },
     },
     addEventListener(name, listener) { this.listeners[name] = listener; },
+    setAttribute(name, value) { this[name] = value; },
     removeEventListener(name) { delete this.listeners[name]; },
   };
 }
@@ -94,6 +95,7 @@ const context = {
   renderDailyReportCalendar() {},
   renderSheet() {},
   dailySheetDirtyCount: () => Object.keys(context.state.imports.dirty).length + Object.keys(context.state.imports.dirtyLabels).length,
+  calculateDailyControls: () => ({ actual: 120, grand: 120, staffAtomic: 120, cashflow: 120, methodTotal: 120, payment: 120, card: 0 }),
   currentStore: () => '向里造型',
   isLocalPreview: () => false,
   api: async () => ({ month: '2026-01', days: [] }),

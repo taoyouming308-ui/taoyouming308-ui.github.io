@@ -17,6 +17,20 @@
     element.classList.toggle('hidden', !message);
   }
 
+  function controlDifferences(controls) {
+    var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
+    return [
+      ['summary_actual', '实做', controls.actual, controls.staffAtomic, '员工合计'],
+      ['summary_grand', '汇总总计', controls.grand, controls.staffAtomic, '员工合计'],
+      ['payment_cashflow', '现金流', controls.cashflow, controls.methodTotal, '支付方式合计'],
+      ['payment_total', '支付总计', controls.payment, controls.cashflow == null ? null : controls.cashflow + controls.card, '现金流＋卡金消费'],
+    ].filter(function (item) {
+      return item[2] == null || item[3] == null || Math.abs(item[2] - item[3]) > 0.01;
+    }).map(function (item) {
+      return { role: item[0], message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) };
+    });
+  }
+
   var renderControlsBase = renderDailyDetailControls;
   renderDailyDetailControls = function () {
     renderControlsBase();
@@ -26,6 +40,15 @@
     var validation = sheet.draft.validation_result || {};
     var reviewed = document.getElementById('daily-detail-reviewed').checked;
     var writable = sheet.permissions && sheet.permissions.write;
+    var root = document.getElementById('daily-detail-grid');
+    var differences = controlDifferences(calculateDailyControls(root));
+    root.querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
+      var issue = differences.find(function (item) { return item.role === input.dataset.role; });
+      input.setAttribute('aria-label', (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel);
+      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) {
+        input.classList.toggle('control-mismatch', !!issue);
+      }
+    });
     var candidateHelp = document.getElementById('daily-detail-candidates');
     candidateHelp.textContent = pending
       ? '黄色数字／姓名中仍有 ' + pending + ' 格仅是机器候选，尚未全部计入后台校验或人工核对记录。请对照原图修改错格，再勾选逐格核对并点击“采纳已核对候选”；此操作只保存候选，不会入账。'
@@ -35,8 +58,11 @@
     adopt.textContent = pending ? '采纳已核对候选（' + pending + '）' : '无待采纳候选';
     if (sheet.draft.status === 'confirmed' || dirty || !writable || (sheet.locked && !sheet.daily_unlock_approved)) return;
     var missing = Array.isArray(validation.missing_controls) ? validation.missing_controls : [];
-    var reason = pending
-      ? '还有 ' + pending + ' 个机器候选数字／姓名未采纳；请先对照原图核对。'
+    var candidateReason = pending ? '还有 ' + pending + ' 个机器候选数字／姓名未采纳；核对后点击“采纳已核对候选”保存，再最终确认入账。' : '';
+    var reason = differences.length
+      ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' + candidateReason
+      : pending
+      ? candidateReason
       : validation.valid !== true
         ? (missing.length ? '后台仍缺少已核对的 ' + missing.join('、') : '后台校验仍未通过，请核对四组合计。')
         : '';

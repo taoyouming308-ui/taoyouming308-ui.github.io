@@ -39,6 +39,7 @@ node scripts/test-zysyr-sprint6.js || exit 1
 node scripts/test-zysyr-sprint7.js || exit 1
 node scripts/test-zysyr-daily-calendar-v457.js || exit 1
 node scripts/test-zysyr-daily-review-v506.js || exit 1
+node scripts/test-zysyr-daily-layout-v508.js || exit 1
 node scripts/test-daily-recognition.mjs || exit 1
 node scripts/test-zysyr-daily-full-recognition-v489.js || exit 1
 node scripts/test-zysyr-daily-rotation-browser-v495.js || exit 1
