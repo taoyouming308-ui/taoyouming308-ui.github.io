@@ -152,7 +152,7 @@
         if(result.item_result){batchStatus.textContent=result.item_result.report_date+(result.item_result.succeeded?' 已保存待核对候选 '+result.item_result.candidate_count+' 项':' 识别失败：'+result.item_result.error);}
         if(!result.item_result&&Number(result.remaining_count||0)>0)await new Promise(function(resolve){setTimeout(resolve,4000);});
       }
-      if(stillOnJob(key)&&currentJob&&currentJob.job&&!['running','pending'].includes(currentJob.job.status)){await loadDailyReportOverview();batchStatus.textContent=currentJob.job.status==='completed'?'本月识别完成，请财务逐日核对并最终确认':'本月识别完成，但有失败日期，请查看并重试';}
+      if(stillOnJob(key)&&currentJob&&currentJob.job&&!['running','pending'].includes(currentJob.job.status)){await loadDailyReportOverview({background:true});batchStatus.textContent=currentJob.job.status==='completed'?'本月识别完成，请财务逐日核对并最终确认':'本月识别完成，但有失败日期，请查看并重试';}
     }catch(error){batchStatus.textContent=error.message;toast(error.message);}
     finally{batchBusy=false;batch.disabled=false;if(state.view==='daily-report'&&currentJob&&currentJob.job&&['running','pending'].includes(currentJob.job.status))setTimeout(function(){runJob(currentJob);},0);}
   }

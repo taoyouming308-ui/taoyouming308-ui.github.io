@@ -9,7 +9,7 @@
 
   function grid() { return document.getElementById('daily-detail-grid'); }
   function pendingCandidates() {
-    return Array.from(grid().querySelectorAll('input.recognition-candidate[data-daily-cell][type="number"],input.recognition-candidate[data-row-label-input]'))
+    return Array.from(grid().querySelectorAll('input.recognition-candidate[data-daily-cell],input.recognition-candidate[data-row-label-input]'))
       .filter(function (input) { return input.value.trim() !== '' && !input.classList.contains('manual-edit'); });
   }
   function notice(message) {
@@ -136,18 +136,27 @@
     renderDetailBase();
   };
 
-  function reviewedValues() {
-    return JSON.stringify(Array.from(grid().querySelectorAll('[data-daily-cell],[data-new-cell],[data-row-label-input]')).map(function (input) {
+  function reviewedValues(root) {
+    return JSON.stringify(Array.from((root || grid()).querySelectorAll('[data-daily-cell],[data-new-cell],[data-row-label-input]')).map(function (input) {
       var key = [input.dataset.section, input.dataset.rowKey || input.dataset.rowLabelInput, input.dataset.columnCode || 'row_label'];
       var value = input.type === 'number' && input.value.trim() !== '' ? Number(input.value) : input.value.trim();
       return [key, value];
     }).sort(function (a, b) { return JSON.stringify(a[0]).localeCompare(JSON.stringify(b[0])); }));
   }
+  function verifySavedValues(sheet, snapshot) {
+    var previous = state.imports.sheet, paper = document.createElement('div');
+    try {
+      state.imports.sheet = sheet;
+      paper.innerHTML = dailyPaperSheet();
+      if (reviewedValues(paper) !== snapshot) throw new Error('后台回读内容与刚才核对的内容不同；本页修改已保留，请勿重新填写整张表');
+    } finally { state.imports.sheet = previous; }
+  }
   async function persistDraft(ctx, reason) {
     if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新打开');
     if (!dailySheetDirtyCount()) return;
-    var cells = collectDailySheetCells(grid());
+    var snapshot = reviewedValues(), cells = collectDailySheetCells(grid());
     var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, cells: cells, reason: reason });
+    verifySavedValues(result, snapshot);
     applySheet(ctx, result);
   }
   async function refreshCalendar(ctx) {
@@ -229,7 +238,11 @@
         input.classList.add('manual-edit');
       });
       if (dailySheetDirtyCount()) await persistDraft(ctx, saveReason);
-      else applySheet(ctx, await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }));
+      else {
+        var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+        verifySavedValues(fresh, snapshot);
+        applySheet(ctx, fresh);
+      }
       if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新核对');
       if (state.imports.sheet.draft.status === 'confirmed') { await finishPosted(ctx, state.imports.sheet); return; }
       if (reviewedValues() !== snapshot) throw new Error('后台回读内容与刚才核对的内容不同，请重新核对后入账');
@@ -265,11 +278,50 @@
   renderDailyReportCalendar = function (data) {
     renderCalendarBase(data);
     (data.days || []).forEach(function (day) {
-      if (day.status === 'confirmed' || day.grand_total == null) return;
-      var cell = document.querySelector('#daily-report-calendar [data-daily-day="' + day.report_date + '"] .day-total');
-      if (cell) cell.textContent = '待确认参考金额 ¥' + Number(day.grand_total).toFixed(2);
+      var tile = document.querySelector('#daily-report-calendar [data-daily-day="' + day.report_date + '"]');
+      if (!tile) return;
+      var badge = tile.querySelector('.voucher-status'), cell = tile.querySelector('.day-total');
+      if (day.status === 'confirmed') { if (badge) badge.textContent = '已入账'; return; }
+      if (badge) badge.textContent = Number(day.edit_revision || 0) > 0 ? '草稿已保存 · 待入账' : '待填写';
+      if (cell) cell.textContent = '待入账金额 ¥' + Number(day.grand_total).toFixed(2);
     });
   };
+
+  function detailOpen() {
+    return state.view === 'daily-report' && !document.getElementById('daily-report-detail').classList.contains('hidden');
+  }
+  function hasWork() {
+    if (!detailOpen() || !state.imports.sheet) return false;
+    var ctx = context();
+    if (displayedScope) ctx.store = displayedScope.store;
+    return !!active || dailySheetDirtyCount() > 0 || uncertainPosts.has(contextKey(ctx));
+  }
+  window.ZysyrDailyReview = { hasWork: hasWork };
+  // Select changes fire after the value changes: restore the original scope before
+  // any existing handler can fetch or save a different store/month.
+  var displayedScope = null, renderWithScope = renderDailySheetDetail;
+  renderDailySheetDetail = function () {
+    renderWithScope();
+    displayedScope = { store: document.getElementById('store-select').value,
+      month: document.getElementById('month').value, dailyMonth: document.getElementById('daily-month').value };
+  };
+  document.addEventListener('change', function (event) {
+    var field = { 'store-select': 'store', month: 'month', 'daily-month': 'dailyMonth' }[event.target.id];
+    if (!field || !displayedScope || !hasWork()) return;
+    event.target.value = displayedScope[field];
+    event.stopImmediatePropagation();
+    toast('当前日报有未保存修改或待查询结果，请先保存草稿或完成入账，再切换。');
+  }, true);
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('button');
+    if (!button || !hasWork() || !['logout','refresh','daily-report-refresh','daily-month-prev','daily-month-next','daily-readonly-back','daily-detail-back'].includes(button.id)) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    toast('请先保存当前日报修改，再离开或刷新。');
+  }, true);
+  window.addEventListener('beforeunload', function (event) {
+    if (!hasWork()) return;
+    event.preventDefault(); event.returnValue = '';
+  });
   var renderMonthlyBase = renderSheet;
   renderSheet = function (display, noTrace, editable) {
     renderMonthlyBase(display, noTrace, editable);

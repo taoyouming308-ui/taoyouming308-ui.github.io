@@ -49,6 +49,8 @@ jobs:
       - name: Protect ZYSYR operations dashboard
         run: |
           node scripts/test-operations.js
+          node scripts/test-zysyr-daily-atomic-save-v510.js
+          node scripts/test-zysyr-report-permissions-v512.js
           node scripts/test-monthly-formula-recalculation.js
           node scripts/test-operations-auth.js
           node scripts/test-operations-auth-migration.js

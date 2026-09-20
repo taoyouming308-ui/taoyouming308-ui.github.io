@@ -92,6 +92,23 @@ async function run() {
         ${q(role)},${amount},${q(labelSource)},'${actor}',now());`);
     }
     sql(fs.readFileSync(path.join(root, 'supabase/migrations/20260920071049_daily_review_atomic_save.sql'), 'utf8'));
+    // Reproduce a cleared candidate returning on readback before applying v512.
+    sql(`update public.zysyr_daily_sheet_cells set ocr_numeric=500 where id='${id(10)}'`);
+    const clearCandidate = `select public.zysyr_save_daily_sheet_cells('${actor}','${company}','${store}','${draft}',
+      '[{"id":"${id(10)}","value":null}]'::jsonb,'清空识别错误的数字');`;
+    sql(clearCandidate);
+    assert.equal(sql(`select manual_override from public.zysyr_daily_sheet_cells where id='${id(10)}'`), 'f', 'old bug reproduces: blank review was lost');
+    sql(fs.readFileSync(path.join(root, 'supabase/migrations/20260920110534_daily_review_explicit_blank.sql'), 'utf8'));
+    sql(clearCandidate);
+    assert.equal(sql(`select manual_override||'|'||(corrected_numeric is null)||'|'||ocr_numeric from public.zysyr_daily_sheet_cells where id='${id(10)}'`), 'true|true|500.00');
+    assert.equal(sql(`select value_reviewed from public.zysyr_daily_sheet_cell_changes where cell_id='${id(10)}'`), 't');
+    const reviewRevision = sql(`select edit_revision from public.zysyr_daily_sheet_drafts`);
+    sql(clearCandidate);
+    assert.equal(sql(`select edit_revision from public.zysyr_daily_sheet_drafts`), reviewRevision, 'retry identical blank is idempotent');
+    // Reset only this disposable fixture for the original 409/name assertions.
+    sql(`truncate public.zysyr_daily_sheet_cell_changes,public.zysyr_audit_events;
+      update public.zysyr_daily_sheet_drafts set edit_revision=0;
+      update public.zysyr_daily_sheet_cells set manual_override=false,ocr_numeric=2126 where id='${id(10)}'`);
     const legacyCells = fixture.map((row, i) => ({ id: id(10 + i), section_code: row[0], row_key: row[1],
       row_label: row[5], column_code: row[2], column_label: row[2], row_number: i + 1,
       column_number: 1, cell_role: row[3], value: String(row[4]) }));
