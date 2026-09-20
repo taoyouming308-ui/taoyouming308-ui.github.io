@@ -4,11 +4,44 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const api = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
+const pageSource = fs.readFileSync('operations.html', 'utf8');
 assert.match(api, /const delta = dailyIncome \? 0 : adjustmentMap\.get/);
 assert.match(api, /const adjustment = dailyIncome \? 0 : adjustmentMap\.get/);
 assert.match(api, /status=eq\.confirmed&source_voucher_id=not\.is\.null/);
 assert.match(api, /validation\.valid === true \? dailySheetTotal\(validation\.grand_total\) : null/);
 assert.match(api, /美发收入已由已确认日报自动累计，不能在月报重复入账/);
+assert.match(pageSource, /dailyPaperCells\(stylistTotal,serviceCodes,'stylist',Object\.fromEntries\(serviceCodes\.map\(function\(code\)\{return\[code,'category_total'\]\}\)\)/);
+assert.match(pageSource, /dailyPaperCells\(techTotal,techCodes,'technician',Object\.fromEntries\(techCodes\.map\(function\(code\)\{return\[code,'technician_category_total'\]\}\)\)/);
+
+const capturedRoles = [];
+const controlsFixture = {
+  dailyPaperInput(_cell, meta) { capturedRoles.push(meta); return ''; },
+  dailyInputValue(input) { return !input || input.value === '' ? null : Number(input.value); },
+};
+vm.createContext(controlsFixture);
+for (const name of ['dailyPaperCells', 'calculateDailyControls']) {
+  const functionLine = pageSource.match(new RegExp('^function ' + name + '\\([^\\n]+', 'm'));
+  assert(functionLine, `${name} must exist`);
+  vm.runInContext(functionLine[0], controlsFixture);
+}
+controlsFixture.dailyPaperCells({ key: 'stylist_category_total', label: '小计', order: 12, cells: { wash_cut_blow: { cell_role: 'category_total' } } },
+  ['wash_cut_blow'], 'stylist', { wash_cut_blow: 'staff_value' }, ['洗剪吹'], 2);
+assert.equal(capturedRoles[0].role, 'category_total', 'saved category subtotal must retain its database role');
+const amount = (role, value, rowKey, columnCode) => ({ dataset: { role, rowKey, columnCode }, value: String(value) });
+const inputs = [
+  amount('staff_value', 2126, 'stylist_1', 'wash_cut_blow'),
+  amount('staff_total', 2126, 'stylist_1', 'subtotal'),
+  amount('category_total', 2126, 'stylist_category_total', 'wash_cut_blow'),
+  amount('summary_actual', 2126, 'summary', 'actual_total'),
+  amount('summary_grand', 2126, 'summary', 'grand_total'),
+  amount('payment_method', 2126, 'payment', 'alipay'),
+  amount('payment_cashflow', 2126, 'payment', 'cash_flow'),
+  amount('payment_total', 2126, 'payment', 'total'),
+];
+const controls = controlsFixture.calculateDailyControls({ querySelectorAll: () => inputs });
+assert.equal(controls.staffAtomic, 2126, 'stylist subtotal must not double the staff detail');
+assert.equal(controls.categoryReported, 2126, 'category subtotal must not disappear');
+assert.equal(controls.valid, true, 'matching 2126 totals must pass the visible control check');
 
 function element() {
   const classes = new Set();
@@ -73,7 +106,8 @@ vm.runInContext(fs.readFileSync('operations-daily-review.js', 'utf8'), context);
   assert.match(ids['daily-detail-candidates'].textContent, /2 格仅是机器候选/);
   assert.match(ids['daily-detail-confirm-help'].textContent, /机器候选数字／姓名未采纳/);
   ids['daily-detail-reviewed'].checked = true;
-  context.renderDailyDetailControls();
+  ids['daily-detail-reviewed'].listeners.change();
+  assert.equal(ids['daily-detail-adopt'].disabled, false, 'review checkbox must enable candidate adoption immediately');
   await ids['daily-detail-adopt'].listeners.click();
   assert.match(ids['daily-detail-note'].textContent, /保存成功 · 修订 v5/);
   assert.equal(candidate.classList.contains('manual-edit'), true);

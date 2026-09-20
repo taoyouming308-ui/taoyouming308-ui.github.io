@@ -47,6 +47,9 @@
     confirm.textContent = '查看未能入账原因';
     document.getElementById('daily-detail-confirm-help').textContent = reason;
   };
+  var reviewedCheckbox = document.getElementById('daily-detail-reviewed');
+  reviewedCheckbox.removeEventListener('change', renderControlsBase);
+  reviewedCheckbox.addEventListener('change', renderDailyDetailControls);
 
   var lastDraftId = '';
   var renderDetailBase = renderDailySheetDetail;
