@@ -45,12 +45,12 @@ async function run() {
       create table public.zysyr_daily_sheet_drafts(id uuid primary key, company_id uuid, store_id uuid,
         status text not null, edit_revision integer not null, validation_result jsonb not null,
         updated_by_user_id uuid, updated_at timestamptz);
-      create table public.zysyr_daily_sheet_cells(id uuid primary key, company_id uuid, store_id uuid,
+      create table public.zysyr_daily_sheet_cells(id uuid primary key default gen_random_uuid(), company_id uuid, store_id uuid,
         draft_id uuid, section_code text, row_key text, row_label text, column_code text,
         column_label text, row_number integer, column_number integer, cell_role text,
         ocr_numeric numeric(14,2), corrected_numeric numeric(14,2), manual_text text,
         manual_override boolean not null default false, row_label_source_method text not null default 'template',
-        row_label_confidence numeric, updated_by_user_id uuid, updated_at timestamptz,
+        row_label_confidence numeric, source_method text, updated_by_user_id uuid, updated_at timestamptz,
         unique(company_id,draft_id,section_code,row_key,column_code));
       create table public.zysyr_daily_sheet_cell_changes(id uuid default gen_random_uuid(),
         company_id uuid, store_id uuid, draft_id uuid, cell_id uuid, revision integer,
@@ -131,6 +131,7 @@ async function run() {
     assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cell_changes`), '8');
     assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cell_changes where cell_id='${id(10)}' and row_label_reviewed`), '1');
     assert.equal(sql(`select corrected_numeric||'|'||row_label_source_method from public.zysyr_daily_sheet_cells where id='${id(10)}'`), '2126.00|manual');
+    assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where row_key='stylist_1' and row_label <> '王小明'`), '0', 'reviewed name must survive every other amount edit in the same row');
     assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where ocr_numeric is distinct from 2126`), '0', 'original candidates untouched');
     sql(`insert into public.zysyr_daily_sheet_cells(id,company_id,store_id,draft_id,section_code,row_key,row_label,
       column_code,column_label,row_number,column_number,cell_role,row_label_source_method,updated_by_user_id,updated_at)
@@ -143,10 +144,42 @@ async function run() {
       ${q(JSON.stringify([labelOnly]))}::jsonb,'核对姓名');`);
     assert.equal(sql(`select row_label_source_method||'|'||manual_override from public.zysyr_daily_sheet_cells where id='${id(30)}'`), 'manual|false');
     assert.equal(sql(`select row_label_reviewed::text from public.zysyr_daily_sheet_cell_changes where cell_id='${id(30)}'`), 'true');
+    // v513: value metadata must not silently rename a row, even after the
+    // candidate name has already become manual on a previous failed attempt.
+    const applyEdits = async cells => {
+      await scope.saveDailySheetDraft({ ...request, cells }, { auth_account_id: actor });
+      const payload = captured.at(-1).payload.p_cells;
+      sql(`select public.zysyr_save_daily_sheet_cells('${actor}','${company}','${store}','${draft}',
+        ${q(JSON.stringify(payload))}::jsonb,'姓名金额联合保存回归');`);
+      return payload;
+    };
+    await applyEdits([{ ...legacyCells[1], value: '2127' }]);
+    assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where row_key='stylist_1' and row_label <> '王小明'`), '0', 'amount-only edits cannot restore stale employee metadata');
+    for (const reverse of [false, true]) {
+      const name = reverse ? '复核姓名乙' : '复核姓名甲';
+      const mixed = [
+        { id: id(10), section_code: 'stylist', row_key: 'stylist_1', row_label: name },
+        { ...legacyCells[0], value: '2000' },
+        { ...legacyCells[1], value: '2126' },
+        { id: null, section_code: 'stylist', row_key: 'stylist_1', row_label: '旧姓名',
+          column_code: reverse ? 'color' : 'perm', column_label: '新增项目',
+          row_number: 1, column_number: reverse ? 6 : 5, cell_role: 'staff_value', value: '63' },
+      ];
+      if (reverse) mixed.reverse();
+      const normalized = await applyEdits(mixed);
+      assert.equal(normalized.at(-1).row_label, name, 'explicit row review must run after every numeric/new-cell edit');
+      assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where row_key='stylist_1' and row_label <> ${q(name)}`), '0', 'all cells retain the reviewed name regardless of input order');
+      assert.equal(sql(`select corrected_numeric from public.zysyr_daily_sheet_cells where id='${id(10)}'`), '2000.00');
+      assert.equal(sql(`select row_label from public.zysyr_daily_sheet_cells where id='${id(30)}'`), '待核姓名', 'another employee row stays isolated');
+      assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cell_changes where before_label=${q(name)} and after_label='小王'`), '0', 'no stale-name reversal is appended to the audit');
+    }
+    await assert.rejects(() => scope.saveDailySheetDraft({ ...request, cells: [
+      { id: id(10), row_label: '甲' }, { id: id(10), row_label: '乙' },
+    ] }, { auth_account_id: actor }), /同一行提交了不同姓名/);
     assert.throws(() => sql(`select public.zysyr_save_daily_sheet_cells('${id(99)}','${company}','${store}','${draft}',
       ${q(JSON.stringify([labelOnly]))}::jsonb,'越权');`), /FINANCE_SCOPE_FORBIDDEN/);
     assert.equal(sql(`select has_function_privilege('authenticated','public.zysyr_save_daily_sheet_cells(uuid,uuid,uuid,uuid,jsonb,text)','execute')`), 'f');
-    console.log('Daily atomic save: legacy 409 reproduced, merged save, unchanged name review, audit, source preservation and finance scope passed');
+    console.log('Daily atomic save: legacy 409, explicit blanks, row-wide name/amount saves in both orders, new cells, audit, source preservation and finance scope passed');
   } finally { docker(['stop', container]); }
 }
 run().catch(error => { console.error(error.stderr ? String(error.stderr) : error); process.exitCode = 1; });

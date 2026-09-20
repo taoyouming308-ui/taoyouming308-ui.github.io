@@ -3,8 +3,27 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
+const { stripTypeScriptTypes } = require('node:module');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
+const edgeSource = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
+const saveStart = edgeSource.indexOf('async function saveDailySheetDraft(');
+const saveSource = stripTypeScriptTypes(edgeSource.slice(saveStart, edgeSource.indexOf('\n}', saveStart) + 2));
+async function normalizeDailySave(payload) {
+  const scope = {
+    hasAuthCapability: () => true,
+    selectedStoreInfo: async () => ({ id: 'test-store', company_id: 'test-company', name: payload.store }),
+    cleanText: (value, max = 500) => String(value ?? '').trim().slice(0, max),
+    safeCellText: (value, max = 120) => String(value ?? '').trim().slice(0, max),
+    uuidValue: value => value,
+    financeRpcSaved: async (_endpoint, body) => body.p_cells,
+    dailySheetRead: async () => ({}),
+  };
+  vm.createContext(scope);
+  vm.runInContext(saveSource, scope);
+  return (await scope.saveDailySheetDraft(payload, { auth_account_id: 'test-finance' })).saved;
+}
 const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
   if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
@@ -22,6 +41,7 @@ async function run() {
   for (const width of [1280, 390]) {
     for (const storeName of ['向里造型', '自由手艺人']) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
+      await page.exposeFunction('normalizeDailySave', normalizeDailySave);
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
@@ -93,14 +113,13 @@ async function run() {
           if (operation !== 'daily_sheet_save') throw new Error('Unexpected operation: ' + operation);
           if (window.fixtureSaveFailure) throw new Error('save unavailable');
           window.savedDailyPayloads.push(payload);
-          payload.cells.forEach(edit => {
+          (await window.normalizeDailySave(payload)).forEach(edit => {
             const cell = source.cells.find(item => item.id === edit.id);
-            if (cell && !Object.hasOwn(edit, 'value') && edit.row_label) {
+            if (cell && edit.row_label) {
               source.cells.filter(item => item.row_key === cell.row_key && item.section_code === cell.section_code).forEach(item => {
                 item.row_label = edit.row_label;
-                item.row_label_source_method = 'manual_entry';
+                if (edit.row_label_reviewed) item.row_label_source_method = 'manual_entry';
               });
-              return;
             }
             if (!cell || !Object.hasOwn(edit, 'value')) return;
             cell.corrected_numeric = edit.value == null ? null : Number(edit.value);
@@ -136,10 +155,17 @@ async function run() {
       await actual.fill('2126');
       await grand.fill('2126');
       await cashflow.fill('2126');
+      const employeeName = page.locator('#daily-detail-grid [data-section="stylist"][data-row-label-input="stylist_1"]');
+      const employeeAmount = page.locator('#daily-detail-grid [data-row-key="stylist_1"][data-column-code="wash_cut_blow"]');
+      const employeeSubtotal = page.locator('#daily-detail-grid [data-row-key="stylist_1"][data-column-code="subtotal"]');
+      await employeeName.fill('人工核对姓名');
+      await employeeAmount.fill('2126');
+      await employeeSubtotal.fill('2126');
       await page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]').fill('');
       await page.locator('#daily-detail-save').click();
       assert.match(await page.locator('#daily-detail-note').textContent(), /保存成功/);
       assert.equal(await actual.inputValue(), '2126');
+      assert.equal(await employeeName.inputValue(), '人工核对姓名', 'reviewed employee survives saving multiple numeric cells with old row metadata');
       assert.equal(await page.evaluate(() => window.confirmDailyPayloads.length), 0, 'save draft must never post');
       assert.equal(await page.locator('#daily-detail-adopt').count(), 0, 'separate adoption action removed');
       assert.equal(await page.locator('#daily-detail-reviewed').count(), 0, 'no repeated review checkbox');
@@ -157,9 +183,10 @@ async function run() {
       assert.equal(await page.evaluate(() => window.confirmDailyPayloads.length), 1);
       assert.match(await page.locator('#daily-detail-note').textContent(), /入账成功/);
       const saved = await page.evaluate(() => window.savedDailyPayloads[0].cells.map(cell => [cell.section_code, cell.column_code, cell.value]));
-      assert.deepEqual(saved, [['summary', 'actual_total', '2126'], ['summary', 'grand_total', '2126'], ['payment', 'cash_flow', '2126'], ['summary', 'treatment_card', null]]);
+      assert.deepEqual(saved.filter(cell => ['summary','payment'].includes(cell[0])), [['summary', 'actual_total', '2126'], ['summary', 'grand_total', '2126'], ['payment', 'cash_flow', '2126'], ['summary', 'treatment_card', null]]);
       const adopted = await page.evaluate(() => window.savedDailyPayloads[1].cells);
-      assert.ok(adopted.some(cell => cell.row_label && !Object.hasOwn(cell, 'value')), 'reviewed names saved with numeric candidates');
+      assert.equal(await employeeName.inputValue(), '人工核对姓名', 'posted readback must keep the reviewed employee');
+      assert.ok(await page.evaluate(() => window.savedDailyPayloads.some(payload => payload.cells.some(cell => cell.row_label && !Object.hasOwn(cell, 'value')))), 'reviewed names saved with numeric candidates');
       assert.ok(!adopted.some(cell => cell.column_code === 'stylist_total'), 'unchanged manual amount must not be overwritten');
       if (width === 1280 && storeName === '向里造型') {
         async function reset(flags = {}) {

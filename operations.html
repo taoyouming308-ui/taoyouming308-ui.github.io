@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="512">
+<html lang="zh-CN" data-version="513">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -366,10 +366,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=512"></script>
-  <script src="operations-auth-bridge.js?v=512"></script>
-  <script src="operations-voucher-preview.js?v=512"></script>
-  <script src="operations-voucher-view.js?v=512"></script>
+  <script src="operations-report-fit.js?v=513"></script>
+  <script src="operations-auth-bridge.js?v=513"></script>
+  <script src="operations-voucher-preview.js?v=513"></script>
+  <script src="operations-voucher-view.js?v=513"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -904,8 +904,8 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=512"></script>
-  <script src="operations-monthly-workbench.js?v=512"></script>
-  <script src="operations-daily-recognition.js?v=512"></script>
+  <script src="operations-daily-review.js?v=513"></script>
+  <script src="operations-monthly-workbench.js?v=513"></script>
+  <script src="operations-daily-recognition.js?v=513"></script>
 </body>
 </html>

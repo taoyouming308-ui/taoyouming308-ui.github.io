@@ -5102,7 +5102,11 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
     }
     return { id, ...valueField(value), row_label_reviewed: labelReviewed,
       section_code: cleanText(cell.section_code, 30), row_key: cleanText(cell.row_key, 80),
-      row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120),
+      // Numeric inputs on older pages carry the row name from the initial
+      // render. It is metadata, not a request to rename the employee. Only an
+      // explicit label review may rename an existing row; new cells still
+      // need an initial label when they are inserted.
+      row_label: (labelReviewed || !id) && cell.row_label != null ? safeCellText(cell.row_label, 120) : null,
       column_code: cleanText(cell.column_code, 80), column_label: cleanText(cell.column_label, 120),
       row_number: cell.row_number == null ? null : Number(cell.row_number),
       column_number: cell.column_number == null ? null : Number(cell.column_number),
@@ -5125,9 +5129,13 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
       row_label: prior.row_label_reviewed && !cell.row_label_reviewed ? prior.row_label : cell.row_label,
       row_label_reviewed: Boolean(prior.row_label_reviewed || cell.row_label_reviewed) });
   }
+  // Apply explicit row-name edits after value/new-cell edits. This also keeps
+  // a newly inserted cell in the same row on the reviewed name, independent
+  // of the order in which the user filled the page.
+  const orderedCells = Array.from(uniqueCells.values()).sort((a, b) => Number(Boolean(a.row_label_reviewed)) - Number(Boolean(b.row_label_reviewed)));
   const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
-    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: Array.from(uniqueCells.values()), p_reason: reason,
+    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: orderedCells, p_reason: reason,
   });
   return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
 }
