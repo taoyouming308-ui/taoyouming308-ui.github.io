@@ -3893,6 +3893,7 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_RECOGNITION_JOB_NOT_FOUND" || code === "DAILY_RECOGNITION_ITEM_NOT_FOUND") throw new Error("日报识别任务不存在或不属于当前门店");
     if (code === "DAILY_RECOGNITION_JOB_ACTION_INVALID") throw new Error("当前状态不能执行这个任务操作，请刷新后重试");
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
+    if (path === "rpc/zysyr_save_daily_sheet_cells" && sqlState === "23505") throw new Error("本次保存出现重复单元格，修改未提交；请刷新页面后重试");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "22003") throw new Error("图片中存在超出单元格允许范围的数字，已停止保存候选草稿");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "23514") {
@@ -5078,6 +5079,10 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
   const draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
   if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
   const cells = (payload.cells as JsonRecord[]).map((cell) => {
+    // Missing value means label-only review; explicit null still means clear.
+    const hasValue = Object.prototype.hasOwnProperty.call(cell, "value");
+    const valueField = (value: number | string | null) => hasValue ? { value } : {};
+    const labelReviewed = cell.row_label_reviewed === true || (!hasValue && cell.row_label != null);
     const textRole = cell.cell_role === "signature" || cell.cell_role === "unclosed_order" || cell.cell_role === "note";
     const raw = cell.value == null || cell.value === "" ? null : String(cell.value);
     let value: number | string | null = null;
@@ -5093,9 +5098,9 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
     const id = cell.id == null || cell.id === "" ? null : uuidValue(cell.id, "电子日报单元格无效");
     if (id == null && !cell.section_code && !cell.row_key && !cell.column_code && !cell.cell_role) {
       if (raw == null && cell.row_label == null) throw new Error("电子日报单元格无效");
-      return { id: null, value, row_key: cleanText(cell.row_key, 80), row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120) };
+      return { id: null, ...valueField(value), row_key: cleanText(cell.row_key, 80), row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120), row_label_reviewed: labelReviewed };
     }
-    return { id, value,
+    return { id, ...valueField(value), row_label_reviewed: labelReviewed,
       section_code: cleanText(cell.section_code, 30), row_key: cleanText(cell.row_key, 80),
       row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120),
       column_code: cleanText(cell.column_code, 80), column_label: cleanText(cell.column_label, 120),
@@ -5103,9 +5108,26 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
       column_number: cell.column_number == null ? null : Number(cell.column_number),
       cell_role: cleanText(cell.cell_role, 60) };
   });
+  // Older pages submit a number and its row name as separate edits to the
+  // same cell. Merge before the RPC so its append-only audit gets one entry.
+  const uniqueCells = new Map<string, JsonRecord>();
+  for (const cell of cells as JsonRecord[]) {
+    const key = cell.id ? `id:${cell.id}` : JSON.stringify([cell.section_code, cell.row_key, cell.column_code]);
+    const prior = uniqueCells.get(key);
+    if (!prior) { uniqueCells.set(key, cell); continue; }
+    if (Object.prototype.hasOwnProperty.call(prior, "value") && Object.prototype.hasOwnProperty.call(cell, "value") && prior.value !== cell.value) {
+      throw new Error("同一单元格提交了不同金额，请刷新后核对；本次未保存");
+    }
+    if (prior.row_label_reviewed && cell.row_label_reviewed && prior.row_label !== cell.row_label) {
+      throw new Error("同一行提交了不同姓名，请刷新后核对；本次未保存");
+    }
+    uniqueCells.set(key, { ...prior, ...cell,
+      row_label: prior.row_label_reviewed && !cell.row_label_reviewed ? prior.row_label : cell.row_label,
+      row_label_reviewed: Boolean(prior.row_label_reviewed || cell.row_label_reviewed) });
+  }
   const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
-    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: cells, p_reason: reason,
+    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: Array.from(uniqueCells.values()), p_reason: reason,
   });
   return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
 }
