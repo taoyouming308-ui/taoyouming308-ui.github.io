@@ -80,14 +80,22 @@ assert.equal(dailyResult[0].current_payload.amount,250);
 assert.equal(dailyResult[1].current_payload.amount,250);
 assert.equal(dailySource[0].current_payload.amount,100);
 assert.equal(dailyResult[0].current_payload.original_report_amount,100);
+const dailyAdjustedRows = dailySource.map((entry, index) => ({ ...entry, id: 'daily-' + index }));
+const oldMonthlyAdjustment = [{ source_id: 'daily-0', adjustment_delta: 140332, revision: 1 }];
+const dailyWithoutDuplicate = sandbox.effectiveHistoryMonthlyEntries(dailyAdjustedRows, oldMonthlyAdjustment, { amount: 250, confirmed_days: 2 });
+assert.equal(dailyWithoutDuplicate[0].current_payload.amount, 250, 'old monthly adjustment must not be added on top of confirmed daily income');
+assert.equal(dailyWithoutDuplicate[1].current_payload.amount, 250, 'dependent monthly formula follows daily rollup only');
+const displayedDailyCells = [{ id: 'daily-0', cell_address: 'C3', label: '主营 / 美发收入', numeric_value: 100, display_value: '100', row_number: 3, column_number: 3, cell_kind: 'input' }];
+const displayedDaily = sandbox.effectiveMonthlyDisplay({ cells: displayedDailyCells, values: [] }, displayedDailyCells, [], oldMonthlyAdjustment, { amount: 250, confirmed_days: 2 });
+assert.equal(displayedDaily.cells[0].numeric_value, 250, 'current monthly display must not double post an old adjustment');
 const apiStart = source.indexOf('async function monthlyIncomeAdjustmentSave(');
 const apiEnd = source.indexOf('\n}', apiStart) + 2;
-let writes = [], category = '主营 / 美发收入', kind = 'formula';
+let writes = [], category = '主营 / 美发收入', kind = 'formula', confirmedDaily = 0;
 Object.assign(sandbox, {
   requireFinanceCapability: session => { if (session.role !== 'finance') throw Error('denied'); },
   selectedStoreInfo: async () => ({ id: 'store-A', company_id: 'company-A' }),
   cellTrace: async () => ({ historical: true, target: { id: 'income-A', label: category, cell_kind: kind }, report: { id: 'report-A', report_date: '2026-06-01' } }),
-  monthlyAdjustmentContext: async () => ({ cells: [{ id: 'income-A', numeric_value: 120 }], versions: { 'income-A': 1 }, adjustments: [{ id: 'adjust-1', source_id: 'income-A', revision: 1, adjustment_delta: 20 }] }),
+  monthlyAdjustmentContext: async () => ({ cells: [{ id: 'income-A', numeric_value: 120 }], daily: { confirmed_days: confirmedDaily }, versions: { 'income-A': 1 }, adjustments: [{ id: 'adjust-1', source_id: 'income-A', revision: 1, adjustment_delta: 20 }] }),
   financeRpcSaved: async (rpc, payload) => { writes.push({ rpc, payload }); return payload; },
 });
 vm.runInContext(stripTypeScriptTypes(source.slice(apiStart, apiEnd)), sandbox);
@@ -103,6 +111,9 @@ vm.runInContext(stripTypeScriptTypes(source.slice(apiStart, apiEnd)), sandbox);
   kind = 'formula';
   await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
   assert.equal(writes.length, 2);
+  confirmedDaily = 2;
+  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' }), /不能在月报重复入账/);
+  confirmedDaily = 0;
   assert.equal(writes[1].payload.p_base_amount, 100, 'never trust client baseline');
   assert.equal(writes[1].payload.p_store_id, 'store-A');
   assert.equal(writes[1].rpc, 'rpc/zysyr_save_monthly_income_adjustment', 'never calls source amount mutation RPC');

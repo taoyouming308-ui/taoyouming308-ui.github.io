@@ -1208,13 +1208,14 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
     const row = byAddress.get(address);
     if (!row) return 0; // Empty Excel cells contribute zero.
     const item = row.current_payload;
-    const delta = adjustmentMap.get(String(row.id)) || 0;
+    const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(item);
+    const delta = dailyIncome ? 0 : adjustmentMap.get(String(row.id)) || 0;
     function finish(base: number): number {
       const value = Number((base + delta).toFixed(4));
       if (delta) changed.add(address);
       item.amount = value; values.set(address, value); return value;
     }
-    if (daily && isDailyIncomeCell(item)) {
+    if (dailyIncome) {
       changed.add(address);
       item.original_report_amount = item.amount;
       item.daily_rollup = daily;
@@ -1330,14 +1331,16 @@ function effectiveMonthlyDisplay(
     cellByAddress.set(address, cell);
     const original = Number(cell.numeric_value);
     const revision = latest.get(cleanText(cell.id, 40));
-    const effective = daily && isDailyIncomeCell(cell) ? Number(daily.amount) : revision ? Number(revision.after_amount) : original;
-    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4)));
+    const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell);
+    const effective = dailyIncome ? Number(daily?.amount) : revision ? Number(revision.after_amount) : original;
+    const adjustment = dailyIncome ? 0 : adjustmentMap.get(String(cell.id)) || 0;
+    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + adjustment).toFixed(4)));
   }
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false;
     for (const cell of cells) {
       if (cleanText(cell.cell_kind, 20) !== "formula") continue;
-      if (daily && isDailyIncomeCell(cell)) continue;
+      if (Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell)) continue;
       const address = cleanText(cell.cell_address, 20).toUpperCase();
       const base = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
       const calculated = base === null ? null : Number((base + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4));
@@ -1354,7 +1357,7 @@ function effectiveMonthlyDisplay(
     const hasAdjustment = adjustmentMap.has(cleanText(cell.id, 40));
     const untouchedBlank = cleanText(cell.cell_kind, 20) === "input"
       && cleanText(cell.display_value, 100) === "" && Number(cell.numeric_value) === 0
-      && !revision && !hasAdjustment && !(daily && isDailyIncomeCell(cell));
+      && !revision && !hasAdjustment && !(Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell));
     const row = Number(cell.row_number) - 1;
     const column = Number(cell.column_number) - 1;
     if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = untouchedBlank ? "" : numeric;
@@ -1375,7 +1378,7 @@ function effectiveMonthlyDisplay(
       displayCell.display_value = untouchedBlank ? "" : String(numeric);
       displayCell.editable_blank = untouchedBlank;
       displayCell.item_category = monthlyItemCategory(cell);
-      if (daily && isDailyIncomeCell(cell)) { displayCell.daily_rollup = daily; displayCell.original_report_amount = cell.numeric_value; }
+      if (Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell)) { displayCell.daily_rollup = daily; displayCell.original_report_amount = cell.numeric_value; }
     }
     effectiveCells[address] = {
       source_cell_id: cell.id, original_amount: cell.numeric_value,
@@ -2898,7 +2901,7 @@ async function historicalDailyIncomeSources(companyId: string, storeId: string, 
   const next = new Date(`${start}T00:00:00Z`);
   next.setUTCMonth(next.getUTCMonth() + 1);
   const end = next.toISOString().slice(0, 10);
-  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&status=eq.confirmed&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
   const draftIds = drafts.map((row) => cleanText(row.id, 40)).filter(Boolean);
   if (!draftIds.length) return { details: [], evidence: [], total: 0 };
   const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.summary&row_key=eq.summary&column_code=eq.actual_total&cell_role=eq.summary_actual&manual_override=eq.true&limit=100`, 100);
@@ -3427,8 +3430,12 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
     const latest = history[0] || null;
     const actorIds = uuidIn(history.map(row => row.actor_user_id));
     const actors = actorIds === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,display_name,login_name&company_id=eq.${store.company_id}&id=in.${actorIds}`, 500);
-    data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(latest?.adjustment_delta || 0)).toFixed(4)),
-      adjustment_delta: latest?.adjustment_delta || 0, revision: latest?.revision || 0 };
+    const dailyLinked = Number((target.daily_rollup as JsonRecord)?.confirmed_days || 0) > 0;
+    data.monthly_adjustment = { base_amount: dailyLinked ? Number(target.numeric_value)
+      : Number((Number(target.numeric_value) - Number(latest?.adjustment_delta || 0)).toFixed(4)),
+      adjustment_delta: dailyLinked ? 0 : latest?.adjustment_delta || 0, revision: latest?.revision || 0,
+      superseded_monthly_adjustment: dailyLinked ? latest?.adjustment_delta || 0 : 0 };
+    if (dailyLinked) data.can_edit = false;
     data.amount_history = [...history.map(row => ({ ...row, revision_type: "月报调整", delta: Number(row.after_amount) - Number(row.before_amount), actor: actors.find(actor => actor.id === row.actor_user_id) || null })), ...(data.amount_history as JsonRecord[] || [])];
   }
   return data;
@@ -3445,6 +3452,9 @@ async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRec
   if (category === "fixed") throw new Error("编号、姓名和文字标签是固定内容，不能修改");
   const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
+  if (isDailyIncomeCell(target) && Number((context.daily as JsonRecord)?.confirmed_days || 0) > 0) {
+    throw new Error("美发收入已由已确认日报自动累计，不能在月报重复入账；请到对应日报核对或走正式冲销/修订流程");
+  }
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (!effective) throw new Error("月报金额来源不存在，请刷新月报");
   const adjustments = context.adjustments as JsonRecord[], prior = adjustments.find(row => row.source_id === target.id);
@@ -5206,7 +5216,9 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     const date = cleanText(draft.report_date, 10);
     if (byDate.has(date)) continue;
     const validation = (draft.validation_result ?? {}) as JsonRecord;
-    const total = dailySheetTotal(validation.grand_total) ?? dailySheetTotal(validation.staff_atomic_total);
+    // An unvalidated OCR draft is not booked revenue. Do not present its
+    // partial candidate sum as the day's authoritative calendar amount.
+    const total = validation.valid === true ? dailySheetTotal(validation.grand_total) : null;
     const dailyLinks = linksByDraft.get(cleanText(draft.id, 40)) || [];
     const originalCount = dailyLinks.length + (draft.source_voucher_id && !dailyLinks.some((link) => cleanText(link.voucher_id, 40) === cleanText(draft.source_voucher_id, 40)) ? 1 : 0);
     const approvedOriginalCount = dailyLinks.filter((link) => attachmentStatus.get(cleanText(link.voucher_id, 40)) === "approved").length
@@ -5223,7 +5235,9 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     if (existing && existing.source === "formal") continue;
     if (existing) { existing.daily_report_id = report.id; existing.source_report_id = report.source_report_id;
       existing.version = Number(report.version ?? 1); existing.formal_status = cleanText(report.status, 20);
-      if (existing.grand_total == null) existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
+      if (existing.status === "confirmed") {
+        existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
+      }
       continue; }
     const formalStatus = cleanText(report.status, 20);
     byDate.set(date, { report_date: date, draft_id: null, daily_report_id: report.id,

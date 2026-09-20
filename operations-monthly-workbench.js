@@ -68,6 +68,30 @@
     var target = data.target, adjustment = data.monthly_adjustment || {
       base_amount: target.numeric_value, adjustment_delta: 0, revision: 0
     };
+    if (target.daily_rollup && Number(target.daily_rollup.confirmed_days) > 0) {
+      var daily = target.daily_rollup;
+      host.innerHTML = '<h4>美发收入来自已确认日报</h4><div class="help">已确认 ' + Number(daily.confirmed_days)
+        + ' 天，累计 ' + formatAmount(daily.amount) + '。月报不再另记一笔；仅统计已确认日期，请核对是否录齐。</div>'
+        + (Number(adjustment.superseded_monthly_adjustment || 0)
+          ? '<div class="candidate-warning">既有月报手工调整 ' + formatAmount(adjustment.superseded_monthly_adjustment)
+            + ' 已留在审计记录中，不叠加到日报累计金额。</div>' : '')
+        + '<div data-daily-sources></div>';
+      var sources = host.querySelector('[data-daily-sources]');
+      (daily.days || []).forEach(function (day) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ghost';
+        button.textContent = day.date + ' · ' + formatAmount(day.amount);
+        button.onclick = async function () {
+          closeMonthlyWorkbench();
+          document.getElementById('daily-month').value = day.date.slice(0, 7);
+          await showView('daily-report');
+          await openDailyReportDay(day.date, day.draft_id);
+        };
+        sources.appendChild(button);
+      });
+      return;
+    }
     var editable = Object.assign({}, data, {
       mode: 'input', sources: [], revision: null,
       target: Object.assign({}, target, { cell_kind: 'input' })
