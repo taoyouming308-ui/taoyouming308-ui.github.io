@@ -19,7 +19,7 @@ for (const marker of [
   '上传这个数字的凭证', '编辑金额', 'monthly-inline-amount', '预览修改', '确认保存', '上传凭证图片 / PDF',
   '确认保存这次修改',
   '逐笔收入 / 开支与凭证', '此笔不需要凭证（只影响这一笔）', 'business_evidence_rule_save',
-  'report-focus', 'minReadable=phone ? .68 : .7',
+  'report-focus', 'window.ZysyrReportFit.apply()',
 ]) expect(page.includes(marker), `monthly workbench UI missing: ${marker}`);
 
 expect(page.includes("record_type:'report',record_id:report.id,monthly_cell_id:target.id")

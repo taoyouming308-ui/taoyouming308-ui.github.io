@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="510">
+<html lang="zh-CN" data-version="511">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -362,9 +362,14 @@
   <div id="voucher-modal" class="catalog-modal hidden" aria-hidden="true"><div class="catalog-dialog voucher-dialog"><div class="catalog-dialog-head"><div><h3 id="voucher-review-title">凭证详情</h3><div id="voucher-review-meta" class="help"></div></div><button id="voucher-review-close" class="ghost" type="button">关闭</button></div><div class="voucher-review-grid"><div id="voucher-preview" class="voucher-preview"><div class="help">正在生成私有预览…</div></div><div class="voucher-fields"><div class="candidate-warning">左侧原图是事实来源；右侧字段是 OCR 候选或人工修正。只有财务点击审核后才记录审核结论。</div><div id="voucher-candidate" class="confidence-list"></div><form id="voucher-review-form"><div class="field"><label for="voucher-document-type">资料类型</label><select id="voucher-document-type" required><option value="daily_report">日报</option><option value="performance_report">业绩表</option><option value="expense">支出</option><option value="purchase">采购</option><option value="salary">工资</option><option value="petty_cash">备用金</option><option value="attendance_check">考勤/检查</option><option value="payment">付款凭证</option><option value="other">其他</option></select></div><div class="form-grid"><div class="field"><label for="voucher-field-date">日期</label><input id="voucher-field-date" type="date"></div><div class="field"><label for="voucher-field-amount">金额</label><input id="voucher-field-amount" type="number" min="0" step="0.01"></div><div class="field"><label for="voucher-field-counterparty">供应商/收款方</label><input id="voucher-field-counterparty" maxlength="200"></div><div class="field"><label for="voucher-field-number">单据号</label><input id="voucher-field-number" maxlength="100"></div></div><div class="field"><label>关联已上传报表（可多选，也可不选）</label><div id="voucher-report-link" class="trace-list"><div class="help">本月暂无可关联报表。</div></div></div><div class="field"><label for="voucher-decision">审核结论</label><select id="voucher-decision"><option value="approved">核对通过</option><option value="rejected">退回/不通过</option></select></div><div class="field"><label for="voucher-review-reason">审核说明（写入审计）</label><textarea id="voucher-review-reason" maxlength="500" required placeholder="例如：已逐项对照原图，金额与日期已修正"></textarea></div><div class="actions"><button class="primary" type="submit">保存审核结论</button></div><div id="voucher-review-result" class="help form-result"></div></form><div id="voucher-readonly" class="help hidden" style="margin-top:14px">当前为只读视角，可查看原件、OCR候选和财务审核结果。</div></div></div></div></div>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="operations-auth-bridge.js?v=510"></script>
-  <script src="operations-voucher-preview.js?v=510"></script>
-  <script src="operations-voucher-view.js?v=510"></script>
+  <style>
+    /* Historical batch progress is retained in storage, hidden from the report workspace. */
+    #daily-recognition-job{display:none!important}
+  </style>
+  <script src="operations-report-fit.js?v=511"></script>
+  <script src="operations-auth-bridge.js?v=511"></script>
+  <script src="operations-voucher-preview.js?v=511"></script>
+  <script src="operations-voucher-view.js?v=511"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -698,7 +703,7 @@
   async function postHistoryBatch(){var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});if(!batch)return;var warning=Number(batch.warning_row_count||0),pending=(data.rows||[]).filter(function(row){return historyReviewStatus(row)!=='confirmed'}).length;if(!window.confirm('确认把当前批次 '+batch.raw_row_count+' 条正式入账？其中 '+warning+' 条有系统提示、'+pending+' 条尚未人工确认；提示会保留，后续可在 App 逐项修改并留痕。'))return;var reason=window.prompt('请输入正式入账原因：','已获负责人授权，先按原始资料正式入账；发现问题后通过版本修订');if(!reason)return;var button=$('history-post-batch');if(button)button.disabled=true;try{if(isLocalPreview()){(data.rows||[]).forEach(function(row){row.import_status='imported'});batch.status='completed';batch.imported_row_count=batch.raw_row_count;toast('本地预览：已模拟正式入账');renderHistoryImport();return}var result=await api('history_import_post',{store:currentStore(),import_batch_id:batch.id,allow_unreviewed:true,reason:reason});await loadHistoryImport(batch.id);toast('正式入账完成：'+esc(result.saved&&result.saved.imported_count||batch.raw_row_count)+' 条')}catch(error){toast(error.message)}finally{if(button)button.disabled=false}}
   $('history-correct-form').addEventListener('submit',async function(event){var entry=state.historyImport.editLedger;if(!entry)return;event.preventDefault();event.stopImmediatePropagation();var corrected={};document.querySelectorAll('[data-history-field]').forEach(function(input){var raw=input.value;corrected[input.dataset.historyField]=input.dataset.kind==='number'?(raw===''?null:Number(raw)):raw||null});var reason=$('history-correct-reason').value.trim(),button=event.submitter;if(!reason){$('history-correct-result').textContent='修改正式账必须填写原因';return}button.disabled=true;try{if(isLocalPreview()){entry.current_payload=corrected;entry.version=Number(entry.version||1)+1;$('history-correct-modal').classList.add('hidden');renderHistoryImport();toast('本地预览：已新增正式账修订版本');return}await api('history_ledger_revise',{store:currentStore(),ledger_entry_id:entry.id,current_payload:corrected,reason:reason});$('history-correct-modal').classList.add('hidden');state.historyImport.editLedger=null;await loadHistoryImport(state.historyImport.selectedBatchId);toast('正式账已修改，原值和新版本均已永久留痕')}catch(error){$('history-correct-result').textContent=error.message}finally{button.disabled=false}},true);
   function currentMonthInput(){var now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
-  function applyReportFit(){var phone=window.innerWidth<=560;var landscape=window.innerHeight<=620&&window.innerWidth>window.innerHeight;var fitMode=phone||landscape;document.querySelectorAll('.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll').forEach(function(wrapper){var table=wrapper.querySelector('table');if(!table)return;table.style.zoom='';if(!fitMode)return;var natural=(wrapper.clientWidth-4)/table.offsetWidth,minReadable=phone ? .68 : .7,fit=Math.min(1,Math.max(minReadable,natural));if(fit<1)table.style.zoom=String(fit)})}
+  function applyReportFit(){if(window.ZysyrReportFit)window.ZysyrReportFit.apply()}
 
   function previewDailySheetMonth(){var month=$('daily-month').value||currentMonthInput(),days=[];for(var d=1;d<=3;d++)days.push({report_date:month+'-'+String(d).padStart(2,'0'),draft_id:'preview-draft-'+d,status:'confirmed',grand_total:11000+d*50,edit_revision:0,source:'electronic',original_count:1,approved_original_count:1,missing_original:false,has_anomaly:false,locked:false});days.push({report_date:month+'-05',draft_id:'preview-draft-5',status:'draft',grand_total:null,edit_revision:1,source:'electronic',original_count:0,approved_original_count:0,missing_original:true,has_anomaly:true,locked:false});return{month:month,days:days,permissions:{write:state.user&&state.user.can_import_photo_reports},manual_entry_only:true,locked:false}}
   async function loadDailyReportOverview(){if(state.view!=='daily-report')return;var input=$('daily-month'),mainMonth=$('month').value||currentMonthInput();if(input.value!==mainMonth)input.value=mainMonth;$('daily-report-status').textContent='正在读取本月日报…';$('daily-report-detail').classList.add('hidden');$('daily-report-calendar').classList.remove('hidden');try{state.dailyReportMonth=isLocalPreview()?previewDailySheetMonth():await api('daily_sheet_month',{store:currentStore(),month:mainMonth});renderDailyReportCalendar(state.dailyReportMonth);$('daily-report-status').textContent='已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(error){$('daily-report-status').textContent=error.message;$('daily-report-calendar').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
@@ -884,8 +889,8 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=510"></script>
-  <script src="operations-monthly-workbench.js?v=510"></script>
-  <script src="operations-daily-recognition.js?v=510"></script>
+  <script src="operations-daily-review.js?v=511"></script>
+  <script src="operations-monthly-workbench.js?v=511"></script>
+  <script src="operations-daily-recognition.js?v=511"></script>
 </body>
 </html>
