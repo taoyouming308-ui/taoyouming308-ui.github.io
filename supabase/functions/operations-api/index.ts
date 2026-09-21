@@ -129,13 +129,20 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
       .map((cell) => safeCellText(cell.row_label, 80)).filter((name) => name && name !== "小计")
       .forEach((name) => { if (!names.some((item) => normalizedName(item) === normalizedName(name))) names.push(name); });
     while (names.length < fallbackCount) names.push(`第${names.length + 1}行`);
-    return names.slice(0, fallbackCount);
+    return names.slice(0, 20);
   };
   const xiangli = /向里/.test(storeName);
   const stylistNames = sectionRows("stylist", 8), technicianNames = sectionRows("technician", xiangli ? 6 : 7);
   const productNames = sectionRows("product", 4);
-  const technicianTotalRow = xiangli ? 21 : 22;
-  const productStartRow = xiangli ? 23 : 24;
+  const stylistOverflow = Math.max(0, stylistNames.length - 8);
+  const defaultTechnicianRows = xiangli ? 6 : 7;
+  const technicianOverflow = Math.max(0, technicianNames.length - defaultTechnicianRows);
+  const stylistTotalRow = 12 + stylistOverflow;
+  const technicianStartRow = 15 + stylistOverflow;
+  const technicianTotalRow = technicianStartRow + technicianNames.length;
+  const productStartRow = (xiangli ? 23 : 24) + stylistOverflow + technicianOverflow;
+  const summaryRow = 30 + stylistOverflow + technicianOverflow;
+  const paymentRow = 33 + stylistOverflow + technicianOverflow;
   const seeds: DailyCellSeed[] = [];
   const add = (section: string, rowKey: string, rowLabel: string, columnCode: string, columnLabel: string,
     rowNumber: number, columnNumber: number, role: string) => {
@@ -152,12 +159,12 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
       add("stylist", `stylist_${rowIndex + 1}`, name, column[0], column[1], 3 + rowIndex, 21 + index, "staff_count"));
   });
   STYLIST_COLUMNS.forEach((column, index) => add("stylist", "stylist_category_total", "小计",
-    column[0], column[1], 12, 2 + index + (index > 13 ? 1 : 0), "category_total"));
-  add("stylist", "stylist_category_total", "小计", "subtotal", "小计", 12, 20, "summary_value");
+    column[0], column[1], stylistTotalRow, 2 + index + (index > 13 ? 1 : 0), "category_total"));
+  add("stylist", "stylist_category_total", "小计", "subtotal", "小计", stylistTotalRow, 20, "summary_value");
   technicianNames.forEach((name, rowIndex) => {
     TECHNICIAN_COLUMNS.forEach((column, columnIndex) => add("technician", `technician_${rowIndex + 1}`, name,
-      column[0], column[1], 15 + rowIndex, 2 + columnIndex + (columnIndex > 14 ? 1 : 0), "technician_value"));
-    add("technician", `technician_${rowIndex + 1}`, name, "subtotal", "小计", 15 + rowIndex, 21, "technician_total");
+      column[0], column[1], technicianStartRow + rowIndex, 2 + columnIndex + (columnIndex > 14 ? 1 : 0), "technician_value"));
+    add("technician", `technician_${rowIndex + 1}`, name, "subtotal", "小计", technicianStartRow + rowIndex, 21, "technician_total");
   });
   TECHNICIAN_COLUMNS.forEach((column, index) => add("technician", "technician_category_total", "小计",
     column[0], column[1], technicianTotalRow, 2 + index + (index > 14 ? 1 : 0), "technician_category_total"));
@@ -168,9 +175,9 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
   productNames.forEach((name, rowIndex) => productColumns.forEach((column, columnIndex) =>
     add("product", `product_${rowIndex + 1}`, name, column[0], column[1], productStartRow + rowIndex,
       1 + columnIndex, column[0] === "retail_subtotal" || column[0] === "subtotal" ? "product_total" : "product_value")));
-  SUMMARY_COLUMNS.forEach((column, index) => add("summary", "summary", "汇总", column[0], column[1], 30, 1 + index,
+  SUMMARY_COLUMNS.forEach((column, index) => add("summary", "summary", "汇总", column[0], column[1], summaryRow, 1 + index,
     column[0] === "actual_total" ? "summary_actual" : column[0] === "grand_total" ? "summary_grand" : "summary_value"));
-  PAYMENT_COLUMNS.forEach((column, index) => add("payment", "payment", "支付", column[0], column[1], 33, 1 + index,
+  PAYMENT_COLUMNS.forEach((column, index) => add("payment", "payment", "支付", column[0], column[1], paymentRow, 1 + index,
     column[0] === "cash_flow" ? "payment_cashflow" : column[0] === "card_consumption" ? "payment_card_consumption"
       : column[0] === "total" ? "payment_total" : "payment_method"));
   return seeds;
@@ -3896,6 +3903,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_RECOGNITION_NO_IMAGES") throw new Error("本月没有已审核的 JPG/PNG 日报原图");
     if (code === "DAILY_RECOGNITION_JOB_NOT_FOUND" || code === "DAILY_RECOGNITION_ITEM_NOT_FOUND") throw new Error("日报识别任务不存在或不属于当前门店");
     if (code === "DAILY_RECOGNITION_JOB_ACTION_INVALID") throw new Error("当前状态不能执行这个任务操作，请刷新后重试");
+    if (code === "DAILY_STAFF_ROW_TARGET_INVALID") throw new Error("当前门店在职员工数量超出电子日报允许范围，请先核对员工档案");
+    if (code === "DAILY_STAFF_ROW_TEMPLATE_NOT_FOUND") throw new Error("电子日报员工区模板不完整，无法自动增加行，请刷新后重试");
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
     if (path === "rpc/zysyr_save_daily_sheet_cells" && sqlState === "23505") throw new Error("本次保存出现重复单元格，修改未提交；请刷新页面后重试");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
@@ -4850,8 +4859,8 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   for (const employee of employees) {
     const position = cleanText(employee.position, 120), name = safeCellText(employee.name, 80);
     if (!name) continue;
+    if (/发型师|设计师|店长/.test(position)) nameSeeds.push({ section_code: "stylist", row_label: name, column_code: "subtotal", value: null });
     if (/技师|技工|助理/.test(position)) nameSeeds.push({ section_code: "technician", row_label: name, column_code: "subtotal", value: null });
-    else if (/发型师|设计师|店长/.test(position)) nameSeeds.push({ section_code: "stylist", row_label: name, column_code: "subtotal", value: null });
   }
   const extraction: JsonRecord = { parsed: { report_date: reportDate, notes: "人工逐格填写空白日报模板", cells: nameSeeds },
     response_id: null, model: "manual-entry-v1", usage: null };
@@ -4891,8 +4900,8 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有日报识别权限");
   const store = await selectedStoreInfo(session, payload);
   const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
-  const sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
-  const draft = sheet.draft as JsonRecord;
+  let sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
+  let draft = sheet.draft as JsonRecord;
   if (draft.status !== "draft" || sheet.locked) throw new Error("已确认或锁账日报不能自动识别覆盖");
   const bridgeUrl = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_URL"), 500);
   const bridgeToken = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN"), 500);
@@ -4902,6 +4911,26 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   const attachment = (sheet.attachments as JsonRecord[]).find(item =>
     String(item.voucher_id || item.id) === String(payload.voucher_id) && item.attachment_kind === "original_report");
   if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
+  const employees = await restRowsAll(`zysyr_employees?select=name,position&company_id=eq.${store.company_id}&store_id=eq.${store.id}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
+  const stylistNames = new Set<string>(), technicianNames = new Set<string>();
+  for (const employee of employees) {
+    const name = normalizedName(employee.name), position = cleanText(employee.position, 120);
+    if (!name) continue;
+    if (/发型师|设计师|店长/.test(position)) stylistNames.add(name);
+    if (/技师|技工|助理/.test(position)) technicianNames.add(name);
+  }
+  const xiangli = /向里/.test(cleanText(store.name, 100));
+  const expanded = await financeRpcSaved("rpc/zysyr_expand_daily_sheet_staff_rows", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_draft_id: draftId, p_expected_revision: Number(draft.edit_revision),
+    p_stylist_rows: Math.min(20, Math.max(8, stylistNames.size)),
+    p_technician_rows: Math.min(20, Math.max(xiangli ? 6 : 7, technicianNames.size)),
+  });
+  if (Number(expanded.added_rows || 0) > 0) {
+    sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
+    draft = sheet.draft as JsonRecord;
+  }
   const cells = (sheet.cells as JsonRecord[]).filter(cell => String(cell.cell_role) !== "signature");
   // Let OpenAI fetch the short-lived private URL directly. Historical daily
   // photos are often 5-8 MB; converting them to base64 inside the Edge Function
@@ -4937,6 +4966,9 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
   });
   const refreshed = await dailySheetRead({store:cleanText(store.name,120),draft_id:draftId},session);
   return {...candidate,saved,sheet:refreshed,draft_id:draftId,edit_revision:saved.revision,
+    expanded_rows:Number(expanded.added_rows||0),
+    expanded_stylist_rows:Number(expanded.added_stylist_rows||0),
+    expanded_technician_rows:Number(expanded.added_technician_rows||0),
     provider:"codex-local",model:cleanText(result.model,120) || expectedModel,
     candidate_only:true,formal_data_unchanged:true,finance_confirmation_required:true};
 }
