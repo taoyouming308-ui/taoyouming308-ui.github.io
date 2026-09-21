@@ -20,7 +20,8 @@
       var panel=document.createElement('section');panel.id='employee-report-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','股东报表');panel.style.cssText='position:fixed;inset:0;z-index:11000;background:#f6f3ec;display:flex;flex-direction:column';
       var bar=document.createElement('div');bar.style.cssText='padding:10px;padding-top:max(10px,env(safe-area-inset-top));display:flex;gap:16px;align-items:center;color:#173a2a';
       var back=document.createElement('button');back.textContent='← 返回工作台';back.onclick=close;bar.appendChild(back);bar.appendChild(document.createTextNode('股东报表 · 只读'));
-      var frame=document.createElement('iframe');frame.title='授权门店报表';frame.src='operations.html?entry=staff-shareholder';frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
+      var version=document.documentElement.getAttribute('data-version')||'';
+      var frame=document.createElement('iframe');frame.title='授权门店报表';frame.src='operations.html?entry=staff-shareholder'+(/^\d+$/.test(version)?'&v='+version:'');frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
       panel.appendChild(bar);panel.appendChild(frame);document.body.appendChild(panel);
     }catch(e){alert(e.message)}finally{button.disabled=false}
   }

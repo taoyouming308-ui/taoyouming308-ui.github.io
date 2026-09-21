@@ -16,7 +16,7 @@ async function run(){
   const origin='http://127.0.0.1:'+server.address().port;
   browser=await chromium.launch({channel:'chrome',headless:true});
   const context=await browser.newContext();
-  const calls=[];let access=true,revoked=false,financeRequests=0;
+  const calls=[];let access=true,revoked=false,financeRequests=0,delaySession=false,resumeSession=null,sessionUnavailable=false;
   let overview,daily,month;
   const employeeToken='11111111-1111-4111-8111-11111111111122222222-2222-4222-8222-222222222222';
   const user={username:'测试股东',store:'向里造型',stores:['向里造型'],role:'shareholder',role_label:'股东',can_read_daily_reports:true,can_read_salary:true,can_read_petty_cash_reports:true};
@@ -30,7 +30,11 @@ async function run(){
     if(url.includes('/functions/v1/operations-api')){
       const data=request.postDataJSON();calls.push(data);
       if(revoked)return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'尚未开通股东报表权限'})});
-      if(data.operation==='session')return ok({user});
+      if(data.operation==='session'){
+        if(delaySession)await new Promise(resolve=>{resumeSession=resolve;});
+        if(sessionUnavailable)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'认证服务暂时不可用，请重试',code:'AUTH_TEMPORARY'})});
+        return ok({user});
+      }
       if(data.operation==='overview')return ok(overview);
       if(data.operation==='daily_sheet_month')return ok(month);
       if(data.operation==='daily_sheet_read')return ok(daily);
@@ -49,10 +53,14 @@ async function run(){
     return route.abort();
   });
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(origin+'/operations.html');
+  assert.equal(await page.locator('#login').isVisible(),true,'standalone finance login is preserved');
+  assert.equal(await page.evaluate(()=>StaffReportView.enabled),false);
   await page.goto(origin+'/operations.html?preview=1&role=finance');
   await page.locator('#monthly-edit-toggle').waitFor();
   ({overview,daily,month}=await page.evaluate(()=>({overview:state.data,daily:previewDailySheetData(),month:previewDailySheetMonth()})));
   daily.readonly=true;daily.permissions={write:false,upload_original:false,save_orientation:false};
+  month.permissions={write:false};
   // Store unrelated finance login exactly; employee mode must not read/use/clear it.
   await page.evaluate(token=>{
     localStorage.setItem('booking-session',JSON.stringify({session_token:token,username:'测试股东',store:'向里造型',position:'股东',loggedAt:Date.now(),expires_at:'2099-01-01T00:00:00Z'}));
@@ -60,8 +68,15 @@ async function run(){
     localStorage.setItem('perm_admin',JSON.stringify({user:'管理员',role:'admin',store:'向里造型',staffToken:token,loggedAt:Date.now()}));
   },employeeToken);
   calls.length=0;financeRequests=0;
+  delaySession=true;
   await page.goto(origin+'/operations.html?entry=staff-shareholder');
+  assert.equal(await page.locator('#login').isVisible(),false,'no finance login flash while employee session is loading');
+  assert.equal(await page.locator('#app').isVisible(),false);
+  assert.match(await page.locator('#staff-report-message').innerText(),/正在打开/);
+  delaySession=false;resumeSession();
   await page.waitForFunction(()=>state.monthlyOverviewReady===true);
+  assert.equal(await page.locator('#app').isVisible(),true,'monthly report is visible, not only loaded in memory');
+  assert(await page.locator('#monthly-sheet td').count()>0,'monthly report cells render');
   assert.equal(financeRequests,0,'employee view never attempts finance authentication');
   assert.equal(await page.locator('#store-select option').count(),1);
   assert.equal(await page.locator('#monthly-ack').count(),0,'read-only view hides acknowledge write');
@@ -69,10 +84,15 @@ async function run(){
   assert(!await page.locator('#user-card').innerText().then(t=>t.includes('退出登录')));
   await page.evaluate(()=>showView('daily-report'));
   await page.waitForFunction(()=>state.dailyReportMonth!==null);
+  await page.waitForTimeout(300); // let delayed recognition restoration execute, as on the real page
+  assert.equal(await page.locator('#app').isVisible(),true,'shareholder daily calendar remains visible after background tasks');
+  assert(!calls.some(c=>c.operation.startsWith('daily_recognition_')),'shareholders must not request or resume finance recognition jobs');
   await page.evaluate(async()=>{state.imports.sheet=await api('daily_sheet_read',{store:currentStore(),draft_id:'synthetic'});renderDailySheetDetail()});
   assert.equal(await page.locator('#daily-detail-grid input:not([disabled]):not([readonly])').count(),0);
   assert.equal(await page.locator('#daily-detail-save').isVisible(),false);
-  for(const [width,height] of [[844,390],[1024,768],[1440,900]]){
+  assert.equal(await page.locator('#daily-recognize').isVisible(),false);
+  assert.equal(await page.locator('#daily-recognize-month').isVisible(),false);
+  for(const [width,height] of [[390,844],[844,390],[1024,768],[1366,1024],[1440,900]]){
     await page.setViewportSize({width,height});await page.waitForTimeout(120);
     const overflow=await page.locator('#daily-detail-grid').evaluate(el=>el.scrollWidth>el.clientWidth+2);assert.equal(overflow,false);
   }
@@ -80,6 +100,12 @@ async function run(){
   await page.evaluate(()=>logout());
   assert.equal(await page.evaluate(()=>localStorage.getItem('zysyr-operations-session-v1')),'FINANCE_SESSION_UNCHANGED');
   assert(!calls.some(c=>c.operation==='logout'));
+  sessionUnavailable=true;await page.reload();
+  await page.locator('#staff-report-message button').waitFor();
+  assert.equal(await page.locator('#login').isVisible(),false,'temporary errors do not fall back to a second login');
+  sessionUnavailable=false;await page.locator('#staff-report-message button').click();
+  await page.waitForFunction(()=>state.monthlyOverviewReady);
+  assert.equal(await page.locator('#app').isVisible(),true,'retry uses employee session to recover reports');
   await page.reload();await page.waitForFunction(()=>state.monthlyOverviewReady);
   revoked=true;await page.evaluate(()=>maintainSession());
   assert.equal(await page.locator('#app').isVisible(),false);assert.equal(await page.locator('#login').isVisible(),false);revoked=false;
@@ -98,11 +124,30 @@ async function run(){
   await page.waitForFunction(()=>window.EmployeeReports&&document.getElementById('employee-report-entry').hidden===false);
   await page.evaluate(()=>document.getElementById('employee-report-entry').click());
   await page.locator('#employee-report-panel iframe').waitFor();
-  assert.match(await page.locator('#employee-report-panel iframe').getAttribute('src'),/^operations\.html\?entry=staff-shareholder$/);
+  const iframeUrl=await page.locator('#employee-report-panel iframe').getAttribute('src');
+  assert.match(iframeUrl,/^operations\.html\?entry=staff-shareholder&v=\d+$/);
+  assert.equal(new URL(iframeUrl,origin).searchParams.get('v'),await page.evaluate(()=>document.documentElement.dataset.version));
+  const reportFrame=page.frames().find(frame=>frame.url().includes('entry=staff-shareholder'));
+  await reportFrame.waitForFunction(()=>state.monthlyOverviewReady);
+  assert.equal(await reportFrame.locator('#app').isVisible(),true,'actual App iframe displays the monthly report');
+  assert.equal(await reportFrame.locator('#login').isVisible(),false);
+  await reportFrame.evaluate(()=>showView('daily-report'));
+  await reportFrame.waitForFunction(()=>state.dailyReportMonth!==null);
+  await page.waitForTimeout(300);
+  assert.equal(await reportFrame.locator('#app').isVisible(),true,'actual App iframe can switch to daily reports');
+  await reportFrame.evaluate(()=>showView('monthly'));
+  assert.equal(await reportFrame.locator('#monthly-sheet').isVisible(),true);
+  for(const [width,height] of [[390,844],[844,390],[1366,1024]]){
+    await page.setViewportSize({width,height});await page.waitForTimeout(150);
+    assert.equal(await reportFrame.locator('#monthly-sheet').isVisible(),true);
+    assert.equal(await reportFrame.locator('#login').isVisible(),false);
+    const overflow=await reportFrame.locator('#monthly-sheet').evaluate(el=>el.scrollWidth>el.clientWidth+2);assert.equal(overflow,false);
+    await page.screenshot({path:`/tmp/zysyr-shareholder-v515-${width}x${height}.png`});
+  }
   assert.equal(await page.evaluate(()=>localStorage.getItem('zysyr-operations-session-v1')),'FINANCE_SESSION_UNCHANGED');
   access=false;await page.evaluate(()=>EmployeeReports.refresh());assert.equal(await page.locator('#employee-report-panel').count(),0);
   assert.equal(await page.locator('#employee-report-entry').isVisible(),false);
   assert.deepEqual(errors,[]);
-  console.log('staff report browser passed: actual App, admin grants, read-only reports, finance-session isolation, revocation and landscape fit');
+  console.log('staff report browser passed: App iframe monthly/daily visibility, no login flash, no shareholder recognition jobs, retry, admin grants, finance isolation, revocation and landscape fit');
 }
 run().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();server.close()});
