@@ -2527,38 +2527,16 @@ function initApp() {
   }
 
   window.doAppLogin = async function(){
-    var name = document.getElementById('login-name').value.trim();
-    var pass = document.getElementById('login-pass').value;
-    var errEl = document.getElementById('login-error');
-    if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
-    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
-      errEl.textContent = '当前浏览器不支持安全登录，请升级浏览器或使用 Safari/Chrome';
-      errEl.style.display = '';
-      return;
-    }
-    var btn = document.getElementById('login-submit-btn');
-    if (btn) btn.disabled = true;
-    try {
-      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
-      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      var rows = await r.json();
-      if (rows && rows.length > 0 && rows[0].active !== false) {
-        // 登录成功 → 弹出选名字页面，不直接绑定
-        document.getElementById('identity-modal').remove();
-        showBarberPicker();
-      } else {
-        errEl.textContent = '姓名或密码错误，或账号未通过审核';
-        errEl.style.display = '';
-      }
-    } catch(e) {
-      errEl.textContent = '登录失败，请重试';
-      errEl.style.display = '';
-    }
-    if (btn) btn.disabled = false;
+    var name=document.getElementById('login-name').value.trim(),pass=document.getElementById('login-pass').value;
+    var error=document.getElementById('login-error'),btn=document.getElementById('login-submit-btn');
+    if(btn.disabled)return;btn.disabled=true;
+    try{
+      var r=await fetch(SUPABASE_URL+'/functions/v1/employee-bookings-api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({operation:'login',username:name,password:pass})});
+      var data=await r.json();if(!r.ok)throw new Error(data.error||'登录失败');
+      localStorage.setItem('booking-session',JSON.stringify(Object.assign({},data.user,{session_token:data.session_token,expires_at:data.expires_at,loggedAt:Date.now()})));
+      // User-initiated login goes to the maintained app; never refresh an active editor.
+      location.href='perm-app.html';
+    }catch(e){error.textContent=e.message;error.style.display='';}finally{btn.disabled=false}
   };
 
   window.showBarberPicker = async function(){
@@ -2648,42 +2626,11 @@ function initApp() {
   };
 
   window.registerEmployee = async function(){
-    var username = document.getElementById('reg-name').value.trim();
-    var pass = document.getElementById('reg-pass').value;
-    var pass2 = document.getElementById('reg-pass2').value;
-    var errEl = document.getElementById('reg-error');
-    if (!username || !pass || !pass2) { errEl.textContent='请完整填写'; errEl.style.display=''; return; }
-    if (pass !== pass2) { errEl.textContent='两次密码不一致'; errEl.style.display=''; return; }
-    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
-      errEl.textContent = '当前浏览器不支持安全注册，请升级浏览器或使用 Safari/Chrome';
-      errEl.style.display = '';
-      return;
-    }
-    var btn = document.getElementById('reg-submit-btn');
-    if (btn) btn.disabled = true;
-    try {
-      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      var store = document.getElementById('reg-store').value;
-      var position = Array.from(document.querySelectorAll('#login-box-main .pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(',');
-      if (!store || !position) { errEl.textContent='请选择门店和职位'; errEl.style.display=''; if (btn) btn.disabled = false; return; }
-      var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
-        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', store:store, position:position, active:false })
-      });
-      if (!res.ok) {
-        var errBody = '';
-        try { var _errJson = await res.json(); errBody = _errJson.message || ''; } catch(e) {}
-        if (res.status === 409 && errBody.indexOf('username') !== -1) {
-          throw new Error('用户名已存在');
-        }
-        throw new Error('提交失败: ' + (errBody || res.status));
-      }
-      alert('注册成功，等待店主审核');
-      document.getElementById('identity-modal').remove();
-    } catch(e) {
-      errEl.textContent=e.message||'注册失败，请重试'; errEl.style.display='';
-      if (btn) btn.disabled = false;
+    var error=document.getElementById('reg-error');
+    error.textContent='员工注册已迁至新版自由手艺人 App，请使用下方入口。';error.style.display='';
+    if(!document.getElementById('new-staff-register')){
+      var link=document.createElement('a');link.id='new-staff-register';link.href='perm-app.html';link.textContent='打开新版 App 注册员工';link.style.cssText='display:block;padding:16px;color:inherit';
+      error.appendChild(link);
     }
   };
 

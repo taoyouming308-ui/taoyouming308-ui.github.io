@@ -64,8 +64,9 @@ async function employeeLogin(payload: JsonRecord): Promise<JsonRecord> {
   const employee = rows[0];
   const digest = await sha256(password);
   const stored = cleanText(employee?.password_hash, 200);
-  if (!activeEmployee(employee) || !stored ||
-      (stored !== digest && stored !== `sha256:${digest}` && stored !== password)) {
+  const passwordMatches = /^sha256:/i.test(stored) ? stored === `sha256:${digest}`
+    : /^[0-9a-f]{64}$/i.test(stored) ? stored === digest : stored === password;
+  if (!activeEmployee(employee) || !stored || !passwordMatches) {
     throw new Error("姓名或密码错误，或账号未通过审核");
   }
 
@@ -160,7 +161,14 @@ Deno.serve(async (request: Request) => {
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
   try {
-    if (operation === "login") return json(await employeeLogin(payload));
+    if (operation === "login") {
+      for (const key of [`employee:${cleanText(payload.username,80).toLowerCase()}`, `employee-client:${request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"}`]) {
+        const gate = await rest("rpc/staff_access_rate_limit", {method:"POST",body:JSON.stringify({p_key_hash:await sha256(key),p_max_attempts:key.startsWith('employee-client:')?120:20})});
+        if (!gate.ok) throw new Error("登录服务暂不可用，请稍后重试");
+        if (await gate.json() !== true) return json({error:"尝试次数过多，请15分钟后再试"},429);
+      }
+      return json(await employeeLogin(payload));
+    }
     if (operation === "logout") return json(await employeeLogout(payload));
     const session = await requireEmployeeSession(payload);
     if (operation === "session") return json({ user: session, expires_at: session.expires_at });

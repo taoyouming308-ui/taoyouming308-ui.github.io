@@ -641,7 +641,8 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
 <script src="aesthetic-knowledge.v1.js?v=388"></script>
-<script src="admin-care-monthly.js?v=513"></script>
+<script src="admin-care-monthly.js?v=514"></script>
+<script src="staff-access-client.js?v=514"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -964,7 +965,7 @@ function stopPendingPolling() {
 // 页面初始化必须在所有后台函数定义完成后执行，避免已登录用户刷新时提前调用未注册的页面加载器。
 function initializeAdminPage() {
   const session = getAdminSession();
-  const sessionValid = session && session.user && ['admin', STORE_ADMIN_ROLE].indexOf(session.role) !== -1 && session.loggedAt &&
+  const sessionValid = session && session.staffToken && session.user && ['admin', STORE_ADMIN_ROLE].indexOf(session.role) !== -1 && session.loggedAt &&
     (session.role !== STORE_ADMIN_ROLE || !!session.store) &&
     Date.now() - Number(session.loggedAt) < 2 * 60 * 60 * 1000;
   if (sessionValid) {
@@ -1030,6 +1031,10 @@ function initializeAdminPage() {
   });
 }
 
+function staffAccessRequest(operation, payload) {
+  return StaffAccessClient.request(SUPABASE_URL,SUPABASE_KEY,operation,Object.assign({session_token:getAdminSession().staffToken||""},payload||{}));
+}
+
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
   try {
@@ -1043,25 +1048,20 @@ async function doLogin() {
   if (btn) btn.disabled = true;
   try {
     const hashed = await hashPasswordValue(p);
-    async function findAdmin(passwordValue) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,role,active,store&username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(passwordValue)}&role=in.(admin,${STORE_ADMIN_ROLE})&limit=1`, {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      await ensureOk(r, '登录失败');
-      return { rows: await r.json(), passwordValue: passwordValue };
-    }
-    let loginMatch = await findAdmin(hashed);
-    // 兼容历史后台管理员的旧密码值；员工新增和重置统一保存 SHA-256 摘要。
-    if (!loginMatch.rows.length) loginMatch = await findAdmin(p);
-    const user = loginMatch.rows[0];
+    const loginResult = await staffAccessRequest('admin_login',{username:u,password:p});
+    const user = loginResult.user;
+
     if (user && ['admin', STORE_ADMIN_ROLE].indexOf(user.role) !== -1 && user.active !== false &&
         (user.role !== STORE_ADMIN_ROLE || !!user.store)) {
       var trainingAuth = null;
       try {
-        var authResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}, body:JSON.stringify({operation:'admin_login',username:u,password_hash:loginMatch.passwordValue}) });
-        if (authResponse.ok) trainingAuth = await authResponse.json();
+        // Preserve legacy training login compatibility without reading stored credentials.
+        for (var trainingPassword of [hashed,p]) {
+          var authResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}, body:JSON.stringify({operation:'admin_login',username:u,password_hash:trainingPassword}) });
+          if (authResponse.ok) { trainingAuth = await authResponse.json(); break; }
+        }
       } catch(e) {}
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now(), trainingToken: trainingAuth && trainingAuth.token || ''}));
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now(), trainingToken: trainingAuth && trainingAuth.token || '', staffToken:loginResult.session_token}));
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
       document.getElementById('login-error').textContent = '';
@@ -1087,6 +1087,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  staffAccessRequest('logout').catch(function(){});
   localStorage.removeItem('perm_admin');
   stopRealtime();
   stopPendingPolling();
@@ -1249,9 +1250,9 @@ window.openRegistrationReview = async function(id) {
 function createPositionChecks(value, id) {
   const div = el('div', { id: id || '', className: 'pos-check-group', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:340px;' });
   const vals = String(value || '').split(',').map(function(v){ return v.trim(); });
-  ['发型师','技师','助理','前台','店长'].forEach(function(position) {
-    const label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;' });
-    const cb = el('input', { type: 'checkbox', value: position });
+  Array.from(new Set(['发型师','技师','助理','前台','店长','股东'].concat(vals.filter(Boolean)))).forEach(function(position) {
+    const label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 8px;margin:0;white-space:nowrap;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;' });
+    const cb = el('input', { type: 'checkbox', value: position, style:'width:16px;height:16px;flex:none;margin:0;' });
     if (vals.indexOf(position) !== -1) cb.checked = true;
     label.appendChild(cb);
     label.appendChild(document.createTextNode(position));
@@ -1269,14 +1270,7 @@ async function approveRegistration(id, username) {
     const store = currentAdminStore() || document.getElementById('reg-review-store').value;
     const position = Array.from(document.querySelectorAll('#reg-review-position input:checked')).map(function(cb){ return cb.value; }).join(',');
     if (!store || !position) throw new Error('请确认门店和职位');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: true, employment_status: 'active', role: 'staff', store: store, position: position })
-    });
-    await ensureOk(r, '审核失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('申请状态已经变化');
+    await staffAccessRequest('approve',{staff_id:id,data:{username:existing.username,role:'staff',store:store,position:position}});
     clearAdminStaffStoreCache();
     recordAdminAction('通过注册', username, store + ' / ' + position);
     toast('已通过注册审核', 'ok');
@@ -1290,17 +1284,13 @@ async function approveRegistration(id, username) {
 }
 
 async function rejectRegistration(id, username) {
-  if (!confirm('确认拒绝“' + username + '”的注册申请？未通过的申请将被移除，但不会影响任何业务配置数据。')) return;
+  if (!confirm('确认拒绝“' + username + '”的注册申请？申请将归档为停用并保留审核记录，不影响业务数据。')) return;
   try {
     const existing = await loadOne('staff', id);
     if (!adminCanManageStaffRow(existing, true)) throw new Error('无权拒绝其他门店的注册申请');
-  const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=representation' }
-    });
-    await ensureOk(r, '拒绝失败');
+    await staffAccessRequest('reject',{staff_id:id});
     clearAdminStaffStoreCache();
-    recordAdminAction('拒绝注册', username, '移除未通过申请');
+    recordAdminAction('拒绝注册', username, '归档未通过申请');
     toast('已拒绝注册申请', 'ok');
     closeModal();
     loadRegistrations();
@@ -2036,7 +2026,7 @@ function renderTable(tab, rows) {
 
 async function loadOne(table, id) {
   const storeScope = table === 'staff' && currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '';
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id,username,role,store,position,active,employment_status,created_at&id=eq.${encodeURIComponent(id)}${storeScope}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
   await ensureOk(r, '加载失败');
   const rows = await r.json();
   return rows[0];
@@ -2110,6 +2100,7 @@ async function openModal(tab, id) {
   if (id) {
     box.appendChild(el('div', { style: 'margin-top:10px;color:var(--muted);font-size:11px;', text: '离职会保留历史发质、预约、护理与训练记录，并立即禁止该账号继续登录。' }));
   }
+  StaffAccessClient.mountGrants(box,id,function(operation,payload){return staffAccessRequest(operation,payload)});
   appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   document.getElementById('modal').classList.add('show');
 }
@@ -2133,14 +2124,11 @@ async function saveStaff(id) {
     data.active = true;
     data.employment_status = 'active';
   }
-  if (pass) {
-    try {
-      data.password_hash = await hashPasswordValue(pass);
-    } catch(e) {
-      toast('密码处理失败: ' + e.message, 'err');
-      return;
-    }
-  }
+  if (pass) data.password=pass;
+  try {
+    var grantIds=StaffAccessClient.grants();
+    if(grantIds!==undefined)data.report_store_ids=grantIds;
+  } catch(e) {toast(e.message,'err');return;}
   if (id) {
     try {
       const existing = await loadOne('staff', id);
@@ -2162,15 +2150,7 @@ async function setStaffEmploymentStatus(id, nextStatus) {
   try {
     const existing = await loadOne('staff', id);
     if (!adminCanManageStaffRow(existing, false)) throw new Error('无权管理该账号');
-    const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + storeScope, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: !leaving, employment_status: nextStatus })
-    });
-    await ensureOk(r, leaving ? '办理离职失败' : '恢复在职失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('员工状态已经变化，请刷新后重试');
+    await staffAccessRequest('employment',{staff_id:id,data:{employment_status:nextStatus}});
     clearAdminStaffStoreCache();
     recordAdminAction(leaving ? '办理离职' : '恢复在职', existing.username, existing.store || '');
     toast(leaving ? '已办理离职，账号已停用' : '已恢复为在职员工', 'ok');
@@ -2186,22 +2166,7 @@ async function upsert(table, id, data) {
   const btn = document.querySelector('#modal .btn-save');
   if (btn) btn.disabled = true;
   try {
-    let r;
-    if (id) {
-      const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
-      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}`, {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(data)
-      });
-    } else {
-      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(data)
-      });
-    }
-    await ensureOk(r, '保存失败');
+    await staffAccessRequest('save',{staff_id:id||0,data:data});
     clearAdminStaffStoreCache();
     recordAdminAction(id ? '修改员工' : '新增员工', data.username, data.store + ' / ' + data.position + ' / ' + data.role);
     toast('保存成功', 'ok');

@@ -5,6 +5,7 @@ import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
 import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-recognition.mjs";
 import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
+import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -384,6 +385,7 @@ function canReviewVouchers(session: JsonRecord): boolean {
 }
 
 function hasAuthCapability(session: JsonRecord, capability: string): boolean {
+  if (session.staff_report_readonly === true) return STAFF_REPORT_CAPABILITIES.includes(capability);
   return Boolean(cleanText(session.auth_account_id, 40))
     && Array.isArray(session.auth_capabilities)
     && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === capability);
@@ -595,6 +597,10 @@ async function logout(payload: JsonRecord): Promise<JsonRecord> {
 }
 
 async function requireSession(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  // Explicit separate route; never borrow or downgrade the finance Auth session.
+  if (Object.prototype.hasOwnProperty.call(payload, "employee_session_token")) {
+    return staffReportSession(payload, restRows, sha256);
+  }
   let authenticated: JsonRecord | null = null;
   try {
     authenticated = await authSession(request);
@@ -5846,12 +5852,14 @@ Deno.serve(async (request: Request) => {
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
   try {
+    const employeeReader = Object.prototype.hasOwnProperty.call(payload, "employee_session_token")
+      ? await staffReportSession(payload, restRows, sha256) : null;
     if (operation === "login") return json(await login(payload));
     if (operation === "shareholder_register") return json(await shareholderRegister(payload));
     if (operation === "logout") return json(await logout(payload));
     if (operation === "daily_recognition_worker_read") return json(await dailyRecognitionWorkerRead(payload, request));
     if (operation === "daily_recognition_worker_next") return json(await dailyRecognitionWorkerNext(payload, request));
-    const session = await requireSession(payload, request);
+    const session = employeeReader || await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
@@ -5971,7 +5979,8 @@ Deno.serve(async (request: Request) => {
   } catch (error) {
     const message = publicRequestError(error);
     const accountDisabled = /账号已停用|离职/.test(message);
-    const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message);
+    const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message)
+      || (Object.prototype.hasOwnProperty.call(payload, "employee_session_token") && /员工登录已失效|门店变化/.test(message));
     const authTemporary = message === "认证服务暂时不可用，请稍后自动重试";
     const dataTemporary = message.startsWith("财务数据连接暂时失败");
     const permissionDenied = /权限|无权/.test(message);
