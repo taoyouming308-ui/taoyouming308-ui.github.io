@@ -36,3 +36,11 @@
 - `scripts/test-staff-report-access-v514.js`：真实 Edge 入口，读白名单／越权写／无授权／停用／跨店／两店；管理员登录、限流、待审核注册、密码哈希；真实 PostgreSQL 列 ACL、RPC 权限、事务回滚、管理范围、撤销、审计和财务数据不变。
 - `scripts/test-staff-report-browser-v514.js`：真实 admin／perm-app／operations 页面，合成网络，员工授权表单、App iframe、只读金额格、隐藏财务操作、财务会话隔离及横屏适配。
 - 原有日报保存、姓名回读、最终人工入账、财务登录、月报、防重复计账和横屏适配测试继续保留在完整发布门禁中。
+
+## 发布证据（2026-09-21）
+
+- 功能提交 `6bd1bac`；Validate `35555458355` 与 Pages `35555458103` 成功；11 个上线页面／脚本／版本文件无缓存读取与本地逐字一致。
+- staff-access-api v1、employee-bookings-api v3、operations-api v83 ACTIVE，远端源码和所用共享依赖逐字一致。
+- 生产迁移历史是 MCP 生成的 `20260921024806 staff_report_access`、`20260921025354 staff_credentials_private`；与仓库两个迁移按名称对应，不应因时间戳不同再次执行。
+- 线上 staff RLS 与列 ACL、服务角色通路验证通过。无令牌接口 403、股东写操作 403，安全目录空查询 200，密码列／密码过滤／授权表查询 401。权限表为空，未擅自给账号授权。
+- 合成测试不等于真实账号验收；没有替财务填写／确认任何真实日报。既有财务入口原样保留，下一步由管理员选择真实股东账号和门店后验证。
