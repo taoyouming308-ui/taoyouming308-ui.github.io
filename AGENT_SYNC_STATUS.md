@@ -5,7 +5,7 @@
 - App version: v518。基线 github/main aa0da78 / v517。范围仅日报原图误传处理、有效来源选择及附件显示；其他 App 只同步版本标识／缓存参数，财务独立登录入口保持不变。
 - 未入账草稿可将错误原图标记为“误传作废”并填写原因；原文件、哈希、上传记录和新作废事件永久保留，作废件不再参与预览、识别、原图计数或入账来源。若当前来源被作废，自动切换到最近一份有效已审核原图，否则要求重传。
 - 已入账或锁账日报禁止作废原图，须先走冲销。新 RPC 仅 service_role 可执行，并校验财务角色、门店、草稿状态、锁账和原因；无痕删除继续被数据库阻止。
-- 隔离 PostgreSQL、电脑／手机浏览器与完整 pre-push 回归已通过：原件保留、来源替换、重复作废拦截、正式日报拦截、审计、权限、有效预览排除及重传提示均正常。生产迁移 `20260921154502 void_mistaken_daily_attachment` 及 `20260921160358 zysyr_daily_attachment_void_indexes` 已应用；新表启用并强制 RLS，匿名／普通登录无执行权，所有新外键均已覆盖索引。`operations-api` v88 ACTIVE，继续 `verify_jwt=false` 和原有财务会话鉴权，无会话请求仍为 403 `AUTH_SESSION_INVALID`。GitHub Pages 发布待执行；未修改真实财务数据，未自动入账。
+- 隔离 PostgreSQL、电脑／手机浏览器与完整 pre-push 回归已通过：原件保留、来源替换、重复作废拦截、正式日报拦截、审计、权限、有效预览排除及重传提示均正常。生产迁移 `20260921154502 void_mistaken_daily_attachment` 及 `20260921160358 zysyr_daily_attachment_void_indexes` 已应用；新表启用并强制 RLS，匿名／普通登录无执行权，所有新外键均已覆盖索引。`operations-api` v88 ACTIVE，继续 `verify_jwt=false` 和原有财务会话鉴权，无会话请求仍为 403 `AUTH_SESSION_INVALID`。功能提交 `77b9069` 已推送 main，Validate shared app `35624857690` 与 Pages `35624855678` 均成功；线上无缓存核验 `version.txt` / `version.json` 为 518，重传、作废、审计文案及作废件排除标记全部生效。未修改真实财务数据，未自动入账。
 
 ## v517 日报原图操作反馈与员工行自动扩展（2026-09-21）
 
