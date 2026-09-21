@@ -22,6 +22,8 @@ node scripts/test-operations.js || exit 1
 node scripts/test-monthly-formula-recalculation.js || exit 1
 node scripts/test-monthly-load-recovery-v499.js || exit 1
 node scripts/test-monthly-load-browser-v499.js || exit 1
+node scripts/test-monthly-summary-v516.js || exit 1
+node scripts/test-monthly-summary-browser-v516.js || exit 1
 node scripts/test-zysyr-monthly-editable-names-v500.js || exit 1
 node scripts/test-zysyr-monthly-petty-navigation-v501.js || exit 1
 node scripts/test-history-import.mjs || exit 1

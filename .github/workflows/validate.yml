@@ -52,6 +52,7 @@ jobs:
           node scripts/test-zysyr-daily-atomic-save-v510.js
           node scripts/test-zysyr-report-permissions-v512.js
           node scripts/test-monthly-formula-recalculation.js
+          node scripts/test-monthly-summary-v516.js
           node scripts/test-operations-auth.js
           node scripts/test-operations-auth-migration.js
           node scripts/test-operations-auth-bridge.js

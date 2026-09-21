@@ -6,6 +6,7 @@ import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
 import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-recognition.mjs";
 import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
+import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-summary.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -1565,64 +1566,61 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
-  const startMonth = cleanText(payload.start_month, 7);
-  const endMonth = cleanText(payload.end_month, 7);
-  if (!/^\d{4}-\d{2}$/.test(startMonth) || !/^\d{4}-\d{2}$/.test(endMonth) || startMonth > endMonth) throw new Error("月份范围无效");
-  const months: string[] = [];
-  const cursor = new Date(`${startMonth}-01T00:00:00Z`);
-  const endCursor = new Date(`${endMonth}-01T00:00:00Z`);
-  while (cursor <= endCursor) {
-    months.push(cursor.toISOString().slice(0, 7));
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
+  const startMonth = cleanText(payload.start_month, 20);
+  const endMonth = cleanText(payload.end_month, 20);
+  const months: string[] = monthlySummaryMonths(startMonth, endMonth);
   const endDate = new Date(`${endMonth}-01T00:00:00Z`);
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
   const endStr = endDate.toISOString().slice(0, 10);
-  const rows = await restRowsAll(`zysyr_report_uploads?select=id,report_date,version,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=gte.${startMonth}-01&report_date=lt.${endStr}&order=report_date.desc,version.desc&limit=5000`, 5000);
+  const scope = `company_id=eq.${companyId}&store_id=eq.${storeId}`;
+  // Same source precedence as overview: latest uploaded report, otherwise posted
+  // historical ledger. Read ledger amounts directly; do not reparse 12 workbooks.
+  const [rows, history, adjustments] = await Promise.all([
+    restRowsAll(`zysyr_report_uploads?select=id,report_date,version,display_data&${scope}&report_type=eq.monthly_profit_loss&report_date=gte.${startMonth}-01&report_date=lt.${endStr}&order=report_date.desc,version.desc&limit=10000`, 10000),
+    restRowsAll(`zysyr_history_ledger_entries?select=id,import_batch_id,source_sheet,source_locator,period_month,current_payload,posted_payload&${scope}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=gte.${startMonth}-01&period_month=lt.${endStr}&order=period_month.asc,source_locator.asc&limit=10000`, 10000),
+    restRowsAll(`zysyr_monthly_income_adjustments?select=source_id,period_month,adjustment_delta,revision,created_at&${scope}&period_month=gte.${startMonth}-01&period_month=lt.${endStr}&order=revision.desc,created_at.desc&limit=10000`, 10000),
+  ]);
   const latest = new Map<string, JsonRecord>();
   for (const row of rows) {
     const month = cleanText(row.report_date, 10).slice(0, 7);
-    if (!latest.has(month)) latest.set(month, row);
+    if (cleanText(row.report_date, 10) === `${month}-01` && !latest.has(month)) latest.set(month, row);
   }
-  const ordered = months.map((month) => latest.get(month)).filter(Boolean);
-  if (!ordered.length) return { start_month: startMonth, end_month: endMonth, months: [], display_data: null };
+  const ordered = months.map((month) => latest.get(month)).filter(Boolean) as JsonRecord[];
   const reportIds = ordered.map((row) => row.id);
   const reportFilter = uuidIn(reportIds);
-  const [allCells, allRevisions, allTextRevisions] = await Promise.all([
+  const [allCells, allRevisions, allTextRevisions] = reportIds.length ? await Promise.all([
     restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
     restRowsAll(`zysyr_monthly_cell_revisions?select=id,report_id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=source_cell_id.asc,revision.desc&limit=10000`, 10000),
     restRowsAll(`zysyr_monthly_text_revisions?select=id,report_id,cell_address,cell_role,revision,base_text,before_text,after_text,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=cell_address.asc,revision.desc&limit=10000`, 10000),
-  ]);
-  const effectiveReports = await Promise.all(ordered.map(async (row) => ({ ...row,
-    display_data: effectiveMonthlyDisplay(row.display_data,
-      allCells.filter((cell) => cleanText(cell.report_id, 40) === cleanText(row.id, 40)),
-      allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40)),
-      await monthlyIncomeAdjustments(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7)),
-      await confirmedDailyRollup(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7)),
-      allTextRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40))),
-  })));
-  const baseDisplay = effectiveReports[0].display_data && typeof effectiveReports[0].display_data === "object" ? effectiveReports[0].display_data as JsonRecord : {};
-  const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
-  for (let i = 1; i < effectiveReports.length; i += 1) {
-    const display = effectiveReports[i].display_data && typeof effectiveReports[i].display_data === "object" ? effectiveReports[i].display_data as JsonRecord : {};
-    const values = Array.isArray(display.values) ? display.values as unknown[] : [];
-    for (let r = 0; r < baseValues.length; r += 1) {
-      const rowArr = baseValues[r] as unknown[];
-      for (let c = 0; c < rowArr.length; c += 1) {
-        const cur = rowArr[c];
-        const other = Array.isArray(values[r]) ? (values[r] as unknown[])[c] : null;
-        const nCur = Number(cur);
-        const nOther = Number(other);
-        if (cur !== null && cur !== "" && other !== null && other !== "" && !Number.isNaN(nCur) && !Number.isNaN(nOther)) {
-          rowArr[c] = nCur + nOther;
-        }
+  ]) : [[], [], []];
+  const effectiveReports: JsonRecord[] = [];
+  // Bound concurrency and fail closed on any read error; never present partial
+  // success as a complete financial total.
+  for (let offset = 0; offset < months.length; offset += 3) {
+    const resolved = await Promise.all(months.slice(offset, offset + 3).map(async (month) => {
+      const row = latest.get(month);
+      const historical = history.filter((entry) => cleanText(entry.period_month, 10) === `${month}-01`);
+      if (!row && !historical.length) return null;
+      const monthAdjustments = adjustments.filter((item) => cleanText(item.period_month, 10) === `${month}-01`);
+      const daily = await confirmedDailyRollup(companyId, storeId, month);
+      if (!row) {
+        const cells = effectiveHistoryMonthlyEntries(historical, monthAdjustments, daily).map((entry) => {
+          const current = entry.current_payload as JsonRecord;
+          return { ...current, numeric_value: current.amount, item_category: monthlyItemCategory(current) };
+        });
+        return { month, source: "posted_history", cells };
       }
-    }
+      const display = effectiveMonthlyDisplay(row.display_data,
+        allCells.filter((cell) => cell.report_id === row.id),
+        allRevisions.filter((revision) => revision.report_id === row.id), monthAdjustments, daily,
+        allTextRevisions.filter((revision) => revision.report_id === row.id));
+      return { month, source: "monthly_report", cells: display.cells || [] };
+    }));
+    effectiveReports.push(...resolved.filter(Boolean) as JsonRecord[]);
   }
   return {
     start_month: startMonth, end_month: endMonth,
-    months: effectiveReports.map((row) => cleanText(row.report_date, 10).slice(0, 7)),
-    display_data: { ...baseDisplay, values: baseValues },
+    ...buildMonthlySummary(months, effectiveReports),
   };
 }
 

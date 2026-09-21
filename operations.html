@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="515">
+<html lang="zh-CN" data-version="516">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -95,7 +95,7 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}}
 </style>
-<script src="operations-staff-view.js?v=515"></script>
+<script src="operations-staff-view.js?v=516"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -147,6 +147,7 @@
             </form>
           </div>
           <div id="monthly-sheet" class="sheet-scroll"></div>
+          <div id="monthly-summary-output" class="hidden" aria-live="polite"></div>
           <div class="sheet-caption">保留原表栏目。月报金额由财务上传的原表数据及财务确认的月报调整组成；调整不覆盖日报原数，不来自美管加同步。</div>
         </section>
 
@@ -367,10 +368,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=515"></script>
-  <script src="operations-auth-bridge.js?v=515"></script>
-  <script src="operations-voucher-preview.js?v=515"></script>
-  <script src="operations-voucher-view.js?v=515"></script>
+  <script src="operations-report-fit.js?v=516"></script>
+  <script src="operations-auth-bridge.js?v=516"></script>
+  <script src="operations-voucher-preview.js?v=516"></script>
+  <script src="operations-voucher-view.js?v=516"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -597,16 +598,14 @@
   function renderTraceSelectedSummary(data){var box=$('trace-selected-summary');if(!box)return;var cells=Object.keys(state.trace.selectedSources).map(function(id){return state.trace.selectedSources[id]}),sum=cells.reduce(function(total,cell){return total+Number(cell.numeric_value||0)},0),expected=Number(data.target&&data.target.numeric_value||0),delta=sum-expected;box.innerHTML='<strong>已选 '+cells.length+' 个来源数字，'+Object.keys(state.trace.selectedVouchers).length+' 份凭证</strong><br>来源合计 '+formatAmount(sum)+'；月报金额 '+formatAmount(expected)+'；差额 <span style="color:'+(Math.abs(delta)>.01?'#a12e24':'#185b37')+'">'+formatAmount(delta)+'</span>'}
   async function saveTraceSelection(data){var button=$('trace-save');button.disabled=true;$('trace-save-result').textContent='正在保存不可覆盖的追溯修订…';try{var sourceIds=Object.keys(state.trace.selectedSources),voucherIds=Object.keys(state.trace.selectedVouchers);await api('cell_trace_save',{store:currentStore(),target_cell_id:data.target.id,source_cell_ids:sourceIds,voucher_ids:voucherIds});await loadOverview();await openCellTrace(state.trace.address);toast('追溯已保存并重新核对')}catch(error){$('trace-save-result').textContent=error.message;toast(error.message)}finally{if($('trace-save'))$('trace-save').disabled=false}}
   async function openPrivate(operation,payload){var target=window.open('about:blank','_blank');if(target)target.opener=null;try{var result=await api(operation,Object.assign({store:currentStore()},payload));if(target)target.location=result.url;else window.location.href=result.url}catch(error){if(target)target.close();toast(error.message)}}
-  function monthRange(preset){var now=new Date(),y=now.getFullYear(),m=now.getMonth()+1,fmt=function(yy,mm){return yy+'-'+String(mm).padStart(2,'0')},shift=function(monthsBack){var d=new Date(y,m-1-monthsBack,1);return fmt(d.getFullYear(),d.getMonth()+1)};if(preset==='3')return{start:shift(2),end:fmt(y,m)};if(preset==='6')return{start:shift(5),end:fmt(y,m)};if(preset==='12')return{start:shift(11),end:fmt(y,m)};if(preset==='year')return{start:y+'-01',end:y+'-12'};return null}
-  async function loadMonthlySummary(start,end){$('monthly-summary-status').textContent='正在汇总…';try{var result=isLocalPreview()?{months:[start],display_data:(state.data.monthly_report&&state.data.monthly_report.display_data)||blankMonthlyTemplate()}:await api('monthly_summary',{store:currentStore(),start_month:start,end_month:end});if(result.display_data){$('monthly-title').textContent='月报表汇总 '+start.slice(0,4)+'年'+start.slice(5,7)+'月 - '+end.slice(0,4)+'年'+end.slice(5,7)+'月';renderSheet(result.display_data,true)}$('monthly-summary-status').textContent='已汇总 '+result.months.length+' 个月'}catch(error){$('monthly-summary-status').textContent=error.message}}
-
   async function loadOverview(){
+    if(state.view==='monthly'&&state.monthlySummary&&state.monthlySummary.active)return window.ZysyrMonthlySummary.refresh();
     var store=currentStore(),month=$('month').value,requestId=(state.monthlyLoadRequest||0)+1;
     state.monthlyLoadRequest=requestId;state.monthlyOverviewReady=false;
     $('sync-status').textContent='读取财务上传记录…';
     $('monthly-edit-toggle').disabled=true;$('monthly-save-cells').disabled=true;
     $('monthly-sheet').style.pointerEvents='none';
-    var isCurrent=function(){return requestId===state.monthlyLoadRequest&&store===currentStore()&&month===$('month').value};
+    var isCurrent=function(){return requestId===state.monthlyLoadRequest&&store===currentStore()&&month===$('month').value&&!(state.view==='monthly'&&state.monthlySummary&&state.monthlySummary.active)};
     try{
       var data=await api('overview',{store:store,month:month});
       if(!isCurrent())return false;
@@ -894,9 +893,6 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
     });
     $('monthly-save-cells').addEventListener('click',async function(){var cells=Object.keys(state.monthlyDirty||{}).map(function(address){return state.monthlyDirty[address]}),textCells=Object.keys(state.monthlyTextDirty||{}).map(function(address){return state.monthlyTextDirty[address]});if(!cells.length&&!textCells.length){toast('没有金额或名称发生变化');return}var reason=window.prompt('请输入本次修改原因（会永久保存在操作审计中）：');if(!reason)return;var button=this,saved=0,textSaved=0;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}for(var i=0;i<cells.length;i++){await saveMonthlyAmountAdjustment(cells[i],reason+'（月报 '+cells[i].address+'）');saved++}if(textCells.length){await api('monthly_text_save',{store:currentStore(),month:$('month').value,report_id:state.data.monthly_report.id,cells:textCells,reason:reason});textSaved=textCells.length}state.monthlyEditMode=false;toast((saved? saved+' 个金额':'')+(saved&&textSaved?'、':'')+(textSaved?textSaved+' 个名称':'')+'已保存；原始月报与修改记录均已保留');await loadOverview()}catch(error){toast(((saved||textSaved)?'已保存 '+(saved+textSaved)+' 项；':'')+error.message);await loadOverview()}finally{button.disabled=false}});
     $('monthly-unlock-request').addEventListener('click',async function(){var reason=window.prompt('请输入申请修改锁账月份的原因：');if(!reason)return;var button=this;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}await api('monthly_cell_unlock_request',{store:currentStore(),month:$('month').value,reason:reason});toast('申请已提交，等待公司管理员审批');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}});
-  $('monthly-summary-toggle').addEventListener('click',function(){state.monthlySummary=state.monthlySummary||{active:false};state.monthlySummary.active=!state.monthlySummary.active;$('monthly-summary-range').classList.toggle('hidden',!state.monthlySummary.active);$('monthly-summary-toggle').textContent=state.monthlySummary.active?'关闭汇总':'开启汇总';if(state.monthlySummary.active){var r=monthRange($('monthly-summary-preset').value);loadMonthlySummary(r.start,r.end)}else{loadOverview()}});
-  $('monthly-summary-preset').addEventListener('change',function(){var p=this.value;$('monthly-summary-custom').classList.toggle('hidden',p!=='custom');if(p==='custom')return;var r=monthRange(p);loadMonthlySummary(r.start,r.end)});
-  $('monthly-summary-apply').addEventListener('click',function(){var start=$('monthly-summary-start').value,end=$('monthly-summary-end').value;if(!start||!end||start>end){toast('请选择正确的起止月份');return}loadMonthlySummary(start,end)});
 
   async function maintainSession(){if(StaffReportView.enabled){try{state.user=(await api('session')).user;refreshRoleEntries()}catch(e){StaffReportView.blocked(e.message)}return}if(document.hidden)return;if(!state.user){scheduleSessionRestore();return}if(!state.auth||!authBridge.ensureFresh)return;try{var fresh=await authBridge.ensureFresh();if(fresh){state.auth=fresh;reconnectDelay=3000}}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}}
   $('refresh').addEventListener('click',refreshCurrentView);$('store-select').addEventListener('change',function(){closeMonthlyWorkbench();refreshCurrentView()});$('month').addEventListener('change',function(){closeMonthlyWorkbench();$('report-month').value=$('month').value;updateMonthlyMaterialFields();refreshCurrentView()});setDefaultDates();updateReportDateField();updateFinanceStoreField();updateMonthlyMaterialFields();restoreSession();setInterval(maintainSession,20*60*1000);window.addEventListener('online',maintainSession);document.addEventListener('visibilitychange',function(){if(!document.hidden)maintainSession()});
@@ -905,8 +901,9 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=515"></script>
-  <script src="operations-monthly-workbench.js?v=515"></script>
-  <script src="operations-daily-recognition.js?v=515"></script>
+  <script src="operations-daily-review.js?v=516"></script>
+  <script src="operations-monthly-workbench.js?v=516"></script>
+  <script src="operations-monthly-summary.js?v=516"></script>
+  <script src="operations-daily-recognition.js?v=516"></script>
 </body>
 </html>
