@@ -5,7 +5,8 @@
 - App version: v515。基线 github/main d94cc20 / v514，同日备份已核验。只改报表嵌入与只读识别请求边界，不更改财务登录、股东服务端白名单、数据库授权或业务数据。
 - 已复现 v514：股东日报渲染后 50ms 定时读取 daily_recognition_job_read，服务端正确拒绝，前端因此隐藏整页；旧浏览器测试只检查内存数据和隐藏的按钮，遗漏 app 仍须可见的断言。现限定识别任务为有写权限的财务流程。
 - 在 head 阶段隐藏 App 股东模式的财务登录卡片，显示员工会话加载状态和失败重试；现有独立 operations.html 财务入口不受影响。iframe 加当前版本参数。
-- 浏览器回归已覆盖慢会话不闪登录、实际 iframe 月报／日报可见、延迟识别请求为零、财务会话不变、撤权隐藏和重试；新增手机竖／横屏及 iPad 月报可见性检查。完整 pre-push 门禁通过，包含隔离 PostgreSQL 授权、财务登录／保存／入账保护、月报防重复汇总及其他 App 回归；线上发布核验待执行，未宣称生产真实账号已验收。
+- 浏览器回归已覆盖慢会话不闪登录、实际 iframe 月报／日报可见、延迟识别请求为零、财务会话不变、撤权隐藏和重试；新增手机竖／横屏及 iPad 月报可见性检查。完整 pre-push 门禁通过，包含隔离 PostgreSQL 授权、财务登录／保存／入账保护、月报防重复汇总及其他 App 回归。测试使用真实页面和合成接口，不宣称用户 iPhone／生产真实账号已验收。
+- 功能提交 e649fac 已推送 GitHub main；Validate 35557758572、Pages 35557758168 均 success。无缓存核验 version.txt=515，version.json、perm-app.html、operations.html、employee-reports.js、operations-staff-view.js、operations-daily-recognition.js 与本地逐字一致。后台 operations-api 保持已核对的 v83，未部署函数／迁移，未改变财务记录和授权。
 
 ## v514 App 股东报表整合（2026-09-21）
 
