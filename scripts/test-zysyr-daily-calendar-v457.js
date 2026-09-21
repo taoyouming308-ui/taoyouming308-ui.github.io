@@ -15,7 +15,8 @@ for (const marker of ['待填写', '缺少原始日报', '数据异常', '已锁
 for (const id of ['daily-detail-grid', 'daily-detail-upload', 'daily-detail-attachments', 'daily-detail-history', 'daily-detail-reason', 'daily-detail-unlock']) {
   expect(page.includes(`id="${id}"`), `daily detail control missing: ${id}`);
 }
-expect(page.includes('照片上传后自动识别为空白格候选，财务核对确认后入账'), 'candidate review boundary copy missing');
+expect(page.includes('照片上传后自动识别为空白格候选')
+  && page.includes('保存草稿可继续编辑；核对原图后点击“入账”，计入当天及月报'), 'candidate review boundary copy missing');
 expect(page.includes("api('daily_sheet_save'") && page.includes("api('daily_sheet_confirm'"), 'daily detail save/confirm path missing');
 expect(page.includes("api('daily_sheet_attachment_upload'"), 'daily source upload path missing');
 

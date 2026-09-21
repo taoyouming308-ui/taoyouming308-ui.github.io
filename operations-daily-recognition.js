@@ -58,18 +58,18 @@
   window.setDailyImageOrientationContext=function(imageId,item,sheet){
     var image=document.getElementById(imageId);if(!image||!image.__setOrientationContext)return;
     image.__setOrientationContext(item?{draftId:sheet&&sheet.draft&&sheet.draft.id,attachmentId:item.id,
-      savedDegrees:item.display_rotation_degrees,canSave:Boolean(sheet&&sheet.permissions&&sheet.permissions.save_orientation&&item.voucher_id)}:null);
+      savedDegrees:item.display_rotation_degrees,canSave:Boolean(!item.voided&&sheet&&sheet.permissions&&sheet.permissions.save_orientation&&item.voucher_id)}:null);
   };
   var attachmentsBase=renderDailyDetailAttachments;
   renderDailyDetailAttachments=function(){
     attachmentsBase();var sheet=state.imports.sheet,items=sheet&&sheet.attachments||[];
-    var images=items.filter(function(item){return ['image/jpeg','image/png'].includes(item.mime_type);});
+    var images=items.filter(function(item){return !item.voided&&['image/jpeg','image/png'].includes(item.mime_type);});
     var current=images.find(function(item){return item.private_url===document.getElementById('daily-detail-image').getAttribute('src');})||images[0];
     window.setDailyImageOrientationContext('daily-detail-image',current,sheet);
     document.querySelectorAll('[data-daily-attachment]').forEach(function(control){control.addEventListener('click',function(){var item=items[Number(control.dataset.dailyAttachment)];if(item&&['image/jpeg','image/png'].includes(item.mime_type))window.setDailyImageOrientationContext('daily-detail-image',item,sheet);});});
   };
   var sheetRenderBase=renderDailySheet;
-  renderDailySheet=function(noScroll){sheetRenderBase(noScroll);var sheet=state.imports.sheet,items=sheet&&sheet.attachments||[];var item=items.find(function(row){return row.private_url===sheet.original_image_url;})||items.find(function(row){return ['image/jpeg','image/png'].includes(row.mime_type);});window.setDailyImageOrientationContext('daily-original-image',item,sheet);};
+  renderDailySheet=function(noScroll){sheetRenderBase(noScroll);var sheet=state.imports.sheet,items=sheet&&sheet.attachments||[];var item=items.find(function(row){return !row.voided&&row.private_url===sheet.original_image_url;})||items.find(function(row){return !row.voided&&['image/jpeg','image/png'].includes(row.mime_type);});window.setDailyImageOrientationContext('daily-original-image',item,sheet);};
   var monthlyBase=renderMonthlyAuditControls;
   renderMonthlyAuditControls=function(){monthlyBase.apply(this,arguments);var prior=document.querySelector('[data-monthly-rollup-warning]');if(prior)prior.remove();var report=state.data.monthly_report,cell=report&&(report.display_data.cells||[]).find(function(row){return row.daily_rollup;});if(!cell)return;var box=document.createElement('div');box.className='candidate-warning';box.dataset.monthlyRollupWarning='true';box.textContent='主营收入来自已确认日报 '+cell.daily_rollup.confirmed_days+' 天：'+formatAmount(cell.daily_rollup.amount)+'；原月报：'+formatAmount(cell.original_report_amount)+'。请核对日报是否录齐，点击收入可查看具体日期。';document.getElementById('report-state').appendChild(box);};
   var upload=document.getElementById('daily-detail-upload');
@@ -88,7 +88,7 @@
     upload.hidden=!canUpload;button.hidden=!canRecognize;
     upload.classList.toggle('hidden',!canUpload);button.classList.toggle('hidden',!canRecognize);
     upload.disabled=sourceBusy||!canUpload;button.disabled=sourceBusy||!canRecognize;
-    sourceButtonLabel(upload,'上传原始日报','支持 JPG、PNG、PDF、Excel',sourceBusy&&sourceKind==='upload'?'正在上传，请勿重复点击':'');
+    sourceButtonLabel(upload,'上传 / 重传正确日报','支持 JPG、PNG、PDF、Excel',sourceBusy&&sourceKind==='upload'?'正在上传，请勿重复点击':'');
     sourceButtonLabel(button,'Codex识别当前原图','只生成待核对草稿，不会自动入账',sourceBusy&&sourceKind==='recognize'?'正在识别，请勿重复点击':'');
   }
   var sourceActions={
@@ -105,7 +105,7 @@
   window.recognizeCurrentDaily=async function(voucherId){
     var sheet=state.imports.sheet;if(busy||!sheet||!(sheet.permissions&&sheet.permissions.write)||sheet.draft.status!=='draft'||sheet.locked)return;
     if(dailySheetDirtyCount()){toast('请先保存当前修改，再识别原图');return;}
-    var items=(sheet.attachments||[]).filter(function(item){return item.attachment_kind==='original_report'&&['image/jpeg','image/png'].includes(item.mime_type);});
+    var items=(sheet.attachments||[]).filter(function(item){return !item.voided&&item.attachment_kind==='original_report'&&['image/jpeg','image/png'].includes(item.mime_type);});
     var item=voucherId?items.find(function(row){return (row.voucher_id||row.id)===voucherId;}):items.find(function(row){return row.private_url===document.getElementById('daily-detail-image').getAttribute('src');})||items[0];
     if(!item){toast('请先上传或选中当天 JPG/PNG 日报原图');return;}
     if(!sourceActions.begin('recognize','Codex 正在识别当前原图，请勿重复点击或关闭页面…')){toast('原图正在上传或识别，请勿重复点击');return;}

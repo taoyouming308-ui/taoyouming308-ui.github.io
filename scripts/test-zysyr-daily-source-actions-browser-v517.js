@@ -50,7 +50,7 @@ async function run(){
     const upload=page.locator('#daily-detail-upload'),recognize=page.locator('#daily-recognize'),status=page.locator('#daily-source-action-status');
     const initial=await page.evaluate(()=>({uploadVisible:!document.getElementById('daily-detail-upload').hidden,recognizeVisible:!document.getElementById('daily-recognize').hidden,detailHidden:document.getElementById('daily-report-detail').classList.contains('hidden'),viewHidden:document.getElementById('view-daily-report').classList.contains('hidden'),uploadDisabled:document.getElementById('daily-detail-upload').disabled,recognizeDisabled:document.getElementById('daily-recognize').disabled}));
     assert.deepEqual(initial,{uploadVisible:true,recognizeVisible:true,detailHidden:false,viewHidden:false,uploadDisabled:false,recognizeDisabled:false});
-    assert.match(await upload.textContent(),/上传原始日报/);assert.match(await recognize.textContent(),/Codex识别当前原图/);
+    assert.match(await upload.textContent(),/上传.*重传正确日报/);assert.match(await recognize.textContent(),/Codex识别当前原图/);
     if(viewport.width<600){
       const widths=await page.evaluate(()=>[document.getElementById('daily-detail-upload').getBoundingClientRect().width,document.getElementById('daily-recognize').getBoundingClientRect().width]);
       widths.forEach(width=>assert.ok(width>330,'mobile source action must be prominent and full width'));
