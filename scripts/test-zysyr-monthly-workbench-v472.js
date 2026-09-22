@@ -11,6 +11,7 @@ const migration = fs.readFileSync(path.join(root, 'supabase/migrations/202609050
 const detailMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908023351_zysyr_monthly_cell_detail_workbench.sql'), 'utf8');
 const directCellRuleMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908034635_zysyr_report_cell_evidence_rule.sql'), 'utf8');
 const directEvidence = fs.readFileSync(path.join(root, 'supabase/migrations/20260906122116_zysyr_history_monthly_direct_evidence.sql'), 'utf8');
+const itemEvidence = fs.readFileSync(path.join(root, 'supabase/migrations/20260922093000_zysyr_history_item_evidence_upload.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 function expect(value, message) { if (!value) throw new Error(message); }
 
@@ -51,8 +52,14 @@ expect(directEvidence.includes('create or replace function public.zysyr_attach_h
 expect(/revoke execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?from public, anon, authenticated/.test(directEvidence)
   && /grant execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?to service_role/.test(directEvidence),
   'historical evidence RPC must remain server-only');
-expect(api.includes('entry_type=eq.monthly_profit_loss'),
-  'direct historical evidence upload must only target posted monthly report entries');
+expect(api.includes('entry_type=in.(monthly_profit_loss,salary,petty_cash,employee_purchase)')
+  && itemEvidence.includes("'monthly_profit_loss', 'salary', 'petty_cash', 'employee_purchase'")
+  && itemEvidence.includes("entry.status = 'posted'"),
+  'direct historical evidence upload must target only supported posted ledger entries');
+expect(/revoke execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?from public, anon, authenticated/.test(itemEvidence)
+  && /grant execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?to service_role/.test(itemEvidence)
+  && !/update\s+public\.zysyr_history_ledger_entries/i.test(itemEvidence),
+  'per-item history evidence must stay server-only and never rewrite ledger amounts');
 
 for (const policy of ['voucher_required', 'source_report', 'none']) {
   expect(api.includes(`"${policy}"`) && migration.includes(`'${policy}'`), `evidence policy missing: ${policy}`);

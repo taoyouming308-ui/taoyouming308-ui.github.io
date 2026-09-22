@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="518">
+<html lang="zh-CN" data-version="519">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -105,7 +105,7 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-staff-view.js?v=518"></script>
+<script src="operations-staff-view.js?v=519"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -211,7 +211,7 @@
         </section>
 
                         <section id="view-finance-workbench" class="view hidden">
-          <div class="page-head"><div><h2>现金 / 备用金收支</h2><p>支出与存入都在此表登记：直接填最后一行并保存；点击金额或凭证可打开原始凭证；凭证列的“＋”可上传新凭证。报表上传、凭证审核、支出分类、付款与月结在二级。</p></div><span id="finance-workbench-status" class="status"></span></div>
+          <div class="page-head"><div><h2>现金 / 备用金收支</h2><p>每笔明细单独显示对应消费凭证；财务可在该笔旁直接上传或补传，股东只读查看。整月凭证包仅作留底，不代替单笔凭证。</p></div><span id="finance-workbench-status" class="status"></span></div>
           <div id="petty-cash-report-summary" class="finance-list"></div>
           <div id="petty-cash-report-table" class="finance-list"></div>
         </section>
@@ -378,10 +378,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=518"></script>
-  <script src="operations-auth-bridge.js?v=518"></script>
-  <script src="operations-voucher-preview.js?v=518"></script>
-  <script src="operations-voucher-view.js?v=518"></script>
+  <script src="operations-report-fit.js?v=519"></script>
+  <script src="operations-auth-bridge.js?v=519"></script>
+  <script src="operations-voucher-preview.js?v=519"></script>
+  <script src="operations-voucher-view.js?v=519"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -940,9 +940,10 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=518"></script>
-  <script src="operations-monthly-workbench.js?v=518"></script>
-  <script src="operations-monthly-summary.js?v=518"></script>
-  <script src="operations-daily-recognition.js?v=518"></script>
+  <script src="operations-daily-review.js?v=519"></script>
+  <script src="operations-monthly-workbench.js?v=519"></script>
+  <script src="operations-petty-cash-evidence.js?v=519"></script>
+  <script src="operations-monthly-summary.js?v=519"></script>
+  <script src="operations-daily-recognition.js?v=519"></script>
 </body>
 </html>

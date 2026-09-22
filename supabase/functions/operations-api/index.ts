@@ -1725,7 +1725,12 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
     sourceCellIds.length ? restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,display_value,numeric_value,label&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(sourceCellIds)}&limit=10000`, 10000) : [],
     confirmerIds.length ? restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(confirmerIds)}&limit=5000`, 5000) : [],
   ]);
-  const voucherIds = Array.from(new Set(voucherLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean)));
+  const pendingVoucherRequests = recordIds.length ? await restRowsAll(
+    `zysyr_business_voucher_link_requests?select=id,voucher_id,business_type,business_id,relation_type,status,reason,requested_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_type=eq.petty_cash_record&business_id=in.${uuidIn(recordIds)}&status=eq.pending&limit=10000`,
+    10000,
+  ) : [];
+  const voucherIds = Array.from(new Set([...voucherLinks, ...pendingVoucherRequests]
+    .map((link) => cleanText(link.voucher_id, 40)).filter(Boolean)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=5000`, 5000) : [];
   const reviewRows = voucherIds.length ? await restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,corrected_fields&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${uuidIn(voucherIds)}&order=review_version.desc&limit=10000`, 10000) : [];
   const voucherNumberByVoucher = new Map<string, string>();
@@ -1761,11 +1766,17 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
   return {
     company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
     records, daily_reports: dailyReports, daily_lines: dailyLines, source_cells: sourceCells,
-    source_reports: sourceReports, voucher_links: voucherLinks, vouchers, users,
+    source_reports: sourceReports, voucher_links: voucherLinks,
+    pending_voucher_requests: pendingVoucherRequests, vouchers, users,
     history_records: historyRecords, history_evidence: historyEvidence.evidence,
     history_evidence_links: historyEvidence.links,
     opening_balance: openingBalance,
-    permissions: { read: true }, source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
+    permissions: {
+      read: true,
+      upload_voucher: canUploadVouchers(session),
+      upload_history_evidence: cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
+    },
+    source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
   };
 }
 
@@ -5782,7 +5793,7 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始凭证内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个原始凭证必须小于 10MB");
 
-  const entries = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&entry_type=eq.monthly_profit_loss&status=eq.posted&limit=1`);
+  const entries = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&entry_type=in.(monthly_profit_loss,salary,petty_cash,employee_purchase)&status=eq.posted&limit=1`);
   const entry = entries[0];
   if (!entry) throw new Error("历史月报金额不存在或无权修改");
   const fileHash = await sha256Bytes(bytes);

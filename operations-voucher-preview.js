@@ -50,6 +50,11 @@
   function selectImages(file) {
     var all = file.images || [], wanted = locators(file).map(function (value) { return String(value).split('/').pop(); });
     if (file.trace_link_level !== 'page_confirmed') return { images: all, missing: false };
+    // A finance-uploaded file is itself the exact evidence. Its audit locator is
+    // a hash marker rather than a path inside a DOCX package.
+    if (all.length === 1 && wanted.length && wanted.every(function (name) { return /^manual-upload:/i.test(name); })) {
+      return { images: all, missing: false };
+    }
     var found = all.filter(function (item) { return wanted.indexOf(String(item.filename || '').split('/').pop()) >= 0; });
     var missing = !wanted.length || wanted.some(function (name) { return !found.some(function (item) { return String(item.filename || '').split('/').pop() === name; }); });
     // Never silently substitute a whole bundle for a confirmed page.
