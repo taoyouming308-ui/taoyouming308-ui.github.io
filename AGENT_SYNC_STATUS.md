@@ -5,7 +5,7 @@
 - App version: v521。基线 github/main `298f4da` / v520。范围仅月报上传表单、已存在月报的照片/PDF补传、历史正式月报附件关联与显示；财务独立登录、股东只读、月报金额和入账逻辑不变。
 - 左侧 Excel / Word 不再用浏览器原生 `required` 阻断提交；本月已有月报时可只选右侧 JPG/PNG/PDF，多张依次上传并反馈进度。没有月报来源时仍必须先建立 Excel/Word 原表，日报和工资表原有要求不变。
 - 历史正式月报附件使用整月 `bundle_only` 关系追加到已完成批次，不冒充单个金额凭证；RPC 仅 service_role 可执行，重复点击幂等、同一文件禁止跨月复用，且函数不更新历史账本金额或版本。
-- 发布状态：完整 pre-push 已通过；生产迁移 `20260922051405_zysyr_completed_history_monthly_attachments` 已应用，`operations-api` v91 已上线且匿名请求返回 403；向里造型 2026-01 正式月报仍为 273 条、既有凭证 1 份，迁移未改账。GitHub main、Pages 和线上无缓存核验待执行。
+- 发布状态：功能提交 `0fc60fb` 已推送 github/main；完整 pre-push、Validate shared app `35690554878`、Pages `35690554366` 均成功。生产迁移 `20260922051405_zysyr_completed_history_monthly_attachments` 与 `operations-api` v91 已上线，匿名请求返回 403；线上无缓存读取为 v521，并确认补传控件、历史附件路由和“不改金额”提示已生效。向里造型 2026-01 正式月报仍为 273 条、既有凭证 1 份，发布未改账。
 
 ## v520 备用金整月凭证批量上传（2026-09-22）
 
