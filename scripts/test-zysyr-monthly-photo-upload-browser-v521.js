@@ -41,14 +41,14 @@ const photo = {
         id: '11111111-1111-4111-8111-111111111111', historical: true, report_type: 'monthly_profit_loss',
         report_date: '2026-01-01', version: 1, original_filename: '历史月报.xlsx', uploaded_at: '2026-09-04T08:58:00Z',
         uploaded_by: { display_name: '财务' }, display_data: previewFilledMonthly(),
-        vouchers: [{ id: '22222222-2222-4222-8222-222222222222', original_filename: '已有照片.jpg' }],
+        vouchers: [{ id: '22222222-2222-4222-8222-222222222222', evidence_kind: 'voucher_bundle', original_filename: '既有整月凭证包.docx' }],
       };
       state.data.trace_summary = {};
       window.fixtureCalls = [];
       api = async (operation, payload) => {
         window.fixtureCalls.push({ operation, ...payload });
         if (operation !== 'history_monthly_attachment_upload') throw Error('Unexpected operation: ' + operation);
-        state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', original_filename: payload.filename });
+        state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', evidence_kind: 'supporting_document', original_filename: payload.filename });
         return { saved: { id: '33333333-3333-4333-8333-333333333333' }, formal_ledger_amount_changed: false };
       };
       loadOverview = async () => { renderAll(); renderMonthlyAuditControls(); };
@@ -67,7 +67,9 @@ const photo = {
     assert.equal(calls[0].report_id, '11111111-1111-4111-8111-111111111111');
     assert.equal(calls[0].month, '2026-01');
     assert.equal(calls[0].filename, '一月份月报照片.jpg');
-    assert.equal(await page.locator('[data-open-history-file]').count(), 2, 'new photo must appear beside the existing monthly evidence');
+    assert.equal(await page.locator('#report-state [data-open-report]').count(), 0, 'redundant historical source button must stay hidden');
+    assert.equal(await page.locator('#report-state [data-open-history-file]').count(), 1, 'only the newly supplemented monthly photo should remain visible');
+    assert.equal(await page.locator('#report-state [data-open-history-file]').innerText(), '月报照片 1');
     assert.match(await page.locator('#monthly-material-result').innerText(), /月报金额未改变/);
 
     await page.evaluate(() => { state.data.monthly_report = null; renderAll(); });

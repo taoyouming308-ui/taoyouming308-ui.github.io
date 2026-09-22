@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="521">
+<html lang="zh-CN" data-version="522">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -105,7 +105,7 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-staff-view.js?v=521"></script>
+<script src="operations-staff-view.js?v=522"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -378,10 +378,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=521"></script>
-  <script src="operations-auth-bridge.js?v=521"></script>
-  <script src="operations-voucher-preview.js?v=521"></script>
-  <script src="operations-voucher-view.js?v=521"></script>
+  <script src="operations-report-fit.js?v=522"></script>
+  <script src="operations-auth-bridge.js?v=522"></script>
+  <script src="operations-voucher-preview.js?v=522"></script>
+  <script src="operations-voucher-view.js?v=522"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -437,6 +437,22 @@
   function renderMonthlyAuditControls(keepEditMode){var report=state.data.monthly_report,locked=Boolean(state.data.monthly_period_was_locked),approved=hasMonthlyApproval(),requests=state.data.monthly_unlock_requests||[],pending=requests.filter(function(row){return row.status==='pending'}),canAdjust=Boolean(state.user.can_adjust_confirmed_finance&&state.user.role==='finance');if(!keepEditMode)state.monthlyEditMode=false;$('monthly-lock-status').textContent=locked?(approved?'本月已锁账 · 已获一次修改授权':'本月已锁账'):'本月未锁账';$('monthly-edit-toggle').textContent=report?(state.monthlyEditMode?'结束编辑':'编辑月报'):'开始填写本月月报';$('monthly-edit-toggle').classList.toggle('hidden',!canAdjust||locked);$('monthly-save-cells').classList.toggle('hidden',!report||!state.monthlyEditMode);$('monthly-unlock-request').classList.toggle('hidden',!canAdjust||!locked||approved||pending.length>0);if(report)renderSheet(report.display_data,false,canAdjust);if(canManageFinanceAccounts()&&pending.length){var panel=document.createElement('div');panel.className='unlock-approval-panel';panel.innerHTML='<strong>待审批的锁账修改申请</strong>'+pending.map(function(row){return'<div class="trace-row"><div><strong>'+esc(userLabel(row.requested_by))+' · '+esc(String(row.period_month||'').slice(0,7))+'</strong><small>'+esc(row.request_reason)+' · '+esc(String(row.requested_at||'').replace('T',' ').slice(0,16))+'</small></div><div class="compact-actions"><button class="secondary" data-unlock-decision="approved" data-request-id="'+esc(row.id)+'">批准一次修改</button><button class="ghost" data-unlock-decision="rejected" data-request-id="'+esc(row.id)+'">拒绝</button></div></div>'}).join('');$('report-state').appendChild(panel);panel.querySelectorAll('[data-unlock-decision]').forEach(function(button){button.onclick=async function(){var label=button.dataset.unlockDecision==='approved'?'批准':'拒绝',reason=window.prompt('请输入'+label+'原因：');if(!reason)return;button.disabled=true;try{await api('monthly_cell_unlock_decide',{store:currentStore(),request_id:button.dataset.requestId,decision:button.dataset.unlockDecision,reason:reason});toast(label+'结果已记录');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}}})}}
   function renderArchive(){var reports=state.data.reports||[];if(!reports.length){$('archive').innerHTML='<div class="empty">当前门店、当前月份暂无财务上传报表。</div>';return}$('archive').innerHTML='<div class="archive-wrap"><table class="archive-table"><thead><tr><th>报表日期</th><th>类型</th><th>原文件</th><th>版本</th><th>上传人</th><th>消费凭证</th><th>上传时间</th><th>操作</th></tr></thead><tbody>'+reports.map(function(r){return'<tr><td>'+esc(r.report_date)+'</td><td>'+esc(reportTypeLabel(r.report_type))+'</td><td>'+esc(r.original_filename)+'</td><td>v'+esc(r.version)+'</td><td>'+esc(userLabel(r.uploaded_by))+'</td><td>'+esc((r.vouchers||[]).length)+' 份</td><td>'+esc(String(r.uploaded_at||'').replace('T',' ').slice(0,16))+'</td><td><button class="ghost" data-open-report="'+esc(r.id)+'">原件</button> <button class="ghost" data-report-lineage="'+esc(r.id)+'">查看关联</button> '+(r.vouchers||[]).map(function(v,i){return'<button class="ghost" data-open-voucher="'+esc(v.id)+'">凭证'+(i+1)+'</button>'}).join(' ')+'</td></tr>'}).join('')+'</tbody></table></div>';bindOpenButtons()}
   var renderAllCore=renderAll;renderAll=function(){renderAllCore();var report=state.data.monthly_report;if(!report||!report.historical)return;var strong=$('report-state').querySelector('strong');if(strong)strong.textContent='历史原表正式账 v'+report.version;var evidenceIds=(report.vouchers||[]).map(function(item){return item.id});document.querySelectorAll('[data-open-voucher]').forEach(function(button){if(evidenceIds.indexOf(button.dataset.openVoucher)>=0){button.dataset.openHistoryFile=button.dataset.openVoucher;button.dataset.historyFileKind='evidence';button.removeAttribute('data-open-voucher')}});document.querySelectorAll('[data-report-lineage="'+report.id+'"]').forEach(function(button){button.classList.add('hidden')});var ack=$('monthly-ack');if(ack)ack.onclick=async function(){ack.disabled=true;try{await api('report_acknowledge',{store:currentStore(),month:$('month').value,monthly_report_id:null});toast('已确认知晓本月经营情况');await loadOverview()}catch(error){toast(error.message)}finally{ack.disabled=false}};bindOpenButtons()};
+  var renderHistoricalMonthlyHeaderCore=renderAll;
+  renderAll=function(){
+    renderHistoricalMonthlyHeaderCore();
+    var report=state.data.monthly_report;
+    if(!report||!report.historical)return;
+    var actions=$('report-state').querySelector('.state-actions');
+    if(!actions)return;
+    actions.querySelectorAll('[data-open-report]').forEach(function(button){button.remove()});
+    var evidenceById=new Map((report.vouchers||[]).map(function(item){return[item.id,item]})),photoIndex=0;
+    actions.querySelectorAll('[data-open-history-file]').forEach(function(button){
+      var evidence=evidenceById.get(button.dataset.openHistoryFile);
+      if(!evidence||evidence.evidence_kind!=='supporting_document'){button.remove();return}
+      photoIndex+=1;button.textContent='月报照片 '+photoIndex;
+    });
+    if(!actions.querySelector('button'))actions.remove();
+  };
   function selectedValues(id){return Array.from($(id).selectedOptions||[]).map(function(option){return option.value}).filter(Boolean)}
   function financeStatusLabel(value){return{submitted:'待审核',approved:'已审核',paid:'已付清',reversed:'已冲销',confirmed:'已确认',draft:'草稿',reviewed:'已复核',locked:'已锁账'}[value]||value||'—'}
   function previewFinanceData(){var voucher={id:'preview-finance-voucher',original_filename:'4月1日支出凭证.jpg',document_type:'expense',audit_status:'approved'},expense={id:'preview-expense',expense_date:$('month').value+'-01',expense_category_id:'preview-category',category:'房租',counterparty:'房东',summary:'门店房租',amount:16000,payment_method:'银行转账',workflow_status:'approved'},monthly={id:'preview-formal-monthly',period_month:$('month').value+'-01',version:1,status:'draft'};return{month:$('month').value,categories:[{id:'preview-category',code:'RENT',name:'房租',report_section:'房租',sort_order:10,status:'active'}],expenses:[expense],petty_cash:[],payments:[],monthly_reports:[monthly],monthly_lines:[{monthly_report_id:monthly.id,line_number:1,metric_code:'EXPENSE_RENT',metric_name:'房租',amount:16000,calculation_method:'sum',source_count:1},{monthly_report_id:monthly.id,line_number:2,metric_code:'NET_PROFIT',metric_name:'盈亏',amount:-16000,calculation_method:'formula',source_count:2}],approved_vouchers:[voucher],uploaded_monthly_reports:[{id:'preview-monthly',report_date:$('month').value+'-01',version:1,original_filename:'月度盈亏表.xlsx'}],employees:[{id:'preview-employee-1',employee_code:'01',name:'无名',position:'发型师',employment_status:'active'}],paid_by_expense:{},permissions:{create_expense:true,approve_expense:true,confirm_payment:true,lock_report:true,reverse:true},meiguanjia_used:false}}
@@ -940,10 +956,10 @@ function calculateDailyControls(root){var scope=root||document,inputs=Array.from
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=521"></script>
-  <script src="operations-monthly-workbench.js?v=521"></script>
-  <script src="operations-petty-cash-evidence.js?v=521"></script>
-  <script src="operations-monthly-summary.js?v=521"></script>
-  <script src="operations-daily-recognition.js?v=521"></script>
+  <script src="operations-daily-review.js?v=522"></script>
+  <script src="operations-monthly-workbench.js?v=522"></script>
+  <script src="operations-petty-cash-evidence.js?v=522"></script>
+  <script src="operations-monthly-summary.js?v=522"></script>
+  <script src="operations-daily-recognition.js?v=522"></script>
 </body>
 </html>
