@@ -47,10 +47,12 @@ const photo = {
       window.fixtureCalls = [];
       api = async (operation, payload) => {
         window.fixtureCalls.push({ operation, ...payload });
+        if (operation === 'history_import_file_url') return { url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', expires_in: 300, filename: '一月份月报照片.jpg' };
         if (operation !== 'history_monthly_attachment_upload') throw Error('Unexpected operation: ' + operation);
-        state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', evidence_kind: 'supporting_document', original_filename: payload.filename });
+        state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', evidence_kind: 'supporting_document', original_filename: payload.filename, mime_type: payload.mime_type });
         return { saved: { id: '33333333-3333-4333-8333-333333333333' }, formal_ledger_amount_changed: false };
       };
+      isLocalPreview = () => false;
       loadOverview = async () => { renderAll(); renderMonthlyAuditControls(); };
       renderAll();
       renderMonthlyAuditControls();
@@ -61,25 +63,30 @@ const photo = {
     assert.equal(await page.locator('#monthly-material-file').getAttribute('required'), null);
     await page.locator('#monthly-material-form button[type="submit"]').click();
     await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('已补充照片 / PDF 1 份'));
+    await page.waitForFunction(() => document.querySelector('#report-state [data-open-history-file]')?.dataset.privatePrefetched === 'true');
     const calls = await page.evaluate(() => window.fixtureCalls);
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].operation, 'history_monthly_attachment_upload');
-    assert.equal(calls[0].report_id, '11111111-1111-4111-8111-111111111111');
-    assert.equal(calls[0].month, '2026-01');
-    assert.equal(calls[0].filename, '一月份月报照片.jpg');
+    const uploads = calls.filter(call => call.operation === 'history_monthly_attachment_upload');
+    assert.equal(uploads.length, 1);
+    assert.equal(uploads[0].report_id, '11111111-1111-4111-8111-111111111111');
+    assert.equal(uploads[0].month, '2026-01');
+    assert.equal(uploads[0].filename, '一月份月报照片.jpg');
+    assert.equal(calls.filter(call => call.operation === 'history_import_file_url').length, 1, 'monthly photo signed URL must be prefetched once');
     assert.equal(await page.locator('#report-state [data-open-report]').count(), 0, 'redundant historical source button must stay hidden');
     assert.equal(await page.locator('#report-state [data-open-history-file]').count(), 1, 'only the newly supplemented monthly photo should remain visible');
     assert.equal(await page.locator('#report-state [data-open-history-file]').innerText(), '月报照片 1');
     assert.match(await page.locator('#monthly-material-result').innerText(), /月报金额未改变/);
+    await page.evaluate(() => { window.open = () => ({ opener: null, location: '', close() {} }); });
+    await page.locator('#report-state [data-open-history-file]').click();
+    assert.equal((await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_import_file_url'))).length, 1, 'opening a prefetched photo must not request another signed URL');
 
     await page.evaluate(() => { state.data.monthly_report = null; renderAll(); });
     await page.selectOption('#monthly-material-type', 'monthly_profit_loss');
     await page.setInputFiles('#monthly-material-vouchers', photo);
     await page.locator('#monthly-material-form button[type="submit"]').click();
     await page.waitForFunction(() => document.getElementById('toast').textContent.includes('本月还没有月报'));
-    assert.equal((await page.evaluate(() => window.fixtureCalls)).length, 1, 'photo-only upload must not create an unscoped report');
+    assert.equal((await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_monthly_attachment_upload'))).length, 1, 'photo-only upload must not create an unscoped report');
 
-    console.log('monthly photo upload v521 browser: no native required block, completed-history binding, visible evidence and no-source guard passed');
+    console.log('monthly photo upload v523 browser: upload, visible evidence, signed-link prefetch/cache and no-source guard passed');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

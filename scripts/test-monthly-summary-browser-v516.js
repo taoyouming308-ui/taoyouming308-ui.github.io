@@ -19,7 +19,12 @@ let browser;
   await page.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
   await page.goto(origin+'/operations.html?preview=1&role=finance');
   await page.locator('#monthly-edit-toggle').waitFor();
+  assert.equal(await page.locator('#monthly-more').isVisible(),false,'multi-month summary entry is closed in production');
+  assert.equal(await page.locator('#monthly-summary-toggle').isDisabled(),true,'closed summary control cannot be activated accidentally');
   await page.evaluate(()=>{
+    const summaryMore=document.getElementById('monthly-more');
+    summaryMore.hidden=false;summaryMore.classList.remove('hidden');summaryMore.removeAttribute('aria-hidden');
+    document.getElementById('monthly-summary-toggle').disabled=false;
     window.singleFixture=JSON.parse(JSON.stringify(state.data));
     isLocalPreview=()=>false;
     document.getElementById('month').value='2026-06';
@@ -119,5 +124,5 @@ let browser;
   }
   assert.deepEqual(errors,[]);
   assert((await page.evaluate(()=>calls)).every(call=>['overview','monthly_summary'].includes(call.operation)));
-  console.log('Monthly summary browser: selected dates, custom reopen, empty/error/retry, refresh, races, readonly, edit protection and phone/iPad/desktop widths passed');
+  console.log('Monthly summary browser: production entry closed; retained internal summary regression passed');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.close();});

@@ -341,7 +341,7 @@
       var reason = item.match && item.match.reason ? item.match.reason : '等待识别结果';
       if (error === 'PDF_REQUIRES_MANUAL_REVIEW') reason = 'PDF 原件已保存，请人工填写日期、金额并选择对应明细';
       return '<article class="petty-batch-item' + (item.confirmed_target_id ? ' confirmed' : '') + '" data-petty-batch-item="' + esc(item.id) + '" data-batch-id="' + esc(item.batch_id) + '">'
-        + '<div class="petty-batch-file"><div><strong>' + esc(item.original_filename) + '</strong><div class="help">上传 ' + esc(String(item.uploaded_at || '').replace('T', ' ').slice(0, 16)) + '</div></div>'
+        + '<div class="petty-batch-file"><div><strong>' + esc(item.original_filename) + '</strong><div class="help">上传 ' + esc(window.ZysyrTime.dateTime(item.uploaded_at)) + '</div></div>'
         + '<span class="petty-batch-chip ' + status.className + '">' + esc(status.label) + '</span></div>'
         + '<div class="petty-batch-match">' + esc(reason) + '</div>'
         + '<div class="petty-batch-fields"><label>凭证日期<input data-batch-date type="date" value="' + esc(draft.document_date) + '" ' + disabled + '></label>'

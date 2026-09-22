@@ -18,6 +18,7 @@ node scripts/test-employee-bookings.mjs || exit 1
 node scripts/test-staff-report-access-v514.js || exit 1
 node scripts/test-staff-report-browser-v514.js || exit 1
 node scripts/test-frontdesk.js || exit 1
+node scripts/test-operations-time.js || exit 1
 node scripts/test-operations.js || exit 1
 node scripts/test-monthly-formula-recalculation.js || exit 1
 node scripts/test-monthly-load-recovery-v499.js || exit 1

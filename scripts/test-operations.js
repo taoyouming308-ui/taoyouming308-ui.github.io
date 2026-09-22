@@ -8,8 +8,10 @@ const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const dailyReview = fs.readFileSync(path.join(root, 'operations-daily-review.js'), 'utf8');
 const voucherCore = fs.readFileSync(path.join(root, 'operations-voucher-preview.js'), 'utf8');
 const voucherView = fs.readFileSync(path.join(root, 'operations-voucher-view.js'), 'utf8');
+const operationsTime = fs.readFileSync(path.join(root, 'operations-time.js'), 'utf8');
 new vm.Script(voucherCore);
 new vm.Script(voucherView);
+new vm.Script(operationsTime);
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/deno.json'), 'utf8');
@@ -34,6 +36,13 @@ expect(inlineScripts.length === 1, 'operations inline script missing or duplicat
 new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
+expect(html.includes('operations-time.js?v=' + releaseVersion) && operationsTime.includes("TIME_ZONE = 'Asia/Shanghai'"), 'versioned China Standard Time helper missing');
+expect(!/replace\(['"]T['"],\s*['"] ['"]\)\.slice/.test(html) && !html.includes('toISOString().slice(0,10)'), 'UTC timestamps must not be sliced directly for report display or form dates');
+expect(html.includes('id="monthly-more" class="monthly-more hidden" hidden') && html.includes('data-feature-enabled="false"')
+  && html.includes('id="monthly-summary-toggle"') && html.includes('disabled>开启多月汇总'),
+  'multi-month summary entry must remain closed without deleting its retained implementation');
+expect(html.includes('privateLinkCache') && html.includes('primePrivateLink') && html.includes('button.dataset.privatePrefetched')
+  && html.includes("expires_in||300"), 'private monthly photo prefetch/cache or expiry guard missing');
 expect(html.includes('月报表') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
 expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
