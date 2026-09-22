@@ -7,6 +7,7 @@ import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-re
 import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
 import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-summary.mjs";
+import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -1775,6 +1776,8 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
       read: true,
       upload_voucher: canUploadVouchers(session),
       upload_history_evidence: cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
+      batch_voucher: canUploadVouchers(session) && canReviewVouchers(session)
+        && cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
     },
     source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
   };
@@ -3657,6 +3660,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 80);
   const skipOcr = payload.skip_ocr === true;
+  const deferOcrWake = payload.defer_ocr_wake === true;
   const monthlyCellId = uuidValue(payload.monthly_cell_id, "月报单元格编号无效", true);
   const monthlyCellReason = cleanText(payload.monthly_cell_reason ?? payload.note, 500);
   const businessType = cleanText(payload.business_type, 40);
@@ -3750,10 +3754,169 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       p_business_id: businessId, p_relation_type: "evidence", p_reason: businessLinkReason,
     });
   }
-  if (!skipOcr) wakeVoucherOcrInBackground(3);
+  if (!skipOcr && !deferOcrWake) wakeVoucherOcrInBackground(3);
   return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: !skipOcr,
+    ocr_worker_wake_deferred: !skipOcr && deferOcrWake,
     manual_review_only: skipOcr, cell_linked: cellLinked, cell_link_error: cellLinkError || null,
     business_link_request: businessLinkRequest };
+}
+
+function pettyCashBatchNote(month: string, batchId: string, filename: string): string {
+  return `petty_cash_batch|${month}|${batchId}|${cleanText(filename, 200).replace(/[|\r\n]/g, " ")}`;
+}
+
+async function uploadPettyCashBatchVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)
+      || cleanText(session.operations_role, 40) !== "finance") {
+    throw new Error("只有当前门店财务账号可以批量上传备用金凭证");
+  }
+  const month = cleanText(payload.month, 7);
+  const batchId = uuidValue(payload.batch_id, "批量上传编号无效") as string;
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("批量上传月份无效");
+  const result = await uploadVoucher({
+    ...payload,
+    record_type: "unassigned",
+    record_id: null,
+    business_type: "",
+    business_id: "",
+    note: pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)),
+    skip_ocr: false,
+    defer_ocr_wake: true,
+  }, session);
+  return { ...result, batch_id: batchId, target_month: month };
+}
+
+function pettyCashBatchFields(value: unknown): JsonRecord {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {};
+}
+
+function pettyCashBatchTargetRows(records: JsonRecord[], historyEntries: JsonRecord[]): JsonRecord[] {
+  const formal = records.filter((record) => cleanText(record.direction, 20) === "outflow"
+    && cleanText(record.status, 20) === "confirmed").map((record) => ({
+    id: cleanText(record.id, 40), target_kind: "formal", transaction_date: cleanText(record.transaction_date, 10),
+    amount: Number(record.amount || 0), category: cleanText(record.category, 120), summary: cleanText(record.summary, 300),
+    recipient: cleanText(record.recipient, 120), voucher_number: cleanText(record.voucher_number, 120), historical: false,
+  }));
+  const history = historyEntries.map((entry) => {
+    const current = pettyCashBatchFields(entry.current_payload);
+    return {
+      id: cleanText(entry.id, 40), target_kind: "history",
+      transaction_date: cleanText(current.transaction_date, 10), amount: Number(current.amount || 0),
+      category: cleanText(current.category, 120), summary: cleanText(current.summary, 300) || "历史备用金明细",
+      recipient: cleanText(current.handled_by_name, 120), voucher_number: cleanText(current.source_sequence, 120),
+      source_locator: cleanText(entry.source_locator, 160), import_row_id: cleanText(entry.import_row_id, 40), historical: true,
+    };
+  }).filter((target) => target.transaction_date && Number.isFinite(target.amount) && target.amount > 0);
+  return [...formal, ...history].sort((left, right) => left.transaction_date.localeCompare(right.transaction_date)
+    || Number(left.amount) - Number(right.amount) || pettyCashTargetKey(left).localeCompare(pettyCashTargetKey(right)));
+}
+
+async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)
+      || cleanText(session.operations_role, 40) !== "finance") {
+    throw new Error("只有当前门店财务账号可以查看批量凭证");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7), requestedBatchId = cleanText(payload.batch_id, 40);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("批量上传月份无效");
+  if (requestedBatchId && !/^[0-9a-f-]{36}$/i.test(requestedBatchId)) throw new Error("批量上传编号无效");
+  const notePattern = requestedBatchId ? `petty_cash_batch|${month}|${requestedBatchId}|*` : `petty_cash_batch|${month}|*`;
+  const vouchers = await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,size_bytes,note,sha256,ocr_status,audit_status,document_type,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&note=like.${encodeURIComponent(notePattern)}&order=uploaded_at.desc&limit=1000`, 1000);
+  const voucherFilter = uuidIn(vouchers.map((voucher) => voucher.id));
+  const start = `${month}-01`, endDate = new Date(`${month}-01T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const [tasks, reviews, formalRecords, formalLinks, historyEntries] = await Promise.all([
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,status,attempt,candidate_fields,field_confidences,error_message,queued_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=3000`, 3000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,decision,corrected_fields,field_confidences,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=review_version.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,voucher_number,recipient,status&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&direction=eq.outflow&status=eq.confirmed&order=transaction_date.asc,created_at.asc&limit=5000`, 5000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=voucher_id,business_id&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&business_type=eq.petty_cash_record&unlinked_at=is.null&limit=3000`, 3000),
+    historyMonthEntries(companyId, storeId, month, "petty_cash"),
+  ]);
+  const targets = pettyCashBatchTargetRows(formalRecords, historyEntries);
+  const latestTask = new Map<string, JsonRecord>(), latestReview = new Map<string, JsonRecord>();
+  for (const task of tasks) if (!latestTask.has(cleanText(task.voucher_id, 40))) latestTask.set(cleanText(task.voucher_id, 40), task);
+  for (const review of reviews) if (!latestReview.has(cleanText(review.voucher_id, 40))) latestReview.set(cleanText(review.voucher_id, 40), review);
+  const formalLinkMap = new Map(formalLinks.map((link) => [cleanText(link.voucher_id, 40), cleanText(link.business_id, 40)]));
+  const historyEvidence = await historyEvidenceForEntries(companyId, storeId, historyEntries);
+  const historyEvidenceByHash = new Map((historyEvidence.evidence as JsonRecord[]).map((evidence) => [cleanText(evidence.sha256, 80), cleanText(evidence.id, 40)]));
+  const historyEntryByRow = new Map(historyEntries.map((entry) => [cleanText(entry.import_row_id, 40), cleanText(entry.id, 40)]));
+  const historyTargetByEvidence = new Map<string, string>();
+  for (const link of historyEvidence.links as JsonRecord[]) {
+    if (cleanText(link.link_level, 30) === "bundle_only") continue;
+    const targetId = historyEntryByRow.get(cleanText(link.import_row_id, 40));
+    if (targetId) historyTargetByEvidence.set(cleanText(link.evidence_id, 40), targetId);
+  }
+  const items = vouchers.map((voucher) => {
+    const task = latestTask.get(cleanText(voucher.id, 40)) || null;
+    const review = latestReview.get(cleanText(voucher.id, 40)) || null;
+    const candidate = pettyCashBatchFields(task?.candidate_fields);
+    const corrected = pettyCashBatchFields(review?.corrected_fields);
+    const note = parsePettyCashBatchNote(voucher.note) || { month, batch_id: "", original_filename: voucher.original_filename };
+    const formalTarget = formalLinkMap.get(cleanText(voucher.id, 40));
+    const evidenceId = historyEvidenceByHash.get(cleanText(voucher.sha256, 80));
+    const historyTarget = evidenceId ? historyTargetByEvidence.get(evidenceId) : "";
+    const confirmedKind = formalTarget ? "formal" : historyTarget ? "history" : null;
+    const confirmedId = formalTarget || historyTarget || null;
+    const taskStatus = cleanText(task?.status, 30) || (cleanText(voucher.mime_type, 80) === "application/pdf" ? "failed" : "queued");
+    const match = confirmedId ? { state: "confirmed", unique_exact: false, score: 100,
+      target_kind: confirmedKind, target_id: confirmedId, reason: "财务已确认并建立逐笔凭证关系" }
+      : matchPettyCashCandidate(candidate, targets);
+    return {
+      ...voucher, batch_id: note.batch_id, target_month: note.month,
+      latest_ocr_task: task, latest_review: review, candidate_fields: candidate,
+      corrected_fields: corrected, field_confidences: pettyCashBatchFields(task?.field_confidences),
+      task_status: taskStatus, match, confirmed_target_kind: confirmedKind,
+      confirmed_target_id: confirmedId,
+    };
+  });
+  return {
+    month, items, targets,
+    summary: {
+      total: items.length,
+      recognizing: items.filter((item) => ["queued", "processing"].includes(cleanText(item.task_status, 30))).length,
+      ready: items.filter((item) => cleanText((item.match as JsonRecord).state, 30) === "exact").length,
+      needs_review: items.filter((item) => !item.confirmed_target_id && !["queued", "processing"].includes(cleanText(item.task_status, 30))
+        && cleanText((item.match as JsonRecord).state, 30) !== "exact").length,
+      confirmed: items.filter((item) => Boolean(item.confirmed_target_id)).length,
+    },
+    candidate_only: true, human_confirmation_required: true, amount_changed: false,
+  };
+}
+
+async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)) {
+    throw new Error("只有当前门店财务账号可以确认批量凭证");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7), batchId = uuidValue(payload.batch_id, "批量上传编号无效") as string;
+  const voucherId = uuidValue(payload.voucher_id, "凭证编号无效") as string;
+  const targetId = uuidValue(payload.target_id, "请选择对应的备用金明细") as string;
+  const targetKind = cleanText(payload.target_kind, 20);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !["formal", "history"].includes(targetKind)) {
+    throw new Error("批量凭证对应信息无效");
+  }
+  const corrected = pettyCashBatchFields(payload.corrected_fields);
+  const documentDate = cleanText(corrected.document_date, 10), amount = Number(corrected.amount);
+  if (!validDate(documentDate) || !Number.isFinite(amount) || amount <= 0) {
+    throw new Error("请人工核对并填写凭证日期和金额");
+  }
+  corrected.document_date = documentDate;
+  corrected.amount = Math.round(amount * 100) / 100;
+  corrected.counterparty = cleanText(corrected.counterparty, 200) || null;
+  corrected.document_number = cleanText(corrected.document_number, 120) || null;
+  const expectedNote = pettyCashBatchNote(month, batchId, "");
+  const rows = await restRows(`zysyr_voucher_attachments?select=id,note,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&limit=1`);
+  if (!rows[0] || !cleanText(rows[0].note, 500).startsWith(expectedNote)) throw new Error("该凭证不属于当前月份的批量上传");
+  const reason = cleanText(payload.reason, 500) || `备用金月度批量凭证人工核对：${month}`;
+  const saved = await financeRpcSaved("rpc/zysyr_review_and_link_petty_cash_voucher", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId,
+    p_voucher_id: voucherId, p_target_kind: targetKind, p_target_id: targetId,
+    p_corrected_fields: corrected, p_field_confidences: pettyCashBatchFields(payload.field_confidences), p_reason: reason,
+  });
+  return { saved, candidate_only_before_confirmation: true, human_confirmed: true, amount_changed: false };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -5980,6 +6143,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "monthly_generate") return json(await generateMonthlyReport(payload, session));
     if (operation === "monthly_transition") return json(await transitionMonthlyReport(payload, session));
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
+    if (operation === "petty_cash_batch_upload") return json(await uploadPettyCashBatchVoucher(payload, session));
+    if (operation === "petty_cash_batch_status") return json(await pettyCashBatchStatus(payload, session));
+    if (operation === "petty_cash_batch_confirm") return json(await confirmPettyCashBatchVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
     if (operation === "voucher_ocr_retry") return json(await retryVoucherOcr(payload, session));

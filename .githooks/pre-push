@@ -28,6 +28,9 @@ node scripts/test-zysyr-monthly-editable-names-v500.js || exit 1
 node scripts/test-zysyr-monthly-petty-navigation-v501.js || exit 1
 node scripts/test-zysyr-petty-cash-evidence-v519.js || exit 1
 node scripts/test-zysyr-petty-cash-evidence-db-v519.js || exit 1
+node scripts/test-zysyr-petty-cash-batch-matching-v520.mjs || exit 1
+node scripts/test-zysyr-petty-cash-batch-browser-v520.js || exit 1
+node scripts/test-zysyr-petty-cash-batch-db-v520.js || exit 1
 node scripts/test-history-import.mjs || exit 1
 node scripts/test-operations-auth.js || exit 1
 node scripts/test-operations-auth-migration.js || exit 1
