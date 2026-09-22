@@ -8,6 +8,7 @@ import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
 import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-summary.mjs";
 import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
+import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2223,6 +2224,28 @@ function worksheetByCleanName(workbook: ExcelJS.Workbook, requestedName: string)
   return workbook.worksheets.find((item) => cleanText(item.name, 120).toLocaleLowerCase() === target);
 }
 
+async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
+  let workbookXml = "";
+  try {
+    const archive = await JSZip.loadAsync(exactArrayBuffer(bytes));
+    const entry = archive.file("xl/workbook.xml");
+    if (!entry) throw new Error("missing xl/workbook.xml");
+    workbookXml = await entry.async("string");
+  } catch {
+    throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
+  }
+  const sheets = Array.from(workbookXml.matchAll(/<sheet\b[^>]*\bname="([^"]+)"[^>]*>/g), (match) =>
+    match[1].replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"));
+  if (!sheets.length) throw new Error("Excel 文件中没有可读取的工作表");
+  if (sheets.length === 1) return cleanText(sheets[0], 120);
+  const activeMatch = workbookXml.match(/<workbookView\b[^>]*\bactiveTab="(\d+)"/);
+  const activeTab = activeMatch ? Number(activeMatch[1]) : 0;
+  if (!Number.isInteger(activeTab) || activeTab < 0 || activeTab >= sheets.length) {
+    throw new Error("文件包含多个工作表，但没有明确的当前工作表；请在 Excel 中打开正确月份后保存，再重新上传");
+  }
+  return cleanText(sheets[activeTab], 120);
+}
+
 async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
   const workbook = new ExcelJS.Workbook();
   try {
@@ -2415,12 +2438,10 @@ function reportDateValue(payload: JsonRecord, reportType: string): string {
   return raw;
 }
 
-async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect = false): Promise<JsonRecord> {
   if (!canUploadReports(session)) throw new Error("只有财务账号可以上传门店报表");
   const store = await selectedStoreInfo(session, payload);
-  const reportType = cleanText(payload.report_type, 40);
-  if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
-  const reportDate = reportDateValue(payload, reportType);
+  let reportType = cleanText(payload.report_type, 40);
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 120);
   const xlsxMime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -2431,9 +2452,35 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("报表文件必须小于 10MB");
-  const displayData = mime === docxMime
-    ? await docxDisplay(bytes)
-    : await workbookDisplay(bytes, reportType, cleanText(store.name, 100));
+  const storeName = cleanText(store.name, 100);
+  let detection: JsonRecord | null = null;
+  let displayData: JsonRecord;
+  if (autoDetect) {
+    if (mime === docxMime) {
+      displayData = await docxDisplay(bytes);
+    } else {
+      const activeSheet = await activeWorkbookSheetName(bytes);
+      displayData = await workbookDisplay(bytes, "daily", storeName, activeSheet);
+    }
+    detection = detectReportMetadata({
+      filename,
+      sheetName: cleanText(displayData.sheet_name, 120),
+      values: Array.isArray(displayData.values) ? displayData.values : [],
+      storeName,
+    }) as JsonRecord;
+    reportType = cleanText(detection.report_type, 40);
+    if (payload.require_monthly === true && reportType !== "monthly_profit_loss") {
+      throw new Error("右侧照片 / PDF 只能随月报原表上传；请取消照片，或改为上传月报原表");
+    }
+    if (mime === xlsxMime && reportType === "monthly_profit_loss") {
+      displayData = await workbookDisplay(bytes, reportType, storeName, cleanText(detection.sheet_name, 120));
+    }
+  } else {
+    if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
+    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName);
+  }
+  const reportDate = autoDetect ? cleanText(detection?.report_date, 10) : reportDateValue(payload, reportType);
+  if (!validDate(reportDate)) throw new Error("自动识别未得到有效报表日期");
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const accountId = cleanText(session.auth_account_id, 40);
@@ -2466,7 +2513,7 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
     throw new Error(`报表登记失败 (${metadata.status})`);
   }
   const saved = await metadata.json() as JsonRecord;
-  return { saved, source_boundary: "finance_uploads_only", original_private: true };
+  return { saved, detection, source_boundary: "finance_uploads_only", original_private: true, formal_ledger_changed: false };
 }
 
 async function monthlyDraftWorkbook(
@@ -6190,6 +6237,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "employee_save") return json(await saveEmployee(payload, session));
     if (operation === "store_save") return json(await saveStore(payload, session));
     if (operation === "report_upload") return json(await uploadReport(payload, session));
+    if (operation === "report_upload_auto") return json(await uploadReport(payload, session, true));
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "report_lineage") return json(await reportLineage(payload, session));
     if (operation === "cell_trace") return json(await finishMonthlyTrace(await cellTrace(payload, session), payload, session));

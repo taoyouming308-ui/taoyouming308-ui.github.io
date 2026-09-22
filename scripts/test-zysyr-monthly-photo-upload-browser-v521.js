@@ -25,6 +25,11 @@ const photo = {
   mimeType: 'image/jpeg',
   buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', 'base64'),
 };
+const workbook = {
+  name: '盈亏表模板2026（向里造型）.xlsx',
+  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  buffer: Buffer.from('fixture-xlsx'),
+};
 
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -48,6 +53,11 @@ const photo = {
       api = async (operation, payload) => {
         window.fixtureCalls.push({ operation, ...payload });
         if (operation === 'history_import_file_url') return { url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', expires_in: 300, filename: '一月份月报照片.jpg' };
+        if (operation === 'report_upload_auto') return {
+          saved: { id: '44444444-4444-4444-8444-444444444444', report_type: 'monthly_profit_loss', report_date: '2026-06-01', version: 2 },
+          detection: { report_type: 'monthly_profit_loss', type_label: '月报原表', month: '2026-06', report_date: '2026-06-01' },
+          formal_ledger_changed: false,
+        };
         if (operation !== 'history_monthly_attachment_upload') throw Error('Unexpected operation: ' + operation);
         state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', evidence_kind: 'supporting_document', original_filename: payload.filename, mime_type: payload.mime_type });
         return { saved: { id: '33333333-3333-4333-8333-333333333333' }, formal_ledger_amount_changed: false };
@@ -58,7 +68,6 @@ const photo = {
       renderMonthlyAuditControls();
     });
     await page.locator('#monthly-material-toggle').click();
-    await page.selectOption('#monthly-material-type', 'monthly_profit_loss');
     await page.setInputFiles('#monthly-material-vouchers', photo);
     assert.equal(await page.locator('#monthly-material-file').getAttribute('required'), null);
     await page.locator('#monthly-material-form button[type="submit"]').click();
@@ -79,14 +88,30 @@ const photo = {
     await page.locator('#report-state [data-open-history-file]').click();
     assert.equal((await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_import_file_url'))).length, 1, 'opening a prefetched photo must not request another signed URL');
 
-    await page.evaluate(() => { state.data.monthly_report = null; renderAll(); });
-    await page.selectOption('#monthly-material-type', 'monthly_profit_loss');
+    await page.setInputFiles('#monthly-material-file', workbook);
+    await page.locator('#monthly-material-form button[type="submit"]').click();
+    await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('自动识别为 月报原表 · 2026-06'));
+    assert.equal(await page.locator('#month').inputValue(), '2026-06');
+    const automatic = await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'report_upload_auto'));
+    assert.equal(automatic.length, 1);
+    assert.equal(automatic[0].store, '向里造型');
+    assert.equal(automatic[0].require_monthly, false);
+    assert.equal(Object.hasOwn(automatic[0], 'report_type'), false, 'browser must not supply a trusted report type');
+    assert.equal(Object.hasOwn(automatic[0], 'report_date'), false, 'browser must not supply a trusted report date');
+
+    await page.evaluate(() => {
+      const month = document.getElementById('month');
+      month.value = '2026-01';
+      document.getElementById('report-month').value = '2026-01';
+      state.data.monthly_report = null;
+      renderAll();
+    });
     await page.setInputFiles('#monthly-material-vouchers', photo);
     await page.locator('#monthly-material-form button[type="submit"]').click();
     await page.waitForFunction(() => document.getElementById('toast').textContent.includes('本月还没有月报'));
     assert.equal((await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_monthly_attachment_upload'))).length, 1, 'photo-only upload must not create an unscoped report');
 
-    console.log('monthly photo upload v523 browser: upload, visible evidence, signed-link prefetch/cache and no-source guard passed');
+    console.log('monthly upload v524 browser: unchanged photo flow, automatic file routing, visible evidence and no-source guard passed');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
