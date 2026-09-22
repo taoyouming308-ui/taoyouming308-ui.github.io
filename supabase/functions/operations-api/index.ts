@@ -5934,6 +5934,74 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   }
 }
 
+async function historyMonthlyAttachmentUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadReports(session)) throw new Error("只有财务账号可以补传月报照片");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const accountId = cleanText(session.auth_account_id, 40);
+  const batchId = uuidValue(payload.report_id ?? payload.import_batch_id, "历史月报编号无效") as string;
+  const month = parseMonth(cleanText(payload.month, 7));
+  const periodMonth = `${month}-01`;
+  const filename = cleanText(payload.filename, 200);
+  const mime = cleanText(payload.mime_type, 120);
+  const reason = cleanText(payload.reason, 500);
+  const extensionByMime: Record<string, string> = {
+    "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png",
+  };
+  const extension = extensionByMime[mime];
+  if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) {
+    throw new Error("月报照片支持 JPG、PNG 或 PDF");
+  }
+  if (!reason) throw new Error("补传月报照片必须填写说明");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("月报照片内容无效"); }
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个月报照片或 PDF 必须小于 10MB");
+
+  const batches = await restRows(`zysyr_history_import_batches?select=id,status,import_type,period_start,period_end&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&import_type=eq.monthly_profit_loss&status=eq.completed&period_start=lte.${periodMonth}&period_end=gte.${periodMonth}&limit=1`);
+  if (!batches[0]) throw new Error("当前月份没有可补传照片的历史月报");
+  const entries = await restRows(`zysyr_history_ledger_entries?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&entry_type=eq.monthly_profit_loss&period_month=eq.${periodMonth}&status=eq.posted&limit=1`);
+  if (!entries[0]) throw new Error("当前月份的历史月报尚未正式建立");
+
+  const fileHash = await sha256Bytes(bytes);
+  const existing = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`);
+  const objectPath = `${companyId}/${storeId}/history-import/${batchId}/monthly-report/${periodMonth}/${fileHash}.${extension}`;
+  let uploaded = false;
+  if (!existing[0]) {
+    const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+      body: exactArrayBuffer(bytes),
+    });
+    if (!upload.ok && upload.status !== 409) throw new Error(`月报照片上传失败 (${upload.status})`);
+    uploaded = upload.ok;
+  }
+  try {
+    const response = await rest("rpc/zysyr_attach_completed_history_monthly_evidence", {
+      method: "POST",
+      body: JSON.stringify({
+        p_actor_user_id: accountId, p_company_id: companyId, p_store_id: storeId,
+        p_import_batch_id: batchId, p_period_month: periodMonth,
+        p_original_filename: filename, p_mime_type: mime, p_size_bytes: bytes.length,
+        p_sha256: fileHash, p_bucket_id: REPORT_BUCKET, p_object_path: objectPath, p_reason: reason,
+      }),
+    });
+    const result = await response.json().catch(() => ({})) as JsonRecord;
+    if (!response.ok) throw new Error(`月报照片登记失败 (${response.status})`);
+    const saved = result.evidence && typeof result.evidence === "object" ? result.evidence as JsonRecord : result;
+    return { saved, linked_rows: result.linked_rows, reused: !result.created, formal_ledger_amount_changed: false };
+  } catch (error) {
+    if (uploaded) {
+      const registered = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`).catch(() => []);
+      if (!registered[0]) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+          method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+        });
+      }
+    }
+    throw error;
+  }
+}
+
 async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   historyImportFinance(session);
   const store = await selectedStoreInfo(session, payload);
@@ -6213,6 +6281,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_ledger_revise") return json(await historyLedgerRevise(payload, session));
     if (operation === "history_ledger_reverse") return json(await historyLedgerReverse(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
+    if (operation === "history_monthly_attachment_upload") return json(await historyMonthlyAttachmentUpload(payload, session));
     if (operation === "history_ledger_evidence_upload") return json(await historyLedgerEvidenceUpload(payload, session));
     if (operation === "history_evidence_images") return json(await historyEvidenceImages(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));

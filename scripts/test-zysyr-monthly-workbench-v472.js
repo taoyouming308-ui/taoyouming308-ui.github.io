@@ -25,7 +25,8 @@ for (const marker of [
 
 expect(page.includes("record_type:'report',record_id:report.id,monthly_cell_id:target.id")
   && api.includes('p_source_cell_id: monthlyCellId'), 'voucher upload must bind to the selected monthly cell');
-expect(page.includes("report_type:type,report_date:date,month:$('month').value")
+expect(page.includes("month=$('month').value,existing=state.data&&state.data.monthly_report")
+  && page.includes("store:currentStore(),report_type:type,report_date:date,month:month")
   && page.includes('日报日期必须属于当前月份'), 'monthly materials must remain scoped to the active store and month');
 expect(page.includes("cell.onclick=function(){openMonthlyVoucher(cell.dataset.traceCell)}")
   && page.includes("typeof value==='number'"), 'only numeric report amounts should open the monthly workbench');
