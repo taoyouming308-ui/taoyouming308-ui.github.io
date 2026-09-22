@@ -5,7 +5,7 @@
 - App version: v519。基线 github/main ac61abd / v518，同日备份已核验。范围仅备用金逐笔凭证展示、补传和反馈；财务独立登录、股东只读、金额及入账逻辑不变。
 - 历史正式备用金改为逐项卡片，每一笔只打开精确关联的原图，整月 Word 包继续永久留底但不再代替单笔凭证。财务可在具体记录旁上传或补传 JPG/PNG/PDF，并在确认页核对日期、摘要、金额和文件预览。
 - 当前记录上传继续经过财务审核，待审核状态立即显示并禁用重复上传；历史正式账补传只追加证据、精确关联和审计，不更新金额、原始导入行或入账版本。门店范围由服务端重新校验，RPC 仅 service_role 可执行。
-- 手机 390px 单列、电脑 1280px 双列浏览器回归、隔离 PostgreSQL 及完整 pre-push 门禁已通过，覆盖逐笔关联、幂等、门店隔离、审计和财务数据不变。生产迁移 `20260922030332 zysyr_history_item_evidence_upload` 已应用；RPC 匿名／普通登录无执行权、仅 service_role 可执行，且函数定义不更新历史账本。`operations-api` v89 ACTIVE，8 个部署源码／依赖与本地逐字一致，继续 `verify_jwt=false` 和原有财务会话鉴权；无会话备用金请求仍为 403 `AUTH_SESSION_INVALID`。数据库顾问未发现本次函数／证据表新增提示，现有旧表 RLS 与索引建议不在本次范围。GitHub Pages 发布状态待完成后补录。
+- 手机 390px 单列、电脑 1280px 双列浏览器回归、隔离 PostgreSQL 及完整 pre-push 门禁已通过，覆盖逐笔关联、幂等、门店隔离、审计和财务数据不变。生产迁移 `20260922030332 zysyr_history_item_evidence_upload` 已应用；RPC 匿名／普通登录无执行权、仅 service_role 可执行，且函数定义不更新历史账本。`operations-api` v89 ACTIVE，8 个部署源码／依赖与本地逐字一致，继续 `verify_jwt=false` 和原有财务会话鉴权；无会话备用金请求仍为 403 `AUTH_SESSION_INVALID`。数据库顾问未发现本次函数／证据表新增提示，现有旧表 RLS 与索引建议不在本次范围。功能提交 `4f7e284` 已推送 main，Validate `35682339672` 与 Pages `35682338990` 均成功；线上无缓存核验 `version.txt=519`，`operations.html` 及 `operations-petty-cash-evidence.js` 与本地逐字一致。未修改真实财务金额或执行入账。
 
 ## v518 日报误传作废与正确原图重传（2026-09-22）
 
