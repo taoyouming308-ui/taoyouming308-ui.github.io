@@ -63,6 +63,7 @@
   function controlDifferences(c) {
     var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
     return [
+      ['stylist_category_subtotal', '造型区总小计', c.stylistSubtotal, c.staffAtomic, '员工明细合计'],
       ['summary_actual', '实做', c.actual, c.staffAtomic, '员工合计'],
       ['summary_grand', '汇总总计', c.grand, c.staffAtomic, '员工合计'],
       ['payment_cashflow', '现金流', c.cashflow, c.methodTotal, '支付方式合计'],

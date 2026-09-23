@@ -68,42 +68,20 @@
     var target = data.target, adjustment = data.monthly_adjustment || {
       base_amount: target.numeric_value, adjustment_delta: 0, revision: 0
     };
-    if (target.daily_rollup && Number(target.daily_rollup.confirmed_days) > 0) {
-      var daily = target.daily_rollup;
-      host.innerHTML = '<h4>美发收入来自已确认日报</h4><div class="help">已确认 ' + Number(daily.confirmed_days)
-        + ' 天，累计 ' + formatAmount(daily.amount) + '。月报不再另记一笔；仅统计已确认日期，请核对是否录齐。</div>'
-        + (Number(adjustment.superseded_monthly_adjustment || 0)
-          ? '<div class="candidate-warning">既有月报手工调整 ' + formatAmount(adjustment.superseded_monthly_adjustment)
-            + ' 已留在审计记录中，不叠加到日报累计金额。</div>' : '')
-        + '<div data-daily-sources></div>';
-      var sources = host.querySelector('[data-daily-sources]');
-      (daily.days || []).forEach(function (day) {
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'ghost';
-        button.textContent = day.date + ' · ' + formatAmount(day.amount);
-        button.onclick = async function () {
-          closeMonthlyWorkbench();
-          document.getElementById('daily-month').value = day.date.slice(0, 7);
-          await showView('daily-report');
-          await openDailyReportDay(day.date, day.draft_id);
-        };
-        sources.appendChild(button);
-      });
-      return;
-    }
     var editable = Object.assign({}, data, {
       mode: 'input', sources: [], revision: null,
       target: Object.assign({}, target, { cell_kind: 'input' })
     });
     attachEditor(host, editable, rootAddress, context);
-    if (target.daily_rollup) {
+    if (target.daily_rollup && Number(target.daily_rollup.confirmed_days) > 0) {
       var daily=target.daily_rollup;
-      host.insertAdjacentHTML('beforeend','<div class="candidate-warning">已确认日报 '+Number(daily.confirmed_days)+' 天，合计 '+formatAmount(daily.amount)+'；原月报 '+formatAmount(target.original_report_amount)+'，差额 '+formatAmount(Number(daily.amount)-Number(target.original_report_amount))+'。仅统计已确认日期，请核对是否录齐。</div><div data-daily-sources></div>');
+      host.insertAdjacentHTML('beforeend','<div class="help">已确认日报 '+Number(daily.confirmed_days)+' 天，现金业绩 '+formatAmount(daily.amount)+'（不含卡金）；原月报 '+formatAmount(target.original_report_amount)+'。财务可修改本月美发收入，修改只作为有原因、有审计的月报调整，不重复记入日报。</div>'
+        +(Number(adjustment.superseded_monthly_adjustment||0)?'<div class="candidate-warning">日报入账前的月报旧调整 '+formatAmount(adjustment.superseded_monthly_adjustment)+' 已保留记录，不叠加到日报现金业绩。</div>':'')
+        +'<div data-daily-sources></div>');
       var sources=host.querySelector('[data-daily-sources]');
       (daily.days||[]).forEach(function(day){var button=document.createElement('button');button.type='button';button.className='ghost';button.textContent=day.date+' · '+formatAmount(day.amount);button.onclick=async function(){closeMonthlyWorkbench();document.getElementById('daily-month').value=day.date.slice(0,7);await showView('daily-report');await openDailyReportDay(day.date,day.draft_id);};sources.appendChild(button);});
     }
-    host.insertAdjacentHTML('afterbegin', '<div class="help">原报表金额 ' + formatAmount(adjustment.base_amount)
+    host.insertAdjacentHTML('afterbegin', '<div class="help">'+(target.daily_rollup?'日报现金业绩 ':'原报表金额 ') + formatAmount(adjustment.base_amount)
       + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta)
       + '。修改只追加审计记录，不覆盖原日报、工资表、月报原件或原凭证。</div>');
     var save = document.getElementById('monthly-inline-save');

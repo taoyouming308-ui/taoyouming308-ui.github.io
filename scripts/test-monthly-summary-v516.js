@@ -5,7 +5,7 @@ const { stripTypeScriptTypes } = require('node:module');
 const source = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
 const names = ['cleanText','uuidIn','effectiveCellValue','columnLetters','formulaPrecedents','mergeCoordinates',
   'reportCellLabel','monthlyEditableNameCells','safeFormulaValue','latestMonthlyCellRevisionMap','isDailyIncomeCell',
-  'monthlyItemCategory','effectiveMonthlyDisplay','effectiveHistoryMonthlyEntries','confirmedDailyRollup','monthlySummary'];
+  'monthlyItemCategory','monthlyAdjustmentForSource','effectiveMonthlyDisplay','effectiveHistoryMonthlyEntries','confirmedDailyRollup','monthlySummary'];
 const code = names.map(name => {
   const start = source.search(new RegExp('(?:async )?function ' + name + '\\('));
   assert(start >= 0, name); return source.slice(start, source.indexOf('\n}', start) + 2);
@@ -39,9 +39,9 @@ const hist = (month, address, amount, label, formula) => ({ id: month + address,
       if (path.startsWith('zysyr_monthly_cell_revisions?')) return revisions;
       if (path.startsWith('zysyr_monthly_text_revisions?')) return textRevisions;
       if (path.startsWith('zysyr_history_ledger_entries?')) { assert(path.includes('status=eq.posted')); assert(maxRows>=5000,'full year must paginate beyond 1000 cells'); return history; }
-      if (path.startsWith('zysyr_monthly_income_adjustments?')) return [{source_id:'2026-01C3',period_month:'2026-01-01',adjustment_delta:999}];
+      if (path.startsWith('zysyr_monthly_income_adjustments?')) return [{source_id:'2026-01C3',period_month:'2026-01-01',adjustment_delta:999,created_at:'2026-09-01T00:00:00Z'}];
       if (path.startsWith('zysyr_daily_sheet_drafts?')) return path.includes('report_date=gte.2026-01-01')
-        ? (duplicateDaily ? [1,2] : [1]).map(n => ({id:id(20+n),report_date:'2026-01-01',edit_revision:3})) : [];
+        ? (duplicateDaily ? [1,2] : [1]).map(n => ({id:id(20+n),report_date:'2026-01-01',edit_revision:3,confirmed_at:'2026-09-20T00:00:00Z'})) : [];
       if (path.startsWith('zysyr_daily_sheet_cells?')) return [{draft_id:id(21),manual_override:true,corrected_numeric:100}];
       throw Error(path);
     }

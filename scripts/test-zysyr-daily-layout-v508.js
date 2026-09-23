@@ -52,6 +52,10 @@ async function run() {
         state.user.role = 'finance';
         const source = previewDailySheetData();
         source.cells = source.cells.filter(cell => ['stylist', 'summary', 'payment'].includes(cell.section_code));
+        const stylistCategory = source.cells.find(cell => cell.section_code === 'stylist'
+          && cell.row_key === 'stylist_category_total' && cell.cell_role === 'category_total');
+        source.cells.push({ ...stylistCategory, id: 'fixture-stylist-total', column_code: 'subtotal',
+          column_label: '小计', column_number: 20, cell_role: 'summary_value' });
         source.cells.forEach(cell => {
           cell.ocr_numeric = null;
           cell.corrected_numeric = null;
@@ -69,6 +73,7 @@ async function run() {
         set('stylist', 'stylist_1', 'wash_cut_blow', 2126);
         set('stylist', 'stylist_1', 'subtotal', 2126);
         set('stylist', 'stylist_category_total', 'wash_cut_blow', 2126);
+        set('stylist', 'stylist_category_total', 'subtotal', 2126);
         set('summary', 'summary', 'stylist_total', 2126, true);
         set('summary', 'summary', 'actual_total', 226);
         set('summary', 'summary', 'treatment_card', 2126, true);

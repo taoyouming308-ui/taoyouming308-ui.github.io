@@ -1213,9 +1213,23 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 // Derived values are computed on read; the immutable source and revisions stay intact.
+function monthlyAdjustmentForSource(sourceId: unknown, adjustments: JsonRecord[], daily: JsonRecord | null): JsonRecord {
+  const rows = adjustments.filter((row) => String(row.source_id) === String(sourceId));
+  const latest = rows[0] || null;
+  const firstConfirmed = Date.parse(String(daily?.first_confirmed_at || ""));
+  if (Number(daily?.confirmed_days || 0) > 0 && rows.length && !Number.isFinite(firstConfirmed)) {
+    throw new Error("已确认日报缺少首次入账时间，暂停月报调整以防旧金额重复统计");
+  }
+  // Pre-daily monthly edits were superseded when the first daily report posted.
+  // Keep their offset as a baseline; never reactivate it with a later edit.
+  const legacy = Number(daily?.confirmed_days || 0) > 0 && Number.isFinite(firstConfirmed)
+    ? rows.find((row) => Date.parse(String(row.created_at || "")) < firstConfirmed) || null : null;
+  const legacyDelta = Number(legacy?.adjustment_delta || 0);
+  return { latest, legacy_delta: legacyDelta,
+    applied_delta: Number(latest?.adjustment_delta || 0) - legacyDelta };
+}
+
 function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = [], daily: JsonRecord | null = null): JsonRecord[] {
-  const adjustmentMap = new Map<string, number>();
-  for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const rows = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
   const byAddress = new Map(rows.map((row) => [cleanText(row.current_payload.cell_address, 20).toUpperCase(), row]));
   const values = new Map<string, number>();
@@ -1228,7 +1242,7 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
     if (!row) return 0; // Empty Excel cells contribute zero.
     const item = row.current_payload;
     const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(item);
-    const delta = dailyIncome ? 0 : adjustmentMap.get(String(row.id)) || 0;
+    const delta = monthlyAdjustmentForSource(row.id, adjustments, dailyIncome ? daily : null).applied_delta;
     function finish(base: number): number {
       const value = Number((base + delta).toFixed(4));
       if (delta) changed.add(address);
@@ -1352,7 +1366,9 @@ function effectiveMonthlyDisplay(
     const revision = latest.get(cleanText(cell.id, 40));
     const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell);
     const effective = dailyIncome ? Number(daily?.amount) : revision ? Number(revision.after_amount) : original;
-    const adjustment = dailyIncome ? 0 : adjustmentMap.get(String(cell.id)) || 0;
+    const adjustment = dailyIncome
+      ? monthlyAdjustmentForSource(cell.id, adjustments, daily).applied_delta
+      : adjustmentMap.get(String(cell.id)) || 0;
     if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + adjustment).toFixed(4)));
   }
   for (let pass = 0; pass < 8; pass += 1) {
@@ -2979,15 +2995,15 @@ async function historicalDailyIncomeSources(companyId: string, storeId: string, 
   const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&status=eq.confirmed&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
   const draftIds = drafts.map((row) => cleanText(row.id, 40)).filter(Boolean);
   if (!draftIds.length) return { details: [], evidence: [], total: 0 };
-  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.summary&row_key=eq.summary&column_code=eq.actual_total&cell_role=eq.summary_actual&manual_override=eq.true&limit=100`, 100);
-  const amountByDraft = new Map(cells.map((cell) => [cleanText(cell.draft_id, 40), Number(cell.corrected_numeric)]));
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.payment&row_key=eq.payment&column_code=eq.cash_flow&cell_role=eq.payment_cashflow&limit=100`, 100);
+  const amountByDraft = new Map(cells.map((cell) => [cleanText(cell.draft_id, 40), effectiveCellValue(cell)]));
   const verifiedDrafts = drafts.filter((draft) => Number.isFinite(amountByDraft.get(cleanText(draft.id, 40))));
   const voucherIds = Array.from(new Set(verifiedDrafts.map((draft) => cleanText(draft.source_voucher_id, 40)).filter(Boolean)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,size_bytes,uploaded_at,document_type,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&audit_status=eq.approved&limit=100`, 100) : [];
   const voucherMap = new Map(vouchers.map((voucher) => [cleanText(voucher.id, 40), voucher]));
   const details = verifiedDrafts.map((draft) => ({
     business_type: "daily_sheet", business_id: draft.id, daily_sheet_id: draft.id,
-    date: draft.report_date, title: `${draft.report_date} 日报`, description: "原始日报人工录入总额",
+    date: draft.report_date, title: `${draft.report_date} 日报`, description: "已确认日报现金业绩（不含卡金）",
     amount: amountByDraft.get(cleanText(draft.id, 40)), source_voucher_id: draft.source_voucher_id,
     source_locator: `日报/${draft.report_date}`, status: draft.status, validation_result: draft.validation_result,
   }));
@@ -3452,12 +3468,14 @@ function isDailyIncomeCell(cell: JsonRecord): boolean {
 
 async function confirmedDailyRollup(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
   const start = `${month}-01`, end = new Date(`${start}T00:00:00Z`); end.setUTCMonth(end.getUTCMonth()+1);
-  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
   if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
   const ids = uuidIn(drafts.map(row=>row.id));
-  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.summary&column_code=eq.grand_total&limit=100`,100);
-  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error("已确认日报缺少唯一有效总计，暂停月报汇总");return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
-  return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,source:"confirmed_daily_grand_total",incomplete_warning:"仅汇总已确认日报；请核对营业日是否全部录齐。"};
+  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.payment&row_key=eq.payment&column_code=eq.cash_flow&cell_role=eq.payment_cashflow&limit=100`,100);
+  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error(`${draft.report_date} 已确认日报缺少唯一有效现金业绩，暂停月报汇总`);return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
+  if (drafts.some((draft) => !draft.confirmed_at)) throw new Error("已确认日报缺少入账时间，暂停月报汇总以防重复统计");
+  const confirmedTimes = drafts.map((draft) => String(draft.confirmed_at)).sort();
+  return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,first_confirmed_at:confirmedTimes[0] || null,source:"confirmed_daily_cash_flow",incomplete_warning:"仅汇总已确认日报的现金业绩，不含卡金；请核对营业日是否全部录齐。"};
 }
 
 const MONTHLY_DAILY_PERFORMANCE_FIELDS = [
@@ -3550,15 +3568,14 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
   if (canUseMonthlyAdjustment) {
     const all = context.adjustments as JsonRecord[];
     const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
-    const latest = history[0] || null;
     const actorIds = uuidIn(history.map(row => row.actor_user_id));
     const actors = actorIds === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,display_name,login_name&company_id=eq.${store.company_id}&id=in.${actorIds}`, 500);
     const dailyLinked = Number((target.daily_rollup as JsonRecord)?.confirmed_days || 0) > 0;
-    data.monthly_adjustment = { base_amount: dailyLinked ? Number(target.numeric_value)
-      : Number((Number(target.numeric_value) - Number(latest?.adjustment_delta || 0)).toFixed(4)),
-      adjustment_delta: dailyLinked ? 0 : latest?.adjustment_delta || 0, revision: latest?.revision || 0,
-      superseded_monthly_adjustment: dailyLinked ? latest?.adjustment_delta || 0 : 0 };
-    if (dailyLinked) data.can_edit = false;
+    const linkedAdjustment = monthlyAdjustmentForSource(target.id, history, dailyLinked ? context.daily as JsonRecord : null);
+    const latest = linkedAdjustment.latest as JsonRecord | null;
+    data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(linkedAdjustment.applied_delta)).toFixed(4)),
+      adjustment_delta: linkedAdjustment.applied_delta, revision: latest?.revision || 0,
+      superseded_monthly_adjustment: dailyLinked ? linkedAdjustment.legacy_delta : 0 };
     data.amount_history = [...history.map(row => ({ ...row, revision_type: "月报调整", delta: Number(row.after_amount) - Number(row.before_amount), actor: actors.find(actor => actor.id === row.actor_user_id) || null })), ...(data.amount_history as JsonRecord[] || [])];
   }
   return data;
@@ -3575,9 +3592,6 @@ async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRec
   if (category === "fixed") throw new Error("编号、姓名和文字标签是固定内容，不能修改");
   const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
-  if (isDailyIncomeCell(target) && Number((context.daily as JsonRecord)?.confirmed_days || 0) > 0) {
-    throw new Error("美发收入已由已确认日报自动累计，不能在月报重复入账；请到对应日报核对或走正式冲销/修订流程");
-  }
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (!effective) throw new Error("月报金额来源不存在，请刷新月报");
   const adjustments = context.adjustments as JsonRecord[], prior = adjustments.find(row => row.source_id === target.id);
