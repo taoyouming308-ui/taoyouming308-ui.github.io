@@ -81,15 +81,49 @@ async function verifyViewport(page, viewport) {
     assert.deepEqual(await page.locator('#monthly-sheet .sheet-table tr').nth(33).locator('.monthly-daily-embedded-total').allTextContents(),
       ['合计', '2926.00', '2626.00', '300.00', '226.00', '2150.00', '250.00', '100.00']);
 
-    await verifyViewport(page, { width: 1280, height: 900 });
-    await verifyViewport(page, { width: 390, height: 844 });
-    await verifyViewport(page, { width: 844, height: 390 });
+    await page.evaluate(() => {
+      state.data.monthly_daily_performance = {
+        confirmed_days: 1,
+        rows: [{
+          date: '2026-01-01', draft_id: 'draft-01', labor_performance: 129773,
+          cash_performance: 128894, card_amount: 879, group_buy: 41570,
+          alipay: 66423, wechat: 22176, douyin: 683,
+        }],
+      };
+      renderAll();
+    });
+
+    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+      await verifyViewport(page, viewport);
+      const overlap = await page.locator('#monthly-sheet .monthly-daily-embedded').evaluateAll(cells => cells
+        .filter(cell => cell.textContent.trim() && cell.textContent.trim() !== '—')
+        .map(cell => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          return { text: cell.textContent, textWidth: range.getBoundingClientRect().width, cellWidth: cell.getBoundingClientRect().width,
+            fontSize: getComputedStyle(cell).fontSize };
+        }).filter(item => item.textWidth > item.cellWidth - 2));
+      assert.deepEqual(overlap, [], `${viewport.width}x${viewport.height}: monthly daily values fit their cells`);
+    }
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-portrait.png', fullPage: true });
     await page.setViewportSize({ width: 844, height: 390 });
     await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-landscape.png', fullPage: true });
-    console.log('ZYSYR v526 monthly daily performance browser: production 22-column template, data, totals, 31-day coverage and desktop/mobile/landscape fit passed');
+
+    await page.evaluate(async () => {
+      await showView('daily-report');
+      await openDailyReportDay('2026-01-01', 'preview-draft-1');
+    });
+    await page.waitForSelector('#daily-report-detail:not(.hidden)');
+    assert.equal(await page.locator('#view-daily-report > .daily-month-bar').isVisible(), false,
+      'month operations are hidden while a single daily report is open');
+    assert.equal(await page.locator('#daily-readonly-back').isVisible(), true,
+      'return-to-calendar action remains available');
+    await page.locator('#daily-readonly-back').click();
+    assert.equal(await page.locator('#view-daily-report > .daily-month-bar').isVisible(), true,
+      'month operations remain available on the calendar');
+    console.log('ZYSYR monthly daily performance browser: large totals fit and daily detail toolbar is hidden');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
