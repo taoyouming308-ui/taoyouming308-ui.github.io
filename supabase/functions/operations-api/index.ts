@@ -1052,7 +1052,9 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
   const voucherPath = `zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&order=uploaded_at.desc&limit=1000`;
-  const [rawReports, vouchers] = await Promise.all([restRowsAll(reportPath), restRowsAll(voucherPath)]);
+  const [rawReports, vouchers, monthlyDailyPerformance] = await Promise.all([
+    restRowsAll(reportPath), restRowsAll(voucherPath), confirmedDailyPerformance(companyId, storeId, month),
+  ]);
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
   const voucherMap = new Map<string, JsonRecord[]>();
@@ -1191,6 +1193,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthly_period_locked: monthlyPeriodLocked,
     monthly_unlock_requests: unlockRequests,
     acknowledgements: acknowledgementsWithUsers,
+    monthly_daily_performance: monthlyDailyPerformance,
   };
 }
 
@@ -3452,9 +3455,57 @@ async function confirmedDailyRollup(companyId: string, storeId: string, month: s
   const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
   if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
   const ids = uuidIn(drafts.map(row=>row.id));
-  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.summary&column_code=eq.grand_total&limit=100`,100);
+  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.summary&column_code=eq.grand_total&limit=100`,100);
   const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error("已确认日报缺少唯一有效总计，暂停月报汇总");return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
   return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,source:"confirmed_daily_grand_total",incomplete_warning:"仅汇总已确认日报；请核对营业日是否全部录齐。"};
+}
+
+const MONTHLY_DAILY_PERFORMANCE_FIELDS = [
+  { key: "labor_performance", section: "summary", column: "grand_total", label: "劳动业绩" },
+  { key: "cash_performance", section: "payment", column: "cash_flow", label: "现金业绩" },
+  { key: "card_amount", section: "payment", column: "card_consumption", label: "卡金" },
+  { key: "group_buy", section: "payment", column: "group_buy", label: "团购" },
+  { key: "alipay", section: "payment", column: "alipay", label: "支付宝" },
+  { key: "wechat", section: "payment", column: "wechat", label: "微信" },
+  { key: "douyin", section: "payment", column: "douyin", label: "抖音" },
+] as const;
+
+async function confirmedDailyPerformance(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
+  const start = `${month}-01`, next = new Date(`${start}T00:00:00Z`);
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${next.toISOString().slice(0, 10)}&status=eq.confirmed&order=report_date.asc&limit=100`, 100);
+  if (new Set(drafts.map((row) => row.report_date)).size !== drafts.length) {
+    throw new Error("同一天存在多份已确认日报，请先核对，避免月报业绩重复展示");
+  }
+  const draftIds = uuidIn(drafts.map((row) => row.id));
+  const cells = draftIds === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,section_code,column_code,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${draftIds}&section_code=in.(summary,payment)&column_code=in.(grand_total,cash_flow,card_consumption,group_buy,alipay,wechat,douyin)&limit=2000`, 2000);
+  const rows = drafts.map((draft) => {
+    const row: JsonRecord = { date: draft.report_date, draft_id: draft.id, revision: Number(draft.edit_revision || 0), status: "confirmed" };
+    const missing: string[] = [];
+    for (const field of MONTHLY_DAILY_PERFORMANCE_FIELDS) {
+      const matches = cells.filter((cell) => cell.draft_id === draft.id
+        && cell.section_code === field.section && cell.column_code === field.column);
+      if (matches.length > 1) throw new Error(`${draft.report_date} 日报的${field.label}存在重复单元格，请先核对`);
+      if (!matches.length) missing.push(field.label);
+      const value = matches.length ? effectiveCellValue(matches[0]) : null;
+      // Blank payment cells are the paper report's normal representation of zero.
+      // A missing cell is kept in missing_fields so the UI never hides a schema gap.
+      row[field.key] = value == null && field.section === "payment" ? 0 : value;
+      row[`${field.key}_cell_id`] = matches[0]?.id ?? null;
+    }
+    row.missing_fields = missing;
+    return row;
+  });
+  const totals: JsonRecord = {};
+  for (const field of MONTHLY_DAILY_PERFORMANCE_FIELDS) {
+    totals[field.key] = Number(rows.reduce((sum, row) => sum + Number(row[field.key] || 0), 0).toFixed(2));
+  }
+  return {
+    month, confirmed_days: rows.length, rows, totals,
+    columns: MONTHLY_DAILY_PERFORMANCE_FIELDS.map((field) => ({ key: field.key, label: field.label })),
+    source: "confirmed_daily_sheet_cells",
+    source_note: "只读取当前门店已入账日报；草稿和识别候选不计入月报业绩。",
+  };
 }
 
 // Capture the entire source revision set. The SQL writer verifies it under the
