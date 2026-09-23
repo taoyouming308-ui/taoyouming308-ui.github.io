@@ -10,6 +10,8 @@ assert.doesNotMatch(html, /id="monthly-daily-performance"/, 'daily performance m
 assert.match(html, /ZysyrMonthlyDailyPerformance\.renderIntoSheet/, 'monthly render places the automatic table inside the original monthly sheet');
 assert.match(moduleSource, /\['labor_performance', '劳动业绩', '日报“总计”'\]/, 'the finance mapping is visible and unambiguous');
 assert.match(moduleSource, /\['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'\]/, 'the eight columns occupy the original monthly sheet right-side block');
+assert.match(moduleSource, /function ensureDisplayColumns\(cells\)/, 'the display layer supplies the missing W column used by the production 22-column template');
+assert.match(moduleSource, /cells\['W' \+ String\(index \+ 1\)\] = cell/, 'the virtual W column is mapped without changing monthly source data');
 assert.match(moduleSource, /rowNumber <= 34/, 'the embedded block reserves header, all 31 days and a total row');
 
 assert.match(api, /async function confirmedDailyPerformance/, 'server builds the monthly daily performance projection');
@@ -42,4 +44,4 @@ assert.equal(totals.card_amount, 300);
 assert.equal(totals.alipay, 2150);
 assert.equal(totals.wechat, 250);
 
-console.log('ZYSYR v525 monthly daily performance: confirmed-day projection, finance mapping, store scope and responsive full-month table passed');
+console.log('ZYSYR v526 monthly daily performance: production 22-column compatibility, confirmed-day projection, finance mapping, store scope and responsive full-month table passed');

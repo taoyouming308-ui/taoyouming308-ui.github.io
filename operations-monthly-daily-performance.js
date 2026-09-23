@@ -71,9 +71,25 @@
     }).forEach(function (name) { cell.classList.remove(name); });
   }
 
+  function ensureDisplayColumns(cells) {
+    if (embeddedCell(cells, 'W', 2)) return true;
+    var anchor = embeddedCell(cells, 'V', 2);
+    var table = anchor && anchor.closest ? anchor.closest('table') : null;
+    if (!table) return false;
+    var colgroup = table.querySelector('colgroup');
+    if (colgroup) colgroup.appendChild(document.createElement('col'));
+    Array.from(table.rows).forEach(function (row, index) {
+      var cell = document.createElement('td');
+      row.appendChild(cell);
+      cells['W' + String(index + 1)] = cell;
+    });
+    return true;
+  }
+
   function renderIntoSheet(options) {
     options = options || {};
     var cells = options.cells || {}, columns = ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
+    if (!ensureDisplayColumns(cells)) return false;
     if (!columns.every(function (column) { return embeddedCell(cells, column, 2); })) return false;
     var performance = options.performance || {}, rows = buildRows(options.month, performance), total = totals(rows);
     var labels = ['日期'].concat(fields.map(function (field) { return field[1]; }));

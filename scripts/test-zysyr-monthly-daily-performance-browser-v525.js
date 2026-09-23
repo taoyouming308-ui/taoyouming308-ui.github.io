@@ -55,6 +55,13 @@ async function verifyViewport(page, viewport) {
       const month = document.getElementById('month');
       if (!month.querySelector('option[value="2026-01"]')) month.insertAdjacentHTML('beforeend', '<option value="2026-01">2026年1月</option>');
       month.value = '2026-01';
+      const display = state.data.monthly_report.display_data;
+      state.data.monthly_report.display_data = Object.assign({}, display, {
+        columns: 22,
+        range: 'A1:V73',
+        values: (display.values || []).map(row => row.slice(0, 22)),
+        column_widths: (display.column_widths || []).slice(0, 22),
+      });
       state.data.monthly_daily_performance = {
         confirmed_days: 2,
         rows: [
@@ -79,10 +86,10 @@ async function verifyViewport(page, viewport) {
     await verifyViewport(page, { width: 844, height: 390 });
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: '/private/tmp/zysyr-v525-monthly-daily-performance-portrait.png', fullPage: true });
+    await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-portrait.png', fullPage: true });
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.screenshot({ path: '/private/tmp/zysyr-v525-monthly-daily-performance-landscape.png', fullPage: true });
-    console.log('ZYSYR v525 monthly daily performance browser: data, totals, 31-day coverage and desktop/mobile/landscape fit passed');
+    await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-landscape.png', fullPage: true });
+    console.log('ZYSYR v526 monthly daily performance browser: production 22-column template, data, totals, 31-day coverage and desktop/mobile/landscape fit passed');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
