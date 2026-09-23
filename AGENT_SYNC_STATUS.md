@@ -5,7 +5,7 @@
 - App version: v526，静态页面和财务登录入口不变。向里造型 2026-01-28、2026-01-31 的草稿金额校验为 true、正式日报均为 0，但每份草稿各有 24 个重复的纸面坐标；技师扩行与产品区重叠，导致入账时报告来源格唯一约束返回 409。
 - 新迁移仅替换 `zysyr_confirm_daily_sheet`：正式来源格按 `section_code` 区分逻辑分区，并以稳定顺序一对一关联员工收入明细。财务范围校验、锁账、金额校验、来源凭证、审核、审计和人工最终确认逻辑不变；不修补或自动确认这两份生产草稿。
 - 已对生产旧函数与仓库基线逐字核对。隔离 PostgreSQL 验证新函数编译和 service_role 执行边界；静态回归验证确认逻辑无其他变化；生产只读模拟分区键下分别为 473/473、474/474 个唯一来源格位。
-- 生产迁移 `20260923091020_zysyr_daily_sheet_section_trace_coordinates` 已应用；线上函数正文与仓库新迁移逐字一致，仍为 SECURITY DEFINER、空 search_path，仅 service_role 可执行。迁移后只读回查 1 月 28、31 日仍是 validation=true 的修订 4 草稿，各自正式日报和确认版本均为 0；没有代财务入账。GitHub 发布状态待补记。
+- 生产迁移 `20260923091020_zysyr_daily_sheet_section_trace_coordinates` 已应用；线上函数正文与仓库新迁移逐字一致，仍为 SECURITY DEFINER、空 search_path，仅 service_role 可执行。迁移后只读回查 1 月 28、31 日仍是 validation=true 的修订 4 草稿，各自正式日报和确认版本均为 0；没有代财务入账。功能提交 `951c753` 已推送 GitHub main，完整 pre-push 门禁通过；尚未以真实财务账号重试这两天的最终入账。
 
 ## v526 兼容真实 22 列月报模板（2026-09-23）
 
