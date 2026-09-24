@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线整改：G01 灾备只读核查与定时任务故障（2026-09-24，未闭环）
+
+- Supabase 只读确认生产项目为 Pro、ACTIVE_HEALTHY、PostgreSQL 17。官方文档说明 Pro 每日自动数据库备份保留 7 天，但数据库备份不包含 Storage 原件；因此这不能证明报表/凭证文件可恢复。未启用 PITR（涉及持续费用，未授权），未执行恢复。
+- 本机 LaunchAgent `com.zysyr.daily-backup` 原先指向旧 `perm-pages` 仓库，最近记录 exit code 126。已获准将任务入口改为当前财务仓库脚本；重新 kickstart 后仍因 macOS `Operation not permitted` 无法从 launchd 读取/执行 Documents 目录下脚本（exit code 126）。配置路径已纠正，但自动备份运行尚未恢复。
+- 当前仓库 2026-09-24 两个既有归档均通过 `tar -tzf` 完整性读取；它们只打包工程文件，不含生产数据库或 Storage 对象。`scripts/backup.env` 不存在，iCloud 备份目录最近副本为 2026-09-12；没有近期异地备份证据。
+- **G01 保持 P0 未完成：** 需先解决 macOS 定时任务对项目目录的授权/部署位置，再建立受保护的数据库导出与 Storage 原件异地备份，并在隔离项目完成恢复、金额/对象哈希抽验及 RPO/RTO 记录。未修改业务代码、数据库、生产数据、权限或 PITR 计费设置。
+
 ## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，CI/Pages 已核验）
 
 - 财务回归清单统一为 `scripts/zysyr-finance-test-manifest.json`：本地 pre-push 和 GitHub Actions 共用 63 条测试，本地 63/63 通过；Actions #35965591930 与 Pages workflow #35965591838 均成功。两处浏览器截图路径已改为跨 macOS/Linux 的系统临时目录。提交 `58f2ef7` 已在 `github/main`，工作区干净。
