@@ -30,6 +30,7 @@ const workbook = {
   mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   buffer: Buffer.from('fixture-xlsx'),
 };
+const extraPhotos = ['凭证甲.jpg', '凭证乙.jpg', '凭证丙.jpg'].map(name => ({ ...photo, name }));
 
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -50,15 +51,22 @@ const workbook = {
       };
       state.data.trace_summary = {};
       window.fixtureCalls = [];
+      window.fixtureActiveUploads = 0;
+      window.fixtureMaxActiveUploads = 0;
       api = async (operation, payload) => {
         window.fixtureCalls.push({ operation, ...payload });
         if (operation === 'history_import_file_url') return { url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', expires_in: 300, filename: '一月份月报照片.jpg' };
         if (operation === 'report_upload_auto') return {
-          saved: { id: '44444444-4444-4444-8444-444444444444', report_type: 'monthly_profit_loss', report_date: '2026-06-01', version: 2 },
+          saved: { id: '44444444-4444-4444-8444-444444444444', historical: payload.require_monthly === true, report_type: 'monthly_profit_loss', report_date: '2026-06-01', version: 2 },
           detection: { report_type: 'monthly_profit_loss', type_label: '月报原表', month: '2026-06', report_date: '2026-06-01' },
           formal_ledger_changed: false,
         };
         if (operation !== 'history_monthly_attachment_upload') throw Error('Unexpected operation: ' + operation);
+        window.fixtureActiveUploads++;
+        window.fixtureMaxActiveUploads = Math.max(window.fixtureMaxActiveUploads, window.fixtureActiveUploads);
+        await new Promise(resolve => setTimeout(resolve, 40));
+        window.fixtureActiveUploads--;
+        if (payload.filename === '凭证乙.jpg') throw Error('模拟网络超时');
         state.data.monthly_report.vouchers.push({ id: '33333333-3333-4333-8333-333333333333', evidence_kind: 'supporting_document', original_filename: payload.filename, mime_type: payload.mime_type });
         return { saved: { id: '33333333-3333-4333-8333-333333333333' }, formal_ledger_amount_changed: false };
       };
@@ -71,7 +79,7 @@ const workbook = {
     await page.setInputFiles('#monthly-material-vouchers', photo);
     assert.equal(await page.locator('#monthly-material-file').getAttribute('required'), null);
     await page.locator('#monthly-material-form button[type="submit"]').click();
-    await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('已补充照片 / PDF 1 份'));
+    await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('1 份已保存，0 份需核验'));
     await page.waitForFunction(() => document.querySelector('#report-state [data-open-history-file]')?.dataset.privatePrefetched === 'true');
     const calls = await page.evaluate(() => window.fixtureCalls);
     const uploads = calls.filter(call => call.operation === 'history_monthly_attachment_upload');
@@ -111,7 +119,26 @@ const workbook = {
     await page.waitForFunction(() => document.getElementById('toast').textContent.includes('本月还没有月报'));
     assert.equal((await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_monthly_attachment_upload'))).length, 1, 'photo-only upload must not create an unscoped report');
 
-    console.log('monthly upload v524 browser: unchanged photo flow, automatic file routing, visible evidence and no-source guard passed');
+    await page.evaluate(() => {
+      document.getElementById('month').value = '2026-01';
+      state.data.monthly_report = { id: '11111111-1111-4111-8111-111111111111', historical: true, report_type: 'monthly_profit_loss', report_date: '2026-01-01', display_data: previewFilledMonthly(), vouchers: [] };
+      window.fixtureCalls = [];
+    });
+    await page.setInputFiles('#monthly-material-file', workbook);
+    await page.setInputFiles('#monthly-material-vouchers', extraPhotos);
+    await page.locator('#monthly-material-form button[type="submit"]').click();
+    await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('1 份需核验'));
+    const batchCalls = await page.evaluate(() => ({ calls: window.fixtureCalls, maxActive: window.fixtureMaxActiveUploads }));
+    assert.equal(batchCalls.calls.filter(call => call.operation === 'report_upload_auto').length, 1, 'the source report should be submitted exactly once');
+    assert.equal(batchCalls.calls.find(call => call.operation === 'report_upload_auto').require_monthly, true);
+    assert.equal(batchCalls.calls.filter(call => call.operation === 'history_monthly_attachment_upload').length, 3, 'all selected attachments must receive an individual attempt');
+    assert.equal(batchCalls.maxActive, 2, 'attachments should upload with a bounded concurrency of two');
+    assert.match(await page.locator('#monthly-material-result').innerText(), /凭证甲\.jpg：已保存/);
+    assert.match(await page.locator('#monthly-material-result').innerText(), /凭证乙\.jpg：未确认/);
+    assert.match(await page.locator('#monthly-material-result').innerText(), /刷新核验/);
+    assert.equal(await page.locator('#monthly-material-file').inputValue(), '', 'a saved source report must be cleared so retry cannot create a duplicate report');
+
+    console.log('monthly upload v549 browser: photo flow, auto routing, bounded concurrency, per-file uncertainty and duplicate-source guard passed');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
