@@ -148,6 +148,15 @@ expect(edge.includes('parseHistoricalWorkbook') && edge.includes('historyImportP
 expect(edge.includes('historyImportSheetPreview') && edge.includes('historyImportReview')
   && edge.includes('historyImportMonthConfirm') && edge.includes('zysyr_review_history_import_row'),
   'history importer must expose source workbook layout and finance human review endpoints');
+const historySheetPreviewStart = edge.indexOf('async function historyImportSheetPreview');
+const historySheetPreviewEnd = edge.indexOf('async function historyImportReview', historySheetPreviewStart);
+const historySheetPreviewSource = edge.slice(historySheetPreviewStart, historySheetPreviewEnd);
+expect(historySheetPreviewStart >= 0 && historySheetPreviewEnd > historySheetPreviewStart
+  && historySheetPreviewSource.includes('excelCellText(cell.value)')
+  && historySheetPreviewSource.includes('formulaCellText(cell.value)')
+  && !historySheetPreviewSource.includes('displayValue(cell)')
+  && !historySheetPreviewSource.includes('formulaText(cell)'),
+  'history original-sheet preview must use defined Excel cell value and formula helpers');
 expect(html.includes('history_import_sheet_preview') && html.includes('history_import_review')
   && html.includes('history_import_month_confirm') && html.includes('按月份审核整张原表'),
   'history importer must render the whole original monthly workbook instead of technical field-only rows');

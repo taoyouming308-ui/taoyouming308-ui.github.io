@@ -6059,8 +6059,8 @@ async function historyImportSheetPreview(payload: JsonRecord, session: JsonRecor
   for (let row = 1; row <= rowCount; row += 1) {
     for (let column = 1; column <= columnCount; column += 1) {
       const cell = sheet.getCell(row, column);
-      const value = displayValue(cell);
-      const formula = formulaText(cell);
+      const value = excelCellText(cell.value);
+      const formula = formulaCellText(cell.value);
       if ((value === null || value === "") && !formula) continue;
       const font = cell.font || {};
       const alignment = cell.alignment || {};

@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线整改：历史导入原表预览未定义函数修复（v543，待完整门禁与发布）
+
+- App version: v543。
+- 生产只读回读 `operations-api` v97 确认，`history_import_sheet_preview` 路径调用未定义的 `displayValue` / `formulaText`，因此财务打开历史导入批次的 Excel 原表预览会在服务端抛出运行时错误。
+- 改为复用现有的 `excelCellText` / `formulaCellText`，并添加回归保护，确保预览路由只用已定义的单元格提取函数。
+- 当前仅本地候选；待完整门禁、GitHub Pages 发布及 `operations-api` 整包部署/回读验证。未读写历史财务原件/金额或生产数据库，未改公式、权限、Auth 设置或财务独立登录入口。
+
 ## 上线整改：C06 固定 Supabase CLI 发布工具链（2026-09-24，CI 已验证）
 
 - GitHub Actions `validate` 工作流现安装并锁定 Supabase CLI `2.109.1`，禁用遥测；校验运行版本确切匹配，并确认 `db push --dry-run` 与 `functions deploy --use-api` 两项预期发布参数存在。
