@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 上线整改：B01 历史 warning 生产复核一致（只读，2026-09-25）
+
+- 再次只读核对 `zysyr_history_ledger_entries` 与对应导入批次，限定 `status=posted`、`posted_review_status=pending`、`posted_validation_status=warning`；仅按门店、月份、导入类型和 issue code 聚合计数，没有读取金额、员工姓名、原始行内容或凭证对象。
+- 结果与上线审计附录一致：3,739 条历史账均 `posted_with_warning=true` 且仍待财务验收；其中 validation_status=`warning` 为 1,115 条、`valid` 为 2,624 条、`invalid` 为 0。warning 标签共 1,154 次（仅统计上述 1,115 条 warning 记录，同一条可有多个）：月报 `label_unresolved` 953、员工自购 `product_unmatched` 88 / `employee_unmatched` 19 / `possible_duplicate` 8 / `retail_sale_preserved` 12、工资 `employee_unmatched` 66 / `net_formula_mismatch` 1、备用金 `sequence_unusual` 7。各标签仍是原始导入提示快照，不能据此自动判错或放行。
+- 本次无生产写入、无代码或金额修改。B01 继续开放：下一步仍须财务按门店/月/类型对照原表与凭证认领，尤其先核工资净额、疑似重复和员工/商品匹配；不得批量清 warning 或自动改历史账。
+
 ## 上线整改：B07 历史月报原件解析短缓存（后端已发布；性能验收待授权会话）
 
 - 仅在当前 Edge isolate 内缓存最多 2 份不可变历史 Excel 的解析展示投影；以公司、门店、原件存储位置及 SHA-256、门店名称和工作表共同隔离。原件身份无效时回到原有下载/解析路径。
