@@ -260,6 +260,19 @@ function monthlyTraceRevisionsPath(companyId: string, storeId: string, reportId:
   return `zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count,cell:zysyr_report_cells!inner(report_id)&company_id=eq.${companyId}&store_id=eq.${storeId}&cell.report_id=eq.${reportId}&order=revision.desc`;
 }
 
+async function reportUploadVouchers(companyId: string, storeId: string, reports: JsonRecord[]): Promise<JsonRecord[]> {
+  const reportIds = Array.from(new Set(reports.map((report) => cleanText(report.id, 40))
+    .filter((id) => /^[0-9a-f-]{36}$/i.test(id))));
+  const batches: string[][] = [];
+  for (let index = 0; index < reportIds.length; index += 100) batches.push(reportIds.slice(index, index + 100));
+  if (!batches.length) return [];
+  const results = await Promise.all(batches.map((ids) => restRowsAll(
+    `zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&record_id=in.${uuidIn(ids)}&order=uploaded_at.desc&limit=1000`,
+    1000,
+  )));
+  return results.flat();
+}
+
 async function restRows(path: string): Promise<JsonRecord[]> {
   const response = await rest(path);
   if (!response.ok) throw new Error(`数据读取失败 (${response.status})`);
@@ -1124,13 +1137,13 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
-  const voucherPath = `zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&order=uploaded_at.desc&limit=1000`;
-  const [rawReports, vouchers, dailySource] = await Promise.all([
-    restRowsAll(reportPath), restRowsAll(voucherPath), confirmedDailySource(companyId, storeId, month),
+  const [rawReports, dailySource] = await Promise.all([
+    restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month),
   ]);
-  const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
+  const vouchers = await reportUploadVouchers(companyId, storeId, reports);
+  const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
   const voucherMap = new Map<string, JsonRecord[]>();
   for (const voucher of vouchers) {
     const key = cleanText(voucher.record_id, 80);
