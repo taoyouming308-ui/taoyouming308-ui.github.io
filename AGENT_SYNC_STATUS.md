@@ -42,9 +42,9 @@
 
 ## 审计整改进度：B01 历史导入与财务验收状态分离（2026-09-24）
 
-- App version: v537。历史导入批次“已入正式账”和“整月财务验收”分开显示；摘要列出整月验收、待验明细、自动 warning、invalid、需修正与已入账数量，并明确入账不等于核清。
+- App version: v537，已随 `f0435ee` 推送 main，线上 version.txt 曾回读为 537。历史导入批次“已入正式账”和“整月财务验收”分开显示；摘要列出整月验收、待验明细、自动 warning、invalid、需修正与已入账数量，并明确入账不等于核清。
 - 对线上只做分组 COUNT 只读核验：3,739 条导入历史目前 review_status=pending，其中 1,115 条 validation_status=warning、2,624 条 validation_status=valid；无记录写入或修订。
-- parser 与汇总状态单测通过。财务仍须按门店/月/业务类型逐批签认 warning 与原件，不能清空标记或自动更改历史金额；当前改动本地，未发布。
+- parser 与汇总状态单测通过。财务仍须按门店/月/业务类型逐批签认 warning 与原件，不能清空标记或自动更改历史金额；功能已发布，但真实财务验收尚未完成。
 
 ## 审计整改进度：A05 历史日报只读复核提示（2026-09-24）
 
@@ -106,6 +106,13 @@
 - `node scripts/test-zysyr-confirm-uncertain-result.js`、`node scripts/test-operations.js`、`git diff --check` 和完整 `.githooks/pre-push` 已通过。测试使用合成状态，不连接生产。
 - 未改财务独立登录端口、金额公式、数据库、生产存储或正式账。A03/A04/A06 代码仅在本地；A01 门店历史查询范围待用户确认，A02/A05/G01 与 P1–P3 仍待分批整改。
 - 本项发布前仍须做完整 pre-push、人工审阅、隔离集成验证，并分别核验 Edge Function 部署和线上响应；不把本地通过说成线上修复。
+
+## 状态复核：A03/A04 已部署、A06 前端已发布（2026-09-24）
+
+- 当前生产只读回读：`operations-api` v95 ACTIVE、`verify_jwt=false`（函数内维持原有自定义会话鉴权）；生产迁移列表含 `20260924010116 zysyr_daily_expected_revision_gate`。在线函数源码确认日报最终确认携带/校验 `expected_revision`，对象路径包含草稿 ID 与来源哈希，结果不明分支保留归档并回读草稿状态，不再对不确定提交做 DELETE。对应隔离 PostgreSQL 与结果不明测试此前均通过。A03/A04 的部署状态因此从本文件早期“仅本地”更新为已部署；真实财务会话的成功写入仍未端到端验收。
+- A06 的修订随 v537 前端发布记录，月报渲染层会在服务端刷新前后保存未提交编辑、按服务端值核销已落库格，并保留失败项；`scripts/test-monthly-load-browser-v499.js` 和 `scripts/test-zysyr-monthly-audit.js` 此前通过。当前网络环境无法重新解析 Pages 主机，故本轮未重新读取线上 HTML 精确字节；按既有 v537 Pages 回读记录标记为已发布、在线代码本轮未复验。
+- 本轮复核的生产 `operations-auth-migrate` 为 v6 ACTIVE；认证滚动迁移表/函数 `20260811040423 zysyr_auth_rolling_migration` 在生产迁移记录中。此项只证明端点和迁移存在，不证明真实账号迁移覆盖率、密码轮换或旧长会话处置完成。
+- 上述核验只读取部署元数据、迁移名称和函数源码标记；没有读取密码/令牌值、使用真实财务会话写入、修改财务数据或更改登录入口。
 
 ## v530 月报整月日报字体微调（2026-09-24）
 
