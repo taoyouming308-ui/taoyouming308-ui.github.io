@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## Salon 会员收银版本保护接口（2026-09-24，独立分支）
+
+- App version: v537 上游基线；本批仅修改独立 Salon 功能分支，不发布主线版本。
+- 新增 `20260924062036_salon_member_checkout_versioned.sql`：储值/混合收银先锁订单核对版本，再复用原子支付事务；补充实际支付行回执与员工/门店/组织范围内的只读恢复核对。通用员工 API 仅路由带版本入口。
+- 合成 PostgreSQL 覆盖版本冲突、储值+现金、同请求并发、重试不重复扣款、跨店隔离、匿名调用拒绝、审计失败整体回滚；API、客户端、恢复清单测试和现金桌面/手机兼容回归通过。
+- **尚未接入收银工作台 UI，不是可收款功能。** 次卡/疗程权益分摊、正式 Auth/Edge/Advisor 与线下验收仍待完成；未应用远程迁移、未部署、未合并旧三 App。
+
 ## Salon 外部退款回执双人核验门禁（2026-09-24，独立分支）
 
 - App version: v537 上游基线；仅修改 `feature/meiguanjia-parity-v1` 的本地 Salon 开发，不发布主线版本。
@@ -24,6 +31,12 @@
 - 专项 PG15/手机浏览器测试及 Salon `.mjs`、退款申请/部分退款/审批/现金收银回归通过；员工带请求号函数覆盖增至 48。详见 `docs/salon-refund-withdrawal.md`。
 - 迁移仅独立分支本地测试，未应用默认 Supabase、未部署、未推 main，未整合旧三 App。商品验收返库、真实退款凭证/执行保护、会员/组合支付、正式 Auth/Edge/Advisor 仍待完成。
 - 本分支已同步最新 main；上游安全修复与 Salon 独立分支功能并存，不表示 Salon 已上线或合并。
+
+## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，本地待完整门禁）
+
+- 新增 `docs/zysyr/production-release-matrix-2026-09-24.md`，记录当日只读核实的 Pages、PostgreSQL、财务相关 Edge Function 版本/鉴权模式，以及代码读取的服务端环境变量名称；不记录值，不修改生产配置。
+- 标注 Supabase CLI 2.109.1；本沙箱无法写入 `/Users/a1/.supabase/telemetry.json`，因此 CLI `--help` 检查失败，未猜测或执行部署命令。
+- **C06 未关闭：** GitHub Actions 与本地 pre-push 测试清单尚未统一，CI 尚未固定 Supabase CLI/部署校验；实际环境变量设置仍需平台管理员逐项核实。本批仅补发布基线与剩余门槛。
 
 ## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
 
