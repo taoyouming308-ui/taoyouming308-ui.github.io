@@ -23,7 +23,13 @@
 - 本机工作台新增“撤回本人待审批申请”；多层门店权限、完整请求指纹、同键幂等、回读及刷新后 request lookup 恢复。不会写支付、会员、库存、业绩或订单退款额。
 - 专项 PG15/手机浏览器测试及 Salon `.mjs`、退款申请/部分退款/审批/现金收银回归通过；员工带请求号函数覆盖增至 48。详见 `docs/salon-refund-withdrawal.md`。
 - 迁移仅独立分支本地测试，未应用默认 Supabase、未部署、未推 main，未整合旧三 App。商品验收返库、真实退款凭证/执行保护、会员/组合支付、正式 Auth/Edge/Advisor 仍待完成。
-- 本分支已同步 v537 主线；主线同步仅为开发分支备份门禁，不表示 Salon 已上线或合并。
+- 本分支已同步最新 main；上游安全修复与 Salon 独立分支功能并存，不表示 Salon 已上线或合并。
+
+## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
+
+- 经用户明确授权，生产迁移 `20260924051925 zysyr_storage_remove_global_public_policy` 已应用；删除的只有 `storage.objects.anon_all` 全局策略。匿名角色此前可读取 74 个报表对象、349 个凭证对象及 2 个 showcase 对象的元数据；应用后匿名对象查询为空。
+- 生产回读确认 `service_role` 仍能访问原有 425 个对象；`showcase` 仍保持 public，`zysyr-reports` 与 `zysyr-vouchers` 仍为 private。没有删除/改写任何对象、财务数据或 bucket 设置。
+- 本地迁移按 Supabase 实际登记版本号对齐，并新增迁移范围回归测试；此项仅数据库安全迁移，无前端发布或财务计算变化。服务端财务接口继续通过 service_role 与短时签名 URL 访问私有对象。
 
 ## 审计整改进度：v537 发布及权限依赖核验（2026-09-24）
 
