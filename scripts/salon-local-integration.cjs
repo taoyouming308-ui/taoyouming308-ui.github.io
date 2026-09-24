@@ -53,6 +53,7 @@ async function startServer(){
     const common={p_actor_staff_id:s.actorStaffId,p_organization_id:s.organizationId,p_store_id:s.storeId};
     if(resource==='customers')return rpc('salon_list_customers',{...common,p_query:s.query,p_status:s.status,p_limit:s.limit});
     if(resource==='catalog')return rpc('salon_list_catalog_inventory',{...common,p_item_type:s.itemType,p_status:s.status,p_query:s.query,p_limit:s.limit});
+    if(resource==='members')return rpc('salon_list_member_accounts',{...common,p_customer_id:s.customerId,p_status:s.status,p_limit:s.limit});
     if(resource==='order_detail')return rpc('salon_get_order',{...common,p_order_id:s.orderId});
     throw Error('本机工作台未开放该读取');
    }
@@ -74,6 +75,7 @@ async function startServer(){
   allowed.add('order_status');
   allowed.add('cash_checkout');
   allowed.add('checkout');
+  allowed.add('members');
   allowed.add('cash_refund_source');allowed.add('cash_refund_request');
   allowed.add('cash_refund_availability');files['/packages/salon-core/refund-availability.mjs']='packages/salon-core/refund-availability.mjs';
   allowed.add('partial_cash_refund_request');files['/packages/salon-core/partial-refund.mjs']='packages/salon-core/partial-refund.mjs';
@@ -83,6 +85,7 @@ async function startServer(){
   files['/packages/salon-core/cash-receipt.mjs']='packages/salon-core/cash-receipt.mjs';
   files['/packages/salon-core/order-flow.mjs']='packages/salon-core/order-flow.mjs';
   files['/packages/salon-core/cash-preview.mjs']='packages/salon-core/cash-preview.mjs';
+  files['/packages/salon-core/member-checkout.mjs']='packages/salon-core/member-checkout.mjs';
   files['/packages/salon-core/order-list.mjs']='packages/salon-core/order-list.mjs';
   server=http.createServer(async(req,res)=>{
    const origin=`http://127.0.0.1:${server.address().port}`;

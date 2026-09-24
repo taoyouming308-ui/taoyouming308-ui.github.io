@@ -1,25 +1,34 @@
-# 会员储值收银 · 版本保护接口阶段
+# 会员储值与组合收银（离线开发阶段）
 
-状态：独立开发分支；本批只补充版本保护数据库/API基础，使用一次性合成 PostgreSQL 验证。未连接真实账户、未部署迁移/Edge，工作台 UI 尚未接入，不能用于收款。
+状态：已接入本机合成工作台并完成桌面/手机浏览器联测；仍只在独立开发分支。未连接真实账户、未应用远程迁移、未部署 Edge/Pages、未合并主分支，不可用于真实收款。
 
-## 本批交付
+## 当前能力
 
-- 新增 `salon_checkout_order_versioned`，先锁定当前门店订单并比较 `edit_version` 与 `awaiting_payment` 状态，再调用现有原子收银事务。原子事务继续同时处理支付行、储值/次数流水、商品库存、订单状态、审计和幂等请求。
-- 保留旧 `salon_checkout_order` 供内部兼容；本机员工 API 的 `checkout` 路由改走带版本的函数，必须提交 `expectedVersion`。
-- 成功响应增加实际支付明细；`salon_lookup_checkout_request` 仅按组织、门店、当前员工及原请求号核对，并逐项匹配持久化支付记录。刷新恢复只查原请求，不重放支付。
-- 当前阶段覆盖储值卡和现金组合的底层事务基础。顾客/账户归属、卡状态、余额、账户类型、门店范围及到期规则仍由数据库在提交时重新验证。次卡/疗程 UI 尚未开放；其次数与项目权益分摊需后续接入既有卡项规则。
+- 在已载入的待收银订单中，按 `members.read` 权限读取该顾客、当前授权门店可用的储值账户；仅展示卡别名、遮罩卡号末四位与余额，不读取手机号或其他顾客账户。
+- 手工指定储值扣款金额和现金实收金额，按分精度预览储值、现金余款与找零；预览前重新读取订单、账户、版本与余额，不产生业务写入。
+- 员工明确确认后，以带订单版本与幂等请求号的 `checkout` 原子提交；服务端重新核对顾客、账户类型/状态、余额、有效期、门店范围与支付总额。会员余额、支付行、库存、订单状态、审计与请求回执处于同一事务。
+- 成功后按原请求只读查询持久化支付行并回读订单。写入响应丢失时可刷新页面，以原请求号恢复历史收银回执；恢复只读，不重放扣款或收款。
+- 不支持散客会员扣款；次卡/疗程 UI 与项目权益分摊尚未接入；微信/支付宝的组合支付凭证采集尚未开放。本页依旧是专用本机合成测试台。
 
-## 本地验证
+## 本批接口与迁移
 
-- `node scripts/test-salon-api.mjs`
-- `node scripts/test-salon-api-client.mjs`
-- `node scripts/test-salon-recovery-journal.mjs`
+- `salon_checkout_order_versioned`：锁定订单，校验 `edit_version` 与待收银状态，再调用现有原子收银事务。
+- `salon_lookup_checkout_request`：按当前组织、门店、员工与原请求号验证持久化支付行；回执包含数据库 `completedAt`，供页面做提交完成校验。
+- `packages/salon-core/member-checkout.mjs`：规范化会员 RPC 返回字段、验证账户范围、构建分支付预览并验证直返/历史回执。
+- `20260924062036_salon_member_checkout_versioned.sql`、`20260924070500_salon_checkout_lookup_completed_at.sql`：版本门禁及历史核对时间戳迁移。
+
+## 验证
+
+- `node scripts/test-salon-member-checkout-model.mjs`
 - `node scripts/test-salon-member-checkout-sql.js`
 - `NODE_PATH=/Users/a1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/test-salon-member-checkout.cjs`
+- `NODE_PATH=/Users/a1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/test-salon-member-checkout-browser.cjs`
+- 相关 API、API 客户端、恢复日志与现金收银回归另行通过后方可记录。
 
-专项 PostgreSQL 测试覆盖旧版本拒绝、储值+现金、同键顺序/并发重试、原请求回读、跨店隔离、匿名执行拒绝及审计失败整体回滚。测试只使用专用临时容器与合成数据。
+端到端测试使用临时 PostgreSQL 容器、合成身份/顾客/账户/订单与库存；覆盖账户遮罩、储值+现金拆分、直返支付记录、响应丢失后刷新恢复、请求幂等及不重复扣款，桌面 1280px 与手机 390px 布局均通过。测试结束自动删除容器。
 
-## 尚未完成
+## 仍需完成
 
-- 把账户选择、余额最小展示、储值金额/现金余款预览、人工确认、支付明细回读及刷新恢复接入收银工作台；并完成桌面/手机浏览器联测。
-- 补真实 Auth/Edge/Advisor 门禁和正式线下业务验收。上线前不应用迁移、不部署、不合并主分支或旧三 App。
+- 接入正式 Auth/员工会话、生产 Edge、最小权限与 Advisor 验收；远程部署迁移必须另行审批并在上线阶段实施。
+- 补次卡/疗程权益分摊、渠道组合支付、退款/撤销后的会员余额与支付追踪，以及完整门店/员工权限矩阵线下验收。
+- 完成整个 App 的模块覆盖、跨模块业务链及离线验收；此单模块通过不代表项目完成。合并三个既有 App 或上线前，需完成线下验收并获得用户明确授权。

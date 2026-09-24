@@ -9,6 +9,7 @@ import {orderStates,orderPage,renderOrderPage} from './order-list.mjs';
 import {orderFlow,renderOrderFlow} from './order-flow.mjs';
 import {createCashPreview,renderCashPreview} from './cash-preview.mjs';
 import {verifyCashReceipt,verifyCashLookup,renderCashReceipt} from './cash-receipt.mjs';
+import {inspectStoredValueAccounts,createStoredValueCheckoutPlan,verifyMemberCheckoutReceipt,verifyMemberCheckoutLookup,verifyRecoveredCheckoutLookup,renderMemberCheckoutReceipt,renderRecoveredCheckoutReceipt} from './member-checkout.mjs';
 import {refundStates,refundPage,inspectRefund,verifyRefundDecision,verifyRefundStockInspection,verifyRefundChannelReceipt,renderRefund} from './refund-review.mjs';
 import {cashRefundSource,verifyCashRefundReceipt,verifyCashRefundReadback,renderCashRefundSource} from './refund-request.mjs';
 import {partialRefundProposal,verifyPartialRefundReceipt,verifyPartialRefundReadback,renderPartialRefundEditor} from './partial-refund.mjs';
@@ -62,9 +63,10 @@ async function loadRefundPage(beforeId=null){
  for(const row of page.rows)$('refundSelection').add(new Option(`申请 ${row.id} · 订单 ${row.orderId} · ¥${row.amount} · ${refundStates[row.status]}`,String(row.id)));
  $('nextRefunds').disabled=refundNext===null;$('refundListStatus').textContent=`本页 ${page.rows.length} 条 · ${refundNext===null?'已到末页':'还有更早申请'} · 载入时重新核对，列表不是实时状态`;
 }
-let cash=createCashPreview(),cashConfirmation=null;
+let cash=createCashPreview(),cashConfirmation=null,memberAccounts=[],memberCheckoutContext=null,memberCheckoutPlan=null;
 function clearCashResult(){cashConfirmation=null;$('cashConfirm').disabled=true;$('cashResult').replaceChildren();}
-function resetCash(){cash.clear();$('cashTendered').value='';clearCashResult();}
+function clearMemberCheckout(){memberAccounts=[];memberCheckoutContext=null;memberCheckoutPlan=null;$('memberCheckoutAccount').replaceChildren(new Option('请先读取账户',''));$('memberValueAmount').value='';$('memberCashTendered').value='';$('memberCheckoutPreview').replaceChildren();$('loadMemberAccounts').disabled=true;$('memberCheckoutAccount').disabled=true;$('memberValueAmount').disabled=true;$('memberCashTendered').disabled=true;$('previewMemberCheckout').disabled=true;$('confirmMemberCheckout').disabled=true;$('memberCheckoutStatus').textContent='仅支持本顾客当前门店可用的储值卡；余额由服务端再次校验。';}
+function resetCash(){cash.clear();$('cashTendered').value='';clearCashResult();clearMemberCheckout();}
 function hydrateEditor(data,scope){const next=orderFlow(data,scope),nextCash=createCashPreview();nextCash.load(data,scope);editor.load(data,scope);loadedFlow=next;resetCash();cash=nextCash;}
 function resetEditor(){editor.clear();loadedFlow=null;resetCash();clearRefunds();clearCashRefundSource();$('cashRefundOrderId').value='';}
 let nextOrderId=null,listedStatus='';
@@ -98,7 +100,9 @@ function renderEditor(){
  const cashDisabled=!cash.available||editor.dirty||orderVersion===null;
  $('cashOrder').textContent=cash.available?`已载入订单 ${cash.order.number} · 应收 ¥${cash.order.payable}（点击预览时重新核对）`:'请先载入有明细、应收大于零的待收银订单。';
  $('cashPreview').disabled=cashDisabled;$('cashTendered').disabled=cashDisabled;
+ $('loadMemberAccounts').disabled=cashDisabled;
  if(cashDisabled)clearCashResult();
+ if(cashDisabled)clearMemberCheckout();
  renderOrderFlow($('orderFlow'),loadedFlow,editor.dirty||orderVersion===null,advanceOrder);
  renderDraftEditor($('draftRows'),editor,renderEditor,error=>status(error.message));
  $('draftSummary').textContent=`共 ${editor.rows.length} 项 · ${!editor.editable?'只读，不能保存':editor.dirty?'有未保存修改':'与最近读取记录一致'}`;
@@ -162,6 +166,7 @@ async function mutate(operation,fields,onSuccess){
  clearCashRefundSource();
  clearRefundDetail();
  clearCashResult();
+ clearMemberCheckout();
  clearOrderList();
  $('orderInspection').replaceChildren();
  if(journalFault||journal().list().length)throw Error('待核对清单未解决，禁止新建业务。');
@@ -172,7 +177,7 @@ async function mutate(operation,fields,onSuccess){
  retry=async()=>{
   let result;
   try{result=await client.submit(ticket);}catch(error){
-   if(['order_lines','order_status','cash_checkout'].includes(operation)&&error.message.includes('订单版本已变化')){editor.lock();orderVersion=null;renderEditor();}
+   if(['order_lines','order_status','cash_checkout','checkout'].includes(operation)&&error.message.includes('订单版本已变化')){editor.lock();orderVersion=null;renderEditor();}
    // A later rejection cannot prove an earlier unknown submission did not commit.
    if(error.code==='API_REJECTED'&&error.httpStatus>=400&&error.httpStatus<500){
     retry=null;if(tracked&&!hadUnknownResult)try{pendingJournal.acknowledge(ticket);}catch(e){journalFault=true;throw e;}
@@ -187,7 +192,7 @@ async function mutate(operation,fields,onSuccess){
     if(operation==='refund_review')verifyRefundDecision(result.data,fields.refundRequestId,client.scope,fields.decision);
     if(operation==='refund_withdraw'&&(id!==fields.refundRequestId||result.data.status!=='cancelled'||result.data.withdrawnByStaffId!==client.scope.staffId))throw Error('退款撤回回执不匹配，请继续核对原请求。');
     if(operation==='refund_channel_receipt')verifyRefundChannelReceipt(result.data,fields.refundRequestId,client.scope,fields);
-    if(['order_lines','order_status','cash_checkout'].includes(operation)&&id!==fields.orderId)throw Error('返回订单不匹配，请继续核对原请求。');
+    if(['order_lines','order_status','cash_checkout','checkout'].includes(operation)&&id!==fields.orderId)throw Error('返回订单不匹配，请继续核对原请求。');
     if(operation==='cash_checkout')verifyCashReceipt(result.data,client.scope,ticket.requestKey,{orderId:fields.orderId,version:fields.expectedVersion,payable:fields.amount,tendered:fields.tendered,change:fields.change});
     if(operation==='order_status'&&result.data.status!==fields.status)throw Error('返回状态不匹配，请继续核对原请求。');
    }catch(error){hadUnknownResult=true;throw error;}
@@ -367,8 +372,55 @@ $('cashPreview').onclick=()=>run(async()=>{
    $('order').textContent=`订单 ${orderId} · 当前状态 ${current.order.status}`;
    renderCashReceipt($('cashResult'),checked,current.order.status);
    status('现金收款已提交，并按原请求核对支付记录；未扣会员。');
-  });
  });
+ });
+function invalidateMemberCheckoutPreview(){memberCheckoutPlan=null;$('memberCheckoutPreview').replaceChildren();$('previewMemberCheckout').disabled=!memberCheckoutContext;$('confirmMemberCheckout').disabled=true;}
+$('loadMemberAccounts').onclick=()=>run(async()=>{
+ clearMemberCheckout();
+ if(!cash.available||editor.dirty||orderVersion===null||cash.order.id!==orderId)throw Error('请先从列表载入未修改的待收银订单');
+ const detail=(await client.read('order_detail',{orderId})).data;
+ inspectOrder(detail,orderId,client.scope);
+ if(detail.order.status!=='awaiting_payment'||orderEditVersion(detail.order.edit_version)!==orderVersion)throw Error('订单状态或版本已变化，请重新载入后核对');
+ if(detail.order.customer_id==null)throw Error('散客订单不能使用会员储值账户');
+ const customerId=serverId(detail.order.customer_id),result=await client.read('members',{customerId,status:'active',limit:200});
+ memberAccounts=inspectStoredValueAccounts(result.data,client.scope,customerId);
+ if(!memberAccounts.length)throw Error('本顾客当前门店没有可用储值卡；未读取或展示其他顾客账户');
+ memberCheckoutContext={orderId,version:orderVersion,customerId,payable:String(detail.order.payable_total),number:String(detail.order.order_no)};
+ const select=$('memberCheckoutAccount');select.replaceChildren(new Option('请选择储值账户',''));
+ for(const account of memberAccounts){const last4=account.accountNo.slice(-4),masked=last4?` ····${last4}`:'';select.add(new Option(`${account.displayName||'储值卡'}${masked} · 余额 ¥${(account.balanceCents/100).toFixed(2)}`,String(account.id)));}
+ select.disabled=false;$('memberValueAmount').disabled=false;$('memberCashTendered').disabled=false;$('previewMemberCheckout').disabled=false;
+ $('memberCheckoutStatus').textContent=`已读取订单 ${memberCheckoutContext.number} 的 ${memberAccounts.length} 个可用储值账户；还未扣款。`;
+});
+for(const id of ['memberCheckoutAccount','memberValueAmount','memberCashTendered'])$(id).addEventListener(id==='memberCheckoutAccount'?'change':'input',invalidateMemberCheckoutPreview);
+$('previewMemberCheckout').onclick=()=>run(async()=>{
+ invalidateMemberCheckoutPreview();
+ const context=memberCheckoutContext,accountId=serverId($('memberCheckoutAccount').value);
+ if(!context||context.orderId!==orderId||context.version!==orderVersion||editor.dirty||!cash.available)throw Error('请重新读取当前订单与储值账户');
+ const detail=(await client.read('order_detail',{orderId:context.orderId})).data;inspectOrder(detail,context.orderId,client.scope);
+ if(detail.order.status!=='awaiting_payment'||orderEditVersion(detail.order.edit_version)!==context.version||serverId(detail.order.customer_id)!==context.customerId)throw Error('订单状态、顾客或版本已变化，请重新载入');
+ const accountRows=(await client.read('members',{customerId:context.customerId,status:'active',limit:200})).data,accounts=inspectStoredValueAccounts(accountRows,client.scope,context.customerId),account=accounts.find(row=>row.id===accountId);
+ if(!account)throw Error('所选储值账户已不可用，请重新读取');
+ const plan=createStoredValueCheckoutPlan({orderId:context.orderId,version:context.version,payable:String(detail.order.payable_total),account,storedValueAmount:$('memberValueAmount').value.trim(),cashTendered:$('memberCashTendered').value.trim()});
+ memberAccounts=accounts;memberCheckoutPlan={...plan,accountName:account.displayName||'储值卡',accountNoSuffix:account.accountNo.slice(-4)};
+ const preview=$('memberCheckoutPreview'),doc=preview.ownerDocument,heading=doc.createElement('strong'),body=doc.createElement('p'),state=doc.createElement('p');
+ heading.textContent='组合支付预览（未提交）';body.textContent=`订单 ${context.number} · 应收 ¥${plan.payable} · 储值扣款 ¥${plan.memberAmount} · 现金余款 ¥${plan.cashAmount} · 现金实收 ¥${plan.cashTendered} · 找零 ¥${plan.change}`;state.textContent=`储值卡 ${memberCheckoutPlan.accountName} · 余额 ¥${(account.balanceCents/100).toFixed(2)}（提交时服务端再次校验）`;
+ preview.replaceChildren(heading,body,state);$('confirmMemberCheckout').disabled=false;$('memberCheckoutStatus').textContent='已重新读取当前订单与储值余额；预览不写入业务。';
+});
+$('confirmMemberCheckout').onclick=()=>run(async()=>{
+ const plan=memberCheckoutPlan,context=memberCheckoutContext;
+ if(!plan||!context||context.orderId!==orderId||context.version!==orderVersion||editor.dirty||!cash.available)throw Error('预览已失效，请重新读取订单、储值卡和余额');
+ if(!confirm(`仅合成测试：订单 ${context.number} · 储值卡扣款 ¥${plan.memberAmount} · 现金余款 ¥${plan.cashAmount} · 现金实收 ¥${plan.cashTendered} · 找零 ¥${plan.change}。确认该储值账户与金额无误？`))return;
+ await mutate('checkout',{orderId:plan.orderId,expectedVersion:plan.version,payments:plan.payments},async(data,ticket)=>{
+  const written=verifyMemberCheckoutReceipt(data,client.scope,ticket.requestKey,plan);
+  const lookup=(await client.read('request_lookup',{targetOperation:'checkout',requestKey:ticket.requestKey})).data,checked=verifyMemberCheckoutLookup(lookup,client.scope,ticket.requestKey,plan);
+  if(written.receipt.paymentLines.some((line,index)=>serverId(line.paymentId)!==serverId(checked.receipt.paymentLines[index].paymentId)))throw Error('写入响应与原请求支付记录不匹配');
+  const current=(await client.read('order_detail',{orderId:plan.orderId})).data;inspectOrder(current,plan.orderId,client.scope);
+  if(current.order.status!=='paid')throw Error('支付记录已提交，但订单当前状态尚未回读为已支付；请保留原请求核对');
+  hydrateEditor(current,client.scope);orderVersion=orderEditVersion(current.order.edit_version);renderEditor();$('order').textContent=`订单 ${plan.orderId} · 当前状态 ${current.order.status}`;
+  renderMemberCheckoutReceipt($('cashResult'),checked,current.order.status);
+  $('memberCheckoutStatus').textContent='本机合成会员收银已完成并回读；储值扣款与订单支付各记一次。';status(`会员储值收银已按原请求核对：储值 ¥${plan.memberAmount}，现金 ¥${plan.cashAmount}。请求号 ${ticket.requestKey}`);
+ });
+});
 function advanceOrder(target,label){return run(async()=>{
  if(!loadedFlow||loadedFlow.id!==orderId||orderVersion===null||editor.dirty||!loadedFlow.actions.includes(target))throw Error('当前订单不能执行该状态操作，请先保存或重新载入核对。');
  if(!confirm(`订单 ${loadedFlow.number}：${label}？只修改整单状态，不代表项目完成或已收款。`))return;
@@ -463,12 +515,17 @@ $('lookupRequest').onclick=()=>run(async()=>{
  const expectedType=ticket.operation==='customer_create'?'customer':'order';
  if(result.status!=='committed'||result.resourceType!==expectedType||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('核对结果不完整，原请求继续保留。');
  const id=serverId(result.resourceId);
- let recoveredOrder,recoveredCash;
+ let recoveredOrder,recoveredCash,recoveredMember;
  if(ticket.operation==='cash_checkout')recoveredCash=verifyCashLookup(result,client.scope,ticket.requestKey);
  if(expectedType==='order'){
   recoveredOrder=(await client.read('order_detail',{orderId:id})).data;
   if(serverId(recoveredOrder?.order?.id)!==id)throw Error('订单现状核对失败，原请求继续保留。');
   orderEditVersion(recoveredOrder.order.edit_version);
+  if(ticket.operation==='checkout'){
+   inspectOrder(recoveredOrder,id,client.scope);
+   if(recoveredOrder.order.status!=='paid')throw Error('原会员收银已登记但当前订单非已支付，请人工核对；原请求保留。');
+   recoveredMember=verifyRecoveredCheckoutLookup(result,client.scope,ticket.requestKey,id,String(recoveredOrder.order.payable_total));
+  }
  }
  await refresh();
  if(expectedType==='customer'&&!customers.some(row=>row.id===id))throw Error('历史建档已完成，但当前列表未找到顾客，请人工核对；原请求保留。');
@@ -478,6 +535,7 @@ $('lookupRequest').onclick=()=>run(async()=>{
  else $('customer').value=String(id);
  renderEditor();
  if(recoveredCash)renderCashReceipt($('cashResult'),recoveredCash,recoveredOrder.order.status);
+ if(recoveredMember)renderRecoveredCheckoutReceipt($('cashResult'),recoveredMember,recoveredOrder.order.status);
  status('已核对原请求并读取当前记录，没有重新提交业务。');
 });
 $('refresh').onclick=()=>run(async()=>{await refresh();status('已刷新本店数据。');});

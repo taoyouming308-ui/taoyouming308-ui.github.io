@@ -56,7 +56,11 @@ export function createSalonHandler(deps){return async function(request){
     if(operation==='inventory')return finish(200,{data:await deps.read('inventory',{actorStaffId:actor,organizationId:common.p_organization_id,storeId:common.p_store_id,catalogItemId:integer(payload.catalogItemId,'商品',true)})});
     if(operation==='customers')return finish(200,{data:await deps.read('customers',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,query:text(payload.query,100),status:text(payload.status,20),limit:Math.min(integer(payload.limit||100,'数量'),200)})});
     if(operation==='catalog')return finish(200,{data:await deps.read('catalog',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,itemType:text(payload.itemType,20),status:text(payload.status,20),query:text(payload.query,100),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
-    if(operation==='members')return finish(200,{data:await deps.read('members',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,customerId:integer(payload.customerId,'顾客',true),status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
+    if(operation==='members'){
+      const rows=await deps.read('members',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,customerId:integer(payload.customerId,'顾客',true),status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)});
+      if(!Array.isArray(rows))throw new Error('会员账户列表格式无效');
+      return finish(200,{data:rows.map(row=>({...row,organization_id:org,store_id:activeStoreId}))});
+    }
     if(operation==='refunds')return finish(200,{data:await deps.read('refunds',{actorStaffId:common.p_actor_staff_id,organizationId:common.p_organization_id,storeId:common.p_store_id,status:text(payload.status,20),limit:Math.min(integer(payload.limit||200,'数量'),500)})});
     let args;
     if(['cash_refund_source','cash_refund_availability'].includes(operation)){
@@ -228,9 +232,13 @@ export function createSalonHandler(deps){return async function(request){
       return finish(200,{data:await deps.invoke('salon_lookup_refund_stock_inspection',{p_actor_staff_id:actor,p_organization_id:org,p_store_id:activeStoreId,p_lookup_key:payload.requestKey})});
     }
     if(operation==='request_lookup'&&payload.targetOperation==='checkout'){
-      return finish(200,{data:await deps.invoke('salon_lookup_checkout_request',{p_actor_staff_id:actor,p_organization_id:org,p_store_id:activeStoreId,p_lookup_key:payload.requestKey})});
+      const found=await deps.invoke('salon_lookup_checkout_request',{p_actor_staff_id:actor,p_organization_id:org,p_store_id:activeStoreId,p_lookup_key:payload.requestKey});
+      const data=found?.status==='committed'&&found.receipt?{...found,receipt:{...found.receipt,organizationId:org,storeId:activeStoreId,requestKey:payload.requestKey}}:found;
+      return finish(200,{data});
     }
     if(operation==='request_lookup'&&payload.targetOperation==='refund_withdraw')delete args.p_target_operation;
-    return finish(200,{data:await deps.invoke(rpc,args)});
+    const result=await deps.invoke(rpc,args);
+    const data=operation==='checkout'&&result&&typeof result==='object'?{...result,organizationId:org,storeId:activeStoreId,requestKey:payload.requestKey}:result;
+    return finish(200,{data});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
 }}

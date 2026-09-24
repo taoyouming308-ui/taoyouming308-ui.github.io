@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## Salon 会员储值与组合收银工作台联调（2026-09-24，独立分支）
+
+- App version: v537 上游基线；工作只在 `feature/meiguanjia-parity-v1`，未发布主线版本。
+- 工作台现支持按当前顾客读取可用储值卡、遮罩卡号、输入扣款/现金金额、预览、人工确认、持久化支付回读；丢失响应后可刷新并按原请求只读恢复。
+- 修复会员账户 RPC 字段映射与本机成员读取白名单；新增 `20260924070500_salon_checkout_lookup_completed_at.sql`，让恢复核对回执带数据库完成时间。
+- 合成模型、真实本机 handler/RPC/PostgreSQL + Chrome 桌面/手机联测通过。覆盖分支付金额、成功提交、丢失响应刷新、不重复扣款与视口无横向溢出。
+- 详见 `docs/salon-member-checkout.md`。真实 Auth/Edge/Advisor、次卡/疗程、渠道组合支付及完整线下验收仍未完成；未应用远程迁移、未部署、未合并或整合旧三 App。
+
 ## Salon 会员收银版本保护接口（2026-09-24，独立分支）
 
 - App version: v537 上游基线；本批仅修改独立 Salon 功能分支，不发布主线版本。
