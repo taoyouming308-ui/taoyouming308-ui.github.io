@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 审计整改进度：v537 发布及权限依赖核验（2026-09-24）
+
+- v537 提交 `f0435ee` 已通过完整 pre-push 门禁并推送 GitHub `main`；只读访问 Pages 的 `version.txt` 确认为 `537`，线上 `perm-app.html` 使用会话校验 API，不再直接请求 `bookings` / `customer_profiles`。
+- `employee-bookings-api` v4 为 ACTIVE；未登录 `session` 探测返回应用层 403。生产迁移 `20260924040520 zysyr_customer_booking_private_acl` 已应用：两表启用 RLS，anon/authenticated 无 SELECT 权限，service_role 的读写权限保留；匿名 REST 探测返回 401。无数据行被修改或删除。
+- 已应用 `20260924040811 daily_confirmed_validation_review`，只读日报复核 RPC 仅 service_role 可执行，`search_path` 固定为空；anon/authenticated 执行权限为 false。它不写入日报或金额。
+- 安全 Advisor 中 `bookings` / `customer_profiles` 的 `rls_disabled_in_public` 两个 ERROR 已消失；保留的 RLS 无策略项是 INFO，另有 Supabase Auth 泄露密码保护 WARN 尚待管理员在 Dashboard 决定启用。真实财务账号完整读写流程、本轮 API 有效会话读数据仍未做端到端验证；财务独立登录端口、公式和数据未改。
+
 ## 审计整改进度：后台受保护接口与日报版本兼容层已分阶段上线（2026-09-24）
 
 - `staff-access-api` 已从 v1 更新到 v2；新增客户档案/跟进操作仅限有效总管理员会话，未登录线上探测返回 403。旧后台登录与管理员接口保留。财务端口、财务登录及财务数据未改。
