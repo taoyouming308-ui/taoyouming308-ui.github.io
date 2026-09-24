@@ -47,7 +47,7 @@ async function run() {
     `);
     const migration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260923105746_zysyr_daily_stylist_subtotal_validation.sql'), 'utf8');
     sql(migration);
-    const historicalReviewMigration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260923203352_daily_confirmed_validation_review.sql'), 'utf8');
+    const historicalReviewMigration = fs.readFileSync(path.join(__dirname, '../supabase/migrations/20260924040811_daily_confirmed_validation_review.sql'), 'utf8');
     sql(historicalReviewMigration);
     const validate = `select zysyr_private.daily_sheet_validation('${id(2)}','${id(3)}','${id(1)}')`;
     let result = JSON.parse(sql(validate));

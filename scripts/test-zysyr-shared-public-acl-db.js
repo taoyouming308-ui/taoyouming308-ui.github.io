@@ -16,7 +16,7 @@ async function main() {
       try { psql('select 1'); break; } catch { await new Promise(resolve => setTimeout(resolve, 250)); }
     }
     const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260924004040_zysyr_shared_public_table_acl.sql'), 'utf8');
-    const privateMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260923202011_zysyr_customer_booking_private_acl.sql'), 'utf8');
+    const privateMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260924040520_zysyr_customer_booking_private_acl.sql'), 'utf8');
     for (const page of ['index.html', 'perm-app.html', '自由手艺人.html', 'v2.html', 'v3.html']) {
       assert.doesNotMatch(fs.readFileSync(path.join(root, page), 'utf8'), /\/rest\/v1\/barber_identities/, `${page} must not write device identity through the public API`);
     }

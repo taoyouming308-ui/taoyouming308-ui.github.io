@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const api = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
 const pageSource = fs.readFileSync('operations.html', 'utf8');
-const historicalReviewMigration = fs.readFileSync('supabase/migrations/20260923203352_daily_confirmed_validation_review.sql', 'utf8');
+const historicalReviewMigration = fs.readFileSync('supabase/migrations/20260924040811_daily_confirmed_validation_review.sql', 'utf8');
 assert.match(api, /monthlyAdjustmentForSource\(row\.id, adjustments, dailyIncome \? daily : null\)\.applied_delta/);
 assert.match(api, /monthlyAdjustmentForSource\(cell\.id, adjustments, daily\)\.applied_delta/);
 assert.match(api, /status=eq\.confirmed&source_voucher_id=not\.is\.null/);
