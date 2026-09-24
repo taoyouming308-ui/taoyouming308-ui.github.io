@@ -12,7 +12,7 @@ assert.match(page, /id="monthly-material-vouchers"[^>]*multiple[^>]*accept="imag
 assert.doesNotMatch(page, /id="monthly-material-type"|id="monthly-material-date"/);
 assert.match(page, /api\('report_upload_auto',\{store:currentStore\(\),filename:file\.name,mime_type:mime,base64:await fileBase64\(file\),require_monthly:vouchers\.length>0\}\)/);
 assert.match(page, /正式财务账未自动改变/);
-assert.match(page, /美发收入仍只按已确认日报累计，不会因上传月报重复统计/);
+assert.match(page, /月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计/);
 
 assert.match(api, /detectReportMetadata/);
 assert.match(api, /activeTab="\(\\d\+\)"/);
@@ -23,7 +23,7 @@ assert.match(api, /formal_ledger_changed: false/);
 
 assert.match(api, /const dailyIncome = Number\(daily\?\.confirmed_days \|\| 0\) > 0 && isDailyIncomeCell\(cell\)/);
 assert.match(api, /const effective = dailyIncome \? Number\(daily\?\.amount\)/);
-assert.match(api, /const adjustment = dailyIncome \? 0/);
-assert.match(api, /美发收入已由已确认日报自动累计，不能在月报重复入账/);
+assert.match(api, /const adjustment = dailyIncome\s*\?\s*monthlyAdjustmentForSource\(cell\.id, adjustments, daily\)\.applied_delta/);
+assert.match(api, /monthlyAdjustmentForSource\(cell\.id, adjustments, daily\)\.applied_delta/);
 
 console.log('ZYSYR v524 auto upload: UI, server-side detection, safe period routing and no-double-count guards passed');

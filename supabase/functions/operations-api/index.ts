@@ -62,6 +62,11 @@ const cors = {
 };
 
 type JsonRecord = Record<string, unknown>;
+type MonthlyAdjustment = { latest: JsonRecord | null; legacy_delta: number; applied_delta: number };
+
+// Supabase's Edge Runtime injects this runtime global; the published runtime
+// declarations do not expose it to the standalone Deno checker.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
 function cleanText(value: unknown, max = 500): string {
   return String(value ?? "").trim().slice(0, max);
@@ -1276,7 +1281,7 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 // Derived values are computed on read; the immutable source and revisions stay intact.
-function monthlyAdjustmentForSource(sourceId: unknown, adjustments: JsonRecord[], daily: JsonRecord | null): JsonRecord {
+function monthlyAdjustmentForSource(sourceId: unknown, adjustments: JsonRecord[], daily: JsonRecord | null): MonthlyAdjustment {
   const rows = adjustments.filter((row) => String(row.source_id) === String(sourceId));
   const latest = rows[0] || null;
   const firstConfirmed = Date.parse(String(daily?.first_confirmed_at || ""));
@@ -1293,8 +1298,8 @@ function monthlyAdjustmentForSource(sourceId: unknown, adjustments: JsonRecord[]
 }
 
 function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = [], daily: JsonRecord | null = null): JsonRecord[] {
-  const rows = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
-  const byAddress = new Map(rows.map((row) => [cleanText(row.current_payload.cell_address, 20).toUpperCase(), row]));
+  const rows: JsonRecord[] = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
+  const byAddress = new Map(rows.map((row) => [cleanText((row.current_payload as JsonRecord).cell_address, 20).toUpperCase(), row]));
   const values = new Map<string, number>();
   const visiting = new Set<string>();
   const changed = new Set<string>();
@@ -1303,7 +1308,7 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
     if (visiting.has(address)) return null;
     const row = byAddress.get(address);
     if (!row) return 0; // Empty Excel cells contribute zero.
-    const item = row.current_payload;
+    const item = row.current_payload as JsonRecord;
     const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(item);
     const delta = monthlyAdjustmentForSource(row.id, adjustments, dailyIncome ? daily : null).applied_delta;
     function finish(base: number): number {
@@ -1315,7 +1320,7 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
       changed.add(address);
       item.original_report_amount = item.amount;
       item.daily_rollup = daily;
-      return finish(Number(daily.amount));
+      return finish(Number(daily?.amount));
     }
     if (item.cell_kind !== "formula") {
       const value = Number(item.amount);
@@ -1416,7 +1421,7 @@ function effectiveMonthlyDisplay(
   for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const source = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
   const display = JSON.parse(JSON.stringify(source)) as JsonRecord;
-  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const values: unknown[][] = Array.isArray(display.values) ? display.values as unknown[][] : [];
   const displayCells = Array.isArray(display.cells) ? display.cells as JsonRecord[] : [];
   const latest = latestMonthlyCellRevisionMap(revisions);
   const numericByAddress = new Map<string, number>();
@@ -2547,7 +2552,7 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
     detection = detectReportMetadata({
       filename,
       sheetName: cleanText(displayData.sheet_name, 120),
-      values: Array.isArray(displayData.values) ? displayData.values : [],
+      values: Array.isArray(displayData.values) ? displayData.values as unknown[][] : [],
       storeName,
     }) as JsonRecord;
     reportType = cleanText(detection.report_type, 40);
@@ -2828,7 +2833,7 @@ function normalizeMonthlyMatchLabel(value: unknown): string {
 
 function matchedMonthlyExpenseCategoryIds(categories: JsonRecord[], labelValue: unknown): unknown[] {
   const compactLabel = normalizeMonthlyMatchLabel(labelValue);
-  const named = categories.map((category) => ({
+  const named: Array<JsonRecord & { normalized_name: string; normalized_section: string }> = categories.map((category) => ({
     ...category,
     normalized_name: normalizeMonthlyMatchLabel(category.name),
     normalized_section: normalizeMonthlyMatchLabel(category.report_section),
@@ -4573,7 +4578,7 @@ async function salarySheetData(companyId: string, storeId: string, sheetId: stri
   const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=500`, 500) : [];
   const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
   const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
-  const attachments = await Promise.all(vouchers.map(async (voucher) => ({
+  const attachments: JsonRecord[] = await Promise.all(vouchers.map(async (voucher) => ({
     ...voucher, ...(linkMap.get(cleanText(voucher.id, 40)) || {}),
     uploaded_by_name: actorMap.get(cleanText(voucher.uploaded_by_user_id, 40)) || cleanText(voucher.uploaded_by, 120) || "已授权账号",
     private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)), url_expires_in: 300,
@@ -5280,7 +5285,7 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
     const attachmentId = cleanText(orientation.daily_sheet_attachment_id, 40);
     if (!orientationMap.has(attachmentId)) orientationMap.set(attachmentId, orientation);
   }
-  const attachments = await Promise.all(vouchers.map(async (voucher) => {
+  const attachments: JsonRecord[] = await Promise.all(vouchers.map(async (voucher) => {
     const link = linkMap.get(cleanText(voucher.id, 40)) || { attachment_kind: "original_report", linked_at: voucher.uploaded_at };
     const voided = voidMap.get(cleanText(link.id, 40)) || null;
     return { ...voucher, ...link, voided: Boolean(voided), void_reason: voided?.reason ?? null,
@@ -5443,7 +5448,7 @@ async function dailyRecognitionJobData(companyId: string, storeId: string, month
   const draftIds = [...new Set(items.map((item) => cleanText(item.draft_id, 40)).filter(Boolean))];
   const drafts = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_drafts?select=id,status&id=in.(${draftIds.join(",")})&company_id=eq.${companyId}&store_id=eq.${storeId}&limit=1000`, 1000) : [];
   const draftStatus = new Map(drafts.map((draft) => [cleanText(draft.id, 40), cleanText(draft.status, 30)]));
-  const displayItems = items.map((item) => ({...item,draft_status:draftStatus.get(cleanText(item.draft_id,40))||null}));
+  const displayItems: JsonRecord[] = items.map((item) => ({...item,draft_status:draftStatus.get(cleanText(item.draft_id,40))||null}));
   const remaining = displayItems.filter((item) => ["queued", "running"].includes(cleanText(item.status, 30))).length;
   return { job, items:displayItems, remaining_count: remaining,
     completed_count: displayItems.filter((item) => ["succeeded", "failed", "skipped"].includes(cleanText(item.status, 30))).length };
@@ -5875,6 +5880,7 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const draftId = uuidValue(payload.draft_id, "请选择日报草稿");
+  if (!draftId) throw new Error("请选择日报草稿");
   const data = await dailySheetData(companyId, storeId, draftId);
   const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText((data.draft as JsonRecord).report_date, 10);
   const approvals = data.locked === true && actorId ? await restRowsAll(`zysyr_monthly_cell_unlock_requests?select=id,status,decided_at,decision_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${reportDate.slice(0, 7)}-01&requested_by_user_id=eq.${actorId}&status=eq.approved&consumed_at=is.null&limit=10`, 10) : [];

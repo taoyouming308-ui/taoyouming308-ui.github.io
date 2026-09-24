@@ -99,6 +99,9 @@ function reportPeriod(type, filename, sheetName, cells, dates) {
   return { report_date: `${month}-01`, month };
 }
 
+/**
+ * @param {{ filename?: string, sheetName?: string, values?: unknown[][], storeName?: string }} options
+ */
 export function detectReportMetadata({ filename = "", sheetName = "", values = [], storeName = "" } = {}) {
   const source = allText(filename, sheetName, values);
   assertStore(source.joined, storeName);

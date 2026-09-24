@@ -20,10 +20,16 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - name: Install pinned Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.6
       - name: Install pinned Supabase CLI
         uses: supabase/setup-cli@v2
         with:
           version: 2.109.1
+      - name: Type-check operations-api with its frozen lockfile
+        run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
       - name: Validate Supabase release command contract
         env:
           SUPABASE_TELEMETRY_DISABLED: "1"
