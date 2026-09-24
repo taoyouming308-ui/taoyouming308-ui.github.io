@@ -581,4 +581,5 @@
     renderHistoryEvidence(data);
     bindUploadButtons();
   };
+  window.ZysyrPettyCashEvidenceReady = true;
 })();

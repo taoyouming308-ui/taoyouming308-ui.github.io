@@ -19,7 +19,9 @@ let browser;
   await page.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
   await page.goto(origin+'/operations.html?preview=1&role=finance');
   await page.locator('#monthly-edit-toggle').waitFor();
+  assert.equal(await page.evaluate(()=>window.ZysyrMonthlySummary),undefined,'disabled monthly summary must not load in production');
   assert.equal(await page.locator('#monthly-more').isVisible(),false,'multi-month summary entry is closed in production');
+  await page.addScriptTag({path:path.join(root,'operations-monthly-summary.js')});
   assert.equal(await page.locator('#monthly-summary-toggle').isDisabled(),true,'closed summary control cannot be activated accidentally');
   await page.evaluate(()=>{
     const summaryMore=document.getElementById('monthly-more');

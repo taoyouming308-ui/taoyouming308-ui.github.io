@@ -36,6 +36,7 @@ let browser;
   await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   await page.goto(origin + '/operations.html?preview=1&role=finance');
   await page.waitForFunction(() => state.user && state.user.role === 'finance');
+  await page.addScriptTag({ path: path.join(root, 'operations-petty-cash-evidence.js') });
   await page.evaluate(async () => {
     const formal = { id: '11111111-1111-4111-8111-111111111111', transaction_date: '2026-01-02', direction: 'outflow', category: '食品', summary: '柠檬', amount: 21.8, status: 'confirmed' };
     const history = { id: '22222222-2222-4222-8222-222222222222', import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', transaction_date: '2026-01-06', direction: 'outflow', category: '装饰', summary: '鲜花', amount: 20.5, source_locator: '01!A10:H10', version: 1, historical: true };

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="544">
+<html lang="zh-CN" data-version="545">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -107,9 +107,9 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-time.js?v=544"></script>
-<script src="operations-staff-view.js?v=544"></script>
-<script src="operations-monthly-daily-performance.js?v=544"></script>
+<script src="operations-time.js?v=545"></script>
+<script src="operations-staff-view.js?v=545"></script>
+<script src="operations-monthly-daily-performance.js?v=545"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -381,10 +381,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=544"></script>
-  <script src="operations-auth-bridge.js?v=544"></script>
-  <script src="operations-voucher-preview.js?v=544"></script>
-  <script src="operations-voucher-view.js?v=544"></script>
+  <script src="operations-report-fit.js?v=545"></script>
+  <script src="operations-auth-bridge.js?v=545"></script>
+  <script src="operations-voucher-preview.js?v=545"></script>
+  <script src="operations-voucher-view.js?v=545"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -540,7 +540,20 @@
 
   function openPettyCashTrace(recordId){var data=state.pettyCash.data||{},record=(data.records||[]).find(function(row){return row.id===recordId});if(!record)return;var line=(data.daily_lines||[]).find(function(row){return row.id===record.daily_report_line_id}),daily=(data.daily_reports||[]).find(function(row){return row.id===record.daily_report_id}),cell=(data.source_cells||[]).find(function(row){return row.id===(record.source_report_cell_id||(line&&line.source_report_cell_id))}),report=(data.source_reports||[]).find(function(row){return row.id===((cell&&cell.report_id)||(daily&&daily.source_report_id))}),user=(data.users||[]).find(function(row){return row.id===record.confirmed_by_user_id}),links=(data.voucher_links||[]).filter(function(row){return row.business_id===record.id&&row.business_type==='petty_cash_record'}),vouchers=data.vouchers||[];$('trace-backdrop').classList.remove('hidden');$('trace-backdrop').setAttribute('aria-hidden','false');var source='<div class="help">该笔为财务独立确认记录，没有关联日报行。</div>';if(line||cell||report)source='<div class="trace-row"><div><strong>'+(line?esc((daily&&daily.report_date||record.transaction_date)+' · 日报第 '+line.line_number+' 行 · '+(line.description||line.metric_code||'')):'已关联原始报表')+'</strong><small>'+(line?'日报明细金额 '+formatAmount(line.amount)+'<br>':'')+(cell?'原表第 '+esc(cell.row_number)+' 行 '+esc(cell.cell_address)+'（'+esc(cell.label||'')+'）· '+formatAmount(cell.numeric_value):'')+'</small></div>'+(report?'<button class="ghost" data-open-report="'+esc(report.id)+'">打开原表</button>':'')+'</div>';var voucherHtml=links.map(function(link){var voucher=vouchers.find(function(row){return row.id===link.voucher_id});return voucher?'<button class="ghost" data-open-voucher="'+esc(voucher.id)+'">'+esc(voucher.original_filename)+'</button>':''}).join('')||'<span class="help" style="color:#8d2f25">该笔记录尚未关联可查看的原始凭证。</span>';$('trace-content').innerHTML='<div class="trace-card"><h4>'+esc(record.transaction_date)+' · '+esc(record.direction==='inflow'?'备用金存入':'备用金支出')+'</h4><div class="trace-row"><span>'+esc(record.category+' · '+record.summary)+'</span><strong>'+formatAmount(record.amount)+'</strong></div><div class="trace-row"><span>确认人 / 时间</span><strong>'+esc(userLabel(user))+' · '+esc(formatDateTime(record.confirmed_at))+'</strong></div></div><div class="trace-card"><h4>日报与原表来源</h4>'+source+'</div><div class="trace-card"><h4>原始凭证</h4><div class="trace-actions">'+voucherHtml+'</div></div>';bindOpenButtons()}
   var renderPettyCashReportCore=renderPettyCashReport;renderPettyCashReport=function(){renderPettyCashReportCore();var data=state.pettyCash.data||{},records=data.history_records||[];if(!records.length)return;var links=data.history_evidence_links||[],evidence=data.history_evidence||[],total=records.filter(function(row){return row.direction==='outflow'}).reduce(function(sum,row){return sum+Number(row.amount||0)},0),rows=records.map(function(row){var fileCount=links.filter(function(link){return link.import_row_id===row.import_row_id}).length;return'<tr><td>'+esc(row.transaction_date)+'</td><td>'+esc(row.voucher_number||'—')+'</td><td>'+esc(row.summary)+'</td><td>'+(row.direction==='inflow'?formatAmount(row.amount):'—')+'</td><td>'+(row.direction==='outflow'?formatAmount(row.amount):'—')+'</td><td>'+esc(row.category)+'</td><td>'+esc(row.recipient||'—')+'</td><td>'+esc(row.source_locator||'—')+'</td><td><button class="ghost" data-history-petty="'+esc(row.id)+'">明细 / 凭证（'+fileCount+'）</button></td></tr>'}).join('');$('petty-cash-report-table').insertAdjacentHTML('beforeend','<div class="panel"><div class="finance-record-head"><div><h3>历史正式备用金明细</h3><div class="help">直接来自已入账历史总账，不重复写入当前备用金业务表。</div></div><strong>支出合计 '+formatAmount(total)+'</strong></div><div class="archive-wrap"><table class="archive-table"><thead><tr><th>日期</th><th>编号</th><th>说明</th><th>借方</th><th>贷方</th><th>科目</th><th>经办人</th><th>原表位置</th><th>追溯</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>');document.querySelectorAll('[data-history-petty]').forEach(function(button){button.onclick=function(){var row=records.find(function(item){return item.id===button.dataset.historyPetty});if(!row)return;var rowLinks=links.filter(function(item){return item.import_row_id===row.import_row_id}),files=evidence.filter(function(file){return rowLinks.some(function(link){return link.evidence_id===file.id})}),fileHtml=files.map(function(file){return'<button class="ghost" data-open-history-file="'+esc(file.id)+'" data-history-file-kind="evidence">'+esc(file.original_filename)+'</button>'}).join(' ')||'<span class="help">该笔尚未精确关联凭证包。</span>';$('trace-backdrop').classList.remove('hidden');$('trace-backdrop').setAttribute('aria-hidden','false');$('trace-content').innerHTML='<div class="trace-card"><h4>'+esc(row.transaction_date)+' · '+esc(row.category)+'</h4><div class="trace-row"><span>'+esc(row.summary)+'</span><strong>'+formatAmount(row.amount)+'</strong></div><div class="trace-row"><span>原表位置 / 正式账版本</span><strong>'+esc(row.source_locator)+' / v'+esc(row.version)+'</strong></div></div><div class="trace-card"><h4>原始凭证</h4><div class="trace-actions">'+fileHtml+'</div></div>';bindOpenButtons()}})};
-  async function loadPettyCashReport(){if(state.view!=='finance-workbench')return;var context=beginScopedRead('petty-cash','finance-workbench');$('finance-workbench-status').textContent='正在读取备用金明细与凭证…';try{var data=isLocalPreview()?previewPettyCashReportData():await api('petty_cash_report',{store:context.store,month:context.month});if(!isCurrentScopedRead('petty-cash',context))return;state.pettyCash.data=data;renderPettyCashReport();$('finance-workbench-status').textContent='已更新 '+beijingTimeNow()}catch(error){if(!isCurrentScopedRead('petty-cash',context))return;$('finance-workbench-status').textContent=error.message;$('petty-cash-report-summary').innerHTML='';$('petty-cash-report-table').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
+  var pettyCashEvidenceModulePromise=null;
+  function ensurePettyCashEvidenceModule(){
+    if(window.ZysyrPettyCashEvidenceReady)return Promise.resolve();
+    if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
+    pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
+      var script=document.createElement('script');
+      script.src='operations-petty-cash-evidence.js?v=545';
+      script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
+      script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
+      document.head.appendChild(script);
+    }).catch(function(error){pettyCashEvidenceModulePromise=null;throw error});
+    return pettyCashEvidenceModulePromise;
+  }
+  async function loadPettyCashReport(){if(state.view!=='finance-workbench')return;var context=beginScopedRead('petty-cash','finance-workbench');$('finance-workbench-status').textContent='正在读取备用金明细与凭证…';try{await ensurePettyCashEvidenceModule();if(!isCurrentScopedRead('petty-cash',context))return;var data=isLocalPreview()?previewPettyCashReportData():await api('petty_cash_report',{store:context.store,month:context.month});if(!isCurrentScopedRead('petty-cash',context))return;state.pettyCash.data=data;renderPettyCashReport();$('finance-workbench-status').textContent='已更新 '+beijingTimeNow()}catch(error){if(!isCurrentScopedRead('petty-cash',context))return;$('finance-workbench-status').textContent=error.message;$('petty-cash-report-summary').innerHTML='';$('petty-cash-report-table').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
   async function loadPayroll(){if(state.view!=='payroll')return;var context=beginScopedRead('payroll','payroll');$('payroll-status').textContent='正在读取工资与来源链…';try{var data=isLocalPreview()?previewPayrollData():await api('payroll_center',{store:context.store,month:context.month});if(!isCurrentScopedRead('payroll',context))return;state.payroll.data=data;renderPayroll();renderCheckRecordPanel();$('payroll-status').textContent='已更新 '+beijingTimeNow()}catch(error){if(!isCurrentScopedRead('payroll',context))return;$('payroll-status').textContent=error.message;$('payroll-records').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
   function renderCheckRecordPanel(){var data=state.payroll.data||{},write=data.permissions&&data.permissions.write,types={appearance:'形象',hygiene:'卫生',service_discipline:'服务纪律',other:'其他'},rows=(data.checks||[]).map(function(row){return Object.assign({},row,{employee_name:payrollEmployeeName(row.employee_id),check_type_name:types[row.check_type]||row.check_type,result_name:row.result==='pass'?'通过':'未通过',_actions:write&&row.status==='confirmed'?'<button class="ghost" data-payroll-reverse="check_record" data-record-id="'+esc(row.id)+'">冲销</button>':'—'})});$('payroll-records').insertAdjacentHTML('beforeend',financeTable('形象/检查记录',[['employee_name','姓名'],['check_date','日期'],['check_type_name','类型'],['item_name','检查项目'],['result_name','结果'],['note','说明'],['status','状态',function(row){return esc(financeStatusLabel(row.status))}]],rows));bindPayrollActions()}
   function payrollEmployeeName(id){var employee=(state.payroll.data&&state.payroll.data.employees||[]).find(function(row){return row.id===id});return employee?employee.name:'未知员工'}
@@ -1134,10 +1147,8 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=544"></script>
-  <script src="operations-monthly-workbench.js?v=544"></script>
-  <script src="operations-petty-cash-evidence.js?v=544"></script>
-  <script src="operations-monthly-summary.js?v=544"></script>
-  <script src="operations-daily-recognition.js?v=544"></script>
+  <script src="operations-daily-review.js?v=545"></script>
+  <script src="operations-monthly-workbench.js?v=545"></script>
+  <script src="operations-daily-recognition.js?v=545"></script>
 </body>
 </html>

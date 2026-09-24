@@ -15,7 +15,9 @@ const migration = fs.readFileSync(path.join(root, 'supabase/migrations/202609220
 for (const marker of ['逐笔消费凭证', '整月 Word 凭证包继续永久留底', 'data-petty-exact-upload', 'history_evidence_images']) {
   assert.ok(moduleSource.includes(marker), 'missing per-item petty evidence marker: ' + marker);
 }
-assert.ok(pageSource.includes('operations-petty-cash-evidence.js?v='), 'petty evidence runtime not loaded');
+assert.ok(pageSource.includes("script.src='operations-petty-cash-evidence.js?v=545'"), 'petty evidence runtime must load on demand');
+assert.doesNotMatch(pageSource, /<script src="operations-petty-cash-evidence\.js\?v=/, 'petty evidence module must not block the initial report view');
+assert.doesNotMatch(pageSource, /<script src="operations-monthly-summary\.js\?v=/, 'disabled monthly summary must not load for every user');
 assert.ok(apiSource.includes('pending_voucher_requests: pendingVoucherRequests'), 'pending formal upload state not returned');
 assert.ok(apiSource.includes('upload_history_evidence') && apiSource.includes('upload_voucher'), 'per-role upload permissions missing');
 assert.match(apiSource, /entry_type=in\.\(monthly_profit_loss,salary,petty_cash,employee_purchase\)/);
@@ -45,6 +47,12 @@ let browser;
   await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   await page.goto(origin + '/operations.html?preview=1&role=finance');
   await page.waitForFunction(() => state.user && state.user.role === 'finance');
+  let pettyModuleRequested = false;
+  page.on('request', request => { if (request.url().includes('operations-petty-cash-evidence.js')) pettyModuleRequested = true; });
+  assert.equal(pettyModuleRequested, false, 'petty evidence module must stay unloaded on the initial monthly view');
+  await page.evaluate(() => showView('finance-workbench'));
+  await page.waitForFunction(() => window.ZysyrPettyCashEvidenceReady === true);
+  assert.equal(pettyModuleRequested, true, 'petty evidence module must load when entering its finance view');
   await page.evaluate(async () => {
     const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=';
     const formalA = { id: '11111111-1111-4111-8111-111111111111', transaction_date: '2026-01-02', direction: 'outflow', category: '食品', summary: '正式单笔', amount: 20, status: 'confirmed' };

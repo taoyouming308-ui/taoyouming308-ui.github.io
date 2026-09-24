@@ -27,10 +27,11 @@ async function run() {
   await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
   await page.goto(origin + '/operations.html?preview=1&role=finance');
   await page.locator('#monthly-sheet').waitFor();
+  await page.evaluate(() => ensurePettyCashEvidenceModule());
 
   const cases = [
     { view: 'finance-workbench', loader: 'loadFinanceWorkbench', operations: ['finance_workbench'], state: 'finance' },
-    { view: 'finance-workbench', loader: 'loadPettyCashReport', operations: ['petty_cash_report'], state: 'pettyCash' },
+    { view: 'finance-workbench', loader: 'loadPettyCashReport', operations: ['petty_cash_report'], state: 'pettyCash', expectedReads: 1 },
     { view: 'payroll', loader: 'loadPayroll', operations: ['payroll_center'], state: 'payroll' },
     { view: 'salary-report', loader: 'loadSalaryReport', operations: ['payroll_center', 'salary_sheet_read'], state: 'salary' },
     { view: 'inventory', loader: 'loadInventory', operations: ['inventory_center'], state: 'inventory' }
@@ -69,7 +70,7 @@ async function run() {
       window.__newRead = window[window.__readCase.loader]();
     });
     const calls = await page.evaluate(() => window.__pendingReads);
-    assert.equal(calls.length, test.operations.length * 2, test.loader + ' should issue the expected read set twice');
+    assert.equal(calls.length, test.expectedReads || test.operations.length * 2, test.loader + ' should issue only the current scoped read set');
     assert(calls.every(call => call.month === '2026-01' || call.month === '2026-02'), test.loader + ' must snapshot the requested month');
     assert(calls.filter(call => call.month === '2026-01').every(call => call.store === '太合中心店'), test.loader + ' old request must keep its original store');
     assert(calls.filter(call => call.month === '2026-02').every(call => call.store === '第二门店'), test.loader + ' new request must use the newly selected store');
