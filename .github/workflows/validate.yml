@@ -20,6 +20,17 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.109.1
+      - name: Validate Supabase release command contract
+        env:
+          SUPABASE_TELEMETRY_DISABLED: "1"
+        run: |
+          test "$(supabase --version)" = "2.109.1"
+          supabase db push --help | grep -q -- '--dry-run'
+          supabase functions deploy --help | grep -q -- '--use-api'
       - name: Install pinned browser-test tooling
         run: |
           npm ci

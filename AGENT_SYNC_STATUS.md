@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线整改：C06 固定 Supabase CLI 发布工具链（2026-09-24，CI 待线上验证）
+
+- GitHub Actions `validate` 工作流现安装并锁定 Supabase CLI `2.109.1`，禁用遥测；校验运行版本确切匹配，并确认 `db push --dry-run` 与 `functions deploy --use-api` 两项预期发布参数存在。
+- 本地以相同 CLI 版本只读验证上述版本和帮助参数；未运行任何部署、数据库推送、链接生产项目或使用生产凭据。
+- **C06 仍开放：** 仓库没有 `supabase/config.toml`，本地也没有 Deno；本次没有伪造项目配置、自动链接生产或增加不可执行的迁移 dry-run。现有 CLI 版本检查不等于 Edge Function 编译/部署或数据库迁移核验。后续须建立经审批的隔离 Supabase 项目/runner 与配置后，再补真实 dry-run、函数 bundle 检查和发布前核对。
+- 仅改 CI 与交接文档；财务 App 仍为 v542，财务登录入口、数据库、金额公式、历史数据、权限和生产服务均未改。
+
 ## 上线整改：B03 月报日报覆盖状态说明（2026-09-24，v542 已发布）
 
 - App version: v542。
