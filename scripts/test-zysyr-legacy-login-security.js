@@ -17,6 +17,8 @@ const rpcCalls = [];
 const paths = [];
 let gateAllowed = true;
 let gateStatus = 200;
+let sessionCreatedAt = new Date(Date.now() - 29 * 86400000).toISOString();
+const sessionExpiry = '2036-01-01T00:00:00.000Z';
 const context = vm.createContext({
   console, Request, Response, TextEncoder, crypto: webcrypto, Date,
   Deno: { env: { get: key => key === 'SUPABASE_URL' ? 'https://synthetic.invalid' : 'synthetic-service-key' },
@@ -34,6 +36,14 @@ const context = vm.createContext({
       return new Response(null, { status: 204 });
     }
     if (path.startsWith('staff?')) return new Response(JSON.stringify([staff]), { status: 200 });
+    if (path.startsWith('zysyr_operations_sessions?select=')) {
+      const cutoff = new URLSearchParams(path.split('?')[1]).get('created_at')?.slice(3);
+      const inAgeWindow = cutoff && Date.parse(sessionCreatedAt) > Date.parse(cutoff);
+      const rows = inAgeWindow ? [{ username: staff.username, role: staff.role, position: staff.position,
+        store: staff.store, expires_at: sessionExpiry, created_at: sessionCreatedAt }] : [];
+      return new Response(JSON.stringify(rows), { status: 200 });
+    }
+    if (path.startsWith('zysyr_operations_sessions?token_hash=') && method === 'PATCH') return new Response(null, { status: 204 });
     if (path.startsWith('zysyr_operations_sessions?') && method === 'DELETE') return new Response(null, { status: 204 });
     if (path === 'zysyr_operations_sessions' && method === 'POST') {
       rpcCalls.push({ method, path, args: JSON.parse(init.body) });
@@ -51,6 +61,12 @@ async function post(password = 'legacy-password') {
   }));
 }
 
+async function readLegacySession() {
+  return context.requireSession({ session_token: 'a'.repeat(72) }, new Request('https://synthetic.invalid/functions/v1/operations-api', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+  }));
+}
+
 (async () => {
   let response = await post();
   assert.equal(response.status, 200, 'a valid legacy credential remains usable during the rolling migration');
@@ -65,19 +81,27 @@ async function post(password = 'legacy-password') {
   const days = (Date.parse(session.args.expires_at) - Date.now()) / 86400000;
   assert(days > 29.99 && days <= 30, 'only a new compatibility session is limited to 30 days');
 
+  const restored = await readLegacySession();
+  assert.equal(restored.username, staff.username, 'a legacy session created within the 30-day window remains usable');
+  const sessionRead = paths.filter(call => call.path.startsWith('zysyr_operations_sessions?select=')).at(-1).path;
+  assert.match(sessionRead, /created_at=gt\./, 'legacy session lookup must enforce its absolute creation-age limit');
+  sessionCreatedAt = new Date(Date.now() - 31 * 86400000).toISOString();
+  await assert.rejects(readLegacySession(), /登录已过期/, 'an unexpired database row older than 30 days must be rejected');
+
   response = await post('wrong-password');
   assert.equal(response.status, 400);
   assert.equal(rpcCalls.filter(call => call.path === 'rpc/zysyr_record_auth_migration_result').at(-1).args.p_event_type, 'failure');
 
+  const staffLookupsBeforeBlockedAttempt = paths.filter(call => call.path.startsWith('staff?')).length;
   gateAllowed = false;
   response = await post();
   assert.equal(response.status, 429, 'rate-limited legacy login returns an explicit 429');
-  assert.equal(paths.filter(call => call.path.startsWith('staff?')).length, 2,
+  assert.equal(paths.filter(call => call.path.startsWith('staff?')).length, staffLookupsBeforeBlockedAttempt,
     'blocked attempts must be rejected before credential lookup');
   gateAllowed = true; gateStatus = 503;
   response = await post();
   assert.equal(response.status, 503, 'if the limiter/audit RPC is unavailable, no compatibility session may be issued');
-  assert.equal(paths.filter(call => call.path.startsWith('staff?')).length, 2,
+  assert.equal(paths.filter(call => call.path.startsWith('staff?')).length, staffLookupsBeforeBlockedAttempt,
     'limiter failures must reject before credential lookup');
-  console.log('legacy login security passed: bounded HMAC attempts, append-only outcome records, 429 handling, preserved legacy login and 30-day new bridge sessions');
+  console.log('legacy login security passed: bounded HMAC attempts, append-only outcomes, 429 handling, 30-day session creation and read-time age limits');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -13,9 +13,9 @@ import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
-// Legacy bridge sessions are deliberately short-lived. Existing sessions are
-// not revoked by this change; only newly issued bridge tokens use this TTL.
+// Legacy bridge sessions are capped both when issued and when validated.
 const SESSION_DAYS = 30;
+const LEGACY_SESSION_MAX_AGE_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
 const REPORT_BUCKET = "zysyr-reports";
@@ -687,8 +687,9 @@ async function requireSession(payload: JsonRecord, request: Request): Promise<Js
   const token = cleanText(payload.session_token, 200);
   if (!token) throw new Error("请重新登录");
   const tokenHash = await sha256(token);
+  const createdAfter = new Date(Date.now() - LEGACY_SESSION_MAX_AGE_DAYS * 86400000).toISOString();
   const rows = await restRows(
-    `zysyr_operations_sessions?select=username,role,position,store,expires_at&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
+    `zysyr_operations_sessions?select=username,role,position,store,expires_at,created_at&token_hash=eq.${encodeURIComponent(tokenHash)}&created_at=gt.${encodeURIComponent(createdAfter)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
   );
   const saved = rows[0];
   if (!saved) throw new Error("登录已过期，请重新登录");
