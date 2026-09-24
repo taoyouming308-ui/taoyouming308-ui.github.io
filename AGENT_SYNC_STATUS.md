@@ -1,5 +1,20 @@
 # Agent Sync Status
 
+## 上线整改：C06 本地迁移回放与生产结构对照（2026-09-25，只读核验）
+
+- 使用 Supabase CLI 2.109.1 在隔离临时项目从空库回放仓库 99 条迁移；回放在 `20260729023135_staff_employment_status.sql` 失败，原因是迁移链未创建 `public.staff`。本地报错为 `relation "public.staff" does not exist`；没有触及生产数据库。
+- 生产只读核验确认 `public.staff` 存在，包含 `id, username, password_hash, role, store, active, created_at, position, employment_status`，并带 `pending/active/departed` 检查约束；生产迁移账本已包含仓库最新迁移 `20260924051925`。因此当前证据指向仓库依赖外部初始化的旧基线，而非线上缺表或迁移落后。
+- 生产只读权限复核确认日报草稿、月报、凭证附件均启用 RLS；`anon` 无 SELECT，`authenticated` 的 SELECT policy 使用公司/门店能力检查。此前已删除的 `storage.objects.anon_all` policy 当前不存在。Security Advisor 仍报告 Auth 泄露密码保护关闭及 42 张 RLS 无策略的信息提示；没有批量放行或改动 Auth。
+- 另查 `public.staff`：线上仍有匿名/认证用户可读取目录字段的列级 GRANT 与 `staff_directory_read` 策略；`password_hash` 不可读，匿名/认证角色均无 INSERT/UPDATE/DELETE。旧自由手艺人/预约 UI 仍有直接读取员工目录的客户端，因此不可贸然撤销整个目录策略；此策略是公开目录兼容边界，不等于可匿名读取员工凭据。
+- 未读取员工凭据、财务行数据、凭证对象；未执行生产写入、迁移、策略调整。C06 仍开放：若要求从空白 Supabase 独立部署，须先由项目负责人确认如何管理既有 `staff` 身份基线；不复制密码哈希、不猜造员工身份，也不擅自补生产 schema。下一步可在隔离环境提供明确的旧基线 fixture 后继续回放，并记录后续首个缺失依赖。
+
+## 上线整改：B05 手机月报整月日报可读性（v552，门禁通过，待推送）
+
+- App version: v552。
+- 保留原月报整月 8 列日报嵌入表和既有金额映射；新增可选的“清晰查看日报明细”第二层，按日期选择并以正常字号展示劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音。
+- 未入账日期和已入账但缺失的字段均显示“—”，明确解释空值不等于 0；默认选择首个已入账日期。此仅重用 overview 已读取数据，不增 API / 数据库请求，不改变汇总口径、数据、权限或财务登录入口。
+- 专项静态测试、隔离 Playwright 桌面/手机竖屏/横屏测试及完整财务回归 70/70 通过；覆盖七项数值映射、未入账不是零、详情 16px 字号。初次运行受 Docker socket 沙箱权限阻挡；获准在隔离容器运行后，全量通过。v552 版本同步、发布完整性、应用 smoke、财务/全仓 pre-push 与交接状态检查均通过。未改数据库、API、现有财务数据或计算口径；本次尚待提交、推送和线上核验。
+
 ## 上线整改：D02 股东月报首屏信息收敛（v551，已发布）
 
 - App version: v551。

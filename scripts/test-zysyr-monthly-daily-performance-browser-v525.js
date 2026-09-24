@@ -74,6 +74,19 @@ async function verifyViewport(page, viewport) {
     });
     assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 2 \/ 31 天；另有 29 天尚无已入账日报/);
     assert.match(await page.locator('#monthly-daily-completeness').textContent(), /未显示不代表休息日或零收入/);
+    assert.equal(await page.locator('.monthly-daily-details-toggle').textContent(), '清晰查看日报明细');
+    await page.locator('.monthly-daily-details-toggle').click();
+    assert.equal(await page.locator('.monthly-daily-details').isVisible(), true, 'the detail panel opens without leaving the monthly report');
+    assert.equal(await page.locator('.monthly-daily-details select option').count(), 31, 'every natural date in the month is selectable');
+    assert.equal(await page.locator('.monthly-daily-details select').inputValue(), '0', 'detail view defaults to the first confirmed date');
+    assert.deepEqual(await page.locator('.monthly-daily-details-item').allTextContents(),
+      ['劳动业绩2126.00', '现金业绩2126.00', '卡金0.00', '团购226.00', '支付宝1850.00', '微信50.00', '抖音0.00']);
+    await page.locator('.monthly-daily-details select').selectOption('2');
+    assert.match(await page.locator('.monthly-daily-details-status').textContent(), /尚无已入账日报；以下“—”表示暂无已确认数据，不代表 0 元/);
+    assert.deepEqual(await page.locator('.monthly-daily-details-item strong').allTextContents(), Array(7).fill('—'),
+      'an unconfirmed date shows missing values rather than fabricated zeros');
+    const detailSize = await page.locator('.monthly-daily-details-item strong').first().evaluate(node => getComputedStyle(node).fontSize);
+    assert.equal(detailSize, '16px', 'readable details retain normal-size numbers on mobile');
 
     const headers = await page.locator('#monthly-sheet .monthly-daily-embedded-head').allTextContents();
     assert.deepEqual(headers, ['日期', '劳动业绩', '现金业绩', '卡金', '团购', '支付宝', '微信', '抖音']);

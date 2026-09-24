@@ -63,6 +63,79 @@
     return cells && cells[column + String(row)] || null;
   }
 
+  function renderReadableDetails(container, rows) {
+    if (!container || typeof document === 'undefined') return;
+    container.replaceChildren();
+    var summary = document.createElement('span');
+    summary.className = 'monthly-daily-completeness-text';
+    summary.textContent = rows.length
+      ? '整月日报：已入账 ' + completeness(rows).confirmed + ' / ' + rows.length + ' 天；另有 ' + completeness(rows).withoutConfirmedReport + ' 天尚无已入账日报。未显示不代表休息日或零收入；合计只统计已入账日报。'
+      : '整月日报：月份无效，暂无法显示日报覆盖情况。';
+    container.appendChild(summary);
+    if (!rows.length) return;
+
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'monthly-daily-details-toggle secondary';
+    toggle.textContent = '清晰查看日报明细';
+    toggle.setAttribute('aria-expanded', 'false');
+    container.appendChild(toggle);
+
+    var panel = document.createElement('section');
+    panel.className = 'monthly-daily-details hidden';
+    panel.setAttribute('aria-label', '整月日报明细');
+    var label = document.createElement('label');
+    label.textContent = '选择日期';
+    var select = document.createElement('select');
+    select.setAttribute('aria-label', '选择日报日期');
+    rows.forEach(function (row, index) {
+      var option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = String(row.day).padStart(2, '0') + '日 · ' + (row.confirmed ? '已入账' : '未入账');
+      select.appendChild(option);
+    });
+    var firstConfirmed = rows.findIndex(function (row) { return row.confirmed; });
+    select.value = String(firstConfirmed >= 0 ? firstConfirmed : 0);
+    label.appendChild(select);
+
+    var dayStatus = document.createElement('p');
+    dayStatus.className = 'monthly-daily-details-status';
+    var grid = document.createElement('div');
+    grid.className = 'monthly-daily-details-grid';
+    panel.appendChild(label);
+    panel.appendChild(dayStatus);
+    panel.appendChild(grid);
+    container.appendChild(panel);
+
+    function updateDay() {
+      var row = rows[Number(select.value)];
+      if (!row) return;
+      dayStatus.textContent = row.confirmed
+        ? row.date + ' · 已入账' + (row.missing_fields.length ? ' · 有字段缺失：' + row.missing_fields.join('、') : ' · 数据来自已确认日报')
+        : row.date + ' · 尚无已入账日报；以下“—”表示暂无已确认数据，不代表 0 元。';
+      grid.replaceChildren();
+      fields.forEach(function (field) {
+        var item = document.createElement('div');
+        item.className = 'monthly-daily-details-item';
+        var name = document.createElement('span');
+        name.textContent = field[1];
+        var amount = document.createElement('strong');
+        amount.textContent = row.confirmed ? formatAmount(row[field[0]]) : '—';
+        item.appendChild(name);
+        item.appendChild(amount);
+        grid.appendChild(item);
+      });
+    }
+    select.addEventListener('change', updateDay);
+    toggle.addEventListener('click', function () {
+      var expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      toggle.textContent = expanded ? '清晰查看日报明细' : '收起日报明细';
+      panel.classList.toggle('hidden', expanded);
+    });
+    updateDay();
+  }
+
   function resetEmbeddedCell(cell) {
     if (!cell) return;
     cell.textContent = '';
@@ -98,12 +171,7 @@
     if (!ensureDisplayColumns(cells)) return false;
     if (!columns.every(function (column) { return embeddedCell(cells, column, 2); })) return false;
     var performance = options.performance || {}, rows = buildRows(options.month, performance), total = totals(rows);
-    var coverage = completeness(rows);
-    if (options.completenessStatus) {
-      options.completenessStatus.textContent = rows.length
-        ? '整月日报：已入账 ' + coverage.confirmed + ' / ' + coverage.days + ' 天；另有 ' + coverage.withoutConfirmedReport + ' 天尚无已入账日报。未显示不代表休息日或零收入；合计只统计已入账日报。'
-        : '整月日报：月份无效，暂无法显示日报覆盖情况。';
-    }
+    if (options.completenessStatus) renderReadableDetails(options.completenessStatus, rows);
     var labels = ['日期'].concat(fields.map(function (field) { return field[1]; }));
 
     for (var rowNumber = 2; rowNumber <= 34; rowNumber++) {
