@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 上线整改：C06 operations-api 类型安全与生产部署（Validate 成功；生产 v99）
+
+- 修复 `operations-api/deno.lock` 未把已声明直接依赖 `jszip@3.10.1` 纳入 Deno workspace 的问题；为 `report-auto-detection.mjs` 补充参数类型，修复类型检查揭出的结果形状/空值类型问题，并为日报草稿 ID 增加显式非空保护。财务金额和公式未改。
+- CI 固定 Deno 2.9.6，新增针对函数的 frozen `deno check`；通过 `--config` 明确使用函数配置、`--node-modules-dir=none` 隔离根目录 Playwright 依赖。独立临时副本与仓库根目录两种执行方式均通过 Deno 检查。
+- 自动上传/防止美发现金收入重复统计用例加入共用财务测试清单，更新两条已过时的断言以对应现行现金日报汇总＋留痕财务调整规则；完整财务回归 66/66 与全仓 pre-push 均通过。
+- 提交 `9b6bd4d`、`7167cab` 已推送 `github/main`；Pages #36018705857 与 Validate #36018707030 均成功，Validate 的 frozen Deno 类型检查、发布命令契约、财务回归与 release integrity 全部通过。
+- 按用户此前授权，将完整 `operations-api` bundle 部署到 Supabase 生产 v99，状态 `ACTIVE`；部署后拉回的 10 个源文件与本地逐字节一致，`verify_jwt=false` 保持原值。没有应用数据库迁移，也没有更改历史数据、权限或财务独立登录入口。
+- 生产迁移清单只读核验已覆盖仓库当前最新迁移 `20260924051925`；没有本次待应用迁移。**C06 仍开放：** 隔离环境 migration dry-run、Edge 发布/环境变量矩阵及完整可复现部署演练仍待完成；本次生产函数部署不替代这些验证。
+
 ## 上线整改：历史导入原表预览未定义函数修复（v543，已推送；生产函数已部署）
 
 - App version: v543。
