@@ -5,6 +5,11 @@
 - 生产 `operations-api` v97 的历史导入工作表预览路径引用了未定义的 Excel 单元格 helper；现复用已存在的 ExcelJS 值/公式提取 helper，并添加回归检查。
 - 本地全仓 pre-push 门禁通过；功能提交 `f5b00dd` 与状态记录 `28a00e4` 已推送 GitHub main。`operations-api` v98 ACTIVE；部署后生产回读确认 10 个文件及修复代码，`verify_jwt=false` 保持不变。Pages build/deployment #36006467617、Validate #36006469238 成功，线上无缓存回读 `version.txt=543`。未读取或改写历史导入数据、原始附件、数据库、财务公式、权限或财务登录端口。真实财务会话下的浏览器端预览仍待验收。
 
+## 2026-09-24 · A02 / G01 生产运行门槛复核（保持开放）
+
+- A02 仅查询生产聚合计数：26 个 active staff 中，2 个有有效迁移白名单，1 个已关联 active Auth account，25 个尚未关联；未读取密码、账号名、财务数据或更改认证数据。不能据此停用旧登录，须由管理员核对实际身份/门店映射与登录验收。
+- G01 检查本机运行条件：iCloud ZYSYR 目录存在但最新归档仍为 2026-09-12；LaunchAgent 执行 Documents 中脚本仍报 `Operation not permitted`。当前 shell 无 `pg_dump`，Docker socket 权限拒绝；没有生产数据导出/恢复、Storage 对象备份或 PITR 设置变更。待解决受保护目的地、macOS 授权和隔离恢复环境。
+
 ## 2026-09-24 · v542 月报已入账日报覆盖说明（已发布）
 
 - 月报整月日报表下方显示已入账日报天数 / 当月自然日天数，并明确“尚无已入账日报”不代表休息日或零收入；整月合计仍只纳入已入账日报。

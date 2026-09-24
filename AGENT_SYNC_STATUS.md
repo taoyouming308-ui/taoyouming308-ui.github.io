@@ -49,6 +49,8 @@
 - A05 历史日报复核：生产迁移 `20260924040811` 已应用；当前 `operations-api` v97 包含每月最多 100 个确认日报的只读重算入口。重算不回写快照、日报或金额。系统发现的历史差异仍须财务按原件签认，不自动纠正账务。
 - A02 认证：滚动迁移/限流迁移已在生产，`operations-auth-migrate` v6 ACTIVE；当前 Auth 安全 Advisor 仍提示 leaked-password protection 未启用。未更改 Auth 密码策略、撤销会话或重置账号；启用前需验证实际 Auth 设置及密码变更流程，并维持财务现有登录入口。
 - G01 备份仍为 P0 未闭环：本轮没有创建数据库/Storage 备份或改变计划任务；异地备份目的地和 macOS 对定时任务访问仓库目录的授权仍未解决。财务历史原件与生产数据未读取或修改。
+- 追加只读复核：生产 26 个 active staff 中，2 个存在有效 Auth 迁移白名单、1 个已关联 active Auth account、25 个尚未关联；因此不能停用旧兼容登录或批量创建账号，需管理员逐项确认员工/门店身份映射。未读取密码、账号名或写入任何认证/角色数据。
+- G01 本机复核：iCloud 备份目录存在，但最新归档仍为 2026-09-12；LaunchAgent 日志重现 `/bin/bash: .../Documents/.../backup-zysyr.sh: Operation not permitted`。当前执行环境没有 `pg_dump`，Docker API socket 返回 permission denied；未导出数据库/Storage、未做恢复、未启用 PITR。等待确认安全目的地和 macOS 访问方案。
 
 ## 上线整改：B08 历史凭证预览按需加载（2026-09-24，v538 已发布）
 
