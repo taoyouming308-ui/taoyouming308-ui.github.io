@@ -37,6 +37,7 @@ async function run() {
   ];
 
   for (const test of cases) {
+    for (const staleOutcome of ['late-success', 'late-error']) {
     await page.evaluate(({ view, loader, operations }) => {
       const select = document.getElementById('store-select');
       if (!Array.from(select.options).some(option => option.value === '第二门店')) select.add(new Option('第二门店', '第二门店'));
@@ -44,6 +45,11 @@ async function run() {
       document.getElementById('month').value = '2026-01';
       state.view = view;
       state.readRequests = {};
+      state.finance.data = null;
+      state.pettyCash.data = null;
+      state.payroll.data = null;
+      state.salarySheet.data = null;
+      state.inventory.data = null;
       window.isLocalPreview = () => false;
       window.__pendingReads = [];
       window.__readResolvers = {};
@@ -68,14 +74,16 @@ async function run() {
     assert(calls.filter(call => call.month === '2026-01').every(call => call.store === '太合中心店'), test.loader + ' old request must keep its original store');
     assert(calls.filter(call => call.month === '2026-02').every(call => call.store === '第二门店'), test.loader + ' new request must use the newly selected store');
 
-    await page.evaluate(() => {
+    await page.evaluate(({ staleOutcome }) => {
       for (const operation of window.__readCase.operations) {
         const old = window.__readResolvers[operation + ':2026-01'];
         const current = window.__readResolvers[operation + ':2026-02'];
-        if (old) old.resolve({ marker: 'old', month: '2026-01', operation });
+        // Current page wins first; both stale successes and failures arriving later must be ignored.
         if (current) current.resolve({ marker: 'current', month: '2026-02', operation });
+        if (old && staleOutcome === 'late-success') old.resolve({ marker: 'old', month: '2026-01', operation });
+        else if (old) old.reject(new Error('stale request failed after the current response'));
       }
-    });
+    }, { staleOutcome });
     await page.evaluate(() => Promise.all([window.__oldRead, window.__newRead]));
 
     const snapshot = await page.evaluate(testCase => ({
@@ -90,11 +98,16 @@ async function run() {
     const target = test.state === 'salary' ? snapshot.salarySheet : snapshot[test.state];
     assert.equal(target && target.marker, 'current', test.loader + ' must keep the latest response');
     assert.equal(target && target.month, '2026-02', test.loader + ' must not display the old period');
+    if (test.state === 'salary') {
+      assert.equal(snapshot.salaryPayroll && snapshot.salaryPayroll.marker, 'current', 'salary report must preserve current payroll-center data');
+      assert.equal(snapshot.salaryPayroll && snapshot.salaryPayroll.month, '2026-02', 'salary report payroll data must stay in the selected period');
+    }
     assert.match(snapshot.status, /已更新/, test.loader + ' should leave a successful current-period status');
+    }
   }
 
   assert.deepEqual(errors, [], 'no browser runtime errors');
-  console.log('period response isolation passed: finance workbench, petty cash, payroll, salary, inventory; month/store race');
+  console.log('period response isolation passed: finance workbench, petty cash, payroll, salary, inventory; month/store race, stale late successes and errors');
   await browser.close();
   await new Promise(resolve => server.close(resolve));
 }
