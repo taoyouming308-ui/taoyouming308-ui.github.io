@@ -9,6 +9,8 @@ const sample={refund:{id:3,organizationId:1,storeId:1,orderId:2,type:'full',stat
 const record=inspectRefund(sample,3,scope);assert.ok(record.canApprove);assert.ok(Object.isFrozen(record.snapshot.payments[0]));
 for(const type of ['service','product','package','year_card']){const data=structuredClone(sample);data.lines[0].type=type;assert.ok(inspectRefund(data,3,scope).canApprove);}
 assert.equal(inspectRefund(sample,3,{...scope,staffId:2}).canReview,false);
+assert.equal(inspectRefund(sample,3,{...scope,staffId:2}).canWithdraw,true);
+assert.equal(inspectRefund(sample,3,{...scope,staffId:1}).canWithdraw,false);
 for(const tweak of [x=>x.refund.storeId=2,x=>x.order.id=4,x=>x.lines.push(x.lines[0]),x=>x.payments[0].originalAmount='1e2',x=>x.payments[0].paymentId=0]){const bad=structuredClone(sample);tweak(bad);assert.throws(()=>inspectRefund(bad,3,scope));}
 for(const tweak of [x=>x.refund.status='approved',x=>x.payments[0].originalStatus='reversed',x=>x.payments[0].amount='12.33',x=>x.order.refundedTotal='1.00',x=>x.lines=[],x=>{x.payments[0].method='member_units';x.payments[0].originalMethod='member_units';}]){const bad=structuredClone(sample);tweak(bad);assert.equal(inspectRefund(bad,3,scope).canApprove,false);}
 const page={organizationId:1,storeId:1,rows:[{id:3,orderId:2,status:'submitted',amount:'12.34'}],nextBeforeId:null};
@@ -17,6 +19,9 @@ for(const bad of [{...page,storeId:2},{...page,nextBeforeId:3},{...page,rows:[pa
 assert.throws(()=>refundPage(page,scope,{status:'approved'}));
 verifyRefundDecision({refundRequestId:3,orderId:2,status:'approved',reviewedByStaffId:1},3,scope,'approved');
 assert.throws(()=>verifyRefundDecision({refundRequestId:3,orderId:2,status:'approved',reviewedByStaffId:2},3,scope));
+const withdrawn=structuredClone(sample);withdrawn.refund.status='cancelled';withdrawn.refund.withdrawnByStaffId=2;withdrawn.refund.withdrawalReason='合成撤回';
+assert.equal(inspectRefund(withdrawn,3,{...scope,staffId:2}).canWithdraw,false);
+assert.throws(()=>inspectRefund({...withdrawn,refund:{...withdrawn.refund,withdrawalReason:''}},3,scope));
 let calls=[];
 const handler=createSalonHandler({verifyUser:async()=>({id:'test'}),findStaff:async()=>({id:1,organization_id:1,store_id:1,employment_status:'active'}),resolveStore:async()=>1,invoke:async(name,args)=>{calls.push({name,args});return {};}});
 const send=body=>handler(new Request('http://127.0.0.1/test',{method:'POST',headers:{Authorization:'Bearer synthetic-token-123456'},body:JSON.stringify(body)}));

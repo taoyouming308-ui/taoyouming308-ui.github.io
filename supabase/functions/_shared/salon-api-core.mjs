@@ -15,6 +15,7 @@ const OPERATIONS={
   member_open:{rpc:'salon_open_member_account'},member_recharge:{rpc:'salon_recharge_member_account'},member_status:{rpc:'salon_set_member_status'},
   order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines_versioned'},order_status:{rpc:'salon_set_order_status_versioned'},
   refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_checked'},refund_execute:{rpc:'salon_execute_refund_request'},
+  refund_withdraw:{rpc:'salon_withdraw_refund_request'},
   finance_entry:{rpc:'salon_add_finance_entry'},operating_report:{rpc:'salon_get_operating_report'},
   staff_create:{rpc:'salon_create_staff'},staff_status:{rpc:'salon_set_staff_status'},commission_rule:{rpc:'salon_create_commission_rule'},payroll_generate:{rpc:'salon_generate_payroll'},payroll_review:{rpc:'salon_review_payroll'},payrolls:{rpc:'salon_list_payroll'},
   role_create:{rpc:'salon_create_role'},role_status:{rpc:'salon_set_role_status'},staff_assign:{rpc:'salon_assign_staff_store_role'},staff_transfer:{rpc:'salon_transfer_staff'},stores:{rpc:'salon_list_staff_stores'},audit:{rpc:'salon_list_audit_events'},
@@ -84,7 +85,7 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_status:state,p_before_id:payload.beforeId??null};
     }else if(operation==='request_lookup'){
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求核对编号无效');
-      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
+      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','refund_withdraw','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
       args={...common,p_lookup_key:payload.requestKey,p_target_operation:payload.targetOperation};
     }else if(operation==='store_time'){
       args=common;
@@ -143,6 +144,9 @@ export function createSalonHandler(deps){return async function(request){
       if(!['approved','rejected'].includes(payload.decision)||typeof payload.reason!=='string'||!payload.reason.trim()||payload.reason.length>500||!payload.expectedSnapshot||typeof payload.expectedSnapshot!=='object'||Array.isArray(payload.expectedSnapshot))throw new Error('审批决定、意见或核对快照无效');
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求幂等键无效');
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:payload.requestKey,p_decision:payload.decision,p_reason:payload.reason.trim(),p_expected_snapshot:payload.expectedSnapshot};
+    }else if(operation==='refund_withdraw'){
+      if(typeof payload.reason!=='string'||!payload.reason.trim()||payload.reason.length>500||!payload.expectedSnapshot||typeof payload.expectedSnapshot!=='object'||Array.isArray(payload.expectedSnapshot))throw new Error('撤回原因或核对快照无效');
+      args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey),p_reason:payload.reason.trim(),p_expected_snapshot:payload.expectedSnapshot};
     }else if(operation==='refund_execute'){
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_request_key:requestKey(payload.requestKey)};
     }else if(operation==='finance_entry'){
@@ -205,6 +209,8 @@ export function createSalonHandler(deps){return async function(request){
       if(typeof zone!=='string'||!zone||zone!==zone.trim()||zone.length>100||!Number.isInteger(version)||version<0||version>2147483647)throw Error('门店时区和版本无效，请刷新后重试');
       args={...args,p_expected_time_zone:zone,p_expected_time_version:version};
     }
-    return finish(200,{data:await deps.invoke(spec.rpc,args)});
+    const rpc=operation==='request_lookup'&&payload.targetOperation==='refund_withdraw'?'salon_lookup_refund_withdraw':spec.rpc;
+    if(operation==='request_lookup'&&payload.targetOperation==='refund_withdraw')delete args.p_target_operation;
+    return finish(200,{data:await deps.invoke(rpc,args)});
   }catch(error){const raw=error?.message||'请求失败',code=errorCode(raw),auth=code==='AUTH_REQUIRED'||code==='STAFF_INACTIVE',message=code==='DATABASE_OPERATION_FAILED'?'操作未完成，请稍后重试':raw;return finish(auth?403:code==='DATABASE_OPERATION_FAILED'?500:400,{error:message,code})}
 }}

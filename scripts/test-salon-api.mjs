@@ -17,6 +17,15 @@ for(const targetOperation of ['customer_create','order_create','order_lines']){
  assert.equal((await handler(request(query))).status,200);
  assert.deepEqual(calls.at(-1),{rpc:'salon_lookup_staff_request',args:{p_actor_staff_id:7,p_organization_id:3,p_store_id:10,p_lookup_key:'lookup-api-000001',p_target_operation:targetOperation}});
 }
+const withdrawLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_withdraw',requestKey:'refund-withdraw-001'}));
+assert.equal(withdrawLookup.status,200);assert.equal(calls.at(-1).rpc,'salon_lookup_refund_withdraw');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_lookup_key:'refund-withdraw-001'});
+const withdrawSnapshot={refund:{id:3,status:'submitted'}};
+const withdrawalResult=await handler(request({operation:'refund_withdraw',refundRequestId:3,requestKey:'refund-withdraw-0001',reason:'顾客取消',expectedSnapshot:withdrawSnapshot}));
+assert.equal(withdrawalResult.status,200);assert.equal(calls.at(-1).rpc,'salon_withdraw_refund_request');
+assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_refund_request_id:3,p_request_key:'refund-withdraw-0001',p_reason:'顾客取消',p_expected_snapshot:withdrawSnapshot});
+for(const patch of [{reason:' '},{reason:'x'.repeat(501)},{expectedSnapshot:[]},{requestKey:'bad'}]){
+ const count=calls.length;assert.equal((await handler(request({operation:'refund_withdraw',refundRequestId:3,requestKey:'refund-withdraw-0001',reason:'顾客取消',expectedSnapshot:withdrawSnapshot,...patch}))).status,400);assert.equal(calls.length,count);
+}
 for(const patch of [{requestKey:'x'},{requestKey:'x'.repeat(121)},{requestKey:12},{requestKey:' padded-request-001'},{targetOperation:'checkout'},{targetOperation:'__proto__'},{targetOperation:null}]){
  const count=calls.length;
  assert.equal((await handler(request({operation:'request_lookup',targetOperation:'order_create',requestKey:'lookup-api-000001',...patch}))).status,400);
