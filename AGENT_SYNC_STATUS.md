@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 上线整改：C06 legacy staff 基线迁移回归（2026-09-25，窄项已验证）
+
+- 新增 PostgreSQL 17 隔离测试，使用生产只读 schema 元数据构造 synthetic `public.staff` 旧基线，只含两条明确虚构数据；回放 `20260729023135_staff_employment_status.sql`，检查必需列、约束，以及 active true/false 到 `active/pending` 的历史映射。隔离测试已实际通过。
+- GitHub Actions 将执行该测试；容器网络关闭，fixture 凭据值为明确的无效占位字符串。没有添加生产 migration，没有包含真实员工数据/密码，没有触及生产 Supabase。
+- 这只验证 C06 已知的首个 legacy schema 依赖，不等于完整 99 条 Supabase migration chain、Auth/Storage extension 运行环境或迁移 dry-run 已闭环。需先从 CI 的 PostgreSQL 17 结果确认这一窄项，再继续定位其后迁移依赖。
+
 ## 上线整改：C06 本地迁移回放与生产结构对照（2026-09-25，只读核验）
 
 - 使用 Supabase CLI 2.109.1 在隔离临时项目从空库回放仓库 99 条迁移；回放在 `20260729023135_staff_employment_status.sql` 失败，原因是迁移链未创建 `public.staff`。本地报错为 `relation "public.staff" does not exist`；没有触及生产数据库。

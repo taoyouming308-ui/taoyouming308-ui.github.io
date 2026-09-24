@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-25 · C06 legacy staff migration baseline regression
+
+- Added an isolated PostgreSQL 17 regression that creates only the synthetic legacy `public.staff` schema needed by the historical employment-status migration, then verifies the added constraint and active-status mapping.
+- CI runs the regression with Docker networking disabled. This tests the first missing legacy baseline dependency only; it does not claim that the complete Supabase migration chain is reproducible, and it does not change production schema or data.
+
 ## 2026-09-25 · v551 股东月报首屏信息收敛
 
 - 月报标题说明改为用户可理解的提示：展示本月报表和已入账日报；缺少日报的日期不是零收入。
