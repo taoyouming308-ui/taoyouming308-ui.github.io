@@ -52,10 +52,15 @@ const {startServer}=require('./salon-local-integration.cjs');
  // Physical goods are not saleable stock until each refunded product line has a final accepted quantity.
  const stockRefund=make(2),stockBefore=balances(),stockQuantityBefore=Number(app.sql('select quantity from public.salon_inventory_balances where organization_id=1 and store_id=1 and catalog_item_id=1')),stockDetail=detail(stockRefund);
  call(review(stockRefund,'refund-stock-approved-01',stockDetail));
- assert.throws(()=>call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-no-inspection')`),/逐项验收/);assert.equal(balances(),stockBefore);
+ assert.throws(()=>call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-no-inspection')`),/尚未复核通过/);assert.equal(balances(),stockBefore);
  const inspected=call(`public.salon_inspect_refund_product_line(1,1,1,${stockRefund},${stockDetail.lines[0].orderLineId},'refund-stock-inspect-001',1,0,0.5,'opened','合成验收：半数可再售')`);
  assert.equal(inspected.acceptedQuantity,'0.500');
  const stockLine=detail(stockRefund).lines[0];assert.equal(stockLine.stockInspection.acceptedQuantity,'0.500');assert.equal(stockLine.stockInspection.revision,1);
+ assert.throws(()=>call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-no-channel')`),/尚未复核通过/);assert.equal(balances(),stockBefore);
+ call(`public.salon_record_refund_channel_receipt(1,1,1,${stockRefund},${stockDetail.payments[0].paymentId},'refund-channel-report-0001',0,'report','synthetic-provider-123','合成环境渠道回执')`);
+ assert.throws(()=>call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-pending-channel')`),/尚未复核通过/);assert.equal(balances(),stockBefore);
+ assert.throws(()=>call(`public.salon_record_refund_channel_receipt(1,1,1,${stockRefund},${stockDetail.payments[0].paymentId},'refund-channel-self-check-01',1,'verify','synthetic-provider-123','自审测试')`),/其他员工/);
+ call(`public.salon_record_refund_channel_receipt(2,1,1,${stockRefund},${stockDetail.payments[0].paymentId},'refund-channel-verify-001',1,'verify','synthetic-provider-123','复核合成回执')`);
  call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-execute-0001')`);
  assert.equal(Number(app.sql('select quantity from public.salon_inventory_balances where organization_id=1 and store_id=1 and catalog_item_id=1')),stockQuantityBefore+0.5);
  assert.equal(Number(app.sql(`select quantity_delta from public.salon_inventory_ledger where refund_request_id=${stockRefund} and movement_type='refund'`)),0.5);
