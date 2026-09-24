@@ -70,22 +70,23 @@ const {startServer}=require('./salon-local-integration.cjs');
  assert.equal(page1.rows.length,50);assert.ok(page2.rows.length>=5);assert.ok(page2.rows.every(r=>r.id<page1.nextBeforeId));assert.deepEqual(Object.keys(page1.rows[0]).sort(),['amount','id','orderId','status']);assert.deepEqual(call("public.salon_list_refund_review_queue(1,1,2,'')").rows,[]);
  browser=await chromium.launch({channel:'chrome',headless:true});
  for(const width of [1280,390]){
-  const target=make(),page=await browser.newPage({viewport:{width,height:844}}),writes=[],errors=[];let mode='normal';
+  const target=make(),page=await browser.newPage({viewport:{width,height:844}}),writes=[],channelWrites=[],errors=[];let mode='normal';
   page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
   await page.route('**/*',r=>new URL(r.request().url()).origin===app.url?r.continue():r.abort());
   await page.route('**/api/salon',async route=>{
    const body=route.request().postDataJSON();
    if(body.operation==='refund_review'){writes.push(body);if(mode==='drop'){mode='normal';await route.fetch();return route.abort('failed');}}
+   if(body.operation==='refund_channel_receipt'){channelWrites.push(body);if(mode==='drop-channel'){mode='normal';await route.fetch();return route.abort('failed');}}
    if(body.operation==='refund_detail'&&mode==='bad-readback'){mode='normal';const response=await route.fetch(),json=await response.json();json.data.refund.decisionReason='wrong';return route.fulfill({response,json});}
    return route.continue();
   });
   const connect=async()=>{await page.locator('#connect').click();await page.getByText('已连接临时数据库；所有操作只影响本次合成数据。',{exact:true}).waitFor();};
-  const load=async n=>{await page.locator('#listRefunds').click();await page.locator('#refundSelection').selectOption(String(n));await page.locator('#loadRefund').click();await page.getByText('退款申请与原支付已读取；尚未审批或退款。',{exact:true}).waitFor();};
+  const load=async n=>{await page.locator('#listRefunds').click();await page.locator('#refundSelection').selectOption(String(n));await page.locator('#loadRefund').click();try{await page.getByText('退款申请与原支付已读取；尚未审批或退款。',{exact:true}).waitFor();}catch(error){throw Error(`refund load failed: ${await page.locator('#status').textContent()}; ${error.message}`)}};
   const journal=()=>page.evaluate(()=>sessionStorage.getItem('salon.pending.v1:1:1:1'));
   await page.goto(app.url);await connect();await load(target);
   assert.equal(await page.locator('#refundDetail img').count(),0);assert.match(await page.locator('#refundDetail').textContent(),/原支付/);
   await page.locator('#refundReason').fill('合成核对');const financialBefore=balances();mode='drop';await page.locator('#approveRefund').click();await page.getByText(/未收到有效结果/).waitFor();assert.ok(await journal());assert.equal(await page.locator('#createOrder').isDisabled(),true);
-  if(width===1280){await page.locator('#retry').click();await page.getByText('退款审批已保存并读取确认；未执行退款或返库。',{exact:true}).waitFor();assert.deepEqual(writes[0],writes[1]);}
+  if(width===1280){await page.locator('#retry').click();try{await page.getByText('退款审批已保存并读取确认；未执行退款或返库。',{exact:true}).waitFor();}catch(error){throw Error(`refund retry failed: ${await page.locator('#status').textContent()}; ${error.message}`)}assert.deepEqual(writes[0],writes[1]);}
   else{app.sql(`update public.salon_refund_requests set status='cancelled' where id=${target}`);await page.reload();await connect();await page.locator('#lookupRequest').click();await page.getByText(/原审批决定已核对/).waitFor();assert.equal(writes.length,1);assert.match(await page.locator('#status').textContent(),/当前申请：已取消/);}
   assert.equal(await journal(),null);assert.equal(balances(),financialBefore);assert.equal(await page.locator('#approveRefund').isDisabled(),true);
   if(width===390)await page.screenshot({path:'/private/tmp/salon-refund-review-mobile.png',fullPage:true});
@@ -99,6 +100,12 @@ const {startServer}=require('./salon-local-integration.cjs');
    await page.locator('#refundFilter').selectOption('approved');await page.locator('#listRefunds').click();await page.locator('#refundSelection').selectOption(String(stockUi));await page.locator('#loadRefund').click();
    const box=page.locator(`[data-stock-line-id="${stockSnapshot.lines[0].orderLineId}"]`);await box.waitFor();await box.locator('input').nth(0).fill('0.500');await box.locator('input').nth(1).fill('合成浏览器验收');await box.locator('[data-refund-stock-inspect="true"]').click();
    await page.waitForTimeout(500);const stockMessage=await page.locator('#status').textContent();assert.match(stockMessage,/商品实物验收已记录并回读确认/,`inspection UI status: ${stockMessage}`);assert.equal(Number(app.sql(`select accepted_quantity from public.salon_refund_stock_inspections where refund_request_id=${stockUi} order by revision desc limit 1`)),0.5);assert.equal(balances(),stockBefore);
+   const paymentId=stockSnapshot.payments[0].paymentId,channelBox=page.locator(`[data-refund-channel-payment-id="${paymentId}"]`);await channelBox.waitFor();await channelBox.locator('input').nth(0).fill('SYNTHETIC-CHANNEL-123');await channelBox.locator('input').nth(1).fill('合成环境渠道退款凭证');mode='drop-channel';await channelBox.locator('[data-refund-channel-receipt="true"]').click();await page.getByText(/未收到有效结果/).waitFor();assert.ok(await journal());await page.reload();await connect();await page.locator('#lookupRequest').click();try{await page.getByText(/原渠道回执请求已核对：待复核/).waitFor();}catch(error){throw Error(`channel recovery failed: ${await page.locator('#status').textContent()}; ${error.message}`)}assert.equal(await journal(),null);assert.equal(channelWrites.length,1);
+   assert.equal(app.sql(`select status from public.salon_refund_channel_receipts where refund_request_id=${stockUi} order by revision desc limit 1`),'reported');assert.equal(balances(),stockBefore);
+   call(`public.salon_record_refund_channel_receipt(2,1,1,${stockUi},${paymentId},'refund-channel-browser-reject',1,'reject','SYNTHETIC-CHANNEL-123','合成测试：拒绝错误凭证')`);
+   await page.locator('#refundFilter').selectOption('approved');await page.locator('#listRefunds').click();await page.locator('#refundSelection').selectOption(String(stockUi));await page.locator('#loadRefund').click();try{await page.getByText(/渠道回执：已拒绝，可重新登记新版本/).waitFor();}catch(error){throw Error(`rejected receipt reload failed: ${await page.locator('#status').textContent()}; ${error.message}`)}const revisedBox=page.locator(`[data-refund-channel-payment-id="${paymentId}"]`);await revisedBox.locator('input').nth(0).fill('SYNTHETIC-CHANNEL-456');await revisedBox.locator('input').nth(1).fill('修正后的合成渠道凭证');await revisedBox.locator('[data-refund-channel-receipt="true"]').click();await page.getByText(/外部渠道退款回执已登记/).waitFor();
+   assert.equal(app.sql(`select revision from public.salon_refund_channel_receipts where refund_request_id=${stockUi} order by revision desc limit 1`),'3');call(`public.salon_record_refund_channel_receipt(2,1,1,${stockUi},${paymentId},'refund-channel-browser-checker',3,'verify','SYNTHETIC-CHANNEL-456','合成环境另一员工复核')`);
+   await page.locator('#loadRefund').click();await page.getByText(/渠道回执：复核通过/).waitFor();assert.equal(await page.locator(`[data-refund-channel-payment-id="${paymentId}"]`).count(),0);assert.equal(balances(),stockBefore);
    assert.equal(app.sql("select has_function_privilege('anon','public.salon_inspect_refund_product_line(bigint,bigint,bigint,bigint,bigint,text,numeric,integer,numeric,text,text)','execute')"),'f');
    assert.throws(()=>call(`public.salon_inspect_refund_product_line(1,1,1,${stockUi},${stockSnapshot.lines[0].orderLineId},'refund-stock-stale-cas-01',1,0,0.250,'opened','旧验收版本')`),/已变化/);
    call(`public.salon_inspect_refund_product_line(1,1,1,${stockUi},${stockSnapshot.lines[0].orderLineId},'refund-stock-revision-02',1,1,0.250,'opened','复核修正')`);

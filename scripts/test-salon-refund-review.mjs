@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {inspectRefund,refundPage,verifyRefundDecision,verifyRefundStockInspection} from '../packages/salon-core/refund-review.mjs';
+import {inspectRefund,refundPage,verifyRefundDecision,verifyRefundStockInspection,verifyRefundChannelReceipt} from '../packages/salon-core/refund-review.mjs';
 import {createSalonHandler} from '../supabase/functions/_shared/salon-api-core.mjs';
 const scope={organizationId:1,storeId:1,staffId:1};
 const sample={refund:{id:3,organizationId:1,storeId:1,orderId:2,type:'full',status:'submitted',amount:'12.34',reason:'test',createdByStaffId:2,reviewedByStaffId:null,decisionReason:''},
@@ -27,6 +27,11 @@ assert.equal(inspectRefund(inspected,3,scope).canInspectStock,true);
 for(const change of [x=>x.lines[0].stockInspection.acceptedQuantity='1.001',x=>x.lines[0].stockInspection.requestedQuantity='2.000',x=>x.lines[0].stockInspection.condition='unknown']){const bad=structuredClone(inspected);change(bad);assert.throws(()=>inspectRefund(bad,3,scope));}
 assert.equal(verifyRefundStockInspection({refundRequestId:3,orderLineId:5,revision:1,status:'recorded',acceptedQuantity:'0.500',condition:'opened'},3,scope,{orderLineId:5,acceptedQuantity:'0.500',condition:'opened'}).status,'recorded');
 assert.throws(()=>verifyRefundStockInspection({refundRequestId:3,orderLineId:5,revision:1,status:'recorded',acceptedQuantity:'1.000',condition:'opened'},3,scope,{orderLineId:5,acceptedQuantity:'0.500',condition:'opened'}));
+const withReceipt=structuredClone(sample);withReceipt.refund.status='approved';withReceipt.channelReceipts=[{paymentId:8,method:'cash',amount:'12.34',revision:1,status:'reported',externalReference:'SYNTHETIC-123',evidenceNote:'合成回执',reportedByStaffId:2,verifiedByStaffId:null,recordedAt:'2026-09-24T08:00:00Z'}];
+assert.equal(inspectRefund(withReceipt,3,scope).channelReceipts[0].status,'reported');assert.equal(inspectRefund(withReceipt,3,scope).snapshot.channelReceipts,undefined);
+const verifiedReceipt=verifyRefundChannelReceipt({refundRequestId:3,paymentId:8,revision:2,status:'verified',reportedBy:2,verifiedBy:1},3,scope,{paymentId:8,decision:'verify',externalReference:'SYNTHETIC-123',evidenceNote:'第二员工复核'});assert.equal(verifiedReceipt.status,'verified');
+assert.throws(()=>inspectRefund({...withReceipt,channelReceipts:[{...withReceipt.channelReceipts[0],verifiedByStaffId:2,status:'verified'}]},3,scope));
+assert.throws(()=>verifyRefundChannelReceipt({refundRequestId:3,paymentId:8,revision:2,status:'verified',reportedBy:1,verifiedBy:2},3,scope,{paymentId:8,decision:'verify',externalReference:'SYNTHETIC-123',evidenceNote:'第二员工复核'}));
 let calls=[];
 const handler=createSalonHandler({verifyUser:async()=>({id:'test'}),findStaff:async()=>({id:1,organization_id:1,store_id:1,employment_status:'active'}),resolveStore:async()=>1,invoke:async(name,args)=>{calls.push({name,args});return {};}});
 const send=body=>handler(new Request('http://127.0.0.1/test',{method:'POST',headers:{Authorization:'Bearer synthetic-token-123456'},body:JSON.stringify(body)}));

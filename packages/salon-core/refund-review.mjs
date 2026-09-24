@@ -1,6 +1,6 @@
 import {serverId,amountToCents,orderEditVersion} from './api-client.mjs';
 export const refundStates=Object.freeze({submitted:'待审批',approved:'已批准（未执行）',rejected:'已拒绝',executed:'已执行',cancelled:'已取消'});
-const methods=Object.freeze({cash:'现金',wechat:'微信',alipay:'支付宝',member_value:'储值卡',member_units:'次卡/疗程'});
+const methods=Object.freeze({cash:'现金',wechat:'微信',alipay:'支付宝',bank:'银行卡',other:'其他渠道',no_payment:'免支付',member_value:'储值卡',member_units:'次卡/疗程'});
 const fail=()=>{throw Error('退款核对数据不完整或范围不匹配，请重新读取');};
 const money=value=>{if(typeof value!=='string'||!/^\d{1,10}\.\d{2}$/.test(value))fail();return amountToCents(value);};
 const units=value=>{if(typeof value!=='string'||!/^\d{1,11}\.\d{3}$/.test(value))fail();const n=Number(value.replace('.',''));if(!Number.isSafeInteger(n))fail();return n;};
@@ -38,11 +38,31 @@ export function inspectRefund(data,id,scope){
   const amount=money(p.amount),original=money(p.originalAmount),requestedUnits=units(p.units),originalUnits=units(p.originalUnits);
   paymentTotal+=amount;validPayments&&=amount>0&&amount<=original&&p.method===p.originalMethod&&p.originalStatus==='confirmed'&&(p.method==='member_units'?(requestedUnits>0&&requestedUnits<=originalUnits):requestedUnits===0);
  }
+ const channelReceipts=data.channelReceipts??data.payments.filter(p=>!['member_value','member_units'].includes(p.method)).map(p=>({paymentId:p.paymentId,method:p.method,amount:p.amount,revision:0,status:'missing',externalReference:'',evidenceNote:'',reportedByStaffId:null,verifiedByStaffId:null,recordedAt:null}));
+ if(!Array.isArray(channelReceipts)||channelReceipts.length>100)fail();
+ const receiptPayments=new Set();
+ for(const c of channelReceipts){
+  const paymentId=serverId(c.paymentId),payment=data.payments.find(row=>serverId(row.paymentId)===paymentId);
+  if(!payment||['member_value','member_units'].includes(payment.method)||receiptPayments.has(paymentId)||c.method!==payment.method||money(c.amount)!==money(payment.amount)||!Number.isSafeInteger(c.revision)||c.revision<0||!['missing','reported','verified','rejected'].includes(c.status))fail();
+  receiptPayments.add(paymentId);label(c.externalReference,120);label(c.evidenceNote,500);
+  if(c.status==='missing'){if(c.revision!==0||c.reportedByStaffId!==null||c.verifiedByStaffId!==null)fail();}
+  else{if(c.revision<1||!c.externalReference||!c.evidenceNote)fail();serverId(c.reportedByStaffId);if(c.status==='reported'&&c.verifiedByStaffId!==null)fail();if(['verified','rejected'].includes(c.status)&&(c.verifiedByStaffId===null||serverId(c.verifiedByStaffId)===serverId(c.reportedByStaffId)))fail();}
+ }
+ if(channelReceipts.length!==data.payments.filter(p=>!['member_value','member_units'].includes(p.method)).length)fail();
  const canReview=r.status==='submitted'&&serverId(r.createdByStaffId)!==serverId(scope.staffId);
  const canWithdraw=r.status==='submitted'&&serverId(r.createdByStaffId)===serverId(scope.staffId);
  const canInspectStock=r.status==='approved'&&data.lines.some(line=>line.type==='product');
  const canApprove=canReview&&o.status==='paid'&&total>0&&total<=payable-refunded&&lineTotal===total&&paymentTotal===total&&data.lines.length>0&&data.payments.length>0&&validPayments;
- return Object.freeze({snapshot:freeze(JSON.parse(JSON.stringify(data))),canReview,canApprove,canWithdraw,canInspectStock});
+ const snapshot=JSON.parse(JSON.stringify(data));delete snapshot.channelReceipts;
+ return Object.freeze({snapshot:freeze(snapshot),channelReceipts:freeze(JSON.parse(JSON.stringify(channelReceipts))),canReview,canApprove,canWithdraw,canInspectStock});
+}
+export function verifyRefundChannelReceipt(data,refundId,scope,{paymentId,decision,externalReference,evidenceNote}){
+ if(!data||serverId(data.refundRequestId)!==serverId(refundId)||serverId(data.paymentId)!==serverId(paymentId)||!Number.isSafeInteger(data.revision)||data.revision<1||!['reported','verified','rejected'].includes(data.status)||!['report','verify','reject'].includes(decision)||(data.externalReference!==undefined&&data.externalReference!==externalReference)||(data.evidenceNote!==undefined&&data.evidenceNote!==evidenceNote))throw Error('外部退款回执不匹配，请只读核对原请求');
+ const reporter=data.reportedByStaffId??data.reportedBy,verifier=data.verifiedByStaffId??data.verifiedBy;
+ if(decision==='report'&&(data.status!=='reported'||serverId(reporter)!==serverId(scope.staffId)||verifier!==null))throw Error('回执登记人或状态不匹配');
+ if(decision==='verify'&&(data.status!=='verified'||serverId(verifier)!==serverId(scope.staffId)))throw Error('回执复核人或状态不匹配');
+ if(decision==='reject'&&(data.status!=='rejected'||serverId(verifier)!==serverId(scope.staffId)))throw Error('回执拒绝人或状态不匹配');
+ return Object.freeze({...data});
 }
 export function verifyRefundStockInspection(data,refundId,scope,{orderLineId,acceptedQuantity,condition}){
  if(!data||serverId(data.refundRequestId)!==serverId(refundId)||serverId(data.orderLineId)!==serverId(orderLineId)||data.status!=='recorded'||!Number.isSafeInteger(data.revision)||data.revision<1||data.acceptedQuantity!==acceptedQuantity||data.condition!==condition)throw Error('商品验收回执不匹配，请只读核对原请求');
@@ -68,10 +88,25 @@ export function renderRefund(container,record){
    button.type='button';button.dataset.refundStockInspect='true';button.textContent=l.stockInspection?'追加验收修订（不执行退款）':'记录商品验收（不执行退款）';box.append(qLabel,cLabel,rLabel,button);fragment.append(box);
   }
  }
- for(const p of payments)add('p',`原支付 ${p.paymentId} · ${methods[p.method]} · 原金额 ¥${p.originalAmount} · 申请退 ¥${p.amount} · 原状态 ${p.originalStatus}${p.method==='member_units'?' · 申请退次数 '+p.units+' / 原次数 '+p.originalUnits:''}`);
+ const channelState={missing:'待登记',reported:'待另一员工复核',verified:'复核通过',rejected:'已拒绝，可重新登记新版本'};
+ for(const p of payments){
+  add('p',`原支付 ${p.paymentId} · ${methods[p.method]} · 原金额 ¥${p.originalAmount} · 申请退 ¥${p.amount} · 原状态 ${p.originalStatus}${p.method==='member_units'?' · 申请退次数 '+p.units+' / 原次数 '+p.originalUnits:''}`);
+  if(['member_value','member_units'].includes(p.method))continue;
+  const receipt=record.channelReceipts.find(row=>row.paymentId===p.paymentId);
+  if(!receipt)continue;
+  add('p',`渠道回执：${channelState[receipt.status]} · 版本 ${receipt.revision}${receipt.externalReference?` · 凭证引用 ${receipt.externalReference}`:''}${receipt.evidenceNote?` · 说明 ${receipt.evidenceNote}`:''}${receipt.reportedByStaffId?` · 登记员工 ${receipt.reportedByStaffId}`:''}${receipt.verifiedByStaffId?` · 复核员工 ${receipt.verifiedByStaffId}`:''}`);
+  if(r.status!=='approved'||receipt.status==='verified')continue;
+  const decision=receipt.status==='reported'?'verify':'report',box=d.createElement('fieldset'),ref=d.createElement('input'),note=d.createElement('input'),refLabel=d.createElement('label'),noteLabel=d.createElement('label'),button=d.createElement('button');
+  box.dataset.refundChannelPaymentId=String(p.paymentId);box.dataset.refundChannelDecision=decision;
+  ref.type='text';ref.maxLength=120;ref.autocomplete='off';ref.value=receipt.externalReference||'';ref.placeholder='渠道流水号或受控凭证引用';refLabel.textContent='渠道凭证引用';refLabel.append(ref);
+  note.type='text';note.maxLength=500;note.autocomplete='off';note.placeholder=decision==='report'?'仅写核验说明，不填账号/手机号等敏感信息':'说明复核依据；需对照原渠道凭证';note.value=decision==='verify'?'':'';noteLabel.textContent=decision==='report'?'登记说明':'复核说明';noteLabel.append(note);
+  button.type='button';button.dataset.refundChannelReceipt='true';button.textContent=decision==='report'?'登记渠道退款回执':'复核通过';box.append(refLabel,noteLabel,button);
+  if(decision==='verify'){const reject=d.createElement('button');reject.type='button';reject.dataset.refundChannelReject='true';reject.textContent='拒绝该回执';box.append(reject);}
+  fragment.append(box);
+ }
  if(r.reviewedByStaffId!==null)add('p',`审批人编号 ${r.reviewedByStaffId} · 意见：${r.decisionReason}`);
  if(r.status==='cancelled'&&r.withdrawnByStaffId!=null)add('p',`撤回人编号 ${r.withdrawnByStaffId} · 撤回原因：${r.withdrawalReason||''}`);
  add('p',record.canApprove?'请逐项核对原因、原支付和返库情况；批准只改变审批状态。':record.canReview?'分配或原单状态不满足批准条件；可以核实后拒绝，不可强行批准。':'当前不可审批：申请人与审批人须分开，且申请必须处于待审批。');
- add('p','验收只记录可返库数量；不会改库存，也不执行退款。实际支付渠道退款回执与返库仍须后续独立核验。');
+ add('p','回执登记只记录外部凭证，不调用支付渠道；必须由另一员工复核后，服务端才允许进入退款执行。实物验收与资金退款仍是独立证据链。');
  container.replaceChildren(fragment);
 }

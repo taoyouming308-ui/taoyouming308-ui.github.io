@@ -19,6 +19,8 @@ for(const targetOperation of ['customer_create','order_create','order_lines']){
 }
 const stockLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_stock_inspect',requestKey:'refund-stock-inspect-01'}));
 assert.equal(stockLookup.status,200);assert.equal(calls.at(-1).rpc,'salon_lookup_refund_stock_inspection');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_lookup_key:'refund-stock-inspect-01'});
+const receiptLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_channel_receipt',requestKey:'refund-channel-key-001'}));assert.equal(receiptLookup.status,200);assert.equal(calls.at(-1).args.p_target_operation,'refund_channel_receipt');
+const receiptList=await handler(request({operation:'refund_channel_receipts',refundRequestId:51}));assert.equal(receiptList.status,200);assert.equal(calls.at(-1).rpc,'salon_list_refund_channel_receipts');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_refund_request_id:51});
 const withdrawLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_withdraw',requestKey:'refund-withdraw-001'}));
 assert.equal(withdrawLookup.status,200);assert.equal(calls.at(-1).rpc,'salon_lookup_refund_withdraw');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_lookup_key:'refund-withdraw-001'});
 const withdrawSnapshot={refund:{id:3,status:'submitted'}};
@@ -34,6 +36,9 @@ assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_sto
 for(const patch of [{requestedQuantity:'2'},{acceptedQuantity:'2.001'},{acceptedQuantity:'-0.100'},{condition:'unknown'},{condition:'damaged'},{reason:''},{requestKey:'short'},{expectedRevision:-1}]){
  const count=calls.length;assert.equal((await handler(request({...stockInspection,...patch}))).status,400);assert.equal(calls.length,count);
 }
+const receiptWrite={operation:'refund_channel_receipt',refundRequestId:51,paymentId:81,requestKey:'channel-write-key-001',expectedRevision:0,decision:'report',externalReference:'PROVIDER-REF-001',evidenceNote:'合成测试渠道凭证'};
+assert.equal((await handler(request(receiptWrite))).status,200);assert.equal(calls.at(-1).rpc,'salon_record_refund_channel_receipt');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_refund_request_id:51,p_original_payment_id:81,p_request_key:receiptWrite.requestKey,p_expected_revision:0,p_decision:'report',p_external_reference:'PROVIDER-REF-001',p_evidence_note:'合成测试渠道凭证'});
+for(const patch of [{decision:'approve'},{externalReference:''},{externalReference:'x'.repeat(121)},{evidenceNote:''},{expectedRevision:-1},{requestKey:'short'}]){const count=calls.length;assert.equal((await handler(request({...receiptWrite,...patch}))).status,400);assert.equal(calls.length,count);}
 for(const patch of [{requestKey:'x'},{requestKey:'x'.repeat(121)},{requestKey:12},{requestKey:' padded-request-001'},{targetOperation:'checkout'},{targetOperation:'__proto__'},{targetOperation:null}]){
  const count=calls.length;
  assert.equal((await handler(request({operation:'request_lookup',targetOperation:'order_create',requestKey:'lookup-api-000001',...patch}))).status,400);

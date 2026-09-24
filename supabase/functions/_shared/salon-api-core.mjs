@@ -16,6 +16,7 @@ const OPERATIONS={
   order_create:{rpc:'salon_create_order'},order_lines:{rpc:'salon_replace_order_lines_versioned'},order_status:{rpc:'salon_set_order_status_versioned'},
   refund_request:{rpc:'salon_submit_refund_request'},refund_review:{rpc:'salon_review_refund_checked'},refund_execute:{rpc:'salon_execute_refund_request'},
   refund_withdraw:{rpc:'salon_withdraw_refund_request'},refund_stock_inspect:{rpc:'salon_inspect_refund_product_line'},
+  refund_channel_receipts:{rpc:'salon_list_refund_channel_receipts'},refund_channel_receipt:{rpc:'salon_record_refund_channel_receipt'},
   finance_entry:{rpc:'salon_add_finance_entry'},operating_report:{rpc:'salon_get_operating_report'},
   staff_create:{rpc:'salon_create_staff'},staff_status:{rpc:'salon_set_staff_status'},commission_rule:{rpc:'salon_create_commission_rule'},payroll_generate:{rpc:'salon_generate_payroll'},payroll_review:{rpc:'salon_review_payroll'},payrolls:{rpc:'salon_list_payroll'},
   role_create:{rpc:'salon_create_role'},role_status:{rpc:'salon_set_role_status'},staff_assign:{rpc:'salon_assign_staff_store_role'},staff_transfer:{rpc:'salon_transfer_staff'},stores:{rpc:'salon_list_staff_stores'},audit:{rpc:'salon_list_audit_events'},
@@ -73,6 +74,8 @@ export function createSalonHandler(deps){return async function(request){
       }
     }else if(operation==='refund_detail'){
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请')};
+    }else if(operation==='refund_channel_receipts'){
+      args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请')};
     }else if(operation==='refund_queue'){
       const state=payload.status??'submitted';
       if(typeof state!=='string'||!['','submitted','approved','rejected','executed','cancelled'].includes(state))throw new Error('退款状态筛选无效');
@@ -85,7 +88,7 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_status:state,p_before_id:payload.beforeId??null};
     }else if(operation==='request_lookup'){
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求核对编号无效');
-      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','refund_withdraw','refund_stock_inspect','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
+      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','refund_withdraw','refund_stock_inspect','refund_channel_receipt','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
       args={...common,p_lookup_key:payload.requestKey,p_target_operation:payload.targetOperation};
     }else if(operation==='store_time'){
       args=common;
@@ -154,6 +157,10 @@ export function createSalonHandler(deps){return async function(request){
       if(typeof requested!=='string'||!/^[0-9]{1,9}\.\d{3}$/.test(requested)||Number(requested)<=0||typeof accepted!=='string'||!/^[0-9]{1,9}\.\d{3}$/.test(accepted)||Number(accepted)>Number(requested)||!['sealed','opened','damaged','not_returnable'].includes(condition)||(['damaged','not_returnable'].includes(condition)&&Number(accepted)!==0)||!reason)throw new Error('商品验收数量、状态或原因无效');
       if(!Number.isSafeInteger(payload.expectedRevision)||payload.expectedRevision<0||payload.expectedRevision>2147483647)throw new Error('验收版本无效，请重新读取');
       args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_order_line_id:integer(payload.orderLineId,'退款商品明细'),p_request_key:requestKey(payload.requestKey),p_expected_quantity:requested,p_expected_revision:payload.expectedRevision,p_accepted_quantity:accepted,p_condition:condition,p_reason:reason};
+    }else if(operation==='refund_channel_receipt'){
+      const decision=text(payload.decision,20),reference=typeof payload.externalReference==='string'?payload.externalReference.trim():'',note=typeof payload.evidenceNote==='string'?payload.evidenceNote.trim():'';
+      if(!['report','verify','reject'].includes(decision)||!reference||reference.length>120||!note||note.length>500||!Number.isInteger(payload.expectedRevision)||payload.expectedRevision<0||payload.expectedRevision>2147483647)throw new Error('回执决策、凭证引用、说明或版本无效');
+      args={...common,p_refund_request_id:integer(payload.refundRequestId,'退款申请'),p_original_payment_id:integer(payload.paymentId,'原支付'),p_request_key:requestKey(payload.requestKey),p_expected_revision:payload.expectedRevision,p_decision:decision,p_external_reference:reference,p_evidence_note:note};
     }else if(operation==='finance_entry'){
       const type=text(payload.entryType,20),category=text(payload.category,100),note=text(payload.note,500),amount=Number(payload.amount);if(!['income','expense'].includes(type)||!category||!note||!Number.isFinite(amount)||amount<=0)throw new Error('收支记录参数无效');args={...common,p_request_key:requestKey(payload.requestKey),p_entry_date:text(payload.entryDate,10),p_entry_type:type,p_category:category,p_amount:amount,p_note:note};
     }else if(operation==='operating_report'){
