@@ -44,12 +44,19 @@ let browser;
       permissions: { read: true, upload_voucher: true, upload_history_evidence: true, batch_voucher: true } };
     window.batchItems = [];
     window.calls = [];
+    window.activeBatchUploads = 0;
+    window.maxBatchUploads = 0;
     window.confirm = () => true;
     isLocalPreview = () => false;
     api = async function (operation, payload) {
       window.calls.push({ operation, ...payload });
       if (operation === 'petty_cash_report') return window.fixture;
       if (operation === 'petty_cash_batch_upload') {
+        window.activeBatchUploads++;
+        window.maxBatchUploads = Math.max(window.maxBatchUploads, window.activeBatchUploads);
+        await new Promise(resolve => setTimeout(resolve, 40));
+        window.activeBatchUploads--;
+        if (payload.filename === '失败.png') throw Error('模拟网络超时');
         const index = window.batchItems.length;
         window.batchItems.push({ id: index ? '44444444-4444-4444-8444-444444444444' : '33333333-3333-4333-8333-333333333333',
           batch_id: payload.batch_id, original_filename: payload.filename, mime_type: payload.mime_type, uploaded_at: '2026-09-22T03:00:00Z',
@@ -108,10 +115,24 @@ let browser;
   const confirms = await page.evaluate(() => window.calls.filter(call => call.operation === 'petty_cash_batch_confirm'));
   assert.deepEqual(confirms.map(call => call.target_kind).sort(), ['formal', 'history']);
   assert.equal(await page.evaluate(() => window.calls.some(call => call.operation === 'petty_cash_record')), false, 'batch receipts must never create or change a petty-cash amount');
+  const retryChooser = page.waitForEvent('filechooser');
+  await page.locator('#petty-batch-select').click();
+  await (await retryChooser).setFiles([
+    { name: '成功甲.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('receipt-c') },
+    { name: '失败.png', mimeType: 'image/png', buffer: Buffer.from('receipt-d') },
+    { name: '成功乙.pdf', mimeType: 'application/pdf', buffer: Buffer.from('receipt-e') },
+  ]);
+  await page.waitForFunction(() => document.getElementById('petty-batch-status').textContent.includes('2 份已保存，1 份需核验'));
+  const batchProgress = await page.evaluate(() => ({ max: window.maxBatchUploads, calls: window.calls.filter(call => call.operation === 'petty_cash_batch_upload') }));
+  assert.equal(batchProgress.max, 2, 'bulk uploads should use bounded concurrency of two');
+  assert.equal(batchProgress.calls.length, 5, 'every selected file should receive one upload attempt');
+  assert.match(await page.locator('#petty-batch-status').innerText(), /成功甲\.jpg：已保存/);
+  assert.match(await page.locator('#petty-batch-status').innerText(), /失败\.png：结果未确认/);
+  assert.match(await page.locator('#petty-batch-status').innerText(), /刷新核验/);
   await page.setViewportSize({ width: 1280, height: 900 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, 'batch UI must not create page overflow');
   assert.deepEqual(errors, []);
-  console.log('v520 browser: hidden legacy controls, multi-upload feedback, OCR suggestions and human batch confirmation passed');
+  console.log('v550 browser: batch uploads are bounded, per-file status and uncertain-result recovery are visible; finance confirmation remains human-gated');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
