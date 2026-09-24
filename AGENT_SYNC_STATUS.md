@@ -2,7 +2,7 @@
 
 ## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，本地待完整门禁）
 
-- 本轮进一步把财务回归清单收敛至 `scripts/zysyr-finance-test-manifest.json`；本地 pre-push 与 GitHub Actions 都调用同一 runner。清单有 63 条唯一测试命令，完整本地运行 63/63 通过；清单检查确保测试文件存在且无重复。Node.js 固定为 22.22.1，Actions runner 固定为 ubuntu-24.04。首次 Actions 暴露浏览器截图硬编码 `/private/tmp` 的 macOS/Linux 兼容问题，改用系统临时目录；受影响两项浏览器测试本地复验通过。GitHub Actions 重跑结果待本次修复推送后核实；Supabase CLI/Edge 部署校验及平台环境变量核对仍未关闭。
+- 本轮进一步把财务回归清单收敛至 `scripts/zysyr-finance-test-manifest.json`；本地 pre-push 与 GitHub Actions 都调用同一 runner。清单有 63 条唯一测试命令，完整本地运行 63/63 通过；清单检查确保测试文件存在且无重复。Node.js 固定为 22.22.1，Actions runner 固定为 ubuntu-24.04。首次 Actions 暴露浏览器截图硬编码 `/private/tmp` 的 macOS/Linux 兼容问题，改用系统临时目录；修复后 GitHub Actions #35965591930 与 Pages workflow #35965591838 均成功，前者完整跑完 63 项财务回归。Supabase CLI/Edge 部署校验及平台环境变量核对仍未关闭。
 - 新增 `docs/zysyr/production-release-matrix-2026-09-24.md`，记录当日只读核实的 Pages、PostgreSQL、财务相关 Edge Function 版本/鉴权模式，以及代码读取的服务端环境变量名称；不记录值，不修改生产配置。
 - 标注 Supabase CLI 2.109.1；本沙箱无法写入 `/Users/a1/.supabase/telemetry.json`，因此 CLI `--help` 检查失败，未猜测或执行部署命令。
 - **C06 未关闭：** 首次 GitHub Actions 完整运行失败，已发现并修复 macOS 专属临时路径；修复后完整重跑待核实。CI 尚未固定 Supabase CLI/Edge 部署校验，实际环境变量设置仍需平台管理员逐项核实。本批不执行生产部署。

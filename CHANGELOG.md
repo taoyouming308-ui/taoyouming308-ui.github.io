@@ -10,7 +10,7 @@
 
 - 新增单一财务测试 manifest 与 runner，覆盖本地 pre-push 原有的完整财务回归测试集；GitHub Actions 改为调用同一 runner，避免 CI 只跑本地清单子集。
 - 增加清单校验，验证测试文件存在、无重复，且 pre-push/Actions 各自恰好调用一次共享 runner。
-- 固定 CI Node.js 22.22.1 与 ubuntu-24.04；完整本地 63 条财务回归全部通过。首次 Actions 运行暴露两处浏览器测试使用 macOS 专属 `/private/tmp` 路径，现已改为系统临时目录并本地复验通过；修复后 Actions 重跑结果待推送后查看。
+- 固定 CI Node.js 22.22.1 与 ubuntu-24.04；完整本地 63 条财务回归全部通过。首次 Actions 运行暴露两处浏览器测试使用 macOS 专属 `/private/tmp` 路径，现已改为系统临时目录并本地复验通过；修复后 GitHub Actions #35965591930（完整财务套件成功）与 Pages workflow #35965591838 均成功。
 - 仅修改测试/CI 配置与交接文档；未修改 App 版本、财务逻辑、数据库、生产权限或生产数据。
 
 ## 2026-09-24 · Storage 匿名权限收口
