@@ -16,15 +16,19 @@ node scripts/test-admin-workflow.js || exit 1
 node scripts/test-booking-ui.js || exit 1
 node scripts/test-employee-bookings.mjs || exit 1
 node scripts/test-staff-report-access-v514.js || exit 1
+node scripts/test-customer-admin-api.js || exit 1
 node scripts/test-staff-report-browser-v514.js || exit 1
 node scripts/test-frontdesk.js || exit 1
 node scripts/test-operations-time.js || exit 1
 node scripts/test-operations.js || exit 1
+node scripts/test-zysyr-confirm-uncertain-result.js || exit 1
 node scripts/test-monthly-formula-recalculation.js || exit 1
 node scripts/test-zysyr-monthly-cash-income-v527.js || exit 1
 node scripts/test-zysyr-daily-stylist-subtotal-db.js || exit 1
 node scripts/test-monthly-load-recovery-v499.js || exit 1
 node scripts/test-monthly-load-browser-v499.js || exit 1
+node scripts/test-operations-voucher-browser.js || exit 1
+node scripts/test-zysyr-period-response-isolation.js || exit 1
 node scripts/test-monthly-summary-v516.js || exit 1
 node scripts/test-monthly-summary-browser-v516.js || exit 1
 node scripts/test-zysyr-monthly-photo-upload-browser-v521.js || exit 1
@@ -41,6 +45,7 @@ node scripts/test-zysyr-petty-cash-batch-db-v520.js || exit 1
 node scripts/test-history-import.mjs || exit 1
 node scripts/test-operations-auth.js || exit 1
 node scripts/test-operations-auth-migration.js || exit 1
+node scripts/test-zysyr-legacy-login-security.js || exit 1
 node scripts/test-operations-auth-bridge.js || exit 1
 node scripts/test-operations-finance-account-admin.js || exit 1
 node scripts/test-zysyr-sprint0.js || exit 1
@@ -56,6 +61,8 @@ node scripts/test-zysyr-sprint7.js || exit 1
 node scripts/test-zysyr-daily-calendar-v457.js || exit 1
 node scripts/test-zysyr-daily-review-v506.js || exit 1
 node scripts/test-zysyr-daily-atomic-save-v510.js || exit 1
+node scripts/test-zysyr-daily-expected-revision-db.js || exit 1
+node scripts/test-zysyr-shared-public-acl-db.js || exit 1
 node scripts/test-zysyr-report-permissions-v512.js || exit 1
 node scripts/test-zysyr-daily-layout-v508.js || exit 1
 node scripts/test-operations-report-fit.js || exit 1

@@ -31,6 +31,58 @@ async function admin(token: unknown) {
   if(!actor || actor.active!==true || actor.employment_status!=="active" || !["admin","store_admin"].includes(String(actor.role)) || actor.role!==session.role || String(actor.store||'')!==session.store || actor.password_hash!==session.credential_hash || (actor.role==='store_admin' && !actor.store)) throw new Error("后台登录已失效，请重新登录");
   return actor;
 }
+function requireCustomerAdmin(actor: Row) {
+  if (actor.role !== "admin") throw new Error("客户档案与回访仅总管理员可用");
+}
+function customerFilter(value: unknown, max = 100): string {
+  return encodeURIComponent(clean(value, max).replace(/[,*()]/g, " ").trim());
+}
+async function customerProfilesAdmin(p: Row): Promise<Row[]> {
+  const fields = "id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,service_history,card_packages,preferences,notes,last_updated";
+  const limit = Math.max(1, Math.min(1000, Number.parseInt(String(p.limit || "200"), 10) || 200));
+  let path = `customer_profiles?select=${fields}&order=last_visit_date.desc.nullslast&limit=${limit}`;
+  const search = clean(p.search, 100).replace(/[,*()]/g, " ").trim();
+  const barber = clean(p.barber, 80);
+  const store = clean(p.store, 100);
+  if (search) {
+    const term = customerFilter(search);
+    path += `&or=(phone.ilike.*${term}*,name.ilike.*${term}*)`;
+  }
+  if (barber) path += `&barber_name=eq.${customerFilter(barber, 80)}`;
+  if (store) path += `&shop_name=eq.${customerFilter(store)}`;
+  return rows(path);
+}
+async function customerSyncStatus(actor: Row): Promise<Row> {
+  requireCustomerAdmin(actor);
+  const [bookings, profiles] = await Promise.all([
+    rows("bookings?select=updated_at&order=updated_at.desc&limit=1"),
+    rows("customer_profiles?select=last_updated&order=last_updated.desc.nullslast&limit=1"),
+  ]);
+  return { booking_updated_at: bookings[0]?.updated_at || null, customer_updated_at: profiles[0]?.last_updated || null };
+}
+async function appendCustomerFollowup(p: Row, actor: Row): Promise<Row> {
+  requireCustomerAdmin(actor);
+  const id = Number(p.profile_id);
+  const content = clean(p.content, 4000);
+  const next = clean(p.next, 10);
+  if (!Number.isSafeInteger(id) || id <= 0 || !content) throw new Error("客户档案或回访内容无效");
+  if (next && !/^\d{4}-\d{2}-\d{2}$/.test(next)) throw new Error("下次回访日期格式错误");
+  const actorName = clean(actor.username, 80);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const profile = (await rows(`customer_profiles?select=id,phone,notes&id=eq.${id}&limit=1`))[0];
+    if (!profile) throw new Error("客户档案不存在，请刷新后重试");
+    let notes: Row = {};
+    try { const parsed = JSON.parse(String(profile.notes || "{}")); if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) notes = parsed; } catch { /* preserve a safe structured note rather than overwrite malformed text */ }
+    if (profile.notes && !Object.keys(notes).length) throw new Error("客户备注格式异常，请先人工核对，未写入回访");
+    const followUps = Array.isArray(notes.follow_ups) ? notes.follow_ups.slice() : [];
+    followUps.push({ date: new Date().toISOString().slice(0, 10), barber: actorName, content, next });
+    notes.follow_ups = followUps;
+    const oldFilter = profile.notes == null ? "notes=is.null" : `notes=eq.${encodeURIComponent(String(profile.notes))}`;
+    const result = await request(`customer_profiles?id=eq.${id}&${oldFilter}`, "PATCH", { notes: JSON.stringify(notes) });
+    if (Array.isArray(result) && result.length === 1) return { saved: true, profile_id: id };
+  }
+  throw new Error("客户资料刚被其他人修改，回访未保存；请刷新后再试");
+}
 function publicStaff(staff: Row) { const {password_hash, ...safe}=staff; void password_hash; return safe; }
 async function handle(req: Request, p: Row) {
   const op=clean(p.operation);
@@ -62,6 +114,15 @@ async function handle(req: Request, p: Row) {
   const actor=await admin(p.session_token);
   if(op==="session") return {user:publicStaff(actor)};
   if(op==="logout") { await request(`staff_access_sessions?token_hash=eq.${await hash(String(p.session_token))}`,"DELETE"); return {logged_out:true}; }
+  if(op==="customer_profiles_admin") { requireCustomerAdmin(actor); return {rows:await customerProfilesAdmin(p)}; }
+  if(op==="customer_sync_status") return await customerSyncStatus(actor);
+  if(op==="customer_profile_notes") {
+    requireCustomerAdmin(actor);
+    const id=Number(p.profile_id);
+    if(!Number.isSafeInteger(id)||id<=0) throw new Error("客户档案编号无效");
+    return {rows:await rows(`customer_profiles?select=id,phone,name,shop_name,notes&id=eq.${id}&limit=1`)};
+  }
+  if(op==="customer_followup_append") return await appendCustomerFollowup(p,actor);
   if(op==="staff_access") {
     const id=Number(p.staff_id);
     const target=(await rows(`staff?select=id,username,role,store,active,employment_status&id=eq.${id}&limit=1`))[0];

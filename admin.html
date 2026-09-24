@@ -1309,7 +1309,7 @@ window.loadDashboard = function() {
     fetchAdminJson('/rest/v1/staff?select=id,store&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), '加载注册申请失败'),
     fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载作品审核失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&limit=500', '加载发质任务失败'),
-    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/customer_profiles?select=id,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=500', '加载回访任务失败'),
+    isStoreAdmin() ? Promise.resolve([]) : staffAccessRequest('customer_profiles_admin',{limit:500}).then(function(data){return data.rows||[];}),
     isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/care_outbound_queue?select=id,status,error_message,created_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库异常失败'),
     fetchAdminStaffStoreMap()
   ]).then(function(results) {
@@ -1355,9 +1355,10 @@ window.loadSystemStatus = function() {
   const stats = document.getElementById('system-stats');
   const list = document.getElementById('system-outbound-list');
   if (!stats || !list) return;
+  const syncStatusPromise = staffAccessRequest('customer_sync_status');
   Promise.all([
-    fetchAdminJson('/rest/v1/bookings?select=updated_at&order=updated_at.desc&limit=1', '加载预约同步状态失败'),
-    fetchAdminJson('/rest/v1/customer_profiles?select=last_updated&order=last_updated.desc.nullslast&limit=1', '加载客户同步状态失败'),
+    syncStatusPromise.then(function(data){return [{updated_at:data.booking_updated_at}];}),
+    syncStatusPromise.then(function(data){return [{last_updated:data.customer_updated_at}];}),
     fetchAdminJson('/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at,processed_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库状态失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', '加载出库关联档案失败')
   ]).then(function(results) {
@@ -2765,11 +2766,8 @@ function fetchMgjServicesForAdmin(serviceUrl, sinceDate, store) {
   return fetch(serviceUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(response){
     if (response.ok) return response.json();
     if (response.status !== 404) return ensureOk(response, '加载美管加烫染护记录失败').then(function(r){ return r.json(); });
-    var profileUrl = SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,shop_name,service_history&last_visit_date=gte.' + sinceDate + '&order=last_visit_date.desc&limit=1000';
-    if (store) profileUrl += '&shop_name=eq.' + encodeURIComponent(store);
-    return fetch(profileUrl, {headers:{'apikey':SUPABASE_KEY}})
-      .then(function(r){ return ensureOk(r, '加载美管加消费历史失败'); })
-      .then(function(r){ return r.json(); })
+    return staffAccessRequest('customer_profiles_admin',{limit:1000,store:store})
+      .then(function(result){ return result.rows||[]; })
       .then(function(profiles){
         var rows = [];
         (profiles || []).forEach(function(profile){
@@ -3716,12 +3714,8 @@ function loadCustomers() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=200';
-  if (search) { url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,name.ilike.%25' + encodeURIComponent(search) + '%25)'; }
-  if (barber) { url += '&barber_name=eq.' + encodeURIComponent(barber); }
-
-  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-    .then(function(r){ return r.json(); })
+  staffAccessRequest('customer_profiles_admin',{limit:200,search:search,barber:barber})
+    .then(function(result){ return result.rows||[]; })
     .then(function(rows){
       if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
 
@@ -3770,7 +3764,7 @@ function loadCustomers() {
         html += '<td><a href="#" onclick="event.preventDefault();viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="color:var(--info);">查看</a></td>';
         html += '<td style="font-size:11px;">' + fuCount + '次' + (lastFu !== '—' ? '<br><span style="color:#666;">最后' + lastFu + '</span>' : '') + '</td>';
         html += '<td style="white-space:nowrap;">';
-        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
+        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\',' + Number(r.id) + ')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
         html += '<button onclick="viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">详情</button>';
         html += '</td></tr>';
       });
@@ -3834,12 +3828,8 @@ function loadFollowups() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=1000';
-  if (store) url += '&shop_name=eq.' + encodeURIComponent(store);
-  if (barber) url += '&barber_name=eq.' + encodeURIComponent(barber);
-
-  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-    .then(function(r){ return r.json(); })
+  staffAccessRequest('customer_profiles_admin',{limit:1000,store:store,barber:barber})
+    .then(function(result){ return result.rows||[]; })
     .then(function(rows){
       if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
 
@@ -3902,7 +3892,7 @@ function loadFollowups() {
         html += '<td style="font-size:11px;">' + esc(meta.dueDate || '—') + '</td>';
         html += '<td><span class="status-chip ' + statusClass + '">' + statusText + '</span></td>';
         html += '<td>';
-        html += '<button onclick="showFollowUpModal(\'' + escAttr(phone) + '\',\'' + escAttr(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
+        html += '<button onclick="showFollowUpModal(\'' + escAttr(phone) + '\',\'' + escAttr(name) + '\',' + Number(r.id) + ')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
         html += '</td></tr>';
       });
       tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
@@ -3916,18 +3906,18 @@ function loadFollowups() {
 // ===== 记录回访弹窗 =====
 var _fuPhone = '';
 var _fuName = '';
-function showFollowUpModal(phone, name) {
+var _fuProfileId = 0;
+function showFollowUpModal(phone, name, profileId) {
   if (!requireSuperAdmin('客户回访')) return;
   _fuPhone = phone;
   _fuName = name;
+  _fuProfileId = Number(profileId) || 0;
   // 查询历史回访记录
   var historyHtml = '';
   if (phone) {
-    fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(phone), {
-      headers: { 'apikey': SUPABASE_KEY }
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(rows){
+    staffAccessRequest('customer_profile_notes',{profile_id:_fuProfileId})
+    .then(function(result){
+      var rows = result.rows || [];
       if (rows && rows[0]) {
         try {
           var notes = JSON.parse(rows[0].notes || '{}');
@@ -3989,38 +3979,10 @@ function saveFollowUp() {
   var content = document.getElementById('fu-content');
   var next = document.getElementById('fu-next');
   if (!_fuPhone || !content || !content.value.trim()) return;
-  var now = new Date();
-  var dateStr = now.toISOString().substring(0,10);
-  
-  var barber = currentAdminName();
   var savedContent = content.value.trim();
   var savedNext = next ? next.value : '';
-
-  // 先取现有notes
-  fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(_fuPhone), {
-    headers: { 'apikey': SUPABASE_KEY }
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(rows){
-    var notes = {};
-    try { notes = JSON.parse((rows && rows[0] && rows[0].notes) || '{}'); } catch(e) {}
-    if (!notes.follow_ups) notes.follow_ups = [];
-    notes.follow_ups.push({
-      date: dateStr,
-      barber: barber,
-      content: savedContent,
-      next: savedNext
-    });
-    // 写回
-    return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(_fuPhone), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notes: JSON.stringify(notes) })
-    });
-  })
-  .then(function(r){
-    return ensureOk(r, '保存回访失败');
-  })
+  if (!_fuProfileId) { toast('客户档案编号缺失，请刷新客户列表后重试', 'err'); return; }
+  staffAccessRequest('customer_followup_append',{profile_id:_fuProfileId,content:savedContent,next:savedNext})
   .then(function(){
     recordAdminAction('记录客户回访', _fuName || _fuPhone, savedNext ? '下次计划 ' + savedNext : '未设置下次计划');
     toast('回访记录已保存', 'ok');

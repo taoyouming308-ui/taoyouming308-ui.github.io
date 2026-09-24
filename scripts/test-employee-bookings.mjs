@@ -8,6 +8,7 @@ function expect(value, message) {
 
 const edge = fs.readFileSync('supabase/functions/employee-bookings-api/index.ts', 'utf8');
 const app = fs.readFileSync('perm-app.html', 'utf8');
+const root = fs.readFileSync('index.html', 'utf8');
 const migration = fs.readFileSync('supabase/migrations/20260906033501_employee_booking_sessions.sql', 'utf8');
 
 const booking = {
@@ -53,6 +54,15 @@ expect(edge.includes('SUPABASE_SERVICE_ROLE_KEY') && !app.includes('SUPABASE_SER
 expect(edge.includes('shop_name=eq.${encodeURIComponent(store)}') && edge.includes('barber_name=eq.${encodeURIComponent(barber)}'), 'Meiguanjia query must use the session store and employee');
 expect(edge.includes('store=eq.${encodeURIComponent(store)}') && edge.includes('business_date=eq.${date}'), 'frontdesk query must use the session store and date');
 expect(edge.includes('sources_read_only: true') && edge.includes('bookings_untouched: true') && edge.includes('frontdesk_records_untouched: true'), 'read-only source boundary markers missing');
+expect(edge.includes('async function customerProfiles') && edge.includes('async function customerHistory'), 'customer data operations missing');
+expect(edge.includes('shop_name=eq.${safeFilterValue(store)}') && edge.includes('customer_phone=ilike.*${encodedPhone}*'), 'customer profiles and history must be limited to the authenticated session store');
+expect(edge.includes('const session = await requireEmployeeSession(payload)') && edge.indexOf('const session = await requireEmployeeSession(payload)') < edge.indexOf('operation === "customer_profiles"'), 'customer operations must require a live employee session');
+expect(!edge.includes('customer_profiles?select=*') && !edge.includes('bookings?select=*'), 'employee API must return a fixed customer-data projection');
+expect(!app.includes('/rest/v1/customer_profiles?') && !app.includes('/rest/v1/bookings?'), 'employee app must not bypass scoped customer endpoints');
+expect(app.includes("employeeBookingsApi('customer_profiles'") && app.includes("employeeBookingsApi('customer_history'"), 'customer views must use the authenticated employee API');
+expect(!root.includes('/rest/v1/customer_profiles?') && !root.includes('/rest/v1/bookings?'), 'root employee app must not bypass scoped customer endpoints');
+expect(root.includes("employeeBookingsApi('customer_profiles'") && root.includes("employeeBookingsApi('customer_history'"), 'root customer profile/history views must use the authenticated employee API');
+expect(root.includes("employeeBookingsApi('today_bookings'") && root.includes('BOOKING_SESSION_VALIDATED'), 'root booking list and picker must require a validated employee session');
 
 const loadStart = app.indexOf('function loadBookings(showLoading)');
 const loadEnd = app.indexOf('function isVisibleCustomerBooking', loadStart);
@@ -67,6 +77,11 @@ expect(pickerStart >= 0 && pickerEnd > pickerStart, 'hair booking picker loader 
 expect(pickerSource.includes("employeeBookingsApi('today_bookings'"), 'hair booking picker does not use merged API');
 expect(!pickerSource.includes('/rest/v1/bookings?'), 'hair booking picker still reads Meiguanjia bookings directly');
 expect(pickerSource.includes('source_label') && pickerSource.includes('前台到店') && pickerSource.includes('美管加预约'), 'hair booking picker source labels missing');
+const rootPickerStart = root.indexOf('window.showBookingPicker = function()');
+const rootPickerEnd = root.indexOf('// =====', rootPickerStart + 20);
+const rootPickerSource = root.slice(rootPickerStart, rootPickerEnd > rootPickerStart ? rootPickerEnd : undefined);
+expect(rootPickerStart >= 0 && rootPickerSource.includes("employeeBookingsApi('today_bookings'"), 'root booking picker must use the protected employee API');
+expect(!rootPickerSource.includes('/rest/v1/bookings?'), 'root booking picker still reads bookings directly');
 expect(app.includes("employeeBookingsApi('login'") && app.includes("employeeBookingsApi('session'"), 'employee login/session API flow missing');
 expect(!app.slice(app.indexOf('window.doAppLogin'), app.indexOf('window.showBarberPicker')).includes('password_hash=eq.'), 'employee password proof must not be placed in a Data API URL');
 

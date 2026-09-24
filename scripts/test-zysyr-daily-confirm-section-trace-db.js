@@ -10,7 +10,7 @@ const sql = input => execFileSync('docker', ['exec', '-i', name, 'psql', '-h', '
 
 async function run() {
   docker(['run', '--rm', '-d', '--network', 'none', '--name', name,
-    '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:15']);
+    '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:17']);
   try {
     let ready = false;
     for (let attempt = 0; attempt < 80; attempt++) {

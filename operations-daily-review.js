@@ -19,18 +19,20 @@
   }
   function context() {
     var sheet = state.imports.sheet;
-    return { id: String(sheet.draft.id), date: String(sheet.draft.report_date), store: currentStore() };
+    return { id: String(sheet.draft.id), date: String(sheet.draft.report_date), store: currentStore(), revision: Number(sheet.draft.edit_revision) };
   }
   function contextKey(ctx) { return JSON.stringify([ctx.store, ctx.id]); }
   function isCurrent(ctx) {
     var sheet = state.imports.sheet;
-    return !!sheet && String(sheet.draft.id) === ctx.id && String(sheet.draft.report_date) === ctx.date && currentStore() === ctx.store;
+    return !!sheet && String(sheet.draft.id) === ctx.id && String(sheet.draft.report_date) === ctx.date
+      && Number(sheet.draft.edit_revision) === ctx.revision && currentStore() === ctx.store;
   }
   function applySheet(ctx, sheet) {
     if (!isCurrent(ctx) || !sheet || String(sheet.draft.id) !== ctx.id || String(sheet.draft.report_date) !== ctx.date) {
       throw new Error('当前门店或日报已变化，请重新打开核对');
     }
     state.imports.sheet = sheet;
+    ctx.revision = Number(sheet.draft.edit_revision);
     state.imports.dirty = {};
     state.imports.dirtyLabels = {};
     renderDailySheetDetail();
@@ -156,7 +158,7 @@
     if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新打开');
     if (!dailySheetDirtyCount()) return;
     var snapshot = reviewedValues(), cells = collectDailySheetCells(grid());
-    var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, cells: cells, reason: reason });
+    var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, cells: cells, reason: reason });
     verifySavedValues(result, snapshot);
     applySheet(ctx, result);
   }
@@ -256,7 +258,7 @@
       }
       notice('校验通过，正在入账…');
       submitted = true;
-      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, is_business_day: null, reviewed_all: true, reason: saveReason });
+      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, is_business_day: null, reviewed_all: true, reason: saveReason });
       var posted = null;
       try { posted = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }); } catch (_) {}
       await finishPosted(ctx, posted && posted.draft.status === 'confirmed' ? posted : null);

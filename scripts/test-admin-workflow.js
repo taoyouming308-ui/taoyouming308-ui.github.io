@@ -72,7 +72,9 @@ assert(admin.includes('未开单 · 本月美管加烫染护对账') && admin.in
 assert(admin.includes('mgj-reconcile-store') && admin.includes('mgj-reconcile-barber'), 'missing-order queue lacks store and stylist filters');
 assert(admin.includes("groupHeader = '<tr><td colspan=\"10\"") && admin.includes("adminMgjBarber(row)"), 'missing-order queue is not grouped by store and stylist');
 assert(admin.includes("if (store) serviceUrl += '&shop_name=eq.'"), 'store administrator reconciliation is not scoped to its store');
-assert(admin.includes("if (response.status !== 404)") && admin.includes('/rest/v1/customer_profiles?select=phone,name,shop_name,service_history'), 'reconciliation lacks a staged-schema fallback');
+assert(admin.includes("if (response.status !== 404)") && admin.includes("staffAccessRequest('customer_profiles_admin',{limit:1000,store:store})"), 'reconciliation fallback must use the admin-authenticated profile operation');
+assert(!admin.includes('/rest/v1/customer_profiles?') && !admin.includes('/rest/v1/bookings?'), 'admin browser must not access customer or booking data through the public Data API');
+assert(staffApi.includes('requireCustomerAdmin(actor)') && staffApi.includes('customer_followup_append') && staffApi.includes('notes=eq.'), 'customer reads/writes must be admin-authenticated and follow-up writes concurrency guarded');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');

@@ -12,7 +12,7 @@ const fail = (text, pattern) => assert.throws(() => sql(text), error => pattern.
 const root = path.resolve(__dirname, '..');
 
 async function run() {
-  docker(['run', '--rm', '-d', '--network', 'none', '--name', name, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:15']);
+  docker(['run', '--rm', '-d', '--network', 'none', '--name', name, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:17']);
   try {
     for (let i = 0; i < 80; i += 1) {
       try { sql('select 1'); break; } catch { await new Promise(resolve => setTimeout(resolve, 250)); }

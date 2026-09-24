@@ -12,7 +12,7 @@ const sql = text => execFileSync('docker', ['exec', '-i', name, 'psql', '-h', '1
 const id = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 
 (async () => {
-  docker(['run', '--rm', '-d', '--network', 'none', '--name', name, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:15']);
+  docker(['run', '--rm', '-d', '--network', 'none', '--name', name, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:17']);
   try {
     for (let attempt = 0; attempt < 80; attempt += 1) {
       try { sql('select 1'); break; } catch { await new Promise(resolve => setTimeout(resolve, 250)); }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="530">
+<html lang="zh-CN" data-version="537">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1051,8 +1051,8 @@ body {
 }
 
 </style>
-<script src="staff-access-client.js?v=530"></script>
-<script src="employee-reports.js?v=530"></script>
+<script src="staff-access-client.js?v=537"></script>
+<script src="employee-reports.js?v=537"></script>
 </head>
 <body>
 
@@ -3074,9 +3074,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=530"></script>
-<script src="hair-vision-training.v1.js?v=530"></script>
-<script src="aesthetic-growth.v2.js?v=530"></script>
+<script src="aesthetic-knowledge.v1.js?v=537"></script>
+<script src="hair-vision-training.v1.js?v=537"></script>
+<script src="aesthetic-growth.v2.js?v=537"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6573,15 +6573,8 @@ function initApp() {
     applyAuthenticatedIdentity({ username: name, store: store, position: position, session_token: sessionToken, expires_at: expiresAt || '', loggedAt: Date.now() }, true);
     var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
     if (modal) modal.remove();
-    // ★ 存到Supabase，管理员可在后台修改
-    if (name) {
-      fetch(SUPABASE_URL + '/rest/v1/barber_identities', {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
-      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); })
-      .catch(function(e){ console.warn('身份同步失败:', e); });
-    }
+    // Device-to-barber sync is retired; authenticated identity stays in the
+    // employee session and local device state, not an anonymously writable table.
     loadBookings();
   };
 
@@ -6972,7 +6965,7 @@ function initApp() {
         phone: phone || '',
         customer_name: name || '',
         barber_name: barber || currentBarber,
-        shop_name: BOOKING_SHOP || '\u81EA\u7531\u624B\u827A\u4EBA',
+        shop_name: BOOKING_SHOP || '\u81EA\u7533\u624B\u827A\u4EBA',
         booking_id: context.bookingId ? Number(context.bookingId) : null,
         booking_date: bdate || '',
         source: 'booking_tag',
@@ -7290,10 +7283,9 @@ function initApp() {
           return;
         }
         // customer_profiles没找到 → 降级到预约记录
-        fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&customer_phone=eq.' + encodeURIComponent(phone) + '&order=date.asc', {
-          headers: { 'apikey': SUPABASE_KEY }
-        }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(function(bookingRows){
+        employeeBookingsApi('customer_history', { session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token, phone: phone })
+        .then(function(history){
+          var bookingRows = history && Array.isArray(history.bookings) ? history.bookings : [];
           bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
             document.querySelector('#plan-modal .box').innerHTML =
@@ -8204,28 +8196,14 @@ function initApp() {
 
   function fetchCustomerProfileRows(phone, name, limit) {
     limit = limit || 1000;
-    var normPhone = normalizeHairCustomerPhone(phone);
-    var clauses = [];
-    if (phone) clauses.push('phone.eq.' + encodeURIComponent(phone));
-    if (normPhone && normPhone !== phone) clauses.push('phone.eq.' + encodeURIComponent(normPhone));
-    if (normPhone) clauses.push('phone.ilike.%25' + encodeURIComponent(normPhone) + '%25');
-    if (name) clauses.push('name.ilike.%25' + encodeURIComponent(name) + '%25');
-    var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=' + limit;
-    if (clauses.length > 0) url += '&or=(' + clauses.join(',') + ')';
-    return fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-      .then(function(r) { if (!r.ok) return []; return r.json(); })
-      .then(function(rows) {
-        rows = Array.isArray(rows) ? rows : [];
-        var matched = rows.filter(function(row) { return customerProfileMatches(row, phone, name); });
-        if (matched.length || (!phone && !name)) return matched;
-        return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=' + limit, {
-          headers: { 'apikey': SUPABASE_KEY }
-        }).then(function(r) { if (!r.ok) return []; return r.json(); })
-          .then(function(allRows) {
-            allRows = Array.isArray(allRows) ? allRows : [];
-            return allRows.filter(function(row) { return customerProfileMatches(row, phone, name); });
-          }).catch(function(){ return []; });
-      }).catch(function(){ return []; });
+    var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
+    if (!sessionToken) return Promise.reject(new Error('请先登录员工账号后查看客户资料'));
+    var search = phone || name || '';
+    return employeeBookingsApi('customer_profiles', { session_token: sessionToken, search: search, limit: limit })
+      .then(function(data) {
+        var rows = data && Array.isArray(data.rows) ? data.rows : [];
+        return rows.filter(function(row) { return customerProfileMatches(row, phone, name); });
+      });
   }
 
   function collectCustomerPackages(profileRows, includeUsed) {
@@ -12410,12 +12388,10 @@ function initApp() {
     var hairRecordsPromise = fetchAllActiveHairRecordRows();
     var legacyQueueUrl = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc';
     var legacyQueuePromise = fetchAllSupabaseRows(legacyQueueUrl, 1000);
-    var customerProfilesPromise = fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,total_visits,total_consumption,last_visit_date,card_packages,barber_name,shop_name&order=last_visit_date.desc.nullslast&limit=1000', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) {
-      if (!r.ok) return [];
-      return r.json();
-    }).catch(function(){ return []; });
+    var customerProfilesPromise = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token
+      ? employeeBookingsApi('customer_profiles', { session_token: AUTHENTICATED_STAFF.session_token, limit: 1000 })
+        .then(function(data){ return data && Array.isArray(data.rows) ? data.rows : []; }).catch(function(){ return []; })
+      : Promise.resolve([]);
 
     Promise.all([hairRecordsPromise, legacyQueuePromise, customerProfilesPromise]).then(function(results) {
       var hairRows = Array.isArray(results[0]) ? results[0] : [];

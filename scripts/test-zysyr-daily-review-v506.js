@@ -5,11 +5,19 @@ const vm = require('node:vm');
 
 const api = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
 const pageSource = fs.readFileSync('operations.html', 'utf8');
+const historicalReviewMigration = fs.readFileSync('supabase/migrations/20260923203352_daily_confirmed_validation_review.sql', 'utf8');
 assert.match(api, /monthlyAdjustmentForSource\(row\.id, adjustments, dailyIncome \? daily : null\)\.applied_delta/);
 assert.match(api, /monthlyAdjustmentForSource\(cell\.id, adjustments, daily\)\.applied_delta/);
 assert.match(api, /status=eq\.confirmed&source_voucher_id=not\.is\.null/);
 assert.match(api, /validation\.valid === true \? dailySheetTotal\(validation\.grand_total\) : null/);
 assert.match(api, /source:"confirmed_daily_cash_flow"/);
+assert.match(api, /historical_validation_status/);
+assert.match(api, /zysyr_admin_current_daily_sheet_validation/);
+assert.match(pageSource, /现行规则复核异常/);
+assert.match(pageSource, /历史复核暂不可用/);
+assert.match(pageSource, /系统没有修改历史金额/);
+assert.doesNotMatch(historicalReviewMigration, /\b(update|delete|insert)\s+into\s+public\.zysyr_daily_sheet_(drafts|cells)/i,
+  'historical revalidation must not edit saved sheets or cell amounts');
 assert.match(pageSource, /dailyPaperCells\(stylistTotal,serviceCodes,'stylist',Object\.fromEntries\(serviceCodes\.map\(function\(code\)\{return\[code,'category_total'\]\}\)\)/);
 assert.match(pageSource, /dailyPaperCells\(techTotal,techCodes,'technician',Object\.fromEntries\(techCodes\.map\(function\(code\)\{return\[code,'technician_category_total'\]\}\)\)/);
 

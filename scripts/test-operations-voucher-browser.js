@@ -18,7 +18,7 @@ let browser;
 async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
+  browser = await chromium.launch({ headless: true });
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
     const { width, height } = viewport;
     const page = await browser.newPage({ viewport, isMobile: width !== 1280, hasTouch: width !== 1280 });
@@ -58,7 +58,7 @@ async function run() {
       api = async function (operation, payload) {
         window.fixtureCalls.push({ operation, ...payload });
         const report = state.data.monthly_report;
-        const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', cell_address: payload.cell_address, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
+        const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', historical_import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', cell_address: payload.cell_address, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
         if (payload.cell_address === 'C3') target.id = target.historical_ledger_entry_id = '33333333-3333-4333-8333-333333333333';
         if (operation === 'cell_trace') {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
@@ -68,7 +68,7 @@ async function run() {
         }
         if (operation === 'history_evidence_images') return { filename: '模拟凭证包.docx', images: [{ filename: 'image1.png', data_url: image }, { filename: 'image2.png', data_url: image }] };
         if (operation === 'voucher_url') return { filename: '模拟日报.png', url: image };
-        if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload') return { saved: true };
+        if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload' || operation === 'history_ledger_evidence_page_link') return { saved: true, linked: true, formal_ledger_amount_changed: false };
         if (operation === 'overview') return state.data;
         throw Error('Unexpected API or write attempted: ' + operation);
       };
@@ -100,6 +100,17 @@ async function run() {
     // One amount page keeps amount edit, upload and per-record evidence control together.
     await page.evaluate(() => openCellTrace('C4'));
     await page.locator('.monthly-inline-editor').waitFor();
+    await page.locator('.voucher-file-preview [data-link-history-page]').first().waitFor();
+    assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 2, 'finance must be able to manually map one displayed bundle image to the selected historical line');
+    await page.evaluate(() => { window.prompt = () => '逐张查看原始凭证后人工确认'; });
+    await page.locator('.voucher-file-preview [data-link-history-page]').first().click();
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_ledger_evidence_page_link'));
+    const exactPageLink = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'history_ledger_evidence_page_link'));
+    assert.equal(exactPageLink.ledger_entry_id, '11111111-1111-4111-8111-111111111111');
+    assert.equal(exactPageLink.evidence_id, 'bundle');
+    assert.equal(exactPageLink.source_locator, 'word/media/image1.png');
+    assert.equal(exactPageLink.reason, '逐张查看原始凭证后人工确认');
+    assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
     assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');
     await page.locator('[data-simple-rule]').click();
@@ -263,7 +274,7 @@ async function run() {
     assert.equal(await page.evaluate(()=>{const stage=document.getElementById('daily-detail-preview').getBoundingClientRect(),image=document.getElementById('daily-detail-image').getBoundingClientRect();return image.right>stage.left&&image.left<stage.right&&image.bottom>stage.top&&image.top<stage.bottom;}),true,'rotated daily original must remain visible inside its preview');
     assert.equal(await page.locator('#daily-detail-image').getAttribute('src'),originalSrc,'rotation never rewrites original image');
     await page.locator('#daily-recognize').click();
-    await page.waitForFunction(()=>document.getElementById('daily-recognition-status').textContent.includes('识别草稿已保存：数字 1 格')).catch(async error=>{console.error(await page.locator('#daily-recognition-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
+    await page.waitForFunction(()=>document.getElementById('daily-source-action-status').textContent.includes('识别完成：数字 1 格')).catch(async error=>{console.error(await page.locator('#daily-source-action-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
     assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').classList.contains('recognition-candidate')),true);

@@ -35,7 +35,7 @@ vm.createContext(scope);
 vm.runInContext(stripTypeScriptTypes(readFunction(api, 'saveDailySheetDraft')), scope);
 
 async function run() {
-  docker(['run', '--rm', '-d', '--network', 'none', '--name', container, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:15']);
+  docker(['run', '--rm', '-d', '--network', 'none', '--name', container, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:17']);
   try {
     for (let attempt = 0; attempt < 80; attempt++) {
       try { sql('select 1'); break; } catch { await new Promise(resolve => setTimeout(resolve, 250)); }
@@ -113,9 +113,15 @@ async function run() {
       row_label: row[5], column_code: row[2], column_label: row[2], row_number: i + 1,
       column_number: 1, cell_role: row[3], value: String(row[4]) }));
     legacyCells.push({ id: id(10), section_code: 'stylist', row_key: 'stylist_1', row_label: '王小明' });
-    const request = { store: '测试门店', draft_id: draft, reason: '逐格核对', cells: legacyCells };
+    const request = { store: '测试门店', draft_id: draft, expected_revision: 0, reason: '逐格核对', cells: legacyCells };
+    await scope.saveDailySheetDraft({ ...request, expected_revision: undefined }, { auth_account_id: actor });
+    assert.equal(captured.length, 1, 'legacy page can still save during the staged rollout');
+    assert.equal(Object.prototype.hasOwnProperty.call(captured[0].payload, 'p_expected_revision'), false,
+      'legacy page uses only the old RPC overload instead of inventing a revision');
+    captured.length = 0;
     await scope.saveDailySheetDraft(request, { auth_account_id: actor });
     const edits = captured[0].payload.p_cells;
+    assert.equal(captured[0].payload.p_expected_revision, 0, 'browser reviewed revision must reach the atomic RPC');
     assert.equal(edits.length, 8, 'same cell number + name must become one audited edit');
     const nameEdit = edits.find(cell => cell.id === id(10));
     assert.equal(nameEdit.value, 2126);

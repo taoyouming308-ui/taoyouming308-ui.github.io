@@ -13,7 +13,9 @@ import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
-const SESSION_DAYS = 3650;
+// Legacy bridge sessions are deliberately short-lived. Existing sessions are
+// not revoked by this change; only newly issued bridge tokens use this TTL.
+const SESSION_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
 const REPORT_BUCKET = "zysyr-reports";
@@ -77,6 +79,42 @@ function json(data: unknown, status = 200): Response {
 async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function hmacSha256(value: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(SERVICE_KEY),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function legacyLoginFingerprint(kind: "identity" | "client", value: string): Promise<string> {
+  // Domain-separate from operations-auth-migrate so the UI's compatibility
+  // login followed by Auth login does not consume the same attempt bucket twice.
+  return hmacSha256(`legacy-operations-${kind}:${value}`);
+}
+
+async function legacyLoginRateLimit(identityHash: string, clientHash: string, requestId: string): Promise<boolean> {
+  const response = await rest("rpc/zysyr_begin_auth_migration", {
+    method: "POST", body: JSON.stringify({
+      p_identity_hash: identityHash, p_client_hash: clientHash, p_request_id: requestId,
+    }),
+  });
+  if (!response.ok) throw new Error("登录安全校验暂不可用，请稍后重试");
+  const result = await response.json() as JsonRecord;
+  return result.allowed === true;
+}
+
+async function recordLegacyLoginResult(
+  identityHash: string, clientHash: string, requestId: string, success: boolean, reason: string,
+): Promise<void> {
+  const response = await rest("rpc/zysyr_record_auth_migration_result", {
+    method: "POST", body: JSON.stringify({
+      p_identity_hash: identityHash, p_client_hash: clientHash, p_request_id: requestId,
+      p_event_type: success ? "success" : "failure", p_reason_code: reason,
+    }),
+  });
+  if (!response.ok) throw new Error("登录安全记录暂不可用，请稍后重试");
 }
 
 async function constantTimeSecretMatch(supplied: string, expected: string): Promise<boolean> {
@@ -561,22 +599,42 @@ async function shareholderRegistrationReview(payload: JsonRecord, session: JsonR
   return { reviewed: true, decision: "approved", saved: rpc };
 }
 
-async function login(payload: JsonRecord): Promise<JsonRecord> {
+async function login(payload: JsonRecord, request: Request): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
   if (!username || !password) throw new Error("请输入账号和密码");
+  const clientAddress = cleanText(request.headers.get("cf-connecting-ip"), 100)
+    || cleanText(request.headers.get("x-forwarded-for"), 500).split(",")[0]?.trim()
+    || "unknown";
+  const requestId = crypto.randomUUID();
+  const [identityHash, clientHash] = await Promise.all([
+    legacyLoginFingerprint("identity", username), legacyLoginFingerprint("client", clientAddress),
+  ]);
+  if (!await legacyLoginRateLimit(identityHash, clientHash, requestId)) {
+    throw new Error("尝试次数过多，请15分钟后再试");
+  }
+
+  let staff: JsonRecord | undefined;
+  let resolvedRole = "";
+  let failureReason = "invalid_credentials";
   const rows = await restRows(
     `staff?select=username,password_hash,role,position,store,active,employment_status&username=eq.${encodeURIComponent(username)}&limit=1`,
   );
-  const staff = rows[0];
+  staff = rows[0];
   const hashed = await sha256(password);
   const stored = cleanText(staff?.password_hash, 200);
   if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active" ||
       !stored || (stored !== hashed && stored !== `sha256:${hashed}` && stored !== password)) {
+    await recordLegacyLoginResult(identityHash, clientHash, requestId, false, failureReason);
     throw new Error("账号或密码错误");
   }
-  const operations_role = operationsRole(staff);
-  if (operations_role !== "shareholder" && !cleanText(staff.store, 100)) throw new Error("该账号尚未绑定门店");
+  resolvedRole = operationsRole(staff);
+  if (resolvedRole !== "shareholder" && !cleanText(staff.store, 100)) {
+    failureReason = "account_scope_missing";
+    await recordLegacyLoginResult(identityHash, clientHash, requestId, false, failureReason);
+    throw new Error("该账号尚未绑定门店");
+  }
+  await recordLegacyLoginResult(identityHash, clientHash, requestId, true, "legacy_credentials_verified");
 
   rest(`zysyr_operations_sessions?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`, {
     method: "DELETE", headers: { Prefer: "return=minimal" },
@@ -592,7 +650,7 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
     }),
   });
   if (!response.ok) throw new Error(`登录会话创建失败 (${response.status})`);
-  const session = { ...staff, operations_role, expires_at: expiresAt };
+  const session = { ...staff, operations_role: resolvedRole, expires_at: expiresAt };
   return { session_token: token, expires_at: expiresAt, user: await sessionUser(session) };
 }
 
@@ -901,6 +959,11 @@ function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
     const selected = exact[0] || matching[0] || {};
     return {
       ...item,
+      trace_links: matching.map((link) => ({
+        import_row_id: cleanText(link.import_row_id, 40),
+        source_locator: cleanText(link.source_locator, 160),
+        link_level: cleanText(link.link_level, 30),
+      })),
       trace_link_level: cleanText(selected.link_level, 30) || "unlinked",
       trace_source_locator: exactLocators[0] || cleanText(selected.source_locator, 160) || null,
       trace_source_locators: exactLocators,
@@ -3038,6 +3101,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   const evidenceData = await historyEvidenceForEntries(companyId, storeId, [entry]);
   const target = {
     id: entry.id, historical_ledger_entry_id: entry.id, sheet_name: entry.source_sheet,
+    historical_import_row_id: entry.import_row_id,
     cell_address: address, row_number: Number(rowMatch?.[1] || 0), column_number: columnNumber,
     cell_kind: current.cell_kind, display_value: current.amount, numeric_value: current.amount,
     original_numeric_value: (entry.posted_payload as JsonRecord)?.amount, formula: current.formula,
@@ -4179,6 +4243,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "EXISTING_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("当天已有正式日报，必须先冲销后再确认新版本");
     if (code === "DAILY_SHEET_ALREADY_CONFIRMED") throw new Error("这张电子日报已经最终确认，不能重复入账");
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
+    if (code === "DAILY_SHEET_REVISION_CONFLICT") throw new Error("这张日报已被其他页面修改；本次没有覆盖，请刷新并重新核对后再保存或入账");
+    if (code === "DAILY_SHEET_EXPECTED_REVISION_REQUIRED") throw new Error("日报版本信息无效，请刷新页面后重新核对");
     if (code === "DAILY_ATTACHMENT_CONFIRMED_REQUIRES_REVERSAL") throw new Error("这张日报已经入账，原图不能删除或替换；请先走冲销流程");
     if (code === "DAILY_ATTACHMENT_NOT_FOUND") throw new Error("所选原图不存在或不属于当前日报");
     if (code === "DAILY_ATTACHMENT_ALREADY_VOIDED") throw new Error("这份误传原图已经作废，无需重复操作");
@@ -5111,6 +5177,19 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
+  let currentValidationReview: JsonRecord | null = null;
+  if (cleanText(draft.status, 20) === "confirmed") {
+    const result = await currentDailyValidations(companyId, storeId, [cleanText(draft.id, 40)]);
+    const current = result.byDraft.get(cleanText(draft.id, 40));
+    const savedValidation = draft.validation_result && typeof draft.validation_result === "object"
+      ? draft.validation_result as JsonRecord : {};
+    currentValidationReview = result.unavailable
+      ? { status: "unavailable" }
+      : { status: current?.valid === false ? "current_mismatch"
+        : typeof savedValidation.valid === "boolean" && typeof current?.valid === "boolean" && savedValidation.valid !== current.valid
+          ? "changed" : "current_valid",
+        historical_valid: savedValidation.valid ?? null, current_validation: current ?? null };
+  }
   const reportDate = cleanText(draft.report_date, 10), month = reportDate.slice(0, 7);
   const [cells, links, voids, changes, locks] = await Promise.all([
     restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,row_label_source_method,row_label_confidence,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
@@ -5148,7 +5227,8 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   }));
   const activeAttachments = attachments.filter((item) => item.voided !== true);
   const primary = activeAttachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || activeAttachments[0] || null;
-  return { draft, cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
+  return { draft, current_validation_review: currentValidationReview,
+    cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
     history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
@@ -5429,6 +5509,9 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有修改电子日报权限");
   const store = await selectedStoreInfo(session, payload), reason = cleanText(payload.reason, 500);
   const draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
+  const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
+  const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
+  if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新后重新核对再保存");
   if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
   const cells = (payload.cells as JsonRecord[]).map((cell) => {
     // Missing value means label-only review; explicit null still means clear.
@@ -5488,6 +5571,7 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
   const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
     p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: orderedCells, p_reason: reason,
+    ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
   });
   return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
 }
@@ -5496,19 +5580,26 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) throw new Error("只有财务账号可以最终确认电子日报");
   const store = await selectedStoreInfo(session, payload), companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const actorId = cleanText(session.auth_account_id, 40), draftId = uuidValue(payload.draft_id, "电子日报草稿无效"), reason = cleanText(payload.reason, 500);
+  const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
+  const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
+  if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新原图并重新逐格核对后入账");
   if (!reason || payload.reviewed_all !== true) throw new Error("最终确认前必须逐格核对原图并填写复核说明");
-  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status,edit_revision&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
+  if (expectedRevision !== null && Number(draft.edit_revision) !== expectedRevision) throw new Error("日报已被其他页面修改，请刷新、重新核对后再入账");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
   if (validation.valid !== true) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
   const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);
+  const sourceHash = await sha256Bytes(bytes);
   const extension = mime === "image/png" ? "png" : mime === "application/pdf" ? "pdf"
     : mime.includes("spreadsheetml") ? "xlsx" : "jpg";
-  const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${crypto.randomUUID()}.${extension}`;
+  // A retry for the same immutable source must reuse the same object rather
+  // than creating another orphan archive after a lost response.
+  const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${draftId}-${sourceHash}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
     method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": mime, "x-upsert": "false" }, body: exactArrayBuffer(bytes),
+      "Content-Type": mime, "x-upsert": "true" }, body: exactArrayBuffer(bytes),
   });
   if (!upload.ok) throw new Error(`电子日报原图归档失败 (${upload.status})`);
   const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
@@ -5521,16 +5612,31 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_sheet", {
       p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId,
       p_report: { original_filename: cleanText(voucher.original_filename, 200), mime_type: mime,
-        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        size_bytes: bytes.length, sha256: sourceHash, bucket_id: REPORT_BUCKET,
         object_path: objectPath, display_data: displayData },
       p_is_business_day: payload.is_business_day == null ? null : Boolean(payload.is_business_day), p_reason: reason,
+      ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
     });
     return { saved, confirmed: true, formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
   } catch (error) {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
-      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    }).catch(() => null);
-    throw error;
+    // Storage and Postgres do not share a transaction. A rejected/lost RPC
+    // response does not prove that the confirmation rolled back, so deleting
+    // this object here can break a report that committed successfully.
+    // Keep the archive; any orphan cleanup must first prove it is unreferenced.
+    try {
+      const readback = await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session);
+      const current = readback.draft && typeof readback.draft === "object" ? readback.draft as JsonRecord : {};
+      if (cleanText(current.status, 30) === "confirmed") {
+        return { saved: { draft_id: draftId, confirmed: true, recovered_by_readback: true }, confirmed: true,
+          formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
+      }
+    } catch {
+      // A failed readback also leaves the outcome unknown; never compensate by
+      // deleting the only object that may now be referenced by the report.
+    }
+    const detail = error instanceof Error ? error.message : "日报确认失败";
+    console.error("daily sheet confirmation outcome requires readback; archive retained", draftId, objectPath);
+    throw new Error(`${detail}；原图归档已保留，请刷新核实日报状态后再操作，避免重复入账。`);
   }
 }
 
@@ -5560,6 +5666,26 @@ function dailySheetTotal(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+async function currentDailyValidations(companyId: string, storeId: string, draftIds: string[])
+  : Promise<{ byDraft: Map<string, JsonRecord>; unavailable: boolean }> {
+  const byDraft = new Map<string, JsonRecord>();
+  if (!draftIds.length) return { byDraft, unavailable: false };
+  try {
+    const response = await rest("rpc/zysyr_admin_current_daily_sheet_validation", {
+      method: "POST", body: JSON.stringify({ p_company_id: companyId, p_store_id: storeId, p_draft_ids: draftIds }),
+    });
+    if (!response.ok) throw new Error(`current daily validation ${response.status}`);
+    const rows = await response.json();
+    if (!Array.isArray(rows)) throw new Error("current daily validation response shape");
+    rows.forEach((row: JsonRecord) => byDraft.set(cleanText(row.draft_id, 40),
+      row.current_validation && typeof row.current_validation === "object" ? row.current_validation as JsonRecord : {}));
+    return { byDraft, unavailable: draftIds.some((id) => !byDraft.has(id)) };
+  } catch (error) {
+    console.error("daily historical validation review unavailable", error instanceof Error ? error.message : "unknown");
+    return { byDraft, unavailable: true };
+  }
+}
+
 async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "voucher.read") && !hasAuthCapability(session, "daily_report.write")) {
     throw new Error("当前账号没有查看日报权限");
@@ -5575,6 +5701,21 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   ]);
   const locked = periodLocks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId);
   const draftIds = drafts.map((draft) => cleanText(draft.id, 40)).filter(Boolean);
+  // Revalidate only the calendar's displayed confirmed revision for each day.
+  // This is a bounded read: it never updates historical validation snapshots
+  // or financial rows.
+  const calendarDrafts: JsonRecord[] = [];
+  const calendarDates = new Set<string>();
+  for (const draft of drafts) {
+    const date = cleanText(draft.report_date, 10);
+    if (!date || calendarDates.has(date)) continue;
+    calendarDates.add(date);
+    calendarDrafts.push(draft);
+  }
+  const confirmedDraftIds = calendarDrafts
+    .filter((draft) => cleanText(draft.status, 20) === "confirmed")
+    .map((draft) => cleanText(draft.id, 40)).filter(Boolean);
+  const currentValidations = await currentDailyValidations(companyId, storeId, confirmedDraftIds);
   const attachmentLinks = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_attachments?select=id,draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [];
   const attachmentVoucherIds = [...new Set(attachmentLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean))];
   const [attachmentVouchers, attachmentVoids] = await Promise.all([
@@ -5602,6 +5743,18 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     const date = cleanText(draft.report_date, 10);
     if (byDate.has(date)) continue;
     const validation = (draft.validation_result ?? {}) as JsonRecord;
+    const currentValidation = cleanText(draft.status, 20) === "confirmed"
+      ? currentValidations.byDraft.get(cleanText(draft.id, 40)) || null
+      : null;
+    const historicalValidationChanged = currentValidation != null
+      && typeof currentValidation.valid === "boolean"
+      && typeof validation.valid === "boolean"
+      && currentValidation.valid !== validation.valid;
+    const historicalValidationStatus = currentValidations.unavailable && cleanText(draft.status, 20) === "confirmed"
+      ? "unavailable"
+      : historicalValidationChanged ? "changed"
+      : currentValidation && currentValidation.valid === false ? "current_mismatch"
+      : currentValidation ? "current_valid" : "not_applicable";
     // An unvalidated OCR draft is not booked revenue. Do not present its
     // partial candidate sum as the day's authoritative calendar amount.
     const total = validation.valid === true ? dailySheetTotal(validation.grand_total) : null;
@@ -5614,7 +5767,10 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       status: cleanText(draft.status, 20), grand_total: total, edit_revision: Number(draft.edit_revision ?? 0),
       confirmed_at: draft.confirmed_at ?? null, source: "electronic", original_count: originalCount,
       approved_original_count: approvedOriginalCount, missing_original: originalCount === 0,
-      has_anomaly: validation.valid === false, locked });
+      has_anomaly: validation.valid === false || currentValidation?.valid === false,
+      historical_validation_status: historicalValidationStatus,
+      historical_validation_changed: historicalValidationChanged,
+      current_validation: currentValidation, locked });
   }
   for (const report of dailyReports) {
     const date = cleanText(report.report_date, 10);
@@ -6180,6 +6336,60 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
   }
 }
 
+async function historyLedgerEvidencePageLink(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const ledgerEntryId = uuidValue(payload.ledger_entry_id, "历史账目编号无效") as string;
+  const evidenceId = uuidValue(payload.evidence_id, "历史凭证编号无效") as string;
+  const sourceLocator = cleanText(payload.source_locator, 220);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^word\/media\/[A-Za-z0-9_.-]{1,180}$/.test(sourceLocator)) throw new Error("原图位置无效，请从凭证包图片中选择");
+  if (!reason) throw new Error("确认单张原图对应此项时必须填写核对说明");
+
+  const entryRows = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&status=eq.posted&limit=1`);
+  const entry = entryRows[0];
+  if (!entry) throw new Error("历史正式账明细不存在或无权查看");
+  const evidenceRows = await restRows(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,mime_type,size_bytes,bucket_id,object_path&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${evidenceId}&limit=1`);
+  const evidence = evidenceRows[0];
+  if (!evidence || cleanText(entry.import_batch_id, 40) !== cleanText(evidence.import_batch_id, 40)
+      || cleanText(entry.period_month, 10) !== cleanText(evidence.period_month, 10)
+      || cleanText(evidence.evidence_kind, 40) !== "voucher_bundle"
+      || cleanText(evidence.mime_type, 120) !== DOCX_MIME) {
+    throw new Error("凭证包与当前正式账日期间或批次不一致，不能关联");
+  }
+  const rowId = cleanText(entry.import_row_id, 40);
+  const duplicate = await restRows(`zysyr_history_import_row_evidence?select=id,link_level&company_id=eq.${companyId}&store_id=eq.${storeId}&import_row_id=eq.${rowId}&evidence_id=eq.${evidenceId}&source_locator=eq.${encodeURIComponent(sourceLocator)}&limit=1`);
+  if (duplicate[0]) return { linked: true, reused: true, link_level: cleanText(duplicate[0].link_level, 30), source_locator: sourceLocator, formal_ledger_amount_changed: false };
+
+  const sizeBytes = Number(evidence.size_bytes || 0);
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0 || sizeBytes > MAX_REPORT_BYTES) throw new Error("凭证包大小异常，暂不能验证原图位置");
+  const objectPath = cleanText(evidence.object_path, 500), bucket = cleanText(evidence.bucket_id, 100);
+  const download = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucket)}/${storagePath(objectPath)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!download.ok) throw new Error(`原始凭证包读取失败 (${download.status})`);
+  const bytes = new Uint8Array(await download.arrayBuffer());
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("凭证包读取大小异常");
+  let archive: JSZip;
+  try { archive = await JSZip.loadAsync(exactArrayBuffer(bytes)); } catch { throw new Error("Word 凭证包无法读取或已损坏"); }
+  const media = archive.file(sourceLocator);
+  if (!media || !rasterMime(sourceLocator)) throw new Error("该原图位置不在当前 Word 凭证包中");
+
+  const saved = await rpcSaved("rpc/zysyr_link_history_import_evidence", {
+    p_actor_user_id: actorId,
+    p_company_id: companyId,
+    p_store_id: storeId,
+    p_import_row_id: rowId,
+    p_evidence_id: evidenceId,
+    p_source_locator: sourceLocator,
+    p_reason: reason,
+  });
+  return { linked: true, reused: false, link_level: cleanText(saved.link_level, 30) || "page_confirmed", source_locator: sourceLocator, formal_ledger_amount_changed: false };
+}
+
 async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
@@ -6273,7 +6483,7 @@ Deno.serve(async (request: Request) => {
   try {
     const employeeReader = Object.prototype.hasOwnProperty.call(payload, "employee_session_token")
       ? await staffReportSession(payload, restRows, sha256) : null;
-    if (operation === "login") return json(await login(payload));
+    if (operation === "login") return json(await login(payload, request));
     if (operation === "shareholder_register") return json(await shareholderRegister(payload));
     if (operation === "logout") return json(await logout(payload));
     if (operation === "daily_recognition_worker_read") return json(await dailyRecognitionWorkerRead(payload, request));
@@ -6396,6 +6606,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
     if (operation === "history_monthly_attachment_upload") return json(await historyMonthlyAttachmentUpload(payload, session));
     if (operation === "history_ledger_evidence_upload") return json(await historyLedgerEvidenceUpload(payload, session));
+    if (operation === "history_ledger_evidence_page_link") return json(await historyLedgerEvidencePageLink(payload, session));
     if (operation === "history_evidence_images") return json(await historyEvidenceImages(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
@@ -6407,14 +6618,21 @@ Deno.serve(async (request: Request) => {
     const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message)
       || (Object.prototype.hasOwnProperty.call(payload, "employee_session_token") && /员工登录已失效|门店变化/.test(message));
     const authTemporary = message === "认证服务暂时不可用，请稍后自动重试";
+    const loginRateLimited = message === "尝试次数过多，请15分钟后再试";
+    const loginSecurityUnavailable = message === "登录安全校验暂不可用，请稍后重试"
+      || message === "登录安全记录暂不可用，请稍后重试";
     const dataTemporary = message.startsWith("财务数据连接暂时失败");
     const permissionDenied = /权限|无权/.test(message);
     const code = accountDisabled ? "AUTH_ACCOUNT_DISABLED"
       : sessionInvalid ? "AUTH_SESSION_INVALID"
       : authTemporary ? "AUTH_TEMPORARY"
+      : loginRateLimited ? "AUTH_RATE_LIMITED"
+      : loginSecurityUnavailable ? "AUTH_SECURITY_TEMPORARY"
       : dataTemporary ? "DATA_TEMPORARY"
       : permissionDenied ? "PERMISSION_DENIED"
       : "REQUEST_FAILED";
-    return json({ error: message, code }, (authTemporary || dataTemporary) ? 503 : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
+    return json({ error: message, code }, (authTemporary || loginSecurityUnavailable || dataTemporary) ? 503
+      : loginRateLimited ? 429
+      : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
   }
 });

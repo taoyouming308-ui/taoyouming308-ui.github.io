@@ -2,6 +2,7 @@
 <html lang="zh-CN" data-version="131">
 <head>
 <meta charset="UTF-8">
+<script>location.replace('perm-app.html'+location.search+location.hash);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2107,14 +2108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('current-identity').textContent = name || '全部发型师';
     var modal = document.getElementById('identity-modal');
     if (modal) modal.remove();
-    // ★ 存到Supabase，管理员可在后台修改
-    if (name) {
-      fetch(SUPABASE_URL + '/rest/v1/barber_identities', {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
-      }).catch(function(e){ console.warn('身份同步失败:', e); });
-    }
+    // Device-to-barber sync is retired; keep the selected identity locally.
     loadBookings();
   };
 

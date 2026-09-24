@@ -153,6 +153,41 @@ async function todayBookings(payload: JsonRecord, session: JsonRecord): Promise<
   };
 }
 
+function safeFilterValue(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
+async function customerProfiles(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = cleanText(session.store, 100);
+  if (!store) throw new Error("账号未绑定门店，无法读取客户资料");
+  const rawSearch = cleanText(payload.search, 100).replace(/[,*()]/g, " ").trim();
+  const limit = Math.max(1, Math.min(1000, Number.parseInt(String(payload.limit || "1000"), 10) || 1000));
+  const fields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences";
+  let path = `customer_profiles?select=${fields}&shop_name=eq.${safeFilterValue(store)}&order=last_visit_date.desc.nullslast&limit=${limit}`;
+  if (rawSearch) {
+    const term = safeFilterValue(rawSearch);
+    path += `&or=(phone.ilike.*${term}*,name.ilike.*${term}*)`;
+  }
+  const rows = await restRows(path);
+  return { rows, store, read_only: true };
+}
+
+async function customerHistory(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = cleanText(session.store, 100);
+  const phone = cleanText(payload.phone, 60).replace(/\D/g, "").slice(-20);
+  if (!store) throw new Error("账号未绑定门店，无法读取客户历史");
+  if (!phone) return { rows: [], bookings: [], store, read_only: true };
+  const encodedStore = safeFilterValue(store);
+  const encodedPhone = safeFilterValue(phone);
+  const profileFields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences";
+  const bookingFields = "id,date,barber_name,customer_name,customer_phone,time_label,reservation_time,service_name,notes,status";
+  const [rows, bookings] = await Promise.all([
+    restRows(`customer_profiles?select=${profileFields}&shop_name=eq.${encodedStore}&phone=ilike.*${encodedPhone}*&order=last_visit_date.desc.nullslast&limit=100`),
+    restRows(`bookings?select=${bookingFields}&shop_name=eq.${encodedStore}&customer_phone=ilike.*${encodedPhone}*&order=date.asc&limit=500`),
+  ]);
+  return { rows, bookings, store, read_only: true };
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
@@ -173,6 +208,8 @@ Deno.serve(async (request: Request) => {
     const session = await requireEmployeeSession(payload);
     if (operation === "session") return json({ user: session, expires_at: session.expires_at });
     if (operation === "today_bookings") return json(await todayBookings(payload, session));
+    if (operation === "customer_profiles") return json(await customerProfiles(payload, session));
+    if (operation === "customer_history") return json(await customerHistory(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";

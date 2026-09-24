@@ -109,6 +109,7 @@ async function run() {
           }
           if (operation === 'daily_sheet_confirm') {
             window.confirmDailyPayloads.push(payload);
+            if (Number(payload.expected_revision) !== Number(source.draft.edit_revision)) throw new Error('Confirmation did not bind reviewed revision');
             if (!payload.reviewed_all || !source.draft.validation_result.valid) throw new Error('Unreviewed draft');
             if (window.fixturePostFailure) throw new Error('confirm unavailable');
             source.draft.status = 'confirmed';
@@ -116,6 +117,7 @@ async function run() {
             return { confirmed: true };
           }
           if (operation !== 'daily_sheet_save') throw new Error('Unexpected operation: ' + operation);
+          if (Number(payload.expected_revision) !== Number(source.draft.edit_revision)) throw new Error('Save did not bind reviewed revision');
           if (window.fixtureSaveFailure) throw new Error('save unavailable');
           window.savedDailyPayloads.push(payload);
           (await window.normalizeDailySave(payload)).forEach(edit => {

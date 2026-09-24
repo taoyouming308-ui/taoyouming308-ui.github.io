@@ -14,7 +14,7 @@ const signatures = [
   'zysyr_upsert_cash_opening_balance(uuid,uuid,uuid,text,numeric)',
 ];
 (async () => {
-  docker(['run','--rm','-d','--network','none','--name',name,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:15']);
+  docker(['run','--rm','-d','--network','none','--name',name,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);
   try {
     for(let n=0;n<80;n++){try{sql('select 1');break;}catch{await new Promise(r=>setTimeout(r,250));}}
     sql('create role anon; create role authenticated; create role service_role bypassrls; grant usage on schema public to anon,authenticated,service_role;');

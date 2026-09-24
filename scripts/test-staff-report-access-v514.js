@@ -92,7 +92,7 @@ async function edgeTests() {
 }
 
 async function databaseTests(){
-  docker(['run','--rm','-d','--network','none','--name',container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:15']);
+  docker(['run','--rm','-d','--network','none','--name',container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);
   try{
     for(let i=0;i<80;i++){try{sql('select 1');break}catch{await new Promise(r=>setTimeout(r,250));}}
     sql(`create role anon;create role authenticated;create role service_role bypassrls;

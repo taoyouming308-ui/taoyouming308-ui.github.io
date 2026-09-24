@@ -30,7 +30,7 @@ let browser;
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
+  browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -68,25 +68,60 @@ let browser;
   }
   assert.equal(await page.locator('input[data-monthly-cell="E14"]').count(), 0, 'fixed identifiers');
   const target = expected[0];
+  const partiallySavedTarget = expected[1] || expected[0];
   await page.locator('input[data-monthly-cell="' + target + '"]').fill('12.50');
+  if (partiallySavedTarget !== target) await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').fill('8.75');
   assert.equal(await page.locator('#monthly-save-cells').isVisible(), true);
-  assert.match(await page.locator('#monthly-save-cells').innerText(), /1/);
-  // Simulate persistence only in the isolated fixture; never write test amounts to production.
+  assert.match(await page.locator('#monthly-save-cells').innerText(), /2/);
+  // A normal refresh must preserve local edits and stale source values must
+  // remain guarded. All persistence below is isolated fixture data.
+  await page.evaluate(() => loadOverview());
+  assert.equal(await page.locator('input[data-monthly-cell="' + target + '"]').inputValue(), '12.50');
+  if (partiallySavedTarget !== target) assert.equal(await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').inputValue(), '8.75');
+  const originalMonth = await page.locator('#month').inputValue();
+  await page.evaluate(async () => { window.confirm = () => false; await showView('daily-report');
+    var picker = document.getElementById('month'); picker.value = picker.value.slice(0, 5) + '02'; picker.dispatchEvent(new Event('change', { bubbles: true })); });
+  assert.equal(await page.evaluate(() => state.view), 'monthly', 'cancelled navigation must keep the unsaved month open');
+  assert.equal(await page.locator('#month').inputValue(), originalMonth, 'cancelled month switch must keep unsaved values in their original scope');
   await page.evaluate(address => {
-    window.savedChanges = [];
+    window.savedChanges = []; window.expectedTarget = address; window.failSecondOnce = true;
     saveMonthlyAmountAdjustment = async (change, reason) => {
       savedChanges.push({ change, reason });
+      if (change.address !== address && failSecondOnce) { failSecondOnce = false; throw Error('模拟第二格保存失败'); }
       const cell = fixtureOverview.monthly_report.display_data.cells.find(c => c.cell_address === address);
-      cell.numeric_value = Number(change.value); cell.display_value = change.value;
-      fixtureOverview.monthly_report.display_data.values[cell.row_number - 1][cell.column_number - 1] = Number(change.value);
+      if (change.address === address) {
+        cell.numeric_value = Number(change.value); cell.display_value = change.value;
+        fixtureOverview.monthly_report.display_data.values[cell.row_number - 1][cell.column_number - 1] = Number(change.value);
+      } else {
+        const other = fixtureOverview.monthly_report.display_data.cells.find(c => c.cell_address === change.address);
+        other.numeric_value = Number(change.value); other.display_value = change.value;
+        fixtureOverview.monthly_report.display_data.values[other.row_number - 1][other.column_number - 1] = Number(change.value);
+      }
       return { saved: true };
     };
   }, target);
   page.once('dialog', dialog => dialog.accept('本地隔离测试，不写生产账'));
   await page.locator('#monthly-save-cells').click();
-  await page.waitForFunction(() => savedChanges.length === 1 && state.monthlyEditMode === false);
+  await page.waitForFunction(() => savedChanges.length === 2);
+  const partialState = await page.evaluate(address => ({ expected: window.expectedTarget, pending: state.monthlyDirty,
+    second: address, mode: state.monthlyEditMode, saveText: document.getElementById('monthly-save-cells').innerText }), partiallySavedTarget);
+  assert.equal(Boolean(partialState.pending[partialState.expected]), false, 'successfully saved cell must clear only after readback');
+  assert.equal(Boolean(partialState.pending[partiallySavedTarget]), true, 'failed cell must remain pending after partial failure');
+  assert.equal(await page.locator('input[data-monthly-cell="' + target + '"]').inputValue(), '12.5', 'successfully saved cell must reflect readback');
+  assert.equal(await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').inputValue(), '8.75', 'failed cell must remain editable');
+  assert.match(await page.locator('#monthly-save-cells').innerText(), /1/);
+  await page.evaluate(address => { window.partiallySavedTarget = address; failOverview = true; }, partiallySavedTarget);
+  await page.evaluate(() => loadOverview());
+  assert.equal(await page.evaluate(address => state.monthlyDirty[address].value, partiallySavedTarget), '8.75', 'failed refresh must not clear dirty value');
+  await page.evaluate(() => { failOverview = false; return loadOverview(); });
+  assert.equal(await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').inputValue(), '8.75', 'successful refresh must restore failed value');
+  await page.evaluate(() => { failSecondOnce = false; });
+  page.once('dialog', dialog => dialog.accept('本地隔离测试，不写生产账'));
+  await page.locator('#monthly-save-cells').click();
+  await page.waitForFunction(address => !state.monthlyDirty[address] && !state.monthlyEditMode, partiallySavedTarget);
   assert.equal(await page.evaluate(address => state.data.monthly_report.display_data.cells.find(c => c.cell_address === address).numeric_value, target), 12.5);
-  // Failed prepare readback must not announce success, retain old table, or create a new month.
+  assert.equal(await page.evaluate(address => state.data.monthly_report.display_data.cells.find(c => c.cell_address === address).numeric_value, partiallySavedTarget), 8.75);
+  // Failed refresh must retain local input, recover on retry, and keep existing scope isolation.
   await page.evaluate(() => { failOverview = true; });
   await page.locator('#monthly-edit-toggle').click();
   await page.waitForFunction(() => state.monthlyOverviewReady === false && document.getElementById('monthly-sheet').innerText.includes('加载失败'));
