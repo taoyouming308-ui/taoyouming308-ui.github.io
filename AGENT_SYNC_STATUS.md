@@ -1,11 +1,12 @@
 # Agent Sync Status
 
-## 上线整改：历史导入原表预览未定义函数修复（v543，待完整门禁与发布）
+## 上线整改：历史导入原表预览未定义函数修复（v543，已推送；生产函数已部署）
 
 - App version: v543。
 - 生产只读回读 `operations-api` v97 确认，`history_import_sheet_preview` 路径调用未定义的 `displayValue` / `formulaText`，因此财务打开历史导入批次的 Excel 原表预览会在服务端抛出运行时错误。
 - 改为复用现有的 `excelCellText` / `formulaCellText`，并添加回归保护，确保预览路由只用已定义的单元格提取函数。
-- 当前仅本地候选；待完整门禁、GitHub Pages 发布及 `operations-api` 整包部署/回读验证。未读写历史财务原件/金额或生产数据库，未改公式、权限、Auth 设置或财务独立登录入口。
+- 完整本地 pre-push 门禁已通过，功能提交 `f5b00dd` 已推送 `github/main`；`operations-api` 整包部署为 v98 ACTIVE。部署后生产回读确认 10 个文件、预览路由使用 `excelCellText` / `formulaCellText` 且不再调用未定义 helper，`verify_jwt=false` 保持原值。未读写历史财务原件/金额或生产数据库，未改公式、权限、Auth 设置或财务独立登录入口。
+- 静态 Pages 的线上传播及浏览器中的真实历史批次预览仍待验证；这项函数修复不代表 C06 CLI/迁移 dry-run 缺口或整份上线审计已关闭。
 
 ## 上线整改：C06 固定 Supabase CLI 发布工具链（2026-09-24，CI 已验证）
 
