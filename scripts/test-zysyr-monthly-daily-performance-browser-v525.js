@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
+const os = require('node:os');
 const path = require('node:path');
 let playwright;
 try {
@@ -107,9 +108,9 @@ async function verifyViewport(page, viewport) {
     }
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-portrait.png', fullPage: true });
+    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v526-monthly-daily-performance-portrait.png'), fullPage: true });
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.screenshot({ path: '/private/tmp/zysyr-v526-monthly-daily-performance-landscape.png', fullPage: true });
+    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v526-monthly-daily-performance-landscape.png'), fullPage: true });
 
     await page.evaluate(async () => {
       await showView('daily-report');
