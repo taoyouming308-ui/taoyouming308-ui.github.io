@@ -3,7 +3,7 @@
 ## 2026-09-24 · v543 历史导入原表预览运行时错误修复（GitHub main 已推送；生产函数已部署）
 
 - 生产 `operations-api` v97 的历史导入工作表预览路径引用了未定义的 Excel 单元格 helper；现复用已存在的 ExcelJS 值/公式提取 helper，并添加回归检查。
-- 本地全仓 pre-push 门禁通过；功能提交 `f5b00dd` 已推送 GitHub main。`operations-api` v98 ACTIVE；部署后生产回读确认 10 个文件及修复代码，`verify_jwt=false` 保持不变。未读取或改写历史导入数据、原始附件、数据库、财务公式、权限或财务登录端口。静态 Pages 传播及真实财务会话下的浏览器端预览仍待验收。
+- 本地全仓 pre-push 门禁通过；功能提交 `f5b00dd` 与状态记录 `28a00e4` 已推送 GitHub main。`operations-api` v98 ACTIVE；部署后生产回读确认 10 个文件及修复代码，`verify_jwt=false` 保持不变。Pages build/deployment #36006467617、Validate #36006469238 成功，线上无缓存回读 `version.txt=543`。未读取或改写历史导入数据、原始附件、数据库、财务公式、权限或财务登录端口。真实财务会话下的浏览器端预览仍待验收。
 
 ## 2026-09-24 · v542 月报已入账日报覆盖说明（已发布）
 
