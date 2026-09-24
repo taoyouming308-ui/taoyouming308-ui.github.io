@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，本地待完整门禁）
+
+- 新增 `docs/zysyr/production-release-matrix-2026-09-24.md`，记录当日只读核实的 Pages、PostgreSQL、财务相关 Edge Function 版本/鉴权模式，以及代码读取的服务端环境变量名称；不记录值，不修改生产配置。
+- 标注 Supabase CLI 2.109.1；本沙箱无法写入 `/Users/a1/.supabase/telemetry.json`，因此 CLI `--help` 检查失败，未猜测或执行部署命令。
+- **C06 未关闭：** GitHub Actions 与本地 pre-push 测试清单尚未统一，CI 尚未固定 Supabase CLI/部署校验；实际环境变量设置仍需平台管理员逐项核实。本批仅补发布基线与剩余门槛。
+
 ## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
 
 - 经用户明确授权，生产迁移 `20260924051925 zysyr_storage_remove_global_public_policy` 已应用；删除的只有 `storage.objects.anon_all` 全局策略。匿名角色此前可读取 74 个报表对象、349 个凭证对象及 2 个 showcase 对象的元数据；应用后匿名对象查询为空。
