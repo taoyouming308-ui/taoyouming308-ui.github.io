@@ -32,10 +32,10 @@ This list is derived from tracked Edge Function code. It intentionally contains 
 
 ## Reproducibility gaps still open (C06)
 
-- Repository CI pins Node.js 22 and Playwright 1.62.1 and installs Chromium. It runs a finance browser subset, but `.githooks/pre-push` currently runs additional finance, database-fixture, and shared-app tests; the two lists are not yet generated from one manifest.
+- Repository CI pins Node.js 22.22.1 via `.node-version`, pins Playwright 1.62.1, installs Chromium and uses `ubuntu-24.04`. Local pre-push and GitHub Actions now run the same 63-command finance regression manifest; PostgreSQL 17 fixtures are isolated in local Docker containers with container networking disabled. The manifest was run locally on 2026-09-24 and all 63 commands passed; the first full GitHub Actions run remains unverified until this commit is pushed.
 - Local Supabase CLI reported version 2.109.1. Its `--help` invocation failed because this sandbox cannot write the CLI telemetry file under `/Users/a1/.supabase`; no deploy command was guessed or run. CI does not currently pin/install the Supabase CLI or perform production deployment.
 - Current production migrations/functions/Pages were inspected read-only on 2026-09-24. The latest production migration version is an observation, not a command to replay or a target for rollback.
-- Before C06 can close: move the shared test inventory to one source of truth, pin and exercise CLI/Edge/database deployment checks in CI or document an equivalent controlled release runner, verify the environment-variable names against actual function settings, and retain successful GitHub Actions run links plus live auth/version probes.
+- Before C06 can close: verify the full GitHub Actions result, pin and exercise CLI/Edge/database deployment checks in CI or document an equivalent controlled release runner, verify the environment-variable names against actual function settings, and retain successful GitHub Actions run links plus live auth/version probes.
 
 ## Safe release checks
 
