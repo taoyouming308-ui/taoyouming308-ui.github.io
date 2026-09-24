@@ -30,12 +30,19 @@ This list is derived from tracked Edge Function code. It intentionally contains 
 | `voucher-ocr-worker` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ZYSYR_WORKER_SECRET`, `SILICONFLOW_API_KEY`, `SILICONFLOW_BASE_URL`, `ZYSYR_OCR_MODEL` | Keep bucket access private; do not log document content or tokens. |
 | `operations-ai-worker` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ZYSYR_WORKER_SECRET`, `ZYSYR_AI_API_KEY`, `DEEPSEEK_API_KEY`, `ZYSYR_AI_BASE_URL`, `DEEPSEEK_BASE_URL`, `ZYSYR_AI_MODEL`, `ZYSYR_AI_PROVIDER` | Worker-only; do not move provider secrets to Pages. |
 
+### Read-only production name reconciliation (2026-09-24)
+
+- Queried the project's configured secret **names only** using Supabase CLI 2.109.1; 21 names were returned. Secret values were not displayed, copied into the report, or committed to Git.
+- Required server baseline names (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `ZYSYR_WORKER_SECRET`) are configured. Function-level runtime behavior and effective credentials are not proven by a project-level name listing.
+- Optional/fallback names observed: `SUPABASE_PUBLISHABLE_KEY` is absent while `SUPABASE_ANON_KEY` is present (the two Auth functions have an explicit legacy fallback); `ZYSYR_AI_API_KEY` and `ZYSYR_AI_BASE_URL` are absent while `DEEPSEEK_API_KEY` and `DEEPSEEK_BASE_URL` are configured (code supports these fallbacks); `SILICONFLOW_BASE_URL` and `ZYSYR_OCR_MODEL` are absent and have code defaults. This confirms configuration-name compatibility only, not provider credentials, quota, network reachability, or successful OCR/AI requests.
+
 ## Reproducibility gaps still open (C06)
 
 - Repository CI pins Node.js 22.22.1 via `.node-version`, pins Playwright 1.62.1, installs Chromium and uses `ubuntu-24.04`. Local pre-push and GitHub Actions now run the same 63-command finance regression manifest; PostgreSQL 17 fixtures are isolated in local Docker containers with container networking disabled. All 63 commands passed locally and in GitHub Actions run [#35965591930](https://github.com/taoyouming308-ui/taoyouming308-ui.github.io/actions/runs/35965591930); the related [Pages workflow #35965591838](https://github.com/taoyouming308-ui/taoyouming308-ui.github.io/actions/runs/35965591838) also succeeded. The first Actions attempt exposed two macOS-only `/private/tmp` screenshot paths; both are now based on the system temporary directory.
-- Local Supabase CLI reported version 2.109.1. Its `--help` invocation failed because this sandbox cannot write the CLI telemetry file under `/Users/a1/.supabase`; no deploy command was guessed or run. CI does not currently pin/install the Supabase CLI or perform production deployment.
+- Local Supabase CLI reported version 2.109.1; the required command help was verified after allowing the CLI's telemetry write. No deploy command was run. CI does not currently pin/install the Supabase CLI or perform production deployment.
 - Current production migrations/functions/Pages were inspected read-only on 2026-09-24. The latest production migration version is an observation, not a command to replay or a target for rollback.
-- Before C06 can close: verify the full GitHub Actions result, pin and exercise CLI/Edge/database deployment checks in CI or document an equivalent controlled release runner, verify the environment-variable names against actual function settings, and retain successful GitHub Actions run links plus live auth/version probes.
+- Verified the full GitHub Actions result, retained successful Actions/Pages run links, and reconciled configured secret names against the source-derived list. Live auth/version probes remain a separate read-only runtime check.
+- Before C06 can close: pin and exercise CLI/Edge/database deployment checks in CI or document an equivalent controlled release runner. Do not treat `--help` or configured secret names as deployment/runtime proof.
 
 ## Safe release checks
 

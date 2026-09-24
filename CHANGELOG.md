@@ -6,6 +6,12 @@
 - 明确本地 Supabase CLI 2.109.1 的帮助命令因沙箱无法写 telemetry 文件而未能验证，不猜测部署命令；当时 GitHub Actions 与 pre-push 清单仍有差异（已在后续本日记录中统一），C06 继续开放。
 - 不修改应用代码、版本、数据库、权限、函数或财务数据。
 
+## 2026-09-24 · C06 生产环境变量名称只读核对
+
+- 通过 Supabase CLI 2.109.1 只读列出生产项目已配置的 21 个环境变量名称，并与财务 Edge Function 源码清单核对；没有输出或保存任何值，也没有更改生产配置。
+- 核心服务端配置名称均已配置；Auth 使用已有 anon-key fallback，AI 使用已有 DeepSeek fallback，OCR endpoint/model 使用代码默认值。该结果不代表密钥有效或供应商调用已端到端验证。
+- CI 完整财务回归及 Pages workflow 的成功链接已保留。C06 仍未关闭：Supabase CLI 版本及 Edge/数据库部署校验还需纳入 CI 或形成受控发布 runner；本轮未部署或写入生产。
+
 ## 2026-09-24 · C06 财务回归清单统一（本地待完整门禁）
 
 - 新增单一财务测试 manifest 与 runner，覆盖本地 pre-push 原有的完整财务回归测试集；GitHub Actions 改为调用同一 runner，避免 CI 只跑本地清单子集。
