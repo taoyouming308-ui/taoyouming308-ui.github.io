@@ -805,7 +805,8 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:exceljs@4.4.0"
+      "npm:exceljs@4.4.0",
+      "npm:jszip@3.10.1"
     ]
   }
 }
