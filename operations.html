@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="543">
+<html lang="zh-CN" data-version="544">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -107,9 +107,9 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-time.js?v=543"></script>
-<script src="operations-staff-view.js?v=543"></script>
-<script src="operations-monthly-daily-performance.js?v=543"></script>
+<script src="operations-time.js?v=544"></script>
+<script src="operations-staff-view.js?v=544"></script>
+<script src="operations-monthly-daily-performance.js?v=544"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -381,10 +381,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=543"></script>
-  <script src="operations-auth-bridge.js?v=543"></script>
-  <script src="operations-voucher-preview.js?v=543"></script>
-  <script src="operations-voucher-view.js?v=543"></script>
+  <script src="operations-report-fit.js?v=544"></script>
+  <script src="operations-auth-bridge.js?v=544"></script>
+  <script src="operations-voucher-preview.js?v=544"></script>
+  <script src="operations-voucher-view.js?v=544"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -782,7 +782,8 @@
   async function postHistoryBatch(){var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});if(!batch)return;var warning=Number(batch.warning_row_count||0),pending=(data.rows||[]).filter(function(row){return historyReviewStatus(row)!=='confirmed'}).length;if(!window.confirm('确认把当前批次 '+batch.raw_row_count+' 条正式入账？其中 '+warning+' 条有系统提示、'+pending+' 条尚未人工确认；提示会保留，后续可在 App 逐项修改并留痕。'))return;var reason=window.prompt('请输入正式入账原因：','已获负责人授权，先按原始资料正式入账；发现问题后通过版本修订');if(!reason)return;var button=$('history-post-batch');if(button)button.disabled=true;try{if(isLocalPreview()){(data.rows||[]).forEach(function(row){row.import_status='imported'});batch.status='completed';batch.imported_row_count=batch.raw_row_count;toast('本地预览：已模拟正式入账');renderHistoryImport();return}var result=await api('history_import_post',{store:currentStore(),import_batch_id:batch.id,allow_unreviewed:true,reason:reason});await loadHistoryImport(batch.id);toast('正式入账完成：'+esc(result.saved&&result.saved.imported_count||batch.raw_row_count)+' 条')}catch(error){toast(error.message)}finally{if(button)button.disabled=false}}
   $('history-correct-form').addEventListener('submit',async function(event){var entry=state.historyImport.editLedger;if(!entry)return;event.preventDefault();event.stopImmediatePropagation();var corrected={};document.querySelectorAll('[data-history-field]').forEach(function(input){var raw=input.value;corrected[input.dataset.historyField]=input.dataset.kind==='number'?(raw===''?null:Number(raw)):raw||null});var reason=$('history-correct-reason').value.trim(),button=event.submitter;if(!reason){$('history-correct-result').textContent='修改正式账必须填写原因';return}button.disabled=true;try{if(isLocalPreview()){entry.current_payload=corrected;entry.version=Number(entry.version||1)+1;$('history-correct-modal').classList.add('hidden');renderHistoryImport();toast('本地预览：已新增正式账修订版本');return}await api('history_ledger_revise',{store:currentStore(),ledger_entry_id:entry.id,current_payload:corrected,reason:reason});$('history-correct-modal').classList.add('hidden');state.historyImport.editLedger=null;await loadHistoryImport(state.historyImport.selectedBatchId);toast('正式账已修改，原值和新版本均已永久留痕')}catch(error){$('history-correct-result').textContent=error.message}finally{button.disabled=false}},true);
   function currentMonthInput(){var now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
-  function applyReportFit(){if(window.ZysyrReportFit)window.ZysyrReportFit.apply()}
+  var reportFitScheduled=false;
+  function applyReportFit(){if(reportFitScheduled||!window.ZysyrReportFit)return;reportFitScheduled=true;Promise.resolve().then(function(){reportFitScheduled=false;if(window.ZysyrReportFit)window.ZysyrReportFit.apply()})}
 
   function previewDailySheetMonth(){var month=$('daily-month').value||currentMonthInput(),days=[];for(var d=1;d<=3;d++)days.push({report_date:month+'-'+String(d).padStart(2,'0'),draft_id:'preview-draft-'+d,status:'confirmed',grand_total:11000+d*50,edit_revision:0,source:'electronic',original_count:1,approved_original_count:1,missing_original:false,has_anomaly:false,locked:false});days.push({report_date:month+'-05',draft_id:'preview-draft-5',status:'draft',grand_total:null,edit_revision:1,source:'electronic',original_count:0,approved_original_count:0,missing_original:true,has_anomaly:true,locked:false});return{month:month,days:days,permissions:{write:state.user&&state.user.can_import_photo_reports},manual_entry_only:true,locked:false}}
   var dailyOverviewRequest=0;
@@ -1133,10 +1134,10 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=543"></script>
-  <script src="operations-monthly-workbench.js?v=543"></script>
-  <script src="operations-petty-cash-evidence.js?v=543"></script>
-  <script src="operations-monthly-summary.js?v=543"></script>
-  <script src="operations-daily-recognition.js?v=543"></script>
+  <script src="operations-daily-review.js?v=544"></script>
+  <script src="operations-monthly-workbench.js?v=544"></script>
+  <script src="operations-petty-cash-evidence.js?v=544"></script>
+  <script src="operations-monthly-summary.js?v=544"></script>
+  <script src="operations-daily-recognition.js?v=544"></script>
 </body>
 </html>

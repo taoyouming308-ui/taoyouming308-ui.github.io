@@ -97,6 +97,15 @@ async function verifyViewport(page, viewport) {
     });
     assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 1 \/ 31 天；另有 30 天尚无已入账日报/);
 
+    const fitCalls = await page.evaluate(async () => {
+      let calls = 0;
+      window.ZysyrReportFit.apply = () => { calls += 1; };
+      renderSheet(state.data.monthly_report.display_data, false, false);
+      await Promise.resolve();
+      return calls;
+    });
+    assert.equal(fitCalls, 1, 'a full monthly render should coalesce table fitting until the final embedded columns and controls are in place');
+
     for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await verifyViewport(page, viewport);
       const overlap = await page.locator('#monthly-sheet .monthly-daily-embedded').evaluateAll(cells => cells
