@@ -54,6 +54,7 @@
     { "runtime": "node", "script": "test-zysyr-report-permissions-v512.js" },
     { "runtime": "node", "script": "test-zysyr-daily-layout-v508.js" },
     { "runtime": "node", "script": "test-operations-report-fit.js" },
+    { "runtime": "node", "script": "test-operations-report-fit-targeted.js" },
     { "runtime": "node", "script": "test-daily-recognition.mjs" },
     { "runtime": "node", "script": "test-zysyr-daily-full-recognition-v489.js" },
     { "runtime": "node", "script": "test-zysyr-daily-adaptive-rows-v517.js" },
