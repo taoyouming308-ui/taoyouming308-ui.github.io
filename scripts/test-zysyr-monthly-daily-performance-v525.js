@@ -22,7 +22,7 @@ assert.match(api, /company_id=eq\.\$\{companyId\}&store_id=eq\.\$\{storeId\}/, '
 assert.match(api, /column_code=in\.\(grand_total,cash_flow,card_consumption,group_buy,alipay,wechat,douyin\)/, 'all requested finance fields come from the daily sheet');
 assert.match(api, /monthly_daily_performance: monthlyDailyPerformance/, 'overview returns the projection without a second client endpoint');
 assert.match(api, /source_note: "只读取当前门店已入账日报；草稿和识别候选不计入月报业绩。"/, 'API documents the accounting boundary');
-assert.match(api, /select=id,draft_id,ocr_numeric,corrected_numeric,manual_override/, 'existing daily rollup reads both recognized and corrected effective values');
+assert.match(api, /select=id,draft_id,section_code,column_code,row_key,cell_role,ocr_numeric,corrected_numeric,manual_override/, 'shared daily source contains performance and exact cash-rollup identifiers');
 
 const context = { window: {}, globalThis: {}, Map, Date, Number, String, Array };
 vm.runInNewContext(moduleSource, context);

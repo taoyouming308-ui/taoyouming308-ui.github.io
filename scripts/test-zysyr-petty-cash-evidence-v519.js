@@ -15,7 +15,7 @@ const migration = fs.readFileSync(path.join(root, 'supabase/migrations/202609220
 for (const marker of ['逐笔消费凭证', '整月 Word 凭证包继续永久留底', 'data-petty-exact-upload', 'history_evidence_images']) {
   assert.ok(moduleSource.includes(marker), 'missing per-item petty evidence marker: ' + marker);
 }
-assert.ok(pageSource.includes("script.src='operations-petty-cash-evidence.js?v=545'"), 'petty evidence runtime must load on demand');
+assert.ok(pageSource.includes("script.src='operations-petty-cash-evidence.js?v=546'"), 'petty evidence runtime must load on demand');
 assert.doesNotMatch(pageSource, /<script src="operations-petty-cash-evidence\.js\?v=/, 'petty evidence module must not block the initial report view');
 assert.doesNotMatch(pageSource, /<script src="operations-monthly-summary\.js\?v=/, 'disabled monthly summary must not load for every user');
 assert.ok(apiSource.includes('pending_voucher_requests: pendingVoucherRequests'), 'pending formal upload state not returned');

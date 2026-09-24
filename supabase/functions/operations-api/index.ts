@@ -1029,9 +1029,13 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
   return output;
 }
 
-async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
+type ConfirmedDailySource = { drafts: JsonRecord[]; cells: JsonRecord[] };
+
+async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string,
+  dailySource?: ConfirmedDailySource): Promise<JsonRecord | null> {
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month));
+    await monthlyIncomeAdjustments(companyId, storeId, month), dailySource
+      ? confirmedDailyRollupFromSource(dailySource) : await confirmedDailyRollup(companyId, storeId, month));
   if (!entries.length) return null;
   const batchId = cleanText(entries[0].import_batch_id, 40);
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
@@ -1121,9 +1125,10 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
   const voucherPath = `zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&order=uploaded_at.desc&limit=1000`;
-  const [rawReports, vouchers, monthlyDailyPerformance] = await Promise.all([
-    restRowsAll(reportPath), restRowsAll(voucherPath), confirmedDailyPerformance(companyId, storeId, month),
+  const [rawReports, vouchers, dailySource] = await Promise.all([
+    restRowsAll(reportPath), restRowsAll(voucherPath), confirmedDailySource(companyId, storeId, month),
   ]);
+  const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
   const voucherMap = new Map<string, JsonRecord[]>();
@@ -1153,7 +1158,9 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   let monthlyCellRevisions: JsonRecord[] = [];
   let monthlyTextRevisions: JsonRecord[] = [];
   let monthlyPeriodLocked = false;
+  let monthlyDailyRollup: JsonRecord | null = null;
   if (monthlyReport) {
+    monthlyDailyRollup = confirmedDailyRollupFromSource(dailySource);
     const reportId = cleanText(monthlyReport.id, 40);
     const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
     monthlyEvidenceRuleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120));
@@ -1173,7 +1180,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthlyReport = {
       ...monthlyReport,
       display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
-        await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month), textRevisions),
+        await monthlyIncomeAdjustments(companyId, storeId, month), monthlyDailyRollup, textRevisions),
     };
     const latest = new Map<string, string>();
     const latestSourceCount = new Map<string, number>();
@@ -1218,7 +1225,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     }
   }
   if (!monthlyReport) {
-    const historical = await historicalMonthlyReport(companyId, storeId, month, cleanText(store.name, 120));
+    const historical = await historicalMonthlyReport(companyId, storeId, month, cleanText(store.name, 120), dailySource);
     if (historical) {
       monthlyReport = historical;
       Object.assign(cellTraceStatus, historical.cell_trace_status as Record<string, string> || {});
@@ -3537,12 +3544,24 @@ function isDailyIncomeCell(cell: JsonRecord): boolean {
 }
 
 async function confirmedDailyRollup(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
+  return confirmedDailyRollupFromSource(await confirmedDailySource(companyId, storeId, month));
+}
+
+async function confirmedDailySource(companyId: string, storeId: string, month: string): Promise<ConfirmedDailySource> {
   const start = `${month}-01`, end = new Date(`${start}T00:00:00Z`); end.setUTCMonth(end.getUTCMonth()+1);
   const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
-  if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
   const ids = uuidIn(drafts.map(row=>row.id));
-  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.payment&row_key=eq.payment&column_code=eq.cash_flow&cell_role=eq.payment_cashflow&limit=100`,100);
-  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error(`${draft.report_date} 已确认日报缺少唯一有效现金业绩，暂停月报汇总`);return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
+  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,section_code,column_code,row_key,cell_role,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=in.(summary,payment)&column_code=in.(grand_total,cash_flow,card_consumption,group_buy,alipay,wechat,douyin)&limit=2000`,2000);
+  return { drafts, cells };
+}
+
+function confirmedDailyRollupFromSource(source: ConfirmedDailySource): JsonRecord {
+  const { drafts, cells } = source;
+  if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
+  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id
+    && cell.section_code==="payment" && cell.row_key==="payment" && cell.column_code==="cash_flow" && cell.cell_role==="payment_cashflow");
+    if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error(`${draft.report_date} 已确认日报缺少唯一有效现金业绩，暂停月报汇总`);
+    return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
   if (drafts.some((draft) => !draft.confirmed_at)) throw new Error("已确认日报缺少入账时间，暂停月报汇总以防重复统计");
   const confirmedTimes = drafts.map((draft) => String(draft.confirmed_at)).sort();
   return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,first_confirmed_at:confirmedTimes[0] || null,source:"confirmed_daily_cash_flow",incomplete_warning:"仅汇总已确认日报的现金业绩，不含卡金；请核对营业日是否全部录齐。"};
@@ -3559,14 +3578,14 @@ const MONTHLY_DAILY_PERFORMANCE_FIELDS = [
 ] as const;
 
 async function confirmedDailyPerformance(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
-  const start = `${month}-01`, next = new Date(`${start}T00:00:00Z`);
-  next.setUTCMonth(next.getUTCMonth() + 1);
-  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${next.toISOString().slice(0, 10)}&status=eq.confirmed&order=report_date.asc&limit=100`, 100);
+  return confirmedDailyPerformanceFromSource(await confirmedDailySource(companyId, storeId, month), month);
+}
+
+function confirmedDailyPerformanceFromSource(source: ConfirmedDailySource, month: string): JsonRecord {
+  const { drafts, cells } = source;
   if (new Set(drafts.map((row) => row.report_date)).size !== drafts.length) {
     throw new Error("同一天存在多份已确认日报，请先核对，避免月报业绩重复展示");
   }
-  const draftIds = uuidIn(drafts.map((row) => row.id));
-  const cells = draftIds === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,section_code,column_code,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${draftIds}&section_code=in.(summary,payment)&column_code=in.(grand_total,cash_flow,card_consumption,group_buy,alipay,wechat,douyin)&limit=2000`, 2000);
   const rows = drafts.map((draft) => {
     const row: JsonRecord = { date: draft.report_date, draft_id: draft.id, revision: Number(draft.edit_revision || 0), status: "confirmed" };
     const missing: string[] = [];

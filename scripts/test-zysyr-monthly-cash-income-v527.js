@@ -16,10 +16,11 @@ const sandbox = {
     ? [{ id: '00000000-0000-4000-8000-000000000001', report_date: '2026-01-01', edit_revision: 2,
       confirmed_at: '2026-09-20T10:00:00Z', status: 'confirmed' }]
     : [{ id: '00000000-0000-4000-8000-000000000002', draft_id: '00000000-0000-4000-8000-000000000001',
+      section_code: 'payment', column_code: 'cash_flow', row_key: 'payment', cell_role: 'payment_cashflow',
       corrected_numeric: 200, ocr_numeric: 250, manual_override: true }],
 };
 vm.createContext(sandbox);
-vm.runInContext(stripTypeScriptTypes(['cleanText', 'uuidIn', 'effectiveCellValue', 'confirmedDailyRollup'].map(extract).join('\n')), sandbox);
+vm.runInContext(stripTypeScriptTypes(['cleanText', 'uuidIn', 'effectiveCellValue', 'confirmedDailySource', 'confirmedDailyRollupFromSource', 'confirmedDailyRollup'].map(extract).join('\n')), sandbox);
 
 (async () => {
   const result = await sandbox.confirmedDailyRollup('company', 'store', '2026-01');
