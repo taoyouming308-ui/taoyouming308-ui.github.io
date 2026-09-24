@@ -17,6 +17,8 @@ for(const targetOperation of ['customer_create','order_create','order_lines']){
  assert.equal((await handler(request(query))).status,200);
  assert.deepEqual(calls.at(-1),{rpc:'salon_lookup_staff_request',args:{p_actor_staff_id:7,p_organization_id:3,p_store_id:10,p_lookup_key:'lookup-api-000001',p_target_operation:targetOperation}});
 }
+assert.equal((await handler(request({operation:'request_lookup',targetOperation:'checkout',requestKey:'checkout-lookup-0001'}))).status,200);
+assert.equal(calls.at(-1).rpc,'salon_lookup_checkout_request');
 const stockLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_stock_inspect',requestKey:'refund-stock-inspect-01'}));
 assert.equal(stockLookup.status,200);assert.equal(calls.at(-1).rpc,'salon_lookup_refund_stock_inspection');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_lookup_key:'refund-stock-inspect-01'});
 const receiptLookup=await handler(request({operation:'request_lookup',targetOperation:'refund_channel_receipt',requestKey:'refund-channel-key-001'}));assert.equal(receiptLookup.status,200);assert.equal(calls.at(-1).args.p_target_operation,'refund_channel_receipt');
@@ -39,7 +41,7 @@ for(const patch of [{requestedQuantity:'2'},{acceptedQuantity:'2.001'},{accepted
 const receiptWrite={operation:'refund_channel_receipt',refundRequestId:51,paymentId:81,requestKey:'channel-write-key-001',expectedRevision:0,decision:'report',externalReference:'PROVIDER-REF-001',evidenceNote:'合成测试渠道凭证'};
 assert.equal((await handler(request(receiptWrite))).status,200);assert.equal(calls.at(-1).rpc,'salon_record_refund_channel_receipt');assert.deepEqual(calls.at(-1).args,{p_actor_staff_id:7,p_organization_id:3,p_store_id:9,p_refund_request_id:51,p_original_payment_id:81,p_request_key:receiptWrite.requestKey,p_expected_revision:0,p_decision:'report',p_external_reference:'PROVIDER-REF-001',p_evidence_note:'合成测试渠道凭证'});
 for(const patch of [{decision:'approve'},{externalReference:''},{externalReference:'x'.repeat(121)},{evidenceNote:''},{expectedRevision:-1},{requestKey:'short'}]){const count=calls.length;assert.equal((await handler(request({...receiptWrite,...patch}))).status,400);assert.equal(calls.length,count);}
-for(const patch of [{requestKey:'x'},{requestKey:'x'.repeat(121)},{requestKey:12},{requestKey:' padded-request-001'},{targetOperation:'checkout'},{targetOperation:'__proto__'},{targetOperation:null}]){
+for(const patch of [{requestKey:'x'},{requestKey:'x'.repeat(121)},{requestKey:12},{requestKey:' padded-request-001'},{targetOperation:'__proto__'},{targetOperation:null}]){
  const count=calls.length;
  assert.equal((await handler(request({operation:'request_lookup',targetOperation:'order_create',requestKey:'lookup-api-000001',...patch}))).status,400);
  assert.equal(calls.length,count);
@@ -67,10 +69,10 @@ for(const expectedVersion of [null,-1,1.2,'0',2147483648])assert.equal((await ha
 for(const field of ['expectedStartsAt','expectedEndsAt','newStartsAt'])for(const bad of ['2026-10-02T09:00','infinity','2026-99-02T09:00:00Z',null])assert.equal((await handler(request({...reschedule,[field]:bad}))).status,400);
 assert.equal((await handler(request({...reschedule,reason:''}))).status,400);
 calls.length=0;
-result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0001',payments:[{method:'cash',amount:120}],p_store_id:999}));
-assert.equal(result.status,200);assert.equal(calls[0].rpc,'salon_checkout_order');
+result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0001',expectedVersion:0,payments:[{method:'cash',amount:'120'}],p_store_id:999}));
+assert.equal(result.status,200);assert.equal(calls[0].rpc,'salon_checkout_order_versioned');
 assert.deepEqual({actor:calls[0].args.p_actor_staff_id,org:calls[0].args.p_organization_id,store:calls[0].args.p_store_id},{actor:7,org:3,store:9},'identity and store must come from server staff binding');
-assert.equal('staffId' in calls[0].args,false);assert.equal(calls[0].args.p_order_id,4);
+assert.equal('staffId' in calls[0].args,false);assert.equal(calls[0].args.p_order_id,4);assert.equal(calls[0].args.p_expected_version,0);
 result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'refund-execute-0001'}));
 assert.equal(result.status,200);assert.equal(calls[1].rpc,'salon_execute_refund_request');
 result=await handler(request({operation:'inventory_move',catalogItemId:8,requestKey:'inventory-request-001',movementType:'sale',quantity:1,orderId:4,reason:'订单销售'}));
@@ -126,7 +128,10 @@ result=await handler(request({operation:'booking_review',requestKey:'booking-rev
 result=await handler(request({operation:'booking_requests',status:'submitted',limit:50}));assert.equal(result.status,200);assert.equal(calls.at(-1).rpc,'salon_list_customer_bookings');
 result=await handler(request({operation:'refunds',status:'submitted',limit:50,storeId:9}));assert.equal(result.status,200);assert.equal(calls.at(-1).scope.storeId,9);
 result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'short'}));assert.equal(result.status,400);
-result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0002',payments:[]}));assert.equal(result.status,400);
+result=await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-request-0002',expectedVersion:0,payments:[]}));assert.equal(result.status,400);
+for(const invalid of [{expectedVersion:-1},{expectedVersion:null},{payments:[{method:'member_value',amount:'10'}]},{payments:[{method:'wechat',amount:'10'}]},{payments:[{method:'member_units',amount:'10',accountId:4,units:'0'}]}]){
+ const before=calls.length;assert.equal((await handler(request({operation:'checkout',orderId:4,requestKey:'checkout-invalid-0001',expectedVersion:0,payments:[{method:'cash',amount:'10'}],...invalid}))).status,400);assert.equal(calls.length,before);
+}
 result=await handler(request({operation:'unknown'}));assert.equal(result.status,400);
 result=await handler(request({operation:'refund_execute',refundRequestId:51,requestKey:'refund-execute-0002'},'invalid-user-token-123456'));assert.equal(result.status,403);
 assert.ok(logs.every(log=>!('token'in log)&&!('payments'in log)&&!('amount'in log)),'request logs must not contain credentials or business payloads');

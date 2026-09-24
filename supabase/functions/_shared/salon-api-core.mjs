@@ -8,7 +8,7 @@ const OPERATIONS={
   request_lookup:{rpc:'salon_lookup_staff_request'},
   store_time:{rpc:'salon_get_store_time_context'},
   reschedule_review:{rpc:'salon_review_reschedule_with_time'},reschedule_requests:{rpc:'salon_list_reschedule_requests'},
-  checkout:{rpc:'salon_checkout_order',fields:['orderId','requestKey','payments']},
+  checkout:{rpc:'salon_checkout_order_versioned',fields:['orderId','requestKey','expectedVersion','payments']},
   inventory_move:{rpc:'salon_move_inventory',fields:['catalogItemId','requestKey','movementType','quantity','orderId','reason']},
   customer_create:{rpc:'salon_create_customer'},customer_status:{rpc:'salon_set_customer_status'},customer_relation:{rpc:'salon_update_customer_relation'},
   catalog_create:{rpc:'salon_create_catalog_item'},catalog_enable:{rpc:'salon_enable_catalog_item'},catalog_status:{rpc:'salon_set_catalog_status'},inventory_count:{rpc:'salon_count_inventory'},
@@ -88,7 +88,7 @@ export function createSalonHandler(deps){return async function(request){
       args={...common,p_status:state,p_before_id:payload.beforeId??null};
     }else if(operation==='request_lookup'){
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求核对编号无效');
-      if(!['customer_create','order_create','order_lines','order_status','cash_checkout','refund_review','refund_withdraw','refund_stock_inspect','refund_channel_receipt','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
+      if(!['customer_create','order_create','order_lines','order_status','checkout','cash_checkout','refund_review','refund_withdraw','refund_stock_inspect','refund_channel_receipt','cash_refund_request','partial_cash_refund_request'].includes(payload.targetOperation))throw new Error('不支持核对该操作');
       args={...common,p_lookup_key:payload.requestKey,p_target_operation:payload.targetOperation};
     }else if(operation==='store_time'){
       args=common;
@@ -98,8 +98,10 @@ export function createSalonHandler(deps){return async function(request){
       if(typeof payload.requestKey!=='string'||!/^[A-Za-z0-9._:-]{16,120}$/.test(payload.requestKey))throw new Error('请求幂等键无效');
       args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:payload.requestKey,p_expected_version:payload.expectedVersion,p_amount:payload.amount,p_tendered:payload.tendered};
     }else if(operation==='checkout'){
-      if(!Array.isArray(payload.payments)||!payload.payments.length)throw new Error('请添加支付方式');
-      args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_payments:payload.payments};
+      if(!Number.isInteger(payload.expectedVersion)||payload.expectedVersion<0||payload.expectedVersion>2147483647)throw new Error('订单版本无效');
+      if(!Array.isArray(payload.payments)||!payload.payments.length||payload.payments.length>10)throw new Error('支付明细必须为1至10项');
+      for(const row of payload.payments){if(!row||typeof row!=='object'||Array.isArray(row)||!['cash','wechat','alipay','member_value','member_units'].includes(row.method)||!/^\d{1,10}(\.\d{1,2})?$/.test(String(row.amount))||Number(row.amount)<=0)throw new Error('支付明细参数无效');if(['member_value','member_units'].includes(row.method)&&(!Number.isSafeInteger(row.accountId)||row.accountId<=0))throw new Error('会员账户无效');if(row.method==='member_units'&&(!/^\d{1,8}(\.\d{1,3})?$/.test(String(row.units))||Number(row.units)<=0))throw new Error('核销次数无效');if(row.method==='cash'&&row.tenderedAmount!=null&&!/^\d{1,10}(\.\d{1,2})?$/.test(String(row.tenderedAmount)))throw new Error('现金实收金额无效');if(['wechat','alipay'].includes(row.method)&&(typeof row.externalReference!=='string'||!row.externalReference.trim()||row.externalReference.length>100))throw new Error('电子支付凭证号无效');}
+      args={...common,p_order_id:integer(payload.orderId,'订单'),p_request_key:requestKey(payload.requestKey),p_expected_version:payload.expectedVersion,p_payments:payload.payments};
     }else if(operation==='inventory_move'){
       const movementType=text(payload.movementType,30),quantity=Number(payload.quantity),reason=text(payload.reason,500);
       if(!['receive','sale','consume','refund'].includes(movementType)||!Number.isFinite(quantity)||quantity<=0||!reason)throw new Error('库存操作参数无效');
@@ -224,6 +226,9 @@ export function createSalonHandler(deps){return async function(request){
     const rpc=operation==='request_lookup'&&payload.targetOperation==='refund_withdraw'?'salon_lookup_refund_withdraw':spec.rpc;
     if(operation==='request_lookup'&&payload.targetOperation==='refund_stock_inspect'){
       return finish(200,{data:await deps.invoke('salon_lookup_refund_stock_inspection',{p_actor_staff_id:actor,p_organization_id:org,p_store_id:activeStoreId,p_lookup_key:payload.requestKey})});
+    }
+    if(operation==='request_lookup'&&payload.targetOperation==='checkout'){
+      return finish(200,{data:await deps.invoke('salon_lookup_checkout_request',{p_actor_staff_id:actor,p_organization_id:org,p_store_id:activeStoreId,p_lookup_key:payload.requestKey})});
     }
     if(operation==='request_lookup'&&payload.targetOperation==='refund_withdraw')delete args.p_target_operation;
     return finish(200,{data:await deps.invoke(rpc,args)});

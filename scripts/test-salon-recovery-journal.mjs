@@ -10,9 +10,10 @@ assert.deepEqual(JSON.parse(values.get(key)),{version:1,requests:[{operation:tic
 assert.deepEqual(make().list(),[{operation:ticket.operation,requestKey:ticket.requestKey}]);
 for(const changed of [{...scope,organizationId:2},{...scope,storeId:3},{...scope,staffId:4}])assert.deepEqual(make(changed).list(),[]);
 assert.throws(()=>make().remember({...ticket,requestKey:'synthetic-key-0002'}));
+const checkoutTicket={operation:'checkout',requestKey:'synthetic-checkout-0001'};make().acknowledge(ticket);make().remember(checkoutTicket);assert.deepEqual(make().list(),[{operation:'checkout',requestKey:checkoutTicket.requestKey}]);make().acknowledge(checkoutTicket);assert.equal(values.has(key),false);
 assert.throws(()=>make().acknowledge({...ticket,operation:'order_lines'}));
-make().acknowledge(ticket);assert.equal(values.has(key),false);assert.equal(values.get('unrelated'),'keep');
-for(const raw of ['broken','null','[]','{"version":2,"requests":[]}',JSON.stringify({version:1,requests:[ticket]}),JSON.stringify({version:1,requests:[{operation:'checkout',requestKey:ticket.requestKey}]}),JSON.stringify({version:1,requests:[{operation:'order_create',requestKey:'short'}]}),'x'.repeat(8193)]){
+assert.equal(values.get('unrelated'),'keep');
+for(const raw of ['broken','null','[]','{"version":2,"requests":[]}',JSON.stringify({version:1,requests:[ticket]}),JSON.stringify({version:1,requests:[{operation:'catalog_create',requestKey:ticket.requestKey}]}),JSON.stringify({version:1,requests:[{operation:'order_create',requestKey:'short'}]}),'x'.repeat(8193)]){
  values.set(key,raw);assert.throws(()=>make().list());assert.throws(()=>make().remember(ticket));assert.equal(values.get(key),raw,'corrupt data must not be silently overwritten');
 }
 values.delete(key);

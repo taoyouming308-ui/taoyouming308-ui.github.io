@@ -1,0 +1,13 @@
+const fs=require('fs'),sql=fs.readFileSync('supabase/migrations/20260924062036_salon_member_checkout_versioned.sql','utf8'),api=fs.readFileSync('supabase/functions/_shared/salon-api-core.mjs','utf8'),bad=[];
+const ok=(x,m)=>{if(!x)bad.push(m)};
+ok(/create or replace function public\.salon_checkout_order_versioned/.test(sql),'versioned checkout wrapper missing');
+ok(/v_order\.edit_version<>p_expected_version/.test(sql),'order version check missing');
+ok(/for update/.test(sql),'order row lock missing');
+ok(/salon_checkout_order\(p_actor_staff_id/.test(sql),'atomic legacy checkout reuse missing');
+ok(/paymentLines/.test(sql),'durable payment readback missing');
+ok(/create or replace function public\.salon_lookup_checkout_request/.test(sql),'recovery lookup missing');
+ok(/security invoker set search_path=''/i.test(sql),'functions must be invoker with empty search path');
+ok(/revoke execute .* from public,anon,authenticated/s.test(sql)&&/grant execute .* to service_role/s.test(sql),'least privilege grants missing');
+ok(/checkout:\{rpc:'salon_checkout_order_versioned'/.test(api),'API must route through guarded checkout');
+ok(/salon_lookup_checkout_request/.test(api),'API must use scoped checkout recovery');
+if(bad.length){console.error('member checkout SQL tests failed:\n- '+bad.join('\n- '));process.exit(1)}console.log('Member checkout SQL tests passed: version, lock, atomic reuse, payment readback, recovery, invoker and grants');

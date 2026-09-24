@@ -21,7 +21,7 @@ lose=true;await assert.rejects(client.submit(ticket),{code:'OUTCOME_UNKNOWN'});
 await client.submit(ticket);assert.deepEqual(calls.at(-1),calls.at(-2));assert.equal(calls.at(-1).displayName,'before');assert.deepEqual(calls.at(-1).tags,['one']);
 let resolve;hold=new Promise(r=>{resolve=r;});
 const first=client.submit(ticket),second=client.submit(ticket);assert.equal(first,second);await Promise.resolve();resolve(response({customerId:5}));await first;hold=null;
-assert.throws(()=>client.prepare('checkout',{}));assert.throws(()=>client.prepare('customer_create',{storeId:2}));
+assert.equal(client.prepare('checkout',{orderId:2,expectedVersion:0,payments:[{method:'cash',amount:'1.00'}]}).operation,'checkout');assert.throws(()=>client.prepare('customer_create',{storeId:2}));
 let release;hold=new Promise(r=>{release=r;});const oldRead=client.read('customers');await Promise.resolve();
 await client.connect(2);release(response([]));await assert.rejects(oldRead,{code:'STALE_SCOPE'});hold=null;
 assert.throws(()=>client.submit(ticket),{code:'STALE_SCOPE'});
