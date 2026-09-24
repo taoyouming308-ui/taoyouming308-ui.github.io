@@ -10,6 +10,8 @@ assert.doesNotMatch(html, /id="monthly-daily-performance"/, 'daily performance m
 assert.match(html, /ZysyrMonthlyDailyPerformance\.renderIntoSheet/, 'monthly render places the automatic table inside the original monthly sheet');
 assert.match(html, /id="monthly-daily-completeness"/, 'monthly view provides an accessible daily completeness status');
 assert.match(html, /completenessStatus:\$\('monthly-daily-completeness'\)/, 'monthly render updates the completeness status with the selected month');
+assert.match(html, /查看本月月报和已入账日报业绩；未显示的日期不会按零收入处理。/, 'monthly first layer explains the key shareholder interpretation without implementation notes');
+assert.match(html, /<details class="monthly-source-details"><summary>数据来源与统计口径<\/summary><div class="monthly-source-body">月报栏目保留原表结构；金额由财务上传的原表数据及财务确认的月报调整组成。调整不覆盖日报原数，且数据不来自美管加同步。<\/div><\/details>/, 'secondary source and accounting scope stays available in an accessible disclosure');
 assert.match(moduleSource, /\['labor_performance', '劳动业绩', '日报“总计”'\]/, 'the finance mapping is visible and unambiguous');
 assert.match(moduleSource, /\['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'\]/, 'the eight columns occupy the original monthly sheet right-side block');
 assert.match(moduleSource, /function ensureDisplayColumns\(cells\)/, 'the display layer supplies the missing W column used by the production 22-column template');
