@@ -3,7 +3,8 @@
   "private": true,
   "description": "Pinned tooling for isolated browser regressions; production frontend remains buildless.",
   "scripts": {
-    "test:finance-browser": "node scripts/test-monthly-load-browser-v499.js && node scripts/test-operations-voucher-browser.js && node scripts/test-zysyr-period-response-isolation.js"
+    "test:finance-browser": "node scripts/test-monthly-load-browser-v499.js && node scripts/test-operations-voucher-browser.js && node scripts/test-zysyr-period-response-isolation.js",
+    "test:finance": "node scripts/test-zysyr-validation-manifest.js && node scripts/run-zysyr-finance-tests.js"
   },
   "devDependencies": {
     "playwright": "1.62.1"

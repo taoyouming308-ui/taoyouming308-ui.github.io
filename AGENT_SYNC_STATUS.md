@@ -34,9 +34,10 @@
 
 ## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，本地待完整门禁）
 
+- 本轮进一步把财务回归清单收敛至 `scripts/zysyr-finance-test-manifest.json`；本地 pre-push 与 GitHub Actions 都调用同一 runner。清单有 63 条唯一测试命令，完整本地运行 63/63 通过；清单检查确保测试文件存在且无重复。Node.js 固定为 22.22.1，Actions runner 固定为 ubuntu-24.04。CI 首次完整运行结果待本次推送后核实；Supabase CLI/Edge 部署校验及平台环境变量核对仍未关闭。
 - 新增 `docs/zysyr/production-release-matrix-2026-09-24.md`，记录当日只读核实的 Pages、PostgreSQL、财务相关 Edge Function 版本/鉴权模式，以及代码读取的服务端环境变量名称；不记录值，不修改生产配置。
 - 标注 Supabase CLI 2.109.1；本沙箱无法写入 `/Users/a1/.supabase/telemetry.json`，因此 CLI `--help` 检查失败，未猜测或执行部署命令。
-- **C06 未关闭：** GitHub Actions 与本地 pre-push 测试清单尚未统一，CI 尚未固定 Supabase CLI/部署校验；实际环境变量设置仍需平台管理员逐项核实。本批仅补发布基线与剩余门槛。
+- **C06 未关闭：** 完整共享财务套件已本地验证，但 GitHub Actions 首次完整执行尚未核实；CI 尚未固定 Supabase CLI/Edge 部署校验，实际环境变量设置仍需平台管理员逐项核实。本批不执行生产部署。
 
 ## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
 

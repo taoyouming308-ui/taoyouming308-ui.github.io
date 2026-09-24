@@ -11,14 +11,14 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: npm
       - name: Install pinned browser-test tooling
         run: |
@@ -53,33 +53,10 @@ jobs:
         run: node scripts/test-booking-ui.js
       - name: Protect iPad frontdesk customer center
         run: node scripts/test-frontdesk.js
-      - name: Protect ZYSYR operations dashboard
-        run: |
-          node scripts/test-operations.js
-          node scripts/test-zysyr-daily-atomic-save-v510.js
-          node scripts/test-zysyr-daily-expected-revision-db.js
-          node scripts/test-zysyr-shared-public-acl-db.js
-          node scripts/test-zysyr-storage-anon-policy.js
-          node scripts/test-zysyr-legacy-login-security.js
-          node scripts/test-zysyr-report-permissions-v512.js
-          node scripts/test-monthly-formula-recalculation.js
-          node scripts/test-monthly-summary-v516.js
-          node scripts/test-operations-auth.js
-          node scripts/test-operations-auth-migration.js
-          node scripts/test-operations-auth-bridge.js
-          node scripts/test-operations-finance-account-admin.js
-          node scripts/test-zysyr-sprint0.js
-          node scripts/test-zysyr-gate-b.js
-          node scripts/test-zysyr-sprint1.js
-          node scripts/test-zysyr-sprint2.js
-          node scripts/test-zysyr-sprint3.js
-          node scripts/test-zysyr-sprint3-workflows.js
-          node scripts/test-zysyr-sprint4.js
-          node scripts/test-zysyr-sprint5.js
-          node scripts/test-zysyr-sprint6.js
-          node scripts/test-zysyr-sprint7.js
-      - name: Protect finance browser regressions
-        run: npm run test:finance-browser
+      - name: Validate shared finance test manifest
+        run: node scripts/test-zysyr-validation-manifest.js
+      - name: Protect complete finance regression suite
+        run: node scripts/run-zysyr-finance-tests.js
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance
