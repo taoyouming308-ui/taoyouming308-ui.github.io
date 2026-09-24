@@ -1,13 +1,13 @@
 # Agent Sync Status
 
-## 上线整改：B07 月报 overview 日报来源请求内去重（v546，待发布）
+## 上线整改：B07 月报 overview 日报来源请求内去重（v546，已发布）
 
 - App version: v546。
 - 按仓库全站版本门禁，将主 App、财务页及前台页版本标记统一到 v546；前台仅更新版本标记，不含前台功能改动。
 - 月报 overview 对同一门店/月只加载一次已确认日报草稿及相关单元格，从相同只读来源生成整月日报业绩与月报使用的现金汇总；历史月报回退路径复用该来源，不再重复请求。
 - 保留原有重复日期、现金业绩单元格缺失/重复、入账时间缺失时阻断汇总的规则；现金汇总仍采用人工修正后的 `payment_cashflow`，不包含卡金。未增加跨请求缓存、数据库结构、权限、财务公式或历史金额修改。
-- 新增 `test-zysyr-monthly-overview-daily-dedupe-v546.js` 并纳入统一财务清单；改动后完整财务套件 67/67、版本同步、发布完整性、交接状态和 diff 检查通过。本地缺少 Deno，Edge frozen type-check 需由 CI 验证。
-- 生产 `operations-api` 只读回读仍为 v100；本批尚未部署或推送。B07 的历史原 Excel 下载/解析及真实生产分阶段响应耗时仍未处理/取得，不宣称 B07 整项关闭。
+- 新增 `test-zysyr-monthly-overview-daily-dedupe-v546.js` 并纳入统一财务清单；完整财务套件 67/67、全仓 pre-push、版本同步、发布完整性、交接状态和 diff 检查通过。提交 `dc7a37f` 已推送 `github/main`；Validate #36044427681 和 Pages #36044427168 均成功，含 Deno frozen type-check，线上 `version.txt=546`。
+- `operations-api` 已整包部署为生产 v101 ACTIVE，`verify_jwt=false` 与内部自定义会话鉴权保持原样；无会话 overview 探针返回 403 `AUTH_SESSION_INVALID`。未执行数据库迁移。B07 的历史原 Excel 下载/解析及真实生产分阶段响应耗时仍未处理/取得，不宣称 B07 整项关闭。
 
 ## 上线整改：C01 延后备用金凭证与关闭汇总模块（v545，已发布）
 
