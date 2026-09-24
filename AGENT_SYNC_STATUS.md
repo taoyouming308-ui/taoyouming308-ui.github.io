@@ -6,6 +6,13 @@
 - 月报调整/已确认日报只读上下文通过请求本地 Promise 缓存复用，仅在该批 HTTP 请求期间存活；没有跨用户/请求缓存。单元格失败独立标出，其他格子仍继续呈现。没有改财务公式、金额、数据库、凭证或权限规则；财务登录入口保持不变。
 - 本地单测、静态 API 边界测试、真实浏览器合成测试（桌面/手机竖屏/横屏）、完整 63 项财务套件和全仓 pre-push 全部通过。`operations-api` v97 已部署并为 ACTIVE，保持既有 `verify_jwt=false`；新批量读取接口的无会话探针返回 `403 AUTH_SESSION_INVALID`。提交 `ff127b9` 推送 `github/main`；Validate #35987122619、Pages #35987122105 均成功。生产无缓存回读 `version.txt=539`、`operations.html data-version=539`、凭证预览脚本 `?v=539`。真实财务会话下端到端体验和门店越权探针未测，不能据此声称完成。
 
+## 2026-09-24 上线审计 P0 状态复核（生产只读）
+
+- A01 客户/预约公开表权限：生产迁移 `20260924040520` 已应用。SQL 回读确认 `bookings`、`customer_profiles` 及停用的三个配置表均启用 RLS；anon/authenticated 无直接 SELECT，`service_role` 权限保留。公共 `perm_data` 仍仅公开读取。当前 Security Advisor 不再报告这两张客户/预约表 `rls_disabled_in_public` 的 ERROR；受保护 API 仍需按既有角色/门店范围使用。
+- A05 历史日报复核：生产迁移 `20260924040811` 已应用；当前 `operations-api` v97 包含每月最多 100 个确认日报的只读重算入口。重算不回写快照、日报或金额。系统发现的历史差异仍须财务按原件签认，不自动纠正账务。
+- A02 认证：滚动迁移/限流迁移已在生产，`operations-auth-migrate` v6 ACTIVE；当前 Auth 安全 Advisor 仍提示 leaked-password protection 未启用。未更改 Auth 密码策略、撤销会话或重置账号；启用前需验证实际 Auth 设置及密码变更流程，并维持财务现有登录入口。
+- G01 备份仍为 P0 未闭环：本轮没有创建数据库/Storage 备份或改变计划任务；异地备份目的地和 macOS 对定时任务访问仓库目录的授权仍未解决。财务历史原件与生产数据未读取或修改。
+
 ## 上线整改：B08 历史凭证预览按需加载（2026-09-24，v538 已发布）
 
 - App version: v538。凭证详情初次打开 Word 原件时只由 `operations-api` 提取并返回第一页，页面翻页时按 `image_filename` 再取对应单页；原始图片/PDF 改用 5 分钟私有签名链接，不再先由 Edge 下载并编码整个文件。每次 Word 翻页仍需服务端读取原 DOCX 压缩包，后续若实测瓶颈在这一段，再评估带成本/存储权衡的独立缩略图方案。
