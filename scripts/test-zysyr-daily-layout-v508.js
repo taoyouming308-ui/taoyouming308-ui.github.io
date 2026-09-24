@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { stripTypeScriptTypes } = require('node:module');
@@ -178,8 +179,8 @@ async function run() {
       assert.equal(await page.locator('#daily-detail-reviewed').count(), 0, 'no repeated review checkbox');
       assert.equal(await page.locator('#daily-detail-confirm-top').textContent(), '入账');
       if (width === 1280 && storeName === '向里造型') {
-        await page.locator('#daily-report-detail .finance-record-head').first().screenshot({ path: '/private/tmp/zysyr-daily-v509-toolbar.png' });
-        await page.locator('#daily-report-detail .daily-confirm-bar').screenshot({ path: '/private/tmp/zysyr-daily-v509-actions.png' });
+        await page.locator('#daily-report-detail .finance-record-head').first().screenshot({ path: path.join(os.tmpdir(), 'zysyr-daily-v509-toolbar.png') });
+        await page.locator('#daily-report-detail .daily-confirm-bar').screenshot({ path: path.join(os.tmpdir(), 'zysyr-daily-v509-actions.png') });
       }
       page.once('dialog', dialog => dialog.accept());
       await page.locator('#daily-detail-confirm-top').click();
