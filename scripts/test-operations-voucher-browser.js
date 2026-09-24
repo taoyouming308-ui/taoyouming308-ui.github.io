@@ -53,7 +53,7 @@ async function run() {
       const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 700, 900);
       ctx.fillStyle = '#234035'; ctx.font = '32px sans-serif'; ctx.fillText('测试样例 · 不入账', 90, 100); ctx.fillText('原始凭证预览测试', 90, 180);
       ctx.strokeRect(70, 230, 560, 460); const image = canvas.toDataURL('image/png');
-      window.fixtureCalls = []; window.fixtureMode = 'formula';
+      window.fixtureCalls = []; window.fixtureMode = 'formula'; window.fixtureExact = false;
       isLocalPreview = () => false;
       api = async function (operation, payload) {
         window.fixtureCalls.push({ operation, ...payload });
@@ -64,9 +64,15 @@ async function run() {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
           if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
-          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: 'bundle_only' }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
+          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: window.fixtureExact ? 'page_confirmed' : 'bundle_only', trace_source_locator: window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
         }
-        if (operation === 'history_evidence_images') return { filename: '模拟凭证包.docx', images: [{ filename: 'image1.png', data_url: image }, { filename: 'image2.png', data_url: image }] };
+        if (operation === 'history_evidence_images') {
+          const imageNames = ['image1.png', 'image2.png'];
+          const imageIndex = payload.image_filename ? imageNames.indexOf(payload.image_filename) : 0;
+          if (imageIndex < 0) throw Error('所选图片不属于此凭证包');
+          return { filename: '模拟凭证包.docx', image_manifest: imageNames, image_index: imageIndex,
+            images: [{ filename: imageNames[imageIndex], data_url: image }] };
+        }
         if (operation === 'voucher_url') return { filename: '模拟日报.png', url: image };
         if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload' || operation === 'history_ledger_evidence_page_link') return { saved: true, linked: true, formal_ledger_amount_changed: false };
         if (operation === 'overview') return state.data;
@@ -79,7 +85,7 @@ async function run() {
       const button = document.getElementById('cell-trace-back'), box = button.getBoundingClientRect();
       return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
     }), true, 'sticky navigation must not cover the return button');
-    assert.equal(await page.locator('.monthly-voucher-preview img').count(), 3);
+    assert.equal(await page.locator('.monthly-voucher-preview img').count(), 2, 'one image per source is loaded initially; the Word bundle loads one page on demand');
     assert.equal(await page.locator('.voucher-file-preview').count(), 2, 'deduplicate shared originals');
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null);
     assert.match(await page.locator('.monthly-voucher-preview').innerText(), /本月整包凭证/);
@@ -88,20 +94,23 @@ async function run() {
     const first = page.locator('.voucher-file-preview').first();
     await first.locator('[data-step="1"]').click();
     await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]').textContent === '2 / 2');
-    await first.locator('[data-zoom="1"]').click();
+    await first.locator('[data-zoom="0"]').click();
     await page.locator('dialog[open]').waitFor();
     await page.locator('dialog button').click();
     await page.locator('.voucher-trace-details > summary').click();
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), '');
     const calls = await page.evaluate(() => window.fixtureCalls);
-    assert.equal(calls.filter(call => call.operation === 'history_evidence_images').length, 1);
+    const historyImageCalls = calls.filter(call => call.operation === 'history_evidence_images');
+    assert.equal(historyImageCalls.length, 2, 'only the visible Word page is read at first, then the next page on demand');
+    assert.equal(historyImageCalls[0].image_filename, undefined, 'initial Word preview returns the first page only');
+    assert.equal(historyImageCalls[1].image_filename, 'image2.png', 'next-page request is scoped to the requested image');
     assert.equal(calls.filter(call => call.operation === 'voucher_url').length, 1);
     assert.equal(new Set(calls.map(call => call.store)).size, 1);
     // One amount page keeps amount edit, upload and per-record evidence control together.
     await page.evaluate(() => openCellTrace('C4'));
     await page.locator('.monthly-inline-editor').waitFor();
     await page.locator('.voucher-file-preview [data-link-history-page]').first().waitFor();
-    assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 2, 'finance must be able to manually map one displayed bundle image to the selected historical line');
+    assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 1, 'finance maps only the currently displayed bundle page');
     await page.evaluate(() => { window.prompt = () => '逐张查看原始凭证后人工确认'; });
     await page.locator('.voucher-file-preview [data-link-history-page]').first().click();
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_ledger_evidence_page_link'));
@@ -110,6 +119,11 @@ async function run() {
     assert.equal(exactPageLink.evidence_id, 'bundle');
     assert.equal(exactPageLink.source_locator, 'word/media/image1.png');
     assert.equal(exactPageLink.reason, '逐张查看原始凭证后人工确认');
+    await page.evaluate(() => { window.fixtureExact = true; openCellTrace('C4'); });
+    await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]')?.textContent === '1 / 1');
+    const exactImageCall = await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1));
+    assert.equal(exactImageCall.image_filename, 'image2.png', 'an exact historical amount link loads only its mapped image');
+    assert.equal(await page.locator('.voucher-file-preview [data-step="1"]').first().isDisabled(), true, 'an exact amount link cannot browse the rest of the Word bundle');
     assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
     assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');

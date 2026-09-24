@@ -189,8 +189,13 @@ expect(edge.includes('historyEvidenceWithScope') && edge.includes('trace_link_le
   'historical cell trace must identify month-bundle voucher scope without pretending an exact page link');
 expect(edge.includes('historyEvidenceImages') && edge.includes('word\\/media\\/')
   && edge.includes('history_evidence_images') && edge.includes('Cache-Control')
-  && html.includes("api('history_evidence_images'") && voucherView.includes('当前关联范围'),
-  'private historical voucher images must be extracted for direct gallery display with truthful bundle scope');
+  && html.includes("api('history_evidence_images'") && voucherView.includes('当前关联范围')
+  && edge.includes('image_manifest: imageManifest') && edge.includes('payload.image_filename')
+  && edge.includes('await archive.file(imagePath)?.async("base64")')
+  && edge.includes('file_url: await signedStorageUrl(bucket, objectPath)')
+  && voucherView.includes('loadPage(file, manifest[next])')
+  && voucherView.includes('file.trace_link_level !== \'page_confirmed\''),
+  'private historical voucher previews must use short signed URLs or fetch a single requested Word page on demand');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),
   'history summary cards must filter whole months and keep exception jumps to source cells');

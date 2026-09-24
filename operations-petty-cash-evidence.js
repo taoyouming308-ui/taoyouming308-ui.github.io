@@ -145,13 +145,25 @@
     });
   }
 
+  function exactHistoryImageFilename(file) {
+    if (!file || file.trace_link_level !== 'page_confirmed') return null;
+    var values = [].concat(file.trace_source_locators || [], file.trace_source_locator || []).filter(Boolean);
+    if (values.length !== 1) return null;
+    var name = String(values[0]).split('/').pop();
+    return /^image[\w.-]+$/i.test(name) ? name : null;
+  }
+
   async function loadHistoryFile(file, host) {
     function retry() { host.innerHTML = '<div class="help">正在重新读取本笔凭证…</div>'; loadHistoryFile(file, host); }
     try {
-      var result = await api('history_evidence_images', { store: currentStore(), evidence_id: file.id });
-      monthlyVoucherView.fileView(Object.assign({}, file, result), host, retry);
+      var result = await api('history_evidence_images', { store: currentStore(), evidence_id: file.id, image_filename: exactHistoryImageFilename(file) || undefined });
+      monthlyVoucherView.fileView(Object.assign({}, file, result), host, retry, null, function (sourceFile, imageFilename) {
+        return api('history_evidence_images', { store: currentStore(), evidence_id: file.id, image_filename: imageFilename });
+      });
     } catch (error) {
-      monthlyVoucherView.fileView(Object.assign({}, file, { preview_error: error.message }), host, retry);
+      monthlyVoucherView.fileView(Object.assign({}, file, { preview_error: error.message }), host, retry, null, function (sourceFile, imageFilename) {
+        return api('history_evidence_images', { store: currentStore(), evidence_id: file.id, image_filename: imageFilename });
+      });
     }
   }
 

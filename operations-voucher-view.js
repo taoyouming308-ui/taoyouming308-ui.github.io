@@ -3,10 +3,15 @@
   'use strict';
   root.createZysyrVoucherView = function (options) {
     var core = root.ZysyrVoucherPreview, esc = options.escape, generation = 0;
-    function fileView(file, host, retry, linkImage) {
+    function fileView(file, host, retry, linkImage, loadPage) {
       var selected = core.selectImages(file), url = core.safeURL(file.file_url), name = file.filename || file.original_filename || '原始凭证';
       var images = selected.images.map(function (item) { return core.safeURL(item.data_url); }).filter(Boolean);
       if (!images.length && url && core.kind(file) === 'image') images.push(url);
+      var manifest = Array.isArray(file.image_manifest) ? file.image_manifest : [];
+      var exactPage = file.trace_link_level === 'page_confirmed';
+      var pageCount = exactPage ? 1 : (manifest.length || images.length);
+      var requestedPageIndex = Number.isInteger(Number(file.image_index)) ? Math.max(0, Number(file.image_index)) : 0;
+      var pageIndex = exactPage ? 0 : Math.min(requestedPageIndex, Math.max(0, pageCount - 1));
       var html = '<h4>' + esc(name) + '</h4>';
       if (file.trace_link_level === 'bundle_only') html += '<div class="candidate-warning">当前关联范围：本月整包凭证，尚未确认哪张对应当前金额。以下展示整包原图，不代表每张都计入该金额。</div>';
       else if (file.trace_link_level === 'page_confirmed') html += '<div class="help">以下为已关联到该金额的原图。</div>';
@@ -14,12 +19,12 @@
       if (selected.missing) html += '<div class="candidate-warning">已登记的原图位置无法全部找到，请核对关联。未以整包图片替代精确凭证。</div>';
       if (file.preview_error) html += '<div class="candidate-warning">这份原件暂时未能读取：' + esc(file.preview_error) + '。可在此重试，不影响其他原件。</div>';
       if (images.length) {
-        html += '<div class="voucher-gallery-controls"><button type="button" class="ghost" data-step="-1">上一张</button><span data-count aria-live="polite">1 / ' + images.length + '</span><button type="button" class="ghost" data-step="1">下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
-        html += images.map(function (src, i) {
-          var item = selected.images[i] || {}, locator = String(item.filename || '').split('/').pop();
-          var linkButton = linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
-          return '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="' + i + '" aria-label="放大第 ' + (i + 1) + ' 张原始凭证"><img src="' + esc(src) + '" alt="原始凭证第 ' + (i + 1) + ' 张" loading="' + (i ? 'lazy' : 'eager') + '"></button><figcaption>原图 ' + (i + 1) + ' / ' + images.length + '</figcaption>' + linkButton + '</figure>';
-        }).join('') + '</div>';
+        var displayPage = manifest.length === images.length && images.length > 1 ? pageIndex : 0;
+        var displayedItem = manifest.length ? manifest[pageIndex] : (selected.images[0] || {}).filename;
+        var locator = String(displayedItem || '').split('/').pop();
+        var linkButton = linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
+        html += '<div class="voucher-gallery-controls"><button type="button" class="ghost" data-step="-1"' + (pageIndex <= 0 ? ' disabled' : '') + '>上一张</button><span data-count aria-live="polite">' + (pageIndex + 1) + ' / ' + pageCount + '</span><button type="button" class="ghost" data-step="1"' + (pageIndex >= pageCount - 1 ? ' disabled' : '') + '>下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
+        html += '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="0" aria-label="放大第 ' + (pageIndex + 1) + ' 张原始凭证"><img src="' + esc(images[displayPage] || images[0]) + '" alt="原始凭证第 ' + (pageIndex + 1) + ' 张" loading="eager"></button><figcaption>原图 ' + (pageIndex + 1) + ' / ' + pageCount + '</figcaption>' + linkButton + '</figure></div>';
       } else if (url && core.kind(file) === 'pdf') html += '<iframe class="voucher-pdf-preview" title="' + esc(name) + ' PDF 原件预览" src="' + esc(url) + '"></iframe><div class="help">若浏览器不支持 PDF 内嵌预览，可使用下方备用原文件入口。</div>';
       else if (!file.preview_error && !selected.missing) html += '<div class="help">这份附件没有可直接显示的图片或 PDF；保留原文件供核对，不将其冒充消费凭证截图。</div>';
       html += '<div class="trace-actions"><button type="button" class="ghost" data-retry>重新读取原件</button></div>';
@@ -39,11 +44,32 @@
           }
         };
       });
-      bindSlides(host, images);
+      bindSlides(host, images, file, retry, linkImage, loadPage);
     }
-    function bindSlides(host, images) {
+    function bindSlides(host, images, file, retry, linkImage, loadPage) {
       var strip = host.querySelector('.voucher-gallery-list');
       if (!strip) return;
+      var manifest = Array.isArray(file.image_manifest) ? file.image_manifest : [];
+      if (manifest.length > 1 && file.trace_link_level !== 'page_confirmed' && typeof loadPage === 'function') {
+        host.querySelectorAll('[data-step]').forEach(function (button) { button.onclick = async function () {
+          var next = Number(file.image_index || 0) + Number(button.dataset.step);
+          if (next < 0 || next >= manifest.length || button.disabled) return;
+          host.innerHTML = '<div class="voucher-gallery-loading">正在读取第 ' + (next + 1) + ' 张原图…</div>';
+          try {
+            var result = await loadPage(file, manifest[next]);
+            fileView(Object.assign({}, file, result, { image_index: next }), host, retry, linkImage, loadPage);
+          } catch (error) {
+            fileView(Object.assign({}, file, { preview_error: error.message || '原图读取失败' }), host, retry, linkImage, loadPage);
+          }
+        }; });
+        host.querySelectorAll('[data-zoom]').forEach(function (button) { button.onclick = function () {
+          var dialog = document.createElement('dialog'); dialog.className = 'voucher-zoom-dialog';
+          dialog.innerHTML = '<form method="dialog"><button class="secondary">关闭放大</button></form><div class="voucher-zoom-scroll"><img src="' + esc(images[0]) + '" alt="放大的原始凭证"></div>';
+          document.body.appendChild(dialog); dialog.addEventListener('close', function () { dialog.remove(); }); dialog.showModal();
+        }; });
+        host.querySelectorAll('img').forEach(function (img) { img.onerror = function () { if (!img.nextElementSibling) img.insertAdjacentHTML('afterend', '<span class="candidate-warning">图片加载失败或链接过期，请点击重新读取原件。</span>'); }; });
+        return;
+      }
       var figures = Array.from(strip.children), position = 0;
       function update() {
         position = figures.reduce(function (best, item, i) {
@@ -111,7 +137,9 @@
           await options.linkHistoryPage({ store: context.store, ledger_entry_id: target.historical_ledger_entry_id,
             evidence_id: file.id, source_locator: 'word/media/' + filename, reason: reason.trim() });
           if (active()) options.reopen(address);
-        } : null); }
+        } : null, function (sourceFile, imageFilename) {
+          return options.load(collected.evidence[index], context, data.historical, imageFilename);
+        }); }
         await core.loadFiles(collected.evidence, function (file) { return options.load(file, context, data.historical); }, show, active);
       } catch (error) {
         if (active()) gallery.innerHTML = header + '<div class="candidate-warning">凭证预览读取失败：' + esc(error.message) + '。下方追溯与修改记录仍可核对。</div>';

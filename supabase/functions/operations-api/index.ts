@@ -6402,19 +6402,19 @@ async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): 
   const objectPath = cleanText(evidence.object_path, 500);
   const filename = cleanText(evidence.original_filename, 200);
   const mime = cleanText(evidence.mime_type, 120);
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucket)}/${storagePath(objectPath)}`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  });
-  if (!response.ok) throw new Error(`原始凭证图片读取失败 (${response.status})`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
   if (mime.startsWith("image/") && ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mime)) {
-    return { filename, mime_type: mime, embedded_asset_count: 1,
-      images: [{ index: 1, filename, mime_type: mime, data_url: `data:${mime};base64,${bytesBase64(bytes)}` }] };
+    return { filename, mime_type: mime, embedded_asset_count: 1, images: [],
+      file_url: await signedStorageUrl(bucket, objectPath), expires_in: 300 };
   }
   if (mime !== DOCX_MIME) {
     return { filename, mime_type: mime, embedded_asset_count: Number(evidence.embedded_asset_count || 0),
       images: [], file_url: await signedStorageUrl(bucket, objectPath), expires_in: 300 };
   }
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucket)}/${storagePath(objectPath)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`原始凭证图片读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
   let archive: JSZip;
   try { archive = await JSZip.loadAsync(exactArrayBuffer(bytes)); } catch { throw new Error("Word 凭证包无法读取或已损坏"); }
   const available = Object.keys(archive.files).filter((path) => /^word\/media\/[^/]+$/i.test(path) && !archive.files[path].dir && rasterMime(path));
@@ -6437,17 +6437,19 @@ async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): 
     }
   } catch { /* Fall back to the package's natural media order. */ }
   available.sort(natural).forEach((path) => { if (!ordered.includes(path)) ordered.push(path); });
-  const images: JsonRecord[] = [];
-  for (let index = 0; index < ordered.length; index += 1) {
-    const path = ordered[index];
-    const imageMime = rasterMime(path);
-    const base64 = await archive.file(path)?.async("base64");
-    if (!base64 || !imageMime) continue;
-    images.push({ index: index + 1, filename: path.split("/").pop(), mime_type: imageMime,
-      data_url: `data:${imageMime};base64,${base64}` });
-  }
-  if (!images.length) throw new Error("Word 凭证包中没有可显示的 JPG、PNG、WEBP 或 GIF 原图");
-  return { filename, mime_type: mime, embedded_asset_count: images.length, images };
+  if (!ordered.length) throw new Error("Word 凭证包中没有可显示的 JPG、PNG、WEBP 或 GIF 原图");
+  const imageManifest = ordered.map((path) => path.split("/").pop() || "");
+  const requestedName = cleanText(payload.image_filename, 200);
+  const imageIndex = requestedName ? imageManifest.indexOf(requestedName) : 0;
+  if (imageIndex < 0) throw new Error("请求的原图页不属于当前凭证包");
+  const imagePath = ordered[imageIndex];
+  const imageMime = rasterMime(imagePath);
+  const base64 = await archive.file(imagePath)?.async("base64");
+  if (!base64 || !imageMime) throw new Error("当前原图页无法读取");
+  return { filename, mime_type: mime, embedded_asset_count: ordered.length,
+    image_manifest: imageManifest, image_index: imageIndex,
+    images: [{ index: imageIndex + 1, filename: imageManifest[imageIndex], mime_type: imageMime,
+      data_url: `data:${imageMime};base64,${base64}` }] };
 }
 
 async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
