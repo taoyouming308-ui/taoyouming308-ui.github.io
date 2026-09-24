@@ -17,35 +17,50 @@
   }
   async function collect(rootTrace, address, fetchTrace, options) {
     options = options || {};
-    var limit = options.limit || 240, active = options.active || function () { return true; };
+    var limit = Math.min(Number(options.limit) || 240, 240), maxDepth = Math.min(Number(options.maxDepth) || 24, 24);
+    var batchSize = Math.max(1, Math.min(Number(options.batchSize) || 8, 8));
+    var active = options.active || function () { return true; }, fetchTraceBatch = options.fetchTraceBatch;
     var seen = new Set([address]), evidence = new Map(), queue = [], failures = [], leaves = 0, missingLeaves = 0, unresolved = 0;
-    function accept(trace) {
+    var depthTruncated = false;
+    function accept(trace, depth) {
       (trace.evidence || []).forEach(function (file) { merge(evidence, file); });
       if (trace.mode === 'formula') {
         var refs = (trace.precedents || []).map(function (cell) { return cell.cell_address; }).filter(Boolean);
         if (!refs.length) unresolved++;
-        queue.push.apply(queue, refs);
+        else if (depth >= maxDepth) depthTruncated = true;
+        else refs.forEach(function (ref) { queue.push({ address: ref, depth: depth + 1 }); });
       } else {
         leaves++;
         if (!(trace.evidence || []).length && Number((trace.target || {}).numeric_value)) missingLeaves++;
       }
     }
-    accept(rootTrace);
+    accept(rootTrace, 0);
     while (queue.length && active()) {
       var batch = [];
-      while (queue.length && batch.length < 4 && seen.size < limit) {
+      while (queue.length && batch.length < batchSize && seen.size < limit) {
         var next = queue.shift();
-        if (seen.has(next)) continue;
-        seen.add(next); batch.push(next);
+        if (seen.has(next.address)) continue;
+        seen.add(next.address); batch.push(next);
       }
       if (!batch.length) break;
-      await Promise.all(batch.map(async function (cell) {
-        try { var trace = await fetchTrace(cell); if (active()) accept(trace); }
-        catch (_) { failures.push(cell); }
-      }));
+      if (typeof fetchTraceBatch === 'function') {
+        try {
+          var traces = await fetchTraceBatch(batch.map(function (item) { return item.address; }));
+          batch.forEach(function (item) {
+            var result = traces && traces[item.address];
+            if (!result || result.error) { failures.push(item.address); return; }
+            if (active()) accept(result.trace || result, item.depth);
+          });
+        } catch (_) { failures.push.apply(failures, batch.map(function (item) { return item.address; })); }
+      } else {
+        await Promise.all(batch.map(async function (item) {
+          try { var trace = await fetchTrace(item.address); if (active()) accept(trace, item.depth); }
+          catch (_) { failures.push(item.address); }
+        }));
+      }
     }
     return { evidence: Array.from(evidence.values()), leaf_count: leaves, missing_leaves: missingLeaves,
-      failures: failures, unresolved: unresolved, truncated: queue.some(function (cell) { return !seen.has(cell); }), cancelled: !active() };
+      failures: failures, unresolved: unresolved, truncated: depthTruncated || queue.some(function (item) { return !seen.has(item.address); }), cancelled: !active() };
   }
   function selectImages(file) {
     var all = file.images || [], wanted = locators(file).map(function (value) { return String(value).split('/').pop(); });

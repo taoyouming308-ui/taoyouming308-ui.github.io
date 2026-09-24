@@ -100,6 +100,10 @@ expect(edge.includes('formulaPrecedents') && edge.includes('reportCellLabel') &&
 expect(edge.includes('/向里/.test(storeName)') && edge.includes('["向里业绩报表", "业绩报表"]'), 'store-specific performance worksheet selection missing');
 expect(edge.includes('zysyr_register_report_upload') && edge.includes('zysyr_report_cells'), 'transactional report-cell registration missing');
 expect(edge.includes('cellTrace') && edge.includes('saveCellTrace') && edge.includes('zysyr_save_report_cell_trace'), 'cell trace query/save API missing');
+expect(edge.includes('cell_trace_batch') && edge.includes('async function cellTraceBatch(')
+  && edge.includes('rawAddresses.length > 8') && edge.includes('Math.min(4, addresses.length)')
+  && edge.includes('store: await selectedStoreInfo(session, payload)')
+  && edge.includes('requestMonthlyAdjustmentContext('), 'bounded formula trace batching, store authorization, or request-local month context reuse missing');
 expect(edge.includes('reportLineage') && edge.includes('zysyr_salary_details') && edge.includes('monthly_targets'), 'cross-report lineage API missing');
 expect(edge.includes('sha256Bytes') && edge.includes('original_private: true'), 'report digest or private-original marker missing');
 expect(edge.includes('REPORT_BUCKET') && edge.includes('/storage/v1/object/sign/'), 'private report signed-link flow missing');

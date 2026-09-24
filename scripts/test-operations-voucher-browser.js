@@ -58,14 +58,16 @@ async function run() {
       api = async function (operation, payload) {
         window.fixtureCalls.push({ operation, ...payload });
         const report = state.data.monthly_report;
-        const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', historical_import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', cell_address: payload.cell_address, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
-        if (payload.cell_address === 'C3') target.id = target.historical_ledger_entry_id = '33333333-3333-4333-8333-333333333333';
-        if (operation === 'cell_trace') {
+        async function traceFixture(cellAddress) {
+          const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', historical_import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', cell_address: cellAddress, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
+          if (cellAddress === 'C3') target.id = target.historical_ledger_entry_id = '33333333-3333-4333-8333-333333333333';
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
-          if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
+          if (cellAddress === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
           return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: window.fixtureExact ? 'page_confirmed' : 'bundle_only', trace_source_locator: window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
         }
+        if (operation === 'cell_trace') return traceFixture(payload.cell_address);
+        if (operation === 'cell_trace_batch') return { results: await Promise.all(payload.cell_addresses.map(async cell_address => ({ cell_address, trace: await traceFixture(cell_address) }))) };
         if (operation === 'history_evidence_images') {
           const imageNames = ['image1.png', 'image2.png'];
           const imageIndex = payload.image_filename ? imageNames.indexOf(payload.image_filename) : 0;
@@ -90,6 +92,10 @@ async function run() {
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null);
     assert.match(await page.locator('.monthly-voucher-preview').innerText(), /本月整包凭证/);
     assert.doesNotMatch(await page.locator('#cell-trace-page-title').innerText(), /C3/);
+    const initialTraceCalls = await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'cell_trace' || call.operation === 'cell_trace_batch'));
+    assert.equal(initialTraceCalls.filter(call => call.operation === 'cell_trace' && call.cell_address === 'C3').length, 1, 'the selected formula root still uses the ordinary single-cell endpoint');
+    assert.equal(initialTraceCalls.filter(call => call.operation === 'cell_trace_batch').length, 1, 'formula children are loaded in one authorized batch request: ' + JSON.stringify(initialTraceCalls));
+    assert.deepEqual(initialTraceCalls.find(call => call.operation === 'cell_trace_batch').cell_addresses, ['C4', 'C5']);
     if (process.env.ZYSYR_VOUCHER_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.ZYSYR_VOUCHER_SCREENSHOTS, 'zysyr-voucher-preview-' + width + 'x' + height + '.png'), fullPage: true });
     const first = page.locator('.voucher-file-preview').first();
     await first.locator('[data-step="1"]').click();

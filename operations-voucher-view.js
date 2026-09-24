@@ -105,7 +105,10 @@
       workbenchCards.forEach(function (card) { body.appendChild(card); }); body.appendChild(gallery); body.appendChild(details);
       function active() { return request === generation && gallery.isConnected && options.isCurrent(context); }
       try {
-        var collected = await core.collect(data, address, function (cell) { return options.trace(cell, context); }, { active: active });
+        var collected = await core.collect(data, address, function (cell) { return options.trace(cell, context); }, {
+          active: active,
+          fetchTraceBatch: typeof options.traceBatch === 'function' ? function (cells) { return options.traceBatch(cells, context); } : undefined
+        });
         if (!active()) return;
         var warnings = [];
         if (collected.failures.length) warnings.push(collected.failures.length + ' 个组成项目读取失败，当前预览不完整');

@@ -19,8 +19,24 @@ async function test() {
   assert.deepEqual(result.failures, ['C6']);
   assert.equal(result.leaf_count, 3);
   assert.equal(result.truncated, false);
+  const batchCalls = [];
+  const batchRefs = Array.from({ length: 9 }, (_, index) => 'D' + (index + 1));
+  const batched = await core.collect(formula(...batchRefs), 'D0', async () => {
+    throw Error('single-cell fallback must not be used when batch tracing is enabled');
+  }, { fetchTraceBatch: async addresses => {
+    batchCalls.push(addresses.slice());
+    return Object.fromEntries(addresses.map(address => [address, address === 'D3'
+      ? { error: 'synthetic cell failure' }
+      : { trace: leaf([{ id: 'voucher-' + address }]) }]));
+  } });
+  assert.deepEqual(batchCalls, [batchRefs.slice(0, 8), ['D9']], 'one request per bounded layer batch');
+  assert.deepEqual(batched.failures, ['D3'], 'a single bad cell must not discard successful batch siblings');
+  assert.equal(batched.leaf_count, 8);
+  assert.equal(batched.evidence.length, 8);
   const limited = await core.collect(formula('A1', 'A2', 'A3'), 'A0', async () => leaf([]), { limit: 2 });
   assert.equal(limited.truncated, true, 'limit must never silently claim completeness');
+  const depthLimited = await core.collect(formula('A1'), 'A0', async address => formula(address === 'A1' ? 'A2' : 'A3'), { maxDepth: 1 });
+  assert.equal(depthLimited.truncated, true, 'maximum formula depth must be visible as an incomplete trace');
   let active = true;
   const cancelled = await core.collect(formula('B1', 'B2', 'B3', 'B4', 'B5'), 'B0', async () => { active = false; return leaf([evidence]); }, { active: () => active });
   assert.equal(cancelled.cancelled, true);

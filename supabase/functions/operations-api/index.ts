@@ -3250,8 +3250,8 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   return result;
 }
 
-async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  const store = await selectedStoreInfo(session, payload);
+async function cellTrace(payload: JsonRecord, session: JsonRecord, resolvedStore?: JsonRecord): Promise<JsonRecord> {
+  const store = resolvedStore || await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const reportId = cleanText(payload.report_id, 40);
@@ -3607,7 +3607,34 @@ async function monthlyAdjustmentContext(companyId: string, storeId: string, mont
   return { adjustments, daily, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
 }
 
-async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+type MonthlyTraceRequestContext = {
+  store?: JsonRecord;
+  adjustmentContexts: Map<string, Promise<JsonRecord>>;
+};
+
+function requestMonthlyAdjustmentContext(
+  context: MonthlyTraceRequestContext,
+  companyId: string,
+  storeId: string,
+  month: string,
+  reportId: string,
+  historical: boolean,
+): Promise<JsonRecord> {
+  const key = [companyId, storeId, month, reportId, historical ? "history" : "report"].join(":");
+  let pending = context.adjustmentContexts.get(key);
+  if (!pending) {
+    pending = monthlyAdjustmentContext(companyId, storeId, month, reportId, historical);
+    context.adjustmentContexts.set(key, pending);
+  }
+  return pending;
+}
+
+async function finishMonthlyTrace(
+  data: JsonRecord,
+  payload: JsonRecord,
+  session: JsonRecord,
+  requestContext: MonthlyTraceRequestContext = { adjustmentContexts: new Map() },
+): Promise<JsonRecord> {
   const target = data.target as JsonRecord;
   const category = monthlyItemCategory(target);
   data.item_category = category;
@@ -3623,19 +3650,19 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
   const canUseMonthlyAdjustment = category !== "fixed";
   if (!canUseMonthlyAdjustment) return data;
   // Match the overview's derived amount, including nested formulas and deltas.
-  const store = await selectedStoreInfo(session, payload);
+  const store = requestContext.store || await selectedStoreInfo(session, payload);
   const month = cleanText((data.report as JsonRecord).report_date, 10).slice(0, 7);
-  const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
-  const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
+  const adjustmentContext = await requestMonthlyAdjustmentContext(requestContext, String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
+  const effective = (adjustmentContext.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (effective) target.numeric_value = effective.numeric_value;
   if (effective?.daily_rollup) { target.daily_rollup = effective.daily_rollup; target.original_report_amount = effective.original_report_amount; }
   if (canUseMonthlyAdjustment) {
-    const all = context.adjustments as JsonRecord[];
+    const all = adjustmentContext.adjustments as JsonRecord[];
     const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
     const actorIds = uuidIn(history.map(row => row.actor_user_id));
     const actors = actorIds === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,display_name,login_name&company_id=eq.${store.company_id}&id=in.${actorIds}`, 500);
     const dailyLinked = Number((target.daily_rollup as JsonRecord)?.confirmed_days || 0) > 0;
-    const linkedAdjustment = monthlyAdjustmentForSource(target.id, history, dailyLinked ? context.daily as JsonRecord : null);
+    const linkedAdjustment = monthlyAdjustmentForSource(target.id, history, dailyLinked ? adjustmentContext.daily as JsonRecord : null);
     const latest = linkedAdjustment.latest as JsonRecord | null;
     data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(linkedAdjustment.applied_delta)).toFixed(4)),
       adjustment_delta: linkedAdjustment.applied_delta, revision: latest?.revision || 0,
@@ -3643,6 +3670,44 @@ async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session
     data.amount_history = [...history.map(row => ({ ...row, revision_type: "月报调整", delta: Number(row.after_amount) - Number(row.before_amount), actor: actors.find(actor => actor.id === row.actor_user_id) || null })), ...(data.amount_history as JsonRecord[] || [])];
   }
   return data;
+}
+
+async function cellTraceBatch(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const rawAddresses = payload.cell_addresses;
+  if (!Array.isArray(rawAddresses) || rawAddresses.length < 1 || rawAddresses.length > 8) {
+    throw new Error("一次最多读取 8 个组成金额，请刷新后重试");
+  }
+  const addresses = rawAddresses.map((value) => cleanText(value, 20).toUpperCase());
+  if (addresses.some((address) => !/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address))
+      || new Set(addresses).size !== addresses.length) {
+    throw new Error("组成金额位置无效或重复");
+  }
+  // Resolve store once after this request's session authorization. All cells in
+  // the batch are then constrained to the same selected store and report.
+  const requestContext: MonthlyTraceRequestContext = {
+    store: await selectedStoreInfo(session, payload),
+    adjustmentContexts: new Map(),
+  };
+  const reportId = cleanText(payload.report_id, 40);
+  if (!/^[0-9a-f-]{36}$/i.test(reportId)) throw new Error("月报标识无效");
+  const results: JsonRecord[] = new Array(addresses.length);
+  let cursor = 0;
+  await Promise.all(Array.from({ length: Math.min(4, addresses.length) }, async () => {
+    while (cursor < addresses.length) {
+      const index = cursor++;
+      const address = addresses[index];
+      const tracePayload = { ...payload, cell_address: address };
+      try {
+        const trace = await cellTrace(tracePayload, session, requestContext.store);
+        results[index] = { cell_address: address, trace: await finishMonthlyTrace(trace, tracePayload, session, requestContext) };
+      } catch (_) {
+        // Keep a bad/missing cell from discarding valid siblings; do not expose
+        // database or authorization internals in a partial batch response.
+        results[index] = { cell_address: address, error: "该组成金额读取失败，请单独打开重试" };
+      }
+    }
+  }));
+  return { results };
 }
 
 async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -6518,6 +6583,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "report_lineage") return json(await reportLineage(payload, session));
     if (operation === "cell_trace") return json(await finishMonthlyTrace(await cellTrace(payload, session), payload, session));
+    if (operation === "cell_trace_batch") return json(await cellTraceBatch(payload, session));
     if (operation === "monthly_income_adjustment_save") return json(await monthlyIncomeAdjustmentSave(payload, session));
     if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
     if (operation === "monthly_evidence_rule_save") return json(await saveMonthlyEvidenceRule(payload, session));
