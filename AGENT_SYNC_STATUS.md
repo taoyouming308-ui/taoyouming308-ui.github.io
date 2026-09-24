@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 上线整改：A01 匿名共享表边界复验（2026-09-25）
+
+- 对生产 Supabase REST 逐表执行匿名只读空结果请求（`select=id&limit=0`）：bookings、customer_profiles、hair_types、perm_styles、barber_identities 均 HTTP 401；公开配方目录 perm_data HTTP 206。没有读取业务行、提交写入或修改权限。
+- A01 原报告定义的匿名直接访问漏洞满足修复验收；perm_data 的公开内容审查和登录身份/跨门店授权矩阵仍属于上线前验收，不宣称整个 App 权限审计已结束。
+- `operations-api` v100 与 30 天旧会话上限、日报 expected_revision 门禁、入账结果不确定保护、月报部分保存恢复均有相应回归；本次已验证 A03 隔离 PostgreSQL、A04 响应丢失、A06 月报浏览器用例通过。A02 仍因旧密码兼容和 Auth 绑定覆盖不足保持 P0 开放。
+
 ## 上线整改：A02 旧兼容会话绝对期限（生产 v100）
 
 - 生产只读聚合核对：26 个在职员工中 2 个已关联有效 Auth 账号；仍有 17 个旧兼容会话，数据库 `expires_at` 最远可到 2036-09-02。核对时这 17 个会话均在创建后 30 天内，因此新期限不会在部署时立即让当前会话失效。
