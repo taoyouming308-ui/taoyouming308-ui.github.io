@@ -53,6 +53,12 @@
     return output;
   }
 
+  function completeness(rows) {
+    var days = Array.isArray(rows) ? rows : [];
+    var confirmed = days.filter(function (row) { return row && row.confirmed; }).length;
+    return { days: days.length, confirmed: confirmed, withoutConfirmedReport: Math.max(0, days.length - confirmed) };
+  }
+
   function embeddedCell(cells, column, row) {
     return cells && cells[column + String(row)] || null;
   }
@@ -92,6 +98,12 @@
     if (!ensureDisplayColumns(cells)) return false;
     if (!columns.every(function (column) { return embeddedCell(cells, column, 2); })) return false;
     var performance = options.performance || {}, rows = buildRows(options.month, performance), total = totals(rows);
+    var coverage = completeness(rows);
+    if (options.completenessStatus) {
+      options.completenessStatus.textContent = rows.length
+        ? '整月日报：已入账 ' + coverage.confirmed + ' / ' + coverage.days + ' 天；另有 ' + coverage.withoutConfirmedReport + ' 天尚无已入账日报。未显示不代表休息日或零收入；合计只统计已入账日报。'
+        : '整月日报：月份无效，暂无法显示日报覆盖情况。';
+    }
     var labels = ['日期'].concat(fields.map(function (field) { return field[1]; }));
 
     for (var rowNumber = 2; rowNumber <= 34; rowNumber++) {
@@ -140,5 +152,5 @@
     return true;
   }
 
-  root.ZysyrMonthlyDailyPerformance = { buildRows: buildRows, totals: totals, renderIntoSheet: renderIntoSheet, fields: fields.slice() };
+  root.ZysyrMonthlyDailyPerformance = { buildRows: buildRows, totals: totals, completeness: completeness, renderIntoSheet: renderIntoSheet, fields: fields.slice() };
 })(typeof window !== 'undefined' ? window : globalThis);

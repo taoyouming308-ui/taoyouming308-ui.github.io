@@ -8,6 +8,8 @@ const moduleSource = fs.readFileSync('operations-monthly-daily-performance.js', 
 
 assert.doesNotMatch(html, /id="monthly-daily-performance"/, 'daily performance must not appear as a separate panel above the original monthly sheet');
 assert.match(html, /ZysyrMonthlyDailyPerformance\.renderIntoSheet/, 'monthly render places the automatic table inside the original monthly sheet');
+assert.match(html, /id="monthly-daily-completeness"/, 'monthly view provides an accessible daily completeness status');
+assert.match(html, /completenessStatus:\$\('monthly-daily-completeness'\)/, 'monthly render updates the completeness status with the selected month');
 assert.match(moduleSource, /\['labor_performance', '劳动业绩', '日报“总计”'\]/, 'the finance mapping is visible and unambiguous');
 assert.match(moduleSource, /\['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'\]/, 'the eight columns occupy the original monthly sheet right-side block');
 assert.match(moduleSource, /function ensureDisplayColumns\(cells\)/, 'the display layer supplies the missing W column used by the production 22-column template');
@@ -43,5 +45,6 @@ assert.equal(totals.cash_performance, 2626);
 assert.equal(totals.card_amount, 300);
 assert.equal(totals.alipay, 2150);
 assert.equal(totals.wechat, 250);
+assert.deepEqual(JSON.parse(JSON.stringify(feature.completeness(rows))), { days: 31, confirmed: 2, withoutConfirmedReport: 29 });
 
 console.log('ZYSYR v526 monthly daily performance: production 22-column compatibility, confirmed-day projection, finance mapping, store scope and responsive full-month table passed');

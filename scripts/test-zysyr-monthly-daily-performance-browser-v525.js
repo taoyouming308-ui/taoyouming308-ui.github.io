@@ -72,6 +72,8 @@ async function verifyViewport(page, viewport) {
       };
       renderAll();
     });
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 2 \/ 31 天；另有 29 天尚无已入账日报/);
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /未显示不代表休息日或零收入/);
 
     const headers = await page.locator('#monthly-sheet .monthly-daily-embedded-head').allTextContents();
     assert.deepEqual(headers, ['日期', '劳动业绩', '现金业绩', '卡金', '团购', '支付宝', '微信', '抖音']);
@@ -93,6 +95,7 @@ async function verifyViewport(page, viewport) {
       };
       renderAll();
     });
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 1 \/ 31 天；另有 30 天尚无已入账日报/);
 
     for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await verifyViewport(page, viewport);
