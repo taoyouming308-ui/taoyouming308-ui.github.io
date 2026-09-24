@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-zysyr-api-read-timeout.js" },
     { "runtime": "node", "script": "test-operations-time.js" },
     { "runtime": "node", "script": "test-operations.js" },
     { "runtime": "node", "script": "test-zysyr-confirm-uncertain-result.js" },
