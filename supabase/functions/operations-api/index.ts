@@ -3,11 +3,19 @@ import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
+import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-recognition.mjs";
+import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
+import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
+import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-summary.mjs";
+import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
+import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const WORKER_SECRET = Deno.env.get("ZYSYR_WORKER_SECRET") || "";
-const SESSION_DAYS = 3650;
+// Legacy bridge sessions are deliberately short-lived. Existing sessions are
+// not revoked by this change; only newly issued bridge tokens use this TTL.
+const SESSION_DAYS = 30;
 const VOUCHER_BUCKET = "zysyr-vouchers";
 const MAX_VOUCHER_BYTES = 10 * 1024 * 1024;
 const REPORT_BUCKET = "zysyr-reports";
@@ -73,6 +81,53 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function hmacSha256(value: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(SERVICE_KEY),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function legacyLoginFingerprint(kind: "identity" | "client", value: string): Promise<string> {
+  // Domain-separate from operations-auth-migrate so the UI's compatibility
+  // login followed by Auth login does not consume the same attempt bucket twice.
+  return hmacSha256(`legacy-operations-${kind}:${value}`);
+}
+
+async function legacyLoginRateLimit(identityHash: string, clientHash: string, requestId: string): Promise<boolean> {
+  const response = await rest("rpc/zysyr_begin_auth_migration", {
+    method: "POST", body: JSON.stringify({
+      p_identity_hash: identityHash, p_client_hash: clientHash, p_request_id: requestId,
+    }),
+  });
+  if (!response.ok) throw new Error("登录安全校验暂不可用，请稍后重试");
+  const result = await response.json() as JsonRecord;
+  return result.allowed === true;
+}
+
+async function recordLegacyLoginResult(
+  identityHash: string, clientHash: string, requestId: string, success: boolean, reason: string,
+): Promise<void> {
+  const response = await rest("rpc/zysyr_record_auth_migration_result", {
+    method: "POST", body: JSON.stringify({
+      p_identity_hash: identityHash, p_client_hash: clientHash, p_request_id: requestId,
+      p_event_type: success ? "success" : "failure", p_reason_code: reason,
+    }),
+  });
+  if (!response.ok) throw new Error("登录安全记录暂不可用，请稍后重试");
+}
+
+async function constantTimeSecretMatch(supplied: string, expected: string): Promise<boolean> {
+  if (!supplied || !expected) return false;
+  const [left, right] = await Promise.all([sha256(supplied), sha256(expected)]);
+  let difference = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    difference |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  }
+  return difference === 0;
+}
+
 function exactArrayBuffer(value: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(value.byteLength);
   copy.set(value);
@@ -85,7 +140,7 @@ async function sha256Bytes(value: Uint8Array): Promise<string> {
 }
 
 function effectiveCellValue(cell: JsonRecord): number | null {
-  const raw = cell.manual_override ? cell.corrected_numeric : null;
+  const raw = cell.manual_override ? cell.corrected_numeric : cell.ocr_numeric;
   if (raw == null || raw === "") return null;
   const numeric = Number(raw);
   return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric * 100) / 100 : null;
@@ -114,13 +169,20 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
       .map((cell) => safeCellText(cell.row_label, 80)).filter((name) => name && name !== "小计")
       .forEach((name) => { if (!names.some((item) => normalizedName(item) === normalizedName(name))) names.push(name); });
     while (names.length < fallbackCount) names.push(`第${names.length + 1}行`);
-    return names.slice(0, fallbackCount);
+    return names.slice(0, 20);
   };
   const xiangli = /向里/.test(storeName);
   const stylistNames = sectionRows("stylist", 8), technicianNames = sectionRows("technician", xiangli ? 6 : 7);
   const productNames = sectionRows("product", 4);
-  const technicianTotalRow = xiangli ? 21 : 22;
-  const productStartRow = xiangli ? 23 : 24;
+  const stylistOverflow = Math.max(0, stylistNames.length - 8);
+  const defaultTechnicianRows = xiangli ? 6 : 7;
+  const technicianOverflow = Math.max(0, technicianNames.length - defaultTechnicianRows);
+  const stylistTotalRow = 12 + stylistOverflow;
+  const technicianStartRow = 15 + stylistOverflow;
+  const technicianTotalRow = technicianStartRow + technicianNames.length;
+  const productStartRow = (xiangli ? 23 : 24) + stylistOverflow + technicianOverflow;
+  const summaryRow = 30 + stylistOverflow + technicianOverflow;
+  const paymentRow = 33 + stylistOverflow + technicianOverflow;
   const seeds: DailyCellSeed[] = [];
   const add = (section: string, rowKey: string, rowLabel: string, columnCode: string, columnLabel: string,
     rowNumber: number, columnNumber: number, role: string) => {
@@ -137,12 +199,12 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
       add("stylist", `stylist_${rowIndex + 1}`, name, column[0], column[1], 3 + rowIndex, 21 + index, "staff_count"));
   });
   STYLIST_COLUMNS.forEach((column, index) => add("stylist", "stylist_category_total", "小计",
-    column[0], column[1], 12, 2 + index + (index > 13 ? 1 : 0), "category_total"));
-  add("stylist", "stylist_category_total", "小计", "subtotal", "小计", 12, 20, "summary_value");
+    column[0], column[1], stylistTotalRow, 2 + index + (index > 13 ? 1 : 0), "category_total"));
+  add("stylist", "stylist_category_total", "小计", "subtotal", "小计", stylistTotalRow, 20, "summary_value");
   technicianNames.forEach((name, rowIndex) => {
     TECHNICIAN_COLUMNS.forEach((column, columnIndex) => add("technician", `technician_${rowIndex + 1}`, name,
-      column[0], column[1], 15 + rowIndex, 2 + columnIndex + (columnIndex > 14 ? 1 : 0), "technician_value"));
-    add("technician", `technician_${rowIndex + 1}`, name, "subtotal", "小计", 15 + rowIndex, 21, "technician_total");
+      column[0], column[1], technicianStartRow + rowIndex, 2 + columnIndex + (columnIndex > 14 ? 1 : 0), "technician_value"));
+    add("technician", `technician_${rowIndex + 1}`, name, "subtotal", "小计", technicianStartRow + rowIndex, 21, "technician_total");
   });
   TECHNICIAN_COLUMNS.forEach((column, index) => add("technician", "technician_category_total", "小计",
     column[0], column[1], technicianTotalRow, 2 + index + (index > 14 ? 1 : 0), "technician_category_total"));
@@ -153,24 +215,44 @@ function dailySheetSeeds(extraction: JsonRecord, storeName = ""): DailyCellSeed[
   productNames.forEach((name, rowIndex) => productColumns.forEach((column, columnIndex) =>
     add("product", `product_${rowIndex + 1}`, name, column[0], column[1], productStartRow + rowIndex,
       1 + columnIndex, column[0] === "retail_subtotal" || column[0] === "subtotal" ? "product_total" : "product_value")));
-  SUMMARY_COLUMNS.forEach((column, index) => add("summary", "summary", "汇总", column[0], column[1], 30, 1 + index,
+  SUMMARY_COLUMNS.forEach((column, index) => add("summary", "summary", "汇总", column[0], column[1], summaryRow, 1 + index,
     column[0] === "actual_total" ? "summary_actual" : column[0] === "grand_total" ? "summary_grand" : "summary_value"));
-  PAYMENT_COLUMNS.forEach((column, index) => add("payment", "payment", "支付", column[0], column[1], 33, 1 + index,
+  PAYMENT_COLUMNS.forEach((column, index) => add("payment", "payment", "支付", column[0], column[1], paymentRow, 1 + index,
     column[0] === "cash_flow" ? "payment_cashflow" : column[0] === "card_consumption" ? "payment_card_consumption"
       : column[0] === "total" ? "payment_total" : "payment_method"));
   return seeds;
 }
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-  });
+  try {
+    return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+      },
+    });
+  } catch {
+    // Never return fetch's URL (which can contain hundreds of record IDs) to the UI.
+    // Do not retry writes automatically: a lost response does not mean no write occurred.
+    throw new Error("财务数据连接暂时失败，请刷新后重试；如刚保存，请先核对保存结果");
+  }
+}
+
+function publicRequestError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "请求失败";
+  if (message.length > 400 || /https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message)) {
+    return "财务数据连接暂时失败，请刷新后重试；如刚保存，请先核对保存结果";
+  }
+  return message || "请求失败";
+}
+
+function monthlyTraceRevisionsPath(companyId: string, storeId: string, reportId: string): string {
+  // Filter by the existing FK, not an IN list growing with every empty amount slot.
+  // The URL stays bounded regardless of how many cells the original sheet contains.
+  return `zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count,cell:zysyr_report_cells!inner(report_id)&company_id=eq.${companyId}&store_id=eq.${storeId}&cell.report_id=eq.${reportId}&order=revision.desc`;
 }
 
 async function restRows(path: string): Promise<JsonRecord[]> {
@@ -243,7 +325,10 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
     method: "POST",
     headers: { apikey: SERVICE_KEY, Authorization: authorization, "Content-Type": "application/json" },
   });
-  if (!response.ok) throw new Error("Supabase Auth 登录已失效，请重新登录");
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) throw new Error("Supabase Auth 登录已失效，请重新登录");
+    throw new Error("认证服务暂时不可用，请稍后自动重试");
+  }
   const scope = await response.json() as JsonRecord;
   if (cleanText(scope.auth_boundary, 80) !== "supabase_auth_rls") throw new Error("Supabase Auth 权限范围无效");
 
@@ -348,6 +433,7 @@ function canReviewVouchers(session: JsonRecord): boolean {
 }
 
 function hasAuthCapability(session: JsonRecord, capability: string): boolean {
+  if (session.staff_report_readonly === true) return STAFF_REPORT_CAPABILITIES.includes(capability);
   return Boolean(cleanText(session.auth_account_id, 40))
     && Array.isArray(session.auth_capabilities)
     && (session.auth_capabilities as unknown[]).some((item) => cleanText(item, 100) === capability);
@@ -513,22 +599,42 @@ async function shareholderRegistrationReview(payload: JsonRecord, session: JsonR
   return { reviewed: true, decision: "approved", saved: rpc };
 }
 
-async function login(payload: JsonRecord): Promise<JsonRecord> {
+async function login(payload: JsonRecord, request: Request): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
   if (!username || !password) throw new Error("请输入账号和密码");
+  const clientAddress = cleanText(request.headers.get("cf-connecting-ip"), 100)
+    || cleanText(request.headers.get("x-forwarded-for"), 500).split(",")[0]?.trim()
+    || "unknown";
+  const requestId = crypto.randomUUID();
+  const [identityHash, clientHash] = await Promise.all([
+    legacyLoginFingerprint("identity", username), legacyLoginFingerprint("client", clientAddress),
+  ]);
+  if (!await legacyLoginRateLimit(identityHash, clientHash, requestId)) {
+    throw new Error("尝试次数过多，请15分钟后再试");
+  }
+
+  let staff: JsonRecord | undefined;
+  let resolvedRole = "";
+  let failureReason = "invalid_credentials";
   const rows = await restRows(
     `staff?select=username,password_hash,role,position,store,active,employment_status&username=eq.${encodeURIComponent(username)}&limit=1`,
   );
-  const staff = rows[0];
+  staff = rows[0];
   const hashed = await sha256(password);
   const stored = cleanText(staff?.password_hash, 200);
   if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active" ||
       !stored || (stored !== hashed && stored !== `sha256:${hashed}` && stored !== password)) {
+    await recordLegacyLoginResult(identityHash, clientHash, requestId, false, failureReason);
     throw new Error("账号或密码错误");
   }
-  const operations_role = operationsRole(staff);
-  if (operations_role !== "shareholder" && !cleanText(staff.store, 100)) throw new Error("该账号尚未绑定门店");
+  resolvedRole = operationsRole(staff);
+  if (resolvedRole !== "shareholder" && !cleanText(staff.store, 100)) {
+    failureReason = "account_scope_missing";
+    await recordLegacyLoginResult(identityHash, clientHash, requestId, false, failureReason);
+    throw new Error("该账号尚未绑定门店");
+  }
+  await recordLegacyLoginResult(identityHash, clientHash, requestId, true, "legacy_credentials_verified");
 
   rest(`zysyr_operations_sessions?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`, {
     method: "DELETE", headers: { Prefer: "return=minimal" },
@@ -544,7 +650,7 @@ async function login(payload: JsonRecord): Promise<JsonRecord> {
     }),
   });
   if (!response.ok) throw new Error(`登录会话创建失败 (${response.status})`);
-  const session = { ...staff, operations_role, expires_at: expiresAt };
+  const session = { ...staff, operations_role: resolvedRole, expires_at: expiresAt };
   return { session_token: token, expires_at: expiresAt, user: await sessionUser(session) };
 }
 
@@ -559,7 +665,19 @@ async function logout(payload: JsonRecord): Promise<JsonRecord> {
 }
 
 async function requireSession(payload: JsonRecord, request: Request): Promise<JsonRecord> {
-  const authenticated = await authSession(request);
+  // Explicit separate route; never borrow or downgrade the finance Auth session.
+  if (Object.prototype.hasOwnProperty.call(payload, "employee_session_token")) {
+    return staffReportSession(payload, restRows, sha256);
+  }
+  let authenticated: JsonRecord | null = null;
+  try {
+    authenticated = await authSession(request);
+  } catch (error) {
+    // A temporary Auth outage must not destroy a still-valid legacy transition
+    // session. Confirmed invalid/revoked JWTs are never allowed to fall back.
+    if ((error as Error).message !== "认证服务暂时不可用，请稍后自动重试"
+      || !cleanText(payload.session_token, 200)) throw error;
+  }
   if (authenticated) return authenticated;
   const token = cleanText(payload.session_token, 200);
   if (!token) throw new Error("请重新登录");
@@ -841,6 +959,11 @@ function historyEvidenceWithScope(data: JsonRecord): JsonRecord[] {
     const selected = exact[0] || matching[0] || {};
     return {
       ...item,
+      trace_links: matching.map((link) => ({
+        import_row_id: cleanText(link.import_row_id, 40),
+        source_locator: cleanText(link.source_locator, 160),
+        link_level: cleanText(link.link_level, 30),
+      })),
       trace_link_level: cleanText(selected.link_level, 30) || "unlinked",
       trace_source_locator: exactLocators[0] || cleanText(selected.source_locator, 160) || null,
       trace_source_locators: exactLocators,
@@ -855,10 +978,18 @@ const MONTHLY_EVIDENCE_POLICIES = new Set(["voucher_required", "source_report", 
 function monthlyItemCategory(cell: JsonRecord): string {
   const label = cleanText(cell.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/");
   if (/编号|序号|员工号/.test(label)) return "fixed";
+  // True summary rows start with their summary label. A right-side detail may
+  // legitimately end in "/ 合计" because that is the column header.
   if (/^(小计|合计|总计|盈亏)(\/|$)/.test(label)) return "total";
   // The original sheet's entire 主营 block is income, including product/dorm entries.
   if (/^主营|美发收入|营业收入|产品收入|其他收入|总收入/.test(label)) return "income";
   if (/^技术人员|^后勤|^发型师\/|^人工\/|工资|底薪|提成|饭补|薪酬/.test(label)) return "salary";
+  // C31 is only the left-side summary. Its evidence belongs to the right-side
+  // 产品进货 detail rows, so never treat this summary as one expense voucher.
+  if (/^产品成本\/产品进货(?:\/|$)/.test(label)) return "purchase_summary";
+  // The left-side 备用金 amount is a summary/navigation cell. Individual
+  // records and their vouchers live in the current month's petty-cash ledger.
+  if (/(^|\/)备用金$/.test(label)) return "petty_cash_summary";
   if (/房租|物业|广告|空调|水费|电费|煤气|电话|宽带|采购|进货|产品成本|产品消耗|零售产品成本|市场|备用金|保险|税|手续费|宿舍|培训|维修|聚餐|杂项|支出|费用|鲜花/.test(label)) return "expense";
   if (cell.cell_kind === "formula" || /小计|合计|盈亏/.test(label)) return "total";
   return "source";
@@ -886,7 +1017,7 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
     if (!address) continue;
     const override = overrides.get(address);
     const category = monthlyItemCategory(cell);
-    output[address] = ["income", "salary", "total", "fixed"].includes(category) ? "none"
+    output[address] = ["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"].includes(category) ? "none"
       : override && MONTHLY_EVIDENCE_POLICIES.has(override) ? override : defaultMonthlyEvidencePolicy(cell);
   }
   return output;
@@ -894,7 +1025,7 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
 
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string): Promise<JsonRecord | null> {
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month));
+    await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month));
   if (!entries.length) return null;
   const batchId = cleanText(entries[0].import_batch_id, 40);
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
@@ -929,6 +1060,7 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     cell.cell_kind = cleanText(current.cell_kind, 30) || cell.cell_kind;
     cell.label = cleanText(current.label, 300) || cell.label;
     cell.item_category = monthlyItemCategory(cell);
+    if (current.daily_rollup) { cell.daily_rollup = current.daily_rollup; cell.original_report_amount = current.original_report_amount; }
     const rowIndex = Number(cell.row_number) - 1, columnIndex = Number(cell.column_number) - 1;
     if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
   }
@@ -962,7 +1094,8 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     report_type: "monthly_profit_loss", report_date: `${month}-01`, template_code: "history_original_v1",
     template_version: 1, version: Math.max(1, ...entries.map((row) => Number(row.version || 1))), status: "posted",
     original_filename: batch.source_filename, mime_type: batch.source_mime_type, size_bytes: batch.source_size_bytes,
-    sha256: batch.source_sha256, display_data: display, uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
+    sha256: batch.source_sha256, bucket_id: batch.source_bucket_id, object_path: batch.source_object_path,
+    display_data: display, uploaded_by_user_id: batch.confirmed_by_user_id || batch.created_by_user_id,
     uploaded_at: batch.confirmed_at || batch.created_at, uploaded_by: uploader, vouchers: evidenceData.evidence,
     history_entries: entries, history_evidence: evidenceData.evidence, history_evidence_links: evidenceData.links,
     cell_trace_status: traceStatus, cell_trace_source_count: sourceCount, trace_summary: summary,
@@ -982,7 +1115,9 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
   const voucherPath = `zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&record_type=eq.report&order=uploaded_at.desc&limit=1000`;
-  const [rawReports, vouchers] = await Promise.all([restRowsAll(reportPath), restRowsAll(voucherPath)]);
+  const [rawReports, vouchers, monthlyDailyPerformance] = await Promise.all([
+    restRowsAll(reportPath), restRowsAll(voucherPath), confirmedDailyPerformance(companyId, storeId, month),
+  ]);
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
   const voucherMap = new Map<string, JsonRecord[]>();
@@ -1010,26 +1145,29 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   let monthlyEvidenceRuleRows: JsonRecord[] = [];
   let monthlyEvidencePolicies: Record<string, string> = {};
   let monthlyCellRevisions: JsonRecord[] = [];
+  let monthlyTextRevisions: JsonRecord[] = [];
   let monthlyPeriodLocked = false;
   if (monthlyReport) {
     const reportId = cleanText(monthlyReport.id, 40);
-    const cells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+    const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
     monthlyEvidenceRuleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120));
     monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
-    const [revisions, amountRevisions, locks] = await Promise.all([
-      cellFilter === "()" ? [] : restRowsAll(`zysyr_report_cell_trace_revisions?select=target_cell_id,revision,status,source_count&company_id=eq.${companyId}&target_cell_id=in.${cellFilter}&order=revision.desc`, 5000),
+    const [revisions, amountRevisions, textRevisions, locks] = await Promise.all([
+      cellFilter === "()" ? [] : restRowsAll(monthlyTraceRevisionsPath(companyId, storeId, reportId), 5000),
       cellFilter === "()" ? [] : restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=source_cell_id.asc,revision.desc`, 5000),
+      restRowsAll(`zysyr_monthly_text_revisions?select=id,cell_address,cell_role,revision,base_text,before_text,after_text,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=cell_address.asc,revision.desc`, 5000),
       restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
     ]);
     const latestAmountRevisionByCell = latestMonthlyCellRevisionMap(amountRevisions);
     monthlyCellRevisions = Array.from(latestAmountRevisionByCell.values());
+    monthlyTextRevisions = textRevisions;
     monthlyPeriodLocked = locks.some((lock) => cleanText(lock.scope_type, 20) === "company"
       || cleanText(lock.store_id, 40) === storeId);
     monthlyReport = {
       ...monthlyReport,
       display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
-        await monthlyIncomeAdjustments(companyId, storeId, month)),
+        await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month), textRevisions),
     };
     const latest = new Map<string, string>();
     const latestSourceCount = new Map<string, number>();
@@ -1114,9 +1252,11 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthly_evidence_rules: monthlyEvidenceRuleRows,
     monthly_evidence_policy: monthlyEvidencePolicies,
     monthly_cell_revisions: monthlyCellRevisions,
+    monthly_text_revisions: monthlyTextRevisions,
     monthly_period_locked: monthlyPeriodLocked,
     monthly_unlock_requests: unlockRequests,
     acknowledgements: acknowledgementsWithUsers,
+    monthly_daily_performance: monthlyDailyPerformance,
   };
 }
 
@@ -1136,9 +1276,23 @@ async function reportAcknowledge(payload: JsonRecord, session: JsonRecord): Prom
 
 
 // Derived values are computed on read; the immutable source and revisions stay intact.
-function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord[] {
-  const adjustmentMap = new Map<string, number>();
-  for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
+function monthlyAdjustmentForSource(sourceId: unknown, adjustments: JsonRecord[], daily: JsonRecord | null): JsonRecord {
+  const rows = adjustments.filter((row) => String(row.source_id) === String(sourceId));
+  const latest = rows[0] || null;
+  const firstConfirmed = Date.parse(String(daily?.first_confirmed_at || ""));
+  if (Number(daily?.confirmed_days || 0) > 0 && rows.length && !Number.isFinite(firstConfirmed)) {
+    throw new Error("已确认日报缺少首次入账时间，暂停月报调整以防旧金额重复统计");
+  }
+  // Pre-daily monthly edits were superseded when the first daily report posted.
+  // Keep their offset as a baseline; never reactivate it with a later edit.
+  const legacy = Number(daily?.confirmed_days || 0) > 0 && Number.isFinite(firstConfirmed)
+    ? rows.find((row) => Date.parse(String(row.created_at || "")) < firstConfirmed) || null : null;
+  const legacyDelta = Number(legacy?.adjustment_delta || 0);
+  return { latest, legacy_delta: legacyDelta,
+    applied_delta: Number(latest?.adjustment_delta || 0) - legacyDelta };
+}
+
+function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: JsonRecord[] = [], daily: JsonRecord | null = null): JsonRecord[] {
   const rows = entries.map((entry) => ({ ...entry, current_payload: { ...(entry.current_payload as JsonRecord) } }));
   const byAddress = new Map(rows.map((row) => [cleanText(row.current_payload.cell_address, 20).toUpperCase(), row]));
   const values = new Map<string, number>();
@@ -1150,11 +1304,18 @@ function effectiveHistoryMonthlyEntries(entries: JsonRecord[], adjustments: Json
     const row = byAddress.get(address);
     if (!row) return 0; // Empty Excel cells contribute zero.
     const item = row.current_payload;
-    const delta = adjustmentMap.get(String(row.id)) || 0;
+    const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(item);
+    const delta = monthlyAdjustmentForSource(row.id, adjustments, dailyIncome ? daily : null).applied_delta;
     function finish(base: number): number {
       const value = Number((base + delta).toFixed(4));
       if (delta) changed.add(address);
       item.amount = value; values.set(address, value); return value;
+    }
+    if (dailyIncome) {
+      changed.add(address);
+      item.original_report_amount = item.amount;
+      item.daily_rollup = daily;
+      return finish(Number(daily.amount));
     }
     if (item.cell_kind !== "formula") {
       const value = Number(item.amount);
@@ -1243,7 +1404,14 @@ function safeFormulaValue(formula: string, precedents: unknown[], values: Map<st
   }
 }
 
-function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revisions: JsonRecord[], adjustments: JsonRecord[] = []): JsonRecord {
+function effectiveMonthlyDisplay(
+  displayData: unknown,
+  cells: JsonRecord[],
+  revisions: JsonRecord[],
+  adjustments: JsonRecord[] = [],
+  daily: JsonRecord | null = null,
+  textRevisions: JsonRecord[] = [],
+): JsonRecord {
   const adjustmentMap = new Map<string, number>();
   for (const row of adjustments) if (!adjustmentMap.has(String(row.source_id))) adjustmentMap.set(String(row.source_id), Number(row.adjustment_delta));
   const source = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
@@ -1259,13 +1427,18 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
     cellByAddress.set(address, cell);
     const original = Number(cell.numeric_value);
     const revision = latest.get(cleanText(cell.id, 40));
-    const effective = revision ? Number(revision.after_amount) : original;
-    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4)));
+    const dailyIncome = Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell);
+    const effective = dailyIncome ? Number(daily?.amount) : revision ? Number(revision.after_amount) : original;
+    const adjustment = dailyIncome
+      ? monthlyAdjustmentForSource(cell.id, adjustments, daily).applied_delta
+      : adjustmentMap.get(String(cell.id)) || 0;
+    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + adjustment).toFixed(4)));
   }
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false;
     for (const cell of cells) {
       if (cleanText(cell.cell_kind, 20) !== "formula") continue;
+      if (Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell)) continue;
       const address = cleanText(cell.cell_address, 20).toUpperCase();
       const base = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
       const calculated = base === null ? null : Number((base + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4));
@@ -1279,24 +1452,84 @@ function effectiveMonthlyDisplay(displayData: unknown, cells: JsonRecord[], revi
   for (const [address, cell] of cellByAddress.entries()) {
     const numeric = numericByAddress.get(address);
     const revision = latest.get(cleanText(cell.id, 40)) || null;
+    const hasAdjustment = adjustmentMap.has(cleanText(cell.id, 40));
+    const untouchedBlank = cleanText(cell.cell_kind, 20) === "input"
+      && cleanText(cell.display_value, 100) === "" && Number(cell.numeric_value) === 0
+      && !revision && !hasAdjustment && !(Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell));
     const row = Number(cell.row_number) - 1;
     const column = Number(cell.column_number) - 1;
-    if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = numeric;
-    const displayCell = displayCells.find((item) => cleanText(item.cell_address, 20).toUpperCase() === address);
-    if (displayCell && numeric !== undefined) {
+    if (numeric !== undefined && Array.isArray(values[row])) values[row][column] = untouchedBlank ? "" : numeric;
+    let displayCell = displayCells.find((item) => cleanText(item.cell_address, 20).toUpperCase() === address);
+    if (!displayCell) {
+      displayCell = {
+        sheet_name: cleanText(cell.sheet_name, 120) || cleanText(display.sheet_name, 120) || "模版",
+        cell_address: address, row_number: cell.row_number, column_number: cell.column_number,
+        cell_kind: cell.cell_kind, display_value: untouchedBlank ? "" : String(numeric ?? ""),
+        numeric_value: numeric ?? cell.numeric_value, formula: cell.formula || null,
+        precedent_addresses: Array.isArray(cell.precedent_addresses) ? cell.precedent_addresses : [],
+        label: cell.label, editable_blank: untouchedBlank,
+      };
+      displayCells.push(displayCell);
+    }
+    if (numeric !== undefined) {
       displayCell.numeric_value = numeric;
-      displayCell.display_value = String(numeric);
+      displayCell.display_value = untouchedBlank ? "" : String(numeric);
+      displayCell.editable_blank = untouchedBlank;
       displayCell.item_category = monthlyItemCategory(cell);
+      if (Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell)) { displayCell.daily_rollup = daily; displayCell.original_report_amount = cell.numeric_value; }
     }
     effectiveCells[address] = {
       source_cell_id: cell.id, original_amount: cell.numeric_value,
       effective_amount: numeric ?? cell.numeric_value, revision,
     };
   }
+  const latestText = new Map<string, JsonRecord>();
+  for (const revision of textRevisions) {
+    const address = cleanText(revision.cell_address, 20).toUpperCase();
+    const prior = latestText.get(address);
+    if (address && (!prior || Number(revision.revision || 0) > Number(prior.revision || 0))) latestText.set(address, revision);
+  }
+  const editableTextCells = monthlyEditableNameCells(source).map((target) => {
+    const address = cleanText(target.cell_address, 20).toUpperCase();
+    const revision = latestText.get(address) || null;
+    const currentText = revision ? cleanText(revision.after_text, 80) : cleanText(target.original_text, 80);
+    const row = Number(target.row_number) - 1;
+    const column = Number(target.column_number) - 1;
+    if (Array.isArray(values[row])) values[row][column] = currentText;
+    return { ...target, current_text: currentText, revision };
+  });
+  // Labels shown in amount trace panels follow the effective names without
+  // changing the immutable labels imported from the original workbook.
+  for (const displayCell of displayCells) {
+    const row = Number(displayCell.row_number);
+    const column = Number(displayCell.column_number);
+    if (row > 0 && column > 0) displayCell.label = reportCellLabel(values as string[][], row, column);
+  }
   display.values = values;
   display.cells = displayCells;
   display.effective_cells = effectiveCells;
+  display.editable_text_cells = editableTextCells;
   return display;
+}
+
+async function prepareMonthlyEditableSlots(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备月报金额调整权限的财务账号可以开始编辑");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  const reportId = uuidValue(payload.report_id, "月报编号无效") as string;
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_date,report_type,status,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&limit=1`);
+  const report = reports[0];
+  if (!report) throw new Error("当月月报不存在、已被替代或不属于当前门店");
+  const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc&limit=5000`, 5000);
+  const missing = monthlyEditableBlankCells(report.display_data, cells);
+  if (!missing.length) return { prepared: 0, report_id: reportId };
+  const saved = await financeRpcSaved("rpc/zysyr_prepare_monthly_editable_slots", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_report_id: reportId, p_cells: missing,
+  });
+  return { ...saved, report_id: reportId };
 }
 
 async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -1327,6 +1560,63 @@ async function monthlyCellSave(payload: JsonRecord, session: JsonRecord): Promis
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
     p_store_id: storeId, p_report_id: reportId, p_changes: changes,
     p_voucher_ids: uuidArray(Array.isArray(payload.voucher_ids) ? payload.voucher_ids : [], 20), p_reason: reason,
+  });
+  return { saved, report_id: reportId };
+}
+
+async function monthlyTextSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备已确认财务调整权限的财务账号可以修改月报名称");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const reportId = uuidValue(payload.report_id, "月报编号无效") as string;
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写本次名称修改原因");
+  const requested = Array.isArray(payload.cells) ? payload.cells as JsonRecord[] : [];
+  if (!requested.length || requested.length > 50) throw new Error("每次请选择 1 至 50 个有变化的名称保存");
+  const reports = await restRows(`zysyr_report_uploads?select=id,report_date,report_type,status,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&limit=1`);
+  const report = reports[0];
+  if (!report) throw new Error("当月月报不存在、已被替代或不属于当前门店");
+  const targets = new Map(monthlyEditableNameCells(report.display_data).map((target) => [cleanText(target.cell_address, 20).toUpperCase(), target]));
+  const revisions = await restRowsAll(`zysyr_monthly_text_revisions?select=cell_address,cell_role,revision,base_text,before_text,after_text&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=cell_address.asc,revision.desc&limit=5000`, 5000);
+  const latest = new Map<string, JsonRecord>();
+  for (const revision of revisions) {
+    const address = cleanText(revision.cell_address, 20).toUpperCase();
+    if (!latest.has(address)) latest.set(address, revision);
+  }
+  const seen = new Set<string>();
+  const changes = requested.map((change) => {
+    const address = cleanText(change.address ?? change.cell_address, 20).toUpperCase();
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address) || seen.has(address)) throw new Error(`月报名称位置 ${address || "未知"} 无效或重复`);
+    seen.add(address);
+    const target = targets.get(address);
+    if (!target) throw new Error(`月报 ${address} 不是可编辑名称格；栏目标题、编号和汇总名称不能修改`);
+    const rawAfter = String(change.value ?? change.after_text ?? "").trim();
+    if (rawAfter.length > 80 || /[\u0000-\u001f\u007f]/.test(rawAfter)) throw new Error(`月报 ${address} 的名称格式无效，最多 80 个字符且不能换行`);
+    const prior = latest.get(address);
+    const current = prior ? cleanText(prior.after_text, 80) : cleanText(target.original_text, 80);
+    const expectedBefore = String(change.expected_before ?? "").trim();
+    const expectedRevision = Number(change.expected_revision || 0);
+    if (expectedBefore !== current || expectedRevision !== Number(prior?.revision || 0)) throw new Error(`月报 ${address} 已被其他人修改，请刷新后重试`);
+    if (rawAfter === current) throw new Error(`月报 ${address} 的名称没有变化`);
+    return {
+      cell_address: address,
+      cell_role: cleanText(target.cell_role, 30),
+      base_text: cleanText(target.original_text, 80),
+      before_text: current,
+      after_text: rawAfter,
+      expected_revision: expectedRevision,
+    };
+  });
+  const saved = await financeRpcSaved("rpc/zysyr_revise_monthly_text_cells", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: companyId,
+    p_store_id: storeId,
+    p_report_id: reportId,
+    p_changes: changes,
+    p_reason: reason,
   });
   return { saved, report_id: reportId };
 }
@@ -1367,61 +1657,61 @@ async function monthlySummary(payload: JsonRecord, session: JsonRecord): Promise
   const store = await selectedStoreInfo(session, payload);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
-  const startMonth = cleanText(payload.start_month, 7);
-  const endMonth = cleanText(payload.end_month, 7);
-  if (!/^\d{4}-\d{2}$/.test(startMonth) || !/^\d{4}-\d{2}$/.test(endMonth) || startMonth > endMonth) throw new Error("月份范围无效");
-  const months: string[] = [];
-  const cursor = new Date(`${startMonth}-01T00:00:00Z`);
-  const endCursor = new Date(`${endMonth}-01T00:00:00Z`);
-  while (cursor <= endCursor) {
-    months.push(cursor.toISOString().slice(0, 7));
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
+  const startMonth = cleanText(payload.start_month, 20);
+  const endMonth = cleanText(payload.end_month, 20);
+  const months: string[] = monthlySummaryMonths(startMonth, endMonth);
   const endDate = new Date(`${endMonth}-01T00:00:00Z`);
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
   const endStr = endDate.toISOString().slice(0, 10);
-  const rows = await restRowsAll(`zysyr_report_uploads?select=id,report_date,version,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=gte.${startMonth}-01&report_date=lt.${endStr}&order=report_date.desc,version.desc&limit=5000`, 5000);
+  const scope = `company_id=eq.${companyId}&store_id=eq.${storeId}`;
+  // Same source precedence as overview: latest uploaded report, otherwise posted
+  // historical ledger. Read ledger amounts directly; do not reparse 12 workbooks.
+  const [rows, history, adjustments] = await Promise.all([
+    restRowsAll(`zysyr_report_uploads?select=id,report_date,version,display_data&${scope}&report_type=eq.monthly_profit_loss&report_date=gte.${startMonth}-01&report_date=lt.${endStr}&order=report_date.desc,version.desc&limit=10000`, 10000),
+    restRowsAll(`zysyr_history_ledger_entries?select=id,import_batch_id,source_sheet,source_locator,period_month,current_payload,posted_payload&${scope}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=gte.${startMonth}-01&period_month=lt.${endStr}&order=period_month.asc,source_locator.asc&limit=10000`, 10000),
+    restRowsAll(`zysyr_monthly_income_adjustments?select=source_id,period_month,adjustment_delta,revision,created_at&${scope}&period_month=gte.${startMonth}-01&period_month=lt.${endStr}&order=revision.desc,created_at.desc&limit=10000`, 10000),
+  ]);
   const latest = new Map<string, JsonRecord>();
   for (const row of rows) {
     const month = cleanText(row.report_date, 10).slice(0, 7);
-    if (!latest.has(month)) latest.set(month, row);
+    if (cleanText(row.report_date, 10) === `${month}-01` && !latest.has(month)) latest.set(month, row);
   }
-  const ordered = months.map((month) => latest.get(month)).filter(Boolean);
-  if (!ordered.length) return { start_month: startMonth, end_month: endMonth, months: [], display_data: null };
+  const ordered = months.map((month) => latest.get(month)).filter(Boolean) as JsonRecord[];
   const reportIds = ordered.map((row) => row.id);
   const reportFilter = uuidIn(reportIds);
-  const [allCells, allRevisions] = await Promise.all([
-    restRowsAll(`zysyr_report_cells?select=id,report_id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
+  const [allCells, allRevisions, allTextRevisions] = reportIds.length ? await Promise.all([
+    restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&limit=10000`, 10000),
     restRowsAll(`zysyr_monthly_cell_revisions?select=id,report_id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=source_cell_id.asc,revision.desc&limit=10000`, 10000),
-  ]);
-  const effectiveReports = await Promise.all(ordered.map(async (row) => ({ ...row,
-    display_data: effectiveMonthlyDisplay(row.display_data,
-      allCells.filter((cell) => cleanText(cell.report_id, 40) === cleanText(row.id, 40)),
-      allRevisions.filter((revision) => cleanText(revision.report_id, 40) === cleanText(row.id, 40)),
-      await monthlyIncomeAdjustments(companyId, storeId, cleanText(row.report_date, 10).slice(0, 7))),
-  })));
-  const baseDisplay = effectiveReports[0].display_data && typeof effectiveReports[0].display_data === "object" ? effectiveReports[0].display_data as JsonRecord : {};
-  const baseValues = Array.isArray(baseDisplay.values) ? (baseDisplay.values as unknown[]).map((row) => Array.isArray(row) ? row.slice() : []) : [];
-  for (let i = 1; i < effectiveReports.length; i += 1) {
-    const display = effectiveReports[i].display_data && typeof effectiveReports[i].display_data === "object" ? effectiveReports[i].display_data as JsonRecord : {};
-    const values = Array.isArray(display.values) ? display.values as unknown[] : [];
-    for (let r = 0; r < baseValues.length; r += 1) {
-      const rowArr = baseValues[r] as unknown[];
-      for (let c = 0; c < rowArr.length; c += 1) {
-        const cur = rowArr[c];
-        const other = Array.isArray(values[r]) ? (values[r] as unknown[])[c] : null;
-        const nCur = Number(cur);
-        const nOther = Number(other);
-        if (cur !== null && cur !== "" && other !== null && other !== "" && !Number.isNaN(nCur) && !Number.isNaN(nOther)) {
-          rowArr[c] = nCur + nOther;
-        }
+    restRowsAll(`zysyr_monthly_text_revisions?select=id,report_id,cell_address,cell_role,revision,base_text,before_text,after_text,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=in.${reportFilter}&order=cell_address.asc,revision.desc&limit=10000`, 10000),
+  ]) : [[], [], []];
+  const effectiveReports: JsonRecord[] = [];
+  // Bound concurrency and fail closed on any read error; never present partial
+  // success as a complete financial total.
+  for (let offset = 0; offset < months.length; offset += 3) {
+    const resolved = await Promise.all(months.slice(offset, offset + 3).map(async (month) => {
+      const row = latest.get(month);
+      const historical = history.filter((entry) => cleanText(entry.period_month, 10) === `${month}-01`);
+      if (!row && !historical.length) return null;
+      const monthAdjustments = adjustments.filter((item) => cleanText(item.period_month, 10) === `${month}-01`);
+      const daily = await confirmedDailyRollup(companyId, storeId, month);
+      if (!row) {
+        const cells = effectiveHistoryMonthlyEntries(historical, monthAdjustments, daily).map((entry) => {
+          const current = entry.current_payload as JsonRecord;
+          return { ...current, numeric_value: current.amount, item_category: monthlyItemCategory(current) };
+        });
+        return { month, source: "posted_history", cells };
       }
-    }
+      const display = effectiveMonthlyDisplay(row.display_data,
+        allCells.filter((cell) => cell.report_id === row.id),
+        allRevisions.filter((revision) => revision.report_id === row.id), monthAdjustments, daily,
+        allTextRevisions.filter((revision) => revision.report_id === row.id));
+      return { month, source: "monthly_report", cells: display.cells || [] };
+    }));
+    effectiveReports.push(...resolved.filter(Boolean) as JsonRecord[]);
   }
   return {
     start_month: startMonth, end_month: endMonth,
-    months: effectiveReports.map((row) => cleanText(row.report_date, 10).slice(0, 7)),
-    display_data: { ...baseDisplay, values: baseValues },
+    ...buildMonthlySummary(months, effectiveReports),
   };
 }
 
@@ -1519,7 +1809,12 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
     sourceCellIds.length ? restRowsAll(`zysyr_report_cells?select=id,report_id,sheet_name,cell_address,row_number,column_number,display_value,numeric_value,label&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(sourceCellIds)}&limit=10000`, 10000) : [],
     confirmerIds.length ? restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(confirmerIds)}&limit=5000`, 5000) : [],
   ]);
-  const voucherIds = Array.from(new Set(voucherLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean)));
+  const pendingVoucherRequests = recordIds.length ? await restRowsAll(
+    `zysyr_business_voucher_link_requests?select=id,voucher_id,business_type,business_id,relation_type,status,reason,requested_at&company_id=eq.${companyId}&store_id=eq.${storeId}&business_type=eq.petty_cash_record&business_id=in.${uuidIn(recordIds)}&status=eq.pending&limit=10000`,
+    10000,
+  ) : [];
+  const voucherIds = Array.from(new Set([...voucherLinks, ...pendingVoucherRequests]
+    .map((link) => cleanText(link.voucher_id, 40)).filter(Boolean)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,document_type,audit_status,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=5000`, 5000) : [];
   const reviewRows = voucherIds.length ? await restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,corrected_fields&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${uuidIn(voucherIds)}&order=review_version.desc&limit=10000`, 10000) : [];
   const voucherNumberByVoucher = new Map<string, string>();
@@ -1555,11 +1850,19 @@ async function pettyCashReport(payload: JsonRecord, session: JsonRecord): Promis
   return {
     company_id: companyId, store_id: storeId, store: cleanText(store.name, 100), month,
     records, daily_reports: dailyReports, daily_lines: dailyLines, source_cells: sourceCells,
-    source_reports: sourceReports, voucher_links: voucherLinks, vouchers, users,
+    source_reports: sourceReports, voucher_links: voucherLinks,
+    pending_voucher_requests: pendingVoucherRequests, vouchers, users,
     history_records: historyRecords, history_evidence: historyEvidence.evidence,
     history_evidence_links: historyEvidence.links,
     opening_balance: openingBalance,
-    permissions: { read: true }, source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
+    permissions: {
+      read: true,
+      upload_voucher: canUploadVouchers(session),
+      upload_history_evidence: cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
+      batch_voucher: canUploadVouchers(session) && canReviewVouchers(session)
+        && cleanText(session.operations_role, 40) === "finance" && canWriteExpense(session),
+    },
+    source_boundary: "finance_confirmed_records_only", meiguanjia_used: false,
   };
 }
 
@@ -1802,10 +2105,227 @@ function reportCellLabel(values: string[][], row: number, column: number): strin
   return cleanText(parts.join(" / "), 300);
 }
 
+function monthlyEditableNameCells(displayData: unknown): JsonRecord[] {
+  const display = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const rows = Math.max(Number(display.rows || 0), values.length);
+  const columns = Math.max(Number(display.columns || 0), ...values.map((row) => Array.isArray(row) ? row.length : 0));
+  if (!rows || !columns) return [];
+  const valueAt = (row: number, column: number): string => cleanText(values[row - 1]?.[column - 1], 300);
+  const merges = Array.isArray(display.merges) ? display.merges as JsonRecord[] : [];
+  const targets = new Map<string, JsonRecord>();
+  const reserved = /^(收入|支出|收入类别|支出类别|类别|编号|序号|员工号|姓名|小计|合计|总计|盈亏|备注[:：]?)$/;
+  const add = (row: number, column: number, role: string): void => {
+    if (row < 1 || row > rows || column < 1 || column > columns) return;
+    const address = `${columnLetters(column)}${row}`;
+    const original = valueAt(row, column);
+    if (reserved.test(original)) return;
+    targets.set(address, {
+      cell_address: address,
+      row_number: row,
+      column_number: column,
+      cell_role: role,
+      original_text: original,
+    });
+  };
+
+  // Left-side monthly income and expense item names. Group headings and every
+  // subtotal/total row remain structural and therefore read-only.
+  let leftHeaderRow = 0;
+  let leftLabelColumn = 0;
+  let expenseHeaderRow = 0;
+  for (let row = 1; row <= Math.min(rows, 20); row += 1) {
+    for (let column = 1; column <= columns; column += 1) {
+      const heading = valueAt(row, column);
+      if (heading === "收入类别" && !leftHeaderRow) { leftHeaderRow = row; leftLabelColumn = column; }
+      if (heading === "支出类别" && (!leftLabelColumn || column === leftLabelColumn)) expenseHeaderRow = row;
+    }
+  }
+  if (leftHeaderRow && leftLabelColumn) {
+    let endRow = rows + 1;
+    for (let row = leftHeaderRow + 1; row <= rows; row += 1) {
+      if (/^备注[:：]?/.test(valueAt(row, 1))) { endRow = row; break; }
+    }
+    for (let row = leftHeaderRow + 1; row < endRow; row += 1) {
+      const group = valueAt(row, Math.max(1, leftLabelColumn - 1));
+      const label = valueAt(row, leftLabelColumn);
+      if (/^(小计|合计|总计|盈亏)$/.test(group) || /^(小计|合计|总计|盈亏|收入类别|支出类别)$/.test(label)) continue;
+      if (label || group) add(row, leftLabelColumn, expenseHeaderRow && row > expenseHeaderRow ? "expense_item" : "income_item");
+    }
+  }
+
+  // Staff names include the intentionally blank rows reserved for future
+  // employees. The employee number column and the subtotal rows stay fixed.
+  let staffHeaderRow = 0;
+  let idColumn = 0;
+  let nameColumn = 0;
+  for (let row = 1; row <= Math.min(rows, 12) && !staffHeaderRow; row += 1) {
+    const rowValues = Array.from({ length: columns }, (_item, index) => valueAt(row, index + 1));
+    const idIndex = rowValues.findIndex((value) => /^(编号|序号|员工号)$/.test(value));
+    const nameIndex = rowValues.findIndex((value) => value === "姓名");
+    if (idIndex >= 0 && nameIndex === idIndex + 1) {
+      staffHeaderRow = row;
+      idColumn = idIndex + 1;
+      nameColumn = nameIndex + 1;
+    }
+  }
+  if (staffHeaderRow && idColumn && nameColumn) {
+    const categoryColumn = idColumn - 1;
+    let stopRow = rows + 1;
+    for (let row = staffHeaderRow + 1; row <= rows; row += 1) {
+      const marker = [valueAt(row, categoryColumn), valueAt(row, idColumn), valueAt(row, nameColumn)].join("/");
+      if (/(^|\/)(合计)(\/|$)/.test(marker)) { stopRow = row; break; }
+    }
+    for (let row = staffHeaderRow + 1; row < stopRow; row += 1) {
+      const marker = [valueAt(row, categoryColumn), valueAt(row, idColumn), valueAt(row, nameColumn)].join("/");
+      if (/(^|\/)(小计|合计)(\/|$)/.test(marker)) continue;
+      add(row, nameColumn, "staff_name");
+    }
+  }
+
+  // Product, retail-cost, petty-cash and miscellaneous detail blocks use a
+  // vertically merged section heading. The adjacent top-left cell is the name
+  // field even when that field itself is horizontally merged in the workbook.
+  const detailGroups = new Set(["产品进货", "零售产品成本", "备用金", "杂项"]);
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1;
+    const endRow = Number(merge.end_row) + 1;
+    const startColumn = Number(merge.start_col) + 1;
+    const group = valueAt(startRow, startColumn).replace(/\s/g, "");
+    if (!detailGroups.has(group) || endRow <= startRow) continue;
+    for (let row = startRow; row <= endRow; row += 1) add(row, startColumn + 1, "detail_name");
+  }
+  return Array.from(targets.values());
+}
+
+function monthlyEditableBlankCells(displayData: unknown, existingCells: JsonRecord[] = []): JsonRecord[] {
+  const display = displayData && typeof displayData === "object" ? displayData as JsonRecord : {};
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  const rows = Math.max(Number(display.rows || 0), values.length);
+  const columns = Math.max(Number(display.columns || 0), ...values.map((row) => Array.isArray(row) ? row.length : 0));
+  const sheetName = cleanText(display.sheet_name, 120) || "模版";
+  if (!rows || !columns) return [];
+  const valueAt = (row: number, column: number): string => cleanText(values[row - 1]?.[column - 1], 300);
+  const merges = Array.isArray(display.merges) ? display.merges as JsonRecord[] : [];
+  const covered = new Set<string>();
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, endRow = Number(merge.end_row) + 1;
+    const startColumn = Number(merge.start_col) + 1, endColumn = Number(merge.end_col) + 1;
+    if (![startRow, endRow, startColumn, endColumn].every(Number.isInteger)) continue;
+    for (let row = startRow; row <= endRow; row += 1) {
+      for (let column = startColumn; column <= endColumn; column += 1) {
+        if (row !== startRow || column !== startColumn) covered.add(`${row}:${column}`);
+      }
+    }
+  }
+  const known = new Set(existingCells.map((cell) => cleanText(cell.cell_address, 20).toUpperCase()).filter(Boolean));
+  const blank: JsonRecord[] = [];
+  const add = (row: number, column: number, label: string): void => {
+    if (row < 1 || row > rows || column < 1 || column > columns || covered.has(`${row}:${column}`)) return;
+    const address = `${columnLetters(column)}${row}`;
+    if (known.has(address) || valueAt(row, column)) return;
+    known.add(address);
+    blank.push({
+      sheet_name: sheetName, cell_address: address, row_number: row, column_number: column,
+      cell_kind: "input", display_value: "", numeric_value: 0, formula: null,
+      precedent_addresses: [], label: cleanText(label || address, 300), editable_blank: true,
+    });
+  };
+
+  // The original monthly sheet has one left-side amount column immediately
+  // after 收入类别/支出类别. A visually blank amount remains a real input.
+  let leftHeaderRow = 0, leftLabelColumn = 0;
+  for (let row = 1; row <= Math.min(rows, 15) && !leftHeaderRow; row += 1) {
+    for (let column = 1; column < columns; column += 1) {
+      if (/^(收入类别|支出类别)$/.test(valueAt(row, column))) {
+        leftHeaderRow = row; leftLabelColumn = column; break;
+      }
+    }
+  }
+  if (leftHeaderRow && leftLabelColumn) {
+    for (let row = leftHeaderRow + 1; row <= rows; row += 1) {
+      const label = valueAt(row, leftLabelColumn);
+      if (!label || /^(收入类别|支出类别|备注[:：]?)$/.test(label)) continue;
+      add(row, leftLabelColumn + 1, label);
+    }
+  }
+
+  // Staff rows: 编号/姓名 are fixed, every column between 姓名 and 备注 is
+  // monetary. This includes reserved blank employee rows in the paper form.
+  let staffHeaderRow = 0, idColumn = 0, nameColumn = 0, noteColumn = 0;
+  for (let row = 1; row <= Math.min(rows, 12) && !staffHeaderRow; row += 1) {
+    const rowValues = Array.from({ length: columns }, (_item, index) => valueAt(row, index + 1));
+    const idIndex = rowValues.findIndex((value) => /^(编号|序号|员工号)$/.test(value));
+    const nameIndex = rowValues.findIndex((value) => value === "姓名");
+    if (idIndex >= 0 && nameIndex === idIndex + 1) {
+      staffHeaderRow = row; idColumn = idIndex + 1; nameColumn = nameIndex + 1;
+      const noteIndex = rowValues.findIndex((value, index) => index > nameIndex && /^(备注|说明)$/.test(value));
+      noteColumn = noteIndex >= 0 ? noteIndex + 1 : columns + 1;
+    }
+  }
+  if (staffHeaderRow && idColumn && nameColumn) {
+    const categoryColumn = idColumn - 1;
+    let stopRow = rows + 1;
+    for (let row = staffHeaderRow + 1; row <= rows; row += 1) {
+      if (valueAt(row, categoryColumn) === "合计") { stopRow = row; break; }
+    }
+    for (let row = staffHeaderRow + 1; row < stopRow; row += 1) {
+      const rowMarker = [valueAt(row, categoryColumn), valueAt(row, idColumn), valueAt(row, nameColumn)].join("/");
+      if (/(^|\/)(小计|合计)(\/|$)/.test(rowMarker)) continue;
+      const group = merges.find((merge) => Number(merge.start_col) + 1 === categoryColumn
+        && row >= Number(merge.start_row) + 1 && row <= Number(merge.end_row) + 1);
+      const groupLabel = group ? valueAt(Number(group.start_row) + 1, categoryColumn) : valueAt(row, categoryColumn);
+      const person = valueAt(row, nameColumn) || `第${row}行`;
+      for (let column = nameColumn + 1; column < noteColumn; column += 1) {
+        const heading = valueAt(staffHeaderRow, column) || columnLetters(column);
+        add(row, column, `${groupLabel || "人员"} / ${person} / ${heading}`);
+      }
+    }
+  }
+
+  // Four right-side detail blocks use vertically merged section headings and
+  // horizontally merged label/amount cells. Only the top-left amount cell is editable.
+  const detailOffsets: Record<string, number> = { "产品进货": 3, "零售产品成本": 3, "备用金": 4, "杂项": 4 };
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, endRow = Number(merge.end_row) + 1;
+    const startColumn = Number(merge.start_col) + 1;
+    const groupLabel = valueAt(startRow, startColumn);
+    const amountOffset = detailOffsets[groupLabel];
+    if (!amountOffset || endRow <= startRow) continue;
+    for (let row = startRow; row <= endRow; row += 1) {
+      const rowLabel = valueAt(row, startColumn + 1) || `第${row}行`;
+      add(row, startColumn + amountOffset, `${groupLabel} / ${rowLabel} / 金额`);
+    }
+  }
+  return blank;
+}
+
 function worksheetByCleanName(workbook: ExcelJS.Workbook, requestedName: string): ExcelJS.Worksheet | undefined {
   const target = cleanText(requestedName, 120).toLocaleLowerCase();
   if (!target) return undefined;
   return workbook.worksheets.find((item) => cleanText(item.name, 120).toLocaleLowerCase() === target);
+}
+
+async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
+  let workbookXml = "";
+  try {
+    const archive = await JSZip.loadAsync(exactArrayBuffer(bytes));
+    const entry = archive.file("xl/workbook.xml");
+    if (!entry) throw new Error("missing xl/workbook.xml");
+    workbookXml = await entry.async("string");
+  } catch {
+    throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
+  }
+  const sheets = Array.from(workbookXml.matchAll(/<sheet\b[^>]*\bname="([^"]+)"[^>]*>/g), (match) =>
+    match[1].replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"));
+  if (!sheets.length) throw new Error("Excel 文件中没有可读取的工作表");
+  if (sheets.length === 1) return cleanText(sheets[0], 120);
+  const activeMatch = workbookXml.match(/<workbookView\b[^>]*\bactiveTab="(\d+)"/);
+  const activeTab = activeMatch ? Number(activeMatch[1]) : 0;
+  if (!Number.isInteger(activeTab) || activeTab < 0 || activeTab >= sheets.length) {
+    throw new Error("文件包含多个工作表，但没有明确的当前工作表；请在 Excel 中打开正确月份后保存，再重新上传");
+  }
+  return cleanText(sheets[activeTab], 120);
 }
 
 async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
@@ -1860,7 +2380,6 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
       });
     }
   }
-  if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
   const model = sheet.model as unknown as JsonRecord;
   const merges = (Array.isArray(model.merges) ? model.merges : []).map((merge) => mergeCoordinates(cleanText(merge, 40)));
   const columnWidths = Array.from({ length: columnCount }, (_item, index) =>
@@ -1889,11 +2408,14 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
     }
   }
   const rangeText = `A1:${sheet.getCell(rowCount, columnCount).address}`;
-  return {
+  const display: JsonRecord = {
     sheet_name: sheetName, range: rangeText, rows: rowCount, columns: columnCount,
     values, merges, cells, column_widths: columnWidths, row_heights: rowHeights,
     cell_styles: cellStyles,
   };
+  if (reportType === "monthly_profit_loss") cells.push(...monthlyEditableBlankCells(display, cells));
+  if (!cells.length) throw new Error("Excel 中没有可追溯的数字或公式单元格");
+  return display;
 }
 
 function xmlText(value: string): string {
@@ -1998,12 +2520,10 @@ function reportDateValue(payload: JsonRecord, reportType: string): string {
   return raw;
 }
 
-async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect = false): Promise<JsonRecord> {
   if (!canUploadReports(session)) throw new Error("只有财务账号可以上传门店报表");
   const store = await selectedStoreInfo(session, payload);
-  const reportType = cleanText(payload.report_type, 40);
-  if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
-  const reportDate = reportDateValue(payload, reportType);
+  let reportType = cleanText(payload.report_type, 40);
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 120);
   const xlsxMime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -2014,9 +2534,35 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("报表文件必须小于 10MB");
-  const displayData = mime === docxMime
-    ? await docxDisplay(bytes)
-    : await workbookDisplay(bytes, reportType, cleanText(store.name, 100));
+  const storeName = cleanText(store.name, 100);
+  let detection: JsonRecord | null = null;
+  let displayData: JsonRecord;
+  if (autoDetect) {
+    if (mime === docxMime) {
+      displayData = await docxDisplay(bytes);
+    } else {
+      const activeSheet = await activeWorkbookSheetName(bytes);
+      displayData = await workbookDisplay(bytes, "daily", storeName, activeSheet);
+    }
+    detection = detectReportMetadata({
+      filename,
+      sheetName: cleanText(displayData.sheet_name, 120),
+      values: Array.isArray(displayData.values) ? displayData.values : [],
+      storeName,
+    }) as JsonRecord;
+    reportType = cleanText(detection.report_type, 40);
+    if (payload.require_monthly === true && reportType !== "monthly_profit_loss") {
+      throw new Error("右侧照片 / PDF 只能随月报原表上传；请取消照片，或改为上传月报原表");
+    }
+    if (mime === xlsxMime && reportType === "monthly_profit_loss") {
+      displayData = await workbookDisplay(bytes, reportType, storeName, cleanText(detection.sheet_name, 120));
+    }
+  } else {
+    if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
+    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName);
+  }
+  const reportDate = autoDetect ? cleanText(detection?.report_date, 10) : reportDateValue(payload, reportType);
+  if (!validDate(reportDate)) throw new Error("自动识别未得到有效报表日期");
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const accountId = cleanText(session.auth_account_id, 40);
@@ -2049,7 +2595,188 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord): Promise<J
     throw new Error(`报表登记失败 (${metadata.status})`);
   }
   const saved = await metadata.json() as JsonRecord;
-  return { saved, source_boundary: "finance_uploads_only", original_private: true };
+  return { saved, detection, source_boundary: "finance_uploads_only", original_private: true, formal_ledger_changed: false };
+}
+
+async function monthlyDraftWorkbook(
+  source: JsonRecord,
+  sourceCells: JsonRecord[],
+  month: string,
+  storeName: string,
+): Promise<Uint8Array> {
+  const display = source.display_data && typeof source.display_data === "object"
+    ? source.display_data as JsonRecord : {};
+  const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
+  if (!values.length || !sourceCells.length) throw new Error("最近一期月报缺少可复制的电子表格结构");
+  const workbook = new ExcelJS.Workbook();
+  workbook.calcProperties.fullCalcOnLoad = true;
+  const sheetName = cleanText(display.sheet_name, 31) || "月报表";
+  const sheet = workbook.addWorksheet(sheetName);
+  values.forEach((row, rowIndex) => {
+    if (!Array.isArray(row)) return;
+    row.forEach((value, columnIndex) => { sheet.getCell(rowIndex + 1, columnIndex + 1).value = value as never; });
+  });
+  // display.values contains the last rendered results as plain text, including
+  // numeric cells that older parsers skipped when a distant "编号" header was
+  // present on the same row. Clear every numeric-looking business value before
+  // restoring known formulas below. Columns explicitly headed as an identifier
+  // or date keep their fixed sequence values.
+  const fixedValueColumns = new Set<number>();
+  values.forEach((row) => {
+    if (!Array.isArray(row)) return;
+    row.forEach((value, columnIndex) => {
+      if (/^(编号|序号|员工号|日期)$/.test(cleanText(value, 40).replace(/\s/g, ""))) {
+        fixedValueColumns.add(columnIndex + 1);
+      }
+    });
+  });
+  for (let row = 1; row <= sheet.rowCount; row += 1) {
+    for (let column = 1; column <= sheet.columnCount; column += 1) {
+      if (fixedValueColumns.has(column)) continue;
+      const target = sheet.getCell(row, column);
+      const rendered = cleanText(target.value, 80).replace(/[,¥￥]/g, "");
+      if (/^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(rendered)) target.value = 0;
+    }
+  }
+  const title = sheet.getCell(1, 1);
+  if (typeof title.value === "string" && /盈亏|月报/.test(title.value)) {
+    title.value = `${storeName}   ${month} 月盈亏统计`;
+  }
+  if (sheet.rowCount >= 2 && sheet.columnCount >= 3) sheet.getCell(2, 3).value = `${month.slice(5, 7)}月`;
+  const widths = Array.isArray(display.column_widths) ? display.column_widths as unknown[] : [];
+  widths.forEach((width, index) => { if (Number(width) > 0) sheet.getColumn(index + 1).width = Number(width); });
+  const heights = Array.isArray(display.row_heights) ? display.row_heights as unknown[] : [];
+  heights.forEach((height, index) => { if (Number(height) > 0) sheet.getRow(index + 1).height = Number(height); });
+  const styles = Array.isArray(display.cell_styles) ? display.cell_styles as JsonRecord[] : [];
+  for (const style of styles) {
+    const address = cleanText(style.cell_address, 20).toUpperCase();
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address)) continue;
+    const cell = sheet.getCell(address);
+    const fill = cleanText(style.fill, 8);
+    if (/^[0-9A-F]{8}$/i.test(fill)) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+    cell.alignment = {
+      ...cell.alignment,
+      horizontal: cleanText(style.horizontal, 30) as ExcelJS.Alignment["horizontal"] || undefined,
+      vertical: cleanText(style.vertical, 30) as ExcelJS.Alignment["vertical"] || undefined,
+      wrapText: style.wrap_text === true,
+    };
+    if (style.bold === true) cell.font = { ...cell.font, bold: true };
+  }
+  const merges = Array.isArray(display.merges) ? display.merges as JsonRecord[] : [];
+  for (const merge of merges) {
+    const startRow = Number(merge.start_row) + 1, startColumn = Number(merge.start_col) + 1;
+    const endRow = Number(merge.end_row) + 1, endColumn = Number(merge.end_col) + 1;
+    if ([startRow, startColumn, endRow, endColumn].every(Number.isInteger)
+      && startRow > 0 && startColumn > 0 && endRow >= startRow && endColumn >= startColumn) {
+      try { sheet.mergeCells(startRow, startColumn, endRow, endColumn); } catch { /* keep usable cells if source merge is malformed */ }
+    }
+  }
+  for (const sourceCell of sourceCells) {
+    const address = cleanText(sourceCell.cell_address, 20).toUpperCase();
+    if (!/^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address)) continue;
+    const target = sheet.getCell(address);
+    if (cleanText(sourceCell.cell_kind, 20) === "formula") {
+      const formula = cleanText(sourceCell.formula, 500).replace(/^=/, "");
+      // A formula made only from literal numbers is old-period business data
+      // disguised as a formula (for example "59.9+240+..."). It must not be
+      // carried into a fresh month. Preserve only formulas that actually refer
+      // to other cells so the new month can recalculate from new inputs.
+      if (formula && formulaPrecedents(formula, sheetName).length) target.value = { formula, result: 0 };
+      else target.value = 0;
+    } else if (monthlyItemCategory(sourceCell) !== "fixed") {
+      target.value = 0;
+    }
+  }
+  const output = await workbook.xlsx.writeBuffer();
+  return new Uint8Array(output);
+}
+
+async function createMonthlyDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadReports(session)) throw new Error("只有财务账号可以建立当月电子月报");
+  requireFinanceCapability(session, "confirmed_finance.adjust", "当前财务账号没有月报金额编辑权限");
+  const store = await selectedStoreInfo(session, payload);
+  const month = cleanText(payload.month, 7);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const exactPath = `zysyr_report_uploads?select=id,report_date,version,original_filename,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&status=eq.active&order=version.desc&limit=1`;
+  const existing = (await restRows(exactPath))[0];
+  const existingDisplay = existing?.display_data && typeof existing.display_data === "object"
+    ? existing.display_data as JsonRecord : {};
+  const rebuildStale = payload.rebuild_stale === true
+    && /^\系\统\电\子\月\报\草\稿_/.test(cleanText(existing?.original_filename, 200))
+    && Number(existingDisplay.draft_reset_policy_version || 0) < 3;
+  if (existing && !rebuildStale) return { saved: existing, created: false };
+  const sources = await restRows(`zysyr_report_uploads?select=id,report_date,template_code,template_version,original_filename,mime_type,size_bytes,sha256,bucket_id,object_path,display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&report_type=eq.monthly_profit_loss&report_date=lt.${month}-01&status=eq.active&order=report_date.desc,version.desc&limit=1`);
+  let source = sources[0] || null;
+  let sourceCells = source
+    ? await restRowsAll(`zysyr_report_cells?select=cell_address,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${source.id}&order=row_number.asc,column_number.asc&limit=5000`, 5000)
+    : [];
+  if (!source) {
+    const historicalPeriods = await restRows(`zysyr_history_ledger_entries?select=period_month&company_id=eq.${companyId}&store_id=eq.${storeId}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=lt.${month}-01&order=period_month.desc&limit=1`);
+    const sourceMonth = cleanText(historicalPeriods[0]?.period_month, 10).slice(0, 7);
+    const historical = sourceMonth ? await historicalMonthlyReport(companyId, storeId, sourceMonth, cleanText(store.name, 100)) : null;
+    if (historical) {
+      source = historical;
+      const historicalDisplay = historical.display_data && typeof historical.display_data === "object"
+        ? historical.display_data as JsonRecord : {};
+      sourceCells = Array.isArray(historicalDisplay.cells) ? historicalDisplay.cells as JsonRecord[] : [];
+      const priorEntries = await restRowsAll(`zysyr_history_ledger_entries?select=period_month,current_payload&company_id=eq.${companyId}&store_id=eq.${storeId}&entry_type=eq.monthly_profit_loss&status=eq.posted&period_month=lt.${month}-01&order=period_month.desc&limit=5000`, 5000);
+      const byAddress = new Map(sourceCells.map((cell) => [cleanText(cell.cell_address, 20).toUpperCase(), cell]));
+      for (const entry of priorEntries) {
+        const cell = entry.current_payload && typeof entry.current_payload === "object" ? entry.current_payload as JsonRecord : null;
+        const address = cleanText(cell?.cell_address, 20).toUpperCase();
+        if (cell && /^[A-Z]{1,3}[1-9][0-9]{0,3}$/.test(address) && !byAddress.has(address)) byAddress.set(address, cell);
+      }
+      sourceCells = Array.from(byAddress.values());
+    }
+  }
+  if (!source || !sourceCells.length) throw new Error("该门店还没有可复制的原版月报，请先上传一次月报模板");
+  const bytes = await monthlyDraftWorkbook(source, sourceCells, month, cleanText(store.name, 100));
+  const displayData = await workbookDisplay(bytes, "monthly_profit_loss", cleanText(store.name, 100));
+  const sourceBucket = cleanText(source.bucket_id, 100), sourceObjectPath = cleanText(source.object_path, 500);
+  const sourceSha256 = cleanText(source.sha256, 64), sourceMime = cleanText(source.mime_type, 120);
+  const sourceSize = Number(source.size_bytes || 0);
+  if (!sourceBucket || !sourceObjectPath || !/^[0-9a-f]{64}$/i.test(sourceSha256)
+    || !sourceMime || !Number.isInteger(sourceSize) || sourceSize <= 0) {
+    throw new Error("来源月报模板的原文件信息不完整，请管理员检查历史资料");
+  }
+  displayData.source_object_reused = true;
+  displayData.source_template_filename = cleanText(source.original_filename, 200);
+  displayData.source_template_report_date = cleanText(source.report_date, 10);
+  displayData.source_template_sha256 = sourceSha256;
+  displayData.fresh_period_values_reset = true;
+  displayData.draft_reset_policy_version = 3;
+  const metadata = await rest("rpc/zysyr_register_report_upload", {
+    method: "POST",
+    body: JSON.stringify({
+      p_report: {
+        company_id: companyId, store_id: storeId, report_type: "monthly_profit_loss", report_date: `${month}-01`,
+        template_code: cleanText(source.template_code, 120) || "zysyr_monthly_profit_loss_original",
+        template_version: Number(source.template_version || 1),
+        original_filename: `系统电子月报草稿_${month}（来源模板）`, mime_type: sourceMime,
+        size_bytes: sourceSize, sha256: sourceSha256, bucket_id: sourceBucket,
+        object_path: sourceObjectPath, display_data: displayData,
+        uploaded_by_user_id: cleanText(session.auth_account_id, 40),
+      },
+      p_cells: Array.isArray(displayData.cells) ? displayData.cells : [],
+    }),
+  });
+  if (!metadata.ok) {
+    const failure = await metadata.clone().json().catch(() => ({} as JsonRecord)) as JsonRecord;
+    const databaseCode = cleanText(failure.code, 30);
+    const databaseMessage = cleanText(failure.message, 220);
+    console.error("monthly draft registration failed", {
+      status: metadata.status, code: databaseCode, message: databaseMessage,
+      company_id: companyId, store_id: storeId, month,
+    });
+    const raced = (await restRows(exactPath))[0];
+    if (raced) return { saved: raced, created: false };
+    if (databaseMessage === "finance report upload scope denied") throw new Error("当前财务账号没有建立月报的门店权限");
+    if (databaseMessage === "service role required") throw new Error("后台服务身份校验失败，请联系管理员");
+    if (databaseMessage === "report cell count out of range") throw new Error("月报数字单元格超出安全范围，请联系管理员");
+    throw new Error(`电子月报草稿登记失败 (${databaseCode || metadata.status})`);
+  }
+  return { saved: await metadata.json(), created: true };
 }
 
 function uuidArray(value: unknown, max: number): string[] {
@@ -2094,6 +2821,28 @@ async function businessEvidenceRulesForDetails(
   });
 }
 
+function normalizeMonthlyMatchLabel(value: unknown): string {
+  return cleanText(value, 300).replace(/其它/g, "其他")
+    .replace(/[\s/／·、，,()（）:_：.-]/g, "").toLocaleLowerCase();
+}
+
+function matchedMonthlyExpenseCategoryIds(categories: JsonRecord[], labelValue: unknown): unknown[] {
+  const compactLabel = normalizeMonthlyMatchLabel(labelValue);
+  const named = categories.map((category) => ({
+    ...category,
+    normalized_name: normalizeMonthlyMatchLabel(category.name),
+    normalized_section: normalizeMonthlyMatchLabel(category.report_section),
+  })).filter((category) => category.normalized_name.length >= 2 && compactLabel.includes(category.normalized_name));
+  const concrete = named.some((category) => category.normalized_name !== category.normalized_section)
+    ? named.filter((category) => category.normalized_name !== category.normalized_section) : named;
+  const longestName = concrete.reduce((length, category) => Math.max(length, category.normalized_name.length), 0);
+  if (longestName) return concrete.filter((category) => category.normalized_name.length === longestName).map((category) => category.id);
+  return categories.filter((category) => {
+    const section = normalizeMonthlyMatchLabel(category.report_section);
+    return section.length >= 2 && compactLabel === section;
+  }).map((category) => category.id);
+}
+
 async function monthlyCellBusinessDetails(
   companyId: string,
   storeId: string,
@@ -2101,7 +2850,7 @@ async function monthlyCellBusinessDetails(
   labelValue: unknown,
 ): Promise<JsonRecord[]> {
   const label = cleanText(labelValue, 300);
-  const compactLabel = label.replace(/[\s/／·]/g, "");
+  const compactLabel = normalizeMonthlyMatchLabel(label);
   const start = `${periodMonth.slice(0, 7)}-01`;
   const endDate = new Date(`${start}T00:00:00Z`);
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
@@ -2130,12 +2879,12 @@ async function monthlyCellBusinessDetails(
   }
 
   const categories = await restRowsAll(`zysyr_expense_categories?select=id,name,report_section&company_id=eq.${companyId}&status=eq.active&limit=1000`, 1000);
-  const matchedCategoryIds = categories.filter((category) => {
-    const name = cleanText(category.name, 120).replace(/\s/g, "");
-    const section = cleanText(category.report_section, 120).replace(/\s/g, "");
-    return (name.length >= 2 && compactLabel.includes(name)) || (section.length >= 2 && compactLabel.includes(section));
-  }).map((category) => category.id);
-  if (matchedCategoryIds.length) {
+  // Prefer the longest concrete item name. Matching report_section together
+  // with the name previously made e.g. "财务费用 / 管理费" open every row in
+  // the 财务费用 section. Section fallback is only for a genuine section cell.
+  const matchedCategoryIds = matchedMonthlyExpenseCategoryIds(categories, label);
+  const isPurchaseLabel = /(产品进货|采购|进货)/.test(label);
+  if (matchedCategoryIds.length && !isPurchaseLabel) {
     const expenses = await restRowsAll(`zysyr_expense_records?select=id,expense_date,category,counterparty,summary,amount,payment_method,workflow_status,submitted_at,approved_at,paid_at&company_id=eq.${companyId}&store_id=eq.${storeId}&deleted_at=is.null&workflow_status=in.(approved,paid)&expense_category_id=in.${uuidIn(matchedCategoryIds)}&expense_date=gte.${start}&expense_date=lt.${end}&order=expense_date.asc,created_at.asc&limit=3000`, 3000);
     for (const row of expenses) details.push({
       business_type: "expense_record", business_id: row.id, business_date: row.expense_date,
@@ -2180,19 +2929,42 @@ async function monthlyCellBusinessDetails(
   }
   if (/(产品进货|采购|进货)/.test(label)) {
     const rows = await restRowsAll(`zysyr_goods_receipts?select=id,purchase_order_id,receipt_number,receipt_date,status,total_amount,posted_at&company_id=eq.${companyId}&store_id=eq.${storeId}&receipt_date=gte.${start}&receipt_date=lt.${end}&status=eq.posted&order=receipt_date.asc,created_at.asc&limit=3000`, 3000);
+    const receiptIds = Array.from(new Set(rows.map((row) => row.id)));
+    const receiptLines = receiptIds.length ? await restRowsAll(`zysyr_goods_receipt_lines?select=id,goods_receipt_id,product_id,quantity,unit_cost,line_amount&company_id=eq.${companyId}&store_id=eq.${storeId}&goods_receipt_id=in.${uuidIn(receiptIds)}&limit=10000`, 10000) : [];
+    const productIds = Array.from(new Set(receiptLines.map((row) => row.product_id)));
+    const products = productIds.length ? await restRowsAll(`zysyr_products?select=id,name,category,unit&company_id=eq.${companyId}&id=in.${uuidIn(productIds)}&limit=5000`, 5000) : [];
+    const productMap = new Map(products.map((row) => [cleanText(row.id, 40), row]));
+    const namedProducts = products.map((product) => ({ product, key: normalizeMonthlyMatchLabel(product.name) }))
+      .filter((item) => item.key.length >= 2 && (compactLabel.includes(item.key) || item.key.includes(compactLabel)));
+    const longestProductName = namedProducts.reduce((length, item) => Math.max(length, item.key.length), 0);
+    const matchedProductIds = new Set(namedProducts.filter((item) => item.key.length === longestProductName)
+      .map((item) => cleanText(item.product.id, 40)));
+    const specificProductKey = compactLabel
+      .replace(/产品成本|产品进货|采购|进货|小计|合计|总计|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}月/g, "");
+    const hasSpecificProduct = specificProductKey.length >= 2;
     const orderIds = Array.from(new Set(rows.map((row) => row.purchase_order_id)));
     const orders = orderIds.length ? await restRowsAll(`zysyr_purchase_orders?select=id,supplier_id,order_number&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(orderIds)}&limit=3000`, 3000) : [];
     const orderMap = new Map(orders.map((row) => [cleanText(row.id, 40), row]));
     const supplierIds = Array.from(new Set(orders.map((row) => row.supplier_id)));
     const suppliers = supplierIds.length ? await restRowsAll(`zysyr_suppliers?select=id,name&company_id=eq.${companyId}&id=in.${uuidIn(supplierIds)}&limit=3000`, 3000) : [];
     const supplierMap = new Map(suppliers.map((row) => [cleanText(row.id, 40), row]));
-    for (const row of rows) {
+    const rowMap = new Map(rows.map((row) => [cleanText(row.id, 40), row]));
+    for (const line of receiptLines) {
+      if (hasSpecificProduct && !matchedProductIds.size) continue;
+      if (matchedProductIds.size && !matchedProductIds.has(cleanText(line.product_id, 40))) continue;
+      const row = rowMap.get(cleanText(line.goods_receipt_id, 40));
+      if (!row) continue;
       const order = orderMap.get(cleanText(row.purchase_order_id, 40)) || {};
+      const product = productMap.get(cleanText(line.product_id, 40)) || {};
       details.push({
-      business_type: "goods_receipt", business_id: row.id, business_date: row.receipt_date,
-      category: "产品进货", description: `${cleanText(supplierMap.get(cleanText(order.supplier_id, 40))?.name, 120)} · ${cleanText(order.order_number, 120)} · 入库 ${cleanText(row.receipt_number, 120)}`,
-      amount: row.total_amount, status: row.status, raw: row,
-    });
+        business_type: "goods_receipt", business_id: row.id, detail_id: line.id, business_date: row.receipt_date,
+        category: cleanText(product.name, 160) || "产品进货",
+        description: `${cleanText(supplierMap.get(cleanText(order.supplier_id, 40))?.name, 120)} · ${cleanText(order.order_number, 120)} · 入库 ${cleanText(row.receipt_number, 120)} · 数量 ${line.quantity} ${cleanText(product.unit, 40)}`.trim(),
+        amount: line.line_amount, status: row.status, raw: { receipt: row, line, product },
+        voucher_targets: [
+          { business_type: "goods_receipt", business_id: row.id },
+        ],
+      });
     }
   }
   if (/(产品成本|消耗品|消耗成本|美发消耗|日用消耗|食品成本)/.test(label)) {
@@ -2217,7 +2989,8 @@ async function monthlyCellBusinessDetails(
       amount: row.amount, status: row.payment_status, raw: row,
     });
   }
-  const unique = Array.from(new Map(details.map((row) => [`${row.business_type}:${row.business_id}`, row])).values());
+  const unique = Array.from(new Map(details.map((row) => [cleanText(row.detail_id, 40)
+    || `${row.business_type}:${row.business_id}`, row])).values());
   const linkTargets = unique.flatMap((row) => Array.isArray(row.voucher_targets) && row.voucher_targets.length
     ? row.voucher_targets as JsonRecord[]
     : [{ business_type: row.business_type, business_id: row.business_id }]);
@@ -2282,18 +3055,18 @@ async function historicalDailyIncomeSources(companyId: string, storeId: string, 
   const next = new Date(`${start}T00:00:00Z`);
   next.setUTCMonth(next.getUTCMonth() + 1);
   const end = next.toISOString().slice(0, 10);
-  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,status,validation_result,edit_revision,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&status=eq.confirmed&source_voucher_id=not.is.null&order=report_date.asc&limit=100`, 100);
   const draftIds = drafts.map((row) => cleanText(row.id, 40)).filter(Boolean);
   if (!draftIds.length) return { details: [], evidence: [], total: 0 };
-  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.summary&row_key=eq.summary&column_code=eq.actual_total&cell_role=eq.summary_actual&manual_override=eq.true&limit=100`, 100);
-  const amountByDraft = new Map(cells.map((cell) => [cleanText(cell.draft_id, 40), Number(cell.corrected_numeric)]));
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&section_code=eq.payment&row_key=eq.payment&column_code=eq.cash_flow&cell_role=eq.payment_cashflow&limit=100`, 100);
+  const amountByDraft = new Map(cells.map((cell) => [cleanText(cell.draft_id, 40), effectiveCellValue(cell)]));
   const verifiedDrafts = drafts.filter((draft) => Number.isFinite(amountByDraft.get(cleanText(draft.id, 40))));
   const voucherIds = Array.from(new Set(verifiedDrafts.map((draft) => cleanText(draft.source_voucher_id, 40)).filter(Boolean)));
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,size_bytes,uploaded_at,document_type,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&audit_status=eq.approved&limit=100`, 100) : [];
   const voucherMap = new Map(vouchers.map((voucher) => [cleanText(voucher.id, 40), voucher]));
   const details = verifiedDrafts.map((draft) => ({
     business_type: "daily_sheet", business_id: draft.id, daily_sheet_id: draft.id,
-    date: draft.report_date, title: `${draft.report_date} 日报`, description: "原始日报人工录入总额",
+    date: draft.report_date, title: `${draft.report_date} 日报`, description: "已确认日报现金业绩（不含卡金）",
     amount: amountByDraft.get(cleanText(draft.id, 40)), source_voucher_id: draft.source_voucher_id,
     source_locator: `日报/${draft.report_date}`, status: draft.status, validation_result: draft.validation_result,
   }));
@@ -2314,7 +3087,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   if (!batch) throw new Error("月报不存在或无权访问");
   const month = cleanText((session as JsonRecord).__trace_month, 7);
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month));
+    await monthlyIncomeAdjustments(companyId, storeId, month), await confirmedDailyRollup(companyId, storeId, month));
   const entry = entries.find((row) => cleanText((row.current_payload as JsonRecord)?.cell_address, 20).toUpperCase() === address);
   if (!entry) throw new Error("该位置不是可追溯的历史金额或公式单元格");
   const current = entry.current_payload as JsonRecord;
@@ -2328,6 +3101,7 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
   const evidenceData = await historyEvidenceForEntries(companyId, storeId, [entry]);
   const target = {
     id: entry.id, historical_ledger_entry_id: entry.id, sheet_name: entry.source_sheet,
+    historical_import_row_id: entry.import_row_id,
     cell_address: address, row_number: Number(rowMatch?.[1] || 0), column_number: columnNumber,
     cell_kind: current.cell_kind, display_value: current.amount, numeric_value: current.amount,
     original_numeric_value: (entry.posted_payload as JsonRecord)?.amount, formula: current.formula,
@@ -2387,6 +3161,40 @@ async function historicalCellTrace(companyId: string, storeId: string, reportId:
     }
     precedents.forEach(visit);
     result.editable_components = leaves;
+    if (monthlyItemCategory(target) === "purchase_summary") {
+      const detailColumn = cleanText(precedents[0], 20).match(/^([A-Z]+)/)?.[1] || "G";
+      const formulaDetailAddresses = new Set(precedents.flatMap((ref) => {
+        const summaryRow = byAddress.get(ref);
+        const summaryItem = summaryRow?.current_payload as JsonRecord | undefined;
+        return summaryItem?.cell_kind === "formula"
+          ? formulaPrecedents(cleanText(summaryItem.formula, 2000), cleanText(summaryRow?.source_sheet, 120)) : [ref];
+      }));
+      const candidates = entries.map((row) => {
+        const item = row.current_payload as JsonRecord;
+        return { id: row.id, historical_ledger_entry_id: row.id,
+          cell_address: cleanText(item.cell_address, 20).toUpperCase(), cell_kind: item.cell_kind,
+          display_value: item.amount, numeric_value: item.amount, formula: item.formula,
+          label: item.label, source_locator: row.source_locator };
+      }).filter((item) => item.cell_address.startsWith(detailColumn)
+        && /^产品进货\//.test(cleanText(item.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/"))
+        && item.numeric_value !== null && item.numeric_value !== "" && Number.isFinite(Number(item.numeric_value)));
+      result.purchase_components = candidates.filter((item) => formulaDetailAddresses.has(item.cell_address));
+      result.purchase_unincluded_components = candidates.filter((item) => !formulaDetailAddresses.has(item.cell_address) && Number(item.numeric_value) !== 0);
+    }
+    if (monthlyItemCategory(target) === "expense") {
+      const evidence = historyEvidenceWithScope(evidenceData);
+      const details = await businessEvidenceRulesForDetails(companyId, storeId, [{
+        business_type: "history_monthly_profit_loss", business_id: entry.id,
+        history_ledger_entry_id: entry.id, date: `${month}-01`, title: cleanText(current.label, 300) || address,
+        description: `月报直接录入 · ${locator}`, amount: current.amount,
+        source_locator: locator, import_row_id: entry.import_row_id,
+        has_evidence: Boolean(evidence.length), vouchers: evidence, pending_vouchers: [],
+      }]);
+      result.business_details = details;
+      result.business_total = Number(details.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+      result.anomalies = details.some((row) => cleanText(row.evidence_policy, 30) !== "none" && !row.has_evidence)
+        ? ["missing_voucher"] : [];
+    }
     return result;
   }
   const moduleEntries = await historyMonthEntries(companyId, storeId, month);
@@ -2507,6 +3315,37 @@ async function cellTrace(payload: JsonRecord, session: JsonRecord): Promise<Json
       original_numeric_value: cell.numeric_value,
       trace: revisionMap.get(cleanText(cell.id, 40)) || null,
     }));
+    if (monthlyItemCategory(target) === "purchase_summary") {
+      const detailColumn = cleanText(addresses[0], 20).match(/^([A-Z]+)/)?.[1] || "G";
+      const purchaseCells = await restRowsAll(`zysyr_report_cells?select=id,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
+      const formulaDetailAddresses = new Set(sourceCells.flatMap((cell) => cleanText(cell.cell_kind, 20) === "formula"
+        ? formulaPrecedents(cleanText(cell.formula, 2000), cleanText(target.sheet_name, 120)) : [cleanText(cell.cell_address, 20).toUpperCase()]));
+      const candidates = purchaseCells.filter((cell) => cleanText(cell.cell_address, 20).toUpperCase().startsWith(detailColumn)
+        && /^产品进货\//.test(cleanText(cell.label, 300).replace(/\s/g, "").replace(/[／·]/g, "/"))
+        && cell.numeric_value !== null && cell.numeric_value !== "" && Number.isFinite(Number(cell.numeric_value)));
+      result.purchase_components = candidates.filter((cell) => formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()));
+      result.purchase_unincluded_components = candidates.filter((cell) => !formulaDetailAddresses.has(cleanText(cell.cell_address, 20).toUpperCase()) && Number(cell.numeric_value) !== 0);
+    }
+    if (monthlyItemCategory(target) === "expense") {
+      const traceRows = await restRows(`zysyr_report_cell_trace_revisions?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&target_cell_id=eq.${cleanText(target.id, 40)}&order=revision.desc&limit=1`);
+      const traceId = cleanText(traceRows[0]?.id, 40);
+      const traceEvidenceLinks = traceId ? await restRowsAll(`zysyr_report_cell_trace_evidence?select=voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&trace_revision_id=eq.${traceId}&limit=200`, 200) : [];
+      const amountEvidenceLinks = latestAmountRevision ? await restRowsAll(`zysyr_monthly_cell_revision_vouchers?select=voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&revision_id=eq.${cleanText(latestAmountRevision.id, 40)}&limit=200`, 200) : [];
+      const evidenceIds = uuidIn([...traceEvidenceLinks, ...amountEvidenceLinks].map((link) => link.voucher_id));
+      const directEvidence = evidenceIds === "()" ? [] : await restRowsAll(`zysyr_voucher_attachments?select=id,record_id,original_filename,mime_type,note,uploaded_by,uploaded_at,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${evidenceIds}&limit=200`, 200);
+      let details = await monthlyCellBusinessDetails(companyId, storeId, cleanText(report.report_date, 10), target.label);
+      if (!details.length) details = await businessEvidenceRulesForDetails(companyId, storeId, [{
+        business_type: "report_cell", business_id: target.id,
+        business_date: cleanText(report.report_date, 10), category: cleanText(target.label, 300) || address,
+        description: `月报直接录入 · ${address}`, amount: effectiveTarget.numeric_value,
+        status: "confirmed", vouchers: directEvidence, pending_vouchers: [], has_evidence: Boolean(directEvidence.length),
+      }]);
+      result.evidence = directEvidence;
+      result.business_details = details;
+      result.business_total = Number(details.reduce((sum, row) => sum + Number(row.amount || 0), 0).toFixed(4));
+      result.anomalies = details.some((row) => cleanText(row.evidence_policy, 30) !== "none"
+        && !(row.vouchers as JsonRecord[] || []).length && !row.has_evidence) ? ["missing_voucher"] : [];
+    }
     return result;
   }
 
@@ -2686,75 +3525,151 @@ async function monthlyIncomeAdjustments(companyId: string, storeId: string, mont
   return restRowsAll(`zysyr_monthly_income_adjustments?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01&order=revision.desc,created_at.desc`, 10000);
 }
 
+function isDailyIncomeCell(cell: JsonRecord): boolean {
+  const label = cleanText(cell.label,300).replace(/\s/g,"").replace(/[／·]/g,"/");
+  return /^(主营\/)?(美发收入|营业收入)(\/|$)/.test(label);
+}
+
+async function confirmedDailyRollup(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
+  const start = `${month}-01`, end = new Date(`${start}T00:00:00Z`); end.setUTCMonth(end.getUTCMonth()+1);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end.toISOString().slice(0,10)}&status=eq.confirmed&order=report_date.asc&limit=100`,100);
+  if (new Set(drafts.map(row=>row.report_date)).size !== drafts.length) throw new Error("同一天存在多份已确认日报，请先核对，避免重复汇总");
+  const ids = uuidIn(drafts.map(row=>row.id));
+  const cells = ids === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${ids}&section_code=eq.payment&row_key=eq.payment&column_code=eq.cash_flow&cell_role=eq.payment_cashflow&limit=100`,100);
+  const days = drafts.map(draft=>{const matches=cells.filter(cell=>cell.draft_id===draft.id);if(matches.length!==1||effectiveCellValue(matches[0])===null)throw new Error(`${draft.report_date} 已确认日报缺少唯一有效现金业绩，暂停月报汇总`);return {date:draft.report_date,draft_id:draft.id,cell_id:matches[0].id,amount:effectiveCellValue(matches[0]),revision:draft.edit_revision};});
+  if (drafts.some((draft) => !draft.confirmed_at)) throw new Error("已确认日报缺少入账时间，暂停月报汇总以防重复统计");
+  const confirmedTimes = drafts.map((draft) => String(draft.confirmed_at)).sort();
+  return {amount:Number(days.reduce((sum,row)=>sum+Number(row.amount),0).toFixed(2)),confirmed_days:days.length,days,first_confirmed_at:confirmedTimes[0] || null,source:"confirmed_daily_cash_flow",incomplete_warning:"仅汇总已确认日报的现金业绩，不含卡金；请核对营业日是否全部录齐。"};
+}
+
+const MONTHLY_DAILY_PERFORMANCE_FIELDS = [
+  { key: "labor_performance", section: "summary", column: "grand_total", label: "劳动业绩" },
+  { key: "cash_performance", section: "payment", column: "cash_flow", label: "现金业绩" },
+  { key: "card_amount", section: "payment", column: "card_consumption", label: "卡金" },
+  { key: "group_buy", section: "payment", column: "group_buy", label: "团购" },
+  { key: "alipay", section: "payment", column: "alipay", label: "支付宝" },
+  { key: "wechat", section: "payment", column: "wechat", label: "微信" },
+  { key: "douyin", section: "payment", column: "douyin", label: "抖音" },
+] as const;
+
+async function confirmedDailyPerformance(companyId: string, storeId: string, month: string): Promise<JsonRecord> {
+  const start = `${month}-01`, next = new Date(`${start}T00:00:00Z`);
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  const drafts = await restRowsAll(`zysyr_daily_sheet_drafts?select=id,report_date,edit_revision,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${next.toISOString().slice(0, 10)}&status=eq.confirmed&order=report_date.asc&limit=100`, 100);
+  if (new Set(drafts.map((row) => row.report_date)).size !== drafts.length) {
+    throw new Error("同一天存在多份已确认日报，请先核对，避免月报业绩重复展示");
+  }
+  const draftIds = uuidIn(drafts.map((row) => row.id));
+  const cells = draftIds === "()" ? [] : await restRowsAll(`zysyr_daily_sheet_cells?select=id,draft_id,section_code,column_code,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${draftIds}&section_code=in.(summary,payment)&column_code=in.(grand_total,cash_flow,card_consumption,group_buy,alipay,wechat,douyin)&limit=2000`, 2000);
+  const rows = drafts.map((draft) => {
+    const row: JsonRecord = { date: draft.report_date, draft_id: draft.id, revision: Number(draft.edit_revision || 0), status: "confirmed" };
+    const missing: string[] = [];
+    for (const field of MONTHLY_DAILY_PERFORMANCE_FIELDS) {
+      const matches = cells.filter((cell) => cell.draft_id === draft.id
+        && cell.section_code === field.section && cell.column_code === field.column);
+      if (matches.length > 1) throw new Error(`${draft.report_date} 日报的${field.label}存在重复单元格，请先核对`);
+      if (!matches.length) missing.push(field.label);
+      const value = matches.length ? effectiveCellValue(matches[0]) : null;
+      // Blank payment cells are the paper report's normal representation of zero.
+      // A missing cell is kept in missing_fields so the UI never hides a schema gap.
+      row[field.key] = value == null && field.section === "payment" ? 0 : value;
+      row[`${field.key}_cell_id`] = matches[0]?.id ?? null;
+    }
+    row.missing_fields = missing;
+    return row;
+  });
+  const totals: JsonRecord = {};
+  for (const field of MONTHLY_DAILY_PERFORMANCE_FIELDS) {
+    totals[field.key] = Number(rows.reduce((sum, row) => sum + Number(row[field.key] || 0), 0).toFixed(2));
+  }
+  return {
+    month, confirmed_days: rows.length, rows, totals,
+    columns: MONTHLY_DAILY_PERFORMANCE_FIELDS.map((field) => ({ key: field.key, label: field.label })),
+    source: "confirmed_daily_sheet_cells",
+    source_note: "只读取当前门店已入账日报；草稿和识别候选不计入月报业绩。",
+  };
+}
+
 // Capture the entire source revision set. The SQL writer verifies it under the
 // month lock, rejecting concurrent edits rather than silently overwriting them.
 async function monthlyAdjustmentContext(companyId: string, storeId: string, month: string, reportId: string, historical: boolean): Promise<JsonRecord> {
   const adjustments = await monthlyIncomeAdjustments(companyId, storeId, month);
+  const daily = await confirmedDailyRollup(companyId, storeId, month);
   if (historical) {
     const source = await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss");
-    return { adjustments, versions: Object.fromEntries(source.map(row => [String(row.id), row.version])),
-      cells: effectiveHistoryMonthlyEntries(source, adjustments).filter(row => row.import_batch_id === reportId)
+    return { adjustments, daily, versions: Object.fromEntries(source.map(row => [String(row.id), row.version])),
+      cells: effectiveHistoryMonthlyEntries(source, adjustments, daily).filter(row => row.import_batch_id === reportId)
         .map(row => ({ ...row.current_payload as JsonRecord, id: row.id, numeric_value: (row.current_payload as JsonRecord).amount })) };
   }
   const cells = await restRowsAll(`zysyr_report_cells?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}`, 5000);
   const revisions = await restRowsAll(`zysyr_monthly_cell_revisions?select=*&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=revision.desc`, 10000);
-  const display = effectiveMonthlyDisplay({ cells, values: [] }, cells, revisions, adjustments);
-  return { adjustments, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
+  const display = effectiveMonthlyDisplay({ cells: cells.map(cell=>({...cell})), values: [] }, cells, revisions, adjustments, daily);
+  return { adjustments, daily, versions: Object.fromEntries(revisions.map(row => [String(row.id), row.revision])), cells: display.cells };
 }
 
 async function finishMonthlyTrace(data: JsonRecord, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const target = data.target as JsonRecord;
   const category = monthlyItemCategory(target);
   data.item_category = category;
-  if (["income", "salary", "total", "fixed"].includes(category)) {
+  if (["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"].includes(category)) {
     data.evidence_policy = "none"; data.can_upload_vouchers = false;
     data.can_manage_business_evidence_rules = false; data.can_manage_evidence_rules = false;
     data.anomalies = (data.anomalies as string[] || []).filter(item => item !== "missing_voucher");
     if (data.revision) (data.revision as JsonRecord).status = "not_required";
     for (const row of data.business_details as JsonRecord[] || []) row.evidence_policy = "none";
   }
-  if (data.historical && category !== "income") return data;
+  // Every numeric monthly cell is adjustable. The adjustment layer preserves
+  // the uploaded value/formula and keeps identifiers outside the mutation path.
+  const canUseMonthlyAdjustment = category !== "fixed";
+  if (!canUseMonthlyAdjustment) return data;
   // Match the overview's derived amount, including nested formulas and deltas.
   const store = await selectedStoreInfo(session, payload);
   const month = cleanText((data.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((data.report as JsonRecord).id), Boolean(data.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
   if (effective) target.numeric_value = effective.numeric_value;
-  if (category === "income") {
+  if (effective?.daily_rollup) { target.daily_rollup = effective.daily_rollup; target.original_report_amount = effective.original_report_amount; }
+  if (canUseMonthlyAdjustment) {
     const all = context.adjustments as JsonRecord[];
     const history = all.filter(row => row.source_id === target.id && row.source_kind === (data.historical ? "history" : "report"));
-    const latest = history[0] || null;
     const actorIds = uuidIn(history.map(row => row.actor_user_id));
     const actors = actorIds === "()" ? [] : await restRowsAll(`zysyr_user_accounts?select=id,display_name,login_name&company_id=eq.${store.company_id}&id=in.${actorIds}`, 500);
-    data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(latest?.adjustment_delta || 0)).toFixed(4)),
-      adjustment_delta: latest?.adjustment_delta || 0, revision: latest?.revision || 0 };
+    const dailyLinked = Number((target.daily_rollup as JsonRecord)?.confirmed_days || 0) > 0;
+    const linkedAdjustment = monthlyAdjustmentForSource(target.id, history, dailyLinked ? context.daily as JsonRecord : null);
+    const latest = linkedAdjustment.latest as JsonRecord | null;
+    data.monthly_adjustment = { base_amount: Number((Number(target.numeric_value) - Number(linkedAdjustment.applied_delta)).toFixed(4)),
+      adjustment_delta: linkedAdjustment.applied_delta, revision: latest?.revision || 0,
+      superseded_monthly_adjustment: dailyLinked ? linkedAdjustment.legacy_delta : 0 };
     data.amount_history = [...history.map(row => ({ ...row, revision_type: "月报调整", delta: Number(row.after_amount) - Number(row.before_amount), actor: actors.find(actor => actor.id === row.actor_user_id) || null })), ...(data.amount_history as JsonRecord[] || [])];
   }
   return data;
 }
 
 async function monthlyIncomeAdjustmentSave(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备财务调整权限的财务账号可以修改收入");
+  requireFinanceCapability(session, "confirmed_finance.adjust", "只有具备财务调整权限的财务账号可以修改月报金额");
   const store = await selectedStoreInfo(session, payload);
   const after = cleanText(payload.after_amount, 100), reason = cleanText(payload.reason, 500);
   if (!/^-?\d{1,14}(?:\.\d{1,4})?$/.test(after) || !reason) throw new Error("请填写有效金额和修改原因");
   const trace = await cellTrace(payload, session);
   const target = trace.target as JsonRecord;
-  if (monthlyItemCategory(target) !== "income") throw new Error("月报调整只适用于收入项目");
+  const category = monthlyItemCategory(target);
+  if (category === "fixed") throw new Error("编号、姓名和文字标签是固定内容，不能修改");
   const month = cleanText((trace.report as JsonRecord).report_date, 10).slice(0, 7);
   const context = await monthlyAdjustmentContext(String(store.company_id), String(store.id), month, String((trace.report as JsonRecord).id), Boolean(trace.historical));
   const effective = (context.cells as JsonRecord[]).find(cell => cell.id === target.id);
-  if (!effective) throw new Error("收入来源不存在，请刷新月报");
+  if (!effective) throw new Error("月报金额来源不存在，请刷新月报");
   const adjustments = context.adjustments as JsonRecord[], prior = adjustments.find(row => row.source_id === target.id);
   const before = Number(effective.numeric_value), base = Number((before - Number(prior?.adjustment_delta || 0)).toFixed(4));
   if (payload.expected_before === null || payload.expected_before === undefined || before !== Number(payload.expected_before)
     || Number(payload.expected_revision) !== Number(prior?.revision || 0)) throw new Error("金额已被其他人修改，请重新打开后预览");
-  const saved = await financeRpcSaved("rpc/zysyr_save_monthly_income_adjustment", {
+  const dailyLinked = Boolean(effective.daily_rollup);
+  const saved = await financeRpcSaved(dailyLinked ? "rpc/zysyr_save_daily_linked_monthly_adjustment" : "rpc/zysyr_save_monthly_income_adjustment", {
     p_actor_user_id: session.auth_account_id, p_company_id: store.company_id, p_store_id: store.id,
     p_source_kind: trace.historical ? "history" : "report", p_source_id: target.id, p_period_month: `${month}-01`,
     p_expected_versions: context.versions,
     p_expected_adjustments: Object.fromEntries(adjustments.map(row => [String(row.id), row.revision])),
     p_base_amount: base, p_before_amount: before, p_after_amount: after, p_reason: reason,
+    ...(dailyLinked ? {p_daily_versions:Object.fromEntries(((context.daily as JsonRecord).days as JsonRecord[]).map(row=>[String(row.draft_id),row.revision]))} : {}),
   });
   return { saved, source_reports_unchanged: true };
 }
@@ -2921,6 +3836,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const filename = cleanText(payload.filename, 200);
   const mime = cleanText(payload.mime_type, 80);
   const skipOcr = payload.skip_ocr === true;
+  const deferOcrWake = payload.defer_ocr_wake === true;
   const monthlyCellId = uuidValue(payload.monthly_cell_id, "月报单元格编号无效", true);
   const monthlyCellReason = cleanText(payload.monthly_cell_reason ?? payload.note, 500);
   const businessType = cleanText(payload.business_type, 40);
@@ -3014,10 +3930,169 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       p_business_id: businessId, p_relation_type: "evidence", p_reason: businessLinkReason,
     });
   }
-  if (!skipOcr) wakeVoucherOcrInBackground(3);
+  if (!skipOcr && !deferOcrWake) wakeVoucherOcrInBackground(3);
   return { saved, private: true, ocr_candidate_only: true, ocr_worker_wake_requested: !skipOcr,
+    ocr_worker_wake_deferred: !skipOcr && deferOcrWake,
     manual_review_only: skipOcr, cell_linked: cellLinked, cell_link_error: cellLinkError || null,
     business_link_request: businessLinkRequest };
+}
+
+function pettyCashBatchNote(month: string, batchId: string, filename: string): string {
+  return `petty_cash_batch|${month}|${batchId}|${cleanText(filename, 200).replace(/[|\r\n]/g, " ")}`;
+}
+
+async function uploadPettyCashBatchVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)
+      || cleanText(session.operations_role, 40) !== "finance") {
+    throw new Error("只有当前门店财务账号可以批量上传备用金凭证");
+  }
+  const month = cleanText(payload.month, 7);
+  const batchId = uuidValue(payload.batch_id, "批量上传编号无效") as string;
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("批量上传月份无效");
+  const result = await uploadVoucher({
+    ...payload,
+    record_type: "unassigned",
+    record_id: null,
+    business_type: "",
+    business_id: "",
+    note: pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)),
+    skip_ocr: false,
+    defer_ocr_wake: true,
+  }, session);
+  return { ...result, batch_id: batchId, target_month: month };
+}
+
+function pettyCashBatchFields(value: unknown): JsonRecord {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {};
+}
+
+function pettyCashBatchTargetRows(records: JsonRecord[], historyEntries: JsonRecord[]): JsonRecord[] {
+  const formal = records.filter((record) => cleanText(record.direction, 20) === "outflow"
+    && cleanText(record.status, 20) === "confirmed").map((record) => ({
+    id: cleanText(record.id, 40), target_kind: "formal", transaction_date: cleanText(record.transaction_date, 10),
+    amount: Number(record.amount || 0), category: cleanText(record.category, 120), summary: cleanText(record.summary, 300),
+    recipient: cleanText(record.recipient, 120), voucher_number: cleanText(record.voucher_number, 120), historical: false,
+  }));
+  const history = historyEntries.map((entry) => {
+    const current = pettyCashBatchFields(entry.current_payload);
+    return {
+      id: cleanText(entry.id, 40), target_kind: "history",
+      transaction_date: cleanText(current.transaction_date, 10), amount: Number(current.amount || 0),
+      category: cleanText(current.category, 120), summary: cleanText(current.summary, 300) || "历史备用金明细",
+      recipient: cleanText(current.handled_by_name, 120), voucher_number: cleanText(current.source_sequence, 120),
+      source_locator: cleanText(entry.source_locator, 160), import_row_id: cleanText(entry.import_row_id, 40), historical: true,
+    };
+  }).filter((target) => target.transaction_date && Number.isFinite(target.amount) && target.amount > 0);
+  return [...formal, ...history].sort((left, right) => left.transaction_date.localeCompare(right.transaction_date)
+    || Number(left.amount) - Number(right.amount) || pettyCashTargetKey(left).localeCompare(pettyCashTargetKey(right)));
+}
+
+async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)
+      || cleanText(session.operations_role, 40) !== "finance") {
+    throw new Error("只有当前门店财务账号可以查看批量凭证");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7), requestedBatchId = cleanText(payload.batch_id, 40);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("批量上传月份无效");
+  if (requestedBatchId && !/^[0-9a-f-]{36}$/i.test(requestedBatchId)) throw new Error("批量上传编号无效");
+  const notePattern = requestedBatchId ? `petty_cash_batch|${month}|${requestedBatchId}|*` : `petty_cash_batch|${month}|*`;
+  const vouchers = await restRowsAll(`zysyr_voucher_attachments?select=id,original_filename,mime_type,size_bytes,note,sha256,ocr_status,audit_status,document_type,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&note=like.${encodeURIComponent(notePattern)}&order=uploaded_at.desc&limit=1000`, 1000);
+  const voucherFilter = uuidIn(vouchers.map((voucher) => voucher.id));
+  const start = `${month}-01`, endDate = new Date(`${month}-01T00:00:00Z`);
+  endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+  const end = endDate.toISOString().slice(0, 10);
+  const [tasks, reviews, formalRecords, formalLinks, historyEntries] = await Promise.all([
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,status,attempt,candidate_fields,field_confidences,error_message,queued_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=3000`, 3000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,decision,corrected_fields,field_confidences,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=review_version.desc&limit=3000`, 3000),
+    restRowsAll(`zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,voucher_number,recipient,status&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&direction=eq.outflow&status=eq.confirmed&order=transaction_date.asc,created_at.asc&limit=5000`, 5000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=voucher_id,business_id&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&business_type=eq.petty_cash_record&unlinked_at=is.null&limit=3000`, 3000),
+    historyMonthEntries(companyId, storeId, month, "petty_cash"),
+  ]);
+  const targets = pettyCashBatchTargetRows(formalRecords, historyEntries);
+  const latestTask = new Map<string, JsonRecord>(), latestReview = new Map<string, JsonRecord>();
+  for (const task of tasks) if (!latestTask.has(cleanText(task.voucher_id, 40))) latestTask.set(cleanText(task.voucher_id, 40), task);
+  for (const review of reviews) if (!latestReview.has(cleanText(review.voucher_id, 40))) latestReview.set(cleanText(review.voucher_id, 40), review);
+  const formalLinkMap = new Map(formalLinks.map((link) => [cleanText(link.voucher_id, 40), cleanText(link.business_id, 40)]));
+  const historyEvidence = await historyEvidenceForEntries(companyId, storeId, historyEntries);
+  const historyEvidenceByHash = new Map((historyEvidence.evidence as JsonRecord[]).map((evidence) => [cleanText(evidence.sha256, 80), cleanText(evidence.id, 40)]));
+  const historyEntryByRow = new Map(historyEntries.map((entry) => [cleanText(entry.import_row_id, 40), cleanText(entry.id, 40)]));
+  const historyTargetByEvidence = new Map<string, string>();
+  for (const link of historyEvidence.links as JsonRecord[]) {
+    if (cleanText(link.link_level, 30) === "bundle_only") continue;
+    const targetId = historyEntryByRow.get(cleanText(link.import_row_id, 40));
+    if (targetId) historyTargetByEvidence.set(cleanText(link.evidence_id, 40), targetId);
+  }
+  const items = vouchers.map((voucher) => {
+    const task = latestTask.get(cleanText(voucher.id, 40)) || null;
+    const review = latestReview.get(cleanText(voucher.id, 40)) || null;
+    const candidate = pettyCashBatchFields(task?.candidate_fields);
+    const corrected = pettyCashBatchFields(review?.corrected_fields);
+    const note = parsePettyCashBatchNote(voucher.note) || { month, batch_id: "", original_filename: voucher.original_filename };
+    const formalTarget = formalLinkMap.get(cleanText(voucher.id, 40));
+    const evidenceId = historyEvidenceByHash.get(cleanText(voucher.sha256, 80));
+    const historyTarget = evidenceId ? historyTargetByEvidence.get(evidenceId) : "";
+    const confirmedKind = formalTarget ? "formal" : historyTarget ? "history" : null;
+    const confirmedId = formalTarget || historyTarget || null;
+    const taskStatus = cleanText(task?.status, 30) || (cleanText(voucher.mime_type, 80) === "application/pdf" ? "failed" : "queued");
+    const match = confirmedId ? { state: "confirmed", unique_exact: false, score: 100,
+      target_kind: confirmedKind, target_id: confirmedId, reason: "财务已确认并建立逐笔凭证关系" }
+      : matchPettyCashCandidate(candidate, targets);
+    return {
+      ...voucher, batch_id: note.batch_id, target_month: note.month,
+      latest_ocr_task: task, latest_review: review, candidate_fields: candidate,
+      corrected_fields: corrected, field_confidences: pettyCashBatchFields(task?.field_confidences),
+      task_status: taskStatus, match, confirmed_target_kind: confirmedKind,
+      confirmed_target_id: confirmedId,
+    };
+  });
+  return {
+    month, items, targets,
+    summary: {
+      total: items.length,
+      recognizing: items.filter((item) => ["queued", "processing"].includes(cleanText(item.task_status, 30))).length,
+      ready: items.filter((item) => cleanText((item.match as JsonRecord).state, 30) === "exact").length,
+      needs_review: items.filter((item) => !item.confirmed_target_id && !["queued", "processing"].includes(cleanText(item.task_status, 30))
+        && cleanText((item.match as JsonRecord).state, 30) !== "exact").length,
+      confirmed: items.filter((item) => Boolean(item.confirmed_target_id)).length,
+    },
+    candidate_only: true, human_confirmation_required: true, amount_changed: false,
+  };
+}
+
+async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadVouchers(session) || !canReviewVouchers(session) || !canWriteExpense(session)) {
+    throw new Error("只有当前门店财务账号可以确认批量凭证");
+  }
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const month = cleanText(payload.month, 7), batchId = uuidValue(payload.batch_id, "批量上传编号无效") as string;
+  const voucherId = uuidValue(payload.voucher_id, "凭证编号无效") as string;
+  const targetId = uuidValue(payload.target_id, "请选择对应的备用金明细") as string;
+  const targetKind = cleanText(payload.target_kind, 20);
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !["formal", "history"].includes(targetKind)) {
+    throw new Error("批量凭证对应信息无效");
+  }
+  const corrected = pettyCashBatchFields(payload.corrected_fields);
+  const documentDate = cleanText(corrected.document_date, 10), amount = Number(corrected.amount);
+  if (!validDate(documentDate) || !Number.isFinite(amount) || amount <= 0) {
+    throw new Error("请人工核对并填写凭证日期和金额");
+  }
+  corrected.document_date = documentDate;
+  corrected.amount = Math.round(amount * 100) / 100;
+  corrected.counterparty = cleanText(corrected.counterparty, 200) || null;
+  corrected.document_number = cleanText(corrected.document_number, 120) || null;
+  const expectedNote = pettyCashBatchNote(month, batchId, "");
+  const rows = await restRows(`zysyr_voucher_attachments?select=id,note,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&limit=1`);
+  if (!rows[0] || !cleanText(rows[0].note, 500).startsWith(expectedNote)) throw new Error("该凭证不属于当前月份的批量上传");
+  const reason = cleanText(payload.reason, 500) || `备用金月度批量凭证人工核对：${month}`;
+  const saved = await financeRpcSaved("rpc/zysyr_review_and_link_petty_cash_voucher", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId,
+    p_voucher_id: voucherId, p_target_kind: targetKind, p_target_id: targetId,
+    p_corrected_fields: corrected, p_field_confidences: pettyCashBatchFields(payload.field_confidences), p_reason: reason,
+  });
+  return { saved, candidate_only_before_confirmation: true, human_confirmed: true, amount_changed: false };
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -3168,7 +4243,26 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "EXISTING_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("当天已有正式日报，必须先冲销后再确认新版本");
     if (code === "DAILY_SHEET_ALREADY_CONFIRMED") throw new Error("这张电子日报已经最终确认，不能重复入账");
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
+    if (code === "DAILY_SHEET_REVISION_CONFLICT") throw new Error("这张日报已被其他页面修改；本次没有覆盖，请刷新并重新核对后再保存或入账");
+    if (code === "DAILY_SHEET_EXPECTED_REVISION_REQUIRED") throw new Error("日报版本信息无效，请刷新页面后重新核对");
+    if (code === "DAILY_ATTACHMENT_CONFIRMED_REQUIRES_REVERSAL") throw new Error("这张日报已经入账，原图不能删除或替换；请先走冲销流程");
+    if (code === "DAILY_ATTACHMENT_NOT_FOUND") throw new Error("所选原图不存在或不属于当前日报");
+    if (code === "DAILY_ATTACHMENT_ALREADY_VOIDED") throw new Error("这份误传原图已经作废，无需重复操作");
+    if (code === "DAILY_ATTACHMENT_VOID_REASON_REQUIRED") throw new Error("请填写误传作废原因");
+    if (code === "DAILY_SHEET_CHANGED_RELOAD") throw new Error("识别期间日报已被修改，请刷新后重试");
+    if (code === "DAILY_VOUCHER_NOT_LINKED") throw new Error("所选原图没有绑定到当前日报");
+    if (code === "DAILY_RECOGNITION_INPUT_INVALID" || code === "DAILY_RECOGNITION_CELL_INVALID"
+      || code === "DAILY_RECOGNITION_CELL_ROLE_INVALID" || code === "DAILY_RECOGNITION_VALUE_INVALID"
+      || code === "DAILY_RECOGNITION_TEXT_INVALID" || code === "DAILY_RECOGNITION_NAME_INVALID") {
+      throw new Error("图片识别结果格式异常，未保存任何候选内容");
+    }
+    if (code === "DAILY_RECOGNITION_NO_IMAGES") throw new Error("本月没有已审核的 JPG/PNG 日报原图");
+    if (code === "DAILY_RECOGNITION_JOB_NOT_FOUND" || code === "DAILY_RECOGNITION_ITEM_NOT_FOUND") throw new Error("日报识别任务不存在或不属于当前门店");
+    if (code === "DAILY_RECOGNITION_JOB_ACTION_INVALID") throw new Error("当前状态不能执行这个任务操作，请刷新后重试");
+    if (code === "DAILY_STAFF_ROW_TARGET_INVALID") throw new Error("当前门店在职员工数量超出电子日报允许范围，请先核对员工档案");
+    if (code === "DAILY_STAFF_ROW_TEMPLATE_NOT_FOUND") throw new Error("电子日报员工区模板不完整，无法自动增加行，请刷新后重试");
     if (code === "DAILY_SHEET_IMPORT_CONFLICT") throw new Error("当天已有日报或来源冲突，系统没有覆盖任何数据");
+    if (path === "rpc/zysyr_save_daily_sheet_cells" && sqlState === "23505") throw new Error("本次保存出现重复单元格，修改未提交；请刷新页面后重试");
     if (code === "DAILY_SHEET_SOURCE_CELL_MAPPING_FAILED" || code === "DAILY_SHEET_RECONCILIATION_FAILED") throw new Error("电子表格单元格与正式日报明细未能逐项匹配，系统已回滚");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "22003") throw new Error("图片中存在超出单元格允许范围的数字，已停止保存候选草稿");
     if (path === "rpc/zysyr_create_daily_sheet_draft" && sqlState === "23514") {
@@ -3186,6 +4280,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "MONTHLY_CELL_AGGREGATE_EDIT_FORBIDDEN") throw new Error("该金额由二级明细自动汇总，请进入二级明细修改具体记录");
     if (code === "MONTHLY_IDENTIFIER_EDIT_FORBIDDEN") throw new Error("编号、序号和员工号是固定标识，不能作为金额修改");
     if (code === "MONTHLY_CELL_AMOUNT_UNCHANGED") throw new Error("填写的金额与当前金额相同，无需保存");
+    if (code === "MONTHLY_EDITABLE_SLOT_REPORT_NOT_FOUND") throw new Error("当月月报不存在、已被替代或不属于当前门店");
+    if (code === "MONTHLY_EDITABLE_SLOT_PAYLOAD_INVALID") throw new Error("月报空白金额位格式异常，请刷新后重试");
     if (code === "MONTHLY_UNLOCK_APPROVAL_REQUIRED") throw new Error("该月份已锁账，请先提交修改申请并等待管理员授权");
     if (code === "MONTHLY_PERIOD_NOT_LOCKED") throw new Error("该月份尚未锁账，不需要申请解锁修改");
     if (code === "MONTHLY_UNLOCK_APPROVER_REQUIRED") throw new Error("只有公司范围管理员可以审批锁账修改申请");
@@ -4016,6 +5112,9 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,report_date,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   if (!drafts[0]) throw new Error("电子日报不存在或不属于当前门店");
   if (cleanText(drafts[0].status, 20) === "cancelled") throw new Error("已取消的日报不能补传原件");
+  if (attachmentKind === "original_report" && cleanText(drafts[0].status, 20) !== "draft") {
+    throw new Error("已入账日报不能更换原图；请先走冲销流程");
+  }
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始日报文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("原始日报文件必须小于 10MB");
@@ -4052,17 +5151,50 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     throw new Error(`原始日报登记失败 (${registered.status})`);
   }
   return { ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)), attachment_uploaded: true,
-    ai_recognition_enabled: false, formal_cells_unchanged: true };
+    ai_recognition_enabled: ["image/jpeg", "image/png"].includes(mime),
+    automatic_recognition_requested_by_client: ["image/jpeg", "image/png"].includes(mime)
+      && cleanText(drafts[0].status, 20) === "draft",
+    candidate_only: true, finance_confirmation_required: true, formal_cells_unchanged: true };
+}
+
+async function voidDailySheetAttachment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有处理误传日报的权限");
+  const store = await selectedStoreInfo(session, payload);
+  const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
+  const attachmentId = uuidValue(payload.attachment_id, "请选择误传的原始日报") as string;
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写误传原因");
+  await financeRpcSaved("rpc/zysyr_void_daily_sheet_attachment", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_draft_id: draftId, p_attachment_id: attachmentId, p_reason: reason,
+  });
+  return { ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)),
+    attachment_voided: true, original_preserved: true, formal_ledger_written: false };
 }
 
 async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
+  let currentValidationReview: JsonRecord | null = null;
+  if (cleanText(draft.status, 20) === "confirmed") {
+    const result = await currentDailyValidations(companyId, storeId, [cleanText(draft.id, 40)]);
+    const current = result.byDraft.get(cleanText(draft.id, 40));
+    const savedValidation = draft.validation_result && typeof draft.validation_result === "object"
+      ? draft.validation_result as JsonRecord : {};
+    currentValidationReview = result.unavailable
+      ? { status: "unavailable" }
+      : { status: current?.valid === false ? "current_mismatch"
+        : typeof savedValidation.valid === "boolean" && typeof current?.valid === "boolean" && savedValidation.valid !== current.valid
+          ? "changed" : "current_valid",
+        historical_valid: savedValidation.valid ?? null, current_validation: current ?? null };
+  }
   const reportDate = cleanText(draft.report_date, 10), month = reportDate.slice(0, 7);
-  const [cells, links, changes, locks] = await Promise.all([
-    restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
+  const [cells, links, voids, changes, locks] = await Promise.all([
+    restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,row_label_source_method,row_label_confidence,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
     restRowsAll(`zysyr_daily_sheet_attachments?select=id,voucher_id,attachment_kind,note,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=linked_at.desc&limit=200`, 200),
+    restRowsAll(`zysyr_daily_sheet_attachment_voids?select=id,daily_sheet_attachment_id,voucher_id,reason,voided_by_user_id,voided_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=voided_at.desc&limit=200`, 200),
     restRowsAll(`zysyr_daily_sheet_cell_changes?select=id,cell_id,revision,before_value,after_value,before_text,after_text,before_label,after_label,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=changed_at.desc&limit=500`, 500),
     restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,locked_at,unlock_reason&company_id=eq.${companyId}&period_month=eq.${month}-01&status=eq.locked&limit=100`, 100),
   ]);
@@ -4070,18 +5202,33 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   const legacyVoucherId = cleanText(draft.source_voucher_id, 40);
   if (legacyVoucherId && !voucherIds.includes(legacyVoucherId)) voucherIds.push(legacyVoucherId);
   const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=200`, 200) : [];
+  const attachmentIds = links.map((link) => cleanText(link.id, 40)).filter(Boolean);
+  const orientations = attachmentIds.length ? await restRowsAll(`zysyr_daily_attachment_orientation_revisions?select=id,daily_sheet_attachment_id,revision,degrees,reason,changed_by_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_sheet_attachment_id=in.${uuidIn(attachmentIds)}&order=revision.desc&limit=1000`, 1000) : [];
   const actorIds = [...new Set(changes.map((change) => cleanText(change.changed_by_user_id, 40)).filter(Boolean))];
   const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=200`, 200) : [];
   const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
   const cellMap = new Map(cells.map((cell) => [cleanText(cell.id, 40), cell]));
   const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
-  const attachments = await Promise.all(vouchers.map(async (voucher) => ({ ...voucher,
-    ...(linkMap.get(cleanText(voucher.id, 40)) || { attachment_kind: "original_report", linked_at: voucher.uploaded_at }),
-    private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
-    url_expires_in: 300,
-  })));
-  const primary = attachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || attachments[0] || null;
-  return { draft, cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
+  const voidMap = new Map(voids.map((entry) => [cleanText(entry.daily_sheet_attachment_id, 40), entry]));
+  const orientationMap = new Map<string, JsonRecord>();
+  for (const orientation of orientations) {
+    const attachmentId = cleanText(orientation.daily_sheet_attachment_id, 40);
+    if (!orientationMap.has(attachmentId)) orientationMap.set(attachmentId, orientation);
+  }
+  const attachments = await Promise.all(vouchers.map(async (voucher) => {
+    const link = linkMap.get(cleanText(voucher.id, 40)) || { attachment_kind: "original_report", linked_at: voucher.uploaded_at };
+    const voided = voidMap.get(cleanText(link.id, 40)) || null;
+    return { ...voucher, ...link, voided: Boolean(voided), void_reason: voided?.reason ?? null,
+      voided_at: voided?.voided_at ?? null,
+      display_orientation: orientationMap.get(cleanText(link.id, 40)) || null,
+      display_rotation_degrees: orientationMap.get(cleanText(link.id, 40))?.degrees ?? null,
+      private_url: await signedStorageUrl(VOUCHER_BUCKET, cleanText(voucher.object_path, 500)),
+      url_expires_in: 300 };
+  }));
+  const activeAttachments = attachments.filter((item) => item.voided !== true);
+  const primary = activeAttachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || activeAttachments[0] || null;
+  return { draft, current_validation_review: currentValidationReview,
+    cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
     history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
@@ -4089,7 +5236,7 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
         column_label: cell.column_label ?? null,
         changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }),
     locked: locks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId),
-    manual_entry_only: true, ai_values_excluded: true, final_confirmation_required: true, meiguanjia_used: false };
+    manual_entry_only: false, ai_candidates_review_only: true, final_confirmation_required: true, meiguanjia_used: false };
 }
 
 async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4107,8 +5254,8 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   for (const employee of employees) {
     const position = cleanText(employee.position, 120), name = safeCellText(employee.name, 80);
     if (!name) continue;
+    if (/发型师|设计师|店长/.test(position)) nameSeeds.push({ section_code: "stylist", row_label: name, column_code: "subtotal", value: null });
     if (/技师|技工|助理/.test(position)) nameSeeds.push({ section_code: "technician", row_label: name, column_code: "subtotal", value: null });
-    else if (/发型师|设计师|店长/.test(position)) nameSeeds.push({ section_code: "stylist", row_label: name, column_code: "subtotal", value: null });
   }
   const extraction: JsonRecord = { parsed: { report_date: reportDate, notes: "人工逐格填写空白日报模板", cells: nameSeeds },
     response_id: null, model: "manual-entry-v1", usage: null };
@@ -4134,7 +5281,7 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
-  return { ...result, readonly: false, permissions: { write: true, upload_original: true },
+  return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -4142,6 +5289,215 @@ async function saveDailySheetExtraction(input: {
 async function importDailySheetExtraction(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   void payload; void session;
   throw new Error("日报AI候选导入已停用；请对照原图人工填写电子表格");
+}
+
+async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有日报识别权限");
+  const store = await selectedStoreInfo(session, payload);
+  const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
+  let sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
+  let draft = sheet.draft as JsonRecord;
+  if (draft.status !== "draft" || sheet.locked) throw new Error("已确认或锁账日报不能自动识别覆盖");
+  const bridgeUrl = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_URL"), 500);
+  const bridgeToken = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN"), 500);
+  if (!bridgeUrl || !bridgeToken || !/^https:\/\//.test(bridgeUrl)) {
+    throw new Error("本机 Codex 日报识别通道尚未配置，请先手工填写");
+  }
+  const attachment = (sheet.attachments as JsonRecord[]).find(item =>
+    String(item.voucher_id || item.id) === String(payload.voucher_id)
+      && item.attachment_kind === "original_report" && item.voided !== true);
+  if (!attachment || !["image/jpeg", "image/png"].includes(String(attachment.mime_type))) throw new Error("请选择当前日报已绑定的 JPG 或 PNG 原图");
+  const employees = await restRowsAll(`zysyr_employees?select=name,position&company_id=eq.${store.company_id}&store_id=eq.${store.id}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
+  const stylistNames = new Set<string>(), technicianNames = new Set<string>();
+  for (const employee of employees) {
+    const name = normalizedName(employee.name), position = cleanText(employee.position, 120);
+    if (!name) continue;
+    if (/发型师|设计师|店长/.test(position)) stylistNames.add(name);
+    if (/技师|技工|助理/.test(position)) technicianNames.add(name);
+  }
+  const xiangli = /向里/.test(cleanText(store.name, 100));
+  const expanded = await financeRpcSaved("rpc/zysyr_expand_daily_sheet_staff_rows", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_draft_id: draftId, p_expected_revision: Number(draft.edit_revision),
+    p_stylist_rows: Math.min(20, Math.max(8, stylistNames.size)),
+    p_technician_rows: Math.min(20, Math.max(xiangli ? 6 : 7, technicianNames.size)),
+  });
+  if (Number(expanded.added_rows || 0) > 0) {
+    sheet = await dailySheetData(String(store.company_id), String(store.id), draftId);
+    draft = sheet.draft as JsonRecord;
+  }
+  const cells = (sheet.cells as JsonRecord[]).filter(cell => String(cell.cell_role) !== "signature");
+  // Let OpenAI fetch the short-lived private URL directly. Historical daily
+  // photos are often 5-8 MB; converting them to base64 inside the Edge Function
+  // adds ~33% payload size and can exhaust the request window before inference.
+  const recognitionUrl = await signedStorageUrl(VOUCHER_BUCKET,cleanText(attachment.object_path,500));
+  const expectedModel = Deno.env.get("ZYSYR_DAILY_CODEX_MODEL") || "gpt-5.5";
+  const response = await fetch(bridgeUrl, {
+    method:"POST", headers:{Authorization:`Bearer ${bridgeToken}`,"Content-Type":"application/json"},
+    signal:AbortSignal.timeout(205000),
+    body:JSON.stringify({store:store.name,report_date:draft.report_date,image_url:recognitionUrl,
+      cells:cells.map(cell=>({id:cell.id,section:cell.section_code,row:cell.row_key,name:cell.row_label,
+        column:cell.column_label,role:cell.cell_role,row_number:cell.row_number,column_number:cell.column_number}))})
+  });
+  if (!response.ok) {
+    const message = cleanText(await response.text(),1000);
+    console.error("daily local Codex recognition failed",response.status,message);
+    let reason = "";
+    try { reason = cleanText((JSON.parse(message) as JsonRecord).error,300); } catch { /* keep generic */ }
+    throw new Error(reason || `本机 Codex 日报识别暂不可用（${response.status}），原图已保留`);
+  }
+  const result = await response.json();
+  if (!result || !Array.isArray(result.cells)) throw new Error("本机 Codex 没有返回有效表格，请重试");
+  const parsed = result as JsonRecord;
+  const candidate = validateDailyCandidates(parsed,cells,String(draft.report_date),String(store.name));
+  const latest = await dailySheetData(String(store.company_id),String(store.id),draftId);
+  if ((latest.draft as JsonRecord).edit_revision !== draft.edit_revision || (latest.draft as JsonRecord).status !== "draft" || latest.locked) throw new Error("识别期间日报已变化，请刷新后重试");
+  const saved = await financeRpcSaved("rpc/zysyr_apply_daily_sheet_recognition_candidates", {
+    p_actor_user_id: cleanText(session.auth_account_id,40), p_company_id: cleanText(store.company_id,40),
+    p_store_id: cleanText(store.id,40), p_draft_id: draftId,
+    p_voucher_id: cleanText(payload.voucher_id,40), p_expected_revision: Number(draft.edit_revision),
+    p_candidates: {cells:candidate.cells,text_cells:candidate.text_cells,row_names:candidate.row_names},
+    p_model: cleanText(result.model,120) || expectedModel,
+  });
+  const refreshed = await dailySheetRead({store:cleanText(store.name,120),draft_id:draftId},session);
+  return {...candidate,saved,sheet:refreshed,draft_id:draftId,edit_revision:saved.revision,
+    expanded_rows:Number(expanded.added_rows||0),
+    expanded_stylist_rows:Number(expanded.added_stylist_rows||0),
+    expanded_technician_rows:Number(expanded.added_technician_rows||0),
+    provider:"codex-local",model:cleanText(result.model,120) || expectedModel,
+    candidate_only:true,formal_data_unchanged:true,finance_confirmation_required:true};
+}
+
+async function dailyRecognitionJobData(companyId: string, storeId: string, month: string, requestedJobId?: string | null): Promise<JsonRecord> {
+  const jobFilter = requestedJobId ? `&id=eq.${requestedJobId}` : "";
+  const jobs = await restRows(`zysyr_daily_recognition_jobs?select=id,period_month,status,total_count,success_count,failed_count,current_report_date,created_at,started_at,finished_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${month}-01${jobFilter}&order=created_at.desc&limit=1`);
+  const job = jobs[0] || null;
+  if (!job) return { job: null, items: [], remaining_count: 0, completed_count: 0 };
+  const items = await restRowsAll(`zysyr_daily_recognition_job_items?select=id,draft_id,voucher_id,report_date,status,attempt_count,candidate_count,error_message,started_at,finished_at,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&job_id=eq.${cleanText(job.id, 40)}&order=report_date.asc&limit=1000`, 1000);
+  const draftIds = [...new Set(items.map((item) => cleanText(item.draft_id, 40)).filter(Boolean))];
+  const drafts = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_drafts?select=id,status&id=in.(${draftIds.join(",")})&company_id=eq.${companyId}&store_id=eq.${storeId}&limit=1000`, 1000) : [];
+  const draftStatus = new Map(drafts.map((draft) => [cleanText(draft.id, 40), cleanText(draft.status, 30)]));
+  const displayItems = items.map((item) => ({...item,draft_status:draftStatus.get(cleanText(item.draft_id,40))||null}));
+  const remaining = displayItems.filter((item) => ["queued", "running"].includes(cleanText(item.status, 30))).length;
+  return { job, items:displayItems, remaining_count: remaining,
+    completed_count: displayItems.filter((item) => ["succeeded", "failed", "skipped"].includes(cleanText(item.status, 30))).length };
+}
+
+async function dailyRecognitionJobRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "voucher.read") && !hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有查看日报识别进度权限");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const jobId = payload.job_id ? uuidValue(payload.job_id, "日报识别任务编号无效") : null;
+  return { month, ...(await dailyRecognitionJobData(cleanText(store.company_id,40), cleanText(store.id,40), month, jobId)),
+    permissions:{write:cleanText(session.operations_role,40)==="finance"&&hasAuthCapability(session,"daily_report.write")} };
+}
+
+async function dailyRecognitionJobStart(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以启动整月日报识别");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), actorId=cleanText(session.auth_account_id,40);
+  const saved = await financeRpcSaved("rpc/zysyr_start_daily_recognition_job", {
+    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_period_month:`${month}-01`
+  });
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,cleanText(saved.id,40))),permissions:{write:true}};
+}
+
+async function dailyRecognitionJobNext(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以执行整月日报识别");
+  const store = await selectedStoreInfo(session, payload), month = parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40), storeId=cleanText(store.id,40), actorId=cleanText(session.auth_account_id,40);
+  const jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  const claimed = await financeRpcSaved("rpc/zysyr_claim_daily_recognition_item", {
+    p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId
+  });
+  const item = claimed.item as JsonRecord | null;
+  if (!item) return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),item_result:null,permissions:{write:true}};
+  let succeeded=false, candidateCount=0, errorMessage="", transient=false, recognized:JsonRecord|null=null;
+  try {
+    recognized=await recognizeDailySheet({store:cleanText(store.name,120),draft_id:item.draft_id,voucher_id:item.voucher_id},session);
+    const saved=(recognized.saved||{}) as JsonRecord;
+    candidateCount=Number(saved.saved_cells||0)+Number(saved.saved_text_cells||0)+Number(saved.saved_row_names||0);
+    succeeded=true;
+  } catch (error) {
+    errorMessage=cleanText((error as Error).message||"识别失败",500);
+    transient=errorMessage.includes("已有日报正在识别，请稍后重试");
+  }
+  if (!transient) {
+    await financeRpcSaved("rpc/zysyr_finish_daily_recognition_item", {
+      p_actor_user_id:actorId,p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,
+      p_item_id:cleanText(item.id,40),p_succeeded:succeeded,p_candidate_count:candidateCount,p_error_message:errorMessage||null
+    });
+  }
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),
+    item_result:{report_date:item.report_date,succeeded,transient,candidate_count:candidateCount,error:errorMessage||null,
+      numeric_count:Number((recognized?.saved as JsonRecord)?.saved_cells||0),text_count:Number((recognized?.saved as JsonRecord)?.saved_text_cells||0),name_count:Number((recognized?.saved as JsonRecord)?.saved_row_names||0)},permissions:{write:true}};
+}
+
+async function dailyRecognitionWorkerContext(payload: JsonRecord, request: Request): Promise<{
+  jobId: string; month: string; store: JsonRecord; session: JsonRecord;
+}> {
+  const expected = cleanText(Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN"), 500);
+  const supplied = cleanText(request.headers.get("x-zysyr-daily-worker"), 500);
+  if (!await constantTimeSecretMatch(supplied, expected)) throw new Error("日报识别后台执行器认证失败");
+  const jobId = uuidValue(payload.job_id, "日报识别任务编号无效") as string;
+  const jobs = await restRows(`zysyr_daily_recognition_jobs?select=id,company_id,store_id,period_month,requested_by_user_id,status&id=eq.${jobId}&limit=1`);
+  const job = jobs[0];
+  if (!job) throw new Error("日报识别任务不存在");
+  const companyId = cleanText(job.company_id, 40), storeId = cleanText(job.store_id, 40);
+  const actorId = cleanText(job.requested_by_user_id, 40);
+  const [stores, actors] = await Promise.all([
+    restRows(`zysyr_stores?select=id,company_id,name,code,status&id=eq.${storeId}&company_id=eq.${companyId}&status=eq.active&limit=1`),
+    restRows(`zysyr_user_accounts?select=id,company_id,status&id=eq.${actorId}&company_id=eq.${companyId}&status=eq.active&limit=1`),
+  ]);
+  const store = stores[0];
+  if (!store || !actors[0]) throw new Error("日报识别任务原财务账号或门店已停用");
+  const session: JsonRecord = {
+    operations_role: "finance", auth_account_id: actorId, auth_company_id: companyId,
+    auth_scope_type: "store", auth_store_id: storeId,
+    store: cleanText(store.name, 100),
+    auth_stores: [cleanText(store.name, 100)], auth_store_records: [store],
+    auth_capabilities: ["daily_report.write", "voucher.read"],
+  };
+  return { jobId, month: cleanText(job.period_month, 10).slice(0, 7), store, session };
+}
+
+async function dailyRecognitionWorkerRead(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  const context = await dailyRecognitionWorkerContext(payload, request);
+  return {
+    month: context.month,
+    ...(await dailyRecognitionJobData(
+      cleanText(context.store.company_id, 40), cleanText(context.store.id, 40), context.month, context.jobId,
+    )),
+  };
+}
+
+async function dailyRecognitionWorkerNext(payload: JsonRecord, request: Request): Promise<JsonRecord> {
+  const context = await dailyRecognitionWorkerContext(payload, request);
+  return dailyRecognitionJobNext({
+    store: cleanText(context.store.name, 100), month: context.month, job_id: context.jobId,
+  }, context.session);
+}
+
+async function dailyRecognitionJobControl(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以控制整月日报识别");
+  const store=await selectedStoreInfo(session,payload),month=parseMonth(payload.month),action=cleanText(payload.action,30);
+  if (!["pause","resume","retry_failed"].includes(action)) throw new Error("日报识别任务操作无效");
+  const companyId=cleanText(store.company_id,40),storeId=cleanText(store.id,40),jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  await financeRpcSaved("rpc/zysyr_control_daily_recognition_job",{p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:companyId,p_store_id:storeId,p_job_id:jobId,p_action:action});
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),permissions:{write:true}};
+}
+
+async function dailyRecognitionItemRetry(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有财务账号可以重试当天日报识别");
+  const store=await selectedStoreInfo(session,payload),month=parseMonth(payload.month);
+  const companyId=cleanText(store.company_id,40),storeId=cleanText(store.id,40);
+  const jobId=uuidValue(payload.job_id,"日报识别任务编号无效") as string;
+  const itemId=uuidValue(payload.item_id,"日报识别日期编号无效") as string;
+  await financeRpcSaved("rpc/zysyr_retry_daily_recognition_item",{
+    p_actor_user_id:cleanText(session.auth_account_id,40),p_company_id:companyId,
+    p_store_id:storeId,p_job_id:jobId,p_item_id:itemId
+  });
+  return {month,...(await dailyRecognitionJobData(companyId,storeId,month,jobId)),permissions:{write:true}};
 }
 
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4153,8 +5509,15 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有修改电子日报权限");
   const store = await selectedStoreInfo(session, payload), reason = cleanText(payload.reason, 500);
   const draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
+  const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
+  const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
+  if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新后重新核对再保存");
   if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
   const cells = (payload.cells as JsonRecord[]).map((cell) => {
+    // Missing value means label-only review; explicit null still means clear.
+    const hasValue = Object.prototype.hasOwnProperty.call(cell, "value");
+    const valueField = (value: number | string | null) => hasValue ? { value } : {};
+    const labelReviewed = cell.row_label_reviewed === true || (!hasValue && cell.row_label != null);
     const textRole = cell.cell_role === "signature" || cell.cell_role === "unclosed_order" || cell.cell_role === "note";
     const raw = cell.value == null || cell.value === "" ? null : String(cell.value);
     let value: number | string | null = null;
@@ -4170,19 +5533,45 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
     const id = cell.id == null || cell.id === "" ? null : uuidValue(cell.id, "电子日报单元格无效");
     if (id == null && !cell.section_code && !cell.row_key && !cell.column_code && !cell.cell_role) {
       if (raw == null && cell.row_label == null) throw new Error("电子日报单元格无效");
-      return { id: null, value, row_key: cleanText(cell.row_key, 80), row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120) };
+      return { id: null, ...valueField(value), row_key: cleanText(cell.row_key, 80), row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120), row_label_reviewed: labelReviewed };
     }
-    return { id, value,
+    return { id, ...valueField(value), row_label_reviewed: labelReviewed,
       section_code: cleanText(cell.section_code, 30), row_key: cleanText(cell.row_key, 80),
-      row_label: cell.row_label == null ? null : safeCellText(cell.row_label, 120),
+      // Numeric inputs on older pages carry the row name from the initial
+      // render. It is metadata, not a request to rename the employee. Only an
+      // explicit label review may rename an existing row; new cells still
+      // need an initial label when they are inserted.
+      row_label: (labelReviewed || !id) && cell.row_label != null ? safeCellText(cell.row_label, 120) : null,
       column_code: cleanText(cell.column_code, 80), column_label: cleanText(cell.column_label, 120),
       row_number: cell.row_number == null ? null : Number(cell.row_number),
       column_number: cell.column_number == null ? null : Number(cell.column_number),
       cell_role: cleanText(cell.cell_role, 60) };
   });
+  // Older pages submit a number and its row name as separate edits to the
+  // same cell. Merge before the RPC so its append-only audit gets one entry.
+  const uniqueCells = new Map<string, JsonRecord>();
+  for (const cell of cells as JsonRecord[]) {
+    const key = cell.id ? `id:${cell.id}` : JSON.stringify([cell.section_code, cell.row_key, cell.column_code]);
+    const prior = uniqueCells.get(key);
+    if (!prior) { uniqueCells.set(key, cell); continue; }
+    if (Object.prototype.hasOwnProperty.call(prior, "value") && Object.prototype.hasOwnProperty.call(cell, "value") && prior.value !== cell.value) {
+      throw new Error("同一单元格提交了不同金额，请刷新后核对；本次未保存");
+    }
+    if (prior.row_label_reviewed && cell.row_label_reviewed && prior.row_label !== cell.row_label) {
+      throw new Error("同一行提交了不同姓名，请刷新后核对；本次未保存");
+    }
+    uniqueCells.set(key, { ...prior, ...cell,
+      row_label: prior.row_label_reviewed && !cell.row_label_reviewed ? prior.row_label : cell.row_label,
+      row_label_reviewed: Boolean(prior.row_label_reviewed || cell.row_label_reviewed) });
+  }
+  // Apply explicit row-name edits after value/new-cell edits. This also keeps
+  // a newly inserted cell in the same row on the reviewed name, independent
+  // of the order in which the user filled the page.
+  const orderedCells = Array.from(uniqueCells.values()).sort((a, b) => Number(Boolean(a.row_label_reviewed)) - Number(Boolean(b.row_label_reviewed)));
   const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
-    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: cells, p_reason: reason,
+    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: orderedCells, p_reason: reason,
+    ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
   });
   return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
 }
@@ -4191,19 +5580,26 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   if (cleanText(session.operations_role, 40) !== "finance" || !hasAuthCapability(session, "daily_report.write")) throw new Error("只有财务账号可以最终确认电子日报");
   const store = await selectedStoreInfo(session, payload), companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const actorId = cleanText(session.auth_account_id, 40), draftId = uuidValue(payload.draft_id, "电子日报草稿无效"), reason = cleanText(payload.reason, 500);
+  const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
+  const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
+  if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新原图并重新逐格核对后入账");
   if (!reason || payload.reviewed_all !== true) throw new Error("最终确认前必须逐格核对原图并填写复核说明");
-  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status,edit_revision&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
+  if (expectedRevision !== null && Number(draft.edit_revision) !== expectedRevision) throw new Error("日报已被其他页面修改，请刷新、重新核对后再入账");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
   if (validation.valid !== true) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
   const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);
+  const sourceHash = await sha256Bytes(bytes);
   const extension = mime === "image/png" ? "png" : mime === "application/pdf" ? "pdf"
     : mime.includes("spreadsheetml") ? "xlsx" : "jpg";
-  const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${crypto.randomUUID()}.${extension}`;
+  // A retry for the same immutable source must reuse the same object rather
+  // than creating another orphan archive after a lost response.
+  const objectPath = `${companyId}/${storeId}/daily/${cleanText(draft.report_date, 10)}/${draftId}-${sourceHash}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
     method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": mime, "x-upsert": "false" }, body: exactArrayBuffer(bytes),
+      "Content-Type": mime, "x-upsert": "true" }, body: exactArrayBuffer(bytes),
   });
   if (!upload.ok) throw new Error(`电子日报原图归档失败 (${upload.status})`);
   const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000);
@@ -4216,16 +5612,31 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_sheet", {
       p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId,
       p_report: { original_filename: cleanText(voucher.original_filename, 200), mime_type: mime,
-        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        size_bytes: bytes.length, sha256: sourceHash, bucket_id: REPORT_BUCKET,
         object_path: objectPath, display_data: displayData },
       p_is_business_day: payload.is_business_day == null ? null : Boolean(payload.is_business_day), p_reason: reason,
+      ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
     });
     return { saved, confirmed: true, formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
   } catch (error) {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
-      method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-    }).catch(() => null);
-    throw error;
+    // Storage and Postgres do not share a transaction. A rejected/lost RPC
+    // response does not prove that the confirmation rolled back, so deleting
+    // this object here can break a report that committed successfully.
+    // Keep the archive; any orphan cleanup must first prove it is unreferenced.
+    try {
+      const readback = await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session);
+      const current = readback.draft && typeof readback.draft === "object" ? readback.draft as JsonRecord : {};
+      if (cleanText(current.status, 30) === "confirmed") {
+        return { saved: { draft_id: draftId, confirmed: true, recovered_by_readback: true }, confirmed: true,
+          formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
+      }
+    } catch {
+      // A failed readback also leaves the outcome unknown; never compensate by
+      // deleting the only object that may now be referenced by the report.
+    }
+    const detail = error instanceof Error ? error.message : "日报确认失败";
+    console.error("daily sheet confirmation outcome requires readback; archive retained", draftId, objectPath);
+    throw new Error(`${detail}；原图归档已保留，请刷新核实日报状态后再操作，避免重复入账。`);
   }
 }
 
@@ -4255,6 +5666,26 @@ function dailySheetTotal(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+async function currentDailyValidations(companyId: string, storeId: string, draftIds: string[])
+  : Promise<{ byDraft: Map<string, JsonRecord>; unavailable: boolean }> {
+  const byDraft = new Map<string, JsonRecord>();
+  if (!draftIds.length) return { byDraft, unavailable: false };
+  try {
+    const response = await rest("rpc/zysyr_admin_current_daily_sheet_validation", {
+      method: "POST", body: JSON.stringify({ p_company_id: companyId, p_store_id: storeId, p_draft_ids: draftIds }),
+    });
+    if (!response.ok) throw new Error(`current daily validation ${response.status}`);
+    const rows = await response.json();
+    if (!Array.isArray(rows)) throw new Error("current daily validation response shape");
+    rows.forEach((row: JsonRecord) => byDraft.set(cleanText(row.draft_id, 40),
+      row.current_validation && typeof row.current_validation === "object" ? row.current_validation as JsonRecord : {}));
+    return { byDraft, unavailable: draftIds.some((id) => !byDraft.has(id)) };
+  } catch (error) {
+    console.error("daily historical validation review unavailable", error instanceof Error ? error.message : "unknown");
+    return { byDraft, unavailable: true };
+  }
+}
+
 async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "voucher.read") && !hasAuthCapability(session, "daily_report.write")) {
     throw new Error("当前账号没有查看日报权限");
@@ -4270,10 +5701,29 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   ]);
   const locked = periodLocks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId);
   const draftIds = drafts.map((draft) => cleanText(draft.id, 40)).filter(Boolean);
-  const attachmentLinks = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_attachments?select=draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [];
+  // Revalidate only the calendar's displayed confirmed revision for each day.
+  // This is a bounded read: it never updates historical validation snapshots
+  // or financial rows.
+  const calendarDrafts: JsonRecord[] = [];
+  const calendarDates = new Set<string>();
+  for (const draft of drafts) {
+    const date = cleanText(draft.report_date, 10);
+    if (!date || calendarDates.has(date)) continue;
+    calendarDates.add(date);
+    calendarDrafts.push(draft);
+  }
+  const confirmedDraftIds = calendarDrafts
+    .filter((draft) => cleanText(draft.status, 20) === "confirmed")
+    .map((draft) => cleanText(draft.id, 40)).filter(Boolean);
+  const currentValidations = await currentDailyValidations(companyId, storeId, confirmedDraftIds);
+  const attachmentLinks = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_attachments?select=id,draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [];
   const attachmentVoucherIds = [...new Set(attachmentLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean))];
-  const attachmentVouchers = attachmentVoucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(attachmentVoucherIds)}&limit=5000`, 5000) : [];
+  const [attachmentVouchers, attachmentVoids] = await Promise.all([
+    attachmentVoucherIds.length ? restRowsAll(`zysyr_voucher_attachments?select=id,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(attachmentVoucherIds)}&limit=5000`, 5000) : Promise.resolve([]),
+    draftIds.length ? restRowsAll(`zysyr_daily_sheet_attachment_voids?select=daily_sheet_attachment_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : Promise.resolve([]),
+  ]);
   const attachmentStatus = new Map(attachmentVouchers.map((voucher) => [cleanText(voucher.id, 40), cleanText(voucher.audit_status, 20)]));
+  const voidedAttachmentIds = new Set(attachmentVoids.map((entry) => cleanText(entry.daily_sheet_attachment_id, 40)));
   const linksByDraft = new Map<string, JsonRecord[]>();
   for (const link of attachmentLinks) {
     const draftId = cleanText(link.draft_id, 40), list = linksByDraft.get(draftId) || [];
@@ -4293,8 +5743,23 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     const date = cleanText(draft.report_date, 10);
     if (byDate.has(date)) continue;
     const validation = (draft.validation_result ?? {}) as JsonRecord;
-    const total = dailySheetTotal(validation.grand_total) ?? dailySheetTotal(validation.staff_atomic_total);
-    const dailyLinks = linksByDraft.get(cleanText(draft.id, 40)) || [];
+    const currentValidation = cleanText(draft.status, 20) === "confirmed"
+      ? currentValidations.byDraft.get(cleanText(draft.id, 40)) || null
+      : null;
+    const historicalValidationChanged = currentValidation != null
+      && typeof currentValidation.valid === "boolean"
+      && typeof validation.valid === "boolean"
+      && currentValidation.valid !== validation.valid;
+    const historicalValidationStatus = currentValidations.unavailable && cleanText(draft.status, 20) === "confirmed"
+      ? "unavailable"
+      : historicalValidationChanged ? "changed"
+      : currentValidation && currentValidation.valid === false ? "current_mismatch"
+      : currentValidation ? "current_valid" : "not_applicable";
+    // An unvalidated OCR draft is not booked revenue. Do not present its
+    // partial candidate sum as the day's authoritative calendar amount.
+    const total = validation.valid === true ? dailySheetTotal(validation.grand_total) : null;
+    const dailyLinks = (linksByDraft.get(cleanText(draft.id, 40)) || [])
+      .filter((link) => !voidedAttachmentIds.has(cleanText(link.id, 40)));
     const originalCount = dailyLinks.length + (draft.source_voucher_id && !dailyLinks.some((link) => cleanText(link.voucher_id, 40) === cleanText(draft.source_voucher_id, 40)) ? 1 : 0);
     const approvedOriginalCount = dailyLinks.filter((link) => attachmentStatus.get(cleanText(link.voucher_id, 40)) === "approved").length
       + (draft.source_voucher_id && !dailyLinks.some((link) => cleanText(link.voucher_id, 40) === cleanText(draft.source_voucher_id, 40)) ? 1 : 0);
@@ -4302,7 +5767,10 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       status: cleanText(draft.status, 20), grand_total: total, edit_revision: Number(draft.edit_revision ?? 0),
       confirmed_at: draft.confirmed_at ?? null, source: "electronic", original_count: originalCount,
       approved_original_count: approvedOriginalCount, missing_original: originalCount === 0,
-      has_anomaly: validation.valid === false, locked });
+      has_anomaly: validation.valid === false || currentValidation?.valid === false,
+      historical_validation_status: historicalValidationStatus,
+      historical_validation_changed: historicalValidationChanged,
+      current_validation: currentValidation, locked });
   }
   for (const report of dailyReports) {
     const date = cleanText(report.report_date, 10);
@@ -4310,7 +5778,9 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     if (existing && existing.source === "formal") continue;
     if (existing) { existing.daily_report_id = report.id; existing.source_report_id = report.source_report_id;
       existing.version = Number(report.version ?? 1); existing.formal_status = cleanText(report.status, 20);
-      if (existing.grand_total == null) existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
+      if (existing.status === "confirmed") {
+        existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
+      }
       continue; }
     const formalStatus = cleanText(report.status, 20);
     byDate.set(date, { report_date: date, draft_id: null, daily_report_id: report.id,
@@ -4321,7 +5791,15 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       missing_original: !report.source_report_id, has_anomaly: false, locked });
   }
   const days = [...byDate.values()].sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  return { month, days, locked, manual_entry_only: true, ai_recognition_enabled: false, meiguanjia_used: false,
+  const candidateDraftIds = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=in.(codex_local_candidate,openai_vision_candidate,kimi_vision_candidate)&limit=10000`,10000) : [];
+  const recognizedDraftIds = new Set(candidateDraftIds.map((cell)=>cleanText(cell.draft_id,40)));
+  for (const day of days) day.recognition_saved = recognizedDraftIds.has(cleanText(day.draft_id,40));
+  const draftDays = days.filter((day)=>day.status === "draft" && Boolean(day.draft_id));
+  const recognizableDays = draftDays.filter((day)=>Number(day.approved_original_count || 0) > 0);
+  const recognizedDays = recognizableDays.filter((day)=>day.recognition_saved === true);
+  return { month, days, locked, manual_entry_only: false, ai_recognition_enabled: true, meiguanjia_used: false,
+    recognition:{eligible_days:recognizableDays.length,recognized_days:recognizedDays.length,
+      pending_days:recognizableDays.length-recognizedDays.length,confirmed_days:days.filter((day)=>day.status==="confirmed").length},
     permissions: { write: hasAuthCapability(session, "daily_report.write") } };
 }
 
@@ -4340,8 +5818,25 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable,
-    upload_original: hasAuthCapability(session, "daily_report.write") },
+    upload_original: hasAuthCapability(session, "daily_report.write"),
+    void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },
     daily_unlock_approved: hasUnlockApproval, daily_unlock_request_id: approvals[0]?.id ?? null };
+}
+
+async function saveDailyAttachmentOrientation(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有保存日报图片方向的权限");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const draftId = uuidValue(payload.draft_id, "电子日报编号无效") as string;
+  const attachmentId = uuidValue(payload.attachment_id, "请选择要保存方向的日报图片") as string;
+  const degrees = Number(payload.degrees);
+  if (![0, 90, 180, 270].includes(degrees)) throw new Error("图片方向必须是 0、90、180 或 270 度");
+  const saved = await financeRpcSaved("rpc/zysyr_save_daily_attachment_orientation", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_draft_id: draftId, p_attachment_id: attachmentId,
+    p_degrees: degrees, p_reason: cleanText(payload.reason, 500) || "调整日报原图显示方向",
+  });
+  return { saved, source_object_unchanged: true };
 }
 
 async function photoDailyImport(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4707,6 +6202,74 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   }
 }
 
+async function historyMonthlyAttachmentUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canUploadReports(session)) throw new Error("只有财务账号可以补传月报照片");
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const accountId = cleanText(session.auth_account_id, 40);
+  const batchId = uuidValue(payload.report_id ?? payload.import_batch_id, "历史月报编号无效") as string;
+  const month = parseMonth(cleanText(payload.month, 7));
+  const periodMonth = `${month}-01`;
+  const filename = cleanText(payload.filename, 200);
+  const mime = cleanText(payload.mime_type, 120);
+  const reason = cleanText(payload.reason, 500);
+  const extensionByMime: Record<string, string> = {
+    "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png",
+  };
+  const extension = extensionByMime[mime];
+  if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) {
+    throw new Error("月报照片支持 JPG、PNG 或 PDF");
+  }
+  if (!reason) throw new Error("补传月报照片必须填写说明");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("月报照片内容无效"); }
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个月报照片或 PDF 必须小于 10MB");
+
+  const batches = await restRows(`zysyr_history_import_batches?select=id,status,import_type,period_start,period_end&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&import_type=eq.monthly_profit_loss&status=eq.completed&period_start=lte.${periodMonth}&period_end=gte.${periodMonth}&limit=1`);
+  if (!batches[0]) throw new Error("当前月份没有可补传照片的历史月报");
+  const entries = await restRows(`zysyr_history_ledger_entries?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&entry_type=eq.monthly_profit_loss&period_month=eq.${periodMonth}&status=eq.posted&limit=1`);
+  if (!entries[0]) throw new Error("当前月份的历史月报尚未正式建立");
+
+  const fileHash = await sha256Bytes(bytes);
+  const existing = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`);
+  const objectPath = `${companyId}/${storeId}/history-import/${batchId}/monthly-report/${periodMonth}/${fileHash}.${extension}`;
+  let uploaded = false;
+  if (!existing[0]) {
+    const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+      method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+      body: exactArrayBuffer(bytes),
+    });
+    if (!upload.ok && upload.status !== 409) throw new Error(`月报照片上传失败 (${upload.status})`);
+    uploaded = upload.ok;
+  }
+  try {
+    const response = await rest("rpc/zysyr_attach_completed_history_monthly_evidence", {
+      method: "POST",
+      body: JSON.stringify({
+        p_actor_user_id: accountId, p_company_id: companyId, p_store_id: storeId,
+        p_import_batch_id: batchId, p_period_month: periodMonth,
+        p_original_filename: filename, p_mime_type: mime, p_size_bytes: bytes.length,
+        p_sha256: fileHash, p_bucket_id: REPORT_BUCKET, p_object_path: objectPath, p_reason: reason,
+      }),
+    });
+    const result = await response.json().catch(() => ({})) as JsonRecord;
+    if (!response.ok) throw new Error(`月报照片登记失败 (${response.status})`);
+    const saved = result.evidence && typeof result.evidence === "object" ? result.evidence as JsonRecord : result;
+    return { saved, linked_rows: result.linked_rows, reused: !result.created, formal_ledger_amount_changed: false };
+  } catch (error) {
+    if (uploaded) {
+      const registered = await restRows(`zysyr_history_import_evidence?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&sha256=eq.${fileHash}&limit=1`).catch(() => []);
+      if (!registered[0]) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
+          method: "DELETE", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+        });
+      }
+    }
+    throw error;
+  }
+}
+
 async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   historyImportFinance(session);
   const store = await selectedStoreInfo(session, payload);
@@ -4729,7 +6292,7 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始凭证内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个原始凭证必须小于 10MB");
 
-  const entries = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&entry_type=eq.monthly_profit_loss&status=eq.posted&limit=1`);
+  const entries = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&entry_type=in.(monthly_profit_loss,salary,petty_cash,employee_purchase)&status=eq.posted&limit=1`);
   const entry = entries[0];
   if (!entry) throw new Error("历史月报金额不存在或无权修改");
   const fileHash = await sha256Bytes(bytes);
@@ -4771,6 +6334,60 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
     }
     throw error;
   }
+}
+
+async function historyLedgerEvidencePageLink(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  const companyId = cleanText(store.company_id, 40);
+  const storeId = cleanText(store.id, 40);
+  const actorId = cleanText(session.auth_account_id, 40);
+  const ledgerEntryId = uuidValue(payload.ledger_entry_id, "历史账目编号无效") as string;
+  const evidenceId = uuidValue(payload.evidence_id, "历史凭证编号无效") as string;
+  const sourceLocator = cleanText(payload.source_locator, 220);
+  const reason = cleanText(payload.reason, 500);
+  if (!/^word\/media\/[A-Za-z0-9_.-]{1,180}$/.test(sourceLocator)) throw new Error("原图位置无效，请从凭证包图片中选择");
+  if (!reason) throw new Error("确认单张原图对应此项时必须填写核对说明");
+
+  const entryRows = await restRows(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${ledgerEntryId}&status=eq.posted&limit=1`);
+  const entry = entryRows[0];
+  if (!entry) throw new Error("历史正式账明细不存在或无权查看");
+  const evidenceRows = await restRows(`zysyr_history_import_evidence?select=id,import_batch_id,period_month,evidence_kind,mime_type,size_bytes,bucket_id,object_path&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${evidenceId}&limit=1`);
+  const evidence = evidenceRows[0];
+  if (!evidence || cleanText(entry.import_batch_id, 40) !== cleanText(evidence.import_batch_id, 40)
+      || cleanText(entry.period_month, 10) !== cleanText(evidence.period_month, 10)
+      || cleanText(evidence.evidence_kind, 40) !== "voucher_bundle"
+      || cleanText(evidence.mime_type, 120) !== DOCX_MIME) {
+    throw new Error("凭证包与当前正式账日期间或批次不一致，不能关联");
+  }
+  const rowId = cleanText(entry.import_row_id, 40);
+  const duplicate = await restRows(`zysyr_history_import_row_evidence?select=id,link_level&company_id=eq.${companyId}&store_id=eq.${storeId}&import_row_id=eq.${rowId}&evidence_id=eq.${evidenceId}&source_locator=eq.${encodeURIComponent(sourceLocator)}&limit=1`);
+  if (duplicate[0]) return { linked: true, reused: true, link_level: cleanText(duplicate[0].link_level, 30), source_locator: sourceLocator, formal_ledger_amount_changed: false };
+
+  const sizeBytes = Number(evidence.size_bytes || 0);
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0 || sizeBytes > MAX_REPORT_BYTES) throw new Error("凭证包大小异常，暂不能验证原图位置");
+  const objectPath = cleanText(evidence.object_path, 500), bucket = cleanText(evidence.bucket_id, 100);
+  const download = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucket)}/${storagePath(objectPath)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!download.ok) throw new Error(`原始凭证包读取失败 (${download.status})`);
+  const bytes = new Uint8Array(await download.arrayBuffer());
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("凭证包读取大小异常");
+  let archive: JSZip;
+  try { archive = await JSZip.loadAsync(exactArrayBuffer(bytes)); } catch { throw new Error("Word 凭证包无法读取或已损坏"); }
+  const media = archive.file(sourceLocator);
+  if (!media || !rasterMime(sourceLocator)) throw new Error("该原图位置不在当前 Word 凭证包中");
+
+  const saved = await rpcSaved("rpc/zysyr_link_history_import_evidence", {
+    p_actor_user_id: actorId,
+    p_company_id: companyId,
+    p_store_id: storeId,
+    p_import_row_id: rowId,
+    p_evidence_id: evidenceId,
+    p_source_locator: sourceLocator,
+    p_reason: reason,
+  });
+  return { linked: true, reused: false, link_level: cleanText(saved.link_level, 30) || "page_confirmed", source_locator: sourceLocator, formal_ledger_amount_changed: false };
 }
 
 async function historyEvidenceImages(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -4864,10 +6481,14 @@ Deno.serve(async (request: Request) => {
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
   try {
-    if (operation === "login") return json(await login(payload));
+    const employeeReader = Object.prototype.hasOwnProperty.call(payload, "employee_session_token")
+      ? await staffReportSession(payload, restRows, sha256) : null;
+    if (operation === "login") return json(await login(payload, request));
     if (operation === "shareholder_register") return json(await shareholderRegister(payload));
     if (operation === "logout") return json(await logout(payload));
-    const session = await requireSession(payload, request);
+    if (operation === "daily_recognition_worker_read") return json(await dailyRecognitionWorkerRead(payload, request));
+    if (operation === "daily_recognition_worker_next") return json(await dailyRecognitionWorkerNext(payload, request));
+    const session = employeeReader || await requireSession(payload, request);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
@@ -4876,6 +6497,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
+    if (operation === "monthly_text_save") return json(await monthlyTextSave(payload, session));
+    if (operation === "monthly_draft_create") return json(await createMonthlyDraft(payload, session));
+    if (operation === "monthly_editable_slots_prepare") return json(await prepareMonthlyEditableSlots(payload, session));
     if (operation === "history_monthly_cell_save") return json(await historyMonthlyCellSave(payload, session));
     if (operation === "monthly_cell_unlock_request") return json(await requestMonthlyCellUnlock(payload, session));
     if (operation === "monthly_cell_unlock_decide") return json(await decideMonthlyCellUnlock(payload, session));
@@ -4888,6 +6512,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "employee_save") return json(await saveEmployee(payload, session));
     if (operation === "store_save") return json(await saveStore(payload, session));
     if (operation === "report_upload") return json(await uploadReport(payload, session));
+    if (operation === "report_upload_auto") return json(await uploadReport(payload, session, true));
     if (operation === "report_cells") return json(await reportCells(payload, session));
     if (operation === "report_lineage") return json(await reportLineage(payload, session));
     if (operation === "cell_trace") return json(await finishMonthlyTrace(await cellTrace(payload, session), payload, session));
@@ -4909,6 +6534,9 @@ Deno.serve(async (request: Request) => {
     if (operation === "monthly_generate") return json(await generateMonthlyReport(payload, session));
     if (operation === "monthly_transition") return json(await transitionMonthlyReport(payload, session));
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
+    if (operation === "petty_cash_batch_upload") return json(await uploadPettyCashBatchVoucher(payload, session));
+    if (operation === "petty_cash_batch_status") return json(await pettyCashBatchStatus(payload, session));
+    if (operation === "petty_cash_batch_confirm") return json(await confirmPettyCashBatchVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
     if (operation === "voucher_review") return json(await reviewVoucher(payload, session));
     if (operation === "voucher_ocr_retry") return json(await retryVoucherOcr(payload, session));
@@ -4953,7 +6581,15 @@ Deno.serve(async (request: Request) => {
     if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_recognize") return json(await recognizeDailySheet(payload, session));
+    if (operation === "daily_recognition_job_start") return json(await dailyRecognitionJobStart(payload, session));
+    if (operation === "daily_recognition_job_read") return json(await dailyRecognitionJobRead(payload, session));
+    if (operation === "daily_recognition_job_next") return json(await dailyRecognitionJobNext(payload, session));
+    if (operation === "daily_recognition_job_control") return json(await dailyRecognitionJobControl(payload, session));
+    if (operation === "daily_recognition_item_retry") return json(await dailyRecognitionItemRetry(payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
+    if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
+    if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
@@ -4968,15 +6604,35 @@ Deno.serve(async (request: Request) => {
     if (operation === "history_ledger_revise") return json(await historyLedgerRevise(payload, session));
     if (operation === "history_ledger_reverse") return json(await historyLedgerReverse(payload, session));
     if (operation === "history_import_evidence_upload") return json(await historyImportEvidenceUpload(payload, session));
+    if (operation === "history_monthly_attachment_upload") return json(await historyMonthlyAttachmentUpload(payload, session));
     if (operation === "history_ledger_evidence_upload") return json(await historyLedgerEvidenceUpload(payload, session));
+    if (operation === "history_ledger_evidence_page_link") return json(await historyLedgerEvidencePageLink(payload, session));
     if (operation === "history_evidence_images") return json(await historyEvidenceImages(payload, session));
     if (operation === "history_import_file_url") return json(await historyImportFileUrl(payload, session));
     if (operation === "voucher_url") return json(await voucherUrl(payload, session));
     if (operation === "store_create") return json(await createStore(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
-    const message = (error as Error).message || "请求失败";
-    const authError = /登录|账号|密码|权限|离职|无权/.test(message);
-    return json({ error: message }, authError ? 403 : 400);
+    const message = publicRequestError(error);
+    const accountDisabled = /账号已停用|离职/.test(message);
+    const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message)
+      || (Object.prototype.hasOwnProperty.call(payload, "employee_session_token") && /员工登录已失效|门店变化/.test(message));
+    const authTemporary = message === "认证服务暂时不可用，请稍后自动重试";
+    const loginRateLimited = message === "尝试次数过多，请15分钟后再试";
+    const loginSecurityUnavailable = message === "登录安全校验暂不可用，请稍后重试"
+      || message === "登录安全记录暂不可用，请稍后重试";
+    const dataTemporary = message.startsWith("财务数据连接暂时失败");
+    const permissionDenied = /权限|无权/.test(message);
+    const code = accountDisabled ? "AUTH_ACCOUNT_DISABLED"
+      : sessionInvalid ? "AUTH_SESSION_INVALID"
+      : authTemporary ? "AUTH_TEMPORARY"
+      : loginRateLimited ? "AUTH_RATE_LIMITED"
+      : loginSecurityUnavailable ? "AUTH_SECURITY_TEMPORARY"
+      : dataTemporary ? "DATA_TEMPORARY"
+      : permissionDenied ? "PERMISSION_DENIED"
+      : "REQUEST_FAILED";
+    return json({ error: message, code }, (authTemporary || loginSecurityUnavailable || dataTemporary) ? 503
+      : loginRateLimited ? 429
+      : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
   }
 });

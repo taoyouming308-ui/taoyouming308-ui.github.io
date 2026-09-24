@@ -531,7 +531,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <!-- 月度护理用量统计 -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;">
     <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:10px;">📊 月度统计</div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">汇总数据由客户护理明细相加得出。点击发型师行的“编辑用量”，进入该发型师当月明细逐条更正。</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">欧拉裴、歌薇酸性护理、歌薇上色水分别统计，单位为克（g）。下方按品牌列出产品／色号明细；点击“编辑用量”可核对当月记录。自动出库已关闭，请员工在美管加手动出库。</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <select id="care-month-year" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
       <select id="care-month-month" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:#fff;font-size:13px;"></select>
@@ -549,6 +549,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
       </table>
     </div>
     <div id="care-stat-summary" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+    <div id="care-stat-brand-details"></div>
   </div>
 </div>
 
@@ -640,6 +641,8 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <button class="close-img" id="close-img-btn">✕</button>
 </div>
 <script src="aesthetic-knowledge.v1.js?v=388"></script>
+<script src="admin-care-monthly.js?v=514"></script>
+<script src="staff-access-client.js?v=514"></script>
 <script>
 const SUPABASE_URL = 'https://pdssrmpeiuwvxzsgschm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -962,7 +965,7 @@ function stopPendingPolling() {
 // 页面初始化必须在所有后台函数定义完成后执行，避免已登录用户刷新时提前调用未注册的页面加载器。
 function initializeAdminPage() {
   const session = getAdminSession();
-  const sessionValid = session && session.user && ['admin', STORE_ADMIN_ROLE].indexOf(session.role) !== -1 && session.loggedAt &&
+  const sessionValid = session && session.staffToken && session.user && ['admin', STORE_ADMIN_ROLE].indexOf(session.role) !== -1 && session.loggedAt &&
     (session.role !== STORE_ADMIN_ROLE || !!session.store) &&
     Date.now() - Number(session.loggedAt) < 2 * 60 * 60 * 1000;
   if (sessionValid) {
@@ -1028,6 +1031,10 @@ function initializeAdminPage() {
   });
 }
 
+function staffAccessRequest(operation, payload) {
+  return StaffAccessClient.request(SUPABASE_URL,SUPABASE_KEY,operation,Object.assign({session_token:getAdminSession().staffToken||""},payload||{}));
+}
+
 async function doLogin() {
   // 先请求通知权限（必须在用户点击操作中触发，Safari 必须）
   try {
@@ -1041,25 +1048,20 @@ async function doLogin() {
   if (btn) btn.disabled = true;
   try {
     const hashed = await hashPasswordValue(p);
-    async function findAdmin(passwordValue) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/staff?select=username,role,active,store&username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(passwordValue)}&role=in.(admin,${STORE_ADMIN_ROLE})&limit=1`, {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      await ensureOk(r, '登录失败');
-      return { rows: await r.json(), passwordValue: passwordValue };
-    }
-    let loginMatch = await findAdmin(hashed);
-    // 兼容历史后台管理员的旧密码值；员工新增和重置统一保存 SHA-256 摘要。
-    if (!loginMatch.rows.length) loginMatch = await findAdmin(p);
-    const user = loginMatch.rows[0];
+    const loginResult = await staffAccessRequest('admin_login',{username:u,password:p});
+    const user = loginResult.user;
+
     if (user && ['admin', STORE_ADMIN_ROLE].indexOf(user.role) !== -1 && user.active !== false &&
         (user.role !== STORE_ADMIN_ROLE || !!user.store)) {
       var trainingAuth = null;
       try {
-        var authResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}, body:JSON.stringify({operation:'admin_login',username:u,password_hash:loginMatch.passwordValue}) });
-        if (authResponse.ok) trainingAuth = await authResponse.json();
+        // Preserve legacy training login compatibility without reading stored credentials.
+        for (var trainingPassword of [hashed,p]) {
+          var authResponse = await fetch(AESTHETIC_LEARNING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}, body:JSON.stringify({operation:'admin_login',username:u,password_hash:trainingPassword}) });
+          if (authResponse.ok) { trainingAuth = await authResponse.json(); break; }
+        }
       } catch(e) {}
-      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now(), trainingToken: trainingAuth && trainingAuth.token || ''}));
+      localStorage.setItem('perm_admin', JSON.stringify({user: u, role: user.role, store: user.store || '', loggedAt: Date.now(), trainingToken: trainingAuth && trainingAuth.token || '', staffToken:loginResult.session_token}));
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
       document.getElementById('login-error').textContent = '';
@@ -1085,6 +1087,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  staffAccessRequest('logout').catch(function(){});
   localStorage.removeItem('perm_admin');
   stopRealtime();
   stopPendingPolling();
@@ -1247,9 +1250,9 @@ window.openRegistrationReview = async function(id) {
 function createPositionChecks(value, id) {
   const div = el('div', { id: id || '', className: 'pos-check-group', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:340px;' });
   const vals = String(value || '').split(',').map(function(v){ return v.trim(); });
-  ['发型师','技师','助理','前台','店长'].forEach(function(position) {
-    const label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;' });
-    const cb = el('input', { type: 'checkbox', value: position });
+  Array.from(new Set(['发型师','技师','助理','前台','店长','股东'].concat(vals.filter(Boolean)))).forEach(function(position) {
+    const label = el('label', { style: 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 8px;margin:0;white-space:nowrap;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;' });
+    const cb = el('input', { type: 'checkbox', value: position, style:'width:16px;height:16px;flex:none;margin:0;' });
     if (vals.indexOf(position) !== -1) cb.checked = true;
     label.appendChild(cb);
     label.appendChild(document.createTextNode(position));
@@ -1267,14 +1270,7 @@ async function approveRegistration(id, username) {
     const store = currentAdminStore() || document.getElementById('reg-review-store').value;
     const position = Array.from(document.querySelectorAll('#reg-review-position input:checked')).map(function(cb){ return cb.value; }).join(',');
     if (!store || !position) throw new Error('请确认门店和职位');
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: true, employment_status: 'active', role: 'staff', store: store, position: position })
-    });
-    await ensureOk(r, '审核失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('申请状态已经变化');
+    await staffAccessRequest('approve',{staff_id:id,data:{username:existing.username,role:'staff',store:store,position:position}});
     clearAdminStaffStoreCache();
     recordAdminAction('通过注册', username, store + ' / ' + position);
     toast('已通过注册审核', 'ok');
@@ -1288,17 +1284,13 @@ async function approveRegistration(id, username) {
 }
 
 async function rejectRegistration(id, username) {
-  if (!confirm('确认拒绝“' + username + '”的注册申请？未通过的申请将被移除，但不会影响任何业务配置数据。')) return;
+  if (!confirm('确认拒绝“' + username + '”的注册申请？申请将归档为停用并保留审核记录，不影响业务数据。')) return;
   try {
     const existing = await loadOne('staff', id);
     if (!adminCanManageStaffRow(existing, true)) throw new Error('无权拒绝其他门店的注册申请');
-  const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + '&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'return=representation' }
-    });
-    await ensureOk(r, '拒绝失败');
+    await staffAccessRequest('reject',{staff_id:id});
     clearAdminStaffStoreCache();
-    recordAdminAction('拒绝注册', username, '移除未通过申请');
+    recordAdminAction('拒绝注册', username, '归档未通过申请');
     toast('已拒绝注册申请', 'ok');
     closeModal();
     loadRegistrations();
@@ -1317,7 +1309,7 @@ window.loadDashboard = function() {
     fetchAdminJson('/rest/v1/staff?select=id,store&employment_status=eq.pending' + (currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : ''), '加载注册申请失败'),
     fetchAdminJson('/rest/v1/showcase_images?select=id,uploaded_by&status=eq.pending&limit=1000', '加载作品审核失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,status,record_data,created_at&status=neq.deleted&limit=500', '加载发质任务失败'),
-    isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/customer_profiles?select=id,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=500', '加载回访任务失败'),
+    isStoreAdmin() ? Promise.resolve([]) : staffAccessRequest('customer_profiles_admin',{limit:500}).then(function(data){return data.rows||[];}),
     isStoreAdmin() ? Promise.resolve([]) : fetchAdminJson('/rest/v1/care_outbound_queue?select=id,status,error_message,created_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库异常失败'),
     fetchAdminStaffStoreMap()
   ]).then(function(results) {
@@ -1363,9 +1355,10 @@ window.loadSystemStatus = function() {
   const stats = document.getElementById('system-stats');
   const list = document.getElementById('system-outbound-list');
   if (!stats || !list) return;
+  const syncStatusPromise = staffAccessRequest('customer_sync_status');
   Promise.all([
-    fetchAdminJson('/rest/v1/bookings?select=updated_at&order=updated_at.desc&limit=1', '加载预约同步状态失败'),
-    fetchAdminJson('/rest/v1/customer_profiles?select=last_updated&order=last_updated.desc.nullslast&limit=1', '加载客户同步状态失败'),
+    syncStatusPromise.then(function(data){return [{updated_at:data.booking_updated_at}];}),
+    syncStatusPromise.then(function(data){return [{last_updated:data.customer_updated_at}];}),
     fetchAdminJson('/rest/v1/care_outbound_queue?select=id,brand,product,grams,status,error_message,created_at,processed_at&status=in.(pending,processing,failed,needs_review,legacy_review)&order=created_at.desc&limit=200', '加载出库状态失败'),
     fetchAdminJson('/rest/v1/hair_records?select=id,barber,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', '加载出库关联档案失败')
   ]).then(function(results) {
@@ -2034,7 +2027,7 @@ function renderTable(tab, rows) {
 
 async function loadOne(table, id) {
   const storeScope = table === 'staff' && currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) : '';
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id,username,role,store,position,active,employment_status,created_at&id=eq.${encodeURIComponent(id)}${storeScope}&limit=1`, { headers: {'apikey': SUPABASE_KEY} });
   await ensureOk(r, '加载失败');
   const rows = await r.json();
   return rows[0];
@@ -2108,6 +2101,7 @@ async function openModal(tab, id) {
   if (id) {
     box.appendChild(el('div', { style: 'margin-top:10px;color:var(--muted);font-size:11px;', text: '离职会保留历史发质、预约、护理与训练记录，并立即禁止该账号继续登录。' }));
   }
+  StaffAccessClient.mountGrants(box,id,function(operation,payload){return staffAccessRequest(operation,payload)});
   appendModalButtons(box, '保存', function() { saveStaff(id || 0); });
   document.getElementById('modal').classList.add('show');
 }
@@ -2131,14 +2125,11 @@ async function saveStaff(id) {
     data.active = true;
     data.employment_status = 'active';
   }
-  if (pass) {
-    try {
-      data.password_hash = await hashPasswordValue(pass);
-    } catch(e) {
-      toast('密码处理失败: ' + e.message, 'err');
-      return;
-    }
-  }
+  if (pass) data.password=pass;
+  try {
+    var grantIds=StaffAccessClient.grants();
+    if(grantIds!==undefined)data.report_store_ids=grantIds;
+  } catch(e) {toast(e.message,'err');return;}
   if (id) {
     try {
       const existing = await loadOne('staff', id);
@@ -2160,15 +2151,7 @@ async function setStaffEmploymentStatus(id, nextStatus) {
   try {
     const existing = await loadOne('staff', id);
     if (!adminCanManageStaffRow(existing, false)) throw new Error('无权管理该账号');
-    const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
-    const r = await fetch(SUPABASE_URL + '/rest/v1/staff?id=eq.' + encodeURIComponent(id) + storeScope, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ active: !leaving, employment_status: nextStatus })
-    });
-    await ensureOk(r, leaving ? '办理离职失败' : '恢复在职失败');
-    const changed = await r.json();
-    if (!changed.length) throw new Error('员工状态已经变化，请刷新后重试');
+    await staffAccessRequest('employment',{staff_id:id,data:{employment_status:nextStatus}});
     clearAdminStaffStoreCache();
     recordAdminAction(leaving ? '办理离职' : '恢复在职', existing.username, existing.store || '');
     toast(leaving ? '已办理离职，账号已停用' : '已恢复为在职员工', 'ok');
@@ -2184,22 +2167,7 @@ async function upsert(table, id, data) {
   const btn = document.querySelector('#modal .btn-save');
   if (btn) btn.disabled = true;
   try {
-    let r;
-    if (id) {
-      const storeScope = currentAdminStore() ? '&store=eq.' + encodeURIComponent(currentAdminStore()) + '&role=eq.staff' : '';
-      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}${storeScope}`, {
-        method: 'PATCH',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(data)
-      });
-    } else {
-      r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(data)
-      });
-    }
-    await ensureOk(r, '保存失败');
+    await staffAccessRequest('save',{staff_id:id||0,data:data});
     clearAdminStaffStoreCache();
     recordAdminAction(id ? '修改员工' : '新增员工', data.username, data.store + ' / ' + data.position + ' / ' + data.role);
     toast('保存成功', 'ok');
@@ -2798,11 +2766,8 @@ function fetchMgjServicesForAdmin(serviceUrl, sinceDate, store) {
   return fetch(serviceUrl, {headers:{'apikey':SUPABASE_KEY}}).then(function(response){
     if (response.ok) return response.json();
     if (response.status !== 404) return ensureOk(response, '加载美管加烫染护记录失败').then(function(r){ return r.json(); });
-    var profileUrl = SUPABASE_URL + '/rest/v1/customer_profiles?select=phone,name,shop_name,service_history&last_visit_date=gte.' + sinceDate + '&order=last_visit_date.desc&limit=1000';
-    if (store) profileUrl += '&shop_name=eq.' + encodeURIComponent(store);
-    return fetch(profileUrl, {headers:{'apikey':SUPABASE_KEY}})
-      .then(function(r){ return ensureOk(r, '加载美管加消费历史失败'); })
-      .then(function(r){ return r.json(); })
+    return staffAccessRequest('customer_profiles_admin',{limit:1000,store:store})
+      .then(function(result){ return result.rows||[]; })
       .then(function(profiles){
         var rows = [];
         (profiles || []).forEach(function(profile){
@@ -3749,12 +3714,8 @@ function loadCustomers() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=*&order=last_visit_date.desc.nullslast&limit=200';
-  if (search) { url += '&or=(phone.ilike.%25' + encodeURIComponent(search) + '%25,name.ilike.%25' + encodeURIComponent(search) + '%25)'; }
-  if (barber) { url += '&barber_name=eq.' + encodeURIComponent(barber); }
-
-  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-    .then(function(r){ return r.json(); })
+  staffAccessRequest('customer_profiles_admin',{limit:200,search:search,barber:barber})
+    .then(function(result){ return result.rows||[]; })
     .then(function(rows){
       if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
 
@@ -3803,7 +3764,7 @@ function loadCustomers() {
         html += '<td><a href="#" onclick="event.preventDefault();viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="color:var(--info);">查看</a></td>';
         html += '<td style="font-size:11px;">' + fuCount + '次' + (lastFu !== '—' ? '<br><span style="color:#666;">最后' + lastFu + '</span>' : '') + '</td>';
         html += '<td style="white-space:nowrap;">';
-        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
+        html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\',' + Number(r.id) + ')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
         html += '<button onclick="viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">详情</button>';
         html += '</td></tr>';
       });
@@ -3867,12 +3828,8 @@ function loadFollowups() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">加载中...</td></tr>';
 
-  var url = SUPABASE_URL + '/rest/v1/customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,notes&order=last_visit_date.desc.nullslast&limit=1000';
-  if (store) url += '&shop_name=eq.' + encodeURIComponent(store);
-  if (barber) url += '&barber_name=eq.' + encodeURIComponent(barber);
-
-  fetch(url, { headers: { 'apikey': SUPABASE_KEY } })
-    .then(function(r){ return r.json(); })
+  staffAccessRequest('customer_profiles_admin',{limit:1000,store:store,barber:barber})
+    .then(function(result){ return result.rows||[]; })
     .then(function(rows){
       if (!rows || rows.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">暂无数据</td></tr>'; return; }
 
@@ -3935,7 +3892,7 @@ function loadFollowups() {
         html += '<td style="font-size:11px;">' + esc(meta.dueDate || '—') + '</td>';
         html += '<td><span class="status-chip ' + statusClass + '">' + statusText + '</span></td>';
         html += '<td>';
-        html += '<button onclick="showFollowUpModal(\'' + escAttr(phone) + '\',\'' + escAttr(name) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
+        html += '<button onclick="showFollowUpModal(\'' + escAttr(phone) + '\',\'' + escAttr(name) + '\',' + Number(r.id) + ')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">记录回访</button>';
         html += '</td></tr>';
       });
       tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#555;padding:30px;">无匹配数据</td></tr>';
@@ -3949,18 +3906,18 @@ function loadFollowups() {
 // ===== 记录回访弹窗 =====
 var _fuPhone = '';
 var _fuName = '';
-function showFollowUpModal(phone, name) {
+var _fuProfileId = 0;
+function showFollowUpModal(phone, name, profileId) {
   if (!requireSuperAdmin('客户回访')) return;
   _fuPhone = phone;
   _fuName = name;
+  _fuProfileId = Number(profileId) || 0;
   // 查询历史回访记录
   var historyHtml = '';
   if (phone) {
-    fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(phone), {
-      headers: { 'apikey': SUPABASE_KEY }
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(rows){
+    staffAccessRequest('customer_profile_notes',{profile_id:_fuProfileId})
+    .then(function(result){
+      var rows = result.rows || [];
       if (rows && rows[0]) {
         try {
           var notes = JSON.parse(rows[0].notes || '{}');
@@ -4022,38 +3979,10 @@ function saveFollowUp() {
   var content = document.getElementById('fu-content');
   var next = document.getElementById('fu-next');
   if (!_fuPhone || !content || !content.value.trim()) return;
-  var now = new Date();
-  var dateStr = now.toISOString().substring(0,10);
-  
-  var barber = currentAdminName();
   var savedContent = content.value.trim();
   var savedNext = next ? next.value : '';
-
-  // 先取现有notes
-  fetch(SUPABASE_URL + '/rest/v1/customer_profiles?select=notes&phone=eq.' + encodeURIComponent(_fuPhone), {
-    headers: { 'apikey': SUPABASE_KEY }
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(rows){
-    var notes = {};
-    try { notes = JSON.parse((rows && rows[0] && rows[0].notes) || '{}'); } catch(e) {}
-    if (!notes.follow_ups) notes.follow_ups = [];
-    notes.follow_ups.push({
-      date: dateStr,
-      barber: barber,
-      content: savedContent,
-      next: savedNext
-    });
-    // 写回
-    return fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(_fuPhone), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notes: JSON.stringify(notes) })
-    });
-  })
-  .then(function(r){
-    return ensureOk(r, '保存回访失败');
-  })
+  if (!_fuProfileId) { toast('客户档案编号缺失，请刷新客户列表后重试', 'err'); return; }
+  staffAccessRequest('customer_followup_append',{profile_id:_fuProfileId,content:savedContent,next:savedNext})
   .then(function(){
     recordAdminAction('记录客户回访', _fuName || _fuPhone, savedNext ? '下次计划 ' + savedNext : '未设置下次计划');
     toast('回访记录已保存', 'ok');
@@ -4375,146 +4304,54 @@ function initCareMonthSelects() {
   }
 }
 
+var careMonthlyRequest = 0;
 window.loadCareMonthlyStats = function() {
+  var request = ++careMonthlyRequest;
   var year = (document.getElementById('care-month-year')||{}).value || new Date().getFullYear();
   var month = (document.getElementById('care-month-month')||{}).value || (new Date().getMonth() + 1);
   var store = currentAdminStore() || (document.getElementById('care-month-store')||{}).value || '';
-
   var tbody = document.getElementById('care-stat-tbody');
   var thead = document.getElementById('care-stat-thead');
-  if (!tbody || !thead) return;
-
+  var details = document.getElementById('care-stat-brand-details');
+  var summary = document.getElementById('care-stat-summary');
+  if (!tbody || !thead || !details) return;
+  thead.innerHTML = '';
+  tbody.innerHTML = '<tr><td>加载中...</td></tr>';
+  details.innerHTML = '';
+  summary.textContent = '';
+  ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id) {
+    document.getElementById(id).textContent = '—';
+  });
   var fromDate = year + '-' + String(month).padStart(2, '0') + '-01';
   var toDate = parseInt(month) === 12
     ? (parseInt(year) + 1) + '-01-01'
     : year + '-' + String(parseInt(month) + 1).padStart(2, '0') + '-01';
-
-  // 并行拉取：产品列表（列头）+ 护理记录
-  Promise.all([
-    fetchCareProducts(),
-    fetch(SUPABASE_URL + '/rest/v1/care_records?select=shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (store ? '&shop_name=eq.' + encodeURIComponent(store) : '') + '&limit=5000', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return ensureOk(r, '加载护理记录失败'); }).then(function(r){ return r.json(); })
-  ])
-  .then(function(results) {
-    var productRows = results[0] || [];
-    var careRows = results[1] || [];
-
-    // 构建列头（所有brand+product的组合）
-    var allProducts = [];
-    var productSet = {};
-    for (var pi = 0; pi < productRows.length; pi++) {
-      var key = productRows[pi].brand + '-' + productRows[pi].product_name;
-      allProducts.push({ brand: productRows[pi].brand, product: productRows[pi].product_name, key: key });
-      productSet[key] = 0;
-    }
-
-    if (!careRows || careRows.length === 0) {
-      thead.innerHTML = '<tr><th>门店</th><th>发型师</th>' + (allProducts.length > 0 ? allProducts.map(function(p){ return '<th style="white-space:nowrap;">' + esc(p.brand) + '<br>' + esc(p.product) + '</th>'; }).join('') : '') + '<th>合计(g)</th><th>操作</th></tr>';
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理记录</td></tr>';
-      document.getElementById('care-stat-summary').textContent = '该月暂无记录';
-      return;
-    }
-
-    // 在JS里分组汇总：按 shop_name + barber
-    var stats = {};
-    for (var ri = 0; ri < careRows.length; ri++) {
-      var cr = careRows[ri];
-      var shopName = cr.shop_name || '';
-      var barber = cr.barber || '未知';
-      // 按门店过滤
-      if (store && shopName !== store) continue;
-      var key = shopName + '|' + barber;
-      if (!stats[key]) {
-        stats[key] = { store: shopName, barber: barber, products: JSON.parse(JSON.stringify(productSet)), total: 0 };
-      }
-      var pk = cr.brand + '-' + cr.product;
-      if (stats[key].products[pk] !== undefined) {
-        var grams = parseFloat(cr.grams) || 0;
-        stats[key].products[pk] += grams;
-        stats[key].total += grams;
-      } else {
-        // 该产品不在care_products表中，仍显示
-        if (stats[key].products[pk] === undefined) {
-          stats[key].products[pk] = (parseFloat(cr.grams) || 0);
-          stats[key].total += (parseFloat(cr.grams) || 0);
-          // 添加到列头
-          var newKey = pk;
-          var found = false;
-          for (var ai = 0; ai < allProducts.length; ai++) {
-            if (allProducts[ai].key === newKey) { found = true; break; }
-          }
-          if (!found) {
-            allProducts.push({ brand: cr.brand, product: cr.product, key: newKey });
-          }
-        }
-      }
-    }
-
-    // ★ 更新顶部概览卡片
-    var totalRecords = careRows.length;
-    var totalGrams = 0;
-    var barberCount = Object.keys(stats).length;
-    for (var si = 0; si < careRows.length; si++) {
-      totalGrams += parseFloat(careRows[si].grams) || 0;
-    }
-    var recEl = document.getElementById('care-total-records');
-    if (recEl) recEl.textContent = totalRecords;
-    var gramEl = document.getElementById('care-total-grams');
-    if (gramEl) gramEl.textContent = totalGrams.toFixed(1) + 'g';
-    var barberEl = document.getElementById('care-total-barbers');
-    if (barberEl) barberEl.textContent = barberCount;
-
-    // 构建表头
-    var headerHtml = '<tr><th>门店</th><th>发型师</th>';
-    for (var ai = 0; ai < allProducts.length; ai++) {
-      headerHtml += '<th style="white-space:nowrap;">' + esc(allProducts[ai].brand) + '<br>' + esc(allProducts[ai].product) + '</th>';
-    }
-    headerHtml += '<th>合计(g)</th><th style="min-width:82px;">操作</th></tr>';
-    thead.innerHTML = headerHtml;
-
-    // 构建表格行
-    var keys = Object.keys(stats);
-    if (keys.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="' + (allProducts.length + 4) + '" style="text-align:center;color:#555;padding:30px;">该月暂无护理用量数据</td></tr>';
-      document.getElementById('care-stat-summary').textContent = '该月暂无记录';
-      ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
-        var el = document.getElementById(id);
-        if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+  var url = SUPABASE_URL + '/rest/v1/care_records?select=id,shop_name,barber,brand,product,grams&record_date=gte.' + fromDate + '&record_date=lt.' + toDate + (store ? '&shop_name=eq.' + encodeURIComponent(store) : '');
+  return Promise.all([fetchCareProducts(), CareMonthly.fetchRows(fetch, url, { apikey: SUPABASE_KEY })])
+    .then(function(results) {
+      if (request !== careMonthlyRequest) return;
+      var report = CareMonthly.build(results[0] || [], results[1], store);
+      var html = CareMonthly.render(report);
+      thead.innerHTML = html.header;
+      tbody.innerHTML = html.body;
+      details.innerHTML = html.details;
+      tbody.querySelectorAll('[data-care-person]').forEach(function(button) {
+        button.onclick = function() {
+          var person = report.people[Number(button.dataset.carePerson)];
+          openCareMonthlyEditor(person.store, person.barber);
+        };
       });
-      return;
-    }
-
-    var bodyHtml = '';
-    var grandTotal = 0;
-    keys.sort();
-    for (var ski = 0; ski < keys.length; ski++) {
-      var s = stats[keys[ski]];
-      bodyHtml += '<tr>';
-      bodyHtml += '<td>' + esc(s.store || '—') + '</td>';
-      bodyHtml += '<td>' + esc(s.barber) + '</td>';
-      for (var ai2 = 0; ai2 < allProducts.length; ai2++) {
-        var val = s.products[allProducts[ai2].key] || 0;
-        bodyHtml += '<td style="text-align:right;">' + (val > 0 ? val.toFixed(1) : '—') + '</td>';
-      }
-      var rowTotal = s.total || 0;
-      bodyHtml += '<td style="text-align:right;font-weight:600;">' + rowTotal.toFixed(1) + '</td>';
-      bodyHtml += '<td><button type="button" class="btn-edit" onclick="openCareMonthlyEditor(\'' + escAttr(s.store || '') + '\',\'' + escAttr(s.barber) + '\')" style="white-space:nowrap;padding:4px 8px;font-size:11px;">编辑用量</button></td>';
-      bodyHtml += '</tr>';
-      grandTotal += rowTotal;
-    }
-    tbody.innerHTML = bodyHtml;
-    document.getElementById('care-stat-summary').textContent = year + '年' + month + '月 · 共 ' + keys.length + ' 条记录 · 护理用量合计 ' + grandTotal.toFixed(1) + 'g';
-  })
-  .catch(function(e) {
-    thead.innerHTML = '';
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger);padding:30px;">加载失败: ' + e.message + '</td></tr>';
-    document.getElementById('care-stat-summary').textContent = '加载失败';
-    ['care-total-records','care-total-grams','care-total-barbers'].forEach(function(id){
-      var el = document.getElementById(id);
-      if (el) el.textContent = id === 'care-total-records' ? '0' : id === 'care-total-grams' ? '0g' : '0';
+      document.getElementById('care-total-records').textContent = report.count;
+      document.getElementById('care-total-grams').textContent = CareMonthly.amount(report.total) + 'g';
+      document.getElementById('care-total-barbers').textContent = report.people.length;
+      summary.textContent = year + '年' + month + '月 · ' + report.count + '条用量明细 · ' + report.people.length + '位发型师 · 各品牌用量分别汇总';
+    }).catch(function(error) {
+      if (request !== careMonthlyRequest) return;
+      thead.innerHTML = '';
+      tbody.innerHTML = '<tr><td style="color:var(--danger);padding:20px;">' + esc(error.message || '加载失败') + '</td></tr>';
+      details.innerHTML = '';
+      summary.textContent = '加载失败，请重新查询';
     });
-  });
 };
 
 // ===== 护理记录明细 =====

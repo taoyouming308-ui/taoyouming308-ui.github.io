@@ -2457,6 +2457,21 @@ function initApp() {
   var BOOKING_DATE = getLocalDateStr();
   var BOOKING_INTERVAL = null;
   var BOOKINGS_CACHE = [];
+  var BOOKING_SESSION = null;
+  var BOOKING_SESSION_VALIDATED = false;
+
+  function employeeBookingsApi(operation, payload) {
+    return fetch(SUPABASE_URL + '/functions/v1/employee-bookings-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify(Object.assign({}, payload || {}, { operation: operation }))
+    }).then(function(response) {
+      return response.json().catch(function(){ return {}; }).then(function(data) {
+        if (!response.ok || data.error) throw new Error(data.error || ('请求失败 (' + response.status + ')'));
+        return data;
+      });
+    });
+  }
 
   // ★ 设备ID（每个手机唯一，存在localStorage）
   var DEVICE_ID = localStorage.getItem('booking-device-id');
@@ -2466,13 +2481,36 @@ function initApp() {
   }
 
   function checkIdentity() {
-    var cached = localStorage.getItem('booking-barber');
-    if (cached) {
-      BOOKING_BARBER = cached;
-      document.getElementById('current-identity').textContent = cached;
-    } else {
+    var cachedSession = null;
+    try { cachedSession = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch(e) {}
+    if (!cachedSession || !cachedSession.session_token) {
+      BOOKING_SESSION = null;
+      BOOKING_SESSION_VALIDATED = false;
+      localStorage.removeItem('booking-barber');
       showIdentityModal();
+      return;
     }
+    BOOKING_SESSION = cachedSession;
+    BOOKING_SESSION_VALIDATED = false;
+    employeeBookingsApi('session', { session_token: cachedSession.session_token }).then(function(data) {
+      var user = data && data.user;
+      if (!user || !user.username || !user.store) throw new Error('员工会话无效');
+      BOOKING_SESSION = Object.assign({}, cachedSession, user, { session_token: cachedSession.session_token, expires_at: data.expires_at });
+      BOOKING_SESSION_VALIDATED = true;
+      BOOKING_BARBER = user.username;
+      BOOKING_SHOP = user.store;
+      localStorage.setItem('booking-session', JSON.stringify(BOOKING_SESSION));
+      localStorage.setItem('booking-barber', BOOKING_BARBER);
+      var identity = document.getElementById('current-identity');
+      if (identity) identity.textContent = BOOKING_BARBER;
+      loadBookings(true);
+    }).catch(function() {
+      BOOKING_SESSION = null;
+      BOOKING_SESSION_VALIDATED = false;
+      localStorage.removeItem('booking-session');
+      localStorage.removeItem('booking-barber');
+      showIdentityModal();
+    });
   }
 
   var DOW = ['日','一','二','三','四','五','六'];
@@ -2527,38 +2565,16 @@ function initApp() {
   }
 
   window.doAppLogin = async function(){
-    var name = document.getElementById('login-name').value.trim();
-    var pass = document.getElementById('login-pass').value;
-    var errEl = document.getElementById('login-error');
-    if (!name || !pass) { errEl.textContent='请输入姓名和密码'; errEl.style.display=''; return; }
-    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
-      errEl.textContent = '当前浏览器不支持安全登录，请升级浏览器或使用 Safari/Chrome';
-      errEl.style.display = '';
-      return;
-    }
-    var btn = document.getElementById('login-submit-btn');
-    if (btn) btn.disabled = true;
-    try {
-      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      // 前端仅发送SHA-256摘要；staff表必须依赖Supabase RLS/策略限制读取范围，生产环境建议改为服务端加盐哈希校验。
-      var r = await fetch(SUPABASE_URL + '/rest/v1/staff?select=username,active&username=eq.' + encodeURIComponent(name) + '&password_hash=eq.' + encodeURIComponent(hash) + '&limit=1', {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      var rows = await r.json();
-      if (rows && rows.length > 0 && rows[0].active !== false) {
-        // 登录成功 → 弹出选名字页面，不直接绑定
-        document.getElementById('identity-modal').remove();
-        showBarberPicker();
-      } else {
-        errEl.textContent = '姓名或密码错误，或账号未通过审核';
-        errEl.style.display = '';
-      }
-    } catch(e) {
-      errEl.textContent = '登录失败，请重试';
-      errEl.style.display = '';
-    }
-    if (btn) btn.disabled = false;
+    var name=document.getElementById('login-name').value.trim(),pass=document.getElementById('login-pass').value;
+    var error=document.getElementById('login-error'),btn=document.getElementById('login-submit-btn');
+    if(btn.disabled)return;btn.disabled=true;
+    try{
+      var r=await fetch(SUPABASE_URL+'/functions/v1/employee-bookings-api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({operation:'login',username:name,password:pass})});
+      var data=await r.json();if(!r.ok)throw new Error(data.error||'登录失败');
+      localStorage.setItem('booking-session',JSON.stringify(Object.assign({},data.user,{session_token:data.session_token,expires_at:data.expires_at,loggedAt:Date.now()})));
+      // User-initiated login goes to the maintained app; never refresh an active editor.
+      location.href='perm-app.html';
+    }catch(e){error.textContent=e.message;error.style.display='';}finally{btn.disabled=false}
   };
 
   window.showBarberPicker = async function(){
@@ -2630,60 +2646,25 @@ function initApp() {
   };
 
   window.selectIdentity = function(name) {
+    if (!BOOKING_SESSION || name !== BOOKING_SESSION.username) {
+      showToast('请使用当前登录员工账号查看预约', 2500);
+      return;
+    }
     BOOKING_BARBER = name;
     localStorage.setItem('booking-barber', name);
     document.getElementById('current-identity').textContent = name || '全部发型师';
     var modal = document.getElementById('barber-picker-modal') || document.getElementById('identity-modal');
     if (modal) modal.remove();
-    // ★ 存到Supabase，管理员可在后台修改
-    if (name) {
-      fetch(SUPABASE_URL + '/rest/v1/barber_identities', {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify({ device_id: DEVICE_ID, barber_name: name })
-      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); })
-      .catch(function(e){ console.warn('身份同步失败:', e); });
-    }
+    // Device-to-barber sync is retired; keep the selected identity locally.
     loadBookings();
   };
 
   window.registerEmployee = async function(){
-    var username = document.getElementById('reg-name').value.trim();
-    var pass = document.getElementById('reg-pass').value;
-    var pass2 = document.getElementById('reg-pass2').value;
-    var errEl = document.getElementById('reg-error');
-    if (!username || !pass || !pass2) { errEl.textContent='请完整填写'; errEl.style.display=''; return; }
-    if (pass !== pass2) { errEl.textContent='两次密码不一致'; errEl.style.display=''; return; }
-    if (!window.crypto || !crypto.subtle || !window.TextEncoder) {
-      errEl.textContent = '当前浏览器不支持安全注册，请升级浏览器或使用 Safari/Chrome';
-      errEl.style.display = '';
-      return;
-    }
-    var btn = document.getElementById('reg-submit-btn');
-    if (btn) btn.disabled = true;
-    try {
-      var hash = 'sha256:' + Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass)))).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      var store = document.getElementById('reg-store').value;
-      var position = Array.from(document.querySelectorAll('#login-box-main .pos-check-group input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).join(',');
-      if (!store || !position) { errEl.textContent='请选择门店和职位'; errEl.style.display=''; if (btn) btn.disabled = false; return; }
-      var res = await fetch(SUPABASE_URL + '/rest/v1/staff', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Prefer':'return=minimal' },
-        body: JSON.stringify({ username:username, password_hash:hash, role:'staff', store:store, position:position, active:false })
-      });
-      if (!res.ok) {
-        var errBody = '';
-        try { var _errJson = await res.json(); errBody = _errJson.message || ''; } catch(e) {}
-        if (res.status === 409 && errBody.indexOf('username') !== -1) {
-          throw new Error('用户名已存在');
-        }
-        throw new Error('提交失败: ' + (errBody || res.status));
-      }
-      alert('注册成功，等待店主审核');
-      document.getElementById('identity-modal').remove();
-    } catch(e) {
-      errEl.textContent=e.message||'注册失败，请重试'; errEl.style.display='';
-      if (btn) btn.disabled = false;
+    var error=document.getElementById('reg-error');
+    error.textContent='员工注册已迁至新版自由手艺人 App，请使用下方入口。';error.style.display='';
+    if(!document.getElementById('new-staff-register')){
+      var link=document.createElement('a');link.id='new-staff-register';link.href='perm-app.html';link.textContent='打开新版 App 注册员工';link.style.cssText='display:block;padding:16px;color:inherit';
+      error.appendChild(link);
     }
   };
 
@@ -2696,6 +2677,10 @@ function initApp() {
   };
 
   window.switchShop = function(shop) {
+    if (!BOOKING_SESSION_VALIDATED || !BOOKING_SESSION || shop !== BOOKING_SESSION.store) {
+      showToast('当前员工账号只能查看所属门店预约', 2500);
+      return;
+    }
     BOOKING_SHOP = shop;
     document.getElementById('shop-btn-ziyou').classList.toggle('on', shop === '自由手艺人');
     document.getElementById('shop-btn-xiangli').classList.toggle('on', shop === '向里造型');
@@ -2705,6 +2690,10 @@ function initApp() {
   function loadBookings(showLoading) {
     var list = document.getElementById('booking-list');
     if (!list) return;
+    if (!BOOKING_SESSION || !BOOKING_SESSION.session_token) {
+      list.innerHTML = '<div class="no-results"><div class="icon">🔒</div>请登录员工账号查看预约</div>';
+      return;
+    }
 
     // ★ 离线模式：先从localStorage渲染缓存，再异步刷新
     var shopName = BOOKING_SHOP;
@@ -2712,24 +2701,19 @@ function initApp() {
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
 
-    if (showLoading === false && cached && cached.length > 0) {
+    if (BOOKING_SESSION_VALIDATED && showLoading === false && cached && cached.length > 0) {
       // 轮询刷新时直接显示已缓存数据（不闪）
       renderBookings(cached, list, false);
-    } else if (cached && cached.length > 0) {
+    } else if (BOOKING_SESSION_VALIDATED && cached && cached.length > 0) {
       // 首次加载：先显示缓存，后面刷新
       renderBookings(cached, list, true);
     } else if (showLoading !== false) {
       list.innerHTML = '<div class="booking-loading">加载中...</div>';
     }
 
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&order=reservation_time.asc&shop_name=eq.' + encodeURIComponent(BOOKING_SHOP) + '&date=eq.' + BOOKING_DATE, {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(rows){
-      rows = Array.isArray(rows) ? rows : [];
-      if (BOOKING_BARBER) {
-        rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
-      }
+    employeeBookingsApi('today_bookings', { session_token: BOOKING_SESSION.session_token, date: BOOKING_DATE })
+    .then(function(data){
+      var rows = data && Array.isArray(data.rows) ? data.rows : [];
       // ★ 数据签名：只有数据变了才更新DOM，避免每5秒闪屏
       var sig = rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.time_label||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')}).join('|');
       if (sig === window._bookingSig) { return; }
@@ -3014,14 +2998,13 @@ function initApp() {
       renderCustomerHistory(phone, name);
     })
     .catch(function(e){
-      // 优先查Supabase customer_profiles（有完整的美管加消费数据）
-      fetch(SUPABASE_URL + '/rest/v1/customer_profiles?phone=eq.' + encodeURIComponent(phone) + '&select=*', {
-        headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(rows){
+      // 通过员工会话读取当前门店客户档案，不允许浏览器直接读取跨店资料。
+      employeeBookingsApi('customer_profiles', { session_token: BOOKING_SESSION && BOOKING_SESSION.session_token, search: phone, limit: 100 })
+      .then(function(result){
+        var rows = result && Array.isArray(result.rows) ? result.rows : [];
         rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
-          // 合并两家店数据：累加消费金额、到店次数，取最近的到店日期
+          // 当前登录门店可能有同手机号的多条档案，仍只在本门店内汇总。
           var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
           rows.forEach(function(p){
             totalVisits += p.total_visits || 0;
@@ -3252,10 +3235,9 @@ function initApp() {
           return;
         }
         // customer_profiles没找到 → 降级到预约记录
-        fetch(SUPABASE_URL + '/rest/v1/bookings?select=*&customer_phone=eq.' + encodeURIComponent(phone) + '&order=date.asc', {
-          headers: { 'apikey': SUPABASE_KEY }
-        }).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then(function(bookingRows){
+        employeeBookingsApi('customer_history', { session_token: BOOKING_SESSION && BOOKING_SESSION.session_token, phone: phone })
+        .then(function(result){
+          var bookingRows = result && Array.isArray(result.bookings) ? result.bookings : [];
           bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
             document.querySelector('#plan-modal .box').innerHTML =
@@ -5044,11 +5026,12 @@ function initApp() {
     var today = new Date();
     var dateKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     
-    var barber = BOOKING_BARBER || '';
-    var barberFilter = barber ? '&barber_name=eq.' + encodeURIComponent(barber) : '';
-    fetch(SUPABASE_URL + '/rest/v1/bookings?select=customer_name,customer_phone,barber_name&date=eq.' + dateKey + barberFilter + '&order=reservation_time.asc', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
+    if (!BOOKING_SESSION_VALIDATED || !BOOKING_SESSION || !BOOKING_SESSION.session_token) {
+      showIdentityModal();
+      return;
+    }
+    employeeBookingsApi('today_bookings', { session_token: BOOKING_SESSION.session_token, date: dateKey }).then(function(result) {
+      var rows = result && Array.isArray(result.rows) ? result.rows : [];
       if (!rows || rows.length === 0) {
         alert('今天暂无预约');
         return;

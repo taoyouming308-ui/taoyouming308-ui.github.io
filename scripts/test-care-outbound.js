@@ -8,6 +8,10 @@ function fail(message) {
 
 const html = fs.readFileSync('perm-app.html', 'utf8');
 const storeConfig = JSON.parse(fs.readFileSync('scripts/care_outbound_store_config.json', 'utf8'));
+if (storeConfig.runtime_enabled !== false || storeConfig.shops['自由手艺人'].enabled !== false) {
+  fail('automatic outbound must be disabled in production config');
+}
+if (!html.includes('var CARE_OUTBOUND_AUTOMATIC_ENABLED = false;')) fail('App automatic outbound must be disabled');
 if (!storeConfig.shops || !storeConfig.shops['向里造型']) {
   fail('Xiangli store config is missing');
 }
@@ -66,7 +70,7 @@ const source = [
   'var CARE_OUTBOUND_PROTOCOL_VERSION = 2;',
   "var CARE_OUTBOUND_ENABLED_SHOP = '自由手艺人';",
   ...functionNames.map(extractFunction),
-  'return { careUsageTotals, prepareCareOutboundBaseline, validateCareOutboundReduction, careOutboundStableId, enqueueCareOutboundForRecord };'
+  'return { careUsageTotals, prepareCareOutboundBaseline, validateCareOutboundReduction, careOutboundStableId, enqueueCareOutboundForRecord, recoverCareOutboundPending, submitCareOutboundPending };'
 ].join('\n');
 const requests = [];
 const queuedRows = [];
@@ -92,12 +96,31 @@ async function mockFetch(url, options) {
   }
   return { ok: true, text: async () => '' };
 }
-const api = new Function('fetch', 'SUPABASE_URL', 'SUPABASE_KEY', 'getCareRecordShopName', source)(
+const api = new Function('fetch', 'SUPABASE_URL', 'SUPABASE_KEY', 'getCareRecordShopName', 'CARE_OUTBOUND_AUTOMATIC_ENABLED', source)(
   mockFetch,
   'https://example.supabase.co',
   'test-key',
-  async barber => barber === '向里员工' ? '向里造型' : '自由手艺人'
+  async barber => barber === '向里员工' ? '向里造型' : '自由手艺人',
+  true // 历史协议测试；生产关闭行为另外验证。
 );
+
+const disabledApi = new Function('fetch', 'SUPABASE_URL', 'SUPABASE_KEY', 'getCareRecordShopName', 'CARE_OUTBOUND_AUTOMATIC_ENABLED', source)(
+  () => { throw new Error('disabled outbound made a network request'); }, '', '',
+  () => { throw new Error('disabled outbound resolved a store'); }, false
+);
+(async function() {
+  const record = { id: 'old-pending', careUsage: [{ brand: '欧拉裴', product: '1号', grams: 5 }], careOutboundPending: { items: [{ queueId: -1 }] }, careOutboundSnapshot: [{ grams: 2 }], careOutboundBatches: [{ ids: [-2] }] };
+  const before = JSON.stringify(record);
+  for (let i = 0; i < 2; i++) {
+    for (const fn of ['enqueueCareOutboundForRecord', 'recoverCareOutboundPending', 'submitCareOutboundPending']) {
+      const result = await disabledApi[fn](record, record.careOutboundPending);
+      if (!result.skipped || result.queued || JSON.stringify(record) !== before) fail('disabled path must preserve history and skip queue');
+    }
+  }
+  const fresh = await disabledApi.enqueueCareOutboundForRecord({ id: 'fresh', careUsage: record.careUsage });
+  if (!fresh.skipped || fresh.queued) fail('new manual usage must not enter queue');
+  console.log('care manual outbound ok: new/repeated/recovery/direct-submit all skipped; history preserved');
+})().catch(error => fail(error.message));
 
 const firstSave = { careUsage: [{ brand: '歌薇', product: '6A', grams: '15' }] };
 api.prepareCareOutboundBaseline(firstSave, { careUsage: [] });

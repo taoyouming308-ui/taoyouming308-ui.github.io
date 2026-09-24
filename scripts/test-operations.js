@@ -5,10 +5,13 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
+const dailyReview = fs.readFileSync(path.join(root, 'operations-daily-review.js'), 'utf8');
 const voucherCore = fs.readFileSync(path.join(root, 'operations-voucher-preview.js'), 'utf8');
 const voucherView = fs.readFileSync(path.join(root, 'operations-voucher-view.js'), 'utf8');
+const operationsTime = fs.readFileSync(path.join(root, 'operations-time.js'), 'utf8');
 new vm.Script(voucherCore);
 new vm.Script(voucherView);
+new vm.Script(operationsTime);
 const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const deno = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/deno.json'), 'utf8');
@@ -33,6 +36,13 @@ expect(inlineScripts.length === 1, 'operations inline script missing or duplicat
 new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
+expect(html.includes('operations-time.js?v=' + releaseVersion) && operationsTime.includes("TIME_ZONE = 'Asia/Shanghai'"), 'versioned China Standard Time helper missing');
+expect(!/replace\(['"]T['"],\s*['"] ['"]\)\.slice/.test(html) && !html.includes('toISOString().slice(0,10)'), 'UTC timestamps must not be sliced directly for report display or form dates');
+expect(html.includes('id="monthly-more" class="monthly-more hidden" hidden') && html.includes('data-feature-enabled="false"')
+  && html.includes('id="monthly-summary-toggle"') && html.includes('disabled>开启多月汇总'),
+  'multi-month summary entry must remain closed without deleting its retained implementation');
+expect(html.includes('privateLinkCache') && html.includes('primePrivateLink') && html.includes('button.dataset.privatePrefetched')
+  && html.includes("expires_in||300"), 'private monthly photo prefetch/cache or expiry guard missing');
 expect(html.includes('月报表') && html.includes('自由手艺人') && html.includes('月盈亏统计'), 'original monthly report home missing');
 expect(html.includes('美发收入') && html.includes('普通美发产品') && html.includes('产品成本') && html.includes('备用金'), 'original monthly report labels missing');
 expect(html.includes('底薪') && html.includes('提成') && html.includes('社保') && html.includes('成本／成长／迟到/拍摄'), 'original payroll columns missing');
@@ -50,7 +60,9 @@ expect(html.includes('data-view="history-import"') && html.includes('生成预�
   && html.includes("api('history_import_preview'") && html.includes("api('history_import_evidence_upload'"),
   'historical import preview or evidence flow missing');
 expect(html.includes('原图对照人工电子日报') && html.includes('生成空白同版电子表格'), 'manual image-aligned daily entry missing');
-expect(html.includes('不进行 AI 识别') && html.includes('获授权门店账号或财务人工逐格填写'), 'manual-only daily source boundary missing');
+expect(html.includes('本机 Codex 只把原图数字填成待审核候选')
+  && html.includes('财务必须逐格核对、修改并最终确认后，才会正式入账'),
+  'local Codex candidate-only daily source boundary missing');
 expect(html.includes('员工每行小计、项目每列小计、实做/总计、支付方式四组必须独立相等'), 'independent daily controls copy missing');
 expect(html.includes("api('daily_sheet_create'") && html.includes("api('daily_sheet_save'") && html.includes("api('daily_sheet_confirm'"), 'daily sheet create/edit/confirm flow missing');
 expect(html.includes('daily-original-image') && html.includes('data-daily-cell') && html.includes('manual-edit'), 'side-by-side original image or editable cell grid missing');
@@ -71,6 +83,11 @@ expect(admin.includes('href="operations.html"'), 'admin entry to operations miss
 
 expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Function must keep service role server-side');
 expect(edge.includes('operations-auth') && edge.includes('requireSession'), 'Supabase Auth session validation missing');
+expect(edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_URL') && edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_TOKEN')
+  && edge.includes('codex_local_candidate'), 'local Codex bridge or candidate source missing');
+expect(edge.includes('只有财务账号可以最终确认电子日报')
+  && edge.includes('最终确认前必须逐格核对原图并填写复核说明'),
+  'finance review gate must remain mandatory after Codex recognition');
 expect(edge.includes('canUploadReports') && edge.includes('report.upload') && edge.includes('operations_role') && edge.includes('finance'), 'finance-only report permission missing');
 expect(edge.includes('selectedStoreInfo') && edge.includes('auth_company_id') && edge.includes('auth_store_records'), 'company/store authorization binding missing');
 expect(edge.includes('zysyr_report_uploads') && edge.includes('finance_uploads_only'), 'finance report source missing');
@@ -112,7 +129,7 @@ expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_ca
 expect(permissionContext.canWriteExpense({ auth_account_id: 'account-1', auth_capabilities: ['dashboard.store.read'] }) === false, 'Auth account without expense capability must be denied');
 expect(!edge.includes('mgj_service_records') && !edge.includes('income_read_only_from_mgj'), 'operations API must not read Meiguanjia');
 expect(!edge.includes('SUPABASE_ANON_KEY'), 'Edge Function must not rely on a browser anon key');
-expect(!edge.includes('Deno.env.get("MOONSHOT_API_KEY")') && !edge.includes('/chat/completions'), 'daily API must not call an AI vision provider');
+expect(edge.includes('async function recognizeDailySheet(') && edge.includes('candidate_only:true,formal_data_unchanged:true'), 'daily vision must return candidates only');
 expect(edge.includes('model: "manual-entry-v1"') && edge.includes('provider: "manual-entry"'), 'manual blank-template provider markers missing');
 expect(edge.includes('source_method: "blank_template"') && edge.includes('ocr_numeric: null') && edge.includes('ai_recognition_enabled: false'), 'blank manual seed boundary missing');
 expect(edge.includes('日报AI候选导入已停用') && edge.includes('请对照原图人工填写电子表格'), 'AI candidate import must remain disabled');
@@ -155,7 +172,7 @@ expect(!html.includes('monthly-trace-open') && html.includes('monthly-edit-toggl
   'monthly amount cells must not be covered by voucher buttons and must open original images directly');
 expect(html.includes('collectMonthlyVoucherTrace') && voucherCore.includes("trace.mode === 'formula'")
   && html.includes('scroll-snap-type:x mandatory') && voucherView.includes('左右滑动查看')
-  && html.includes('return openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
+  && html.includes(':openCellTrace(address)') && html.includes('monthlyVoucherView.mount'),
   'formula totals must collect descendant vouchers into a swipeable second-level gallery');
 expect(html.includes('上传这个数字的凭证') && html.includes('monthly_cell_id:target.id')
   && html.includes("record_type:'report',record_id:report.id")
@@ -239,6 +256,14 @@ expect(dailyManualOnly.includes('update public.zysyr_daily_sheet_drafts') && dai
 expect(dailyEditable.includes("v_has_value := v_item ? 'value'") && dailyEditable.includes('manual_text = v_text_after'), 'manual daily cells must support explicit clear and text persistence');
 expect(dailyEditable.includes('v_section := v_cell.section_code') && dailyEditable.includes('and section_code = v_section and row_key = v_row_key'), 'daily edits must trust database cell identity and update row labels consistently');
 expect(dailyEditable.includes('before_text') && dailyEditable.includes('after_text') && dailyEditable.includes('before_label') && dailyEditable.includes('after_label'), 'daily text and label audit values missing');
+expect(dailyReview.includes('button.dataset.blockReason')
+  && dailyReview.includes("button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write)")
+  && dailyReview.includes('if (reason) { showProblem(reason); return; }')
+  && html.includes('id="daily-detail-confirm-top"'),
+  'blocked daily confirmation must remain tappable and explain why posting is unavailable');
+expect(dailyReview.includes("querySelector('.control-mismatch')")
+  && dailyReview.includes("scrollIntoView({ behavior: 'smooth', block: 'center' })"),
+  'blocked daily confirmation must locate the first mismatched cell');
 expect(docxLineage.includes('wordprocessingml.document') && docxLineage.includes("report.report_type in ('daily', 'performance', 'salary')"), 'DOCX constraint or salary-to-monthly source boundary missing');
 expect(docxLineage.includes('daily_sheet_version_text_snapshot') && docxLineage.includes("'manual_text', cell.manual_text"), 'confirmed manual text snapshot missing');
 expect(docxLineage.includes('assert_daily_entry_scope') && docxLineage.includes("'daily_report.write'"), 'authorized store daily-entry scope missing');

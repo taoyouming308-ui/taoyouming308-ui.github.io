@@ -30,9 +30,11 @@ assert(app.includes('/rest/v1/perm_data'), 'app runtime unexpectedly lost perm_d
 assert(admin.includes('employment_status=eq.pending') && admin.includes('openRegistrationReview'), 'registration review is not separated from active staff');
 assert(admin.includes('employment_status=eq.pending'), 'registration review must not mix pending registrations with departed employees');
 assert(admin.includes('staff-status-filter') && admin.includes("value=\"departed\""), 'staff management must provide an employment-status filter');
-assert(admin.includes('setStaffEmploymentStatus') && admin.includes("employment_status: nextStatus"), 'staff management must support a reversible departure status');
+assert(admin.includes('setStaffEmploymentStatus') && /employment_status:\s*nextStatus/.test(admin), 'staff management must support a reversible departure status');
 assert(admin.includes('历史业务记录会保留'), 'departure flow must preserve historical business records');
-assert(admin.includes("hashPasswordValue(pass)"), 'new employee passwords are not hashed');
+const staffApi = fs.readFileSync('supabase/functions/staff-access-api/index.ts','utf8');
+assert(staffApi.includes('data.password_hash=`sha256:${await hash(password)}`') && admin.includes("staffAccessRequest('save'"), 'new employee passwords must be hashed by the protected service');
+assert(!admin.includes('password_hash=eq.'), 'backend login must never read/filter credentials publicly');
 assert(admin.includes('recordAdminAction'), 'backend operation audit is missing');
 assert(admin.includes('openCareMonthlyEditor') && admin.includes('编辑用量'), 'care monthly report has no per-barber edit entry');
 assert(admin.includes('loadCareDetailRecords();') && admin.includes('loadCareMonthlyStats();'), 'care correction does not refresh detail and monthly summary');
@@ -42,7 +44,7 @@ assert(admin.includes("const STORE_ADMIN_TABS = ['dashboard', 'registrations', '
 assert(admin.includes('FRONTDESK_ENDPOINT') && admin.includes("frontdeskAdminRequest('admin_overview'") && admin.includes('loadFrontdeskManagement'), 'frontdesk backend management is missing');
 assert(admin.includes("frontdeskAdminRequest('admin_revoke_session'") && admin.includes('退出前台设备'), 'frontdesk device session management is missing');
 assert(admin.includes('session.role !== STORE_ADMIN_ROLE || !!session.store'), 'store administrators can log in without a bound store');
-assert(admin.includes('role=in.(admin,${STORE_ADMIN_ROLE})'), 'backend login does not accept scoped store administrators');
+assert(admin.includes("staffAccessRequest('admin_login'") && staffApi.includes('["admin","store_admin"].includes(String(staff.role))'), 'backend login must validate administrator roles server-side');
 assert(admin.includes('data-tab="customers" data-super-admin-only') && admin.includes('data-tab="followups" data-super-admin-only'), 'customer or follow-up navigation is exposed to store administrators');
 assert(admin.includes('data-tab="system" data-super-admin-only'), 'system exceptions are exposed to store administrators');
 assert(admin.includes('data-content-view="carousel" data-super-admin-only'), 'homepage recommendation navigation is exposed to store administrators');
@@ -70,7 +72,9 @@ assert(admin.includes('未开单 · 本月美管加烫染护对账') && admin.in
 assert(admin.includes('mgj-reconcile-store') && admin.includes('mgj-reconcile-barber'), 'missing-order queue lacks store and stylist filters');
 assert(admin.includes("groupHeader = '<tr><td colspan=\"10\"") && admin.includes("adminMgjBarber(row)"), 'missing-order queue is not grouped by store and stylist');
 assert(admin.includes("if (store) serviceUrl += '&shop_name=eq.'"), 'store administrator reconciliation is not scoped to its store');
-assert(admin.includes("if (response.status !== 404)") && admin.includes('/rest/v1/customer_profiles?select=phone,name,shop_name,service_history'), 'reconciliation lacks a staged-schema fallback');
+assert(admin.includes("if (response.status !== 404)") && admin.includes("staffAccessRequest('customer_profiles_admin',{limit:1000,store:store})"), 'reconciliation fallback must use the admin-authenticated profile operation');
+assert(!admin.includes('/rest/v1/customer_profiles?') && !admin.includes('/rest/v1/bookings?'), 'admin browser must not access customer or booking data through the public Data API');
+assert(staffApi.includes('requireCustomerAdmin(actor)') && staffApi.includes('customer_followup_append') && staffApi.includes('notes=eq.'), 'customer reads/writes must be admin-authenticated and follow-up writes concurrency guarded');
 
 const assessment = admin.slice(admin.indexOf('window.loadAssessment'), admin.indexOf('// ===== 护理管理 ====='));
 assert(assessment.includes('/rest/v1/hair_records?'), 'monthly report does not use hair_records');

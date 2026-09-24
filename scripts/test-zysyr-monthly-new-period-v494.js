@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+const fs=require('fs');
+const path=require('path');
+const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+const page=fs.readFileSync(path.join(root,'operations.html'),'utf8');
+const api=fs.readFileSync(path.join(root,'supabase/functions/operations-api/index.ts'),'utf8');
+const workbench=fs.readFileSync(path.join(root,'operations-monthly-workbench.js'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260913040528_monthly_draft_shared_source.sql'),'utf8');
+function expect(value,message){if(!value)throw new Error(message)}
+expect(api.includes('async function createMonthlyDraft('),'monthly draft endpoint missing');
+expect(api.includes('monthlyDraftWorkbook(')&&api.includes('workbook.calcProperties.fullCalcOnLoad = true'),'editable workbook generation missing');
+expect(api.includes('report_date=eq.${month}-01')&&api.includes('created: false'),'idempotent exact-month guard missing');
+expect(api.includes('report_date=lt.${month}-01')&&api.includes('order=report_date.desc,version.desc'),'latest store template lookup missing');
+expect(api.includes('entry_type=eq.monthly_profit_loss')&&api.includes('historicalMonthlyReport(companyId, storeId, sourceMonth'),'historical formal monthly fallback missing');
+expect(api.includes('select=period_month,current_payload')&&api.includes('byAddress.set(address, cell)'),'all prior monthly input positions must remain fillable');
+expect(api.includes('monthlyItemCategory(sourceCell) !== "fixed"'),'fixed monthly identifiers must not be cleared');
+expect(api.includes('const fixedValueColumns = new Set<number>()')&&api.includes('target.value = 0'),'rendered amounts skipped by older parsers must be cleared');
+expect(api.includes('fresh_period_values_reset = true')&&api.includes('draft_reset_policy_version = 3'),'fresh-period reset marker missing');
+expect(api.includes('payload.rebuild_stale === true')&&api.includes('Number(existingDisplay.draft_reset_policy_version || 0) < 3'),'stale system draft repair guard missing');
+expect(api.includes('formulaPrecedents(formula, sheetName).length')&&api.includes('else target.value = 0'),'literal-only old-period formulas must be cleared');
+expect(api.includes('rpc/zysyr_register_report_upload'),'draft must use the audited report registration RPC');
+const draft=api.slice(api.indexOf('async function createMonthlyDraft('),api.indexOf('\nfunction uuidArray',api.indexOf('async function createMonthlyDraft(')));
+expect(draft.includes('displayData.source_object_reused = true'),'monthly draft must identify a retained shared source object');
+expect(draft.includes('bucket_id: sourceBucket')&&draft.includes('object_path: sourceObjectPath'),'monthly draft must reference its retained source template');
+expect(!draft.includes('/storage/v1/object/'),'starting monthly editing must not depend on uploading a duplicate workbook');
+expect(workbench.includes("button.textContent = '打开来源模板'"),'shared monthly source must be labelled as a source template');
+expect(migration.includes('drop constraint if exists zysyr_report_uploads_object_path_key'),'legacy one-row-per-object constraint must be replaced');
+expect(migration.includes('zysyr_report_uploads_owned_object_path_key')&&migration.includes("source_object_reused', 'false') <> 'true'"),'owned report objects must remain unique');
+expect(migration.includes("or report_type = 'monthly_profit_loss'"),'only monthly electronic drafts may share retained source objects');
+expect(api.includes('operation === "monthly_draft_create"'),'monthly draft route missing');
+expect(page.includes('开始填写本月月报')&&page.includes("api('monthly_draft_create'"),'new-month finance action missing');
+expect(page.includes('本月月报已建立，可直接填写金额、名称并保存'),'new-month editing confirmation missing');
+const scripts=[...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+expect(scripts.length===1,'operations inline script missing or duplicated');
+new vm.Script(scripts[0][1],{filename:'operations.html'});
+console.log('ZYSYR new monthly period editing static tests passed');

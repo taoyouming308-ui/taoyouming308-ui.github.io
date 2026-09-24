@@ -15,7 +15,8 @@ for (const marker of ['待填写', '缺少原始日报', '数据异常', '已锁
 for (const id of ['daily-detail-grid', 'daily-detail-upload', 'daily-detail-attachments', 'daily-detail-history', 'daily-detail-reason', 'daily-detail-unlock']) {
   expect(page.includes(`id="${id}"`), `daily detail control missing: ${id}`);
 }
-expect(page.includes('上传不会读取或覆盖电子表格'), 'manual-entry boundary copy missing');
+expect(page.includes('照片上传后自动识别为空白格候选')
+  && page.includes('保存草稿可继续编辑；核对原图后点击“入账”，计入当天及月报'), 'candidate review boundary copy missing');
 expect(page.includes("api('daily_sheet_save'") && page.includes("api('daily_sheet_confirm'"), 'daily detail save/confirm path missing');
 expect(page.includes("api('daily_sheet_attachment_upload'"), 'daily source upload path missing');
 
@@ -46,4 +47,6 @@ const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');
 new vm.Script(scripts[0][1], { filename: 'operations.html' });
 expect(page.includes(`data-version="${releaseVersion}"`) && page.includes(`operations-auth-bridge.js?v=${releaseVersion}`), 'current cache markers missing');
+expect(page.includes('id="daily-month" class="hidden" aria-hidden="true" tabindex="-1"'), 'duplicate daily month selector must stay visually hidden');
+expect(page.includes("mainMonth=$('month').value||currentMonthInput()") && page.includes('[main,input].forEach'), 'daily calendar must use and update the single top month selector');
 console.log('ZYSYR_DAILY_CALENDAR_V457_STATIC_OK');

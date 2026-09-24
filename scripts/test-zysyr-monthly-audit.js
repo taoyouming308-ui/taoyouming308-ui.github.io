@@ -73,11 +73,12 @@ new vm.Script(scripts[0][1], { filename: 'operations.html' });
 expect(page.includes('保存金额修改') && page.includes('申请修改锁账月份'), 'monthly revision controls missing');
 expect(page.includes('data-unlock-decision') && page.includes('批准一次修改'), 'administrator decision UI missing');
 expect(page.includes('amount_history') && page.includes('金额修改记录（永久留痕）'), 'shareholder audit history UI missing');
-expect(page.includes('二级业务明细 → 单笔记录 → 原始凭证'), 'business detail voucher drill-down UI missing');
+expect(page.includes('逐笔收入 / 开支与凭证'), 'business detail voucher drill-down UI missing');
 expect(page.includes('data-business-voucher-upload') && page.includes('审核通过后将自动绑定当前明细'), 'inline missing-voucher upload UI missing');
 expect(page.includes('monthly_cell_id:target.id'), 'cell-specific voucher upload payload missing');
 expect(page.includes('Object.keys(state.monthlyDirty'), 'dirty-only monthly save missing');
-expect(page.includes("cell.cell_kind==='input'") && page.includes('isAggregate') && page.includes('isTotal'), 'derived cells must not render as editable');
+expect(page.includes("cell.cell_kind==='formula'") && page.includes('saveMonthlyAmountAdjustment')
+  && page.includes("monthly_income_adjustment_save"), 'every numeric input/formula cell must use the audited adjustment path');
 expect(page.includes('isMonthlyFixedIdentifier') && page.includes('!isIdentifier'), 'identifier columns must stay fixed and non-traceable');
 expect(page.includes('data-view="monthly" class="active"'), 'original monthly report must remain default home');
 expect(!/data-view="revenue"|mgj_service_records/.test(page), 'turnover UI or Meiguanjia source returned');

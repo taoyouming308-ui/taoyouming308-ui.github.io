@@ -1,0 +1,34 @@
+const assert = require('node:assert/strict');
+const { build, render, fetchRows, amount } = require('../admin-care-monthly.js');
+const row = (id, brand, product, grams, shop_name = '自由手艺人') => ({ id, brand, product, grams, shop_name, barber: '无名' });
+const rows = [row(1, '欧拉裴', '1号', 1.25), row(2, '欧拉裴', '1号', 2.5), row(3, '歌薇酸性护理', '1号', 30), row(4, '歌薇上色水', '水蓝色', 60), row(5, '欧拉裴', '2号', 100, '向里造型'), row(6, '历史品牌', '<停用>', 4)];
+const report = build([{ brand: '欧拉裴', product_name: '1号' }, { brand: '欧拉裴', product_name: '1号' }], rows, '自由手艺人');
+assert.deepEqual(report.brands.map(b => [b.name, amount(b.total)]), [['欧拉裴', '3.75'], ['歌薇酸性护理', '30'], ['歌薇上色水', '60'], ['历史品牌', '4']]);
+assert.equal(report.count, 5);
+assert.equal(report.people.length, 1);
+assert.equal(report.brands[0].products.size, 1);
+assert.equal(amount(report.total), '97.75');
+assert.equal(build([], rows, '').people.length, 2);
+const html = render(report);
+assert(!html.header.includes('合计(g)'));
+assert(html.body.includes('当月合计'));
+const sections = html.details.split('<section').slice(1);
+assert.equal(sections.length, 4);
+assert(!sections[0].includes('歌薇'));
+assert(!sections[1].includes('欧拉裴'));
+assert(html.details.includes('&lt;停用&gt;'));
+assert(render(build([], [], '')).body.includes('该月暂无护理记录'));
+assert.deepEqual(build([], [], '').brands.map(b => b.total), [0, 0, 0]);
+(async () => {
+  const calls = [];
+  const got = await fetchRows(async url => {
+    calls.push(url);
+    const offset = Number(new URL(url).searchParams.get('offset'));
+    return { ok: true, json: async () => rows.slice(offset, offset + 2) };
+  }, 'https://example.test/care_records?select=id', {});
+  assert.deepEqual(got, rows);
+  assert.equal(calls.length, 4, 'server-capped short pages must not truncate monthly usage');
+  await assert.rejects(fetchRows(async () => ({ ok: false, status: 503 }), 'https://example.test/?a=1', {}), /503/);
+  await assert.rejects(fetchRows(async () => ({ ok: true, json: async () => [rows[0]] }), 'https://example.test/?a=1', {}), /分页发生变化/);
+  console.log('care monthly ok: independent brands, store isolation, historical products, decimals, empty state, pagination and failure');
+})().catch(error => { console.error(error); process.exitCode = 1; });

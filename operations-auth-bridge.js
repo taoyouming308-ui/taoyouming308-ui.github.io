@@ -5,6 +5,8 @@
 
   function clean(value,max){return String(value==null?'':value).trim().slice(0,max||9000)}
   function safeParse(value){try{return JSON.parse(value)}catch(_){return null}}
+  function transient(error){var status=Number(error&&error.status)||0;return !status||status===408||status===425||status===429||status>=500}
+  function confirmedInvalid(error){var status=Number(error&&error.status)||0;return status===400||status===401||status===403}
 
   function create(config){
     var base=clean(config&&config.supabaseUrl,500).replace(/\/$/,'');
@@ -35,7 +37,7 @@
     async function request(url,options){
       var response=await global.fetch(url,options||{});
       var body=await response.json().catch(function(){return{error:'认证服务响应无效'}});
-      if(!response.ok){var error=new Error(clean(body.error||body.message,300)||'认证请求失败');error.status=response.status;throw error}
+      if(!response.ok){var error=new Error(clean(body.error_description||body.error||body.message,300)||'认证请求失败');error.status=response.status;error.code=clean(body.error_code||body.code,100);throw error}
       return body;
     }
 
@@ -84,12 +86,19 @@
       return persist(body,value.scope);
     }
 
+    function invalidate(error){if(error&&!error.code)error.code='AUTH_SESSION_INVALID';clear();return error}
+
     async function ensureFresh(){
       var value=read();if(!value)return null;
-      if(!value.session.expires_at||value.session.expires_at<=Math.floor(Date.now()/1000)+60){
-        try{return await refresh(value)}catch(_){return read()}
+      if(!value.session.expires_at||value.session.expires_at<=Math.floor(Date.now()/1000)+300){
+        try{return await refresh(value)}catch(error){if(confirmedInvalid(error))throw invalidate(error);throw error}
       }
       return value;
+    }
+
+    async function forceRefresh(){
+      var value=read();if(!value)return null;
+      try{return await refresh(value)}catch(error){if(confirmedInvalid(error))throw invalidate(error);throw error}
     }
 
     async function restore(){
@@ -98,7 +107,7 @@
         if(!value.session.expires_at||value.session.expires_at<=Math.floor(Date.now()/1000)+60)value=await refresh(value);
         try{value.scope=await verify(value.session.access_token)}catch(error){if(!error.status||error.status!==401)throw error;value=await refresh(value);value.scope=await verify(value.session.access_token)}
         return persist(value.session,value.scope);
-      }catch(error){if(error&&error.status)clear();return null}
+      }catch(error){if(confirmedInvalid(error)){clear();return null}throw error}
     }
 
     async function login(username,password){
@@ -156,7 +165,7 @@
       })});
     }
 
-    return{login:login,restore:restore,ensureFresh:ensureFresh,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,createShareholderAccount:createShareholderAccount,clear:clear,read:read};
+    return{login:login,restore:restore,ensureFresh:ensureFresh,forceRefresh:forceRefresh,isTransientError:transient,signOut:signOut,createFinanceAccount:createFinanceAccount,createWorkforceAccount:createWorkforceAccount,createShareholderAccount:createShareholderAccount,clear:clear,read:read};
   }
 
   global.ZysyrAuthBridge={create:create,storageKey:STORAGE_KEY};

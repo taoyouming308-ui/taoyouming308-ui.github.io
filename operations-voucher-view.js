@@ -3,7 +3,7 @@
   'use strict';
   root.createZysyrVoucherView = function (options) {
     var core = root.ZysyrVoucherPreview, esc = options.escape, generation = 0;
-    function fileView(file, host, retry) {
+    function fileView(file, host, retry, linkImage) {
       var selected = core.selectImages(file), url = core.safeURL(file.file_url), name = file.filename || file.original_filename || '原始凭证';
       var images = selected.images.map(function (item) { return core.safeURL(item.data_url); }).filter(Boolean);
       if (!images.length && url && core.kind(file) === 'image') images.push(url);
@@ -15,13 +15,30 @@
       if (file.preview_error) html += '<div class="candidate-warning">这份原件暂时未能读取：' + esc(file.preview_error) + '。可在此重试，不影响其他原件。</div>';
       if (images.length) {
         html += '<div class="voucher-gallery-controls"><button type="button" class="ghost" data-step="-1">上一张</button><span data-count aria-live="polite">1 / ' + images.length + '</span><button type="button" class="ghost" data-step="1">下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
-        html += images.map(function (src, i) { return '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="' + i + '" aria-label="放大第 ' + (i + 1) + ' 张原始凭证"><img src="' + esc(src) + '" alt="原始凭证第 ' + (i + 1) + ' 张" loading="' + (i ? 'lazy' : 'eager') + '"></button><figcaption>原图 ' + (i + 1) + ' / ' + images.length + '</figcaption></figure>'; }).join('') + '</div>';
+        html += images.map(function (src, i) {
+          var item = selected.images[i] || {}, locator = String(item.filename || '').split('/').pop();
+          var linkButton = linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
+          return '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="' + i + '" aria-label="放大第 ' + (i + 1) + ' 张原始凭证"><img src="' + esc(src) + '" alt="原始凭证第 ' + (i + 1) + ' 张" loading="' + (i ? 'lazy' : 'eager') + '"></button><figcaption>原图 ' + (i + 1) + ' / ' + images.length + '</figcaption>' + linkButton + '</figure>';
+        }).join('') + '</div>';
       } else if (url && core.kind(file) === 'pdf') html += '<iframe class="voucher-pdf-preview" title="' + esc(name) + ' PDF 原件预览" src="' + esc(url) + '"></iframe><div class="help">若浏览器不支持 PDF 内嵌预览，可使用下方备用原文件入口。</div>';
       else if (!file.preview_error && !selected.missing) html += '<div class="help">这份附件没有可直接显示的图片或 PDF；保留原文件供核对，不将其冒充消费凭证截图。</div>';
       html += '<div class="trace-actions"><button type="button" class="ghost" data-retry>重新读取原件</button></div>';
       if (url) html += '<details class="trace-source-details"><summary>备用：打开原文件</summary><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(name) + '</a></details>';
       host.innerHTML = html;
       host.querySelector('[data-retry]').onclick = retry;
+      host.querySelectorAll('[data-link-history-page]').forEach(function (button) {
+        button.onclick = async function () {
+          button.disabled = true;
+          try {
+            var result = await linkImage(button.dataset.linkHistoryPage);
+            if (result === false) { button.disabled = false; return; }
+            button.textContent = '已确认关联，正在刷新…';
+          } catch (error) {
+            button.disabled = false;
+            button.insertAdjacentHTML('afterend', '<span class="candidate-warning">' + esc(error.message || '关联失败') + '</span>');
+          }
+        };
+      });
       bindSlides(host, images);
     }
     function bindSlides(host, images) {
@@ -49,7 +66,7 @@
       update();
     }
     async function mount(data, address, context, body) {
-      if (['income', 'salary', 'total', 'fixed'].includes(data.item_category)) { generation++; return; }
+      if (['income', 'salary', 'total', 'fixed', 'purchase_summary'].includes(data.item_category)) { generation++; return; }
       var request = ++generation, details = document.createElement('details'), workbenchCards = Array.from(body.querySelectorAll('.monthly-simple-workbench'));
       if (!workbenchCards.length) workbenchCards = Array.from(body.querySelectorAll('.monthly-inline-editor,.business-detail-card'));
       details.className = 'trace-source-details voucher-trace-details';
@@ -75,6 +92,9 @@
           gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。可以直接上传凭证，或将该项目设置为“不需要凭证”；组成明细仍保留在下方，按需展开。</div>');
           return;
         }
+        var target = data.target || {};
+        var canLinkPage = Boolean(data.historical && data.mode !== 'formula' && data.can_upload_vouchers
+          && target.historical_ledger_entry_id && target.historical_import_row_id);
         var hosts = collected.evidence.map(function (file) {
           var host = document.createElement('section'); host.className = 'trace-card voucher-file-preview';
           host.innerHTML = '<h4>' + esc(file.original_filename || '原始凭证') + '</h4><div class="voucher-gallery-loading">正在读取原图…</div>';
@@ -84,7 +104,14 @@
           hosts[index].innerHTML = '<div class="voucher-gallery-loading">正在重新读取…</div>';
           try { var result = await options.load(collected.evidence[index], context, data.historical); if (active()) show(result, index); }
           catch (error) { if (active()) show(Object.assign({}, collected.evidence[index], { preview_error: error.message }), index); }
-        }); }
+        }, canLinkPage && file.trace_link_level === 'bundle_only' ? async function (filename) {
+          if (!active()) throw new Error('页面已切换，请重新打开当前金额');
+          var reason = window.prompt('请先放大核对原图确实对应“' + (target.label || address) + '”这笔，再填写核对说明。系统不会按金额自动配对。');
+          if (!reason || !reason.trim()) return false;
+          await options.linkHistoryPage({ store: context.store, ledger_entry_id: target.historical_ledger_entry_id,
+            evidence_id: file.id, source_locator: 'word/media/' + filename, reason: reason.trim() });
+          if (active()) options.reopen(address);
+        } : null); }
         await core.loadFiles(collected.evidence, function (file) { return options.load(file, context, data.historical); }, show, active);
       } catch (error) {
         if (active()) gallery.innerHTML = header + '<div class="candidate-warning">凭证预览读取失败：' + esc(error.message) + '。下方追溯与修改记录仍可核对。</div>';

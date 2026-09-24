@@ -1,0 +1,11 @@
+{
+  "name": "perm-pages-validation",
+  "private": true,
+  "description": "Pinned tooling for isolated browser regressions; production frontend remains buildless.",
+  "scripts": {
+    "test:finance-browser": "node scripts/test-monthly-load-browser-v499.js && node scripts/test-operations-voucher-browser.js && node scripts/test-zysyr-period-response-isolation.js"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

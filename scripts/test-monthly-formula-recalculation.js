@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { stripTypeScriptTypes } = require('node:module');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
-const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'safeFormulaValue', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay'];
+const names = ['cleanText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'reportCellLabel', 'monthlyEditableNameCells', 'safeFormulaValue', 'monthlyAdjustmentForSource', 'effectiveHistoryMonthlyEntries', 'monthlyItemCategory', 'defaultMonthlyEvidencePolicy', 'latestMonthlyCellRevisionMap', 'effectiveMonthlyDisplay', 'normalizeMonthlyMatchLabel', 'matchedMonthlyExpenseCategoryIds', 'isDailyIncomeCell'];
 const snippets = names.map(name => {
   const start = source.indexOf('function ' + name + '(');
   const end = source.indexOf('\n}', start) + 2;
@@ -47,7 +47,8 @@ for (const [label, kind, category, policy] of [
   ['主营 / 普通美发产品 / Nov.', 'formula', 'income', 'none'],
   ['主营 / 发型师成本 / Nov.', 'formula', 'income', 'none'],
   ['房租 / Nov.', 'input', 'expense', 'voucher_required'],
-  ['产品成本 / 产品进货', 'formula', 'expense', 'voucher_required'],
+  ['产品成本 / 产品进货', 'formula', 'purchase_summary', 'none'],
+  ['产品进货 / 歌薇 / 合计', 'input', 'expense', 'voucher_required'],
   ['小计 / Nov.', 'formula', 'total', 'none'],
   ['盈亏', 'formula', 'total', 'none'],
   ['人工 / 技术人员', 'formula', 'salary', 'none'],
@@ -60,14 +61,46 @@ for (const [label, kind, category, policy] of [
   assert.equal(sandbox.defaultMonthlyEvidencePolicy(cell), policy, label);
 }
 console.log('Income adjustment added once, source preservation, rollup and real monthly category labels passed');
+const expenseCategories = [
+  { id: 'section-all', name: '财务费用', report_section: '财务费用' },
+  { id: 'management', name: '管理费', report_section: '财务费用' },
+  { id: 'fee-short', name: '手续费', report_section: '财务费用' },
+  { id: 'fee-exact', name: '银/支/微/团手续费', report_section: '财务费用' },
+  { id: 'rent', name: '房租', report_section: '房租' },
+  { id: 'property', name: '物业费', report_section: '房租' },
+];
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '财务费用 / 管理费 / Nov.')), ['management']);
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '财务费用 / 银/支/微/团手续费 / Nov.')), ['fee-exact']);
+assert.deepEqual(Array.from(sandbox.matchedMonthlyExpenseCategoryIds(expenseCategories, '房租 / 物业费 / Nov.')), ['property']);
+console.log('Monthly expense routing: longest concrete item wins and section-wide leakage is blocked');
+const dailySource=[row('C3',100,'R28-S28'),row('C8',100,'SUM(C3:C4)')];
+dailySource[0].current_payload.label='主营 / 美发收入';
+const dailyResult=sandbox.effectiveHistoryMonthlyEntries(dailySource,[],{amount:250,confirmed_days:2});
+assert.equal(dailyResult[0].current_payload.amount,250);
+assert.equal(dailyResult[1].current_payload.amount,250);
+assert.equal(dailySource[0].current_payload.amount,100);
+assert.equal(dailyResult[0].current_payload.original_report_amount,100);
+const dailyAdjustedRows = dailySource.map((entry, index) => ({ ...entry, id: 'daily-' + index }));
+const oldMonthlyAdjustment = [{ source_id: 'daily-0', adjustment_delta: 140332, revision: 1, created_at: '2026-09-01T00:00:00Z' }];
+const rollup = { amount: 250, confirmed_days: 2, first_confirmed_at: '2026-09-20T00:00:00Z' };
+const dailyWithoutDuplicate = sandbox.effectiveHistoryMonthlyEntries(dailyAdjustedRows, oldMonthlyAdjustment, rollup);
+assert.equal(dailyWithoutDuplicate[0].current_payload.amount, 250, 'old monthly adjustment must not be added on top of confirmed daily income');
+assert.equal(dailyWithoutDuplicate[1].current_payload.amount, 250, 'dependent monthly formula follows daily rollup only');
+const displayedDailyCells = [{ id: 'daily-0', cell_address: 'C3', label: '主营 / 美发收入', numeric_value: 100, display_value: '100', row_number: 3, column_number: 3, cell_kind: 'input' }];
+const displayedDaily = sandbox.effectiveMonthlyDisplay({ cells: displayedDailyCells, values: [] }, displayedDailyCells, [], oldMonthlyAdjustment, rollup);
+assert.equal(displayedDaily.cells[0].numeric_value, 250, 'current monthly display must not double post an old adjustment');
+const newMonthlyAdjustment = [{ source_id: 'daily-0', adjustment_delta: 140342, revision: 2, created_at: '2026-09-23T00:00:00Z' }, ...oldMonthlyAdjustment];
+const dailyWithFinanceEdit = sandbox.effectiveHistoryMonthlyEntries(dailyAdjustedRows, newMonthlyAdjustment, rollup);
+assert.equal(dailyWithFinanceEdit[0].current_payload.amount, 260, 'only post-daily finance delta changes monthly hair income');
+assert.equal(sandbox.effectiveMonthlyDisplay({ cells: displayedDailyCells, values: [] }, displayedDailyCells, [], newMonthlyAdjustment, rollup).cells[0].numeric_value, 260);
 const apiStart = source.indexOf('async function monthlyIncomeAdjustmentSave(');
 const apiEnd = source.indexOf('\n}', apiStart) + 2;
-let writes = [], category = '主营 / 美发收入';
+let writes = [], category = '主营 / 美发收入', kind = 'formula', confirmedDaily = 0;
 Object.assign(sandbox, {
   requireFinanceCapability: session => { if (session.role !== 'finance') throw Error('denied'); },
   selectedStoreInfo: async () => ({ id: 'store-A', company_id: 'company-A' }),
-  cellTrace: async () => ({ historical: true, target: { id: 'income-A', label: category }, report: { id: 'report-A', report_date: '2026-06-01' } }),
-  monthlyAdjustmentContext: async () => ({ cells: [{ id: 'income-A', numeric_value: 120 }], versions: { 'income-A': 1 }, adjustments: [{ id: 'adjust-1', source_id: 'income-A', revision: 1, adjustment_delta: 20 }] }),
+  cellTrace: async () => ({ historical: true, target: { id: 'income-A', label: category, cell_kind: kind }, report: { id: 'report-A', report_date: '2026-06-01' } }),
+  monthlyAdjustmentContext: async () => ({ cells: [{ id: 'income-A', numeric_value: 120, daily_rollup: confirmedDaily ? { confirmed_days: confirmedDaily } : null }], daily: { confirmed_days: confirmedDaily, days: [{ draft_id: 'draft-A', revision: 1 }] }, versions: { 'income-A': 1 }, adjustments: [{ id: 'adjust-1', source_id: 'income-A', revision: 1, adjustment_delta: 20 }] }),
   financeRpcSaved: async (rpc, payload) => { writes.push({ rpc, payload }); return payload; },
 });
 vm.runInContext(stripTypeScriptTypes(source.slice(apiStart, apiEnd)), sandbox);
@@ -76,13 +109,33 @@ vm.runInContext(stripTypeScriptTypes(source.slice(apiStart, apiEnd)), sandbox);
   await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'shareholder' }), /denied/);
   await assert.rejects(sandbox.monthlyIncomeAdjustmentSave({ ...payload, expected_before: 100 }, { role: 'finance' }), /修改/);
   category = '房租';
-  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance' }), /收入/);
-  assert.equal(writes.length, 0);
-  category = '主营 / 美发收入';
+  kind = 'input';
   await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].payload.p_base_amount, 100, 'never trust client baseline');
-  assert.equal(writes[0].payload.p_store_id, 'store-A');
-  assert.equal(writes[0].rpc, 'rpc/zysyr_save_monthly_income_adjustment', 'never calls source amount mutation RPC');
-  console.log('Income API: finance-only, stale preview denial, income-only, server-derived baseline and scoped adjustment RPC passed');
+  category = '主营 / 美发收入';
+  kind = 'formula';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  assert.equal(writes.length, 2);
+  confirmedDaily = 2;
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  assert.equal(writes[2].rpc, 'rpc/zysyr_save_daily_linked_monthly_adjustment', 'daily-linked hair income uses snapshot-guarded finance adjustment');
+  assert.equal(writes[2].payload.p_base_amount, 100);
+  assert.equal(writes[2].payload.p_daily_versions['draft-A'], 1);
+  confirmedDaily = 0;
+  assert.equal(writes[1].payload.p_base_amount, 100, 'never trust client baseline');
+  assert.equal(writes[1].payload.p_store_id, 'store-A');
+  assert.equal(writes[1].rpc, 'rpc/zysyr_save_monthly_income_adjustment', 'never calls source amount mutation RPC');
+  category = '人工 / 技术人员';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  category = '财务费用 / 银/支/微/团手续费';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  assert.equal(writes.length, 5);
+  category = '产品成本 / 产品进货';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  category = '合计 / 本月';
+  await sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance', auth_account_id: 'actor-A' });
+  category = '员工编号 / 01';
+  await assert.rejects(sandbox.monthlyIncomeAdjustmentSave(payload, { role: 'finance' }), /编号|姓名|文字标签/);
+  assert.equal(writes.length, 7);
+  console.log('Monthly adjustment API: finance-only, stale preview denial, every amount category editable and identifiers fixed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

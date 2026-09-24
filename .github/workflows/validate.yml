@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - name: Install pinned browser-test tooling
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
       - name: Validate release integrity
         run: node scripts/check-release-integrity.js
       - name: Validate synchronized versions
@@ -42,6 +47,8 @@ jobs:
         run: node scripts/test-customer-archive-rendering.js
       - name: Protect backend workflows
         run: node scripts/test-admin-workflow.js
+      - name: Protect admin customer archive access
+        run: node scripts/test-customer-admin-api.js
       - name: Protect booking page UI
         run: node scripts/test-booking-ui.js
       - name: Protect iPad frontdesk customer center
@@ -49,7 +56,13 @@ jobs:
       - name: Protect ZYSYR operations dashboard
         run: |
           node scripts/test-operations.js
+          node scripts/test-zysyr-daily-atomic-save-v510.js
+          node scripts/test-zysyr-daily-expected-revision-db.js
+          node scripts/test-zysyr-shared-public-acl-db.js
+          node scripts/test-zysyr-legacy-login-security.js
+          node scripts/test-zysyr-report-permissions-v512.js
           node scripts/test-monthly-formula-recalculation.js
+          node scripts/test-monthly-summary-v516.js
           node scripts/test-operations-auth.js
           node scripts/test-operations-auth-migration.js
           node scripts/test-operations-auth-bridge.js
@@ -64,6 +77,8 @@ jobs:
           node scripts/test-zysyr-sprint5.js
           node scripts/test-zysyr-sprint6.js
           node scripts/test-zysyr-sprint7.js
+      - name: Protect finance browser regressions
+        run: npm run test:finance-browser
       - name: Protect shared app UI system
         run: node scripts/test-app-ui-system.js
       - name: Protect aesthetic training and knowledge governance

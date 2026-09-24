@@ -6,24 +6,30 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
+const workbench = fs.readFileSync(path.join(root, 'operations-monthly-workbench.js'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260905073551_zysyr_monthly_evidence_workbench.sql'), 'utf8');
 const detailMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908023351_zysyr_monthly_cell_detail_workbench.sql'), 'utf8');
 const directCellRuleMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260908034635_zysyr_report_cell_evidence_rule.sql'), 'utf8');
 const directEvidence = fs.readFileSync(path.join(root, 'supabase/migrations/20260906122116_zysyr_history_monthly_direct_evidence.sql'), 'utf8');
+const itemEvidence = fs.readFileSync(path.join(root, 'supabase/migrations/20260922093000_zysyr_history_item_evidence_upload.sql'), 'utf8');
 const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').trim();
 function expect(value, message) { if (!value) throw new Error(message); }
 
 for (const marker of [
   '上传原表 / 凭证', 'monthly-material-form', '金额处理',
   '上传这个数字的凭证', '编辑金额', 'monthly-inline-amount', '预览修改', '确认保存', '上传凭证图片 / PDF',
+  '确认保存这次修改',
   '逐笔收入 / 开支与凭证', '此笔不需要凭证（只影响这一笔）', 'business_evidence_rule_save',
-  'report-focus', 'minReadable=phone ? .68 : .7',
+  'report-focus', 'window.ZysyrReportFit.apply()',
 ]) expect(page.includes(marker), `monthly workbench UI missing: ${marker}`);
 
 expect(page.includes("record_type:'report',record_id:report.id,monthly_cell_id:target.id")
   && api.includes('p_source_cell_id: monthlyCellId'), 'voucher upload must bind to the selected monthly cell');
-expect(page.includes("report_type:type,report_date:date,month:$('month').value")
-  && page.includes('日报日期必须属于当前月份'), 'monthly materials must remain scoped to the active store and month');
+expect(page.includes("month=$('month').value,existing=state.data&&state.data.monthly_report")
+  && page.includes("api('report_upload_auto',{store:currentStore(),filename:file.name")
+  && page.includes('require_monthly:vouchers.length>0')
+  && page.includes('selectDetectedReportMonth(targetMonth)'),
+  'monthly materials must be server-detected and routed to the detected store period');
 expect(page.includes("cell.onclick=function(){openMonthlyVoucher(cell.dataset.traceCell)}")
   && page.includes("typeof value==='number'"), 'only numeric report amounts should open the monthly workbench');
 expect(page.includes("classList.toggle('hidden',!data.can_upload_vouchers)")
@@ -32,9 +38,9 @@ expect(page.includes("classList.toggle('hidden',!data.can_upload_vouchers)")
 expect(page.includes('monthly-inline-preview-button') && page.includes('save.dataset.previewAmount')
   && page.includes("toast('金额已经变化，请重新预览')"),
   'amount changes must be previewed and revalidated before confirmation');
-expect(page.includes("api('history_monthly_cell_save'") && api.includes('async function historyMonthlyCellSave(')
-  && api.includes('rpc/zysyr_revise_history_monthly_cell'),
-  'historical monthly input must use the amount-only revision path from the detail page');
+expect(page.includes('saveMonthlyAmountAdjustment') && page.includes("api('monthly_income_adjustment_save'")
+  && api.includes('async function monthlyIncomeAdjustmentSave('),
+  'historical and current monthly amounts must share the append-only adjustment path');
 expect(page.includes("api('history_ledger_evidence_upload'")
   && api.includes('async function historyLedgerEvidenceUpload(')
   && api.includes('rpc/zysyr_attach_history_ledger_evidence'),
@@ -49,8 +55,14 @@ expect(directEvidence.includes('create or replace function public.zysyr_attach_h
 expect(/revoke execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?from public, anon, authenticated/.test(directEvidence)
   && /grant execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?to service_role/.test(directEvidence),
   'historical evidence RPC must remain server-only');
-expect(api.includes('entry_type=eq.monthly_profit_loss'),
-  'direct historical evidence upload must only target posted monthly report entries');
+expect(api.includes('entry_type=in.(monthly_profit_loss,salary,petty_cash,employee_purchase)')
+  && itemEvidence.includes("'monthly_profit_loss', 'salary', 'petty_cash', 'employee_purchase'")
+  && itemEvidence.includes("entry.status = 'posted'"),
+  'direct historical evidence upload must target only supported posted ledger entries');
+expect(/revoke execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?from public, anon, authenticated/.test(itemEvidence)
+  && /grant execute on function public\.zysyr_attach_history_ledger_evidence[\s\S]*?to service_role/.test(itemEvidence)
+  && !/update\s+public\.zysyr_history_ledger_entries/i.test(itemEvidence),
+  'per-item history evidence must stay server-only and never rewrite ledger amounts');
 
 for (const policy of ['voucher_required', 'source_report', 'none']) {
   expect(api.includes(`"${policy}"`) && migration.includes(`'${policy}'`), `evidence policy missing: ${policy}`);
@@ -106,6 +118,11 @@ expect(api.includes('business_type: "history_monthly_profit_loss"')
   && api.includes('business_type: "report_cell"')
   && api.includes('if (!businessDetails.length && !sources.length)'),
   'direct historical and current monthly inputs must appear as one independently controlled record');
+expect(api.includes('return "purchase_summary"')
+  && api.includes('result.purchase_components')
+  && api.includes('["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"]')
+  && workbench.includes('产品进货明细') && workbench.includes('data-root-voucher-upload'),
+  'product purchase summary must bypass summary vouchers and return original purchase detail cells');
 
 const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 expect(scripts.length === 1, 'inline script missing');

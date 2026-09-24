@@ -1,6 +1,16 @@
 /* Finance controls for the selected amount. Files stay local until confirmation. */
 (function () {
   'use strict';
+  var originalRenderAll = renderAll;
+  renderAll = function () {
+    originalRenderAll();
+    var report = state.data.monthly_report;
+    var button = document.querySelector('#report-state [data-open-report]');
+    if (button && report && report.display_data && report.display_data.source_object_reused === true) {
+      button.textContent = '打开来源模板';
+      button.title = '本月金额保存在电子月报中；这里打开的是本门店留存的原版月报模板';
+    }
+  };
   var originalRender = renderCellTrace;
   var pendingURL = null, pendingGeneration = 0;
   function disposePhoto() {
@@ -23,6 +33,7 @@
     return cell.label || known && known.label || '原表 ' + cell.cell_address;
   }
   async function components(data, context) {
+    if (Array.isArray(data.purchase_components)) return data.purchase_components;
     if (Array.isArray(data.editable_components)) return data.editable_components;
     var queue = (data.precedents || []).slice(), seen = new Set(), result = [];
     while (queue.length && seen.size < 240 && voucherContextCurrent(context)) {
@@ -53,6 +64,46 @@
       };
     }
   }
+  function attachMonthlyAdjustmentEditor(host, data, rootAddress, context) {
+    var target = data.target, adjustment = data.monthly_adjustment || {
+      base_amount: target.numeric_value, adjustment_delta: 0, revision: 0
+    };
+    var editable = Object.assign({}, data, {
+      mode: 'input', sources: [], revision: null,
+      target: Object.assign({}, target, { cell_kind: 'input' })
+    });
+    attachEditor(host, editable, rootAddress, context);
+    if (target.daily_rollup && Number(target.daily_rollup.confirmed_days) > 0) {
+      var daily=target.daily_rollup;
+      host.insertAdjacentHTML('beforeend','<div class="help">已确认日报 '+Number(daily.confirmed_days)+' 天，现金业绩 '+formatAmount(daily.amount)+'（不含卡金）；原月报 '+formatAmount(target.original_report_amount)+'。财务可修改本月美发收入，修改只作为有原因、有审计的月报调整，不重复记入日报。</div>'
+        +(Number(adjustment.superseded_monthly_adjustment||0)?'<div class="candidate-warning">日报入账前的月报旧调整 '+formatAmount(adjustment.superseded_monthly_adjustment)+' 已保留记录，不叠加到日报现金业绩。</div>':'')
+        +'<div data-daily-sources></div>');
+      var sources=host.querySelector('[data-daily-sources]');
+      (daily.days||[]).forEach(function(day){var button=document.createElement('button');button.type='button';button.className='ghost';button.textContent=day.date+' · '+formatAmount(day.amount);button.onclick=async function(){closeMonthlyWorkbench();document.getElementById('daily-month').value=day.date.slice(0,7);await showView('daily-report');await openDailyReportDay(day.date,day.draft_id);};sources.appendChild(button);});
+    }
+    host.insertAdjacentHTML('afterbegin', '<div class="help">'+(target.daily_rollup?'日报现金业绩 ':'原报表金额 ') + formatAmount(adjustment.base_amount)
+      + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta)
+      + '。修改只追加审计记录，不覆盖原日报、工资表、月报原件或原凭证。</div>');
+    var save = document.getElementById('monthly-inline-save');
+    if (!save) return;
+    save.onclick = async function () {
+      var amount = document.getElementById('monthly-inline-amount').value.trim();
+      var reason = document.getElementById('monthly-inline-reason').value.trim();
+      if (!reason || save.dataset.previewAmount !== amount) { toast('请填写原因并先预览修改'); return; }
+      if (!voucherContextCurrent(context) || state.trace.address !== target.cell_address) return;
+      save.disabled = true;
+      try {
+        if (isLocalPreview()) { toast('本地预览不修改正式账'); return; }
+        await api('monthly_income_adjustment_save', Object.assign({}, context, {
+          cell_address: target.cell_address, after_amount: amount,
+          expected_before: target.numeric_value, expected_revision: adjustment.revision, reason: reason
+        }));
+        toast('月报金额已保存，原始报表保持不变');
+        if (voucherContextCurrent(context)) { await loadOverview(); await openCellTrace(rootAddress); }
+      } catch (error) { toast(error.message); }
+      finally { if (save.isConnected) save.disabled = false; }
+    };
+  }
   function attachRules(host, data) {
     var rows = data.business_details || [];
     host.innerHTML = '<h4>凭证要求</h4>' + (rows.length ? rows.map(function (row) {
@@ -61,7 +112,7 @@
         + ' · ' + formatAmount(row.amount) + '</span><span><input type="checkbox" data-simple-rule="' + esc(row.business_id)
         + '" data-type="' + esc(row.business_type) + '" ' + (waived ? '' : 'checked ')
         + (data.can_manage_business_evidence_rules ? '' : 'disabled ') + '> 此笔需要凭证</span></label>';
-    }).join('') : '<div class="help">请选择上方的组成金额，逐笔设置凭证要求。</div>');
+    }).join('') : '<div class="help">当前金额尚未匹配到正式业务明细；可在上方直接上传当前金额的凭证，或先补齐对应业务记录。</div>');
     host.querySelectorAll('[data-simple-rule]').forEach(function (input) {
       input.onchange = async function () {
         var required = input.checked, context = voucherContext(); input.disabled = true;
@@ -83,30 +134,10 @@
     var category = data.item_category, target = data.target, editor = box.querySelector('[data-amount-editor]');
     document.getElementById('cell-trace-page-title').textContent = (target.label || '月报金额') + ' · ' + (category === 'income' ? '编辑收入' : category === 'salary' ? '工资' : '自动汇总');
     box.querySelector('[data-rules]').remove();
-    if (category === 'income') {
-      var adjustment = data.monthly_adjustment || { base_amount: target.numeric_value, adjustment_delta: 0, revision: 0 };
-      var editable = Object.assign({}, data, { mode: 'input', can_upload_vouchers: false, sources: [], revision: null,
-        target: Object.assign({}, target, { cell_kind: 'input' }) });
-      attachEditor(editor, editable, target.cell_address, context);
-      editor.insertAdjacentHTML('afterbegin', '<div class="help">原报表口径 ' + formatAmount(adjustment.base_amount) + ' ＋ 月报调整 ' + formatAmount(adjustment.adjustment_delta) + '。调整只影响月报，不修改日报原数。</div>');
-      var save = document.getElementById('monthly-inline-save');
-      if (save) save.onclick = async function () {
-        var amount = document.getElementById('monthly-inline-amount').value.trim(), reason = document.getElementById('monthly-inline-reason').value.trim();
-        if (!reason || save.dataset.previewAmount !== amount) { toast('请填写原因并先预览修改'); return; }
-        if (!voucherContextCurrent(context) || state.trace.address !== target.cell_address) return;
-        save.disabled = true;
-        try {
-          if (isLocalPreview()) { toast('本地预览不修改正式账'); return; }
-          await api('monthly_income_adjustment_save', Object.assign({}, context, { cell_address: target.cell_address,
-            after_amount: amount, expected_before: target.numeric_value, expected_revision: adjustment.revision, reason: reason }));
-          toast('月报调整已保存，日报原数保持不变');
-          if (voucherContextCurrent(context)) { await loadOverview(); await openCellTrace(target.cell_address); }
-        } catch (error) { toast(error.message); }
-        finally { if (save.isConnected) save.disabled = false; }
-      };
+    if (category !== 'fixed') {
+      attachMonthlyAdjustmentEditor(editor, data, target.cell_address, context);
     } else {
-      editor.innerHTML = '<h4>' + esc(target.label || '月报金额') + ' · ' + formatAmount(target.numeric_value) + '</h4><div class="help">'
-        + (category === 'salary' ? '以工资表为依据，无需另外上传凭证。' : category === 'fixed' ? '原表固定编号，不可修改。' : '由组成项目自动计算，无需上传凭证。') + '</div>';
+      editor.innerHTML = '<h4>' + esc(target.label || '固定内容') + '</h4><div class="help">编号、姓名和文字标签固定，不可修改。</div>';
     }
     var sourceView = category === 'salary' ? 'salary-report' : category === 'income' ? 'daily-report' : '';
     var canRead = category === 'salary' ? state.user.can_read_salary_reports : state.user.can_read_daily_reports;
@@ -120,21 +151,61 @@
         + '<small>' + esc(row.reason || '') + '</small></div><strong>' + formatAmount(row.before_amount) + ' → ' + formatAmount(row.after_amount) + '</strong></div>';
     }).join('') + '</details>');
   }
+  function renderPurchaseSummary(box, data, context) {
+    var target = data.target, list = box.querySelector('[data-composition]'), editor = box.querySelector('[data-amount-editor]'), excluded = data.purchase_unincluded_components || [];
+    document.getElementById('cell-trace-page-title').textContent = (target.label || '产品进货') + ' · 进货明细';
+    box.querySelector('[data-rules]').remove();
+    attachMonthlyAdjustmentEditor(editor, data, target.cell_address, context);
+    list.innerHTML = '<h4>产品进货明细</h4><div class="help">汇总金额由下列原表明细自动合计，汇总格本身无需上传凭证。正在读取明细…</div>';
+    components(data, context).then(function (cells) {
+      if (!box.isConnected || !voucherContextCurrent(context)) return;
+      var seen = new Set();
+      cells = cells.filter(function (cell) {
+        var key = cell.cell_address || (labelFor(cell) + ':' + cell.numeric_value);
+        if (!Number.isFinite(Number(cell.numeric_value)) || Number(cell.numeric_value) === 0 || seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+      if (!cells.length) {
+        list.innerHTML = '<h4>产品进货明细</h4><div class="candidate-warning">原表没有读到可展示的产品进货明细，请核对本月原表。</div>';
+        return;
+      }
+      var excludedTotal = excluded.reduce(function (sum, cell) { return sum + Number(cell.numeric_value || 0); }, 0);
+      list.innerHTML = '<h4>产品进货明细（' + cells.length + ' 项）</h4><div class="help">点击任意一项，直接编辑该明细并查看或上传它自己的凭证。</div>'
+        + (excluded.length ? '<div class="candidate-warning">原表另有 ' + excluded.length + ' 项、合计 ' + formatAmount(excludedTotal) + ' 没有被当前汇总公式计入，请财务核对原表公式。</div>' : '')
+        + '<div class="purchase-detail-list">'
+        + cells.map(function (cell) { return '<button type="button" class="purchase-detail-row" data-purchase-cell="' + esc(cell.cell_address) + '"><span>'
+          + esc(labelFor(cell).replace(/^产品进货\s*[\/／]\s*/, '').replace(/\s*[\/／]\s*合计$/, '')) + '</span><strong>'
+          + formatAmount(cell.numeric_value) + '</strong><small>查看 / 编辑 / 凭证</small></button>'; }).join('') + '</div>';
+      list.querySelectorAll('[data-purchase-cell]').forEach(function (button) {
+        button.onclick = function () { openCellTrace(button.dataset.purchaseCell); };
+      });
+    }).catch(function (error) { if (box.isConnected) list.innerHTML = '<div class="candidate-warning">进货明细读取失败：' + esc(error.message) + '</div>'; });
+  }
   renderCellTrace = function (data) {
     disposePhoto(); originalRender(data);
     var body = document.getElementById('cell-trace-body');
-    var reportOnly = ['income', 'salary', 'total', 'fixed'].includes(data.item_category);
+    var reportOnly = ['income', 'salary', 'total', 'fixed', 'purchase_summary'].includes(data.item_category);
     var description = document.getElementById('cell-trace-page-title').nextElementSibling;
-    if (description) description.textContent = reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
+    if (description) description.textContent = data.item_category === 'purchase_summary' ? '直接查看原表产品进货明细；凭证绑定在明细上。'
+      : reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
     if (reportOnly) body.innerHTML = '';
     body.querySelectorAll('.monthly-inline-editor,.business-detail-card').forEach(function (node) { node.remove(); });
     var box = document.createElement('section'); box.className = 'trace-card monthly-simple-workbench';
     var context = voucherContext(), rootAddress = data.target.cell_address;
-    box.innerHTML = '<div data-composition></div><div data-amount-editor></div><div data-rules></div>';
+    box.innerHTML = '<div data-root-actions></div><div data-composition></div><div data-amount-editor></div><div data-rules></div>';
     body.prepend(box);
+    if (data.item_category === 'purchase_summary') { renderPurchaseSummary(box, data, context); return; }
     if (reportOnly) { renderReportOnly(box, data, context); return; }
     var editor = box.querySelector('[data-amount-editor]'), rules = box.querySelector('[data-rules]');
     if (data.mode !== 'formula') { attachEditor(editor, data, rootAddress, context); attachRules(rules, data); return; }
+    if (data.item_category === 'expense' && data.can_upload_vouchers) {
+      box.querySelector('[data-root-actions]').innerHTML = '<h4>这项支出的凭证</h4><div class="help">直接上传到当前月报金额；不必先进入组成项。</div><div class="trace-actions"><button type="button" class="secondary" data-root-voucher-upload>上传凭证图片 / PDF</button></div>';
+    }
+    if (data.item_category === 'expense') {
+      attachMonthlyAdjustmentEditor(editor, data, rootAddress, context);
+      attachRules(rules, data);
+      return;
+    }
     var choose = box.querySelector('[data-composition]');
     choose.innerHTML = '<h4>修改组成金额</h4><div class="help">正在读取可填写的组成项…</div>';
     components(data, context).then(function (cells) {
@@ -161,11 +232,11 @@
 
   // Capture all upload entries inside the amount drawer before legacy auto-upload handlers.
   document.getElementById('view-cell-trace').addEventListener('click', function (event) {
-    var button = event.target.closest('#cell-trace-upload-voucher,#monthly-inline-upload,[data-business-voucher-upload]');
+    var button = event.target.closest('#cell-trace-upload-voucher,#monthly-inline-upload,[data-root-voucher-upload],[data-business-voucher-upload]');
     if (!button) return;
     event.preventDefault(); event.stopImmediatePropagation();
     var workbench = button.closest('.monthly-simple-workbench');
-    var data = workbench ? workbench.selectedTrace : state.trace.data;
+    var data = button.hasAttribute('data-root-voucher-upload') ? state.trace.data : workbench ? workbench.selectedTrace : state.trace.data;
     var context = voucherContext(), target = data && data.target;
     var rootAddress = state.trace.address;
     if (!target || !data.can_upload_vouchers) { toast('当前账号不能上传凭证'); return; }

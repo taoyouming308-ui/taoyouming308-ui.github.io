@@ -1,10 +1,10 @@
 {
-  "runtime_enabled": true,
+  "runtime_enabled": false,
   "server": "vip12.meiguanjia.net",
   "parent_shop_id": "1103470",
   "shops": {
     "自由手艺人": {
-      "enabled": true,
+      "enabled": false,
       "shop_id": "1009951",
       "employees": {
         "无名": "2488057",

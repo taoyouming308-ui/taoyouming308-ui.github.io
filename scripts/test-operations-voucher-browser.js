@@ -18,7 +18,7 @@ let browser;
 async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
+  browser = await chromium.launch({ headless: true });
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
     const { width, height } = viewport;
     const page = await browser.newPage({ viewport, isMobile: width !== 1280, hasTouch: width !== 1280 });
@@ -26,6 +26,22 @@ async function run() {
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
+    await page.locator('[data-trace-cell="C3"]').first().waitFor();
+    await page.locator('#monthly-edit-toggle').waitFor();
+    await page.waitForTimeout(100);
+    await page.evaluate(() => { state.monthlyEditMode = true; renderSheet(state.data.monthly_report.display_data, false, true); });
+    await page.locator('input[data-monthly-cell="C3"]').waitFor();
+    assert.equal(await page.locator('input[data-monthly-cell="C8"]').count(), 1, 'income subtotal formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="C52"]').count(), 1, 'expense total formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="C53"]').count(), 1, 'profit/loss formula must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="E3"]').count(), 0, 'employee number must remain fixed');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').count(), 1, 'blank staff salary slot must be a real editable amount input');
+    assert.equal(await page.locator('input[data-monthly-cell="M12"]').count(), 1, 'blank staff social-security slot must be editable');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').inputValue(), '', 'untouched blank amount must remain visually blank');
+    assert.equal(await page.locator('input[data-monthly-cell="G12"]').evaluate(node => getComputedStyle(node).boxShadow !== 'none'), true, 'blank amount input must keep a visible boundary');
+    assert.equal(await page.locator('input[data-monthly-cell="F12"]').count(), 0, 'employee name must remain fixed even when blank');
+    assert.equal(await page.locator('input[data-monthly-cell="O12"]').count(), 0, 'staff note cell must remain text, not an amount input');
+    await page.evaluate(() => { state.monthlyEditMode = false; renderSheet(state.data.monthly_report.display_data, false, false); });
     await page.locator('[data-trace-cell="C3"]').first().waitFor();
     if (width > height && height <= 620) {
       assert.equal(await page.locator('body').evaluate(element => element.classList.contains('report-focus')), true, 'report view must activate landscape focus mode');
@@ -42,17 +58,17 @@ async function run() {
       api = async function (operation, payload) {
         window.fixtureCalls.push({ operation, ...payload });
         const report = state.data.monthly_report;
-        const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', cell_address: payload.cell_address, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
+        const target = { id: '11111111-1111-4111-8111-111111111111', historical_ledger_entry_id: '11111111-1111-4111-8111-111111111111', historical_import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', cell_address: payload.cell_address, numeric_value: 30, label: '测试总收入', cell_kind: 'input' };
         if (payload.cell_address === 'C3') target.id = target.historical_ledger_entry_id = '33333333-3333-4333-8333-333333333333';
         if (operation === 'cell_trace') {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
-          if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
-          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: 'bundle_only' }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
+          if (payload.cell_address === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
+          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: 'bundle_only' }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
         }
         if (operation === 'history_evidence_images') return { filename: '模拟凭证包.docx', images: [{ filename: 'image1.png', data_url: image }, { filename: 'image2.png', data_url: image }] };
         if (operation === 'voucher_url') return { filename: '模拟日报.png', url: image };
-        if (operation === 'business_evidence_rule_save' || operation === 'history_monthly_cell_save' || operation === 'history_ledger_evidence_upload') return { saved: true };
+        if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload' || operation === 'history_ledger_evidence_page_link') return { saved: true, linked: true, formal_ledger_amount_changed: false };
         if (operation === 'overview') return state.data;
         throw Error('Unexpected API or write attempted: ' + operation);
       };
@@ -84,6 +100,17 @@ async function run() {
     // One amount page keeps amount edit, upload and per-record evidence control together.
     await page.evaluate(() => openCellTrace('C4'));
     await page.locator('.monthly-inline-editor').waitFor();
+    await page.locator('.voucher-file-preview [data-link-history-page]').first().waitFor();
+    assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 2, 'finance must be able to manually map one displayed bundle image to the selected historical line');
+    await page.evaluate(() => { window.prompt = () => '逐张查看原始凭证后人工确认'; });
+    await page.locator('.voucher-file-preview [data-link-history-page]').first().click();
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_ledger_evidence_page_link'));
+    const exactPageLink = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'history_ledger_evidence_page_link'));
+    assert.equal(exactPageLink.ledger_entry_id, '11111111-1111-4111-8111-111111111111');
+    assert.equal(exactPageLink.evidence_id, 'bundle');
+    assert.equal(exactPageLink.source_locator, 'word/media/image1.png');
+    assert.equal(exactPageLink.reason, '逐张查看原始凭证后人工确认');
+    assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
     assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');
     await page.locator('[data-simple-rule]').click();
@@ -97,8 +124,8 @@ async function run() {
     assert.equal(await page.locator('#monthly-inline-preview').isVisible(), true, 'amount confirmation preview must be visible before save');
     assert.match(await page.locator('#monthly-inline-preview').innerText(), /修改前[\s\S]*30\.00[\s\S]*修改后[\s\S]*31\.00[\s\S]*差额[\s\S]*\+1\.00/);
     await page.locator('#monthly-inline-save').click();
-    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_monthly_cell_save'));
-    const amountCall = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'history_monthly_cell_save'));
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
+    const amountCall = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
     assert.equal(amountCall.after_amount, '31');
     // A selected image remains local until explicit confirmation, and cancel has no write.
     const photo = { name: 'synthetic-receipt.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=', 'base64') };
@@ -127,7 +154,7 @@ async function run() {
     await page.locator('#monthly-inline-amount').fill('32');
     await page.locator('#monthly-inline-preview-button').click();
     await page.locator('#monthly-inline-save').click();
-    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_monthly_cell_save' && call.after_amount === '32') && state.trace.address === 'C3');
+    await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save' && call.after_amount === '32') && state.trace.address === 'C3');
     await page.locator('[aria-label="选择组成金额"]').waitFor();
     await page.locator('#monthly-inline-upload').waitFor();
     chooser = page.waitForEvent('filechooser');
@@ -168,10 +195,17 @@ async function run() {
         if (operation === 'monthly_income_adjustment_save') { window.fixtureCalls.push({ operation, ...payload }); return { saved: true, source_reports_unchanged: true }; }
         const result = await raw(operation, payload);
         if (operation === 'cell_trace') {
-          result.item_category = window.fixtureCategory;
-          result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '房租' }[window.fixtureCategory];
+          result.item_category = window.fixtureCategory === 'purchase_summary' && payload.cell_address !== 'C3'
+            ? 'expense' : window.fixtureCategory;
+          result.target.label = { income: '主营 / 美发收入', salary: '人工 / 后勤人员', total: '小计', expense: '财务费用 / 银/支/微/团手续费', purchase_summary: '产品成本 / 产品进货' }[window.fixtureCategory];
           result.can_edit = true;
-          if (window.fixtureCategory !== 'expense') { result.can_upload_vouchers = false; result.can_manage_business_evidence_rules = false; }
+          if (window.fixtureCategory === 'purchase_summary' && payload.cell_address !== 'C3') result.target.label = '产品进货 / 歌薇 / 合计';
+          result.can_upload_vouchers = result.item_category === 'expense';
+          result.can_manage_business_evidence_rules = result.item_category === 'expense';
+          if (window.fixtureCategory === 'purchase_summary') result.purchase_components = [
+            { cell_address: 'G31', label: '产品进货 / 歌薇 / 合计', numeric_value: 1280, cell_kind: 'input' },
+            { cell_address: 'G35', label: '产品进货 / 杭汐 / 合计', numeric_value: 960, cell_kind: 'input' },
+          ], result.purchase_unincluded_components = [{ cell_address: 'G32', label: '产品进货 / 新欧芭 / 合计', numeric_value: 128, cell_kind: 'input' }];
           result.monthly_adjustment = { base_amount: 30, adjustment_delta: 0, revision: 0 };
         }
         return result;
@@ -191,19 +225,65 @@ async function run() {
     }
     await page.locator('#monthly-inline-save').click();
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'monthly_income_adjustment_save'));
-    const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save'));
+    const adjustment = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'monthly_income_adjustment_save' && call.after_amount === '45'));
     assert.equal(adjustment.after_amount, '45'); assert.equal(adjustment.expected_before, 30);
-    for (const category of ['salary', 'total']) {
-      await page.evaluate(async category => { window.fixtureCategory = category; await openCellTrace('C3'); }, category);
-      assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload,#monthly-inline-amount').count(), 0, category);
-      assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
-    }
+    await page.evaluate(async () => { window.fixtureCategory = 'salary'; await openCellTrace('C3'); });
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0, 'salary never requires vouchers');
+    assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
+    await page.evaluate(async () => { window.fixtureCategory = 'total'; await openCellTrace('C3'); });
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('.monthly-voucher-preview,[data-simple-rule],#monthly-inline-upload').count(), 0, 'totals are editable but voucher-free');
+    assert.doesNotMatch(await page.locator('#cell-trace-body').innerText(), /缺少凭证|尚未关联凭证/);
     await page.evaluate(async () => { window.fixtureCategory = 'income'; state.data.monthly_period_was_locked = true; await openCellTrace('C3'); });
     assert.equal(await page.locator('#monthly-inline-amount').count(), 0);
     assert.equal(await page.locator('#monthly-inline-unlock').count(), 1, 'income adjustment must respect month locks');
     await page.evaluate(async () => { state.data.monthly_period_was_locked = false; window.fixtureCategory = 'expense'; await openCellTrace('C4'); });
     await page.locator('#monthly-inline-upload').waitFor();
     assert.equal(await page.locator('[data-simple-rule]').count(), 1);
+    await page.evaluate(async () => { window.fixtureCategory = 'expense'; await openCellTrace('C3'); });
+    await page.locator('[data-root-voucher-upload]').waitFor();
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /这项支出的凭证[\s\S]*不必先进入组成项/);
+    await page.evaluate(async () => { window.fixtureCategory = 'purchase_summary'; await openCellTrace('C3'); });
+    await page.locator('.purchase-detail-row').first().waitFor();
+    assert.equal(await page.locator('.purchase-detail-row').count(), 2, 'purchase summary must open the original product detail rows');
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /歌薇[\s\S]*1,280\.00[\s\S]*杭汐[\s\S]*960\.00/);
+    assert.match(await page.locator('.monthly-simple-workbench').innerText(), /另有 1 项、合计 128\.00 没有被当前汇总公式计入/);
+    assert.equal(await page.locator('[data-root-voucher-upload],#monthly-inline-upload,.monthly-voucher-preview').count(), 0, 'purchase summary itself must not require a voucher');
+    assert.equal(await page.locator('#monthly-inline-amount').count(), 1, 'purchase summary amount must also be adjustable');
+    await page.locator('.purchase-detail-row').first().click();
+    await page.locator('#monthly-inline-amount').waitFor();
+    assert.equal(await page.locator('#monthly-inline-preview-button').count(), 1, 'one product detail must be editable inside the monthly drawer');
+    assert.equal(await page.locator('#monthly-inline-upload').count(), 1, 'one product detail keeps only its own voucher entry');
+    assert.equal(await page.evaluate(() => state.trace.address), 'G31', 'product detail routing must stay on the selected product cell');
+    await page.evaluate(() => {
+      closeMonthlyWorkbench();state.imports.sheet=previewDailySheetData();state.imports.dirty={};state.imports.dirtyLabels={};
+      document.querySelectorAll('.view').forEach(node=>node.classList.add('hidden'));document.getElementById('view-daily-report').classList.remove('hidden');state.view='daily-report';
+      const sheet=state.imports.sheet;window.fixtureDailyExisting=sheet.cells.find(cell=>cell.effective_numeric!=null);window.fixtureDailyBlank=sheet.cells.find(cell=>cell.effective_numeric==null);
+      sheet.cells.forEach(cell=>{if(cell.effective_numeric!=null){cell.manual_override=true;cell.corrected_numeric=cell.effective_numeric;}});
+      const raw=api;api=async function(operation,payload){if(operation==='daily_sheet_recognize'){window.fixtureCalls.push({operation,...payload});var next=structuredClone(state.imports.sheet),blank=next.cells.find(cell=>cell.id===window.fixtureDailyBlank.id);blank.ocr_numeric=123;blank.ocr_text='123';blank.confidence=.6;blank.source_method='openai_vision_candidate';next.draft.edit_revision++;return {saved:{saved_cells:1,manual_cells_preserved:1},sheet:next,cells:[{id:window.fixtureDailyExisting.id,value:999,confidence:1},{id:window.fixtureDailyBlank.id,value:123,confidence:.6}],warnings:[]};}return raw(operation,payload);};
+      renderDailySheetDetail();
+    });
+    const originalSrc=await page.locator('#daily-detail-image').getAttribute('src');
+    const rotationBefore=await page.locator('#daily-detail-image').getAttribute('style');
+    await page.locator('#daily-report-detail [data-turn="90"]').click();
+    const rotationAfter=await page.locator('#daily-detail-image').getAttribute('style');
+    assert.notEqual(rotationAfter,rotationBefore,'right rotation must change the displayed direction');
+    assert.match(rotationAfter,/translate\(-50%, -50%\) rotate\([0-9]+deg\)/);
+    assert.equal(await page.evaluate(()=>{const stage=document.getElementById('daily-detail-preview').getBoundingClientRect(),image=document.getElementById('daily-detail-image').getBoundingClientRect();return image.right>stage.left&&image.left<stage.right&&image.bottom>stage.top&&image.top<stage.bottom;}),true,'rotated daily original must remain visible inside its preview');
+    assert.equal(await page.locator('#daily-detail-image').getAttribute('src'),originalSrc,'rotation never rewrites original image');
+    await page.locator('#daily-recognize').click();
+    await page.waitForFunction(()=>document.getElementById('daily-source-action-status').textContent.includes('识别完成：数字 1 格')).catch(async error=>{console.error(await page.locator('#daily-source-action-status').innerText());console.error(await page.locator('#toast').innerText());throw error;});
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyExisting.id+'"]').value),String(await page.evaluate(()=>window.fixtureDailyExisting.effective_numeric)));
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').value),'123');
+    assert.equal(await page.evaluate(()=>document.querySelector('[data-daily-cell="'+window.fixtureDailyBlank.id+'"]').classList.contains('recognition-candidate')),true);
+    assert.equal(await page.locator('#daily-detail-reviewed').count(),0);
+    assert.equal(await page.locator('#daily-detail-confirm').isEnabled(),true,'invalid saved daily sheet must keep an actionable explanation button');
+    assert.equal(await page.locator('#daily-detail-confirm').innerText(),'入账');
+    await page.locator('#daily-detail-confirm').click();
+    assert.match(await page.locator('#toast').innerText(),/请核对/);
+    assert.equal(await page.evaluate(()=>window.fixtureCalls.filter(row=>row.operation==='daily_sheet_confirm').length),0);
     assert.deepEqual(errors, []);
     console.log('voucher browser passed: ' + width + 'x' + height + ', direct images, paging, zoom, inline audit, private API routing, missing evidence, stale scope');
     await page.close();

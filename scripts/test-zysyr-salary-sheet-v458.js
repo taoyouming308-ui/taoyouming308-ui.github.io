@@ -34,7 +34,7 @@ for (const operation of [
 expect(api.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   && api.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), 'salary DOCX/XLSX upload support missing');
 expect(api.includes('source_salary_sheet_row_id') && api.includes('salary_sheet_row'), 'salary row trace API missing');
-expect(!/salarySheetData[\s\S]*?MOONSHOT_API_KEY/.test(api), 'salary sheet must not invoke OCR/AI');
+expect(!/MOONSHOT_API_KEY/.test(api.slice(api.indexOf('async function salarySheetData('),api.indexOf('async function salarySheetData(')+8000)), 'salary sheet must not invoke OCR/AI');
 
 for (const table of [
   'zysyr_salary_sheet_drafts', 'zysyr_salary_sheet_rows', 'zysyr_salary_sheet_changes',

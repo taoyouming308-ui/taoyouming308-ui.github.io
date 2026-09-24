@@ -177,4 +177,25 @@ assert.match(operationsApi, /business_type: ["']daily_sheet["']/);
 assert.match(operationsApi, /daily_source_total = dailyIncome\.total/);
 assert.match(operationsApi, /daily_source_reconciled = dailyReconciled/);
 
+const acceptanceHelper = operationsPage.match(/^  function historyFinancialAcceptanceSummary\(rows,events,ledgerEntries\)\{[\s\S]*?^  \}/m);
+assert.ok(acceptanceHelper, "history import must expose a separate finance acceptance summary");
+const acceptanceSummary = (await import("node:vm")).default.runInNewContext(`${acceptanceHelper[0]}\nhistoryFinancialAcceptanceSummary`);
+const acceptance = acceptanceSummary([
+  { source_sheet: "1月", mapped_json: { period_month: "2026-01-01" }, review_status: "pending", validation_status: "warning" },
+  { source_sheet: "1月", mapped_json: { period_month: "2026-01-01" }, review_status: "pending", validation_status: "valid" },
+  { source_sheet: "2月", mapped_json: { period_month: "2026-02-01" }, review_status: "needs_correction", validation_status: "invalid" },
+], [{ action: "month_review", after_json: { period_month: "2026-01-01" } }], [
+  { status: "posted", posted_with_warning: true },
+]);
+assert.equal(acceptance.reviewedMonths, 1, "a whole-month source review counts independently of import status");
+assert.equal(acceptance.totalMonths, 2);
+assert.equal(acceptance.pendingRows, 1, "unreviewed month rows remain pending acceptance");
+assert.equal(acceptance.warningRows, 1, "warning count reflects actual warning rows only");
+assert.equal(acceptance.invalidRows, 1);
+assert.equal(acceptance.needsCorrectionRows, 1);
+assert.equal(acceptance.postedRows, 1);
+assert.equal(acceptance.postedWithWarningRows, 1, "posted warning rows remain visibly distinct from accepted months");
+assert.match(operationsPage, /财务验收进度（独立于导入状态）/);
+assert.match(operationsPage, /入账不等于核清/);
+
 console.log("history import parser tests passed");
