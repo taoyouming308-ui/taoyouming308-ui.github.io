@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## Salon 退款商品实物验收与返库数量门禁（2026-09-24，独立分支）
+
+- App version: v537 上游基线；本批只为 Salon 开发，不发布主线版本。
+- 新增 `20260924050826_salon_refund_stock_inspection.sql`：已批准退款商品行逐项追加验收版本、申请/实收/可返库数量、状态说明和操作人审计；expected revision 防旧页面覆盖。破损/不可再售必须为零返库数量。
+- Salon 退款详情接入验收表单与刷新/丢包 request lookup；未验收或快照不匹配会整笔阻断执行，执行函数只按最新通过验收的数量生成返库流水。服务/项目退款不要求商品验收。
+- 临时 PG15/Chromium 桌面页面、权限/CAS/幂等/修订与退款详情/API模型回归通过；验收前后不改库存、支付、会员、订单退款额、业绩。详见 `docs/salon-refund-stock-inspection.md`。
+- 迁移仅本机测试链加载；不执行真实支付退款、不部署、不应用 Supabase 远端、不开放退款执行 UI、不合并旧三 App。支付渠道回执/会员退款核验、正式 Auth/Edge/Advisor 和线下验收仍待完成。
+
 ## Salon 本人撤回待审批退款申请（2026-09-24，独立分支）
 
 - App version: v537 上游基线；本批 Salon 功能独立开发，未发布新版本。

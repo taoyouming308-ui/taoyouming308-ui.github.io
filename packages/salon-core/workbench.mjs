@@ -9,7 +9,7 @@ import {orderStates,orderPage,renderOrderPage} from './order-list.mjs';
 import {orderFlow,renderOrderFlow} from './order-flow.mjs';
 import {createCashPreview,renderCashPreview} from './cash-preview.mjs';
 import {verifyCashReceipt,verifyCashLookup,renderCashReceipt} from './cash-receipt.mjs';
-import {refundStates,refundPage,inspectRefund,verifyRefundDecision,renderRefund} from './refund-review.mjs';
+import {refundStates,refundPage,inspectRefund,verifyRefundDecision,verifyRefundStockInspection,renderRefund} from './refund-review.mjs';
 import {cashRefundSource,verifyCashRefundReceipt,verifyCashRefundReadback,renderCashRefundSource} from './refund-request.mjs';
 import {partialRefundProposal,verifyPartialRefundReceipt,verifyPartialRefundReadback,renderPartialRefundEditor} from './partial-refund.mjs';
 import {cashRefundAvailability} from './refund-availability.mjs';
@@ -27,7 +27,20 @@ function clearPartialPreview(){partialProposal=null;$('partialRefundSummary').te
 function clearCashRefundSource(){cashRefundDraft=null;partialRows=null;clearPartialPreview();$('partialRefundEditor').replaceChildren();$('previewPartialRefund').disabled=true;$('cashRefundSource').replaceChildren();$('cashRefundReason').value='';$('submitCashRefund').disabled=true;}
 function clearRefundDetail(){refundRecord=null;$('refundDetail').replaceChildren();$('refundReason').value='';$('approveRefund').disabled=true;$('rejectRefund').disabled=true;$('withdrawRefund').disabled=true;}
 function clearRefunds(){clearRefundDetail();refundNext=null;$('nextRefunds').disabled=true;$('refundSelection').replaceChildren(new Option('请选择',''));$('refundListStatus').textContent='请查询本店退款申请。';}
-function showRefund(record){clearRefundDetail();refundRecord=record;renderRefund($('refundDetail'),record);$('approveRefund').disabled=!record.canApprove;$('rejectRefund').disabled=!record.canReview;$('withdrawRefund').disabled=!record.canWithdraw;}
+function showRefund(record){clearRefundDetail();refundRecord=record;renderRefund($('refundDetail'),record);$('approveRefund').disabled=!record.canApprove;$('rejectRefund').disabled=!record.canReview;$('withdrawRefund').disabled=!record.canWithdraw;
+ for(const button of $('refundDetail').querySelectorAll('[data-refund-stock-inspect="true"]'))button.onclick=()=>run(async()=>{
+  const box=button.closest('fieldset'),line=record.snapshot.lines.find(row=>row.orderLineId===Number(box?.dataset.stockLineId));
+  const acceptedQuantity=box?.querySelector('input')?.value.trim(),condition=box?.querySelector('select')?.value,reason=box?.querySelectorAll('input')[1]?.value.trim();
+  if(!line||!record.canInspectStock||!acceptedQuantity||!/^[0-9]{1,9}\.\d{3}$/.test(acceptedQuantity)||Number(acceptedQuantity)>Number(line.quantity)||!reason)throw Error('请核对已批准商品、可返库数量和验收说明');
+  const refundRequestId=record.snapshot.refund.id,orderLineId=line.orderLineId;
+  await mutate('refund_stock_inspect',{refundRequestId,orderLineId,requestedQuantity:line.quantity,expectedRevision:line.stockInspection?.revision??0,acceptedQuantity,condition,reason},async(data,ticket)=>{
+   const receipt=verifyRefundStockInspection(data,refundRequestId,client.scope,{orderLineId,acceptedQuantity,condition});
+   const current=inspectRefund((await client.read('refund_detail',{refundRequestId})).data,refundRequestId,client.scope),latest=current.snapshot.lines.find(row=>row.orderLineId===orderLineId)?.stockInspection;
+   if(!latest||latest.revision!==receipt.revision||latest.acceptedQuantity!==acceptedQuantity||latest.inspectedByStaffId!==client.scope.staffId||latest.reason!==reason)throw Error('商品验收回读与本次记录不一致，请只读核对原请求');
+   showRefund(current);status(`商品实物验收已记录并回读确认 · ${acceptedQuantity}/${line.quantity} 可返库；没有退款或修改库存。请求号 ${ticket.requestKey}`);
+  });
+ });
+}
 async function loadRefundPage(beforeId=null){
  const state=$('refundFilter').value;clearRefunds();
  const page=refundPage((await client.read('refund_queue',{status:state,beforeId})).data,client.scope,{status:state,beforeId});
@@ -154,7 +167,7 @@ async function mutate(operation,fields,onSuccess){
   }
   if(tracked){
    try{
-    const id=serverId(result.data?.[operation==='customer_create'?'customerId':['refund_review','refund_withdraw','cash_refund_request','partial_cash_refund_request'].includes(operation)?'refundRequestId':'orderId']);
+    const id=serverId(result.data?.[operation==='customer_create'?'customerId':['refund_review','refund_withdraw','refund_stock_inspect','cash_refund_request','partial_cash_refund_request'].includes(operation)?'refundRequestId':'orderId']);
     if(operation==='partial_cash_refund_request')verifyPartialRefundReceipt(result.data,ticket.requestKey,client.scope,partialRefundProposal(fields.expectedSnapshot,fields.lines,client.scope));
     if(operation==='cash_refund_request')verifyCashRefundReceipt(result.data,ticket.requestKey,client.scope,fields.expectedSnapshot);
     if(operation==='refund_review')verifyRefundDecision(result.data,fields.refundRequestId,client.scope,fields.decision);
@@ -412,6 +425,15 @@ $('lookupRequest').onclick=()=>run(async()=>{
   if(current.snapshot.refund.status!=='cancelled'||current.snapshot.refund.withdrawnByStaffId!==client.scope.staffId||current.snapshot.refund.withdrawalReason!==receipt.withdrawalReason)throw Error('退款撤回现状与回执不一致，请人工核对；原请求保留');
   showRefund(current);try{pendingJournal.acknowledge(ticket);}catch(error){journalFault=true;throw error;}
   status('本人退款申请已撤回并读取确认；额度已释放，未退款、未改订单/会员/库存。');return;
+ }
+ if(ticket.operation==='refund_stock_inspect'){
+  if(result.status!=='committed'||result.resourceType!=='refund_request'||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('商品验收核对结果不完整，原请求保留');
+  const id=serverId(result.resourceId),receipt=result.receipt,orderLineId=serverId(receipt?.orderLineId),acceptedQuantity=receipt?.acceptedQuantity,condition=receipt?.condition;
+  verifyRefundStockInspection(receipt,id,client.scope,{orderLineId,acceptedQuantity,condition});
+  const current=inspectRefund((await client.read('refund_detail',{refundRequestId:id})).data,id,client.scope),latest=current.snapshot.lines.find(row=>row.orderLineId===orderLineId)?.stockInspection;
+  if(!latest||latest.revision!==receipt.revision||latest.inspectedByStaffId!==client.scope.staffId||latest.acceptedQuantity!==acceptedQuantity)throw Error('商品验收现状与回执不一致；原请求保留，请人工核对');
+  showRefund(current);try{pendingJournal.acknowledge(ticket);}catch(error){journalFault=true;throw error;}
+  status(`商品验收原请求已核对：${acceptedQuantity} 可返库；没有退款或修改库存。`);return;
  }
  const expectedType=ticket.operation==='customer_create'?'customer':'order';
  if(result.status!=='committed'||result.resourceType!==expectedType||typeof result.completedAt!=='string'||!Number.isFinite(Date.parse(result.completedAt)))throw Error('核对结果不完整，原请求继续保留。');

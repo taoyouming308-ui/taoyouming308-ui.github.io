@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {inspectRefund,refundPage,verifyRefundDecision} from '../packages/salon-core/refund-review.mjs';
+import {inspectRefund,refundPage,verifyRefundDecision,verifyRefundStockInspection} from '../packages/salon-core/refund-review.mjs';
 import {createSalonHandler} from '../supabase/functions/_shared/salon-api-core.mjs';
 const scope={organizationId:1,storeId:1,staffId:1};
 const sample={refund:{id:3,organizationId:1,storeId:1,orderId:2,type:'full',status:'submitted',amount:'12.34',reason:'test',createdByStaffId:2,reviewedByStaffId:null,decisionReason:''},
@@ -22,6 +22,11 @@ assert.throws(()=>verifyRefundDecision({refundRequestId:3,orderId:2,status:'appr
 const withdrawn=structuredClone(sample);withdrawn.refund.status='cancelled';withdrawn.refund.withdrawnByStaffId=2;withdrawn.refund.withdrawalReason='合成撤回';
 assert.equal(inspectRefund(withdrawn,3,{...scope,staffId:2}).canWithdraw,false);
 assert.throws(()=>inspectRefund({...withdrawn,refund:{...withdrawn.refund,withdrawalReason:''}},3,scope));
+const inspected=structuredClone(sample);inspected.refund.status='approved';inspected.lines[0].stockInspection={revision:1,requestedQuantity:'1.000',acceptedQuantity:'0.500',condition:'opened',reason:'合成验收',inspectedByStaffId:2,inspectedAt:'2026-09-24T08:00:00Z'};
+assert.equal(inspectRefund(inspected,3,scope).canInspectStock,true);
+for(const change of [x=>x.lines[0].stockInspection.acceptedQuantity='1.001',x=>x.lines[0].stockInspection.requestedQuantity='2.000',x=>x.lines[0].stockInspection.condition='unknown']){const bad=structuredClone(inspected);change(bad);assert.throws(()=>inspectRefund(bad,3,scope));}
+assert.equal(verifyRefundStockInspection({refundRequestId:3,orderLineId:5,revision:1,status:'recorded',acceptedQuantity:'0.500',condition:'opened'},3,scope,{orderLineId:5,acceptedQuantity:'0.500',condition:'opened'}).status,'recorded');
+assert.throws(()=>verifyRefundStockInspection({refundRequestId:3,orderLineId:5,revision:1,status:'recorded',acceptedQuantity:'1.000',condition:'opened'},3,scope,{orderLineId:5,acceptedQuantity:'0.500',condition:'opened'}));
 let calls=[];
 const handler=createSalonHandler({verifyUser:async()=>({id:'test'}),findStaff:async()=>({id:1,organization_id:1,store_id:1,employment_status:'active'}),resolveStore:async()=>1,invoke:async(name,args)=>{calls.push({name,args});return {};}});
 const send=body=>handler(new Request('http://127.0.0.1/test',{method:'POST',headers:{Authorization:'Bearer synthetic-token-123456'},body:JSON.stringify(body)}));

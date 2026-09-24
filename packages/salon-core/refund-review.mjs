@@ -29,7 +29,9 @@ export function inspectRefund(data,id,scope){
  const total=money(r.amount),payable=money(o.payable),refunded=money(o.refundedTotal);
  if(!Array.isArray(data.lines)||data.lines.length>100||!Array.isArray(data.payments)||data.payments.length>100)fail();
  let lineTotal=0,paymentTotal=0,validPayments=true;const ids=new Set();
- for(const l of data.lines){const key=serverId(l.orderLineId);if(ids.has(key)||!['service','product','package','year_card'].includes(l.type)||units(l.quantity)<=0)fail();ids.add(key);label(l.name,200);lineTotal+=money(l.amount);}
+ for(const l of data.lines){const key=serverId(l.orderLineId);if(ids.has(key)||!['service','product','package','year_card'].includes(l.type)||units(l.quantity)<=0)fail();ids.add(key);label(l.name,200);lineTotal+=money(l.amount);
+  if(l.stockInspection!=null){const i=l.stockInspection;if(l.type!=='product'||!Number.isSafeInteger(i.revision)||i.revision<=0||units(i.requestedQuantity)!==units(l.quantity)||units(i.acceptedQuantity)>units(l.quantity)||!['sealed','opened','damaged','not_returnable'].includes(i.condition)||!Number.isFinite(Date.parse(i.inspectedAt)))fail();serverId(i.inspectedByStaffId);label(i.reason);}
+ }
  ids.clear();
  for(const p of data.payments){
   const key=serverId(p.paymentId);if(ids.has(key)||!Object.hasOwn(methods,p.method)||!Object.hasOwn(methods,p.originalMethod)||!['pending','confirmed','failed','reversed'].includes(p.originalStatus))fail();ids.add(key);
@@ -38,8 +40,13 @@ export function inspectRefund(data,id,scope){
  }
  const canReview=r.status==='submitted'&&serverId(r.createdByStaffId)!==serverId(scope.staffId);
  const canWithdraw=r.status==='submitted'&&serverId(r.createdByStaffId)===serverId(scope.staffId);
+ const canInspectStock=r.status==='approved'&&data.lines.some(line=>line.type==='product');
  const canApprove=canReview&&o.status==='paid'&&total>0&&total<=payable-refunded&&lineTotal===total&&paymentTotal===total&&data.lines.length>0&&data.payments.length>0&&validPayments;
- return Object.freeze({snapshot:freeze(JSON.parse(JSON.stringify(data))),canReview,canApprove,canWithdraw});
+ return Object.freeze({snapshot:freeze(JSON.parse(JSON.stringify(data))),canReview,canApprove,canWithdraw,canInspectStock});
+}
+export function verifyRefundStockInspection(data,refundId,scope,{orderLineId,acceptedQuantity,condition}){
+ if(!data||serverId(data.refundRequestId)!==serverId(refundId)||serverId(data.orderLineId)!==serverId(orderLineId)||data.status!=='recorded'||!Number.isSafeInteger(data.revision)||data.revision<1||data.acceptedQuantity!==acceptedQuantity||data.condition!==condition)throw Error('商品验收回执不匹配，请只读核对原请求');
+ return Object.freeze({...data});
 }
 export function verifyRefundDecision(data,id,scope,decision=null){
  if(!data||serverId(data.refundRequestId)!==serverId(id)||serverId(data.reviewedByStaffId)!==serverId(scope.staffId)||!['approved','rejected'].includes(data.status)||(decision&&data.status!==decision))throw Error('退款审批回执不匹配，请核对原请求');
@@ -51,11 +58,20 @@ export function renderRefund(container,record){
  add('h3',`退款申请 ${r.id} · ${refundStates[r.status]}`);
  add('p',`原单 ${o.number}（${o.id}）· 当前 ${o.status} · 原应收 ¥${o.payable} · 已执行退款 ¥${o.refundedTotal}`);
  add('p',`${r.type==='full'?'全额':'部分'}退款 ¥${r.amount} · 申请人编号 ${r.createdByStaffId} · 原因：${r.reason}`);
- for(const l of lines)add('p',`明细 ${l.orderLineId} · ${l.name} · ${l.quantity} · 申请退 ¥${l.amount}${l.type==='product'?'（商品；执行前需核实返库）':''}`);
+ for(const l of lines){add('p',`明细 ${l.orderLineId} · ${l.name} · ${l.quantity} · 申请退 ¥${l.amount}${l.type==='product'?'（商品；执行前需验收）':''}`);
+  if(l.type==='product'&&l.stockInspection)add('p',`最近验收 v${l.stockInspection.revision} · 可返库 ${l.stockInspection.acceptedQuantity}/${l.quantity} · ${l.stockInspection.condition} · 员工 ${l.stockInspection.inspectedByStaffId} · ${l.stockInspection.reason}`);
+  if(l.type==='product'&&r.status==='approved'){
+   const box=d.createElement('fieldset'),qty=d.createElement('input'),condition=d.createElement('select'),reason=d.createElement('input'),button=d.createElement('button');box.dataset.stockLineId=String(l.orderLineId);
+   const qLabel=d.createElement('label');qLabel.textContent=`明细 ${l.orderLineId} 实物验收可返库数量（最多 ${l.quantity}）`;qty.type='text';qty.inputMode='decimal';qty.autocomplete='off';qty.maxLength=13;qty.placeholder='例如 1.000';qty.value=l.stockInspection?.acceptedQuantity??'';qLabel.append(qty);
+   const cLabel=d.createElement('label');cLabel.textContent='商品状态';for(const [value,text] of [['sealed','未拆封'],['opened','已拆封可再售'],['damaged','破损/瑕疵'],['not_returnable','不可再售']]){const option=d.createElement('option');option.value=value;option.textContent=text;condition.append(option);}condition.value=l.stockInspection?.condition??'sealed';cLabel.append(condition);
+   const rLabel=d.createElement('label');rLabel.textContent='验收说明';reason.type='text';reason.maxLength=500;reason.autocomplete='off';reason.placeholder='说明实收、外观及处理';reason.value=l.stockInspection?.reason??'';rLabel.append(reason);
+   button.type='button';button.dataset.refundStockInspect='true';button.textContent=l.stockInspection?'追加验收修订（不执行退款）':'记录商品验收（不执行退款）';box.append(qLabel,cLabel,rLabel,button);fragment.append(box);
+  }
+ }
  for(const p of payments)add('p',`原支付 ${p.paymentId} · ${methods[p.method]} · 原金额 ¥${p.originalAmount} · 申请退 ¥${p.amount} · 原状态 ${p.originalStatus}${p.method==='member_units'?' · 申请退次数 '+p.units+' / 原次数 '+p.originalUnits:''}`);
  if(r.reviewedByStaffId!==null)add('p',`审批人编号 ${r.reviewedByStaffId} · 意见：${r.decisionReason}`);
  if(r.status==='cancelled'&&r.withdrawnByStaffId!=null)add('p',`撤回人编号 ${r.withdrawnByStaffId} · 撤回原因：${r.withdrawalReason||''}`);
  add('p',record.canApprove?'请逐项核对原因、原支付和返库情况；批准只改变审批状态。':record.canReview?'分配或原单状态不满足批准条件；可以核实后拒绝，不可强行批准。':'当前不可审批：申请人与审批人须分开，且申请必须处于待审批。');
- add('p','本页不执行退款、不退会员余额/次数、不返库。批准不代表顾客已收到退款；商品返库和实际退款必须另行核实。');
+ add('p','验收只记录可返库数量；不会改库存，也不执行退款。实际支付渠道退款回执与返库仍须后续独立核验。');
  container.replaceChildren(fragment);
 }

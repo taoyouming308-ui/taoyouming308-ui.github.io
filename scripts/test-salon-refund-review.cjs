@@ -5,7 +5,7 @@ const {startServer}=require('./salon-local-integration.cjs');
  app=await startServer();let serial=0;
  const call=q=>JSON.parse(app.sql(`set role service_role;select ${q}`));
  const quote=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
- app.sql("insert into public.salon_role_permissions(role_id,resource,action) values(1,'orders','checkout'),(1,'orders','refund_request'),(1,'orders','refund_read'),(1,'orders','refund_approve');insert into public.salon_staff(organization_id,store_id,role_id,staff_no,display_name) values(1,1,1,'REQUESTER','合成申请人');insert into public.salon_staff_store_roles(organization_id,staff_id,store_id,role_id,reason) values(1,2,1,1,'合成测试');update public.salon_catalog_store_settings set stock_tracked=true where store_id=1;insert into public.salon_inventory_balances(organization_id,store_id,catalog_item_id,quantity) values(1,1,1,100)");
+ app.sql("insert into public.salon_role_permissions(role_id,resource,action) values(1,'orders','checkout'),(1,'orders','refund_request'),(1,'orders','refund_read'),(1,'orders','refund_approve'),(1,'orders','refund_execute'),(1,'inventory','write');insert into public.salon_staff(organization_id,store_id,role_id,staff_no,display_name) values(1,1,1,'REQUESTER','合成申请人');insert into public.salon_staff_store_roles(organization_id,staff_id,store_id,role_id,reason) values(1,2,1,1,'合成测试');update public.salon_catalog_store_settings set stock_tracked=true where store_id=1;insert into public.salon_inventory_balances(organization_id,store_id,catalog_item_id,quantity) values(1,1,1,100)");
  const make=(actor=2)=>{
   const n=++serial,id=Number(app.sql(`insert into public.salon_orders(organization_id,store_id,order_no) values(1,1,'REFUND-TEST-${n}') returning id`));
   call(`public.salon_replace_order_lines_versioned(1,1,1,${id},'refund-lines-key-${n}','[{"catalogItemId":1,"quantity":1,"unitPrice":12.34}]'::jsonb,'',0)`);
@@ -49,6 +49,16 @@ const {startServer}=require('./salon-local-integration.cjs');
  const overBefore=balances();
  assert.throws(()=>call(review(over,'refund-over-units-001',detail(over))),/累计退款/);assert.equal(balances(),overBefore);
  assert.equal(call(review(over,'refund-reject-units-1',detail(over),'rejected')).status,'rejected');assert.equal(balances(),overBefore);
+ // Physical goods are not saleable stock until each refunded product line has a final accepted quantity.
+ const stockRefund=make(2),stockBefore=balances(),stockQuantityBefore=Number(app.sql('select quantity from public.salon_inventory_balances where organization_id=1 and store_id=1 and catalog_item_id=1')),stockDetail=detail(stockRefund);
+ call(review(stockRefund,'refund-stock-approved-01',stockDetail));
+ assert.throws(()=>call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-no-inspection')`),/逐项验收/);assert.equal(balances(),stockBefore);
+ const inspected=call(`public.salon_inspect_refund_product_line(1,1,1,${stockRefund},${stockDetail.lines[0].orderLineId},'refund-stock-inspect-001',1,0,0.5,'opened','合成验收：半数可再售')`);
+ assert.equal(inspected.acceptedQuantity,'0.500');
+ const stockLine=detail(stockRefund).lines[0];assert.equal(stockLine.stockInspection.acceptedQuantity,'0.500');assert.equal(stockLine.stockInspection.revision,1);
+ call(`public.salon_execute_refund_request(1,1,1,${stockRefund},'refund-stock-execute-0001')`);
+ assert.equal(Number(app.sql('select quantity from public.salon_inventory_balances where organization_id=1 and store_id=1 and catalog_item_id=1')),stockQuantityBefore+0.5);
+ assert.equal(Number(app.sql(`select quantity_delta from public.salon_inventory_ledger where refund_request_id=${stockRefund} and movement_type='refund'`)),0.5);
  // Queue keyset boundary, minimal fields, filter and scope.
  app.sql(`insert into public.salon_refund_requests(organization_id,store_id,order_id,refund_type,status,requested_amount,reason,created_by_staff_id) select 1,1,${snapshot.order.id},'partial','rejected',1,'synthetic pagination',2 from generate_series(1,55)`);
  const page1=call("public.salon_list_refund_review_queue(1,1,1,'rejected')"),page2=call(`public.salon_list_refund_review_queue(1,1,1,'rejected',${page1.nextBeforeId})`);
@@ -79,6 +89,16 @@ const {startServer}=require('./salon-local-integration.cjs');
   const changed=make();await load(changed);await page.locator('#refundReason').fill('合成核对');app.sql(`update public.salon_orders set notes='changed' where id=${detail(changed).order.id}`);
   await page.locator('#approveRefund').click();await page.getByText(/内容已变化/).waitFor();assert.equal(await journal(),null);assert.equal(await page.locator('#approveRefund').isDisabled(),true);
   await load(own);assert.equal(await page.locator('#approveRefund').isDisabled(),true);assert.equal(await page.locator('#rejectRefund').isDisabled(),true);
+  if(width===1280){
+   const stockUi=make(2),stockSnapshot=detail(stockUi),stockBefore=balances();call(review(stockUi,'refund-stock-ui-review-01',stockSnapshot));
+   await page.locator('#refundFilter').selectOption('approved');await page.locator('#listRefunds').click();await page.locator('#refundSelection').selectOption(String(stockUi));await page.locator('#loadRefund').click();
+   const box=page.locator(`[data-stock-line-id="${stockSnapshot.lines[0].orderLineId}"]`);await box.waitFor();await box.locator('input').nth(0).fill('0.500');await box.locator('input').nth(1).fill('合成浏览器验收');await box.locator('[data-refund-stock-inspect="true"]').click();
+   await page.waitForTimeout(500);const stockMessage=await page.locator('#status').textContent();assert.match(stockMessage,/商品实物验收已记录并回读确认/,`inspection UI status: ${stockMessage}`);assert.equal(Number(app.sql(`select accepted_quantity from public.salon_refund_stock_inspections where refund_request_id=${stockUi} order by revision desc limit 1`)),0.5);assert.equal(balances(),stockBefore);
+   assert.equal(app.sql("select has_function_privilege('anon','public.salon_inspect_refund_product_line(bigint,bigint,bigint,bigint,bigint,text,numeric,integer,numeric,text,text)','execute')"),'f');
+   assert.throws(()=>call(`public.salon_inspect_refund_product_line(1,1,1,${stockUi},${stockSnapshot.lines[0].orderLineId},'refund-stock-stale-cas-01',1,0,0.250,'opened','旧验收版本')`),/已变化/);
+   call(`public.salon_inspect_refund_product_line(1,1,1,${stockUi},${stockSnapshot.lines[0].orderLineId},'refund-stock-revision-02',1,1,0.250,'opened','复核修正')`);
+   assert.equal(Number(app.sql(`select accepted_quantity from public.salon_refund_stock_inspections where refund_request_id=${stockUi} order by revision desc limit 1`)),0.25);assert.equal(app.sql(`select count(*) from public.salon_refund_stock_inspections where refund_request_id=${stockUi}`),'2');assert.equal(balances(),stockBefore);
+  }
   await page.locator('#store').selectOption('2');await page.getByText('已切换门店，旧选择已清除。',{exact:true}).waitFor();assert.equal(await page.locator('#refundDetail').textContent(),'');assert.equal(await page.locator('#refundSelection option').count(),1);
   assert.deepEqual(errors,[]);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.close();
  }
