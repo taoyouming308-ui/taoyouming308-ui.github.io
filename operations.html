@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="539">
+<html lang="zh-CN" data-version="540">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -107,9 +107,9 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-time.js?v=539"></script>
-<script src="operations-staff-view.js?v=539"></script>
-<script src="operations-monthly-daily-performance.js?v=539"></script>
+<script src="operations-time.js?v=540"></script>
+<script src="operations-staff-view.js?v=540"></script>
+<script src="operations-monthly-daily-performance.js?v=540"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -380,10 +380,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=539"></script>
-  <script src="operations-auth-bridge.js?v=539"></script>
-  <script src="operations-voucher-preview.js?v=539"></script>
-  <script src="operations-voucher-view.js?v=539"></script>
+  <script src="operations-report-fit.js?v=540"></script>
+  <script src="operations-auth-bridge.js?v=540"></script>
+  <script src="operations-voucher-preview.js?v=540"></script>
+  <script src="operations-voucher-view.js?v=540"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -572,8 +572,8 @@
     $('trace-content').innerHTML='<div class="trace-card"><h4>'+esc(payrollEmployeeName(salary.employee_id))+' · '+esc(salary.salary_month.slice(0,7))+' · '+esc(financeStatusLabel(salary.status))+'</h4><div class="trace-formula">实发 = 底薪 + 提成 + 奖励 - 扣款 - 社保 + 其他调整</div><div class="trace-actions">'+reportButton+'</div></div><div class="trace-card"><h4>怎么算出来、来自哪里</h4>'+rows+'</div><div class="trace-card"><h4>对应工资凭证</h4>'+voucherHtml+'</div>';bindOpenButtons();
   }
   function bindPayrollActions(){document.querySelectorAll('[data-payroll-trace]').forEach(function(button){button.onclick=function(){openPayrollTrace(button.dataset.payrollTrace,button.dataset.payrollComponent)}});document.querySelectorAll('[data-payroll-reverse]').forEach(function(button){button.onclick=async function(){var reason=window.prompt('冲销不会删除历史。请输入冲销原因：');if(!reason)return;try{await api('payroll_record_reverse',{store:currentStore(),entity_type:button.dataset.payrollReverse,entity_id:button.dataset.recordId,reason:reason});await loadPayroll();toast('冲销已记录')}catch(error){toast(error.message)}}});document.querySelectorAll('[data-salary-action]').forEach(function(button){button.onclick=async function(){var action=button.dataset.salaryAction,reason=window.prompt('请输入'+({approve:'审核',pay:'支付',reverse:'冲销'}[action])+'原因：');if(!reason)return;var payload={store:currentStore(),salary_id:button.dataset.salaryId,action:action,reason:reason};if(action==='pay'){payload.payment_date=window.prompt('请输入支付日期（YYYY-MM-DD）：',beijingToday());payload.payment_method=window.prompt('请输入支付方式：','银行转账');payload.payment_reference=window.prompt('请输入付款单号（可空）：','');payload.voucher_ids=selectedValues('salary-vouchers')}try{await api('salary_transition',payload);await loadPayroll();toast('工资状态已更新')}catch(error){toast(error.message)}}})}
-  $('performance-source-report').addEventListener('change',async function(){var reportId=this.value;$('performance-source-cell').innerHTML='<option value="">正在读取原表数字…</option>';if(!reportId)return;try{var result=await api('report_cells',{store:currentStore(),report_id:reportId}),cells=(result.cells||[]).filter(function(cell){return cell.numeric_value!=null});$('performance-source-cell').innerHTML='<option value="">请选择对应数字</option>'+cells.map(function(cell){return'<option value="'+esc(cell.id)+'">'+esc((cell.label||cell.cell_address)+' · 第'+cell.row_number+'行 '+cell.cell_address+' · '+formatAmount(cell.numeric_value))+'</option>'}).join('')}catch(error){$('performance-source-cell').innerHTML='<option value="">'+esc(error.message)+'</option>'}});
-  async function loadSalaryCells(){var reportId=$('salary-source-report').value,ids=['salary-base-cell','salary-social-cell','salary-other-cell'];ids.forEach(function(id){$(id).innerHTML='<option value="">'+(reportId?'正在读取原表数字…':'请先选择工资原表')+'</option>'});if(!reportId)return;try{var result=isLocalPreview()?{cells:[{id:'preview-salary-C5',label:'底薪',cell_address:'C5',row_number:5,numeric_value:6000},{id:'preview-salary-J5',label:'社保',cell_address:'J5',row_number:5,numeric_value:1306.33},{id:'preview-salary-K5',label:'其他调整',cell_address:'K5',row_number:5,numeric_value:100}]}:await api('report_cells',{store:currentStore(),report_id:reportId}),cells=(result.cells||[]).filter(function(cell){return cell.numeric_value!=null}),html='<option value="">金额为0可不选；非零请选择</option>'+cells.map(function(cell){return'<option value="'+esc(cell.id)+'">'+esc((cell.label||cell.cell_address)+' · 第'+cell.row_number+'行 '+cell.cell_address+' · '+formatAmount(cell.numeric_value))+'</option>'}).join('');ids.forEach(function(id){$(id).innerHTML=html})}catch(error){ids.forEach(function(id){$(id).innerHTML='<option value="">'+esc(error.message)+'</option>'})}}
+  $('performance-source-report').addEventListener('change',async function(){var reportId=this.value,context=beginScopedRead('performance-source-cells','payroll');$('performance-source-cell').innerHTML='<option value="">'+(reportId?'正在读取原表数字…':'请先选择业绩原表')+'</option>';if(!reportId)return;try{var result=await api('report_cells',{store:context.store,report_id:reportId});if(!isCurrentScopedRead('performance-source-cells',context)||$('performance-source-report').value!==reportId)return;var cells=(result.cells||[]).filter(function(cell){return cell.numeric_value!=null});$('performance-source-cell').innerHTML='<option value="">请选择对应数字</option>'+cells.map(function(cell){return'<option value="'+esc(cell.id)+'">'+esc((cell.label||cell.cell_address)+' · 第'+cell.row_number+'行 '+cell.cell_address+' · '+formatAmount(cell.numeric_value))+'</option>'}).join('')}catch(error){if(!isCurrentScopedRead('performance-source-cells',context)||$('performance-source-report').value!==reportId)return;$('performance-source-cell').innerHTML='<option value="">'+esc(error.message)+'</option>'}});
+  async function loadSalaryCells(){var reportId=$('salary-source-report').value,context=beginScopedRead('salary-source-cells','payroll'),ids=['salary-base-cell','salary-social-cell','salary-other-cell'];ids.forEach(function(id){$(id).innerHTML='<option value="">'+(reportId?'正在读取原表数字…':'请先选择工资原表')+'</option>'});if(!reportId)return;try{var result=isLocalPreview()?{cells:[{id:'preview-salary-C5',label:'底薪',cell_address:'C5',row_number:5,numeric_value:6000},{id:'preview-salary-J5',label:'社保',cell_address:'J5',row_number:5,numeric_value:1306.33},{id:'preview-salary-K5',label:'其他调整',cell_address:'K5',row_number:5,numeric_value:100}]}:await api('report_cells',{store:context.store,report_id:reportId});if(!isCurrentScopedRead('salary-source-cells',context)||$('salary-source-report').value!==reportId)return;var cells=(result.cells||[]).filter(function(cell){return cell.numeric_value!=null}),html='<option value="">金额为0可不选；非零请选择</option>'+cells.map(function(cell){return'<option value="'+esc(cell.id)+'">'+esc((cell.label||cell.cell_address)+' · 第'+cell.row_number+'行 '+cell.cell_address+' · '+formatAmount(cell.numeric_value))+'</option>'}).join('');ids.forEach(function(id){$(id).innerHTML=html})}catch(error){if(!isCurrentScopedRead('salary-source-cells',context)||$('salary-source-report').value!==reportId)return;ids.forEach(function(id){$(id).innerHTML='<option value="">'+esc(error.message)+'</option>'})}}
   $('salary-source-report').addEventListener('change',loadSalaryCells);
   function refreshPenaltySources(){var data=state.payroll.data||{},type=$('penalty-source-type').value,rows=type==='attendance'?(data.attendance||[]):type==='check'?(data.checks||[]):[],options=rows.filter(function(row){return row.status==='confirmed'}).map(function(row){var date=row.attendance_date||row.check_date,label=type==='attendance'?attendanceTypeLabel(row.attendance_type):(row.item_name+' · '+(row.result==='pass'?'通过':'未通过'));return'<option value="'+esc(row.id)+'">'+esc(date+' · '+payrollEmployeeName(row.employee_id)+' · '+label)+'</option>'}).join('');$('penalty-source').disabled=type==='manual';$('penalty-source').innerHTML=type==='manual'?'<option value="">不关联</option>':'<option value="">请选择来源记录</option>'+options}
   $('penalty-source-type').addEventListener('change',refreshPenaltySources);
@@ -1130,10 +1130,10 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=539"></script>
-  <script src="operations-monthly-workbench.js?v=539"></script>
-  <script src="operations-petty-cash-evidence.js?v=539"></script>
-  <script src="operations-monthly-summary.js?v=539"></script>
-  <script src="operations-daily-recognition.js?v=539"></script>
+  <script src="operations-daily-review.js?v=540"></script>
+  <script src="operations-monthly-workbench.js?v=540"></script>
+  <script src="operations-petty-cash-evidence.js?v=540"></script>
+  <script src="operations-monthly-summary.js?v=540"></script>
+  <script src="operations-daily-recognition.js?v=540"></script>
 </body>
 </html>

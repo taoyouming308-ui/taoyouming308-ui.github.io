@@ -62,6 +62,7 @@
     { "runtime": "node", "script": "test-zysyr-daily-orientation-db-v496.js" },
     { "runtime": "python", "args": ["-m", "unittest", "scripts/test_zysyr_daily_codex_bridge.py"] },
     { "runtime": "node", "script": "test-zysyr-salary-sheet-v458.js" },
+    { "runtime": "node", "script": "test-zysyr-report-cell-request-scope.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-workbench-v472.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-new-period-v494.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-shared-source-db-v496.js" }
