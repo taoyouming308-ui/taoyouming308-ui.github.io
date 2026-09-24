@@ -1044,6 +1044,50 @@ function monthlyEvidencePolicyMap(cells: JsonRecord[], rules: JsonRecord[]): Rec
 
 type ConfirmedDailySource = { drafts: JsonRecord[]; cells: JsonRecord[] };
 
+// Historical source workbooks are immutable (unique object path + x-upsert=false,
+// and the batch trigger protects the source hash/path). Keep only a tiny isolate-
+// local cache of the parsed *original* display; all ledger revisions, daily
+// rollups, evidence and authorization are still read and applied per request.
+const HISTORY_MONTHLY_DISPLAY_CACHE_LIMIT = 2;
+const historyMonthlyDisplayCache = new Map<string, JsonRecord>();
+
+function cloneJsonRecord(value: JsonRecord): JsonRecord {
+  return JSON.parse(JSON.stringify(value)) as JsonRecord;
+}
+
+async function historicalMonthlyDisplay(companyId: string, storeId: string, batch: JsonRecord,
+  storeName: string, sheetName: string): Promise<JsonRecord> {
+  const sourceHash = cleanText(batch.source_sha256, 64).toLowerCase();
+  const bucketId = cleanText(batch.source_bucket_id, 100);
+  const objectPath = cleanText(batch.source_object_path, 500);
+  // Do not cache if the immutable-source identity is incomplete or malformed.
+  const cacheKey = /^[a-f0-9]{64}$/.test(sourceHash) && bucketId && objectPath
+    ? JSON.stringify(["monthly_profit_loss_v1", companyId, storeId, bucketId, objectPath, sourceHash, storeName, sheetName])
+    : "";
+  if (cacheKey && historyMonthlyDisplayCache.has(cacheKey)) {
+    const cached = historyMonthlyDisplayCache.get(cacheKey)!;
+    historyMonthlyDisplayCache.delete(cacheKey);
+    historyMonthlyDisplayCache.set(cacheKey, cached);
+    return cloneJsonRecord(cached);
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(bucketId)}/${storagePath(objectPath)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`历史月报原件读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const display = await workbookDisplay(bytes, "monthly_profit_loss", storeName, sheetName);
+  if (cacheKey) {
+    historyMonthlyDisplayCache.set(cacheKey, cloneJsonRecord(display));
+    while (historyMonthlyDisplayCache.size > HISTORY_MONTHLY_DISPLAY_CACHE_LIMIT) {
+      const oldestKey = historyMonthlyDisplayCache.keys().next().value;
+      if (!oldestKey) break;
+      historyMonthlyDisplayCache.delete(oldestKey);
+    }
+  }
+  return display;
+}
+
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string,
   dailySource?: ConfirmedDailySource): Promise<JsonRecord | null> {
   const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
@@ -1060,12 +1104,7 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     if (name) sheetCounts.set(name, (sheetCounts.get(name) || 0) + 1);
   }
   const sheetName = Array.from(sheetCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(cleanText(batch.source_bucket_id, 100))}/${storagePath(cleanText(batch.source_object_path, 500))}`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-  });
-  if (!response.ok) throw new Error(`历史月报原件读取失败 (${response.status})`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const display = await workbookDisplay(bytes, "monthly_profit_loss", storeName, sheetName);
+  const display = await historicalMonthlyDisplay(companyId, storeId, batch, storeName, sheetName);
   const entryByAddress = new Map(entries.map((entry) => [cleanText((entry.current_payload as JsonRecord)?.cell_address, 20).toUpperCase(), entry]));
   const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
   const cells = Array.isArray(display.cells) ? display.cells as JsonRecord[] : [];

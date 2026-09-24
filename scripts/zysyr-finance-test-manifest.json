@@ -10,6 +10,7 @@
     { "runtime": "node", "script": "test-zysyr-monthly-cash-income-v527.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-overview-daily-dedupe-v546.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-overview-vouchers-scope-v547.js" },
+    { "runtime": "node", "script": "test-zysyr-history-monthly-display-cache.js" },
     { "runtime": "node", "script": "test-zysyr-report-auto-upload-v524.js" },
     { "runtime": "node", "script": "test-zysyr-daily-stylist-subtotal-db.js" },
     { "runtime": "node", "script": "test-monthly-load-recovery-v499.js" },
