@@ -59,6 +59,7 @@ jobs:
           node scripts/test-zysyr-daily-atomic-save-v510.js
           node scripts/test-zysyr-daily-expected-revision-db.js
           node scripts/test-zysyr-shared-public-acl-db.js
+          node scripts/test-zysyr-storage-anon-policy.js
           node scripts/test-zysyr-legacy-login-security.js
           node scripts/test-zysyr-report-permissions-v512.js
           node scripts/test-monthly-formula-recalculation.js

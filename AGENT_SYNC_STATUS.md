@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
+
+- 经用户明确授权，生产迁移 `20260924051925 zysyr_storage_remove_global_public_policy` 已应用；删除的只有 `storage.objects.anon_all` 全局策略。匿名角色此前可读取 74 个报表对象、349 个凭证对象及 2 个 showcase 对象的元数据；应用后匿名对象查询为空。
+- 生产回读确认 `service_role` 仍能访问原有 425 个对象；`showcase` 仍保持 public，`zysyr-reports` 与 `zysyr-vouchers` 仍为 private。没有删除/改写任何对象、财务数据或 bucket 设置。
+- 本地迁移按 Supabase 实际登记版本号对齐，并新增迁移范围回归测试；此项仅数据库安全迁移，无前端发布或财务计算变化。服务端财务接口继续通过 service_role 与短时签名 URL 访问私有对象。
+
 ## 审计整改进度：v537 发布及权限依赖核验（2026-09-24）
 
 - v537 提交 `f0435ee` 已通过完整 pre-push 门禁并推送 GitHub `main`；只读访问 Pages 的 `version.txt` 确认为 `537`，线上 `perm-app.html` 使用会话校验 API，不再直接请求 `bookings` / `customer_profiles`。
