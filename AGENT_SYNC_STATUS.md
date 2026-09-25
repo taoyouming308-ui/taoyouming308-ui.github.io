@@ -6,6 +6,12 @@
 - 新增分页边界单测并纳入 72 项财务测试清单；完整财务回归 72/72 通过，包含隔离且断网的临时 PostgreSQL 用例。未改数据库、公式、历史金额、权限或财务独立登录入口。
 - 全仓 pre-push 通过，提交 `6822224` 已推送 `github/main`。生产 `operations-api` 为 ACTIVE v104，远端源码确认修复存在且 `verify_jwt=false` 未改变；Pages 无缓存回读 `version.txt=556`、`operations.html data-version=556`、脚本 `v=556`。此修复只关闭分页边界误报/超量请求风险，不代表 C03 性能与规模风险整体关闭。
 
+## 上线整改：C06 财务发布环境与门禁交接（文档子项）
+
+- 新增 `docs/finance-release-runbook.md` 并从 README 链接：明确 Node/Playwright/Chromium/Python/Deno/Supabase CLI/PostgreSQL 版本、复现测试命令、按函数归属的 Supabase 环境变量**名称**、迁移/Edge/Pages 分阶段核验及授权边界。
+- 只记录变量名称，不读取或写入秘密值；文档明确隔离迁移重放、生产迁移与函数部署、正式账号验收以及数据库/Storage 恢复演练均不能由本地测试替代。
+- 本项不改生产配置、数据库、财务公式、历史数据、权限或财务独立登录端口。C06 整体仍开放：一次性生产同构环境的完整迁移/发布演练及 GitHub Actions 实际运行证据仍待完成。
+
 ## 上线整改：B13 日报识别桥脱敏健康探针（v555，代码已验证；共享运行端未部署）
 
 - App version: v555。候选识别桥新增 Bearer 鉴权健康处理器，仅检查 Codex CLI 文件是否存在且可执行；明确返回 `codex_login: not_checked`，不启动 Codex、不检查个人会话、不回传路径/令牌/图片/财务数据。

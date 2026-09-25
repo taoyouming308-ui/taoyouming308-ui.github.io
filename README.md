@@ -23,7 +23,7 @@ python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
 
 财务完整回归统一使用仓库根 `package.json` 的 `npm run test:finance`。本地 pre-push 与 GitHub Actions 调用同一个 `scripts/zysyr-finance-test-manifest.json`；需使用 `.node-version` 指定的 Node.js、已安装的 Playwright Chromium，以及 Docker（财务 SQL 用 PostgreSQL 17 隔离容器，禁用容器网络）。
 
-完整发布前检查见 `AGENTS.md` 和 `PUBLISH_RULES.md`。
+财务环境版本、变量名称、数据库/Edge/Pages 分阶段发布门槛见 [`docs/finance-release-runbook.md`](docs/finance-release-runbook.md)。完整发布前检查见 `AGENTS.md` 和 `PUBLISH_RULES.md`。
 
 ## ZYSYR 企业级备份
 
