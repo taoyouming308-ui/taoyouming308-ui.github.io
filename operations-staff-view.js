@@ -1,6 +1,7 @@
 (function(global){
   'use strict';
   var enabled=new URLSearchParams(location.search).get('entry')==='staff-shareholder';
+  var READ_TIMEOUT_MS=45000;
   var phase='loading';
   function token(){try{return (JSON.parse(localStorage.getItem('booking-session')||'null')||{}).session_token||''}catch(_){return ''}}
   function notice(message){
@@ -17,9 +18,17 @@
   }
   global.StaffReportView={enabled:enabled,loading:loading,blocked:blocked,ready:function(){phase='ready';document.documentElement.classList.remove('staff-report-loading');var note=document.getElementById('staff-report-message');if(note)note.remove()},request:async function(endpoint,key,operation,payload){
     var session=token();if(!session)throw new Error('员工登录已失效，请返回 App 重新登录');
-    var r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:key},body:JSON.stringify(Object.assign({},payload||{},{operation:operation,employee_session_token:session}))});
-    var data=await r.json().catch(function(){throw new Error('报表服务暂时无法读取，请重试')});if(token()!==session){blocked('员工登录已变化，请返回工作台重新打开报表。');throw new Error('员工登录已变化')}
-    if(!r.ok){var e=new Error(data.error||'报表读取失败');e.status=r.status;e.code=data.code||'';if(r.status===401||r.status===403)blocked(e.message);throw e}return data;
+    var controller=typeof AbortController==='function'?new AbortController():null;
+    var timer=controller?setTimeout(function(){controller.abort()},READ_TIMEOUT_MS):null;
+    try{
+      var r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:key},body:JSON.stringify(Object.assign({},payload||{},{operation:operation,employee_session_token:session})),...(controller?{signal:controller.signal}:{})});
+      var data;try{data=await r.json()}catch(error){if(controller&&controller.signal.aborted)throw error;throw new Error('报表服务暂时无法读取，请重试')}
+      if(token()!==session){blocked('员工登录已变化，请返回工作台重新打开报表。');throw new Error('员工登录已变化')}
+      if(!r.ok){var e=new Error(data.error||'报表读取失败');e.status=r.status;e.code=data.code||'';if(r.status===401||r.status===403)blocked(e.message);throw e}return data;
+    }catch(error){
+      if(controller&&controller.signal.aborted){var timeout=new Error('股东报表读取超时，未提交任何修改；请点击重新读取报表');timeout.code='STAFF_REPORT_READ_TIMEOUT';throw timeout}
+      throw error;
+    }finally{if(timer)clearTimeout(timer)}
   }};
   if(enabled){
     var style=document.createElement('style');
