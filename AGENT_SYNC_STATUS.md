@@ -5,6 +5,7 @@
 - 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。
 - 此测试不连接生产 Supabase、不含任何真实财务数据，也不验证 Supabase PITR/项目备份或 Storage 原件恢复。仓库 `backup-zysyr.sh` 仅归档项目文件；本机 `scripts/backup.env` 不存在，因此未配置异地副本。
 - 同日生产只读 SQL 回读 `storage.objects` 上的 `anon_all` 策略为空；Supabase Security Advisor 当前仍有 42 条 RLS enabled/no policy 的 INFO 与 1 条 Auth 泄露密码保护 WARN。未改权限或 Auth 设置；INFO 须按服务端专用表与公开/用户表逐项区分，不能批量加策略。
+- 对 42 张 public RLS/no-policy 表再按有效表权限分组：37 张对 `anon` 和 `authenticated` 均无 SELECT/INSERT/UPDATE/DELETE 表权限；5 张 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods` 有角色级 GRANT，但 RLS 开启且无策略，当前行访问 fail-closed。该权限差异需要结合旧内容/分析模块的设计逐表审查；未读取业务行、未撤销权限或补策略。
 - G01 仍为 P0 开放：需要获批的数据库/Storage 备份目的地、LaunchAgent 对当前仓库路径的 macOS 授权或受控运行位置，以及隔离环境内的实际数据库与对象恢复抽验。未导出生产数据、未启用可能计费的 PITR。
 
 ## 上线整改：B10 财务请求结果未确认提示（v558，已发布）
