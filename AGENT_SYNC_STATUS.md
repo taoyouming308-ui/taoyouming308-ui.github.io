@@ -1,10 +1,16 @@
 # Agent Sync Status
 
-## CI Node 20 runner 退役兼容（2026-09-25，等待远端验证）
+## CI Node 20 runner 退役兼容（2026-09-25，已验证）
 
 - GitHub 于 2026-09-23 移除 Actions runner 的 Node 20；旧 `actions/checkout@v4`、`setup-node@v4`、`setup-python@v5` 仍能在 runner 的 Node 24 强制兼容模式下运行，但近期 workflow 明确出现弃用警告。
 - 将这三项官方 action 更新至当前官方主版本 `checkout@v7`、`setup-node@v7`、`setup-python@v7`，均支持 Node 24；保留 `.node-version=22.22.1`、Python 3.12、npm cache 和所有测试/门禁逻辑不变。工作流无 `registry-url` / `always-auth` 等新版本破坏性配置。
-- 待本提交 GitHub Validate 与 Pages 工作流完成后，确认 Node 20 runtime warning 消失；此处不改应用版本、财务逻辑、数据库、权限或生产数据。
+- 提交 `7051ba7` 已推送 GitHub main；Validate `36108524238` 与 Pages `36108523746` 均成功，日志未再出现 Node 20 forced-runtime warning。此处不改应用版本、财务逻辑、数据库、权限或生产数据。
+
+## 上线审计状态复核（2026-09-25）
+
+- 旧上线报告中的日报多人/多端并发覆盖（A03）已不是未修状态：当前生产迁移 `20260924010116` 与 `operations-api` v95 的 expected-revision 检查已在 9 月 24 日生产只读回读中核实；旧修订冲突隔离 PostgreSQL 回归此前通过。真实财务账号的成功写入端到端验收仍需财务配合，不能由合成测试替代。
+- 本轮尝试重跑 A03 隔离 PostgreSQL 用例时，受限环境无法连接 OrbStack Docker socket（permission denied）；因此本次不声称该用例已重新运行。已存在的上次通过记录仍保留。
+- 其余需要外部条件/业务确认的上线门槛仍开放：生产数据库及 Storage 原图隔离恢复演练、零收入与休息日规则、财务真实账号/设备验收、历史草稿/凭证逐项签认，以及旧 Auth 账号迁移和非财务旧模块的权限边界审查。未猜测数据、改变财务端口或擅自修改 Auth/RLS。
 
 ## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
 

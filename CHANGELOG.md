@@ -1,9 +1,15 @@
 # Changelog
 
+## 2026-09-25 · 上线审计状态复核
+
+- 校正旧报告中日报并发修订门禁的状态：生产迁移与 API 已核验部署，合成数据库回归已有通过证据；真实财务账号端到端写入验收仍待财务配合。
+- 将已成功的 GitHub Actions Node 24 工作流验证记为完成，并明确记录本次 Docker socket 权限受限导致未能重跑隔离数据库用例，以及仍需外部条件/业务决策的上线门槛。
+- 仅更新审计交接状态，不改应用代码、财务规则、数据库、权限、历史数据或财务独立登录端口。
+
 ## 2026-09-25 · GitHub Actions Node 24 兼容
 
 - 将 `actions/checkout`、`actions/setup-node`、`actions/setup-python` 更新到官方 Node 24 兼容主版本，消除 Node 20 runner 退役后的强制兼容警告；原有 Node/Python 版本、npm cache 和测试命令保持不变。
-- 等待 GitHub Validate/Pages 对最新工作流实际验证；未改应用代码或版本、财务业务逻辑、数据库、权限及生产数据。
+- GitHub Validate `36108524238` 与 Pages `36108523746` 成功，日志未再出现 Node 20 forced-runtime warning；未改应用代码或版本、财务业务逻辑、数据库、权限及生产数据。
 
 ## 2026-09-25 · G01 合成数据库备份恢复演练
 
