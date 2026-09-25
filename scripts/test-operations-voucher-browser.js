@@ -64,18 +64,37 @@ async function run() {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
           if (cellAddress === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
-          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: window.fixtureExact ? 'page_confirmed' : 'bundle_only', trace_source_locator: window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
+          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: cellAddress === 'C5' || !window.fixtureExact ? 'bundle_only' : 'page_confirmed', trace_source_locator: cellAddress === 'C5' ? 'bundle:2026-01' : window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
         }
-        if (operation === 'cell_trace') return traceFixture(payload.cell_address);
-        if (operation === 'cell_trace_batch') return { results: await Promise.all(payload.cell_addresses.map(async cell_address => ({ cell_address, trace: await traceFixture(cell_address) }))) };
+        async function realTrace(cellAddress) {
+          const trace = await traceFixture(cellAddress);
+          for (const file of trace.evidence || []) {
+            if (file.id !== 'bundle') continue;
+            if (window.fixtureMulti && cellAddress === 'C5') {
+              file.trace_link_level = 'page_confirmed'; file.trace_source_locator = 'word/media/image3.png';
+            }
+            if (file.trace_link_level === 'page_confirmed') {
+              if (cellAddress !== 'C5' && window.fixtureLocator) file.trace_source_locator = window.fixtureLocator;
+              // Production always sends BOTH fields, including single-page links.
+              file.trace_source_locators = [file.trace_source_locator];
+            }
+          }
+          return trace;
+        }
+        if (operation === 'cell_trace') return realTrace(payload.cell_address);
+        if (operation === 'cell_trace_batch') return { results: await Promise.all(payload.cell_addresses.map(async cell_address => ({ cell_address, trace: await realTrace(cell_address) }))) };
         if (operation === 'history_evidence_images') {
-          const imageNames = ['image1.png', 'image2.png'];
+          const imageNames = window.fixtureMulti ? ['image1.png', 'image2.png', 'image3.png'] : ['image1.png', 'image2.png'];
           const imageIndex = payload.image_filename ? imageNames.indexOf(payload.image_filename) : 0;
           if (imageIndex < 0) throw Error('所选图片不属于此凭证包');
           return { filename: '模拟凭证包.docx', image_manifest: imageNames, image_index: imageIndex,
             images: [{ filename: imageNames[imageIndex], data_url: image }] };
         }
         if (operation === 'voucher_url') return { filename: '模拟日报.png', url: image };
+        if (operation === 'history_ledger_evidence_page_link') {
+          window.fixtureExact = true; window.fixtureLocator = payload.source_locator;
+          return { saved: true, linked: true, formal_ledger_amount_changed: false };
+        }
         if (operation === 'business_evidence_rule_save' || operation === 'monthly_income_adjustment_save' || operation === 'history_ledger_evidence_upload' || operation === 'history_ledger_evidence_page_link') return { saved: true, linked: true, formal_ledger_amount_changed: false };
         if (operation === 'overview') return state.data;
         throw Error('Unexpected API or write attempted: ' + operation);
@@ -122,22 +141,43 @@ async function run() {
     await page.locator('.monthly-inline-editor').waitFor();
     await page.locator('.voucher-file-preview [data-link-history-page]').first().waitFor();
     assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 1, 'finance maps only the currently displayed bundle page');
+    await first.locator('[data-step="1"]').click();
+    await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-link-history-page]')?.dataset.linkHistoryPage === 'image2.png');
     await page.evaluate(() => { window.prompt = () => '逐张查看原始凭证后人工确认'; });
     await page.locator('.voucher-file-preview [data-link-history-page]').first().click();
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'history_ledger_evidence_page_link'));
     const exactPageLink = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'history_ledger_evidence_page_link'));
     assert.equal(exactPageLink.ledger_entry_id, '11111111-1111-4111-8111-111111111111');
     assert.equal(exactPageLink.evidence_id, 'bundle');
-    assert.equal(exactPageLink.source_locator, 'word/media/image1.png');
+    assert.equal(exactPageLink.source_locator, 'word/media/image2.png');
     assert.equal(exactPageLink.reason, '逐张查看原始凭证后人工确认');
-    await page.evaluate(() => { window.fixtureExact = true; openCellTrace('C4'); });
+    await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]')?.textContent === '1 / 1');
+    await page.evaluate(async () => { closeMonthlyWorkbench(); await openCellTrace('C4'); });
     await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]')?.textContent === '1 / 1');
     const exactImageCall = await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1));
     assert.equal(exactImageCall.image_filename, 'image2.png', 'an exact historical amount link loads only its mapped image');
+    await first.locator('img').waitFor();
+    assert.doesNotMatch(await first.innerText(), /无法全部找到/);
+    await first.locator('[data-retry]').click();
+    await first.locator('img').waitFor();
+    assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1).image_filename), 'image2.png', 'retry keeps the confirmed page');
     assert.equal(await page.locator('.voucher-file-preview [data-step="1"]').first().isDisabled(), true, 'an exact amount link cannot browse the rest of the Word bundle');
+    assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 0, 'a page already confirmed for this amount must not offer re-linking');
+    assert.doesNotMatch(await page.locator('.voucher-file-preview').first().innerText(), /本月整包凭证/, 'a bundle-only sibling must not downgrade the confirmed exact page');
     assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
     assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');
+    await page.evaluate(() => openCellTrace('C3'));
+    await first.locator('img').waitFor();
+    assert.doesNotMatch(await first.innerText(), /本月整包凭证|无法全部找到/, 'formula merge must retain its confirmed image despite a bundle sibling');
+    await page.evaluate(() => { window.fixtureMulti = true; return openCellTrace('C3'); });
+    await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]')?.textContent === '1 / 2');
+    await first.locator('[data-step="1"]').click();
+    await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]')?.textContent === '2 / 2');
+    assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1).image_filename), 'image3.png', 'paging visits only confirmed images, not unrelated image1');
+    assert.doesNotMatch(await first.innerText(), /无法全部找到/);
+    await page.evaluate(() => { window.fixtureMulti = false; return openCellTrace('C4'); });
+    await page.locator('[data-simple-rule]').waitFor();
     await page.locator('[data-simple-rule]').click();
     await page.waitForFunction(() => window.fixtureCalls.some(call => call.operation === 'business_evidence_rule_save'));
     const evidenceCall = await page.evaluate(() => window.fixtureCalls.find(call => call.operation === 'business_evidence_rule_save'));

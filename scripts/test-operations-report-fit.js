@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
-const { chromium } = require('playwright');
+const { chromium, webkit } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
@@ -14,38 +14,65 @@ const server = http.createServer((req, res) => {
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const browser = process.env.REPORT_FIT_WEBKIT ? await webkit.launch({ headless: true }) : await chromium.launch({ channel: 'chrome', headless: true });
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ isMobile: true, hasTouch: true });
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
-    for (const view of ['monthly', 'daily-report', 'salary-report', 'finance-workbench']) {
+    const views = process.env.REPORT_FIT_WEBKIT ? ['monthly'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
+    for (const view of views) {
       await page.evaluate(async view => {
         await showView(view);
+        if (view === 'monthly') {
+          // Realistic long daily amounts and monthly totals; DOM-only fixtures.
+          document.querySelectorAll('.monthly-daily-embedded.amount-cell').forEach((cell, index) => {
+            cell.textContent = index % 2 ? '11609.00' : '141369.00';
+          });
+        }
         if (view === 'daily-report') {
           state.imports.sheet = previewDailySheetData(); renderDailySheetDetail();
           // Restored job rendering must never make the hidden batch panel visible again.
           document.getElementById('daily-recognition-job').classList.remove('hidden');
         }
       }, view);
-      for (const [width, height] of [[390,844],[844,390],[1024,768],[1366,1024],[1920,1080]]) {
+      for (const [width, height] of [[390,844],[844,390],[932,430],[1280,589],[1024,768],[1366,1024],[1920,1080],[390,844]]) {
         await page.setViewportSize({ width, height });
         await page.waitForTimeout(100);
         const result = await page.evaluate(() => {
           const wrappers = [...document.querySelectorAll('.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll,.history-grid-wrap')]
             .filter(el => el.getClientRects().length && el.querySelector('table'));
+          const embeddedAmount = document.querySelector('.monthly-daily-embedded.amount-cell');
+          const overlaps = [...document.querySelectorAll('.monthly-daily-embedded.amount-cell')].filter(cell => {
+            if (!cell.getClientRects().length) return false;
+            const range = document.createRange(); range.selectNodeContents(cell);
+            const text = range.getBoundingClientRect(), box = cell.getBoundingClientRect();
+            return text.left < box.left - .2 || text.right > box.right + .2;
+          }).slice(0, 5).map(cell => {
+            const range = document.createRange(); range.selectNodeContents(cell);
+            return { value: cell.textContent, cell: cell.getBoundingClientRect().toJSON(), text: range.getBoundingClientRect().toJSON(), font: getComputedStyle(cell).fontSize, inline: cell.style.fontSize, width: cell.offsetWidth };
+          });
           return { count: wrappers.length, overflows: wrappers.filter(el => el.scrollWidth > el.clientWidth + 2)
             .map(el => ({ className: el.className, width: el.clientWidth, scroll: el.scrollWidth })),
+            overlaps, embeddedAmount: embeddedAmount && { value: embeddedAmount.textContent, textSizeAdjust: getComputedStyle(embeddedAmount).getPropertyValue('-webkit-text-size-adjust') || getComputedStyle(embeddedAmount).getPropertyValue('text-size-adjust') },
             hiddenProgress: getComputedStyle(document.getElementById('daily-recognition-job')).display === 'none',
             viewport: document.querySelector('meta[name=viewport]').content };
         });
         assert(result.count > 0, view + ': no visible fixture table');
         assert.deepEqual(result.overflows, [], view + ' at ' + width + 'x' + height);
+        if (view === 'monthly') {
+          if (result.overlaps.length) await page.screenshot({ path: '/tmp/zysyr-monthly-fit-failure.png', fullPage: true });
+          assert.deepEqual(result.overlaps, [], 'complete daily and total amounts must not overlap at ' + width + 'x' + height);
+          assert.equal(result.embeddedAmount.value, '141369.00', 'fitting must preserve every digit and decimal');
+          // Computed text-size-adjust differs across browser engines. Assert
+          // actual glyph bounds above and the whole-sheet scale contract here.
+          assert.equal(await page.locator('.sheet-table').evaluate(table => table.style.zoom), '1', 'monthly text must avoid CSS zoom minimum-font inflation');
+          if (width === 844) await page.screenshot({ path: '/tmp/zysyr-monthly-fit-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png', fullPage: true });
+        }
         assert(result.hiddenProgress);
         assert(!/user-scalable=no|maximum-scale=1/.test(result.viewport), 'native pinch zoom must remain available');
         if (view === 'daily-report' && width === 844) await page.screenshot({ path: '/tmp/zysyr-report-fit-phone-landscape.png', fullPage: true });
       }
     }
-    console.log('Report fit: monthly/daily/salary/petty tables fit phone, rotated phone, iPad and desktop; progress hidden; browser zoom enabled.');
+    console.log('Report fit (' + (process.env.REPORT_FIT_WEBKIT ? 'WebKit monthly' : 'Chromium monthly/daily/salary/petty') + '): phone, rotated phone, iPad and desktop; full amounts do not overlap; browser zoom enabled.');
   } finally { await browser.close(); server.close(); }
 })().catch(error => { console.error(error); server.close(); process.exitCode = 1; });

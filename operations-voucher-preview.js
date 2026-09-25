@@ -3,16 +3,29 @@
   'use strict';
   function key(file) { return (file.evidence_source || 'history') + ':' + file.id; }
   function locators(file) {
-    return Array.from(new Set([].concat(file.trace_source_locators || [], file.trace_source_locator || []).filter(Boolean)));
+    // Bundle-level links identify the monthly file, not a specific image in it.
+    // Never pass their synthetic `bundle:<month>` locator into exact-page loading.
+    if (!file || file.trace_link_level !== 'page_confirmed') return [];
+    return Array.from(new Set([].concat(file.trace_source_locators || [], file.trace_source_locator || [])
+      .filter(Boolean).filter(function (value) { return !/^bundle:/i.test(String(value)); })));
+  }
+  function exactImageFilenames(file) {
+    return Array.from(new Set(locators(file).map(function (value) { return String(value).split('/').pop(); })
+      .filter(function (name) { return /^image[\w.-]+$/i.test(name); })));
   }
   function merge(map, file) {
     var id = key(file), current = map.get(id);
     if (!current) { map.set(id, Object.assign({}, file)); return; }
+    var exactLocators = Array.from(new Set(locators(current).concat(locators(file))));
     var merged = Object.assign({}, current, file, {
-      trace_source_locators: Array.from(new Set(locators(current).concat(locators(file)))),
+      trace_source_locators: exactLocators,
+      trace_source_locator: exactLocators[0] || null,
       trace_missing_exact_count: Math.max(Number(current.trace_missing_exact_count || 0), Number(file.trace_missing_exact_count || 0))
     });
-    if (current.trace_link_level === 'bundle_only' || file.trace_link_level === 'bundle_only') merged.trace_link_level = 'bundle_only';
+    // One confirmed page remains exact even when another component points only
+    // to the same monthly bundle. Keep the missing-component warning separately.
+    if (exactLocators.length) merged.trace_link_level = 'page_confirmed';
+    else if (current.trace_link_level === 'bundle_only' || file.trace_link_level === 'bundle_only') merged.trace_link_level = 'bundle_only';
     map.set(id, merged);
   }
   async function collect(rootTrace, address, fetchTrace, options) {
@@ -67,11 +80,15 @@
     if (file.trace_link_level !== 'page_confirmed') return { images: all, missing: false };
     // A finance-uploaded file is itself the exact evidence. Its audit locator is
     // a hash marker rather than a path inside a DOCX package.
-    if (all.length === 1 && wanted.length && wanted.every(function (name) { return /^manual-upload:/i.test(name); })) {
+    if (wanted.length && wanted.every(function (name) { return /^manual-upload:/i.test(name); }) &&
+        kind(file) === 'image' && (all.length === 1 || safeURL(file.file_url))) {
       return { images: all, missing: false };
     }
     var found = all.filter(function (item) { return wanted.indexOf(String(item.filename || '').split('/').pop()) >= 0; });
-    var missing = !wanted.length || wanted.some(function (name) { return !found.some(function (item) { return String(item.filename || '').split('/').pop() === name; }); });
+    // The API returns one requested image plus the full document manifest.
+    // Other confirmed pages in that manifest are lazy-loaded, not missing.
+    var available = Array.isArray(file.image_manifest) ? file.image_manifest : all.map(function (item) { return String(item.filename || '').split('/').pop(); });
+    var missing = !wanted.length || !found.length || wanted.some(function (name) { return available.indexOf(name) < 0; });
     // Never silently substitute a whole bundle for a confirmed page.
     return { images: found, missing: missing };
   }
@@ -136,7 +153,7 @@
       resolveDone();
     }, done: done };
   }
-  var api = { collect: collect, selectImages: selectImages, safeURL: safeURL, kind: kind, loadFiles: loadFiles, loadVisibleFiles: loadVisibleFiles, merge: merge };
+  var api = { collect: collect, exactImageFilenames: exactImageFilenames, selectImages: selectImages, safeURL: safeURL, kind: kind, loadFiles: loadFiles, loadVisibleFiles: loadVisibleFiles, merge: merge };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ZysyrVoucherPreview = api;
 })(typeof window !== 'undefined' ? window : globalThis);

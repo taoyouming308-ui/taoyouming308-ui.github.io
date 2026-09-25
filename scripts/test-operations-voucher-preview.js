@@ -3,6 +3,9 @@ const core = require('../operations-voucher-preview.js');
 
 async function test() {
   const evidence = { id: 'receipt-a', trace_link_level: 'page_confirmed', trace_source_locator: 'word/media/image1.jpeg' };
+  assert.deepEqual(core.exactImageFilenames({ ...evidence, trace_source_locators: [evidence.trace_source_locator] }), ['image1.jpeg'], 'API singular and plural locator fields refer to the same image');
+  assert.deepEqual(core.exactImageFilenames({ ...evidence, trace_source_locators: ['word/media/image2.jpeg', 'bundle:2026-01'] }), ['image2.jpeg', 'image1.jpeg']);
+  assert.deepEqual(core.exactImageFilenames({ ...evidence, trace_link_level: 'bundle_only' }), []);
   const leaf = (files, amount = 10) => ({ mode: 'input', target: { numeric_value: amount }, evidence: files });
   const formula = (...refs) => ({ mode: 'formula', precedents: refs.map(cell_address => ({ cell_address })) });
   const calls = [];
@@ -46,8 +49,18 @@ async function test() {
   assert.deepEqual(core.selectImages({ ...evidence, trace_source_locator: 'missing.jpeg', images }), { images: [], missing: true });
   assert.equal(core.selectImages({ ...evidence, trace_source_locators: ['image1.jpeg', 'missing.jpeg'], images }).missing, true);
   assert.equal(core.selectImages({ ...evidence, trace_link_level: 'bundle_only', images }).images.length, 2);
-  const map = new Map(); core.merge(map, evidence); core.merge(map, { ...evidence, trace_link_level: 'bundle_only' });
-  assert.equal([...map.values()][0].trace_link_level, 'bundle_only');
+  assert.equal(core.selectImages({ ...evidence, trace_source_locators: ['word/media/image1.jpeg', 'word/media/image2.jpeg'], images: [images[0]], image_manifest: ['image1.jpeg', 'image2.jpeg', 'image3.jpeg'] }).missing, false, 'confirmed pages are paged lazily, not falsely marked missing');
+  assert.equal(core.selectImages({ ...evidence, images: [images[1]], image_manifest: ['image1.jpeg', 'image2.jpeg'] }).missing, true, 'manifest alone must never replace the actual linked image');
+  const map = new Map(); core.merge(map, { ...evidence, trace_link_level: 'bundle_only', trace_source_locator: 'bundle:2026-01' });
+  core.merge(map, evidence);
+  const merged = [...map.values()][0];
+  assert.equal(merged.trace_link_level, 'page_confirmed', 'a bundle-only sibling must not downgrade a confirmed exact page');
+  assert.deepEqual(merged.trace_source_locators, ['word/media/image1.jpeg'], 'synthetic bundle locators must not be used as exact image paths');
+  assert.equal(core.selectImages({ ...merged, images }).missing, false);
+  assert.equal(core.selectImages({
+    trace_link_level: 'page_confirmed', trace_source_locator: 'manual-upload:sha256-abc',
+    filename: '消费凭证.jpg', mime_type: 'image/jpeg', file_url: 'https://storage.example/signed-image', images: []
+  }).missing, false, 'a directly uploaded private image is itself the exact original');
   core.merge(map, { ...evidence, evidence_source: 'voucher_attachment' });
   assert.equal(map.size, 2, 'different private tables must not conflate identities');
   assert.equal(core.safeURL('javascript:alert(1)'), '');

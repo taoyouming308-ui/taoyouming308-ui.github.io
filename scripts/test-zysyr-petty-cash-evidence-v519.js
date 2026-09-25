@@ -80,7 +80,10 @@ let browser;
       if (operation === 'petty_cash_report') return window.fixture;
       if (operation === 'history_evidence_images') {
         if (payload.evidence_id === '66666666-6666-4666-8666-666666666666') return { filename: '补传纸巾.png', mime_type: 'image/png', images: [{ filename: 'receipt.png', data_url: png }] };
-        return { filename: '2026年1月备用金支出凭证.docx', mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', images: [{ filename: 'image1.jpeg', data_url: png }, { filename: 'image2.jpeg', data_url: png }] };
+        const manifest = ['image1.jpeg', 'image2.jpeg'];
+        const index = payload.image_filename ? manifest.indexOf(payload.image_filename) : 0;
+        if (index < 0) throw Error('原图位置不存在');
+        return { filename: '2026年1月备用金支出凭证.docx', mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', image_manifest: manifest, image_index: index, images: [{ filename: manifest[index], data_url: png }] };
       }
       if (operation === 'history_ledger_evidence_upload') {
         window.fixture.history_evidence.push({ id: '66666666-6666-4666-8666-666666666666', original_filename: payload.filename, mime_type: payload.mime_type });
@@ -114,6 +117,12 @@ let browser;
   await page.locator('#history-petty-file-list img').waitFor();
   assert.equal(await page.locator('#history-petty-file-list img').count(), 1, 'one history item must show only its exact image, not the whole bundle');
   assert.match(await page.locator('#trace-content').innerText(), /只显示与当前这一笔精确对应的原图/);
+  assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1).image_filename), 'image2.jpeg');
+  assert.doesNotMatch(await page.locator('#trace-content').innerText(), /无法全部找到/);
+  await page.evaluate(() => closeTrace());
+  await page.locator('[data-history-petty-open="33333333-3333-4333-8333-333333333333"]').click();
+  await page.locator('#history-petty-file-list img').waitFor();
+  assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.operation === 'history_evidence_images').at(-1).image_filename), 'image2.jpeg', 'closing and reopening must preserve the precise page');
 
   const closeTraceResult = await page.evaluate(() => { closeTrace(); return true; });
   assert.equal(closeTraceResult, true);

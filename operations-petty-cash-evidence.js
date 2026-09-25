@@ -148,11 +148,7 @@
   }
 
   function exactHistoryImageFilename(file) {
-    if (!file || file.trace_link_level !== 'page_confirmed') return null;
-    var values = [].concat(file.trace_source_locators || [], file.trace_source_locator || []).filter(Boolean);
-    if (values.length !== 1) return null;
-    var name = String(values[0]).split('/').pop();
-    return /^image[\w.-]+$/i.test(name) ? name : null;
+    return window.ZysyrVoucherPreview.exactImageFilenames(file)[0] || null;
   }
 
   async function loadHistoryFile(file, host) {

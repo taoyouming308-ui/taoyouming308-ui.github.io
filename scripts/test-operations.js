@@ -207,7 +207,8 @@ expect(edge.includes('historyEvidenceImages') && edge.includes('word\\/media\\/'
   && edge.includes('await archive.file(imagePath)?.async("base64")')
   && edge.includes('file_url: await signedStorageUrl(bucket, objectPath)')
   && voucherView.includes('loadPage(file, manifest[next])')
-  && voucherView.includes('file.trace_link_level !== \'page_confirmed\''),
+  && voucherView.includes('exactPage ? core.exactImageFilenames(file).filter(')
+  && voucherView.includes('manifest.indexOf(name) >= 0'),
   'private historical voucher previews must use short signed URLs or fetch a single requested Word page on demand');
 expect(html.includes('data-history-filter') && html.includes('data-history-jump')
   && html.includes('全部月份') && html.includes('待审核月份') && html.includes('有异常月份'),

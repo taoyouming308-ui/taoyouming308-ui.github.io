@@ -6,12 +6,13 @@
     function fileView(file, host, retry, linkImage, loadPage) {
       var selected = core.selectImages(file), url = core.safeURL(file.file_url), name = file.filename || file.original_filename || '原始凭证';
       var images = selected.images.map(function (item) { return core.safeURL(item.data_url); }).filter(Boolean);
-      if (!images.length && url && core.kind(file) === 'image') images.push(url);
+      if (!images.length && !selected.missing && url && core.kind(file) === 'image') images.push(url);
       var manifest = Array.isArray(file.image_manifest) ? file.image_manifest : [];
       var exactPage = file.trace_link_level === 'page_confirmed';
-      var pageCount = exactPage ? 1 : (manifest.length || images.length);
+      var pages = exactPage ? core.exactImageFilenames(file).filter(function (name) { return manifest.indexOf(name) >= 0; }) : manifest;
+      var pageCount = pages.length || images.length;
       var requestedPageIndex = Number.isInteger(Number(file.image_index)) ? Math.max(0, Number(file.image_index)) : 0;
-      var pageIndex = exactPage ? 0 : Math.min(requestedPageIndex, Math.max(0, pageCount - 1));
+      var pageIndex = exactPage ? Math.max(0, pages.indexOf((selected.images[0] || {}).filename)) : Math.min(requestedPageIndex, Math.max(0, pageCount - 1));
       var html = '<h4>' + esc(name) + '</h4>';
       if (file.trace_link_level === 'bundle_only') html += '<div class="candidate-warning">当前关联范围：本月整包凭证，尚未确认哪张对应当前金额。以下展示整包原图，不代表每张都计入该金额。</div>';
       else if (file.trace_link_level === 'page_confirmed') html += '<div class="help">以下为已关联到该金额的原图。</div>';
@@ -20,9 +21,9 @@
       if (file.preview_error) html += '<div class="candidate-warning">这份原件暂时未能读取：' + esc(file.preview_error) + '。可在此重试，不影响其他原件。</div>';
       if (images.length) {
         var displayPage = manifest.length === images.length && images.length > 1 ? pageIndex : 0;
-        var displayedItem = manifest.length ? manifest[pageIndex] : (selected.images[0] || {}).filename;
+        var displayedItem = exactPage ? (selected.images[0] || {}).filename : (manifest.length ? manifest[pageIndex] : (selected.images[0] || {}).filename);
         var locator = String(displayedItem || '').split('/').pop();
-        var linkButton = linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
+        var linkButton = !exactPage && linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
         html += '<div class="voucher-gallery-controls"><button type="button" class="ghost" data-step="-1"' + (pageIndex <= 0 ? ' disabled' : '') + '>上一张</button><span data-count aria-live="polite">' + (pageIndex + 1) + ' / ' + pageCount + '</span><button type="button" class="ghost" data-step="1"' + (pageIndex >= pageCount - 1 ? ' disabled' : '') + '>下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
         html += '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="0" aria-label="放大第 ' + (pageIndex + 1) + ' 张原始凭证"><img src="' + esc(images[displayPage] || images[0]) + '" alt="原始凭证第 ' + (pageIndex + 1) + ' 张" loading="eager"></button><figcaption>原图 ' + (pageIndex + 1) + ' / ' + pageCount + '</figcaption>' + linkButton + '</figure></div>';
       } else if (url && core.kind(file) === 'pdf') html += '<iframe class="voucher-pdf-preview" title="' + esc(name) + ' PDF 原件预览" src="' + esc(url) + '"></iframe><div class="help">若浏览器不支持 PDF 内嵌预览，可使用下方备用原文件入口。</div>';
@@ -44,15 +45,15 @@
           }
         };
       });
-      bindSlides(host, images, file, retry, linkImage, loadPage);
+      bindSlides(host, images, file, retry, linkImage, loadPage, pages, pageIndex);
     }
-    function bindSlides(host, images, file, retry, linkImage, loadPage) {
+    function bindSlides(host, images, file, retry, linkImage, loadPage, pages, pageIndex) {
       var strip = host.querySelector('.voucher-gallery-list');
       if (!strip) return;
-      var manifest = Array.isArray(file.image_manifest) ? file.image_manifest : [];
-      if (manifest.length > 1 && file.trace_link_level !== 'page_confirmed' && typeof loadPage === 'function') {
+      var manifest = pages;
+      if (manifest.length > 1 && typeof loadPage === 'function') {
         host.querySelectorAll('[data-step]').forEach(function (button) { button.onclick = async function () {
-          var next = Number(file.image_index || 0) + Number(button.dataset.step);
+          var next = pageIndex + Number(button.dataset.step);
           if (next < 0 || next >= manifest.length || button.disabled) return;
           host.innerHTML = '<div class="voucher-gallery-loading">正在读取第 ' + (next + 1) + ' 张原图…</div>';
           try {

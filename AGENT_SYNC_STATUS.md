@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 凭证精确追溯与月报手机端防重叠（v560，待发布）
+
+- App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。
+- WebKit 移动环境实测 CSS zoom 会把小字放大越过固定列；月报改为布局后整表 scale，并只对超宽金额按实际宽度适配，撤销裁切/固定手机小字方案。保持完整小数和原数值、原位置、原宽度适配及原生手势缩放；不改其他报表缩放方式。
+- 已通过凭证单测、operations、真实响应形状的凭证浏览器（1280×900、390×844、844×390）、备用金精确原图重开、Chromium 适配和定向重测；额外 WebKit 月报测试覆盖横竖屏/旋转，生产财务账户仍未接入。另发现 WebKit 工资表现有缩放溢出（不属本次两项修复，保留待办，不扩改）。未改数据库、权限、历史财务数据、公式或财务独立登录入口。
+- 完整财务回归 73/73、WebKit 月报专项、版本/发布/同步检查、smoke 与 diff check 已通过。测试数据均为本地合成数据；隔离数据库测试使用无网络临时 PostgreSQL 容器。
+- Last synchronized base checked: `3899f29` (`github/main`); Current owner: Codex; Last Completed Work: 凭证/手机显示修复及完整财务回归通过；Open Work For Next Agent: 完整 pre-push、GitHub Actions/Pages 线上版本传播验证；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
+
 ## D01 月报/凭证样式 token 试点（v559，已发布）
 
 - App version: v559。月报操作条、月报数字与凭证详情页开始复用间距、圆角、按钮高度和数字字形 token；保留现有字号、表格尺寸、财务登录入口及按钮行为，不涉及数据库、权限或财务计算。
