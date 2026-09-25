@@ -15,6 +15,7 @@
     { "runtime": "node", "script": "test-zysyr-history-monthly-display-cache.js" },
     { "runtime": "node", "script": "test-zysyr-report-auto-upload-v524.js" },
     { "runtime": "node", "script": "test-zysyr-daily-stylist-subtotal-db.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-validation-warning-v557.js" },
     { "runtime": "node", "script": "test-monthly-load-recovery-v499.js" },
     { "runtime": "node", "script": "test-monthly-load-browser-v499.js" },
     { "runtime": "node", "script": "test-operations-voucher-browser.js" },
