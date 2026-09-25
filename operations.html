@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" data-version="558">
+<html lang="zh-CN" data-version="559">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#253832">
   <title>ZYSYR 悦西智营</title>
   <style>
-    :root{--ink:#1f2c29;--muted:#68716e;--paper:#efeee9;--card:#fff;--line:#c9c7bf;--green:#dcebdc;--green-ink:#185b37;--red:#f4d9d4;--red-ink:#8d2f25;--head:#dededb;--gold:#ab8541;--shadow:0 12px 30px rgba(31,44,41,.1)}
+    :root{--ink:#1f2c29;--muted:#68716e;--paper:#efeee9;--card:#fff;--line:#c9c7bf;--green:#dcebdc;--green-ink:#185b37;--red:#f4d9d4;--red-ink:#8d2f25;--head:#dededb;--gold:#ab8541;--shadow:0 12px 30px rgba(31,44,41,.1);--finance-space-tight:6px;--finance-space:8px;--finance-space-wide:12px;--finance-radius-control:9px;--finance-radius-card:10px;--finance-action-height:38px;--finance-action-height-compact:34px;--finance-number-font:tabular-nums}
     *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
     .primary,.secondary,.ghost,.danger{border:0;border-radius:9px;padding:9px 14px;font-weight:700}.primary{background:#245849;color:#fff}.secondary{background:#e5e1d8;color:var(--ink)}.ghost{background:transparent;border:1px solid #c9c7bf;color:var(--muted)}.danger{background:#f4d9d4;color:#8d2f25;border:1px solid #d9a49a}.danger:disabled{opacity:.55;cursor:not-allowed}
     .login-shell{min-height:100vh;display:grid;place-items:center;padding:28px;background:linear-gradient(140deg,#e3e9e4,#f2eee5 50%,#e9dfcb)}.login-card{width:min(420px,100%);padding:34px;border:1px solid rgba(31,44,41,.15);border-radius:22px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}.mark{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:#253832;color:#e8cf91;font-weight:850;font-size:12px}.brand h1{font-size:23px;margin:0}.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}.field{display:grid;gap:7px;margin:13px 0}.field label{font-size:13px;color:var(--muted);font-weight:700}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:9px;background:#fff;padding:11px 12px;color:var(--ink)}.field textarea{min-height:78px;resize:vertical}.login-card .primary{width:100%;margin-top:8px}.help{font-size:12px;line-height:1.65;color:var(--muted)}.boundary{margin-top:18px;padding:12px 14px;border-left:4px solid #527c6d;background:#edf4f0;font-size:12px;line-height:1.65;color:#31584b}
@@ -82,15 +82,17 @@
 .salary-paper-label th:nth-child(2){min-width:96px}.salary-paper .salary-employee-name{padding:5px 7px;white-space:nowrap;font-weight:800;color:#243832}
 </style>
 <style>
-  .monthly-action-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
-  .monthly-action-bar>.primary,.monthly-action-bar>.secondary{min-height:38px}.monthly-action-help{flex:1 1 260px;color:var(--muted);font-size:12px;line-height:1.5}
-  .monthly-more{position:relative}.monthly-more>summary{list-style:none;cursor:pointer;padding:8px 11px;border:1px solid var(--line);border-radius:9px;color:var(--muted);font-size:12px;font-weight:700}.monthly-more>summary::-webkit-details-marker{display:none}
-  .monthly-more-panel{position:absolute;right:0;top:44px;z-index:18;display:grid;min-width:260px;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:var(--shadow)}
+  .monthly-action-bar{display:flex;align-items:center;gap:var(--finance-space);flex-wrap:wrap;margin:8px 0;padding:9px 10px;border:1px solid var(--line);border-radius:var(--finance-radius-card);background:#fff}
+  .monthly-action-bar>.primary,.monthly-action-bar>.secondary{min-height:var(--finance-action-height)}.monthly-action-help{flex:1 1 260px;color:var(--muted);font-size:12px;line-height:1.5}
+  .monthly-more{position:relative}.monthly-more>summary{list-style:none;cursor:pointer;padding:8px 11px;border:1px solid var(--line);border-radius:var(--finance-radius-control);color:var(--muted);font-size:12px;font-weight:700}.monthly-more>summary::-webkit-details-marker{display:none}
+  .monthly-more-panel{position:absolute;right:0;top:44px;z-index:18;display:grid;min-width:260px;gap:var(--finance-space);padding:10px;border:1px solid var(--line);border-radius:var(--finance-radius-card);background:#fff;box-shadow:var(--shadow)}
+  #view-monthly .sheet-table td.amount-cell,#view-monthly .monthly-daily-details-item strong{font-variant-numeric:var(--finance-number-font)}
+  #voucher-gallery-backdrop .trace-body{gap:var(--finance-space-wide);padding:var(--finance-space-wide)}#voucher-gallery-backdrop .trace-card{border-radius:var(--finance-radius-card)}#voucher-gallery-backdrop .voucher-gallery-controls{gap:var(--finance-space)}#voucher-modal .catalog-dialog-head{gap:var(--finance-space-wide)}#voucher-modal .actions{gap:var(--finance-space)}
   .monthly-materials:before{content:"上传文件和照片凭证";display:block;margin-bottom:8px;font-size:14px;font-weight:850}.monthly-materials .field label{color:var(--ink)}
   .sheet-table td.trace-cell{font-weight:inherit;text-decoration:none;box-shadow:inset 0 -2px 0 rgba(52,117,169,.32)}.sheet-table td.trace-cell:after{display:none!important}.sheet-table td.amount-cell{font-size:10px;letter-spacing:-.2px}.sheet-table input[data-monthly-cell]{font-size:9px!important;letter-spacing:-.35px;padding:3px 1px!important}
   #view-daily-report:has(#daily-report-detail:not(.hidden))>.daily-month-bar{display:none!important}
   .evidence-simple-toggle{display:flex;align-items:flex-start;gap:9px;margin:10px 0;padding:11px;border:1px solid #d8d4ca;border-radius:9px;background:#faf9f5;font-weight:800}.evidence-simple-toggle input{width:19px!important;height:19px;margin:0;flex:0 0 auto}.evidence-advanced{margin:8px 0}.evidence-advanced>summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:700}
-  @media(max-width:560px){body{padding:0}.monthly-action-bar{gap:6px;margin:4px 0;padding:6px}.monthly-action-bar>.primary,.monthly-action-bar>.secondary{min-height:34px;padding:7px 9px;font-size:11px}.monthly-action-help{flex-basis:100%;font-size:10px}.monthly-more{margin-left:auto}.monthly-more-panel{position:fixed;left:8px;right:8px;top:auto;min-width:0}.sheet-table td.amount-cell{font-size:9px}.sheet-table input[data-monthly-cell]{font-size:8px!important}.sheet-scroll{overscroll-behavior-x:contain}}
+  @media(max-width:560px){body{padding:0}.monthly-action-bar{gap:var(--finance-space-tight);margin:4px 0;padding:6px}.monthly-action-bar>.primary,.monthly-action-bar>.secondary{min-height:var(--finance-action-height-compact);padding:7px 9px;font-size:11px}.monthly-action-help{flex-basis:100%;font-size:10px}.monthly-more{margin-left:auto}.monthly-more-panel{position:fixed;left:8px;right:8px;top:auto;min-width:0}.sheet-table td.amount-cell{font-size:9px}.sheet-table input[data-monthly-cell]{font-size:8px!important}.sheet-scroll{overscroll-behavior-x:contain}}
   @media(orientation:landscape) and (max-height:620px){body.report-focus{padding:0;overflow:hidden}.report-focus .topbar{height:42px;padding:4px 8px;flex-wrap:nowrap}.report-focus .topbar .mark,.report-focus .top-title,.report-focus #refresh{display:none}.report-focus .toolbar{width:100%;margin:0;justify-content:center;flex-wrap:nowrap}.report-focus .toolbar select{max-width:46vw;padding:5px 7px}.report-focus .shell{display:block;min-height:calc(100dvh - 42px)}.report-focus .sidebar{display:none}.report-focus .content{height:calc(100dvh - 42px);padding:0;overflow:hidden}.report-focus #view-monthly>.page-head,.report-focus #view-daily-report>.page-head,.report-focus #view-salary-report>.page-head{display:none}.report-focus .monthly-action-bar,.report-focus #view-daily-report>.daily-month-bar{margin:0;border-radius:0;border-left:0;border-right:0;padding:4px 6px}.report-focus #report-state{display:none}.report-focus #view-monthly{height:calc(100dvh - 42px);overflow:auto}.report-focus #view-monthly .sheet-scroll{height:auto;max-height:none;border:0}.report-focus #view-monthly .sheet-caption{display:none}.report-focus #view-daily-report,.report-focus #view-salary-report{height:calc(100dvh - 42px);overflow:auto}.report-focus .daily-grid-scroll,.report-focus .salary-paper-scroll{max-height:calc(100dvh - 104px)}.report-focus .monthly-materials{position:fixed;inset:42px 0 0;z-index:25;margin:0;border-radius:0;overflow:auto}.report-focus .monthly-more-panel{position:fixed;right:6px;top:84px}.report-focus .sheet-table td.amount-cell{font-size:9px}}
   .daily-rotation-tools{justify-content:center;margin:8px 0}.daily-rotation-frame{position:relative;flex:0 0 auto;margin:12px auto}.daily-original-stage{overscroll-behavior:contain}.daily-original img{transform-origin:center center}.daily-recognition-item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;padding:4px 6px}.daily-recognition-main{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:7px;width:100%;min-width:0;padding:3px 2px;border:0;background:transparent;color:inherit;font:inherit;font-size:11px;text-align:left}.daily-recognition-main span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.daily-recognition-rerun{padding:5px 7px;font-size:10px;white-space:nowrap}.daily-recognition-item.succeeded:hover,.daily-recognition-item.succeeded:focus-within{box-shadow:inset 0 0 0 2px #4b8c59}.daily-recognition-item.failed:hover,.daily-recognition-item.failed:focus-within{box-shadow:inset 0 0 0 2px #bd6658}
   #daily-detail-confirm.blocked-action,#daily-detail-confirm-top.blocked-action{background:#9b681d;border-color:#9b681d;color:#fff}
@@ -107,9 +109,9 @@
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
 </style>
-<script src="operations-time.js?v=558"></script>
-<script src="operations-staff-view.js?v=558"></script>
-<script src="operations-monthly-daily-performance.js?v=558"></script>
+<script src="operations-time.js?v=559"></script>
+<script src="operations-staff-view.js?v=559"></script>
+<script src="operations-monthly-daily-performance.js?v=559"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -381,10 +383,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=558"></script>
-  <script src="operations-auth-bridge.js?v=558"></script>
-  <script src="operations-voucher-preview.js?v=558"></script>
-  <script src="operations-voucher-view.js?v=558"></script>
+  <script src="operations-report-fit.js?v=559"></script>
+  <script src="operations-auth-bridge.js?v=559"></script>
+  <script src="operations-voucher-preview.js?v=559"></script>
+  <script src="operations-voucher-view.js?v=559"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -547,7 +549,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=558';
+      script.src='operations-petty-cash-evidence.js?v=559';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1159,8 +1161,8 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=558"></script>
-  <script src="operations-monthly-workbench.js?v=558"></script>
-  <script src="operations-daily-recognition.js?v=558"></script>
+  <script src="operations-daily-review.js?v=559"></script>
+  <script src="operations-monthly-workbench.js?v=559"></script>
+  <script src="operations-daily-recognition.js?v=559"></script>
 </body>
 </html>

@@ -38,11 +38,19 @@ async function verifyViewport(page, viewport) {
       bodyScrollWidth: document.body.scrollWidth,
       embeddedHeaders: table.querySelectorAll('.monthly-daily-embedded-head').length,
       embeddedCells: table.querySelectorAll('.monthly-daily-embedded').length,
+      actionGap: getComputedStyle(document.querySelector('#monthly-summary-bar')).columnGap,
+      actionHeight: getComputedStyle(document.querySelector('#monthly-edit-toggle')).minHeight,
+      numberFont: getComputedStyle(table.querySelector('.amount-cell')).fontVariantNumeric,
+      voucherGap: getComputedStyle(document.querySelector('#voucher-gallery-content')).gap,
     };
   });
   assert.equal(metrics.embeddedHeaders, 8, `${viewport.width}x${viewport.height}: exact requested columns are embedded`);
   assert.equal(metrics.embeddedCells, 8 * 33, `${viewport.width}x${viewport.height}: header, 31 days and total are embedded`);
   assert.ok(metrics.bodyScrollWidth <= metrics.viewportWidth + 1, `${viewport.width}x${viewport.height}: page does not require horizontal scrolling`);
+  assert.equal(metrics.actionGap, viewport.width <= 560 ? '6px' : '8px', `${viewport.width}x${viewport.height}: monthly action spacing uses the shared token without changing its established size`);
+  assert.equal(metrics.actionHeight, viewport.width <= 560 ? '34px' : '38px', `${viewport.width}x${viewport.height}: monthly buttons retain their established height`);
+  assert.equal(metrics.numberFont, 'tabular-nums', `${viewport.width}x${viewport.height}: financial amounts keep aligned tabular digits`);
+  assert.equal(metrics.voucherGap, '12px', `${viewport.width}x${viewport.height}: voucher detail spacing uses the shared token`);
 }
 
 (async () => {

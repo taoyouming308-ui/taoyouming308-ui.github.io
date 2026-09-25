@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## D01 月报/凭证样式 token 试点（v559，代码/回归已验证）
+
+- App version: v559。月报操作条、月报数字与凭证详情页开始复用间距、圆角、按钮高度和数字字形 token；保留现有字号、表格尺寸、财务登录入口及按钮行为，不涉及数据库、权限或财务计算。
+- 专项浏览器回归通过，覆盖桌面、手机竖屏、横屏及凭证细节间距；金额列无溢出，现有字号与按钮尺寸保持。财务测试清单 73/73、App smoke、版本/发布/同步门禁及 `git diff --check` 通过。页面只改 CSS tokens；无 DB/财务计算/权限/登录入口变更。
+- 仓库 pre-push 的 frontdesk 测试要求所有首页 `data-version` 同步；仅将 `frontdesk.html` 的发布标记从 v558 升到 v559，没有修改前台页面行为。
+- Last synchronized base checked: `65ffa3a` (`github/main`); Current owner: Codex; Last Completed Work: D01 样式 token 第一轮已验证；Open Work For Next Agent: 发布 v559 并继续审计整改；Required Checks Before Editing: 先确认工作区干净并完成备份；Required Checks Before Publishing: 全量财务测试、版本/发布/同步门禁及 GitHub CI；Handoff Rule: 未验证不声称完成。
+- git fetch github main；node scripts/check-version-sync.js；node scripts/smoke-test-app.js。
+
 ## CI Node 20 runner 退役兼容（2026-09-25，已验证）
 
 - GitHub 于 2026-09-23 移除 Actions runner 的 Node 20；旧 `actions/checkout@v4`、`setup-node@v4`、`setup-python@v5` 仍能在 runner 的 Node 24 强制兼容模式下运行，但近期 workflow 明确出现弃用警告。
