@@ -11,6 +11,7 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -480,3 +481,20 @@ def handle_daily_codex_recognition(handler: Any) -> None:
         _send(handler, {"error": message or "Codex识别服务异常"}, 502)
     finally:
         _RECOGNITION_SLOT.release()
+
+
+def handle_daily_codex_health(handler: Any) -> None:
+    """Return a minimal authenticated runtime check without invoking Codex."""
+    if not _authorized(handler):
+        _send(handler, {"error": "unauthorized"}, 401)
+        return
+
+    codex_bin = os.getenv("ZYSYR_CODEX_BIN", "/Users/a1/.local/bin/codex").strip()
+    executable = shutil.which(codex_bin) if codex_bin and os.path.basename(codex_bin) == codex_bin else codex_bin
+    available = bool(executable and os.path.isfile(executable) and os.access(executable, os.X_OK))
+    _send(handler, {
+        "status": "reachable" if available else "degraded",
+        "codex_cli": "available" if available else "missing",
+        "codex_login": "not_checked",
+        "candidate_only": True,
+    }, 200 if available else 503)

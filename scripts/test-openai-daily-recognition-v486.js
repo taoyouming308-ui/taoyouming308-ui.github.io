@@ -11,6 +11,7 @@ const migration = fs.readFileSync(
   'utf8'
 );
 const bridge = fs.readFileSync('scripts/zysyr_daily_codex_bridge.py', 'utf8');
+const bridgeRouterPatch = fs.readFileSync('scripts/zysyr_daily_codex_plan_server.patch', 'utf8');
 const recognizeStart = api.indexOf('async function recognizeDailySheet(');
 const recognizeEnd = api.indexOf('async function getDailySheetDraft(', recognizeStart);
 const recognize = api.slice(recognizeStart, recognizeEnd);
@@ -28,6 +29,8 @@ expect(bridge.includes('--sandbox", "read-only"') && bridge.includes('--ephemera
 expect(bridge.includes('--output-schema'), 'structured Codex output missing');
 expect(bridge.includes('_MAX_PARALLEL_RECOGNITIONS') && bridge.includes('threading.BoundedSemaphore(_MAX_PARALLEL_RECOGNITIONS)'), 'local Codex concurrency guard missing');
 expect(bridge.includes('/usr/local/bin:/opt/homebrew/bin:'), 'launchd Node PATH repair missing');
+expect(bridge.includes('def handle_daily_codex_health(handler: Any)') && bridge.includes('"codex_login": "not_checked"'), 'authenticated, non-invasive bridge health handler missing');
+expect(bridgeRouterPatch.includes('/api/zysyr-daily-health') && bridgeRouterPatch.includes('handle_daily_codex_health(self)'), 'Hermes router patch lacks the health route');
 expect(migration.includes('codex_local_candidate'), 'local Codex candidate source missing');
 expect(migration.includes("ocr_provider=''codex-local''"), 'local Codex provider audit missing');
 expect(page.includes("['codex_local_candidate','openai_vision_candidate','kimi_vision_candidate']"), 'candidate review highlighting missing');

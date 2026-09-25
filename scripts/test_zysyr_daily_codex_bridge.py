@@ -1,4 +1,5 @@
 import os
+import json
 import sys
 import tempfile
 import unittest
@@ -21,6 +22,10 @@ class Headers(dict):
 class Handler:
     def __init__(self, authorization=""):
         self.headers = Headers(Authorization=authorization)
+        self.sent = None
+
+    def send_json(self, payload, status=200):
+        self.sent = (payload, status)
 
 
 class DailyCodexBridgeTests(unittest.TestCase):
@@ -97,6 +102,39 @@ class DailyCodexBridgeTests(unittest.TestCase):
             for success in acquired:
                 if success:
                     bridge._RECOGNITION_SLOT.release()
+
+    def test_health_requires_auth_and_never_reports_secrets_or_runs_codex(self):
+        previous = os.environ.get("ZYSYR_DAILY_CODEX_TOKEN")
+        os.environ["ZYSYR_DAILY_CODEX_TOKEN"] = "health-test-secret"
+        try:
+            denied = Handler()
+            bridge.handle_daily_codex_health(denied)
+            self.assertEqual(denied.sent, ({"error": "unauthorized"}, 401))
+
+            allowed = Handler("Bearer health-test-secret")
+            with mock.patch.object(bridge.shutil, "which", return_value="/fake/codex"), \
+                 mock.patch.object(bridge.os.path, "isfile", return_value=True), \
+                 mock.patch.object(bridge.os, "access", return_value=True), \
+                 mock.patch.object(bridge.subprocess, "run", side_effect=AssertionError("health must not execute Codex")):
+                bridge.handle_daily_codex_health(allowed)
+            payload, status = allowed.sent
+            self.assertEqual(status, 200)
+            self.assertEqual(payload, {"status": "reachable", "codex_cli": "available",
+                                       "codex_login": "not_checked", "candidate_only": True})
+            self.assertNotIn("health-test-secret", json.dumps(payload))
+
+            degraded = Handler("Bearer health-test-secret")
+            with mock.patch.object(bridge.shutil, "which", return_value="/fake/codex"), \
+                 mock.patch.object(bridge.os.path, "isfile", return_value=False), \
+                 mock.patch.object(bridge.os, "access", return_value=False):
+                bridge.handle_daily_codex_health(degraded)
+            self.assertEqual(degraded.sent[1], 503)
+            self.assertEqual(degraded.sent[0]["status"], "degraded")
+        finally:
+            if previous is None:
+                os.environ.pop("ZYSYR_DAILY_CODEX_TOKEN", None)
+            else:
+                os.environ["ZYSYR_DAILY_CODEX_TOKEN"] = previous
 
     def test_overlapping_crop_duplicates_keep_highest_confidence_candidate(self):
         numeric_id = "00000000-0000-0000-0000-000000000001"
