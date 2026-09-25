@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线整改：B11 财务测试门禁同步复核（2026-09-25，已验证）
+
+- 旧审计指出的失效选择器 `#daily-recognition-status` 已不在当前测试中；`test-operations-voucher-browser.js` 使用现行 `#daily-source-action-status`，并在本地合成环境的桌面 1280×900、手机竖屏 390×844、横屏 844×390 三种视口全部通过，覆盖原件预览、分页/缩放、凭证下钻、缺失证据及过期范围。
+- 当前 `scripts/zysyr-finance-test-manifest.json` 是唯一财务回归清单；manifest 校验通过，GitHub Actions 和 pre-push 均调用 `test-zysyr-validation-manifest.js` 与 `run-zysyr-finance-tests.js`，完整财务集由同一 manifest 执行。清单包含 A03 expected-revision、A04 入账结果不确定、A06 月报失败恢复及 B06 月份/门店响应隔离回归。
+- 本轮定向运行：共享清单校验、A04、A03 隔离 PostgreSQL、A06、B06 响应隔离均通过；未连接生产数据库或写入生产数据。B11 报告中“旧失效选择器及 CI/本地财务清单不同步”这两个已证实子问题现关闭；真实角色/设备及完整月结验收仍由 B12 管理，不因这些合成测试而关闭。
+- 仅更新交接证据与变更日志；未改 App 代码、版本、数据库、财务公式、历史数据、权限或财务独立登录入口。
+
 ## 上线整改：A05 已入账日报差额提示可读性（v557，已发布）
 
 - 生产只读复核再次确认向里造型 2026-02-03 与 2026-02-07 的日报均为 confirmed、历史快照 `valid=true`，现行重算 `valid=false`；前者员工明细 6,087 元/造型小计 6,081 元，后者 15,598 元/15,998 元。异常源于造型区总小计，不是员工行或项目列小计；未读取姓名、原图或凭证。
