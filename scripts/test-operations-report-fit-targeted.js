@@ -22,17 +22,23 @@ const script = fs.readFileSync(path.join(__dirname, '..', 'operations-report-fit
       };
     });
     await page.addScriptTag({ content: script.toString() });
-    await page.waitForTimeout(100);
+    async function waitForMeasurements(count) {
+      // CI can delay requestAnimationFrame beyond 100 ms. Wait for the real
+      // measurement event, then drain two frames before asserting exact scope.
+      await page.waitForFunction(minimum => window.fitMeasurements.length >= minimum, count);
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    }
+    await waitForMeasurements(2);
     const baseline = await page.evaluate(() => window.fitMeasurements.slice().sort());
     assert.deepEqual(baseline, ['one', 'two']);
 
     await page.evaluate(() => { window.fitMeasurements.length = 0; document.getElementById('cell').textContent = 'A longer value'; });
-    await page.waitForTimeout(100);
+    await waitForMeasurements(1);
     const afterCellChange = await page.evaluate(() => window.fitMeasurements.slice());
     assert.deepEqual(afterCellChange, ['one'], 'cell mutation must not remeasure unrelated report tables');
 
     await page.evaluate(() => { window.fitMeasurements.length = 0; document.getElementById('app').classList.toggle('hidden'); });
-    await page.waitForTimeout(100);
+    await waitForMeasurements(2);
     const afterAncestorVisibility = await page.evaluate(() => window.fitMeasurements.slice().sort());
     assert.deepEqual(afterAncestorVisibility, ['one', 'two'], 'ancestor visibility changes must remeasure descendant report tables');
 

@@ -1,12 +1,13 @@
 # Agent Sync Status
 
-## 凭证精确追溯与月报手机端防重叠（v560，待发布）
+## 凭证精确追溯与月报手机端防重叠（v560，Pages 已发布，云端回归复核中）
 
 - App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。
 - WebKit 移动环境实测 CSS zoom 会把小字放大越过固定列；月报改为布局后整表 scale，并只对超宽金额按实际宽度适配，撤销裁切/固定手机小字方案。保持完整小数和原数值、原位置、原宽度适配及原生手势缩放；不改其他报表缩放方式。
 - 已通过凭证单测、operations、真实响应形状的凭证浏览器（1280×900、390×844、844×390）、备用金精确原图重开、Chromium 适配和定向重测；额外 WebKit 月报测试覆盖横竖屏/旋转，生产财务账户仍未接入。另发现 WebKit 工资表现有缩放溢出（不属本次两项修复，保留待办，不扩改）。未改数据库、权限、历史财务数据、公式或财务独立登录入口。
 - 完整财务回归 73/73、WebKit 月报专项、版本/发布/同步检查、smoke 与 diff check 已通过。测试数据均为本地合成数据；隔离数据库测试使用无网络临时 PostgreSQL 容器。
-- Last synchronized base checked: `3899f29` (`github/main`); Current owner: Codex; Last Completed Work: 凭证/手机显示修复及完整财务回归通过；Open Work For Next Agent: 完整 pre-push、GitHub Actions/Pages 线上版本传播验证；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
+- 提交 `ab40039` 已通过完整 pre-push 并推送 main；Pages `36126025448` 成功，无缓存回读 8 个版本/页面/修复脚本与提交哈希一致。首次推送缺 Python cryptography 后在临时 venv 安装 CI 指定 48.0.0，47 项同步测试通过；未改系统 Python。Validate `36126026134` 的财务第 57 项定向测量测试在 100ms 内未等到 RAF，前 56 项通过；本次仅将该测试等待改为真实测量事件加两帧排空，仍保留精确次数及不重测无关表格的断言，不改 App 代码。
+- Last synchronized base checked: `ab40039` (`github/main`); Current owner: Codex; Last Completed Work: v560 Pages 已发布且线上文件一致；Open Work For Next Agent: 复核修正等待方式后的 GitHub CI；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
 
 ## D01 月报/凭证样式 token 试点（v559，已发布）
 
