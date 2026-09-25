@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线整改：C06 完整迁移链遇到身份审批门槛（2026-09-25，未闭环）
+
+- 在临时 Supabase PostgreSQL 17 项目中继续隔离回放：用全合成的 28 条旧 staff fixture、两家合成门店及仅用于旧迁移检查的空 `hair_records` / `care_records` / `bookings` 兼容表，Gate B 数据映射断言通过，随后 Auth rolling migration 通过。
+- Gate C1 在事务内准确失败：`Gate C1 expected exactly two approved active administrator mappings, found 0`。该迁移要求现有的 `admin/ziyou` 与 `哈维/xiangli` 两名已批准管理员映射，并会基于授权建立股东 allowlist 和审计事件。不得用虚构身份填充、跳过门槛或在生产执行该迁移。
+- 回放仅接触独立临时数据库；Gate C1 的复现包在事务中回滚。未触及生产 Supabase、真实账户、财务数据、权限或历史记录。临时测试不能证明整条 migration chain 可由空白 Supabase 独立重建。
+- C06 继续开放。后续须由项目负责人/管理员确认并提供受控的真实旧身份基线与审批方式，或确认独立新环境应采用的身份引导流程；确认前不继续伪造 Gate C1 身份，也不宣称生产迁移已闭环。
+
 ## 上线整改：C06 legacy staff 基线迁移回归（2026-09-25，窄项已验证）
 
 - 新增 PostgreSQL 17 隔离测试，使用生产只读 schema 元数据构造 synthetic `public.staff` 旧基线，只含两条明确虚构数据；回放 `20260729023135_staff_employment_status.sql`，检查必需列、约束，以及 active true/false 到 `active/pending` 的历史映射。隔离测试已实际通过。

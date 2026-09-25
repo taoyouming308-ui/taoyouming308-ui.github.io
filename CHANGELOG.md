@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-25 · C06 隔离迁移链验证到身份审批门槛（未闭环）
+
+- 在独立 Supabase PostgreSQL 17 临时项目中，Gate B 和 Auth rolling migration 通过；以事务回滚方式验证 Gate C1 准确阻止缺少两名已审批真实管理员映射的测试基线。
+- 该迁移会建立股东授权名单及审计事件，故不使用虚构身份绕过、不触碰生产、不改迁移或权限。C06 仍需管理员确认旧身份基线/新环境身份引导方式；本次不代表全链迁移已完成。
+
 ## 2026-09-25 · C06 legacy staff migration baseline regression
 
 - Added an isolated PostgreSQL 17 regression that creates only the synthetic legacy `public.staff` schema needed by the historical employment-status migration, then verifies the added constraint and active-status mapping.
