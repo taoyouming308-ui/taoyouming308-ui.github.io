@@ -42,6 +42,10 @@ const server = http.createServer((req, res) => {
           const wrappers = [...document.querySelectorAll('.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll,.history-grid-wrap')]
             .filter(el => el.getClientRects().length && el.querySelector('table'));
           const embeddedAmount = document.querySelector('.monthly-daily-embedded.amount-cell');
+          const monthlyFont = selector => {
+            const cell = document.querySelector('#view-monthly .sheet-table ' + selector);
+            return cell ? parseFloat(getComputedStyle(cell).fontSize) : null;
+          };
           const overlaps = [...document.querySelectorAll('.monthly-daily-embedded.amount-cell')].filter(cell => {
             if (!cell.getClientRects().length) return false;
             const range = document.createRange(); range.selectNodeContents(cell);
@@ -54,6 +58,7 @@ const server = http.createServer((req, res) => {
           return { count: wrappers.length, overflows: wrappers.filter(el => el.scrollWidth > el.clientWidth + 2)
             .map(el => ({ className: el.className, width: el.clientWidth, scroll: el.scrollWidth })),
             overlaps, embeddedAmount: embeddedAmount && { value: embeddedAmount.textContent, textSizeAdjust: getComputedStyle(embeddedAmount).getPropertyValue('-webkit-text-size-adjust') || getComputedStyle(embeddedAmount).getPropertyValue('text-size-adjust') },
+            monthlyFonts: { label: monthlyFont('td.sheet-head'), amount: monthlyFont('td.amount-cell:not(.monthly-daily-embedded)'), dailyHead: monthlyFont('td.monthly-daily-embedded-head') },
             hiddenProgress: getComputedStyle(document.getElementById('daily-recognition-job')).display === 'none',
             viewport: document.querySelector('meta[name=viewport]').content };
         });
@@ -63,6 +68,7 @@ const server = http.createServer((req, res) => {
           if (result.overlaps.length) await page.screenshot({ path: '/tmp/zysyr-monthly-fit-failure.png', fullPage: true });
           assert.deepEqual(result.overlaps, [], 'complete daily and total amounts must not overlap at ' + width + 'x' + height);
           assert.equal(result.embeddedAmount.value, '141369.00', 'fitting must preserve every digit and decimal');
+          assert.deepEqual(result.monthlyFonts, { label: 13, amount: 12, dailyHead: 12 }, 'monthly sheet font must stay readable on every viewport');
           // Computed text-size-adjust differs across browser engines. Assert
           // actual glyph bounds above and the whole-sheet scale contract here.
           assert.equal(await page.locator('.sheet-table').evaluate(table => table.style.zoom), '1', 'monthly text must avoid CSS zoom minimum-font inflation');

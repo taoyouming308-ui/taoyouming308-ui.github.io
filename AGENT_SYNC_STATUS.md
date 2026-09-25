@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 月报表字号微调（v561，待发布）
+
+- App version: v561。用户确认月报表在手机、iPad 和电脑都偏小；本批仅提高月报原始单元格、金额、整月日报栏和财务编辑输入的字号，不改表格列结构、财务数字、计算、数据库、权限或财务独立登录入口。
+- 继续用 v560 的整表 `scale` 防止 WebKit 最小字号跨格；长金额仍按单格实际宽度局部适配。Chromium/WebKit 合成浏览器回归覆盖手机竖屏、横屏、iPad 和桌面，完整金额不重叠、无横向表格滚动，新增字号回归断言。完整财务回归 73/73、版本/发布/同步检查和 App smoke 通过；生产真机仍待用户复核。
+- Last synchronized base checked: `4108847` (`github/main`); Current owner: Codex; Last Completed Work: 本地 v561 字号与专项回归；Open Work For Next Agent: 完整财务/发布门禁、GitHub CI、Pages 发布与线上无缓存回读；Required Checks Before Publishing: 财务清单、全仓 pre-push、版本/发布/同步检查；Handoff Rule: 未验证不声称完成。
+
 ## 凭证精确追溯与月报手机端防重叠（v560，Pages 已发布，云端回归复核中）
 
 - App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。

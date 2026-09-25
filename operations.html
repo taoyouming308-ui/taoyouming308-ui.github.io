@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="560">
+<html lang="zh-CN" data-version="561">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -112,10 +112,16 @@
   .daily-source-status.processing{border-color:#8aabc2;background:#eaf3f9;color:#245d86}.daily-source-status.success{border-color:#8bb499;background:#e8f3eb;color:#185b37}.daily-source-status.error{border-color:#d69a91;background:#fff0ed;color:#8d2f25}
   #daily-report-detail{scroll-margin-top:84px}.daily-more-options{margin:12px 0;color:var(--muted);font-size:12px}.daily-more-options summary{cursor:pointer}.daily-more-options .field{margin-top:8px}.daily-confirm-bar .actions{justify-content:flex-end}.daily-confirm-bar .primary{min-width:110px}
   @media(max-width:560px){.daily-recognition-items{grid-template-columns:1fr}.daily-recognition-rerun{padding:5px 6px}.daily-rotation-tools{gap:5px}.daily-rotation-tools button{padding:7px 8px;font-size:11px}.daily-source-actions{width:100%;display:grid;grid-template-columns:1fr}.daily-source-action{width:100%;min-width:0}}
+  /* Increase the monthly sheet's source-size on every device. The whole-sheet
+     fit still keeps every column visible, while long amounts fit per cell. */
+  #view-monthly .sheet-table td:not(.sheet-title):not(.note-cell):not(.amount-cell):not(.monthly-daily-embedded){font-size:13px}
+  #view-monthly .sheet-table td.amount-cell{font-size:12px}
+  #view-monthly .sheet-table td.monthly-daily-embedded{font-size:12px!important}
+  #view-monthly .sheet-table input[data-monthly-cell]{font-size:12px!important}
 </style>
-<script src="operations-time.js?v=560"></script>
-<script src="operations-staff-view.js?v=560"></script>
-<script src="operations-monthly-daily-performance.js?v=560"></script>
+<script src="operations-time.js?v=561"></script>
+<script src="operations-staff-view.js?v=561"></script>
+<script src="operations-monthly-daily-performance.js?v=561"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -387,10 +393,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=560"></script>
-  <script src="operations-auth-bridge.js?v=560"></script>
-  <script src="operations-voucher-preview.js?v=560"></script>
-  <script src="operations-voucher-view.js?v=560"></script>
+  <script src="operations-report-fit.js?v=561"></script>
+  <script src="operations-auth-bridge.js?v=561"></script>
+  <script src="operations-voucher-preview.js?v=561"></script>
+  <script src="operations-voucher-view.js?v=561"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -553,7 +559,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=560';
+      script.src='operations-petty-cash-evidence.js?v=561';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1165,8 +1171,8 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=560"></script>
-  <script src="operations-monthly-workbench.js?v=560"></script>
-  <script src="operations-daily-recognition.js?v=560"></script>
+  <script src="operations-daily-review.js?v=561"></script>
+  <script src="operations-monthly-workbench.js?v=561"></script>
+  <script src="operations-daily-recognition.js?v=561"></script>
 </body>
 </html>
