@@ -6,6 +6,12 @@
 - 将已成功的 GitHub Actions Node 24 工作流验证记为完成，并明确记录本次 Docker socket 权限受限导致未能重跑隔离数据库用例，以及仍需外部条件/业务决策的上线门槛。
 - 仅更新审计交接状态，不改应用代码、财务规则、数据库、权限、历史数据或财务独立登录端口。
 
+## 2026-09-25 · Auth 迁移覆盖只读复核
+
+- 生产只读聚合核对显示：26 个旧 active staff 中，admin 2/2 已审核进入 allowlist，普通 staff 仅 21/24 映射至 active V2 员工档案且无迁移 allowlist；active Auth 账户 2 个（finance 与 shareholder），仅 1 个关联 active 员工档案。
+- 这纠正了旧交接的 25/26 估计，但无法根据聚合数据判断未映射账号是否需补建、停用或合并；须由管理员确认准确人员、门店、角色及登录安排后，才能安全执行迁移。
+- 不读取或输出身份明细，不创建账号、不重置密码、不停用旧登录、不改财务登录端口或业务数据。
+
 ## 2026-09-25 · GitHub Actions Node 24 兼容
 
 - 将 `actions/checkout`、`actions/setup-node`、`actions/setup-python` 更新到官方 Node 24 兼容主版本，消除 Node 20 runner 退役后的强制兼容警告；原有 Node/Python 版本、npm cache 和测试命令保持不变。

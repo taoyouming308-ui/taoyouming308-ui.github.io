@@ -12,6 +12,13 @@
 - 本轮尝试重跑 A03 隔离 PostgreSQL 用例时，受限环境无法连接 OrbStack Docker socket（permission denied）；因此本次不声称该用例已重新运行。已存在的上次通过记录仍保留。
 - 其余需要外部条件/业务确认的上线门槛仍开放：生产数据库及 Storage 原图隔离恢复演练、零收入与休息日规则、财务真实账号/设备验收、历史草稿/凭证逐项签认，以及旧 Auth 账号迁移和非财务旧模块的权限边界审查。未猜测数据、改变财务端口或擅自修改 Auth/RLS。
 
+## 上线审计：Auth 迁移覆盖只读复核（2026-09-25）
+
+- 仅运行生产只读聚合 SQL，不读取或导出姓名、用户名、电话、邮箱、密码、Auth UUID 或单条账号映射。旧 `staff` 中 active 账号共 26 个：role=admin 2 个、role=staff 24 个；其中 2 个 admin 已进入 approved Auth allowlist，普通 staff 尚无 allowlist。
+- `zysyr_employees` 当前 active 且未软删除共 24 个；旧 staff 到当前 active 员工的 legacy ID 映射为 admin 2/2、staff 21/24。当前 active Auth account 共 2 个，授权角色分别为 company finance 1、company shareholder 1；当前可关联 active 员工档案的 active Auth account 仅 1 个。
+- 该只读结果与旧交接中的“25/26”估计不一致，现以本次生产聚合为准，但不能仅凭聚合判断 3 条未映射员工是否应新增、停用或合并。A02/员工 Auth 迁移仍为上线门槛：需要管理员逐一确认旧账号与员工、门店、角色的对应关系及登录安排；未创建账号、重置密码、停用旧登录或修改财务端口。
+- 当前没有安全的自动修复：身份绑定错误会造成越权或锁号。待获批的准确身份清单后，再以逐条校验、可回滚的小批次推进。
+
 ## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
 
 - 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。
