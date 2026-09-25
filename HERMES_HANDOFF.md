@@ -39,8 +39,9 @@
 - Hermes keepalive job `25e56b7f1ac0` runs at `50 * * * *`, not on the hour. It shares the customer sync lock and must never unconditionally relogin.
 - Credentials are local-only in `~/.hermes/meiguanjia-auth.json` with mode 600. Never commit or print them.
 - Booking canonical source: `scripts/sync_mgj_bookings.py`; deployed target: `/Users/a1/.hermes/scripts/sync_mgj_bookings.py`.
+- Since the 2026-09-24 private booking ACL, bookings must be written only through the signed `supabase/functions/mgj-booking-sync/index.ts` Edge Function. The Ed25519 private key is local-only at `~/.hermes/mgj-booking-sync-ed25519.pem` (mode 0600); never print, commit, copy into the App, or replace this path with a public/service-role key. Runtime Python requires `cryptography==48.0.0`.
 - Booking wrapper canonical source: `scripts/sync_mgj_bookings.sh`. It must use `exec` and propagate failures; never suppress stderr or force `exit 0`.
-- A booking may be deleted only when that exact store/date API call succeeded and omitted the stable appointment id.
+- A booking may be deleted only when that exact store/date API call succeeded, the matching signed pair upsert succeeded, and the stable appointment id is absent; the Edge Function must filter each delete by exact store and date.
 - Customer backfill canonical wrapper: `scripts/backfill_mgj_customer_profiles.sh`. Run one scheduled backfill source only; unmanaged endless loops are forbidden.
 - Hermes no-agent scripts have a 120-second execution limit. Keep customer backfill at 15 profiles per run so the 2-second API pacing can finish before timeout.
 - Keep the normal customer sync at 8 rotating profiles per run; a 20-profile run exceeded the Hermes 120-second hard limit on 2026-07-30.

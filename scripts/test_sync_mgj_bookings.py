@@ -1,45 +1,19 @@
 import importlib.util
+import base64
+import io
+import json
 import pathlib
-import subprocess
 import unittest
 import urllib.error
 from unittest import mock
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("sync_mgj_bookings.py")
 SPEC = importlib.util.spec_from_file_location("sync_mgj_bookings", SCRIPT_PATH)
 SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
-
-
-class BookingDeletionTests(unittest.TestCase):
-    def test_deletes_only_from_successful_shop_date_pairs(self):
-        existing = [
-            {"id": 1, "shop_id": "a", "date": "2026-06-29"},
-            {"id": 2, "shop_id": "a", "date": "2026-06-29"},
-            {"id": 3, "shop_id": "a", "date": "2026-06-30"},
-            {"id": 4, "shop_id": "b", "date": "2026-06-29"},
-        ]
-        fetched = {
-            ("a", "2026-06-29"): [{"id": 1}],
-            ("a", "2026-06-30"): [],
-        }
-        successful = {("a", "2026-06-29")}
-        self.assertEqual(
-            SYNC.deletion_ids(existing, fetched, successful),
-            {2},
-        )
-
-    def test_authoritative_empty_pair_deletes_only_that_pair(self):
-        existing = [
-            {"id": 10, "shop_id": "a", "date": "2026-06-29"},
-            {"id": 11, "shop_id": "a", "date": "2026-06-30"},
-        ]
-        successful = {("a", "2026-06-29")}
-        self.assertEqual(
-            SYNC.deletion_ids(existing, {}, successful),
-            {10},
-        )
 
 
 class BookingNormalizationTests(unittest.TestCase):
@@ -70,27 +44,38 @@ class BookingNormalizationTests(unittest.TestCase):
         self.assertEqual(result["status"], 3)
 
 
-class SupabaseRequestTests(unittest.TestCase):
-    @mock.patch.object(SYNC.subprocess, "run")
-    def test_http_error_is_not_reported_as_success(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=["curl"],
-            returncode=22,
-            stdout='{"message":"quota exceeded"}',
-            stderr="curl: (22) HTTP 402",
+class SignedRequestTests(unittest.TestCase):
+    @mock.patch.object(SYNC.urllib.request, "urlopen")
+    def test_request_is_signed_and_reports_pair_result(self, urlopen):
+        signing_key = Ed25519PrivateKey.generate()
+        result = {"shop_id": "1009951", "date": "2026-09-25", "upserted": 1, "deleted": 2}
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(result).encode()
+        bookings = [{"id": 7, "shop_id": "1009951", "date": "2026-09-25"}]
+        self.assertEqual(SYNC.signed_pair_request("1009951", "2026-09-25", bookings, signing_key), result)
+        request = urlopen.call_args.args[0]
+        timestamp = request.get_header("X-booking-sync-ts")
+        signature = request.get_header("X-booking-sync-signature")
+        signing_key.public_key().verify(
+            base64.urlsafe_b64decode(signature + "=="),
+            timestamp.encode() + b"." + request.data,
         )
-        with self.assertRaisesRegex(RuntimeError, "HTTP 402"):
-            SYNC.curl_request("GET", "bookings?select=id")
+        self.assertEqual(json.loads(request.data)["bookings"], bookings)
 
-    @mock.patch.object(SYNC.subprocess, "run")
-    def test_curl_uses_bounded_transient_retries(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=["curl"], returncode=0, stdout="[]", stderr=""
-        )
-        SYNC.curl_request("GET", "bookings?select=id")
-        command = run.call_args.args[0]
-        self.assertEqual(command[command.index("--retry") + 1], "2")
-        self.assertIn("--retry-connrefused", command)
+    @mock.patch.object(SYNC.urllib.request, "urlopen")
+    def test_http_error_is_not_reported_as_success(self, urlopen):
+        error = urllib.error.HTTPError(SYNC.SYNC_FUNCTION, 401, "Unauthorized", {}, io.BytesIO())
+        urlopen.side_effect = error
+        with self.assertRaises(urllib.error.HTTPError):
+            SYNC.signed_pair_request("1009951", "2026-09-25", [], Ed25519PrivateKey.generate())
+        self.assertEqual(urlopen.call_count, 1)
+        error.close()
+
+    @mock.patch.object(SYNC.urllib.request, "urlopen")
+    def test_mismatched_response_is_rejected(self, urlopen):
+        result = {"shop_id": "1837032", "date": "2026-09-25", "upserted": 0, "deleted": 0}
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(result).encode()
+        with self.assertRaisesRegex(RuntimeError, "返回异常"):
+            SYNC.signed_pair_request("1009951", "2026-09-25", [], Ed25519PrivateKey.generate())
 
 
 class NetworkRetryTests(unittest.TestCase):
@@ -103,7 +88,7 @@ class NetworkRetryTests(unittest.TestCase):
 
     @mock.patch.object(SYNC.time, "sleep")
     def test_http_401_is_not_retried(self, sleep):
-        error = urllib.error.HTTPError("https://example.invalid", 401, "bad", {}, None)
+        error = urllib.error.HTTPError("https://example.invalid", 401, "bad", {}, io.BytesIO())
         operation = mock.Mock(side_effect=error)
         try:
             with self.assertRaises(urllib.error.HTTPError):

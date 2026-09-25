@@ -20,6 +20,11 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install booking sync signing dependency
+        run: python3 -m pip install cryptography==48.0.0
       - name: Install pinned Deno
         uses: denoland/setup-deno@v2
         with:
@@ -30,6 +35,8 @@ jobs:
           version: 2.109.1
       - name: Type-check operations-api with its frozen lockfile
         run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
+      - name: Type-check signed booking sync function
+        run: deno check supabase/functions/mgj-booking-sync/index.ts
       - name: Validate Supabase release command contract
         env:
           SUPABASE_TELEMETRY_DISABLED: "1"

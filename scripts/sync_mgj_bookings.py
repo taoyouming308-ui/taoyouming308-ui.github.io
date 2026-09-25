@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Synchronize Meiguanjia appointments to Supabase without unsafe deletion."""
 
+import base64
 import fcntl
 import http.cookiejar
 import json
 import os
 import socket
 import ssl
-import subprocess
 import sys
 import tempfile
 import time
@@ -15,6 +15,9 @@ import urllib.parse
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
 CONFIG_PATH = os.path.expanduser("~/.hermes/meiguanjia-config.json")
@@ -25,6 +28,8 @@ SESSION_LOCK_PATH = "/tmp/sync_mgj_all.lock"
 DEFAULT_SERVER = "vip12.meiguanjia.net"
 SUPABASE_URL = "https://pdssrmpeiuwvxzsgschm.supabase.co"
 SUPABASE_KEY = "sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t"
+SIGNING_KEY_PATH = os.path.expanduser("~/.hermes/mgj-booking-sync-ed25519.pem")
+SYNC_FUNCTION = f"{SUPABASE_URL}/functions/v1/mgj-booking-sync"
 SHOPS = [
     {"shopId": "1009951", "name": "自由手艺人", "parentShopId": "1103470"},
     {"shopId": "1837032", "name": "向里造型", "parentShopId": "1103470"},
@@ -268,68 +273,56 @@ def ensure_session():
         release_lock(session_lock)
 
 
-def curl_request(method, path, body=None, prefer=None, timeout=30):
-    remaining = remaining_run_seconds()
-    if remaining is not None and remaining < 1:
-        raise TimeoutError("预约同步运行时间已到105秒上限")
-    effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
-    process_timeout = timeout + 5 if remaining is None else max(1, remaining)
-    url = f"{SUPABASE_URL}/rest/v1/{path}"
-    command = [
-        "curl",
-        "--silent",
-        "--show-error",
-        "--fail-with-body",
-        "--request",
-        method,
-        url,
-        "--header",
-        f"apikey: {SUPABASE_KEY}",
-        "--header",
-        "Content-Type: application/json",
-        "--max-time",
-        str(effective_timeout),
-        "--retry",
-        "2",
-        "--retry-delay",
-        "1",
-        "--retry-max-time",
-        str(effective_timeout),
-        "--retry-connrefused",
-    ]
-    if prefer:
-        command.extend(["--header", f"Prefer: {prefer}"])
-    input_text = None
-    if body is not None:
-        command.extend(["--data-binary", "@-"])
-        input_text = json.dumps(body, ensure_ascii=False)
-    result = subprocess.run(
-        command,
-        input=input_text,
-        capture_output=True,
-        text=True,
-        timeout=process_timeout,
-        check=False,
+def load_signing_key():
+    if os.stat(SIGNING_KEY_PATH).st_mode & 0o077:
+        raise PermissionError("预约同步私钥权限必须为0600")
+    with open(SIGNING_KEY_PATH, "rb") as source:
+        key = serialization.load_pem_private_key(source.read(), password=None)
+    if not isinstance(key, Ed25519PrivateKey):
+        raise ValueError("预约同步私钥类型必须为Ed25519")
+    return key
+
+
+def signed_pair_request(shop_id, date_text, bookings, signing_key, timeout=15):
+    body = json.dumps(
+        {"shop_id": shop_id, "date": date_text, "bookings": bookings},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    timestamp = str(int(time.time()))
+    signature = base64.urlsafe_b64encode(
+        signing_key.sign(timestamp.encode("ascii") + b"." + body)
+    ).rstrip(b"=").decode("ascii")
+    request = urllib.request.Request(
+        SYNC_FUNCTION,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "X-Booking-Sync-Ts": timestamp,
+            "X-Booking-Sync-Signature": signature,
+        },
     )
-    if result.returncode != 0:
-        message = (result.stderr or result.stdout or "unknown error").strip()
-        raise RuntimeError(f"Supabase {method} failed: {message[:500]}")
-    response_text = result.stdout.strip()
-    return json.loads(response_text) if response_text else None
 
+    def perform():
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("预约同步运行时间已到105秒上限")
+        effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+        try:
+            with urllib.request.urlopen(
+                request, timeout=effective_timeout, context=ssl.create_default_context()
+            ) as response:
+                result = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError:
+            raise
+        if not isinstance(result, dict) or result.get("shop_id") != shop_id or result.get("date") != date_text:
+            raise RuntimeError("预约写入接口返回异常")
+        if result.get("upserted") != len(bookings):
+            raise RuntimeError("预约写入接口回报数量不符")
+        return result
 
-def supabase_get_all(path, page_size=1000):
-    rows = []
-    offset = 0
-    separator = "&" if "?" in path else "?"
-    while True:
-        page = curl_request("GET", f"{path}{separator}limit={page_size}&offset={offset}")
-        if not isinstance(page, list):
-            raise RuntimeError("Supabase GET did not return a list")
-        rows.extend(page)
-        if len(page) < page_size:
-            return rows
-        offset += page_size
+    return with_network_retries(perform)
 
 
 def reservation_date_keys(days=8):
@@ -360,10 +353,13 @@ def normalize_reservation(raw, shop, date_text, today_text):
     customer_name = raw.get("custName") or ""
     if customer_name == "未登记":
         customer_name = ""
-    reservation_time = raw.get("reservationTime") or 0
+    try:
+        reservation_time = int(raw.get("reservationTime") or 0)
+    except (TypeError, ValueError):
+        return None
     time_label = ""
     if reservation_time:
-        value = datetime.fromtimestamp(int(reservation_time) / 1000, tz=CHINA_TZ)
+        value = datetime.fromtimestamp(reservation_time / 1000, tz=CHINA_TZ)
         time_label = value.strftime("%H:%M")
     return {
         "id": booking_id,
@@ -412,24 +408,6 @@ def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
     return normalized
 
 
-def deletion_ids(existing_rows, fetched_by_pair, successful_pairs):
-    existing_by_pair = {}
-    for row in existing_rows:
-        pair = (str(row.get("shop_id") or ""), str(row.get("date") or ""))
-        existing_by_pair.setdefault(pair, set()).add(int(row["id"]))
-    result = set()
-    for pair in successful_pairs:
-        fetched_ids = {row["id"] for row in fetched_by_pair.get(pair, [])}
-        result.update(existing_by_pair.get(pair, set()) - fetched_ids)
-    return result
-
-
-def chunked(values, size):
-    values = list(values)
-    for index in range(0, len(values), size):
-        yield values[index:index + size]
-
-
 def sync_bookings():
     server, cookie = ensure_session()
     dates = reservation_date_keys()
@@ -439,8 +417,8 @@ def sync_bookings():
     fetch_errors = []
 
     budget_exhausted = False
-    for shop in SHOPS:
-        for date_text in dates:
+    for date_text in dates:
+        for shop in SHOPS:
             if not run_budget_available():
                 fetch_errors.append("预约同步运行时间已到105秒上限，剩余日期留待下次")
                 budget_exhausted = True
@@ -460,62 +438,42 @@ def sync_bookings():
         if budget_exhausted:
             break
 
-    bookings = [
-        booking
-        for pair in successful_pairs
-        for booking in fetched_by_pair.get(pair, [])
-    ]
+    bookings = [booking for pair in successful_pairs for booking in fetched_by_pair.get(pair, [])]
     write_errors = []
     upserted = 0
-    for batch in chunked(bookings, 100):
-        try:
-            curl_request(
-                "POST",
-                "bookings?on_conflict=id",
-                batch,
-                prefer="resolution=merge-duplicates,return=minimal",
-            )
-            upserted += len(batch)
-        except Exception as exc:
-            write_errors.append(str(exc))
-
-    existing_rows = None
-    try:
-        existing_rows = supabase_get_all(
-            "bookings?select=id,shop_id,date"
-            f"&date=gte.{dates[0]}&date=lte.{dates[-1]}"
-        )
-    except Exception as exc:
-        write_errors.append(f"existing booking read failed: {exc}")
-
     deleted = 0
-    if existing_rows is not None:
-        stale_ids = sorted(deletion_ids(
-            existing_rows,
-            fetched_by_pair,
-            successful_pairs,
-        ))
-        for batch in chunked(stale_ids, 100):
+    written_pairs = 0
+    signing_key = load_signing_key()
+    for date_text in dates:
+        for shop in SHOPS:
+            pair = (shop["shopId"], date_text)
+            if pair not in successful_pairs:
+                continue
+            if not run_budget_available(3):
+                write_errors.append("预约同步运行时间已到105秒上限，剩余日期留待下次")
+                break
             try:
-                id_filter = ",".join(str(value) for value in batch)
-                curl_request(
-                    "DELETE",
-                    f"bookings?id=in.({id_filter})",
-                    prefer="return=minimal",
+                result = signed_pair_request(
+                    shop["shopId"], date_text, fetched_by_pair[pair], signing_key
                 )
-                deleted += len(batch)
+                upserted += result["upserted"]
+                deleted += result["deleted"]
+                written_pairs += 1
             except Exception as exc:
-                write_errors.append(str(exc))
+                write_errors.append(f"{shop['name']} {date_text}: {exc}")
+        if not run_budget_available(3):
+            break
 
     if not fetch_errors and not write_errors:
         status = "healthy"
-    elif successful_pairs:
+    elif written_pairs:
         status = "partial"
     else:
         status = "degraded"
     expected_pairs = len(SHOPS) * len(dates)
     summary = {
         "pairs_ok": len(successful_pairs),
+        "pairs_written": written_pairs,
         "pairs_failed": expected_pairs - len(successful_pairs),
         "fetched": len(bookings),
         "upserted": upserted,
@@ -529,7 +487,7 @@ def sync_bookings():
     )
     print(
         "预约同步: "
-        f"成功日期{summary['pairs_ok']}/16 "
+        f"读取日期{summary['pairs_ok']}/16 写入日期{written_pairs}/16 "
         f"读取{summary['fetched']} 写入{summary['upserted']} 删除{summary['deleted']}"
     )
     if fetch_errors or write_errors:
