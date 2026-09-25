@@ -19,6 +19,13 @@
 - 该只读结果与旧交接中的“25/26”估计不一致，现以本次生产聚合为准，但不能仅凭聚合判断 3 条未映射员工是否应新增、停用或合并。A02/员工 Auth 迁移仍为上线门槛：需要管理员逐一确认旧账号与员工、门店、角色的对应关系及登录安排；未创建账号、重置密码、停用旧登录或修改财务端口。
 - 当前没有安全的自动修复：身份绑定错误会造成越权或锁号。待获批的准确身份清单后，再以逐条校验、可回滚的小批次推进。
 
+## 上线审计：Supabase Advisor 再核（2026-09-25）
+
+- 最新 Security Advisor：42 张 public 表为 RLS enabled/no policy INFO；独立只读 ACL 聚合确认其中 37 张对 anon/authenticated 无 SELECT/INSERT/UPDATE/DELETE 表权限，5 张有表级权限的旧内容/分析表为 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods`，因无 RLS policy 仍 fail-closed。Auth `auth_leaked_password_protection` WARN 仍存在。没有新增财务范围匿名可读发现。
+- Performance Advisor 目前报告 135 个未索引外键、4 个重复 permissive policy WARN，以及 Auth 固定连接数 INFO。本次在日报、月报、凭证和工资核心表范围独立核实 14 个未覆盖外键：附件 1、日报草稿 3、日报版本 4、工资 6；未自动创建索引。
+- 4 个重复策略分属 `perm_data` 与 `staff` 两张表；只读策略定义显示重复项均为 `USING (true)`，同表仍有另一条同样覆盖公开读取的策略。当前表现为性能/维护告警，不是已证实的数据泄露；移除策略仍属于 RLS 变更，须先经所有者确认并检查权限设计。
+- Advisor 查询和目录查询均只读。本轮未改 Auth 设置、RLS、索引、数据库、业务权限或生产数据；平台 Auth 密码保护配置需要管理员 Dashboard/平台设置权限，当前连接工具未提供该设置入口。
+
 ## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
 
 - 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。

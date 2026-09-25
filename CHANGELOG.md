@@ -12,6 +12,12 @@
 - 这纠正了旧交接的 25/26 估计，但无法根据聚合数据判断未映射账号是否需补建、停用或合并；须由管理员确认准确人员、门店、角色及登录安排后，才能安全执行迁移。
 - 不读取或输出身份明细，不创建账号、不重置密码、不停用旧登录、不改财务登录端口或业务数据。
 
+## 2026-09-25 · Supabase 上线 Advisor 再核
+
+- Security Advisor 仍有 42 张 RLS 无策略 INFO；只读 ACL 核对为 37 张无 anon/authenticated 直连表权限、5 张旧内容/分析表有表级权限但被无策略 RLS fail-closed；Auth 泄露密码保护 WARN 仍存在。
+- Performance Advisor 计数 135 个未索引外键、4 个重复 permissive policy WARN、Auth 连接数 INFO；日报、凭证、月报和工资目标表只读核实 14 个未覆盖外键，分布于日报附件/草稿/版本及工资表。没有批量建索引。
+- 两表重复策略均是 `USING (true)` 且各自仍有等效公开 SELECT 策略；清理仍属于 RLS 变更，待所有者确认。仅记录证据，未改 Auth/RLS/数据库/权限或财务数据。
+
 ## 2026-09-25 · GitHub Actions Node 24 兼容
 
 - 将 `actions/checkout`、`actions/setup-node`、`actions/setup-python` 更新到官方 Node 24 兼容主版本，消除 Node 20 runner 退役后的强制兼容警告；原有 Node/Python 版本、npm cache 和测试命令保持不变。
