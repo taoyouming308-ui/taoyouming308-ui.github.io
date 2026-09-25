@@ -281,17 +281,20 @@ async function restRows(path: string): Promise<JsonRecord[]> {
 }
 
 async function restRowsAll(path: string, maxRows = 10000): Promise<JsonRecord[]> {
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1) throw new Error("数据读取上限无效");
   const rows: JsonRecord[] = [];
   const pageSize = 1000;
   for (let offset = 0; offset < maxRows; offset += pageSize) {
-    const response = await rest(path, { headers: { Range: `${offset}-${offset + pageSize - 1}` } });
+    const requestedRows = Math.min(pageSize, maxRows - offset);
+    const response = await rest(path, { headers: { Range: `${offset}-${offset + requestedRows - 1}` } });
     if (!response.ok) throw new Error(`数据读取失败 (${response.status})`);
     const page = await response.json();
-    if (!Array.isArray(page)) break;
+    if (!Array.isArray(page)) throw new Error("数据读取格式异常，请刷新后重试");
+    if (page.length > requestedRows) throw new Error("数据读取返回超过安全上限，请缩小日期范围后重试");
     rows.push(...page);
-    if (page.length < pageSize) return rows;
+    if (page.length < requestedRows) return rows;
   }
-  throw new Error("当前日期范围记录超过 10000 条，请缩短日期范围后重试");
+  throw new Error(`本次读取达到安全上限 ${maxRows} 条，结果可能不完整；请缩小日期范围后重试`);
 }
 
 async function invokeVoucherOcrWorker(limit = 3): Promise<JsonRecord> {
