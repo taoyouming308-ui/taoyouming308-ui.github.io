@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## CI Node 20 runner 退役兼容（2026-09-25，等待远端验证）
+
+- GitHub 于 2026-09-23 移除 Actions runner 的 Node 20；旧 `actions/checkout@v4`、`setup-node@v4`、`setup-python@v5` 仍能在 runner 的 Node 24 强制兼容模式下运行，但近期 workflow 明确出现弃用警告。
+- 将这三项官方 action 更新至当前官方主版本 `checkout@v7`、`setup-node@v7`、`setup-python@v7`，均支持 Node 24；保留 `.node-version=22.22.1`、Python 3.12、npm cache 和所有测试/门禁逻辑不变。工作流无 `registry-url` / `always-auth` 等新版本破坏性配置。
+- 待本提交 GitHub Validate 与 Pages 工作流完成后，确认 Node 20 runtime warning 消失；此处不改应用版本、财务逻辑、数据库、权限或生产数据。
+
 ## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
 
 - 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。

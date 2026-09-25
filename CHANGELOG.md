@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-25 · GitHub Actions Node 24 兼容
+
+- 将 `actions/checkout`、`actions/setup-node`、`actions/setup-python` 更新到官方 Node 24 兼容主版本，消除 Node 20 runner 退役后的强制兼容警告；原有 Node/Python 版本、npm cache 和测试命令保持不变。
+- 等待 GitHub Validate/Pages 对最新工作流实际验证；未改应用代码或版本、财务业务逻辑、数据库、权限及生产数据。
+
 ## 2026-09-25 · G01 合成数据库备份恢复演练
 
 - 用两个断网 PostgreSQL 17 临时容器验证 `pg_dump`/`pg_restore` 链路；合成数据恢复前后行数、金额与摘要一致，临时容器已清理。
