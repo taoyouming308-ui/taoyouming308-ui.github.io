@@ -82,12 +82,11 @@ async function run() {
       };
     });
     await page.locator('[data-trace-cell="C3"]').first().click();
-    await page.locator('.monthly-voucher-preview img').first().waitFor();
+    await page.locator('.monthly-voucher-preview').waitFor();
     assert.equal(await page.evaluate(() => {
       const button = document.getElementById('cell-trace-back'), box = button.getBoundingClientRect();
       return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
     }), true, 'sticky navigation must not cover the return button');
-    assert.equal(await page.locator('.monthly-voucher-preview img').count(), 2, 'one image per source is loaded initially; the Word bundle loads one page on demand');
     assert.equal(await page.locator('.voucher-file-preview').count(), 2, 'deduplicate shared originals');
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null);
     assert.match(await page.locator('.monthly-voucher-preview').innerText(), /本月整包凭证/);
@@ -98,6 +97,12 @@ async function run() {
     assert.deepEqual(initialTraceCalls.find(call => call.operation === 'cell_trace_batch').cell_addresses, ['C4', 'C5']);
     if (process.env.ZYSYR_VOUCHER_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.ZYSYR_VOUCHER_SCREENSHOTS, 'zysyr-voucher-preview-' + width + 'x' + height + '.png'), fullPage: true });
     const first = page.locator('.voucher-file-preview').first();
+    const second = page.locator('.voucher-file-preview').nth(1);
+    await second.scrollIntoViewIfNeeded();
+    await second.locator('img, iframe').first().waitFor();
+    assert.equal(await page.locator('.monthly-voucher-preview img').count(), 2, 'scrolling to the next source loads its preview while preserving full evidence access');
+    await first.scrollIntoViewIfNeeded();
+    await first.locator('[data-step="1"]').waitFor();
     await first.locator('[data-step="1"]').click();
     await page.waitForFunction(() => document.querySelector('.voucher-file-preview [data-count]').textContent === '2 / 2');
     await first.locator('[data-zoom="0"]').click();
@@ -203,7 +208,9 @@ async function run() {
       };
       openCellTrace('C3');
     });
+    await page.locator('.voucher-file-preview').first().scrollIntoViewIfNeeded();
     await page.getByText('这份原件暂时未能读取：', { exact: false }).waitFor();
+    await page.locator('.voucher-file-preview').nth(1).scrollIntoViewIfNeeded();
     await page.locator('.monthly-voucher-preview img').waitFor();
     assert.equal(await page.locator('.monthly-voucher-preview img').count(), 1);
     // Latest confirmed policy: income is edited directly as a monthly-only

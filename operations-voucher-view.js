@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   root.createZysyrVoucherView = function (options) {
-    var core = root.ZysyrVoucherPreview, esc = options.escape, generation = 0;
+    var core = root.ZysyrVoucherPreview, esc = options.escape, generation = 0, previewObserver = null;
     function fileView(file, host, retry, linkImage, loadPage) {
       var selected = core.selectImages(file), url = core.safeURL(file.file_url), name = file.filename || file.original_filename || '原始凭证';
       var images = selected.images.map(function (item) { return core.safeURL(item.data_url); }).filter(Boolean);
@@ -92,6 +92,7 @@
       update();
     }
     async function mount(data, address, context, body) {
+      if (previewObserver) { previewObserver.disconnect(); previewObserver = null; }
       if (['income', 'salary', 'total', 'fixed', 'purchase_summary'].includes(data.item_category)) { generation++; return; }
       var request = ++generation, details = document.createElement('details'), workbenchCards = Array.from(body.querySelectorAll('.monthly-simple-workbench'));
       if (!workbenchCards.length) workbenchCards = Array.from(body.querySelectorAll('.monthly-inline-editor,.business-detail-card'));
@@ -126,7 +127,10 @@
           && target.historical_ledger_entry_id && target.historical_import_row_id);
         var hosts = collected.evidence.map(function (file) {
           var host = document.createElement('section'); host.className = 'trace-card voucher-file-preview';
-          host.innerHTML = '<h4>' + esc(file.original_filename || '原始凭证') + '</h4><div class="voucher-gallery-loading">正在读取原图…</div>';
+          var scope = file.trace_link_level === 'bundle_only'
+            ? '<div class="candidate-warning">当前关联范围：本月整包凭证，尚未确认哪张对应当前金额。以下展示整包原图，不代表每张都计入该金额。</div>'
+            : file.trace_link_level === 'page_confirmed' ? '<div class="help">以下为已关联到该金额的原图。</div>' : '';
+          host.innerHTML = '<h4>' + esc(file.original_filename || '原始凭证') + '</h4>' + scope + '<div class="voucher-gallery-loading">滚动到此处后自动加载原件</div>';
           gallery.appendChild(host); return host;
         });
         function show(file, index) { fileView(file, hosts[index], async function () {
@@ -143,11 +147,13 @@
         } : null, function (sourceFile, imageFilename) {
           return options.load(collected.evidence[index], context, data.historical, imageFilename);
         }); }
-        await core.loadFiles(collected.evidence, function (file) { return options.load(file, context, data.historical); }, show, active);
+        var observed = core.loadVisibleFiles(collected.evidence, hosts,
+          function (file) { return options.load(file, context, data.historical); }, show, active);
+        previewObserver = observed;
       } catch (error) {
         if (active()) gallery.innerHTML = header + '<div class="candidate-warning">凭证预览读取失败：' + esc(error.message) + '。下方追溯与修改记录仍可核对。</div>';
       }
     }
-    return { mount: mount, cancel: function () { generation++; }, fileView: fileView };
+    return { mount: mount, cancel: function () { generation++; if (previewObserver) { previewObserver.disconnect(); previewObserver = null; } }, fileView: fileView };
   };
 })(window);

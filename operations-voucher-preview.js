@@ -96,7 +96,47 @@
       }
     }));
   }
-  var api = { collect: collect, selectImages: selectImages, safeURL: safeURL, kind: kind, loadFiles: loadFiles, merge: merge };
+  function loadVisibleFiles(files, elements, load, onFile, active, Observer) {
+    active = active || function () { return true; };
+    Observer = Observer || root.IntersectionObserver;
+    if (typeof Observer !== 'function') {
+      return { disconnect: function () {}, done: loadFiles(files, load, onFile, active) };
+    }
+    var states = files.map(function () { return 'idle'; }), queue = [], running = 0, maxConcurrent = 3;
+    var resolveDone, done = new Promise(function (resolve) { resolveDone = resolve; });
+    var observer = new Observer(function (entries) {
+      entries.forEach(function (entry) {
+        var index = elements.indexOf(entry.target);
+        if (index < 0 || states[index] !== 'idle' || !(entry.isIntersecting || entry.intersectionRatio > 0)) return;
+        states[index] = 'queued'; queue.push(index); observer.unobserve(entry.target);
+      });
+      pump();
+    }, { rootMargin: '320px 0px' });
+    function finishIfIdle() {
+      if (running || queue.length || states.some(function (state) { return state === 'idle'; })) return;
+      resolveDone();
+    }
+    function pump() {
+      while (running < maxConcurrent && queue.length && active()) {
+        (function (index) {
+          running++; states[index] = 'loading';
+          Promise.resolve().then(function () { return load(files[index]); })
+            .catch(function (error) { return Object.assign({}, files[index], { preview_error: error.message || '读取失败' }); })
+            .then(function (result) { if (active()) { states[index] = 'loaded'; onFile(result, index); } })
+            .finally(function () { running--; pump(); finishIfIdle(); });
+        })(queue.shift());
+      }
+      finishIfIdle();
+    }
+    elements.forEach(function (element) { observer.observe(element); });
+    finishIfIdle();
+    return { disconnect: function () {
+      observer.disconnect(); queue = [];
+      states = states.map(function (state) { return state === 'idle' || state === 'queued' ? 'cancelled' : state; });
+      resolveDone();
+    }, done: done };
+  }
+  var api = { collect: collect, selectImages: selectImages, safeURL: safeURL, kind: kind, loadFiles: loadFiles, loadVisibleFiles: loadVisibleFiles, merge: merge };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ZysyrVoucherPreview = api;
 })(typeof window !== 'undefined' ? window : globalThis);

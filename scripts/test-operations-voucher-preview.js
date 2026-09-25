@@ -63,6 +63,27 @@ async function test() {
   assert.equal(peak, 3);
   assert.equal(loaded.length, 8);
   assert.equal(loaded[3].preview_error, 'synthetic expired');
-  console.log('voucher preview: traversal, exact scope, failures, cancellation, MIME and bounded loading passed');
+  let intersectionCallback, observedOptions;
+  const elements = Array.from({ length: 8 }, (_, id) => ({ id })), visibleCalls = [], visibleResults = [];
+  class FakeIntersectionObserver {
+    constructor(callback, options) { intersectionCallback = callback; observedOptions = options; }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  const visibleLoad = core.loadVisibleFiles(elements, elements,
+    async file => { visibleCalls.push(file.id); return file; },
+    (file, index) => visibleResults[index] = file, () => true, FakeIntersectionObserver);
+  assert.deepEqual(visibleCalls, [], 'offscreen evidence must not trigger file URL requests');
+  assert.equal(observedOptions.rootMargin, '320px 0px', 'near-viewport evidence should preload just before entering view');
+  intersectionCallback([{ target: elements[0], isIntersecting: true, intersectionRatio: 1 }]);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(visibleCalls, [0], 'only the card entering the viewport should load');
+  intersectionCallback([{ target: elements[7], isIntersecting: true, intersectionRatio: 1 }]);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(visibleCalls, [0, 7], 'distant cards remain deferred until they enter the viewport');
+  assert.equal(visibleResults[7].id, 7);
+  visibleLoad.disconnect(); await visibleLoad.done;
+  console.log('voucher preview: traversal, exact scope, failures, cancellation, MIME, bounded and viewport-lazy loading passed');
 }
 test().catch(error => { console.error(error); process.exitCode = 1; });
