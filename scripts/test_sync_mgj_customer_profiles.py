@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import pathlib
 import tempfile
 import unittest
@@ -255,7 +256,7 @@ class NetworkRetryTests(unittest.TestCase):
 
     @mock.patch.object(SYNC.time, "sleep")
     def test_non_transient_http_error_is_not_retried(self, sleep):
-        error = urllib.error.HTTPError("https://example.invalid", 400, "bad", {}, None)
+        error = urllib.error.HTTPError("https://example.invalid", 400, "bad", {}, io.BytesIO())
         operation = mock.Mock(side_effect=error)
         try:
             with self.assertRaises(urllib.error.HTTPError):
