@@ -72,8 +72,59 @@ async function testWritesAreNeverAborted() {
   console.log('ZYSYR API timeout: safe reads abort during network/body wait; finance writes and unclassified operations never receive a timeout signal');
 }
 
+async function testWriteNetworkFailureIsUnconfirmed() {
+  const context = vm.createContext({
+    API: 'https://example.invalid/operations-api',
+    AbortController,
+    setTimeout,
+    clearTimeout,
+    fetch: async () => { throw new TypeError('Failed to fetch'); },
+  });
+  vm.runInContext(code, context);
+  await assert.rejects(context.requestApiResponse('daily_sheet_confirm', { method: 'POST' }), error => {
+    assert.equal(error.code, 'API_OUTCOME_UNCONFIRMED');
+    assert.match(error.message, /先刷新并核对是否已完成/);
+    assert.match(error.message, /不要直接重复提交/);
+    return true;
+  });
+}
+
+async function testWriteInvalidResponseIsUnconfirmed() {
+  const context = vm.createContext({
+    API: 'https://example.invalid/operations-api',
+    AbortController,
+    setTimeout,
+    clearTimeout,
+    fetch: async () => ({ ok: true, json: async () => { throw new SyntaxError('invalid json'); } }),
+  });
+  vm.runInContext(code, context);
+  await assert.rejects(context.requestApiResponse('report_upload', { method: 'POST' }), error => {
+    assert.equal(error.code, 'API_OUTCOME_UNCONFIRMED');
+    assert.match(error.message, /上传/);
+    return true;
+  });
+}
+
+async function testExplicitServerErrorRemainsActionable() {
+  const context = vm.createContext({
+    API: 'https://example.invalid/operations-api',
+    AbortController,
+    setTimeout,
+    clearTimeout,
+    fetch: async () => ({ ok: false, status: 409, json: async () => ({ error: '版本冲突' }) }),
+  });
+  vm.runInContext(code + "\nfunction testServerError(result){return result}", context);
+  const result = await context.requestApiResponse('daily_sheet_save', { method: 'POST' });
+  assert.equal(result.response.status, 409);
+  assert.equal(result.data.error, '版本冲突');
+}
+
 (async () => {
   await testFetchTimeout();
   await testBodyReadTimeout();
   await testWritesAreNeverAborted();
+  await testWriteNetworkFailureIsUnconfirmed();
+  await testWriteInvalidResponseIsUnconfirmed();
+  await testExplicitServerErrorRemainsActionable();
+  console.log('ZYSYR API outcome: ambiguous transport/body failures are marked unconfirmed; explicit server errors remain unchanged');
 })().catch(error => { console.error(error); process.exitCode = 1; });
