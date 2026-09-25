@@ -4,7 +4,7 @@
 
 - App version: v555。候选识别桥新增 Bearer 鉴权健康处理器，仅检查 Codex CLI 文件是否存在且可执行；明确返回 `codex_login: not_checked`，不启动 Codex、不检查个人会话、不回传路径/令牌/图片/财务数据。
 - Hermes 部署补丁增加 `/api/zysyr-daily-health` 路由。该补丁仍只在本仓库；没有读取、编辑或重启共享 Hermes `plan_server.py`，没有触发识别或改生产数据。系统工具对本机进程列表受限，运行端健康仍未实测；B13 保持开放。
-- Python 桥接单测 8/8 与识别静态门禁通过。发布前还需更新版本缓存标记、完整财务/全仓回归和 CI；未经单独授权不部署共享路由。
+- Python 桥接单测 8/8 与识别静态门禁通过；完整 pre-push 的 71 项财务回归、跨应用回归和 47 项同步测试均通过。提交 `412964b` 已推送 `github/main`；无缓存核验 GitHub Pages `version.json=555`、`operations.html data-version=555`、识别脚本 `v=555`。此提交未部署共享 Hermes 路由；未经单独授权不部署共享服务。
 
 ## 上线整改：B10 股东 iframe 只读请求超时（v554，已发布）
 
