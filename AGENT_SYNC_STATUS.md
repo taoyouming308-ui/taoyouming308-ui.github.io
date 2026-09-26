@@ -1,11 +1,11 @@
 # Agent Sync Status
 
-## v563 月报整月日报可读布局（本地测试通过，待发布）
+## v563 月报整月日报可读布局（已发布）
 
 - App version: v563。将已入账日报的整月业绩从原月报 22 列表格右侧移出，放到月报区域前部独立展示：宽屏为 8 列整月表，手机窄屏为逐日卡片和月合计。原始月报表不被覆盖，仍完整保留在下方；空缺日期显示“—”，只汇总已入账的当前门店日报，日期入口保留日报追溯。
-- Chromium 浏览器回归通过：桌面、手机竖屏/横屏、平板尺寸下检查表格/卡片切换、数字边界、无横向页面溢出；工资表和原始月报适配回归未退化。静态数据映射回归也通过。尚未运行完整财务测试/发布门禁、尚未推送或部署，因此不作为线上已生效；真实财务账号和设备仍需验收。
-- 仅改本地 HTML/显示模块/回归测试/版本标记；未改 Supabase、财务 API、数据库、权限、历史账务/公式、原始凭证或财务独立登录入口。版本标记 v563，Pages 生产仍以线上当前版本为准。
-- Current owner: Codex; Last Completed Work: v563 月报可读布局本地专项回归通过；Open Work For Next Agent: 完整财务及仓库预推送门禁、发布后 Pages/线上无缓存回读；上线审计其余 A02、B01、G01、共享权限及真实账号设备验收持续未完成；Required Checks Before Publishing: fetch/版本/release/agent sync 检查、财务测试清单、pre-push、GitHub Actions 与 Pages 无缓存核验；Handoff Rule: 本地浏览器通过不等于线上发布或真实设备验收。
+- 本地 Chromium 回归通过：桌面、手机竖屏/横屏、平板尺寸下检查表格/卡片切换、数字边界、无横向页面溢出；工资表和原始月报适配回归未退化。财务 73/73、全仓 pre-push 门禁及 47 项同步测试通过。提交 `61ebe742c34a1477b65735f672e6c34940f189f2` 已推送 main；GitHub Validate `36243451181` 与 Pages `36243450907` 成功；无缓存确认 `version.txt=563`、`operations.html data-version=563`，模块 SHA-256 `23e5e170187d2a4ff5b137085d1f5ac8db591c13e4a26f2b48f0e5e48785d964` 与提交源码一致。真实 iPhone/iPad 和财务账号仍需验收。
+- 仅改 HTML/显示模块/回归测试/版本标记；未改 Supabase、财务 API、数据库、权限、历史账务/公式、原始凭证或财务独立登录入口。
+- Current owner: Codex; Last Completed Work: v563 月报可读布局已通过线上回读；Open Work For Next Agent: 上线审计其余 A02、B01、G01、共享权限及真实账号/设备验收持续未完成；Required Checks Before Next Publishing: fetch/版本/release/agent sync 检查、财务测试清单、pre-push、GitHub Actions 与 Pages 无缓存核验；Handoff Rule: 合成回归与 Pages 部署不等于真实财务账号和设备验收。
 
 ## 共享业务数据权限：护理出库队列客户端封闭（迁移已测，生产待审批）
 
