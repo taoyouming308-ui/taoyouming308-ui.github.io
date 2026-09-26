@@ -3,13 +3,15 @@
 ## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
 
 - Supabase 官方当前备份文档确认：数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制 Storage 对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库恢复本身会让原项目不可访问，不能拿生产 restore 当演练。
-- Supabase 项目元数据只确认项目 `ACTIVE_HEALTHY`、Postgres 17；没有返回当前套餐、日备份/PITR状态、保留期或 Storage 外部副本，因此这些生产配置仍属未知，不能宣称已有可用灾备。
+- Supabase 当前组织套餐为 Pro；项目元数据确认 `ACTIVE_HEALTHY`、Postgres 17，但没有返回自动备份/PITR状态、保留期或 Storage 外部副本，因此这些生产配置仍属未知，不能宣称已有可用灾备。
+- 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
 - 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。
 
 ## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
 
 - 对生产 `zysyr_history_ledger_entries` 仅执行聚合 SELECT，按月、账类、已存储校验状态分组，未返回姓名、金额、源定位、payload、原表行或凭证内容。当前 posted 状态待签认 3,739 行：valid 2,624、warning 1,115；查询分桶覆盖 2026-01 至 2026-06，reversed 为 0。
 - warning 问题代码的非互斥受影响行数：monthly `label_unresolved` 953；employee_purchase `product_unmatched` 88、`employee_unmatched` 19、`retail_sale_preserved` 12、`possible_duplicate` 8；salary `employee_unmatched` 66、`net_formula_mismatch` 1；petty_cash `sequence_unusual` 7。单行可能同时带多个代码，因此代码行数不可相加替代 1,115 个 warning 行。
+- 按 `period_month × entry_type` 重新脱敏交叉核对：warning 行在 2026-01 至 06 分别为 224、122、195、190、206、178，合计 1,115；账类合计 monthly_profit_loss 953、employee_purchase 88、salary 67、petty_cash 7。2026-05 的 206 行中有 4 行 petty_cash warning；此前简略分桶摘要未单列，这次用月度总数及 5 月分类聚合复核，未读取明细。
 - 结果支持财务按月/账类/问题代码安排逐笔核对，但不能替代源凭证审核或财务签认。没有更新 review_status、修正金额、导入历史账或改变任何生产行。项目当日恢复备份脚本确认源码归档已存在，未新增归档。
 - Last Completed Work: 只读完成 warning 分桶；Open Work For Next Agent: 由财务按正式原件逐批核验并通过受审计工作流签认/更正；不得批量确认或按代码自动修复。
 
@@ -23,6 +25,9 @@
 - Current owner: Codex; Last Completed Work: `60affb7` 已推送 main，完整本地 pre-push 与 GitHub Validate/Deno frozen check/Pages 均成功；Open Work For Next Agent: 获用户明确授权后部署 `operations-api`，对真实迁移账号和未迁移账号分别验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码推送不等于生产部署，生产部署及 Auth 结果必须单独回读验证。
 
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
+
+- 2026-09-26 最新 24 小时生产日志聚合：`operations_api_timing` 仅 1 条，`operation=unknown`、HTTP 200、1ms；它不是具体业务路由样本，性能结论仍待真实财务使用流量。
+- 2026-09-26 最新 Advisor：Security 为 42 条 RLS-no-policy INFO、Auth leaked-password protection disabled WARN；Performance 为 135 条未索引 FK INFO、4 条重复 permissive policy WARN 和 Auth 固定连接数 INFO。范围包含非财务表；没有基于 Advisor 批量建索引、改 Auth 或改 RLS。
 
 - Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
 - 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
