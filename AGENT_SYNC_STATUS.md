@@ -1,13 +1,26 @@
 # Agent Sync Status
 
+## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
+
+- Supabase 官方当前备份文档确认：数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制 Storage 对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库恢复本身会让原项目不可访问，不能拿生产 restore 当演练。
+- Supabase 项目元数据只确认项目 `ACTIVE_HEALTHY`、Postgres 17；没有返回当前套餐、日备份/PITR状态、保留期或 Storage 外部副本，因此这些生产配置仍属未知，不能宣称已有可用灾备。
+- 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。
+
+## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
+
+- 对生产 `zysyr_history_ledger_entries` 仅执行聚合 SELECT，按月、账类、已存储校验状态分组，未返回姓名、金额、源定位、payload、原表行或凭证内容。当前 posted 状态待签认 3,739 行：valid 2,624、warning 1,115；查询分桶覆盖 2026-01 至 2026-06，reversed 为 0。
+- warning 问题代码的非互斥受影响行数：monthly `label_unresolved` 953；employee_purchase `product_unmatched` 88、`employee_unmatched` 19、`retail_sale_preserved` 12、`possible_duplicate` 8；salary `employee_unmatched` 66、`net_formula_mismatch` 1；petty_cash `sequence_unusual` 7。单行可能同时带多个代码，因此代码行数不可相加替代 1,115 个 warning 行。
+- 结果支持财务按月/账类/问题代码安排逐笔核对，但不能替代源凭证审核或财务签认。没有更新 review_status、修正金额、导入历史账或改变任何生产行。项目当日恢复备份脚本确认源码归档已存在，未新增归档。
+- Last Completed Work: 只读完成 warning 分桶；Open Work For Next Agent: 由财务按正式原件逐批核验并通过受审计工作流签认/更正；不得批量确认或按代码自动修复。
+
 ## A02 旧兼容登录收口第一步（代码已推送 main，生产未部署）
 
 - `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
 - 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
-- 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub 状态检查暂未返回 CI 记录，本机无 Deno CLI，frozen check 待 CI 证据，真实财务账号验收未完成。
+- 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub Validate run `36218103714` 成功，Deno frozen `operations-api` 类型检查成功，Pages run `36218103325` 成功。真实财务账号验收未完成。
 - 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入上线风险说明与真实验收。未部署到生产；部署 `operations-api` 前需用户对本批生产 Auth 行为作具体确认。
 - A02 仍未关闭：当前生产聚合不足以识别哪些具体员工已完成 Auth 绑定；不得自动建号、改密码、撤销会话或停用财务登录。管理员逐账号身份/门店/角色核对及生产读写验收仍是剩余门槛。
-- Current owner: Codex; Last Completed Work: `60affb7` 已推送 main，完整本地 pre-push 通过；Open Work For Next Agent: 取得 GitHub CI/frozen Deno 类型检查证据；获用户明确授权后部署 `operations-api`，对真实迁移账号和未迁移账号分别验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码推送不等于生产部署，生产部署及 Auth 结果必须单独回读验证。
+- Current owner: Codex; Last Completed Work: `60affb7` 已推送 main，完整本地 pre-push 与 GitHub Validate/Deno frozen check/Pages 均成功；Open Work For Next Agent: 获用户明确授权后部署 `operations-api`，对真实迁移账号和未迁移账号分别验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码推送不等于生产部署，生产部署及 Auth 结果必须单独回读验证。
 
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
