@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage({ isMobile: true, hasTouch: true });
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
-    const views = process.env.REPORT_FIT_WEBKIT ? ['monthly'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
+    const views = process.env.REPORT_FIT_WEBKIT ? ['monthly', 'salary-report'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
     for (const view of views) {
       await page.evaluate(async view => {
         await showView(view);
@@ -42,6 +42,7 @@ const server = http.createServer((req, res) => {
           const wrappers = [...document.querySelectorAll('.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll,.history-grid-wrap')]
             .filter(el => el.getClientRects().length && el.querySelector('table'));
           const embeddedAmount = document.querySelector('.monthly-daily-embedded.amount-cell');
+          const salaryTable = document.querySelector('.salary-paper-scroll .salary-paper');
           const monthlyFont = selector => {
             const cell = document.querySelector('#view-monthly .sheet-table ' + selector);
             return cell ? parseFloat(getComputedStyle(cell).fontSize) : null;
@@ -59,6 +60,9 @@ const server = http.createServer((req, res) => {
             .map(el => ({ className: el.className, width: el.clientWidth, scroll: el.scrollWidth })),
             overlaps, embeddedAmount: embeddedAmount && { value: embeddedAmount.textContent, textSizeAdjust: getComputedStyle(embeddedAmount).getPropertyValue('-webkit-text-size-adjust') || getComputedStyle(embeddedAmount).getPropertyValue('text-size-adjust') },
             monthlyFonts: { label: monthlyFont('td.sheet-head'), amount: monthlyFont('td.amount-cell:not(.monthly-daily-embedded)'), dailyHead: monthlyFont('td.monthly-daily-embedded-head') },
+            salaryFit: salaryTable && { transform: salaryTable.style.transform, zoom: salaryTable.style.zoom,
+              stageWidth: salaryTable.parentElement.clientWidth,
+              wrapperWidth: salaryTable.closest('.salary-paper-scroll').clientWidth },
             hiddenProgress: getComputedStyle(document.getElementById('daily-recognition-job')).display === 'none',
             viewport: document.querySelector('meta[name=viewport]').content };
         });
@@ -74,11 +78,22 @@ const server = http.createServer((req, res) => {
           assert.equal(await page.locator('.sheet-table').evaluate(table => table.style.zoom), '1', 'monthly text must avoid CSS zoom minimum-font inflation');
           if (width === 844) await page.screenshot({ path: '/tmp/zysyr-monthly-fit-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png', fullPage: true });
         }
+        if (view === 'salary-report') {
+          assert.match(result.salaryFit.transform, /^scale\(/, 'salary sheet should use whole-table geometric scaling');
+          assert.equal(result.salaryFit.zoom, '1', 'salary sheet must avoid WebKit minimum-font CSS zoom behavior');
+          assert(result.salaryFit.stageWidth <= result.salaryFit.wrapperWidth + 1, 'salary sheet stage must fit within its viewport');
+          if (width === 390) await page.screenshot({ path: '/tmp/zysyr-salary-fit-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png', fullPage: true });
+        }
         assert(result.hiddenProgress);
         assert(!/user-scalable=no|maximum-scale=1/.test(result.viewport), 'native pinch zoom must remain available');
         if (view === 'daily-report' && width === 844) await page.screenshot({ path: '/tmp/zysyr-report-fit-phone-landscape.png', fullPage: true });
       }
+      if (view === 'salary-report') {
+        await page.locator('.salary-paper input').first().click();
+        assert.equal(await page.locator('.salary-paper input').first().evaluate(el => document.activeElement === el), true,
+          'transformed salary inputs must remain interactive');
+      }
     }
-    console.log('Report fit (' + (process.env.REPORT_FIT_WEBKIT ? 'WebKit monthly' : 'Chromium monthly/daily/salary/petty') + '): phone, rotated phone, iPad and desktop; full amounts do not overlap; browser zoom enabled.');
+    console.log('Report fit (' + (process.env.REPORT_FIT_WEBKIT ? 'WebKit monthly/salary' : 'Chromium monthly/daily/salary/petty') + '): phone, rotated phone, iPad and desktop; full amounts do not overlap; browser zoom enabled.');
   } finally { await browser.close(); server.close(); }
 })().catch(error => { console.error(error); server.close(); process.exitCode = 1; });

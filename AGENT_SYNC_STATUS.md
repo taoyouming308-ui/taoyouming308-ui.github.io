@@ -1,15 +1,22 @@
 # Agent Sync Status
 
+## v562 工资表 Safari 窄屏适配（待发布门禁）
+
+- App version: v562。继续上线审计整改中的已知 UI 缺陷：WebKit 下原工资表 `CSS zoom` 被最小字号限制，手机竖屏表格仍溢出（复现值：wrapper 376px、scrollWidth 635px）。`operations-report-fit.js` 现对工资表改用整表几何缩放；保留 21 列/金额和原生手势放大，输入框仍可交互。不改财务公式、数据、数据库、权限、凭证或独立财务登录入口。
+- `scripts/test-operations-report-fit.js` 新增 WebKit 工资表覆盖，断言适配边界、缩放路径和输入交互；WebKit、Chromium phone portrait/landscape、iPad、desktop 以及定向重测和 `git diff --check` 已通过。截图仅为本地 synthetic preview；生产设备未验收。
+- 修改前 `git fetch github main` 与版本/release/agent-sync 检查通过；当天源码恢复归档已存在。当前未提交、未推送、未部署。发布前仍需运行完整 `npm run test:finance`、预推门禁与 CI/Pages 检查。
+- Last synchronized base checked: `578a2cee3a1cc501ba455ceeee98dba9f94cff8e` (`github/main`); Current owner: Codex; Last Completed Work: v562 工资表 WebKit overflow 本地回归修复；Open Work For Next Agent: 完整发布门禁、提交/推送、CI 与 Pages 无缓存回读；独立上线审计仍有 A02、B01、G01、共享表权限及真实账号设备验收未完成；Required Checks Before Next Publishing: 完整财务/仓库测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 本地合成测试不等于生产验收。
+
 ## 继续推进状态（2026-09-26）
 
 - 上线审计目标保持未完成 / active。本轮重跑 A02 本地回归：`test-zysyr-legacy-login-security.js` 与 `test-operations-auth-migration.js` 均通过；仅验证本地兼容登录门禁和滚动迁移，不代表生产门禁已部署或真实员工已迁移。
 - A02 仍等待生产 Auth 行为部署确认与管理员逐一确认身份/门店/角色；不自动绑定或停用账号，财务独立登录入口不变。G01 仍等待可验证的备份恢复点、获批隔离目的地/实际费用及恢复抽验授权；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
 - 2026-09-26 再次对生产历史导入行做脱敏聚合：2026-01 至 2026-06 共 3,739 条，`review_status=pending` 全部未签认，其中 2,624 条 valid、1,115 条 warning；各月 warning 数仍为 224、122、195、190、206、178。检查了签认路径：Edge API 与数据库 RPC 都要求 `expense.create_submit` 财务能力、说明理由并拒绝无效行；整月原表签认只写审核状态/审计事件，不会写正式历史账；之后的批次确认另行要求全部明细已确认。未查询金额/人员/原文，也未执行签认、正式入账或历史更改。
-- 当前没有生产写入、发布、数据库/Storage/Auth/权限/历史财务数据改动；本轮仅本地回归与状态记录。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相关门槛。
+- 本轮工资表适配是本地前端显示修复；没有生产写入、部署、数据库/Storage/Auth/权限/历史财务数据变更。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相应上线门槛。
 - 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；worker 走 `service_role`。这使得移除客户端角色权限在 worker 权限层面可隔离，但仍须先获生产权限变更确认；没有查询队列业务行、改策略或 grants。
 - 2026-09-26 最新 24 小时 `operations-api` Edge 聚合仍是 v104 175 个 POST 200（p50 1,927ms / p95 5,408ms / max 10,582ms）、6 个 POST 400、3 个 POST 403、125 个 OPTIONS；v105 只有 1 个 OPTIONS，没有业务 POST，函数日志仍只有该版本的一条 Log。当前性能结论为新版本缺代表性样本、整体旧版 POST 有较长延迟；未把延迟归因到单个 RPC/SQL 或宣称优化见效。
 - G01 复核：生产 DB `pg_database_size` 为 276,688,019 bytes；Storage 元数据汇总为 `zysyr-reports` 74 对象 / 274,875,340 bytes、`zysyr-vouchers` 349 / 1,228,759,809 bytes、公开 `showcase` 2 / 5 bytes。仅查数量与 size，没有读取对象内容。当天源码归档 `ZYSYR_2026-09-26_111333.tar.gz` 可由 `tar -tzf` 完整读取，但 LaunchAgent 仍 `not running`、runs=4、last exit=126；都不构成 DB/Storage 备份或恢复演练。
-- 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；GitHub 只读 API 确认 `main=578a2cee3a1cc501ba455ceeee98dba9f94cff8e`，随后在获准网络执行环境完成 `git fetch github main`，与本地发布基线一致。版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
+- 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；在获准网络执行环境完成 `git fetch github main`，基线为 `578a2cee3a1cc501ba455ceeee98dba9f94cff8e`。修改前版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
 
 ## P0 权限复核：共享 Supabase 中遗留的公开业务表（2026-09-26，只读，待授权整改）
 

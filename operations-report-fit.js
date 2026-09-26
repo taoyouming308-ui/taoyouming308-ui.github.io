@@ -64,6 +64,23 @@
         if (observer && !widths.has(wrapper)) { widths.set(wrapper, wrapper.clientWidth); observer.observe(wrapper); }
         return;
       }
+      if (table.classList.contains('salary-paper')) {
+        // Safari enforces a minimum rendered font size under CSS zoom. The
+        // 21-column salary sheet then remains wider than the viewport even
+        // though zoom is reduced. Scale the whole laid-out sheet geometrically
+        // so every column stays visible; native pinch zoom remains enabled.
+        var salaryStage = table.parentElement;
+        if (!salaryStage.classList.contains('report-fit-stage')) {
+          salaryStage = document.createElement('div'); salaryStage.className = 'report-fit-stage';
+          table.parentElement.insertBefore(salaryStage, table); salaryStage.appendChild(table);
+        }
+        salaryStage.style.cssText = 'position:relative;overflow:hidden;width:' + (natural * scale) + 'px;height:' + (table.offsetHeight * scale + 1) + 'px';
+        table.style.position = 'absolute'; table.style.left = '0'; table.style.top = '0';
+        table.style.transformOrigin = 'top left'; table.style.transform = 'scale(' + scale + ')';
+        wrapper.scrollLeft = 0;
+        if (observer && !widths.has(wrapper)) { widths.set(wrapper, wrapper.clientWidth); observer.observe(wrapper); }
+        return;
+      }
       table.style.zoom = String(scale);
       // Native date/select controls can increase an auto-layout table's minimum
       // width after zoom. Measure that final layout too, without clipping cells.
