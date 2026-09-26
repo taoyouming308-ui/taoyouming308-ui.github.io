@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## G01 源码归档保留顺序加固（本地回归通过，DB/Storage 灾备仍未完成）
+
+- 复现并修复源码备份脚本的清理顺序缺陷：过去先删超 30 天本地归档，再尝试云端复制；若云端目标失败，会丢失本地旧恢复点。现在先检查本地 tar，再复制至云端临时文件并逐字节 `cmp`，原子落盘后才清理过期云端/本地归档；云端失败时本地旧归档保持不动。
+- `node scripts/test-zysyr-backup-retention.js` 先在旧逻辑上按预期失败（明确证实旧归档会在云端失败时被删除），修复后通过；同时 `bash -n scripts/backup-zysyr.sh` 与 `git diff --check` 通过。测试只使用隔离临时目录和合成文件。
+- 当前 App version 仍为 v563，本次仅为备份脚本/测试/交接文档维护，不部署网页或 Supabase。未运行真实备份脚本、未访问/复制生产 DB 或 Storage 对象。G01 仍等待获批的隔离目的地与费用，以及数据库和对象真实恢复抽验；LaunchAgent/TCC 仍未改动。
+- Current owner: Codex; Last Completed Work: G01 源码归档失败保护及隔离回归；Open Work For Next Agent: A02 身份/真实账号验收、B01 历史账签认、G01 DB/Storage 隔离恢复、共享权限决策、真实设备/性能验收仍开放；Required Checks Before Publishing: 本地脚本测试、版本/发布/同步检查及仓库门禁；Handoff Rule: 源码归档和合成测试不等于生产 DB/Storage 灾备恢复。
+
 ## v563 月报整月日报可读布局（已发布）
 
 - App version: v563。将已入账日报的整月业绩从原月报 22 列表格右侧移出，放到月报区域前部独立展示：宽屏为 8 列整月表，手机窄屏为逐日卡片和月合计。原始月报表不被覆盖，仍完整保留在下方；空缺日期显示“—”，只汇总已入账的当前门店日报，日期入口保留日报追溯。
