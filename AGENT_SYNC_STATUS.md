@@ -1,10 +1,18 @@
 # Agent Sync Status
 
-## 月报表字号微调（v561，待发布）
+## 月报表字号微调（v561，已发布）
 
 - App version: v561。用户确认月报表在手机、iPad 和电脑都偏小；本批仅提高月报原始单元格、金额、整月日报栏和财务编辑输入的字号，不改表格列结构、财务数字、计算、数据库、权限或财务独立登录入口。
 - 继续用 v560 的整表 `scale` 防止 WebKit 最小字号跨格；长金额仍按单格实际宽度局部适配。Chromium/WebKit 合成浏览器回归覆盖手机竖屏、横屏、iPad 和桌面，完整金额不重叠、无横向表格滚动，新增字号回归断言。完整财务回归 73/73、版本/发布/同步检查和 App smoke 通过；生产真机仍待用户复核。
-- Last synchronized base checked: `4108847` (`github/main`); Current owner: Codex; Last Completed Work: 本地 v561 字号与专项回归；Open Work For Next Agent: 完整财务/发布门禁、GitHub CI、Pages 发布与线上无缓存回读；Required Checks Before Publishing: 财务清单、全仓 pre-push、版本/发布/同步检查；Handoff Rule: 未验证不声称完成。
+- v561 提交 `bdb0ec0` 已同步 GitHub main；GitHub Validate 与 Pages 成功，生产 `version.txt=561`，`operations.html` 无缓存回读哈希与发布提交一致。用户已确认字号调整。真实财务账户真机验收仍待财务配合。
+- Last synchronized base checked: `bdb0ec0` (`github/main`); Current owner: Codex; Last Completed Work: v561 已发布，生产版本/文件回读一致；Open Work For Next Agent: 继续上线审计整改及真实财务账号验收；Required Checks Before Editing: fetch 与版本/发布/同步门禁、工作区状态检查、当日恢复归档；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
+
+## 上线整改：A02 / B01 / G01 生产复核（2026-09-26，只读与本地归档）
+
+- Supabase 生产只读聚合复核员工 Auth 覆盖：旧 active staff 26；映射到 active V2 员工 23；approved allowlist 2；具备 active Auth account 的旧员工 1。与 9 月 25 日计数一致。不能依据聚合结果自动补绑/停用账号；仍须管理员逐一确认身份、门店、角色与迁移安排，财务独立登录入口保持不变。
+- 历史正式账本只读聚合：posted 3,739；validation valid 2,624、warning 1,115；warning 记录仍全部 pending，confirmed 0、needs_correction 0。无金额、姓名、原始行或凭证内容被查询/返回；B01 仍须财务按门店/月/类型核对原表与凭证，未更改历史账。
+- 生产迁移账本只读列表与仓库最新迁移 `20260924051925` 一致，没有发现线上迁移落后。G01 本机 LaunchAgent 仍 inactive；错误日志确认 macOS `Operation not permitted` 阻止它读取/执行 Documents 下的脚本。今日项目源码归档已创建；它不包含生产数据库/Storage 备份，也不代表灾备恢复完成。尚需获批数据库/Storage 备份目的地与 macOS 授权，并做真实隔离恢复抽验；未导出生产数据或启用 PITR。
+- 本批没有生产写入、数据库/权限/财务逻辑/代码修改；只执行聚合查询、迁移账本列表与项目源码归档。A02、B01、G01 均保持开放并等待各自所需的管理员/财务决策或环境授权。
 
 ## 凭证精确追溯与月报手机端防重叠（v560，Pages 已发布，云端回归复核中）
 
