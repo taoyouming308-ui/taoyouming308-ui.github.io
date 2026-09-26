@@ -6621,13 +6621,53 @@ async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): P
   return { url: signedPath.startsWith("http") ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`, filename, expires_in: 300 };
 }
 
+const OPERATIONS_API_LOG_OPERATIONS = new Set(`
+ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+`.trim().split(/\s+/));
+
+function safeOperationsApiLogOperation(value: unknown): string {
+  const operation = cleanText(value, 40);
+  return OPERATIONS_API_LOG_OPERATIONS.has(operation) ? operation : "unknown";
+}
+
+function operationsApiNow(): number {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
+}
+
 Deno.serve(async (request: Request) => {
+  const startedAt = operationsApiNow();
+  let operation = "unknown";
+  let status = 500;
+  try {
+    const response = await handleOperationsApiRequest(request, (value) => {
+      operation = safeOperationsApiLogOperation(value);
+    });
+    status = response.status;
+    return response;
+  } finally {
+    // Keep diagnostics to a small allow-shaped label and timing only; never log request data.
+    try {
+      console.info(JSON.stringify({
+        event: "operations_api_timing",
+        operation,
+        status,
+        duration_ms: Math.round(operationsApiNow() - startedAt),
+      }));
+    } catch { /* Diagnostics must never affect the financial API response. */ }
+  }
+});
+
+async function handleOperationsApiRequest(
+  request: Request,
+  onOperation: (operation: unknown) => void,
+): Promise<Response> {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
   if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: "service not configured" }, 503);
   let payload: JsonRecord;
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
+  onOperation(operation);
   try {
     const employeeReader = Object.prototype.hasOwnProperty.call(payload, "employee_session_token")
       ? await staffReportSession(payload, restRows, sha256) : null;
@@ -6784,4 +6824,4 @@ Deno.serve(async (request: Request) => {
       : loginRateLimited ? 429
       : (accountDisabled || sessionInvalid || permissionDenied) ? 403 : 400);
   }
-});
+}

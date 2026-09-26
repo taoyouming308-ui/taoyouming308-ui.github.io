@@ -7,6 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { stripTypeScriptTypes } = require('node:module');
 const { webcrypto } = require('node:crypto');
+const { performance } = require('node:perf_hooks');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8')
@@ -15,12 +16,13 @@ const staff = { username: 'finance.test', password_hash: 'legacy-password', role
   store: '测试门店', active: true, employment_status: 'active' };
 const rpcCalls = [];
 const paths = [];
+const timingLogs = [];
 let gateAllowed = true;
 let gateStatus = 200;
 let sessionCreatedAt = new Date(Date.now() - 29 * 86400000).toISOString();
 const sessionExpiry = '2036-01-01T00:00:00.000Z';
 const context = vm.createContext({
-  console, Request, Response, TextEncoder, crypto: webcrypto, Date,
+  console: { ...console, info: line => timingLogs.push(JSON.parse(line)) }, Request, Response, TextEncoder, crypto: webcrypto, Date, performance,
   Deno: { env: { get: key => key === 'SUPABASE_URL' ? 'https://synthetic.invalid' : 'synthetic-service-key' },
     serve: handler => { context.handler = handler; } },
   fetch: async (url, init = {}) => {
@@ -70,6 +72,14 @@ async function readLegacySession() {
 (async () => {
   let response = await post();
   assert.equal(response.status, 200, 'a valid legacy credential remains usable during the rolling migration');
+  const timing = timingLogs.at(-1);
+  assert.deepEqual(Object.keys(timing).sort(), ['duration_ms', 'event', 'operation', 'status']);
+  assert.equal(timing.event, 'operations_api_timing');
+  assert.equal(timing.operation, 'login');
+  assert.equal(timing.status, response.status);
+  assert(Number.isFinite(timing.duration_ms) && timing.duration_ms >= 0);
+  assert(!JSON.stringify(timing).includes(staff.username) && !JSON.stringify(timing).includes('legacy-password'),
+    'timing diagnostics must not expose credentials or identity');
   const success = rpcCalls.find(call => call.path === 'rpc/zysyr_record_auth_migration_result');
   assert.equal(success.args.p_event_type, 'success');
   assert.equal(success.args.p_reason_code, 'legacy_credentials_verified');

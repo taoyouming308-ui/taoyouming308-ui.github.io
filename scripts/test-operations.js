@@ -82,6 +82,18 @@ expect(html.includes('sb_publishable_') && !html.includes('SUPABASE_SERVICE_ROLE
 expect(admin.includes('href="operations.html"'), 'admin entry to operations missing');
 
 expect(edge.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")'), 'Edge Function must keep service role server-side');
+expect(edge.includes('event: "operations_api_timing"') && edge.includes('duration_ms: Math.round(operationsApiNow() - startedAt)')
+  && edge.includes('status,') && edge.includes('onOperation(operation)'), 'operation-level timing telemetry must record only the allowlisted operation, status, and elapsed time');
+expect(edge.includes('const OPERATIONS_API_LOG_OPERATIONS = new Set(')
+  && edge.includes('return OPERATIONS_API_LOG_OPERATIONS.has(operation) ? operation : "unknown";')
+  && !/console\.(?:info|log)\([^\n]*(?:payload|request\.url|headers|body)/.test(edge),
+  'operation timing labels must be allowlisted and never include request or financial data');
+const logOperationSource = edge.match(/const OPERATIONS_API_LOG_OPERATIONS = new Set\(`([\s\S]*?)`\.trim\(\)\.split/);
+const loggedOperations = new Set((logOperationSource?.[1] || '').trim().split(/\s+/));
+const operationHandler = edge.slice(edge.indexOf('async function handleOperationsApiRequest('));
+for (const [, operation] of operationHandler.matchAll(/operation\s*===\s*"([a-z0-9_]+)"/g)) {
+  expect(loggedOperations.has(operation), `recognized API operation missing from telemetry allowlist: ${operation}`);
+}
 expect(edge.includes('operations-auth') && edge.includes('requireSession'), 'Supabase Auth session validation missing');
 expect(edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_URL') && edge.includes('ZYSYR_DAILY_CODEX_BRIDGE_TOKEN')
   && edge.includes('codex_local_candidate'), 'local Codex bridge or candidate source missing');

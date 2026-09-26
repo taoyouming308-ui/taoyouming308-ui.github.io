@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 上线审计：operations-api 操作级耗时诊断（本地验证中，未发布）
+
+- Last synchronized base checked: `d0d71bce88931784a2d30ccac16a0334ae2bfaff` (`github/main`)，GitHub 远端 SHA 已核验一致；工作区修改前干净，v561 版本/发布完整性/交接同步门禁已通过，当日源码归档存在。
+- 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
+- 本批为诊断能力，不是性能修复或 P0/P1 闭环。`npm run test:finance` 全部 73/73 通过；初次 pre-push 额外暴露员工报表 VM 未提供 `performance`，现有单调时钟优先、Node VM 用 Date 兜底。报表访问集成测试（含本地隔离 PostgreSQL）、兼容登录隐私回归及 operations 静态测试均通过。当前机器未安装 Deno，因此 frozen 类型检查待 GitHub CI；当前尚未部署 Supabase，生产分操作耗时与日志成本须在部署后再评估。
+- Current owner: Codex; Last Completed Work: 本地添加 operation-level timing telemetry 与静态隐私断言；Open Work For Next Agent: 完成回归与 Deno frozen 类型检查，评估日志采样/用量，再根据真实慢路由实施单项性能修复；Required Checks Before Publishing: 先取得适用的生产部署授权，完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，部署后回读 ACTIVE 版本及线上无敏感内容的诊断事件；Handoff Rule: 未部署且未观察线上 operation 数据前，不声称性能问题已修复。
+
 ## 月报表字号微调（v561，已发布）
 
 - App version: v561。用户确认月报表在手机、iPad 和电脑都偏小；本批仅提高月报原始单元格、金额、整月日报栏和财务编辑输入的字号，不改表格列结构、财务数字、计算、数据库、权限或财务独立登录入口。
