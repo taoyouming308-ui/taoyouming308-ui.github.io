@@ -1,11 +1,11 @@
 # Agent Sync Status
 
-## v562 工资表 Safari 窄屏适配（待发布门禁）
+## v562 工资表 Safari 窄屏适配（已发布）
 
 - App version: v562。继续上线审计整改中的已知 UI 缺陷：WebKit 下原工资表 `CSS zoom` 被最小字号限制，手机竖屏表格仍溢出（复现值：wrapper 376px、scrollWidth 635px）。`operations-report-fit.js` 现对工资表改用整表几何缩放；保留 21 列/金额和原生手势放大，输入框仍可交互。不改财务公式、数据、数据库、权限、凭证或独立财务登录入口。
 - `scripts/test-operations-report-fit.js` 新增 WebKit 工资表覆盖，断言适配边界、缩放路径和输入交互；WebKit、Chromium phone portrait/landscape、iPad、desktop 以及定向重测和 `git diff --check` 已通过。截图仅为本地 synthetic preview；生产设备未验收。
-- 修改前 `git fetch github main` 与版本/release/agent-sync 检查通过；当天源码恢复归档已存在。当前未提交、未推送、未部署。发布前仍需运行完整 `npm run test:finance`、预推门禁与 CI/Pages 检查。
-- Last synchronized base checked: `578a2cee3a1cc501ba455ceeee98dba9f94cff8e` (`github/main`); Current owner: Codex; Last Completed Work: v562 工资表 WebKit overflow 本地回归修复；Open Work For Next Agent: 完整发布门禁、提交/推送、CI 与 Pages 无缓存回读；独立上线审计仍有 A02、B01、G01、共享表权限及真实账号设备验收未完成；Required Checks Before Next Publishing: 完整财务/仓库测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 本地合成测试不等于生产验收。
+- 修改前 `git fetch github main` 与版本/release/agent-sync 检查通过；当天源码恢复归档已存在。完整 `npm run test:finance` 73/73、完整预推送门禁、WebKit/Chromium报表适配及交互检查通过。提交 `635fe0596258e7308d3f7e2229e196af62f0ab3d` 已推送 GitHub main；Validate `36232501432` 和 Pages `36232501018` 均成功。线上无缓存 `version.txt=562`、`operations.html data-version=562`，`operations-report-fit.js` SHA-256 与提交文件一致。未改数据库、财务金额/公式、权限或独立财务登录入口。真实 iPhone/iPad 与财务账号体验仍待用户验收。
+- Last synchronized base checked: `635fe0596258e7308d3f7e2229e196af62f0ab3d` (`github/main`); Current owner: Codex; Last Completed Work: v562 工资表 WebKit overflow 修复已发布且线上文件/版本回读一致；Open Work For Next Agent: 独立上线审计仍有 A02、B01、G01、共享表权限及真实账号设备验收未完成；Required Checks Before Next Publishing: 完整财务/仓库测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 本地合成测试不等于真实设备/生产账号验收。
 
 ## 继续推进状态（2026-09-26）
 
