@@ -45,8 +45,6 @@ DEFAULT_LOG = os.path.join(HERMES_HOME, "logs", "care_outbound_worker.log")
 DEFAULT_LOCK = os.path.join(HERMES_HOME, "logs", "care_outbound_worker.lock")
 
 SSL_CONTEXT = ssl.create_default_context()
-SSL_CONTEXT.check_hostname = False
-SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 USER_AGENTS = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "

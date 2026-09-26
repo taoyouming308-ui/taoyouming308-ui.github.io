@@ -137,6 +137,10 @@ def make_store_config(runtime_enabled=False):
 
 
 class CareOutboundWorkerTests(unittest.TestCase):
+    def test_outbound_https_uses_system_certificate_and_hostname_validation(self):
+        self.assertTrue(worker_module.SSL_CONTEXT.check_hostname)
+        self.assertEqual(worker_module.SSL_CONTEXT.verify_mode, worker_module.ssl.CERT_REQUIRED)
+
     @mock.patch.object(worker_module.urllib.request, "urlopen")
     def test_supabase_transient_network_failure_is_retried(self, urlopen):
         response = mock.MagicMock()
