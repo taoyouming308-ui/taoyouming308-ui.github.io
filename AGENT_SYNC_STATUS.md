@@ -7,7 +7,7 @@
 - overview 并发与凭证范围、日报去重、450 单元月报读取、公式重算、现金业绩口径等定向测试及统一财务回归 73/73 通过（最终退出码 0）；项目 CI 原命令 `deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen ...` 使用 SHA-256 验证的官方 Deno 2.9.6 二进制通过。`check-agent-sync-status.js` 与 `git diff --check` 通过。
 - 已将完整 `operations-api` 包部署为生产 v108；线上回读确认 ACTIVE、`verify_jwt=false`（保留自定义 session 鉴权）、import map、时序事件与全部阶段标记均存在。一次无凭据只读 `overview` 请求返回 403 `AUTH_SESSION_INVALID`，确认匿名请求仍被拦截；未读取或修改财务业务数据。首次打包尝试因分块输出截断被 Supabase 拒绝，回读确认仍为 v107 后，改用字节分块并核验文件长度才部署成功。
 - 部署后短时日志窗口尚无授权 `overview` 请求，因此没有 `zysyr_overview_timing_v1` 真实计时样本，不能宣称性能问题已修复；后续要等真实财务用户自然打开页面，再只汇总各阶段时长。之前 24h v107 全函数 p95 4,535.8ms 为整支 API 聚合基线，不单独代表 overview。
-- 日志保持每次成功 `overview` 一条聚合事件，不逐查询/逐单元记录；隔离目录基于与 GitHub `main` 同步的 `e12ee7c`，主工作树未触碰。生产部署完成但候选改动尚未提交/推送，仍需完成 Git 变更审查与主仓库发布门禁。
+- 日志保持每次成功 `overview` 一条聚合事件，不逐查询/逐单元记录；候选基于与 GitHub `main` 同步的 `e12ee7c`，仅包含 API 时序诊断、回归和交接记录。生产 v108 已部署，完整 pre-push 通过，源码提交 `ce6f50d` 已推送至 GitHub `main`；后续仍需等待真实财务会话产生脱敏阶段计时样本，才能定位具体慢阶段并决定是否需要数据查询优化。
 
 ## 2026-09-27 · 月报字体可读性微调（App version: v564；已发布）
 
