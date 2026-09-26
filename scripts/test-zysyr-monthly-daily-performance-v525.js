@@ -16,6 +16,10 @@ assert.match(moduleSource, /\['labor_performance', '劳动业绩', '日报“总
 assert.match(moduleSource, /monthly-daily-mobile-cards/, 'small screens use readable daily cards instead of shrinking a wide table');
 assert.match(moduleSource, /monthly-daily-mobile-totals/, 'small screens retain all seven month totals');
 assert.doesNotMatch(moduleSource, /renderIntoSheet|monthly-daily-embedded/, 'daily performance no longer overwrites or shrinks original monthly sheet cells');
+assert.match(html, /#view-monthly \.sheet-table td:not\([^\n]+\{font-size:14px\}/, 'original monthly sheet labels use the increased font size');
+assert.match(html, /#view-monthly \.sheet-table td\.amount-cell\{font-size:13px\}/, 'original monthly sheet amounts use the increased font size');
+assert.match(html, /\.monthly-daily-mobile-total strong\{font-size:15px/, 'mobile monthly total amounts use the increased font size');
+assert.match(html, /\.monthly-daily-mobile-metric dd\{margin:0;font-size:15px/, 'mobile daily-card amounts use the increased font size');
 
 assert.match(api, /async function confirmedDailyPerformance/, 'server builds the monthly daily performance projection');
 assert.match(api, /status=eq\.confirmed/, 'only confirmed daily sheets are eligible');

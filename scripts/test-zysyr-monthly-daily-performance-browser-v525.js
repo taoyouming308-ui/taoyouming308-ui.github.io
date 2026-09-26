@@ -51,7 +51,7 @@ async function verifyViewport(page, viewport) {
   if (viewport.width <= 700) {
     assert.equal(metrics.tableDisplay, 'none', `${viewport.width}x${viewport.height}: narrow screens do not force a dense eight-column grid`);
     assert.equal(metrics.cardDisplay, 'grid', `${viewport.width}x${viewport.height}: daily metrics render as readable cards`);
-    assert.ok(parseFloat(metrics.amountFont) >= 13, `${viewport.width}x${viewport.height}: mobile totals stay readable`);
+    assert.ok(parseFloat(metrics.amountFont) >= 15, `${viewport.width}x${viewport.height}: mobile totals stay readable`);
   } else {
     assert.notEqual(metrics.tableDisplay, 'none', `${viewport.width}x${viewport.height}: tablet/desktop use the requested table layout`);
     assert.equal(metrics.cardDisplay, 'none', `${viewport.width}x${viewport.height}: desktop avoids duplicate daily data`);

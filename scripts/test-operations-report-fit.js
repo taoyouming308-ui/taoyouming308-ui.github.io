@@ -78,7 +78,7 @@ const server = http.createServer((req, res) => {
           const largeAmounts = result.dailyAmounts.filter(item => item.value === '141369.00').map(item => item.value);
           assert.deepEqual(largeAmounts, Array(width <= 700 ? 1 : 2).fill('141369.00'), 'visible daily and total amounts preserve every digit without truncation');
           assert.ok(result.dailyAmounts.every(item => item.textWidth <= item.cellWidth + 1), 'daily amounts must fit their visible cells');
-          assert.ok(result.dailyAmounts.every(item => item.font >= 12), 'daily amounts must retain readable source font size');
+          assert.ok(result.dailyAmounts.every(item => item.font >= 14), 'daily amounts must retain the increased readable source font size');
           if (width <= 700) {
             assert.equal(result.dailyTableDisplay, 'none', 'mobile uses cards instead of shrinking the grid');
             assert.equal(result.dailyCardDisplay, 'grid', 'mobile displays all daily records as readable cards');
@@ -86,7 +86,7 @@ const server = http.createServer((req, res) => {
             assert.notEqual(result.dailyTableDisplay, 'none', 'tablet/desktop use the monthly table');
             assert.equal(result.dailyCardDisplay, 'none', 'tablet/desktop do not duplicate the daily records');
           }
-          assert.deepEqual(result.monthlyFonts, { label: 13, amount: 12, dailyHead: null }, 'original monthly source sheet font remains unchanged');
+          assert.deepEqual(result.monthlyFonts, { label: 14, amount: 13, dailyHead: null }, 'original monthly source sheet typography stays increased');
           // Computed text-size-adjust differs across browser engines. Assert
           // actual glyph bounds above and the whole-sheet scale contract here.
           assert.equal(await page.locator('.sheet-table').evaluate(table => table.style.zoom), '1', 'monthly text must avoid CSS zoom minimum-font inflation');
