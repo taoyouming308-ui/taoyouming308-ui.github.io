@@ -1,11 +1,44 @@
 # Agent Sync Status
 
+## 继续推进状态（2026-09-26）
+
+- 上线审计目标保持未完成 / active。本轮重跑 A02 本地回归：`test-zysyr-legacy-login-security.js` 与 `test-operations-auth-migration.js` 均通过；仅验证本地兼容登录门禁和滚动迁移，不代表生产门禁已部署或真实员工已迁移。
+- A02 仍等待生产 Auth 行为部署确认与管理员逐一确认身份/门店/角色；不自动绑定或停用账号，财务独立登录入口不变。G01 仍等待可验证的备份恢复点、获批隔离目的地/实际费用及恢复抽验授权；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
+- 2026-09-26 再次对生产历史导入行做脱敏聚合：2026-01 至 2026-06 共 3,739 条，`review_status=pending` 全部未签认，其中 2,624 条 valid、1,115 条 warning；各月 warning 数仍为 224、122、195、190、206、178。检查了签认路径：Edge API 与数据库 RPC 都要求 `expense.create_submit` 财务能力、说明理由并拒绝无效行；整月原表签认只写审核状态/审计事件，不会写正式历史账；之后的批次确认另行要求全部明细已确认。未查询金额/人员/原文，也未执行签认、正式入账或历史更改。
+- 当前没有生产写入、发布、数据库/Storage/Auth/权限/历史财务数据改动；本轮仅本地回归与状态记录。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相关门槛。
+- 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；worker 走 `service_role`。这使得移除客户端角色权限在 worker 权限层面可隔离，但仍须先获生产权限变更确认；没有查询队列业务行、改策略或 grants。
+- 2026-09-26 最新 24 小时 `operations-api` Edge 聚合仍是 v104 175 个 POST 200（p50 1,927ms / p95 5,408ms / max 10,582ms）、6 个 POST 400、3 个 POST 403、125 个 OPTIONS；v105 只有 1 个 OPTIONS，没有业务 POST，函数日志仍只有该版本的一条 Log。当前性能结论为新版本缺代表性样本、整体旧版 POST 有较长延迟；未把延迟归因到单个 RPC/SQL 或宣称优化见效。
+- G01 复核：生产 DB `pg_database_size` 为 276,688,019 bytes；Storage 元数据汇总为 `zysyr-reports` 74 对象 / 274,875,340 bytes、`zysyr-vouchers` 349 / 1,228,759,809 bytes、公开 `showcase` 2 / 5 bytes。仅查数量与 size，没有读取对象内容。当天源码归档 `ZYSYR_2026-09-26_111333.tar.gz` 可由 `tar -tzf` 完整读取，但 LaunchAgent 仍 `not running`、runs=4、last exit=126；都不构成 DB/Storage 备份或恢复演练。
+- 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；GitHub 只读 API 确认 `main=578a2cee3a1cc501ba455ceeee98dba9f94cff8e`，随后在获准网络执行环境完成 `git fetch github main`，与本地发布基线一致。版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
+
+## P0 权限复核：共享 Supabase 中遗留的公开业务表（2026-09-26，只读，待授权整改）
+
+- 对 15 张非财务 public 表只查了 `information_schema`、`pg_policies` 和有效权限，没有读取业务行或执行写入。anon 与 authenticated 均获这些表的 INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER 表级授权。
+- 7 张表存在 `TO public USING (true) WITH CHECK (true) FOR ALL`：`care_products`、`care_records`、`coach_messages`、`coach_scores`、`coach_sessions`、`hair_records`、`showcase_images`。另 `hair_analysis_queue` 与 `care_outbound_queue` 允许 anon 全表 SELECT/INSERT/UPDATE；`mgj_service_records` 允许 anon/authenticated 全表 SELECT，并可对 `source='meiguanjia'` 的记录 INSERT/UPDATE。活跃 `perm-app.html` 直接用 publishable key 访问其中多张表，查询字段含顾客姓名/电话、头发记录及分析；这是可由 Data API 触达的跨用户读写边界，不是 Advisor 告警本身。
+- `content_articles/settings/titles`、`hair_analysis`、`shooting_methods` 当前 RLS 无策略，虽有表级授权，当前 RLS 会挡常规 REST 行访问；但表级 TRUNCATE 不受 RLS 保护，PostgREST 本身没有直接 SQL TRUNCATE 端点，未发现/测试可利用的公开 RPC。不能把该风险表述成已证明可由普通 HTTP 用户直接 TRUNCATE。
+- 财务 `zysyr_*` 表单独复核：anon 无表级权限；authenticated 仅有 88 张表的 SELECT，没有 INSERT/UPDATE/DELETE/TRUNCATE。日报/月报/收入/付款/历史账/凭证关键读策略调用 `zysyr_private.has_capability(company_id, store_id, ...)`，工资读取另校验 `salary.read` 或本人；函数把 `auth.uid()` 绑定到 active 账号并校验公司、门店授权。筛查未发现这些财务表 `USING/WITH CHECK true` 的策略。真实股东双门店/跨公司 token 验收仍未完成，不能仅凭 SQL 定义宣称验收通过。
+- 2026-09-26 追加只读核对 public 下 112 个 `zysyr_* SECURITY DEFINER` 函数：`anon` 可执行 0、`authenticated` 可执行 0、缺少函数级固定 `search_path` 为 0；按财务命名筛查且可被上述角色调用的 definer 函数为 0。该结论只覆盖函数权限/配置，不替代真实会话下的股东门店隔离验收。
+- 2026-09-26 本地 `npm run test:finance` 完整跑完 73/73：需本机 listener 与 OrbStack 的隔离 PostgreSQL 用例在普通沙箱首次执行时因环境权限无法启动；在批准的本机测试环境中重跑后，浏览器、Auth、财务、数据库隔离测试全部通过。仅为本地合成/隔离测试，不构成真实财务账号、生产 API、跨门店 token 或线上凭证验收。
+- 2026-09-26 另行重跑股东报表权限专项：`test-staff-report-browser-v514.js` 通过（股东月/日报显示、无财务登录闪屏、只读、无识别任务、财务会话隔离、权限撤销、横屏适配）；`test-staff-report-access-v514.js` 的 Edge 合成会话/操作白名单/门店范围拒绝全部通过，断网 PostgreSQL 17 子测也通过（ACL、管理员角色、门店 grant、离职会话撤销、原子回滚、审计记录和财务 fixture 不变）。普通沙箱首次被 loopback/Docker 权限挡住，批准的本机测试运行通过；这仍不是线上真实股东账号/双门店 token 验收。
+- 2026-09-26 继续运行 `test-zysyr-report-permissions-v512.js`：隔离 PostgreSQL 17 权限回归通过，3 张报表表保留数据/`service_role` 访问，anon/authenticated 的直接读写被阻断，4 个 RPC 不可被客户端角色直接执行；测试容器断网，仅合成数据，不访问/修改生产数据库。
+- 不能直接撤销全部 anon/authenticated grants：活跃浏览器页面仍有上述表的直接读写调用，立刻撤权会中断功能。需先获得用户确认把客户/员工数据权限整改纳入本轮，再将调用迁到经过认证及门店范围校验的 API、补兼容回归，最后单独批准生产 RLS/GRANT 切换；当前未做任何权限变更。
+- 2026-09-26 静态扫描当前 `perm-app.html` 的 `/rest/v1/...` URL，直接涉及 8 张表：`hair_records`、`care_records`、`hair_analysis_queue`、`care_outbound_queue`、`mgj_service_records`、`showcase_images`、`perm_data`、`staff`。其中前 6 张包含顾客/发质/服务记录或展示图工作流；若要纳入整改，需要逐类替换其浏览器读写调用并为页面保持既有行为，不能仅移除 grants。此项仅为静态调用清单，不据此假设各表所有路径都由 anon 权限成功放行。
+- 2026-09-26 继续检查调用点：`perm-app.html` 对上述 8 张表有 42 处 `/rest/v1/` 引用；这些调用使用公开 publishable `apikey`，没有随请求携带员工身份 bearer token。现有 `employee-bookings-api` 通过哈希后的 `employee_booking_sessions` token 校验员工 active 状态和当前门店，但仅支持预约、客户资料/历史；`staff-access-api` 的会话限定 admin/store_admin 并服务员工管理，不能直接复用为全员敏感数据代理。若要收紧，需先设计按业务角色/门店过滤的专用操作，再分模块迁移并回归，最后单独批准生产策略/GRANT 切换；未执行任何生产写操作。
+- 2026-09-26 继续只读梳理实现边界：`employee-bookings-api` 的会话解析会重新读取当前 `staff` 状态并校验当前门店，现有可用操作仅为 `session`、`today_bookings`、`customer_profiles`、`customer_history`；它没有发质档案、护理记录、分析队列或美管加服务记录代理。不能只把浏览器 URL 改成该 API 就认为风险关闭。已有元数据显示 `hair_records` 缺独立门店列，不能安全地按当前登录门店过滤历史档案；应先逐模块确定可信门店关联和完整 CRUD 业务路径，再实现/测试专用代理，最后单独批准生产 grants/RLS 收紧。此轮仅检查源码与既有列级元数据，没有改代码或生产状态。
+- 2026-09-26 只读重查上述表的生产 RLS/GRANT 元数据：`hair_records`、`care_records`、`showcase_images` 对 `public` 有 `ALL USING true WITH CHECK true`；`hair_analysis_queue`、`care_outbound_queue` 对 `anon` 的 SELECT/INSERT/UPDATE policy 条件为 true；`mgj_service_records` 对 anon/authenticated 可全表 SELECT，且可对 `source='meiguanjia'` 写入/更新；`perm_data` 仅公开 SELECT；`staff` 虽有 SELECT policy，但 anon/authenticated 当前无表级权限。多个表同时授予 anon/authenticated 多项表级 DML 与 TRUNCATE 权限。此为权限与策略元数据检查，未查询业务行；不要把 TRUNCATE 表级授权误说成已验证存在普通 REST 调用路径。
+- 2026-09-26 只读检查数据模型列：`hair_records` 没有专用门店列，仅有 barber/technician 和 `record_data` JSON；`care_records`、`hair_analysis_queue`、`mgj_service_records` 则有 `shop_name`。因此先迁移有明确门店列的门店队列/护理/美管加读写相对可控；发质档案需先确认历史行门店归属能否由可信数据确定，不能按当前员工门店或前端传值臆测，更不能给旧档案错分店。
+- 生产 Supabase Advisor 于 2026-09-26 06:27Z 刷新：security 仍为 42 条 `rls_enabled_no_policy` INFO 和 1 条 leaked-password protection disabled WARN；performance 仍有 135 条 unindexed-FK INFO、4 条 multiple-permissive-policy WARN，以及 unused-index/Auth-connection INFO。结果覆盖共享项目全部业务模块，不能将汇总告警全归属财务 App，也没有据告警批量改权限、Auth 或索引。
+- Auth 警告只读复核了 Supabase 当前官方[密码安全文档](https://supabase.com/docs/guides/auth/password-security)：泄露密码保护通过 Auth 设置启用，Pro 及以上计划可用；文档说明更新密码要求可能使不符合强度规则的既有账号在登录时出现 `WeakPasswordError`。这与“仅阻止新设/改密”不同，故在真实财务账号及现行长度/复杂度设置未核验前，不直接切生产开关；现有 MCP 不提供读取/更新该 Auth 设置的专用接口，本轮未改生产 Auth 配置。
+
 ## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
 
 - Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；本组织当前为 Pro，项目 `ACTIVE_HEALTHY`、Postgres 17，但本工具未读到项目实际备份列表，故尚未确认今天可用的恢复点。PITR 是否启用与 Storage 外部副本仍未知。数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库生产恢复会让原项目不可访问，不能拿生产 restore 当演练。
+- 2026-09-26 重新核实官方备份文档：可通过 Management API `GET /v1/projects/{ref}/database/backups` 列出恢复点，但当前可用 Supabase MCP 没有备份列表方法，shell 环境没有 `SUPABASE_ACCESS_TOKEN`；只读 Dashboard 浏览器初始化两次超时。本轮仍无法核实实时备份列表/PITR 状态，没有尝试恢复或导出。
 - 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
+- 2026-09-26 只读容量估算（仅 `storage.objects` 元数据 size 聚合，未读对象内容）：`zysyr-reports` 74 个对象 / 274,875,340 bytes，`zysyr-vouchers` 349 个 / 1,228,759,809 bytes，`showcase` 2 个 / 5 bytes；数据库 `pg_database_size` 为 276,679,827 bytes（约 264 MiB）。Storage 对象合计约 1.40 GiB，连同数据库约 1.66 GiB 原始数据；恢复空间还需覆盖临时文件、索引/数据库恢复开销及版本/桶配置，不能据原始大小直接当作磁盘下限。该清单可用于备份容量规划，不等于已经备份或完成恢复。
 - 权限边界复核：关键财务 3 表对 `anon` 和 `authenticated` 的表级 SELECT/INSERT/UPDATE/DELETE 均无权限，`service_role` 仍有服务访问；`storage.objects` 表级 CRUD grants 对 anon/authenticated 仍存在，但 RLS 已启用、无策略，使用 `SET ROLE anon` 的只读查询返回 0 个对象。该结果证明当前匿名读被 RLS 拦截，不代表表级授权已被撤销；未做 Storage 写探针或修改 grants/policy。
-- 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。
+- 2026-09-26 当前 Supabase 账号下只列出生产项目 `pdssrmpeiuwvxzsgschm`，`list_branches` 返回空；本地 `scripts/backup-zysyr.sh` 仅打包源码并排除 `.git`、`node_modules`、`backup.env` 等，不包含数据库 dump、Storage 对象复制或 restore 命令，不能充当 DB/Storage 灾备。创建隔离 Supabase 项目的当前成本查询为每月 USD 10；等待用户确认费用后才可创建，未创建任何资源。
+- 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。2026-09-26 再读 `launchctl print gui/501/com.zysyr.daily-backup` 仍为 `state=not running`、last exit code 126；未尝试加载或修改 LaunchAgent/TCC。
 
 ## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
 
@@ -18,6 +51,8 @@
 ## A02 旧兼容登录收口第一步（代码已推送 main，生产未部署）
 
 - `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
+- 2026-09-26 生产源码回读确认 `operations-api` v105 ACTIVE 仍不含 `legacyStaffHasManagedV2Account` / `supabase_auth_required` 门禁；`operations-auth-migrate` v6、`operations-auth` v6 ACTIVE。最新匿名化聚合为 26 名旧在职员工、23 名有 V2 员工映射，其中 22 名尚无用户账号、1 名已有 active 账号；有效 approved allowlist 2 个。近 24 小时迁移事件为 12 次 started、6 次 direct Auth 成功、6 次凭据错误。没有查看账号身份、姓名、哈希或业务凭证。
+- 本轮本地重新运行 `node scripts/test-zysyr-legacy-login-security.js` 与 `node scripts/test-operations-auth-migration.js` 均通过；生产门禁仍未部署。它只应阻止已绑定 V2 账号继续签发旧会话，并要求该员工沿用现有财务登录入口完成 Auth；不得据聚合数批量建号、停用账号或改变登录端口。
 - 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
 - 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub Validate run `36218103714` 成功，Deno frozen `operations-api` 类型检查成功，Pages run `36218103325` 成功。真实财务账号验收未完成。
 - 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入上线风险说明与真实验收。未部署到生产；部署 `operations-api` 前需用户对本批生产 Auth 行为作具体确认。
@@ -27,7 +62,16 @@
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
 - 2026-09-26 最新 24 小时生产日志聚合：`operations_api_timing` 仅 1 条，`operation=unknown`、HTTP 200、1ms；它不是具体业务路由样本，性能结论仍待真实财务使用流量。
+- 2026-09-25 07:34:47Z 至 2026-09-26 07:34:47Z 重新查生产 `function_logs`，在线 v105 仍仅有上述 1 条 `operations_api_timing`：OPTIONS 预检、operation unknown、200、1ms；该窗口没有可用的真实 POST/财务操作样本。计时日志管线有运行证据，业务端到端性能和是否改善仍不可判断。
+- 按函数版本重新切分同一窗口：v104 有 OPTIONS 125、POST 200 共 175、POST 400 共 6、POST 403 共 3；v105 仅 OPTIONS 1、无 POST。所有 11 个 ≥5 秒的 POST 200 和最长 10,582ms 样本都来自 v104。v105 的 `operations_api_timing` 结构化日志也仍只有 1 条，无法形成业务操作分布；不能把旧版慢请求归因于 v105，也不能据没有新样本声称性能已改善。
+- 2026-09-25 07:53:51 至 2026-09-26 07:53:51 UTC 再次只读刷新近 24 小时 Edge 网关统计：`operations-api` 共 310 次，v104 OPTIONS 125、POST 200 175（p50 1,927ms / p95 5,408ms / max 10,582ms）、POST 400 6、POST 403 3；v105 仅 OPTIONS 1（1,540ms），没有业务 POST。v104 的 175 个成功 POST 中仍有 11 个达到或超过 5 秒；这是函数总耗时，不是单个 SQL 或前端端到端时间。v105 尚无可用业务延迟样本，不能声称性能改善或把旧版慢请求归因于新版本。
+- 2026-09-26 当前生产 `pg_stat_statements_info.stats_reset=2026-06-09 23:21:03Z`。自重置以来财务 RPC 累计：日报确认 `zysyr_confirm_daily_sheet` 41 次，均值 1,486.68ms、最大 4,048.65ms；保存日报格子 75 次，均值 828.44ms、最大 1,824.97ms；应用识别候选 299 次，均值 799.73ms、最大 1,731.84ms；创建日报草稿 315 次，均值 274.15ms、最大 4,133.75ms。它们是跨三月累计的数据库语句数据，不代表当前版本或单次用户端到端延迟。统计中最慢的 2.53s 查询实际是 Supabase 元数据/表结构 introspection，不是财务交易。
+- 再查生产 `current_setting('track_functions')` 返回 `none`，因此没有 `pg_stat_user_functions` 子函数耗时可用于拆解日报确认内部阶段；未修改数据库参数。当前数据库证据不足以定位可安全优化的具体子查询，避免仅凭 1.49s 整体均值重写入账事务。
+- 2026-09-25 07:16 至 2026-09-26 07:15 UTC Postgres 日志安全聚合另见 195 个 PostgREST `authenticator` BIND / SQLSTATE `42501` 权限拒绝，另有 4 个 `mgmt-api` SELECT 错误。聚合日志没有可用的请求路径/财务操作标签；这些是拒绝结果，不能据此认定为数据泄露、财务用户错误或授权问题，也不据此改变 grants/RLS。PostgREST 聚合字段未提供可关联具体财务 API 的请求耗时，性能瓶颈仍未定位。
+- 复核本地日志钩子：`handleOperationsApiRequest` 在 OPTIONS 分支立即返回；业务 `operation` 只在 POST JSON 解析后提取并传给日志回调。因此唯一 v105 事件显示 `unknown` 符合预检路径，不表示操作名解析故障。当前没有足够 v105 业务请求样本来定位或验证性能修复。
 - 2026-09-26 最新 Advisor：Security 为 42 条 RLS-no-policy INFO、Auth leaked-password protection disabled WARN；Performance 为 135 条未索引 FK INFO、4 条重复 permissive policy WARN 和 Auth 固定连接数 INFO。范围包含非财务表；没有基于 Advisor 批量建索引、改 Auth 或改 RLS。
+- 06:01Z Advisor 的 4 条重复策略已只读核实：`perm_data` 的两条 `SELECT USING (true)` 与匿名/登录用户可读授权是配方查询的既有公开契约（字段为烫发配方/步骤，不含员工或财务记录）；不得为清告警撤销。`staff` 的两条 `SELECT USING (true)` 策略虽然冗余，但生产 `has_table_privilege` 对 anon/authenticated 均为 false，当前不能经 PostgREST 直接读取；未删策略或授予权限。另有 42 张启用 RLS 无策略的表，需与实际 grants 分开核验，Advisor INFO 本身不等于公开可读。
+- 同一日志窗口重新按 HTTP 方法/状态读取，发现慢请求主要在 POST 200；不能仅凭网关总耗时把根因归于数据库，也未尝试生产压测或执行会改财务数据的 API。
 
 - Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
 - 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
@@ -39,7 +83,8 @@
 
 - G01：当前 `com.zysyr.daily-backup` LaunchAgent 已指向本项目，但 `launchctl print gui/501/com.zysyr.daily-backup` 显示 `state=not running`、累计 runs=4、last exit code=126；错误日志最近仍为 macOS `Operation not permitted`。本机 2026-09-26 11:13 的源码 tar.gz 归档可完整列出，备份目录有 8 份近 30 天归档，且归档未包含 `backup.env`、`.git`、`node_modules`、`supabase/.temp`；这仅证明源码归档可读，不是生产 DB/Storage 备份或恢复演练。未改 LaunchAgent/TCC 权限，未导出生产数据；灾备目的地和隔离恢复仍待授权。
 - A02：生产匿名化聚合复核仍为 active legacy staff 26、approved allowlist 2、映射员工中具备 active V2 account 1（不要与 active V2 employee 档案映射数混为一谈）。近 24 小时 Auth 安全事件只有聚合计数：12 attempts、6 次 `invalid_credentials`、6 次 `direct_auth_login` 成功；没有读取用户标识或哈希，不能据此判断具体人员已迁移或授权停用旧登录。
-- A02 当前仍未达到关闭条件：旧 active staff 26 中，23 映射至 active V2 employee、2 个有效迁移白名单、1 个已关联 active V2 Auth account；过去 24 小时 Auth 事件 6 次 `direct_auth_login` 成功、6 次 `invalid_credentials`。未读身份标识/哈希。生产 `operations-api` 仍为 v105，包含本次提交的新旧登录过渡门禁未部署；真实逐账号身份、角色/门店与登录验收未完成。
+- 2026-09-26 再次只读回查确认员工迁移覆盖为 26 个 active 旧员工、23 个映射 active V2 员工（其中 22 个还没有 V2 account、1 个 account 为 active）、2 个有效审批白名单；迁移事件共 12 次 started、6 次失败、6 次 direct Auth 成功。生产源码回读确认 `operations-api` v105 ACTIVE 未包含 commit `60affb7` 的兼容登录门禁；定向本地测试通过。仍无身份级动作依据。
+- A02 当前仍未达到关闭条件：生产 `operations-api` v105 未部署旧兼容登录门禁；真实逐账号身份、角色/门店和 Auth 登录验收未完成。上述匿名化计数不授权自动绑定/停用账号；部署该门禁会改变已绑定员工的旧登录结果，需针对这一生产 Auth 行为取得确认，财务独立登录入口/URL 保持不变。
 - 性能：部署 v105 后最近 24 小时仅观测到 1 条 `operations_api_timing`，为 HTTP OPTIONS 预检；尚无真实 operation 分布。数据库 `pg_stat_statements` 自 2026-06-09 重置以来累计数据中，日报确认 RPC 平均/最大约 1.49/4.05 秒（41 次），保存单元格 0.83/1.82 秒（75 次），识别候选应用 0.80/1.73 秒（299 次），创建草稿 0.27/4.13 秒（315 次）。累计值不代表最近 24 小时或用户侧端到端延迟，只用于后续选取排查候选，不据此改索引/公式。
 - Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
 - 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
@@ -65,6 +110,8 @@
 - App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。
 - WebKit 移动环境实测 CSS zoom 会把小字放大越过固定列；月报改为布局后整表 scale，并只对超宽金额按实际宽度适配，撤销裁切/固定手机小字方案。保持完整小数和原数值、原位置、原宽度适配及原生手势缩放；不改其他报表缩放方式。
 - 已通过凭证单测、operations、真实响应形状的凭证浏览器（1280×900、390×844、844×390）、备用金精确原图重开、Chromium 适配和定向重测；额外 WebKit 月报测试覆盖横竖屏/旋转，生产财务账户仍未接入。另发现 WebKit 工资表现有缩放溢出（不属本次两项修复，保留待办，不扩改）。未改数据库、权限、历史财务数据、公式或财务独立登录入口。
+- 2026-09-26 对生产 2026-01 正式历史行只做聚合元数据核验：53 条 `page_confirmed` 关联、涉及 4 份 DOCX；关联定位均符合 `word/media/<文件名>` 格式，4 个底层 Storage 对象都存在，未发现缺对象或 0 嵌入图片数。该检查没有读取文件内容，不能证明 DOCX 内每个精确 locator 可解析，也不能替代真实财务账号点击打开；本轮未重新关联、补传或修改历史行。下一步需在授权的财务会话中复现，核对页面请求的图片名与 API 返回的 `image_manifest`，再决定是否需要小范围代码修复。
+- 2026-09-26 只读回读生产 `operations-api` 为 v105 ACTIVE，在线源码包含历史凭证页读取的 `image_manifest` 与请求页存在性校验；本地合成凭证预览单测、历史导入解析测试、1280×900 / 390×844 / 844×390 凭证浏览器回归均通过。线上对象元数据与代码路径均有证据，但由于没有真实财务会话，尚未复现“人工确认后无法读取”，不能据此判定线上交互已修好。
 - 完整财务回归 73/73、WebKit 月报专项、版本/发布/同步检查、smoke 与 diff check 已通过。测试数据均为本地合成数据；隔离数据库测试使用无网络临时 PostgreSQL 容器。
 - 提交 `ab40039` 已通过完整 pre-push 并推送 main；Pages `36126025448` 成功，无缓存回读 8 个版本/页面/修复脚本与提交哈希一致。首次推送缺 Python cryptography 后在临时 venv 安装 CI 指定 48.0.0，47 项同步测试通过；未改系统 Python。Validate `36126026134` 的财务第 57 项定向测量测试在 100ms 内未等到 RAF，前 56 项通过；本次仅将该测试等待改为真实测量事件加两帧排空，仍保留精确次数及不重测无关表格的断言，不改 App 代码。
 - Last synchronized base checked: `ab40039` (`github/main`); Current owner: Codex; Last Completed Work: v560 Pages 已发布且线上文件一致；Open Work For Next Agent: 复核修正等待方式后的 GitHub CI；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
