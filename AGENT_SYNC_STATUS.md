@@ -1,11 +1,12 @@
 # Agent Sync Status
 
-## 上线审计：operations-api 操作级耗时诊断（本地验证中，未发布）
+## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
-- Last synchronized base checked: `d0d71bce88931784a2d30ccac16a0334ae2bfaff` (`github/main`)，GitHub 远端 SHA 已核验一致；工作区修改前干净，v561 版本/发布完整性/交接同步门禁已通过，当日源码归档存在。
+- Last synchronized base checked: `ead651cea614a29cc51da742c14733332f603293` (`github/main`)，推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
 - 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
-- 本批为诊断能力，不是性能修复或 P0/P1 闭环。`npm run test:finance` 全部 73/73 通过；初次 pre-push 额外暴露员工报表 VM 未提供 `performance`，现有单调时钟优先、Node VM 用 Date 兜底。报表访问集成测试（含本地隔离 PostgreSQL）、兼容登录隐私回归及 operations 静态测试均通过。当前机器未安装 Deno，因此 frozen 类型检查待 GitHub CI；当前尚未部署 Supabase，生产分操作耗时与日志成本须在部署后再评估。
-- Current owner: Codex; Last Completed Work: 本地添加 operation-level timing telemetry 与静态隐私断言；Open Work For Next Agent: 完成回归与 Deno frozen 类型检查，评估日志采样/用量，再根据真实慢路由实施单项性能修复；Required Checks Before Publishing: 先取得适用的生产部署授权，完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，部署后回读 ACTIVE 版本及线上无敏感内容的诊断事件；Handoff Rule: 未部署且未观察线上 operation 数据前，不声称性能问题已修复。
+- GitHub main commit `ead651c` 已将完整 operations-api bundle 部署到生产 v105 ACTIVE；回读确认 `verify_jwt=false` 保持原值，在线源码包含 allowlist 与计时事件。无凭证 OPTIONS 探测返回 200；生产日志回读事件 `operations_api_timing` / `operation=unknown` / `status=200` / `duration_ms=1`，仅是预检请求，不含业务数据。
+- 本批是诊断能力，不是性能修复或 P0/P1 闭环。待收集至少 24 小时真实按 operation 分布的耗时与日志量，确认具体瓶颈后再按路由逐项修复；不要据单次 OPTIONS 耗时推断业务 API 性能，也不要过度采样扩大日志成本。
+- Current owner: Codex; Last Completed Work: operations-api v105 生产部署、版本/鉴权配置/结构化预检日志已回读核验；Open Work For Next Agent: 观察 operation 粒度生产请求的 p50/p95 与日志量，按证据修复慢路由；并继续 A02 Auth、G01 备份恢复、B01 历史签认及其余上线验收；Required Checks Before Next Publishing: 完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，按范围部署后回读 ACTIVE 版本、鉴权标志和所需运行证据；Handoff Rule: 未观察到有代表性的真实 operation 数据前，不声称性能问题已修复。
 
 ## 月报表字号微调（v561，已发布）
 
