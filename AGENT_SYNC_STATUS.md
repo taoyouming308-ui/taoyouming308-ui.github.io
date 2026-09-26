@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-09-27 · 历史凭证多定位回退修复（App version: v565，待发布）
+
+- 根据凭证追溯实现确认：服务端追加式保存人工确认的页码关系；前端此前只请求最早页码。若该位置在当前 DOCX 包中不存在，读取立即失败，即使后续已补充正确位置也看不到凭证。
+- 前端现在仅在收到精确的“请求的原图页不属于当前凭证包”错误时，继续尝试同一凭证其他人工确认页码；不会按金额/文件名猜测。原图成功显示时，仍对失效旧位置提示关联未完全核实。没有改写/删除数据库关系或财务数据。
+- 凭证预览单测通过；浏览器回归在桌面 1280×900、手机 390×844、横屏 844×390 通过，含旧无效 locator 后接正确 locator 的合成场景。统一财务测试 73/73、完整仓库 pre-push（含 47 项 Meiguanjia 同步测试）通过；使用仓库自带 Python 运行时补齐 cryptography 依赖。未验证生产用户实际那笔凭证，也尚未发布 v565。
+- 已从 GitHub main `ffc38ba` 同步，版本/发布/交接静态门禁通过；源码恢复包已生成于本 worktree 的 `backups/daily/`。本次只涉及前端读取与测试，没有生产 API/数据库部署。
+- Current owner: Codex; Last Completed Work: 本地修复和三种视口浏览器回归；Open Work For Next Agent: 完成财务及全仓门禁、发布 v565 并无缓存核验，然后由财务用户复测实际凭证；其他 A02/B01/G01/Auth/设备验收/性能遗留仍开放；Required Checks Before Editing: `git fetch github main`、版本/release/agent-sync 检查和每日备份；Required Checks Before Publishing: 完整财务测试、pre-push、GitHub Actions、Pages 无缓存回读；Handoff Rule: 合成凭证包通过不等于生产历史关联已修复，所有其他上线审计门槛继续 active。
+
 ## 2026-09-27 · overview阶段计时诊断（operations-api v108 已部署）
 
 - 为解释生产 `overview` 请求约 4.6 秒的延迟，在 `overview` 的各个读取批次记录单次阶段耗时；只输出一个 JSON 日志事件，包含总耗时与固定阶段名，不记录公司/门店/月/账号/报表 ID/金额/凭证信息，也不改变返回数据或计算口径。

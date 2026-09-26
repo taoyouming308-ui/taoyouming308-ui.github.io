@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="564">
+<html lang="zh-CN" data-version="565">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -131,9 +131,9 @@
   .monthly-daily-mobile-totals,.monthly-daily-mobile-cards{display:none}
   @media(max-width:700px){.monthly-daily-performance{padding:10px}.monthly-daily-completeness-text{font-size:14px}.monthly-daily-table-wrap{display:none}.monthly-daily-mobile-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:10px}.monthly-daily-mobile-total{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:9px;border:1px solid #dedbd2;border-radius:8px;background:#f8f7f3;font-size:14px}.monthly-daily-mobile-total strong{font-size:15px;font-variant-numeric:tabular-nums}.monthly-daily-mobile-cards{display:grid;grid-template-columns:1fr;gap:8px}.monthly-daily-mobile-card{padding:10px;border:1px solid #dedbd2;border-radius:9px;background:#fff}.monthly-daily-mobile-card.is-missing{background:#faf9f6;color:#888}.monthly-daily-mobile-card h3{margin:0 0 8px;font-size:15px}.monthly-daily-mobile-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0}.monthly-daily-mobile-metric{display:flex;justify-content:space-between;gap:5px;padding:6px 7px;background:#f7f6f1;border-radius:6px;font-size:14px}.monthly-daily-mobile-metric dt{color:var(--muted)}.monthly-daily-mobile-metric dd{margin:0;font-size:15px;font-weight:750;font-variant-numeric:tabular-nums}}
 </style>
-<script src="operations-time.js?v=564"></script>
-<script src="operations-staff-view.js?v=564"></script>
-<script src="operations-monthly-daily-performance.js?v=564"></script>
+<script src="operations-time.js?v=565"></script>
+<script src="operations-staff-view.js?v=565"></script>
+<script src="operations-monthly-daily-performance.js?v=565"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -405,10 +405,10 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=564"></script>
-  <script src="operations-auth-bridge.js?v=564"></script>
-  <script src="operations-voucher-preview.js?v=564"></script>
-  <script src="operations-voucher-view.js?v=564"></script>
+  <script src="operations-report-fit.js?v=565"></script>
+  <script src="operations-auth-bridge.js?v=565"></script>
+  <script src="operations-voucher-preview.js?v=565"></script>
+  <script src="operations-voucher-view.js?v=565"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -571,7 +571,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=564';
+      script.src='operations-petty-cash-evidence.js?v=565';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -648,11 +648,19 @@
   function voucherContextCurrent(context){var now=voucherContext();return!$('view-cell-trace').classList.contains('hidden')&&now.store===context.store&&now.month===context.month&&now.report_id===context.report_id}
   function collectMonthlyVoucherTrace(address,context){return isLocalPreview()?Promise.resolve(previewTraceData(address)):api('cell_trace',Object.assign({},context,{cell_address:address}))}
   function collectMonthlyVoucherTraceBatch(addresses,context){if(isLocalPreview())return Promise.resolve(addresses.reduce(function(result,address){result[address]={trace:previewTraceData(address)};return result},{}));return api('cell_trace_batch',Object.assign({},context,{cell_addresses:addresses})).then(function(data){return(data.results||[]).reduce(function(result,item){result[item.cell_address]=item;return result},{})})}
-  function exactHistoryImageFilename(file){return window.ZysyrVoucherPreview.exactImageFilenames(file)[0]||null}
+  async function loadHistoricalEvidenceImages(file,context,imageFilename){
+    var candidates=imageFilename?[imageFilename]:window.ZysyrVoucherPreview.exactImageFilenames(file),lastError;
+    if(!candidates.length)candidates=[undefined];
+    for(var index=0;index<candidates.length;index++){
+      try{return Object.assign({},file,await api('history_evidence_images',{store:context.store,evidence_id:file.id,image_filename:candidates[index]}))}
+      catch(error){lastError=error;if(imageFilename||!String(error&&error.message||'').includes('请求的原图页不属于当前凭证包')||index===candidates.length-1)throw error}
+    }
+    throw lastError||new Error('历史凭证原图暂时无法读取')
+  }
   var monthlyVoucherView=createZysyrVoucherView({escape:esc,amount:formatAmount,isCurrent:voucherContextCurrent,trace:collectMonthlyVoucherTrace,traceBatch:collectMonthlyVoucherTraceBatch,reopen:openCellTrace,load:function(file,context,historical,imageFilename){
     if(isLocalPreview())return Promise.resolve(Object.assign({},file,{preview_error:'本地示例不包含真实财务凭证，请在登录后查看原件'}));
     if(!historical||file.evidence_source==='voucher_attachment')return api('voucher_url',{store:context.store,voucher_id:file.id}).then(function(result){return Object.assign({},file,{file_url:result.url,filename:result.filename})});
-    return api('history_evidence_images',{store:context.store,evidence_id:file.id,image_filename:imageFilename||exactHistoryImageFilename(file)||undefined}).then(function(result){return Object.assign({},file,result)});
+    return loadHistoricalEvidenceImages(file,context,imageFilename);
   },linkHistoryPage:async function(payload){if(isLocalPreview())throw new Error('本地预览不关联历史凭证');await api('history_ledger_evidence_page_link',payload);toast('已记录人工原图关联；正式账金额未修改')}});
   async function openCellTrace(address){
     var report=state.data.monthly_report;if(!report)return;
@@ -1183,8 +1191,8 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=564"></script>
-  <script src="operations-monthly-workbench.js?v=564"></script>
-  <script src="operations-daily-recognition.js?v=564"></script>
+  <script src="operations-daily-review.js?v=565"></script>
+  <script src="operations-monthly-workbench.js?v=565"></script>
+  <script src="operations-daily-recognition.js?v=565"></script>
 </body>
 </html>

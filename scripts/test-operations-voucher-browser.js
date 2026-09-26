@@ -76,7 +76,7 @@ async function run() {
             if (file.trace_link_level === 'page_confirmed') {
               if (cellAddress !== 'C5' && window.fixtureLocator) file.trace_source_locator = window.fixtureLocator;
               // Production always sends BOTH fields, including single-page links.
-              file.trace_source_locators = [file.trace_source_locator];
+              file.trace_source_locators = window.fixtureLocatorCandidates || [file.trace_source_locator];
             }
           }
           return trace;
@@ -86,7 +86,7 @@ async function run() {
         if (operation === 'history_evidence_images') {
           const imageNames = window.fixtureMulti ? ['image1.png', 'image2.png', 'image3.png'] : ['image1.png', 'image2.png'];
           const imageIndex = payload.image_filename ? imageNames.indexOf(payload.image_filename) : 0;
-          if (imageIndex < 0) throw Error('所选图片不属于此凭证包');
+          if (imageIndex < 0) throw Error('请求的原图页不属于当前凭证包');
           return { filename: '模拟凭证包.docx', image_manifest: imageNames, image_index: imageIndex,
             images: [{ filename: imageNames[imageIndex], data_url: image }] };
         }
@@ -164,6 +164,18 @@ async function run() {
     assert.equal(await page.locator('.voucher-file-preview [data-step="1"]').first().isDisabled(), true, 'an exact amount link cannot browse the rest of the Word bundle');
     assert.equal(await page.locator('.voucher-file-preview [data-link-history-page]').count(), 0, 'a page already confirmed for this amount must not offer re-linking');
     assert.doesNotMatch(await page.locator('.voucher-file-preview').first().innerText(), /本月整包凭证/, 'a bundle-only sibling must not downgrade the confirmed exact page');
+    const fallbackStart = await page.evaluate(() => {
+      window.fixtureLocatorCandidates = ['image999.png', 'image2.png'];
+      const count = window.fixtureCalls.filter(call => call.operation === 'history_evidence_images').length;
+      openCellTrace('C4');
+      return count;
+    });
+    await page.locator('.voucher-file-preview img').first().waitFor();
+    await page.waitForFunction(start => document.querySelector('.voucher-file-preview img') && window.fixtureCalls.filter(call => call.operation === 'history_evidence_images').length >= start + 2, fallbackStart);
+    const fallbackCalls = await page.evaluate(start => window.fixtureCalls.filter(call => call.operation === 'history_evidence_images').slice(start).map(call => call.image_filename), fallbackStart);
+    assert.deepEqual(fallbackCalls, ['image999.png', 'image2.png'], 'a stale older locator must fall through to a later manually confirmed page');
+    assert.match(await page.locator('.voucher-file-preview').first().innerText(), /已登记的原图位置无法全部找到/, 'the valid image is shown while the stale relation remains transparently flagged');
+    await page.evaluate(() => { window.fixtureLocatorCandidates = null; });
     assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
     assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');
