@@ -2,11 +2,20 @@
 
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
-- Last synchronized base checked: `ead651cea614a29cc51da742c14733332f603293` (`github/main`)，推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
+- Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
 - 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
 - GitHub main commit `ead651c` 已将完整 operations-api bundle 部署到生产 v105 ACTIVE；回读确认 `verify_jwt=false` 保持原值，在线源码包含 allowlist 与计时事件。无凭证 OPTIONS 探测返回 200；生产日志回读事件 `operations_api_timing` / `operation=unknown` / `status=200` / `duration_ms=1`，仅是预检请求，不含业务数据。
 - 本批是诊断能力，不是性能修复或 P0/P1 闭环。待收集至少 24 小时真实按 operation 分布的耗时与日志量，确认具体瓶颈后再按路由逐项修复；不要据单次 OPTIONS 耗时推断业务 API 性能，也不要过度采样扩大日志成本。
-- Current owner: Codex; Last Completed Work: operations-api v105 生产部署、版本/鉴权配置/结构化预检日志已回读核验；Open Work For Next Agent: 观察 operation 粒度生产请求的 p50/p95 与日志量，按证据修复慢路由；并继续 A02 Auth、G01 备份恢复、B01 历史签认及其余上线验收；Required Checks Before Next Publishing: 完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，按范围部署后回读 ACTIVE 版本、鉴权标志和所需运行证据；Handoff Rule: 未观察到有代表性的真实 operation 数据前，不声称性能问题已修复。
+- Current owner: Codex; Last Completed Work: operations-api v105 生产部署已核验；2026-09-26 补充复核了 Auth 聚合、LaunchAgent/源码归档与性能统计证据（均只读）；Open Work For Next Agent: 观察真实 operation 分布与日志量；等待旧员工身份映射、历史账签认、备份目的地/系统授权及真实财务设备验收；Required Checks Before Next Publishing: 完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，按范围部署后回读 ACTIVE 版本、鉴权标志和所需运行证据；Handoff Rule: 未观察到有代表性的真实 operation 数据前，不声称性能问题已修复。
+
+## 上线整改续核（2026-09-26，只读状态与证据更新）
+
+- G01：当前 `com.zysyr.daily-backup` LaunchAgent 已指向本项目，但 `launchctl print gui/501/com.zysyr.daily-backup` 显示 `state=not running`、累计 runs=4、last exit code=126；错误日志最近仍为 macOS `Operation not permitted`。本机 2026-09-26 11:13 的源码 tar.gz 归档可完整列出，备份目录有 8 份近 30 天归档，且归档未包含 `backup.env`、`.git`、`node_modules`、`supabase/.temp`；这仅证明源码归档可读，不是生产 DB/Storage 备份或恢复演练。未改 LaunchAgent/TCC 权限，未导出生产数据；灾备目的地和隔离恢复仍待授权。
+- A02：生产匿名化聚合复核仍为 active legacy staff 26、approved allowlist 2、映射员工中具备 active V2 account 1（不要与 active V2 employee 档案映射数混为一谈）。近 24 小时 Auth 安全事件只有聚合计数：12 attempts、6 次 `invalid_credentials`、6 次 `direct_auth_login` 成功；没有读取用户标识或哈希，不能据此判断具体人员已迁移或授权停用旧登录。
+- 性能：部署 v105 后最近 24 小时仅观测到 1 条 `operations_api_timing`，为 HTTP OPTIONS 预检；尚无真实 operation 分布。数据库 `pg_stat_statements` 自 2026-06-09 重置以来累计数据中，日报确认 RPC 平均/最大约 1.49/4.05 秒（41 次），保存单元格 0.83/1.82 秒（75 次），识别候选应用 0.80/1.73 秒（299 次），创建草稿 0.27/4.13 秒（315 次）。累计值不代表最近 24 小时或用户侧端到端延迟，只用于后续选取排查候选，不据此改索引/公式。
+- Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
+- 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
+- 本次只有只读生产查询、LaunchAgent 状态/日志核查和现有源码归档完整性检查；无代码、数据库、Auth、RLS、历史账、Storage 对象、端口或系统权限变更。
 
 ## 月报表字号微调（v561，已发布）
 
