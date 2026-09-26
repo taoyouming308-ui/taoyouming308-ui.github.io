@@ -1,9 +1,9 @@
 # Agent Sync Status
 
-## 2026-09-27 · 月报字体可读性微调（App version: v564；本地实现，待验证/未发布）
+## 2026-09-27 · 月报字体可读性微调（App version: v564；已发布）
 
 - 原月报表标签从 13px 调至 14px、金额/输入从 12px 调至 13px；整月日报桌面表格调至 14px，手机端汇总金额与逐日卡片数值调至 15px、卡片标签调至 14px。保留手机端卡片布局、原表整表适配和双指放大；不改变计算、数据源、表格内容或凭证追溯。
-- 更新 `operations.html`、`perm-app.html`、`frontdesk.html`、`version.txt`、`version.json` 至 v564，并同步静态/浏览器回归断言。此为本地未发布改动；受当前浏览器安全策略阻止，未完成桌面/平板/手机真实视觉验收，不声称字号问题已实机解决。
+- 更新 `operations.html`、`perm-app.html`、`frontdesk.html`、`version.txt`、`version.json` 至 v564，并同步静态/浏览器回归断言。提交 `b630f291849ee0903a05c6b031597d9510bab991` 已推送 GitHub main；Validate shared app #36260935609 与 Pages build/deployment #36260935463 均成功。线上无缓存回读 `version.txt=564`、`operations.html data-version=564`。真实桌面/平板/手机视觉验收仍待用户确认，不声称实机问题已解决。
 - 仅改前端样式、版本标记、测试断言和交接记录；未改数据库、API、财务公式/历史金额、权限、认证或登录入口。
 - 本轮只读回查生产项目为 `ACTIVE_HEALTHY`；`operations-api` 为 ACTIVE v107、`verify_jwt=false`（函数内部仍做鉴权）。生产 `care_outbound_queue` 的 anon `SELECT/INSERT/UPDATE` 策略仍存在；公开权限清单还含 `hair_records`、`care_records`、`hair_analysis_queue`、`mgj_service_records`、`showcase_images`。没有运行生产写操作或读取业务行。`CARE_OUTBOUND_AUTOMATIC_ENABLED=false`；worker 继续以 publishable key 直接请求 Data API，不能先应用现有 ACL 迁移再补认证。
 - A02 最新生产匿名化聚合（仅计数）：active legacy staff 26、active V2 employees 24、存在 legacy-id 映射的 active 旧员工 23，其中门店与目标员工档案一致 22、跨门店不一致 1；active V2 Auth accounts 2、有效迁移白名单 2、其中已关联 active V2 account 1；近 24h Auth migration success 2、failure 2、blocked 0。仍有 3 个在职旧员工没有映射，且 1 个 V2 在职员工没有旧员工映射；不读姓名/账号/哈希，不自动绑定、停用或重置。
@@ -18,8 +18,8 @@
 - Storage 本地 `test-zysyr-storage-anon-policy.js`、凭证预览静态/视口约束测试及备用金批量匹配测试通过；备用金凭证浏览器测试在本地服务器 `listen EPERM 127.0.0.1` 处未启动浏览器。没有对生产运行删除操作，本轮只读确认既有迁移已登记。
 - 2026-09-27 Supabase Advisor 复核（Advisor findings 的 observed_at 为 2026-09-26 17:37Z）：Security 有 42 条 RLS-enabled/no-policy INFO 与 1 条 Auth 泄露密码保护关闭 WARN；Performance 有 135 条未覆盖外键 INFO、145 条未使用索引 INFO、4 条重复 permissive policy WARN、Auth 固定连接数 INFO。它们覆盖全库多个 App；未批量建/删索引、改 Auth 或改策略。定向只读核对确认 `perm_data` 与 `staff` 的重复策略都为 `USING (true)`；`perm_data` 的公开配方读取是现有契约。`staff` 对 anon 有非敏感目录列的列级 SELECT（含 username/role/store/position/active/employment_status），`password_hash` 不可读；代码中旧预约/员工目录入口仍使用显式列查询，故不能据 advisor 警告直接撤销目录访问。注意 `has_table_privilege(...,'SELECT')=false` 只表示没有整表 SELECT，并不否定列级 SELECT；目前只核对授权元数据和代码，未发匿名 HTTP 请求读取目录数据。后续如要收紧目录暴露，需先替换这些公开客户端查询并经兼容验证，再单独批准生产权限调整。
 - B01 历史账签认最新生产聚合：正式账本仍有 3,739 笔 `posted_review_status=pending`（向里造型 1,694、自由手艺人 2,045）；其中 1,115 笔 `posted_validation_status=warning`（向里造型 516、自由手艺人 599）。本次只按门店/entry_type/状态汇总，没有读取金额或逐笔内容，没有代财务签认/修账；剩余逐笔签认须由财务人员依据原件决定。
-- 本轮新跑 `test-zysyr-monthly-daily-performance-v525.js` 与 5 项财务公式/分类/现金收入/日报来源/凭证范围/异常提示回归均通过；`check-version-sync.js`、`check-release-integrity.js`、`check-agent-sync-status.js` 和 `git diff --check` 通过（v564）。在获准监听本机临时端口后，`test-operations-report-fit.js` 的 Chromium 与 WebKit 两套浏览器回归均通过：覆盖手机竖屏/横屏、iPad 与桌面视口，确认大额数字完整、不重叠、表格适配且保留缩放；浏览器仅加载本地合成数据。截图 `/tmp/zysyr-monthly-fit-chromium.png`、`/tmp/zysyr-monthly-fit-webkit.png` 已生成供视觉检查。自动化不等于真实设备验收，v564 仍未发布，待用户实机复核。
-- Current owner: Codex; Last Completed Work: v564 月报字号样式本地实现；Storage 全局 anon 策略迁移确认已上线、财务桶 private；A02 新发现 1 条跨店 employee mapping mismatch（尚无 Auth/授权绑定）；取得 operations-api v107 按操作的线上延迟样本。Open Work For Next Agent: 管理员确认错配员工的正确身份/门店；取得实际设备视觉验收再决定是否发布 v564；完成 A02/Auth、B01 历史账签认、G01 隔离恢复、护理队列权限方案、真实财务/股东会话隔离及性能稳定性验收；Required Checks Before Publishing: fetch/版本/release/agent sync 检查、全量财务测试及仓库 pre-push，之后 GitHub CI/Pages 无缓存回读；Handoff Rule: 静态回归不能替代真实浏览器、真实账号或灾备恢复证据，审计目标继续 active。
+- 本轮新跑 `test-zysyr-monthly-daily-performance-v525.js` 与 5 项财务公式/分类/现金收入/日报来源/凭证范围/异常提示回归均通过；`check-version-sync.js`、`check-release-integrity.js`、`check-agent-sync-status.js` 和 `git diff --check` 通过（v564）。在获准监听本机临时端口后，`test-operations-report-fit.js` 的 Chromium 与 WebKit 两套浏览器回归均通过：覆盖手机竖屏/横屏、iPad 与桌面视口，确认大额数字完整、不重叠、表格适配且保留缩放；浏览器仅加载本地合成数据。截图 `/tmp/zysyr-monthly-fit-chromium.png`、`/tmp/zysyr-monthly-fit-webkit.png` 已生成供视觉检查。自动化不等于真实设备验收；v564 已发布，实机复核待完成。
+- Current owner: Codex; Last Completed Work: v564 月报字号样式已推送并由 GitHub CI/Pages 无缓存回读验证；Storage 全局 anon 策略迁移确认已上线、财务桶 private；A02 新发现 1 条跨店 employee mapping mismatch（尚无 Auth/授权绑定）；取得 operations-api v107 按操作的线上延迟样本。Open Work For Next Agent: 管理员确认错配员工的正确身份/门店；取得实际设备视觉验收；完成 A02/Auth、B01 历史账签认、G01 隔离恢复、护理队列权限方案、真实财务/股东会话隔离及性能稳定性验收；Handoff Rule: 静态回归不能替代真实浏览器、真实账号或灾备恢复证据，审计目标继续 active。
 
 ## 2026-09-27 · operations-api v107 历史月报独立读取并发化（已部署）
 
