@@ -1207,7 +1207,16 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
 }
 
 async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const overviewStartedAt = performance.now();
+  let overviewStageStartedAt = overviewStartedAt;
+  const overviewStageMs: Record<string, number> = {};
+  const markOverviewStage = (name: string) => {
+    const now = performance.now();
+    overviewStageMs[name] = Math.round(now - overviewStageStartedAt);
+    overviewStageStartedAt = now;
+  };
   const store = await selectedStoreInfo(session, payload);
+  markOverviewStage("store_scope");
   const month = cleanText(payload.month, 7);
   if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`)) throw new Error("月份无效");
   const start = `${month}-01`;
@@ -1221,10 +1230,16 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const [rawReports, dailySource, acknowledgements] = await Promise.all([
     restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month), restRowsAll(acknowledgementPath, 500),
   ]);
+  markOverviewStage("base_reads");
   const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
+  const acknowledgementUsersStartedAt = performance.now();
   const ackUsersPromise = ackUserIds.length
     ? restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`)
     : Promise.resolve([] as JsonRecord[]);
+  const timedAckUsersPromise = ackUsersPromise.then((rows) => {
+    overviewStageMs.acknowledgement_users = Math.round(performance.now() - acknowledgementUsersStartedAt);
+    return rows;
+  });
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
   const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
@@ -1233,6 +1248,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     reportUploadVouchers(companyId, storeId, reports),
     uploaderFilter === "()" ? Promise.resolve([] as JsonRecord[]) : restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`),
   ]);
+  markOverviewStage("report_evidence_and_uploaders");
   const voucherMap = new Map<string, JsonRecord[]>();
   for (const voucher of vouchers) {
     const key = cleanText(voucher.record_id, 80);
@@ -1266,6 +1282,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000),
       monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120)),
     ]);
+    markOverviewStage("monthly_cells_and_rules");
     monthlyEvidenceRuleRows = evidenceRules;
     monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
@@ -1276,6 +1293,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
       monthlyIncomeAdjustments(companyId, storeId, month),
     ]);
+    markOverviewStage("monthly_revisions_and_locks");
     const latestAmountRevisionByCell = latestMonthlyCellRevisionMap(amountRevisions);
     monthlyCellRevisions = Array.from(latestAmountRevisionByCell.values());
     monthlyTextRevisions = textRevisions;
@@ -1339,11 +1357,13 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       monthlyEvidencePolicies = historical.monthly_evidence_policy as Record<string, string> || {};
     }
   }
-  const ackUsers = await ackUsersPromise;
+  markOverviewStage("historical_fallback_and_projection");
+  const ackUsers = await timedAckUsersPromise;
   const ackUserMap = new Map(ackUsers.map((account) => [cleanText(account.id, 40), {
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
   const acknowledgementsWithUsers = acknowledgements.map((row) => ({ ...row, user: ackUserMap.get(cleanText(row.user_id, 40)) || null }));
+  markOverviewStage("acknowledgement_enrichment");
   let unlockRequests: JsonRecord[] = [];
   const actorId = cleanText(session.auth_account_id, 40);
   if (monthlyReport && (cleanText(session.operations_role, 40) === "finance" || hasAuthCapability(session, "finance_account.create"))) {
@@ -1357,6 +1377,12 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       decided_by: accountMap.get(cleanText(row.decided_by_user_id, 40)) || null,
     }));
   }
+  markOverviewStage("unlock_requests");
+  console.log(JSON.stringify({
+    event: "zysyr_overview_timing_v1",
+    total_ms: Math.round(performance.now() - overviewStartedAt),
+    stage_ms: overviewStageMs,
+  }));
   return {
     store: cleanText(store.name, 100), month, source_boundary: "finance_uploads_only",
     monthly_report: monthlyReport,

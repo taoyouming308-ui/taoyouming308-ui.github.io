@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-27 · overview阶段计时诊断（operations-api v108 已部署）
+
+- 为解释生产 `overview` 请求约 4.6 秒的延迟，在 `overview` 的各个读取批次记录单次阶段耗时；只输出一个 JSON 日志事件，包含总耗时与固定阶段名，不记录公司/门店/月/账号/报表 ID/金额/凭证信息，也不改变返回数据或计算口径。
+- 生产只读复核：当前 `operations-api` 为 ACTIVE v107。UTC 2026-09-26 00:00 至 2026-09-27 00:00 的 Edge 请求日志中，v107 全函数 43 次 HTTP 200 的 p50 为 1,643 ms、p95 为 4,535.8 ms、最大值 5,199 ms；另有 2 次 400、1 次 403。该遥测按整支函数聚合，不区分 overview 与其他操作，因此只能确认延迟问题仍值得拆阶段调查，不能作为 overview 单独的线上性能结论。
+- overview 并发与凭证范围、日报去重、450 单元月报读取、公式重算、现金业绩口径等定向测试及统一财务回归 73/73 通过（最终退出码 0）；项目 CI 原命令 `deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen ...` 使用 SHA-256 验证的官方 Deno 2.9.6 二进制通过。`check-agent-sync-status.js` 与 `git diff --check` 通过。
+- 已将完整 `operations-api` 包部署为生产 v108；线上回读确认 ACTIVE、`verify_jwt=false`（保留自定义 session 鉴权）、import map、时序事件与全部阶段标记均存在。一次无凭据只读 `overview` 请求返回 403 `AUTH_SESSION_INVALID`，确认匿名请求仍被拦截；未读取或修改财务业务数据。首次打包尝试因分块输出截断被 Supabase 拒绝，回读确认仍为 v107 后，改用字节分块并核验文件长度才部署成功。
+- 部署后短时日志窗口尚无授权 `overview` 请求，因此没有 `zysyr_overview_timing_v1` 真实计时样本，不能宣称性能问题已修复；后续要等真实财务用户自然打开页面，再只汇总各阶段时长。之前 24h v107 全函数 p95 4,535.8ms 为整支 API 聚合基线，不单独代表 overview。
+- 日志保持每次成功 `overview` 一条聚合事件，不逐查询/逐单元记录；隔离目录基于与 GitHub `main` 同步的 `e12ee7c`，主工作树未触碰。生产部署完成但候选改动尚未提交/推送，仍需完成 Git 变更审查与主仓库发布门禁。
+
 ## 2026-09-27 · 月报字体可读性微调（App version: v564；已发布）
 
 - 原月报表标签从 13px 调至 14px、金额/输入从 12px 调至 13px；整月日报桌面表格调至 14px，手机端汇总金额与逐日卡片数值调至 15px、卡片标签调至 14px。保留手机端卡片布局、原表整表适配和双指放大；不改变计算、数据源、表格内容或凭证追溯。
