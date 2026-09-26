@@ -34,6 +34,7 @@
 - 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；worker 走 `service_role`。这使得移除客户端角色权限在 worker 权限层面可隔离，但仍须先获生产权限变更确认；没有查询队列业务行、改策略或 grants。
 - 2026-09-26 最新 24 小时 `operations-api` Edge 聚合仍是 v104 175 个 POST 200（p50 1,927ms / p95 5,408ms / max 10,582ms）、6 个 POST 400、3 个 POST 403、125 个 OPTIONS；v105 只有 1 个 OPTIONS，没有业务 POST，函数日志仍只有该版本的一条 Log。当前性能结论为新版本缺代表性样本、整体旧版 POST 有较长延迟；未把延迟归因到单个 RPC/SQL 或宣称优化见效。
 - G01 复核：生产 DB `pg_database_size` 为 276,688,019 bytes；Storage 元数据汇总为 `zysyr-reports` 74 对象 / 274,875,340 bytes、`zysyr-vouchers` 349 / 1,228,759,809 bytes、公开 `showcase` 2 / 5 bytes。仅查数量与 size，没有读取对象内容。当天源码归档 `ZYSYR_2026-09-26_111333.tar.gz` 可由 `tar -tzf` 完整读取，但 LaunchAgent 仍 `not running`、runs=4、last exit=126；都不构成 DB/Storage 备份或恢复演练。
+- G01 2026-09-26 增补：生产项目当前物理备份列表返回 8 个连续日期的 `COMPLETED` 点（2026-09-19 至 2026-09-26，最近点 06:36 UTC），WALG 开启、PITR 关闭。当前 Supabase CLI `backups restore --help` 仅提供带时间戳的 PITR 恢复参数，故不可用来对当前生产项目做隔离物理备份演练；须在明确审批目标后按官方“恢复到另一个项目”流程验证。恢复目标及费用确认前未创建项目、导出数据库或复制 Storage 对象。
 - 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；在获准网络执行环境完成 `git fetch github main`，基线为 `578a2cee3a1cc501ba455ceeee98dba9f94cff8e`。修改前版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
 
 ## P0 权限复核：共享 Supabase 中遗留的公开业务表（2026-09-26，只读，待授权整改）
@@ -88,9 +89,11 @@
 - A02 仍未关闭：管理员需逐账号确认身份/门店/角色，并在真实财务端分别验收已迁移和未迁移账号；不得自动建号、改密码、撤销会话或停用财务登录。
 - Current owner: Codex; Last Completed Work: `operations-api` v106 已生产部署且 Auth 精确映射门禁已回读；Open Work For Next Agent: 管理员确认后做真实迁移账号/未迁移账号登录验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码与 bundle 回读不等于真实财务账号端到端验收。
 
-## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
+## 上线审计：operations-api 操作级耗时诊断（v106 已部署，性能根因待观测）
 
-- 2026-09-26 最新 24 小时生产日志聚合：`operations_api_timing` 仅 1 条，`operation=unknown`、HTTP 200、1ms；它不是具体业务路由样本，性能结论仍待真实财务使用流量。
+- 2026-09-26 11:16 UTC 再查近 24 小时结构化计时日志：v106 仅 1 个 `overview` HTTP 403（2ms，未授权探测，不是有效财务操作样本）；v105 有 3 个成功 `overview`（p50 11,489ms / p95 14,412ms / max 14,737ms）、1 个成功 `cell_trace` 4,540ms、1 个成功 `daily_sheet_month` 1,828ms、2 个 `history_evidence_images` 成功（p50 1,298ms / max 1,318ms）、1 个 `history_import_file_url` 1,471ms、1 个 `daily_recognition_job_read` 1,054ms、1 个 `session` 890ms，另有 8 个 unknown/200（预检）。这些有效成功样本仍来自 v105；v106 尚无授权业务请求，不能证明并行读取优化效果。
+
+- 2026-09-26 早前生产日志聚合仅有 1 条 v105 `operation=unknown`、HTTP 200、1ms 的预检事件；该历史窗口不含有效业务路由样本，后续 11:16 UTC 刷新结果见下。
 - 2026-09-25 07:34:47Z 至 2026-09-26 07:34:47Z 重新查生产 `function_logs`，在线 v105 仍仅有上述 1 条 `operations_api_timing`：OPTIONS 预检、operation unknown、200、1ms；该窗口没有可用的真实 POST/财务操作样本。计时日志管线有运行证据，业务端到端性能和是否改善仍不可判断。
 - 按函数版本重新切分同一窗口：v104 有 OPTIONS 125、POST 200 共 175、POST 400 共 6、POST 403 共 3；v105 仅 OPTIONS 1、无 POST。所有 11 个 ≥5 秒的 POST 200 和最长 10,582ms 样本都来自 v104。v105 的 `operations_api_timing` 结构化日志也仍只有 1 条，无法形成业务操作分布；不能把旧版慢请求归因于 v105，也不能据没有新样本声称性能已改善。
 - 2026-09-25 07:53:51 至 2026-09-26 07:53:51 UTC 再次只读刷新近 24 小时 Edge 网关统计：`operations-api` 共 310 次，v104 OPTIONS 125、POST 200 175（p50 1,927ms / p95 5,408ms / max 10,582ms）、POST 400 6、POST 403 3；v105 仅 OPTIONS 1（1,540ms），没有业务 POST。v104 的 175 个成功 POST 中仍有 11 个达到或超过 5 秒；这是函数总耗时，不是单个 SQL 或前端端到端时间。v105 尚无可用业务延迟样本，不能声称性能改善或把旧版慢请求归因于新版本。
