@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 共享业务数据权限：护理出库队列客户端封闭（迁移已测，生产待审批）
+
+- 2026-09-26 生产只读目录复核：`public.care_outbound_queue` 仍有 3 条授予 `anon` 的无条件 SELECT/INSERT/UPDATE RLS 策略；`anon` 与 `authenticated` 对该表有效享有 SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER，`service_role` 也有完整权限。只查询了 ACL/RLS 元数据，没有读取队列业务行。
+- App 的 `CARE_OUTBOUND_AUTOMATIC_ENABLED` 当前固定为 `false`；新增、重试、恢复和状态刷新都短路跳过浏览器队列请求。后台 `care_outbound_worker.py` 通过服务端 `service_role` 操作该表。迁移仅限制客户端角色，不影响后台 worker；没有删除或改动任何队列数据。
+- 新增 `20260926103914_care_outbound_queue_private_acl.sql`：撤销 `anon`/`authenticated` 全部表权限，并删除上述 3 条匿名策略；保留 `service_role` ACL 和 RLS 开启状态。迁移文件附有人工回滚 SQL。隔离、断网 PostgreSQL 17 回归已通过：anon/authenticated 无表权限且读/写被拒，service_role 读/写成功，其他共享表的既有公共配方只读与封闭边界不变。
+- `node scripts/test-care-outbound.js`、隔离 ACL PostgreSQL 回归及完整 `.githooks/pre-push` 均已通过（含 73 项财务测试、浏览器视口测试、共享权限回归和应用测试）。生产迁移尚未应用；已向用户单独询问是否批准对生产 ACL 执行这一项 DDL。只有收到明确批准后才可应用，随后需回读 grants/policies 并验证 worker 服务端访问。此变更不涉及财务表、金额、历史账、财务公式或财务登录端口。
+- Current owner: Codex; Last Completed Work: 生产权限元数据复核、隔离迁移回归及完整发布门禁；Open Work For Next Agent: 等待用户批准后应用并回读生产权限；Required Checks Before Publishing: 发布门禁通过；生产核验及对应 CI 状态待确认；Handoff Rule: 合成数据库通过不等于生产权限已经收紧。
+
 ## operations-api v106 月报总览独立读取并行化（已部署，性能观测待样本）
 
 - 基于生产日志中的 v105 `overview` 慢请求样本（3 次成功调用，约 14.4–14.7 秒），将月报列表/日报来源/股东签认读取、凭证与上传人读取、月报单元格与证据规则读取、各类修订/锁/收入调整读取改为并行等待；仅并行彼此独立的只读请求，不改筛选条件、金额计算、财务公式、数据库、权限或登录端口。

@@ -128,11 +128,14 @@ async function run(){
   assert.match(iframeUrl,/^operations\.html\?entry=staff-shareholder&v=\d+$/);
   assert.equal(new URL(iframeUrl,origin).searchParams.get('v'),await page.evaluate(()=>document.documentElement.dataset.version));
   const reportFrame=page.frames().find(frame=>frame.url().includes('entry=staff-shareholder'));
-  await reportFrame.waitForFunction(()=>state.monthlyOverviewReady);
+  // The iframe URL becomes observable before its inline app script has declared
+  // `state`; guard initialization so Playwright polls instead of failing with a
+  // transient ReferenceError during frame navigation.
+  await reportFrame.waitForFunction(()=>typeof state!=='undefined'&&state.monthlyOverviewReady===true);
   assert.equal(await reportFrame.locator('#app').isVisible(),true,'actual App iframe displays the monthly report');
   assert.equal(await reportFrame.locator('#login').isVisible(),false);
   await reportFrame.evaluate(()=>showView('daily-report'));
-  await reportFrame.waitForFunction(()=>state.dailyReportMonth!==null);
+  await reportFrame.waitForFunction(()=>typeof state!=='undefined'&&state.dailyReportMonth!==null);
   await page.waitForTimeout(300);
   assert.equal(await reportFrame.locator('#app').isVisible(),true,'actual App iframe can switch to daily reports');
   await reportFrame.evaluate(()=>showView('monthly'));

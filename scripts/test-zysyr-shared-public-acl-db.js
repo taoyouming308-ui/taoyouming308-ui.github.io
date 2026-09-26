@@ -17,6 +17,7 @@ async function main() {
     }
     const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260924004040_zysyr_shared_public_table_acl.sql'), 'utf8');
     const privateMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260924040520_zysyr_customer_booking_private_acl.sql'), 'utf8');
+    const careOutboundMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260926103914_care_outbound_queue_private_acl.sql'), 'utf8');
     for (const page of ['index.html', 'perm-app.html', '自由手艺人.html', 'v2.html', 'v3.html']) {
       assert.doesNotMatch(fs.readFileSync(path.join(root, page), 'utf8'), /\/rest\/v1\/barber_identities/, `${page} must not write device identity through the public API`);
     }
@@ -31,12 +32,18 @@ async function main() {
         create table public.barber_identities(id bigint generated always as identity primary key, device_id text not null, barber_name text not null);
         create table public.bookings(id bigint primary key, shop_name text, customer_phone text);
         create table public.customer_profiles(id bigint primary key, phone text, shop_name text, notes text);
-        grant all on public.hair_types, public.perm_styles, public.perm_data, public.barber_identities, public.bookings, public.customer_profiles to anon, authenticated, service_role;
+        create table public.care_outbound_queue(id bigint primary key, brand text, product text, grams numeric, status text);
+        alter table public.care_outbound_queue enable row level security;
+        create policy "允许读取" on public.care_outbound_queue for select to anon using (true);
+        create policy "允许插入" on public.care_outbound_queue for insert to anon with check (true);
+        create policy "允许更新" on public.care_outbound_queue for update to anon using (true) with check (true);
+        grant all on public.hair_types, public.perm_styles, public.perm_data, public.barber_identities, public.bookings, public.customer_profiles, public.care_outbound_queue to anon, authenticated, service_role;
         insert into public.perm_data values(1,'test','test','0','0','0','test','[]',now(),now(),null,null);
         insert into public.bookings values(1,'甲店','13800000000');
         insert into public.customer_profiles values(1,'13800000000','甲店','{}');
         ${migration}
-        ${privateMigration}`]);
+        ${privateMigration}
+        ${careOutboundMigration}`]);
 
     const statesText = psql(`select c.relname||'|'||c.relrowsecurity||'|'||
       has_table_privilege('anon',c.oid,'select')||'|'||has_table_privilege('anon',c.oid,'insert')||'|'||has_table_privilege('anon',c.oid,'update')||'|'||has_table_privilege('anon',c.oid,'delete')||'|'||
@@ -69,7 +76,17 @@ async function main() {
     for (const table of ['bookings', 'customer_profiles']) {
       assert.equal(psql(`set role service_role; select count(*) from public.${table}`), 'SET\n1', `service_role should retain ${table} API access`);
     }
-    console.log('Shared public ACL: only perm_data SELECT remains public; booking/customer/profile/config/device tables are closed; service_role retains access');
+    assert.equal(psql(`select bool_and(not has_table_privilege(role_name, 'public.care_outbound_queue', privilege_name))
+      from (values ('anon'), ('authenticated')) roles(role_name)
+      cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) privileges(privilege_name)`), 't', 'client roles must have no table privileges on the worker queue');
+    assert.equal(psql(`select count(*) from pg_policies where schemaname='public' and tablename='care_outbound_queue'`), '0', 'client queue policies must be removed');
+    for (const role of ['anon', 'authenticated']) {
+      await assert.rejects(async () => psql(`set role ${role}; select * from public.care_outbound_queue`), /permission denied/);
+      await assert.rejects(async () => psql(`set role ${role}; insert into public.care_outbound_queue values (100,'x','y',1,'pending')`), /permission denied/);
+    }
+    assert.equal(psql("set role service_role; select count(*) from public.care_outbound_queue"), 'SET\n0', 'service_role must retain queue reads');
+    assert.equal(psql("set role service_role; insert into public.care_outbound_queue values (1,'test','product',5,'pending') returning id"), 'SET\n1\nINSERT 0 1', 'service_role must retain queue writes');
+    console.log('Shared public ACL: client data paths closed; public recipe SELECT preserved; care-outbound queue private to service_role');
   } finally { docker(['stop', container]); }
 }
 
