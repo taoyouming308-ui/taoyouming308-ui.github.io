@@ -44,7 +44,7 @@
 - Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
 - 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
 - 本次只有只读生产查询、LaunchAgent 状态/日志核查和现有源码归档完整性检查；无代码、数据库、Auth、RLS、历史账、Storage 对象、端口或系统权限变更。
-- 本轮审计文档 `git diff --check`、版本同步和发布完整性检查通过（v561）；财务回归套件前 12 项通过，第 13 项数据库测试因本机无权连接 OrbStack Docker socket 中止，不能计为完整回归通过。
+- 本轮独立启动财务回归时，第 13 项因普通 shell 无权连接 OrbStack Docker socket 中止；随后完整 pre-push 在授权发布环境重跑全部门禁，73/73 财务回归、其他 App 回归及 47 项美管加同步测试均通过。GitHub Validate `36220733338` 与 Pages `36220732712` 也已成功。
 
 ## 月报表字号微调（v561，已发布）
 
