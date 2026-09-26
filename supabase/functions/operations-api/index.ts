@@ -620,6 +620,26 @@ async function shareholderRegistrationReview(payload: JsonRecord, session: JsonR
   return { reviewed: true, decision: "approved", saved: rpc };
 }
 
+async function legacyStaffHasManagedV2Account(staffId: number): Promise<boolean> {
+  if (!Number.isSafeInteger(staffId) || staffId < 1) throw new Error("旧账号身份校验失败");
+  const mappings = await restRows(
+    `zysyr_legacy_id_map?select=company_id,target_id&source_table=eq.staff&source_key=eq.${staffId}&target_table=eq.zysyr_employees&mapping_status=eq.mapped&limit=2`,
+  );
+  if (mappings.length > 1) throw new Error("旧账号身份映射不唯一，请联系管理员");
+  const mapping = mappings[0];
+  if (!mapping) return false;
+
+  const companyId = cleanText(mapping.company_id, 40);
+  const employeeId = cleanText(mapping.target_id, 40);
+  if (!/^[0-9a-f-]{36}$/i.test(companyId) || !/^[0-9a-f-]{36}$/i.test(employeeId)) {
+    throw new Error("旧账号身份映射异常，请联系管理员");
+  }
+  const accounts = await restRows(
+    `zysyr_user_accounts?select=id,status&company_id=eq.${companyId}&employee_id=eq.${employeeId}&status=in.(active,suspended,disabled)&limit=2`,
+  );
+  return accounts.length > 0;
+}
+
 async function login(payload: JsonRecord, request: Request): Promise<JsonRecord> {
   const username = cleanText(payload.username, 80);
   const password = cleanText(payload.password, 200);
@@ -639,7 +659,7 @@ async function login(payload: JsonRecord, request: Request): Promise<JsonRecord>
   let resolvedRole = "";
   let failureReason = "invalid_credentials";
   const rows = await restRows(
-    `staff?select=username,password_hash,role,position,store,active,employment_status&username=eq.${encodeURIComponent(username)}&limit=1`,
+    `staff?select=id,username,password_hash,role,position,store,active,employment_status&username=eq.${encodeURIComponent(username)}&limit=1`,
   );
   staff = rows[0];
   const hashed = await sha256(password);
@@ -655,6 +675,14 @@ async function login(payload: JsonRecord, request: Request): Promise<JsonRecord>
     await recordLegacyLoginResult(identityHash, clientHash, requestId, false, failureReason);
     throw new Error("该账号尚未绑定门店");
   }
+
+  // Keep old credentials out of the compatibility-session channel once the
+  // exact mapped employee has any activated, suspended, or disabled V2 account.
+  if (await legacyStaffHasManagedV2Account(Number(staff.id))) {
+    await recordLegacyLoginResult(identityHash, clientHash, requestId, false, "supabase_auth_required");
+    throw new Error("账号或密码错误");
+  }
+
   await recordLegacyLoginResult(identityHash, clientHash, requestId, true, "legacy_credentials_verified");
 
   rest(`zysyr_operations_sessions?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`, {
@@ -710,12 +738,15 @@ async function requireSession(payload: JsonRecord, request: Request): Promise<Js
   const saved = rows[0];
   if (!saved) throw new Error("登录已过期，请重新登录");
   const staffRows = await restRows(
-    `staff?select=username,role,position,store,active,employment_status&username=eq.${encodeURIComponent(cleanText(saved.username, 80))}&limit=1`,
+    `staff?select=id,username,role,position,store,active,employment_status&username=eq.${encodeURIComponent(cleanText(saved.username, 80))}&limit=1`,
   );
   const staff = staffRows[0];
   if (!staff || staff.active === false || cleanText(staff.employment_status, 40) !== "active") {
     await rest(`zysyr_operations_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
     throw new Error("账号已停用或离职，请重新登录");
+  }
+  if (await legacyStaffHasManagedV2Account(Number(staff.id))) {
+    throw new Error("该账号已切换到新的安全登录，请使用新登录入口");
   }
   const current = { ...staff, operations_role: operationsRole(staff), expires_at: saved.expires_at };
   await rest(`zysyr_operations_sessions?token_hash=eq.${encodeURIComponent(tokenHash)}`, {

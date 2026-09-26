@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## A02 旧兼容登录收口第一步（本地实现，未发布/未部署）
+
+- `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
+- 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
+- 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。Deno CLI 当前主机不可用；完整 pre-push、CI 与真实财务账号验收尚未完成。
+- 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入上线风险说明与真实验收。未部署到生产；部署 `operations-api` 前需用户对本批生产 Auth 行为作具体确认。
+- A02 仍未关闭：当前生产聚合不足以识别哪些具体员工已完成 Auth 绑定；不得自动建号、改密码、撤销会话或停用财务登录。管理员逐账号身份/门店/角色核对及生产读写验收仍是剩余门槛。
+- Current owner: Codex; Last Completed Work: 本地 Auth-transition gate 与定向回归；Open Work For Next Agent: 审阅 diff、完整 pre-push/CI、确认后部署 `operations-api` 并对真实迁移账号和未迁移账号分别验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码推送不等于生产部署，生产部署及 Auth 结果必须单独回读验证。
+
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
 - Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。

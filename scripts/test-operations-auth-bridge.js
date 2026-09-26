@@ -32,6 +32,8 @@ expect(html.includes("['shareholder','finance','store_manager','employee']"), 'a
 expect(html.includes("authBridge.login(username,password)"), 'shareholder Auth migration call missing');
 expect(html.includes("window.ZysyrAuthBridge?") && html.includes("新认证组件暂未就绪"), 'legacy login fallback for bridge loading failure missing');
 expect(html.includes("api('login',{username:username,password:password})"), 'legacy session must remain first for no-downtime transition');
+expect(/if\(legacy\)[\s\S]*?\}else\{state\.auth=await authBridge\.login\(username,password\);state\.session='';localStorage\.removeItem\('zysyr-operations-session-v1'\);state\.user=\(await api\('session'\)\)\.user\}/.test(html),
+  'when legacy login is blocked during rollout, the same credentials must continue through Supabase Auth and discard the legacy token');
 expect(html.includes('新认证暂未完成，当前已安全使用旧登录'), 'explicit legacy fallback status missing');
 expect(html.includes('Supabase Auth 已验证'), 'successful Auth status missing');
 expect(html.includes('仍填写用户名和密码，无需填写邮箱'), 'no-email Auth guidance missing');
