@@ -29,6 +29,13 @@ assert.ok(!query.includes('target_cell_id=in.'));
 const overview = source.slice(source.indexOf('async function overview('), source.indexOf('function latestMonthlyCellRevisionMap('));
 assert.ok(overview.includes('restRowsAll(monthlyTraceRevisionsPath(companyId, storeId, reportId), 5000)'));
 assert.ok(!overview.includes('target_cell_id=in.${cellFilter}'));
+const historicalMonthly = source.slice(source.indexOf('async function historicalMonthlyReport('), source.indexOf('async function overview('));
+assert.match(historicalMonthly, /const \[rawEntries, incomeAdjustments, dailyRollup\] = await Promise\.all\(/,
+  'independent historical ledger, adjustments and daily rollup reads must run concurrently');
+assert.match(historicalMonthly, /const \[display, evidenceData, evidenceRules, uploaders\] = await Promise\.all\(/,
+  'independent historical workbook, evidence, rules and uploader reads must run concurrently');
+assert.match(historicalMonthly, /effectiveHistoryMonthlyEntries\(rawEntries, incomeAdjustments, dailyRollup\)/,
+  'parallel reads must preserve the existing historical amount projection inputs');
 assert.equal(sandbox.publicRequestError(new Error('请填写本次金额修改原因')), '请填写本次金额修改原因');
 assert.match(sandbox.publicRequestError(new Error(ids.join(','))), /暂时失败/);
 assert.match(sandbox.publicRequestError(new Error('http2 error: private URL')), /暂时失败/);

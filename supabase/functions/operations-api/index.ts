@@ -1124,9 +1124,12 @@ async function historicalMonthlyDisplay(companyId: string, storeId: string, batc
 
 async function historicalMonthlyReport(companyId: string, storeId: string, month: string, storeName: string,
   dailySource?: ConfirmedDailySource): Promise<JsonRecord | null> {
-  const entries = effectiveHistoryMonthlyEntries(await historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
-    await monthlyIncomeAdjustments(companyId, storeId, month), dailySource
-      ? confirmedDailyRollupFromSource(dailySource) : await confirmedDailyRollup(companyId, storeId, month));
+  const [rawEntries, incomeAdjustments, dailyRollup] = await Promise.all([
+    historyMonthEntries(companyId, storeId, month, "monthly_profit_loss"),
+    monthlyIncomeAdjustments(companyId, storeId, month),
+    dailySource ? Promise.resolve(confirmedDailyRollupFromSource(dailySource)) : confirmedDailyRollup(companyId, storeId, month),
+  ]);
+  const entries = effectiveHistoryMonthlyEntries(rawEntries, incomeAdjustments, dailyRollup);
   if (!entries.length) return null;
   const batchId = cleanText(entries[0].import_batch_id, 40);
   const batches = await restRows(`zysyr_history_import_batches?select=id,source_filename,source_mime_type,source_size_bytes,source_sha256,source_bucket_id,source_object_path,created_by_user_id,created_at,confirmed_by_user_id,confirmed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&status=eq.completed&limit=1`);
@@ -1138,7 +1141,15 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     if (name) sheetCounts.set(name, (sheetCounts.get(name) || 0) + 1);
   }
   const sheetName = Array.from(sheetCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
-  const display = await historicalMonthlyDisplay(companyId, storeId, batch, storeName, sheetName);
+  const uploaderIds = Array.from(new Set([batch.created_by_user_id, batch.confirmed_by_user_id].filter(Boolean)));
+  const [display, evidenceData, evidenceRules, uploaders] = await Promise.all([
+    historicalMonthlyDisplay(companyId, storeId, batch, storeName, sheetName),
+    historyEvidenceForEntries(companyId, storeId, entries),
+    monthlyEvidenceRules(companyId, storeId, "history_original_v1"),
+    uploaderIds.length
+      ? restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(uploaderIds)}&limit=20`, 20)
+      : Promise.resolve([] as JsonRecord[]),
+  ]);
   const entryByAddress = new Map(entries.map((entry) => [cleanText((entry.current_payload as JsonRecord)?.cell_address, 20).toUpperCase(), entry]));
   const values = Array.isArray(display.values) ? display.values as unknown[][] : [];
   const cells = Array.isArray(display.cells) ? display.cells as JsonRecord[] : [];
@@ -1160,8 +1171,6 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     const rowIndex = Number(cell.row_number) - 1, columnIndex = Number(cell.column_number) - 1;
     if (Number.isFinite(amount) && Array.isArray(values[rowIndex])) values[rowIndex][columnIndex] = amount;
   }
-  const evidenceData = await historyEvidenceForEntries(companyId, storeId, entries);
-  const evidenceRules = await monthlyEvidenceRules(companyId, storeId, "history_original_v1");
   const evidencePolicies = monthlyEvidencePolicyMap(cells, evidenceRules);
   const linkCounts = new Map<string, number>();
   for (const link of evidenceData.links as JsonRecord[]) {
@@ -1182,8 +1191,6 @@ async function historicalMonthlyReport(companyId: string, storeId: string, month
     traceStatus[address] = status; sourceCount[address] = 0;
     summary.total += 1; (summary as Record<string, number>)[status] += 1;
   }
-  const uploaderIds = Array.from(new Set([batch.created_by_user_id, batch.confirmed_by_user_id].filter(Boolean)));
-  const uploaders = uploaderIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(uploaderIds)}&limit=20`, 20) : [];
   const uploader = uploaders.find((row) => row.id === batch.confirmed_by_user_id) || uploaders[0] || null;
   return {
     id: batch.id, historical: true, history_batch_id: batch.id,

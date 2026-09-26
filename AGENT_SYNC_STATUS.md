@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-09-26 · operations-api v107 历史月报独立读取并发化（待部署）
+
+- 历史月报 fallback 中 3 个独立数据源请求以及原始工作簿、凭证关联、证据规则、上传人读取原为串行等待；改为两阶段 `Promise.all`，只改变只读请求调度，`effectiveHistoryMonthlyEntries`、金额投影、门店范围、凭证关联状态与响应内容保持不变。
+- `node scripts/test-monthly-load-recovery-v499.js` 和统一财务测试 73/73 通过；版本/发布完整性/同步状态检查通过。当前尚未部署 Edge Function；需本地/CI Edge 编译和部署后在线版本、授权财务会话自然样本延迟对照。不得把调度优化描述为已证明的线上提速。
+- App 前端版本保持 v563；无数据库、权限、财务登录端口、历史财务数据或对象变更。
+- Current owner: Codex; Last Completed Work: v563 月报布局发布；Open Work For Next Agent: v107 Edge Function 上线与生产性能证据；A02/Auth 身份核验、B01 历史账签认、G01 隔离恢复和获批配置仍未完成；Required Checks Before Publishing: 全仓 pre-push、GitHub main 同步、Edge frozen type check；Handoff Rule: 73/73 合成回归不代表生产延迟验收。
+
 ## 2026-09-26 · 上线遗留项最新只读复核（目标继续未完成）
 
 - 本轮没有改动生产或本地业务代码。`operations-api` ACTIVE v106（部署时间 2026-09-26 10:08:22 UTC）之后的新结构化日志中，授权 `overview` 成功样本仅 2 次，p95 4,959ms / 最大 5,096ms；另 1 次无权请求 403（2ms）不计入。样本太少，只能作为初步信号，性能验收仍开放；不得据此宣称达标。
