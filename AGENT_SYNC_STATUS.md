@@ -1,11 +1,12 @@
 # Agent Sync Status
 
-## operations-api v106 月报总览独立读取并行化（待发布验证）
+## operations-api v106 月报总览独立读取并行化（已部署，性能观测待样本）
 
 - 基于生产日志中的 v105 `overview` 慢请求样本（3 次成功调用，约 14.4–14.7 秒），将月报列表/日报来源/股东签认读取、凭证与上传人读取、月报单元格与证据规则读取、各类修订/锁/收入调整读取改为并行等待；仅并行彼此独立的只读请求，不改筛选条件、金额计算、财务公式、数据库、权限或登录端口。
-- 定向回归与完整 `npm run test:finance` 73/73 通过；包括只读门店范围与月报金额映射测试。本地无 Deno，Edge 冻结依赖类型检查待 GitHub CI；尚未部署。本轮前性能样本仅 3 个 overview 请求，部署后的响应改善必须以线上新样本复核，不预先宣称见效。
-- App 前端版本仍为 v562；这是独立 Edge Function 更新，不改变 Pages 内容或版本标记。部署后需确认 operations-api 版本、`verify_jwt=false` 自定义会话边界及生产日志耗时。上线审计目标仍保持 active。
-- Last synchronized base checked: `e8991f5`; Current owner: Codex; Last Completed Work: full finance suite passed before API deployment; Open Work For Next Agent: A02, B01, G01, shared app permission remediation and real-account/device acceptance remain open; Required Checks Before Next Publishing: Deno frozen type check via CI, release/sync hooks, GitHub Actions and production function/log readback; Handoff Rule: local test success does not equal production deployment or financial account acceptance.
+- 定向回归与完整 `npm run test:finance` 73/73 通过。完整仓库 pre-push 门禁（财务 73 项、应用/权限/前台及美管加同步测试）通过；GitHub Validate #36234632685 与 Pages build #36234632382 成功，Validate 包含 Deno 2.9.6 冻结依赖类型检查。
+- 提交 `298de94` 已推送 `github/main`；生产 `operations-api` 已为 v106 ACTIVE，整包 10 文件与 main 本地版本逐文件完全一致，`verify_jwt=false` 与 import map 均保持。无会话 overview 生产探针返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。没有部署迁移、改账、改权限或改财务独立登录入口。
+- App 前端版本仍为 v562；本次是独立 Edge Function 更新，Pages 内容未变。v105 基线只有 3 个 `overview` 慢请求；v106 部署后的已发请求尚无有效登录业务样本，匿名 403 不作为性能样本，需取得自然产生的授权 overview 请求后再比较耗时。上线审计目标仍保持 active。
+- Last synchronized base checked: `298de94`; Current owner: Codex; Last Completed Work: v106 API bundle deployed and source/auth rejection verified; Open Work For Next Agent: A02, B01, G01, shared app permission remediation, real-account/device acceptance, and representative post-v106 performance evidence remain open; Required Checks Before Next Publishing: fetch main, release/sync hooks, complete pre-push suite, GitHub Actions and production readback; Handoff Rule: local tests and anonymous auth probes do not equal real finance account acceptance or post-deployment performance proof.
 
 ## v562 工资表 Safari 窄屏适配（已发布）
 
