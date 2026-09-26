@@ -4,25 +4,6 @@
   var selector = '.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll,.history-grid-wrap';
   var originals = new WeakMap(), widths = new WeakMap(), frame = 0;
   var pending = new Set(), pendingAll = false;
-  function fitMonthlyAmounts(table) {
-    // Fit complete amounts, never hide overflowing digits or shrink the whole
-    // report's text. Re-measure after rotation, zoom and data replacement.
-    var cells = table.querySelectorAll('td.monthly-daily-embedded:not(.monthly-daily-embedded-head)'), sizes = [];
-    cells.forEach(function (cell) { cell.style.removeProperty('font-size'); });
-    cells.forEach(function (cell) {
-      if (!cell.textContent.trim()) return;
-      var style = getComputedStyle(cell), box = cell.getBoundingClientRect();
-      var zoom = box.width / cell.offsetWidth;
-      var available = box.width - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
-        + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)) * zoom;
-      var range = document.createRange(); range.selectNodeContents(cell);
-      var textWidth = range.getBoundingClientRect().width;
-      if (available > 0 && textWidth > available) {
-        sizes.push([cell, (Math.floor(parseFloat(style.fontSize) * available / textWidth * 98) / 100) + 'px']);
-      }
-    });
-    sizes.forEach(function (item) { item[0].style.setProperty('font-size', item[1], 'important'); });
-  }
   var observer = typeof ResizeObserver === 'function' ? new ResizeObserver(function (entries) {
     entries.forEach(function (entry) {
       var width = entry.target.clientWidth;
@@ -51,7 +32,6 @@
         // WebKit enforces a minimum rendered font size under CSS zoom, so it
         // can enlarge glyphs without enlarging these fixed columns. Scale the
         // laid-out monthly sheet as a whole instead, keeping every digit intact.
-        fitMonthlyAmounts(table);
         var stage = table.parentElement;
         if (!stage.classList.contains('report-fit-stage')) {
           stage = document.createElement('div'); stage.className = 'report-fit-stage';

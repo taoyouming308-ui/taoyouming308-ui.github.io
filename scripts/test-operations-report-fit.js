@@ -24,10 +24,10 @@ const server = http.createServer((req, res) => {
       await page.evaluate(async view => {
         await showView(view);
         if (view === 'monthly') {
-          // Realistic long daily amounts and monthly totals; DOM-only fixtures.
-          document.querySelectorAll('.monthly-daily-embedded.amount-cell').forEach((cell, index) => {
-            cell.textContent = index % 2 ? '11609.00' : '141369.00';
-          });
+          // Realistic large confirmed values; DOM-only fixture, no finance writes.
+          window.ZysyrMonthlyDailyPerformance.render({ container: document.getElementById('monthly-daily-performance'),
+            month: document.getElementById('month').value, performance: { rows: [{ date: document.getElementById('month').value + '-01', draft_id: 'fit-day', labor_performance: 141369,
+              cash_performance: 128894, card_amount: 879, group_buy: 41570, alipay: 66423, wechat: 22176, douyin: 683 }] } });
         }
         if (view === 'daily-report') {
           state.imports.sheet = previewDailySheetData(); renderDailySheetDetail();
@@ -41,25 +41,29 @@ const server = http.createServer((req, res) => {
         const result = await page.evaluate(() => {
           const wrappers = [...document.querySelectorAll('.sheet-scroll,.daily-grid-scroll,.archive-wrap,.salary-paper-scroll,.history-grid-wrap')]
             .filter(el => el.getClientRects().length && el.querySelector('table'));
-          const embeddedAmount = document.querySelector('.monthly-daily-embedded.amount-cell');
+          const dailyPanel = document.querySelector('#monthly-daily-performance');
+          const dailyTableWrap = dailyPanel && dailyPanel.querySelector('.monthly-daily-table-wrap');
+          const dailyCards = dailyPanel && dailyPanel.querySelector('.monthly-daily-mobile-cards');
           const salaryTable = document.querySelector('.salary-paper-scroll .salary-paper');
           const monthlyFont = selector => {
             const cell = document.querySelector('#view-monthly .sheet-table ' + selector);
             return cell ? parseFloat(getComputedStyle(cell).fontSize) : null;
           };
-          const overlaps = [...document.querySelectorAll('.monthly-daily-embedded.amount-cell')].filter(cell => {
-            if (!cell.getClientRects().length) return false;
-            const range = document.createRange(); range.selectNodeContents(cell);
-            const text = range.getBoundingClientRect(), box = cell.getBoundingClientRect();
-            return text.left < box.left - .2 || text.right > box.right + .2;
-          }).slice(0, 5).map(cell => {
-            const range = document.createRange(); range.selectNodeContents(cell);
-            return { value: cell.textContent, cell: cell.getBoundingClientRect().toJSON(), text: range.getBoundingClientRect().toJSON(), font: getComputedStyle(cell).fontSize, inline: cell.style.fontSize, width: cell.offsetWidth };
-          });
+          const dailyAmounts = dailyPanel ? [...dailyPanel.querySelectorAll('.monthly-daily-table td, .monthly-daily-mobile-metric dd')]
+            .filter(cell => cell.getClientRects().length && cell.textContent.trim() !== '—').map(cell => {
+              const range = document.createRange(); range.selectNodeContents(cell);
+              return { value: cell.textContent, textWidth: range.getBoundingClientRect().width, cellWidth: cell.getBoundingClientRect().width,
+                font: parseFloat(getComputedStyle(cell).fontSize) };
+            }) : [];
           return { count: wrappers.length, overflows: wrappers.filter(el => el.scrollWidth > el.clientWidth + 2)
             .map(el => ({ className: el.className, width: el.clientWidth, scroll: el.scrollWidth })),
-            overlaps, embeddedAmount: embeddedAmount && { value: embeddedAmount.textContent, textSizeAdjust: getComputedStyle(embeddedAmount).getPropertyValue('-webkit-text-size-adjust') || getComputedStyle(embeddedAmount).getPropertyValue('text-size-adjust') },
-            monthlyFonts: { label: monthlyFont('td.sheet-head'), amount: monthlyFont('td.amount-cell:not(.monthly-daily-embedded)'), dailyHead: monthlyFont('td.monthly-daily-embedded-head') },
+            dailyTableDisplay: dailyTableWrap && getComputedStyle(dailyTableWrap).display,
+            dailyCardDisplay: dailyCards && getComputedStyle(dailyCards).display,
+            dailyTotals: dailyPanel && dailyPanel.querySelectorAll('.monthly-daily-mobile-total').length,
+            dailyRows: dailyPanel && dailyPanel.querySelectorAll('.monthly-daily-table tbody tr').length,
+            dailyDays: (() => { const [year, month] = document.getElementById('month').value.split('-').map(Number); return new Date(year, month, 0).getDate(); })(),
+            dailyAmounts,
+            monthlyFonts: { label: monthlyFont('td.sheet-head'), amount: monthlyFont('td.amount-cell'), dailyHead: null },
             salaryFit: salaryTable && { transform: salaryTable.style.transform, zoom: salaryTable.style.zoom,
               stageWidth: salaryTable.parentElement.clientWidth,
               wrapperWidth: salaryTable.closest('.salary-paper-scroll').clientWidth },
@@ -69,10 +73,20 @@ const server = http.createServer((req, res) => {
         assert(result.count > 0, view + ': no visible fixture table');
         assert.deepEqual(result.overflows, [], view + ' at ' + width + 'x' + height);
         if (view === 'monthly') {
-          if (result.overlaps.length) await page.screenshot({ path: '/tmp/zysyr-monthly-fit-failure.png', fullPage: true });
-          assert.deepEqual(result.overlaps, [], 'complete daily and total amounts must not overlap at ' + width + 'x' + height);
-          assert.equal(result.embeddedAmount.value, '141369.00', 'fitting must preserve every digit and decimal');
-          assert.deepEqual(result.monthlyFonts, { label: 13, amount: 12, dailyHead: 12 }, 'monthly sheet font must stay readable on every viewport');
+          assert.equal(result.dailyTotals, 7, 'all daily month totals remain visible');
+          assert.equal(result.dailyRows, result.dailyDays + 1, 'full-month table includes every natural date and a total');
+          const largeAmounts = result.dailyAmounts.filter(item => item.value === '141369.00').map(item => item.value);
+          assert.deepEqual(largeAmounts, Array(width <= 700 ? 1 : 2).fill('141369.00'), 'visible daily and total amounts preserve every digit without truncation');
+          assert.ok(result.dailyAmounts.every(item => item.textWidth <= item.cellWidth + 1), 'daily amounts must fit their visible cells');
+          assert.ok(result.dailyAmounts.every(item => item.font >= 12), 'daily amounts must retain readable source font size');
+          if (width <= 700) {
+            assert.equal(result.dailyTableDisplay, 'none', 'mobile uses cards instead of shrinking the grid');
+            assert.equal(result.dailyCardDisplay, 'grid', 'mobile displays all daily records as readable cards');
+          } else {
+            assert.notEqual(result.dailyTableDisplay, 'none', 'tablet/desktop use the monthly table');
+            assert.equal(result.dailyCardDisplay, 'none', 'tablet/desktop do not duplicate the daily records');
+          }
+          assert.deepEqual(result.monthlyFonts, { label: 13, amount: 12, dailyHead: null }, 'original monthly source sheet font remains unchanged');
           // Computed text-size-adjust differs across browser engines. Assert
           // actual glyph bounds above and the whole-sheet scale contract here.
           assert.equal(await page.locator('.sheet-table').evaluate(table => table.style.zoom), '1', 'monthly text must avoid CSS zoom minimum-font inflation');

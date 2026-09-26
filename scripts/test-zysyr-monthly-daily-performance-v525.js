@@ -6,20 +6,16 @@ const html = fs.readFileSync('operations.html', 'utf8');
 const api = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
 const moduleSource = fs.readFileSync('operations-monthly-daily-performance.js', 'utf8');
 
-assert.doesNotMatch(html, /id="monthly-daily-performance"/, 'daily performance must not appear as a separate panel above the original monthly sheet');
-assert.match(html, /ZysyrMonthlyDailyPerformance\.renderIntoSheet/, 'monthly render places the automatic table inside the original monthly sheet');
-assert.match(html, /id="monthly-daily-completeness"/, 'monthly view provides an accessible daily completeness status');
-assert.ok(html.indexOf('id="monthly-daily-completeness"') < html.indexOf('id="monthly-sheet"'), 'readable daily details are available before the long monthly sheet');
-assert.match(moduleSource, /清晰查看日报明细/, 'the compact full-month table has an optional readable second layer');
-assert.match(moduleSource, /不代表 0 元/, 'unconfirmed daily values are explicitly distinguished from zero');
-assert.match(html, /completenessStatus:\$\('monthly-daily-completeness'\)/, 'monthly render updates the completeness status with the selected month');
+assert.match(html, /id="monthly-daily-performance"/, 'the readable all-month report occupies the original monthly report area');
+assert.match(html, /ZysyrMonthlyDailyPerformance\.render\(/, 'monthly render updates the independent full-width daily report');
+assert.ok(html.indexOf('id="monthly-daily-performance"') < html.indexOf('id="monthly-sheet"'), 'daily performance precedes and preserves the original monthly source sheet');
+assert.match(moduleSource, /尚无已入账日报；不代表 0 元/, 'unconfirmed daily values are explicitly distinguished from zero');
 assert.match(html, /查看本月月报和已入账日报业绩；未显示的日期不会按零收入处理。/, 'monthly first layer explains the key shareholder interpretation without implementation notes');
 assert.match(html, /<details class="monthly-source-details"><summary>数据来源与统计口径<\/summary><div class="monthly-source-body">月报栏目保留原表结构；金额由财务上传的原表数据及财务确认的月报调整组成。调整不覆盖日报原数，且数据不来自美管加同步。<\/div><\/details>/, 'secondary source and accounting scope stays available in an accessible disclosure');
 assert.match(moduleSource, /\['labor_performance', '劳动业绩', '日报“总计”'\]/, 'the finance mapping is visible and unambiguous');
-assert.match(moduleSource, /\['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'\]/, 'the eight columns occupy the original monthly sheet right-side block');
-assert.match(moduleSource, /function ensureDisplayColumns\(cells\)/, 'the display layer supplies the missing W column used by the production 22-column template');
-assert.match(moduleSource, /cells\['W' \+ String\(index \+ 1\)\] = cell/, 'the virtual W column is mapped without changing monthly source data');
-assert.match(moduleSource, /rowNumber <= 34/, 'the embedded block reserves header, all 31 days and a total row');
+assert.match(moduleSource, /monthly-daily-mobile-cards/, 'small screens use readable daily cards instead of shrinking a wide table');
+assert.match(moduleSource, /monthly-daily-mobile-totals/, 'small screens retain all seven month totals');
+assert.doesNotMatch(moduleSource, /renderIntoSheet|monthly-daily-embedded/, 'daily performance no longer overwrites or shrinks original monthly sheet cells');
 
 assert.match(api, /async function confirmedDailyPerformance/, 'server builds the monthly daily performance projection');
 assert.match(api, /status=eq\.confirmed/, 'only confirmed daily sheets are eligible');
@@ -52,4 +48,4 @@ assert.equal(totals.alipay, 2150);
 assert.equal(totals.wechat, 250);
 assert.deepEqual(JSON.parse(JSON.stringify(feature.completeness(rows))), { days: 31, confirmed: 2, withoutConfirmedReport: 29 });
 
-console.log('ZYSYR v526 monthly daily performance: production 22-column compatibility, confirmed-day projection, finance mapping, store scope and responsive full-month table passed');
+console.log('ZYSYR monthly daily performance: full-width month placement, confirmed-day projection, finance mapping, store scope and responsive rendering passed');

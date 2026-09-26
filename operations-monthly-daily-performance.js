@@ -59,166 +59,89 @@
     return { days: days.length, confirmed: confirmed, withoutConfirmedReport: Math.max(0, days.length - confirmed) };
   }
 
-  function embeddedCell(cells, column, row) {
-    return cells && cells[column + String(row)] || null;
-  }
-
-  function renderReadableDetails(container, rows) {
-    if (!container || typeof document === 'undefined') return;
-    container.replaceChildren();
-    var summary = document.createElement('span');
-    summary.className = 'monthly-daily-completeness-text';
-    summary.textContent = rows.length
-      ? '整月日报：已入账 ' + completeness(rows).confirmed + ' / ' + rows.length + ' 天；另有 ' + completeness(rows).withoutConfirmedReport + ' 天尚无已入账日报。未显示不代表休息日或零收入；合计只统计已入账日报。'
-      : '整月日报：月份无效，暂无法显示日报覆盖情况。';
-    container.appendChild(summary);
-    if (!rows.length) return;
-
-    var toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'monthly-daily-details-toggle secondary';
-    toggle.textContent = '清晰查看日报明细';
-    toggle.setAttribute('aria-expanded', 'false');
-    container.appendChild(toggle);
-
-    var panel = document.createElement('section');
-    panel.className = 'monthly-daily-details hidden';
-    panel.setAttribute('aria-label', '整月日报明细');
-    var label = document.createElement('label');
-    label.textContent = '选择日期';
-    var select = document.createElement('select');
-    select.setAttribute('aria-label', '选择日报日期');
-    rows.forEach(function (row, index) {
-      var option = document.createElement('option');
-      option.value = String(index);
-      option.textContent = String(row.day).padStart(2, '0') + '日 · ' + (row.confirmed ? '已入账' : '未入账');
-      select.appendChild(option);
-    });
-    var firstConfirmed = rows.findIndex(function (row) { return row.confirmed; });
-    select.value = String(firstConfirmed >= 0 ? firstConfirmed : 0);
-    label.appendChild(select);
-
-    var dayStatus = document.createElement('p');
-    dayStatus.className = 'monthly-daily-details-status';
-    var grid = document.createElement('div');
-    grid.className = 'monthly-daily-details-grid';
-    panel.appendChild(label);
-    panel.appendChild(dayStatus);
-    panel.appendChild(grid);
-    container.appendChild(panel);
-
-    function updateDay() {
-      var row = rows[Number(select.value)];
-      if (!row) return;
-      dayStatus.textContent = row.confirmed
-        ? row.date + ' · 已入账' + (row.missing_fields.length ? ' · 有字段缺失：' + row.missing_fields.join('、') : ' · 数据来自已确认日报')
-        : row.date + ' · 尚无已入账日报；以下“—”表示暂无已确认数据，不代表 0 元。';
-      grid.replaceChildren();
-      fields.forEach(function (field) {
-        var item = document.createElement('div');
-        item.className = 'monthly-daily-details-item';
-        var name = document.createElement('span');
-        name.textContent = field[1];
-        var amount = document.createElement('strong');
-        amount.textContent = row.confirmed ? formatAmount(row[field[0]]) : '—';
-        item.appendChild(name);
-        item.appendChild(amount);
-        grid.appendChild(item);
-      });
-    }
-    select.addEventListener('change', updateDay);
-    toggle.addEventListener('click', function () {
-      var expanded = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', String(!expanded));
-      toggle.textContent = expanded ? '清晰查看日报明细' : '收起日报明细';
-      panel.classList.toggle('hidden', expanded);
-    });
-    updateDay();
-  }
-
-  function resetEmbeddedCell(cell) {
-    if (!cell) return;
-    cell.textContent = '';
-    cell.removeAttribute('data-trace-cell');
-    cell.removeAttribute('data-monthly-daily-draft');
-    cell.removeAttribute('data-report-date');
-    cell.removeAttribute('role');
-    cell.removeAttribute('tabindex');
-    cell.removeAttribute('title');
-    Array.from(cell.classList).filter(function (name) {
-      return name === 'trace-cell' || name.indexOf('trace-') === 0 || name.indexOf('monthly-daily-embedded') === 0;
-    }).forEach(function (name) { cell.classList.remove(name); });
-  }
-
-  function ensureDisplayColumns(cells) {
-    if (embeddedCell(cells, 'W', 2)) return true;
-    var anchor = embeddedCell(cells, 'V', 2);
-    var table = anchor && anchor.closest ? anchor.closest('table') : null;
-    if (!table) return false;
-    var colgroup = table.querySelector('colgroup');
-    if (colgroup) colgroup.appendChild(document.createElement('col'));
-    Array.from(table.rows).forEach(function (row, index) {
-      var cell = document.createElement('td');
-      row.appendChild(cell);
-      cells['W' + String(index + 1)] = cell;
-    });
-    return true;
-  }
-
-  function renderIntoSheet(options) {
+  function render(options) {
     options = options || {};
-    var cells = options.cells || {}, columns = ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
-    if (!ensureDisplayColumns(cells)) return false;
-    if (!columns.every(function (column) { return embeddedCell(cells, column, 2); })) return false;
+    var container = options.container;
+    if (!container || typeof document === 'undefined') return false;
     var performance = options.performance || {}, rows = buildRows(options.month, performance), total = totals(rows);
-    if (options.completenessStatus) renderReadableDetails(options.completenessStatus, rows);
-    var labels = ['日期'].concat(fields.map(function (field) { return field[1]; }));
+    container.replaceChildren();
+    var summary = document.createElement('p');
+    summary.className = 'monthly-daily-completeness-text';
+    summary.textContent = '已入账日报 ' + completeness(rows).confirmed + ' / ' + rows.length + ' 天；未显示不代表休息日或零收入。合计只统计已入账日报。';
+    container.appendChild(summary);
 
-    for (var rowNumber = 2; rowNumber <= 34; rowNumber++) {
-      columns.forEach(function (column) { resetEmbeddedCell(embeddedCell(cells, column, rowNumber)); });
-    }
-    columns.forEach(function (column, index) {
-      var cell = embeddedCell(cells, column, 2);
-      cell.textContent = labels[index];
-      cell.classList.add('monthly-daily-embedded', 'monthly-daily-embedded-head');
-      cell.title = index === 0 ? '按自然日显示整月' : labels[index] + '：' + fields[index - 1][2] + '；只取已入账日报';
+    var tableWrap = document.createElement('div');
+    tableWrap.className = 'monthly-daily-table-wrap';
+    var table = document.createElement('table');
+    table.className = 'monthly-daily-table';
+    table.setAttribute('aria-label', '整月日报业绩明细');
+    var head = document.createElement('thead'), headRow = document.createElement('tr');
+    ['日期'].concat(fields.map(function (field) { return field[1]; })).forEach(function (label) {
+      var cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; headRow.appendChild(cell);
     });
-    for (var slot = 0; slot < 31; slot++) {
-      var source = rows[slot] || null, htmlRow = slot + 3;
-      columns.forEach(function (column, index) {
-        var cell = embeddedCell(cells, column, htmlRow);
-        if (!cell) return;
-        cell.classList.add('monthly-daily-embedded');
-        if (!source) {
-          cell.classList.add('monthly-daily-embedded-outside');
-          return;
-        }
-        cell.textContent = index === 0 ? String(source.day).padStart(2, '0') + '日' : formatAmount(source[fields[index - 1][0]]);
-        cell.classList.add(source.confirmed ? 'monthly-daily-embedded-confirmed' : 'monthly-daily-embedded-missing');
-        cell.title = source.confirmed
-          ? source.date + ' 已入账' + (source.missing_fields.length ? '；缺少：' + source.missing_fields.join('、') : '')
-          : source.date + ' 尚无已入账日报';
-        if (source.confirmed && source.draft_id && typeof options.onOpenDay === 'function') {
-          cell.dataset.monthlyDailyDraft = source.draft_id;
-          cell.dataset.reportDate = source.date;
-          cell.tabIndex = 0;
-          cell.setAttribute('role', 'button');
-          cell.addEventListener('click', function () { options.onOpenDay(source.date, source.draft_id); });
-          cell.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); cell.click(); }
-          });
-        }
+    head.appendChild(headRow); table.appendChild(head);
+    var body = document.createElement('tbody');
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      tr.className = row.confirmed ? 'is-confirmed' : 'is-missing';
+      var dateCell = document.createElement('th'); dateCell.scope = 'row';
+      dateCell.textContent = String(row.day).padStart(2, '0') + '日';
+      dateCell.title = row.confirmed ? row.date + ' · 已入账日报' : row.date + ' · 尚无已入账日报';
+      if (row.confirmed && row.draft_id && typeof options.onOpenDay === 'function') {
+        var link = document.createElement('button'); link.type = 'button'; link.className = 'monthly-daily-date-link';
+        link.textContent = dateCell.textContent;
+        link.addEventListener('click', function () { options.onOpenDay(row.date, row.draft_id); });
+        dateCell.replaceChildren(link);
+      }
+      tr.appendChild(dateCell);
+      fields.forEach(function (field) {
+        var cell = document.createElement('td');
+        cell.dataset.label = field[1];
+        cell.textContent = row.confirmed ? formatAmount(row[field[0]]) : '—';
+        cell.title = row.confirmed
+          ? field[2] + (row.missing_fields.indexOf(field[0]) >= 0 ? ' · 原日报未提供此字段' : '')
+          : '尚无已入账日报；不代表 0 元';
+        tr.appendChild(cell);
       });
-    }
-    columns.forEach(function (column, index) {
-      var cell = embeddedCell(cells, column, 34);
-      if (!cell) return;
-      cell.textContent = index === 0 ? '合计' : formatAmount(total[fields[index - 1][0]]);
-      cell.classList.add('monthly-daily-embedded', 'monthly-daily-embedded-total');
-      cell.title = '只合计当前门店已入账日报；草稿和识别候选不计入';
+      body.appendChild(tr);
     });
+    var totalRow = document.createElement('tr'); totalRow.className = 'monthly-daily-total';
+    var totalLabel = document.createElement('th'); totalLabel.scope = 'row'; totalLabel.textContent = '合计'; totalRow.appendChild(totalLabel);
+    fields.forEach(function (field) {
+      var cell = document.createElement('td'); cell.textContent = formatAmount(total[field[0]]); totalRow.appendChild(cell);
+    });
+    body.appendChild(totalRow); table.appendChild(body); tableWrap.appendChild(table); container.appendChild(tableWrap);
+
+    var mobileTotals = document.createElement('div'); mobileTotals.className = 'monthly-daily-mobile-totals';
+    fields.forEach(function (field) {
+      var item = document.createElement('div'); item.className = 'monthly-daily-mobile-total';
+      var label = document.createElement('span'); label.textContent = field[1];
+      var amount = document.createElement('strong'); amount.textContent = formatAmount(total[field[0]]);
+      item.appendChild(label); item.appendChild(amount); mobileTotals.appendChild(item);
+    });
+    container.appendChild(mobileTotals);
+
+    var cards = document.createElement('div'); cards.className = 'monthly-daily-mobile-cards';
+    rows.forEach(function (row) {
+      var card = document.createElement('section'); card.className = 'monthly-daily-mobile-card ' + (row.confirmed ? 'is-confirmed' : 'is-missing');
+      var title = document.createElement('h3'); title.textContent = String(row.day).padStart(2, '0') + '日' + (row.confirmed ? ' · 已入账' : ' · 暂无日报');
+      if (row.confirmed && row.draft_id && typeof options.onOpenDay === 'function') {
+        title.replaceChildren(); var dayLink = document.createElement('button'); dayLink.type = 'button'; dayLink.className = 'monthly-daily-date-link';
+        dayLink.textContent = title.textContent; dayLink.addEventListener('click', function () { options.onOpenDay(row.date, row.draft_id); }); title.appendChild(dayLink);
+      }
+      card.appendChild(title);
+      var metrics = document.createElement('dl');
+      fields.forEach(function (field) {
+        var item = document.createElement('div'); item.className = 'monthly-daily-mobile-metric';
+        var name = document.createElement('dt'); name.textContent = field[1];
+        var value = document.createElement('dd'); value.textContent = row.confirmed ? formatAmount(row[field[0]]) : '—';
+        item.appendChild(name); item.appendChild(value); metrics.appendChild(item);
+      });
+      card.appendChild(metrics); cards.appendChild(card);
+    });
+    container.appendChild(cards);
     return true;
   }
 
-  root.ZysyrMonthlyDailyPerformance = { buildRows: buildRows, totals: totals, completeness: completeness, renderIntoSheet: renderIntoSheet, fields: fields.slice() };
+  root.ZysyrMonthlyDailyPerformance = { buildRows: buildRows, totals: totals, completeness: completeness, render: render, fields: fields.slice() };
 })(typeof window !== 'undefined' ? window : globalThis);
