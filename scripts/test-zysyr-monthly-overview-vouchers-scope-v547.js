@@ -36,5 +36,13 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
   const overview = api.slice(api.indexOf('async function overview('), api.indexOf('async function reportAcknowledge('));
   assert.match(overview, /const reports = rawReports\.filter\([\s\S]*?reportUploadVouchers\(companyId, storeId, reports\)/);
   assert.doesNotMatch(overview, /record_type=eq\.report&order=uploaded_at\.desc&limit=1000/);
-  console.log('ZYSYR v547 monthly overview voucher scoping: store/report filters, bounded chunks, empty-period no-query passed');
+  assert.match(overview, /const \[rawReports, dailySource, acknowledgements\] = await Promise\.all\([\s\S]*?restRowsAll\(acknowledgementPath, 500\)/,
+    'overview should read report, daily source, and acknowledgements concurrently');
+  assert.match(overview, /const \[vouchers, uploaders\] = await Promise\.all\(/,
+    'voucher metadata and uploader profiles should be fetched concurrently');
+  assert.match(overview, /const \[cells, evidenceRules\] = await Promise\.all\(/,
+    'monthly cells and evidence rules should be fetched concurrently');
+  assert.match(overview, /restRowsAll\(monthlyTraceRevisionsPath\(companyId, storeId, reportId\), 5000\)[\s\S]*?monthlyIncomeAdjustments\(companyId, storeId, month\)/,
+    'monthly adjustment reads should share the concurrent revision batch');
+  console.log('ZYSYR monthly overview: store/report voucher scope and independent-read concurrency passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

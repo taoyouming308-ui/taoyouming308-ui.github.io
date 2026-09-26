@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## operations-api v106 月报总览独立读取并行化（待发布验证）
+
+- 基于生产日志中的 v105 `overview` 慢请求样本（3 次成功调用，约 14.4–14.7 秒），将月报列表/日报来源/股东签认读取、凭证与上传人读取、月报单元格与证据规则读取、各类修订/锁/收入调整读取改为并行等待；仅并行彼此独立的只读请求，不改筛选条件、金额计算、财务公式、数据库、权限或登录端口。
+- 定向回归与完整 `npm run test:finance` 73/73 通过；包括只读门店范围与月报金额映射测试。本地无 Deno，Edge 冻结依赖类型检查待 GitHub CI；尚未部署。本轮前性能样本仅 3 个 overview 请求，部署后的响应改善必须以线上新样本复核，不预先宣称见效。
+- App 前端版本仍为 v562；这是独立 Edge Function 更新，不改变 Pages 内容或版本标记。部署后需确认 operations-api 版本、`verify_jwt=false` 自定义会话边界及生产日志耗时。上线审计目标仍保持 active。
+- Last synchronized base checked: `e8991f5`; Current owner: Codex; Last Completed Work: full finance suite passed before API deployment; Open Work For Next Agent: A02, B01, G01, shared app permission remediation and real-account/device acceptance remain open; Required Checks Before Next Publishing: Deno frozen type check via CI, release/sync hooks, GitHub Actions and production function/log readback; Handoff Rule: local test success does not equal production deployment or financial account acceptance.
+
 ## v562 工资表 Safari 窄屏适配（已发布）
 
 - App version: v562。继续上线审计整改中的已知 UI 缺陷：WebKit 下原工资表 `CSS zoom` 被最小字号限制，手机竖屏表格仍溢出（复现值：wrapper 376px、scrollWidth 635px）。`operations-report-fit.js` 现对工资表改用整表几何缩放；保留 21 列/金额和原生手势放大，输入框仍可交互。不改财务公式、数据、数据库、权限、凭证或独立财务登录入口。

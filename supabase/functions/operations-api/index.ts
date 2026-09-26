@@ -1210,13 +1210,22 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
-  const [rawReports, dailySource] = await Promise.all([
-    restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month),
+  const acknowledgementPath = `zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`;
+  const [rawReports, dailySource, acknowledgements] = await Promise.all([
+    restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month), restRowsAll(acknowledgementPath, 500),
   ]);
+  const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
+  const ackUsersPromise = ackUserIds.length
+    ? restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`)
+    : Promise.resolve([] as JsonRecord[]);
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
-  const vouchers = await reportUploadVouchers(companyId, storeId, reports);
   const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
+  const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
+  const [vouchers, uploaders] = await Promise.all([
+    reportUploadVouchers(companyId, storeId, reports),
+    uploaderFilter === "()" ? Promise.resolve([] as JsonRecord[]) : restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`),
+  ]);
   const voucherMap = new Map<string, JsonRecord[]>();
   for (const voucher of vouchers) {
     const key = cleanText(voucher.record_id, 80);
@@ -1224,8 +1233,6 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     list.push(voucher);
     voucherMap.set(key, list);
   }
-  const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
-  const uploaders = uploaderFilter === "()" ? [] : await restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`);
   const uploaderMap = new Map(uploaders.map((account) => [cleanText(account.id, 40), {
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
@@ -1248,15 +1255,19 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   if (monthlyReport) {
     monthlyDailyRollup = confirmedDailyRollupFromSource(dailySource);
     const reportId = cleanText(monthlyReport.id, 40);
-    const cells = await restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000);
-    monthlyEvidenceRuleRows = await monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120));
+    const [cells, evidenceRules] = await Promise.all([
+      restRowsAll(`zysyr_report_cells?select=id,sheet_name,cell_address,row_number,column_number,cell_kind,display_value,numeric_value,formula,precedent_addresses,label&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=row_number.asc,column_number.asc`, 5000),
+      monthlyEvidenceRules(companyId, storeId, cleanText(monthlyReport.template_code, 120)),
+    ]);
+    monthlyEvidenceRuleRows = evidenceRules;
     monthlyEvidencePolicies = monthlyEvidencePolicyMap(cells, monthlyEvidenceRuleRows);
     const cellFilter = uuidIn(cells.map((cell) => cell.id));
-    const [revisions, amountRevisions, textRevisions, locks] = await Promise.all([
+    const [revisions, amountRevisions, textRevisions, locks, incomeAdjustments] = await Promise.all([
       cellFilter === "()" ? [] : restRowsAll(monthlyTraceRevisionsPath(companyId, storeId, reportId), 5000),
       cellFilter === "()" ? [] : restRowsAll(`zysyr_monthly_cell_revisions?select=id,source_cell_id,revision,revision_type,before_amount,after_amount,delta,reason,actor_user_id,voucher_count,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=source_cell_id.asc,revision.desc`, 5000),
       restRowsAll(`zysyr_monthly_text_revisions?select=id,cell_address,cell_role,revision,base_text,before_text,after_text,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_id=eq.${reportId}&order=cell_address.asc,revision.desc`, 5000),
       restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,period_month&company_id=eq.${companyId}&period_month=eq.${start}&status=eq.locked&limit=20`, 20),
+      monthlyIncomeAdjustments(companyId, storeId, month),
     ]);
     const latestAmountRevisionByCell = latestMonthlyCellRevisionMap(amountRevisions);
     monthlyCellRevisions = Array.from(latestAmountRevisionByCell.values());
@@ -1266,7 +1277,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     monthlyReport = {
       ...monthlyReport,
       display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
-        await monthlyIncomeAdjustments(companyId, storeId, month), monthlyDailyRollup, textRevisions),
+        incomeAdjustments, monthlyDailyRollup, textRevisions),
     };
     const latest = new Map<string, string>();
     const latestSourceCount = new Map<string, number>();
@@ -1321,9 +1332,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       monthlyEvidencePolicies = historical.monthly_evidence_policy as Record<string, string> || {};
     }
   }
-  const acknowledgements = await restRowsAll(`zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`, 500);
-  const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
-  const ackUsers = ackUserIds.length ? await restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`) : [];
+  const ackUsers = await ackUsersPromise;
   const ackUserMap = new Map(ackUsers.map((account) => [cleanText(account.id, 40), {
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
