@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-26 · 上线遗留项最新只读复核（目标继续未完成）
+
+- 本轮没有改动生产或本地业务代码。`operations-api` ACTIVE v106（部署时间 2026-09-26 10:08:22 UTC）之后的新结构化日志中，授权 `overview` 成功样本仅 2 次，p95 4,959ms / 最大 5,096ms；另 1 次无权请求 403（2ms）不计入。样本太少，只能作为初步信号，性能验收仍开放；不得据此宣称达标。
+- A02 最新生产聚合仍为 active legacy staff 26、有效 V2 employee 映射 23、有效审批白名单 2、白名单中已有 active V2 Auth 账号 1、active V2 Auth 账号共 2；最近 24 小时 Auth 迁移事件 2 次（成功 1、失败 1、阻断 0）。所有值均为汇总计数，未读取个人身份或凭据，也未绑定、停用、重置任何账号；真实员工身份/门店/角色核验及财务账号登录验收仍开放。
+- Supabase Advisor 最新聚合：security 有 42 条 RLS-enabled/no-policy INFO（其中 11 条 `zysyr_*`）和 1 条 leaked-password protection WARN；performance 有 135 条未索引外键 INFO（其中 128 条 `zysyr_*`）、145 条 unused-index INFO（其中 127 条 `zysyr_*`）、4 条 multiple-permissive-policy WARN（无 `zysyr_*` 命中）。对所有 `zysyr_*` 且 RLS 开启但无策略的对象，另以 `has_table_privilege` 检查 anon/authenticated 的 SELECT/INSERT/UPDATE/DELETE，有效授权结果为 0 行；没有根据 Advisor 批量改 RLS、Auth 或索引。
+- G01 仍未完成。现有生产组织 `taoyouming308-ui's Org`、区域 `us-east-1`；隔离项目成本查询为约 USD 10/月。数据库约 276.7 MB，私有财务 Storage 约 1.40 GiB。已向用户单独询问是否同意创建隔离项目并复制恢复样本，以及是否启用泄露密码防护；等待明确答复前，不创建项目、不复制数据、不改 Auth 策略。
+- 仍待外部业务人员处理：B01 3,739 条历史已入账待财务签认（其中 1,115 条 warning），不得自动确认；care outbound 队列 ACL 生产变更继续等待安全 worker 认证方案/用户选择；真实财务设备、真实股东门店隔离、签名凭证查看、备份恢复抽验均未完成。本轮没有改历史数据、权限、登录端口或 LaunchAgent/TCC。
+- 上述实时证据仅用于审计状态，不代表全部修复完成。上线审计目标保持 active；本轮没有可发布的 App 代码变化。
+
 ## G01 源码归档保留顺序加固（本地回归通过，DB/Storage 灾备仍未完成）
 
 - 复现并修复源码备份脚本的清理顺序缺陷：过去先删超 30 天本地归档，再尝试云端复制；若云端目标失败，会丢失本地旧恢复点。现在先检查本地 tar，再复制至云端临时文件并逐字节 `cmp`，原子落盘后才清理过期云端/本地归档；云端失败时本地旧归档保持不动。
