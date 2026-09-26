@@ -6,6 +6,7 @@
 - 定向回归与完整 `npm run test:finance` 73/73 通过。完整仓库 pre-push 门禁（财务 73 项、应用/权限/前台及美管加同步测试）通过；GitHub Validate #36234632685 与 Pages build #36234632382 成功，Validate 包含 Deno 2.9.6 冻结依赖类型检查。
 - 提交 `298de94` 已推送 `github/main`；生产 `operations-api` 已为 v106 ACTIVE，整包 10 文件与 main 本地版本逐文件完全一致，`verify_jwt=false` 与 import map 均保持。无会话 overview 生产探针返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。没有部署迁移、改账、改权限或改财务独立登录入口。
 - App 前端版本仍为 v562；本次是独立 Edge Function 更新，Pages 内容未变。v105 基线只有 3 个 `overview` 慢请求；v106 部署后的已发请求尚无有效登录业务样本，匿名 403 不作为性能样本，需取得自然产生的授权 overview 请求后再比较耗时。上线审计目标仍保持 active。
+- 本机浏览器验收规则：优先使用已连接浏览器工具或应用内浏览器；不得在受限 shell 直接启动 Chrome/Chromium/Playwright/Puppeteer。若出现 `SIGABRT`、`_RegisterApplication` 或 `TransformProcessType`，停止原样重试并区分测试浏览器启动故障与业务会话问题；不得退出日常浏览器、批量结束进程或清理用户配置。
 - Last synchronized base checked: `298de94`; Current owner: Codex; Last Completed Work: v106 API bundle deployed and source/auth rejection verified; Open Work For Next Agent: A02, B01, G01, shared app permission remediation, real-account/device acceptance, and representative post-v106 performance evidence remain open; Required Checks Before Next Publishing: fetch main, release/sync hooks, complete pre-push suite, GitHub Actions and production readback; Handoff Rule: local tests and anonymous auth probes do not equal real finance account acceptance or post-deployment performance proof.
 
 ## v562 工资表 Safari 窄屏适配（已发布）
@@ -63,16 +64,17 @@
 - 结果支持财务按月/账类/问题代码安排逐笔核对，但不能替代源凭证审核或财务签认。没有更新 review_status、修正金额、导入历史账或改变任何生产行。项目当日恢复备份脚本确认源码归档已存在，未新增归档。
 - Last Completed Work: 只读完成 warning 分桶；Open Work For Next Agent: 由财务按正式原件逐批核验并通过受审计工作流签认/更正；不得批量确认或按代码自动修复。
 
-## A02 旧兼容登录收口第一步（代码已推送 main，生产未部署）
+## A02 旧兼容登录收口第一步（v106 已部署，真实账号验收待完成）
 
 - `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
-- 2026-09-26 生产源码回读确认 `operations-api` v105 ACTIVE 仍不含 `legacyStaffHasManagedV2Account` / `supabase_auth_required` 门禁；`operations-auth-migrate` v6、`operations-auth` v6 ACTIVE。最新匿名化聚合为 26 名旧在职员工、23 名有 V2 员工映射，其中 22 名尚无用户账号、1 名已有 active 账号；有效 approved allowlist 2 个。近 24 小时迁移事件为 12 次 started、6 次 direct Auth 成功、6 次凭据错误。没有查看账号身份、姓名、哈希或业务凭证。
-- 本轮本地重新运行 `node scripts/test-zysyr-legacy-login-security.js` 与 `node scripts/test-operations-auth-migration.js` 均通过；生产门禁仍未部署。它只应阻止已绑定 V2 账号继续签发旧会话，并要求该员工沿用现有财务登录入口完成 Auth；不得据聚合数批量建号、停用账号或改变登录端口。
+- 2026-09-26 随 `operations-api` v106 整包部署，生产 bundle 已确认包含 `legacyStaffHasManagedV2Account` / `supabase_auth_required` 门禁；10 个 bundle 文件与 main 逐文件一致，`verify_jwt=false` 与函数内 Auth 校验保持。`operations-auth-migrate` v6、`operations-auth` v6 ACTIVE。
+- 生产脱敏聚合：旧 active staff 26；映射到 active V2 员工 23，其中 22 名尚无 V2 account、1 名已有 active account；legacy→employee 映射总数 27；active approved allowlist 2。当前 active V2 Auth account 总数 2：1 个关联有效旧员工迁移白名单，另 1 个未关联该白名单（不据此推断角色或权限）。本次只查 counts，没有查看姓名、账号标识、哈希或业务凭证。
+- 本轮本地重新运行 `node scripts/test-zysyr-legacy-login-security.js` 与 `node scripts/test-operations-auth-migration.js` 均通过。门禁仅阻止已精确映射且 V2 账号已管理的员工继续获得旧兼容会话；旧登录入口仍保留给过渡账号。不得据聚合数批量建号、停用账号或改变财务登录端口。生产真实账号登录/恢复验收仍未完成。
 - 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
 - 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub Validate run `36218103714` 成功，Deno frozen `operations-api` 类型检查成功，Pages run `36218103325` 成功。真实财务账号验收未完成。
-- 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入上线风险说明与真实验收。未部署到生产；部署 `operations-api` 前需用户对本批生产 Auth 行为作具体确认。
-- A02 仍未关闭：当前生产聚合不足以识别哪些具体员工已完成 Auth 绑定；不得自动建号、改密码、撤销会话或停用财务登录。管理员逐账号身份/门店/角色核对及生产读写验收仍是剩余门槛。
-- Current owner: Codex; Last Completed Work: `60affb7` 已推送 main，完整本地 pre-push 与 GitHub Validate/Deno frozen check/Pages 均成功；Open Work For Next Agent: 获用户明确授权后部署 `operations-api`，对真实迁移账号和未迁移账号分别验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码推送不等于生产部署，生产部署及 Auth 结果必须单独回读验证。
+- 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入真实验收。没有更改账号、密码、会话、登录端口或财务数据。
+- A02 仍未关闭：管理员需逐账号确认身份/门店/角色，并在真实财务端分别验收已迁移和未迁移账号；不得自动建号、改密码、撤销会话或停用财务登录。
+- Current owner: Codex; Last Completed Work: `operations-api` v106 已生产部署且 Auth 精确映射门禁已回读；Open Work For Next Agent: 管理员确认后做真实迁移账号/未迁移账号登录验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码与 bundle 回读不等于真实财务账号端到端验收。
 
 ## 上线审计：operations-api 操作级耗时诊断（v105 已部署，性能根因待观测）
 
