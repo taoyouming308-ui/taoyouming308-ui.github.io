@@ -2,8 +2,10 @@
 
 ## 2026-09-26 · G01 生产备份范围核验（只读）
 
-- Supabase 当前官方文档确认：数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制 Storage 对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。生产数据库 restore 会造成项目不可访问，不能用于无隔离演练。
-- 当前组织套餐为 Pro；项目健康且为 PostgreSQL 17，但项目元数据不显示自动备份/PITR状态、保留期或 Storage 独立副本，当前生产灾备仍未证实。`storage.objects` 策略列表为空（已批准的匿名全权策略已不存在），Storage 为 2 个私有桶和 1 个公开桶；真实 signed URL 与公开读取仍待端到端核验。
+- Supabase 当前官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目有每日自动备份、可访问最近 7 天；当前组织为 Pro，但本工具未读取到项目实际备份列表，故没有确认可用恢复点。数据库备份不含 Storage 对象，“恢复到新项目”也不会复制对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展；生产 restore 会造成停机，不能直接在生产演练。
+- `storage.objects` 策略列表为空（已批准删除的匿名全权策略不存在），Storage 为 2 个私有桶和 1 个公开桶；anon/authenticated 虽仍有表级 CRUD grants，但启用的 RLS 无策略，anon 实测看不到对象。真实 signed URL 与公开读取仍待端到端核验。
+- 权限只读复核：财务相关 3 表拒绝 anon/authenticated 直接 CRUD；Storage 表级 grants 仍存在，但 `storage.objects` RLS 开启且无策略，`SET ROLE anon` 实测查询可见对象数为 0。故可确认匿名行级读取被拦截，不能把表级 grants 描述为已撤销；未尝试写入或变更权限。
+- A02最新只读聚合仍为 active 旧员工 26、active V2 employee 映射 23、有效白名单 2、已绑定 active Auth 账户 1；过去 24 小时 6 次 Auth 成功、6 次无效凭据失败。生产 `operations-api` 仍为 v105，本次兼容登录收紧未部署，未读用户身份或凭据。
 - 未创建备份、PITR、项目分支或 Storage 副本；待确认备份目的地/费用后做隔离恢复演练。
 
 ## 2026-09-26 · B01 历史正式账待签认分桶（只读）

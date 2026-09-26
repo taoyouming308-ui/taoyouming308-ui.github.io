@@ -2,9 +2,9 @@
 
 ## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
 
-- Supabase 官方当前备份文档确认：数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制 Storage 对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库恢复本身会让原项目不可访问，不能拿生产 restore 当演练。
-- Supabase 当前组织套餐为 Pro；项目元数据确认 `ACTIVE_HEALTHY`、Postgres 17，但没有返回自动备份/PITR状态、保留期或 Storage 外部副本，因此这些生产配置仍属未知，不能宣称已有可用灾备。
+- Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；本组织当前为 Pro，项目 `ACTIVE_HEALTHY`、Postgres 17，但本工具未读到项目实际备份列表，故尚未确认今天可用的恢复点。PITR 是否启用与 Storage 外部副本仍未知。数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库生产恢复会让原项目不可访问，不能拿生产 restore 当演练。
 - 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
+- 权限边界复核：关键财务 3 表对 `anon` 和 `authenticated` 的表级 SELECT/INSERT/UPDATE/DELETE 均无权限，`service_role` 仍有服务访问；`storage.objects` 表级 CRUD grants 对 anon/authenticated 仍存在，但 RLS 已启用、无策略，使用 `SET ROLE anon` 的只读查询返回 0 个对象。该结果证明当前匿名读被 RLS 拦截，不代表表级授权已被撤销；未做 Storage 写探针或修改 grants/policy。
 - 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。
 
 ## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
@@ -39,10 +39,12 @@
 
 - G01：当前 `com.zysyr.daily-backup` LaunchAgent 已指向本项目，但 `launchctl print gui/501/com.zysyr.daily-backup` 显示 `state=not running`、累计 runs=4、last exit code=126；错误日志最近仍为 macOS `Operation not permitted`。本机 2026-09-26 11:13 的源码 tar.gz 归档可完整列出，备份目录有 8 份近 30 天归档，且归档未包含 `backup.env`、`.git`、`node_modules`、`supabase/.temp`；这仅证明源码归档可读，不是生产 DB/Storage 备份或恢复演练。未改 LaunchAgent/TCC 权限，未导出生产数据；灾备目的地和隔离恢复仍待授权。
 - A02：生产匿名化聚合复核仍为 active legacy staff 26、approved allowlist 2、映射员工中具备 active V2 account 1（不要与 active V2 employee 档案映射数混为一谈）。近 24 小时 Auth 安全事件只有聚合计数：12 attempts、6 次 `invalid_credentials`、6 次 `direct_auth_login` 成功；没有读取用户标识或哈希，不能据此判断具体人员已迁移或授权停用旧登录。
+- A02 当前仍未达到关闭条件：旧 active staff 26 中，23 映射至 active V2 employee、2 个有效迁移白名单、1 个已关联 active V2 Auth account；过去 24 小时 Auth 事件 6 次 `direct_auth_login` 成功、6 次 `invalid_credentials`。未读身份标识/哈希。生产 `operations-api` 仍为 v105，包含本次提交的新旧登录过渡门禁未部署；真实逐账号身份、角色/门店与登录验收未完成。
 - 性能：部署 v105 后最近 24 小时仅观测到 1 条 `operations_api_timing`，为 HTTP OPTIONS 预检；尚无真实 operation 分布。数据库 `pg_stat_statements` 自 2026-06-09 重置以来累计数据中，日报确认 RPC 平均/最大约 1.49/4.05 秒（41 次），保存单元格 0.83/1.82 秒（75 次），识别候选应用 0.80/1.73 秒（299 次），创建草稿 0.27/4.13 秒（315 次）。累计值不代表最近 24 小时或用户侧端到端延迟，只用于后续选取排查候选，不据此改索引/公式。
 - Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
 - 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
 - 本次只有只读生产查询、LaunchAgent 状态/日志核查和现有源码归档完整性检查；无代码、数据库、Auth、RLS、历史账、Storage 对象、端口或系统权限变更。
+- 本轮审计文档 `git diff --check`、版本同步和发布完整性检查通过（v561）；财务回归套件前 12 项通过，第 13 项数据库测试因本机无权连接 OrbStack Docker socket 中止，不能计为完整回归通过。
 
 ## 月报表字号微调（v561，已发布）
 
