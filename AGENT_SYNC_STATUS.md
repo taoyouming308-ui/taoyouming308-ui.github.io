@@ -1,11 +1,11 @@
 # Agent Sync Status
 
-## 2026-09-26 · operations-api v107 历史月报独立读取并发化（待部署）
+## 2026-09-27 · operations-api v107 历史月报独立读取并发化（已部署）
 
 - 历史月报 fallback 中 3 个独立数据源请求以及原始工作簿、凭证关联、证据规则、上传人读取原为串行等待；改为两阶段 `Promise.all`，只改变只读请求调度，`effectiveHistoryMonthlyEntries`、金额投影、门店范围、凭证关联状态与响应内容保持不变。
-- `node scripts/test-monthly-load-recovery-v499.js` 和统一财务测试 73/73 通过；版本/发布完整性/同步状态检查通过。当前尚未部署 Edge Function；需本地/CI Edge 编译和部署后在线版本、授权财务会话自然样本延迟对照。不得把调度优化描述为已证明的线上提速。
+- `node scripts/test-monthly-load-recovery-v499.js`、统一财务测试 73/73 和完整 pre-push 通过；GitHub Validate #36253525110（含 Deno frozen type check）及 Pages #36253524876 成功。生产 `operations-api` v107 ACTIVE，10 文件包已部署，`verify_jwt=false` 保持；匿名 overview 探针仍为预期 403 `AUTH_SESSION_INVALID`。无授权财务会话自然样本，线上性能对照仍开放，不声称已证实提速。
 - App 前端版本保持 v563；无数据库、权限、财务登录端口、历史财务数据或对象变更。
-- Current owner: Codex; Last Completed Work: v563 月报布局发布；Open Work For Next Agent: v107 Edge Function 上线与生产性能证据；A02/Auth 身份核验、B01 历史账签认、G01 隔离恢复和获批配置仍未完成；Required Checks Before Publishing: 全仓 pre-push、GitHub main 同步、Edge frozen type check；Handoff Rule: 73/73 合成回归不代表生产延迟验收。
+- Current owner: Codex; Last Completed Work: operations-api v107 历史月报独立读取并发化部署；Open Work For Next Agent: v107 生产授权会话自然延迟证据；A02/Auth 身份核验、B01 历史账签认、G01 隔离恢复和获批配置仍未完成；Required Checks Before Publishing: 全仓 pre-push、GitHub main 同步、Edge frozen type check；Handoff Rule: 73/73 合成回归不代表生产延迟验收。
 
 ## 2026-09-26 · 上线遗留项最新只读复核（目标继续未完成）
 
