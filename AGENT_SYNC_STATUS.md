@@ -27,7 +27,8 @@
 ## 继续推进状态（2026-09-26）
 
 - 上线审计目标保持未完成 / active。本轮重跑 A02 本地回归：`test-zysyr-legacy-login-security.js` 与 `test-operations-auth-migration.js` 均通过；仅验证本地兼容登录门禁和滚动迁移，不代表生产门禁已部署或真实员工已迁移。
-- A02 仍等待生产 Auth 行为部署确认与管理员逐一确认身份/门店/角色；不自动绑定或停用账号，财务独立登录入口不变。G01 仍等待可验证的备份恢复点、获批隔离目的地/实际费用及恢复抽验授权；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
+- 2026-09-26 生产 Auth 最新聚合只读复核：在职员工 26、有效 Auth 账号 2、获批迁移白名单 2；仅 1 条白名单可与在职员工及有效 Auth 账号匹配。Security Advisor 仍报告 leaked-password protection disabled。未读取账号标识/密码、未创建或绑定用户；仍需管理员核对身份、门店与角色并确认密码策略变更影响。
+- A02 仍等待生产 Auth 行为部署确认与管理员逐一确认身份/门店/角色；不自动绑定或停用账号，财务独立登录入口不变。G01 已查到完成的物理备份点，但仍等待获批隔离目的地/实际费用及数据库与 Storage 恢复抽验；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
 - 2026-09-26 再次对生产历史导入行做脱敏聚合：2026-01 至 2026-06 共 3,739 条，`review_status=pending` 全部未签认，其中 2,624 条 valid、1,115 条 warning；各月 warning 数仍为 224、122、195、190、206、178。检查了签认路径：Edge API 与数据库 RPC 都要求 `expense.create_submit` 财务能力、说明理由并拒绝无效行；整月原表签认只写审核状态/审计事件，不会写正式历史账；之后的批次确认另行要求全部明细已确认。未查询金额/人员/原文，也未执行签认、正式入账或历史更改。
 - 本轮工资表适配是本地前端显示修复；没有生产写入、部署、数据库/Storage/Auth/权限/历史财务数据变更。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相应上线门槛。
 - 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；worker 走 `service_role`。这使得移除客户端角色权限在 worker 权限层面可隔离，但仍须先获生产权限变更确认；没有查询队列业务行、改策略或 grants。
@@ -56,12 +57,15 @@
 
 ## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
 
-- Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；本组织当前为 Pro，项目 `ACTIVE_HEALTHY`、Postgres 17，但本工具未读到项目实际备份列表，故尚未确认今天可用的恢复点。PITR 是否启用与 Storage 外部副本仍未知。数据库备份不包含 Storage 对象；“恢复到新项目”也不会复制对象/桶配置、Edge Functions、Auth 设置/API keys、Realtime 或部分扩展。数据库生产恢复会让原项目不可访问，不能拿生产 restore 当演练。
-- 2026-09-26 重新核实官方备份文档：可通过 Management API `GET /v1/projects/{ref}/database/backups` 列出恢复点，但当前可用 Supabase MCP 没有备份列表方法，shell 环境没有 `SUPABASE_ACCESS_TOKEN`；只读 Dashboard 浏览器初始化两次超时。本轮仍无法核实实时备份列表/PITR 状态，没有尝试恢复或导出。
+- Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；当前已从实时列表核实生产有 8 个连续日 `COMPLETED` 物理备份，PITR 未启用。数据库备份不包含 Storage 对象；恢复到另一项目也需单独迁移 Storage 对象和重建桶/函数/Auth 设置。生产项目恢复会造成不可访问，不能拿生产 restore 当演练。
+- 2026-09-26 重新核实官方备份文档：可通过 Management API `GET /v1/projects/{ref}/database/backups` 列出恢复点，但当时的 MCP 未提供备份列表方法、shell 没有 `SUPABASE_ACCESS_TOKEN`；Dashboard 浏览器初始化超时。
+- 2026-09-26 后续只读补证：Supabase CLI v2.109.1 的 `supabase backups list --project-ref pdssrmpeiuwvxzsgschm` 成功返回生产备份元数据：`walg_enabled=true`、`pitr_enabled=false`，最近一次物理备份 `COMPLETED` 于 2026-09-26 06:36:41 UTC，并列出 8 个连续日完成点（2026-09-19 至 2026-09-26）。这证明平台有完成的备份点，不证明可恢复；没有下载、复制或执行恢复。
+- Supabase 当前官方指引提供 “Restore to another project” 的物理备份恢复流程；数据库恢复与 Storage 对象恢复仍是分离步骤。当前项目属于 `taoyouming308-ui's Org`；已向用户询问是否在该组织查价并准备隔离环境，尚未创建项目、恢复数据库或复制约 1.40 GiB 对象。
 - 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
 - 2026-09-26 只读容量估算（仅 `storage.objects` 元数据 size 聚合，未读对象内容）：`zysyr-reports` 74 个对象 / 274,875,340 bytes，`zysyr-vouchers` 349 个 / 1,228,759,809 bytes，`showcase` 2 个 / 5 bytes；数据库 `pg_database_size` 为 276,679,827 bytes（约 264 MiB）。Storage 对象合计约 1.40 GiB，连同数据库约 1.66 GiB 原始数据；恢复空间还需覆盖临时文件、索引/数据库恢复开销及版本/桶配置，不能据原始大小直接当作磁盘下限。该清单可用于备份容量规划，不等于已经备份或完成恢复。
 - 权限边界复核：关键财务 3 表对 `anon` 和 `authenticated` 的表级 SELECT/INSERT/UPDATE/DELETE 均无权限，`service_role` 仍有服务访问；`storage.objects` 表级 CRUD grants 对 anon/authenticated 仍存在，但 RLS 已启用、无策略，使用 `SET ROLE anon` 的只读查询返回 0 个对象。该结果证明当前匿名读被 RLS 拦截，不代表表级授权已被撤销；未做 Storage 写探针或修改 grants/policy。
 - 2026-09-26 当前 Supabase 账号下只列出生产项目 `pdssrmpeiuwvxzsgschm`，`list_branches` 返回空；本地 `scripts/backup-zysyr.sh` 仅打包源码并排除 `.git`、`node_modules`、`backup.env` 等，不包含数据库 dump、Storage 对象复制或 restore 命令，不能充当 DB/Storage 灾备。创建隔离 Supabase 项目的当前成本查询为每月 USD 10；等待用户确认费用后才可创建，未创建任何资源。
+- 当前完整审计仍要求隔离恢复练习：已核实有最新 completed physical backup，但没有生产 DB/Storage 恢复点进入隔离目标的证据。新项目/分支需另行确认组织和当前价格；复制约 1.40 GiB 私有财务 Storage 对象也涉及获批目标与数据复制授权。恢复范围仅限隔离目标，禁止对生产执行 restore。
 - 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。2026-09-26 再读 `launchctl print gui/501/com.zysyr.daily-backup` 仍为 `state=not running`、last exit code 126；未尝试加载或修改 LaunchAgent/TCC。
 
 ## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
