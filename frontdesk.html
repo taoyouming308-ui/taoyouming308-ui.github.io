@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="zh-CN" data-version="566">
+<html lang="zh-CN" data-version="567">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta name="theme-color" content="#11110f">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="前台客户中心">
   <link rel="manifest" href="frontdesk-manifest.json">
   <link rel="apple-touch-icon" href="apple-icon-192.png">
@@ -176,6 +176,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=567">
 </head>
 <body>
   <div class="login" id="login">
@@ -217,31 +218,31 @@
       <button class="ghost" type="button" id="logout-btn">退出</button>
     </header>
     <aside>
-      <nav>
-        <button class="nav-btn on" data-view="today" type="button"><span>今</span><b>今日客户</b></button>
-        <button class="nav-btn" data-view="customers" type="button"><span>客</span><b>客户档案</b></button>
-        <button class="nav-btn" data-view="import" type="button"><span>表</span><b>客户数据表</b></button>
-        <button class="nav-btn" data-view="shampoo" type="button"><span>洗</span><b>洗发合格率</b></button>
+      <nav aria-label="前台功能">
+        <button class="nav-btn on" data-view="today" type="button" aria-label="今日客户" title="今日客户"><span aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 5h3"/></svg></span><b>今日客户</b></button>
+        <button class="nav-btn" data-view="customers" type="button" aria-label="客户档案" title="客户档案"><span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span><b>客户档案</b></button>
+        <button class="nav-btn" data-view="import" type="button" aria-label="客户数据表" title="客户数据表"><span aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/></svg></span><b>客户数据表</b></button>
+        <button class="nav-btn" data-view="shampoo" type="button" aria-label="洗发合格率" title="洗发合格率"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3s7 7 7 12a7 7 0 0 1-14 0c0-5 7-12 7-12Z"/><path d="m9 15 2 2 4-4"/></svg></span><b>洗发合格率</b></button>
       </nav>
       <div class="scope"><strong id="scope-store">门店</strong><span id="scope-user">—</span><div class="readonly">美管加负责收银<br>本端负责查询与辅助接待</div></div>
     </aside>
 
     <main>
       <section class="view" id="view-today">
-        <div class="view-head"><div><h2>发型师时间预览</h2><p>从当天最早营业时段开始完整显示，已过去时段和已完成客户都会保留；点击客户看套餐，点击空白时间格快速登记。</p></div><div class="actions"><button class="primary" id="add-today-btn" type="button">添加今日客户</button><input class="date-input" id="today-date" type="date"></div></div>
+        <div class="view-head"><div><h2>今日客户</h2><p>查看到店安排，轻松接待每一位客户。</p></div><div class="actions"><input class="date-input" id="today-date" type="date" aria-label="查看日期"><button class="primary" id="add-today-btn" type="button">添加今日客户</button></div></div>
         <div class="kpis">
           <div class="kpi"><label>今日预约</label><strong id="kpi-bookings">—</strong><small>来自预约同步</small></div>
           <div class="kpi"><label>已消费客户</label><strong id="kpi-services">—</strong><small>来自美管加消费单</small></div>
           <div class="kpi"><label>预约已匹配</label><strong id="kpi-matched">—</strong><small>手机号优先匹配</small></div>
           <div class="kpi"><label>今日消费金额</label><strong id="kpi-amount">—</strong><small>仅展示，不在此收款</small></div>
         </div>
-        <div class="card"><div class="card-head"><h3>发型师预览表</h3><small id="today-caption">正在载入</small><div class="schedule-controls"><small>可左右滑动</small><button class="scroll-step" id="schedule-left" type="button" aria-label="向左查看">←</button><button class="scroll-step" id="schedule-right" type="button" aria-label="向右查看">→</button></div><div class="schedule-legend"><span><i class="wait"></i>等待接待</span><span><i class="active"></i>预约/服务中</span><span><i class="done"></i>已完成</span><span><i class="cancel"></i>取消/未到</span></div></div><div class="schedule-scroll" id="today-list"><div class="empty">正在读取今日数据…</div></div></div>
+        <div class="card"><div class="card-head"><h3>发型师时间预览</h3><small id="today-caption">正在载入</small><div class="schedule-controls"><small>可左右滑动</small><button class="scroll-step" id="schedule-left" type="button" aria-label="向左查看">←</button><button class="scroll-step" id="schedule-right" type="button" aria-label="向右查看">→</button></div><div class="schedule-legend"><span><i class="wait"></i>等待接待</span><span><i class="active"></i>预约/服务中</span><span><i class="done"></i>已完成</span><span><i class="cancel"></i>取消/未到</span></div></div><div class="schedule-scroll" id="today-list"><div class="empty">正在读取今日数据…</div></div><details class="schedule-guide"><summary>排班操作说明</summary><p>从当天最早营业时段开始完整显示，已过去时段和已完成客户都会保留；点击客户看套餐，点击空白时间格快速登记。</p></details></div>
       </section>
 
       <section class="view hidden" id="view-customers">
         <div class="view-head"><div><h2>客户档案</h2><p>按姓名或手机号查询，查看全部已同步消费记录和套餐余项。</p></div></div>
         <div class="customer-layout">
-          <div class="card search-pane"><div class="search-box"><input class="search-input" id="customer-query" placeholder="输入姓名、完整手机号或后4位"><button class="primary" id="customer-search-btn" type="button">查询</button></div><div class="result-list" id="customer-results"><div class="empty"><b>查找客户</b>可输入姓名、完整手机号或手机号后4位</div></div></div>
+          <div class="card search-pane"><div class="search-box"><input class="search-input" id="customer-query" aria-label="搜索客户" placeholder="输入姓名、完整手机号或后4位"><button class="primary" id="customer-search-btn" type="button">查询</button></div><div class="result-list" id="customer-results"><div class="empty"><b>查找客户</b>可输入姓名、完整手机号或手机号后4位</div></div></div>
           <div class="card detail-pane" id="customer-detail"><div class="detail-empty"><div><div class="mark" style="margin:auto">客</div><p>从左侧选择客户查看档案</p></div></div></div>
         </div>
       </section>
@@ -249,12 +250,12 @@
       <section class="view hidden" id="view-import">
         <div class="view-head"><div><h2>客户数据表</h2><p>以电脑表格查看“当日接待”和“历史导入”；来源分开显示，不覆盖美管加或后台客户原始档案。</p></div></div>
         <div class="card ledger-card">
-          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" placeholder="姓名、完整手机号、手机后4位、项目或发型师"><input class="date-input" id="ledger-date" type="date" title="按日期筛选"><button class="primary" id="ledger-search-btn" type="button">搜索</button><select class="ledger-filter" id="ledger-source"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
-          <div class="ledger-boundary"><span><b>项目 / 发型师 / 技师 / 助理：</b>两类记录都可补充修改</span><span><b>历史导入：</b>保留原 CSV 和来源批次，修改会记录操作人</span><span>所有修改仅作用于前台独立数据表，不修改美管加或后台客户原始信息</span></div>
+          <div class="ledger-toolbar"><input class="search-input" id="ledger-search" aria-label="搜索客户数据表" placeholder="姓名、完整手机号、手机后4位、项目或发型师"><input class="date-input" id="ledger-date" aria-label="筛选记录日期" type="date" title="按日期筛选"><button class="primary" id="ledger-search-btn" type="button">搜索</button><select class="ledger-filter" id="ledger-source" aria-label="记录来源"><option value="all">全部来源</option><option value="today">当日接待</option><option value="imported">历史导入</option></select><button class="ghost" id="ledger-refresh" type="button">刷新表格</button><span class="ledger-count" id="ledger-count">正在读取…</span></div>
+          <details class="ledger-guidance"><summary>编辑与来源说明</summary><div class="ledger-boundary"><span><b>项目 / 发型师 / 技师 / 助理：</b>两类记录都可补充修改</span><span><b>历史导入：</b>保留原 CSV 和来源批次，修改会记录操作人</span><span>所有修改仅作用于前台独立数据表，不修改美管加或后台客户原始信息</span></div></details>
           <div class="ledger-table-wrap" id="ledger-table"><div class="empty">正在读取客户数据表…</div></div>
         </div>
         <div class="notice hidden" id="import-denied"><strong>当前账号可以查看客户数据表</strong>但上传历史 CSV 只允许店长或管理员操作。</div>
-        <div id="import-tools">
+        <details id="import-tools"><summary>导入历史登记表</summary>
           <div class="import-section-title"><div><h3>导入以前的登记表</h3><p>补入历史消费记录；不会写回美管加，也不会执行收银。</p></div></div>
           <div class="import-grid">
             <div>
@@ -263,11 +264,11 @@
             </div>
             <div class="card mapping"><h3>自动识别这些列</h3><table><tbody><tr><td>消费日期</td><td>必填</td></tr><tr><td>券码</td><td>可选</td></tr><tr><td>姓名 / 手机号</td><td>至少一项</td></tr><tr><td>客户项目</td><td>剪发、烫发、染发等</td></tr><tr><td>发型师 / 技师 / 助理</td><td>自动保存人员</td></tr><tr><td>消费金额</td><td>金额、点评、扣次卡说明</td></tr></tbody></table><button class="link-btn" id="template-btn" type="button">下载 CSV 模板</button><div class="section-title">最近导入<span>防重复写入</span></div><div class="batch-list" id="batch-list"><div class="empty" style="padding:20px">暂无导入记录</div></div></div>
           </div>
-        </div>
+        </details>
       </section>
 
       <section class="view hidden" id="view-shampoo">
-        <div class="view-head"><div><h2>助理洗发合格率</h2><p>前台在客户接待信息里标记「洗发合格」，月底一键统计各助理合格率。</p></div><div class="actions"><select class="ledger-filter" id="shampoo-month"></select><button class="primary" id="shampoo-stats-btn" type="button">统计</button></div></div>
+        <div class="view-head"><div><h2>助理洗发合格率</h2><p>前台在客户接待信息里标记「洗发合格」，月底一键统计各助理合格率。</p></div><div class="actions"><select class="ledger-filter" id="shampoo-month" aria-label="统计月份"></select><button class="primary" id="shampoo-stats-btn" type="button">统计</button></div></div>
         <div class="card"><div class="card-head"><h3>统计结果</h3><small id="shampoo-caption">选择月份后点击统计</small></div><div class="ledger-table-wrap" id="shampoo-table"><div class="empty">选择月份后点击「统计」查看合格率</div></div></div>
       </section>
     </main>
@@ -348,7 +349,7 @@
     $('store-select').addEventListener('change',function(){state.store=this.value;localStorage.setItem(STORE_KEY,state.store);$('scope-store').textContent=state.store;$('head-user').textContent=state.store+' · '+state.session.user.username;loadDashboard();if(state.view==='import'){loadLedger();if(state.session.user.can_import)loadBatches();}});
 
     document.querySelectorAll('.nav-btn').forEach(function(button){button.addEventListener('click',function(){showView(button.dataset.view);});});
-    function showView(name){state.view=name;document.querySelectorAll('.nav-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.view===name);});document.querySelectorAll('.view').forEach(function(view){view.classList.add('hidden');});$('view-'+name).classList.remove('hidden');if(name==='import'&&state.session){loadLedger();if(state.session.user.can_import)loadBatches();}}
+    function showView(name){state.view=name;document.querySelectorAll('.nav-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.view===name);});document.querySelectorAll('.view').forEach(function(view){view.classList.add('hidden');});$('view-'+name).classList.remove('hidden');if(isMobileView()&&typeof window.scrollTo==='function')window.scrollTo(0,0);if(name==='import'&&state.session){loadLedger();if(state.session.user.can_import)loadBatches();}}
 
     function itemNames(items){return (Array.isArray(items)?items:[]).map(function(item){return typeof item==='string'?item:(item&&((item.name||item.itemname)))||'';}).filter(Boolean);}
     function customerKey(row){return phone(row.customer_phone)||(row.customer_name?'n:'+row.customer_name:'');}
@@ -387,8 +388,8 @@
       var container=$('today-list'),previousScroll=container.querySelector('.schedule-grid')?container.scrollLeft:null;if(!names.length){container.innerHTML='<div class="empty"><b>当前门店没有在职发型师</b>请先在后台检查员工职位与门店</div>';return;}
       var availability={},placeholderRows=(data.bookings||[]).filter(bookingPlaceholder).map(function(booking){var barber=resolvedBarber(booking.barber_name,data.barbers||[]),time=booking.time_label||minuteLabel(timeMinutes(booking.reservation_time));availability[barber+'|'+time]=true;return {time:time};});var range=scheduleRange(rows.concat(placeholderRows)),slots=[];for(var minute=range.start;minute<range.end;minute+=30)slots.push(minute);
       var header='<div class="schedule-corner" style="grid-row:1;grid-column:1">发型师 / 时间</div>'+slots.map(function(minute,index){return '<div class="schedule-time '+(minute%60===0?'hour':'')+'" style="grid-row:1;grid-column:'+(index+2)+'">'+minuteLabel(minute)+'</div>';}).join('');
-      var body=names.map(function(name,rowIndex){var gridRow=rowIndex+2,groupRows=rows.filter(function(row){return (row.barber||'未分配发型师')===name;}),slotsHtml=slots.map(function(minute,index){var label=minuteLabel(minute),available=!!availability[name+'|'+label];return '<button class="schedule-slot '+(available?'available':'')+'" type="button" data-barber="'+esc(name)+'" data-time="'+label+'" aria-label="'+esc(name+' '+label+(available?' 可预约，添加客户':' 添加客户'))+'" style="grid-row:'+gridRow+';grid-column:'+(index+2)+'"><span>'+(available?'✋':'＋')+'</span></button>';}).join('');var events=groupRows.map(function(row){var minute=timeMinutes(row.time);if(minute==null)minute=range.start;var column=Math.max(0,Math.min(slots.length-1,Math.floor((minute-range.start)/30))),duration=Number(row.duration)||30,span=Math.max(1,Math.ceil(duration/30));span=Math.min(span,slots.length-column);var stateMeta=todayState(row),index=rows.indexOf(row),label=minuteLabel(minute)||row.time||'—';return '<button class="schedule-event '+stateMeta.tone+'" type="button" data-index="'+index+'" aria-label="'+esc(label+' '+row.name+' '+stateMeta.label)+'" style="grid-row:'+gridRow+';grid-column:'+(column+2)+'/span '+span+'"><strong>'+esc(label+' '+row.name)+'</strong><small>'+esc(row.phone||stateMeta.label)+'</small><em>'+esc(row.service||stateMeta.label)+'</em></button>';}).join('');return '<div class="schedule-barber" style="grid-row:'+gridRow+';grid-column:1"><strong>'+esc(name)+'</strong><span>'+groupRows.length+' 位客户</span></div>'+slotsHtml+events;}).join('');
-      var now=new Date(),nowMinute=now.getHours()*60+now.getMinutes(),showNow=$('today-date').value===localDate()&&nowMinute>=range.start&&nowMinute<range.end,nowLine=showNow?'<div class="schedule-now" style="left:'+(142+(nowMinute-range.start)/30*104)+'px"></div>':'';
+      var body=names.map(function(name,rowIndex){var gridRow=rowIndex+2,groupRows=rows.filter(function(row){return (row.barber||'未分配发型师')===name;}),slotsHtml=slots.map(function(minute,index){var label=minuteLabel(minute),available=!!availability[name+'|'+label];return '<button class="schedule-slot '+(available?'available':'')+'" type="button" data-barber="'+esc(name)+'" data-time="'+label+'" aria-label="'+esc(name+' '+label+(available?' 可预约，添加客户':' 添加客户'))+'" style="grid-row:'+gridRow+';grid-column:'+(index+2)+'"><span aria-hidden="true">＋</span></button>';}).join('');var events=groupRows.map(function(row){var minute=timeMinutes(row.time);if(minute==null)minute=range.start;var column=Math.max(0,Math.min(slots.length-1,Math.floor((minute-range.start)/30))),duration=Number(row.duration)||30,span=Math.max(1,Math.ceil(duration/30));span=Math.min(span,slots.length-column);var stateMeta=todayState(row),index=rows.indexOf(row),label=minuteLabel(minute)||row.time||'—';return '<button class="schedule-event '+stateMeta.tone+'" type="button" data-index="'+index+'" aria-label="'+esc(label+' '+row.name+' '+stateMeta.label)+'" style="grid-row:'+gridRow+';grid-column:'+(column+2)+'/span '+span+'"><strong>'+esc(label+' '+row.name)+'</strong><small>'+esc(row.phone||stateMeta.label)+'</small><em>'+esc(row.service||stateMeta.label)+'</em></button>';}).join('');return '<div class="schedule-barber" style="grid-row:'+gridRow+';grid-column:1"><strong>'+esc(name)+'</strong><span>'+groupRows.length+' 位客户</span></div>'+slotsHtml+events;}).join('');
+      var now=new Date(),nowMinute=now.getHours()*60+now.getMinutes(),showNow=$('today-date').value===localDate()&&nowMinute>=range.start&&nowMinute<range.end,nowLine=showNow?'<div class="schedule-now" style="left:calc(var(--staff-col) + var(--slot) * '+((nowMinute-range.start)/30)+')"></div>':'';
       container.innerHTML='<div class="schedule-grid" style="--slot-count:'+slots.length+';--barber-count:'+names.length+'">'+header+body+nowLine+'</div>';
       container.querySelectorAll('.schedule-event').forEach(function(el){el.addEventListener('click',function(){openTodayCustomer(rows[Number(el.dataset.index)]);});});
       container.querySelectorAll('.schedule-slot').forEach(function(el){el.addEventListener('click',function(){openTodayForm({barber:el.dataset.barber,time:el.dataset.time});});});

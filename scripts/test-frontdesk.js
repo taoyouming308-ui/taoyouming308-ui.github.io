@@ -99,7 +99,7 @@ expect(html.includes('10:00') || html.includes('var start=600'), 'default 10:00 
 expect(html.includes('已过去时段和已完成客户都会保留'), 'past times and completed customer visibility note missing');
 expect(!html.includes('var focus=showNow?nowMinute'), 'schedule must not auto-hide past times by jumping to now');
 expect(html.includes('minute+=30') && html.includes('点击空白时间格快速登记'), '30-minute quick-add schedule behavior missing');
-expect(html.includes('bookingPlaceholder') && html.includes("available?'✋':'＋'"), 'empty Meiguanjia booking slots must render as available schedule cells');
+expect(html.includes('bookingPlaceholder') && html.includes("available?'available':''") && html.includes('<span aria-hidden="true">＋</span>'), 'empty Meiguanjia booking slots must remain available quick-add cells');
 expect(html.includes('resolvedBarber') && html.includes('name.endsWith(item)'), 'Meiguanjia/staff barber alias reconciliation missing');
 expect(html.includes('添加今日客户') && html.includes('当天前台备注') && html.includes('id="today-time"'), 'timed daily reception form missing');
 expect(html.includes('store-select') && html.includes('zysyr-frontdesk-store-v1'), 'persistent branch selection missing');
