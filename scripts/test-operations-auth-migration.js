@@ -29,6 +29,18 @@ expect(source.includes('zysyr_begin_auth_migration'), 'atomic rate-limit gate mi
 expect(source.includes('zysyr_complete_auth_migration'), 'atomic account/grant completion missing');
 expect(source.includes('direct_auth_login') && source.includes('zysyr_account_id'), 'direct Supabase Auth finance login missing');
 expect(source.includes('role_id=eq.${financeRoleId}') && source.includes('direct_identity_mismatch'), 'direct finance role/identity verification missing');
+expect(source.includes('async function legacyStoreMappingMatches(')
+  && source.includes('zysyr_legacy_id_map?select=target_id,mapping_status')
+  && source.includes('staff?select=id,username,password_hash,store,active,employment_status')
+  && source.includes('zysyr_stores?select=id,company_id,name,status')
+  && source.includes('normalizedStoreName(staffRows[0].store) === normalizedStoreName(stores[0].name)'), 'legacy/V2 employee store consistency guard missing');
+const directGuardIndex = source.indexOf('!await legacyStoreMappingMatches(cleanText(directAccount.company_id');
+const directSignInIndex = source.indexOf('const session = await signIn(email, password);', directGuardIndex);
+expect(source.includes('migratedFromLegacy && (!isUuid(directEmployeeId) || !Number.isInteger(legacyStaffId)')
+  && directGuardIndex >= 0 && directSignInIndex > directGuardIndex, 'direct migrated finance login must fail closed on missing or cross-store legacy mapping before password sign-in');
+const allowlistGuardIndex = source.indexOf('if (!await legacyStoreMappingMatches(', source.indexOf('async function passwordLogin'));
+const allowlistAccountIndex = source.indexOf('const existingAccount = accountRows[0];', allowlistGuardIndex);
+expect(allowlistGuardIndex >= 0 && allowlistAccountIndex > allowlistGuardIndex, 'allowlisted account login/migration must fail closed on a store mismatch before account reuse or creation');
 expect(source.includes('GENERIC_LOGIN_ERROR'), 'generic anti-enumeration error missing');
 expect(!source.includes('console.log'), 'credentials or success payloads must not be logged');
 expect(!source.includes('user_metadata'), 'user-editable metadata must not authorize migration');
@@ -66,5 +78,10 @@ const syntaxProbe = spawnSync(process.execPath, [
   sourcePath,
 ], { encoding: 'utf8' });
 expect(syntaxProbe.status === 0, `operations-auth-migrate TypeScript syntax failed: ${syntaxProbe.stderr}`);
+
+const storeGuardProbe = spawnSync(process.execPath, [
+  path.join(root, 'scripts/test-zysyr-auth-store-guard.js'),
+], { encoding: 'utf8' });
+expect(storeGuardProbe.status === 0, `operations-auth-migrate cross-store guard behavior failed: ${storeGuardProbe.stderr || storeGuardProbe.stdout}`);
 
 console.log('operations Auth rolling migration tests passed');

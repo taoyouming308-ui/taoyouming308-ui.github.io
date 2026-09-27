@@ -80,6 +80,42 @@ async function restRows(path: string): Promise<JsonRecord[]> {
   return Array.isArray(rows) ? rows as JsonRecord[] : [];
 }
 
+function normalizedStoreName(value: unknown): string {
+  return cleanText(value, 100).normalize("NFKC").replace(/\s+/g, " ").toLocaleLowerCase("zh-CN");
+}
+
+async function legacyStoreMappingMatches(
+  companyId: string,
+  employeeId: string,
+  legacyStaffId: number,
+  knownStaff?: JsonRecord,
+  knownEmployee?: JsonRecord,
+): Promise<boolean> {
+  if (!isUuid(companyId) || !isUuid(employeeId) || !Number.isInteger(legacyStaffId)) return false;
+  const [mappingRows, staffRows, employeeRows] = await Promise.all([
+    restRows(`zysyr_legacy_id_map?select=target_id,mapping_status&company_id=eq.${companyId}&source_table=eq.staff&source_key=eq.${legacyStaffId}&target_table=eq.zysyr_employees&limit=2`),
+    knownStaff ? Promise.resolve([knownStaff]) : restRows(`staff?select=id,store&id=eq.${legacyStaffId}&limit=2`),
+    knownEmployee ? Promise.resolve([knownEmployee]) : restRows(`zysyr_employees?select=id,company_id,store_id&id=eq.${employeeId}&company_id=eq.${companyId}&limit=2`),
+  ]);
+  if (mappingRows.length !== 1
+      || cleanText(mappingRows[0].mapping_status, 20) !== "mapped"
+      || cleanText(mappingRows[0].target_id, 40) !== employeeId
+      || staffRows.length !== 1
+      || Number(staffRows[0].id) !== legacyStaffId
+      || employeeRows.length !== 1
+      || cleanText(employeeRows[0].id, 40) !== employeeId
+      || cleanText(employeeRows[0].company_id, 40) !== companyId) return false;
+
+  const storeId = cleanText(employeeRows[0].store_id, 40);
+  if (!isUuid(storeId)) return false;
+  const stores = await restRows(`zysyr_stores?select=id,company_id,name,status&id=eq.${storeId}&company_id=eq.${companyId}&status=eq.active&limit=2`);
+  return stores.length === 1
+    && cleanText(stores[0].id, 40) === storeId
+    && cleanText(stores[0].company_id, 40) === companyId
+    && normalizedStoreName(staffRows[0].store) !== ""
+    && normalizedStoreName(staffRows[0].store) === normalizedStoreName(stores[0].name);
+}
+
 async function rpc(name: string, body: JsonRecord): Promise<unknown> {
   const response = await serviceFetch(`/rest/v1/rpc/${name}`, {
     method: "POST",
@@ -248,6 +284,15 @@ async function passwordLogin(req: Request, payload: JsonRecord): Promise<Respons
           return json({ error: GENERIC_LOGIN_ERROR }, 403);
         }
 
+        const migratedFromLegacy = cleanText(appMetadata.zysyr_migration, 80) === "legacy_password_bootstrap_v1";
+        const legacyStaffId = Number(appMetadata.zysyr_legacy_staff_id);
+        const directEmployeeId = cleanText(directAccount.employee_id, 40);
+        if (migratedFromLegacy && (!isUuid(directEmployeeId) || !Number.isInteger(legacyStaffId)
+            || !await legacyStoreMappingMatches(cleanText(directAccount.company_id, 40), directEmployeeId, legacyStaffId))) {
+          await recordResult(identityHash, clientHash, requestId, "failure", "store_mapping_mismatch");
+          return json({ error: GENERIC_LOGIN_ERROR }, 403);
+        }
+
         const session = await signIn(email, password);
         const sessionUser = session?.user && typeof session.user === "object" ? session.user as JsonRecord : {};
         if (!session || cleanText(sessionUser.id, 40) !== authUserId) {
@@ -273,7 +318,7 @@ async function passwordLogin(req: Request, payload: JsonRecord): Promise<Respons
     }
 
     const [staffRows, employeeRows, accountRows] = await Promise.all([
-      restRows(`staff?select=id,username,password_hash,active,employment_status&id=eq.${legacyStaffId}&username=eq.${encodeURIComponent(username)}&limit=1`),
+      restRows(`staff?select=id,username,password_hash,store,active,employment_status&id=eq.${legacyStaffId}&username=eq.${encodeURIComponent(username)}&limit=1`),
       restRows(`zysyr_employees?select=id,company_id,store_id,employee_code,name,employment_status&id=eq.${employeeId}&company_id=eq.${cleanText(approved.company_id, 40)}&limit=1`),
       restRows(`zysyr_user_accounts?select=id,company_id,auth_user_id,employee_id,login_name,status&employee_id=eq.${employeeId}&limit=1`),
     ]);
@@ -282,6 +327,17 @@ async function passwordLogin(req: Request, payload: JsonRecord): Promise<Respons
     if (!staff || staff.active !== true || cleanText(staff.employment_status, 40) !== "active"
         || !employee || cleanText(employee.employment_status, 40) !== "active") {
       await recordResult(identityHash, clientHash, requestId, "failure", "inactive_identity");
+      return json({ error: GENERIC_LOGIN_ERROR }, 403);
+    }
+
+    if (!await legacyStoreMappingMatches(
+      cleanText(approved.company_id, 40),
+      employeeId,
+      legacyStaffId,
+      staff,
+      employee,
+    )) {
+      await recordResult(identityHash, clientHash, requestId, "failure", "store_mapping_mismatch");
       return json({ error: GENERIC_LOGIN_ERROR }, 403);
     }
 
