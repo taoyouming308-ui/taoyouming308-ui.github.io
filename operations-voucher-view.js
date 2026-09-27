@@ -3,6 +3,18 @@
   'use strict';
   root.createZysyrVoucherView = function (options) {
     var core = root.ZysyrVoucherPreview, esc = options.escape, generation = 0, previewObserver = null;
+    function isMonthlyReportAttachment(file) {
+      if (!file || file.evidence_kind !== 'supporting_document') return false;
+      var monthlyLinks = (Array.isArray(file.trace_links) ? file.trace_links : []).filter(function (link) {
+        return /^monthly-report:/i.test(String(link && link.source_locator || ''));
+      });
+      if (!monthlyLinks.length) return false;
+      // Keep a file if it was also explicitly attached to this expense/page.
+      // trace_source_locator can fall back to the bundle's monthly-report
+      // locator; trace_source_locators contains only exact page locators.
+      var exactLocators = [].concat(file.trace_source_locators || []).filter(Boolean);
+      return file.trace_link_level !== 'page_confirmed' && exactLocators.length === 0;
+    }
     function fileView(file, host, retry, linkImage, loadPage) {
       var selected = core.selectImages(file), url = core.safeURL(file.file_url), name = file.filename || file.original_filename || '原始凭证';
       var images = selected.images.map(function (item) { return core.safeURL(item.data_url); }).filter(Boolean);
@@ -112,21 +124,24 @@
           fetchTraceBatch: typeof options.traceBatch === 'function' ? function (cells) { return options.traceBatch(cells, context); } : undefined
         });
         if (!active()) return;
+        // Monthly report scans are month-level source documents, not the
+        // receipt for every individual ledger item linked to that report.
+        var voucherEvidence = collected.evidence.filter(function (file) { return !isMonthlyReportAttachment(file); });
         var warnings = [];
         if (collected.failures.length) warnings.push(collected.failures.length + ' 个组成项目读取失败，当前预览不完整');
         if (collected.truncated) warnings.push('组成项目较多，本次尚未读取全部，不能标记凭证齐全');
         if (collected.unresolved) warnings.push(collected.unresolved + ' 个公式缺少可解析的组成项目');
         if (collected.missing_leaves) warnings.push(collected.missing_leaves + ' 个非零组成项目尚未关联凭证');
-        gallery.innerHTML = header + (warnings.length ? '<div class="candidate-warning">' + esc(warnings.join('；')) + '。<button class="ghost" data-retry-trace>重新读取</button></div>' : '') + '<div class="help">已读取 ' + collected.leaf_count + ' 个组成项目，关联原件 ' + collected.evidence.length + ' 份。仅展示已有关系，不按文件名猜测关联。</div>';
+        gallery.innerHTML = header + (warnings.length ? '<div class="candidate-warning">' + esc(warnings.join('；')) + '。<button class="ghost" data-retry-trace>重新读取</button></div>' : '') + '<div class="help">已读取 ' + collected.leaf_count + ' 个组成项目，关联本笔凭证 ' + voucherEvidence.length + ' 份。月报原图请从月报表入口查看。</div>';
         var retryTrace = gallery.querySelector('[data-retry-trace]'); if (retryTrace) retryTrace.onclick = function () { options.reopen(address); };
-        if (!collected.evidence.length) {
+        if (!voucherEvidence.length) {
           gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。可以直接上传凭证，或将该项目设置为“不需要凭证”；组成明细仍保留在下方，按需展开。</div>');
           return;
         }
         var target = data.target || {};
         var canLinkPage = Boolean(data.historical && data.mode !== 'formula' && data.can_upload_vouchers
           && target.historical_ledger_entry_id && target.historical_import_row_id);
-        var hosts = collected.evidence.map(function (file) {
+        var hosts = voucherEvidence.map(function (file) {
           var host = document.createElement('section'); host.className = 'trace-card voucher-file-preview';
           var scope = file.trace_link_level === 'bundle_only'
             ? '<div class="candidate-warning">当前关联范围：本月整包凭证，尚未确认哪张对应当前金额。以下展示整包原图，不代表每张都计入该金额。</div>'
@@ -136,8 +151,8 @@
         });
         function show(file, index) { fileView(file, hosts[index], async function () {
           hosts[index].innerHTML = '<div class="voucher-gallery-loading">正在重新读取…</div>';
-          try { var result = await options.load(collected.evidence[index], context, data.historical); if (active()) show(result, index); }
-          catch (error) { if (active()) show(Object.assign({}, collected.evidence[index], { preview_error: error.message }), index); }
+          try { var result = await options.load(voucherEvidence[index], context, data.historical); if (active()) show(result, index); }
+          catch (error) { if (active()) show(Object.assign({}, voucherEvidence[index], { preview_error: error.message }), index); }
         }, canLinkPage && file.trace_link_level === 'bundle_only' ? async function (filename) {
           if (!active()) throw new Error('页面已切换，请重新打开当前金额');
           var reason = window.prompt('请先放大核对原图确实对应“' + (target.label || address) + '”这笔，再填写核对说明。系统不会按金额自动配对。');
@@ -146,9 +161,9 @@
             evidence_id: file.id, source_locator: 'word/media/' + filename, reason: reason.trim() });
           if (active()) options.reopen(address);
         } : null, function (sourceFile, imageFilename) {
-          return options.load(collected.evidence[index], context, data.historical, imageFilename);
+          return options.load(voucherEvidence[index], context, data.historical, imageFilename);
         }); }
-        var observed = core.loadVisibleFiles(collected.evidence, hosts,
+        var observed = core.loadVisibleFiles(voucherEvidence, hosts,
           function (file) { return options.load(file, context, data.historical); }, show, active);
         previewObserver = observed;
       } catch (error) {

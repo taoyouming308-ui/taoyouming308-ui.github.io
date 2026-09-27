@@ -64,7 +64,7 @@ async function run() {
           if (window.fixtureMode === 'slow') await new Promise(resolve => setTimeout(resolve, 100));
           if (window.fixtureMode === 'missing') return { target, report, historical: true, mode: 'input', evidence: [] };
           if (cellAddress === 'C3') return { target, report, historical: true, mode: 'formula', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, precedents: [{ cell_address: 'C4', label: '组成项目甲' }, { cell_address: 'C5', label: '组成项目乙' }] };
-          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: cellAddress === 'C5' || !window.fixtureExact ? 'bundle_only' : 'page_confirmed', trace_source_locator: cellAddress === 'C5' ? 'bundle:2026-01' : window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }] };
+          return { target, report, historical: true, mode: 'input', can_edit: true, can_upload_vouchers: true, can_manage_business_evidence_rules: true, monthly_adjustment: { revision: 0 }, business_total: 30, business_details: [{ business_type: 'history_petty_cash', business_id: '22222222-2222-4222-8222-222222222222', date: '2026-01-02', title: '单笔开支', description: '测试明细', amount: 30, evidence_policy: 'voucher_required', has_evidence: true }], evidence: [{ id: 'bundle', original_filename: '模拟凭证包.docx', trace_link_level: cellAddress === 'C5' || !window.fixtureExact ? 'bundle_only' : 'page_confirmed', trace_source_locator: cellAddress === 'C5' ? 'bundle:2026-01' : window.fixtureExact ? 'word/media/image2.png' : null }, { id: 'daily', evidence_source: 'voucher_attachment', original_filename: '模拟日报.png' }, { id: 'monthly-report-photo', evidence_kind: 'supporting_document', original_filename: '整月月报原图.jpg', trace_link_level: 'bundle_only', trace_source_locator: 'monthly-report:2026-01', trace_links: [{ source_locator: 'monthly-report:2026-01', link_level: 'bundle_only' }] }] };
         }
         async function realTrace(cellAddress) {
           const trace = await traceFixture(cellAddress);
@@ -107,6 +107,7 @@ async function run() {
       return button.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
     }), true, 'sticky navigation must not cover the return button');
     assert.equal(await page.locator('.voucher-file-preview').count(), 2, 'deduplicate shared originals');
+    assert.equal((await page.locator('.monthly-voucher-preview').innerText()).includes('整月月报原图.jpg'), false, 'a month-level report photo must not appear as an individual voucher');
     assert.equal(await page.locator('.voucher-trace-details').getAttribute('open'), null);
     assert.match(await page.locator('.monthly-voucher-preview').innerText(), /本月整包凭证/);
     assert.doesNotMatch(await page.locator('#cell-trace-page-title').innerText(), /C3/);
