@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-mgj-daily-report-sync.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-electronic-reader.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-electronic-browser.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-electronic-source-db.js" },
+    { "runtime": "python", "args": ["-m", "unittest", "scripts/test_sync_mgj_daily_electronic_sources.py", "scripts/test_audit_mgj_daily_report_source.py"] },
     { "runtime": "node", "script": "test-staff-report-read-timeout.js" },
     { "runtime": "node", "script": "test-zysyr-api-read-timeout.js" },
     { "runtime": "node", "script": "test-operations-time.js" },

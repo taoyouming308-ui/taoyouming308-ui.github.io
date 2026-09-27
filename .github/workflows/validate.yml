@@ -37,6 +37,8 @@ jobs:
         run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
       - name: Type-check signed booking sync function
         run: deno check supabase/functions/mgj-booking-sync/index.ts
+      - name: Type-check signed daily electronic source function
+        run: deno check supabase/functions/mgj-daily-report-sync/index.ts
       - name: Validate signed private customer sync
         run: |
           deno check supabase/functions/mgj-customer-sync/index.ts

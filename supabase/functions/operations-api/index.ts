@@ -1225,7 +1225,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const end = endDate.toISOString().slice(0, 10);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
-  const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,display_data,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
+  const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
   const acknowledgementPath = `zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`;
   const [rawReports, dailySource, acknowledgements] = await Promise.all([
     restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month), restRowsAll(acknowledgementPath, 500),
@@ -1242,12 +1242,20 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   });
   const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
     && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
+  const monthlyReportCandidate = reports.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
+    && cleanText(report.report_date, 10) === start) || null;
   const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
   const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
-  const [vouchers, uploaders] = await Promise.all([
+  const monthlyDisplayStartedAt = performance.now();
+  const monthlyDisplayPromise = monthlyReportCandidate
+    ? restRows(`zysyr_report_uploads?select=display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${cleanText(monthlyReportCandidate.id, 40)}&limit=1`)
+    : Promise.resolve([] as JsonRecord[]);
+  const [vouchers, uploaders, monthlyDisplayRows] = await Promise.all([
     reportUploadVouchers(companyId, storeId, reports),
     uploaderFilter === "()" ? Promise.resolve([] as JsonRecord[]) : restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`),
+    monthlyDisplayPromise,
   ]);
+  if (monthlyReportCandidate) overviewStageMs.monthly_report_display = Math.round(performance.now() - monthlyDisplayStartedAt);
   markOverviewStage("report_evidence_and_uploaders");
   const voucherMap = new Map<string, JsonRecord[]>();
   for (const voucher of vouchers) {
@@ -1259,8 +1267,11 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const uploaderMap = new Map(uploaders.map((account) => [cleanText(account.id, 40), {
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
+  const monthlyReportId = cleanText(monthlyReportCandidate?.id, 40);
+  const monthlyDisplayData = monthlyDisplayRows.length === 1 ? monthlyDisplayRows[0].display_data : null;
   const withEvidence: JsonRecord[] = reports.map((report) => ({
     ...report,
+    ...(monthlyReportId && cleanText(report.id, 40) === monthlyReportId ? { display_data: monthlyDisplayData } : {}),
     uploaded_by: uploaderMap.get(cleanText(report.uploaded_by_user_id, 40)) || null,
     vouchers: voucherMap.get(cleanText(report.id, 80)) || [],
   }));
@@ -5391,6 +5402,40 @@ async function voidDailySheetAttachment(payload: JsonRecord, session: JsonRecord
     attachment_voided: true, original_preserved: true, formal_ledger_written: false };
 }
 
+// Separate finance-only reference reader. It never adopts values, edits drafts or posts income.
+async function dailyElectronicSources(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "仅财务账号可以查看待核对电子来源");
+  const store = await selectedStoreInfo(session, payload);
+  const start = cleanText(payload.start_date, 10), end = cleanText(payload.end_date, 10);
+  const exactDate = (value: string) => /^2026-\d{2}-\d{2}$/.test(value)
+    && Number.isFinite(Date.parse(value + "T00:00:00Z"))
+    && new Date(value + "T00:00:00Z").toISOString().slice(0, 10) === value;
+  const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  if (!exactDate(start) || !exactDate(end) || end < start || end > today
+    || Date.parse(end) - Date.parse(start) > 30 * 86400000) {
+    throw new Error("请选择2026年内不超过31天且不晚于今天的日期范围");
+  }
+  // Company and store IDs come from the validated session scope, never caller-supplied IDs.
+  const candidateId = uuidValue(payload.candidate_id, "电子来源版本编号无效", true);
+  const sourceScope = cleanText(payload.source_scope, 40) || null;
+  if (sourceScope && !["projects_daily_summary", "all_business_daily_summary"].includes(sourceScope)) {
+    throw new Error("电子来源范围无效");
+  }
+  const response = await rest("rpc/zysyr_read_daily_electronic_source", {
+    method: "POST", signal: AbortSignal.timeout(20000), body: JSON.stringify({ p_company_id: cleanText(store.company_id, 40),
+      p_store_id: cleanText(store.id, 40), p_date_from: start, p_date_to: end,
+      p_source_scope: sourceScope, p_candidate_id: candidateId }),
+  });
+  if (!response.ok) throw new Error("电子来源暂不可用；原日报和已入账数据不受影响");
+  const result = await response.json() as JsonRecord;
+  if (result.formal_ledger_amount_changed !== false || result.stage !== "source_only"
+    || !Array.isArray(result.items) || result.items.length > 62) {
+    throw new Error("电子来源回执无效，请稍后重新读取");
+  }
+  return { ...result, store: cleanText(store.name, 100), start_date: start, end_date: end,
+    readonly: true, finance_confirmation_required: true, automatic_posting_enabled: false };
+}
+
 async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
@@ -6695,6 +6740,7 @@ async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): P
 }
 
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
+daily_electronic_sources
 ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
@@ -6853,6 +6899,7 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
     if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
     if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
+    if (operation === "daily_electronic_sources") return json(await dailyElectronicSources(payload, session));
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));

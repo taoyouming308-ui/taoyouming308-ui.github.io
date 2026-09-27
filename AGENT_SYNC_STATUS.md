@@ -1,12 +1,22 @@
 # Agent Sync Status
 
+## 2026-09-28 · 电子日报第一阶段后端已部署（App version: v581，页面待发布）
+
+- Last synchronized base checked: GitHub main `326a138`；当前本地提交 `9b6a04c`，等待获准推送。Astra high 完成独立数据库实现及安全回归，Luna 完成采集器，主线程完成签名接口、财务只读 API/UI 和集成检查。
+- 用户已确认公-刷卡、公-支微、私-刷卡、私-支微不需要填写：新来源候选为 null/not_applicable/nonblocking，不清空旧已确认值。
+- Last Completed Work: 新增独立快照/候选/水位/审计，幂等和迟到保护、两店隔离、财务只读对照入口、默认 dry-run 有界采集。完整财务套件 79/79 命令通过，含新库 43 项和来源 Python 25 项；operations-api 冻结依赖 Deno 类型检查通过。
+- 当前仅 source_only，不会生成完整日报或登记电子凭证，不改变旧草稿、41 张已确认日报、原图、正式账、月报和美管加。迁移与两个 Edge 接口已部署；页面尚未发布，未运行全年补录，未安装定时器。
+- Cloud: migration 已追加四张隔离来源表及服务端读写 RPC；核对旧数据仍为 41 份已确认、311 份日报和 279 个附件，匿名/普通登录无新 RPC 权限。签名 source writer ACTIVE v1；operations-api ACTIVE v110，保留更高版本线上报表逻辑，仅新增财务只读来源读取。无签名 writer 探针 401。未采集/写入任何来源。
+- Release blockers: `supabase db push --dry-run --linked --include-all` 因 checkout 未关联项目不可用；改由目标项目 migration history 只读核对后逐项应用。数据库/Storage 备份与恢复点状态未能从可用连接器核验，只有源码归档。单日采集试跑为日常同步让路，未取得新真实源。页面 v581 尚未推送。
+- Open Work For Next Agent: 先完成 v581 页面发布授权；然后还需员工及项目等可靠映射、电子凭证/采用/人工确认路径、全年有界补录与逐日核对，不能把来源参考当全年完整日报。数据库/Storage 备份恢复点仍待有权限者核验。
+
 ## 2026-09-28 · 两店电子日报来源诊断（App version: v580，财务功能未部署）
 
 - Last synchronized base checked: GitHub main `cd849b1`；Current owner: Codex。复用 perm-pages-hair-picker-sync，开始时干净；9/28 源码归档已完成，不冒充数据库/Storage 备份。
 - 用户批准两店 2026 年至今自动日报及电子明细凭证，仍需财务人工确认；已有照片、人工草稿和 41 张已确认日报保持不变。Astra high 审查架构，Luna 实现有界只读诊断，主线程核验真实样本。
 - Last Completed Work: 只读核实 bill detail 的支付/项目/岗位结构与日汇总查询合同；两店差异样本、向里首周 6 份已确认日报现金业绩及非空支付分项匹配。员工分类汇总请求出现门店回显不匹配，结果作废，不用于导入。13 项脱敏/请求/金额/范围合成回归通过，单日日汇总真实解析通过。
 - 新诊断工具不是生产同步器，不含客户原始数据、秘密、财务写入或定时器；单次最多 3 张单据或一个店日汇总，60 秒预算，共享消费锁。没有部署数据库/Edge/页面改动，App 保持 v580。
-- Open Work For Next Agent: 先读 docs/daily-electronic-evidence-plan.md；完成业务映射、完整来源与电子证据/候选/审核确认链路。对公对私规则尚待用户答复。发布财务迁移前按 finance-release-runbook 取得具体影响/备份/回退确认；不能把政策批准当部署完成。
+- Open Work For Next Agent: 先读 docs/daily-electronic-evidence-plan.md；完成业务映射、完整来源与电子证据/候选/审核确认链路。对公对私规则已由上节用户答复更新。发布财务迁移前按 finance-release-runbook 取得具体影响/备份/回退确认；不能把政策批准当部署完成。
 - Handoff Rule: 前台项目消费 540 店日已补齐，不等于财务日报完整。当前截至 9/28 的目标为 542 店日，分别统计既有已确认、完整候选、缺口与今天草稿；未知不填零，岗位业绩不重复计收入，不自动入账。
 
 ## 2026-09-27 · 两店 2026 历史消费补齐完成（App version: v580，云端已核验）
