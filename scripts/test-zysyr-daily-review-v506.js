@@ -58,6 +58,13 @@ const badControls = controlsFixture.calculateDailyControls({ querySelectorAll: (
 assert.equal(badControls.valid, false, 'an incorrect stylist grand subtotal must block posting');
 assert.equal(badControls.stylistSubtotalMismatch, true);
 
-// Save, adoption and posting are covered by the real browser workflow regression.
-assert.match(fs.readFileSync('operations-daily-review.js', 'utf8'), /daily-rollup-readonly/);
+// Daily aggregation stays intact, while the monthly rollup cell remains
+// finance-editable through the audited monthly adjustment path.
+const dailyReview = fs.readFileSync('operations-daily-review.js', 'utf8');
+assert.doesNotMatch(dailyReview, /daily-rollup-readonly|美发收入来自已确认日报累计，不能在月报重复录入/,
+  'confirmed daily rollup must not force the monthly hair-income cell readonly');
+assert.match(pageSource, /data-monthly-cell=.*oninput="monthlyInputChanged\(this\)"/,
+  'monthly amount cells must remain editable in finance edit mode');
+assert.match(pageSource, /monthly_income_adjustment_save/,
+  'finance monthly overrides must save through the audited monthly adjustment endpoint');
 console.log('ZYSYR_DAILY_REVIEW_V506_OK');

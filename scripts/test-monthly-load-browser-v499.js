@@ -41,6 +41,11 @@ let browser;
     if (realReport) state.data.monthly_report = Object.assign({}, state.data.monthly_report, realReport);
     state.data.monthly_report.historical = false;
     window.fixtureOverview = JSON.parse(JSON.stringify(state.data));
+    if (!realReport) {
+      const rollupCell = window.fixtureOverview.monthly_report.display_data.cells.find(cell => cell.cell_address === 'G12');
+      if (!rollupCell) throw Error('daily-linked monthly amount fixture missing');
+      rollupCell.daily_rollup = { confirmed_days: 1, amount: 0 };
+    }
     window.calls = []; window.failOverview = false;
     isLocalPreview = () => false;
     api = async (operation, payload) => {
@@ -65,6 +70,10 @@ let browser;
     assert.equal(await input.count(), 1, address + ' must be editable');
     assert.equal(await input.inputValue(), '', address + ' must stay blank until filled');
     assert.equal(await input.evaluate(node => getComputedStyle(node).boxShadow !== 'none'), true, address + ' requires a visible boundary');
+  }
+  if (!real) {
+    const rollupInput = page.locator('input[data-monthly-cell="G12"]');
+    assert.equal(await rollupInput.isEditable(), true, 'confirmed-daily hair income must remain finance-editable');
   }
   assert.equal(await page.locator('input[data-monthly-cell="E14"]').count(), 0, 'fixed identifiers');
   const target = expected[0];

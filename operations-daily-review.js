@@ -325,16 +325,7 @@
     if (!hasWork()) return;
     event.preventDefault(); event.returnValue = '';
   });
-  var renderMonthlyBase = renderSheet;
-  renderSheet = function (display, noTrace, editable) {
-    renderMonthlyBase(display, noTrace, editable);
-    (display && display.cells || []).forEach(function (cell) {
-      if (!(cell.daily_rollup && Number(cell.daily_rollup.confirmed_days) > 0)) return;
-      var input = document.querySelector('#monthly-sheet input[data-monthly-cell="' + cell.cell_address + '"]');
-      if (!input) return;
-      input.readOnly = true;
-      input.title = '美发收入来自已确认日报累计，不能在月报重复录入';
-      input.classList.add('daily-rollup-readonly');
-    });
-  };
+  // The daily cash rollup remains the monthly hair-income starting value, but
+  // finance may override that month-only value through the audited adjustment
+  // path in operations.html. Do not make the daily-linked monthly cell readonly.
 })();

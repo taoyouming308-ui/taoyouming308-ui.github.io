@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-09-27 · 月报美发收入恢复财务编辑（App version: v573，待发布）
+
+- Last synchronized base checked: GitHub main `cd5f52a`（v572），已快进同步并保留客户消费/套餐修复；本日源码备份已存在。
+- 根因：线上 operations-daily-review.js 在月报渲染后把 daily_rollup 金额格强制设为 readonly。只删除该覆盖，让财务编辑模式继续走现有 monthly_income_adjustment_save 审计通道。
+- 日报现金业绩、不含卡金、月报调整和原表留存逻辑不变；未修改 API、数据库、权限或生产金额。
+- 定向日报校验、现金收入、月报公式/调整、审计测试及合成浏览器编辑/保存/读回通过；已将已入账日报来源输入框纳入浏览器回归。Open Work For Next Agent: 完成发布门禁、推送并核验 Pages；真实一月账不写入测试金额。
+- Handoff Rule: 线上新资源验证与合成数据回归不等于真实账金额保存验收。
+
 ## 2026-09-27 · 套餐余额有效期核对（App version: v572，已发布）
 
 - Last synchronized base checked: github/main 593a0dd（本轮 v571）。Current owner: Codex。v571 完整 pre-push 通过，含统一财务 74/74 和同步 Python 53 项；employee-bookings-api v5 ACTIVE，线上源码逐字匹配，未登录请求 403。真实样本已回读并运行相同门店裁剪，得到 5 项有余额套餐、356 笔本店消费且其他门店记录/备注不外泄。
