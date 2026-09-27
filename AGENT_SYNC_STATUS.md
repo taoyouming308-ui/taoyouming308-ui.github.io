@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，待发布）
+
+- Last synchronized base checked: GitHub main `89338ad`（v574），由本任务隔离分支快进同步；当日 ZYSYR 源码归档已存在。
+- 用户确认统计口径：消费单数按当天门店同步到的 Meiguanjia 服务单条数；消费人数按非空手机号去重，无手机号服务单数作为提示且不计入人数；消费总额仍按服务单金额合计。
+- 预约已匹配继续保留总数，副标题拆出手机号匹配与姓名兜底匹配数量，避免把姓名兜底误认成手机号精确匹配。只改前台展示逻辑和缓存版本，不改 Supabase、源业务记录或收银流程。
+- Last Completed Work: 代码已修改，发布检查尚未运行；无生产数据读取或写入，本版尚未上线。
+- Open Work For Next Agent: 执行经用户授权的发布验证/门禁，修正问题后推送 GitHub main 并检查 GitHub Pages v575；等真实门店刷新后核对统计口径。
+- Handoff Rule: 手机号缺失时人数不猜测；手机号匹配人数不等于无手机号顾客数，也不宣称消费源数据覆盖完整。
+
 ## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，已发布）
 
 - Last synchronized base checked: github/main cf5725d（v573）；Current owner: Codex；复用 perm-pages-booking-sync 干净隔离 checkout，保留财务 v573 和用户其他工作区。修改前检查与当日源码备份完成。
