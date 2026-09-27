@@ -1,6 +1,8 @@
 // Actual customer-modal functions/styles, synthetic data and blocked external network.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { chromium } = require('playwright');
 const source = fs.readFileSync('perm-app.html','utf8');
 const styles = [...source.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(x=>x[1]).join('\n');
@@ -49,7 +51,7 @@ let browser;
       assert(layout.scroll<=layout.width+1 && layout.right<=width+1, 'modal must fit viewport '+width);
       assert.equal(await page.locator('#plan-modal .box').evaluate(el=>getComputedStyle(el).getPropertyValue('--text').trim()), '#111', 'white modal must use readable dark text');
       if(mode!=='empty') assert.equal(await page.locator('#plan-modal .hair-archive-body td').first().evaluate(el=>getComputedStyle(el).color), 'rgb(25, 25, 24)', 'package title must have readable contrast');
-      if(width===390 && mode==='cloud') await page.screenshot({path:'/private/tmp/customer-profile-modal-v571.png'});
+      if(width===390 && mode==='cloud') await page.screenshot({path:path.join(os.tmpdir(),'customer-profile-modal.png')});
     }
     await page.close();
   }
