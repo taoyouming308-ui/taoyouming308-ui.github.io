@@ -90,7 +90,9 @@ def live_due():
 
 @contextmanager
 def source_slot(deadline):
-    wait_until = min(deadline - 45, time.monotonic() + 100)
+    # A minute tick can arrive just before the five-minute live interval is due.
+    # Allow the following tick and its booking prelude, without forcing a refresh.
+    wait_until = min(deadline - 45, time.monotonic() + 180)
     with open(daily.LOCK, 'a') as source_lock:
         while time.monotonic() < wait_until:
             if not live_due():

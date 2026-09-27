@@ -67,10 +67,17 @@ class HistoricalConsumptionTests(unittest.TestCase):
     def test_live_priority_wait_is_bounded_and_never_fetches(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(backfill.daily,'LOCK',str(Path(tmp)/'lock')), \
              patch.object(backfill,'live_due',return_value=True), patch.object(backfill.time,'sleep'), \
-             patch.object(backfill.time,'monotonic',side_effect=[0,0,101]):
+             patch.object(backfill.time,'monotonic',side_effect=[0,0,181]):
             with self.assertRaises(TimeoutError):
-                with backfill.source_slot(200):
+                with backfill.source_slot(300):
                     self.fail('live priority must not yield the source lock')
+
+    def test_live_tick_can_complete_after_old_hundred_second_window(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(backfill.daily,'LOCK',str(Path(tmp)/'lock')), \
+             patch.object(backfill,'live_due',side_effect=[True,False]), patch.object(backfill.time,'sleep'), \
+             patch.object(backfill.time,'monotonic',side_effect=[0,0,130]):
+            with backfill.source_slot(300):
+                pass
 
 
 if __name__ == '__main__':
