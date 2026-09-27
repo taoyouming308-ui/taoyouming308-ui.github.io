@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-09-27 · 月报照片与单笔凭证隔离（App version: v570，已发布）
+
+- Last synchronized base checked: GitHub main `dbfda7c`，保留客户私有同步与预约刷新发布。源码备份已存在。
+- 凭证追溯按显式 `monthly-report:` 来源排除月报整月附件；精确逐笔关联、人工上传的单笔凭证仍保留。月报照片仍由月报入口访问。
+- 凭证浏览器回归桌面、手机竖屏和横屏通过；完整 pre-push 财务 74/74、同步/健康 Python 53 项及 GitHub Validate #36313666708 成功。Pages #36313666438 成功；无缓存回读 v570 页面与脚本含修复。提交 `e07add7` 已发布。
+- 仅前端展示过滤、版本和交接记录；未修改数据库、API、Storage、财务数据、凭证关系、权限或登录入口。Open Work For Next Agent: 等用户用原问题中的月份/凭证实机复测；若单笔凭证文件本身仍有问题，继续按该凭证 ID 独立排查。
+- Handoff Rule: 发布回读与合成凭证回归通过不等于真实账号实机验收；没有生产财务写操作。
+
 ## 2026-09-27 · 客户私有同步恢复与当天预约提速（App version: v569，已发布）
 
 - Last synchronized base checked: github/main e32b4cf（包含最新财务极简界面，已保留）；本线程干净隔离 checkout 开始，备份已核验。Current owner: Codex。用户同意先修复消费/套餐授权，再实施当天预约 1 分钟、未来日期约 15 分钟轮换及前台云端 30 秒刷新。
