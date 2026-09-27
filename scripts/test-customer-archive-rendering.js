@@ -132,14 +132,16 @@ function testConsumptionAndPackages() {
   vm.runInNewContext(source.slice(infoStart, infoEnd) + source.slice(start, end), context);
   const rows = [{ summary_scope:'synced_store_records', total_visits:7, total_consumption:300,
     service_history:Array.from({length:7}, (_,i)=>({id:'bill-'+i,date:'2026-09-'+String(20+i).padStart(2,'0'),amount:i===0?null:i===6?0:60,bill_no:'NO-'+i,items:[{name:'护理 <测试>'}],staff:['本店员工'],shop:'自由手艺人'})),
-    card_packages:[{id:'p1',name:'剪发280',package_name:'设计总监五次剪发卡',left:4,total:5,shop:'自由手艺人'}] }];
+    card_packages:[{id:'p1',name:'剪发280',package_name:'设计总监五次剪发卡',left:4,total:5,shop:'自由手艺人'},
+      {id:'expired',name:'护理',package_name:'护理季卡',left:2,total:4,expire_date:'2024-05-11',status:'active',shop:'自由手艺人'}] }];
   const history = context.renderCustomerConsumptionArchive(rows);
   for (const text of ['已同步 7 笔消费','查看其余 2 笔消费','<details>','已同步金额','¥0','金额未同步','护理 &lt;测试&gt;','本店员工','单号 NO-0']) {
     if (!history.includes(text)) failures.push('consumption display missing: '+text);
   }
   if (history.indexOf('2026-09-26') > history.indexOf('2026-09-20')) failures.push('consumption history not newest first');
   const packages = context.renderCustomerPackagesArchive(rows);
-  for (const text of ['设计总监五次剪发卡','剪发280','剩4/5次']) if (!packages.includes(text)) failures.push('package details missing: '+text);
+  for (const text of ['设计总监五次剪发卡','剪发280','剩4/5次','已过期','护理季卡','2024-05-11']) if (!packages.includes(text)) failures.push('package details missing: '+text);
+  if (context.collectCustomerPackages(rows, false).length !== 1) failures.push('expired balances must not be recommended as usable');
   if (context.collectCustomerServiceHistory([{last_visit_date:'2026-09-27'}]).length) failures.push('last visit must not fabricate a consumption record');
   if (!context.renderCustomerConsumptionArchive([]).includes('尚未同步')) failures.push('missing history must be explicit');
   const modal = source.slice(source.indexOf('window.showPlanModal = function'), source.indexOf('window.closePlanModal = function'));

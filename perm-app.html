@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="571">
+<html lang="zh-CN" data-version="572">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3080,9 +3080,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=571"></script>
-<script src="hair-vision-training.v1.js?v=571"></script>
-<script src="aesthetic-growth.v2.js?v=571"></script>
+<script src="aesthetic-knowledge.v1.js?v=572"></script>
+<script src="hair-vision-training.v1.js?v=572"></script>
+<script src="aesthetic-growth.v2.js?v=572"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -8219,13 +8219,17 @@ function initApp() {
   function collectCustomerPackages(profileRows, includeUsed) {
     var list = [];
     var seen = {};
+    var todayKey = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
     (profileRows || []).forEach(function(row) {
       var packages = parseHairArrayField(row.card_packages);
       packages.forEach(function(pkg) {
         pkg = pkg || {};
         var left = Number(pkg.left != null ? pkg.left : (pkg.remaining != null ? pkg.remaining : pkg.leavetimes)) || 0;
         var total = Number(pkg.total != null ? pkg.total : pkg.sumtimes) || 0;
-        if (!includeUsed && left <= 0) return;
+        var expireDate = String(pkg.expire_date || pkg.validdate || '');
+        var expireKey = expireDate.slice(0, 10);
+        var expired = pkg.status === 'expired' || pkg.status === '已过期' || (/^\d{4}-\d{2}-\d{2}$/.test(expireKey) && expireKey < todayKey);
+        if (!includeUsed && (left <= 0 || expired)) return;
         var name = pkg.name || pkg.itemname || '套餐';
         var shop = pkg.shop || row.shop_name || '';
         var sourceId = pkg.id || pkg.source_id || '';
@@ -8242,12 +8246,14 @@ function initApp() {
           total: total,
           sumtimes: total,
           shop: shop,
-          expireDate: pkg.expire_date || pkg.validdate || '',
+          expireDate: expireDate,
+          expired: expired,
           status: pkg.status || ''
         });
       });
     });
     list.sort(function(a, b) {
+      if (a.expired !== b.expired) return a.expired ? 1 : -1;
       var ar = a.total > 0 ? a.left / a.total : 1;
       var br = b.total > 0 ? b.left / b.total : 1;
       return ar - br;
@@ -8383,14 +8389,15 @@ function initApp() {
   }
 
   function renderCustomerPackagesArchive(profileRows) {
-    var packages = collectCustomerPackages(profileRows, false);
+    // Keep expired balances visible for traceability, but never recommend using them.
+    var packages = collectCustomerPackages(profileRows, true).filter(function(pkg){ return pkg.left > 0; });
     if (!packages.length) return '<div style="color:var(--text-secondary);">暂无已同步的剩余套餐，请以美管加记录为准。</div>';
     var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
     packages.forEach(function(pkg) {
       var pct = pkg.total > 0 ? Math.round(pkg.left / pkg.total * 100) : 0;
-      var color = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
+      var color = pkg.expired ? 'var(--text-secondary)' : (pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050'));
       var meta = [pkg.shop, pkg.expireDate ? '有效期至' + pkg.expireDate : ''].filter(Boolean).join(' · ');
-      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.packageName || pkg.name || '套餐') + (pkg.packageName ? '<br>' + esc(pkg.name) : '') + (meta ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(meta) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
+      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.packageName || pkg.name || '套餐') + (pkg.packageName ? '<br>' + esc(pkg.name) : '') + (meta ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(meta) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">' + (pkg.expired ? '已过期<br>' : '') + '剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
     });
     html += '</tbody></table>';
     return html;

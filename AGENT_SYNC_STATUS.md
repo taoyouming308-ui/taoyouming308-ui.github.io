@@ -1,6 +1,12 @@
 # Agent Sync Status
 
-## 2026-09-27 · 员工客户套餐与消费明细修复（App version: v571，待发布）
+## 2026-09-27 · 套餐余额有效期核对（App version: v572，待发布）
+
+- Last synchronized base checked: github/main 593a0dd（本轮 v571）。Current owner: Codex。v571 完整 pre-push 通过，含统一财务 74/74 和同步 Python 53 项；employee-bookings-api v5 ACTIVE，线上源码逐字匹配，未登录请求 403。真实样本已回读并运行相同门店裁剪，得到 5 项有余额套餐、356 笔本店消费且其他门店记录/备注不外泄。
+- 最后核对有效期发现 5 项余额中一项护理季卡已于 2024-05-11 过期，源 status 仍是 active。前端改为按北京时间判断并清楚标注过期，保留档案，但不计入可用推荐；实际未过期 4 项。前文“有效 5 项”在此更正为“有余额 5 项”。
+- Last Completed Work: 有效期/档案渲染定向测试通过。Open Work For Next Agent: 完成 v572 发布与线上回读；真实门店设备验收仍待用户。
+
+## 2026-09-27 · 员工客户套餐与消费明细修复（App version: v571，已推送）
 
 - Last synchronized base checked: github/main e8c6cf8（v570 的发布核验文档已快进保留）。Current owner: Codex；复用干净 perm-pages-booking-sync checkout，未修改用户 Salon 工作区；修改前备份 ZYSYR_2026-09-27_184944.tar.gz。
 - 根因已用真实数据核对：截图客户主档 shop_name=向里造型，但套餐和多数消费属于自由手艺人；旧 employee-bookings-api 按主档门店过滤，导致降级为 34 条预约。生产聚合显示向里主档内有自由明细的客户 482 位，反向 242 位。
