@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { mergeEmployeeBookingRows } from "../_shared/employee-booking-merge.mjs";
+import { customerProfileStoreFilter, scopeCustomerProfile } from "../_shared/customer-profile-scope.mjs";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -162,14 +163,14 @@ async function customerProfiles(payload: JsonRecord, session: JsonRecord): Promi
   if (!store) throw new Error("账号未绑定门店，无法读取客户资料");
   const rawSearch = cleanText(payload.search, 100).replace(/[,*()]/g, " ").trim();
   const limit = Math.max(1, Math.min(1000, Number.parseInt(String(payload.limit || "1000"), 10) || 1000));
-  const fields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences";
-  let path = `customer_profiles?select=${fields}&shop_name=eq.${safeFilterValue(store)}&order=last_visit_date.desc.nullslast&limit=${limit}`;
+  const fields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences,last_updated";
+  let path = `customer_profiles?select=${fields}&${customerProfileStoreFilter(store)}&order=last_visit_date.desc.nullslast&limit=${limit}`;
   if (rawSearch) {
     const term = safeFilterValue(rawSearch);
-    path += `&or=(phone.ilike.*${term}*,name.ilike.*${term}*)`;
+    path += `&and=(or(phone.ilike.*${term}*,name.ilike.*${term}*))`;
   }
   const rows = await restRows(path);
-  return { rows, store, read_only: true };
+  return { rows: rows.map(row => scopeCustomerProfile(row, store)).filter(Boolean), store, read_only: true };
 }
 
 async function customerHistory(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -179,13 +180,13 @@ async function customerHistory(payload: JsonRecord, session: JsonRecord): Promis
   if (!phone) return { rows: [], bookings: [], store, read_only: true };
   const encodedStore = safeFilterValue(store);
   const encodedPhone = safeFilterValue(phone);
-  const profileFields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences";
+  const profileFields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences,last_updated";
   const bookingFields = "id,date,barber_name,customer_name,customer_phone,time_label,reservation_time,service_name,notes,status";
   const [rows, bookings] = await Promise.all([
-    restRows(`customer_profiles?select=${profileFields}&shop_name=eq.${encodedStore}&phone=ilike.*${encodedPhone}*&order=last_visit_date.desc.nullslast&limit=100`),
+    restRows(`customer_profiles?select=${profileFields}&${customerProfileStoreFilter(store)}&phone=eq.${encodedPhone}&order=last_visit_date.desc.nullslast&limit=100`),
     restRows(`bookings?select=${bookingFields}&shop_name=eq.${encodedStore}&customer_phone=ilike.*${encodedPhone}*&order=date.asc&limit=500`),
   ]);
-  return { rows, bookings, store, read_only: true };
+  return { rows: rows.map(row => scopeCustomerProfile(row, store)).filter(Boolean), bookings, store, read_only: true };
 }
 
 Deno.serve(async (request: Request) => {

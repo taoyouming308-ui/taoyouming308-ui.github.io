@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## 2026-09-27 · 员工客户套餐与消费明细修复（App version: v571，待发布）
+
+- Last synchronized base checked: github/main e8c6cf8（v570 的发布核验文档已快进保留）。Current owner: Codex；复用干净 perm-pages-booking-sync checkout，未修改用户 Salon 工作区；修改前备份 ZYSYR_2026-09-27_184944.tar.gz。
+- 根因已用真实数据核对：截图客户主档 shop_name=向里造型，但套餐和多数消费属于自由手艺人；旧 employee-bookings-api 按主档门店过滤，导致降级为 34 条预约。生产聚合显示向里主档内有自由明细的客户 482 位，反向 242 位。
+- 新 customer-profile-scope.mjs 按登录员工门店做 JSON 子项匹配和返回裁剪；跨店主档备注、偏好、全局金额、全局次数不外泄。手机号历史查档用精确匹配。无数据库迁移，无客户主档归属改写，无公开权限恢复，无护理自动出入库改动。
+- Last Completed Work: 源站与云端样本刷新核验通过（33 个套餐项目中本店有效 5 项，358 笔消费中本店 356 笔，最新 2026-09-27）；Deno 类型检查、门店隔离/认证/只读回归、消费渲染回归通过；Chromium 三尺寸 x 本地API/云档案/无档案分支通过。线上 PostgREST 新筛选解析成功且匿名读取仍 401/42501，错误语法对照返回 400/PGRST100。
+- 发布范围：employee-bookings-api + 员工 perm-app.html；operations/frontdesk 仅同步全局缓存版本。需部署 Edge、完整 pre-push、GitHub Validate/Pages 和线上无缓存回读。Open Work For Next Agent: 真实门店设备点击验收；旧客户历史明细缺口继续走已有后台补档，不能声称所有客户历史均完整。
+- Handoff Rule: 不把合成浏览器验证冒充真实账号验收；不把已同步笔数称为完整历史消费次数。
+
+
 ## 2026-09-27 · 月报照片与单笔凭证隔离（App version: v570，已发布）
 
 - Last synchronized base checked: GitHub main `dbfda7c`，保留客户私有同步与预约刷新发布。源码备份已存在。

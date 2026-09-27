@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="570">
+<html lang="zh-CN" data-version="571">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -2302,6 +2302,12 @@ body {
       -webkit-backdrop-filter:blur(8px);
     }
     .plan-modal .box {
+      --surface:#fff;
+      --bg:#fff;
+      --border:#e5e5e5;
+      --text:#111;
+      --text-secondary:#6b6b70;
+      --accent:#111;
       width:min(100%, 390px);
       max-width:390px;
       max-height:86vh;
@@ -3074,9 +3080,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=570"></script>
-<script src="hair-vision-training.v1.js?v=570"></script>
-<script src="aesthetic-growth.v2.js?v=570"></script>
+<script src="aesthetic-knowledge.v1.js?v=571"></script>
+<script src="hair-vision-training.v1.js?v=571"></script>
+<script src="aesthetic-growth.v2.js?v=571"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7072,9 +7078,9 @@ function initApp() {
           }
         }
       }
+      html += '<div id="plan-profile-extra" style="margin-top:8px;"></div>';
       html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       html += renderAiButton(phone, name, barberName, bookingDate);
-      html += '<div id="plan-profile-extra" style="margin-top:8px;"></div>';
       html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
       html += renderHairRecordReadOnly(phone, name, bookingId, bookingDate);
       document.querySelector('#plan-modal .box').innerHTML = html;
@@ -7089,7 +7095,8 @@ function initApp() {
       .then(function(rows){
         rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
-          // 合并两家店数据：累加消费金额、到店次数，取最近的到店日期
+          // 服务端已按当前员工门店裁剪套餐和消费明细。
+          var scopedSummary = rows.some(function(p){ return p.summary_scope === 'synced_store_records'; });
           var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
           rows.forEach(function(p){
             totalVisits += p.total_visits || 0;
@@ -7238,8 +7245,8 @@ function initApp() {
 
           var htmlContent = '<h3>'+esc(name||'客户')+'</h3>';
           htmlContent += '<div class="row"><span class="label">客户画像</span><span class="val">'+esc(customerType)+' | '+esc(spendLabel)+'</span></div>';
-          htmlContent += '<div class="row"><span class="label">到店次数</span><span class="val">'+visits+'次</span></div>';
-          if (consum > 0) htmlContent += '<div class="row"><span class="label">共计消费</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
+          htmlContent += '<div class="row"><span class="label">'+(scopedSummary ? '已同步消费' : '到店次数')+'</span><span class="val">'+visits+(scopedSummary ? '笔' : '次')+'</span></div>';
+          if (consum > 0) htmlContent += '<div class="row"><span class="label">'+(scopedSummary ? '已同步金额' : '共计消费')+'</span><span class="val">¥'+consum.toFixed(0)+'</span></div>';
           var avgTicket = visits > 0 ? Math.round(consum / visits) : 0;
           if (avgTicket > 0) htmlContent += '<div class="row"><span class="label">均消</span><span class="val">¥'+avgTicket+'</span></div>';
           // 上次消费项目（从notes取）
@@ -7271,7 +7278,8 @@ function initApp() {
               htmlContent += '<div class="row" style="border-bottom:none;padding:2px 0 2px 12px;font-size:12px;color:var(--text-secondary);"><span class="val" style="font-weight:400;">↳ '+esc(label)+'</span></div>';
             }
           }
-          htmlContent += renderCustomerPackageRows(packages);
+          htmlContent += hairArchiveSection('套餐详情', renderCustomerPackagesArchive(rows));
+          htmlContent += hairArchiveSection('消费记录', renderCustomerConsumptionArchive(rows));
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           // ===== AI分析按钮 =====
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
@@ -7289,7 +7297,8 @@ function initApp() {
           bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
             document.querySelector('#plan-modal .box').innerHTML =
-              '<h3>'+esc(name||'客户')+'</h3><div class="no-data">暂无历史数据</div>'+
+              '<h3>'+esc(name||'客户')+'</h3>'+hairArchiveSection('套餐详情', renderCustomerPackagesArchive([]))+
+              hairArchiveSection('消费记录', renderCustomerConsumptionArchive([]))+
               '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
             return;
           }
@@ -7326,9 +7335,9 @@ function initApp() {
           else if (totalPast <= 2 && monthsSince < 3) sug += '新客成长关键期，重点建立信任。';
           else sug += '根据客户实际情况灵活推荐。';
           var htmlContent = '<h3>'+esc(name||'客户')+'</h3>';
-          htmlContent += '<div class="row"><span class="label">历史到店</span><span class="val">'+totalPast+'次</span></div>';
+          htmlContent += '<div class="row"><span class="label">历史预约</span><span class="val">'+totalPast+'条</span></div>';
           if (totalFuture > 0) htmlContent += '<div class="row"><span class="label">待赴约</span><span class="val">'+totalFuture+'次</span></div>';
-          if (lastDate) htmlContent += '<div class="row"><span class="label">最近到店</span><span class="val">'+esc(lastDate)+'</span></div>';
+          if (lastDate) htmlContent += '<div class="row"><span class="label">最近预约</span><span class="val">'+esc(lastDate)+'</span></div>';
           if (nextDate) htmlContent += '<div class="row"><span class="label">下次预约</span><span class="val">'+esc(nextDate)+'</span></div>';
           htmlContent += '<div class="row"><span class="label">距上次</span><span class="val">'+monthsSince+'个月</span></div>';
           if (barbers.length > 0) htmlContent += '<div class="row"><span class="label">发型师</span><span class="val">'+esc(barbers.join('、'))+'</span></div>';
@@ -7337,6 +7346,8 @@ function initApp() {
           bookingRows.forEach(function(b){ if (b.notes) bookingNotes.push(b.notes); });
           var uniqueNotes = bookingNotes.filter(function(v,i,a){ return a.indexOf(v)===i; });
           if (uniqueNotes.length > 0) htmlContent += '<div class="row"><span class="label">📝 备注</span><span class="val" style="font-weight:400;">'+esc(uniqueNotes.join(' | '))+'</span></div>';
+          htmlContent += hairArchiveSection('套餐详情', renderCustomerPackagesArchive([]));
+          htmlContent += hairArchiveSection('消费记录', '<div style="color:var(--text-secondary);">消费明细尚未同步，以上预约记录不等于实际消费记录。</div>');
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
           document.querySelector('#plan-modal .box').innerHTML = htmlContent;
@@ -7366,13 +7377,12 @@ function initApp() {
     if (!holder) return;
     fetchCustomerProfileRows(phone, name).then(function(rows) {
       rows = Array.isArray(rows) ? rows : [];
-      if (!rows.length) { holder.innerHTML = ''; return; }
       var html = '';
-      html += hairArchiveSection('完整消费记录', renderCustomerConsumptionArchive(rows));
-      html += hairArchiveSection('剩余套餐项目', renderCustomerPackagesArchive(rows));
+      html += hairArchiveSection('套餐详情', renderCustomerPackagesArchive(rows));
+      html += hairArchiveSection('消费记录', renderCustomerConsumptionArchive(rows));
       holder.innerHTML = html;
     }).catch(function() {
-      holder.innerHTML = '';
+      holder.innerHTML = '<div style="color:var(--text-secondary);">套餐与消费明细加载失败，请重新打开客户资料重试。</div>';
     });
   }
 
@@ -8250,9 +8260,6 @@ function initApp() {
     var seen = {};
     (profileRows || []).forEach(function(row) {
       var history = parseHairArrayField(row.service_history);
-      if (!history.length && row.last_visit_date) {
-        history = [{ date: String(row.last_visit_date).slice(0, 10), time: String(row.last_visit_date).slice(11, 16), barber: row.barber_name || '', shop: row.shop_name || '' }];
-      }
       history.forEach(function(item) {
         item = item || {};
         if (typeof item === 'string') item = { items: [{ name: item }] };
@@ -8280,6 +8287,8 @@ function initApp() {
           staff: staff,
           shop: shop,
           amount: amount,
+          amountKnown: item.amount != null || item.consumefee != null,
+          billNo: item.bill_no || '',
           items: items,
           comment: item.comment || ''
         });
@@ -8334,46 +8343,54 @@ function initApp() {
 
   function renderCustomerConsumptionArchive(profileRows) {
     profileRows = profileRows || [];
-    if (!profileRows.length) return '';
+    if (!profileRows.length) return '<div style="color:var(--text-secondary);">消费明细尚未同步，不能据此判断客户没有消费。</div>';
     var summary = summarizeCustomerProfiles(profileRows);
     var history = collectCustomerServiceHistory(profileRows);
     var rows = [];
-    if (summary.visits > 0) rows.push(['到店次数', summary.visits + '次']);
-    if (summary.consumption > 0) rows.push(['总消费', '¥' + Math.round(summary.consumption)]);
+    var scoped = profileRows.some(function(row){ return row.summary_scope === 'synced_store_records'; });
+    if (summary.visits > 0) rows.push([scoped ? '已同步消费' : '到店次数', summary.visits + (scoped ? '笔' : '次')]);
+    if (summary.consumption > 0) rows.push([scoped ? '已同步金额' : '总消费', '¥' + Math.round(summary.consumption)]);
     if (summary.avgTicket > 0) rows.push(['均消', '¥' + summary.avgTicket]);
     if (summary.lastVisit) rows.push(['最后到店', summary.lastVisit]);
     if (summary.notes.length) rows.push(['备注', summary.notes.join(' / ')]);
+    var updated = profileRows.map(function(row){ return row.last_updated || ''; }).filter(Boolean).sort().pop();
+    if (updated && !isNaN(new Date(updated).getTime())) rows.push(['资料更新', new Date(updated).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai', hour12:false})]);
     var html = rows.length ? hairArchiveInfoRows(rows) : '';
     if (history.length) {
-      html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin:8px 0 4px;">消费/到店记录</div>';
+      html += '<div style="font-size:11px;color:var(--text-secondary);margin:8px 0 4px;">已同步 '+history.length+' 笔消费 · 最新在前</div>';
       html += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
-      history.forEach(function(h) {
+      history.forEach(function(h, index) {
+        if (index === 5) html += '</tbody></table><details><summary style="padding:10px 0;cursor:pointer;">查看其余 '+(history.length - 5)+' 笔消费</summary><table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
         var label = (h.date || '') + (h.time ? ' ' + h.time : '');
         var people = h.staff && h.staff.length ? h.staff.join('、') : h.barber;
         var right = [people, h.shop].filter(Boolean).join(' · ');
         var projectText = h.items && h.items.length ? h.items.join('、') : '消费记录';
-        var amountText = h.amount > 0 ? '¥' + Math.round(h.amount * 100) / 100 : '';
+        var amountText = h.amountKnown ? '¥' + Math.round(h.amount * 100) / 100 : '金额未同步';
         html += '<tr><td style="padding:6px 4px;border-bottom:1px solid var(--border);vertical-align:top;">' + esc(label) +
-          '<br><span style="color:var(--text-secondary);font-size:10px;">' + esc(projectText) + '</span></td>' +
+          '<br><span style="color:var(--text-secondary);font-size:10px;">' + esc(projectText) + '</span>' +
+          (h.billNo ? '<br><span style="color:var(--text-secondary);font-size:10px;">单号 ' + esc(h.billNo) + '</span>' : '') + '</td>' +
           '<td style="padding:6px 4px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top;">' +
           '<span style="font-weight:600;">' + esc(amountText) + '</span>' +
           (right ? '<br><span style="color:var(--text-secondary);font-size:10px;">' + esc(right) + '</span>' : '') +
           '</td></tr>';
       });
       html += '</tbody></table>';
+      if (history.length > 5) html += '</details>';
+    } else {
+      html += '<div style="color:var(--text-secondary);margin-top:8px;">消费明细尚未同步，不能据此判断客户没有消费。</div>';
     }
     return html;
   }
 
   function renderCustomerPackagesArchive(profileRows) {
     var packages = collectCustomerPackages(profileRows, false);
-    if (!packages.length) return '';
+    if (!packages.length) return '<div style="color:var(--text-secondary);">暂无已同步的剩余套餐，请以美管加记录为准。</div>';
     var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tbody>';
     packages.forEach(function(pkg) {
       var pct = pkg.total > 0 ? Math.round(pkg.left / pkg.total * 100) : 0;
       var color = pct > 50 ? 'var(--accent)' : (pct > 20 ? '#e8a817' : '#e85050');
       var meta = [pkg.shop, pkg.expireDate ? '有效期至' + pkg.expireDate : ''].filter(Boolean).join(' · ');
-      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.name || '套餐') + (meta ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(meta) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
+      html += '<tr><td style="padding:5px 4px;border-bottom:1px solid var(--border);">' + esc(pkg.packageName || pkg.name || '套餐') + (pkg.packageName ? '<br>' + esc(pkg.name) : '') + (meta ? '<br><span style="font-size:10px;color:var(--text-secondary);">' + esc(meta) + '</span>' : '') + '</td><td style="padding:5px 4px;border-bottom:1px solid var(--border);text-align:right;color:' + color + ';font-weight:700;">剩' + esc(pkg.left) + '/' + esc(pkg.total) + '次</td></tr>';
     });
     html += '</tbody></table>';
     return html;

@@ -74,7 +74,10 @@ jobs:
           node scripts/test-hair-service-photos.js
           node scripts/test-hair-save-durability.js
       - name: Protect customer archive rendering
-        run: node scripts/test-customer-archive-rendering.js
+        run: |
+          node scripts/test-customer-archive-rendering.js
+          node scripts/test-employee-bookings.mjs
+          node scripts/test-customer-profile-modal-browser.js
       - name: Protect backend workflows
         run: node scripts/test-admin-workflow.js
       - name: Protect admin customer archive access
