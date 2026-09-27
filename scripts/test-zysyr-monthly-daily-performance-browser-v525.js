@@ -27,35 +27,25 @@ const server = http.createServer((req, res) => {
 async function verifyViewport(page, viewport) {
   await page.setViewportSize(viewport);
   await page.waitForTimeout(40);
-  const metrics = await page.locator('#monthly-daily-performance').evaluate(panel => {
-    const table = panel.querySelector('.monthly-daily-table');
+  const metrics = await page.locator('#monthly-sheet').evaluate(panel => {
+    const table = panel.querySelector('.sheet-table');
+    const rect = table.getBoundingClientRect();
     return {
       panelWidth: panel.clientWidth,
-      tableWidth: table.getBoundingClientRect().width,
+      tableWidth: rect.width,
+      tableScrollWidth: table.scrollWidth,
       viewportWidth: document.documentElement.clientWidth,
       bodyScrollWidth: document.body.scrollWidth,
-      tableDisplay: getComputedStyle(panel.querySelector('.monthly-daily-table-wrap')).display,
-      cardDisplay: getComputedStyle(panel.querySelector('.monthly-daily-mobile-cards')).display,
-      amountFont: getComputedStyle(panel.querySelector('.monthly-daily-mobile-total strong')).fontSize,
-      totals: panel.querySelectorAll('.monthly-daily-mobile-total').length,
-      dailyCards: panel.querySelectorAll('.monthly-daily-mobile-card').length,
+      embeddedHeaders: table.querySelectorAll('.monthly-daily-embedded-head').length,
+      embeddedCells: table.querySelectorAll('.monthly-daily-embedded').length,
       actionGap: getComputedStyle(document.querySelector('#monthly-summary-bar')).columnGap,
       actionHeight: getComputedStyle(document.querySelector('#monthly-edit-toggle')).minHeight,
-      numberFont: getComputedStyle(table.querySelector('td')).fontVariantNumeric,
+      numberFont: getComputedStyle(table.querySelector('.amount-cell')).fontVariantNumeric,
       voucherGap: getComputedStyle(document.querySelector('#voucher-gallery-content')).gap,
     };
   });
-  assert.equal(metrics.totals, 7, `${viewport.width}x${viewport.height}: all financial totals remain visible`);
-  assert.equal(metrics.dailyCards, 31, `${viewport.width}x${viewport.height}: all natural days remain available`);
-  assert.ok(metrics.tableWidth <= metrics.panelWidth + 1, `${viewport.width}x${viewport.height}: full-width table does not overflow its panel`);
-  if (viewport.width <= 700) {
-    assert.equal(metrics.tableDisplay, 'none', `${viewport.width}x${viewport.height}: narrow screens do not force a dense eight-column grid`);
-    assert.equal(metrics.cardDisplay, 'grid', `${viewport.width}x${viewport.height}: daily metrics render as readable cards`);
-    assert.ok(parseFloat(metrics.amountFont) >= 15, `${viewport.width}x${viewport.height}: mobile totals stay readable`);
-  } else {
-    assert.notEqual(metrics.tableDisplay, 'none', `${viewport.width}x${viewport.height}: tablet/desktop use the requested table layout`);
-    assert.equal(metrics.cardDisplay, 'none', `${viewport.width}x${viewport.height}: desktop avoids duplicate daily data`);
-  }
+  assert.equal(metrics.embeddedHeaders, 8, `${viewport.width}x${viewport.height}: exact requested columns are embedded`);
+  assert.equal(metrics.embeddedCells, 8 * 33, `${viewport.width}x${viewport.height}: header, 31 days and total are embedded`);
   assert.ok(metrics.bodyScrollWidth <= metrics.viewportWidth + 1, `${viewport.width}x${viewport.height}: page does not require horizontal scrolling`);
   assert.equal(metrics.actionGap, viewport.width <= 560 ? '6px' : '8px', `${viewport.width}x${viewport.height}: monthly action spacing uses the shared token without changing its established size`);
   assert.equal(metrics.actionHeight, viewport.width <= 560 ? '34px' : '38px', `${viewport.width}x${viewport.height}: monthly buttons retain their established height`);
@@ -90,18 +80,31 @@ async function verifyViewport(page, viewport) {
       };
       renderAll();
     });
-    assert.match(await page.locator('#monthly-daily-performance').textContent(), /已入账日报 2 \/ 31 天/);
-    assert.match(await page.locator('#monthly-daily-performance').textContent(), /未显示不代表休息日或零收入/);
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 2 \/ 31 天；另有 29 天尚无已入账日报/);
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /未显示不代表休息日或零收入/);
+    assert.equal(await page.locator('.monthly-daily-details-toggle').textContent(), '清晰查看日报明细');
+    await page.locator('.monthly-daily-details-toggle').click();
+    assert.equal(await page.locator('.monthly-daily-details').isVisible(), true, 'the detail panel opens without leaving the monthly report');
+    assert.equal(await page.locator('.monthly-daily-details select option').count(), 31, 'every natural date in the month is selectable');
+    assert.equal(await page.locator('.monthly-daily-details select').inputValue(), '0', 'detail view defaults to the first confirmed date');
+    assert.deepEqual(await page.locator('.monthly-daily-details-item').allTextContents(),
+      ['劳动业绩2126.00', '现金业绩2126.00', '卡金0.00', '团购226.00', '支付宝1850.00', '微信50.00', '抖音0.00']);
+    await page.locator('.monthly-daily-details select').selectOption('2');
+    assert.match(await page.locator('.monthly-daily-details-status').textContent(), /尚无已入账日报；以下“—”表示暂无已确认数据，不代表 0 元/);
+    assert.deepEqual(await page.locator('.monthly-daily-details-item strong').allTextContents(), Array(7).fill('—'),
+      'an unconfirmed date shows missing values rather than fabricated zeros');
+    const detailSize = await page.locator('.monthly-daily-details-item strong').first().evaluate(node => getComputedStyle(node).fontSize);
+    assert.equal(detailSize, '16px', 'readable details retain normal-size numbers on mobile');
 
-    const headers = await page.locator('.monthly-daily-table thead th').allTextContents();
+    assert.equal(await page.locator('#view-monthly table').count(), 1, 'monthly overview contains one integrated report, not a separate daily table');
+    const headers = await page.locator('#monthly-sheet .monthly-daily-embedded-head').allTextContents();
     assert.deepEqual(headers, ['日期', '劳动业绩', '现金业绩', '卡金', '团购', '支付宝', '微信', '抖音']);
-    assert.deepEqual(await page.locator('.monthly-daily-table tbody tr').nth(0).locator('th,td').allTextContents(),
+    assert.deepEqual(await page.locator('#monthly-sheet .sheet-table tr').nth(2).locator('.monthly-daily-embedded').allTextContents(),
       ['01日', '2126.00', '2126.00', '0.00', '226.00', '1850.00', '50.00', '0.00']);
-    assert.deepEqual(await page.locator('.monthly-daily-table tbody tr').nth(2).locator('th,td').allTextContents(),
+    assert.deepEqual(await page.locator('#monthly-sheet .sheet-table tr').nth(4).locator('.monthly-daily-embedded').allTextContents(),
       ['03日', '—', '—', '—', '—', '—', '—', '—']);
-    assert.deepEqual(await page.locator('.monthly-daily-table tbody tr').nth(31).locator('th,td').allTextContents(),
+    assert.deepEqual(await page.locator('#monthly-sheet .sheet-table tr').nth(33).locator('.monthly-daily-embedded-total').allTextContents(),
       ['合计', '2926.00', '2626.00', '300.00', '226.00', '2150.00', '250.00', '100.00']);
-    assert.equal(await page.locator('#monthly-sheet .sheet-table').count(), 1, 'the original monthly report remains below the daily performance table');
 
     await page.evaluate(() => {
       state.data.monthly_daily_performance = {
@@ -114,47 +117,59 @@ async function verifyViewport(page, viewport) {
       };
       renderAll();
     });
-    assert.match(await page.locator('#monthly-daily-performance').textContent(), /已入账日报 1 \/ 31 天/);
+    assert.match(await page.locator('#monthly-daily-completeness').textContent(), /已入账 1 \/ 31 天；另有 30 天尚无已入账日报/);
 
     const fitCalls = await page.evaluate(async () => {
       let calls = 0;
-      window.ZysyrReportFit.apply = () => { calls += 1; };
+      const originalApply = window.ZysyrReportFit.apply;
+      window.ZysyrReportFit.apply = (...args) => { calls += 1; return originalApply(...args); };
       renderSheet(state.data.monthly_report.display_data, false, false);
       await Promise.resolve();
+      window.ZysyrReportFit.apply = originalApply;
       return calls;
     });
-    assert.equal(fitCalls, 1, 'monthly report rendering keeps the existing original-sheet fitting pass');
+    assert.equal(fitCalls, 1, 'a full monthly render should coalesce table fitting until the final embedded columns and controls are in place');
 
     for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await verifyViewport(page, viewport);
-      const daily = await page.locator('#monthly-daily-performance').evaluate(panel => {
-        const visible = panel.querySelector('.monthly-daily-table-wrap').getBoundingClientRect().width > 0
-          ? panel.querySelector('.monthly-daily-table-wrap') : panel.querySelector('.monthly-daily-mobile-cards');
-        const range = document.createRange();
-        const amount = visible.querySelector('td, dd');
-        range.selectNodeContents(amount);
-        return { textWidth: range.getBoundingClientRect().width, cellWidth: amount.getBoundingClientRect().width,
-          fontSize: parseFloat(getComputedStyle(amount).fontSize) };
-      });
-      assert.ok(daily.textWidth <= daily.cellWidth + 1, `${viewport.width}x${viewport.height}: visible daily amounts do not overlap their cells`);
-      assert.ok(daily.fontSize >= (viewport.width <= 700 ? 12 : 12), `${viewport.width}x${viewport.height}: daily data remain at a readable CSS size`);
+      const overlap = await page.locator('#monthly-sheet .monthly-daily-embedded').evaluateAll(cells => cells
+        .filter(cell => cell.textContent.trim() && cell.textContent.trim() !== '—')
+        .map(cell => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          return { text: cell.textContent, textWidth: range.getBoundingClientRect().width, cellWidth: cell.getBoundingClientRect().width,
+            fontSize: getComputedStyle(cell).fontSize };
+        }).filter(item => item.textWidth > item.cellWidth + .2));
+      assert.deepEqual(overlap, [], `${viewport.width}x${viewport.height}: monthly daily values fit their cells`);
     }
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v563-monthly-daily-performance-portrait.png'), fullPage: true });
+    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v566-monthly-daily-performance-portrait.png'), fullPage: true });
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v563-monthly-daily-performance-landscape.png'), fullPage: true });
+    await page.screenshot({ path: path.join(os.tmpdir(), 'zysyr-v566-monthly-daily-performance-landscape.png'), fullPage: true });
 
-    await page.evaluate(() => {
-      window.__openedDailyTrace = null;
-      window.__originalDailyOpen = window.openDailyReportDay;
-      window.openDailyReportDay = async (date, draftId) => { window.__openedDailyTrace = { date, draftId }; };
+    const opened = await page.evaluate(async () => {
+      const originalOpen = openDailyReportDay;
+      const originalShow = showView;
+      const previousPermission = state.user.can_read_daily_reports;
+      const calls = [];
+      state.user.can_read_daily_reports = true;
+      showView = async () => {};
+      openDailyReportDay = async (date, draftId) => { calls.push([date, draftId]); };
+      try {
+        document.querySelector('.monthly-daily-embedded-confirmed').click();
+        await Promise.resolve();
+        await Promise.resolve();
+        return calls;
+      } finally {
+        openDailyReportDay = originalOpen;
+        showView = originalShow;
+        state.user.can_read_daily_reports = previousPermission;
+      }
     });
-    await page.locator('.monthly-daily-table .monthly-daily-date-link').first().click();
-    assert.deepEqual(await page.evaluate(() => window.__openedDailyTrace), { date: '2026-01-01', draftId: 'draft-01' },
-      'clicking a confirmed date opens its exact daily report for traceability');
+    assert.deepEqual(opened, [['2026-01-01', 'draft-01']], 'click opens the exact date rather than the final day');
+
     await page.evaluate(async () => {
-      window.openDailyReportDay = window.__originalDailyOpen;
       await showView('daily-report');
       await openDailyReportDay('2026-01-01', 'preview-draft-1');
     });
@@ -166,7 +181,7 @@ async function verifyViewport(page, viewport) {
     await page.locator('#daily-readonly-back').click();
     assert.equal(await page.locator('#view-daily-report > .daily-month-bar').isVisible(), true,
       'month operations remain available on the calendar');
-    console.log('ZYSYR monthly daily performance browser: month placement, readable table/cards, totals and trace navigation passed');
+    console.log('ZYSYR monthly daily performance browser: large totals fit and daily detail toolbar is hidden');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

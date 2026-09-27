@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-09-27 · 单表月报布局恢复（App version: v566，待发布）
+
+- Last synchronized base checked: github/main d577c3c；复用干净隔离 checkout，修改前已运行 scripts/backup-zysyr.sh。用户原工作区未修改。
+- Current owner: Codex。用户要求撤回上下双表；恢复右侧 P:W 的整月日报展示、31 个自然日槽位和合计，并保留当前整表缩放/字号。财务数据来源与现金收入口径不变。
+- Last Completed Work: 本地 Chromium/WebKit 多尺寸单表/金额不重叠、精确日期跳转回归及统一财务 73/73 通过；发布门禁首次在未安装 cryptography 的系统 Python 处失败，改用既有隔离依赖环境继续，不修改同步业务代码。日期点击使用绑定参数避免旧闭包跳错日期。
+- Open Work For Next Agent: 验证 v566 CI/Pages 与真实设备显示；原目标仅保留备份可恢复及股东门店权限两项，不恢复全面重构，不新建付费恢复项目。生产数据/历史凭证未修改。
+- Handoff Rule: 本地合成测试不等于真实账号验收；发布状态以远端 SHA、CI/Pages、线上资源回读为准。
+
 ## 2026-09-27 · 历史凭证多定位回退修复（App version: v565，已发布）
 
 - 根据凭证追溯实现确认：服务端追加式保存人工确认的页码关系；前端此前只请求最早页码。若该位置在当前 DOCX 包中不存在，读取立即失败，即使后续已补充正确位置也看不到凭证。
