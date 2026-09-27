@@ -62,5 +62,14 @@ async function send(payload,{unsigned=false,old=false,domain='mgj-customer-sync\
   assert.equal((await send(snapshot)).status,409,'older snapshot cannot overwrite');
   dailyReceipt={written:1,count:0};
   assert.equal((await send({...snapshot,source_count:0,services:[]})).status,200,'verified empty day is a valid snapshot');
+  const history={...snapshot,operation:'daily_consumption_backfill_2026',date:'2026-01-01',source_count:0,services:[]};
+  assert.equal((await send(history)).status,200,'explicit approved history uses the same private snapshot RPC');
+  assert.equal((await send(history,{unsigned:true})).status,401);
+  const beforeInvalidHistory=calls.length;
+  for(const date of ['2025-12-31','2026-09-26','2026-09-27','2026-12-31','2027-01-01'])assert.equal((await send({...history,date})).status,400,'history must not expand scope or race today/yesterday');
+  assert.equal((await send({...history,shop:'其他门店'})).status,400);
+  assert.equal((await send({...history,operation:'daily_consumption_write'})).status,400,'regular live writer keeps its 31-day bound');
+  assert.equal(calls.length,beforeInvalidHistory);
+  assert.equal((await send({...history,date:'2026-09-25'})).status,200);
   console.log('Private customer sync: signatures, domain/expiry, table/field/shop/phone scope, no delete, exact write count, conflict and array preservation passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -91,9 +91,9 @@ def only(nodes, label):
     return nodes[0]
 
 
-def query_params(shop, day, page):
+def query_params(shop, day, page, end_day=None):
     # Send ALL filters on every page: never inherit server-side saved searches.
-    return {'billFlag': 0, 'shopId': shop, 'bill.startDate': day, 'bill.endDate': day,
+    return {'billFlag': 0, 'shopId': shop, 'bill.startDate': day, 'bill.endDate': end_day or day,
             'bill.type': -1, 'bill.consumeType': -1, 'bill.itemNo': -1,
             'notSharedPerformance': 2, 'bill.employeeId': 0, 'bill.payFlag': 0,
             'bill.mdFlag': 0, 'bill.otherFlag': 0, 'bill.operatorId': 0,
@@ -102,13 +102,14 @@ def query_params(shop, day, page):
             'bill.endBillNo': '', 'page.currNum': page, 'page.rpp': PAGE_SIZE}
 
 
-def parse_page(html, shop, day):
+def parse_page(html, shop, day, end_day=None):
+    end_day = end_day or day
     root = Document(html).root
     form = only(root.find(id='searchForm'), 'searchForm')
     if only(form.find(id='pageShopId'), 'shop').attrs.get('value') != shop:
         raise ValueError('source_shop_mismatch')
     date_control = only(form.find(**{'data-start-name': 'bill.startDate'}), 'date')
-    if date_control.attrs.get('data-start-value') != day or date_control.attrs.get('data-end-value') != day:
+    if date_control.attrs.get('data-start-value') != day or date_control.attrs.get('data-end-value') != end_day:
         raise ValueError('source_date_mismatch')
     for name, expected in [('bill.type', '-1'), ('bill.payFlag', '0'), ('bill.employeeId', '0'), ('bill.otherFlag', '0'), ('bill.mdFlag', '0'), ('bill.operatorId', '0')]:
         select = only(form.find('select', name=name), name)
@@ -132,8 +133,9 @@ def parse_page(html, shop, day):
         if scope.get('shopId') != [shop]:
             raise ValueError('bill_shop_mismatch')
         when = only(row.by_class('billDateEdit'), 'bill_date').text()
-        if not re.fullmatch(re.escape(day) + r' \d{2}:\d{2}:\d{2}', when):
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', when) or not day <= when[:10] <= end_day:
             raise ValueError('bill_date_mismatch')
+        datetime.strptime(when, '%Y-%m-%d %H:%M:%S')
         raw_amount = only(row.by_class('billEafeeEdit'), 'amount').text()
         if not re.fullmatch(r'\d+(?:\.\d{1,2})?', raw_amount):
             raise ValueError('invalid_source_amount')
@@ -157,7 +159,7 @@ def parse_page(html, shop, day):
         staff = stylists + [n for n in staff if n not in stylists]
         items = list(dict.fromkeys(n.text() for n in row.by_class('billItemEdit')))
         rows.append({'source_id': key, 'bill_no': bill.text(), 'customer_name': name,
-                     'customer_phone': phone, 'shop_name': SHOPS[shop], 'service_date': day,
+                     'customer_phone': phone, 'shop_name': SHOPS[shop], 'service_date': when[:10],
                      'service_time': when[11:16], 'amount': cents / 100,
                      'staff': staff, 'items': [{'name': n} for n in items], 'service_types': []})
     if len({r['source_id'] for r in rows}) != len(rows) or len(rows) > total or (total and not rows):
@@ -165,7 +167,9 @@ def parse_page(html, shop, day):
     return total, rows
 
 
-def fetch_snapshot(shop, day, deadline, fetch=None):
+def fetch_period(shop, day, end_day, deadline, fetch=None):
+    if shop not in SHOPS or not day <= end_day or (datetime.fromisoformat(end_day) - datetime.fromisoformat(day)).days > 6:
+        raise ValueError('invalid_source_period')
     fetched_at = datetime.now(TZ).isoformat(timespec='seconds')
     cfg = json.loads(CONFIG.read_text()) if fetch is None else None
     def request(params):
@@ -183,7 +187,7 @@ def fetch_snapshot(shop, day, deadline, fetch=None):
                 raise ValueError('source_response_too_large')
             return body.decode('utf-8')
     reader = fetch or request
-    total, rows = parse_page(reader(query_params(shop, day, 1)), shop, day)
+    total, rows = parse_page(reader(query_params(shop, day, 1, end_day)), shop, day, end_day)
     seen = {r['source_id'] for r in rows}
     page = 1
     while len(rows) < total:
@@ -192,15 +196,21 @@ def fetch_snapshot(shop, day, deadline, fetch=None):
             raise ValueError('source_pagination_limit')
         if fetch is None:
             time.sleep(1)
-        next_total, incoming = parse_page(reader(query_params(shop, day, page)), shop, day)
+        next_total, incoming = parse_page(reader(query_params(shop, day, page, end_day)), shop, day, end_day)
         if next_total != total or not incoming or any(r['source_id'] in seen for r in incoming):
             raise ValueError('source_changed_during_pagination')
         rows.extend(incoming)
         seen.update(r['source_id'] for r in incoming)
     if len(rows) != total:
         raise ValueError('source_incomplete')
-    return {'operation': 'daily_consumption_write', 'shop': SHOPS[shop], 'date': day,
+    return {'shop': SHOPS[shop], 'start': day, 'end': end_day,
             'fetched_at': fetched_at, 'source_count': total, 'services': rows}
+
+
+def fetch_snapshot(shop, day, deadline, fetch=None):
+    period = fetch_period(shop, day, day, deadline, fetch)
+    return {'operation': 'daily_consumption_write', 'shop': period['shop'], 'date': day,
+            'fetched_at': period['fetched_at'], 'source_count': period['source_count'], 'services': period['services']}
 
 
 def save_state(value):

@@ -2,6 +2,8 @@
 
 ## 2026-09-27 current sync runtime (supersedes older scheduling notes)
 
+- v579 用户授权两店 2026-01-01 至今天的历史消费补齐。一次性有限脚本 `scripts/backfill_mgj_daily_consumption_2026.py` 仅补 1/1–9/25，9/26–27 沿用正常调度；不加入 cron。状态文件 `~/.hermes/mgj_daily_consumption_backfill_2026.json` 是汇总级可续检查点，严禁删除以重跑全量。共用消费源锁，日常同步到期先让路。新签名操作 `daily_consumption_backfill_2026` 仅放开明确历史范围；不要把旧预约、回访表混成营业消费统计。
+
 - v578 增加 `scripts/sync_mgj_daily_consumption.py`：预约任务结束后调用，复用既有一分钟任务而非新增调度。独立锁、45 秒预算、店日成功间隔 5 分钟；昨日每天补读一次。完整项目消费列表 → 私有 `mgj_daily_consumption`，金额为美管加入账；不是原 `mgj_service_records` 核对投影。状态 `~/.hermes/mgj_daily_consumption_status.json` 纳入健康检查；详情见 `docs/frontdesk-daily-consumption.md`。
 
 - Booking job `9ef3f10b20d9`: `* * * * *`, no-agent, existing `sync_bookings_wrapper.sh` invokes canonical `sync_mgj_bookings.py --scheduled`. Today is fetched first; one overdue future day at most per tick, each future date renewed after 15 minutes. No duplicate scheduler. Cadence state: `~/.hermes/mgj_booking_cadence.json`; never discard it to force repeated full-week pulls. Default manual mode retains full 8-day behavior.

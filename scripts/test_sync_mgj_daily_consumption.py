@@ -51,6 +51,21 @@ class DailyConsumptionTests(unittest.TestCase):
         self.assertEqual(rows[0]['customer_phone'],'')
         self.assertEqual(rows[0]['amount'],0)
 
+    def test_historical_period_is_scoped_and_preserves_each_bill_date(self):
+        html = page(day='2026-01-02').replace('data-start-value="2026-01-02" data-end-value="2026-01-02"', 'data-start-value="2026-01-01" data-end-value="2026-01-07"')
+        seen = []
+        def fetch(p):
+            seen.append(p)
+            return html
+        period = daily.fetch_period('1009951','2026-01-01','2026-01-07',time.monotonic()+10,fetch)
+        self.assertEqual(period['services'][0]['service_date'],'2026-01-02')
+        self.assertEqual(seen[0]['bill.endDate'],'2026-01-07')
+        for bad in [html.replace('2026-01-02 10:30','2026-01-08 10:30'), html.replace('data-end-value="2026-01-07"','data-end-value="2026-01-06"')]:
+            with self.assertRaises(ValueError):
+                daily.parse_page(bad,'1009951','2026-01-01','2026-01-07')
+        with self.assertRaises(ValueError):
+            daily.fetch_period('1009951','2026-01-01','2026-01-08',time.monotonic()+10,fetch)
+
     def test_failure_preserves_previous_success_and_five_minute_cadence(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(daily,'STATE',Path(tmp)/'state.json'), patch.object(daily,'LOCK',str(Path(tmp)/'lock')):
             day = daily.datetime.now(daily.TZ).date().isoformat()

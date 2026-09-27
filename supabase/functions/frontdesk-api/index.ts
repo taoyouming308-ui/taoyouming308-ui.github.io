@@ -240,7 +240,8 @@ function withStore(path: string, column: string, store: string): string {
 }
 
 async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  const date = cleanText(payload.date, 10) || new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+  const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+  const date = cleanText(payload.date, 10) || today;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("日期格式错误");
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
@@ -269,7 +270,7 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     services,
     consumption_complete: Boolean(snapshot),
     consumption_source: "meiguanjia_project_bills",
-    consumption_stale: Boolean(snapshot) && Date.now() - Date.parse(fetchedAt) > 15 * 60_000,
+    consumption_stale: Boolean(snapshot) && date >= today && Date.now() - Date.parse(fetchedAt) > 15 * 60_000,
     reception,
     staff: staffRows.map((row) => ({ username: cleanText(row.username, 80), position: cleanText(row.position, 120) })),
     barbers: staffRows.filter((row) => /发型师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),

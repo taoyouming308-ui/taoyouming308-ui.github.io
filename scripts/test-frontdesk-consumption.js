@@ -23,8 +23,10 @@ const sql=text=>execFileSync('docker',['exec','-i',container,'psql','-h','127.0.
   result=await ctx.run({date:'2026-09-27'},{role:'frontdesk',store:'自由手艺人'});
   assert.equal(result.consumption_complete,false);assert.equal(result.synced_at,'');
   snapshots=[{services:[],fetched_at:new Date(Date.now()-3600000).toISOString()}];
-  result=await ctx.run({date:'2026-09-27'},{role:'frontdesk',store:'自由手艺人'});
+  result=await ctx.run({date:new Date(Date.now()+8*3600_000).toISOString().slice(0,10)},{role:'frontdesk',store:'自由手艺人'});
   assert.equal(result.consumption_complete,true);assert.equal(result.consumption_stale,true);
+  result=await ctx.run({date:'2026-01-01'},{role:'frontdesk',store:'自由手艺人'});
+  assert.equal(result.consumption_complete,true);assert.equal(result.consumption_stale,false,'historical snapshots are not live five-minute feeds');
   docker(['run','--rm','-d','--network','none','--name',container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);
   try{
     let ready=false;

@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## 2026-09-27 · 两店 2026 历史消费补齐（App version: v579，执行中）
+
+- Last synchronized base checked: GitHub main `1ddec3f`（v578）。干净专用 checkout；当日备份已存在。v578 GitHub Validate #36326534924 / Pages #36326534842 已成功，用户确认当天数字正确。
+- 用户授权从 2026 年 1 月 1 日补到今天；按上一轮明确范围包含自由手艺人和向里造型。只补项目消费快照，不改美管加账单、客户主档、预约、回访导入或财务表。
+- 新增有界签名操作，仅接受 1/1–9/25 两店历史，9/26–27 保留日常维护；日常 31 天上限不放宽。历史脚本按最多一周读取，完整分页校验后分日写入，明确空营业日记录 0。限定时间/组数，断点续传、共享消费锁、当天优先、限速、错误停机，无新定时器。
+- Last Completed Work: 两店年初逐日与首周分页只读核对一致；13 个解析/补录 Python 测试、签名安全 Node、PostgreSQL RLS/原子快照和 Deno 两函数检查通过。历史页面不再误套当天 15 分钟新鲜度提示。
+- 云端：mgj-customer-sync v3 / frontdesk-api v22 ACTIVE，线上源码与候选逐字一致，内部签名/会话认证与 verify_jwt=false 保留。首周有限真实补录启动，自由手艺人 1/1–1/7 回读已成功（包含 1/5 明确零消费日），尚未宣称全年完成。
+- Open Work For Next Agent: 完整发布门禁和运行副本安装、536 历史店日有限补齐、总共 540 店日云端单数/金额/ID 摘要核对，以及当天同步健康检查。完成前不能报全年已补齐。
+- Handoff Rule: `docs/frontdesk-daily-consumption.md` 记录固定范围/检查点/停止条件；消费统计不等于现金收入或历史预约补齐。保留其他工作区和旧人工核对队列。
+
 ## 2026-09-27 · 前台完整项目消费数据源修复（App version: v578，页面及自动同步已上线）
 
 - Last synchronized base checked: GitHub main `e3ff217`（v576），保留本线程未发布 v577 横屏保存修复。Current owner: Codex。干净专用 checkout，修改前当日源码备份完成。

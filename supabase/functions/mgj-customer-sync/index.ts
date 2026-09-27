@@ -70,12 +70,17 @@ function validateProfile(value: unknown): Row {
 }
 async function handle(p: Row) {
   switch (p.operation) {
-    case "daily_consumption_write": {
+    case "daily_consumption_write":
+    case "daily_consumption_backfill_2026": {
       fields(p, ["operation", "shop", "date", "fetched_at", "source_count", "services"]);
       if (typeof p.shop !== "string" || !SHOPS.includes(p.shop)) throw new Error("invalid_shop");
       const day = date(p.date);
       const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-      if (day > today || +new Date(today) - +new Date(day) > 31 * 86400_000) throw new Error("invalid_date_range");
+      // User-approved one-time 2026 backfill. Sep 26/27 stay with the live worker.
+      const historical = p.operation === "daily_consumption_backfill_2026";
+      if (day > today || (historical
+        ? day < "2026-01-01" || day > "2026-09-25"
+        : +new Date(today) - +new Date(day) > 31 * 86400_000)) throw new Error("invalid_date_range");
       const fetched = typeof p.fetched_at === "string" ? Date.parse(p.fetched_at) : NaN;
       if (!Number.isFinite(fetched) || fetched > Date.now() + 10_000 || fetched < Date.now() - 120_000) throw new Error("invalid_fetch_time");
       const count = integer(p.source_count, 0, 1000);
