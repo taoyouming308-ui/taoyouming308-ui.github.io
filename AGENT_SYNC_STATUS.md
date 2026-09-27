@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-27 · 横屏统计卡片适配（App version: v576，待发布）
+
+- Last synchronized base checked: GitHub main `02dd441`（v575）；本任务隔离 checkout；当日源码归档已存在。
+- v575 已发布到 Pages，GitHub Validate 在 Linux 844×390 横屏步骤发现添加第 5 张统计卡后的保存按钮露出断言失败；同机多尺寸浏览器断言通过。重跑也在该步骤失败。
+- 调整横屏平板 KPI 为 5 列单行，以保留指标同时避免增加一行页面高度。消费人数继续只按手机号去重，无手机号消费单显式列出；预约匹配继续区分手机号与姓名兜底。
+- Last Completed Work: v576 代码与版本缓存标记已调整；发布门禁待重跑，Pages 待部署核对。未改 Supabase、预约/收银源数据或权限。
+- Open Work For Next Agent: 完成 v576 发布门禁；若 844×390 仍失败，读取最新 job 日志后再修，不修改旧的用户业务表单或数据。
+- Handoff Rule: 区分 GitHub Pages 部署和 Validate 状态；页面已提供 v575 暂行统计，等 v576 通过回归后再报本轮完成。
+
 ## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，待发布）
 
 - Last synchronized base checked: GitHub main `89338ad`（v574），由本任务隔离分支快进同步；当日 ZYSYR 源码归档已存在。
