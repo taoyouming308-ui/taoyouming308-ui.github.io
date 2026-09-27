@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="567">
+<html lang="zh-CN" data-version="568">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -120,9 +120,9 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=567"></script>
-<script src="operations-staff-view.js?v=567"></script>
-<script src="operations-monthly-daily-performance.js?v=567"></script>
+<script src="operations-time.js?v=568"></script>
+<script src="operations-staff-view.js?v=568"></script>
+<script src="operations-monthly-daily-performance.js?v=568"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -394,10 +394,223 @@
     /* Historical batch progress is retained in storage, hidden from the report workspace. */
     #daily-recognition-job{display:none!important}
   </style>
-  <script src="operations-report-fit.js?v=567"></script>
-  <script src="operations-auth-bridge.js?v=567"></script>
-  <script src="operations-voucher-preview.js?v=567"></script>
-  <script src="operations-voucher-view.js?v=567"></script>
+  <style id="operations-minimal-system">
+    /* Presentation only. Keep report geometry, warning colors and role visibility
+       in their existing modules. Based on perm-app's app-minimal-system tokens. */
+    :root {
+      color-scheme:light;
+      --ink:#191918;
+      --muted:#686862;
+      --paper:#fafaf9;
+      --card:#fff;
+      --line:#e5e5e0;
+      --shadow:0 12px 40px rgba(25,25,24,.09);
+      --report-black:#191918;
+      --report-soft:#f4f4f1;
+      --report-radius:12px;
+      -webkit-font-smoothing:antialiased;
+    }
+    body { padding:0; font-size:14px; line-height:1.5; }
+    button,input,select,textarea,summary { -webkit-tap-highlight-color:transparent; }
+    button:disabled { cursor:not-allowed; opacity:.55; }
+    button:focus-visible,summary:focus-visible,a:focus-visible {
+      outline:2px solid var(--ink); outline-offset:3px;
+    }
+    .primary,.secondary,.ghost,.danger {
+      min-height:38px; padding:8px 14px; border-radius:9px;
+      font-size:13px; font-weight:600; line-height:1.5;
+    }
+    .primary { background:var(--report-black); color:#fff; }
+    .secondary { border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .ghost { border-color:var(--line); color:var(--muted); }
+    .primary:not(:disabled):hover { background:#383834; }
+    .secondary:not(:disabled):hover,.ghost:not(:disabled):hover { background:var(--report-soft); }
+    .topbar {
+      min-height:64px; padding:12px 22px; background:#fff;
+      color:var(--ink); border-bottom:1px solid var(--line); box-shadow:none;
+    }
+    .mark,.topbar .mark {
+      background:var(--report-black); color:#fff; border-radius:10px;
+      letter-spacing:.3px; font-weight:650;
+    }
+    .topbar .mark { width:36px; height:36px; font-size:10px; }
+    .top-title strong { font-size:16px; font-weight:650; white-space:nowrap; }
+    .toolbar { gap:8px; }
+    .toolbar select,.toolbar input {
+      min-height:38px; padding:7px 11px; border:1px solid var(--line);
+      background:var(--report-soft); color:var(--ink); font-size:13px;
+    }
+    .shell { grid-template-columns:174px minmax(0,1fr); }
+    .sidebar { padding:24px 12px; border-color:var(--line); background:#fff; }
+    .nav { gap:4px; }
+    .nav button { min-height:42px; padding:11px 12px; color:var(--muted); font-size:13px; }
+    .nav button:hover { background:var(--report-soft); color:var(--ink); }
+    .nav button.active { background:var(--report-soft); color:var(--ink); font-weight:650; box-shadow:inset 2px 0 var(--ink); }
+    .user-card { margin-top:30px; padding:16px 6px 0; border:0; border-top:1px solid var(--line); border-radius:0; background:transparent; color:var(--muted); font-size:11px; line-height:1.9; }
+    .user-card strong { color:var(--ink); font-size:12px; font-weight:600; }
+    .user-card .tag { margin-top:6px; background:var(--report-soft); color:var(--muted); }
+    .user-card .ghost { min-height:32px; padding:5px 9px; font-size:11px; }
+    .content { padding:26px 24px 40px; }
+    .page-head { gap:16px; align-items:flex-start; margin-bottom:22px; }
+    .page-head h2 { font-size:24px; font-weight:650; letter-spacing:-.5px; line-height:1.3; }
+    .page-head p { max-width:760px; margin-top:8px; line-height:1.7; }
+    .status { font-size:11px; line-height:1.6; }
+    .page-head>.status { padding-top:7px; flex-shrink:0; }
+    .help { line-height:1.7; }
+    .form-card,.panel { padding:20px; border-color:var(--line); border-radius:var(--report-radius); box-shadow:none; }
+    .form-card h3,.panel h3,.finance-record-head h3 { font-size:15px; font-weight:650; }
+    .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .finance-list { grid-template-columns:minmax(0,1fr); }
+    .finance-list>.panel { min-width:0; }
+    .finance-grid>*,.form-grid>*,.finance-record-head>div { min-width:0; }
+    .field { min-width:0; grid-template-columns:minmax(0,1fr); gap:7px; margin:14px 0; }
+    .field label { color:var(--muted); font-size:12px; font-weight:550; }
+    .field input,.field select,.field textarea { min-width:0; max-width:100%; border-color:var(--line); padding:10px 12px; border-radius:9px; }
+    .field select { overflow:hidden; text-overflow:ellipsis; }
+    .field input:focus,.field select:focus,.field textarea:focus,.toolbar select:focus {
+      outline:2px solid #85857d; outline-offset:1px; border-color:#85857d;
+    }
+    .field input::placeholder,.field textarea::placeholder { color:#85857f; opacity:1; }
+    .actions { flex-wrap:wrap; gap:8px; }
+    .login-shell { padding:24px; background:var(--paper); }
+    .login-card { width:min(420px,100%); padding:32px; background:#fff; border-color:var(--line); border-radius:16px; box-shadow:none; }
+    .brand { gap:12px; margin-bottom:28px; }
+    .brand h1 { font-size:24px; font-weight:650; letter-spacing:-.5px; }
+    .brand p { line-height:1.6; font-size:12px; }
+    .login-card .mark { width:44px; height:44px; font-size:11px; }
+    .login-card .primary { min-height:44px; margin-top:14px; }
+    .boundary { padding:12px 14px; border-left:2px solid #afafa6; background:var(--report-soft); color:var(--muted); }
+    /* One integrated monthly sheet: no new table, no changes to financial cells. */
+    .monthly-action-bar { padding:0 0 14px; margin:0 0 16px; border:0; border-bottom:1px solid var(--line); border-radius:0; background:transparent; }
+    .monthly-action-help { color:var(--muted); font-size:11px; }
+    .report-state { padding:12px 14px; border-color:var(--line); background:#fff; line-height:1.8; }
+    .report-state strong { font-weight:600; }
+    .trace-summary { gap:5px; }
+    .trace-summary span:not(.warn) { background:var(--report-soft); color:var(--muted); }
+    .sheet-scroll { box-shadow:none; }
+    .monthly-materials { padding:16px; margin:0 0 16px; border-radius:var(--report-radius); background:#fff; }
+    .monthly-materials:before { margin-bottom:14px; font-size:14px; font-weight:650; }
+    .monthly-source-details { padding-top:12px; border-top:1px solid var(--line); font-size:12px; }
+    .monthly-source-details summary { padding:4px 0; }
+    .monthly-daily-completeness-text { margin:14px 0 10px; font-size:12px; }
+    .monthly-daily-details { border-color:var(--line); border-radius:var(--report-radius); }
+    .monthly-daily-details-item { background:var(--report-soft); border:0; }
+    .monthly-daily-details-item strong { color:var(--ink); }
+    /* Calendar and source uploads: status still carries financial meaning. */
+    .daily-month-bar { margin:12px 0 16px; }
+    .daily-month-summary { padding:10px 0; border-bottom:1px solid var(--line); color:var(--muted); }
+    .daily-calendar { gap:6px; }
+    .daily-cal-head { border-bottom:1px solid var(--line); color:var(--muted); font-weight:550; }
+    .daily-day { border-color:var(--line); border-radius:9px; padding:10px; gap:6px; }
+    .daily-day:hover { border-color:#99998f; box-shadow:none; }
+    .daily-day.empty { background:var(--report-soft); border-style:solid; }
+    .daily-day .day-num { font-weight:650; color:var(--ink); }
+    .daily-day .day-total { font-weight:600; white-space:normal; overflow-wrap:anywhere; line-height:1.5; }
+    .daily-day .day-sub { color:var(--muted); }
+    .daily-electronic { padding:16px; border-color:var(--line); border-radius:var(--report-radius); }
+    .daily-original { padding:16px; border-color:var(--line); border-radius:var(--report-radius); background:#fff; }
+    .daily-original-stage { border-color:var(--line); }
+    .daily-original-tools { flex-wrap:wrap; }
+    .daily-source-action { box-shadow:none; border-width:1px; }
+    .daily-source-action:hover:not(:disabled),.daily-source-action:focus-visible:not(:disabled) { transform:none; box-shadow:none; }
+    .daily-source-action .action-label { font-weight:650; }
+    .daily-source-action.upload { background:#fff; color:var(--ink); border-color:#b6b6ae; }
+    .daily-source-action.recognize { background:var(--report-black); color:#fff; border-color:var(--report-black); }
+    .daily-readonly-note { background:var(--report-soft); border-color:var(--line); color:var(--muted); }
+    .daily-confirm-bar,.salary-sheet-bar { border-color:var(--line); box-shadow:0 -2px 8px rgba(0,0,0,.03); }
+    /* Trace panels, attachments and remaining business pages share the same shell. */
+    .trace-drawer,.monthly-workbench { background:var(--paper); box-shadow:-8px 0 28px rgba(0,0,0,.08); }
+    .trace-head,.monthly-workbench>.page-head { background:#fff; color:var(--ink); border-bottom:1px solid var(--line); }
+    .trace-head h3,.monthly-workbench>.page-head h2 { font-size:17px; font-weight:650; letter-spacing:0; }
+    .monthly-workbench>.page-head p { color:var(--muted); }
+    .trace-card,.voucher-gallery-summary,.voucher-gallery-item,.catalog-dialog { border-color:var(--line); border-radius:var(--report-radius); box-shadow:none; }
+    .trace-card h4 { font-weight:650; overflow-wrap:anywhere; }
+    .trace-row { border-color:var(--line); font-size:13px; line-height:1.6; }
+    .trace-row>div { min-width:0; overflow-wrap:anywhere; }
+    .trace-row>strong { flex-shrink:0; font-variant-numeric:tabular-nums; }
+    .trace-formula { background:var(--report-soft); }
+    .trace-list,.trace-check,.salary-attachment { border-color:var(--line); }
+    .voucher-preview { background:var(--report-soft); border-color:var(--line); }
+    .voucher-gallery-item img { background:var(--report-soft); }
+    .voucher-gallery-summary strong { font-size:15px; font-weight:650; }
+    .voucher-gallery-summary small { font-size:12px; }
+    .finance-summary span { border-radius:6px; background:var(--report-soft); color:var(--muted); }
+    .finance-summary strong { color:var(--ink); }
+    .finance-list { gap:14px; }
+    .history-summary>div,.history-summary button { background:#fff; border-color:var(--line); box-shadow:none; }
+    .history-summary button.active { background:var(--report-soft); border-color:#88887f; }
+    .history-review-queue,.history-original-row,.upload-note,.type-item,.confidence-list { background:var(--report-soft); }
+    .type-item { border-left:2px solid #b3b3ab; }
+    .archive-wrap { border-color:var(--line); }
+    .archive-table th,.catalog-table th,.voucher-table th { background:var(--report-soft); font-weight:600; }
+    .archive-table td,.catalog-table td,.voucher-table td { border-color:var(--line); }
+    .purchase-detail-row { border-color:var(--line); }
+    .purchase-detail-row:hover { background:var(--report-soft); }
+    .toast { background:var(--report-black); color:#fff; }
+    @media(max-width:900px) {
+      .shell { grid-template-columns:minmax(0,1fr); }
+      .topbar { flex-wrap:nowrap; min-height:60px; padding:10px 16px; }
+      .toolbar { width:auto; margin-left:auto; }
+      .sidebar { position:static; padding:6px 12px; border-bottom:1px solid var(--line); }
+      .nav button { min-height:40px; padding:9px 12px; }
+      .nav button.active { box-shadow:inset 0 -2px var(--ink); border-radius:6px; }
+      .content { padding:20px 14px 32px; }
+      .page-head { margin-bottom:18px; }
+      .daily-calendar { grid-template-columns:repeat(7,minmax(0,1fr)); }
+      .daily-day { min-height:84px; padding:7px; }
+    }
+    @media(max-width:560px) {
+      .form-grid { grid-template-columns:minmax(0,1fr); }
+      .topbar { flex-wrap:wrap; gap:10px; padding:12px; }
+      .toolbar { width:100%; margin-left:0; flex-wrap:nowrap; gap:6px; }
+      .toolbar select { min-width:0; max-width:none; flex:1; width:0; }
+      .toolbar #refresh { flex:0 0 auto; }
+      .topbar .mark { width:30px; height:30px; font-size:9px; border-radius:8px; }
+      .top-title strong { font-size:15px; }
+      .content { padding:18px 8px 28px; }
+      .page-head h2 { font-size:21px; }
+      .page-head>.status { display:block; padding-top:6px; }
+      .page-head p { font-size:12px; }
+      .form-card,.panel,.daily-original,.daily-electronic { padding:12px; }
+      .monthly-action-bar { gap:var(--finance-space-tight); }
+      .monthly-action-bar>.primary,.monthly-action-bar>.secondary { min-height:var(--finance-action-height-compact); }
+      .monthly-action-help { flex-basis:100%; line-height:1.7; }
+      .daily-calendar { gap:3px; }
+      .daily-day { min-height:90px; padding:5px 3px; gap:4px; }
+      .daily-day.empty { min-height:90px; }
+      .daily-day .day-total { font-size:11px; }
+      .daily-day .voucher-status { white-space:normal; padding:3px; line-height:1.4; }
+      .login-card { padding:26px 22px; }
+      .field input,.field select,.field textarea { font-size:16px; }
+      .trace-row { font-size:12px; }
+      .catalog-dialog { padding:16px; }
+      .trace-head { padding:12px 14px; }
+    }
+    @media(orientation:landscape) and (max-height:560px) {
+      .topbar { min-height:46px; flex-wrap:nowrap; padding:6px 12px; gap:10px; }
+      .toolbar { width:auto; margin-left:auto; }
+      .toolbar select { width:auto; flex:none; max-width:180px; }
+      .toolbar select,.toolbar input,.topbar button { min-height:34px; padding:5px 9px; }
+      .content { padding:12px 10px 28px; }
+      .page-head { margin-bottom:12px; }
+      .page-head h2 { font-size:20px; }
+      .sidebar { padding:4px 8px; }
+      .daily-day,.daily-day.empty { min-height:64px; }
+    }
+    @media(orientation:landscape) and (max-height:620px) {
+      .report-focus .topbar { min-height:42px; }
+      .report-focus .monthly-materials { position:static; inset:auto; }
+    }
+    @media print {
+      .topbar,.sidebar { position:static; }
+      .content { padding:0; }
+      .sheet-scroll { box-shadow:none; }
+    }
+  </style>
+  <script src="operations-report-fit.js?v=568"></script>
+  <script src="operations-auth-bridge.js?v=568"></script>
+  <script src="operations-voucher-preview.js?v=568"></script>
+  <script src="operations-voucher-view.js?v=568"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -560,7 +773,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=567';
+      script.src='operations-petty-cash-evidence.js?v=568';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1180,8 +1393,8 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=567"></script>
-  <script src="operations-monthly-workbench.js?v=567"></script>
-  <script src="operations-daily-recognition.js?v=567"></script>
+  <script src="operations-daily-review.js?v=568"></script>
+  <script src="operations-monthly-workbench.js?v=568"></script>
+  <script src="operations-daily-recognition.js?v=568"></script>
 </body>
 </html>

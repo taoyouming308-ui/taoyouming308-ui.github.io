@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-27 · 报表 App 极简界面统一（App version: v568，待发布）
+
+- Last synchronized base checked: github/main 68b9459；复用干净隔离 checkout，修改前完成每日源码备份，保留 v567 收银中心改动及用户原工作区。
+- Current owner: Codex。按自由手艺人 App 业务页面的浅色极简体系统一报表登录、导航、月报操作区、日报月历、工资/库存表单及凭证追溯抽屉。主要操作黑色，次要操作轻边框；风险/缺凭证/待入账颜色保留。
+- Last Completed Work: 仅新增集中呈现层样式；保留一张完整月报、右侧整月日报及原字号/缩放，不改任何金额、公式、业务 API、数据库、门店权限或财务独立登录入口。修正表单内在宽度撑开页面，以及横屏上传面板遮住收起按钮的布局问题。
+- 新增 test-operations-minimal.js 并接入统一财务回归清单，使用全部拦截外网的虚构预览数据验证五种尺寸、登录/注册、主要财务页面、上传入口、凭证追溯与股东只读控件；样式开关前后报表文本和源数据保持一致。Chromium/WebKit 各五种尺寸及原月报/整表缩放回归通过；最终完整门禁待运行。
+- Open Work For Next Agent: 发布前完成完整 pre-push、GitHub Actions / Pages 和线上资源回读；真实门店账号、实际手机和平板的视觉验收仍由用户确认。此次不恢复此前暂停的全面重构，不部署 Supabase，不修改生产数据。
+- Handoff Rule: 本地合成测试不等于真实业务或实机验收；发布状态以 SHA、CI/Pages、线上资源为准。
+
 ## 2026-09-27 · 收银中心浅色极简界面（App version: v567，已发布）
 
 - Last synchronized base checked: github/main d3af07c；复用本线程隔离 checkout，修改前完成源码备份。保留最新财务页面改动，不修改其他工作区。

@@ -6,6 +6,7 @@
     { "runtime": "node", "script": "test-zysyr-api-read-timeout.js" },
     { "runtime": "node", "script": "test-operations-time.js" },
     { "runtime": "node", "script": "test-operations.js" },
+    { "runtime": "node", "script": "test-operations-minimal.js" },
     { "runtime": "node", "script": "test-zysyr-confirm-uncertain-result.js" },
     { "runtime": "node", "script": "test-monthly-formula-recalculation.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-cash-income-v527.js" },
