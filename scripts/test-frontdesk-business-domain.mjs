@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {projectBusinessDay} from '../supabase/functions/_shared/frontdesk-business-domain.mjs';
+const bill=JSON.parse(execFileSync('/usr/bin/python3',['-c','import json;from scripts.test_mgj_business_detail import normalized;print(json.dumps(normalized()))'],{encoding:'utf8'}));
+const source={available:true,date:'2026-01-01',source_count:1,source_list_changed:false,bills:[bill]};
+const result=projectBusinessDay(source);
+assert.equal(result.posted_amount_cents,10000);
+assert.equal(result.employees.reduce((sum,row)=>sum+row.performance_cents,0),20000);
+assert.equal(result.payments.find(row=>row.source_field==='cash').amount_cents,8000);
+assert.equal(result.payments.find(row=>row.source_field==='weixin').amount_cents,null);
+assert.equal(projectBusinessDay({...source,source_list_changed:true}).posted_amount_cents,null);
+assert.throws(()=>projectBusinessDay({...source,source_count:2,bills:[bill,bill]}));
+assert.throws(()=>projectBusinessDay({...source,date:'2026-01-02'}));
+assert.equal(projectBusinessDay({available:false}).posted_amount_cents,null);
+assert.equal(result.employees[0].lines[0].item.item_name,'剪发');
+console.log('Business projection: independent staff/payments, no double income, gaps and source freshness passed');

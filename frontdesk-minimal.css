@@ -276,3 +276,15 @@ summary { cursor: pointer; width: fit-content; color: var(--muted); font-size: 1
   .mobile-ledger-card, .mobile-stat-card { background: #fff; }.mobile-ledger-notes { border-color: var(--line); }
 }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+.business-details{margin:0 0 20px;padding:18px 22px}
+.business-details>summary{cursor:pointer;font-size:14px;font-weight:550;list-style:none}
+.business-details>summary:after{content:'展开';float:right;color:var(--muted);font-size:12px}
+.business-details[open]>summary:after{content:'收起'}
+.business-details h3{font-size:14px;font-weight:550;margin:18px 0 12px}
+.business-columns{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:28px}
+.business-columns section{min-width:0}.business-columns details{padding:12px 0;border-bottom:1px solid var(--line)}
+.business-columns details summary{cursor:pointer;font-size:13px}.business-columns details summary b{float:right;font-weight:550}
+.business-details table{width:100%;border-collapse:collapse;font-size:12px}
+.business-details th,.business-details td{text-align:left;white-space:nowrap;border-bottom:1px solid var(--line);padding:10px 8px}
+.business-details th{color:var(--muted);font-weight:500}.business-table-scroll{overflow:auto}
+@media(max-width:900px){.business-columns{grid-template-columns:1fr}.business-details{padding:16px}.business-columns details summary b{float:none;margin-left:12px}}

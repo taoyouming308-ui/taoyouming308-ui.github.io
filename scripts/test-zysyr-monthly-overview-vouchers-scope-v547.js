@@ -38,8 +38,10 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
   assert.doesNotMatch(overview, /record_type=eq\.report&order=uploaded_at\.desc&limit=1000/);
   assert.match(overview, /const \[rawReports, dailySource, acknowledgements\] = await Promise\.all\([\s\S]*?restRowsAll\(acknowledgementPath, 500\)/,
     'overview should read report, daily source, and acknowledgements concurrently');
-  assert.match(overview, /const \[vouchers, uploaders\] = await Promise\.all\(/,
-    'voucher metadata and uploader profiles should be fetched concurrently');
+  assert.match(overview, /const \[vouchers, uploaders, monthlyDisplayRows\] = await Promise\.all\(/,
+    'voucher metadata, uploader profiles, and selected monthly display should be fetched concurrently');
+  assert.match(overview, /select=display_data&company_id=eq\.\$\{companyId\}&store_id=eq\.\$\{storeId\}&id=eq\.\$\{cleanText\(monthlyReportCandidate\.id, 40\)\}&limit=1/,
+    'monthly display must remain restricted to the selected company, store, and report');
   assert.match(overview, /const \[cells, evidenceRules\] = await Promise\.all\(/,
     'monthly cells and evidence rules should be fetched concurrently');
   assert.match(overview, /restRowsAll\(monthlyTraceRevisionsPath\(companyId, storeId, reportId\), 5000\)[\s\S]*?monthlyIncomeAdjustments\(companyId, storeId, month\)/,
@@ -72,6 +74,10 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
       if (path.startsWith('zysyr_report_uploads?')) return [syntheticMonthlyReport];
       if (path.startsWith('zysyr_report_cells?')) return [];
       return [];
+    },
+    restRows: async path => {
+      assert.match(path, /company_id=eq\.synthetic-company&store_id=eq\.synthetic-store&id=eq\.00000000-0000-4000-8000-000000000001&limit=1/);
+      return [{ display_data: syntheticMonthlyReport.display_data }];
     },
     confirmedDailySource: async () => [],
     confirmedDailyPerformanceFromSource: () => [],

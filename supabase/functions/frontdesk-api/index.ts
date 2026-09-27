@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { customerProfileStoreFilter, scopeCustomerProfile, customerRecordsStoreFilter, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
+import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -281,6 +282,20 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
 }
 
 const TODAY_SOURCES = new Set(["walkin", "appointment", "referral", "other"]);
+async function businessDetails(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = selectedStore(session, payload);
+  const stores = await availableStores(session);
+  if (!store || !stores.includes(store)) throw new Error("请选择有效门店");
+  const date = cleanText(payload.date, 10);
+  if (!/^2026-\d{2}-\d{2}$/.test(date) || new Date(`${date}T00:00:00Z`).toISOString().slice(0,10) !== date) throw new Error("日期格式错误");
+  const response = await rest("rpc/mgj_read_business_details", {
+    method: "POST", body: JSON.stringify({ p_shop: store, p_day: date }),
+  });
+  if (!response.ok) throw new Error("营业明细暂时无法读取，请稍后刷新");
+  const source = await response.json();
+  if (source.shop !== store || source.date !== date) throw new Error("营业明细门店校验失败");
+  return projectBusinessDay(source);
+}
 const TODAY_STATUSES = new Set(["waiting", "arrived", "in_service", "completed", "cancelled"]);
 
 function frontdeskAmount(value: unknown): number {
@@ -979,6 +994,7 @@ Deno.serve(async (request: Request) => {
     const session = await requireSession(payload);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
     if (operation === "dashboard") return json(await dashboard(payload, session));
+    if (operation === "business_details") return json(await businessDetails(payload, session));
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "today_mark_new_customer") return json(await markNewCustomer(payload, session));
     if (operation === "today_mark_shampoo_qualified") return json(await markShampooQualified(payload, session));

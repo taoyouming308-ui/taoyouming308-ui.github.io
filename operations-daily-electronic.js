@@ -106,5 +106,26 @@
       finally { if (sameScope(ctx, token)) button.disabled = false; }
     };
     panel.appendChild(button); panel.appendChild(content); grid.insertAdjacentElement('afterend', panel);
+    var businessButton = el('button','读取收银员工与付款明细','secondary'); businessButton.type='button';
+    businessButton.style.marginLeft='8px';
+    businessButton.onclick=async function(){
+      if(!sameScope(ctx,token)||businessButton.disabled)return;
+      businessButton.disabled=true;content.textContent='正在读取收银共用明细…';
+      try{
+        var data=await api('daily_business_details',{store:ctx.store,date:ctx.date});
+        if(!sameScope(ctx,token))return;
+        if(data.shop!==ctx.store||data.date!==ctx.date||data.automatic_posting_enabled!==false||data.readonly!==true)throw new Error('收银明细范围校验失败');
+        content.replaceChildren();
+        if(!data.available){content.appendChild(el('p','本店该日收银明细尚未补齐。','help'));return;}
+        content.appendChild(el('p','已读取 '+data.source_count+' 张项目消费单'+(data.source_list_changed?'；源单据已更新，等待重新同步。':'。'),'help'));
+        var table=el('table',null,'voucher-table'),body=el('tbody');
+        (data.employees||[]).forEach(function(row){var tr=el('tr');tr.appendChild(el('td',(row.employee_names||[]).join(' / ')+' · '+row.source_role));tr.appendChild(el('td',money(row.performance_cents)));body.appendChild(tr);});
+        (data.payments||[]).filter(function(row){return row.amount_cents!==0;}).forEach(function(row){var tr=el('tr');tr.appendChild(el('td',(row.source_labels||[]).join(' / ')||row.source_field));tr.appendChild(el('td',money(row.amount_cents)));body.appendChild(tr);});
+        table.appendChild(body);content.appendChild(table);
+        content.appendChild(el('p','员工业绩与付款分别核对。当前来源为项目消费；日报逐列映射及零售、售卡充值仍待补齐。','help'));
+      }catch(error){if(sameScope(ctx,token))content.textContent=error.message;}
+      finally{if(sameScope(ctx,token))businessButton.disabled=false;}
+    };
+    button.insertAdjacentElement('afterend',businessButton);
   };
 })();

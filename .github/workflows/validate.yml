@@ -39,6 +39,8 @@ jobs:
         run: deno check supabase/functions/mgj-booking-sync/index.ts
       - name: Type-check signed daily electronic source function
         run: deno check supabase/functions/mgj-daily-report-sync/index.ts
+      - name: Type-check signed shared business detail function
+        run: deno check supabase/functions/mgj-business-detail-sync/index.ts
       - name: Validate signed private customer sync
         run: |
           deno check supabase/functions/mgj-customer-sync/index.ts

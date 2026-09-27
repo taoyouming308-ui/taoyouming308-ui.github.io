@@ -80,6 +80,12 @@
     { "runtime": "node", "script": "test-zysyr-report-cell-request-scope.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-workbench-v472.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-new-period-v494.js" },
-    { "runtime": "node", "script": "test-zysyr-monthly-shared-source-db-v496.js" }
+    { "runtime": "node", "script": "test-zysyr-monthly-shared-source-db-v496.js" },
+    { "runtime": "node", "script": "test-frontdesk-business-db.js" },
+    { "runtime": "node", "script": "test-frontdesk-business-domain.mjs" },
+    { "runtime": "node", "script": "test-frontdesk-business-reader.js" },
+    { "runtime": "node", "script": "test-mgj-business-detail-sync.js" },
+    { "runtime": "node", "script": "test-frontdesk-business-browser.js" },
+    { "runtime": "python", "args": ["-m", "unittest", "scripts/test_mgj_business_detail.py", "scripts/test_sync_mgj_business_details.py"] }
   ]
 }

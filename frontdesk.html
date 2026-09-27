@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="581">
+<html lang="zh-CN" data-version="582">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=581">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=582">
 </head>
 <body>
   <div class="login" id="login">
@@ -239,6 +239,7 @@
           <div class="kpi"><label>今日项目入账</label><strong id="kpi-amount">—</strong><small>含套餐核销 · 不含充值售卡</small></div>
         </div>
         <p class="sub" id="consumption-status" role="status">正在核对完整消费数据…</p>
+        <details class="card business-details" id="business-details"><summary>员工业绩与付款明细</summary><div id="business-details-content"></div></details>
         <div class="card"><div class="card-head"><h3>发型师时间预览</h3><small id="today-caption">正在载入</small><div class="schedule-controls"><small>可左右滑动</small><button class="scroll-step" id="schedule-left" type="button" aria-label="向左查看">←</button><button class="scroll-step" id="schedule-right" type="button" aria-label="向右查看">→</button></div><div class="schedule-legend"><span><i class="wait"></i>等待接待</span><span><i class="active"></i>预约/服务中</span><span><i class="done"></i>已完成</span><span><i class="cancel"></i>取消/未到</span></div></div><div class="schedule-scroll" id="today-list"><div class="empty">正在读取今日数据…</div></div><details class="schedule-guide"><summary>排班操作说明</summary><p>从当天最早营业时段开始完整显示，已过去时段和已完成客户都会保留；点击客户看套餐，点击空白时间格快速登记。</p></details></div>
       </section>
 
@@ -281,6 +282,7 @@
   <div class="overlay hidden" id="ledger-form-overlay"><div class="drawer"><div class="drawer-head"><h3>编辑前台数据</h3><button class="drawer-close" type="button" data-close="ledger-form-overlay">×</button></div><form id="ledger-form" style="padding-top:18px"><input type="hidden" id="ledger-record-type"><input type="hidden" id="ledger-record-id"><div class="today-summary"><div><label>客户</label><b id="ledger-record-customer">—</b></div><div><label>记录来源</label><b id="ledger-record-source">—</b></div></div><div class="form-grid"><div class="form-field wide"><label for="ledger-service">项目</label><input id="ledger-service" maxlength="500" placeholder="剪发、烫发、染发等"></div><div class="form-field"><label for="ledger-barber">发型师</label><input id="ledger-barber" list="today-barber-list"></div><div class="form-field"><label for="ledger-technician">技师</label><input id="ledger-technician" list="today-technician-list"></div><div class="form-field"><label for="ledger-assistant">助理</label><input id="ledger-assistant" list="today-assistant-list"></div><div class="form-field"><label for="ledger-amount">实际金额（元）</label><input id="ledger-amount" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></div><div class="form-field"><label for="ledger-payment-summary">金额说明</label><input id="ledger-payment-summary" maxlength="500" placeholder="现金、微信、优惠、套餐扣次等"></div><div class="form-field wide" id="ledger-notes-field"><label for="ledger-notes">当天备注</label><textarea id="ledger-notes" maxlength="800"></textarea></div></div><div class="notice" style="margin-top:16px"><strong>修改前台独立数据</strong>金额和说明会更新到客户数据表；原始上传表格内容、客户主档和美管加收银数据保持不变。</div><div class="form-actions"><button class="ghost" type="button" data-close="ledger-form-overlay">取消</button><button class="primary" id="ledger-save-btn" type="submit">保存修改</button></div></form></div></div>
   <div class="toast hidden" id="toast"></div>
 
+  <script src="frontdesk-business-details.js?v=582"></script>
   <script>
   (function(){
     'use strict';
@@ -291,6 +293,7 @@
     var STORE_KEY = 'zysyr-frontdesk-store-v1';
     var state = { session:null, store:'', dashboard:null, todayRows:[], selected:null, importRows:[], importFile:'', ledgerRows:[], ledgerPhoneSuffix:'', ledgerDate:'', ledgerRequest:0, showingAll:false, drawerData:null, drawerCustomer:null, customerScope:'all', customerRequest:0, drawerRequest:0, searchRequest:0, view:'today' };
     var $ = function(id){ return document.getElementById(id); };
+    var businessUI = typeof window !== 'undefined' && window.FrontdeskBusinessDetails || {init:function(){},refresh:function(){},clear:function(){}};
     function isMobileView(){ if(typeof window==='undefined'||!window.matchMedia)return false; return window.matchMedia('(max-width:680px), (max-width:900px) and (orientation:landscape) and (max-height:500px)').matches; }
 
     function esc(value){ return String(value == null ? '' : value).replace(/[&<>'"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]; }); }
@@ -309,9 +312,10 @@
       if(!response.ok){if(response.status===403&&['login','register','registration_options'].indexOf(operation)<0)clearSession();throw new Error(result.error||('请求失败 '+response.status));}
       return result;
     }
+    businessUI.init({api:api,scope:function(){return {session:state.session&&state.session.session_token,store:state.store,date:$('today-date').value||localDate()};}});
 
     function saveSession(session){ state.session=session; localStorage.setItem(STORAGE_KEY,JSON.stringify(session)); applySession(); }
-    function clearSession(){ state.session=null;state.customerRequest++;state.drawerRequest++;state.searchRequest++;state.selected=null;state.drawerCustomer=null;state.drawerData=null;$('customer-results').innerHTML='';$('customer-detail').innerHTML='';$('customer-drawer-content').innerHTML='';$('customer-drawer').classList.add('hidden');localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
+    function clearSession(){ state.session=null;businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;state.selected=null;state.drawerCustomer=null;state.drawerData=null;$('customer-results').innerHTML='';$('customer-detail').innerHTML='';$('customer-drawer-content').innerHTML='';$('customer-drawer').classList.add('hidden');localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
     function configureStores(user){
       var stores=Array.isArray(user.stores)?user.stores.filter(Boolean):[];if(user.store&&stores.indexOf(user.store)<0)stores.unshift(user.store);
       var remembered=localStorage.getItem(STORE_KEY)||'',selected=stores.indexOf(remembered)>=0?remembered:(user.store||stores[0]||'');
@@ -407,8 +411,8 @@
       if(!state.session||!state.store)return;
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
       state.dashboardLoading=true;setBusy(btn,true,'刷新中…');
-      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});}
-      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);}
+      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});businessUI.refresh();}
+      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);businessUI.refresh();}
       catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
