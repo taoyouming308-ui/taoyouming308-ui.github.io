@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="576">
+<html lang="zh-CN" data-version="577">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -156,6 +156,7 @@
       .history-row{grid-template-columns:86px minmax(0,1fr) 66px}
       .ledger-table-wrap{max-height:calc(100dvh - 220px)}
       .drawer{width:min(720px,78vw);max-width:none;height:auto;max-height:calc(100dvh - 24px)}
+      #today-form-overlay .form-actions{position:sticky;bottom:0;z-index:3;padding:10px 0 calc(8px + env(safe-area-inset-bottom));background:var(--panel)}
       .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .form-grid .wide{grid-column:span 2}
       .today-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -176,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=576">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=577">
 </head>
 <body>
   <div class="login" id="login">

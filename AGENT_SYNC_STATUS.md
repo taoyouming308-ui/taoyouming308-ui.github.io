@@ -1,21 +1,30 @@
 # Agent Sync Status
 
-## 2026-09-27 · 横屏统计卡片适配（App version: v576，待发布）
+## 2026-09-27 · 横屏接待表单固定保存区（App version: v577，待发布）
+
+- Last synchronized base checked: GitHub main `e3ff217`（v576）；本任务隔离 checkout；当日源码归档已存在。
+- v576 Pages 已部署，但 GitHub Validate 两次在 Linux 844×390 前台浏览器断言失败：接待表单保存按钮滚动后底部仍在视口外；macOS 本机各尺寸通过。仅调 KPI 列数未消除。
+- 横屏下将当天接待表单操作区固定在抽屉可视区底部，解决保存入口可达性；保留 v575 的手机号去重消费人数、无手机号消费单提示、匹配来源拆分及 v576 五卡单行布局。
+- Last Completed Work: v577 代码已修改；版本/发布完整性/交接检查通过，定向 Playwright 在 Chrome 启动时 SIGABRT，未能完成；按本机已知环境处理停止浏览器重试。v577 未发布，线上仍为 Pages 已部署的 v576。
+- Open Work For Next Agent: 在安全可用的浏览器测试环境完成 844×390 回归及完整 pre-push，再推送 v577 并检查 Pages；不能跳过 pre-push。
+- Handoff Rule: 手机号缺失人数不猜测；历史消费源同步完整度不因新增统计而改变。
+
+## 2026-09-27 · 横屏统计卡片适配（App version: v576，已发布但远端回归失败）
 
 - Last synchronized base checked: GitHub main `02dd441`（v575）；本任务隔离 checkout；当日源码归档已存在。
 - v575 已发布到 Pages，GitHub Validate 在 Linux 844×390 横屏步骤发现添加第 5 张统计卡后的保存按钮露出断言失败；同机多尺寸浏览器断言通过。重跑也在该步骤失败。
 - 调整横屏平板 KPI 为 5 列单行，以保留指标同时避免增加一行页面高度。消费人数继续只按手机号去重，无手机号消费单显式列出；预约匹配继续区分手机号与姓名兜底。
-- Last Completed Work: v576 代码与版本缓存标记已调整；发布门禁待重跑，Pages 待部署核对。未改 Supabase、预约/收银源数据或权限。
-- Open Work For Next Agent: 完成 v576 发布门禁；若 844×390 仍失败，读取最新 job 日志后再修，不修改旧的用户业务表单或数据。
+- Last Completed Work: v576 已推送，Pages build/deploy 成功，无缓存回读确认线上 v576。完整本地 pre-push 通过；GitHub Validate 仍在 844×390 横屏表单保存按钮断言失败。未改 Supabase、预约/收银源数据或权限。
+- Open Work For Next Agent: 由 v577 的横屏固定保存区修复该失败；完成安全浏览器回归与发布门禁。
 - Handoff Rule: 区分 GitHub Pages 部署和 Validate 状态；页面已提供 v575 暂行统计，等 v576 通过回归后再报本轮完成。
 
-## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，待发布）
+## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，已发布）
 
 - Last synchronized base checked: GitHub main `89338ad`（v574），由本任务隔离分支快进同步；当日 ZYSYR 源码归档已存在。
 - 用户确认统计口径：消费单数按当天门店同步到的 Meiguanjia 服务单条数；消费人数按非空手机号去重，无手机号服务单数作为提示且不计入人数；消费总额仍按服务单金额合计。
 - 预约已匹配继续保留总数，副标题拆出手机号匹配与姓名兜底匹配数量，避免把姓名兜底误认成手机号精确匹配。只改前台展示逻辑和缓存版本，不改 Supabase、源业务记录或收银流程。
-- Last Completed Work: 代码已修改，发布检查尚未运行；无生产数据读取或写入，本版尚未上线。
-- Open Work For Next Agent: 执行经用户授权的发布验证/门禁，修正问题后推送 GitHub main 并检查 GitHub Pages v575；等真实门店刷新后核对统计口径。
+- Last Completed Work: v575 Pages build/deploy 成功并无缓存回读确认线上统计实现；Validate 的横屏保存按钮断言失败，后由 v576/v577 跟进。
+- Open Work For Next Agent: 查看当前 v577 横屏可用性修复和发布状态。
 - Handoff Rule: 手机号缺失时人数不猜测；手机号匹配人数不等于无手机号顾客数，也不宣称消费源数据覆盖完整。
 
 ## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，已发布）
