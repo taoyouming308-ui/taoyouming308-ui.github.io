@@ -10,7 +10,9 @@ const ctx=vm.createContext({Date,cleanText:(v,n)=>String(v||'').slice(0,n),restR
 vm.runInContext(stripTypeScriptTypes(reader)+';globalThis.run=dashboard;',ctx);
 const container='frontdesk-consumption-test-'+process.pid;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']});
-const sql=text=>execFileSync('docker',['exec','-i',container,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input:text,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
+// The image starts a temporary Unix-socket-only server during initialization.
+// TCP becomes available only on the final server, avoiding a false ready signal.
+const sql=text=>execFileSync('docker',['exec','-i',container,'psql','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input:text,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 (async()=>{
   snapshots=[{fetched_at:new Date().toISOString(),services:[{source_id:'1',amount:100}]}];
   let result=await ctx.run({date:'2026-09-27',store:'向里造型'},{role:'frontdesk',store:'自由手艺人'});
