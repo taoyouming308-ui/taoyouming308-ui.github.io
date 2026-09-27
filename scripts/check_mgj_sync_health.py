@@ -33,6 +33,7 @@ STATUS_RULES = (
 RUNTIME_PAIRS = (
     ("customer_sync", "sync_mgj_customer_profiles.py", "sync_mgj_all.py"),
     ("booking_sync", "sync_mgj_bookings.py", "sync_mgj_bookings.py"),
+    ("customer_private_client", "mgj_private_customer.py", "mgj_private_customer.py"),
     ("keepalive", "mgj_keepalive.py", "mgj_keepalive.py"),
     ("care_worker", "care_outbound_worker.py", "care_outbound_worker.py"),
     (
@@ -81,6 +82,20 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(65536), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def published_sync_hash(repo_root: Path, source_name: str) -> str:
+    """Use published sync code, not a developer's unrelated dirty worktree."""
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "show", f"github/main:scripts/{source_name}"],
+        capture_output=True, timeout=5, check=False,
+        env={key: value for key, value in os.environ.items() if not key.startswith("GIT_")},
+    )
+    if result.returncode == 0:
+        return hashlib.sha256(result.stdout).hexdigest()
+    if (repo_root / ".git").exists():
+        raise ValueError("published source unavailable")
+    return sha256(repo_root / "scripts" / source_name)
 
 
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -247,10 +262,14 @@ def audit_runtime(
     for label, source_name, runtime_name in RUNTIME_PAIRS:
         source = repo_root / "scripts" / source_name
         runtime = runtime_dir / runtime_name
-        if not source.is_file() or not runtime.is_file():
+        if not runtime.is_file():
             issues.append(f"{label}: 源文件或运行副本缺失")
             continue
-        source_hash = sha256(source)
+        try:
+            source_hash = published_sync_hash(repo_root, source_name) if label in ("customer_sync", "booking_sync", "customer_private_client") else sha256(source)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            issues.append(f"{label}: 已发布源文件不可用")
+            continue
         runtime_hash = sha256(runtime)
         hashes[label] = {
             "matched": source_hash == runtime_hash,

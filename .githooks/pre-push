@@ -19,11 +19,12 @@ node scripts/test-staff-report-access-v514.js || exit 1
 node scripts/test-customer-admin-api.js || exit 1
 node scripts/test-staff-report-browser-v514.js || exit 1
 node scripts/test-frontdesk.js || exit 1
+node scripts/test-mgj-customer-sync.js || exit 1
 node scripts/test-zysyr-validation-manifest.js || exit 1
 node scripts/run-zysyr-finance-tests.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
 python3 -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
-python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py || exit 1
+python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1

@@ -23,6 +23,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 CONFIG_PATH = os.path.expanduser("~/.hermes/meiguanjia-config.json")
 AUTH_PATH = os.path.expanduser("~/.hermes/meiguanjia-auth.json")
 STATUS_PATH = os.path.expanduser("~/.hermes/sync_bookings_status.json")
+CADENCE_PATH = os.path.expanduser("~/.hermes/mgj_booking_cadence.json")
+FUTURE_INTERVAL_SECONDS = 15 * 60
 RUN_LOCK_PATH = "/tmp/sync_mgj_bookings.lock"
 SESSION_LOCK_PATH = "/tmp/sync_mgj_all.lock"
 DEFAULT_SERVER = "vip12.meiguanjia.net"
@@ -189,8 +191,11 @@ def check_session(server, cookie):
             timeout=10,
         )
         return result.get("code") == 0
-    except Exception:
-        return False
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            return False
+        raise
+    # A timeout is not proof of expiry. Do not repeatedly log in on outages.
 
 
 def login(server, username, password):
@@ -408,9 +413,20 @@ def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
     return normalized
 
 
-def sync_bookings():
-    server, cookie = ensure_session()
+def scheduled_dates(cadence, now=None):
+    """Today every tick; at most one overdue future day, oldest first."""
+    now = time.time() if now is None else now
     dates = reservation_date_keys()
+    history = cadence.get("dates", {})
+    due = [d for d in dates[1:] if now - history.get(d, {}).get("success_at", 0) >= FUTURE_INTERVAL_SECONDS
+           and now >= history.get(d, {}).get("retry_after", 0)]
+    due.sort(key=lambda d: (history.get(d, {}).get("success_at", 0), d))
+    return dates[:1] + due[:1]
+
+
+def sync_bookings(dates=None, cadence=None):
+    server, cookie = ensure_session()
+    dates = reservation_date_keys() if dates is None else dates
     today_text = date.today().isoformat()
     fetched_by_pair = {}
     successful_pairs = set()
@@ -435,6 +451,10 @@ def sync_bookings():
                 successful_pairs.add(pair)
             except Exception as exc:
                 fetch_errors.append(f"{shop['name']} {date_text}: {exc}")
+                if cadence is not None and isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
+                    cadence["cooldown_until"] = time.time() + 300
+                    budget_exhausted = True
+                    break
         if budget_exhausted:
             break
 
@@ -443,6 +463,7 @@ def sync_bookings():
     upserted = 0
     deleted = 0
     written_pairs = 0
+    written_keys = set()
     signing_key = load_signing_key()
     for date_text in dates:
         for shop in SHOPS:
@@ -459,6 +480,7 @@ def sync_bookings():
                 upserted += result["upserted"]
                 deleted += result["deleted"]
                 written_pairs += 1
+                written_keys.add(pair)
             except Exception as exc:
                 write_errors.append(f"{shop['name']} {date_text}: {exc}")
         if not run_budget_available(3):
@@ -471,6 +493,16 @@ def sync_bookings():
     else:
         status = "degraded"
     expected_pairs = len(SHOPS) * len(dates)
+    if cadence is not None:
+        history = cadence.setdefault("dates", {})
+        for day in dates:
+            previous = history.setdefault(day, {})
+            if all((shop["shopId"], day) in written_keys for shop in SHOPS):
+                previous.update(success_at=time.time(), retry_after=0)
+            else:
+                previous["retry_after"] = time.time() + 120
+        cadence["dates"] = {d: v for d, v in history.items() if d in reservation_date_keys()}
+        atomic_write_json(CADENCE_PATH, cadence)
     summary = {
         "pairs_ok": len(successful_pairs),
         "pairs_written": written_pairs,
@@ -479,6 +511,8 @@ def sync_bookings():
         "upserted": upserted,
         "deleted": deleted,
         "write_errors": len(write_errors),
+        "pairs_expected": expected_pairs,
+        "dates": dates,
     }
     write_status(
         status,
@@ -487,7 +521,7 @@ def sync_bookings():
     )
     print(
         "预约同步: "
-        f"读取日期{summary['pairs_ok']}/16 写入日期{written_pairs}/16 "
+        f"读取日期{summary['pairs_ok']}/{expected_pairs} 写入日期{written_pairs}/{expected_pairs} "
         f"读取{summary['fetched']} 写入{summary['upserted']} 删除{summary['deleted']}"
     )
     if fetch_errors or write_errors:
@@ -499,15 +533,29 @@ def sync_bookings():
 
 def main():
     global RUN_DEADLINE
-    RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
+    scheduled = "--scheduled" in sys.argv[1:]
+    cadence = None
+    RUN_DEADLINE = time.monotonic() + (55 if scheduled else RUN_BUDGET_SECONDS)
     run_lock = acquire_lock(RUN_LOCK_PATH)
     if run_lock is None:
         write_status("skipped_busy", reason="booking_sync_running")
         print("预约同步已有任务运行，本次跳过")
         return 0
     try:
+        if scheduled:
+            try:
+                cadence = load_json(CADENCE_PATH)
+            except FileNotFoundError:
+                cadence = {"dates": {}}
+            if time.time() < cadence.get("cooldown_until", 0):
+                print("预约接口限流冷却中，保留已有数据")
+                return 0
+            return sync_bookings(scheduled_dates(cadence), cadence)
         return sync_bookings()
     except Exception as exc:
+        if scheduled and cadence is not None and isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
+            cadence["cooldown_until"] = time.time() + 300
+            atomic_write_json(CADENCE_PATH, cadence)
         write_status("degraded", error=f"{type(exc).__name__}:{exc}")
         print(f"预约同步失败: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1

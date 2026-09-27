@@ -45,6 +45,11 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 
+try:
+    import mgj_private_customer as private_customer
+except ModuleNotFoundError:
+    from scripts import mgj_private_customer as private_customer
+
 # ── 配置 ──
 CONFIG_PATH = "/Users/a1/.hermes/meiguanjia-config.json"
 HISTORY_CONFIG_PATH = os.environ.get(
@@ -348,6 +353,9 @@ def timestamp_date(timestamp_ms):
 
 def supabase_get(path, timeout=10):
     """GET请求Supabase REST API"""
+    if path.partition("?")[0] in ("bookings", TABLE):
+        payload = private_customer.payload_for("GET", path)
+        return with_network_retries(lambda seconds: private_customer.request(payload, seconds), timeout)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     req = urllib.request.Request(url, headers={"apikey": SUPABASE_KEY, "Accept": "application/json"})
     def request(effective_timeout):
@@ -358,6 +366,9 @@ def supabase_get(path, timeout=10):
 
 def supabase_post(path, body, timeout=10):
     """POST请求Supabase REST API"""
+    if path.partition("?")[0] == TABLE:
+        payload = private_customer.payload_for("POST", path, body)
+        return with_network_retries(lambda seconds: private_customer.request(payload, seconds), timeout)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     data = json.dumps(body, ensure_ascii=False).encode()
     req = urllib.request.Request(url, data=data, headers={
@@ -373,6 +384,9 @@ def supabase_post(path, body, timeout=10):
 
 def supabase_patch(path, body, timeout=10):
     """PATCH请求Supabase REST API"""
+    if path.partition("?")[0] == TABLE:
+        payload = private_customer.payload_for("PATCH", path, body)
+        return with_network_retries(lambda seconds: private_customer.request(payload, seconds), timeout)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     data = json.dumps(body, ensure_ascii=False).encode()
     req = urllib.request.Request(url, data=data, headers={

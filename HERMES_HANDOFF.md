@@ -1,5 +1,14 @@
 # Hermes Handoff
 
+## 2026-09-27 current sync runtime (supersedes older scheduling notes)
+
+- Booking job `9ef3f10b20d9`: `* * * * *`, no-agent, existing `sync_bookings_wrapper.sh` invokes canonical `sync_mgj_bookings.py --scheduled`. Today is fetched first; one overdue future day at most per tick, each future date renewed after 15 minutes. No duplicate scheduler. Cadence state: `~/.hermes/mgj_booking_cadence.json`; never discard it to force repeated full-week pulls. Default manual mode retains full 8-day behavior.
+- Customer cron currently remains OS `*/30` (minute 00/30), 8 rotating profiles, 105-second budget; Hermes normal-customer duplicate stays disabled. Services task remains hourly :15. The old 02/32 description below is historical, not current installed state.
+- Customer canonical `scripts/sync_mgj_customer_profiles.py` now requires sibling `scripts/mgj_private_customer.py`, deployed together as `sync_mgj_all.py` / `mgj_private_customer.py`. Private bookings/customer operations use `mgj-customer-sync` with domain-separated Ed25519 signatures. Function must retain `verify_jwt=false` and internal signature authentication. No public ACL repair and no service-role key on the Mac.
+- Deploy only core sync with `scripts/deploy_mgj_sync_runtime.sh --core-only`: creates a recoverable backup, then byte-verifies and atomically replaces the four core files. Full deploy also includes the new private helper. Do not alter credentials, customer retry queues or unrelated workers when deploying.
+- Frontdesk dashboard polls own cloud every 30 seconds only while visible on Today, with pending-request guard. This does not poll Meiguanjia per client.
+- Watchdog compares core sync hashes against the local `github/main` Git object rather than a dirty developer checkout. Ensure `git fetch github main` has completed after release. Historical `needs_review` customers with source-not-found errors are not automatically reset by the auth repair.
+
 ## v505 护理改为员工手动出库（2026-09-19）
 
 - 用户明确要求关闭自由手艺人 App 向美管加自动出库。App 总开关关闭，`scripts/care_outbound_store_config.json` 的 `runtime_enabled=false`，两个门店均 `enabled=false`。

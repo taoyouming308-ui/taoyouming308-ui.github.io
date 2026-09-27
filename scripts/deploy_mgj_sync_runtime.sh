@@ -5,6 +5,23 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 TARGET_DIR="$HOME/.hermes/scripts"
 
 mkdir -p "$TARGET_DIR"
+if [ "${1:-}" = "--core-only" ]; then
+  backup_dir=$(mktemp -d "$HOME/.hermes/mgj-core-backup.XXXXXX")
+  for pair in "mgj_private_customer.py:mgj_private_customer.py" "sync_mgj_customer_profiles.py:sync_mgj_all.py" "sync_mgj_bookings.py:sync_mgj_bookings.py" "sync_mgj_bookings.sh:sync_bookings_wrapper.sh"; do
+    source_name=${pair%%:*}
+    target_name=${pair#*:}
+    if [ -f "$TARGET_DIR/$target_name" ]; then cp -p "$TARGET_DIR/$target_name" "$backup_dir/$target_name"; fi
+    cp "$SCRIPT_DIR/$source_name" "$TARGET_DIR/$target_name.pending.$$"
+    chmod 700 "$TARGET_DIR/$target_name.pending.$$"
+    cmp "$SCRIPT_DIR/$source_name" "$TARGET_DIR/$target_name.pending.$$"
+    mv "$TARGET_DIR/$target_name.pending.$$" "$TARGET_DIR/$target_name"
+    shasum -a 256 "$SCRIPT_DIR/$source_name" "$TARGET_DIR/$target_name"
+  done
+  echo "Core sync backup: $backup_dir"
+  exit 0
+fi
+cp "$SCRIPT_DIR/mgj_private_customer.py" "$TARGET_DIR/mgj_private_customer.py"
+chmod 700 "$TARGET_DIR/mgj_private_customer.py"
 cp "$SCRIPT_DIR/sync_mgj_customer_profiles.py" "$TARGET_DIR/sync_mgj_all.py"
 cp "$SCRIPT_DIR/sync_mgj_bookings.py" "$TARGET_DIR/sync_mgj_bookings.py"
 cp "$SCRIPT_DIR/sync_mgj_bookings.sh" "$TARGET_DIR/sync_bookings_wrapper.sh"
@@ -32,6 +49,7 @@ verify_pair() {
 }
 
 verify_pair "$SCRIPT_DIR/sync_mgj_customer_profiles.py" "$TARGET_DIR/sync_mgj_all.py"
+verify_pair "$SCRIPT_DIR/mgj_private_customer.py" "$TARGET_DIR/mgj_private_customer.py"
 verify_pair "$SCRIPT_DIR/sync_mgj_bookings.py" "$TARGET_DIR/sync_mgj_bookings.py"
 verify_pair "$SCRIPT_DIR/sync_mgj_bookings.sh" "$TARGET_DIR/sync_bookings_wrapper.sh"
 verify_pair "$SCRIPT_DIR/backfill_mgj_customer_profiles.sh" "$TARGET_DIR/backfill_loop.sh"

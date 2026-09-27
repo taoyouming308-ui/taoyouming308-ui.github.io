@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## 2026-09-27 · 客户私有同步恢复与当天预约提速（App version: v569，前端待发布）
+
+- Last synchronized base checked: github/main e32b4cf（包含最新财务极简界面，已保留）；本线程干净隔离 checkout 开始，备份已核验。Current owner: Codex。用户同意先修复消费/套餐授权，再实施当天预约 1 分钟、未来日期约 15 分钟轮换及前台云端 30 秒刷新。
+- 根因：bookings 与 customer_profiles 已无 anon 读写权限，但旧客户脚本仍直连公开 REST。新增 mgj-customer-sync 签名通道，复用本机 mode-0600 Ed25519 私钥但使用独立签名域；仅允许固定预约手机号读取、客户单条读取/扫描和按精确手机号写入，拒绝未知表/字段/门店/操作，不含删除。未放开数据库权限、未分发 service-role key，也不写美管加。
+- 生产 mgj-customer-sync v1 已部署，ACTIVE、verify_jwt=false（函数内部验证签名/时戳）；线上源码与候选一致。匿名请求 401，签名读取成功。客户同步首批 8/8 成功；独立 services 1 成功。只读聚合确认最近更新 9 份档案（自由手艺人 6、向里造型 3），均含消费历史，其中 5 份有套餐。未清空失败来源数组。
+- 预约脚本 --scheduled 每轮优先当天两店，最多增加一个到期未来日期；未来日期仅在两店写入成功后推进 15 分钟计时，失败退避、不删失败范围；55 秒预算、单实例锁，源站 429 冷却 5 分钟，网络超时不再误判为会话失效而重登。现有唯一 Hermes 任务 9ef3f10b20d9 已改每分钟 cron；18:22 受控首轮、18:24 自动轮均 healthy。后台四个文件已备份到 ~/.hermes/mgj-core-backup.p0bn2p 后部署，哈希与仓库一致。
+- 前台仅将可见“今日客户”云端轮询从 60 秒改为 30 秒，已有请求未结束时跳过自动轮询；不直接请求美管加。同步健康检查对本轮三个同步模块使用本地 github/main 发布对象，避免开发工作区的未发布代码造成假漂移告警。
+- Last Completed Work: Python 同步/健康 53 项、Node 签名通道拒绝/隔离/保存测试、前台定向测试和 Deno 2.9.6 类型检查通过。Open Work For Next Agent: 完整 pre-push、GitHub CI/Pages、前台线上版本及自动轮次持续核验待完成；发布后部署健康检查脚本。保留原消费/套餐任务每 30 分钟的小批量轮换，近期明细每小时 :15。
+- 已知独立遗留：50 个历史客户 needs_review 原因为“未搜索到该客户”，不是 401；未重置/删除/自动无限重试。护理 worker 的既有源码/运行差异未修改。Handoff Rule: 有限批次成功不等于所有历史客户已补齐，也不证明美管加零限流风险；不改变出库、收银或门店登录权限。
+
 ## 2026-09-27 · 报表 App 极简界面统一（App version: v568，待发布）
 
 - Last synchronized base checked: github/main 68b9459；复用干净隔离 checkout，修改前完成每日源码备份，保留 v567 收银中心改动及用户原工作区。

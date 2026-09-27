@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="568">
+<html lang="zh-CN" data-version="569">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -176,7 +176,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=567">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=569">
 </head>
 <body>
   <div class="login" id="login">
@@ -396,7 +396,7 @@
       requestAnimationFrame(function(){container.scrollLeft=scheduleScrollLeft(previousScroll);});
     }
     function updateStaffOptions(data){[['today-barber-list',data.barbers],['today-technician-list',data.technicians],['today-assistant-list',data.assistants]].forEach(function(pair){$(pair[0]).innerHTML=(pair[1]||[]).map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');});}
-    async function loadDashboard(){if(!state.session||!state.store)return;var btn=$('refresh-btn');setBusy(btn,true,'刷新中…');try{var data=await api('dashboard',{date:$('today-date').value||localDate()});state.dashboard=data;updateStaffOptions(data);renderToday(data);}catch(e){toast(e.message,true);}finally{setBusy(btn,false);}}
+    async function loadDashboard(){if(!state.session||!state.store)return;state.dashboardLoading=true;var btn=$('refresh-btn');setBusy(btn,true,'刷新中…');try{var data=await api('dashboard',{date:$('today-date').value||localDate()});state.dashboard=data;updateStaffOptions(data);renderToday(data);}catch(e){toast(e.message,true);}finally{state.dashboardLoading=false;setBusy(btn,false);}}
     $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'&&state.selected)openCustomer(state.selected);else{loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
     $('schedule-left').addEventListener('click',function(){$('today-list').scrollBy({left:-520,behavior:'smooth'});});$('schedule-right').addEventListener('click',function(){$('today-list').scrollBy({left:520,behavior:'smooth'});});
 
@@ -518,7 +518,7 @@
     async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});renderShampooStats(data);}catch(e){$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
     function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
     document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
-    setInterval(function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();},60000);
+    setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard();},30000);
     restoreSession();
   })();
   </script>

@@ -2,6 +2,13 @@
 
 This is the handoff checklist for Hermes and Codex when improving Meiguanjia appointment/customer sync.
 
+## Current 2026-09-27 repair
+
+- Private `bookings` and `customer_profiles` are accessed by the customer sync via `mgj-customer-sync`, not by restoring anon grants. Named operations only; exact phone writes, shop/field validation, signed timestamp and separate signature domain. Runtime helper is `mgj_private_customer.py`.
+- Scheduled booking runs prioritize today every minute and rotate a single overdue future date (15-minute age); 55-second deadline and single-run lock. Full successful shop/date result remains mandatory for stale-copy cleanup. HTTP 429 puts scheduled source queries into a 5-minute cooldown, and network errors do not cause relogin.
+- Existing normal customer cron remains :00/:30 in actual runtime, services refresh :15 hourly. These current settings supersede older :02/:32 notes below. No full-history high-frequency refresh.
+- Finite verification: 8 normal customers + 1 recent-service customer succeeded across both stores; old 50 source-not-found customers remain explicitly unresolved. Frontdesk own-cloud refresh becomes 30 seconds, independent of upstream cadence.
+
 ## Current Sync Surfaces
 
 1. `bookings`

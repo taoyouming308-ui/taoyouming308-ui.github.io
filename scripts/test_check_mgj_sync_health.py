@@ -4,6 +4,8 @@ import json
 import pathlib
 import tempfile
 import unittest
+from unittest import mock
+import hashlib
 
 
 SCRIPT_PATH = pathlib.Path(__file__).with_name("check_mgj_sync_health.py")
@@ -14,6 +16,11 @@ SPEC.loader.exec_module(HEALTH)
 
 
 class HealthAuditTests(unittest.TestCase):
+    def test_published_source_ignores_development_worktree(self):
+        with mock.patch.dict(HEALTH.os.environ, {"GIT_DIR": "/wrong/repo"}), mock.patch.object(HEALTH.subprocess, "run", return_value=mock.Mock(returncode=0, stdout=b"published")) as run:
+            self.assertEqual(HEALTH.published_sync_hash(pathlib.Path('/unused'), 'sync_mgj_bookings.py'), hashlib.sha256(b"published").hexdigest())
+            self.assertNotIn("GIT_DIR", run.call_args.kwargs["env"])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         root = pathlib.Path(self.temp.name)

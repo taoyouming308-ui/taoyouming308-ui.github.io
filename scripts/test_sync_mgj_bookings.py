@@ -99,5 +99,37 @@ class NetworkRetryTests(unittest.TestCase):
             error.close()
 
 
+class CadenceTests(unittest.TestCase):
+    @mock.patch.object(SYNC, "reservation_date_keys", return_value=["d0", "d1", "d2", "d3"])
+    def test_today_first_and_only_one_due_future_day(self, dates):
+        self.assertEqual(SYNC.scheduled_dates({}, 2000), ["d0", "d1"])
+        state = {"dates": {"d1": {"success_at": 1999}, "d2": {"retry_after": 2001}}}
+        self.assertEqual(SYNC.scheduled_dates(state, 2000), ["d0", "d3"])
+        state = {"dates": {d: {"success_at": 1999} for d in ["d1", "d2", "d3"]}}
+        self.assertEqual(SYNC.scheduled_dates(state, 2000), ["d0"])
+        self.assertEqual(SYNC.scheduled_dates(state, 2900), ["d0", "d1"])
+
+    @mock.patch.object(SYNC, "request_json", side_effect=TimeoutError("offline"))
+    def test_session_network_failure_does_not_trigger_login(self, request):
+        with mock.patch.object(SYNC, "load_json", return_value={"cookies": "session"}), mock.patch.object(SYNC, "login") as login:
+            with self.assertRaises(TimeoutError):
+                SYNC.ensure_session()
+            login.assert_not_called()
+
+    def test_scheduled_failure_only_advances_successful_date(self):
+        shops = SYNC.SHOPS
+        state = {"dates": {}}
+        with mock.patch.object(SYNC, "ensure_session", return_value=("host", "cookie")), \
+             mock.patch.object(SYNC, "load_signing_key", return_value=object()), \
+             mock.patch.object(SYNC, "fetch_reservation_pair", side_effect=[[], [], TimeoutError("offline"), []]), \
+             mock.patch.object(SYNC, "signed_pair_request", return_value={"upserted": 0, "deleted": 0}) as write, \
+             mock.patch.object(SYNC, "atomic_write_json"), mock.patch.object(SYNC, "write_status"), \
+             mock.patch.object(SYNC, "reservation_date_keys", return_value=["today", "future"]):
+            self.assertEqual(SYNC.sync_bookings(["today", "future"], state), 1)
+            self.assertIn("success_at", state["dates"]["today"])
+            self.assertNotIn("success_at", state["dates"]["future"])
+            self.assertNotIn((shops[0]["shopId"], "future"), [c.args[:2] for c in write.call_args_list])
+
+
 if __name__ == "__main__":
     unittest.main()

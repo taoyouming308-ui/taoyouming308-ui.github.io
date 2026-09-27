@@ -37,6 +37,10 @@ jobs:
         run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
       - name: Type-check signed booking sync function
         run: deno check supabase/functions/mgj-booking-sync/index.ts
+      - name: Validate signed private customer sync
+        run: |
+          deno check supabase/functions/mgj-customer-sync/index.ts
+          node scripts/test-mgj-customer-sync.js
       - name: Validate Supabase release command contract
         env:
           SUPABASE_TELEMETRY_DISABLED: "1"
@@ -91,7 +95,7 @@ jobs:
           node scripts/test-aesthetic-system.js
           python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
       - name: Run Meiguanjia sync tests
-        run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py
+        run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py
       - name: Validate Codex and Hermes handoff
         run: node scripts/check-agent-sync-status.js
       - name: Reject whitespace errors
