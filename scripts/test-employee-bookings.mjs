@@ -55,7 +55,7 @@ expect(edge.includes('shop_name=eq.${encodeURIComponent(store)}') && edge.includ
 expect(edge.includes('store=eq.${encodeURIComponent(store)}') && edge.includes('business_date=eq.${date}'), 'frontdesk query must use the session store and date');
 expect(edge.includes('sources_read_only: true') && edge.includes('bookings_untouched: true') && edge.includes('frontdesk_records_untouched: true'), 'read-only source boundary markers missing');
 expect(edge.includes('async function customerProfiles') && edge.includes('async function customerHistory'), 'customer data operations missing');
-expect(edge.includes('customerProfileStoreFilter(store)') && edge.includes('scopeCustomerProfile(row, store)') && edge.includes('customer_phone=ilike.*${encodedPhone}*'), 'customer profiles and history must be limited to the authenticated session store');
+expect(edge.includes('customerProfileStoreFilter(store, scope)') && edge.includes('scopeCustomerProfile(row, store, scope)') && edge.includes('customer_phone=ilike.*${encodedPhone}*'), 'customer profiles/history must use the authenticated read scope while bookings remain own-store');
 expect(edge.includes('const session = await requireEmployeeSession(payload)') && edge.indexOf('const session = await requireEmployeeSession(payload)') < edge.indexOf('operation === "customer_profiles"'), 'customer operations must require a live employee session');
 expect(!edge.includes('customer_profiles?select=*') && !edge.includes('bookings?select=*'), 'employee API must return a fixed customer-data projection');
 expect(!app.includes('/rest/v1/customer_profiles?') && !app.includes('/rest/v1/bookings?'), 'employee app must not bypass scoped customer endpoints');

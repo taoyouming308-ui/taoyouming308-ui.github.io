@@ -7,7 +7,7 @@ const vm = require('vm');
 const source = fs.readFileSync(path.join(__dirname, '..', 'perm-app.html'), 'utf8');
 const required = [
   ["latest visits use newest-first data", "visitHistory.slice(0, showCount)"],
-  ["bill identity deduplication", "sourceId ? 'id:' + sourceId"],
+  ["store-aware bill identity deduplication", "sourceId ? 'id:' + shop + ':' + sourceId"],
   ["bill item detail rendering", "var projectText = h.items && h.items.length ? h.items.join('、') : '消费记录';"],
   ["bill staff detail rendering", "h.staff && h.staff.length ? h.staff.join('、') : h.barber"],
   ["package expiry rendering", "pkg.expireDate ? '有效期至' + pkg.expireDate : ''"],
@@ -52,7 +52,7 @@ if (saveMatches.length < 2) failures.push('perm notes must be saved by draft and
 
 async function testCompleteHairRecordPagination() {
   const start = source.indexOf('function fetchAllSupabaseRows(baseUrl, pageSize)');
-  const end = source.indexOf('function fetchHairRecordsForCustomer(phone, name, limit)', start);
+  const end = source.indexOf('function fetchHairRecordsForCustomer(phone, name, limit, scope)', start);
   if (start < 0 || end < 0) {
     failures.push('unable to isolate complete hair record pagination functions');
     return;

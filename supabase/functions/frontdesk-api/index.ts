@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { customerProfileStoreFilter, scopeCustomerProfile, customerRecordsStoreFilter, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -461,6 +462,8 @@ function remainingPackageCount(value: unknown, store: string): number {
 async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
+  const scope = cleanText(payload.customer_scope || 'store', 20);
+  customerReadStores(store, scope);
   const query = cleanText(payload.query, 80);
   if (query.length < 2) throw new Error("至少输入两个字或两位手机号");
   const phone = cleanPhone(query);
@@ -474,29 +477,33 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
     ? `customer_phone=ilike.${encodeURIComponent(phoneSuffix ? `*${phoneSuffix}` : `*${phone}*`)}`
     : `customer_name=ilike.${like}`;
   const [profiles, imported] = await Promise.all([
-    restRows(withStore(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages&${profileFilter}&order=last_visit_date.desc.nullslast&limit=${searchLimit}`, "shop_name", store)),
-    restRows(withStore(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&order=visit_date.desc&limit=${searchLimit}`, "store", store)),
+    restRows(`customer_profiles?select=id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history&${profileFilter}&${customerProfileStoreFilter(store, scope)}&order=last_visit_date.desc.nullslast&limit=${searchLimit}`),
+    restRows(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,amount,service_items,store&${importFilter}&${customerRecordsStoreFilter('store', store, scope)}&order=visit_date.desc&limit=${searchLimit}`),
   ]);
   const index = new Map<string, JsonRecord>();
-  for (const row of profiles) {
-    const key = cleanPhone(row.phone) || `name:${cleanText(row.name, 160)}`;
+  for (const raw of profiles) {
+    const row = scopeCustomerProfile(raw, store, scope);
+    if (!row) continue;
+    const key = cleanPhone(row.phone).length >= 11 ? `${cleanPhone(row.phone)}|${comparableCustomerName(row.name)}` : `profile:${row.id}`;
     const current = index.get(key) || {
       phone: cleanPhone(row.phone), name: row.name || "未命名客户", shops: [],
+      profile_id: row.id, identity_store: raw.shop_name,
       last_visit: "", visits: 0, consumption: 0, remaining_packages: 0, sources: [],
     };
     current.name = current.name || row.name;
     current.last_visit = String(current.last_visit || "") > cleanText(row.last_visit_date, 40) ? current.last_visit : row.last_visit_date;
     current.visits = Number(current.visits || 0) + (Number(row.total_visits) || 0);
     current.consumption = Number(current.consumption || 0) + (Number(row.total_consumption) || 0);
-    current.remaining_packages = Number(current.remaining_packages || 0) + remainingPackageCount(row.card_packages, store);
-    current.shops = Array.from(new Set([...(current.shops as unknown[]), row.shop_name].filter(Boolean)));
+    current.remaining_packages = Number(current.remaining_packages || 0) + collectPackages([row], store, scope).filter(pkg => !pkg.expired).length;
+    current.shops = Array.from(new Set([...(current.shops as unknown[]), row.shop_name, ...parseArray(row.card_packages).map((pkg) => (pkg as JsonRecord).shop), ...parseArray(row.service_history).map((item) => (item as JsonRecord).shop)].filter(Boolean)));
     current.sources = Array.from(new Set([...(current.sources as unknown[]), "美管加"]));
     index.set(key, current);
   }
   for (const row of imported) {
-    const key = cleanPhone(row.customer_phone) || `name:${cleanText(row.customer_name, 160)}`;
+    const key = cleanPhone(row.customer_phone).length >= 11 ? `${cleanPhone(row.customer_phone)}|${comparableCustomerName(row.customer_name)}` : `import:${row.id}`;
     const current = index.get(key) || {
       phone: cleanPhone(row.customer_phone), name: row.customer_name || "未命名客户", shops: [],
+      import_id: row.id, identity_store: row.store,
       last_visit: "", visits: 0, consumption: 0, remaining_packages: 0, sources: [],
     };
     current.last_visit = String(current.last_visit || "") > cleanText(row.visit_date, 40) ? current.last_visit : row.visit_date;
@@ -506,7 +513,7 @@ async function customerSearch(payload: JsonRecord, session: JsonRecord): Promise
   }
   const sortedResults = Array.from(index.values()).sort((a, b) => String(b.last_visit || "").localeCompare(String(a.last_visit || "")));
   const results = phoneSuffix ? sortedResults : sortedResults.slice(0, 60);
-  return { query, results, store };
+  return { query, results, store, customer_scope: scope, read_only: true };
 }
 
 function parseArray(value: unknown): unknown[] {
@@ -517,14 +524,16 @@ function parseArray(value: unknown): unknown[] {
   return [];
 }
 
-function collectPackages(profiles: JsonRecord[], store: string): JsonRecord[] {
+function collectPackages(profiles: JsonRecord[], store: string, scope = 'store'): JsonRecord[] {
+  const stores = customerReadStores(store, scope);
+  const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const seen = new Set<string>();
   const packages: JsonRecord[] = [];
   for (const profile of profiles) {
     for (const item of parseArray(profile.card_packages)) {
       const pkg = (item || {}) as JsonRecord;
       const packageStore = cleanText(pkg.shop ?? pkg.shop_name, 100);
-      if (packageStore && packageStore !== store) continue;
+      if (packageStore && !stores.includes(packageStore)) continue;
       const left = Number(pkg.left ?? pkg.remaining ?? pkg.leavetimes ?? 0) || 0;
       const total = Number(pkg.total ?? pkg.sumtimes ?? 0) || 0;
       if (left <= 0) continue;
@@ -536,21 +545,23 @@ function collectPackages(profiles: JsonRecord[], store: string): JsonRecord[] {
         shop: cleanText(pkg.shop ?? profile.shop_name, 100),
         expire_date: cleanText(pkg.expire_date ?? pkg.validdate, 40),
         status: cleanText(pkg.status, 40),
+        expired: ['expired', '已过期'].includes(cleanText(pkg.status, 40)) || (/^\d{4}-\d{2}-\d{2}/.test(cleanText(pkg.expire_date ?? pkg.validdate, 40)) && cleanText(pkg.expire_date ?? pkg.validdate, 40).slice(0, 10) < today),
       };
-      const key = [normalized.name, normalized.left, normalized.total, normalized.shop, normalized.expire_date].join("|");
+      const key = pkg.id || pkg.source_id ? `${normalized.shop}|${pkg.id || pkg.source_id}` : [normalized.name, normalized.package_name, normalized.left, normalized.total, normalized.shop, normalized.expire_date].join("|");
       if (!seen.has(key)) { seen.add(key); packages.push(normalized); }
     }
   }
   return packages.sort((a, b) => Number(a.left) / Math.max(1, Number(a.total)) - Number(b.left) / Math.max(1, Number(b.total)));
 }
 
-function historyFromProfiles(profiles: JsonRecord[], store: string): JsonRecord[] {
+function historyFromProfiles(profiles: JsonRecord[], store: string, scope = 'store'): JsonRecord[] {
+  const stores = customerReadStores(store, scope);
   const history: JsonRecord[] = [];
   for (const profile of profiles) {
     for (const item of parseArray(profile.service_history)) {
       const row = (typeof item === "string" ? { items: [{ name: item }] } : (item || {})) as JsonRecord;
       const historyStore = cleanText(row.shop ?? row.shop_name ?? profile.shop_name, 100);
-      if (historyStore && historyStore !== store) continue;
+      if (historyStore && !stores.includes(historyStore)) continue;
       const items = parseArray(row.items).map((project) => cleanText((project as JsonRecord)?.name ?? (project as JsonRecord)?.itemname ?? project, 200)).filter(Boolean);
       history.push({
         source: "美管加档案",
@@ -559,6 +570,7 @@ function historyFromProfiles(profiles: JsonRecord[], store: string): JsonRecord[
         time: row.time || "",
         items,
         amount: Number(row.amount ?? row.consumefee ?? 0) || 0,
+        amount_known: row.amount != null || row.consumefee != null,
         staff: parseArray(row.staff).map((x) => cleanText(x, 100)).filter(Boolean),
         barber: row.barber || profile.barber_name || "",
         shop: historyStore,
@@ -594,6 +606,8 @@ function selectCustomerRows(
 async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
+  const scope = cleanText(payload.customer_scope || 'store', 20);
+  customerReadStores(store, scope);
   const phone = cleanPhone(payload.phone);
   const name = cleanText(payload.name, 160);
   if (!phone && !name) throw new Error("缺少客户信息");
@@ -606,15 +620,20 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
   const importedFilter = phone
     ? `customer_phone=ilike.${encodeURIComponent(`*${phone}*`)}`
     : `customer_name=eq.${encodeURIComponent(name)}`;
-  const [profileRows, liveRows, importedRows] = await Promise.all([
-    restRows(withStore(`customer_profiles?select=*&${profileFilter}&order=last_visit_date.desc.nullslast&limit=200`, "shop_name", store)),
-    restRows(withStore(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&order=service_date.desc,service_time.desc&limit=1000`, "shop_name", store)),
-    restRows(withStore(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${importedFilter}&order=visit_date.desc&limit=2000`, "store", store)),
+  const fullIdentity = phone.length >= 11;
+  const profileId = /^\d+$/.test(String(payload.profile_id || '')) ? String(payload.profile_id) : '';
+  const importId = /^\d+$/.test(String(payload.import_id || '')) ? String(payload.import_id) : '';
+  const [profileRows, liveRows, importedRows, hairRows] = await Promise.all([
+    fullIdentity || profileId ? restRows(`customer_profiles?select=*&${fullIdentity ? profileFilter : 'id=eq.' + profileId}&${customerProfileStoreFilter(store, scope)}&order=last_visit_date.desc.nullslast&limit=200`) : Promise.resolve([]),
+    fullIdentity ? readCustomerPages(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&${customerRecordsStoreFilter('shop_name', store, scope)}&order=service_date.desc,service_time.desc,source_id.asc`) : Promise.resolve([]),
+    fullIdentity || importId ? readCustomerPages(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${fullIdentity ? importedFilter : 'id=eq.' + importId}&${customerRecordsStoreFilter('store', store, scope)}&order=visit_date.desc,id.asc`) : Promise.resolve([]),
+    fullIdentity ? readCustomerPages(`hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc`) : Promise.resolve([]),
   ]);
-  const profiles = selectCustomerRows(profileRows, phone, name, "phone", "name");
-  const live = selectCustomerRows(liveRows, phone, name, "customer_phone", "customer_name");
-  const imported = selectCustomerRows(importedRows, phone, name, "customer_phone", "customer_name");
-  const history = historyFromProfiles(profiles, store);
+  const profiles: JsonRecord[] = (fullIdentity ? customerIdentityRows(profileRows, phone, name) : profileRows).map((row: JsonRecord) => scopeCustomerProfile(row, store, scope)).filter(Boolean);
+  const live = customerIdentityRows(liveRows, phone, name, "customer_phone", "customer_name");
+  const imported: JsonRecord[] = fullIdentity ? customerIdentityRows(importedRows, phone, name, "customer_phone", "customer_name") : importedRows;
+  const hair = scopeCustomerHairRecords(customerHairIdentityRows(hairRows, phone, name), store, scope);
+  const history = historyFromProfiles(profiles, store, scope);
   for (const row of live) {
     history.push({
       source: "美管加实时",
@@ -623,6 +642,7 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
       time: row.service_time || "",
       items: parseArray(row.items).map((item) => cleanText((item as JsonRecord)?.name ?? (item as JsonRecord)?.itemname ?? item, 200)).filter(Boolean),
       amount: Number(row.amount) || 0,
+      amount_known: row.amount != null,
       staff: parseArray(row.staff).map((x) => cleanText(x, 100)).filter(Boolean),
       barber: "",
       shop: row.shop_name || "",
@@ -637,6 +657,7 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
       time: "",
       items: cleanText(row.service_items, 500).split(/[、,，/]/).map((x) => x.trim()).filter(Boolean),
       amount: Number(row.amount) || 0,
+      amount_known: row.amount != null,
       staff: [row.barber_name, row.technician_name, row.assistant_name].map((x) => cleanText(x, 100)).filter(Boolean),
       barber: row.barber_name || "",
       shop: row.store || "",
@@ -645,11 +666,11 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
   }
   const deduped = new Map<string, JsonRecord>();
   for (const row of history) {
-    const key = cleanText(row.source_id, 160) || [row.date, row.time, row.amount, JSON.stringify(row.items), row.shop].join("|");
+    const key = row.source_id ? `${row.shop}|${cleanText(row.source_id, 160)}` : [row.date, row.time, row.amount, JSON.stringify(row.items), row.shop].join("|");
     if (!deduped.has(key)) deduped.set(key, row);
   }
   const timeline = Array.from(deduped.values()).sort((a, b) => `${b.date || ""} ${b.time || ""}`.localeCompare(`${a.date || ""} ${a.time || ""}`));
-  const summary = profiles.reduce((total, row) => ({
+  const summary = profiles.reduce<{visits: number; consumption: number; last_visit: string}>((total, row) => ({
     visits: total.visits + (Number(row.total_visits) || 0),
     consumption: total.consumption + (Number(row.total_consumption) || 0),
     last_visit: String(total.last_visit) > cleanText(row.last_visit_date, 40) ? total.last_visit : cleanText(row.last_visit_date, 40),
@@ -659,12 +680,17 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
   ).length;
   return {
     store,
+    customer_scope: scope,
+    read_only: true,
+    identity_warning: !fullIdentity ? '缺少完整手机号，只展示所选来源档案，不自动关联同名客户。' : profileRows.length > profiles.length || liveRows.length > live.length || importedRows.length > imported.length ? '该手机号存在姓名不一致的来源记录，仅展示当前姓名匹配的资料，请核对身份，不自动合并。' : '',
     customer: { phone, name: name || profiles[0]?.name || imported[0]?.customer_name || "未命名客户" },
     summary,
     historical_import: { rows: imported.length, amount: imported.reduce((sum, row) => sum + (Number(row.amount) || 0), 0) },
-    packages: collectPackages(profiles, store),
+    packages: collectPackages(profiles, store, scope),
+    hair_records: hair,
+    hair_scope_note: scope === 'all' ? '历史发质档案未记录门店的，标为“门店待确认”；不推测所属门店。' : '本店仅展示门店已确认的发质档案；旧档案请切换“全部门店”查看。',
     timeline,
-    notes: profiles.map((row) => cleanText(row.notes, 500)).filter(Boolean),
+    notes: profiles.map((row) => row.notes ? `${row.home_store || row.shop_name}：${cleanText(row.notes, 500)}` : '').filter(Boolean),
     data_quality: {
       profile_rows: profiles.length,
       live_rows: live.length,
@@ -675,6 +701,15 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
         : "当前时间线已展示可用的美管加明细和历史导入记录。",
     },
   };
+}
+
+async function readCustomerPages(path: string): Promise<JsonRecord[]> {
+  const rows: JsonRecord[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await restRows(`${path}&limit=500&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < 500) return rows;
+  }
 }
 
 function validDate(value: string): boolean {

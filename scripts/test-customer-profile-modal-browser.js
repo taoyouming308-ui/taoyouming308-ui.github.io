@@ -22,7 +22,7 @@ let browser;
       window.renderHairRecordReadOnly = ()=>'';
       window.updateAiButtonsAvailability = ()=>{};
       window.renderCustomerHistory = ()=>{};
-      window.AUTHENTICATED_STAFF = {session_token:'fixture'};
+      window.AUTHENTICATED_STAFF = {session_token:'fixture',store:'自由手艺人'};
       window.BARBER_SPECIALTIES = {};
       window.getLocalDateStr = ()=>'2026-09-27';
       window.mode = 'cloud';
@@ -30,11 +30,15 @@ let browser;
       window.fixture = [{summary_scope:'synced_store_records',total_visits:7,total_consumption:300,last_visit_date:'2026-09-27 13:02',
         card_packages:[{id:'p1',name:'剪发280',package_name:'设计总监五次剪发卡',left:4,total:5,shop:'自由手艺人'}],
         service_history:Array.from({length:7},(_,i)=>({id:'b'+i,date:'2026-09-'+(20+i),amount:i?50:0,items:[{name:'洗剪吹'}],staff:['合成员工'],shop:'自由手艺人'}))}];
-      window.fetchCustomerProfileRows = async()=>window.mode==='empty'?[]:window.fixture;
+      window.fixture[0].card_packages.push({id:'p2',name:'异店护理',left:2,total:3,shop:'向里造型'});
+      window.fetchCustomerProfileRows = async(phone,name,limit,scope)=>window.mode==='empty'?[]:window.fixture.map(row=>({...row,card_packages:row.card_packages.filter(pkg=>scope==='all'||pkg.shop==='自由手艺人')}));
       window.employeeBookingsApi = async()=>({bookings:[{date:'2026-09-01',barber_name:'合成员工'}]});
     });
+    assert.deepEqual(await page.evaluate(()=>[
+      hairArchiveStoreForSave(null,false),hairArchiveStoreForSave({},true),hairArchiveStoreForSave({shopName:'向里造型'},true)
+    ]),['自由手艺人','','向里造型'],'new archives record current store; editing old archives never guesses/reassigns their store');
     for(const mode of ['cloud','local','empty']) {
-      await page.evaluate(value=>{window.mode=value;window.closePlanModal();},mode);
+      await page.evaluate(value=>{window.mode=value;window._customerReadScope='all';window.closePlanModal();},mode);
       await page.click('#customer');
       await page.locator('.hair-archive-title').filter({hasText:'消费记录'}).waitFor();
       const text = await page.locator('#plan-modal').innerText();
@@ -52,6 +56,13 @@ let browser;
       assert.equal(await page.locator('#plan-modal .box').evaluate(el=>getComputedStyle(el).getPropertyValue('--text').trim()), '#111', 'white modal must use readable dark text');
       if(mode!=='empty') assert.equal(await page.locator('#plan-modal .hair-archive-body td').first().evaluate(el=>getComputedStyle(el).color), 'rgb(25, 25, 24)', 'package title must have readable contrast');
       if(width===390 && mode==='cloud') await page.screenshot({path:path.join(os.tmpdir(),'customer-profile-modal.png')});
+      if(mode!=='empty') {
+        assert((await page.locator('#plan-modal').innerText()).includes('异店护理'));
+        await page.locator('.customer-read-scope').selectOption('store');
+        await page.locator('.hair-archive-title').filter({hasText:'消费记录'}).waitFor();
+        assert(!(await page.locator('#plan-modal').innerText()).includes('异店护理'));
+        assert.equal(await page.locator('.customer-read-scope').inputValue(),'store');
+      }
     }
     await page.close();
   }

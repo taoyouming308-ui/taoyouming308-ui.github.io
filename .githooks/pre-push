@@ -20,6 +20,7 @@ node scripts/test-staff-report-access-v514.js || exit 1
 node scripts/test-customer-admin-api.js || exit 1
 node scripts/test-staff-report-browser-v514.js || exit 1
 node scripts/test-frontdesk.js || exit 1
+node scripts/test-frontdesk-minimal.js || exit 1
 node scripts/test-mgj-customer-sync.js || exit 1
 node scripts/test-zysyr-validation-manifest.js || exit 1
 node scripts/run-zysyr-finance-tests.js || exit 1

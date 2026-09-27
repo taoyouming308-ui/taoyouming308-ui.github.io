@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="573">
+<html lang="zh-CN" data-version="574">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -3080,9 +3080,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=573"></script>
-<script src="hair-vision-training.v1.js?v=573"></script>
-<script src="aesthetic-growth.v2.js?v=573"></script>
+<script src="aesthetic-knowledge.v1.js?v=574"></script>
+<script src="hair-vision-training.v1.js?v=574"></script>
+<script src="aesthetic-growth.v2.js?v=574"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6945,7 +6945,7 @@ function initApp() {
         }, 200);
       }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
     }
-    fetchHairRecordsForCustomer(phone, '', 100).then(function(list) {
+    fetchHairRecordsForCustomer(phone, '', 100, 'all').then(function(list) {
       if (list && list.length > 0) {
         var found = hasBookingContext
           ? findHairRecordForBooking(list, bookingId, bookingDate, phone)
@@ -7021,81 +7021,24 @@ function initApp() {
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
-    div.innerHTML = '<div class="box"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div>';
+    var scope = getCustomerReadScope();
+    div.innerHTML = '<div class="box"><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
+    div.querySelector('.customer-read-scope').value = scope;
+    div.querySelector('.customer-read-scope').addEventListener('change', function(event) {
+      window._customerReadScope = event.target.value;
+      showPlanModal(phone, name, barberName, bookingDate, bookingId);
+    });
     document.body.appendChild(div);
 
-    // 尝试本地API（店内WiFi直连美管加实时数据）
-    var supportsAbort = typeof AbortController !== 'undefined';
-    var ac = supportsAbort ? new AbortController() : null;
-    var _planModalAborted = false;
-    var acTimer = supportsAbort ? setTimeout(function(){ _planModalAborted = true; ac.abort(); }, 5000) : null;
-    var fetchOptions = supportsAbort ? { signal: ac.signal } : {};
-    fetch('/api/plan?phone='+encodeURIComponent(phone), fetchOptions)
-    .then(function(r){ if (acTimer) clearTimeout(acTimer); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data){
-      if (acTimer) clearTimeout(acTimer);
-      if (_planModalAborted) return;
-      if (data.error || !data.plan_text) throw new Error('no data');
-      var p = data;
-      var html = '<h3>'+esc(name||p.name||'客户')+'</h3>';
-      html += '<div class="row"><span class="label">画像</span><span class="val">'+esc(p.summary||'')+'</span></div>';
-      html += '<div class="row"><span class="label">到店</span><span class="val">'+((p.visits||0) > 0 ? (p.visits||0)+'次' : '未知')+'</span></div>';
-      html += '<div class="row"><span class="label">均消</span><span class="val">'+((Number(p.avg_fee)||0)>0 ? '¥'+(Number(p.avg_fee)||0).toFixed(0) : '未知')+'</span></div>';
-      // 总消费优先用 total_consumption（现金页路径有），兜底用 total_12m
-      var totalConsumption = (p.total_consumption || 0) > 0 ? p.total_consumption : (p.total_12m || 0);
-      html += '<div class="row"><span class="label">总消费</span><span class="val">¥'+(Number(totalConsumption||0)).toFixed(0)+'</span></div>';
-      if (p.freq_12m > 0) {
-        html += '<div class="row"><span class="label">近12月</span><span class="val">'+Number(p.freq_12m||0)+'次 · ¥'+(Number(p.total_12m||0)).toFixed(0)+'</span></div>';
-      }
-      html += '<div class="row"><span class="label">上次到店</span><span class="val">'+esc(p.last_visit||'无')+'</span></div>';
-      if (p.months_since_last > 0) {
-        html += '<div class="row"><span class="label">距上次</span><span class="val">'+esc(p.months_since_last)+'个月</span></div>';
-      }
-      // 上次项目（从plan_server返回的notes或last_service）
-      var pNotes = p.notes || p.last_service || '';
-      if (pNotes) {
-        html += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(pNotes)+'</span></div>';
-      }
-      // 卡项/套餐
-      if (p.active_treats && p.active_treats.length > 0) {
-        html += '<div class="row" style="border-bottom:none;padding-bottom:2px;margin-top:4px;"><span class="label">📦 卡项/套餐</span></div>';
-        for (var ti = 0; ti < p.active_treats.length; ti++) {
-          var tp = p.active_treats[ti];
-          var tn = tp.name || '套餐';
-          var tl = tp.left || tp.remaining || 0;
-          var tt = tp.total || 0;
-          var tused = tt - tl;
-          var tpct = tt > 0 ? Math.round(tl / tt * 100) : 0;
-          var tbar = tpct > 50 ? 'var(--accent)' : (tpct > 20 ? '#e8a817' : '#e85050');
-          html += '<div class="row" style="border-bottom:none;padding:3px 0 3px 12px;font-size:12px;">';
-          html += '<span class="val" style="font-weight:400;font-size:11px;width:100%;display:flex;justify-content:space-between;">';
-          html += '<span>'+esc(tn)+'</span>';
-          html += '<span style="color:'+tbar+';font-weight:600;">剩'+esc(tl)+'/'+esc(tt)+'次</span>';
-          html += '</span></div>';
-          if (tt > 0) {
-            html += '<div style="height:3px;background:var(--border);border-radius:2px;margin:0 0 2px 12px;overflow:hidden;">';
-            html += '<div style="width:'+tpct+'%;height:100%;background:'+tbar+';border-radius:2px;"></div></div>';
-          }
-        }
-      }
-      html += '<div id="plan-profile-extra" style="margin-top:8px;"></div>';
-      html += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
-      html += renderAiButton(phone, name, barberName, bookingDate);
-      html += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
-      html += renderHairRecordReadOnly(phone, name, bookingId, bookingDate);
-      document.querySelector('#plan-modal .box').innerHTML = html;
-      updateAiButtonsAvailability();
-      hydratePlanProfileExtra(phone, name);
-      // 加载客户历史档案
-      renderCustomerHistory(phone, name);
-    })
-    .catch(function(e){
+    // 共享档案统一走登录保护的云端接口；本地方案接口没有门店范围契约。
+    Promise.resolve().then(function(){
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
-      fetchCustomerProfileRows(phone, name)
+      fetchCustomerProfileRows(phone, name, 1000, scope)
       .then(function(rows){
+        if (!div.isConnected) return;
         rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
-          // 服务端已按当前员工门店裁剪套餐和消费明细。
+          // 服务端按明确的只读范围裁剪套餐和消费明细。
           var scopedSummary = rows.some(function(p){ return p.summary_scope === 'synced_store_records'; });
           var totalVisits = 0, totalConsum = 0, lastDate = '', maxConsum = 0;
           rows.forEach(function(p){
@@ -7285,21 +7228,23 @@ function initApp() {
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
           htmlContent += '<div id="plan-customer-history" style="margin-top:8px;"></div>';
           htmlContent += renderHairRecordReadOnly(phone, name, bookingId, bookingDate);
-          document.querySelector('#plan-modal .box').innerHTML = htmlContent;
+          div.querySelector('.plan-customer-body').innerHTML = htmlContent;
           updateAiButtonsAvailability();
           renderCustomerHistory(phone, name);
           return;
         }
         // customer_profiles没找到 → 降级到预约记录
-        employeeBookingsApi('customer_history', { session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token, phone: phone })
+        employeeBookingsApi('customer_history', { session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token, phone: phone, name: name, customer_scope: scope })
         .then(function(history){
+          if (!div.isConnected) return;
           var bookingRows = history && Array.isArray(history.bookings) ? history.bookings : [];
           bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
-            document.querySelector('#plan-modal .box').innerHTML =
+            div.querySelector('.plan-customer-body').innerHTML =
               '<h3>'+esc(name||'客户')+'</h3>'+hairArchiveSection('套餐详情', renderCustomerPackagesArchive([]))+
               hairArchiveSection('消费记录', renderCustomerConsumptionArchive([]))+
-              '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
+              '<button class="close-btn" onclick="closePlanModal()">关闭</button><div id="plan-customer-history"></div>';
+            renderCustomerHistory(phone, name);
             return;
           }
           var today = getLocalDateStr();
@@ -7350,18 +7295,20 @@ function initApp() {
           htmlContent += hairArchiveSection('消费记录', '<div style="color:var(--text-secondary);">消费明细尚未同步，以上预约记录不等于实际消费记录。</div>');
           htmlContent += '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
           htmlContent += renderAiButton(phone, name, barberName, bookingDate);
-          document.querySelector('#plan-modal .box').innerHTML = htmlContent;
+          div.querySelector('.plan-customer-body').innerHTML = htmlContent;
           updateAiButtonsAvailability();
+          div.querySelector('.plan-customer-body').insertAdjacentHTML('beforeend', '<div id="plan-customer-history"></div>');
+          renderCustomerHistory(phone, name);
         }).catch(function(e){
           console.log('[catch-b] bookings error:', e && e.message ? e.message : e);
-          document.querySelector('#plan-modal .box').innerHTML =
+          div.querySelector('.plan-customer-body').innerHTML =
             '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败(b)</div>'+
             '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
         });
       }).catch(function(e){
         console.log('[catch-c] profiles error:', e && e.message ? e.message : e);
-        document.querySelector('#plan-modal .box').innerHTML =
-          '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败(c)</div>'+
+        div.querySelector('.plan-customer-body').innerHTML =
+          '<h3>'+esc(name||'客户')+'</h3><div class="no-data">'+esc(e.message || '客户档案加载失败，请重新打开重试')+'</div>'+
           '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
       });
     });
@@ -7371,6 +7318,16 @@ function initApp() {
     var m = document.getElementById('plan-modal');
     if (m) m.remove();
   };
+
+  function getCustomerReadScope() {
+    return window._customerReadScope === 'store' ? 'store' : 'all';
+  }
+
+  function hairArchiveStoreForSave(existing, editing) {
+    if (editing) return (existing && (existing.shopName || existing.shop_name || existing.store)) || '';
+    var store = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.store;
+    return ['自由手艺人', '向里造型'].indexOf(store) >= 0 ? store : '';
+  }
 
   function hydratePlanProfileExtra(phone, name) {
     var holder = document.getElementById('plan-profile-extra');
@@ -7519,6 +7476,7 @@ function initApp() {
     var feelMap = {smooth:'顺滑有弹性',slight_rough:'轻微粗糙',rough:'明显粗糙',mushy:'软绵无弹性'};
     var baseRows = [
       ['姓名', r.customerName || '—'],
+      ['门店', r.shopName || r.shop_name || r.store || '门店待确认'],
       ['电话', r.customerPhone || '—'],
       ['助理', r.technician || '—'],
       ['发型师', r.barber || '—'],
@@ -7628,6 +7586,7 @@ function initApp() {
         html += '<button type="button" class="hair-full-archive-btn" data-record-id="'+escAttr(recordId)+'" data-phone="'+escAttr(phone || rec.customerPhone || '')+'" data-booking-id="'+escAttr(rec.bookingId || rec.booking_id || '')+'" data-booking-date="'+escAttr(rec.bookingDate || rec.booking_date || rec.visitDate || rec.date || '')+'" style="display:block;width:100%;background:none;border:0;border-bottom:'+(i<rows.length-1?'1px solid var(--border)':'none')+';font-size:10px;color:var(--text);padding:7px 2px;text-align:left;cursor:pointer;font-family:var(--font);">';
         html += '<span style="font-weight:600;">'+esc(dateStr)+'</span>';
         if (staffName) html += ' · '+esc(staffName);
+        html += ' · '+esc(rec.shopName || rec.shop_name || rec.store || '门店待确认');
         // 服务类型
         var st = rec.serviceType || '';
         if (st === 'color') html += ' 🎨染发';
@@ -8162,10 +8121,13 @@ function initApp() {
     return fetchAllSupabaseRows(url, 1000);
   }
 
-  function fetchHairRecordsForCustomer(phone, name, limit) {
+  function fetchHairRecordsForCustomer(phone, name, limit, scope) {
     limit = parseInt(limit, 10) || 0;
-    return fetchAllActiveHairRecordRows().then(function(rows) {
-      rows = Array.isArray(rows) ? rows : [];
+    var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
+    if (!sessionToken) return Promise.reject(new Error('请先登录员工账号后查看客户资料'));
+    return employeeBookingsApi('customer_hair_records', { session_token: sessionToken, phone: phone, name: name, customer_scope: scope || getCustomerReadScope() }).then(function(data) {
+      if (data.identity_warning) throw new Error(data.identity_warning);
+      var rows = data && Array.isArray(data.rows) ? data.rows : [];
       var list = rows.map(normalizeHairCloudRecord).filter(function(rec) {
         return hairRecordMatchesCustomer(rec, phone, name);
       });
@@ -8204,13 +8166,15 @@ function initApp() {
     return !!(targetName && rowName && targetName === rowName);
   }
 
-  function fetchCustomerProfileRows(phone, name, limit) {
+  function fetchCustomerProfileRows(phone, name, limit, scope) {
     limit = limit || 1000;
     var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
     if (!sessionToken) return Promise.reject(new Error('请先登录员工账号后查看客户资料'));
+    if (normalizeHairCustomerPhone(phone).length < 11) return Promise.reject(new Error('请补充完整手机号，避免同名客户档案混淆'));
     var search = phone || name || '';
-    return employeeBookingsApi('customer_profiles', { session_token: sessionToken, search: search, limit: limit })
+    return employeeBookingsApi('customer_profiles', { session_token: sessionToken, search: search, phone: phone, name: name, customer_scope: scope || getCustomerReadScope(), limit: limit })
       .then(function(data) {
+        if (data.identity_warning) throw new Error(data.identity_warning);
         var rows = data && Array.isArray(data.rows) ? data.rows : [];
         return rows.filter(function(row) { return customerProfileMatches(row, phone, name); });
       });
@@ -8233,7 +8197,7 @@ function initApp() {
         var name = pkg.name || pkg.itemname || '套餐';
         var shop = pkg.shop || row.shop_name || '';
         var sourceId = pkg.id || pkg.source_id || '';
-        var key = sourceId ? 'id:' + sourceId : [shop, name, left, total].join('|');
+        var key = sourceId ? 'id:' + shop + ':' + sourceId : [shop, name, left, total].join('|');
         if (seen[key]) return;
         seen[key] = true;
         list.push({
@@ -8282,7 +8246,7 @@ function initApp() {
         var staff = Array.isArray(item.staff) ? item.staff.filter(Boolean) : [];
         if (!barber && staff.length) barber = staff[0];
         var amount = Number(item.amount != null ? item.amount : item.consumefee) || 0;
-        var key = sourceId ? 'id:' + sourceId : [date, time, amount, items.join(','), shop].join('|');
+        var key = sourceId ? 'id:' + shop + ':' + sourceId : [date, time, amount, items.join(','), shop].join('|');
         if (!date || seen[key]) return;
         seen[key] = true;
         list.push({
@@ -9181,6 +9145,7 @@ function initApp() {
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       bookingId: String(_recordBookingContext.bookingId || ''),
+      shopName: hairArchiveStoreForSave(_isCloudEdit ? _cloudRecordData : getHairRecords().find(function(item){ return item.id === _editingHairId; }), !!(_isCloudEdit || _editingHairId)),
       bookingDate: normalizeHairBookingDate(_recordBookingContext.bookingDate),
       visitDate: normalizeHairBookingDate(_recordBookingContext.bookingDate) || getLocalDateStr(),
       // ── 特殊字段（非标准 input/select/textarea） ──
@@ -10751,6 +10716,7 @@ function initApp() {
     var record = {
       id: cloudId,
       seq: archiveSeq,
+      shopName: hairArchiveStoreForSave(previousArchiveRecord, true),
       createdAt: new Date().toISOString(),
       date: new Date().getFullYear()+'.'+(new Date().getMonth()+1)+'.'+new Date().getDate(),
       bookingId: String((window._activeHairBookingContext && window._activeHairBookingContext.bookingId) || previousArchiveRecord.bookingId || previousArchiveRecord.booking_id || ''),
@@ -12413,7 +12379,7 @@ function initApp() {
     var legacyQueueUrl = SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,ai_analysis,stylist_damage_level,status,created_at&status=in.(record_saved,completed)&order=created_at.desc';
     var legacyQueuePromise = fetchAllSupabaseRows(legacyQueueUrl, 1000);
     var customerProfilesPromise = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token
-      ? employeeBookingsApi('customer_profiles', { session_token: AUTHENTICATED_STAFF.session_token, limit: 1000 })
+      ? employeeBookingsApi('customer_profiles', { session_token: AUTHENTICATED_STAFF.session_token, customer_scope: getCustomerReadScope(), limit: 1000 })
         .then(function(data){ return data && Array.isArray(data.rows) ? data.rows : []; }).catch(function(){ return []; })
       : Promise.resolve([]);
 

@@ -75,6 +75,7 @@ jobs:
           node scripts/test-hair-save-durability.js
       - name: Protect customer archive rendering
         run: |
+          deno check --no-lock --node-modules-dir=none supabase/functions/employee-bookings-api/index.ts supabase/functions/frontdesk-api/index.ts
           node scripts/test-customer-archive-rendering.js
           node scripts/test-employee-bookings.mjs
           node scripts/test-customer-profile-modal-browser.js
@@ -85,7 +86,9 @@ jobs:
       - name: Protect booking page UI
         run: node scripts/test-booking-ui.js
       - name: Protect iPad frontdesk customer center
-        run: node scripts/test-frontdesk.js
+        run: |
+          node scripts/test-frontdesk.js
+          node scripts/test-frontdesk-minimal.js
       - name: Validate shared finance test manifest
         run: node scripts/test-zysyr-validation-manifest.js
       - name: Protect complete finance regression suite

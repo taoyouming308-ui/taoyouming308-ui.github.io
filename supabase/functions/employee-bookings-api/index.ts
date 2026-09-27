@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { mergeEmployeeBookingRows } from "../_shared/employee-booking-merge.mjs";
-import { customerProfileStoreFilter, scopeCustomerProfile } from "../_shared/customer-profile-scope.mjs";
+import { customerProfileStoreFilter, scopeCustomerProfile, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -160,21 +160,42 @@ function safeFilterValue(value: string): string {
 
 async function customerProfiles(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = cleanText(session.store, 100);
+  const scope = cleanText(payload.customer_scope || 'store', 20);
+  customerReadStores(store, scope);
   if (!store) throw new Error("账号未绑定门店，无法读取客户资料");
   const rawSearch = cleanText(payload.search, 100).replace(/[,*()]/g, " ").trim();
   const limit = Math.max(1, Math.min(1000, Number.parseInt(String(payload.limit || "1000"), 10) || 1000));
-  const fields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences,last_updated";
-  let path = `customer_profiles?select=${fields}&${customerProfileStoreFilter(store)}&order=last_visit_date.desc.nullslast&limit=${limit}`;
+  const fields = "id,phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences,last_updated";
+  let path = `customer_profiles?select=${fields}&${customerProfileStoreFilter(store, scope)}&order=last_visit_date.desc.nullslast&limit=${limit}`;
   if (rawSearch) {
     const term = safeFilterValue(rawSearch);
     path += `&and=(or(phone.ilike.*${term}*,name.ilike.*${term}*))`;
   }
-  const rows = await restRows(path);
-  return { rows: rows.map(row => scopeCustomerProfile(row, store)).filter(Boolean), store, read_only: true };
+  let rows = await restRows(path);
+  const candidates = rows.length;
+  if (payload.phone) rows = customerIdentityRows(rows, payload.phone, payload.name);
+  return { rows: rows.map(row => scopeCustomerProfile(row, store, scope)).filter(Boolean), store, customer_scope: scope,
+    identity_warning: payload.phone && candidates && !rows.length ? '该手机号下的档案姓名与当前客户不一致，请核对身份，不自动合并。' : '', read_only: true };
+}
+
+async function customerHairRecords(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const store = cleanText(session.store, 100), scope = cleanText(payload.customer_scope || 'store', 20);
+  customerReadStores(store, scope);
+  const phone = cleanText(payload.phone, 60).replace(/\D/g, '').replace(/^86(?=1\d{10}$)/, '');
+  if (phone.length < 11) return { rows: [], identity_warning: '缺少完整手机号，暂不跨档案关联，避免同名客户混淆。', read_only: true };
+  const rows: JsonRecord[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await restRows(`hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc&limit=500&offset=${offset}`);
+    rows.push(...page);
+    if (page.length < 500) break;
+  }
+  return { rows: scopeCustomerHairRecords(customerHairIdentityRows(rows, phone, payload.name), store, scope), customer_scope: scope, read_only: true };
 }
 
 async function customerHistory(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = cleanText(session.store, 100);
+  const scope = cleanText(payload.customer_scope || 'store', 20);
+  customerReadStores(store, scope);
   const phone = cleanText(payload.phone, 60).replace(/\D/g, "").slice(-20);
   if (!store) throw new Error("账号未绑定门店，无法读取客户历史");
   if (!phone) return { rows: [], bookings: [], store, read_only: true };
@@ -183,10 +204,10 @@ async function customerHistory(payload: JsonRecord, session: JsonRecord): Promis
   const profileFields = "phone,name,barber_name,shop_name,last_visit_date,total_visits,total_consumption,card_packages,service_history,notes,preferences,last_updated";
   const bookingFields = "id,date,barber_name,customer_name,customer_phone,time_label,reservation_time,service_name,notes,status";
   const [rows, bookings] = await Promise.all([
-    restRows(`customer_profiles?select=${profileFields}&${customerProfileStoreFilter(store)}&phone=eq.${encodedPhone}&order=last_visit_date.desc.nullslast&limit=100`),
+    restRows(`customer_profiles?select=${profileFields}&${customerProfileStoreFilter(store, scope)}&phone=eq.${encodedPhone}&order=last_visit_date.desc.nullslast&limit=100`),
     restRows(`bookings?select=${bookingFields}&shop_name=eq.${encodedStore}&customer_phone=ilike.*${encodedPhone}*&order=date.asc&limit=500`),
   ]);
-  return { rows: rows.map(row => scopeCustomerProfile(row, store)).filter(Boolean), bookings, store, read_only: true };
+  return { rows: customerIdentityRows(rows, phone, payload.name).map((row: JsonRecord) => scopeCustomerProfile(row, store, scope)).filter(Boolean), bookings, store, customer_scope: scope, read_only: true };
 }
 
 Deno.serve(async (request: Request) => {
@@ -211,6 +232,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "today_bookings") return json(await todayBookings(payload, session));
     if (operation === "customer_profiles") return json(await customerProfiles(payload, session));
     if (operation === "customer_history") return json(await customerHistory(payload, session));
+    if (operation === "customer_hair_records") return json(await customerHairRecords(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = (error as Error).message || "请求失败";

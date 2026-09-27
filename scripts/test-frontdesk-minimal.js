@@ -15,9 +15,13 @@ const bookings = names.map((name, i) => ({ id: 100+i, customer_name: name, custo
 const reception = bookings.slice(0, 5).map((b, i) => ({ ...b, id: `preview-${i}`, business_date: today, arrival_time: b.time_label, service_intent: b.service_name, assistant_name: '小禾', technician_name: '小雨', amount: 380, payment_summary: '微信 · 已核对', status: ['completed','in_service','waiting','arrived','cancelled'][i], reception_notes: '示例接待信息', is_new_customer: i===1, shampoo_qualified: i===0 }));
 const ledger = reception.map((r, i) => ({ ...r, record_id: r.id, row_type: i===3?'imported':'today', source: i===3?'历史导入':'当日接待', service_items: r.service_intent, notes: '此处为界面预览的示例记录', amount: i===3?123456.78:380 }));
 const detail = { customer: { name: '林女士', phone: '13800000000' }, summary: { visits: 12, consumption: 123456.78, last_visit: today+' 10:30' }, historical_import: { rows: 6 }, packages: [{ package_name:'剪发护理套餐', name:'剪发', left:3, total:5, shop:user.store, expire_date:'2027-06-30' }, { name:'染发护理套餐', left:2, total:3, shop:user.store }], timeline: [{ date:today, source:'美管加消费', items:['剪发','头皮护理'], amount:380, staff:['林一','小禾'], shop:user.store },{date:'2026-08-12',source:'历史导入',items:['染发'],amount:680,staff:['林一'],shop:user.store}] };
+detail.packages.push({name:'异店过期套餐',left:1,total:4,shop:'向里造型',expire_date:'2024-05-11',expired:true});
+const tinyPhoto='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=';
+detail.hair_records=[{id:'synthetic-hair',archive_store:'',barber:'林一',created_at:today,record_data:{formFields:{'hair-form-perm-notes':'合成配方记录 <script>不执行</script>'},serviceBeforePhoto:tinyPhoto,serviceAfterPhoto:tinyPhoto}}];
+detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查看。';
 
 (async () => {
-  const browser = await (engine==='webkit'?webkit.launch({headless:true}):chromium.launch({channel:'chrome',headless:true}));
+  const browser = await (engine==='webkit'?webkit.launch({headless:true}):chromium.launch({...(process.platform==='darwin'?{channel:'chrome'}:{}),headless:true}));
   const unexpected = [], errors = [];
   try {
     for (const [width,height] of [[1440,1000],[1024,768],[768,1024],[390,844],[844,390]]) {
@@ -38,7 +42,7 @@ const detail = { customer: { name: '林女士', phone: '13800000000' }, summary:
             login:{session_token:'synthetic-only',user}, session:{user}, registration_options:{stores:[user.store]},
             dashboard:{date:today,store:user.store,barbers,technicians:['小雨'],assistants:['小禾'],bookings:bookings.concat({barber_name:'林一',time_label:'12:00'}),services:[],reception,synced_at:new Date().toISOString()},
             customer_search:{results:[{name:'林女士',phone:'13800000000',last_visit:today,shops:[user.store],remaining_packages:2}]},
-            customer_detail:detail,ledger_records:{rows:ledger},import_batches:{batches:[]},
+            customer_detail:{...detail,customer_scope:data.customer_scope,packages:detail.packages.filter(pkg=>data.customer_scope==='all'||pkg.shop===user.store),hair_records:data.customer_scope==='all'?detail.hair_records:[]},ledger_records:{rows:ledger},import_batches:{batches:[]},
             shampoo_qualification_stats:{month:today.slice(0,7),stats:[{assistant:'小禾',total:20,qualified:18,rate:90},{assistant:'小雨',total:12,qualified:8,rate:66.7}]}
           };
           if(!(data.operation in responses)) { unexpected.push(data.operation);return route.fulfill({status:400,json:{error:'Unexpected preview operation'}}); }
@@ -85,6 +89,19 @@ const detail = { customer: { name: '林女士', phone: '13800000000' }, summary:
       await page.locator('#today-form-overlay [data-close]').first().click();await page.locator('#customer-drawer [data-close]').click();
       await page.locator('[data-view="customers"]').click();await page.locator('#customer-query').fill('0000');await page.locator('#customer-search-btn').click();await page.locator('.result').first().click();
       await page.locator('#customer-detail .package').first().waitFor();await bounded('customer archive');await shot('customers');
+      assert((await page.locator('#customer-detail').innerText()).includes('异店过期套餐'));
+      assert((await page.locator('#customer-detail').innerText()).includes('已过期'));
+      await page.locator('#customer-detail details.package summary').click();
+      assert.equal(await page.locator('#customer-detail img[alt="服务前照片"]').count(),1);
+      assert.equal(await page.locator('#customer-detail img[alt="服务后照片"]').count(),1);
+      assert.equal(await page.locator('#customer-detail script').count(),0,'saved form content must be escaped');
+      await bounded('shared photos');
+      await page.locator('#customer-scope').selectOption('store');
+      await page.waitForFunction(()=>document.querySelector('#customer-detail .detail-customer-scope')?.value==='store');
+      assert(!(await page.locator('#customer-detail').innerText()).includes('异店过期套餐'));
+      assert.equal(await page.locator('#customer-detail details.package').count(),0,'unconfirmed old archives are not guessed into current store');
+      assert(calls.some(c=>c.operation==='customer_detail'&&c.customer_scope==='all'));
+      assert(calls.some(c=>c.operation==='customer_detail'&&c.customer_scope==='store'));
       await page.locator('[data-view="import"]').click();await page.locator('.table-edit').first().waitFor();await bounded('ledger');await shot('ledger');
       assert.equal(await page.locator('#import-tools').getAttribute('open'),null);
       await page.locator('#import-tools > summary').click();
