@@ -21,8 +21,10 @@ from pathlib import Path
 
 try:
     from scripts import sync_mgj_daily_consumption as daily
+    from scripts.mgj_employee_identity import employee_index, employee_key, EmployeeIdentityError
 except ModuleNotFoundError:
     import sync_mgj_daily_consumption as daily
+    from mgj_employee_identity import employee_index, employee_key, EmployeeIdentityError
 
 SERVER = "vip12.meiguanjia.net"
 PARENT_SHOP_ID = "1103470"
@@ -391,21 +393,10 @@ def list_of_dicts(value):
 
 def sanitize_detail(content):
     emp_list = list_of_dicts(content.get("empList"))
-    duties = {}
-    for employee in emp_list:
-        dutyname = employee.get("dutyname")
-        aliases = {field: str(employee[field]) for field in ("id", "empId", "employeeId")
-                   if employee.get(field) not in (None, "")}
-        if not aliases or not isinstance(dutyname, str):
-            continue
-        identity = tuple(sorted(aliases.items()))
-        for employee_id in aliases.values():
-            previous = duties.get(employee_id)
-            if previous is not None and previous[0] != identity:
-                raise AuditError("employee_id_alias_conflict")
-            if previous is not None and previous[1] != dutyname[:64]:
-                raise AuditError("employee_duty_conflict")
-            duties[employee_id] = (identity, dutyname[:64])
+    try:
+        employees = employee_index(emp_list)
+    except EmployeeIdentityError as exc:
+        raise AuditError(str(exc)) from None
 
     empfees = []
     for employee in list_of_dicts(content.get("empfees")):
@@ -414,9 +405,9 @@ def sanitize_detail(content):
             number = finite_number(employee.get(field))
             if number is not None:
                 item[field] = number
-        emp_id = employee.get("empid")
-        if emp_id is not None and str(emp_id) in duties:
-            item["dutyname"] = duties[str(emp_id)][1]
+        source_employee = employees.get(employee_key(employee.get("empid")), {})
+        if isinstance(source_employee.get("dutyname"), str):
+            item["dutyname"] = source_employee["dutyname"][:64]
         empfees.append(item)
 
     details = []
@@ -537,13 +528,13 @@ def acquire_shared_lock():
 
 
 def audit(shop, day, bill_limit=1, budget_seconds=MAX_BUDGET_SECONDS, menu=False,
-          daily_summary=False, summary_scope="projects"):
+          daily_summary=False, summary_scope="projects", business_detail=False):
     shop = validate_shop(shop)
     day = validate_day(day)
     bill_limit = validate_bill_limit(bill_limit)
     if summary_scope not in SUMMARY_INCOME_TYPES:
         raise AuditError("invalid_summary_scope")
-    if menu and daily_summary:
+    if sum((bool(menu), bool(daily_summary), bool(business_detail))) > 1:
         raise AuditError("incompatible_modes")
     if not 1 <= budget_seconds <= MAX_BUDGET_SECONDS:
         raise AuditError("invalid_budget")
@@ -565,7 +556,14 @@ def audit(shop, day, bill_limit=1, budget_seconds=MAX_BUDGET_SECONDS, menu=False
             bill_id = row.get("source_id")
             content = request_bill_detail(bill_id, config, deadline)
             verify_bill_scope(content, bill_id, shop, day)
-            bills.append({"source_id": str(bill_id), **sanitize_detail(content)})
+            if business_detail:
+                try:
+                    from scripts.mgj_business_detail import normalize_bill, inspection_summary
+                except ModuleNotFoundError:
+                    from mgj_business_detail import normalize_bill, inspection_summary
+                bills.append(inspection_summary(normalize_bill(content, bill_id=bill_id, shop=shop, day=day)))
+            else:
+                bills.append({"source_id": str(bill_id), **sanitize_detail(content)})
         return {"mode": "bill_detail", "shop": shop, "date": day,
                 "source_count": period["source_count"], "inspected_count": len(bills), "bills": bills}
     finally:
@@ -580,6 +578,7 @@ def parse_args(argv=None):
     parser.add_argument("--budget-seconds", type=int, default=MAX_BUDGET_SECONDS)
     parser.add_argument("--menu", action="store_true", help="仅读取已观测菜单页，不访问菜单链接")
     parser.add_argument("--daily-summary", action="store_true", help="只读已观测门店营业日汇总")
+    parser.add_argument("--business-detail", action="store_true", help="核验收银/日报共用明细契约，仅输出字段完整度")
     parser.add_argument("--summary-scope", choices=("projects", "all"), default="projects")
     return parser.parse_args(argv)
 
@@ -588,7 +587,7 @@ def main(argv=None):
     try:
         args = parse_args(argv)
         result = audit(args.shop, args.date, args.bill_limit, args.budget_seconds, args.menu,
-                       args.daily_summary, args.summary_scope)
+                       args.daily_summary, args.summary_scope, args.business_detail)
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except AuditError as exc:
