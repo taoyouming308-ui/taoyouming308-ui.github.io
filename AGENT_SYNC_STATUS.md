@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，待发布）
+## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，已发布）
 
 - Last synchronized base checked: github/main cf5725d（v573）；Current owner: Codex；复用 perm-pages-booking-sync 干净隔离 checkout，保留财务 v573 和用户其他工作区。修改前检查与当日源码备份完成。
 - 用户批准自由手艺人员工 App 与前台客户中心同步共享客户资料。两端默认“全部门店”、可切“本店”；共享范围固定为自由手艺人/向里造型，旧客户端不传范围仍按本店。登录与在职/岗位校验保留，未公开 customer_profiles 或前台表权限。
@@ -9,7 +9,8 @@
 - Last Completed Work: 两个 Edge 线上源与修改前 HEAD 逐字一致（employee v5/frontdesk v19）；Deno 类型检查、真实 handler 的合成身份/范围/权限/只读回归、保存与照片回归通过。员工三尺寸、前台 Chromium/WebKit 各五尺寸验证范围切换、来源、过期套餐、只读照片和可编辑接待入口；浏览器不使用生产账号。
 - 真实只读样本经新投影核对：全部门店 358 笔消费、本店 356 笔；5 项余额中 4 项未过期、1 项过期，原主档归属未变。生产 REST 零数据请求确认新筛选可解析，私有客户/前台表匿名请求仍 401。
 - 发布进度：完整 pre-push 通过（财务 74/74、同步 Python 53 项和双端客户回归）；employee-bookings-api v6 / frontdesk-api v20 已 ACTIVE，全部部署源文件逐字回读一致，内部会话认证和 verify_jwt=false 保持既有契约。前台与员工三个查档操作未登录实测均 403。
-- Open Work For Next Agent: 静态发布与 CI/Pages 验证；真实门店手机点击验收尚未完成。历史未同步缺口仍走已有补档流程，本次共享不等于全部历史自动补齐。
+- 发布完成：功能提交 c71c1c5 已推送 main；GitHub Validate #36317951723 和 Pages #36317951231 均成功。无缓存回读 version.txt/version.json/perm-app.html/frontdesk.html/operations.html 全部逐字匹配本地 v574；operations 仅全局缓存版本联动，无财务功能改动。
+- Open Work For Next Agent: 真实门店手机点击验收尚未完成。历史未同步缺口仍走已有补档流程，本次共享不等于全部历史自动补齐。
 - Handoff Rule: 区分代码测试、生产数据只读核对、后端/页面发布与真实账号验收；不要把“全部门店”读取范围传给接待或财务写入逻辑。
 
 ## 2026-09-27 · 月报美发收入恢复财务编辑（App version: v573，待发布）
