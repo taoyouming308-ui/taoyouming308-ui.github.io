@@ -1,5 +1,16 @@
 # Agent Sync Status
 
+## 2026-09-27 · 前台完整项目消费数据源修复（App version: v578，发布核验中）
+
+- Last synchronized base checked: GitHub main `e3ff217`（v576），保留本线程未发布 v577 横屏保存修复。Current owner: Codex。干净专用 checkout，修改前当日源码备份完成。
+- 根因已实证：dashboard 读 `mgj_service_records`，但该表只收烫/染/护理核对明细且客户轮换同步不全。自由手艺人该日旧表 2 笔、2428，不是全店总数。v575 只是改统计标签和手机号去重，未修复这个缺口；此前“真实统计”的描述在此更正。
+- 新建私有店日快照：美管加项目消费页面实际表单只读读取，全部普通/套餐/年卡消费按稳定单号分页核对，金额按入账列，不含充值售卡和卖品。只读实测自由手艺人 24 笔/24 手机号/6500，向里造型 31 笔/29 手机号/1 笔无手机/9628；无手机号不猜人数。
+- 私有签名 writer 固定操作 + 原子店日快照 + 旧快照拒绝。保留现有核对、客户主档、预约及财务表。复用每分钟预约调度，独立消费 5 分钟间隔与 45 秒预算，昨日每日补读，失败保留旧数据并退避；前台 30 秒自有云端刷新，缺数据显待同步，超时显旧数据。
+- Last Completed Work: 新源两店/空营业日只读验证、Python 分页/失败保留/间隔测试、签名与范围拒绝、PostgreSQL 17 隔离迁移/RLS/旧快照防覆盖、前台统计口径测试通过；Deno 两函数检查通过；原横屏回归已在正式提升权限的独立 Chromium 五尺寸通过，并修正延迟 focus 的滚动干扰。
+- 云端进度：私有快照迁移已成功；mgj-customer-sync v2 ACTIVE，源码回读一致且内部签名验证保留。首次真实签名同步成功，数据库回读当天自由手艺人 24 笔/6500、向里造型 31 笔/9628，RLS 与匿名/普通认证角色无读取权限已核验。frontdesk-api 已提交指定函数部署。最终前台 Chromium 五尺寸回归通过。
+- Open Work For Next Agent: 完成 reader 源码回读、完整 pre-push、GitHub/Pages、运行副本部署和真实自动轮核验。不能在此之前报完成。
+- Handoff Rule: `docs/frontdesk-daily-consumption.md` 是数据口径与运行说明；全店项目消费不等于全店现金收入。历史无快照日期不猜值，不额外启动另一套定时器。
+
 ## 2026-09-27 · 横屏接待表单固定保存区（App version: v577，待发布）
 
 - Last synchronized base checked: GitHub main `e3ff217`（v576）；本任务隔离 checkout；当日源码归档已存在。

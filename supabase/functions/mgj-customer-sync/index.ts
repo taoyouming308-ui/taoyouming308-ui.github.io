@@ -70,6 +70,37 @@ function validateProfile(value: unknown): Row {
 }
 async function handle(p: Row) {
   switch (p.operation) {
+    case "daily_consumption_write": {
+      fields(p, ["operation", "shop", "date", "fetched_at", "source_count", "services"]);
+      if (typeof p.shop !== "string" || !SHOPS.includes(p.shop)) throw new Error("invalid_shop");
+      const day = date(p.date);
+      const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+      if (day > today || +new Date(today) - +new Date(day) > 31 * 86400_000) throw new Error("invalid_date_range");
+      const fetched = typeof p.fetched_at === "string" ? Date.parse(p.fetched_at) : NaN;
+      if (!Number.isFinite(fetched) || fetched > Date.now() + 10_000 || fetched < Date.now() - 120_000) throw new Error("invalid_fetch_time");
+      const count = integer(p.source_count, 0, 1000);
+      if (!Array.isArray(p.services) || p.services.length !== count) throw new Error("incomplete_snapshot");
+      const ids = new Set();
+      for (const value of p.services) {
+        const r = object(value);
+        fields(r, ["source_id", "bill_no", "customer_name", "customer_phone", "shop_name", "service_date", "service_time", "amount", "staff", "items", "service_types"]);
+        if (typeof r.source_id !== "string" || !/^\d{1,20}$/.test(r.source_id) || ids.has(r.source_id)) throw new Error("invalid_bill_id");
+        ids.add(r.source_id);
+        if (r.shop_name !== p.shop || r.service_date !== day) throw new Error("bill_scope_mismatch");
+        for (const key of ["bill_no", "customer_name", "customer_phone", "service_time"]) {
+          if (typeof r[key] !== "string" || String(r[key]).length > 160) throw new Error("invalid_bill");
+        }
+        if (r.customer_phone !== "") phone(r.customer_phone);
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(r.service_time))) throw new Error("invalid_bill_time");
+        if (typeof r.amount !== "number" || !Number.isFinite(r.amount) || r.amount < 0 || r.amount > 10_000_000 || Math.abs(r.amount * 100 - Math.round(r.amount * 100)) > 0.00001) throw new Error("invalid_amount");
+        if (!Array.isArray(r.staff) || r.staff.length > 50 || r.staff.some(s => typeof s !== "string" || s.length > 100)) throw new Error("invalid_bill_staff");
+        if (!Array.isArray(r.items) || r.items.length > 100 || r.items.some(i => typeof object(i).name !== "string" || String(object(i).name).length > 300)) throw new Error("invalid_bill_items");
+        if (!Array.isArray(r.service_types) || r.service_types.length) throw new Error("invalid_bill_types");
+      }
+      const result = await (await rest("rpc/write_mgj_daily_consumption", { method: "POST", body: JSON.stringify({ p_shop: p.shop, p_date: day, p_services: p.services, p_fetched_at: p.fetched_at }) })).json();
+      if (result.written !== 1 || result.count !== count) throw new Error("profile_changed");
+      return result;
+    }
     case "booking_phones": {
       fields(p, ["operation", "start", "end", "end_inclusive", "limit"]);
       const start = date(p.start), end = date(p.end);

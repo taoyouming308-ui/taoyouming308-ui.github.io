@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="577">
+<html lang="zh-CN" data-version="578">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=577">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=578">
 </head>
 <body>
   <div class="login" id="login">
@@ -233,11 +233,12 @@
         <div class="view-head"><div><h2>今日客户</h2><p>查看到店安排，轻松接待每一位客户。</p></div><div class="actions"><input class="date-input" id="today-date" type="date" aria-label="查看日期"><button class="primary" id="add-today-btn" type="button">添加今日客户</button></div></div>
         <div class="kpis">
           <div class="kpi"><label>今日预约</label><strong id="kpi-bookings">—</strong><small>来自预约同步</small></div>
-          <div class="kpi"><label>消费单数</label><strong id="kpi-services">—</strong><small>美管加已同步消费单</small></div>
+          <div class="kpi"><label>消费单数</label><strong id="kpi-services">—</strong><small>美管加全部项目消费单</small></div>
           <div class="kpi"><label>消费人数（手机号去重）</label><strong id="kpi-consumers">—</strong><small id="kpi-consumers-note">统计中…</small></div>
           <div class="kpi"><label>预约已匹配</label><strong id="kpi-matched">—</strong><small id="kpi-matched-note">手机号匹配 · 姓名兜底</small></div>
-          <div class="kpi"><label>今日消费金额</label><strong id="kpi-amount">—</strong><small>仅展示，不在此收款</small></div>
+          <div class="kpi"><label>今日项目入账</label><strong id="kpi-amount">—</strong><small>含套餐核销 · 不含充值售卡</small></div>
         </div>
+        <p class="sub" id="consumption-status" role="status">正在核对完整消费数据…</p>
         <div class="card"><div class="card-head"><h3>发型师时间预览</h3><small id="today-caption">正在载入</small><div class="schedule-controls"><small>可左右滑动</small><button class="scroll-step" id="schedule-left" type="button" aria-label="向左查看">←</button><button class="scroll-step" id="schedule-right" type="button" aria-label="向右查看">→</button></div><div class="schedule-legend"><span><i class="wait"></i>等待接待</span><span><i class="active"></i>预约/服务中</span><span><i class="done"></i>已完成</span><span><i class="cancel"></i>取消/未到</span></div></div><div class="schedule-scroll" id="today-list"><div class="empty">正在读取今日数据…</div></div><details class="schedule-guide"><summary>排班操作说明</summary><p>从当天最早营业时段开始完整显示，已过去时段和已完成客户都会保留；点击客户看套餐，点击空白时间格快速登记。</p></details></div>
       </section>
 
@@ -381,14 +382,16 @@
     function scheduleRange(rows){var start=600,end=1320;rows.forEach(function(row){var minute=timeMinutes(row.time);if(minute==null)return;start=Math.min(start,Math.floor(minute/30)*30);end=Math.max(end,Math.min(1440,Math.ceil((minute+30)/30)*30));});return {start:start,end:end};}
     function scheduleScrollLeft(previousScroll){return previousScroll==null?0:previousScroll;}
     function renderToday(data){
-      var services=data.services||[],rows=mergeToday(data),matchedRows=rows.filter(function(r){return r.kind==='matched';}),matchedPhone=matchedRows.filter(function(r){return r.matchType==='phone';}).length,matchedName=matchedRows.filter(function(r){return r.matchType==='name';}).length,matched=matchedRows.length,total=services.reduce(function(sum,row){return sum+(Number(row.amount)||0);},0),consumerPhones={};
+      var complete=data.consumption_complete===true,services=complete?(data.services||[]):[],rows=mergeToday(Object.assign({},data,{services:services})),matchedRows=rows.filter(function(r){return r.kind==='matched';}),matchedPhone=matchedRows.filter(function(r){return r.matchType==='phone';}).length,matchedName=matchedRows.filter(function(r){return r.matchType==='name';}).length,matched=matchedRows.length,total=services.reduce(function(sum,row){return sum+Math.round((Number(row.amount)||0)*100);},0)/100,consumerPhones={};
       services.forEach(function(row){var key=phone(row.customer_phone);if(key)consumerPhones[key]=true;});
       var consumers=Object.keys(consumerPhones).length,servicesWithoutPhone=services.filter(function(row){return !phone(row.customer_phone);}).length;
       state.todayRows=rows;
       var realBookings=(data.bookings||[]).filter(function(booking){return !bookingPlaceholder(booking);});$('kpi-bookings').textContent=realBookings.length;$('kpi-services').textContent=services.length;$('kpi-consumers').textContent=consumers;$('kpi-consumers-note').textContent='无手机号消费单 '+servicesWithoutPhone+' 笔未计入';$('kpi-matched').textContent=matched;$('kpi-matched-note').textContent='手机号 '+matchedPhone+' · 姓名兜底 '+matchedName;$('kpi-amount').textContent=money(total);
+      if(!complete){['kpi-services','kpi-consumers','kpi-matched','kpi-amount'].forEach(function(id){$(id).textContent='—';});$('kpi-consumers-note').textContent='等待完整消费同步';$('kpi-matched-note').textContent='等待消费核对';}
+      $('consumption-status').textContent=!complete?'该日期尚未完成全店消费同步，不能当作 0。':data.consumption_stale?'消费同步已超过 15 分钟，当前显示上次完整结果，请与美管加核对。':'已读取本店当日全部项目消费单（含普通、套餐及年卡核销）；金额按美管加「入账」列，不等于现金实收。';
       var names=[],seen={};(data.barbers||[]).concat(rows.map(function(row){return row.barber||'未分配发型师';})).forEach(function(name){name=name||'未分配发型师';if(!seen[name]){seen[name]=true;names.push(name);}});
       $('today-caption').textContent=rows.length+' 位客户 · '+names.length+' 位发型师 · '+(data.store||state.store);
-      $('sync-label').textContent=data.synced_at?'美管加数据 '+new Date(data.synced_at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 更新':'美管加今日暂无消费回传';
+      $('sync-label').textContent=complete&&data.synced_at?'消费数据 '+new Date(data.synced_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+(data.consumption_stale?' · 待更新':' 更新'):'完整消费数据待同步';
       var container=$('today-list'),previousScroll=container.querySelector('.schedule-grid')?container.scrollLeft:null;if(!names.length){container.innerHTML='<div class="empty"><b>当前门店没有在职发型师</b>请先在后台检查员工职位与门店</div>';return;}
       var availability={},placeholderRows=(data.bookings||[]).filter(bookingPlaceholder).map(function(booking){var barber=resolvedBarber(booking.barber_name,data.barbers||[]),time=booking.time_label||minuteLabel(timeMinutes(booking.reservation_time));availability[barber+'|'+time]=true;return {time:time};});var range=scheduleRange(rows.concat(placeholderRows)),slots=[];for(var minute=range.start;minute<range.end;minute+=30)slots.push(minute);
       var header='<div class="schedule-corner" style="grid-row:1;grid-column:1">发型师 / 时间</div>'+slots.map(function(minute,index){return '<div class="schedule-time '+(minute%60===0?'hour':'')+'" style="grid-row:1;grid-column:'+(index+2)+'">'+minuteLabel(minute)+'</div>';}).join('');
@@ -400,7 +403,15 @@
       requestAnimationFrame(function(){container.scrollLeft=scheduleScrollLeft(previousScroll);});
     }
     function updateStaffOptions(data){[['today-barber-list',data.barbers],['today-technician-list',data.technicians],['today-assistant-list',data.assistants]].forEach(function(pair){$(pair[0]).innerHTML=(pair[1]||[]).map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');});}
-    async function loadDashboard(){if(!state.session||!state.store)return;state.dashboardLoading=true;var btn=$('refresh-btn');setBusy(btn,true,'刷新中…');try{var data=await api('dashboard',{date:$('today-date').value||localDate()});state.dashboard=data;updateStaffOptions(data);renderToday(data);}catch(e){toast(e.message,true);}finally{state.dashboardLoading=false;setBusy(btn,false);}}
+    async function loadDashboard(){
+      if(!state.session||!state.store)return;
+      var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
+      state.dashboardLoading=true;setBusy(btn,true,'刷新中…');
+      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});}
+      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);}
+      catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';toast(e.message,true);}}
+      finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
+    }
     $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'&&state.selected)openCustomer(state.selected);else{loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
     $('schedule-left').addEventListener('click',function(){$('today-list').scrollBy({left:-520,behavior:'smooth'});});$('schedule-right').addEventListener('click',function(){$('today-list').scrollBy({left:520,behavior:'smooth'});});
 
@@ -467,7 +478,7 @@
       $('today-customer-name').value=rec.customer_name||row.name||'';$('today-customer-phone').value=rec.customer_phone||row.phone||'';$('today-barber').value=rec.barber_name||row.barber||'';$('today-technician').value=rec.technician_name||row.technician||'';$('today-assistant').value=rec.assistant_name||row.assistant||'';
       var visitMinute=timeMinutes(rec.arrival_time||row.time);$('today-time').value=minuteLabel(visitMinute==null?nearestHalfHour():visitMinute);
       $('today-source').value=rec.visit_source||(row.booking?'appointment':'walkin');$('today-status').value=rec.status||'waiting';$('today-service').value=rec.service_intent||row.service||'';$('today-amount').value=rec.id&&Number(rec.amount)>0?String(Number(rec.amount)):'';$('today-payment-summary').value=rec.id?(rec.payment_summary||''):'';$('today-notes').value=rec.reception_notes||row.notes||'';
-      $('today-form-overlay').classList.remove('hidden');setTimeout(function(){$('today-customer-name').focus();},80);
+      $('today-form-overlay').classList.remove('hidden');setTimeout(function(){if(!$('today-form-overlay').classList.contains('hidden'))$('today-customer-name').focus({preventScroll:true});},80);
     }
     $('add-today-btn').addEventListener('click',function(){openTodayForm({});});
     $('today-form').addEventListener('submit',async function(event){

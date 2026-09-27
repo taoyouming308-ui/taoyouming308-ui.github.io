@@ -564,4 +564,14 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    result = main()
+    # Reuse the one existing minute scheduler; independent five-minute cadence
+    # and lock. A bill-read failure must not erase bookings or their status.
+    if "--scheduled" in sys.argv[1:]:
+        try:
+            import sync_mgj_daily_consumption
+            result = sync_mgj_daily_consumption.run(scheduled=True) or result
+        except Exception as exc:
+            print(f"消费快照任务失败（预约结果保留）: {type(exc).__name__}", file=sys.stderr)
+            result = result or 1
+    sys.exit(result)

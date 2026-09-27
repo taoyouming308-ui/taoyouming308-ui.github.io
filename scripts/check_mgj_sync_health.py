@@ -25,6 +25,7 @@ RETRY_QUEUE_FILENAME = "mgj_sync_retry.json"
 
 STATUS_RULES = (
     ("booking_sync", "sync_bookings_status.json", 20),
+    ("daily_consumption_sync", "mgj_daily_consumption_status.json", 20),
     ("customer_sync", "sync_status.json", 45),
     ("main_keepalive", "mgj_keepalive_status.json", 95),
     ("history_keepalive", "mgj_care_keepalive_status.json", 65),
@@ -34,6 +35,7 @@ RUNTIME_PAIRS = (
     ("customer_sync", "sync_mgj_customer_profiles.py", "sync_mgj_all.py"),
     ("booking_sync", "sync_mgj_bookings.py", "sync_mgj_bookings.py"),
     ("customer_private_client", "mgj_private_customer.py", "mgj_private_customer.py"),
+    ("daily_consumption_sync", "sync_mgj_daily_consumption.py", "sync_mgj_daily_consumption.py"),
     ("keepalive", "mgj_keepalive.py", "mgj_keepalive.py"),
     ("care_worker", "care_outbound_worker.py", "care_outbound_worker.py"),
     (
@@ -266,7 +268,7 @@ def audit_runtime(
             issues.append(f"{label}: 源文件或运行副本缺失")
             continue
         try:
-            source_hash = published_sync_hash(repo_root, source_name) if label in ("customer_sync", "booking_sync", "customer_private_client") else sha256(source)
+            source_hash = published_sync_hash(repo_root, source_name) if label in ("customer_sync", "booking_sync", "customer_private_client", "daily_consumption_sync") else sha256(source)
         except (OSError, ValueError, subprocess.SubprocessError):
             issues.append(f"{label}: 已发布源文件不可用")
             continue

@@ -2,6 +2,8 @@
 
 ## 2026-09-27 current sync runtime (supersedes older scheduling notes)
 
+- v578 增加 `scripts/sync_mgj_daily_consumption.py`：预约任务结束后调用，复用既有一分钟任务而非新增调度。独立锁、45 秒预算、店日成功间隔 5 分钟；昨日每天补读一次。完整项目消费列表 → 私有 `mgj_daily_consumption`，金额为美管加入账；不是原 `mgj_service_records` 核对投影。状态 `~/.hermes/mgj_daily_consumption_status.json` 纳入健康检查；详情见 `docs/frontdesk-daily-consumption.md`。
+
 - Booking job `9ef3f10b20d9`: `* * * * *`, no-agent, existing `sync_bookings_wrapper.sh` invokes canonical `sync_mgj_bookings.py --scheduled`. Today is fetched first; one overdue future day at most per tick, each future date renewed after 15 minutes. No duplicate scheduler. Cadence state: `~/.hermes/mgj_booking_cadence.json`; never discard it to force repeated full-week pulls. Default manual mode retains full 8-day behavior.
 - Customer cron currently remains OS `*/30` (minute 00/30), 8 rotating profiles, 105-second budget; Hermes normal-customer duplicate stays disabled. Services task remains hourly :15. The old 02/32 description below is historical, not current installed state.
 - Customer canonical `scripts/sync_mgj_customer_profiles.py` now requires sibling `scripts/mgj_private_customer.py`, deployed together as `sync_mgj_all.py` / `mgj_private_customer.py`. Private bookings/customer operations use `mgj-customer-sync` with domain-separated Ed25519 signatures. Function must retain `verify_jwt=false` and internal signature authentication. No public ACL repair and no service-role key on the Mac.

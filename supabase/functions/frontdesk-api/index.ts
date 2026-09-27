@@ -240,7 +240,7 @@ function withStore(path: string, column: string, store: string): string {
 }
 
 async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  const date = cleanText(payload.date, 10) || new Date().toISOString().slice(0, 10);
+  const date = cleanText(payload.date, 10) || new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("日期格式错误");
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
@@ -250,29 +250,32 @@ async function dashboard(payload: JsonRecord, session: JsonRecord): Promise<Json
     store,
   );
   const servicePath = withStore(
-    `mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&service_date=eq.${date}&order=service_time.asc&limit=500`,
+    `mgj_daily_consumption?select=services,fetched_at&business_date=eq.${date}&limit=1`,
     "shop_name",
     store,
   );
   const receptionPath = `frontdesk_today_customers?select=id,business_date,store,customer_name,customer_phone,barber_name,technician_name,assistant_name,arrival_time,visit_source,service_intent,amount,payment_summary,reception_notes,status,is_new_customer,shampoo_qualified,created_by,updated_by,created_at,updated_at&business_date=eq.${date}&store=eq.${encodeURIComponent(store)}&order=arrival_time.asc.nullslast,created_at.asc&limit=500`;
   const staffPath = `staff?select=username,position,store&active=eq.true&employment_status=eq.active&store=eq.${encodeURIComponent(store)}&order=username.asc&limit=300`;
-  const [bookings, services, reception, staffRows] = await Promise.all([
+  const [bookings, snapshots, reception, staffRows] = await Promise.all([
     restRows(bookingPath), restRows(servicePath), restRows(receptionPath), restRows(staffPath),
   ]);
+  const snapshot = snapshots[0];
+  const services = snapshot && Array.isArray(snapshot.services) ? snapshot.services : [];
+  const fetchedAt = snapshot ? cleanText(snapshot.fetched_at, 40) : "";
   return {
     date,
     store,
     bookings,
     services,
+    consumption_complete: Boolean(snapshot),
+    consumption_source: "meiguanjia_project_bills",
+    consumption_stale: Boolean(snapshot) && Date.now() - Date.parse(fetchedAt) > 15 * 60_000,
     reception,
     staff: staffRows.map((row) => ({ username: cleanText(row.username, 80), position: cleanText(row.position, 120) })),
     barbers: staffRows.filter((row) => /发型师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
     technicians: staffRows.filter((row) => /技师/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
     assistants: staffRows.filter((row) => /助理/.test(cleanText(row.position, 120))).map((row) => cleanText(row.username, 80)),
-    synced_at: services.reduce((latest, row) => {
-      const value = cleanText(row.synced_at, 40);
-      return value > latest ? value : latest;
-    }, ""),
+    synced_at: fetchedAt,
   };
 }
 

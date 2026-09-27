@@ -58,6 +58,10 @@ def request(payload, timeout=20):
     })
     with urllib.request.urlopen(req, timeout=timeout, context=ssl.create_default_context()) as response:
         result = json.loads(response.read())
+    if payload["operation"] == "daily_consumption_write":
+        if not isinstance(result, dict) or result.get('written') != 1 or result.get('count') != payload['source_count']:
+            raise RuntimeError('消费快照写入回执无效')
+        return result
     if payload["operation"] == "profile_write":
         if not isinstance(result, dict) or result.get("written") != 1:
             raise RuntimeError("客户同步写入回执无效")

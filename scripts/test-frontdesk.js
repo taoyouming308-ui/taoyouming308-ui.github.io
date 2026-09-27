@@ -37,7 +37,7 @@ function fakeElement() {
 }
 const runtimeScript = scriptMatch[1].replace(
   'restoreSession();',
-  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery,ledgerAmountLabel,openTodayForm};',
+  'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery,ledgerAmountLabel,openTodayForm,renderToday};',
 );
 const runtimeContext = {
   console,
@@ -53,6 +53,22 @@ const runtimeContext = {
 };
 vm.runInNewContext(runtimeScript, runtimeContext);
 const timeline = runtimeContext.__frontdeskTest;
+const metricData={store:'测试门店',bookings:[],reception:[],barbers:[],consumption_complete:true,services:[
+  {source_id:'1',customer_phone:'13800000000',amount:100.1},
+  {source_id:'2',customer_phone:'13800000000',amount:200.2},
+  {source_id:'3',customer_phone:'',amount:0}
+]};
+timeline.renderToday(metricData);
+expect(elements.get('kpi-services').textContent===3,'count distinct source bills, not customers');
+expect(elements.get('kpi-consumers').textContent===1,'phone count deduplicates bill customer, not bills');
+expect(elements.get('kpi-amount').textContent==='¥300.3','amount sums in cents');
+expect(elements.get('kpi-consumers-note').textContent.includes('1 笔未计入'),'unknown phone bills remain explicit');
+timeline.renderToday({...metricData,consumption_complete:false});
+expect(elements.get('kpi-services').textContent==='—'&&elements.get('kpi-amount').textContent==='—','missing snapshot is not zero or partial totals');
+timeline.renderToday({...metricData,services:[]});
+expect(elements.get('kpi-services').textContent===0&&elements.get('kpi-amount').textContent==='¥0','confirmed empty day is zero');
+timeline.renderToday({...metricData,consumption_stale:true});
+expect(elements.get('consumption-status').textContent.includes('上次完整结果'),'old totals show stale warning');
 const sampleRows = timeline.mergeToday({
   barbers: ['小康'],
   bookings: [

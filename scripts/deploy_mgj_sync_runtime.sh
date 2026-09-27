@@ -7,7 +7,7 @@ TARGET_DIR="$HOME/.hermes/scripts"
 mkdir -p "$TARGET_DIR"
 if [ "${1:-}" = "--core-only" ]; then
   backup_dir=$(mktemp -d "$HOME/.hermes/mgj-core-backup.XXXXXX")
-  for pair in "mgj_private_customer.py:mgj_private_customer.py" "sync_mgj_customer_profiles.py:sync_mgj_all.py" "sync_mgj_bookings.py:sync_mgj_bookings.py" "sync_mgj_bookings.sh:sync_bookings_wrapper.sh"; do
+  for pair in "mgj_private_customer.py:mgj_private_customer.py" "sync_mgj_daily_consumption.py:sync_mgj_daily_consumption.py" "sync_mgj_customer_profiles.py:sync_mgj_all.py" "sync_mgj_bookings.py:sync_mgj_bookings.py" "sync_mgj_bookings.sh:sync_bookings_wrapper.sh" "check_mgj_sync_health.py:check_mgj_sync_health.py"; do
     source_name=${pair%%:*}
     target_name=${pair#*:}
     if [ -f "$TARGET_DIR/$target_name" ]; then cp -p "$TARGET_DIR/$target_name" "$backup_dir/$target_name"; fi
@@ -22,6 +22,8 @@ if [ "${1:-}" = "--core-only" ]; then
 fi
 cp "$SCRIPT_DIR/mgj_private_customer.py" "$TARGET_DIR/mgj_private_customer.py"
 chmod 700 "$TARGET_DIR/mgj_private_customer.py"
+cp "$SCRIPT_DIR/sync_mgj_daily_consumption.py" "$TARGET_DIR/sync_mgj_daily_consumption.py"
+chmod 700 "$TARGET_DIR/sync_mgj_daily_consumption.py"
 cp "$SCRIPT_DIR/sync_mgj_customer_profiles.py" "$TARGET_DIR/sync_mgj_all.py"
 cp "$SCRIPT_DIR/sync_mgj_bookings.py" "$TARGET_DIR/sync_mgj_bookings.py"
 cp "$SCRIPT_DIR/sync_mgj_bookings.sh" "$TARGET_DIR/sync_bookings_wrapper.sh"
