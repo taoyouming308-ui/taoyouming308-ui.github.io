@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-09-28 · 两店电子日报来源诊断（App version: v580，财务功能未部署）
+
+- Last synchronized base checked: GitHub main `cd849b1`；Current owner: Codex。复用 perm-pages-hair-picker-sync，开始时干净；9/28 源码归档已完成，不冒充数据库/Storage 备份。
+- 用户批准两店 2026 年至今自动日报及电子明细凭证，仍需财务人工确认；已有照片、人工草稿和 41 张已确认日报保持不变。Astra high 审查架构，Luna 实现有界只读诊断，主线程核验真实样本。
+- Last Completed Work: 只读核实 bill detail 的支付/项目/岗位结构与日汇总查询合同；两店差异样本、向里首周 6 份已确认日报现金业绩及非空支付分项匹配。员工分类汇总请求出现门店回显不匹配，结果作废，不用于导入。13 项脱敏/请求/金额/范围合成回归通过，单日日汇总真实解析通过。
+- 新诊断工具不是生产同步器，不含客户原始数据、秘密、财务写入或定时器；单次最多 3 张单据或一个店日汇总，60 秒预算，共享消费锁。没有部署数据库/Edge/页面改动，App 保持 v580。
+- Open Work For Next Agent: 先读 docs/daily-electronic-evidence-plan.md；完成业务映射、完整来源与电子证据/候选/审核确认链路。对公对私规则尚待用户答复。发布财务迁移前按 finance-release-runbook 取得具体影响/备份/回退确认；不能把政策批准当部署完成。
+- Handoff Rule: 前台项目消费 540 店日已补齐，不等于财务日报完整。当前截至 9/28 的目标为 542 店日，分别统计既有已确认、完整候选、缺口与今天草稿；未知不填零，岗位业绩不重复计收入，不自动入账。
+
 ## 2026-09-27 · 两店 2026 历史消费补齐完成（App version: v580，云端已核验）
 
 - Last synchronized base checked: GitHub main `8014ce4`（v580），专用干净 checkout；未改动其他工作区。功能提交 `969f9f3` / `8014ce4` 已发布，完整本地 pre-push 通过；v580 GitHub Validate #36328991865 / Pages #36328991474 均成功，线上 version.txt / frontdesk.html 无缓存回读与候选逐字一致。
