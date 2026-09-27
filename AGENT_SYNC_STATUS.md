@@ -1,12 +1,13 @@
 # Agent Sync Status
 
-## 2026-09-27 · 收银中心浅色极简界面（App version: v567，待发布）
+## 2026-09-27 · 收银中心浅色极简界面（App version: v567，已发布）
 
 - Last synchronized base checked: github/main d3af07c；复用本线程隔离 checkout，修改前完成源码备份。保留最新财务页面改动，不修改其他工作区。
 - Current owner: Codex。按用户要求参考自由手艺人员工 App 的极简风格，统一收银登录、今日客户排班、客户档案、客户数据表、洗发统计及编辑弹窗；采用浅色背景、细线图标、轻量卡片与柔和状态色。历史导入及较长说明可展开，保留原功能。
 - 修复手机文档滚动裁切并让切换页面回到顶部；排班保留横向滑动，当前时间线跟随真实列宽；长姓名、金额与编辑按钮保持可读。新增独立 frontdesk-minimal.css 和合成浏览器回归。仅修改呈现层及页面导航滚动，不改 API、数据库、客户数据、门店权限或美管加同步/预约去重逻辑。
 - Last Completed Work: frontdesk 定向测试及 Chromium/WebKit 各 5 种尺寸（桌面、平板、手机竖横屏）通过；验证登录/注册、四个页面、排班客户数量及状态、横向滑动、时间线、档案/表格编辑、金额说明与导入展开。全部使用虚构预览数据且拦截外网，未执行真实保存或删除。
-- Open Work For Next Agent: 完整发布门禁、GitHub CI/Pages 和无缓存线上资源核验待完成；真实门店账号及实际设备视觉体验仍需用户验收。
+- 发布证据：提交 14807d8 已推送 github/main；完整 pre-push 通过（含统一财务 73/73、美管加同步 47 项），GitHub Validate #36309950498 的 validate job 和 Pages #36309950010 成功。无缓存回读 version.txt、frontdesk.html、frontdesk-minimal.css 与本地逐字一致；新建无登录 Chrome 打开线上页面，确认 data-version=567、浅色登录背景和新版样式加载。首次门禁因未提供既有 Playwright 依赖路径停止，补齐环境后完整重跑通过，未绕过检查。
+- Open Work For Next Agent: 真实门店账号及实际设备视觉体验仍需用户验收；本轮没有使用真实账号进行保存/删除验证。
 - Handoff Rule: 合成测试与线上资源存在不等于真实业务验收；此次不包含此前预约重复问题的处理。
 
 ## 2026-09-27 · 单表月报布局恢复（App version: v566，待发布）
