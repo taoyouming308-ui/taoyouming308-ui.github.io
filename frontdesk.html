@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="582">
+<html lang="zh-CN" data-version="583">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=582">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=583">
 </head>
 <body>
   <div class="login" id="login">
@@ -282,7 +282,7 @@
   <div class="overlay hidden" id="ledger-form-overlay"><div class="drawer"><div class="drawer-head"><h3>编辑前台数据</h3><button class="drawer-close" type="button" data-close="ledger-form-overlay">×</button></div><form id="ledger-form" style="padding-top:18px"><input type="hidden" id="ledger-record-type"><input type="hidden" id="ledger-record-id"><div class="today-summary"><div><label>客户</label><b id="ledger-record-customer">—</b></div><div><label>记录来源</label><b id="ledger-record-source">—</b></div></div><div class="form-grid"><div class="form-field wide"><label for="ledger-service">项目</label><input id="ledger-service" maxlength="500" placeholder="剪发、烫发、染发等"></div><div class="form-field"><label for="ledger-barber">发型师</label><input id="ledger-barber" list="today-barber-list"></div><div class="form-field"><label for="ledger-technician">技师</label><input id="ledger-technician" list="today-technician-list"></div><div class="form-field"><label for="ledger-assistant">助理</label><input id="ledger-assistant" list="today-assistant-list"></div><div class="form-field"><label for="ledger-amount">实际金额（元）</label><input id="ledger-amount" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></div><div class="form-field"><label for="ledger-payment-summary">金额说明</label><input id="ledger-payment-summary" maxlength="500" placeholder="现金、微信、优惠、套餐扣次等"></div><div class="form-field wide" id="ledger-notes-field"><label for="ledger-notes">当天备注</label><textarea id="ledger-notes" maxlength="800"></textarea></div></div><div class="notice" style="margin-top:16px"><strong>修改前台独立数据</strong>金额和说明会更新到客户数据表；原始上传表格内容、客户主档和美管加收银数据保持不变。</div><div class="form-actions"><button class="ghost" type="button" data-close="ledger-form-overlay">取消</button><button class="primary" id="ledger-save-btn" type="submit">保存修改</button></div></form></div></div>
   <div class="toast hidden" id="toast"></div>
 
-  <script src="frontdesk-business-details.js?v=582"></script>
+  <script src="frontdesk-business-details.js?v=583"></script>
   <script>
   (function(){
     'use strict';

@@ -13,6 +13,10 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{exe
   await page.locator('#business-details>summary').click();
   await page.waitForFunction(()=>document.getElementById('business-details-content').textContent.includes('TEST_STYLIST'));
   assert.match(await page.locator('#business-details-content').innerText(),/TEST_TECH/);
+  const technician=page.locator('.business-columns details').filter({hasText:'TEST_TECH'});
+  assert.match(await technician.locator('summary').innerText(),/烫 0 个 · 染 0 个 · 护 0 个/);
+  await technician.locator('summary').click();
+  assert.doesNotMatch(await technician.innerText(),/¥|现金业绩|卡金业绩/);
   assert.match(await page.locator('#business-details-content').innerText(),/待补齐/);
   await page.locator('.business-columns details').first().locator('summary').click();
   assert.match(await page.locator('.business-columns').innerText(),/剪发/);

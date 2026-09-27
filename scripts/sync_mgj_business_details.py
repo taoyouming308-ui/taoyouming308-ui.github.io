@@ -95,7 +95,7 @@ def run(shop, day, *, write=False, budget=60, max_bills=100,
         backoff_reader=None, backoff_recorder=None, request_pause=None):
     shop = audit.validate_shop(shop)
     day = audit.validate_day(day)
-    if type(budget) is not int or not 1 <= budget <= 60 or type(max_bills) is not int or not 1 <= max_bills <= 1000:
+    if type(budget) is not int or not 1 <= budget <= 90 or type(max_bills) is not int or not 1 <= max_bills <= 1000:
         raise ValueError("invalid_budget_or_limit")
     if time.time() < (backoff_reader or read_backoff)().get('cooldown_until', 0):
         return {'status': 'yielded_source_cooldown', 'shop': shop, 'date': day}
