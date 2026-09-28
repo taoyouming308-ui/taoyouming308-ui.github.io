@@ -1,5 +1,12 @@
 # Hermes Handoff
 
+## 2026-09-28 business-detail runtime (supersedes its initial hourly slots)
+
+- Canonical files: `scripts/run_mgj_business_detail_2026.py`, `scripts/sync_mgj_business_details.py`; install exclusively with `scripts/install_mgj_business_detail_2026.py --install`. Six isolated runtime files are copied/hash-verified in `~/.hermes/scripts`, without changing normal booking/customer/consumption files, credentials or their tasks. Installer only upgrades the exact known business-detail cron block and preserves a recoverable original.
+- User-approved live slots: 09–21 hours, 自由手艺人 :02/:17/:32/:47, 向里造型 :07/:22/:37/:52. Night history: a single `*/5 0-8,22-23` OS cron, `--mode history`, alternates stores globally; never add two separate 5-minute store jobs or parallel detail workers. Lock plus persisted cadence reject overlapping/early manual attempts; success progress is resumable in `~/.hermes/mgj_business_detail_2026_state.json` (0600, aggregate only), never erase to force a full reload.
+- Only observed list/detail read APIs, one full store/day per task, 90-second source budget and at most 90-second wait for normal consumption freshness. Existing 401/403/429 cooldown is global for business details; no fast retry, no automatic relogin, no MGJ/ledger writes. The source endpoint only appends signed private business snapshots. Hard scope is 2026; completed history is not repeatedly queried at the faster cadence.
+- Installation backups: `~/.hermes/mgj-business-backup-a749oqdv` (cron upgrade), `~/.hermes/mgj-business-backup-t0tbzx_2` (2026 scope protection). First accelerated run at 08:26: 自由手艺人 2026-01-01, 16 bills accepted and cloud readback matched. This is not a claim that full-year details/reports are complete. Mac must be awake for OS cron; source limits/due-priority can skip a slot.
+
 ## 2026-09-27 current sync runtime (supersedes older scheduling notes)
 
 - v579/v580 两店 2026-01-01 至 09-27 的历史消费补齐已完成（23:52:09，退出 0）。一次性有限脚本 `scripts/backfill_mgj_daily_consumption_2026.py` 的 1/1–9/25 共 536/536 店日逐日单数/金额分/ID 摘要与云端一致；9/26–27 沿用正常调度，共 540 店日、缺失 0、跨日重复单据 0。不加入 cron。状态文件 `~/.hermes/mgj_daily_consumption_backfill_2026.json` 是权限 0600 的汇总级完成检查点，严禁删除以重跑全量。共用消费源锁，日常同步到期先让路，有界等待 180 秒。新签名操作 `daily_consumption_backfill_2026` 仅放开明确历史范围；不要把旧预约、回访表混成营业消费统计。

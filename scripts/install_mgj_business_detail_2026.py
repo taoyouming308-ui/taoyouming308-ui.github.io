@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the isolated business-detail runtime and two staggered cron slots.
+"""Install isolated business-detail live/history cron slots, preserve others.
 
 Existing cron lines and normal booking/customer/consumption runtime files are
 not modified. Default mode is read-only; --install is explicit.
@@ -21,6 +21,11 @@ FILES = (
 )
 MARKER = '# MGJ business-detail 2026 staggered read-only source sync'
 CRON = (
+    '2,17,32,47 9-21 * * * /usr/bin/python3 {runner} --mode live --shop 1009951 >> {log} 2>&1',
+    '7,22,37,52 9-21 * * * /usr/bin/python3 {runner} --mode live --shop 1837032 >> {log} 2>&1',
+    '*/5 0-8,22-23 * * * /usr/bin/python3 {runner} --mode history >> {log} 2>&1',
+)
+LEGACY_CRON = (
     '17 * * * * /usr/bin/python3 {runner} --shop 1009951 >> {log} 2>&1',
     '47 * * * * /usr/bin/python3 {runner} --shop 1837032 >> {log} 2>&1',
 )
@@ -36,6 +41,11 @@ def cron_candidate(existing, runner, log):
         wanted = [line.format(runner=runner, log=log) for line in CRON]
         if lines == wanted and MARKER in existing:
             return existing, False
+        legacy = [line.format(runner=runner, log=log) for line in LEGACY_CRON]
+        old_block = '\n'.join([MARKER] + legacy) + '\n'
+        new_block = '\n'.join([MARKER] + wanted) + '\n'
+        if lines == legacy and existing.count(MARKER) == 1 and existing.count(old_block) == 1:
+            return existing.replace(old_block, new_block, 1), True
         raise ValueError('existing_business_cron_conflict')
     addition = '\n'.join([MARKER] + [line.format(runner=runner, log=log) for line in CRON])
     return existing.rstrip('\n') + '\n' + addition + '\n', True
@@ -96,7 +106,7 @@ def main(argv=None):
     parser.add_argument('--install', action='store_true')
     args = parser.parse_args(argv)
     if not args.install:
-        print('dry_run: would verify six runtime files and add :17/:47 hourly store slots; no changes')
+        print('dry_run: would verify six runtime files and replace only the known business-detail block with live 15-minute/history 5-minute slots; no changes')
         return 0
     try:
         result = install()
