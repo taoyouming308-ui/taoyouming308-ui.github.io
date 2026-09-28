@@ -10,6 +10,7 @@ import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-su
 import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
 import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
+import { dailyAutofillView } from "../_shared/daily-autofill-view.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -5456,7 +5457,7 @@ async function dailyBusinessDetails(payload: JsonRecord, session: JsonRecord): P
 }
 
 async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
-  const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,autofill_view:ocr_raw_result->autofill,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
   let currentValidationReview: JsonRecord | null = null;
@@ -5509,8 +5510,9 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   }));
   const activeAttachments = attachments.filter((item) => item.voided !== true);
   const primary = activeAttachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || activeAttachments[0] || null;
-  return { draft, current_validation_review: currentValidationReview,
-    cells: cells.map((cell) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
+  const view = dailyAutofillView(draft, cells, storeId);
+  return { draft: view.draft, current_validation_review: currentValidationReview,
+    cells: view.cells.map((cell: JsonRecord) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
     history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
