@@ -39,6 +39,11 @@ let browser;
     assert((await page.locator('#daily-electronic-source-reference').innerText()).includes('50.00 元'));
     assert((await page.locator('#daily-electronic-source-reference').innerText()).includes('留空（无需填写）'));
     assert.equal(await page.locator('#daily-electronic-source-reference img').count(), 0, 'source values are text, not HTML');
+    await page.evaluate(() => { nextReply.items[0].source_scope='operating_daily_summary'; });
+    await page.getByText('读取当天电子来源', { exact: true }).click();
+    assert((await page.locator('#daily-electronic-source-reference').innerText()).includes('不含充值售卡'));
+    await page.getByText('查看来源数值与版本', { exact: true }).click();
+    assert.equal(await page.evaluate(() => apiCalls.at(-1).payload.source_scope),'operating_daily_summary');
     await page.evaluate(() => { holdReply = true; });
     await page.getByText('读取当天电子来源', { exact: true }).click();
     await page.evaluate(() => {

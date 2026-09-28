@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="587">
+<html lang="zh-CN" data-version="588">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -120,9 +120,9 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=587"></script>
-<script src="operations-staff-view.js?v=587"></script>
-<script src="operations-monthly-daily-performance.js?v=587"></script>
+<script src="operations-time.js?v=588"></script>
+<script src="operations-staff-view.js?v=588"></script>
+<script src="operations-monthly-daily-performance.js?v=588"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -607,10 +607,10 @@
       .sheet-scroll { box-shadow:none; }
     }
   </style>
-  <script src="operations-report-fit.js?v=587"></script>
-  <script src="operations-auth-bridge.js?v=587"></script>
-  <script src="operations-voucher-preview.js?v=587"></script>
-  <script src="operations-voucher-view.js?v=587"></script>
+  <script src="operations-report-fit.js?v=588"></script>
+  <script src="operations-auth-bridge.js?v=588"></script>
+  <script src="operations-voucher-preview.js?v=588"></script>
+  <script src="operations-voucher-view.js?v=588"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -774,7 +774,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=587';
+      script.src='operations-petty-cash-evidence.js?v=588';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1203,25 +1203,29 @@ function calculateDailyControls(root){
     tol=.01,atomic=byRole('staff_value'),staffTotal=byRole('staff_total'),category=byRole('category_total'),
     stylistSubtotal=inputs.find(function(input){return input.dataset.section==='stylist'&&input.dataset.rowKey==='stylist_category_total'&&input.dataset.columnCode==='subtotal'}),
     actual=byRole('summary_actual')[0],grand=byRole('summary_grand')[0],methods=byRole('payment_method'),
-    cashflow=byRole('payment_cashflow')[0],card=byRole('payment_card_consumption')[0],payment=byRole('payment_total')[0],rowKeys={};
+    cashflow=byRole('payment_cashflow')[0],card=byRole('payment_card_consumption')[0],payment=byRole('payment_total')[0],rowKeys={},
+    cashMetadata=typeof state!=='undefined'&&state.imports&&state.imports.sheet&&state.imports.sheet.draft&&state.imports.sheet.draft.ocr_raw_result&&state.imports.sheet.draft.ocr_raw_result.autofill&&state.imports.sheet.draft.ocr_raw_result.autofill.cash_receipts,
+    cashMode=!!cashMetadata&&cashMetadata.policy==='operating-external-cash-v1'&&cashMetadata.state==='candidate',
+    cardSalesInput=inputs.find(function(input){return input.dataset.section==='summary'&&input.dataset.columnCode==='card_subtotal'}),cardSales=read(cardSalesInput);
   atomic.forEach(function(input){rowKeys[input.dataset.rowKey]=true});
   var rowMismatchKeys=Object.keys(rowKeys).filter(function(key){var values=atomic.filter(function(input){return input.dataset.rowKey===key}),total=staffTotal.find(function(input){return input.dataset.rowKey===key}),a=sum(values),t=read(total);return(a!==0||t!=null)&&(t==null||Math.abs(a-t)>tol)}),
     categoryMismatchCodes=category.filter(function(total){var a=sum(atomic.filter(function(input){return input.dataset.columnCode===total.dataset.columnCode})),t=read(total);return(a!==0||t!=null)&&(t==null||Math.abs(a-t)>tol)}).map(function(input){return input.dataset.columnCode}),
     staffAtomic=sum(atomic),staffReported=sum(staffTotal),categoryReported=sum(category),stylistSubtotalValue=read(stylistSubtotal),
     stylistSubtotalMismatch=(staffAtomic!==0||stylistSubtotalValue!=null)&&(stylistSubtotalValue==null||Math.abs(staffAtomic-stylistSubtotalValue)>tol),
     methodTotal=sum(methods),actualValue=read(actual),grandValue=read(grand),cashValue=read(cashflow),cardValue=read(card)||0,paymentValue=read(payment),
-    missing=[actualValue,grandValue,cashValue,paymentValue].some(function(value){return value==null})||!atomic.some(function(input){return read(input)!=null});
+    missing=[actualValue,grandValue,cashValue,paymentValue].some(function(value){return value==null})||!atomic.some(function(input){return read(input)!=null})||(cashMode&&(cardSales==null||cashMetadata.cash_channels_complete!==true));
   var pendingRows=Object.keys(rowKeys).filter(function(key){return atomic.some(function(input){return input.dataset.rowKey===key&&input.dataset.autofillUnknown==='1'})}),pendingCategories=category.filter(function(total){return atomic.some(function(input){return input.dataset.columnCode===total.dataset.columnCode&&input.dataset.autofillUnknown==='1'})}).map(function(input){return input.dataset.columnCode});
   rowMismatchKeys=rowMismatchKeys.filter(function(key){return pendingRows.indexOf(key)<0});
   categoryMismatchCodes=categoryMismatchCodes.filter(function(code){return pendingCategories.indexOf(code)<0});
   if(pendingRows.length)stylistSubtotalMismatch=false;
   var valid=!missing&&pendingRows.length===0&&staffAtomic>0&&rowMismatchKeys.length===0&&categoryMismatchCodes.length===0&&!stylistSubtotalMismatch
     &&Math.abs(staffAtomic-staffReported)<=tol&&Math.abs(staffAtomic-categoryReported)<=tol
-    &&Math.abs(staffAtomic-actualValue)<=tol&&Math.abs(staffAtomic-grandValue)<=tol
-    &&Math.abs(methodTotal-cashValue)<=tol&&Math.abs(cashValue+cardValue-paymentValue)<=tol&&Math.abs(staffAtomic-paymentValue)<=tol;
+    &&Math.abs(methodTotal-cashValue)<=tol
+    &&(cashMode?Math.abs(actualValue-cashValue)<=tol&&Math.abs(actualValue+cardSales-grandValue)<=tol&&Math.abs(grandValue-paymentValue)<=tol
+      :Math.abs(staffAtomic-actualValue)<=tol&&Math.abs(staffAtomic-grandValue)<=tol&&Math.abs(cashValue+cardValue-paymentValue)<=tol&&Math.abs(staffAtomic-paymentValue)<=tol);
   return{pendingRows:pendingRows,pendingCategories:pendingCategories,valid:valid,staffAtomic:staffAtomic,staffReported:staffReported,categoryReported:categoryReported,
     stylistSubtotal:stylistSubtotalValue,stylistSubtotalMismatch:stylistSubtotalMismatch,
-    actual:actualValue,grand:grandValue,methodTotal:methodTotal,cashflow:cashValue,card:cardValue,payment:paymentValue,
+    actual:actualValue,grand:grandValue,methodTotal:methodTotal,cashflow:cashValue,card:cardValue,payment:paymentValue,cashMode:cashMode,cardSales:cardSales,
     rowMismatch:rowMismatchKeys.length,categoryMismatch:categoryMismatchCodes.length,
     rowMismatchKeys:rowMismatchKeys,categoryMismatchCodes:categoryMismatchCodes,missing:missing};
 }
@@ -1411,9 +1415,9 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=587"></script>
-  <script src="operations-daily-electronic.js?v=587"></script>
-  <script src="operations-monthly-workbench.js?v=587"></script>
-  <script src="operations-daily-recognition.js?v=587"></script>
+  <script src="operations-daily-review.js?v=588"></script>
+  <script src="operations-daily-electronic.js?v=588"></script>
+  <script src="operations-monthly-workbench.js?v=588"></script>
+  <script src="operations-daily-recognition.js?v=588"></script>
 </body>
 </html>

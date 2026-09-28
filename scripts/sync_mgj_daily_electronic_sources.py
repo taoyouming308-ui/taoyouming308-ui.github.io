@@ -23,9 +23,11 @@ from pathlib import Path
 try:
     from scripts import audit_mgj_daily_report_source as audit
     from scripts import mgj_private_customer as private_sync
+    from scripts import sync_mgj_business_details as business_details
 except ModuleNotFoundError:
     import audit_mgj_daily_report_source as audit
     import mgj_private_customer as private_sync
+    import sync_mgj_business_details as business_details
 
 try:
     from cryptography.hazmat.primitives import serialization
@@ -38,7 +40,9 @@ except ImportError:
 SYNC_ENDPOINT = "https://pdssrmpeiuwvxzsgschm.supabase.co/functions/v1/mgj-daily-report-sync"
 DAILY = audit.daily
 SHOPS = {shop_id: name for shop_id, name in DAILY.SHOPS.items()}
-SCOPE_NAMES = {"projects": "projects_daily_summary", "all": "all_business_daily_summary"}
+SCOPE_NAMES = {"projects": "projects_daily_summary", "operating": "operating_daily_summary",
+               "card_sales": "card_sales_daily_summary",
+               "all": "all_business_daily_summary"}
 SCOPE_SEQUENCE = ("projects", "all")
 MAX_BUDGET_SECONDS = 60
 LIVE_SYNC_FRESH_SECONDS = 240
@@ -68,7 +72,7 @@ def validate_options(shop, day, scope, budget_seconds):
     if str(shop) not in SHOPS:
         raise SyncError("invalid_shop")
     day = audit.validate_day(day)
-    if scope not in ("projects", "all", "both"):
+    if scope not in (*SCOPE_NAMES, "both", "cash"):
         raise SyncError("invalid_scope")
     if type(budget_seconds) is not int or not 1 <= budget_seconds <= MAX_BUDGET_SECONDS:
         raise SyncError("invalid_budget")
@@ -76,6 +80,8 @@ def validate_options(shop, day, scope, budget_seconds):
 
 
 def selected_scopes(scope):
+    if scope == "cash":
+        return ["operating", "card_sales", "all"]
     if scope == "both":
         return list(SCOPE_SEQUENCE)
     if scope in SCOPE_NAMES:
@@ -236,7 +242,11 @@ def read_daily_sync_state():
         value = json.loads(DAILY.STATE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return value if isinstance(value, dict) else None
+    if not isinstance(value, dict):
+        return None
+    backoff = business_details.read_backoff()
+    return {**value, "cooldown_until": max(float(value.get("cooldown_until") or 0),
+                                          float(backoff.get("cooldown_until") or 0))}
 
 
 def daily_sync_due(state, now=None):
@@ -278,7 +288,7 @@ def fresh_fetched_at():
 def run(shop, day, scope="both", write=False, budget_seconds=MAX_BUDGET_SECONDS,
         config_loader=audit.load_config, summary_reader=audit.request_daily_summary,
         key_loader=load_signing_key, submitter=submit_candidate, now_fn=time.monotonic,
-        state_reader=read_daily_sync_state, lock_acquirer=acquire_shared_lock):
+        state_reader=read_daily_sync_state, lock_acquirer=acquire_shared_lock, sleeper=time.sleep):
     shop, day = validate_options(shop, day, scope, budget_seconds)
     scopes = selected_scopes(scope)
     if daily_sync_due(state_reader()):
@@ -294,7 +304,12 @@ def run(shop, day, scope="both", write=False, budget_seconds=MAX_BUDGET_SECONDS,
         if daily_sync_due(state_reader()):
             return {"status": "yielded_daily_sync_due", "shop": shop, "date": day, "scopes": []}
         signing_key = key_loader() if write else None
-        for source_scope in scopes:
+        for source_index, source_scope in enumerate(scopes):
+            if source_index:
+                if deadline - now_fn() <= 1:
+                    results.append({"scope": SCOPE_NAMES[source_scope], "status": "budget_exhausted"})
+                    continue
+                sleeper(1)
             if deadline - now_fn() <= 0:
                 results.append({"scope": SCOPE_NAMES[source_scope], "status": "budget_exhausted"})
                 continue
@@ -312,6 +327,11 @@ def run(shop, day, scope="both", write=False, budget_seconds=MAX_BUDGET_SECONDS,
                 status = "missing_source" if str(exc) == "summary_no_rows" else "source_read_failed"
                 results.append({"scope": SCOPE_NAMES[source_scope], "status": status,
                                 "reason": str(exc) if status == "missing_source" else "source_or_validation_error"})
+                if str(exc) in ("http_status:401", "http_status:403", "http_status:429"):
+                    business_details.record_backoff(str(exc).split(":")[1])
+                    results.extend({"scope": SCOPE_NAMES[pending], "status": "yielded_source_cooldown"}
+                                   for pending in scopes[source_index+1:])
+                    break
                 continue
             except Exception:
                 results.append({"scope": SCOPE_NAMES[source_scope], "status": "source_read_failed",
@@ -356,7 +376,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="只读采集并可选追加美管加日报源候选；默认dry-run")
     parser.add_argument("--shop", required=True, choices=sorted(SHOPS))
     parser.add_argument("--date", required=True)
-    parser.add_argument("--scope", choices=("projects", "all", "both"), default="both")
+    parser.add_argument("--scope", choices=(*SCOPE_NAMES, "both", "cash"), default="both")
     parser.add_argument("--budget-seconds", type=int, default=MAX_BUDGET_SECONDS)
     parser.add_argument("--write", action="store_true", help="明确提交到needs_review候选，不写正式账本")
     return parser.parse_args(argv)

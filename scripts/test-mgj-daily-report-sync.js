@@ -57,6 +57,13 @@ async function send(payload, { unsigned = false, domain = 'mgj-daily-report-sync
   assert.equal(params.p_company_id, '02463a53-dfdb-4291-b04d-dd1d85f9d998');
   assert.equal(params.p_store_id, 'ea7e281f-a254-4664-bb03-cf1acf48d79d');
   assert.equal(params.p_source_scope, 'projects_daily_summary');
+  const op = valid(); op.source_scope = 'operating_daily_summary'; op.source.query.incomeType = ['1','2'];
+  receipt.source_scope = op.source_scope;
+  assert.equal((await send(op)).status,200);
+  assert.equal(JSON.parse(calls.at(-1).init.body).p_source_scope,op.source_scope);
+  op.source.query.incomeType = ['1','2','3'];
+  assert.equal((await send(op)).status,400,'recharge cannot enter operating receipt scope');
+  receipt.source_scope = 'projects_daily_summary';
   dbStatus = 409;
   let response = await send(valid()); assert.equal(response.status, 409);
   assert.equal((await response.json()).outcome, 'unconfirmed');

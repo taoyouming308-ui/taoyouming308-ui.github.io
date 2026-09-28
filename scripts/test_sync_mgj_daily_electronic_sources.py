@@ -83,6 +83,28 @@ class SignedResponse:
 
 
 class SyncElectronicSourcesTests(unittest.TestCase):
+    def test_cash_scope_is_operating_and_all_not_project_only(self):
+        self.assertEqual(sync.selected_scopes('cash'), ['operating', 'card_sales', 'all'])
+        payload = candidate('operating')
+        self.assertEqual(payload['source_scope'], 'operating_daily_summary')
+        self.assertEqual(payload['source']['query']['incomeType'], ['1', '2'])
+        self.assertEqual(sync.selected_scopes('both'), ['projects', 'all'])
+
+    def test_auth_limit_stops_source_pair_and_records_shared_cooldown(self):
+        for code in ('401', '403', '429'):
+            reads = []
+            def reader(*args, **kwargs):
+                reads.append(args[3])
+                raise audit.AuditError('http_status:' + code)
+            with patch.object(sync.business_details, 'record_backoff') as backoff:
+                result = sync.run(SHOP, DAY, scope='cash', config_loader=lambda: {'shop_id':'1103470'},
+                                  summary_reader=reader, state_reader=self.fresh_state,
+                                  lock_acquirer=lambda: type('Lock', (), {'close':lambda self:None})(),
+                                  sleeper=lambda _:None)
+            self.assertEqual(reads, ['operating'])
+            backoff.assert_called_once_with(code)
+            self.assertEqual(result['scopes'][1]['status'], 'yielded_source_cooldown')
+
     def test_candidate_contract_and_source_requires_validated_content(self):
         config = {"shop_id": "1103470"}
         source = sync.source_object(SHOP, DAY, "projects", config, valid_content())

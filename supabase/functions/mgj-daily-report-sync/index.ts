@@ -9,6 +9,8 @@ const STORES: Record<string, { id: string; source: string }> = {
 };
 const SCOPES: Record<string, string[]> = {
   projects_daily_summary: ["1"], all_business_daily_summary: ["1", "2", "3", "4", "5"],
+  operating_daily_summary: ["1", "2"],
+  card_sales_daily_summary: ["3", "4", "5"],
 };
 const MAX_BYTES = 65536;
 type Row = Record<string, unknown>;

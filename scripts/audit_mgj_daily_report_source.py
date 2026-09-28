@@ -55,7 +55,10 @@ DAILY_SUMMARY_GROUPS = [
     ("划卡类", 11, tuple(range(12, 15))),
     ("其他非现类", 15, tuple(range(16, 24))),
 ]
-SUMMARY_INCOME_TYPES = {"projects": ["1"], "all": ["1", "2", "3", "4", "5"]}
+SUMMARY_INCOME_TYPES = {
+    "projects": ["1"], "operating": ["1", "2"], "card_sales": ["3", "4", "5"],
+    "all": ["1", "2", "3", "4", "5"],
+}
 
 
 class AuditError(ValueError):
@@ -579,7 +582,7 @@ def parse_args(argv=None):
     parser.add_argument("--menu", action="store_true", help="仅读取已观测菜单页，不访问菜单链接")
     parser.add_argument("--daily-summary", action="store_true", help="只读已观测门店营业日汇总")
     parser.add_argument("--business-detail", action="store_true", help="核验收银/日报共用明细契约，仅输出字段完整度")
-    parser.add_argument("--summary-scope", choices=("projects", "all"), default="projects")
+    parser.add_argument("--summary-scope", choices=tuple(SUMMARY_INCOME_TYPES), default="projects")
     return parser.parse_args(argv)
 
 

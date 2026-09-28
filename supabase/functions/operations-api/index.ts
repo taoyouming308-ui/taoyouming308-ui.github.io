@@ -5420,7 +5420,7 @@ async function dailyElectronicSources(payload: JsonRecord, session: JsonRecord):
   // Company and store IDs come from the validated session scope, never caller-supplied IDs.
   const candidateId = uuidValue(payload.candidate_id, "电子来源版本编号无效", true);
   const sourceScope = cleanText(payload.source_scope, 40) || null;
-  if (sourceScope && !["projects_daily_summary", "all_business_daily_summary"].includes(sourceScope)) {
+  if (sourceScope && !["projects_daily_summary", "all_business_daily_summary", "operating_daily_summary", "card_sales_daily_summary"].includes(sourceScope)) {
     throw new Error("电子来源范围无效");
   }
   const response = await rest("rpc/zysyr_read_daily_electronic_source", {

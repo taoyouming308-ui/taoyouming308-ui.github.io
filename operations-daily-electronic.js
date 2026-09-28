@@ -4,7 +4,7 @@
   var generation = 0;
   var accountLabels = { public_card: '公-刷卡', public_qr: '公-支微', private_card: '私-刷卡', private_qr: '私-支微' };
   var groupLabels = { source_cash: '现金类', source_card: '划卡类', source_noncash: '其他非现金类' };
-  var names = { projects_daily_summary: '项目消费汇总', all_business_daily_summary: '全部业务收款汇总（含售卡充值范围）' };
+  var names = { projects_daily_summary: '项目消费汇总', operating_daily_summary: '项目及零售实际收款（不含充值售卡）', card_sales_daily_summary: '充值、套餐及年卡新收款（不计实做）', all_business_daily_summary: '全部业务收款汇总（含售卡充值范围）' };
   var gaps = {
     source_shop_not_echoed: '源汇总未回显门店，仍需明细交叉核验',
     employee_detail_unavailable: '员工明细尚未补齐', project_mapping_unavailable: '项目与日报栏目映射尚未完成',

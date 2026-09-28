@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process');
 execFileSync(process.execPath,['scripts/build-daily-autofill-v2.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v3.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v4.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -30,7 +31,9 @@ let started=false;
  let ready=false;for(let n=0;n<80;n++){try{sql('select 1');ready=true;break;}catch{await new Promise(r=>setTimeout(r,250));}}assert(ready);
  assert(JSON.parse(docker(['inspect','--format','{{json .Mounts}}',name])).every(m=>m.Type!=='volume'));
  sql(`create role anon;create role authenticated;create role service_role bypassrls;
- create schema zysyr_private;create schema zysyr_daily_electronic_private;
+ create schema zysyr_private;
+ create table public.zysyr_stores(company_id uuid,id uuid,primary key(company_id,id));
+ insert into public.zysyr_stores values('${company}','${free}'),('${company}','${xiang}');
  create table public.zysyr_daily_sheet_drafts(id uuid primary key default gen_random_uuid(),company_id uuid not null,store_id uuid not null,
   report_date date not null,status text not null default 'draft',template_code text not null default 'zysyr_daily_performance_photo',source_voucher_id uuid,source_sha256 text,ocr_provider text not null,ocr_model text not null,
   ocr_raw_result jsonb not null default '{}',validation_result jsonb not null default '{}',edit_revision int not null default 0,
@@ -43,12 +46,13 @@ let started=false;
   updated_by_user_id uuid not null,updated_at timestamptz not null default now(),unique(company_id,draft_id,section_code,row_key,column_code));
  create table public.zysyr_daily_sheet_attachments(id uuid default gen_random_uuid(),draft_id uuid);
  create table public.zysyr_daily_sheet_cell_changes(draft_id uuid,cell_id uuid references public.zysyr_daily_sheet_cells(id) on delete restrict);
+ create function zysyr_private.daily_sheet_cell_value(public.zysyr_daily_sheet_cells) returns numeric language sql immutable as $$select case when $1.manual_override then $1.corrected_numeric else $1.ocr_numeric end$$;
  create table public.test_locks(store_id uuid,report_date date);
  create function zysyr_private.period_is_locked(uuid,uuid,date) returns boolean language sql as $$select exists(select 1 from public.test_locks where store_id=$2 and report_date=$3)$$;
- create function zysyr_daily_electronic_private.protect_daily_electronic_evidence() returns trigger language plpgsql as $$begin raise exception 'DAILY_ELECTRONIC_EVIDENCE_IMMUTABLE';end$$;
- revoke all on schema zysyr_private,zysyr_daily_electronic_private from public,anon,authenticated,service_role;
+ revoke all on schema zysyr_private from public,anon,authenticated,service_role;
  create table public.mgj_daily_consumption(shop_name text,business_date date,services jsonb,primary key(shop_name,business_date));
  create table public.legacy_income(id int,amount numeric);insert into public.legacy_income values(1,2126);
+ ${fs.readFileSync('supabase/migrations/20260927173455_zysyr_daily_electronic_source_candidates.sql','utf8')}
  ${fs.readFileSync('supabase/migrations/20260927210938_mgj_frontdesk_business_detail_snapshots.sql','utf8')}
  ${fs.readFileSync('supabase/migrations/20260928005448_zysyr_frontdesk_daily_autofill.sql','utf8')}`);
  check('only fixed machine writer, no client or private schema/table access',()=>{
@@ -239,6 +243,83 @@ let started=false;
   }
   for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.platform_item_routes(jsonb)','EXECUTE')`),'f');
   assert.throws(()=>sql('delete from public.zysyr_daily_autofill_events'),/IMMUTABLE/);
+  assert.equal(sql('select amount from public.legacy_income'),'2126');
+ });
+ sql(fs.readFileSync('supabase/migrations/20260928141730_zysyr_daily_cash_candidate_v4.sql','utf8'));
+ const headers=['日期','总额','现金','银联','支付宝','微信支付','大众点评','商场卡','合作券','口碑','抖音','总额','划卡','划赠送金','划分期赠送金','总额','代金券','欠款','免单','红包','优惠券','商城订单','线上积分抵扣','门店积分抵扣'];
+ const cashSource=(scope,shop='1837032',date=day)=>{
+  const period=Date.parse(date+'T00:00:00Z'),row=[date,...Array(23).fill('0')];row[1]=scope==='card_sales_daily_summary'?'0':'100';row[4]=row[1];row[11]='879';row[12]='879';
+  return {shop_id:shop,business_date:date,query:{parentShopId:1103470,shopId:'1103470',shopIds:[shop],period:`${period}_${period}`,incomeType:scope==='operating_daily_summary'?['1','2']:scope==='card_sales_daily_summary'?['3','4','5']:['1','2','3','4','5'],depcode:'-1'},
+   content:{head:headers,headTop:[{text:'日期',rowspan:2},{text:'现金类',colspan:10},{text:'划卡类',colspan:4},{text:'其他非现类',colspan:9}],columns:Array(24).fill(null),config:{title:'门店营业日汇总'},data:[row]}};
+ };
+ const appendCash=(scope,source=cashSource(scope),time='2026-09-28T11:00:00Z',store=xiang)=>json(`set role service_role;select public.zysyr_ingest_daily_electronic_source('${company}','${store}',${q(source.business_date)},${q(scope)},${q(time)},${q(JSON.stringify(source))}::jsonb);`);
+ const projection=()=>json(`select zysyr_daily_electronic_private.cash_receipt_projection('${company}','${xiang}','${day}')`);
+ const opScope='operating_daily_summary',allScope='all_business_daily_summary',cardScope='card_sales_daily_summary';
+ let originalTechCount;
+ check('v4 absent aggregate sources does not guess financial totals from performance',()=>{
+  list();const p=payload();p.bills[0].items[0].item_code='324';ingest(p);assert.equal(autofill().status,'already_applied');
+  originalTechCount=value('perm_count','technician','合成技师');
+  assert.equal(projection().available,false);assert.equal(value('actual_total','summary','汇总'),'');
+ });
+ check('operating source is incomeTypes 1+2 only and remains request-only',()=>{
+  const first=appendCash(opScope);assert.equal(first.stage,'source_only');assert.equal(first.scope_verified,false);
+  assert.equal(projection().available,false);assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code='actual_total' and ocr_numeric is not null`),'0');
+  const bad=cashSource(opScope);bad.query.incomeType=['1'];assert.throws(()=>appendCash(opScope,bad),/QUERY_SCOPE_MISMATCH/);
+  appendCash(cardScope);assert.equal(projection().available,false);
+ });
+ check('three immutable cash sources trigger persisted draft totals, exclude 879 card drawdown',()=>{
+  appendCash(allScope);assert.equal(projection().available,true);
+  for(const [section,code,expected]of[['summary','actual_total','100.00'],['summary','card_subtotal','0.00'],['summary','grand_total','100.00'],['payment','cash_flow','100.00'],['payment','total','100.00']]) assert.equal(value(code,section,section==='summary'?'汇总':'支付'),expected);
+  assert.equal(value('subtotal'),'100.00');assert.equal(value('perm_count','technician','合成技师'),originalTechCount);
+  assert.equal(sql(`select (ocr_raw_result#>>'{autofill,cash_receipts,scope_verified}')::boolean from public.zysyr_daily_sheet_drafts where id='${draft}'`),'f');
+  assert.equal(autofill().status,'already_applied');
+  assert.equal(json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`).valid,true);
+ });
+ check('new recharge/card-sales cash is separate, not 实做; original allocation stays unchanged',()=>{
+  const all=cashSource(allScope);all.content.data[0][1]='400';all.content.data[0][4]='400';appendCash(allScope,all,'2026-09-28T11:00:01Z');
+  assert.equal(projection().available,false,'all minus operating cannot be guessed as card sales');
+  const cards=cashSource(cardScope);cards.content.data[0][1]='300';cards.content.data[0][4]='300';appendCash(cardScope,cards,'2026-09-28T11:00:01Z');
+  assert.equal(value('actual_total','summary','汇总'),'100.00');assert.equal(value('card_subtotal','summary','汇总'),'300.00');assert.equal(value('grand_total','summary','汇总'),'400.00');
+  assert.equal(value('cash_flow','payment','支付'),'100.00');assert.equal(value('total','payment','支付'),'400.00');assert.equal(value('alipay','payment','支付'),'100.00');assert.equal(value('subtotal'),'100.00');
+  const revision=sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`);assert.equal(autofill().status,'already_applied');assert.equal(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`),revision);
+  assert.equal(json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`).valid,true,'receipt and performance are independently checked');
+ });
+ check('retail cash fills actual income independently of employee allocation',()=>{
+  const op=cashSource(opScope),all=cashSource(allScope);for(const s of[op,all]){s.content.data[0][1]='159.90';s.content.data[0][4]='159.90';}
+  appendCash(opScope,op,'2026-09-28T11:00:02Z');appendCash(cardScope,cashSource(cardScope),'2026-09-28T11:00:02Z');appendCash(allScope,all,'2026-09-28T11:00:03Z');
+  assert.equal(value('actual_total','summary','汇总'),'159.90');assert.equal(value('subtotal'),'100.00');assert.equal(value('card_subtotal','summary','汇总'),'0.00');
+  const event=json(`select after_snapshot->'draft'->'ocr_raw_result'->'autofill'->'cash_receipts' from public.zysyr_daily_autofill_events where draft_id='${draft}' order by revision desc limit 1`);
+  assert(event.operating_snapshot_id&&event.all_snapshot_id&&event.card_sales_snapshot_id&&event.operating_sha256&&event.all_sha256&&event.card_sales_sha256);
+ });
+ check('unknown totals preserved as null with audited withdrawal of former candidate amounts',()=>{
+  const op=cashSource(opScope);op.content.data[0][1]='';appendCash(opScope,op,'2026-09-28T11:00:04Z');
+  assert.equal(value('actual_total','summary','汇总'),'NULL');assert.equal(value('card_subtotal','summary','汇总'),'0.00');
+  assert(projection().gaps.includes('cash_total_unknown'));
+  assert.equal(sql(`select count(*)>0 from public.zysyr_daily_autofill_events e cross join lateral jsonb_array_elements(e.before_snapshot->'cells')c where e.draft_id='${draft}' and c->>'column_code'='actual_total' and (c->>'ocr_numeric')::numeric=159.90`),'t');
+ });
+ check('mismatched known cash group cannot fill candidate; no public privileges or posting added',()=>{
+  const op=cashSource(opScope);op.content.data[0][1]='101';appendCash(opScope,op,'2026-09-28T11:00:05Z');assert.equal(projection().available,false);
+  for(const role of['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.cash_receipt_projection(uuid,uuid,date)','EXECUTE')`),'f');
+  assert.equal(sql('select amount from public.legacy_income'),'2126');
+  assert.equal(autofill('向里造型','2026-09-24').status,'confirmed_preserved');
+  assert.throws(()=>sql('delete from public.zysyr_daily_autofill_events'),/IMMUTABLE/);
+ });
+ check('cash validation rejects stale or incomplete receipt source and never opens public confirmation',()=>{
+  assert.equal(json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`).valid,false);
+  for(const role of['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_private.daily_sheet_validation(uuid,uuid,uuid)','EXECUTE')`),'f');
+ });
+ check('intervening project income is never silently classified as new card income',()=>{
+  appendCash(opScope,cashSource(opScope),'2026-09-28T11:00:06Z');
+  const all=cashSource(allScope);all.content.data[0][1]='120';all.content.data[0][4]='120';appendCash(allScope,all,'2026-09-28T11:00:07Z');
+  assert.equal(projection().available,false);assert(projection().gaps.includes('cash_source_partition_mismatch'));
+ });
+ check('optional cash projection error never rolls back accepted immutable evidence',()=>{
+  list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));
+  sql(`create or replace function zysyr_daily_electronic_private.cash_receipt_projection(p_company uuid,p_store uuid,p_day date) returns jsonb language plpgsql stable set search_path='' as $$begin raise exception 'synthetic_projection_error';end$$;`);
+  const receipt=appendCash(opScope,cashSource(opScope,'1837032','2026-09-21'));
+  assert.equal(receipt.inserted,true);assert.equal(receipt.stage,'source_only');
+  assert.equal(sql("select count(*) from public.zysyr_daily_electronic_heads where business_date='2026-09-21'"),'1');
+  assert.equal(sql("select result->>'status' from public.zysyr_daily_autofill_status where shop_name='向里造型' and business_date='2026-09-21'"),'cash_projection_failed');
   assert.equal(sql('select amount from public.legacy_income'),'2126');
  });
  console.log(`Frontdesk automatic drafts: ${checks} safety groups passed`);
