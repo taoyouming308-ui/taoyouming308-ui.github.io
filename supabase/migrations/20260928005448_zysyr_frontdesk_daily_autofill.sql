@@ -166,7 +166,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare
  company uuid:='02463a53-dfdb-4291-b04d-dd1d85f9d998'; store uuid;
  source jsonb; cells jsonb; gaps jsonb; sid uuid; draft public.zysyr_daily_sheet_drafts;
- before_data jsonb; after_data jsonb; cell jsonb; n integer:=0; is_new boolean:=false;
+ before_data jsonb; after_data jsonb; cell jsonb; result jsonb; n integer:=0; is_new boolean:=false;
 begin
  if current_setting('role',true) is distinct from 'service_role' then raise exception 'AUTOFILL_SERVICE_REQUIRED'; end if;
  store:=case p_shop when '自由手艺人' then 'ea7e281f-a254-4664-bb03-cf1acf48d79d'::uuid
@@ -185,13 +185,9 @@ begin
   and d.report_date=p_day and d.status='draft')>1 then return jsonb_build_object('status','multiple_drafts_preserved','automatic_posting_enabled',false); end if;
  select * into draft from public.zysyr_daily_sheet_drafts d where d.company_id=company and d.store_id=store
   and d.report_date=p_day and d.status='draft' for update;
- if draft.id is not null and (draft.source_voucher_id is not null
-   or exists(select 1 from public.zysyr_daily_sheet_attachments a where a.draft_id=draft.id)
-   or draft.ocr_model<>'frontdesk-autofill-v1' and (draft.ocr_provider<>'manual-entry' or draft.edit_revision<>0
-    or exists(select 1 from public.zysyr_daily_sheet_cell_changes h where h.draft_id=draft.id)
-    or exists(select 1 from public.zysyr_daily_sheet_cells c where c.draft_id=draft.id and
-     (c.manual_override or c.ocr_numeric is not null or c.manual_text is not null or c.row_label_source_method='manual'))))
- then return jsonb_build_object('status','manual_or_original_preserved','automatic_posting_enabled',false); end if;
+ -- Recheck after waiting on an existing row lock: finance may have confirmed it.
+ if exists(select 1 from public.zysyr_daily_sheet_drafts d where d.company_id=company and d.store_id=store
+   and d.report_date=p_day and d.status='confirmed') then return jsonb_build_object('status','confirmed_preserved','automatic_posting_enabled',false); end if;
  if sid=(select e.snapshot_id from public.zysyr_daily_autofill_events e where e.draft_id=draft.id order by e.revision desc limit 1)
  then return jsonb_build_object('status','already_applied','draft_id',draft.id,'automatic_posting_enabled',false); end if;
  cells:=zysyr_daily_electronic_private.autofill_cells(source);
@@ -211,10 +207,15 @@ begin
   is_new:=true;
  end if;
  before_data:=jsonb_build_object('draft',to_jsonb(draft),'cells',(select coalesce(jsonb_agg(to_jsonb(c) order by c.id),'[]') from public.zysyr_daily_sheet_cells c where c.draft_id=draft.id),'created',is_new);
- -- Only the verified wholly empty template is replaced; its exact pre-image
- -- remains in the immutable audit. Stable employee keys prevent row reassignment.
+ -- Authorized on 2026-09-28: update unposted drafts, including manual/image
+ -- drafts. Keep cell IDs, change-history FKs, vouchers and attachments intact.
+ -- Previous numeric staff candidates cannot be mixed with source employee rows.
+ -- Exact pre-images remain in the immutable audit; never turn old money into counts.
  if draft.ocr_model<>'frontdesk-autofill-v1' then
-  delete from public.zysyr_daily_sheet_cells c where c.draft_id=draft.id;
+  update public.zysyr_daily_sheet_cells c set ocr_numeric=null,corrected_numeric=null,
+   ocr_text=null,manual_text=null,manual_override=false,updated_at=now(),updated_by_user_id=null
+  where c.draft_id=draft.id and c.section_code in('stylist','technician')
+   and c.cell_role not in('signature','unclosed_order','note');
  end if;
  for cell in select value from jsonb_array_elements(cells) loop
   insert into public.zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,
@@ -224,20 +225,22 @@ begin
   on conflict(company_id,draft_id,section_code,row_key,column_code) do update
    set row_label=excluded.row_label,column_label=excluded.column_label,row_number=excluded.row_number,
     column_number=excluded.column_number,ocr_text=excluded.ocr_text,ocr_numeric=excluded.ocr_numeric,
-    source_method='frontdesk_autofill',updated_by_user_id=null,updated_at=now()
-   where not zysyr_daily_sheet_cells.manual_override and zysyr_daily_sheet_cells.manual_text is null
-    and zysyr_daily_sheet_cells.row_label_source_method<>'manual'
-    and (zysyr_daily_sheet_cells.source_method='frontdesk_autofill' or zysyr_daily_sheet_cells.ocr_numeric is null);
+    source_method='frontdesk_autofill',manual_override=false,corrected_numeric=null,manual_text=null,
+    updated_by_user_id=null,updated_at=now();
   if found then n:=n+1; end if;
  end loop;
- -- Never retain a machine value removed from a newer source. Manual edits survive.
- update public.zysyr_daily_sheet_cells c set ocr_numeric=null,ocr_text=null,updated_at=now(),updated_by_user_id=null
- where c.draft_id=draft.id and c.source_method='frontdesk_autofill' and not c.manual_override and c.manual_text is null
+ -- A superseded source value must not survive, even under a manual override.
+ -- Unsupported payment/retail fields and text notes are outside the projection.
+ update public.zysyr_daily_sheet_cells c set ocr_numeric=null,ocr_text=null,corrected_numeric=null,
+  manual_override=false,manual_text=null,updated_at=now(),updated_by_user_id=null
+ where c.draft_id=draft.id and c.source_method='frontdesk_autofill'
   and not exists(select 1 from jsonb_array_elements(cells)x where x->>'section_code'=c.section_code and x->>'row_key'=c.row_key and x->>'column_code'=c.column_code);
  update public.zysyr_daily_sheet_drafts d set ocr_model='frontdesk-autofill-v1',template_code='zysyr_frontdesk_project_draft',
   ocr_raw_result=d.ocr_raw_result||jsonb_build_object('autofill',jsonb_build_object('snapshot_id',sid,
    'source_sha256',source->>'source_sha256','mapping_version','frontdesk-autofill-v1','gaps',gaps,
-   'source_scope','project_consumption','automatic_posting_enabled',false)),
+   'source_scope','project_consumption','automatic_posting_enabled',false,
+   'active_staff_row_keys',(select coalesce(jsonb_agg(distinct x->>'row_key'),'[]'::jsonb)
+    from jsonb_array_elements(cells)x where x->>'section_code' in('stylist','technician')))),
   edit_revision=d.edit_revision+1,updated_by_user_id=null,updated_at=now(),
   validation_result=jsonb_build_object('valid',false,'needs_finance_review',true,'autofill_gaps',gaps,
    'autofill_source_snapshot_id',sid,'autofill_source_sha256',source->>'source_sha256','automatic_posting_enabled',false)
@@ -245,9 +248,13 @@ begin
  after_data:=jsonb_build_object('draft',to_jsonb(draft),'cells',(select jsonb_agg(to_jsonb(c) order by c.id) from public.zysyr_daily_sheet_cells c where c.draft_id=draft.id));
  insert into public.zysyr_daily_autofill_events(company_id,store_id,draft_id,snapshot_id,mapping_version,revision,before_snapshot,after_snapshot,review_gaps)
  values(company,store,draft.id,sid,'frontdesk-autofill-v1',draft.edit_revision,before_data,after_data,gaps);
- return jsonb_build_object('status','draft_filled','draft_id',draft.id,'snapshot_id',sid,'revision',draft.edit_revision,
+ result:=jsonb_build_object('status','draft_filled','draft_id',draft.id,'snapshot_id',sid,'revision',draft.edit_revision,
   'cell_count',n,'filled_value_count',(select count(*) from jsonb_array_elements(cells)x where x->>'value' is not null),
   'needs_finance_review',true,'automatic_posting_enabled',false,'formal_ledger_amount_changed',false);
+ insert into public.zysyr_daily_autofill_status(shop_name,business_date,snapshot_id,result)
+ values(p_shop,p_day,sid,result) on conflict(shop_name,business_date) do update
+  set snapshot_id=excluded.snapshot_id,result=excluded.result,updated_at=now();
+ return result;
 end $$;
 revoke all on function public.mgj_autofill_daily_sheet(text,date) from public,anon,authenticated;
 grant execute on function public.mgj_autofill_daily_sheet(text,date) to service_role;

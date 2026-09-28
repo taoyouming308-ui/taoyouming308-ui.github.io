@@ -30,6 +30,8 @@ let browser;
   assert.equal(await page.locator('[data-column-code="grand_total"]').inputValue(),'');
   assert.equal(await page.locator('#grid img').count(),0,'employee names escaped');
   assert((await page.locator('[data-section="technician"][data-column-code="perm_count"]').first().getAttribute('title')).includes('收银明细'));
+  await page.evaluate(()=>{const sheet=state.imports.sheet;sheet.draft.ocr_raw_result={autofill:{active_staff_row_keys:['stylist_e11','technician_e22']}};sheet.cells.push({...sheet.cells[0],id:'old-preserved-cell',row_key:'stylist_1',row_label:'旧占位行',ocr_numeric:null});document.getElementById('grid').innerHTML=dailyPaperSheet()});
+  assert.equal(await page.locator('[data-row-label-input="stylist_1"]').count(),0,'archived old rows are not double-displayed');
   assert.equal(await page.locator('[data-column-code="perm"][data-section="stylist"]').first().inputValue(),'100');
   const spans=await page.locator('tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells).reduce((n,cell)=>n+cell.colSpan,0)));
   assert(spans.every(n=>n===25),'count layout preserves the 25-column January sheet: '+spans.join(','));

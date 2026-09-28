@@ -40,7 +40,7 @@ let started=false;
   source_method text not null constraint zysyr_daily_sheet_cells_source_method_check check(source_method in('blank_template','codex_local_candidate')),
   updated_by_user_id uuid not null,updated_at timestamptz not null default now(),unique(company_id,draft_id,section_code,row_key,column_code));
  create table public.zysyr_daily_sheet_attachments(id uuid default gen_random_uuid(),draft_id uuid);
- create table public.zysyr_daily_sheet_cell_changes(draft_id uuid);
+ create table public.zysyr_daily_sheet_cell_changes(draft_id uuid,cell_id uuid references public.zysyr_daily_sheet_cells(id) on delete restrict);
  create table public.test_locks(store_id uuid,report_date date);
  create function zysyr_private.period_is_locked(uuid,uuid,date) returns boolean language sql as $$select exists(select 1 from public.test_locks where store_id=$2 and report_date=$3)$$;
  create function zysyr_daily_electronic_private.protect_daily_electronic_evidence() returns trigger language plpgsql as $$begin raise exception 'DAILY_ELECTRONIC_EVIDENCE_IMMUTABLE';end$$;
@@ -72,18 +72,21 @@ let started=false;
  });
  const draft=sql(`select id from public.zysyr_daily_sheet_drafts where store_id='${xiang}' and report_date='${day}'`);
  check('idempotent same snapshot leaves revision/audit unchanged',()=>{assert.equal(autofill().status,'already_applied');ingest(payload());assert.equal(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`),'1');assert.equal(sql('select count(*) from public.zysyr_daily_autofill_events'),'1');});
- check('manual money and explicit blank survive newer source',()=>{
+ check('authorized unposted source fields replace manual overrides with before-image',()=>{
   sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=777 where draft_id='${draft}' and column_code='perm' and section_code='stylist' and cell_role='staff_value';
    update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=null where draft_id='${draft}' and column_code='alipay';`);
   ingest(payload('向里造型',day,20000));
-  assert.equal(sql(`select corrected_numeric from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code='perm' and cell_role='staff_value'`),'777');
-  assert.equal(value('alipay','payment','支付'),'100.00','old source value retained beneath explicit manual blank');
+  assert.equal(sql(`select manual_override from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code='perm' and cell_role='staff_value'`),'f');
+  assert.equal(value('perm'),'200.00');
+  assert.equal(value('alipay','payment','支付'),'100.00');
+  assert.equal(sql(`select count(*) from public.zysyr_daily_autofill_events e cross join lateral jsonb_array_elements(e.before_snapshot->'cells')c where e.draft_id='${draft}' and c->>'corrected_numeric'='777'`),'1');
   assert.equal(value('subtotal'),'200.00');
  });
  check('A to B to A source reversion is applied, not falsely deduplicated',()=>{ingest(payload());assert.equal(value('subtotal'),'100.00');assert.equal(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`),'3');});
- check('stable employee keys do not transfer manual values to newly sorted employee',()=>{
+ check('stable employee keys do not reassign rows to newly sorted employee',()=>{
+  const originalKey=sql(`select row_key from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code='perm' and cell_role='staff_value'`);
   const p=payload();p.bills[0].employee_allocations.push({...p.bills[0].employee_allocations[0],source_allocation_id:'9',employee_id:'1',employee_name:'新合成员工',performance_cents:1000});ingest(p);
-  assert.equal(sql(`select row_label from public.zysyr_daily_sheet_cells where draft_id='${draft}' and corrected_numeric=777`),'合成发型师');
+  assert.equal(sql(`select row_label from public.zysyr_daily_sheet_cells where draft_id='${draft}' and row_key=${q(originalKey)} and column_code='perm'`),'合成发型师');
  });
  check('unknown projects/counts and changed payment labels stay unknown',()=>{
   const p=payload();p.bills[0].items[0].item_name='褪色';p.bills[0].employee_allocations[1].source_project_count=null;
@@ -106,13 +109,20 @@ let started=false;
   sql(`insert into public.zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,updated_by_user_id)values('${company}','${free}','${freeDraft}','stylist','stylist_1','第1行','perm','烫',3,2,'staff_value','blank_template','${actor}');`);
   ingest(payload('自由手艺人'),'自由手艺人');assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_drafts where report_date='${day}'`),'2');
   assert.equal(sql(`select before_snapshot->'cells'->0->>'row_label' from public.zysyr_daily_autofill_events where draft_id='${freeDraft}'`),'第1行');
-  assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where draft_id='${freeDraft}' and row_key='stylist_1'`),'0');
+  assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where draft_id='${freeDraft}' and row_key='stylist_1'`),'1','old cell ID/history retained, not deleted');
+  assert.equal(sql(`select ocr_raw_result->'autofill'->'active_staff_row_keys' ? 'stylist_1' from public.zysyr_daily_sheet_drafts where id='${freeDraft}'`),'f');
  });
- check('confirmed, manually edited and original-bearing drafts preserved',()=>{
+ check('confirmed preserved; authorized manual/image drafts updated without removing evidence',()=>{
   for(const [date,status,provider,revision] of [['2026-09-24','confirmed','manual-entry',0],['2026-09-25','draft','manual-entry',1],['2026-09-26','draft','manual-entry',0]]){
    list('向里造型',date);sql(`insert into public.zysyr_daily_sheet_drafts(company_id,store_id,report_date,status,ocr_provider,ocr_model,edit_revision,created_by_user_id,updated_by_user_id)values('${company}','${xiang}','${date}','${status}','${provider}','manual-entry-v1',${revision},'${actor}','${actor}');`);
    if(date==='2026-09-26')sql(`insert into public.zysyr_daily_sheet_attachments(draft_id)select id from public.zysyr_daily_sheet_drafts where report_date='${date}'`);
-   ingest(payload('向里造型',date));assert.equal(sql(`select ocr_model from public.zysyr_daily_sheet_drafts where report_date='${date}'`),'manual-entry-v1');
+   if(date==='2026-09-25')sql(`insert into public.zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,ocr_numeric,manual_override,corrected_numeric,updated_by_user_id)select '${company}','${xiang}',id,'stylist','stylist_1','原人工员工','perm','烫发',3,2,'staff_value','blank_template',10,true,777,'${actor}' from public.zysyr_daily_sheet_drafts where report_date='${date}';insert into public.zysyr_daily_sheet_cell_changes(draft_id,cell_id) select draft_id,id from public.zysyr_daily_sheet_cells where row_label='原人工员工';`);
+   ingest(payload('向里造型',date));assert.equal(sql(`select ocr_model from public.zysyr_daily_sheet_drafts where report_date='${date}'`),status==='confirmed'?'manual-entry-v1':'frontdesk-autofill-v1');
+   if(date==='2026-09-26')assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_attachments a join public.zysyr_daily_sheet_drafts d on d.id=a.draft_id where d.report_date='${date}'`),'1');
+   if(date==='2026-09-25'){
+    assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cell_changes h join public.zysyr_daily_sheet_cells c on c.id=h.cell_id`),'1','cell IDs/history not removed');
+    assert.equal(sql(`select count(*) from public.zysyr_daily_autofill_events e cross join lateral jsonb_array_elements(e.before_snapshot->'cells')c where c->>'row_label'='原人工员工' and c->>'corrected_numeric'='777'`),'1','original manual amount archived exactly');
+   }
   }
  });
  check('locked period and stale live list cannot create/fill',()=>{
