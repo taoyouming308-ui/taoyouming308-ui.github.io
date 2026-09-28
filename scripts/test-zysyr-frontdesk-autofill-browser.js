@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {chromium}=require('playwright');
 const html=fs.readFileSync('operations.html','utf8');
-const source=html.slice(html.indexOf('  function dailyCellValue(cell)'),html.indexOf('function calculateDailyControls(root)'));
+const source=html.slice(html.indexOf('  function dailyCellValue(cell)'),html.indexOf('  function renderDailyControls()'));
 assert(source.includes('function dailyPaperSheet()'));
 let browser;
 (async()=>{
@@ -37,6 +37,17 @@ let browser;
   assert(spans.every(n=>n===25),'count layout preserves the 25-column January sheet: '+spans.join(','));
   await page.evaluate(()=>{const sheet=state.imports.sheet;sheet.cells[2].manual_override=true;sheet.cells[2].corrected_numeric=null;document.getElementById('grid').innerHTML=dailyPaperSheet()});
   assert.equal(await page.locator('[data-section="technician"][data-column-code="perm_count"]').first().inputValue(),'','explicit manual blank is not replaced with source');
+  await page.evaluate(()=>{const sheet=state.imports.sheet;sheet.draft.ocr_model='frontdesk-autofill-v2';
+    sheet.cells.push({...sheet.cells[0],id:'known-zero',column_code:'douyin',ocr_numeric:0},
+      {...sheet.cells[0],id:'unknown-color',column_code:'color',ocr_numeric:null});
+    document.getElementById('grid').innerHTML=dailyPaperSheet();});
+  const zero=page.locator('[data-section="stylist"][data-row-key="stylist_e11"][data-column-code="douyin"]');
+  assert.equal(await zero.inputValue(),'','known absence displays blank like January');
+  assert.equal(await zero.getAttribute('data-known-zero'),'1');
+  assert.equal(await page.locator('[data-section="stylist"][data-row-key="stylist_e11"][data-column-code="color"]').getAttribute('data-autofill-unknown'),'1');
+  const controls=await page.evaluate(()=>calculateDailyControls(document));
+  assert.deepEqual(controls.pendingRows,['stylist_e11']);assert.equal(controls.rowMismatch,0);
+  assert.equal(controls.valid,false,'partial source cannot enable confirmation');
   await page.evaluate(()=>{state.imports.sheet.draft.template_code='zysyr_daily_performance_photo';state.imports.sheet.draft.status='confirmed';state.imports.sheet.cells=[];document.getElementById('grid').innerHTML=dailyPaperSheet()});
   assert((await page.locator('#grid').innerText()).includes('基础烫发'),'old confirmed template remains unchanged');
   assert(!(await page.locator('#grid').innerText()).includes('烫（个）'));

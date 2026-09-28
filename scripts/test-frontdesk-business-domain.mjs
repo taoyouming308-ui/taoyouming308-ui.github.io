@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {projectBusinessDay} from '../supabase/functions/_shared/frontdesk-business-domain.mjs';
 const bill=JSON.parse(execFileSync('/usr/bin/python3',['-c','import json;from scripts.test_mgj_business_detail import normalized;print(json.dumps(normalized()))'],{encoding:'utf8'}));
+bill.items[0].item_code='205';bill.items[0].item_name='剪发79';
 const source={available:true,date:'2026-01-01',source_count:1,source_list_changed:false,bills:[bill]};
 const result=projectBusinessDay(source);
 assert.equal(result.posted_amount_cents,10000);
@@ -11,9 +12,10 @@ assert.equal(tech.metric_kind,'service_count');
 assert.equal(tech.performance_cents,null);
 assert.equal(tech.service_counts.other,1);
 assert.equal(tech.lines[0].performance_cents,undefined);
-for(const [name,expected] of [['健康烫发980','perm'],['健康染699','dye'],['歌薇酸护680','care'],['褪色','review']]){
+for(const [shop,code,name,expected] of [['1837032','324','健康烫发980','perm'],['1837032','439','健康染699','dye'],['1009951','512','歌薇酸护680','care'],['1837032','427','褪色','dye']]){
   const changed=structuredClone(bill);
   changed.items[0].item_name=name;
+  changed.shop_id=shop;changed.items[0].item_code=code;
   const projected=projectBusinessDay({...source,bills:[changed]});
   assert.equal(projected.employees.find(row=>row.source_role==='C级技师').service_counts[expected],1);
 }
@@ -23,5 +25,11 @@ assert.equal(projectBusinessDay({...source,source_list_changed:true}).posted_amo
 assert.throws(()=>projectBusinessDay({...source,source_count:2,bills:[bill,bill]}));
 assert.throws(()=>projectBusinessDay({...source,date:'2026-01-02'}));
 assert.equal(projectBusinessDay({available:false}).posted_amount_cents,null);
-assert.equal(result.employees[0].lines[0].item.item_name,'剪发');
+assert.equal(result.employees[0].lines[0].item.item_name,'剪发79');
+const combined=structuredClone(bill);
+combined.items=[{...combined.items[0],item_code:'427',item_name:'褪色'}, {...combined.items[0],source_item_id:'dye2',item_code:'439',item_name:'健康染699'}];
+combined.employee_allocations.push({...combined.employee_allocations[1],source_allocation_id:'tech2',source_item_id:'dye2'});
+assert.equal(projectBusinessDay({...source,bills:[combined]}).employees.find(x=>x.metric_kind==='service_count').service_counts.dye,1);
+const second=structuredClone(combined);second.source_bill_id='another-visit';
+assert.equal(projectBusinessDay({...source,source_count:2,bills:[combined,second]}).employees.find(x=>x.metric_kind==='service_count').service_counts.dye,2);
 console.log('Business projection: independent staff/payments, no double income, gaps and source freshness passed');

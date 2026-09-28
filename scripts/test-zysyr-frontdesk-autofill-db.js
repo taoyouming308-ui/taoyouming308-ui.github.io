@@ -1,5 +1,6 @@
 // Synthetic isolated PostgreSQL only; tmpfs, no network, no anonymous volumes.
 const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process');
+execFileSync(process.execPath,['scripts/build-daily-autofill-v2.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -145,6 +146,53 @@ let started=false;
   assert.equal(sql("select result->>'status' from public.zysyr_daily_autofill_status where shop_name='向里造型' and business_date='2026-09-22'"),'failed');
   assert.equal(sql("select count(*) from public.zysyr_daily_sheet_drafts where report_date='2026-09-22'"),'0');
   assert.equal(sql("select count(*) from public.mgj_business_detail_heads where business_date='2026-09-22'"),'1');
+ });
+ sql(fs.readFileSync('supabase/migrations/20260928084952_zysyr_daily_autofill_precise_v2.sql','utf8'));
+ check('v2 catalog exactly matches shared frontdesk routes, unknown names fail closed',()=>{
+  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
+  for(const [shop,code,name,category] of catalog)assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),category);
+  assert.equal(sql("select coalesce(zysyr_daily_electronic_private.report_project_category('1837032','324','改名不明产品'),'NULL')"),'NULL');
+ });
+ check('v1 same-snapshot upgrade runs once, stable cell IDs and confirmation guards survive',()=>{
+  list();
+  const p=payload();p.bills[0].items[0].item_code='324';ingest(p);
+  assert.equal(sql(`select ocr_model from public.zysyr_daily_sheet_drafts where id='${draft}'`),'frontdesk-autofill-v2');
+  const revision=sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`);
+  assert.equal(autofill().status,'already_applied');assert.equal(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`),revision);
+  assert.equal(autofill('向里造型','2026-09-24').status,'confirmed_preserved');
+  assert.equal(sql('select amount from public.legacy_income'),'2126');
+ });
+ check('mixed platform + cash: unique whole-item match reproduces January column convention',()=>{
+  const p=payload(),b=p.bills[0];b.source_posted_amount_cents=20000;
+  b.items=[{...b.items[0],item_code:'205',item_name:'剪发79',amount_cents:7000},{...b.items[0],source_item_id:'18',item_code:'311',item_name:'烫刘海400',amount_cents:13000}];
+  b.employee_allocations=[{...b.employee_allocations[0],performance_cents:7000},{...b.employee_allocations[0],source_allocation_id:'19',source_item_id:'18',performance_cents:13000}];
+  b.payments=b.payments.map(x=>({...x,amount_cents:x.source_field==='dianpin'?7000:x.source_field==='weixin'?13000:0}));
+  sql(`update public.mgj_daily_consumption set services='[{"source_id":"42","amount":200}]' where shop_name='向里造型' and business_date='${day}'`);ingest(p);
+  assert.equal(value('dianping_group'),'70.00');assert.equal(value('perm'),'130.00');assert.equal(value('subtotal'),'200.00');
+  // Equal-value competing items cannot be disambiguated by amount alone.
+  b.items[0].amount_cents=10000;b.items[1].amount_cents=10000;
+  b.payments=b.payments.map(x=>({...x,amount_cents:['dianpin','weixin'].includes(x.source_field)?10000:0}));ingest(p);
+  assert.equal(value('dianping_group'),'NULL');assert.equal(value('perm'),'NULL');
+ });
+ check('bleaching+dye counts one occasion, retains both performance amounts',()=>{
+  list();const p=payload(),b=p.bills[0];
+  b.items=[{...b.items[0],item_code:'427',item_name:'褪色',amount_cents:5000},{...b.items[0],source_item_id:'18',item_code:'439',item_name:'健康染699',amount_cents:5000}];
+  b.employee_allocations=b.employee_allocations.map(x=>({...x,performance_cents:5000,source_project_count:1}));
+  b.employee_allocations.push(...b.employee_allocations.map(x=>({...x,source_allocation_id:x.source_allocation_id+'second',source_item_id:'18'})));ingest(p);
+  assert.equal(value('color'),'100.00');assert.equal(value('subtotal'),'100.00');
+  assert.equal(value('dye_count','technician','合成技师'),'1.00');assert.equal(value('subtotal','technician','合成技师'),'1.00');
+ });
+ check('douyin payment channel not silently omitted; unknown label remains unknown',()=>{
+  const p=payload();p.bills[0].items[0].item_code='324';
+  p.bills[0].payments=p.bills[0].payments.map(x=>({...x,amount_cents:x.source_field==='otherfee2'?10000:0,source_label:x.source_field==='otherfee2'?'抖音':x.source_label}));ingest(p);
+  assert.equal(value('douyin'),'100.00');assert.equal(value('douyin','payment','支付'),'100.00');
+  p.bills[0].payments.find(x=>x.source_field==='otherfee2').source_label='其他新渠道';ingest(p);
+  assert.equal(value('douyin','payment','支付'),'NULL');
+ });
+ check('v2 helpers are private, audit append-only and confirmed reports remain unaltered',()=>{
+  for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.platform_item_routes(jsonb)','EXECUTE')`),'f');
+  assert.throws(()=>sql('delete from public.zysyr_daily_autofill_events'),/IMMUTABLE/);
+  assert.equal(sql("select ocr_model from public.zysyr_daily_sheet_drafts where status='confirmed'"),'manual-entry-v1');
  });
  console.log(`Frontdesk automatic drafts: ${checks} safety groups passed`);
 }finally{if(started)docker(['rm','-f','-v',name]);}})().catch(e=>{console.error(e.stderr||e);process.exitCode=1});
