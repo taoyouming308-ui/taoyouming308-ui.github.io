@@ -1,6 +1,7 @@
 // Synthetic isolated PostgreSQL only; tmpfs, no network, no anonymous volumes.
 const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process');
 execFileSync(process.execPath,['scripts/build-daily-autofill-v2.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v3.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -193,6 +194,52 @@ let started=false;
   for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.platform_item_routes(jsonb)','EXECUTE')`),'f');
   assert.throws(()=>sql('delete from public.zysyr_daily_autofill_events'),/IMMUTABLE/);
   assert.equal(sql("select ocr_model from public.zysyr_daily_sheet_drafts where status='confirmed'"),'manual-entry-v1');
+ });
+ sql(fs.readFileSync('supabase/migrations/20260928094856_zysyr_daily_autofill_cash_evidence_v3.sql','utf8'));
+ check('v3 same-source mapping upgrade runs once; compatible v2 paper marker and immutable audit',()=>{
+  const before=Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`));
+  assert.equal(autofill().status,'draft_filled');
+  assert.equal(Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`)),before+1);
+  assert.equal(sql(`select ocr_model from public.zysyr_daily_sheet_drafts where id='${draft}'`),'frontdesk-autofill-v2');
+  assert.equal(sql(`select ocr_raw_result#>>'{autofill,mapping_version}' from public.zysyr_daily_sheet_drafts where id='${draft}'`),'frontdesk-autofill-v3');
+  assert.equal(autofill().status,'already_applied');
+  assert.equal(autofill('向里造型','2026-09-24').status,'confirmed_preserved');
+ });
+ const cashEvidence=()=>{
+  const p=payload(),b=p.bills[0];b.items[0].item_code='324';b.gaps.push('payment_fields_missing');
+  const unknown=new Set(['cardfee','presentfee','treatfee','treatpresentfee','dividefee','offlineCreditPay','onlineCreditPay']);
+  b.payments=b.payments.map(x=>({...x,amount_cents:unknown.has(x.source_field)?null:x.source_field==='dianpin'?10000:0,known:!unknown.has(x.source_field)}));
+  b.employee_allocations=b.employee_allocations.map(a=>({...a,cash_performance_cents:a.performance_cents,card_performance_cents:0,other_performance_cents:0}));
+  return p;
+ };
+ check('explicit cash-only performance classifies single platform project without filling unknown card fields',()=>{
+  const p=cashEvidence();ingest(p);
+  assert.equal(value('dianping_group'),'100.00');assert.equal(value('perm'),'0.00');assert.equal(value('subtotal'),'100.00');
+  assert.equal(sql(`select count(*) from public.mgj_business_detail_heads h join public.mgj_business_detail_snapshots s on s.id=h.snapshot_id cross join lateral jsonb_array_elements(s.payload->'bills')b cross join lateral jsonb_array_elements(b->'payments')p where h.shop_name='向里造型' and h.business_date='${day}' and p->>'amount_cents' is null`),'7','source nulls were not rewritten as zero');
+  assert.equal(sql(`select (validation_result->>'valid')::boolean=false and (ocr_raw_result#>'{autofill,gaps}') ? 'payment_fields_missing' from public.zysyr_daily_sheet_drafts where id='${draft}'`),'t');
+  assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code in('card_consumption','cash_flow','actual_total','grand_total') and ocr_numeric is not null`),'0');
+ });
+ check('cash evidence fail-closed matrix: unknown cash, allocation components, refunds, wrong item or mixed pay',()=>{
+  const mutations=[
+   b=>{b.employee_allocations[0].cash_performance_cents=null;},
+   b=>{b.employee_allocations[0].card_performance_cents=1;},
+   b=>{b.employee_allocations[0].other_performance_cents=1;},
+   b=>{b.employee_allocations[0].cash_performance_cents-=1;},
+   b=>{b.payments.find(x=>x.source_field==='weixin').amount_cents=null;},
+   b=>{b.payments.find(x=>x.source_field==='cash').amount_cents=-1;},
+   b=>{b.items[0].amount_cents=9000;},
+   b=>{b.items.push({...b.items[0],source_item_id:'18'});},
+   b=>{b.employee_allocations=[];},
+   b=>{b.employee_allocations[0].source_item_id='wrong-item';},
+   b=>{b.payments.find(x=>x.source_field==='weixin').amount_cents=1000;b.source_posted_amount_cents=11000;b.items[0].amount_cents=11000;},
+   b=>{b.payments.push({source_field:null,amount_cents:null});},
+  ];
+  for(const mutate of mutations){const b=cashEvidence().bills[0];mutate(b);
+   assert.equal(sql(`select zysyr_daily_electronic_private.platform_item_routes(${q(JSON.stringify(b))}::jsonb)->>'7'`),'review');
+  }
+  for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.platform_item_routes(jsonb)','EXECUTE')`),'f');
+  assert.throws(()=>sql('delete from public.zysyr_daily_autofill_events'),/IMMUTABLE/);
+  assert.equal(sql('select amount from public.legacy_income'),'2126');
  });
  console.log(`Frontdesk automatic drafts: ${checks} safety groups passed`);
 }finally{if(started)docker(['rm','-f','-v',name]);}})().catch(e=>{console.error(e.stderr||e);process.exitCode=1});
