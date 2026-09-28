@@ -1,13 +1,15 @@
 # Agent Sync Status
 
-## 2026-09-28 · 收银明细自动填写草稿（App version: v584，已授权发布中）
+## 2026-09-28 · 收银明细自动填写草稿（App version: v584，云端已接通）
 
-- Last synchronized base checked: github/main `a12076c`，Current owner: Codex。工程归档已存在；当前云端 v583 未被本候选修改。
-- 用户已明确授权上线，并允许修改全部未入账日报。新增服务自动作者（NULL 不冒用用户）、独立不可改 source/cell before-after 审计和运行状态；固定门店/年份服务入口及源 head 触发，不增加美管加查询。已确认和锁账不动；原图/人工未入账表可更新，但原图、格子 ID、修改历史外键保留。旧员工数字归档清空，不把钱转成技师次数；新快照覆盖对应源字段，未映射字段和文字保留，稳定员工键与幂等保护。
-- 9/27 两店源已核验一致；向里草稿全空且修改记录 0，自由无草稿。1/1 向里标准已知洗剪吹/造型/烫发/点评/总业绩及支付栏目与纯投影一致，真实金额不发布到公开源码。仅已核实分类候选；全业务总额、现金流、卡金及未知仍空，不自动入账。技师新草稿用烫/染/护次数，旧版式不改。
-- Last Completed Work: PostgreSQL 15 组安全回归、390/1280 实际纸表渲染、旧版式兼容和 operations 静态回归通过。故障状态持久化而不回滚有效收银源。真实 `.githooks/pre-push` 全门禁通过（统一财务 87/87、其余 UI/同步/健康检查）；最终 SQL 索引和已证实零次数另行聚焦复测。Edge Deno/远程 CI、部署、两店真实草稿回读仍未完成；旧确认摘要留在受控核验结果，不发布原始业务数据。
-- Open Work For Next Agent: 授权已取得；新版 15 组回归及实际浏览器通过。CLI 2.109.1 linked dry-run 缺少 project ref，仅核对 MCP history，不能全库 push。正常推送并验收 API/Pages 后，仅应用已审阅单一迁移，再补两店 9/27、回读草稿/审计/旧确认及格子摘要；上线结果需独立记录。详见 `docs/frontdesk-daily-autofill-release.md`。
-- Handoff Rule: 代码测试、工程备份与真实财务草稿/入账是不同证据级别；保留人工数据，无法验证的格子不能填 0 或据岗位业绩编造收入。
+- Last synchronized base checked: github/main `16655226621d5d45ba05dbfc399ec6b53005f559`，Current owner: Codex。页面 v584、operations-api ACTIVE v113 和已审阅单一云端迁移均已发布。没有全库 push、强推或绕门禁；真实 pre-push 财务 87/87 通过，Validate #36367228288 与 Pages #36367227684 success。
+- 用户在明确说明具体三项影响后回复“允许以上三项”：三个系统作者字段允许 NULL、新增两张私有审计/状态表、同门店同日期 head 更新自动修改两店 2026 未入账草稿。再次提交 MCP apply_migration 成功，远端 history `20260928015608 zysyr_frontdesk_daily_autofill`；前一轮拦截没有通过其他通道绕过。
+- 9/27 自由手艺人 129 个自动源格（69 个数值）、向里造型 169 个自动源格（71 个数值）已真实持久化，均 draft/revision 1，源投影差异 0。向里原 472 格 ID 全保留，完整 before/after 留在不可改审计；两店重试 already_applied，不重复生成/加版本。真实财务金额、原文、业务 ID 不发布进公开文档。
+- 已具备详细来源的自由手艺人 1/1 未入账草稿已按最新授权更新；两店 9/28 建立无已核实数值的待核对草稿，空源不猜零。向里 1/1 已确认入口实测 confirmed_preserved。全年详细源仍只覆盖少量店日，原定夜间采集继续逐日补齐；不能宣称完整全年财务报表已完成。
+- 技师仅烫/染/护整数个数；线上非整数次数和其他技师自动金额字段计数均 0。发型师采用源分配业绩、可核实平台/项目分类；全业务总額、现金流、卡金、新老客及歧义分类仍空，validation.valid=false/needs_finance_review=true，不自动入账。电子凭证替代纸图的最终确认桥接仍是独立未完成模块。
+- Security/transaction evidence: 新表 RLS/force RLS true，anon/authenticated/service 直接 CRUD 均 false；新入口仅 service execute，固定公司/两店/2026 范围、search_path 空。trigger enabled=O，头推进后数据库内同步，无新美管加请求/轮询；草稿失败独立状态，不回滚合法源。Advisor 只有这两张故意无客户端策略的 INFO 新提示，无新增 WARN/ERROR；原密码保护 WARN 未擅改。
+- Online evidence: v584 日报 HTML/脚本/版本文件和 v113 全部在线文件已逐字核对，匿名接口 403；41 张旧确认表及 16164 格、正式收入/日报、确认版本/附件整体摘要在写入后与基线完全一致。浏览器连接超时，未伪造授权账号或宣称真实登录点击验收。
+- Open Work For Next Agent: 核验下一次自然收银 head 更新的自动触发状态（不要伪造 fresh timestamp）；真实财务页面点击验收；逐日历史详细源覆盖和缺字段口径补证。不得把项目消费草稿或工程备份称作完整财务报表/异地 DB 灾备，不据岗位业绩编造收入。详见 `docs/frontdesk-daily-autofill-release.md`。
 
 ## 2026-09-28 · 已授权明细同步提速（App version: v583，页面/接口不变）
 
