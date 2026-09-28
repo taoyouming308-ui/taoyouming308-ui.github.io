@@ -5518,7 +5518,9 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
         column_label: cell.column_label ?? null,
         changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }),
     locked: locks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId),
-    manual_entry_only: false, ai_candidates_review_only: true, final_confirmation_required: true, meiguanjia_used: false };
+    manual_entry_only: false, ai_candidates_review_only: true, final_confirmation_required: true,
+    meiguanjia_used: cleanText(draft.template_code,80) === "zysyr_frontdesk_project_draft",
+    automatic_posting_enabled: false };
 }
 
 async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {

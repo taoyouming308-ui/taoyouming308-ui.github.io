@@ -109,6 +109,10 @@
     grid().querySelectorAll('[data-row-label-input]').forEach(function (input) { input.readOnly = !writable; });
     var help = document.getElementById('daily-detail-candidates');
     help.textContent = pending && !confirmed ? '黄色为识别内容，请对照原图核对；点击“入账”时会一并保存核对结果。' : '';
+    if (sheet.draft.template_code === 'zysyr_frontdesk_project_draft' && !confirmed) {
+      help.textContent = '收银项目明细已自动填写，黄色为待核对数据；技师仅统计烫、染、护个数。'
+        + '空白不代表零：全业务总额、卡金及未分类项目仍需核对。本表未自动入账。';
+    }
     help.classList.toggle('hidden', !help.textContent);
     var reason = localBlockReason();
     document.getElementById('daily-detail-confirm-help').textContent = confirmed
