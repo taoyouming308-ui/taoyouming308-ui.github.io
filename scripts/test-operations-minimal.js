@@ -44,7 +44,7 @@ assert.doesNotMatch(html, /id="monthly-daily-performance"/);
       await page.setViewportSize({width,height});
       await page.goto(origin + '/operations.html?preview=1&role=finance&store=' + encodeURIComponent('界面预览门店'));
       await page.locator('#monthly-sheet .sheet-table').waitFor();
-      assert.equal(await page.locator('.topbar').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
+      assert.equal(await page.locator('.topbar').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(251, 250, 246)','report chrome uses the low-glare warm surface');
       const baseline = await page.evaluate(() => {
         const style = document.getElementById('operations-minimal-system');
         style.sheet.disabled = true;

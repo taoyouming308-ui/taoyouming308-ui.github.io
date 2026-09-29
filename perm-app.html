@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="588">
+<html lang="zh-CN" data-version="589">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#f3f2ed">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1050,6 +1050,23 @@ body {
   text-align: center;
 }
 
+  /* Warmer low-glare surfaces for the white app mode; semantic colors stay intact. */
+  :root{--soft-app-page:#f3f2ed;--soft-app-surface:#fbfaf6;--soft-app-surface-alt:#eeece5;--soft-app-line:#e2dfd6}
+  body.plan-white-mode,body.plan-white-mode .main,body.plan-white-mode #app-content,
+  body.plan-white-mode #tab-bookings,#tab-plans{background-color:var(--soft-app-page)!important}
+  body.plan-white-mode .booking-bar{background:var(--soft-app-surface-alt)!important}
+  body.plan-white-mode .booking-bar .shop-switch.on,
+  body.plan-white-mode .booking-item,body.plan-white-mode .booking-item.real-customer,
+  body.plan-white-mode .identity-modal .box,body.plan-white-mode .plan-modal .box,
+  body.plan-white-mode .identity-modal .opt,body.plan-white-mode .identity-modal .reg-form input,
+  body.plan-white-mode .plan-modal .close-btn,body.plan-white-mode .plan-modal .ai-btn{
+    background-color:var(--soft-app-surface)!important
+  }
+  body.plan-white-mode .booking-item,body.plan-white-mode .booking-item.real-customer{border-bottom-color:var(--soft-app-line)}
+  body.plan-white-mode .plan-page .result-card{background:var(--soft-app-surface)!important;border-color:var(--soft-app-line)}
+  body.plan-white-mode .plan-modal .suggestion,body.plan-white-mode .plan-modal .ai-result{background:var(--soft-app-surface-alt)}
+  body.hair-modal-open{background:var(--soft-app-page)!important}
+  body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
 <script src="staff-access-client.js?v=539"></script>
 <script src="employee-reports.js?v=539"></script>
@@ -3080,9 +3097,9 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="aesthetic-knowledge.v1.js?v=588"></script>
-<script src="hair-vision-training.v1.js?v=588"></script>
-<script src="aesthetic-growth.v2.js?v=588"></script>
+<script src="aesthetic-knowledge.v1.js?v=589"></script>
+<script src="hair-vision-training.v1.js?v=589"></script>
+<script src="aesthetic-growth.v2.js?v=589"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE

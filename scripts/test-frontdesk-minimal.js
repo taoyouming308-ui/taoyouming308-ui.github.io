@@ -74,7 +74,7 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
         const expected=parseFloat(s.getPropertyValue('--staff-col'))+(now.getHours()*60+now.getMinutes()-start)/30*parseFloat(s.getPropertyValue('--slot'));
         return Math.abs(e.offsetLeft-expected)<2;
       }),'current-time line follows responsive slot width');
-      assert.equal(await page.locator('header').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
+      assert.equal(await page.locator('header').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(251, 250, 246)','low-glare frontdesk header keeps its warm off-white surface');
       await page.locator('#schedule-right').click();
       await page.waitForFunction(()=>document.querySelector('#today-list').scrollLeft>0);
       await page.locator('#today-list').evaluate(e=>{e.scrollLeft=0;});
