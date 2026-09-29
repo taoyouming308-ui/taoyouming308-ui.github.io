@@ -1,12 +1,13 @@
 # Agent Sync Status
 
-## 2026-09-29 · 三个 App 柔和底色（App version: v589，页面样式已改，发布待验）
+## 2026-09-29 · 三个 App 柔和底色（App version: v589，已发布并核验）
 
 - Last synchronized base checked: GitHub main `0d1048b`（v588），fetch 与版本/发布完整性/交接检查通过；起始工作树干净，当日源码备份已存在。Current owner: Codex。
 - 收银中心将近黑底调为暖炭色；员工端预约/方案/弹窗纯白面改为浅暖灰与暖白；报表应用暖灰底和柔和卡片/导航底色。报表内原始表格纸面、警示状态色、文字对比、布局与业务行为不变。
 - Last Completed Work: 只改 `frontdesk.html`、`perm-app.html`、`operations.html` 的 CSS / 主题色和静态缓存版本，以及版本号、Changelog；未动数据、公式、API、权限、云端或同步任务。
 - Verification: `git diff --check`、版本/发布完整性/交接检查、`smoke-test-app.js`、`test-frontdesk.js`、`test-booking-ui.js`、`test-operations.js` 均通过。定向 Chromium 视觉回归无法启动：本机浏览器进程触发 SIGABRT（Chromium 和备用 WebKit 均如此），不是断言失败；按环境故障停止重试。
-- Open Work For Next Agent: 在可用浏览器环境完成定向视觉回归和完整仓库 pre-push，审阅差异后提交并按 GitHub 发布规则推送；确认 Pages 的 v589 三页已更新。当前未提交、未推送、未上线。
+- Release: commit `01251ee` 已推送至 GitHub `main`；完整 pre-push 通过。无缓存线上复查确认 `version.txt`、`perm-app.html`、`frontdesk.html`、`operations.html` 均为 v589。未强制刷新用户。
+- Open Work For Next Agent: 无；继续保持原始日报纸面白底，待后续用户反馈。
 - Handoff Rule: 保持字体和状态色对比；月报原始账表及工资纸表继续白底，避免改变原始凭证/表格的识读观感。
 
 ## 2026-09-29 · 现金口径 v4（App version: v588，已发布；两店9/27已填可用汇总）
