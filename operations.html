@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="590">
+<html lang="zh-CN" data-version="591">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -120,9 +120,9 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=590"></script>
-<script src="operations-staff-view.js?v=590"></script>
-<script src="operations-monthly-daily-performance.js?v=590"></script>
+<script src="operations-time.js?v=591"></script>
+<script src="operations-staff-view.js?v=591"></script>
+<script src="operations-monthly-daily-performance.js?v=591"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -608,10 +608,10 @@
       .sheet-scroll { box-shadow:none; }
     }
   </style>
-  <script src="operations-report-fit.js?v=590"></script>
-  <script src="operations-auth-bridge.js?v=590"></script>
-  <script src="operations-voucher-preview.js?v=590"></script>
-  <script src="operations-voucher-view.js?v=590"></script>
+  <script src="operations-report-fit.js?v=591"></script>
+  <script src="operations-auth-bridge.js?v=591"></script>
+  <script src="operations-voucher-preview.js?v=591"></script>
+  <script src="operations-voucher-view.js?v=591"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -775,7 +775,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=590';
+      script.src='operations-petty-cash-evidence.js?v=591';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1170,7 +1170,8 @@ function dailyPaperTh(cols){return cols.map(function(col){return '<th data-paper
 function dailyPaperHeader(cols,first){return'<tr class="paper-subhead"><th class="row-label">'+esc(first||'姓名')+'</th>'+dailyPaperTh(cols)+'</tr>'}
 function dailyBlank(count){var html='';while(count-->0)html+='<td class="paper-empty"></td>';return html}
 function dailyPaperSheet(){var sheet=state.imports.sheet,date=String(sheet.draft.report_date||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$1年$2月$3日'),service=[['dianping_group','点评团'],['douyin','抖音'],['wash_cut_blow','洗剪吹'],['makeup_styling','彩妆／造型'],['perm','烫发'],['color','染发'],['treatment','护理'],['technical_care','技护'],['scalp_care','头皮护理'],['beirou_care','倍柔护理'],['extensions','接发'],['retail','美发零售'],['essence_products','精华产品'],['wig_custom','假发定制／发片',2],['beauty_aids','美发辅助品'],['makeup_jewelry','彩妆+首饰'],['home_fragrance','家居品和香氛']],counts=[['old_count','老'],['new_count','新'],['card_count','卡类'],['treatment_card_count','疗程卡']],tech=[['extensions','接发'],['styling','造型'],['base_perm','基础烫发'],['technical_perm','技术烫发'],['base_color','基础染发'],['technical_color','技术染发'],['base_treatment','基础护理'],['treatment','护理'],['technical_care','技护'],['scalp_care','头皮护理'],['beirou_care','倍柔护理'],['zhenhei_care','臻黑护理'],['retail','美发零售'],['essence_products','精华产品'],['wig_custom','假发订制／发片',2],['beauty_aids','美发辅助品'],['makeup_jewelry','彩妆+首饰'],['home_fragrance','家居品和香氛']],summary=[['stylist_total','发型师栏'],['technician_total','技师栏',2],['nail_total','美甲师栏'],['frontdesk_total','前台栏'],['actual_total','实做',2],['treatment_card','疗程卡'],['qualification_card','资格卡'],['membership_card','会籍卡'],['card_subtotal','卡类小计'],['grand_total','总计',2]],payment=[['cash','现金'],['public_card','公-刷卡'],['public_qr','公-支微'],['private_card','私-刷卡'],['private_qr','私-支微'],['alipay','支付宝'],['wechat','微信'],['douyin','抖音'],['group_buy','团购'],['cash_flow','现金流'],['card_consumption','卡金消费'],['total','总计',2]],product=[['product_regular','普通产品'],['product_essence','精华产品'],['other_product','其他产品'],['retail_subtotal','零售小计']],serviceCodes=service.map(function(col){return col[0]}),techCodes=tech.map(function(col){return col[0]}),summaryCodes=summary.map(function(col){return col[0]}),paymentCodes=payment.map(function(col){return col[0]}),productCodes=product.map(function(col){return col[0]}),serviceLabels=service.map(function(col){return col[1]}),techLabels=tech.map(function(col){return col[1]}),summaryLabels=summary.map(function(col){return col[1]}),paymentLabels=payment.map(function(col){return col[1]}),productLabels=product.map(function(col){return col[1]}),stylist=dailySectionCells('stylist'),technician=dailySectionCells('technician'),productMap=dailySectionCells('product'),summaryMap=dailySectionCells('summary'),paymentMap=dailySectionCells('payment'),serviceRoles={},countRoles={},techRoles={},summaryRoles={},paymentRoles={},productRoles={product_regular:'product_value',product_essence:'product_value',other_product:'product_value',retail_subtotal:'product_total'},html='<div class="daily-grid-scroll"><table class="daily-grid"><tbody>';
-var techSpans=null;
+var techSpans=null,bankPayment=(sheet.cells||[]).some(function(cell){return cell.section_code==='payment'&&cell.row_key==='payment'&&cell.column_code==='bank_card'}),paymentGap=bankPayment?2:3,paymentStart=bankPayment?8:9;
+if(bankPayment){payment.unshift(['bank_card','银行卡']);paymentCodes=payment.map(function(col){return col[0]});paymentLabels=payment.map(function(col){return col[1]})}
 if(sheet.draft.template_code==='zysyr_frontdesk_project_draft'){
   tech=[['perm_count','烫（个）',6],['dye_count','染（个）',6],['care_count','护（个）',7]];
   techCodes=tech.map(function(col){return col[0]});techLabels=tech.map(function(col){return col[1]});
@@ -1191,9 +1192,9 @@ html+='<tr class="paper-subhead"><th class="row-label">姓名</th>'+dailyPaperTh
 dailySortedRows(productMap).forEach(function(row){html+='<tr>'+dailyLabelCell(row)+dailyPaperCells(row,productCodes,'product',productRoles,productLabels,2)+dailyBlank(20)+'</tr>'});
 var summaryRow=summaryMap.summary||dailySortedRows(summaryMap)[0]||{key:'summary',label:'汇总',order:30,section:'summary',cells:{}};
 html+='<tr class="total-row">'+dailyLabelCell(summaryRow)+dailyPaperCells(summaryRow,productCodes,'summary',productRoles,productLabels,2)+dailyBlank(3)+dailyPaperCells(summaryRow,summaryCodes,'summary',summaryRoles,summaryLabels,9,Object.fromEntries(summary.map(function(col){return[col[0],col[2]||1]})))+dailyBlank(4)+'</tr>';
-html+='<tr class="paper-subhead"><th class="row-label">姓名</th><th>美甲</th><th>产品</th><th>小计</th><th>签字</th>'+dailyBlank(3)+dailyPaperTh(payment)+dailyBlank(4)+'</tr>';
+html+='<tr class="paper-subhead"><th class="row-label">姓名</th><th>美甲</th><th>产品</th><th>小计</th><th>签字</th>'+dailyBlank(paymentGap)+dailyPaperTh(payment)+dailyBlank(4)+'</tr>';
 var paymentRow=paymentMap.payment||dailySortedRows(paymentMap)[0]||{key:'payment',label:'支付',order:33,section:'payment',cells:{}};
-html+='<tr class="total-row">'+dailyLabelCell(paymentRow)+dailyPaperInput(paymentRow.cells.nail,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'nail',columnLabel:'美甲',rowNumber:33,columnNumber:2,role:'payment_nail'})+dailyPaperInput(paymentRow.cells.product,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'product',columnLabel:'产品',rowNumber:33,columnNumber:3,role:'payment_product'})+dailyPaperInput(paymentRow.cells.subtotal,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'subtotal',columnLabel:'小计',rowNumber:33,columnNumber:4,role:'payment_subtotal'})+dailyPaperInput(paymentRow.cells.signature,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'signature',columnLabel:'签字',rowNumber:33,columnNumber:5,role:'signature'})+dailyBlank(3)+dailyPaperCells(paymentRow,paymentCodes,'payment',paymentRoles,paymentLabels,9,Object.fromEntries(payment.map(function(col){return[col[0],col[2]||1]})))+dailyBlank(4)+'</tr>';
+html+='<tr class="total-row">'+dailyLabelCell(paymentRow)+dailyPaperInput(paymentRow.cells.nail,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'nail',columnLabel:'美甲',rowNumber:33,columnNumber:2,role:'payment_nail'})+dailyPaperInput(paymentRow.cells.product,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'product',columnLabel:'产品',rowNumber:33,columnNumber:3,role:'payment_product'})+dailyPaperInput(paymentRow.cells.subtotal,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'subtotal',columnLabel:'小计',rowNumber:33,columnNumber:4,role:'payment_subtotal'})+dailyPaperInput(paymentRow.cells.signature,{section:'payment',rowKey:paymentRow.key,rowLabel:'支付',columnCode:'signature',columnLabel:'签字',rowNumber:33,columnNumber:5,role:'signature'})+dailyBlank(paymentGap)+dailyPaperCells(paymentRow,paymentCodes,'payment',paymentRoles,paymentLabels,paymentStart,Object.fromEntries(payment.map(function(col){return[col[0],col[2]||1]})))+dailyBlank(4)+'</tr>';
 html+='<tr class="paper-note"><td class="row-label">备注</td>'+dailyPaperInput(paymentMap.note&&paymentMap.note.cells.note,{section:'payment',rowKey:'note',rowLabel:'备注',columnCode:'note',columnLabel:'备注',rowNumber:34,columnNumber:2,role:'note'},24)+'</tr>';
 return html+'</tbody></table></div>'}
 function calculateDailyControls(root){
@@ -1416,9 +1417,9 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=590"></script>
-  <script src="operations-daily-electronic.js?v=590"></script>
-  <script src="operations-monthly-workbench.js?v=590"></script>
-  <script src="operations-daily-recognition.js?v=590"></script>
+  <script src="operations-daily-review.js?v=591"></script>
+  <script src="operations-daily-electronic.js?v=591"></script>
+  <script src="operations-monthly-workbench.js?v=591"></script>
+  <script src="operations-daily-recognition.js?v=591"></script>
 </body>
 </html>

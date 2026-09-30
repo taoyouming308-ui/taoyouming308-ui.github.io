@@ -21,13 +21,19 @@ let browser;
     cell('technician','technician_e22','<img src=x onerror=alert(1)>','dye_count','染（个）','technician_value',null),
     cell('technician','technician_e22','<img src=x onerror=alert(1)>','care_count','护（个）','technician_value',1),
     cell('technician','technician_e22','<img src=x onerror=alert(1)>','subtotal','烫染护合计（个）','technician_total',3),
-    cell('payment','payment','支付','alipay','支付宝','payment_method',100)]}}};
+    cell('payment','payment','支付','alipay','支付宝','payment_method',100),
+    cell('payment','payment','支付','bank_card','银行卡','payment_method',56)]}}};
   });
   await page.addScriptTag({content:source});await page.evaluate(()=>document.getElementById('grid').innerHTML=dailyPaperSheet());
   assert.equal(await page.locator('[data-section="technician"][data-column-code="perm_count"]').first().inputValue(),'2');
   assert.equal(await page.locator('[data-section="technician"][data-column-code="dye_count"]').first().inputValue(),'');
   assert.equal(await page.locator('[data-section="technician"][data-column-code="base_perm"]').count(),0);
   assert.equal(await page.locator('[data-column-code="grand_total"]').inputValue(),'');
+  assert.equal(await page.locator('[data-paper-column="bank_card"]').innerText(),'银行卡');
+  assert.equal(await page.locator('[data-column-code="bank_card"]').inputValue(),'56');
+  assert.equal(await page.locator('[data-column-code="public_card"]').inputValue(),'');
+  assert.equal(await page.evaluate(()=>calculateDailyControls(document).methodTotal),156);
+  assert.equal(await page.locator('[data-paper-column="cash"]').evaluate(el=>Array.from(el.parentNode.cells).slice(0,el.cellIndex).reduce((n,c)=>n+c.colSpan,0)+1),9,'new bank column uses spare cell, all existing payment positions preserved');
   assert.equal(await page.locator('#grid img').count(),0,'employee names escaped');
   assert((await page.locator('[data-section="technician"][data-column-code="perm_count"]').first().getAttribute('title')).includes('收银明细'));
   await page.evaluate(()=>{const sheet=state.imports.sheet;sheet.draft.ocr_raw_result={autofill:{active_staff_row_keys:['stylist_e11','technician_e22']}};sheet.cells.push({...sheet.cells[0],id:'old-preserved-cell',row_key:'stylist_1',row_label:'旧占位行',ocr_numeric:null});document.getElementById('grid').innerHTML=dailyPaperSheet()});
@@ -51,6 +57,7 @@ let browser;
   await page.evaluate(()=>{state.imports.sheet.draft.template_code='zysyr_daily_performance_photo';state.imports.sheet.draft.status='confirmed';state.imports.sheet.cells=[];document.getElementById('grid').innerHTML=dailyPaperSheet()});
   assert((await page.locator('#grid').innerText()).includes('基础烫发'),'old confirmed template remains unchanged');
   assert(!(await page.locator('#grid').innerText()).includes('烫（个）'));
+  assert.equal(await page.locator('[data-paper-column="bank_card"]').count(),0,'old confirmed sheets do not acquire a new bank column');
   await page.close();
  }
  console.log('Automatic draft browser: real paper rendering, count columns, blanks, manual overrides, escaping, 25-column layout and legacy compatibility passed');

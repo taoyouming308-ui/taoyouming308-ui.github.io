@@ -61,9 +61,9 @@ export function dailyCashCandidate(operating, allBusiness, cardSalesSource) {
   const gaps = [{code:'source_shop_not_echoed',blocking:true}, {code:'financial_review_required',blocking:true}];
   if (op[0] === null || all[0] === null || sales[0] === null) gaps.push({code:'cash_total_unknown',blocking:true});
   if (op.slice(1,10).some(v=>v === null)) gaps.push({code:'cash_channels_unknown',blocking:true});
-  // No unsupported mapping from 银联/商场卡/合作券/口碑 to one of the four
+  // No unsupported mapping from 商场卡/合作券/口碑 to one of the four
   // user-excluded account columns. Known nonzero values need a mapping review.
-  if ([2,6,7,8].some(i=>op[i] !== null && op[i] !== 0)) gaps.push({code:'unmapped_external_cash_channel',blocking:true});
+  if ([6,7,8].some(i=>op[i] !== null && op[i] !== 0)) gaps.push({code:'unmapped_external_cash_channel',blocking:true});
   const cardSales = sales[0];
   if (cardSales !== null && cardSales > 0) gaps.push({code:'card_sales_category_split_unavailable',blocking:true});
   const refs = sources.map(e=>({snapshot_id:e.snapshot_id,source_sha256:e.source_sha256,
@@ -79,7 +79,7 @@ export function dailyCashCandidate(operating, allBusiness, cardSalesSource) {
     cell('summary','grand_total','总计','summary_grand',all[0],[1],1),
     cell('payment','cash_flow','现金流','payment_cashflow',op[0],[1]),
     cell('payment','total','总计','payment_total',all[0],[1],1),
-    ...[['cash','现金',1],['alipay','支付宝',3],['wechat','微信',4],['group_buy','团购',5],['douyin','抖音',9]]
+    ...[['cash','现金',1],['bank_card','银行卡',2],['alipay','支付宝',3],['wechat','微信',4],['group_buy','团购',5],['douyin','抖音',9]]
       .map(([code,label,index])=>cell('payment',code,label,'payment_method',op[index],[index+1])),
   ];
   return {policy:CASH_POLICY,stage:'draft_candidate',status:'needs_review',shop_id:operating.shop_id,

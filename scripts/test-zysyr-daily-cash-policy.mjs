@@ -49,10 +49,19 @@ test('known total with missing channel is only a review candidate, null preserve
   assert.equal(value(r,'payment','alipay'),null);assert.equal(value(r,'summary','actual_total'),10000);
   assert(r.gaps.some(g=>g.code==='cash_channels_unknown'));
 });
-test('four excluded account columns never filled even for nonzero unionpay',()=>{
+test('unionpay maps only to independent bank card, excluded account columns untouched',()=>{
   const o=fixture(opScope),a=fixture(allScope);for(const e of[o,a]){e.source.content.data[0][1]='110';e.source.content.data[0][3]='10';}
-  const r=project(o,a);assert(r.gaps.some(g=>g.code==='unmapped_external_cash_channel'));
+  const r=project(o,a);assert(!r.gaps.some(g=>g.code==='unmapped_external_cash_channel'));
+  assert.equal(value(r,'payment','bank_card'),1000);
+  assert.equal(r.cells.find(c=>c.column_code==='bank_card').lineage[0].json_pointer,'/content/data/0/3');
+  assert.equal(value(r,'payment','alipay'),7000);assert.equal(value(r,'payment','wechat'),2000);
   assert(!r.cells.some(c=>['public_card','public_qr','private_card','private_qr'].includes(c.column_code)));
+});
+test('bank blank remains unknown and unsupported other channels still require review',()=>{
+  const o=fixture(opScope),a=fixture(allScope);o.source.content.data[0][3]='';
+  assert.equal(value(project(o,a),'payment','bank_card'),null);
+  for(const e of[o,a]){e.source.content.data[0][1]='110';e.source.content.data[0][3]='0';e.source.content.data[0][7]='10';}
+  assert(project(o,a).gaps.some(g=>g.code==='unmapped_external_cash_channel'));
 });
 test('known zero is not confused with missing evidence',()=>{const o=fixture(opScope),a=fixture(allScope);for(const e of[o,a]) e.source.content.data[0].fill('0',1);assert.equal(value(project(o,a),'summary','actual_total'),0)});
 test('same-store/day paired evidence required',()=>{
