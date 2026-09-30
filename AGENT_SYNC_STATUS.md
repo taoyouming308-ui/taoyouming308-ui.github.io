@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-09-30 · 报表门店默认顺序（App version: v592）
+
+- Last synchronized base checked: GitHub main `bfde9e9`（v591）；起始工作树干净，fetch、版本/完整性/交接检查通过，当日源码备份已存在。Current owner: Codex。
+- 仅在报表页对 `session.user.stores` 的本地副本排序；获授权多店账号默认“自由手艺人”，单店账号维持原门店。没有新增可访问门店，也不修改服务端鉴权、RLS、数据库或任何财务数据。
+- 增加浏览器回归，分别检查双店默认顺序和仅向里造型授权账号不出现自由手艺人；五种视口、股东只读与页面数据未变的本地 Chromium 回归通过。版本/完整性/交接检查与 `test-operations.js` 通过。发布后需核验 Pages 版本与线上文件；真实门店账号的最终显示仍需用户确认。
+- 回退：在更高版本中恢复原门店排序和默认选择；不需数据回滚。
+
 ## 2026-09-30 · 独立银行卡栏（App version: v591，用户已授权发布）
 
 - Last synchronized base checked: GitHub main `eda9737`（v590）；Current owner: Codex。起始工作树干净，fetch、版本、完整性和交接检查通过，当日源码归档已存在。此前 v590 Pages #36667029328、Validate #36667029744 均 success。

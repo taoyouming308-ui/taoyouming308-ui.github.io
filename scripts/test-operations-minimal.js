@@ -44,6 +44,22 @@ assert.doesNotMatch(html, /id="monthly-daily-performance"/);
       await page.setViewportSize({width,height});
       await page.goto(origin + '/operations.html?preview=1&role=finance&store=' + encodeURIComponent('界面预览门店'));
       await page.locator('#monthly-sheet .sheet-table').waitFor();
+      if (width === 1440) {
+        const storeChoices = await page.evaluate(() => {
+          const originalUser = state.user;
+          state.user = {...originalUser, store:'向里造型', stores:['向里造型','自由手艺人']};
+          showApp();
+          const multiStore = {options:Array.from(document.getElementById('store-select').options, option => option.value), selected:currentStore()};
+          state.user = {...originalUser, store:'向里造型', stores:['向里造型']};
+          showApp();
+          const singleStore = {options:Array.from(document.getElementById('store-select').options, option => option.value), selected:currentStore()};
+          state.user = originalUser;
+          showApp();
+          return {multiStore, singleStore};
+        });
+        assert.deepEqual(storeChoices.multiStore, {options:['自由手艺人','向里造型'], selected:'自由手艺人'}, 'authorized multi-store accounts default to 自由手艺人 first');
+        assert.deepEqual(storeChoices.singleStore, {options:['向里造型'], selected:'向里造型'}, 'single-store accounts must not gain access to another store');
+      }
       assert.equal(await page.locator('.topbar').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(251, 250, 246)','report chrome uses the low-glare warm surface');
       const baseline = await page.evaluate(() => {
         const style = document.getElementById('operations-minimal-system');
