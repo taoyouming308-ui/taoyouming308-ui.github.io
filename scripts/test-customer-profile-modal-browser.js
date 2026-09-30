@@ -18,7 +18,7 @@ let browser;
     await page.addScriptTag({content:modal+'\n'+archives});
     await page.evaluate(()=>{
       window.esc = value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      window.renderAiButton = ()=>'';
+      window.renderAiButton = ()=>'<button class="ai-btn" type="button">🤖 AI分析建议</button>';
       window.renderHairRecordReadOnly = ()=>'';
       window.updateAiButtonsAvailability = ()=>{};
       window.renderCustomerHistory = ()=>{};
@@ -63,6 +63,19 @@ let browser;
         assert(!(await page.locator('#plan-modal').innerText()).includes('异店护理'));
         assert.equal(await page.locator('.customer-read-scope').inputValue(),'store');
       }
+      for(const button of await page.locator('#plan-modal .close-btn, #plan-modal .ai-btn').all()) {
+        const contrast=await button.evaluate(el=>{
+          const style=getComputedStyle(el);
+          const rgb=value=>(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
+          const luminance=value=>rgb(value).map(channel=>{const c=channel/255;return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4;}).reduce((sum,c,index)=>sum+c*[0.2126,0.7152,0.0722][index],0);
+          const foreground=luminance(style.color),background=luminance(style.backgroundColor);
+          return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
+        });
+        assert(contrast>=4.5, 'customer modal button must remain legible at '+width+'px (contrast '+contrast.toFixed(2)+')');
+      }
+      const closeButton=page.locator('#plan-modal .close-btn');
+      await closeButton.click();
+      assert.equal(await page.locator('#plan-modal').count(),0,'close button dismisses customer modal');
     }
     await page.close();
   }
