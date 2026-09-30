@@ -73,15 +73,19 @@
   var monthlyBase=renderMonthlyAuditControls;
   renderMonthlyAuditControls=function(){monthlyBase.apply(this,arguments);var prior=document.querySelector('[data-monthly-rollup-warning]');if(prior)prior.remove();var report=state.data.monthly_report,cell=report&&(report.display_data.cells||[]).find(function(row){return row.daily_rollup;});if(!cell)return;var box=document.createElement('div');box.className='candidate-warning';box.dataset.monthlyRollupWarning='true';box.textContent='主营收入来自已确认日报 '+cell.daily_rollup.confirmed_days+' 天：'+formatAmount(cell.daily_rollup.amount)+'；原月报：'+formatAmount(cell.original_report_amount)+'。请核对日报是否录齐，点击收入可查看具体日期。';document.getElementById('report-state').appendChild(box);};
   var upload=document.getElementById('daily-detail-upload');
+  window.dailySourceIsSynced=function(sheet){return Boolean(sheet&&(sheet.draft.template_code==='zysyr_frontdesk_project_draft'||sheet.draft.ocr_provider==='frontdesk-autofill'||(sheet.draft.ocr_raw_result||{}).autofill||(sheet.cells||[]).some(function(c){return c.source_method==='frontdesk_autofill'})));};
   var button=document.createElement('button');button.type='button';button.className='daily-source-action recognize';button.innerHTML='<span class="action-label">Codex识别当前原图</span><span class="action-help">只生成待核对草稿，不会自动入账</span>';button.id='daily-recognize';upload.after(button);
   var status=document.getElementById('daily-source-action-status'),sourceBusy=false,sourceKind='',sourceDraftId='';
+  var comparison=document.createElement('div');comparison.id='daily-recognition-comparison';status.after(comparison);
+  var conflicts=document.createElement('div');conflicts.id='daily-sync-conflicts';comparison.after(conflicts);
+  function differenceList(rows,sourceKey){return rows.map(function(row){return '<li>'+esc(row.name)+' / '+esc(row.column)+'：当前 '+esc(row.current==null?'空白':row.current)+'；'+(sourceKey==='source'?'同步':'识别')+' '+esc(row[sourceKey]==null?'空白':row[sourceKey])+'</li>';}).join('');}
   function sourceButtonLabel(control,label,help,busyText){
     control.classList.toggle('is-busy',Boolean(busyText));
     control.innerHTML='<span class="action-label">'+esc(busyText||label)+'</span><span class="action-help">'+esc(help)+'</span>';
   }
   function sourceSync(){
     var sheet=state.imports.sheet,draftId=sheet&&sheet.draft&&sheet.draft.id||'';
-    if(sourceDraftId&&draftId!==sourceDraftId){sourceBusy=false;sourceKind='';status.className='daily-source-status';status.textContent='请选择原图上传；JPG / PNG 上传成功后会自动开始 Codex 识别。';}
+    if(sourceDraftId&&draftId!==sourceDraftId){sourceBusy=false;sourceKind='';comparison.innerHTML='';status.className='daily-source-status';status.textContent='同步日报上传只留凭证，识别仅供核对；空白日报可识别填写。';}
     sourceDraftId=draftId;
     var canUpload=Boolean(sheet&&sheet.permissions&&sheet.permissions.upload_original&&sheet.draft.status==='draft'&&!sheet.locked);
     var canRecognize=Boolean(sheet&&sheet.permissions&&sheet.permissions.write&&sheet.draft.status==='draft'&&!sheet.locked);
@@ -89,7 +93,10 @@
     upload.classList.toggle('hidden',!canUpload);button.classList.toggle('hidden',!canRecognize);
     upload.disabled=sourceBusy||!canUpload;button.disabled=sourceBusy||!canRecognize;
     sourceButtonLabel(upload,'上传 / 重传正确日报','支持 JPG、PNG、PDF、Excel',sourceBusy&&sourceKind==='upload'?'正在上传，请勿重复点击':'');
-    sourceButtonLabel(button,'Codex识别当前原图','只生成待核对草稿，不会自动入账',sourceBusy&&sourceKind==='recognize'?'正在识别，请勿重复点击':'');
+    var synced=window.dailySourceIsSynced(sheet);
+    sourceButtonLabel(button,synced?'Codex核对原图（不改表）':'Codex识别当前原图',synced?'只显示差异，不覆盖同步或人工金额':'只生成待核对草稿，不会自动入账',sourceBusy&&sourceKind==='recognize'?'正在识别，请勿重复点击':'');
+    var differences=sheet&&sheet.draft.ocr_raw_result&&sheet.draft.ocr_raw_result.autofill&&sheet.draft.ocr_raw_result.autofill.manual_conflicts||[];
+    conflicts.innerHTML=differences.length?'<details class="candidate-warning" open><summary>已保留人工修改：'+differences.length+'处与同步来源不同，请核对</summary><ul>'+differenceList(differences,'source')+'</ul></details>':'';
   }
   var sourceActions={
     busy:function(){return sourceBusy;},
@@ -119,6 +126,12 @@
         return;
       }
       if(dailySheetDirtyCount()){sourceActions.fail('识别期间有手工修改，本次结果未填入；请保存后重试。');return;}
+      if(result.saved&&result.saved.comparison_only){
+        var diffs=result.saved.differences||[];
+        comparison.innerHTML='<details class="candidate-warning" open><summary>原图核对：'+diffs.length+'处差异（未改动表格）</summary><p>识别可能出错，请对照原图与同步明细；需要修改时由财务手动确认保存。</p><ul>'+differenceList(diffs,'recognized')+'</ul></details>';
+        sourceActions.finish('原图核对完成，发现 '+diffs.length+' 处差异；同步数据、人工修改和姓名均未覆盖。'+(result.date_unconfirmed?' 原图日期未识别，请核对。':'')+(result.store_unconfirmed?' 原图门店未识别，请核对。':'')+(result.warnings||[]).join('；'),'success');
+        return;
+      }
       var filled=Number(result.saved&&result.saved.saved_cells||0),textFilled=Number(result.saved&&result.saved.saved_text_cells||0),nameFilled=Number(result.saved&&result.saved.saved_row_names||0),skipped=Number(result.saved&&result.saved.manual_cells_preserved||0),uncertain=[].concat(result.cells||[],result.text_cells||[],result.row_names||[]).filter(function(row){return Number(row.confidence)<.85;}).length;
       state.imports.sheet=result.sheet;state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
       document.getElementById('daily-detail-reason').value='对照日报原图核对图片识别草稿';

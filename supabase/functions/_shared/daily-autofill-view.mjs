@@ -3,6 +3,21 @@ const XIANG_STORE = '8d057980-ff8f-4b2c-9c7f-4dd23a568f35';
 const sourceRow = /^(stylist|technician)_e[0-9]+_[a-f0-9]{8}$/;
 const totalRow = /^(stylist|technician)_category_total$/;
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+export function isSyncedDailySheet(sheet) {
+  const d=sheet?.draft;
+  return d?.template_code==='zysyr_frontdesk_project_draft'||d?.ocr_provider==='frontdesk-autofill'
+    ||Boolean(d?.ocr_raw_result?.autofill)||Boolean(sheet?.cells?.some(c=>c.source_method==='frontdesk_autofill'));
+}
+function manualConflicts(metadata,cells) {
+  if(!Array.isArray(metadata?.manual_conflicts))return [];
+  const byId=new Map(cells.map(c=>[c.id,c]));
+  return metadata.manual_conflicts.slice(0,1000).flatMap(item=>{
+    const c=byId.get(item?.cell_id),v=item?.source_value;
+    if(!c?.manual_override||!(v===null||typeof v==='number'&&Number.isFinite(v)&&v>=0))return [];
+    const current=c.corrected_numeric==null?null:Number(c.corrected_numeric);
+    return current===v?[]:[{cell_id:c.id,name:c.row_label,column:c.column_label,current,source:v}];
+  });
+}
 function cashView(metadata) {
   const cash = metadata?.cash_receipts;
   if (!cash || cash.policy !== 'operating-external-cash-v1' || cash.state !== 'candidate'
@@ -28,7 +43,9 @@ export function dailyAutofillView(draft, cells, storeId) {
   const active = Array.isArray(supplied) && supplied.length <= 250 && supplied.every(allowedKey)
     ? [...new Set(supplied)].filter(key => sourceKeys.includes(key)) : sourceKeys;
   // Only this renderer contract is exposed; no raw OCR, bill payload or before-image.
-  safeDraft.ocr_raw_result = { autofill: { active_staff_row_keys: active, ...(cash ? { cash_receipts: cash } : {}) } };
+  const conflicts=manualConflicts(metadata,cells);
+  safeDraft.ocr_raw_result = { autofill: { active_staff_row_keys: active, ...(cash ? { cash_receipts: cash } : {}),
+    ...(conflicts.length?{manual_conflicts:conflicts}:{}) } };
   const displayCells = cells.map(cell => {
     // User-confirmed alias, exact store + source employee namespace only.
     // A manually renamed cell, another store or another employee stays unchanged.

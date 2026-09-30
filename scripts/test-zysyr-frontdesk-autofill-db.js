@@ -5,6 +5,7 @@ execFileSync(process.execPath,['scripts/build-daily-autofill-v3.mjs','--check'],
 execFileSync(process.execPath,['scripts/build-daily-autofill-v4.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v5.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v6.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v7.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -353,7 +354,7 @@ let started=false;
   }
  });
  check('observed care code is exact shop+code+name; latest JS and SQL catalogs agree',()=>{
-  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
+  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES_V5 as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
   for(const [shop,code,name,category]of catalog)assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),category);
   for(const [shop,code,name]of[['1009951','511','歌薇酸护480'],['1837032','511','未知项目'],['1837032','999','歌薇酸护480']])assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),'');
   const p=payload();p.bills[0].items[0].item_code='511';p.bills[0].items[0].item_name='歌薇酸护480';ingest(p);
@@ -384,6 +385,70 @@ let started=false;
   assert.equal(value('bank_card','payment','支付'),'0.00');
   for(const role of['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.cash_receipt_projection(uuid,uuid,date)','EXECUTE')`),'f');
   assert.equal(sql('select amount from public.legacy_income'),'2126');
+ });
+ sql(`alter table public.zysyr_daily_sheet_cells add column confidence numeric,add column row_label_confidence numeric,add column bbox jsonb;
+  alter table public.zysyr_daily_sheet_attachments add column company_id uuid,add column store_id uuid,add column voucher_id uuid,add column attachment_kind text;
+  alter table public.zysyr_daily_sheet_cell_changes add column company_id uuid,add column store_id uuid,add column before_label text,add column after_label text;
+  create table public.zysyr_voucher_attachments(id uuid,company_id uuid,store_id uuid,audit_status text,document_type text);
+  create table public.zysyr_audit_events(company_id uuid,store_id uuid,actor_type text,actor_user_id uuid,channel text,entity_type text,entity_id uuid,action text,before_json jsonb,after_json jsonb,reason text,sensitivity text);
+  create function zysyr_private.assert_finance_scope(uuid,uuid,uuid,text) returns void language plpgsql as $$begin if $1<>'${actor}' or $2<>'${company}' or $3<>'${xiang}' then raise exception 'SCOPE';end if;end$$;`);
+ sql(fs.readFileSync('supabase/migrations/20260930045230_zysyr_daily_source_protection_v7.sql','utf8'));
+ check('v7 confirmed care category and known-zero accessories close monetary columns',()=>{
+  assert.equal(sql("select zysyr_daily_electronic_private.report_project_category('1009951','523','歌薇酸护（盖白发）880')"),'treatment');
+  assert.equal(sql("select zysyr_daily_electronic_private.report_project_category('1837032','523','歌薇酸护（盖白发）880')"),'');
+  const p=payload('自由手艺人'),b=p.bills[0];
+  b.items[0].item_code='523';b.items[0].item_name='歌薇酸护（盖白发）880';
+  b.items.push({...b.items[0],source_item_id:'zero',item_code:'unknown',item_name:'未分类零元附项',amount_cents:0});
+  b.employee_allocations.push({...b.employee_allocations[0],source_allocation_id:'zero',source_item_id:'zero',performance_cents:0,source_project_count:0});
+  const rows=json(`select zysyr_daily_electronic_private.autofill_cells(${q(JSON.stringify({...p,bills:[b]}))}::jsonb)`);
+  assert.equal(rows.find(c=>c.row_key==='stylist_category_total'&&c.column_code==='treatment').value,100);
+  assert.equal(rows.find(c=>c.row_key==='stylist_category_total'&&c.column_code==='perm').value,0);
+  b.employee_allocations.at(-1).performance_cents=null;
+  const unknown=json(`select zysyr_daily_electronic_private.autofill_cells(${q(JSON.stringify({...p,bills:[b]}))}::jsonb)`);
+  assert.equal(unknown.find(c=>c.row_key==='stylist_category_total'&&c.column_code==='perm').value,null);
+ });
+ check('v7 human money, deliberate blank and row names survive resync with conflict evidence',()=>{
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=77,row_label='手填姓名' where draft_id='${draft}' and row_key='stylist_e11_'||substr(md5('设计师'),1,8) and column_code='treatment' and cell_role='staff_value';
+   update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=null where draft_id='${draft}' and column_code='alipay';`);
+  assert.equal(autofill().status,'draft_filled');
+  assert.equal(sql(`select corrected_numeric||'|'||manual_override||'|'||row_label from public.zysyr_daily_sheet_cells where draft_id='${draft}' and row_key='stylist_e11_'||substr(md5('设计师'),1,8) and column_code='treatment'`),'77|true|手填姓名');
+  assert.equal(sql(`select manual_override from public.zysyr_daily_sheet_cells where draft_id='${draft}' and column_code='alipay'`),'t');
+  assert.equal(sql(`select jsonb_array_length(ocr_raw_result#>'{autofill,manual_conflicts}') from public.zysyr_daily_sheet_drafts where id='${draft}'`),'2');
+  assert.equal(autofill().status,'already_applied');
+ });
+ const voucher='00000000-0000-4000-8000-000000000099';
+ sql(`insert into public.zysyr_voucher_attachments values('${voucher}','${company}','${xiang}','approved','daily_report');
+ insert into public.zysyr_daily_sheet_attachments(draft_id,company_id,store_id,voucher_id,attachment_kind) values('${draft}','${company}','${xiang}','${voucher}','original_report');`);
+ const cellId=sql(`select id from public.zysyr_daily_sheet_cells where draft_id='${draft}' and row_key='stylist_e11_'||substr(md5('设计师'),1,8) and column_code='subtotal'`);
+ const revision=()=>Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`));
+ const recognize=(rev=revision(),candidate={cells:[{id:cellId,value:999,confidence:.9}]},who=actor)=>json(`set role service_role;select public.zysyr_apply_daily_sheet_recognition_candidates('${who}','${company}','${xiang}','${draft}','${voucher}',${rev},${q(JSON.stringify(candidate))}::jsonb,'synthetic');`);
+ const digest=()=>sql(`select md5(string_agg(to_jsonb(c)::text,'' order by id)) from public.zysyr_daily_sheet_cells c where draft_id='${draft}'`);
+ check('synced recognition compares only; immutable audit saved and old-client expansion blocked',()=>{
+  const before=digest(),rev=revision();
+  const r=recognize();assert.equal(r.comparison_only,true);assert.equal(r.saved_cells,0);assert.equal(r.differences[0].recognized,999);
+  assert.equal(revision(),rev);assert.equal(digest(),before);
+  const ex=json(`set role service_role;select public.zysyr_expand_daily_sheet_staff_rows('${actor}','${company}','${xiang}','${draft}',${rev},20,20);`);
+  assert.equal(ex.added_rows,0);assert.equal(digest(),before);
+  assert.equal(sql(`select count(*) from public.zysyr_audit_events where action='daily_recognition_comparison_saved'`),'1');
+ });
+ check('comparison preserves scope, revision, period and confirmed gates',()=>{
+  assert.throws(()=>recognize(revision()-1),/DAILY_SHEET_CHANGED_RELOAD/);
+  assert.throws(()=>recognize(revision(),{cells:[{id:cellId,value:999,confidence:.9}]},voucher),/SCOPE/);
+  assert.throws(()=>recognize(revision(),{cells:[{id:cellId,value:-1,confidence:.9}]}),/DAILY_RECOGNITION_VALUE_INVALID/);
+  sql(`update public.zysyr_daily_sheet_drafts set status='confirmed' where id='${draft}'`);
+  assert.throws(()=>recognize(),/DAILY_SHEET_DRAFT_NOT_EDITABLE/);assert.equal(autofill().status,'confirmed_preserved');
+  sql(`update public.zysyr_daily_sheet_drafts set status='draft' where id='${draft}'`);
+  for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_private.daily_sheet_has_sync(uuid)','execute')`),'f');
+ });
+ check('unsynced blank sheet still accepts image candidates without touching human values',()=>{
+  const blank='00000000-0000-4000-8000-000000000098',blankCell='00000000-0000-4000-8000-000000000097';
+  sql(`insert into public.zysyr_daily_sheet_drafts(id,company_id,store_id,report_date,ocr_provider,ocr_model,source_voucher_id,created_by_user_id,updated_by_user_id) values('${blank}','${company}','${xiang}','2026-09-19','manual-entry','manual-entry-v1','${voucher}','${actor}','${actor}');
+   insert into public.zysyr_daily_sheet_cells(id,company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method)
+   values('${blankCell}','${company}','${xiang}','${blank}','stylist','stylist_1','空白','perm','烫发',3,2,'staff_value','blank_template');`);
+  const call=rev=>json(`set role service_role;select public.zysyr_apply_daily_sheet_recognition_candidates('${actor}','${company}','${xiang}','${blank}','${voucher}',${rev},'{"cells":[{"id":"${blankCell}","value":99,"confidence":0.9}]}','synthetic');`);
+  assert.equal(call(0).saved_cells,1);
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=88 where id='${blankCell}'`);
+  assert.equal(call(1).manual_cells_preserved,1);assert.equal(sql(`select corrected_numeric from public.zysyr_daily_sheet_cells where id='${blankCell}'`),'88');
  });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));

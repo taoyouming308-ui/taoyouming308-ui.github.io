@@ -65,6 +65,19 @@ async function run(){
     assert.match(await status.textContent(),/已按在职人数自动新增 3 行员工格子/);
     assert.match(await status.textContent(),/保留财务已填 2 项/);
     assert.equal(await upload.isEnabled(),true);assert.equal(await recognize.isEnabled(),true);
+    await page.evaluate(()=>{
+      state.imports.sheet.draft.template_code='zysyr_frontdesk_project_draft';
+      state.imports.sheet.draft.ocr_raw_result={autofill:{manual_conflicts:[{name:'合成员工',column:'护理',current:77,source:100}]}};
+      window.syncedBefore=JSON.stringify(state.imports.sheet);
+      api=async(operation)=>{if(operation!=='daily_sheet_recognize')throw Error('unexpected write');return {saved:{comparison_only:true,differences:[{name:'<img src=x>',column:'护理',current:77,recognized:100}]},warnings:[]};};
+      renderDailySheetDetail();
+    });
+    assert.match(await recognize.textContent(),/核对原图（不改表）/);
+    assert.match(await page.locator('#daily-sync-conflicts').textContent(),/当前 77；同步 100/);
+    await page.evaluate(()=>window.recognizeCurrentDaily());
+    assert.match(await page.locator('#daily-recognition-comparison').textContent(),/1处差异（未改动表格）/);
+    assert.equal(await page.locator('#daily-recognition-comparison img').count(),0);
+    assert.equal(await page.evaluate(()=>JSON.stringify(state.imports.sheet)===window.syncedBefore),true,'comparison cannot replace the current sheet');
     assert.deepEqual(errors,[]);await page.close();
   }
   console.log('ZYSYR v517 daily source actions: prominent mobile/desktop controls, single-flight feedback and completion state passed');

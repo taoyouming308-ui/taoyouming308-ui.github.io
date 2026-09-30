@@ -1,7 +1,7 @@
 // Offline generator: prints apply_patch, never writes files or contacts sources.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {REPORT_PROJECT_ROUTES as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
+import {REPORT_PROJECT_ROUTES_V5 as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
 const file='supabase/migrations/20260930034900_zysyr_daily_project_routes_v5.sql';
 const base=fs.readFileSync('supabase/migrations/20260928094856_zysyr_daily_autofill_cash_evidence_v3.sql','utf8');
 let helper=base.slice(base.indexOf('create or replace function zysyr_daily_electronic_private.platform_item_routes'),base.indexOf('alter table public.zysyr_daily_autofill_events'));

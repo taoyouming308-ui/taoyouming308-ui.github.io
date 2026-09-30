@@ -10,7 +10,7 @@ import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-su
 import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
 import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
-import { dailyAutofillView } from "../_shared/daily-autofill-view.mjs";
+import { dailyAutofillView, isSyncedDailySheet } from "../_shared/daily-autofill-view.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -5381,10 +5381,11 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     if (code === "DAILY_ENTRY_SCOPE_FORBIDDEN") throw new Error("当前账号无权为该门店上传日报原件");
     throw new Error(`原始日报登记失败 (${registered.status})`);
   }
-  return { ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)), attachment_uploaded: true,
+  const uploadedSheet=await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session);
+  return { ...uploadedSheet, attachment_uploaded: true,
     ai_recognition_enabled: ["image/jpeg", "image/png"].includes(mime),
     automatic_recognition_requested_by_client: ["image/jpeg", "image/png"].includes(mime)
-      && cleanText(drafts[0].status, 20) === "draft",
+      && cleanText(drafts[0].status, 20) === "draft" && !isSyncedDailySheet(uploadedSheet),
     candidate_only: true, finance_confirmation_required: true, formal_cells_unchanged: true };
 }
 
@@ -5602,7 +5603,7 @@ async function recognizeDailySheet(payload: JsonRecord, session: JsonRecord): Pr
     if (/技师|技工|助理/.test(position)) technicianNames.add(name);
   }
   const xiangli = /向里/.test(cleanText(store.name, 100));
-  const expanded = await financeRpcSaved("rpc/zysyr_expand_daily_sheet_staff_rows", {
+  const expanded = isSyncedDailySheet(sheet) ? {added_rows:0} : await financeRpcSaved("rpc/zysyr_expand_daily_sheet_staff_rows", {
     p_actor_user_id: cleanText(session.auth_account_id, 40),
     p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
     p_draft_id: draftId, p_expected_revision: Number(draft.edit_revision),
