@@ -28,10 +28,10 @@
       if (available <= 0 || natural <= 0) return;
       var scale = Math.min(1, available / natural);
       table.style.width = natural + 'px';
-      if (table.classList.contains('sheet-table')) {
+      if (table.classList.contains('sheet-table') || table.classList.contains('daily-grid')) {
         // WebKit enforces a minimum rendered font size under CSS zoom, so it
         // can enlarge glyphs without enlarging these fixed columns. Scale the
-        // laid-out monthly sheet as a whole instead, keeping every digit intact.
+        // laid-out monthly/daily sheet as a whole, keeping every digit intact.
         var stage = table.parentElement;
         if (!stage.classList.contains('report-fit-stage')) {
           stage = document.createElement('div'); stage.className = 'report-fit-stage';

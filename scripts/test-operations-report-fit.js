@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage({ isMobile: true, hasTouch: true });
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
-    const views = process.env.REPORT_FIT_WEBKIT ? ['monthly', 'salary-report'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
+    const views = process.env.REPORT_FIT_WEBKIT ? ['monthly', 'daily-report', 'salary-report'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
     for (const view of views) {
       await page.evaluate(async view => {
         await showView(view);
@@ -31,6 +31,10 @@ const server = http.createServer((req, res) => {
         }
         if (view === 'daily-report') {
           state.imports.sheet = previewDailySheetData(); renderDailySheetDetail();
+          document.querySelectorAll('#daily-detail-grid .daily-money-wrap input').forEach((input, index) => {
+            input.value = ['3560', '16759.24', '123456.78'][index % 3];
+            syncDailyAmountDisplay(input);
+          });
           // Restored job rendering must never make the hidden batch panel visible again.
           document.getElementById('daily-recognition-job').classList.remove('hidden');
         }
@@ -84,6 +88,32 @@ const server = http.createServer((req, res) => {
           assert(result.salaryFit.stageWidth <= result.salaryFit.wrapperWidth + 1, 'salary sheet stage must fit within its viewport');
           if (width === 390) await page.screenshot({ path: '/tmp/zysyr-salary-fit-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png', fullPage: true });
         }
+        if (view === 'daily-report') {
+          const amounts = await page.evaluate(() => {
+            const table = document.querySelector('#daily-detail-grid .daily-grid');
+            const canvas = document.createElement('canvas').getContext('2d');
+            const failures = Array.from(table.querySelectorAll('.daily-money-wrap input')).flatMap(input => {
+              const label = input.nextElementSibling, range = document.createRange();
+              range.selectNodeContents(label);
+              const text = range.getBoundingClientRect(), cell = input.closest('td').getBoundingClientRect();
+              const style = getComputedStyle(input);
+              canvas.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
+              const needed = canvas.measureText(input.value).width;
+              const available = input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+              return text.left < cell.left - .2 || text.right > cell.right + .2 || needed > available + .5
+                ? [{value:input.value, needed, available, text:text.toJSON(), cell:cell.toJSON()}] : [];
+            });
+            const sample = table.querySelector('.daily-money-wrap input');
+            return {failures:failures.slice(0,3), zoom:table.style.zoom, transform:table.style.transform,
+              appearance:getComputedStyle(sample).appearance, font:getComputedStyle(sample).fontSize};
+          });
+          assert.deepEqual(amounts.failures, [], 'daily amounts and editable cents must fit each cell at ' + width);
+          assert.equal(amounts.appearance, 'textfield', 'native number controls must not cover the last digit');
+          assert.equal(amounts.font, '12px', 'daily numbers keep a readable source size');
+          assert.equal(amounts.zoom, '1', 'daily input text must avoid WebKit CSS zoom inflation');
+          assert.match(amounts.transform, /^scale\(/);
+          if (width === 1920) await page.locator('#daily-detail-grid').screenshot({path:'/tmp/zysyr-daily-readable-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png'});
+        }
         assert(result.hiddenProgress);
         assert(!/user-scalable=no|maximum-scale=1/.test(result.viewport), 'native pinch zoom must remain available');
         if (view === 'daily-report' && width === 844) await page.screenshot({ path: '/tmp/zysyr-report-fit-phone-landscape.png', fullPage: true });
@@ -93,7 +123,17 @@ const server = http.createServer((req, res) => {
         assert.equal(await page.locator('.salary-paper input').first().evaluate(el => document.activeElement === el), true,
           'transformed salary inputs must remain interactive');
       }
+      if (view === 'daily-report') {
+        const input = page.locator('#daily-detail-grid .daily-money-wrap input').first();
+        await input.click();
+        assert.equal(await input.evaluate(el => document.activeElement === el), true, 'scaled daily input stays editable');
+        await input.fill('828.24');
+        await input.blur();
+        assert.equal(await input.inputValue(), '828.24', 'readability changes preserve the original cents');
+        assert.equal(await input.evaluate(el => el.nextElementSibling.textContent), '828', 'existing whole-yuan display remains intact');
+        await page.evaluate(() => { state.imports.dirty = {}; state.imports.dirtyLabels = {}; });
+      }
     }
-    console.log('Report fit (' + (process.env.REPORT_FIT_WEBKIT ? 'WebKit monthly/salary' : 'Chromium monthly/daily/salary/petty') + '): phone, rotated phone, iPad and desktop; full amounts do not overlap; browser zoom enabled.');
+    console.log('Report fit (' + (process.env.REPORT_FIT_WEBKIT ? 'WebKit monthly/daily/salary' : 'Chromium monthly/daily/salary/petty') + '): phone, rotated phone, iPad and desktop; full amounts do not overlap; daily editing preserves cents; browser zoom enabled.');
   } finally { await browser.close(); server.close(); }
 })().catch(error => { console.error(error); server.close(); process.exitCode = 1; });

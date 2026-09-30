@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-09-30 · 日报金额清晰显示（App version: v597）
+
+- Last synchronized base checked: GitHub main `c98f810`（v596）；Current owner: Codex。起始工作树干净，最新基线、版本/完整性/交接检查及当天源码备份检查完成。
+- Safari/WebKit 本地合成纸表复现数字末位被原生 number 步进箭头盖住；原输入和整数覆盖层字号均为 10px。移除日报数字步进箭头，数字改为 12px Arial/tabular-nums、表格最小宽度 1600px；沿用现有整表 fit，用与月报一致的 transform 缩放避免 Safari 字号膨胀。
+- 只调整报表显示；v596 整数展示、点击后原始角分、保存载荷、自动来源、财务计算、权限和数据库不变。员工/收银端只有全局版本及资源缓存标记同步。
+- 聚焦验证：Chrome 和 WebKit 八种尺寸/旋转的金额边界（含 123456.78 编辑值）、点击编辑 828.24 保留角分通过；两店桌面/手机日报保存与入账保护回归通过。完整真实 pre-push、Pages/CI 与无缓存回读在发布时核验；不把合成测试称为真实财务账号验收。
+- 回退：以更高版本恢复本次日报 CSS 与 fit 分支，不需数据回滚。
+
 ## 2026-09-30 · 日报金额整数展示（App version: v596）
 
 - 基于 github/main `b3e023b`（v595）；工作树干净、版本/完整性/交接检查通过，9/30 完整源码归档复用。Current owner: Codex。

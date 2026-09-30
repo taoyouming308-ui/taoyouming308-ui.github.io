@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="596">
+<html lang="zh-CN" data-version="597">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -29,7 +29,10 @@
     @media(max-width:900px){.shell{grid-template-columns:minmax(0,1fr);overflow:hidden}.sidebar{position:sticky;top:64px;z-index:20;width:auto;min-width:0;max-width:100%;overflow:hidden;padding:8px;border-right:0;border-bottom:1px solid var(--line)}.nav{display:flex;width:100%;min-width:0;max-width:100%;overflow-x:auto}.nav button{white-space:nowrap}.user-card{display:none}.content{width:auto;min-width:0;max-width:100%;overflow-x:hidden;overflow-y:visible;padding:12px}.view,.daily-review-layout,.daily-original,.daily-electronic,.daily-grid-scroll{width:100%;min-width:0;max-width:100%}.daily-review-layout,.daily-electronic{overflow:hidden}.upload-layout,.voucher-toolbar,.voucher-review-grid,.finance-grid,.daily-review-layout{grid-template-columns:minmax(0,1fr)}.topbar{flex-wrap:wrap}.toolbar{width:100%;margin-left:0}.sidebar{top:116px}.voucher-preview{min-height:320px}.voucher-preview img,.voucher-preview iframe{height:52vh}.voucher-fields{max-height:none}.daily-original{position:static}.daily-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:560px){.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.toolbar select{max-width:145px}.page-head{display:block}body{padding:10px}h1{font-size:19px;line-height:1.25}h2{font-size:17px}.topbar{padding:10px 12px}.nav button{padding:9px 10px;font-size:13px}.sheet-table td{font-size:10px;padding:2px 3px}.sheet-table td.sheet-title{font-size:13px;letter-spacing:0;height:34px}.daily-grid-scroll{overflow-x:auto}.daily-grid td{min-width:36px;font-size:9px;height:23px}.daily-grid th{min-width:36px}.daily-calendar{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:8px 0 14px}.daily-day{min-height:64px;padding:5px;gap:3px}.daily-day .day-num{font-size:12px}.daily-day .day-total{font-size:11px}.daily-month-summary{font-size:11px;gap:8px}.daily-month-bar button{padding:6px 8px;font-size:12px}.daily-month-bar select{max-width:150px}.daily-month-summary .help{display:none}.content{padding:4px 6px}.form-card,.panel{padding:12px}.finance-grid{gap:10px}.trace-row{font-size:11px;gap:8px}.candidate-warning{font-size:12px;padding:9px 11px}.archive-table th,.archive-table td{padding:8px 9px;font-size:11px}.voucher-table th,.voucher-table td{padding:8px 9px;font-size:11px}.finance-record-head{flex-wrap:wrap;gap:8px}.finance-grid{grid-template-columns:minmax(0,1fr)}.daily-review-layout{gap:10px}.daily-electronic,.daily-original{padding:8px}.daily-original-stage{max-height:50vh}.daily-day .day-sub{font-size:10px}}
   .daily-grid input.paper-text{text-align:left}.daily-grid .row-label input{width:100%;min-width:0;border:0;background:transparent;font-weight:800;text-align:center;padding:2px 0;font-size:11px;outline:0}
-  .daily-money-wrap{display:block;position:relative;width:100%;height:100%}.daily-grid .daily-money-wrap input:not(:focus){color:transparent}.daily-money-visible{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:2px;pointer-events:none;font-size:10px;font-variant-numeric:tabular-nums}.daily-money-wrap:focus-within .daily-money-visible{display:none}.daily-grid input.control-mismatch+.daily-money-visible{color:#8d2f25}
+  .daily-grid{min-width:1600px}
+  .daily-grid input[type="number"]{appearance:textfield;-moz-appearance:textfield;font-family:Arial,sans-serif;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}
+  .daily-grid input[type="number"]::-webkit-inner-spin-button,.daily-grid input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  .daily-money-wrap{display:block;position:relative;width:100%;height:100%}.daily-grid .daily-money-wrap input:not(:focus){color:transparent}.daily-money-visible{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:2px;pointer-events:none;font-family:Arial,sans-serif;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}.daily-money-wrap:focus-within .daily-money-visible{display:none}.daily-grid input.control-mismatch+.daily-money-visible{color:#8d2f25}
   .daily-month-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}.daily-month-bar input[type="month"],.daily-month-bar select{padding:6px 10px;border:1px solid #b8b5aa;border-radius:8px;font:inherit}
   .daily-calendar{display:grid;grid-template-columns:repeat(7,minmax(96px,1fr));gap:8px;margin:10px 0 18px}.daily-cal-head{font-size:12px;font-weight:800;color:#6d6a60;text-align:center;padding:6px 0;border-bottom:2px solid #e3e0d6}
   .daily-day{border:1px solid #e3e0d6;border-radius:10px;background:#fff;min-height:92px;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:5px;align-items:stretch;text-align:left}
@@ -121,9 +124,9 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=596"></script>
-<script src="operations-staff-view.js?v=596"></script>
-<script src="operations-monthly-daily-performance.js?v=596"></script>
+<script src="operations-time.js?v=597"></script>
+<script src="operations-staff-view.js?v=597"></script>
+<script src="operations-monthly-daily-performance.js?v=597"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -609,10 +612,10 @@
       .sheet-scroll { box-shadow:none; }
     }
   </style>
-  <script src="operations-report-fit.js?v=596"></script>
-  <script src="operations-auth-bridge.js?v=596"></script>
-  <script src="operations-voucher-preview.js?v=596"></script>
-  <script src="operations-voucher-view.js?v=596"></script>
+  <script src="operations-report-fit.js?v=597"></script>
+  <script src="operations-auth-bridge.js?v=597"></script>
+  <script src="operations-voucher-preview.js?v=597"></script>
+  <script src="operations-voucher-view.js?v=597"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -777,7 +780,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=596';
+      script.src='operations-petty-cash-evidence.js?v=597';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1422,9 +1425,9 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=596"></script>
-  <script src="operations-daily-electronic.js?v=596"></script>
-  <script src="operations-monthly-workbench.js?v=596"></script>
-  <script src="operations-daily-recognition.js?v=596"></script>
+  <script src="operations-daily-review.js?v=597"></script>
+  <script src="operations-daily-electronic.js?v=597"></script>
+  <script src="operations-monthly-workbench.js?v=597"></script>
+  <script src="operations-daily-recognition.js?v=597"></script>
 </body>
 </html>
