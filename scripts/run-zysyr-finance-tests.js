@@ -49,7 +49,7 @@ try {
     process.exit(0);
   }
   for (const [index, step] of manifest.steps.entries()) {
-    const command = step.runtime === 'node' ? process.execPath : (process.env.PYTHON || 'python3');
+    const command = step.runtime === 'node' ? process.execPath : (process.env.ZYSYR_HOOK_PYTHON || process.env.PYTHON || 'python3');
     const args = step.runtime === 'node'
       ? [path.join(__dirname, step.script)]
       : step.args;
