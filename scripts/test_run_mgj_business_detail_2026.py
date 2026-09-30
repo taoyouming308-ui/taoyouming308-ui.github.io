@@ -15,6 +15,13 @@ class ScheduleTests(unittest.TestCase):
         root = Path(self.tmp.name)
         self.state, self.lock = root / 'state.json', root / 'lock'
         self.calls = []
+        self.cash_calls = []
+
+    def cash(self, shop, day, **kwargs):
+        self.cash_calls.append((shop, day, kwargs))
+        return {'status':'needs_review', 'scopes':[
+            {'scope':task.sync.signed.SCOPE_NAMES[key], 'status':'accepted'}
+            for key in task.sync.signed.selected_scopes('cash')]}
 
     def call(self, shop, day, **kwargs):
         self.calls.append((shop, day, kwargs))
@@ -23,7 +30,7 @@ class ScheduleTests(unittest.TestCase):
     def run_at(self, shop, hour, epoch, runner=None):
         now = datetime(2026, 9, 28, hour, 17, tzinfo=task.TZ)
         return task.run_slot(shop, now=now, epoch=epoch, state_path=self.state, lock_path=self.lock,
-                             runner=runner or self.call, source_ready=lambda: True, backoff_reader=lambda: {})
+                             runner=runner or self.call, source_ready=lambda: True, backoff_reader=lambda: {}, cash_runner=self.cash)
 
     def test_daytime_prioritizes_today_and_limits_15_minutes(self):
         result = self.run_at('1009951', 11, 100000)
@@ -82,7 +89,7 @@ class ScheduleTests(unittest.TestCase):
         now=datetime(2026,9,28,6,0,tzinfo=task.TZ)
         def run(epoch):
             return task.run_slot(mode='history',now=now,epoch=epoch,state_path=self.state,lock_path=self.lock,
-                                 runner=self.call,source_ready=lambda:True,backoff_reader=lambda:{})
+                                 runner=self.call,source_ready=lambda:True,backoff_reader=lambda:{},cash_runner=self.cash)
         self.assertEqual(run(100000)['shop'],'1009951')
         self.assertEqual(run(100299)['status'],'yielded_cadence_limit')
         self.assertEqual(run(100301)['shop'],'1837032')
@@ -118,6 +125,37 @@ class ScheduleTests(unittest.TestCase):
         target=task.target_date('1009951',task.empty_state(),datetime(2027,1,2,6,0,tzinfo=task.TZ),'history')
         self.assertEqual(target,('2026-12-31',True))
         self.assertEqual(task.progress(task.empty_state(),now.date())['past_store_days'],730)
+
+    def test_legacy_finalized_detail_gets_cash_without_requerying_bills(self):
+        state=task.empty_state()
+        state['pairs']['1009951:2026-09-27']={'finalized':True,'source_count':26}
+        task.save_state(state,self.state)
+        result=self.run_at('1009951',6,100000)
+        self.assertEqual(result['date'],'2026-09-27')
+        self.assertEqual(self.calls,[])
+        self.assertEqual(len(self.cash_calls),1)
+        self.assertEqual(self.cash_calls[0][:2],('1009951','2026-09-27'))
+        self.assertTrue(task.read_state(self.state)['pairs']['1009951:2026-09-27']['cash_finalized'])
+
+    def test_missing_cash_is_deferred_without_zero_or_blocking_history(self):
+        now=datetime(2026,9,28,6,0,tzinfo=task.TZ)
+        value=task.run_slot('1009951',now=now,epoch=100000,state_path=self.state,lock_path=self.lock,
+            runner=self.call,source_ready=lambda:True,backoff_reader=lambda:{},
+            cash_runner=lambda *a,**k:{'status':'partial','scopes':[{'scope':'card_sales_daily_summary','status':'missing_source'}]})
+        pair=task.read_state(self.state)['pairs']['1009951:2026-09-27']
+        self.assertTrue(pair['finalized'])
+        self.assertFalse(pair['cash_finalized'])
+        self.assertEqual(value['cash_status'],'partial')
+        self.assertEqual(task.target_date('1009951',task.read_state(self.state),now,'history'),('2026-01-01',True))
+
+    def test_details_and_cash_share_bounded_source_budget(self):
+        ticks=iter([100,181])
+        value=task.run_slot('1009951',now=datetime(2026,9,28,11,0,tzinfo=task.TZ),epoch=100000,
+            state_path=self.state,lock_path=self.lock,runner=self.call,cash_runner=self.cash,
+            source_ready=lambda:True,backoff_reader=lambda:{},monotonic=lambda:next(ticks))
+        self.assertEqual(value['cash_status'],'budget_exhausted')
+        self.assertEqual(self.cash_calls,[])
+        self.assertFalse(task.read_state(self.state)['pairs']['1009951:2026-09-28']['cash_finalized'])
 
 
 if __name__ == '__main__':

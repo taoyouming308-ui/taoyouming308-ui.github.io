@@ -21,12 +21,24 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright'),{exe
   await page.locator('.business-columns details').first().locator('summary').click();
   assert.match(await page.locator('.business-columns').innerText(),/剪发/);
   for(const width of [1280,768,390]){await page.setViewportSize({width,height:800});assert(await page.locator('#business-details').evaluate(el=>el.getBoundingClientRect().width<=innerWidth));}
+  await page.evaluate(()=>{window.previousEmployee=document.querySelector('.business-columns details');window.FrontdeskBusinessDetails.init({api:()=>new Promise(resolve=>window.silentResolve=resolve),scope:()=>({...window.testScope})});window.FrontdeskBusinessDetails.refresh();});
+  assert.match(await page.locator('#business-details-content').innerText(),/TEST_STYLIST/,'refresh retains existing content while pending');
+  assert.doesNotMatch(await page.locator('#business-details-content').innerText(),/正在读取/);
+  await page.evaluate(()=>window.silentResolve(window.testData));
+  await page.waitForTimeout(30);
+  assert(await page.evaluate(()=>window.previousEmployee===document.querySelector('.business-columns details')),'unchanged response preserves DOM identity');
+  assert(await page.locator('.business-columns details').first().evaluate(el=>el.open),'unchanged response preserves expanded employee');
+  await page.evaluate(async()=>{window.testData=JSON.parse(JSON.stringify(window.testData));window.testData.employees[0].performance_cents+=500;window.FrontdeskBusinessDetails.init({api:async()=>window.testData,scope:()=>({...window.testScope})});await window.FrontdeskBusinessDetails.refresh();});
+  assert(await page.locator('.business-columns details').first().evaluate(el=>el.open),'changed amounts preserve expanded employee');
+  await page.evaluate(async()=>{window.FrontdeskBusinessDetails.init({api:async()=>{throw new Error('temporary failure');},scope:()=>({...window.testScope})});await window.FrontdeskBusinessDetails.refresh();});
+  assert.match(await page.locator('#business-details-content').innerText(),/TEST_STYLIST/,'background failure keeps the last data');
+  assert.match(await page.locator('#business-details-content').innerText(),/保留上次明细/);
   await page.evaluate(()=>{window.FrontdeskBusinessDetails.init({api:()=>new Promise(resolve=>window.lateResolve=resolve),scope:()=>({...window.testScope})});window.FrontdeskBusinessDetails.refresh();});
   await page.evaluate(()=>{window.testScope.store='自由手艺人';window.lateResolve(window.testData);});
   await page.waitForTimeout(30);assert.doesNotMatch(await page.locator('#business-details-content').innerText(),/TEST_STYLIST/);
   await page.evaluate(()=>window.FrontdeskBusinessDetails.clear());
   assert.equal(await page.locator('#business-details-content').innerText(),'');
   assert.equal(await page.locator('#business-details').evaluate(el=>el.open),false);
-  console.log('Business browser: staff/item/payment display, mobile widths, stale scope rejection and logout clearing passed');
+  console.log('Business browser: silent refresh, expanded rows, unchanged DOM, failure retention, mobile widths, scope isolation and logout clearing passed');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -2,7 +2,7 @@
 // files, contacts the database or changes sources. Canonical v1 remains intact.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {REPORT_PROJECT_ROUTES as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
+import {REPORT_PROJECT_ROUTES_V2 as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
 const file='supabase/migrations/20260928084952_zysyr_daily_autofill_precise_v2.sql';
 const old=fs.readFileSync('supabase/migrations/20260928005448_zysyr_frontdesk_daily_autofill.sql','utf8');
 const q=s=>"'"+s.replaceAll("'","''")+"'";

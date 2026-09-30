@@ -29,6 +29,14 @@ def money_cents(value):
         amount = Decimal(str(value)) * 100
     except InvalidOperation:
         raise ValueError("invalid_money") from None
+    # MGJ JSON allocations can contain IEEE-754 cancellation residue, e.g.
+    # 249.99999999999997 and 2.842170943040401e-14. Only numeric float noise
+    # within 1e-7 of a cent is canonicalized; real fractional cents and
+    # decimal strings remain subject to the exact-cent validation below.
+    if isinstance(value, float) and amount.is_finite():
+        nearest = amount.to_integral_value()
+        if abs(amount - nearest) <= Decimal("0.0000001"):
+            amount = nearest
     if not amount.is_finite() or amount != amount.to_integral_value() or abs(amount) > 9007199254740991:
         raise ValueError("invalid_money")
     return int(amount)

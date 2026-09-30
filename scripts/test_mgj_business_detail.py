@@ -70,6 +70,20 @@ class BusinessDetailTests(unittest.TestCase):
         with self.assertRaises(EmployeeIdentityError):
             employee_index([{"empId": 1, "dutyname": "A"}, {"empId": 1, "dutyname": "B"}])
 
+    def test_source_float_residue_does_not_block_the_whole_day(self):
+        source = fixture()
+        source['empfees'][0].update(fee=250, cashFee=249.99999999999997,
+                                   cardFee=0, otherFee=2.842170943040401e-14)
+        row = normalized(source)['employee_allocations'][0]
+        self.assertEqual(row['cash_performance_cents'], 25000)
+        self.assertEqual(row['other_performance_cents'], 0)
+        self.assertEqual(row['performance_cents'], sum(row[k] for k in
+            ('cash_performance_cents', 'card_performance_cents', 'other_performance_cents')))
+        self.assertEqual(business.money_cents(-249.99999999999997), -25000)
+        for value in (249.9999, 0.001, 0.005, '249.99999999999997', '0.000000000001'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                business.money_cents(value)
+
     def test_fallback_only_without_primary(self):
         self.assertEqual(set(employee_index([{"empId": 21, "id": 999}])), {"21"})
         self.assertEqual(set(employee_index([{"id": 999}])), {"999"})

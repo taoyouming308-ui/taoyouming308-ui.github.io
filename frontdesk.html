@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="589">
+<html lang="zh-CN" data-version="590">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=589">
+  <link rel="stylesheet" href="frontdesk-minimal.css?v=590">
 </head>
 <body>
   <div class="login" id="login">
@@ -282,7 +282,7 @@
   <div class="overlay hidden" id="ledger-form-overlay"><div class="drawer"><div class="drawer-head"><h3>编辑前台数据</h3><button class="drawer-close" type="button" data-close="ledger-form-overlay">×</button></div><form id="ledger-form" style="padding-top:18px"><input type="hidden" id="ledger-record-type"><input type="hidden" id="ledger-record-id"><div class="today-summary"><div><label>客户</label><b id="ledger-record-customer">—</b></div><div><label>记录来源</label><b id="ledger-record-source">—</b></div></div><div class="form-grid"><div class="form-field wide"><label for="ledger-service">项目</label><input id="ledger-service" maxlength="500" placeholder="剪发、烫发、染发等"></div><div class="form-field"><label for="ledger-barber">发型师</label><input id="ledger-barber" list="today-barber-list"></div><div class="form-field"><label for="ledger-technician">技师</label><input id="ledger-technician" list="today-technician-list"></div><div class="form-field"><label for="ledger-assistant">助理</label><input id="ledger-assistant" list="today-assistant-list"></div><div class="form-field"><label for="ledger-amount">实际金额（元）</label><input id="ledger-amount" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></div><div class="form-field"><label for="ledger-payment-summary">金额说明</label><input id="ledger-payment-summary" maxlength="500" placeholder="现金、微信、优惠、套餐扣次等"></div><div class="form-field wide" id="ledger-notes-field"><label for="ledger-notes">当天备注</label><textarea id="ledger-notes" maxlength="800"></textarea></div></div><div class="notice" style="margin-top:16px"><strong>修改前台独立数据</strong>金额和说明会更新到客户数据表；原始上传表格内容、客户主档和美管加收银数据保持不变。</div><div class="form-actions"><button class="ghost" type="button" data-close="ledger-form-overlay">取消</button><button class="primary" id="ledger-save-btn" type="submit">保存修改</button></div></form></div></div>
   <div class="toast hidden" id="toast"></div>
 
-  <script src="frontdesk-business-details.js?v=589"></script>
+  <script src="frontdesk-business-details.js?v=590"></script>
   <script>
   (function(){
     'use strict';
@@ -396,24 +396,27 @@
       var names=[],seen={};(data.barbers||[]).concat(rows.map(function(row){return row.barber||'未分配发型师';})).forEach(function(name){name=name||'未分配发型师';if(!seen[name]){seen[name]=true;names.push(name);}});
       $('today-caption').textContent=rows.length+' 位客户 · '+names.length+' 位发型师 · '+(data.store||state.store);
       $('sync-label').textContent=complete&&data.synced_at?'消费数据 '+new Date(data.synced_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+(data.consumption_stale?' · 待更新':' 更新'):'完整消费数据待同步';
-      var container=$('today-list'),previousScroll=container.querySelector('.schedule-grid')?container.scrollLeft:null;if(!names.length){container.innerHTML='<div class="empty"><b>当前门店没有在职发型师</b>请先在后台检查员工职位与门店</div>';return;}
+      var container=$('today-list'),previousScroll=container.querySelector('.schedule-grid')?container.scrollLeft:null,previousTop=container.scrollTop;if(!names.length){container.innerHTML='<div class="empty"><b>当前门店没有在职发型师</b>请先在后台检查员工职位与门店</div>';container._scheduleSignature=null;return;}
       var availability={},placeholderRows=(data.bookings||[]).filter(bookingPlaceholder).map(function(booking){var barber=resolvedBarber(booking.barber_name,data.barbers||[]),time=booking.time_label||minuteLabel(timeMinutes(booking.reservation_time));availability[barber+'|'+time]=true;return {time:time};});var range=scheduleRange(rows.concat(placeholderRows)),slots=[];for(var minute=range.start;minute<range.end;minute+=30)slots.push(minute);
       var header='<div class="schedule-corner" style="grid-row:1;grid-column:1">发型师 / 时间</div>'+slots.map(function(minute,index){return '<div class="schedule-time '+(minute%60===0?'hour':'')+'" style="grid-row:1;grid-column:'+(index+2)+'">'+minuteLabel(minute)+'</div>';}).join('');
       var body=names.map(function(name,rowIndex){var gridRow=rowIndex+2,groupRows=rows.filter(function(row){return (row.barber||'未分配发型师')===name;}),slotsHtml=slots.map(function(minute,index){var label=minuteLabel(minute),available=!!availability[name+'|'+label];return '<button class="schedule-slot '+(available?'available':'')+'" type="button" data-barber="'+esc(name)+'" data-time="'+label+'" aria-label="'+esc(name+' '+label+(available?' 可预约，添加客户':' 添加客户'))+'" style="grid-row:'+gridRow+';grid-column:'+(index+2)+'"><span aria-hidden="true">＋</span></button>';}).join('');var events=groupRows.map(function(row){var minute=timeMinutes(row.time);if(minute==null)minute=range.start;var column=Math.max(0,Math.min(slots.length-1,Math.floor((minute-range.start)/30))),duration=Number(row.duration)||30,span=Math.max(1,Math.ceil(duration/30));span=Math.min(span,slots.length-column);var stateMeta=todayState(row),index=rows.indexOf(row),label=minuteLabel(minute)||row.time||'—';return '<button class="schedule-event '+stateMeta.tone+'" type="button" data-index="'+index+'" aria-label="'+esc(label+' '+row.name+' '+stateMeta.label)+'" style="grid-row:'+gridRow+';grid-column:'+(column+2)+'/span '+span+'"><strong>'+esc(label+' '+row.name)+'</strong><small>'+esc(row.phone||stateMeta.label)+'</small><em>'+esc(row.service||stateMeta.label)+'</em></button>';}).join('');return '<div class="schedule-barber" style="grid-row:'+gridRow+';grid-column:1"><strong>'+esc(name)+'</strong><span>'+groupRows.length+' 位客户</span></div>'+slotsHtml+events;}).join('');
       var now=new Date(),nowMinute=now.getHours()*60+now.getMinutes(),showNow=$('today-date').value===localDate()&&nowMinute>=range.start&&nowMinute<range.end,nowLine=showNow?'<div class="schedule-now" style="left:calc(var(--staff-col) + var(--slot) * '+((nowMinute-range.start)/30)+')"></div>':'';
-      container.innerHTML='<div class="schedule-grid" style="--slot-count:'+slots.length+';--barber-count:'+names.length+'">'+header+body+nowLine+'</div>';
-      container.querySelectorAll('.schedule-event').forEach(function(el){el.addEventListener('click',function(){openTodayCustomer(rows[Number(el.dataset.index)]);});});
+      var scheduleHTML='<div class="schedule-grid" style="--slot-count:'+slots.length+';--barber-count:'+names.length+'">'+header+body+'</div>',signature=JSON.stringify([data.store||state.store,data.date||$('today-date').value,scheduleHTML]);
+      var currentGrid=container.querySelector('.schedule-grid');if(container._scheduleSignature===signature&&currentGrid){var currentLine=container.querySelector('.schedule-now');if(showNow){if(!currentLine)currentGrid.insertAdjacentHTML('beforeend',nowLine);else currentLine.style.left='calc(var(--staff-col) + var(--slot) * '+((nowMinute-range.start)/30)+')';}else if(currentLine)currentLine.remove();return;}
+      container.innerHTML=scheduleHTML.slice(0,-6)+nowLine+'</div>';container._scheduleSignature=signature;
+      container.querySelectorAll('.schedule-event').forEach(function(el){el.addEventListener('click',function(){openTodayCustomer(state.todayRows[Number(el.dataset.index)]);});});
       container.querySelectorAll('.schedule-slot').forEach(function(el){el.addEventListener('click',function(){openTodayForm({barber:el.dataset.barber,time:el.dataset.time});});});
-      requestAnimationFrame(function(){container.scrollLeft=scheduleScrollLeft(previousScroll);});
+      container.scrollLeft=scheduleScrollLeft(previousScroll);container.scrollTop=previousTop;
     }
     function updateStaffOptions(data){[['today-barber-list',data.barbers],['today-technician-list',data.technicians],['today-assistant-list',data.assistants]].forEach(function(pair){$(pair[0]).innerHTML=(pair[1]||[]).map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');});}
-    async function loadDashboard(){
+    async function loadDashboard(options){
       if(!state.session||!state.store)return;
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
-      state.dashboardLoading=true;setBusy(btn,true,'刷新中…');
+      var silent=options&&options.silent===true;
+      state.dashboardLoading=true;if(!silent)setBusy(btn,true,'刷新中…');
       if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});businessUI.refresh();}
       try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);businessUI.refresh();}
-      catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';toast(e.message,true);}}
+      catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
     $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'&&state.selected)openCustomer(state.selected);else{loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
@@ -547,7 +550,7 @@
     async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});renderShampooStats(data);}catch(e){$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
     function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
     document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
-    setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard();},30000);
+    setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard({silent:true});},30000);
     restoreSession();
   })();
   </script>

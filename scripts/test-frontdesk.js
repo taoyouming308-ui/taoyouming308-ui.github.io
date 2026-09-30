@@ -147,7 +147,7 @@ expect(html.includes("$('import-tools').classList.toggle('hidden',!user.can_impo
 expect(html.includes("Promise.all([loadDashboard(),loadLedger()])") && html.includes('原客户档案未修改'), 'daily reception save must refresh ledger without changing master profile');
 expect(html.includes('pkg.package_name||pkg.name'), 'package card must prefer the recognizable package name');
 expect(!html.includes("'Authorization':'Bearer '+SUPABASE_KEY"), 'publishable API key must not be sent as a bearer token');
-expect(html.includes("setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard();},30000)"), '30-second non-overlapping foreground refresh missing');
+expect(html.includes("setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard({silent:true});},30000)"), '30-second non-overlapping silent foreground refresh missing');
 expect(html.includes("accept=\".csv,.tsv"), 'CSV import entry missing');
 expect(!html.includes('SUPABASE_SERVICE_ROLE_KEY'), 'service role key must never appear in frontdesk HTML');
 expect(admin.includes('href="frontdesk.html"'), 'admin entry to frontdesk missing');

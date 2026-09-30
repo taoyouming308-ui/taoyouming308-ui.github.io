@@ -27,7 +27,9 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
     for (const [width,height] of [[1440,1000],[1024,768],[768,1024],[390,844],[844,390]]) {
       const context = await browser.newContext({viewport:{width,height},timezoneId:'Asia/Shanghai',hasTouch:width<1100});
       const page = await context.newPage();
+      await page.addInitScript(()=>{const original=window.setInterval;window.setInterval=function(fn,ms,...args){if(ms===30000)window.testTodayPoll=fn;return original(fn,ms,...args);};});
       const calls=[];
+      let dashboardHold=null;
       page.on('pageerror', e=>errors.push(e.message));
       await page.route('**/*', async route=>{
         const url=new URL(route.request().url());
@@ -38,6 +40,7 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
         }
         if(url.pathname==='/functions/v1/frontdesk-api') {
           const data=route.request().postDataJSON();calls.push(data);
+          if(data.operation==='dashboard'&&dashboardHold)await dashboardHold;
           const responses={
             login:{session_token:'synthetic-only',user}, session:{user}, registration_options:{stores:[user.store]},
             dashboard:{date:today,store:user.store,barbers,technicians:['小雨'],assistants:['小禾'],bookings:bookings.concat({barber_name:'林一',time_label:'12:00'}),services:[],reception,synced_at:new Date().toISOString()},
@@ -63,6 +66,16 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
       assert.equal(await page.locator('.schedule-event.green').count(),1);
       assert.equal(await page.locator('.schedule-event.gold').count(),1);
       await bounded('today');await shot('today');
+      if(width===1440){
+        let release;dashboardHold=new Promise(resolve=>{release=resolve;});
+        const response=page.waitForResponse(res=>res.url().includes('/frontdesk-api')&&res.request().postDataJSON().operation==='dashboard');
+        await page.evaluate(()=>{window.previousGrid=document.querySelector('.schedule-grid');document.getElementById('today-list').scrollLeft=240;window.testTodayPoll();});
+        assert.equal(await page.locator('#refresh-btn').innerText(),'刷新数据','automatic refresh stays quiet');
+        assert(await page.evaluate(()=>window.previousGrid===document.querySelector('.schedule-grid')),'pending refresh keeps the schedule visible');
+        release();dashboardHold=null;await response;await page.waitForTimeout(50);
+        assert(await page.evaluate(()=>window.previousGrid===document.querySelector('.schedule-grid')),'unchanged schedule must not be rebuilt');
+        assert.equal(await page.locator('#today-list').evaluate(el=>el.scrollLeft),240,'poll retains horizontal position');
+      }
       if(width<681) {
         await page.locator('.schedule-guide').scrollIntoViewIfNeeded();
         assert.ok(await page.locator('.schedule-guide').evaluate(e=>e.getBoundingClientRect().bottom<=innerHeight),'mobile calendar footer is reachable');

@@ -1,7 +1,7 @@
 // Observed store+item-code+name routes. Unknown/renamed products need review.
 // No customer/employee data; keep the SQL catalog regression in sync.
 export const REPORT_MAPPING_VERSION = 'frontdesk-autofill-v2';
-export const REPORT_PROJECT_ROUTES = [
+export const REPORT_PROJECT_ROUTES_V2 = [
   ['1837032','101','洗吹98元','makeup_styling'],
   ['1837032','103','洗发15分钟','wash_cut_blow'],
   ['1837032','104','洗发15分钟内','wash_cut_blow'],
@@ -27,6 +27,14 @@ export const REPORT_PROJECT_ROUTES = [
   ['1009951','434','基础染长发1060','color'],
   ['1009951','501','护理400','treatment'],
   ['1009951','512','歌薇酸护680','treatment'],
+];
+export const REPORT_PROJECT_ROUTES = [
+  ...REPORT_PROJECT_ROUTES_V2,
+  ['1837032','511','歌薇酸护480','treatment'],
+  ['1009951','307','烫发1380','perm'],
+  ['1009951','410','健康染中发','color'],
+  ['1009951','411','健康染长发','color'],
+  ['1009951','416','基础染短发','color'],
 ];
 export function reportProjectCategory(shopId, item) {
   if (!['1009951','1837032'].includes(String(shopId))) return null;

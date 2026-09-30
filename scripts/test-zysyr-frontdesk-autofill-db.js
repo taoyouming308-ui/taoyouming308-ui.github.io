@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=
 execFileSync(process.execPath,['scripts/build-daily-autofill-v2.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v3.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v4.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v5.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -154,7 +155,7 @@ let started=false;
  });
  sql(fs.readFileSync('supabase/migrations/20260928084952_zysyr_daily_autofill_precise_v2.sql','utf8'));
  check('v2 catalog exactly matches shared frontdesk routes, unknown names fail closed',()=>{
-  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
+  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES_V2 as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
   for(const [shop,code,name,category] of catalog)assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),category);
   assert.equal(sql("select coalesce(zysyr_daily_electronic_private.report_project_category('1837032','324','改名不明产品'),'NULL')"),'NULL');
  });
@@ -312,6 +313,53 @@ let started=false;
   appendCash(opScope,cashSource(opScope),'2026-09-28T11:00:06Z');
   const all=cashSource(allScope);all.content.data[0][1]='120';all.content.data[0][4]='120';appendCash(allScope,all,'2026-09-28T11:00:07Z');
   assert.equal(projection().available,false);assert(projection().gaps.includes('cash_source_partition_mismatch'));
+ });
+ sql(fs.readFileSync('supabase/migrations/20260930034900_zysyr_daily_project_routes_v5.sql','utf8'));
+ check('v5 upgrades unchanged source once with audit and preserves confirmed reports',()=>{
+  const before=Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`));
+  assert.equal(autofill().status,'draft_filled');
+  assert.equal(Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${draft}'`)),before+1);
+  assert.equal(sql(`select mapping_version from public.zysyr_daily_autofill_events where draft_id='${draft}' order by revision desc limit 1`),'frontdesk-autofill-v5');
+  assert.equal(autofill().status,'already_applied');
+  assert.equal(autofill('向里造型','2026-09-24').status,'confirmed_preserved');
+ });
+ const accessoryEvidence=()=>{
+  const p=cashEvidence(),b=p.bills[0];
+  b.items.unshift({...b.items[0],source_item_id:'zero',item_code:'103',item_name:'洗发15分钟',amount_cents:0});
+  b.employee_allocations.push({...b.employee_allocations[1],source_allocation_id:'zero',source_item_id:'zero',performance_cents:0,cash_performance_cents:0,source_project_count:0});
+  return p;
+ };
+ check('single paid project plus zero accessory still fills exact platform performance',()=>{
+  list();const p=accessoryEvidence();ingest(p);
+  assert.equal(value('dianping_group'),'100.00');assert.equal(value('subtotal'),'100.00');
+  assert.equal(value('perm_count','technician','合成技师'),'1.00');
+  assert.equal(sql(`select (ocr_raw_result#>'{autofill,gaps}') ? 'payment_fields_missing' from public.zysyr_daily_sheet_drafts where id='${draft}'`),'t');
+  const routes=json(`select zysyr_daily_electronic_private.platform_item_routes(${q(JSON.stringify(p.bills[0]))}::jsonb)`);
+  assert.equal(routes['7'],'dianping_group');assert.equal(routes.zero,'dianping_group');
+ });
+ check('accessories never excuse unknown money, nonzero allocations or ambiguous paid items',()=>{
+  const mutations=[
+   b=>{b.items[0].amount_cents=null;},
+   b=>{b.items[0].amount_cents=-1;},
+   b=>{b.items[0].amount_cents=1;b.items[1].amount_cents-=1;},
+   b=>{b.employee_allocations.at(-1).performance_cents=1;b.employee_allocations.at(-1).cash_performance_cents=1;},
+   b=>{b.employee_allocations.at(-1).card_performance_cents=null;},
+   b=>{b.employee_allocations[0].source_item_id='missing';},
+   b=>{b.payments.find(x=>x.source_field==='weixin').amount_cents=null;},
+  ];
+  for(const mutate of mutations){const b=accessoryEvidence().bills[0];mutate(b);
+   assert.equal(sql(`select zysyr_daily_electronic_private.platform_item_routes(${q(JSON.stringify(b))}::jsonb)->>'7'`),'review');
+  }
+ });
+ check('observed care code is exact shop+code+name; latest JS and SQL catalogs agree',()=>{
+  const catalog=JSON.parse(execFileSync('node',['--input-type=module','-e',"import {REPORT_PROJECT_ROUTES as r} from './supabase/functions/_shared/salon-report-catalog.mjs';console.log(JSON.stringify(r))"],{encoding:'utf8'}));
+  for(const [shop,code,name,category]of catalog)assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),category);
+  for(const [shop,code,name]of[['1009951','511','歌薇酸护480'],['1837032','511','未知项目'],['1837032','999','歌薇酸护480']])assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},${q(code)},${q(name)})`),'');
+  const p=payload();p.bills[0].items[0].item_code='511';p.bills[0].items[0].item_name='歌薇酸护480';ingest(p);
+  assert.equal(value('treatment'),'100.00');assert.equal(value('subtotal'),'100.00');
+  assert.equal(value('care_count','technician','合成技师'),'1.00');
+  for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.platform_item_routes(jsonb)','EXECUTE')`),'f');
+  assert.equal(sql('select amount from public.legacy_income'),'2126');
  });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));

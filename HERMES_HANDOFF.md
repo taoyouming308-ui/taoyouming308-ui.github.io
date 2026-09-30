@@ -1,5 +1,11 @@
 # Hermes Handoff
 
+## 2026-09-30 detail/cash recovery (same installed slots)
+
+- The six-file business-detail installer has deployed the canonical float-residue fix and combined detail/cash runner. Recoverable backup: `~/.hermes/mgj-business-backup-6chx20rb`; all six SHA-256 checks pass, cron unchanged. Never restore a pre-fix private copy over the tracked parser.
+- Each existing live/history slot now appends the three signed operating/card-sales/all-business cash summaries after accepted detail, within a single 90-second source budget. Shared source lock, auth/rate cooldown and normal consumption priority remain mandatory. Finalized historical detail is not re-fetched just to add cash evidence; cash failures retry after 6 hours while other days advance. Checkpoint has additive cash status only; never erase it. Source blank totals/channels remain unknown, not zero.
+- Free 9/29 detail and both 9/29 cash sources recovered. New slot naturally accepted Xiangli 9/30 detail+cash. This is not completion of 2026 history or finance approval. Live period remains per-store 15 minutes; overnight history stays one alternating global 5-minute job.
+
 ## 2026-09-28 business-detail runtime (supersedes its initial hourly slots)
 
 - Canonical files: `scripts/run_mgj_business_detail_2026.py`, `scripts/sync_mgj_business_details.py`; install exclusively with `scripts/install_mgj_business_detail_2026.py --install`. Six isolated runtime files are copied/hash-verified in `~/.hermes/scripts`, without changing normal booking/customer/consumption files, credentials or their tasks. Installer only upgrades the exact known business-detail cron block and preserves a recoverable original.

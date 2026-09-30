@@ -26,6 +26,7 @@ STATE = Path.home() / '.hermes/mgj_business_detail_2026_state.json'
 LOCK = Path.home() / '.hermes/mgj_business_detail_2026.lock'
 LIVE_INTERVAL_SECONDS = 900
 HISTORY_INTERVAL_SECONDS = 300
+CASH_RETRY_SECONDS = 21600
 
 
 def empty_state():
@@ -43,6 +44,10 @@ def read_state(path=STATE):
         shop, sep, day = key.partition(':')
         if not sep or shop not in allowed or not START <= date.fromisoformat(day) <= END or not isinstance(row, dict) or type(row.get('finalized')) is not bool:
             raise ValueError('invalid_checkpoint_pair')
+        if ('cash_finalized' in row and type(row['cash_finalized']) is not bool
+                or type(row.get('cash_retry_after', 0)) not in (int, float)
+                or not 0 <= row.get('cash_retry_after', 0) < float('inf')):
+            raise ValueError('invalid_cash_checkpoint')
     if not set(value['last_attempts']).issubset(allowed) or any(type(v) not in (int, float) or v < 0 for v in value['last_attempts'].values()):
         raise ValueError('invalid_checkpoint_attempt')
     if value.get('last_history_shop') not in (None, *allowed) or type(value.get('last_history_attempt', 0)) not in (int, float):
@@ -68,11 +73,15 @@ def target_date(shop, state, now, mode='auto'):
     if mode == 'live' or (mode == 'auto' and 9 <= now.hour < 22):
         return today.isoformat(), False
     yesterday = min(today - timedelta(days=1), END)
-    if yesterday >= START and not state['pairs'].get(shop + ':' + yesterday.isoformat(), {}).get('finalized'):
+    def pending(day):
+        row = state['pairs'].get(shop + ':' + day.isoformat(), {})
+        return (not row.get('finalized') or (not row.get('cash_finalized')
+                and now.timestamp() >= row.get('cash_retry_after', 0)))
+    if yesterday >= START and pending(yesterday):
         return yesterday.isoformat(), True
     day = START
     while day <= yesterday:
-        if not state['pairs'].get(shop + ':' + day.isoformat(), {}).get('finalized'):
+        if pending(day):
             return day.isoformat(), True
         day += timedelta(days=1)
     return None
@@ -83,11 +92,14 @@ def progress(state, today):
     expected = total_days * len(sync.audit.daily.SHOPS)
     completed = sum(bool(state['pairs'].get(shop + ':' + (START + timedelta(days=offset)).isoformat(), {}).get('finalized'))
                     for shop in sync.audit.daily.SHOPS for offset in range(total_days))
-    return {'finalized_store_days': completed, 'past_store_days': expected}
+    cash_completed = sum(bool(state['pairs'].get(shop + ':' + (START + timedelta(days=offset)).isoformat(), {}).get('cash_finalized'))
+                         for shop in sync.audit.daily.SHOPS for offset in range(total_days))
+    return {'finalized_store_days': completed, 'cash_finalized_store_days': cash_completed, 'past_store_days': expected}
 
 
 def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LOCK, runner=None, epoch=None,
-             source_ready=None, ready_wait_seconds=90, sleeper=time.sleep, backoff_reader=None):
+             source_ready=None, ready_wait_seconds=90, sleeper=time.sleep, backoff_reader=None,
+             cash_runner=None, monotonic=time.monotonic):
     if mode not in ('auto', 'live', 'history'):
         raise ValueError('invalid_mode')
     if shop is not None:
@@ -124,7 +136,9 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
                 shop = next(value for value in stores if value != shop)
                 target = target_date(shop, state, now, mode)
             if target is None:
-                return {'status': 'history_complete', **progress(state, now.date())}
+                counts = progress(state, now.date())
+                complete = counts['cash_finalized_store_days'] == counts['past_store_days']
+                return {'status': 'history_complete' if complete else 'history_waiting_cash_retry', **counts}
         else:
             if epoch - state['last_attempts'].get(shop, 0) < LIVE_INTERVAL_SECONDS:
                 return {'status': 'yielded_cadence_limit', 'shop': shop, 'mode': mode, **progress(state, now.date())}
@@ -149,10 +163,18 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
         else:
             state['last_attempts'][shop] = epoch
         save_state(state, state_path)
+        started = monotonic()
+        pair = state['pairs'].get(shop + ':' + day, {})
         try:
-            result = (runner or sync.run)(shop, day, write=True, budget=90, max_bills=100)
+            # Previously finalized detail snapshots are immutable evidence;
+            # cash-only backfill must not repeat all their per-bill requests.
+            if mode == 'history' and pair.get('finalized'):
+                result = {'status': 'accepted', 'source_count': pair.get('source_count')}
+            else:
+                result = (runner or sync.run)(shop, day, write=True, budget=90, max_bills=100)
         except Exception as exc:
-            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': type(exc).__name__, **progress(state, now.date())}
+            code = str(exc) if str(exc) in ('invalid_money', 'posted_amount_mismatch', 'employee_id_alias_conflict') else type(exc).__name__
+            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': code, **progress(state, now.date())}
         if result.get('status') in ('yielded_daily_sync_due', 'yielded_source_cooldown'):
             if mode == 'history':
                 for key, value in zip(('last_history_attempt', 'last_history_shop'), previous_history):
@@ -164,10 +186,29 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
                 state['last_attempts'].pop(shop, None)
             save_state(state, state_path)
         if result.get('status') == 'accepted':
-            state['pairs'][shop + ':' + day] = {'finalized': finalized, 'source_count': result['source_count'], 'synced_at': now.isoformat()}
+            pair = {**pair, 'finalized': finalized, 'source_count': result['source_count'], 'synced_at': now.isoformat()}
+            state['pairs'][shop + ':' + day] = pair
             save_state(state, state_path)
+            # Reuse the existing staggered slot and the shared source lock.
+            # Details + three cash summaries share one 90-second source budget.
+            remaining = min(60, int(90 - (monotonic() - started)))
+            cash = {'status': 'budget_exhausted', 'scopes': []}
+            if remaining >= 15:
+                try:
+                    cash = (cash_runner or sync.signed.run)(shop, day, scope='cash', write=True, budget_seconds=remaining)
+                except Exception as exc:
+                    cash = {'status': 'failed_or_unconfirmed', 'error_code': type(exc).__name__, 'scopes': []}
+            scopes = cash.get('scopes') or []
+            expected = {sync.signed.SCOPE_NAMES[key] for key in sync.signed.selected_scopes('cash')}
+            cash_complete = (len(scopes) == len(expected) and {row.get('scope') for row in scopes} == expected
+                             and all(row.get('status') == 'accepted' for row in scopes))
+            pair.update(cash_finalized=finalized and cash_complete, cash_status=cash.get('status', 'unconfirmed'),
+                        cash_scopes=[{'scope':row.get('scope'), 'status':row.get('status')} for row in scopes])
+            pair['cash_retry_after'] = 0 if cash_complete else now.timestamp() + CASH_RETRY_SECONDS
+            save_state(state, state_path)
+            result['cash_status'] = pair['cash_status']
         return {'status': result.get('status', 'invalid_result'), 'shop': shop, 'date': day,
-                'source_count': result.get('source_count'), **progress(state, now.date())}
+                'source_count': result.get('source_count'), 'cash_status': result.get('cash_status'), **progress(state, now.date())}
 
 
 def main(argv=None):
@@ -182,7 +223,7 @@ def main(argv=None):
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result['status'] in ('accepted', 'yielded_cadence_limit', 'yielded_scheduler_busy',
                                      'yielded_daily_sync_due', 'yielded_source_cooldown',
-                                     'yielded_outside_window', 'history_complete', 'year_scope_complete') else 2
+                                     'yielded_outside_window', 'history_complete', 'history_waiting_cash_retry', 'year_scope_complete') else 2
 
 
 if __name__ == '__main__':
