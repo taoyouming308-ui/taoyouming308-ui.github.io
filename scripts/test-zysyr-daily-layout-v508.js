@@ -147,13 +147,38 @@ async function run() {
           return Array.from(table.querySelectorAll('input[data-section="' + section + '"]')).filter(input => ['summary', 'payment'].includes(input.dataset.rowKey) && input.dataset.columnNumber >= 1).flatMap(input => {
             const header = Array.from(table.querySelectorAll('th[data-paper-column]')).find(th => th.dataset.paperColumn === input.dataset.columnCode && (section === 'summary' ? th.parentElement.querySelector('[data-paper-column="actual_total"]') : th.parentElement.querySelector('[data-paper-column="cash_flow"]')));
             if (!header) return [];
-            const head = header.getBoundingClientRect(), cell = input.parentElement.getBoundingClientRect();
+            const head = header.getBoundingClientRect(), cell = input.closest('td').getBoundingClientRect();
             return [{ section, code: input.dataset.columnCode, width: head.width, dx: Math.abs(head.left - cell.left), dw: Math.abs(head.width - cell.width) }];
           });
         });
       });
       assert.equal(alignment.length, 26);
       alignment.forEach(item => assert.ok(item.width > 0 && item.dx < 1 && item.dw < 1, JSON.stringify({ storeName, width, ...item })));
+      const moneyDisplay = await page.evaluate(() => {
+        const holder = document.createElement('div');
+        holder.className = 'daily-grid';
+        holder.innerHTML = '<table><tbody><tr>' + dailyPaperInput({
+          id: 'fixture-decimal', ocr_numeric: 828.24, manual_override: false, source_method: 'frontdesk_autofill',
+        }, { section: 'payment', rowKey: 'payment', rowLabel: '支付', columnCode: 'card_consumption',
+          columnLabel: '卡金消费', rowNumber: 33, columnNumber: 20, role: 'payment_card_consumption' }) + '</tr></tbody></table>';
+        document.body.appendChild(holder);
+        const input = holder.querySelector('input'), display = holder.querySelector('.daily-money-visible');
+        const before = { visible: display.textContent, raw: input.value, hiddenRaw: getComputedStyle(input).color };
+        input.focus();
+        const focused = { raw: input.value, display: getComputedStyle(display).display };
+        input.blur();
+        state.imports.dirty['fixture-decimal'] = input.value;
+        const saved = collectDailySheetCells(holder)[0].value;
+        delete state.imports.dirty['fixture-decimal'];
+        holder.remove();
+        return { before, focused, saved };
+      });
+      assert.equal(moneyDisplay.before.visible, '828');
+      assert.equal(moneyDisplay.before.raw, '828.24');
+      assert.equal(moneyDisplay.before.hiddenRaw, 'rgba(0, 0, 0, 0)');
+      assert.equal(moneyDisplay.focused.raw, '828.24');
+      assert.equal(moneyDisplay.focused.display, 'none');
+      assert.equal(moneyDisplay.saved, '828.24', 'saving a displayed integer must retain exact cents');
       const actual = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="actual_total"]');
       const grand = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="grand_total"]');
       const cashflow = page.locator('#daily-detail-grid [data-section="payment"][data-column-code="cash_flow"]');

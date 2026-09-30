@@ -299,7 +299,7 @@
       var badge = tile.querySelector('.voucher-status'), cell = tile.querySelector('.day-total');
       if (day.status === 'confirmed') { if (badge) badge.textContent = '已入账'; return; }
       if (badge) badge.textContent = Number(day.edit_revision || 0) > 0 ? '草稿已保存 · 待入账' : '待填写';
-      if (cell) cell.textContent = '待入账金额 ¥' + Number(day.grand_total).toFixed(2);
+      if (cell) cell.textContent = '待入账金额 ¥' + dailyAmountDisplay(day.grand_total);
     });
   };
 

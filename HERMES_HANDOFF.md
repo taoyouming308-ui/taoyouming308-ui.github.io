@@ -1,5 +1,10 @@
 # Hermes Handoff
 
+## 2026-09-30 daily amount display v596
+
+- Daily report paper cells and calendar show truncated whole yuan; focused editing, save payloads and finance calculations retain exact cents. Technician counts are unchanged. No cloud schema, API, Meiguanjia sync, or production ledger mutation.
+- If adjusting this UI later, preserve the distinction between `dailyAmountDisplay` and `dailyInputValue`; integer display must never become a saved amount.
+
 ## 2026-09-30 daily totals v8
 
 - User clarified: daily actual/grand/payment totals include earned stylist card performance, NOT raw cardfee. Cash flow remains external operating receipts; monthly hair income continues confirmed cash_flow only. Card-sale new cash remains separate from actual performance.
