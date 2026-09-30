@@ -1,4 +1,5 @@
 #!/bin/sh
+ZYSYR_HOOK_PYTHON=${ZYSYR_HOOK_PYTHON:-python3}
 git fetch github main >/dev/null 2>&1 || exit 1
 node scripts/check-version-sync.js || exit 1
 node scripts/check-release-integrity.js || exit 1
@@ -7,7 +8,7 @@ node scripts/test-version-update-flow.js || exit 1
 node scripts/test-ai-codex-route.js || exit 1
 node scripts/test-care-outbound.js || exit 1
 node scripts/test-care-monthly.js || exit 1
-python3 -m unittest scripts/test_care_outbound_worker.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_care_outbound_worker.py || exit 1
 node scripts/test-hair-task-state.js || exit 1
 node scripts/test-hair-service-photos.js || exit 1
 node scripts/test-hair-save-durability.js || exit 1
@@ -22,13 +23,13 @@ node scripts/test-staff-report-browser-v514.js || exit 1
 node scripts/test-frontdesk.js || exit 1
 node scripts/test-frontdesk-minimal.js || exit 1
 node scripts/test-mgj-customer-sync.js || exit 1
-python3 -m unittest scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py || exit 1
 node scripts/test-frontdesk-consumption.js || exit 1
 node scripts/test-zysyr-validation-manifest.js || exit 1
 node scripts/run-zysyr-finance-tests.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
-python3 -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
-python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1
