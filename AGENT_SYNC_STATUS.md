@@ -1,6 +1,6 @@
 # Agent Sync Status
 
-## 2026-09-30 · 明细同步、现金汇总和静默刷新（App version: v590，发布核验中）
+## 2026-09-30 · 明细同步、现金汇总和静默刷新（App version: v590，已发布并线上回读）
 
 - Last synchronized base checked: GitHub main `2b4779b`（v589），起始工作树干净、版本/完整性/交接检查通过，当日源码归档已存在。Current owner: Codex。
 - Last Completed Work: 修复上游 JSON 浮点极小残差导致整日明细拒绝的问题；只容忍 float 的不足 0.0000001 分残差，真实分以下金额/字符串仍拒绝。已重新接收自由门店 9/29 的 26 单、73 个员工分配，草稿由既有受保护 writer 更新。
@@ -10,6 +10,9 @@
 - 两店 9/29 实做/现金流/总计已按三份独立来源补入未入账草稿。向里员工明细/小计/分类合计闭合。原源空白不补零；自由“盖白发”项目归类与向里银联收款的纸表栏位已向用户询问，未擅自混入其他科目。财务仍需确认、不自动入账。
 - 已确认 42 张/16638 格、正式日报42张、收入379条、确认版本42个、附件280个的数量及整体摘要与本轮前一致。数据库助手权限不扩大；安全检查级别/数量不变（既有51项私有RLS无客户端policy提示、1项Auth泄露密码保护提示）。两个接口只共享目录更新，部署前线上bundle与HEAD基线核对一致；Pages、完整pre-push、发布后回读待完成后记录。
 - Open Work For Next Agent: 不宣称全年补齐或全部财务校验通过；继续既有队列，等待两项业务归栏确认，未知保留。回退用前向版本恢复旧helper/writer与运行备份，不删除快照、事件或重置检查点。
+- 发布证据：运行提交 `9b28b737754092893eabf6c3c863e118db6c088f` 已由真实 `.githooks/pre-push` 全部通过后推到 GitHub main（财务90/90）；Pages #36667029328 success，三HTML入口、两个版本文件与明细脚本六份无缓存HTTP200回读逐字一致。未替真实财务账号点击入账；已发布不等于用户财务验收。
+- 云端迁移记录 `20260930035426 zysyr_daily_project_routes_v5` 对应本地CLI生成文件 `20260930034900`；frontdesk-api v26 / operations-api v117 ACTIVE、原 verify_jwt=false 自定义鉴权不变，未登录请求均403。9/29自由135格、向里171格与新只读投影回算差异均0；这是映射一致性，不代表未知科目已补齐。两店9/30最新明细及三组现金来源均接通为待核对草稿。最终受保护摘要仍与部署前一致。
+- 安全检查没有新增项；既有 Auth [泄露密码保护提示](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) 未在本次业务修复中改动。只读权限和入账保护回归保持通过。
 
 ## 2026-09-29 · 三个 App 柔和底色（App version: v589，已发布并核验）
 
