@@ -24,7 +24,9 @@ CRON = (
     '2,17,32,47 9-21 * * * /usr/bin/python3 {runner} --mode live --shop 1009951 >> {log} 2>&1',
     '7,22,37,52 9-21 * * * /usr/bin/python3 {runner} --mode live --shop 1837032 >> {log} 2>&1',
     '*/5 0-8,22-23 * * * /usr/bin/python3 {runner} --mode history >> {log} 2>&1',
+    '12,27,42,57 9-21 * * * /usr/bin/python3 {runner} --mode history >> {log} 2>&1',
 )
+PREVIOUS_CRON = CRON[:3]
 LEGACY_CRON = (
     '17 * * * * /usr/bin/python3 {runner} --shop 1009951 >> {log} 2>&1',
     '47 * * * * /usr/bin/python3 {runner} --shop 1837032 >> {log} 2>&1',
@@ -41,11 +43,12 @@ def cron_candidate(existing, runner, log):
         wanted = [line.format(runner=runner, log=log) for line in CRON]
         if lines == wanted and MARKER in existing:
             return existing, False
-        legacy = [line.format(runner=runner, log=log) for line in LEGACY_CRON]
-        old_block = '\n'.join([MARKER] + legacy) + '\n'
         new_block = '\n'.join([MARKER] + wanted) + '\n'
-        if lines == legacy and existing.count(MARKER) == 1 and existing.count(old_block) == 1:
-            return existing.replace(old_block, new_block, 1), True
+        for old in (LEGACY_CRON, PREVIOUS_CRON):
+            legacy = [line.format(runner=runner, log=log) for line in old]
+            old_block = '\n'.join([MARKER] + legacy) + '\n'
+            if lines == legacy and existing.count(MARKER) == 1 and existing.count(old_block) == 1:
+                return existing.replace(old_block, new_block, 1), True
         raise ValueError('existing_business_cron_conflict')
     addition = '\n'.join([MARKER] + [line.format(runner=runner, log=log) for line in CRON])
     return existing.rstrip('\n') + '\n' + addition + '\n', True

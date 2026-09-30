@@ -58,7 +58,8 @@ class ScheduleTests(unittest.TestCase):
         value = self.run_at('1009951', 7, 104000, secret_failure)
         self.assertEqual(value['status'], 'failed_or_unconfirmed')
         self.assertNotIn('private', json.dumps(value))
-        self.assertEqual(task.read_state(self.state)['pairs'], {})
+        self.assertFalse(task.read_state(self.state)['pairs']['1009951:2026-09-27']['finalized'])
+        self.assertEqual(task.target_date('1009951',task.read_state(self.state),datetime(2026,9,28,7,17,tzinfo=task.TZ),'history'),('2026-01-01',True))
 
     def test_normal_sync_stale_yields_without_source_attempt(self):
         value = task.run_slot('1009951', now=datetime(2026, 9, 28, 6, 17, tzinfo=task.TZ),
@@ -80,7 +81,7 @@ class ScheduleTests(unittest.TestCase):
         candidate, changed = installer.cron_candidate(old, runner, '/private/log')
         self.assertTrue(changed)
         self.assertTrue(candidate.startswith(old))
-        self.assertEqual(candidate.count('run_mgj_business_detail_2026.py'), 3)
+        self.assertEqual(candidate.count('run_mgj_business_detail_2026.py'), 4)
         self.assertEqual(installer.cron_candidate(candidate, runner, '/private/log'), (candidate, False))
         with self.assertRaises(ValueError):
             installer.cron_candidate(candidate.replace('2,17,32,47', '3,18,33,48'), runner, '/private/log')
@@ -97,7 +98,7 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual([row[0] for row in self.calls],['1009951','1837032','1009951'])
 
     def test_window_and_cooldown_prevent_all_source_access(self):
-        value=task.run_slot(mode='history',now=datetime(2026,9,28,12,0,tzinfo=task.TZ),runner=self.call)
+        value=task.run_slot('1009951',mode='live',now=datetime(2026,9,28,2,0,tzinfo=task.TZ),runner=self.call)
         self.assertEqual(value['status'],'yielded_outside_window')
         value=task.run_slot(mode='history',now=datetime(2026,9,28,6,0,tzinfo=task.TZ),epoch=100000,
                            state_path=self.state,lock_path=self.lock,runner=self.call,source_ready=lambda:True,
@@ -112,7 +113,7 @@ class ScheduleTests(unittest.TestCase):
         value,changed=installer.cron_candidate(prefix+legacy,runner,'/private/log')
         self.assertTrue(changed)
         self.assertTrue(value.startswith(prefix))
-        self.assertEqual(value.count('--mode history'),1)
+        self.assertEqual(value.count('--mode history'),2)
         self.assertEqual(value.count('--mode live'),2)
         with self.assertRaises(ValueError):
             installer.cron_candidate((prefix+legacy).replace('17 *','18 *'),runner,'/private/log')
@@ -149,13 +150,40 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(task.target_date('1009951',task.read_state(self.state),now,'history'),('2026-01-01',True))
 
     def test_details_and_cash_share_bounded_source_budget(self):
-        ticks=iter([100,181])
+        ticks=iter([100,181,181])
         value=task.run_slot('1009951',now=datetime(2026,9,28,11,0,tzinfo=task.TZ),epoch=100000,
             state_path=self.state,lock_path=self.lock,runner=self.call,cash_runner=self.cash,
             source_ready=lambda:True,backoff_reader=lambda:{},monotonic=lambda:next(ticks))
         self.assertEqual(value['cash_status'],'budget_exhausted')
         self.assertEqual(self.cash_calls,[])
         self.assertFalse(task.read_state(self.state)['pairs']['1009951:2026-09-28']['cash_finalized'])
+
+    def test_day_history_is_separate_global_15_minute_slot(self):
+        now=datetime(2026,9,28,12,12,tzinfo=task.TZ)
+        def run(epoch):
+            return task.run_slot(mode='history',now=now,epoch=epoch,state_path=self.state,lock_path=self.lock,
+                runner=self.call,source_ready=lambda:True,backoff_reader=lambda:{},cash_runner=self.cash)
+        self.assertEqual(run(100000)['shop'],'1009951')
+        self.assertEqual(run(100899)['status'],'yielded_cadence_limit')
+        self.assertEqual(run(100900)['shop'],'1837032')
+        self.assertEqual(task.read_state(self.state)['last_attempts'],{})
+
+    def test_partial_detail_is_deferred_without_blocking_next_day(self):
+        now=datetime(2026,9,28,12,12,tzinfo=task.TZ)
+        result=task.run_slot('1009951',mode='history',now=now,epoch=100000,state_path=self.state,lock_path=self.lock,
+            runner=lambda *a,**k:{'status':'budget_exhausted'},source_ready=lambda:True,backoff_reader=lambda:{})
+        state=task.read_state(self.state)
+        self.assertEqual(result['status'],'budget_exhausted')
+        self.assertEqual(task.target_date('1009951',state,now,'history'),('2026-01-01',True))
+        self.assertEqual(task.progress(state,now.date())['shops']['自由手艺人']['source_complete_days'],0)
+
+    def test_upgrade_previous_cron_preserves_live_slots(self):
+        runner='/private/run_mgj_business_detail_2026.py'
+        old='\n'.join([installer.MARKER]+[l.format(runner=runner,log='/private/log') for l in installer.PREVIOUS_CRON])+'\n'
+        new,changed=installer.cron_candidate(old,runner,'/private/log')
+        self.assertTrue(changed)
+        self.assertTrue(new.startswith(old))
+        self.assertEqual(new.count('12,27,42,57'),1)
 
 
 if __name__ == '__main__':

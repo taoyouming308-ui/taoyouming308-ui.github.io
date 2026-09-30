@@ -26,7 +26,9 @@ STATE = Path.home() / '.hermes/mgj_business_detail_2026_state.json'
 LOCK = Path.home() / '.hermes/mgj_business_detail_2026.lock'
 LIVE_INTERVAL_SECONDS = 900
 HISTORY_INTERVAL_SECONDS = 300
+DAY_HISTORY_INTERVAL_SECONDS = 900
 CASH_RETRY_SECONDS = 21600
+DETAIL_RETRY_SECONDS = 21600
 
 
 def empty_state():
@@ -46,7 +48,9 @@ def read_state(path=STATE):
             raise ValueError('invalid_checkpoint_pair')
         if ('cash_finalized' in row and type(row['cash_finalized']) is not bool
                 or type(row.get('cash_retry_after', 0)) not in (int, float)
-                or not 0 <= row.get('cash_retry_after', 0) < float('inf')):
+                or not 0 <= row.get('cash_retry_after', 0) < float('inf')
+                or type(row.get('detail_retry_after', 0)) not in (int, float)
+                or not 0 <= row.get('detail_retry_after', 0) < float('inf')):
             raise ValueError('invalid_cash_checkpoint')
     if not set(value['last_attempts']).issubset(allowed) or any(type(v) not in (int, float) or v < 0 for v in value['last_attempts'].values()):
         raise ValueError('invalid_checkpoint_attempt')
@@ -75,7 +79,7 @@ def target_date(shop, state, now, mode='auto'):
     yesterday = min(today - timedelta(days=1), END)
     def pending(day):
         row = state['pairs'].get(shop + ':' + day.isoformat(), {})
-        return (not row.get('finalized') or (not row.get('cash_finalized')
+        return ((not row.get('finalized') and now.timestamp() >= row.get('detail_retry_after', 0)) or (row.get('finalized') and not row.get('cash_finalized')
                 and now.timestamp() >= row.get('cash_retry_after', 0)))
     if yesterday >= START and pending(yesterday):
         return yesterday.isoformat(), True
@@ -94,7 +98,23 @@ def progress(state, today):
                     for shop in sync.audit.daily.SHOPS for offset in range(total_days))
     cash_completed = sum(bool(state['pairs'].get(shop + ':' + (START + timedelta(days=offset)).isoformat(), {}).get('cash_finalized'))
                          for shop in sync.audit.daily.SHOPS for offset in range(total_days))
-    return {'finalized_store_days': completed, 'cash_finalized_store_days': cash_completed, 'past_store_days': expected}
+    shops = {}
+    for shop, name in sync.audit.daily.SHOPS.items():
+        rows = [state['pairs'].get(shop + ':' + (START + timedelta(days=n)).isoformat(), {}) for n in range(total_days)]
+        details = sum(bool(r.get('finalized')) for r in rows)
+        cash = sum(bool(r.get('cash_finalized')) for r in rows)
+        both = sum(bool(r.get('finalized') and r.get('cash_finalized')) for r in rows)
+        shops[name] = {'expected_days': total_days, 'detail_days': details, 'cash_days': cash,
+                       'source_complete_days': both, 'remaining_source_days': total_days-both,
+                       'deferred_detail_days': sum(bool(r.get('detail_retry_after')) for r in rows)}
+    return {'finalized_store_days': completed, 'cash_finalized_store_days': cash_completed,
+            'past_store_days': expected, 'shops': shops, 'report_completion_not_implied': True}
+
+
+def defer_detail(state, shop, day, now, status):
+    key = shop + ':' + day
+    row = state['pairs'].setdefault(key, {'finalized': False})
+    row.update(detail_retry_after=now.timestamp()+DETAIL_RETRY_SECONDS, detail_status=status)
 
 
 def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LOCK, runner=None, epoch=None,
@@ -111,7 +131,8 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
     epoch = time.time() if epoch is None else epoch
     daytime = 9 <= now.hour < 22
     mode = ('live' if daytime else 'history') if mode == 'auto' else mode
-    if (mode == 'history' and daytime) or (mode == 'live' and not daytime):
+    # Daytime history is explicit and staggered; auto still prioritizes today.
+    if mode == 'live' and not daytime:
         return {'status': 'yielded_outside_window', 'mode': mode}
     if mode == 'live' and shop is None:
         raise ValueError('live_shop_required')
@@ -125,7 +146,8 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
             return {'status': 'yielded_scheduler_busy', 'shop': shop}
         state = read_state(state_path)
         if mode == 'history':
-            if epoch - state.get('last_history_attempt', 0) < HISTORY_INTERVAL_SECONDS:
+            interval = DAY_HISTORY_INTERVAL_SECONDS if daytime else HISTORY_INTERVAL_SECONDS
+            if epoch - state.get('last_history_attempt', 0) < interval:
                 return {'status': 'yielded_cadence_limit', 'mode': mode, **progress(state, now.date())}
             stores = list(sync.audit.daily.SHOPS)
             if shop is None:
@@ -165,6 +187,7 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
         save_state(state, state_path)
         started = monotonic()
         pair = state['pairs'].get(shop + ':' + day, {})
+        detail_reused = bool(mode == 'history' and pair.get('finalized'))
         try:
             # Previously finalized detail snapshots are immutable evidence;
             # cash-only backfill must not repeat all their per-bill requests.
@@ -174,7 +197,11 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
                 result = (runner or sync.run)(shop, day, write=True, budget=90, max_bills=100)
         except Exception as exc:
             code = str(exc) if str(exc) in ('invalid_money', 'posted_amount_mismatch', 'employee_id_alias_conflict') else type(exc).__name__
-            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': code, **progress(state, now.date())}
+            if mode == 'history':
+                defer_detail(state, shop, day, now, code)
+                save_state(state, state_path)
+            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': code,
+                    'elapsed_seconds': round(monotonic()-started, 2), **progress(state, now.date())}
         if result.get('status') in ('yielded_daily_sync_due', 'yielded_source_cooldown'):
             if mode == 'history':
                 for key, value in zip(('last_history_attempt', 'last_history_shop'), previous_history):
@@ -185,8 +212,12 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
             else:
                 state['last_attempts'].pop(shop, None)
             save_state(state, state_path)
+        elif result.get('status') != 'accepted' and mode == 'history':
+            defer_detail(state, shop, day, now, result.get('status', 'unconfirmed'))
+            save_state(state, state_path)
         if result.get('status') == 'accepted':
-            pair = {**pair, 'finalized': finalized, 'source_count': result['source_count'], 'synced_at': now.isoformat()}
+            pair = {**pair, 'finalized': finalized, 'source_count': result['source_count'], 'synced_at': now.isoformat(),
+                    'detail_retry_after': 0, 'detail_status': 'accepted'}
             state['pairs'][shop + ':' + day] = pair
             save_state(state, state_path)
             # Reuse the existing staggered slot and the shared source lock.
@@ -208,20 +239,24 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
             save_state(state, state_path)
             result['cash_status'] = pair['cash_status']
         return {'status': result.get('status', 'invalid_result'), 'shop': shop, 'date': day,
-                'source_count': result.get('source_count'), 'cash_status': result.get('cash_status'), **progress(state, now.date())}
+                'source_count': result.get('source_count'), 'cash_status': result.get('cash_status'),
+                'detail_reused': detail_reused,
+                'elapsed_seconds': round(monotonic()-started, 2), **progress(state, now.date())}
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='白天每店15分钟、夜间每5分钟两店交替补录2026明细')
+    parser = argparse.ArgumentParser(description='当天每店15分钟；历史白天15分钟/夜间5分钟全局轮换')
     parser.add_argument('--shop', choices=sorted(sync.audit.daily.SHOPS))
     parser.add_argument('--mode', choices=('auto', 'live', 'history'), default='auto')
+    parser.add_argument('--status', action='store_true', help='只读汇总进度，不访问美管加或写入数据')
     args = parser.parse_args(argv)
     try:
-        result = run_slot(args.shop, mode=args.mode)
+        result = ({'status': 'progress', **progress(read_state(), datetime.now(TZ).date())}
+                  if args.status else run_slot(args.shop, mode=args.mode))
     except Exception as exc:
         result = {'status': 'failed_or_unconfirmed', 'error_code': type(exc).__name__}
     print(json.dumps(result, ensure_ascii=False))
-    return 0 if result['status'] in ('accepted', 'yielded_cadence_limit', 'yielded_scheduler_busy',
+    return 0 if result['status'] in ('progress', 'accepted', 'yielded_cadence_limit', 'yielded_scheduler_busy',
                                      'yielded_daily_sync_due', 'yielded_source_cooldown',
                                      'yielded_outside_window', 'history_complete', 'history_waiting_cash_retry', 'year_scope_complete') else 2
 

@@ -1,5 +1,11 @@
 # Hermes Handoff
 
+## 2026-09-30 daytime historical catch-up (latest approved schedule)
+
+- Preserve both live cron lines. Add one global historical line `12,27,42,57 9-21`; retain `*/5 0-8,22-23`. Daytime history interval900s, night300s; alternate shops, no parallel source workers. Explicit history now works in daytime; auto remains today-first.
+- Every failed historical detail/partial budget gets additive per-date `detail_retry_after` (6h); other dates proceed. Never reset the state. Completed details are reused for cash-only catch-up. Cash summaries remain a paired group, not mismatched partial timestamps.
+- `--status` is read-only, reports per-store complete-source and remaining past days, never calls these posted/verified reports. Source request budget90s, shared locks, daily priority and global cooldown remain unchanged. Installer accepts only exact known legacy/previous blocks and backs up cron/runtime before replacement.
+
 ## 2026-09-30 detail/cash recovery (same installed slots)
 
 - The six-file business-detail installer has deployed the canonical float-residue fix and combined detail/cash runner. Recoverable backup: `~/.hermes/mgj-business-backup-6chx20rb`; all six SHA-256 checks pass, cron unchanged. Never restore a pre-fix private copy over the tracked parser.
