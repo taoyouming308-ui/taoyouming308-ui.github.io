@@ -1,7 +1,7 @@
 // Deterministic, offline builder. Prints an apply_patch; never writes a database.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {REPORT_PROJECT_ROUTES as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
+import {REPORT_PROJECT_ROUTES_V7 as routes} from '../supabase/functions/_shared/salon-report-catalog.mjs';
 const file='supabase/migrations/20260930045230_zysyr_daily_source_protection_v7.sql';
 const read=name=>fs.readFileSync('supabase/migrations/'+name,'utf8');
 const q=s=>"'"+s.replaceAll("'","''")+"'";

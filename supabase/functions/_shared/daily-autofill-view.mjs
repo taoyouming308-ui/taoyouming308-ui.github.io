@@ -32,7 +32,9 @@ function cashView(metadata) {
 export function dailyAutofillView(draft, cells, storeId) {
   const { autofill_view: metadata, ...safeDraft } = draft;
   const cash = draft.template_code === 'zysyr_frontdesk_project_draft' ? cashView(metadata) : null;
-  if (cash) safeDraft.ocr_raw_result = { autofill: { cash_receipts: cash } };
+  const totalPolicy = metadata?.daily_total_policy === 'cash-plus-earned-card-v1'
+    ? {daily_total_policy:'cash-plus-earned-card-v1'} : {};
+  if (cash) safeDraft.ocr_raw_result = { autofill: { cash_receipts: cash, ...totalPolicy } };
   if (draft.template_code !== 'zysyr_frontdesk_project_draft' || draft.status !== 'draft') {
     return { draft: safeDraft, cells };
   }
@@ -44,7 +46,7 @@ export function dailyAutofillView(draft, cells, storeId) {
     ? [...new Set(supplied)].filter(key => sourceKeys.includes(key)) : sourceKeys;
   // Only this renderer contract is exposed; no raw OCR, bill payload or before-image.
   const conflicts=manualConflicts(metadata,cells);
-  safeDraft.ocr_raw_result = { autofill: { active_staff_row_keys: active, ...(cash ? { cash_receipts: cash } : {}),
+  safeDraft.ocr_raw_result = { autofill: { active_staff_row_keys: active, ...totalPolicy, ...(cash ? { cash_receipts: cash } : {}),
     ...(conflicts.length?{manual_conflicts:conflicts}:{}) } };
   const displayCells = cells.map(cell => {
     // User-confirmed alias, exact store + source employee namespace only.

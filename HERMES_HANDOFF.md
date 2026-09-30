@@ -1,5 +1,12 @@
 # Hermes Handoff
 
+## 2026-09-30 daily totals v8
+
+- User clarified: daily actual/grand/payment totals include earned stylist card performance, NOT raw cardfee. Cash flow remains external operating receipts; monthly hair income continues confirmed cash_flow only. Card-sale new cash remains separate from actual performance.
+- New marker cash-plus-earned-card-v1 preserves old confirmed-policy behavior. Preserve manual edits and before/after audit, no automatic posting. Free exact item513 歌薇酸护880 maps to treatment.
+- Today's earlier three manual repairs remain protected; differences from new source are review conflicts, never silently overwritten. No scheduler or MGJ write changes.
+
+
 ## 2026-09-30 daytime historical catch-up (latest approved schedule)
 
 - Preserve both live cron lines. Add one global historical line `12,27,42,57 9-21`; retain `*/5 0-8,22-23`. Daytime history interval900s, night300s; alternate shops, no parallel source workers. Explicit history now works in daytime; auto remains today-first.

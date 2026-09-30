@@ -36,9 +36,13 @@ export const REPORT_PROJECT_ROUTES_V5 = [
   ['1009951','411','健康染长发','color'],
   ['1009951','416','基础染短发','color'],
 ];
-export const REPORT_PROJECT_ROUTES = [
+export const REPORT_PROJECT_ROUTES_V7 = [
   ...REPORT_PROJECT_ROUTES_V5,
   ['1009951','523','歌薇酸护（盖白发）880','treatment'],
+];
+export const REPORT_PROJECT_ROUTES = [
+  ...REPORT_PROJECT_ROUTES_V7,
+  ['1009951','513','歌薇酸护880','treatment'],
 ];
 export function reportProjectCategory(shopId, item) {
   if (!['1009951','1837032'].includes(String(shopId))) return null;

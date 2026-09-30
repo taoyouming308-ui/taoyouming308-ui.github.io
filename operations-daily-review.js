@@ -65,10 +65,10 @@
   function controlDifferences(c) {
     var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
     var receiptChecks = c.cashMode ? [
-      ['summary_actual', '实做', c.actual, c.cashflow, '项目及零售实际收款'],
-      ['summary_grand', '汇总总计', c.grand, c.cashflow == null || c.cardSales == null ? null : c.cashflow + c.cardSales, '实做＋充值售卡实收'],
+      ['summary_actual', '实做', c.actual, c.cashflow == null ? null : c.cashflow + (c.earnedMode ? c.card : 0), c.earnedMode ? '现金业绩＋实际获得卡金业绩' : '项目及零售实际收款'],
+      ['summary_grand', '汇总总计', c.grand, c.cashflow == null || c.cardSales == null ? null : c.cashflow + c.cardSales + (c.earnedMode ? c.card : 0), '实做＋充值售卡实收'],
       ['payment_cashflow', '现金流', c.cashflow, c.methodTotal, '经营收款渠道合计'],
-      ['payment_total', '支付总计', c.payment, c.grand, '经营收款＋充值售卡实收（不含卡金扣款）'],
+      ['payment_total', '支付总计', c.payment, c.grand, c.earnedMode ? '现金业绩＋实际获得卡金业绩＋充值售卡实收' : '经营收款＋充值售卡实收（不含卡金扣款）'],
     ] : [
       ['summary_actual', '实做', c.actual, c.staffAtomic, '员工合计'],
       ['summary_grand', '汇总总计', c.grand, c.staffAtomic, '员工合计'],
@@ -120,6 +120,7 @@
       help.textContent = '收银项目明细已自动填写，黄色为待核对数据；技师仅统计烫、染、护个数。'
         + '空白不代表零：全业务总额、卡金及未分类项目仍需核对。本表未自动入账。';
       if (calculateDailyControls(grid()).cashMode) help.textContent = '实做和现金流只计项目、零售的实际外部收款（含微信、支付宝、团购、抖音）；充值、套餐及年卡实收另列卡类小计，不计实做。卡金扣款不计收入。来源范围仍待财务核对，本表未自动入账。';
+      if (calculateDailyControls(grid()).earnedMode) help.textContent = '日报实做＝现金业绩＋实际获得卡金业绩；两处总计另含充值售卡实收。卡金消费按获得业绩，不按原始划卡额。月报美发收入只取现金流，不含卡金。未知字段保留待核对，本表未自动入账。';
     }
     help.classList.toggle('hidden', !help.textContent);
     var reason = localBlockReason();

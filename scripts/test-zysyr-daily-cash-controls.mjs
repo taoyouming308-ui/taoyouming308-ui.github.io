@@ -10,8 +10,9 @@ let fields=[],draft={};
 const context=vm.createContext({state:{imports:{sheet:{draft}}},Number,Array,Math,Object,String,
  dailyInputValue:input=>!input||input.value===''?null:Number(input.value)});
 vm.runInContext(calc+messages,context);
-function set(cash=true,{staff=979,actual=100,cashflow=100,card=879,sales=300,grand=400,payment=400,channelsComplete=true}={}){
+function set(cash=true,{staff=979,actual=100,cashflow=100,card=879,sales=300,grand=400,payment=400,channelsComplete=true,earned=false}={}){
  context.state.imports.sheet.draft.ocr_raw_result=cash?{autofill:{cash_receipts:{policy:'operating-external-cash-v1',state:'candidate',cash_channels_complete:channelsComplete}}}:{};
+ if(earned)context.state.imports.sheet.draft.ocr_raw_result.autofill.daily_total_policy='cash-plus-earned-card-v1';
  fields=[
   ['stylist','stylist_1','perm','staff_value',staff],['stylist','stylist_1','subtotal','staff_total',staff],
   ['stylist','stylist_category_total','perm','category_total',staff],['stylist','stylist_category_total','subtotal','summary_value',staff],
@@ -39,4 +40,14 @@ for(const status of['draft','confirmed']){
  assert(!JSON.stringify(projected).includes('secret'));assert(!JSON.stringify(projected).includes('a'.repeat(64)));
 }
 assert(!dailyAutofillView({status:'draft',template_code:'zysyr_frontdesk_project_draft',autofill_view:{cash_receipts:{...cash,cash_channels_complete:'true'}}},[],'x').draft.ocr_raw_result.autofill.cash_receipts);
+const earnedExample={earned:true,staff:3762.24,actual:3762.24,cashflow:2934,card:828.24,sales:0,grand:3762.24,payment:3762.24};
+assert.equal(set(true,earnedExample).valid,true);
+assert.equal(context.controlDifferences(set(true,earnedExample)).length,0);
+assert.equal(set(true,{...earnedExample,actual:2934,grand:2934,payment:2934}).valid,false);
+assert.equal(set(true,{...earnedExample,card:null}).valid,false);
+assert.equal(set(true,{...earnedExample,sales:300,grand:4062.24,payment:4062.24}).valid,true);
+for(const status of ['draft','confirmed']){
+ const view=dailyAutofillView({status,template_code:'zysyr_frontdesk_project_draft',autofill_view:{cash_receipts:cash,daily_total_policy:'cash-plus-earned-card-v1'}},[],'x');
+ assert.equal(view.draft.ocr_raw_result.autofill.daily_total_policy,'cash-plus-earned-card-v1');
+}
 console.log('Actual UI checks: independent performance/cash controls, stored-value exclusion, new card-sales separation, old January compatibility and metadata allowlist passed');

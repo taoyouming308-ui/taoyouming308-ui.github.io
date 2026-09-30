@@ -6,6 +6,7 @@ execFileSync(process.execPath,['scripts/build-daily-autofill-v4.mjs','--check'],
 execFileSync(process.execPath,['scripts/build-daily-autofill-v5.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v6.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v7.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v8.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -449,6 +450,31 @@ let started=false;
   assert.equal(call(0).saved_cells,1);
   sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=88 where id='${blankCell}'`);
   assert.equal(call(1).manual_cells_preserved,1);assert.equal(sql(`select corrected_numeric from public.zysyr_daily_sheet_cells where id='${blankCell}'`),'88');
+ });
+ sql(fs.readFileSync('supabase/migrations/20260930104817_zysyr_daily_earned_card_v8.sql','utf8'));
+ check('v8 earned card is not raw drawdown or technician money; missing/duplicate components stay unknown',()=>{
+  const p=payload(),a=p.bills[0].employee_allocations[0];
+  Object.assign(a,{cash_performance_cents:293400,card_performance_cents:82824,other_performance_cents:0,performance_cents:376224});
+  const earned=()=>sql(`select coalesce(zysyr_daily_electronic_private.earned_card_total(${q(JSON.stringify(p))}::jsonb)::text,'NULL')`);
+  assert.equal(Number(earned()),828.24);
+  p.bills[0].payments.find(x=>x.source_field==='cardfee').amount_cents=116000;
+  assert.equal(Number(earned()),828.24);
+  delete a.card_performance_cents;assert.equal(earned(),'NULL');a.card_performance_cents=82824;
+  p.bills[0].employee_allocations.push({...a});assert.equal(earned(),'NULL');
+  assert.equal(sql("select zysyr_daily_electronic_private.report_project_category('1009951','513','歌薇酸护880')"),'treatment');
+ });
+ check('v8 persisted daily totals include earned card; cash flow and posted history stay independent',()=>{
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=false,corrected_numeric=null where draft_id='${draft}'`);
+  list();const p=payload(),b=p.bills[0];b.items[0].item_code='324';
+  Object.assign(b.employee_allocations[0],{cash_performance_cents:293400,card_performance_cents:82824,other_performance_cents:0,performance_cents:376224});
+  ingest(p);
+  const op=cashSource(opScope),all=cashSource(allScope);for(const s of[op,all]){s.content.data[0][1]='2934';s.content.data[0][4]='2934';}
+  appendCash(opScope,op,'2026-09-28T12:00:00Z');appendCash(cardScope,cashSource(cardScope),'2026-09-28T12:00:00Z');appendCash(allScope,all,'2026-09-28T12:00:00Z');
+  for(const [section,code,n] of [['summary','actual_total',3762.24],['summary','grand_total',3762.24],['payment','total',3762.24],['payment','cash_flow',2934],['payment','card_consumption',828.24]])assert.equal(Number(value(code,section,section==='summary'?'汇总':'支付')),n);
+  const c=json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`);assert.equal(c.valid,true);assert.equal(c.cashflow_total,2934);assert.equal(c.card_consumption,828.24);
+  assert.equal(autofill().status,'already_applied');
+  sql(`update public.zysyr_daily_sheet_drafts set status='confirmed' where id='${draft}'`);assert.equal(autofill().status,'confirmed_preserved');
+  sql(`update public.zysyr_daily_sheet_drafts set status='draft' where id='${draft}'`);
  });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));
