@@ -12,7 +12,7 @@ for(const marker of [
   'daily-source-action upload',
   'daily-source-action-status',
   'aria-live="polite"',
-  'JPG / PNG 上传成功后会自动开始 Codex 识别',
+  '同步日报上传原图不会覆盖表格；未同步日报 JPG / PNG 上传后自动识别',
 ]) assert.ok(page.includes(marker),`daily source UI marker missing: ${marker}`);
 for(const marker of [
   'window.ZysyrDailySourceActions',
