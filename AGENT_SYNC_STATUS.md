@@ -8,6 +8,11 @@
 - operations-api 仅透传当前草稿有效员工行的白名单说明，不泄露客户/原单载荷；日报提示员工、项目、金额、单号，提醒已计入小计不可重复增加。已确认表不加新提示。frontdesk-api 同步共享分类目录，其他逻辑不改。
 - 本地50组隔离 SQL、390/1280宽实际纸表和实际 reader 回归通过，Deno 两个 API 类型检查通过；完整 pre-push/CI/Pages/生产迁移及草稿回读仍由本轮部署步骤核验。
 - 回滚基线 `7b74c1f`；生产原函数受控备份 `/private/tmp/zysyr-project-v9-functions-before-20261001.json`。必要时以前向迁移恢复旧分类/writer，不删除审计；草稿只按对应事件前像、人工修订核对后单张恢复，不改正式账。没有自动入账、不重新采集美管加、不改调度。
+- 实际发布：`9a93479` 已经真实 pre-push 全门禁（财务90/90）推送 main；Validate #36865432972 和 Pages #36865431054 success。线上 version=600，operations/frontdesk HTML 无缓存逐字匹配。
+- operations-api ACTIVE v120 / frontdesk-api ACTIVE v28，13/4个部署文件逐字回读匹配；保留原 custom-auth。frontdesk 首次部署审核疑似旧包而拒绝，已用明确 v600 commit 和生产逐文件差异证明仅分类文件变化后获准，无绕过发布渠道。
+- CLI linked dry-run 因 checkout 无 project-ref 停止；远端单独迁移 `20261001130016 zysyr_daily_project_completeness_v9` 成功。原函数 owner/ACL/security-definer不变；新纯函数仅postgres可执行，安全Advisor无新增项。
+- 10/1向里草稿修订28；自由经原有正常同步自然推进至修订25，均为v9、未入账、classification_issues=[]。逐员工项目合计等于小计；向里同源财务总额/付款/员工小计未变。自由新增来源使员工业绩自然增长，原付款汇总未随此分类修复改写；源收款批次暂不同步仍需核对，不冒充完整日报可入账。
+- 手动修复事务在来源变更或金额保护不符时完整回滚；核实其中变化仅为技师项目次数补齐后，将金额保护限于员工金额/汇总/支付，未解除任何人工或正式账保护。自由由既有正常同步触发，不强制旧来源覆盖。55张确认日报、21645确认格、2480人工格、正式日报/收入及350附件摘要均与发布前一致。
 
 ## 2026-10-01 · 日报安全静默同步（App version: v599）
 
