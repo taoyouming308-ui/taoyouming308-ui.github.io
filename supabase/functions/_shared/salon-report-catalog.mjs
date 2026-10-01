@@ -43,11 +43,21 @@ export const REPORT_PROJECT_ROUTES_V7 = [
 export const REPORT_PROJECT_ROUTES = [
   ...REPORT_PROJECT_ROUTES_V7,
   ['1009951','513','歌薇酸护880','treatment'],
+  ['1837032','314','健康烫发1380元','perm'],
+  ['1837032','417','基础染中发','color'],
+  ['1837032','442','健康染发880','color'],
+  ['1837032','431','漂发1200','color'],
+  ['1009951','409','健康染短发','color'],
+  ['1009951','428','健康染长发1460','color'],
+  ['1009951','436','健康染长发14603次','color'],
 ];
+// Approved service family only: excludes retail goods and unverified mixed packages.
+export const APPROVED_ACID_CARE_PATTERN='^歌薇酸护(（盖白发）)?([0-9]+(元)?)?$';
 export function reportProjectCategory(shopId, item) {
   if (!['1009951','1837032'].includes(String(shopId))) return null;
   // Explicit user decision: bleaching is dye, for both stores.
   if (item?.item_name === '褪色') return 'color';
+  if (new RegExp(APPROVED_ACID_CARE_PATTERN).test(item?.item_name || '')) return 'treatment';
   return REPORT_PROJECT_ROUTES.find(([shop,code,name]) => shop === String(shopId)
     && code === String(item?.item_code) && name === item?.item_name)?.[3] ?? null;
 }

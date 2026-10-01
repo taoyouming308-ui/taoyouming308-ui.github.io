@@ -7,6 +7,7 @@ execFileSync(process.execPath,['scripts/build-daily-autofill-v5.mjs','--check'],
 execFileSync(process.execPath,['scripts/build-daily-autofill-v6.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v7.mjs','--check'],{stdio:'pipe'});
 execFileSync(process.execPath,['scripts/build-daily-autofill-v8.mjs','--check'],{stdio:'pipe'});
+execFileSync(process.execPath,['scripts/build-daily-autofill-v9.mjs','--check'],{stdio:'pipe'});
 const name=`daily-autofill-${process.pid}-${Date.now()}`;
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024});
 const sql=query=>docker(['exec','-i',name,'psql','-X','-h','127.0.0.1','-U','postgres','-At','-v','ON_ERROR_STOP=1', '-c',query]).trim();
@@ -475,6 +476,42 @@ let started=false;
   assert.equal(autofill().status,'already_applied');
   sql(`update public.zysyr_daily_sheet_drafts set status='confirmed' where id='${draft}'`);assert.equal(autofill().status,'confirmed_preserved');
   sql(`update public.zysyr_daily_sheet_drafts set status='draft' where id='${draft}'`);
+ });
+ sql(fs.readFileSync('supabase/migrations/20261001124358_zysyr_daily_project_completeness_v9.sql','utf8'));
+ check('v9 approved care family works in both stores; new price variants do not need another patch',()=>{
+  for(const shop of ['1009951','1837032'])for(const name of ['歌薇酸护','歌薇酸护880','歌薇酸护（盖白发）','歌薇酸护（盖白发）1280元'])
+   assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category('${shop}','new-code',${q(name)})`),'treatment');
+  for(const [shop,name] of [['other','歌薇酸护880'],['1009951','歌薇酸护产品零售'],['1009951','未确认护理'],['1837032','新套餐烫染护']])
+   assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category(${q(shop)},'new-code',${q(name)})`),'');
+  for(const [shop,code,name,expected] of [['1837032','314','健康烫发1380元','perm'],['1837032','417','基础染中发','color'],['1837032','431','漂发1200','color'],['1009951','409','健康染短发','color']])
+   assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category('${shop}','${code}',${q(name)})`),expected);
+ });
+ const issues=p=>json(`select zysyr_daily_electronic_private.project_classification_issues(${q(JSON.stringify(p))}::jsonb)`);
+ check('v9 every unresolved nonzero or missing stylist allocation has an explanation, no customer data',()=>{
+  const p=payload(),b=p.bills[0];b.items[0].item_code='999';b.items[0].item_name='合成新项目';
+  let rows=issues(p);assert.equal(rows.length,1);assert.equal(rows[0].project_name,'合成新项目');assert.equal(rows[0].amount,100);assert.equal(rows[0].reason,'project_unmapped');
+  assert.equal(rows[0].row_key,'stylist_e11_b53304c1');assert(!JSON.stringify(rows).includes('customer'));
+  b.employee_allocations[0].performance_cents=0;assert.deepEqual(issues(p),[],'zero performance is not missing money');
+  b.employee_allocations[0].performance_cents=null;assert.equal(issues(p)[0].reason,'amount_unknown');assert.equal(issues(p)[0].amount,null);
+  b.employee_allocations[0].performance_cents=10000;b.items[0].item_name='歌薇酸护（盖白发）';assert.deepEqual(issues(p),[]);
+  b.payments.find(x=>x.source_field==='dianpin').amount_cents=5000;
+  assert.equal(issues(p)[0].reason,'platform_unresolved','mixed platform routing is never guessed from name');
+ });
+ check('v9 persisted classification closes categories without changing totals, snapshots or manual cells',()=>{
+  const p=payload(),b=p.bills[0];b.items[0].item_code='513';b.items[0].item_name='歌薇酸护880';
+  Object.assign(b.employee_allocations[0],{cash_performance_cents:293400,card_performance_cents:82824,other_performance_cents:0,performance_cents:376224});
+  const before=json(`select jsonb_object_agg(section_code||':'||column_code,ocr_numeric) from public.zysyr_daily_sheet_cells where draft_id='${draft}' and section_code in('summary','payment')`);
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=12.34 where draft_id='${draft}' and section_code='payment' and column_code='alipay'`);
+  ingest(p);autofill();assert.equal(value('treatment','stylist','手填姓名'),'3762.24');assert.equal(value('subtotal'),'3762.24');assert.equal(value('perm'),'0.00');
+  assert.deepEqual(json(`select jsonb_object_agg(section_code||':'||column_code,ocr_numeric) from public.zysyr_daily_sheet_cells where draft_id='${draft}' and section_code in('summary','payment')`),before);
+  assert.equal(sql(`select corrected_numeric from public.zysyr_daily_sheet_cells where draft_id='${draft}' and section_code='payment' and column_code='alipay'`),'12.34');
+  assert.equal(sql(`select ocr_raw_result#>>'{autofill,mapping_version}' from public.zysyr_daily_sheet_drafts where id='${draft}'`),'frontdesk-autofill-v9');
+  assert.deepEqual(json(`select ocr_raw_result#>'{autofill,classification_issues}' from public.zysyr_daily_sheet_drafts where id='${draft}'`),[]);
+  assert.equal(autofill().status,'already_applied');assert.equal(autofill('向里造型','2026-09-24').status,'confirmed_preserved');
+  b.items[0].item_name='合成新项目';ingest(p);
+  assert.equal(json(`select ocr_raw_result#>'{autofill,classification_issues}' from public.zysyr_daily_sheet_drafts where id='${draft}'`).length,1);
+  assert.equal(json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`).valid,false);
+  for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.project_classification_issues(jsonb)','execute')`),'f');
  });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));

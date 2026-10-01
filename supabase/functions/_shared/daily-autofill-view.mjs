@@ -29,6 +29,19 @@ function cashView(metadata) {
   return { policy: cash.policy, state: 'candidate', cash_channels_complete: cash.cash_channels_complete };
 }
 
+function classificationIssues(metadata, active) {
+  if (!Array.isArray(metadata?.classification_issues)) return [];
+  const clean = value => typeof value === 'string' ? value.slice(0,120) : '';
+  return metadata.classification_issues.slice(0,1000).flatMap(item => {
+    if (!item || !active.includes(item.row_key)
+      || !['project_unmapped','platform_unresolved','amount_unknown'].includes(item.reason)
+      || !(item.amount === null || typeof item.amount === 'number' && Number.isFinite(item.amount))) return [];
+    return [{row_key:item.row_key, employee_name:clean(item.employee_name),
+      project_code:clean(item.project_code), project_name:clean(item.project_name),
+      bill_id:clean(item.bill_id), amount:item.amount, reason:item.reason}];
+  });
+}
+
 export function dailyAutofillView(draft, cells, storeId) {
   const { autofill_view: metadata, ...safeDraft } = draft;
   const cash = draft.template_code === 'zysyr_frontdesk_project_draft' ? cashView(metadata) : null;
@@ -46,8 +59,9 @@ export function dailyAutofillView(draft, cells, storeId) {
     ? [...new Set(supplied)].filter(key => sourceKeys.includes(key)) : sourceKeys;
   // Only this renderer contract is exposed; no raw OCR, bill payload or before-image.
   const conflicts=manualConflicts(metadata,cells);
+  const issues=classificationIssues(metadata,active);
   safeDraft.ocr_raw_result = { autofill: { active_staff_row_keys: active, ...totalPolicy, ...(cash ? { cash_receipts: cash } : {}),
-    ...(conflicts.length?{manual_conflicts:conflicts}:{}) } };
+    ...(conflicts.length?{manual_conflicts:conflicts}:{}), ...(issues.length?{classification_issues:issues}:{}) } };
   const displayCells = cells.map(cell => {
     // User-confirmed alias, exact store + source employee namespace only.
     // A manually renamed cell, another store or another employee stays unchanged.

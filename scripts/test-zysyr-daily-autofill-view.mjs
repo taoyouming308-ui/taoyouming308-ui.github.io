@@ -47,6 +47,12 @@ assert.equal(dailyAutofillView({...draft,autofill_view:null},cells,store).draft.
 const confirmed=dailyAutofillView({...draft,status:'confirmed'},cells,store);
 assert(!('ocr_raw_result' in confirmed.draft));assert.equal(confirmed.cells[0].row_label,'郭小康');
 assert.deepEqual(confirmed.cells,cells,'posted names and amounts unchanged');
+const issue={row_key:key,employee_name:'合成员工',project_name:'未知项目',project_code:'999',bill_id:'synthetic',amount:125.34,reason:'project_unmapped',private_payload:'never expose'};
+const issueView=dailyAutofillView({...draft,autofill_view:{...draft.autofill_view,classification_issues:[issue,{...issue,row_key:'stylist_e99_b53304c1'},{...issue,amount:'125.34'},{...issue,reason:'private'}]}},cells,store);
+assert.equal(issueView.draft.ocr_raw_result.autofill.classification_issues.length,1);
+assert.equal(issueView.draft.ocr_raw_result.autofill.classification_issues[0].amount,125.34);
+assert(!JSON.stringify(issueView).includes('never expose'));
+assert(!JSON.stringify(dailyAutofillView({...draft,status:'confirmed',autofill_view:{classification_issues:[issue]}},cells,store)).includes('classification_issues'));
 let browser;
 try {
  browser=await chromium.launch({...process.platform==='darwin'?{channel:'chrome'}:{},headless:true});

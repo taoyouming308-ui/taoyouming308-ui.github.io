@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="599">
+<html lang="zh-CN" data-version="600">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -124,9 +124,9 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=599"></script>
-<script src="operations-staff-view.js?v=599"></script>
-<script src="operations-monthly-daily-performance.js?v=599"></script>
+<script src="operations-time.js?v=600"></script>
+<script src="operations-staff-view.js?v=600"></script>
+<script src="operations-monthly-daily-performance.js?v=600"></script>
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -612,10 +612,10 @@
       .sheet-scroll { box-shadow:none; }
     }
   </style>
-  <script src="operations-report-fit.js?v=599"></script>
-  <script src="operations-auth-bridge.js?v=599"></script>
-  <script src="operations-voucher-preview.js?v=599"></script>
-  <script src="operations-voucher-view.js?v=599"></script>
+  <script src="operations-report-fit.js?v=600"></script>
+  <script src="operations-auth-bridge.js?v=600"></script>
+  <script src="operations-voucher-preview.js?v=600"></script>
+  <script src="operations-voucher-view.js?v=600"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -780,7 +780,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=599';
+      script.src='operations-petty-cash-evidence.js?v=600';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1239,6 +1239,14 @@ function calculateDailyControls(root){
     rowMismatch:rowMismatchKeys.length,categoryMismatch:categoryMismatchCodes.length,
     rowMismatchKeys:rowMismatchKeys,categoryMismatchCodes:categoryMismatchCodes,missing:missing};
 }
+  function dailyClassificationNotice(){
+    var sheet=state.imports.sheet,meta=sheet&&sheet.draft.ocr_raw_result&&sheet.draft.ocr_raw_result.autofill;
+    var issues=meta&&meta.classification_issues;
+    if(!sheet||sheet.draft.status!=='draft'||!Array.isArray(issues)||!issues.length)return '';
+    var labels={project_unmapped:'项目尚未归类',platform_unresolved:'团购/项目归属待核对',amount_unknown:'来源金额缺失'};
+    var rows=issues.map(function(item){return '<li>'+esc(item.employee_name||'员工待核对')+' · '+esc(item.project_name||'项目待核对')+'（编号 '+esc(item.project_code||'未知')+'） · <strong>'+esc(item.amount==null?'金额未知':Number(item.amount).toFixed(2)+' 元')+'</strong> · '+esc(labels[item.reason]||'待核对')+' · 单号 '+esc(item.bill_id||'未知')+'</li>'}).join('');
+    return '<div class="candidate-warning" data-classification-issues style="grid-column:1/-1;overflow-wrap:anywhere"><strong>有 '+issues.length+' 条来源项目需要归类核对</strong><div>下列业绩已包含在员工小计中，不要再加到总额。请对照来源补齐项目栏；如已手工补齐，仍须核对归类与金额。</div><ul>'+rows+'</ul></div>';
+  }
   function renderDailyControls(){
     if(!state.imports.sheet)return;
     var c=calculateDailyControls(),control=function(label,left,right,ok){return'<div class="daily-control '+(ok?'ok':'bad')+'">'+esc(label)+'<strong>'+esc(left)+' / '+esc(right)+'</strong>'+(ok?'一致':'请核对')+'</div>'};
@@ -1254,6 +1262,7 @@ function calculateDailyControls(root){
       +control('员工合计 ↔ 实做/总计',c.staffAtomic.toFixed(2),(c.actual==null?'空':Number(c.actual).toFixed(2))+' / '+(c.grand==null?'空':Number(c.grand).toFixed(2)),c.actual!=null&&c.grand!=null&&Math.abs(c.staffAtomic-c.actual)<=.01&&Math.abs(c.staffAtomic-c.grand)<=.01)
       +control('支付方式 ↔ 现金流+卡金 ↔ 总计',c.methodTotal.toFixed(2),(c.cashflow==null?'空':Number(c.cashflow).toFixed(2))+' + '+Number(c.card||0).toFixed(2)+' / '+(c.payment==null?'空':Number(c.payment).toFixed(2)),c.cashflow!=null&&c.payment!=null&&Math.abs(c.methodTotal-c.cashflow)<=.01&&Math.abs(c.cashflow+c.card-c.payment)<=.01&&Math.abs(c.staffAtomic-c.payment)<=.01);
     }
+    $('daily-controls').insertAdjacentHTML('beforeend',dailyClassificationNotice());
     document.querySelectorAll('[data-daily-cell]').forEach(function(input){
       var subtotal=c.stylistSubtotalMismatch&&input.dataset.section==='stylist'&&input.dataset.rowKey==='stylist_category_total'&&input.dataset.columnCode==='subtotal';
       input.classList.toggle('control-mismatch',subtotal||c.rowMismatchKeys.indexOf(input.dataset.rowKey)>=0||c.categoryMismatchCodes.indexOf(input.dataset.columnCode)>=0);
@@ -1425,9 +1434,9 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=599"></script>
-  <script src="operations-daily-electronic.js?v=599"></script>
-  <script src="operations-monthly-workbench.js?v=599"></script>
-  <script src="operations-daily-recognition.js?v=599"></script>
+  <script src="operations-daily-review.js?v=600"></script>
+  <script src="operations-daily-electronic.js?v=600"></script>
+  <script src="operations-monthly-workbench.js?v=600"></script>
+  <script src="operations-daily-recognition.js?v=600"></script>
 </body>
 </html>

@@ -54,10 +54,17 @@ let browser;
   const controls=await page.evaluate(()=>calculateDailyControls(document));
   assert.deepEqual(controls.pendingRows,['stylist_e11']);assert.equal(controls.rowMismatch,0);
   assert.equal(controls.valid,false,'partial source cannot enable confirmation');
+  await page.evaluate(()=>{state.imports.sheet.draft.ocr_raw_result.autofill.classification_issues=[{employee_name:'合成员工',project_name:'<img src=x onerror=alert(1)>',project_code:'999',bill_id:'synthetic-bill',amount:125.34,reason:'project_unmapped'},{employee_name:'合成员工',project_name:'未知金额',amount:null,reason:'amount_unknown'}];document.getElementById('grid').insertAdjacentHTML('afterend','<div id="notice">'+dailyClassificationNotice()+'</div>')});
+  assert((await page.locator('#notice').innerText()).includes('125.34 元'));
+  assert((await page.locator('#notice').innerText()).includes('金额未知'));
+  assert((await page.locator('#notice').innerText()).includes('不要再加到总额'));
+  assert.equal(await page.locator('#notice img').count(),0,'untrusted source names are escaped');
+  assert.equal(await page.evaluate(()=>calculateDailyControls(document).valid),false,'explanation does not bypass missing-cell gate');
   await page.evaluate(()=>{state.imports.sheet.draft.template_code='zysyr_daily_performance_photo';state.imports.sheet.draft.status='confirmed';state.imports.sheet.cells=[];document.getElementById('grid').innerHTML=dailyPaperSheet()});
   assert((await page.locator('#grid').innerText()).includes('基础烫发'),'old confirmed template remains unchanged');
   assert(!(await page.locator('#grid').innerText()).includes('烫（个）'));
   assert.equal(await page.locator('[data-paper-column="bank_card"]').count(),0,'old confirmed sheets do not acquire a new bank column');
+  assert.equal(await page.evaluate(()=>dailyClassificationNotice()),'','do not attach new source issues to historical posted sheets');
   await page.close();
  }
  console.log('Automatic draft browser: real paper rendering, count columns, blanks, manual overrides, escaping, 25-column layout and legacy compatibility passed');
