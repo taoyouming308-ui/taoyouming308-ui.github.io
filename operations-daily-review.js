@@ -4,6 +4,8 @@
   var active = null;
   var disabledControls = new Map();
   var uncertainPosts = new Set();
+  var quietRefresh = false, syncPending = false, syncCheckedAt = 0, syncKey = '';
+  var syncMessage = '';
   var saveButtons = ['daily-detail-save', 'daily-detail-save-top'].map(function (id) { return document.getElementById(id); });
   var postButtons = ['daily-detail-confirm', 'daily-detail-confirm-top'].map(function (id) { return document.getElementById(id); });
 
@@ -27,7 +29,7 @@
     return !!sheet && String(sheet.draft.id) === ctx.id && String(sheet.draft.report_date) === ctx.date
       && Number(sheet.draft.edit_revision) === ctx.revision && currentStore() === ctx.store;
   }
-  function applySheet(ctx, sheet) {
+  function applySheet(ctx, sheet, quiet) {
     if (!isCurrent(ctx) || !sheet || String(sheet.draft.id) !== ctx.id || String(sheet.draft.report_date) !== ctx.date) {
       throw new Error('当前门店或日报已变化，请重新打开核对');
     }
@@ -35,7 +37,87 @@
     ctx.revision = Number(sheet.draft.edit_revision);
     state.imports.dirty = {};
     state.imports.dirtyLabels = {};
-    renderDailySheetDetail();
+    syncMessage = '';
+    quietRefresh = !!quiet;
+    var x = window.scrollX, y = window.scrollY;
+    var scrolls = Array.from(grid().querySelectorAll('.daily-grid-scroll')).map(function (el) { return [el.scrollLeft, el.scrollTop]; });
+    try { renderDailySheetDetail(); }
+    finally { quietRefresh = false; }
+    if (quiet) {
+      grid().querySelectorAll('.daily-grid-scroll').forEach(function (el, i) { if (scrolls[i]) { el.scrollLeft = scrolls[i][0]; el.scrollTop = scrolls[i][1]; } });
+      window.scrollTo(x, y);
+    }
+  }
+  function sheetVersion(sheet) {
+    // Signed image URLs change on reads; they are not a financial revision.
+    return JSON.stringify([sheet.draft.edit_revision, sheet.draft.status, sheet.draft.source_voucher_id,
+      sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved,
+      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+  }
+  function sourceBusy() { return !!(window.ZysyrDailySourceActions && window.ZysyrDailySourceActions.busy()); }
+  function syncStatus(message) {
+    syncMessage = message;
+    var element = document.getElementById('daily-detail-sync-status');
+    if (!element) {
+      element = document.createElement('div');
+      element.id = 'daily-detail-sync-status';
+      element.className = 'help';
+      element.setAttribute('role', 'status');
+      document.getElementById('daily-detail-meta').after(element);
+    }
+    element.textContent = message;
+    element.hidden = !message;
+  }
+  function localInputActive() {
+    var detail = document.getElementById('daily-report-detail');
+    var focused = document.activeElement;
+    return dailySheetDirtyCount() > 0 || !!document.getElementById('daily-detail-reason').value.trim()
+      || !!detail.querySelector('details[open]')
+      || Array.from(detail.querySelectorAll('input[type=file]')).some(function (input) { return input.files.length > 0; })
+      || (detail.contains(focused) && focused.matches('input,textarea,select'));
+  }
+  async function checkBeforeWrite(ctx) {
+    var previous = state.imports.sheet;
+    var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+    if (!isCurrent(ctx) || state.imports.sheet !== previous) throw new Error('当前日报已变化，请重新核对');
+    if (String(fresh.draft.id) !== ctx.id || String(fresh.draft.report_date) !== ctx.date) throw new Error('返回的日报不一致，本次未提交');
+    if (sheetVersion(fresh) !== sheetVersion(previous)) {
+      if (!dailySheetDirtyCount()) applySheet(ctx, fresh, true);
+      throw new Error(dailySheetDirtyCount()
+        ? '后台日报已有更新，本页修改已保留，未覆盖后台；请保留修改内容并重新打开最新日报核对'
+        : fresh.draft.status === 'confirmed' ? '这张日报已入账，已更新页面，无需重复提交'
+        : '已更新到最新日报，请重新核对后再操作');
+    }
+    return fresh;
+  }
+  async function syncDailySheet() {
+    if (!detailOpen() || !state.imports.sheet || !state.user || document.hidden || navigator.onLine === false
+      || active || sourceBusy() || syncPending || isLocalPreview()) return;
+    var ctx = context(), key = contextKey(ctx);
+    if (key === syncKey && Date.now() - syncCheckedAt < 30000) return;
+    syncKey = key; syncCheckedAt = Date.now(); syncPending = true;
+    var previous = state.imports.sheet;
+    var protectedInput = localInputActive();
+    try {
+      var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+      // Check again after the request: the user may have started typing or navigated.
+      if (!detailOpen() || document.hidden || active || sourceBusy() || !isCurrent(ctx) || state.imports.sheet !== previous) return;
+      if (String(fresh.draft.id) !== ctx.id || String(fresh.draft.report_date) !== ctx.date) throw new Error('日报范围不一致');
+      if (sheetVersion(fresh) !== sheetVersion(previous) || uncertainPosts.has(key)) {
+        if (protectedInput || localInputActive()) {
+          syncStatus('后台日报已有更新；本页填写内容已保留，请保留修改内容并核对最新版本后再保存或入账。');
+          return;
+        }
+        var uncertain = uncertainPosts.has(key);
+        applySheet(ctx, fresh, true);
+        uncertainPosts.delete(key);
+        renderDailyDetailControls();
+        syncStatus(fresh.draft.status === 'confirmed' ? '已核实：此日报已入账，无需重复提交。'
+          : uncertain ? '已核实：此日报仍为草稿，请核对后再入账。' : '已同步最新日报，请按最新内容核对。');
+      } else if (syncMessage) syncStatus('');
+    } catch (_) {
+      if (detailOpen() && !active && isCurrent(ctx) && state.imports.sheet === previous) syncStatus('暂时无法检查最新日报，填写内容未清除；保存和入账前会再次核对。');
+    } finally { syncPending = false; }
   }
   function lockControls() {
     if (!active) return;
@@ -147,9 +229,10 @@
   var renderDetailBase = renderDailySheetDetail;
   renderDailySheetDetail = function () {
     var id = String(state.imports.sheet && state.imports.sheet.draft.id || '');
-    if (lastDraftId !== id) { notice(''); document.getElementById('daily-detail-reason').value = ''; }
+    if (lastDraftId !== id) { notice(''); syncMessage = ''; document.getElementById('daily-detail-reason').value = ''; }
     lastDraftId = id;
     renderDetailBase();
+    syncStatus(syncMessage);
   };
 
   function reviewedValues(root) {
@@ -167,9 +250,10 @@
       if (reviewedValues(paper) !== snapshot) throw new Error('后台回读内容与刚才核对的内容不同；本页修改已保留，请勿重新填写整张表');
     } finally { state.imports.sheet = previous; }
   }
-  async function persistDraft(ctx, reason) {
+  async function persistDraft(ctx, reason, versionChecked) {
     if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新打开');
     if (!dailySheetDirtyCount()) return;
+    if (!versionChecked) await checkBeforeWrite(ctx);
     var snapshot = reviewedValues(), cells = collectDailySheetCells(grid());
     var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, cells: cells, reason: reason });
     verifySavedValues(result, snapshot);
@@ -248,14 +332,15 @@
     var submitted = false;
     notice('正在保存并校验日报…');
     try {
+      var latest = await checkBeforeWrite(ctx);
       pendingCandidates().forEach(function (input) {
         if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
         else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
         input.classList.add('manual-edit');
       });
-      if (dailySheetDirtyCount()) await persistDraft(ctx, saveReason);
+      if (dailySheetDirtyCount()) await persistDraft(ctx, saveReason, true);
       else {
-        var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+        var fresh = latest;
         verifySavedValues(fresh, snapshot);
         applySheet(ctx, fresh);
       }
@@ -312,7 +397,12 @@
     if (displayedScope) ctx.store = displayedScope.store;
     return !!active || dailySheetDirtyCount() > 0 || uncertainPosts.has(contextKey(ctx));
   }
-  window.ZysyrDailyReview = { hasWork: hasWork };
+  window.ZysyrDailyReview = { hasWork: hasWork, sync: syncDailySheet, isQuietRefresh: function () { return quietRefresh; } };
+  setInterval(syncDailySheet, 60000);
+  window.addEventListener('focus', syncDailySheet);
+  window.addEventListener('pageshow', syncDailySheet);
+  window.addEventListener('online', syncDailySheet);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) syncDailySheet(); });
   // Select changes fire after the value changes: restore the original scope before
   // any existing handler can fetch or save a different store/month.
   var displayedScope = null, renderWithScope = renderDailySheetDetail;

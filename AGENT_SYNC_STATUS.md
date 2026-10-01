@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-01 · 日报安全静默同步（App version: v599）
+
+- 基线 github/main `a099b97` v598；工作树干净，fetch/版本/发布完整性/交接检查完成，复用 10/1 源码归档。Current owner: Codex。
+- 用户确认按“安全静默同步”方案执行：仅 `operations-daily-review.js` 的详情后台检查和写前预检，以及 `operations.html` 静默渲染不滚回顶部；其他两个入口只同步版本/缓存标记。
+- 前台详情每60秒及 focus/pageshow/online/visibility 唤醒读取既有鉴权 `daily_sheet_read`，30秒合并及 single-flight；隐藏/离线/正在写入或原件处理中跳过。请求前后校验上下文和 sheet 对象，保护金额/姓名/备注/文件选择/展开核对；无变化不重建DOM。
+- 未编辑自动读取最新日报；有修改只提示，不更换 expected_revision 强行保存。保存和入账先核对版本/权限/锁账；不改 v598 数据库冲突保护、公式、历史数据、RLS或登录续期。没有自动确认任何真实日报，无需 Edge 或迁移部署。
+- 聚焦 Chrome 与 WebKit 隔离浏览器用例通过，覆盖输入/迟到响应/重复唤醒/离线隐藏/权限变化/写前冲突/入账结果恢复。完整 pre-push 与 Pages/CI/线上哈希在本轮发布时核验；真实财务长时间挂页仍需实际使用验收。
+- 回退：从 `a099b97` 恢复该前端模块及静默渲染条件，以更高版本发布；不回滚数据、不恢复旧40001错误码。
+
 ## 2026-10-01 · 日报版本冲突非重试修复（App version: v598）
 
 - 基线 github/main `bebf7e2` v597，干净工作树；fetch/版本/完整性/交接检查及 10/1 源码归档完成。Current owner: Codex。

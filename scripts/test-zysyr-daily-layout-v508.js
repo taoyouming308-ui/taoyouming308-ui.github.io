@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { stripTypeScriptTypes } = require('node:module');
-const { chromium } = require('playwright');
+const { chromium, webkit } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const edgeSource = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const saveStart = edgeSource.indexOf('async function saveDailySheetDraft(');
@@ -38,7 +38,8 @@ let browser;
 async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
+  browser = process.env.ZYSYR_TEST_WEBKIT === '1'
+    ? await webkit.launch({ headless: true }) : await chromium.launch({ channel: 'chrome', headless: true });
   for (const width of [1280, 390]) {
     for (const storeName of ['向里造型', '自由手艺人']) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
@@ -105,7 +106,7 @@ async function run() {
           if (payload.draft_id !== 'fixture-draft') throw new Error('Wrong draft');
           if (window.fixtureDelay) await new Promise(resolve => setTimeout(resolve, window.fixtureDelay));
           if (operation === 'daily_sheet_read') {
-            if (window.fixtureReadFailure) throw new Error('read unavailable');
+            if (window.fixtureReadFailure && (!window.fixtureLostReply || window.confirmDailyPayloads.length)) throw new Error('read unavailable');
             return structuredClone(source);
           }
           if (operation === 'daily_sheet_confirm') {
@@ -306,6 +307,127 @@ async function run() {
         await page.evaluate(() => confirmDailyReportDetail());
         assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 1, 'uncertain result must be queried, not resubmitted');
         assert.equal(await page.locator('#daily-detail-confirm').textContent(), '已入账');
+        // Idle/re-entry synchronization: real browser DOM, synthetic API only.
+        await page.evaluate(() => {
+          window.realNow = Date.now;
+          window.clockOffset = 0;
+          Date.now = () => realNow() + clockOffset;
+        });
+        async function sync() {
+          await page.evaluate(async () => {
+            clockOffset += 61000;
+            document.activeElement.blur();
+            await ZysyrDailyReview.sync();
+          });
+        }
+        await reset();
+        await page.evaluate(() => {
+          window.oldGrid = document.querySelector('#daily-detail-grid table');
+          fixtureSource.draft.edit_revision++;
+          document.getElementById('daily-report-detail').scrollIntoView = () => { window.scrolledByRender = true; };
+          window.scrolledByRender = false;
+        });
+        await sync();
+        assert.equal(await page.evaluate(() => state.imports.sheet.draft.edit_revision === fixtureSource.draft.edit_revision), true);
+        assert.equal(await page.evaluate(() => scrolledByRender), false, 'idle refresh must not jump to the report header');
+        assert.deepEqual(await page.evaluate(() => [savedDailyPayloads.length, confirmDailyPayloads.length]), [0, 0]);
+        await page.evaluate(() => { window.oldGrid = document.querySelector('#daily-detail-grid table'); });
+        await sync();
+        assert.equal(await page.evaluate(() => oldGrid === document.querySelector('#daily-detail-grid table')), true, 'unchanged read must not rebuild the grid');
+        const readCount = await page.evaluate(() => dailyOperations.length);
+        await page.evaluate(async () => {
+          window.dispatchEvent(new Event('focus'));
+          window.dispatchEvent(new Event('online'));
+          window.dispatchEvent(new Event('pageshow'));
+          document.dispatchEvent(new Event('visibilitychange'));
+          await ZysyrDailyReview.sync();
+        });
+        assert.equal(await page.evaluate(() => dailyOperations.length), readCount, 're-entry events are coalesced');
+
+        await reset();
+        await actual.fill('999');
+        await employeeName.fill('本页未保存姓名');
+        await page.evaluate(() => { fixtureSource.draft.edit_revision++; });
+        await sync();
+        assert.equal(await actual.inputValue(), '999');
+        assert.equal(await employeeName.inputValue(), '本页未保存姓名');
+        assert.match(await page.locator('#daily-detail-sync-status').textContent(), /填写内容已保留/);
+        assert.equal(await page.evaluate(() => state.imports.sheet.draft.edit_revision < fixtureSource.draft.edit_revision), true, 'must not silently rebase dirty edits');
+        await page.evaluate(() => saveDailyReportDetail());
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length), 0, 'stale dirty save must stop before writing');
+        assert.equal(await actual.inputValue(), '999');
+
+        await reset({ fixtureDelay: 100 });
+        await page.evaluate(() => {
+          clockOffset += 61000; document.activeElement.blur(); fixtureSource.draft.edit_revision++;
+          window.pendingSync = ZysyrDailyReview.sync();
+        });
+        await actual.fill('888');
+        await page.evaluate(() => pendingSync);
+        assert.equal(await actual.inputValue(), '888', 'typing during an in-flight read must survive');
+
+        await reset({ fixtureDelay: 100 });
+        await page.evaluate(() => {
+          clockOffset += 61000; document.activeElement.blur(); fixtureSource.draft.edit_revision++;
+          window.pendingSync = ZysyrDailyReview.sync();
+          state.imports.sheet = structuredClone(state.imports.sheet);
+          state.imports.sheet.draft.id = 'different-day';
+        });
+        await page.evaluate(() => pendingSync);
+        assert.equal(await page.evaluate(() => state.imports.sheet.draft.id), 'different-day', 'late reads cannot replace another day');
+
+        await reset();
+        await page.evaluate(() => { fixtureSource.permissions.write = false; });
+        await actual.fill('2126');
+        await page.evaluate(() => saveDailyReportDetail());
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length), 0, 'server permission change stops stale editing');
+        assert.ok(await page.evaluate(() => dailySheetDirtyCount() > 0));
+
+        await reset();
+        await page.evaluate(() => { fixtureSource.draft.id = 'wrong-response-id'; });
+        await sync();
+        assert.equal(await page.evaluate(() => state.imports.sheet.draft.id), 'fixture-draft', 'wrong-scope API responses must not render');
+        await page.evaluate(() => { fixtureSource.draft.id = 'fixture-draft'; });
+
+        await reset({ fixtureDelay: 100 });
+        await page.evaluate(async () => {
+          clockOffset += 61000; document.activeElement.blur();
+          await Promise.all([ZysyrDailyReview.sync(), ZysyrDailyReview.sync(), ZysyrDailyReview.sync()]);
+        });
+        assert.equal(await page.evaluate(() => dailyOperations.filter(op => op === 'daily_sheet_read').length), 1, 'only one idle read in flight');
+
+        await reset({ fixtureReadFailure: true });
+        await sync();
+        assert.match(await page.locator('#daily-detail-sync-status').textContent(), /暂时无法检查/);
+        await post();
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length + confirmDailyPayloads.length), 0, 'failed preflight must not write');
+        await reset();
+        await page.evaluate(() => { fixtureSource.draft.edit_revision++; });
+        await post();
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length + confirmDailyPayloads.length), 0, 'clean stale post refreshes for review, never auto-posts');
+        assert.match(await page.locator('#daily-detail-note').textContent(), /最新日报/);
+        await post();
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 1, 'explicit re-review can post the current version');
+
+        await reset();
+        await page.evaluate(() => { fixtureSource.draft.status = 'confirmed'; });
+        await sync();
+        assert.equal(await page.locator('#daily-detail-confirm').textContent(), '已入账');
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'already posted on server is read-only recovery');
+        await reset();
+        await page.evaluate(() => {
+          clockOffset += 61000;
+          Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+        });
+        await sync();
+        assert.deepEqual(await page.evaluate(() => dailyOperations), [], 'offline timer does not request');
+        await page.evaluate(() => {
+          delete navigator.onLine;
+          Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+        });
+        await sync();
+        assert.deepEqual(await page.evaluate(() => dailyOperations), [], 'hidden tab does not poll');
+        await page.evaluate(() => { delete document.hidden; Date.now = realNow; });
         await reset();
         await page.evaluate(() => { state.imports.sheet.locked = true; renderDailyDetailControls(); });
         await page.evaluate(() => confirmDailyReportDetail());
@@ -320,6 +442,6 @@ async function run() {
       await page.close();
     }
   }
-  console.log('Daily report: aligned headers, save-only, reviewed posting, candidates, failure gates and uncertain-result recovery passed in both stores at desktop/mobile widths.');
+  console.log('Daily report: layout/edit/save/post desktop+mobile; safe idle/re-entry sync, dirty/race/scope/offline protection, preflight and uncertain-result recovery passed.');
 }
 run().finally(async () => { if (browser) await browser.close(); server.close(); }).catch(error => { console.error(error); process.exitCode = 1; });
