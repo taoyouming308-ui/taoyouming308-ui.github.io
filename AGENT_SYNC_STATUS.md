@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-01 · 两店当日日报定时核对（App version: v600）
+
+- 基线 github/main `4e69685`，干净工作树；启动门禁及当天源码归档已完成。Current owner: Codex。
+- 用户要求每日自动检查日报。仅新增只读脚本/SQL、15项测试、运行说明和财务测试清单，不修改页面、财务公式、数据库/权限、历史账或现有同步调度；维护模块无需提升App版本。
+- 使用候选/人工优先显示值独立核对，不把正式入账函数的人工-only空值误判为草稿数据丢失。源列表/详情快照、来源逐员工预期格、分类遗漏、行列合计、支付控制和未知字段分层提示。
+- 10/1 21:35生产只读试运行：两店当前来源员工项目无差异，但收款控制有未知字段，正确返回attention；本轮未写任何真实日报。定时执行采用23:30 Asia/Shanghai，稳定副本目录`/Users/a1/Documents/Codex/2026-06-20/zysyr-daily-monitor`，不依赖临时checkout。
+- 后续核验：完整pre-push与远端CI、稳定副本哈希、heartbeat激活；依赖本机开机/Codex运行/Supabase可用，不宣称无人值守云端SLA。回滚只需暂停此heartbeat，无数据库迁移或数据恢复。
+
 ## 2026-10-01 · 日报项目归类完整性（App version: v600）
 
 - 基线 github/main `7b74c1f` v599，干净工作树；fetch/版本/发布完整性/交接及当天源码归档完成。Current owner: Codex。
