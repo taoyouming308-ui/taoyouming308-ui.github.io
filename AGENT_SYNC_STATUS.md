@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-01 · 日报版本冲突非重试修复（App version: v598）
+
+- 基线 github/main `bebf7e2` v597，干净工作树；fetch/版本/完整性/交接检查及 10/1 源码归档完成。Current owner: Codex。
+- 生产证据：12:20–13:00 窗口数据库大量 `DAILY_SHEET_REVISION_CONFLICT` / 40001；两次 daily_sheet_save 耗时约 126.8 秒。官方已确认 PostgREST 对此自定义可重试状态的重复事务问题。
+- 用户明确批准最小数据库修复。仅两个带 expected_revision 的 save/confirm RPC 将该错误码改 PT409；保持锁、作用域、权限、委托旧实现和金额规则。生产迁移 `20261001045401` 已成功应用，本地 CLI 文件时间 `20261001045133`；前后函数逐字比较确认只有错误码变化，proacl/owner/security_definer 相同。
+- 原生产函数恢复副本：`/private/tmp/zysyr-daily-revision-functions-before-20261001.json`（0600）；旧定义同时可由基线迁移重建。回退只恢复函数错误处理，不回滚账务；优先前向修复，不恢复会无限重试的 40001。
+- 隔离 PostgreSQL 并发/错误码/正确确认/拒绝越权及原子保存、入账不确定结果保护均通过。CLI linked dry-run 因本工作树无 project-ref 不可用；未伪造绑定或整库推送，改由已授权单迁移 MCP 应用。
+- 只读确认向里 2026-03-04 金额780、revision2仍为草稿；未替用户入账。没有 Edge 代码部署，三个入口只有发布版本标记更新。真实 pre-push、Actions/Pages 和迁移后日志/安全检查将在本轮收尾核验；正式入账仍由财务重新打开核对后操作。
+
 ## 2026-09-30 · 日报金额清晰显示（App version: v597）
 
 - Last synchronized base checked: GitHub main `c98f810`（v596）；Current owner: Codex。起始工作树干净，最新基线、版本/完整性/交接检查及当天源码备份检查完成。

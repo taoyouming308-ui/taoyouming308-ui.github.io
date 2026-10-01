@@ -42,6 +42,15 @@ async function main() {
         create function public.zysyr_confirm_daily_sheet(uuid,uuid,uuid,uuid,jsonb,boolean,text) returns jsonb language plpgsql security definer as $$begin update public.zysyr_daily_sheet_drafts set status='confirmed',confirmation_revision=edit_revision where id=$4; return jsonb_build_object('confirmed',true,'revision',(select edit_revision from public.zysyr_daily_sheet_drafts where id=$4)); end$$;
         ${migration}`);
 
+    const noRetryMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20261001045133_zysyr_daily_revision_conflict_no_retry.sql'), 'utf8');
+    const definitions = () => runSql(`select json_agg(json_build_object('definition',pg_get_functiondef(oid),'acl',proacl,'owner',proowner,'security_definer',prosecdef) order by proname) from pg_proc where proname in ('zysyr_save_daily_sheet_cells','zysyr_confirm_daily_sheet');`);
+    const before = JSON.parse((await definitions()).stdout);
+    setupSql(noRetryMigration);
+    setupSql(noRetryMigration); // Reapplication must be harmless.
+    const after = JSON.parse((await definitions()).stdout);
+    assert.deepEqual(after, before.map(row => ({ ...row, definition: row.definition.replace("errcode = '40001', message = 'DAILY_SHEET_REVISION_CONFLICT'", "errcode = 'PT409', message = 'DAILY_SHEET_REVISION_CONFLICT'") })),
+      'only the two error codes change; implementations, locks, scope, ownership and grants are identical');
+
     // Two stale browser tabs submit the same reviewed version simultaneously.
     // The row lock allows exactly one write; the waiter must see revision 1 and conflict.
     const calls = ['101', '202'].map(value => runSql(`set role service_role;
@@ -54,6 +63,18 @@ async function main() {
       `select edit_revision||'|'||last_value from public.zysyr_daily_sheet_drafts where id='${draft}'`]).trim();
     assert.match(state, /^1\|(101|202)$/);
 
+    for (const call of [
+      `public.zysyr_save_daily_sheet_cells('${actor}','${company}','${store}','${draft}','[{"value":"999"}]'::jsonb,'stale save',0)`,
+      `public.zysyr_confirm_daily_sheet('${actor}','${company}','${store}','${draft}','{}'::jsonb,null,'stale confirm',0)`,
+    ]) {
+      await runSql(`set role service_role; do $$begin
+        perform ${call}; raise exception 'stale call unexpectedly succeeded';
+        exception when sqlstate 'PT409' then
+          if sqlerrm <> 'DAILY_SHEET_REVISION_CONFLICT' then raise; end if;
+        end$$;`);
+    }
+    await assert.rejects(() => runSql(`set role service_role; select public.zysyr_save_daily_sheet_cells('${id(99)}','${company}','${store}','${draft}','[]'::jsonb,'wrong actor',1);`), /DAILY_SCOPE_FORBIDDEN/);
+
     await assert.rejects(() => runSql(`set role service_role; select public.zysyr_confirm_daily_sheet('${actor}','${company}','${store}','${draft}','{}'::jsonb,null,'stale confirm',0);`), /DAILY_SHEET_REVISION_CONFLICT/);
     assert.equal(docker(['exec', '-i', container, 'psql', '-h', '127.0.0.1', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At', '-c',
       `select status||'|'||coalesce(confirmation_revision::text,'') from public.zysyr_daily_sheet_drafts where id='${draft}'`]).trim(), 'draft|');
@@ -64,8 +85,8 @@ async function main() {
     assert.equal(grants, 'true|true|false', 'service role retains a temporary legacy overload while browser roles cannot call either overload directly');
     assert.match((await runSql(`set role service_role; select public.zysyr_save_daily_sheet_cells('${actor}','${company}','${store}','${draft}','[{"value":"legacy"}]'::jsonb,'legacy compatibility');`)).stdout, /revision/,
       'the old RPC overload must remain usable during the staged UI rollout');
-    console.log('Daily expected revision: stale concurrent saves serialize to one winner; stale confirmation is rejected; current revision confirms; v529 legacy server calls remain compatible and browser roles have no direct RPC grant');
-  } finally { docker(['stop', container]); }
+    console.log('Daily expected revision: stale concurrent saves have one winner; save/confirm return non-retryable PT409; current revision confirms; definitions and grants preserved; wrong actor rejected');
+  } finally { docker(['rm', '-f', '-v', container]); }
 }
 
 main().catch(error => { console.error(error.stderr ? String(error.stderr) : error); process.exitCode = 1; });
