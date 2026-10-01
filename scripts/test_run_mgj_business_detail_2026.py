@@ -64,7 +64,8 @@ class ScheduleTests(unittest.TestCase):
     def test_normal_sync_stale_yields_without_source_attempt(self):
         value = task.run_slot('1009951', now=datetime(2026, 9, 28, 6, 17, tzinfo=task.TZ),
                               epoch=100000, state_path=self.state, lock_path=self.lock,
-                              runner=self.call, source_ready=lambda: False, ready_wait_seconds=0)
+                              runner=self.call, source_ready=lambda: False, ready_wait_seconds=0,
+                              backoff_reader=lambda: {})
         self.assertEqual(value['status'], 'yielded_daily_sync_due')
         self.assertEqual(self.calls, [])
         self.assertEqual(task.read_state(self.state)['last_attempts'], {})
