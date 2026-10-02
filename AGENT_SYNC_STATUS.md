@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-02 frontdesk appointment overview (App version: v604)
+
+- User approved the reviewed one-screen overview for release; isolated latest main 0ba262b. Original developer checkout and all pending Salon/401 work preserved.
+- All-day proportional rails and chronological customer cards retain every appointment; overlap labels, detail/create controls, keyboard focus on polling, and detailed timeline toggle remain. Dense/mobile agendas expand naturally.
+- Synthetic 7 staff / 17 customers fit 1366x768, 1280x800 and 1920x1080; 390px, 45 overlaps, empty staff and interactions verified. Required shared checks and remote CI gate release.
+- Only frontdesk UI, required version/cache markers and tests; no API, schema, data, permissions, runtime install or forced refresh.
+
 ## 2026-10-02 frontdesk disclosure v603
 
 - User approved this one visual update for release. CSS-only disclosure styling plus required version/cache references; no Salon development, API, migration, data, sync or permission changes.
