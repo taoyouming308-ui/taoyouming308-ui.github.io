@@ -69,7 +69,7 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
       await bounded('overview');
       const bounds=await page.locator('#today-list').evaluate(e=>({bottom:e.getBoundingClientRect().bottom,sw:e.scrollWidth,cw:e.clientWidth,sh:e.scrollHeight,ch:e.clientHeight}));
       assert.ok(bounds.sw<=bounds.cw+1);assert.ok(bounds.sh<=bounds.ch+1);
-      
+
       if(width>=1280)assert.ok(bounds.bottom<=height,JSON.stringify(bounds));
       await page.screenshot({path:require('node:path').join(root,`overview-${width}.png`),fullPage:true});
       await page.locator('.overview-event').first().focus();await page.evaluate(()=>{window.testFocused=document.activeElement;window.testTodayPoll();});await page.waitForTimeout(150);assert.ok(await page.evaluate(()=>document.activeElement===window.testFocused));
