@@ -63,6 +63,7 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
       await page.locator('#login-user').fill('preview');await page.locator('#login-pass').fill('synthetic');await page.locator('#login-btn').click();
       await page.locator('.schedule-event').first().waitFor();
       assert.equal(await page.locator('.schedule-event').count(),bookings.length,'visual change preserves customer count');
+      await page.locator('#schedule-mode').click();
       const disclosure=page.locator('#business-details'), disclosureSummary=disclosure.locator('summary');
       assert.equal(await disclosureSummary.evaluate(e=>getComputedStyle(e,'::after').content),'"展开"');
       assert.ok((await disclosureSummary.boundingBox()).height>=48,'disclosure remains a generous touch target');
@@ -144,4 +145,4 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
     }
     assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
   } finally { await browser.close(); }
-})().catch(e=>{console.error(e);process.exitCode=1;});
+})().then(()=>require('./test-schedule-overview.js')).catch(e=>{console.error(e);process.exitCode=1;});

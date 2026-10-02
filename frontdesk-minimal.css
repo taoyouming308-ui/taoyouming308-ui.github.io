@@ -295,3 +295,75 @@ summary { cursor: pointer; width: fit-content; color: var(--muted); font-size: 1
 .business-details th,.business-details td{text-align:left;white-space:nowrap;border-bottom:1px solid var(--line);padding:10px 8px}
 .business-details th{color:var(--muted);font-weight:500}.business-table-scroll{overflow:auto}
 @media(max-width:900px){.business-columns{grid-template-columns:1fr}.business-details{padding:16px}.business-columns details summary b{float:none;margin-left:12px}}
+/* Preview: readable agenda cards with an independent, proportional day rail. */
+#view-today { padding: 18px 24px 24px; }
+#view-today .view-head { margin-bottom: 14px; }
+#view-today .view-head p { margin-top: 2px; }
+#view-today .kpis { margin-bottom: 12px; }
+#view-today .kpi { padding: 10px 18px; }
+#view-today .kpi strong { font-size: 25px; margin: 3px 0; }
+#view-today .business-details { margin-bottom: 12px; }
+#view-today .card-head { padding: 10px 16px; gap: 6px 12px; }
+#view-today:not(.is-detailed) .timeline-hint,
+#view-today:not(.is-detailed) .scroll-step { display: none; }
+#schedule-mode { min-height: 34px; padding: 5px 10px; }
+.schedule-scroll.is-overview { overflow: visible; min-height: 0; max-height: none; background: var(--panel); }
+.schedule-overview { width: 100%; padding: 0 14px; box-sizing: border-box; }
+.overview-axis, .overview-row { display: grid; grid-template-columns: 98px minmax(0,1fr) 44px; gap: 10px; }
+.overview-axis { height: 27px; font-size: 10px; color: var(--muted); align-items: center; }
+.overview-axis > div { position: relative; height: 20px; }
+.overview-tick { position: absolute; top: 1px; transform: translateX(-50%); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overview-tick.first { transform: none; }
+.overview-tick.last { transform: translateX(-100%); }
+.overview-row { padding: 5px 0; min-height: 50px; align-items: center; border-top: 1px solid var(--line); }
+.overview-staff { display: flex; flex-direction: column; }
+.overview-staff strong { font-size: 13px; }
+.overview-staff small { font-size: 10px; color: var(--muted); }
+.overview-main { min-width: 0; }
+.overview-rail { height: 5px; position: relative; background: #eae8e1; margin: 0 0 4px; border-radius: 3px; }
+.overview-marker { position: absolute; top: 0; height: 5px; min-width: 2px; background: #7b9fbb; border-radius: 2px; }
+.overview-marker.green { background: #83a386; }
+.overview-marker.gold { background: #ba9750; }
+.overview-marker.red { background: #c78c83; }
+.overview-cards { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.overview-event.schedule-event { position: static; margin: 0; padding: 5px 8px; min-height: 40px; width: auto; min-width: 120px; max-width: 100%; text-align: left; flex: 0 1 auto; overflow: visible; }
+.overview-event.schedule-event strong { font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+.overview-event.schedule-event em { font-size: 11px; display: block; margin-top: 0; white-space: normal; overflow-wrap: anywhere; font-style: normal; }
+.overview-event b { font-weight: 600; }
+.overview-empty { color: var(--muted); font-size: 11px; min-height: 40px; display: flex; align-items: center; }
+.overview-add { width: 44px; height: 44px; background: transparent; border: 1px solid var(--line); color: #576b55; border-radius: 8px; font-size: 20px; }
+#view-today .schedule-guide { padding: 7px 16px; }
+@media(max-width:680px) {
+  #view-today { padding: 14px 12px 24px; }
+  #view-today .kpi { padding: 10px; }
+  .schedule-overview { padding: 0 10px; }
+  .overview-axis,.overview-row { grid-template-columns: 58px minmax(0,1fr) 44px; gap: 7px; }
+  .overview-axis { font-size: 9px; }
+  .overview-tick:not(.first):not(.last) { display: none; }
+  .overview-event.schedule-event { min-width: 0; flex: 1 1 120px; min-height: 44px; }
+  .overview-row { padding: 8px 0; }
+}
+@media(min-width:1100px) {
+  #view-today .view-head { margin-bottom: 10px; }
+  #view-today .view-head h2 { font-size: 23px; }
+  #view-today .view-head p { display: none; }
+  #view-today .kpi { padding: 7px 14px; }
+  #view-today .kpi strong { font-size: 23px; line-height: 1; }
+  #view-today .kpi small { font-size: 10px; }
+  #view-today .sub { margin: 5px 0 8px; }
+  #view-today .business-details { padding: 6px 12px; margin-bottom: 10px; }
+  #view-today .card-head { padding: 7px 14px; }
+  #view-today .schedule-legend { width: auto; margin-left: auto; gap: 8px; }
+  #view-today .schedule-controls { order: 2; }
+  .overview-row { box-sizing: border-box; min-height: 0; padding: 2px 0; }
+  .overview-event.schedule-event { padding: 3px 8px; min-height: 38px; }
+  .overview-axis { height: 25px; }
+}
+@media(min-width:1100px) {
+  .overview-row { padding: 1px 0; }
+  .overview-rail,.overview-marker { height: 3px; }
+  .overview-rail { margin-bottom: 2px; }
+  .overview-event.schedule-event { min-height: 36px; padding: 2px 8px; }
+  .overview-add { height: 40px; }
+  .overview-empty { min-height: 36px; }
+}
