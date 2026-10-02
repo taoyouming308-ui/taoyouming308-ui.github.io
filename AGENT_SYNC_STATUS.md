@@ -1,6 +1,13 @@
 # Agent Sync Status
 
-## 2026-10-02 · 日报人工姓名保存契约（App version: v602）
+## 2026-10-02 frontdesk disclosure v603
+
+- User approved this one visual update for release. CSS-only disclosure styling plus required version/cache references; no Salon development, API, migration, data, sync or permission changes.
+- Native details interaction verified on isolated Chromium at 320/390/1280px, including pointer, Enter/Space, focus and no overflow; synthetic preview only. Shared checks and CI gate release.
+- Isolated clean main worktree; original developer checkout and all pending work preserved. No forced refresh; normal update prompting remains.
+
+
+## 2026-10-02 · 日报人工姓名保存契约（App version: v603）
 
 - Current owner: Codex。基线 github/main 487c63b（v601），隔离克隆 fix/daily-manual-label-contract-v602；用户明确批准最小前端修复发布，原开发目录及用户旧页面保持。
 - 仅将行名回读校验 manual_entry 改为后台规范 manual；后台已有成功人工保存却前端误拒绝的契约差异已只读核实。保留所有内容、修订、权限和锁账保护。
