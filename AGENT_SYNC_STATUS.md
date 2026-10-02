@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-02 · 日报保存结果恢复（App version: v601）
+
+- Current owner: Codex。基线 github/main `6c18169`，独立干净工作树 `zysyr-daily-save-recovery`；保留并行项目分类 PR #5。启动版本/发布完整性/交接通过，10/2 源码归档已校验。
+- 视频中向里 3/17 日报反复提示版本更新；只读诊断显示草稿已有人工保存修订但未入账。已用合成 API 复现旧版保存成功但响应丢失后卡住，修复前新增回归实际失败。不能据此声称已确定生产最初回包丢失的网络原因。
+- 仅修改 operations-daily-review：写失败一次只读回查，严格验证同作用域、修订增加、全表显示值、人工持久化值/姓名、权限/锁账/原件后接续；下一次显式操作同样可恢复已保存旧页。不盲改 expected_revision、不自动重写，不更改真实冲突保护。
+- Chrome 与 WebKit 的两店/桌面/手机合成回归通过，包括丢保存回包、回读失败后重试、仅保存不入账、角分与姓名、原件/权限/锁账/人工未落地拒绝、实际金额冲突、迟到响应及重复确认。
+- 待本轮核验：真实完整 pre-push、远端 Validate/Pages 与线上无缓存哈希。真实财务账号最终入账留给用户核对操作；本轮未写生产财务数据，不部署 Edge、不应用迁移、不改自动化。
+- 回滚：以更高 App 版本恢复 `6c18169` 的 operations-daily-review.js 并同步缓存标记；不回滚账务。主开发目录的其他未提交工作完全未动。
+
 ## Local classification-only candidate (2026-10-02; v600 unchanged)
 
 - Base github/main d330bc9; branch review/mgj-exact-catalog-v10-local.

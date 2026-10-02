@@ -82,6 +82,15 @@
     if (!isCurrent(ctx) || state.imports.sheet !== previous) throw new Error('当前日报已变化，请重新核对');
     if (String(fresh.draft.id) !== ctx.id || String(fresh.draft.report_date) !== ctx.date) throw new Error('返回的日报不一致，本次未提交');
     if (sheetVersion(fresh) !== sheetVersion(previous)) {
+      // A prior save may have committed even when its reply/readback was lost.
+      // Adopt only a strictly newer, fully matching saved form, never a blind rebase.
+      if (dailySheetDirtyCount()) {
+        try {
+          verifyCommittedDraft(ctx, fresh, reviewedValues(), collectDailySheetCells(grid()));
+          applySheet(ctx, fresh, true);
+          return fresh;
+        } catch (_) { /* Real differences keep the existing conflict protection. */ }
+      }
       if (!dailySheetDirtyCount()) applySheet(ctx, fresh, true);
       throw new Error(dailySheetDirtyCount()
         ? '后台日报已有更新，本页修改已保留，未覆盖后台；请保留修改内容并重新打开最新日报核对'
@@ -250,13 +259,58 @@
       if (reviewedValues(paper) !== snapshot) throw new Error('后台回读内容与刚才核对的内容不同；本页修改已保留，请勿重新填写整张表');
     } finally { state.imports.sheet = previous; }
   }
+  function saveGuard(sheet) {
+    return JSON.stringify([sheet.draft.status, sheet.draft.template_code, sheet.draft.source_voucher_id,
+      sheet.permissions, sheet.locked, sheet.daily_unlock_approved,
+      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+  }
+  function verifyCommittedDraft(ctx, sheet, snapshot, edits) {
+    var previous = state.imports.sheet;
+    if (!isCurrent(ctx) || !sheet || !sheet.draft || String(sheet.draft.id) !== ctx.id
+      || String(sheet.draft.report_date) !== ctx.date || sheet.draft.status !== 'draft'
+      || !Number.isSafeInteger(Number(sheet.draft.edit_revision)) || Number(sheet.draft.edit_revision) <= ctx.revision
+      || saveGuard(sheet) !== saveGuard(previous) || reviewedValues() !== snapshot) {
+      throw new Error('保存结果或日报权限已变化，本页填写已保留，请核对最新日报');
+    }
+    verifySavedValues(sheet, snapshot);
+    // Equal displayed numbers alone are not proof that manual review/blank edits saved.
+    if (!edits.length || !edits.every(function (edit) {
+      var cell = (sheet.cells || []).find(function (item) {
+        return (!edit.id || String(item.id) === String(edit.id)) && item.section_code === edit.section_code
+          && item.row_key === edit.row_key && item.column_code === edit.column_code;
+      });
+      if (!Object.prototype.hasOwnProperty.call(edit, 'value')) {
+        var row = (sheet.cells || []).filter(function (item) { return item.section_code === edit.section_code && item.row_key === edit.row_key; });
+        return row.length > 0 && row.every(function (item) {
+          return String(item.row_label || '').trim() === String(edit.row_label || '').trim() && item.row_label_source_method === 'manual_entry';
+        });
+      }
+      return cell && cell.manual_override === true && (edit.value == null
+        ? cell.corrected_numeric == null
+        : cell.corrected_numeric != null && Number(cell.corrected_numeric) === Number(edit.value));
+    })) throw new Error('后台尚未完整保存本页人工核对内容；填写已保留，请核对后重试');
+  }
   async function persistDraft(ctx, reason, versionChecked) {
     if (!isCurrent(ctx)) throw new Error('当前日报已变化，请重新打开');
     if (!dailySheetDirtyCount()) return;
     if (!versionChecked) await checkBeforeWrite(ctx);
+    if (!dailySheetDirtyCount()) return; // Preflight recovered a prior committed save.
     var snapshot = reviewedValues(), cells = collectDailySheetCells(grid());
-    var result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, cells: cells, reason: reason });
-    verifySavedValues(result, snapshot);
+    var result;
+    try {
+      result = await api('daily_sheet_save', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, cells: cells, reason: reason });
+      verifyCommittedDraft(ctx, result, snapshot, cells);
+    } catch (error) {
+      // Exactly one read, no automatic repeat write. If unavailable, the next
+      // explicit action runs the same guarded preflight against the retained form.
+      notice('正在查询草稿保存结果，请勿重复提交…');
+      var recovered;
+      try { recovered = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }); }
+      catch (_) { throw new Error('暂时无法核实草稿保存结果，本页填写已保留；网络恢复后再次点击会先核对后台结果'); }
+      if (recovered && recovered.draft && Number(recovered.draft.edit_revision) === ctx.revision) throw error;
+      verifyCommittedDraft(ctx, recovered, snapshot, cells);
+      result = recovered;
+    }
     applySheet(ctx, result);
   }
   async function refreshCalendar(ctx) {

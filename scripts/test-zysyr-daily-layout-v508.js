@@ -106,6 +106,7 @@ async function run() {
           if (payload.draft_id !== 'fixture-draft') throw new Error('Wrong draft');
           if (window.fixtureDelay) await new Promise(resolve => setTimeout(resolve, window.fixtureDelay));
           if (operation === 'daily_sheet_read') {
+            if (window.fixtureSaveReadFailure && window.savedDailyPayloads.length) throw new Error('save readback unavailable');
             if (window.fixtureReadFailure && (!window.fixtureLostReply || window.confirmDailyPayloads.length)) throw new Error('read unavailable');
             return structuredClone(source);
           }
@@ -137,6 +138,11 @@ async function run() {
           source.draft.edit_revision++;
           source.draft.validation_result = { valid: !window.fixtureValidationFailure && source.cells.filter(cell => cell.ocr_numeric != null).every(cell => cell.manual_override) };
           if (window.fixtureChangedAfterSave) source.cells.find(cell => cell.section_code === 'summary' && cell.column_code === 'treatment_card').corrected_numeric = 10;
+          if (window.fixtureSaveGuard === 'permission') source.permissions.write = false;
+          if (window.fixtureSaveGuard === 'lock') source.locked = true;
+          if (window.fixtureSaveGuard === 'voucher') source.draft.source_voucher_id = 'different-voucher';
+          if (window.fixtureSaveGuard === 'review') source.cells.find(cell => cell.section_code === 'payment' && cell.column_code === 'alipay').manual_override = false;
+          if (window.fixtureLostSaveReply) throw new Error('save committed but reply lost');
           return structuredClone(source);
         };
         state.dailyReportMonth = null;
@@ -225,13 +231,14 @@ async function run() {
       if (width === 1280 && storeName === '向里造型') {
         async function reset(flags = {}) {
           await page.evaluate(flags => {
-            for (const key of ['fixtureDelay', 'fixtureReadFailure', 'fixturePostFailure', 'fixtureLostReply', 'fixtureSaveFailure', 'fixtureValidationFailure', 'fixtureChangedAfterSave']) window[key] = false;
+            for (const key of ['fixtureDelay', 'fixtureReadFailure', 'fixturePostFailure', 'fixtureLostReply', 'fixtureSaveFailure', 'fixtureValidationFailure', 'fixtureChangedAfterSave', 'fixtureLostSaveReply', 'fixtureSaveReadFailure', 'fixtureSaveGuard']) window[key] = false;
             Object.assign(window, flags);
             const source = window.fixtureSource;
             source.draft.status = 'draft';
             source.draft.validation_result = { valid: false };
             source.locked = false;
             source.permissions.write = true;
+            source.draft.source_voucher_id = 'fixture-voucher';
             const cell = source.cells.find(cell => cell.section_code === 'payment' && cell.column_code === 'alipay');
             cell.manual_override = false;
             cell.corrected_numeric = null;
@@ -261,6 +268,36 @@ async function run() {
         await post();
         assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'save failure must stop posting');
         assert.ok(await page.evaluate(() => dailySheetDirtyCount() > 0), 'failed save must retain reviewed edits');
+        await reset({ fixtureLostSaveReply: true });
+        await post();
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length), 1, 'committed save must not be repeated');
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 1, 'exact readback recovers lost save response and completes explicit posting');
+        await reset({ fixtureLostSaveReply: true, fixtureSaveReadFailure: true });
+        await post();
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'unknown save result must not post');
+        assert.ok(await page.evaluate(() => dailySheetDirtyCount() > 0), 'unavailable readback retains edits');
+        await page.evaluate(() => { fixtureSaveReadFailure = false; });
+        await post();
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length), 1, 'retry must reconcile the already saved revision without another save');
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 1, 'repeated stale-version trap must recover after connection returns');
+        await reset({ fixtureLostSaveReply: true });
+        await employeeName.fill('断网前核对姓名');
+        await page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]').fill('0.24');
+        await page.evaluate(() => saveDailyReportDetail());
+        assert.match(await page.locator('#daily-detail-note').textContent(), /保存成功/);
+        assert.equal(await employeeName.inputValue(), '断网前核对姓名');
+        assert.equal(await page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]').inputValue(), '0.24');
+        assert.equal(await page.evaluate(() => dailySheetDirtyCount()), 0);
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'draft recovery never implicitly posts');
+        for (const guard of ['permission', 'lock', 'voucher', 'review']) {
+          await reset({ fixtureLostSaveReply: true, fixtureSaveGuard: guard });
+          await post();
+          assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'recovery cannot bypass ' + guard);
+          assert.ok(await page.evaluate(() => dailySheetDirtyCount() > 0), 'guard changes preserve local edits: ' + guard);
+          await post();
+          assert.equal(await page.evaluate(() => savedDailyPayloads.length), 1, 'guarded retry must not rewrite: ' + guard);
+          assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0);
+        }
         await reset({ fixtureValidationFailure: true });
         await post();
         assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0, 'backend validation must remain authoritative');
@@ -271,6 +308,9 @@ async function run() {
         assert.match(await page.locator('#daily-detail-note').textContent(), /回读内容/);
         assert.equal(await page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]').inputValue(), '', 'bad readback must not replace the reviewed form');
         assert.ok(await page.evaluate(() => dailySheetDirtyCount() > 0), 'bad readback keeps edits for retry');
+        await post();
+        assert.equal(await page.evaluate(() => savedDailyPayloads.length), 1, 'a real changed amount cannot be overwritten on retry');
+        assert.equal(await page.evaluate(() => confirmDailyPayloads.length), 0);
         await reset();
         await page.evaluate(() => {
           const cell = fixtureSource.cells.find(c => c.row_key === 'stylist_2' && c.column_code === 'wash_cut_blow');
