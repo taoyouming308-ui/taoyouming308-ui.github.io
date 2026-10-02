@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-03 cold-start tolerance (App version: v606)
+
+- Current owner: Codex. Base github/main bf0c911 (v605), isolated review/cold-start-local; user explicitly approved publication of only these three entries. Original dirty checkout and new Salon/401/logo work untouched.
+- Visible startup guard before blocking dependencies, preserved synchronous order, frontdesk CSS readiness barrier, explicit pre-ready reload only. Existing auth/permissions, business writes, active edits and cache state retained. No automatic refresh, API retries, schema/data/Edge changes.
+- 13 sequential isolated Chromium synthetic cases passed plus frontdesk/operations/API-read-timeout/version checks; previous operations surface desktop/mobile passed. Required hook/CI and exact Pages resource tests gate publication. Eight seconds is a visible waiting threshold, not request cancellation; actual iPhone cause and icon URLs remain unverified.
+- Forward recovery: restore three entry behavior from bf0c911 in a higher version and retain normal update prompting. No data rollback.
+
 ## 2026-10-02 report surface polish (App version: v605)
 
 - Current owner: Codex. Last synchronized base checked: github/main 0d47280324c7f2de68d846dc67a8193ffce9a0d8 (v604). Isolated worktree; original developer checkout and all pending work untouched.

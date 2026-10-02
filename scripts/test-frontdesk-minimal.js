@@ -36,13 +36,14 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
         if(url.origin===origin) {
           const file=path.join(root,url.pathname==='/'?'frontdesk.html':url.pathname.slice(1));
           if(!file.startsWith(root+path.sep)||!fs.existsSync(file))return route.fulfill({status:404,body:''});
-          return route.fulfill({status:200,body:fs.readFileSync(file),contentType:file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':file.endsWith('.json')?'application/json':'image/png'});
+          return route.fulfill({status:200,body:fs.readFileSync(file),contentType:file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':'image/png'});
         }
         if(url.pathname==='/functions/v1/frontdesk-api') {
           const data=route.request().postDataJSON();calls.push(data);
           if(data.operation==='dashboard'&&dashboardHold)await dashboardHold;
           const responses={
             login:{session_token:'synthetic-only',user}, session:{user}, registration_options:{stores:[user.store]},
+            business_details:{available:false,store:user.store,date:today},
             dashboard:{date:today,store:user.store,barbers,technicians:['小雨'],assistants:['小禾'],bookings:bookings.concat({barber_name:'林一',time_label:'12:00'}),services:[],reception,synced_at:new Date().toISOString()},
             customer_search:{results:[{name:'林女士',phone:'13800000000',last_visit:today,shops:[user.store],remaining_packages:2}]},
             customer_detail:{...detail,customer_scope:data.customer_scope,packages:detail.packages.filter(pkg=>data.customer_scope==='all'||pkg.shop===user.store),hair_records:data.customer_scope==='all'?detail.hair_records:[]},ledger_records:{rows:ledger},import_batches:{batches:[]},

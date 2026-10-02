@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="605">
+<html lang="zh-CN" data-version="606">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,9 +177,50 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link rel="stylesheet" href="frontdesk-minimal.css?v=605">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=606" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
+<!-- Visible before any startup dependency; no account or business data is stored here. -->
+<style>
+#app-startup{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#f4f3ee;color:#252923;padding:24px;font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+#app-startup[hidden]{display:none}
+#app-startup>div{max-width:420px;width:100%;background:#fffefa;border:1px solid #dedbd2;border-radius:14px;padding:24px}
+#app-startup h1{font-size:21px;margin:0 0 10px}
+#app-startup p{margin:8px 0}
+#app-startup button{font:inherit;padding:10px 16px;min-height:44px;border:1px solid #bfc6b8;border-radius:9px;background:#fff;color:#252923}
+#app-startup button:focus-visible{outline:2px solid #506448;outline-offset:3px}
+</style>
+<section id="app-startup" data-phase="loading" aria-label="启动状态"><div>
+  <h1>正在打开前台客户中心</h1>
+  <p id="app-startup-message" role="status" aria-live="polite">正在加载基础资源，请稍候…</p>
+  <button id="app-startup-retry" type="button" hidden>重新加载入口</button>
+  <noscript><p>当前浏览器未启用 JavaScript，请启用后重新打开。</p></noscript>
+</div></section>
+<script data-startup>
+(function(global){
+  'use strict';
+  var panel=document.getElementById('app-startup'),message=document.getElementById('app-startup-message'),retry=document.getElementById('app-startup-retry');
+  var closed=false,edited=false,locked=[],timer;
+  function update(phase,text){if(closed)return;panel.dataset.phase=phase;message.textContent=text;retry.hidden=false;}
+  function failed(){if(closed)return;clearTimeout(timer);update('failed','基础资源未能加载完成，请检查网络后重新加载入口。');}
+  function lock(ids){(ids||['login','app']).forEach(function(id){var el=document.getElementById(id);if(el){locked.push({el:el,inert:el.inert});el.inert=true;}});}
+  function finish(){if(closed||panel.dataset.phase==='failed')return;closed=true;panel.dataset.phase='ready';clearTimeout(timer);locked.forEach(function(item){item.el.inert=item.inert;});panel.hidden=true;}
+  retry.addEventListener('click',function(){
+    if(closed)return;
+    if(edited){message.textContent='当前页面已有输入，已保留内容；请勿重新加载或关闭页面。';retry.disabled=true;return;}
+    if(navigator.onLine===false){message.textContent='当前处于离线状态，请恢复网络后重试；没有提交任何业务请求。';return;}
+    // This control exists only before startup succeeds. Never reload an active form.
+    location.reload();
+  });
+  document.addEventListener('input',function(event){if(event.isTrusted&&!panel.contains(event.target))edited=true;},true);
+  document.addEventListener('change',function(event){if(event.isTrusted&&!panel.contains(event.target))edited=true;},true);
+  global.addEventListener('error',function(event){if(closed)return;var target=event.target;if(target&&((target.tagName==='SCRIPT'&&target.src)||(target.tagName==='LINK'&&target.rel==='stylesheet')))failed();else if(event instanceof ErrorEvent)failed();},true);
+  global.addEventListener('unhandledrejection',function(){if(!closed)failed();});
+  timer=setTimeout(function(){update('slow','打开较慢，请检查网络。可以继续等待，或重新加载当前入口。');},8000);
+  global.ZysyrStartup=Object.freeze({lock:lock,finish:finish,failed:failed});
+})(window);
+</script>
+
   <div class="login" id="login">
     <div class="login-box">
       <form id="login-form">
@@ -282,7 +323,8 @@
   <div class="overlay hidden" id="ledger-form-overlay"><div class="drawer"><div class="drawer-head"><h3>编辑前台数据</h3><button class="drawer-close" type="button" data-close="ledger-form-overlay">×</button></div><form id="ledger-form" style="padding-top:18px"><input type="hidden" id="ledger-record-type"><input type="hidden" id="ledger-record-id"><div class="today-summary"><div><label>客户</label><b id="ledger-record-customer">—</b></div><div><label>记录来源</label><b id="ledger-record-source">—</b></div></div><div class="form-grid"><div class="form-field wide"><label for="ledger-service">项目</label><input id="ledger-service" maxlength="500" placeholder="剪发、烫发、染发等"></div><div class="form-field"><label for="ledger-barber">发型师</label><input id="ledger-barber" list="today-barber-list"></div><div class="form-field"><label for="ledger-technician">技师</label><input id="ledger-technician" list="today-technician-list"></div><div class="form-field"><label for="ledger-assistant">助理</label><input id="ledger-assistant" list="today-assistant-list"></div><div class="form-field"><label for="ledger-amount">实际金额（元）</label><input id="ledger-amount" type="number" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00"></div><div class="form-field"><label for="ledger-payment-summary">金额说明</label><input id="ledger-payment-summary" maxlength="500" placeholder="现金、微信、优惠、套餐扣次等"></div><div class="form-field wide" id="ledger-notes-field"><label for="ledger-notes">当天备注</label><textarea id="ledger-notes" maxlength="800"></textarea></div></div><div class="notice" style="margin-top:16px"><strong>修改前台独立数据</strong>金额和说明会更新到客户数据表；原始上传表格内容、客户主档和美管加收银数据保持不变。</div><div class="form-actions"><button class="ghost" type="button" data-close="ledger-form-overlay">取消</button><button class="primary" id="ledger-save-btn" type="submit">保存修改</button></div></form></div></div>
   <div class="toast hidden" id="toast"></div>
 
-  <script src="frontdesk-business-details.js?v=605"></script>
+  <script data-startup>window.ZysyrStartup.lock();</script>
+  <script src="frontdesk-business-details.js?v=606"></script>
   <script>
   (function(){
     'use strict';
@@ -565,7 +607,9 @@
     function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
     document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
     setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard({silent:true});},30000);
-    restoreSession();
+    var startupStyle=document.getElementById('frontdesk-startup-style');
+    var startupStyleReady=startupStyle.dataset.failed?Promise.reject(new Error('样式未载入')):startupStyle.dataset.loaded==='true'?Promise.resolve():new Promise(function(resolve,reject){startupStyle.addEventListener('load',resolve,{once:true});startupStyle.addEventListener('error',reject,{once:true});});
+    Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
 </body>

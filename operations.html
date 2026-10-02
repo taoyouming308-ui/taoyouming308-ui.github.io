@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="605">
+<html lang="zh-CN" data-version="606">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -124,11 +124,49 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-<script src="operations-time.js?v=605"></script>
-<script src="operations-staff-view.js?v=605"></script>
-<script src="operations-monthly-daily-performance.js?v=605"></script>
 </head>
 <body>
+<!-- Visible before any startup dependency; no account or business data is stored here. -->
+<style>
+#app-startup{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#f4f3ee;color:#252923;padding:24px;font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+#app-startup[hidden]{display:none}
+#app-startup>div{max-width:420px;width:100%;background:#fffefa;border:1px solid #dedbd2;border-radius:14px;padding:24px}
+#app-startup h1{font-size:21px;margin:0 0 10px}
+#app-startup p{margin:8px 0}
+#app-startup button{font:inherit;padding:10px 16px;min-height:44px;border:1px solid #bfc6b8;border-radius:9px;background:#fff;color:#252923}
+#app-startup button:focus-visible{outline:2px solid #506448;outline-offset:3px}
+</style>
+<section id="app-startup" data-phase="loading" aria-label="启动状态"><div>
+  <h1>正在打开悦西智营</h1>
+  <p id="app-startup-message" role="status" aria-live="polite">正在加载基础资源，请稍候…</p>
+  <button id="app-startup-retry" type="button" hidden>重新加载入口</button>
+  <noscript><p>当前浏览器未启用 JavaScript，请启用后重新打开。</p></noscript>
+</div></section>
+<script data-startup>
+(function(global){
+  'use strict';
+  var panel=document.getElementById('app-startup'),message=document.getElementById('app-startup-message'),retry=document.getElementById('app-startup-retry');
+  var closed=false,edited=false,locked=[],timer;
+  function update(phase,text){if(closed)return;panel.dataset.phase=phase;message.textContent=text;retry.hidden=false;}
+  function failed(){if(closed)return;clearTimeout(timer);update('failed','基础资源未能加载完成，请检查网络后重新加载入口。');}
+  function lock(ids){(ids||['login','app']).forEach(function(id){var el=document.getElementById(id);if(el){locked.push({el:el,inert:el.inert});el.inert=true;}});}
+  function finish(){if(closed||panel.dataset.phase==='failed')return;closed=true;panel.dataset.phase='ready';clearTimeout(timer);locked.forEach(function(item){item.el.inert=item.inert;});panel.hidden=true;}
+  retry.addEventListener('click',function(){
+    if(closed)return;
+    if(edited){message.textContent='当前页面已有输入，已保留内容；请勿重新加载或关闭页面。';retry.disabled=true;return;}
+    if(navigator.onLine===false){message.textContent='当前处于离线状态，请恢复网络后重试；没有提交任何业务请求。';return;}
+    // This control exists only before startup succeeds. Never reload an active form.
+    location.reload();
+  });
+  document.addEventListener('input',function(event){if(event.isTrusted&&!panel.contains(event.target))edited=true;},true);
+  document.addEventListener('change',function(event){if(event.isTrusted&&!panel.contains(event.target))edited=true;},true);
+  global.addEventListener('error',function(event){if(closed)return;var target=event.target;if(target&&((target.tagName==='SCRIPT'&&target.src)||(target.tagName==='LINK'&&target.rel==='stylesheet')))failed();else if(event instanceof ErrorEvent)failed();},true);
+  global.addEventListener('unhandledrejection',function(){if(!closed)failed();});
+  timer=setTimeout(function(){update('slow','打开较慢，请检查网络。可以继续等待，或重新加载当前入口。');},8000);
+  global.ZysyrStartup=Object.freeze({lock:lock,finish:finish,failed:failed});
+})(window);
+</script>
+
   <section id="login" class="login-shell">
     <form id="login-form" class="login-card">
       <div class="brand"><div class="mark">ZYSYR</div><div><h1>悦西智营</h1><p>沿用原报表习惯 · 原件与凭证可追溯</p></div></div>
@@ -659,10 +697,14 @@
       }
     }
   </style>
-  <script src="operations-report-fit.js?v=605"></script>
-  <script src="operations-auth-bridge.js?v=605"></script>
-  <script src="operations-voucher-preview.js?v=605"></script>
-  <script src="operations-voucher-view.js?v=605"></script>
+  <script data-startup>window.ZysyrStartup.lock();</script>
+<script src="operations-time.js?v=606"></script>
+<script src="operations-staff-view.js?v=606"></script>
+<script src="operations-monthly-daily-performance.js?v=606"></script>
+  <script src="operations-report-fit.js?v=606"></script>
+  <script src="operations-auth-bridge.js?v=606"></script>
+  <script src="operations-voucher-preview.js?v=606"></script>
+  <script src="operations-voucher-view.js?v=606"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -827,7 +869,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=605';
+      script.src='operations-petty-cash-evidence.js?v=606';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1475,15 +1517,16 @@ function calculateDailyControls(root){
 
   async function maintainSession(){if(StaffReportView.enabled){try{state.user=(await api('session')).user;refreshRoleEntries()}catch(e){StaffReportView.blocked(e.message)}return}if(document.hidden)return;if(!state.user){scheduleSessionRestore();return}if(!state.auth||!authBridge.ensureFresh)return;try{var fresh=await authBridge.ensureFresh();if(fresh){state.auth=fresh;reconnectDelay=3000}}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}}
   ['store-select','month'].forEach(function(id){$(id).addEventListener('change',function(event){if(!monthlyHasUnsaved())return;var scope=state.monthlyDirtyScope||{},label=id==='month'?'切换月份':'切换门店';if(confirmMonthlyDiscard(label))return;this.value=id==='month'?(scope.month||this.value):(scope.store||this.value);event.stopImmediatePropagation()},true)});
-  $('refresh').addEventListener('click',refreshCurrentView);$('store-select').addEventListener('change',function(){closeMonthlyWorkbench();refreshCurrentView()});$('month').addEventListener('change',function(){closeMonthlyWorkbench();$('report-month').value=$('month').value;refreshCurrentView()});setDefaultDates();updateReportDateField();updateFinanceStoreField();restoreSession();setInterval(maintainSession,20*60*1000);window.addEventListener('online',maintainSession);document.addEventListener('visibilitychange',function(){if(!document.hidden)maintainSession()});
+  $('refresh').addEventListener('click',refreshCurrentView);$('store-select').addEventListener('change',function(){closeMonthlyWorkbench();refreshCurrentView()});$('month').addEventListener('change',function(){closeMonthlyWorkbench();$('report-month').value=$('month').value;refreshCurrentView()});setDefaultDates();updateReportDateField();updateFinanceStoreField();var initialSessionRestore=restoreSession();setInterval(maintainSession,20*60*1000);window.addEventListener('online',maintainSession);document.addEventListener('visibilitychange',function(){if(!document.hidden)maintainSession()});
   var renderCellTraceBase=renderCellTrace;
   renderCellTrace=function(data){renderCellTraceBase(data);if(!data||!data.historical)return;var files=data.evidence||[],buttons=document.querySelectorAll('#cell-trace-body [data-open-history-file]'),hasBundle=false;buttons.forEach(function(button,index){var file=files.find(function(item){return item.id===button.dataset.openHistoryFile})||files[index];if(!file)return;var bundle=file.trace_link_level==='bundle_only',count=Number(file.trace_asset_count||file.embedded_asset_count||0);hasBundle=hasBundle||bundle;button.textContent=(bundle?'本月支出凭证包':'原始凭证')+' · '+(file.original_filename||('凭证 '+(index+1)))+(count?'（含 '+count+' 张原始图片）':'')});if(hasBundle){var actions=$('cell-trace-body').querySelector('.trace-card .trace-actions');if(actions){var note=document.createElement('div');note.className='help';note.style.marginBottom='9px';note.textContent='该金额已关联本月支出凭证包。点击下方文件可查看原始单据；当前资料是整月凭证包，未伪装成单张凭证的精确页码。';actions.parentNode.insertBefore(note,actions)}}};
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=605"></script>
-  <script src="operations-daily-electronic.js?v=605"></script>
-  <script src="operations-monthly-workbench.js?v=605"></script>
-  <script src="operations-daily-recognition.js?v=605"></script>
+  <script src="operations-daily-review.js?v=606"></script>
+  <script src="operations-daily-electronic.js?v=606"></script>
+  <script src="operations-monthly-workbench.js?v=606"></script>
+  <script src="operations-daily-recognition.js?v=606"></script>
+<script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>
