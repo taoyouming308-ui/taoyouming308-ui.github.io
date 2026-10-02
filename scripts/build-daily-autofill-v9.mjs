@@ -1,7 +1,7 @@
 // Deterministic increment: preserve the v8 writer, totals, locks and manual protection.
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {REPORT_PROJECT_ROUTES,APPROVED_ACID_CARE_PATTERN} from '../supabase/functions/_shared/salon-report-catalog.mjs';
+import {REPORT_PROJECT_ROUTES_V9 as REPORT_PROJECT_ROUTES,APPROVED_ACID_CARE_PATTERN} from '../supabase/functions/_shared/salon-report-catalog.mjs';
 const file='supabase/migrations/20261001124358_zysyr_daily_project_completeness_v9.sql';
 const prior=fs.readFileSync('supabase/migrations/20260930104817_zysyr_daily_earned_card_v8.sql','utf8');
 const replace=(s,a,b)=>{assert(s.includes(a),'missing '+a);return s.replace(a,()=>b)};
