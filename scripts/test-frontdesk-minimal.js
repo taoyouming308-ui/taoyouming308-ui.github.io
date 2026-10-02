@@ -63,6 +63,18 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
       await page.locator('#login-user').fill('preview');await page.locator('#login-pass').fill('synthetic');await page.locator('#login-btn').click();
       await page.locator('.schedule-event').first().waitFor();
       assert.equal(await page.locator('.schedule-event').count(),bookings.length,'visual change preserves customer count');
+      const disclosure=page.locator('#business-details'), disclosureSummary=disclosure.locator('summary');
+      assert.equal(await disclosureSummary.evaluate(e=>getComputedStyle(e,'::after').content),'"展开"');
+      assert.ok((await disclosureSummary.boundingBox()).height>=48,'disclosure remains a generous touch target');
+      await disclosureSummary.focus();await page.keyboard.press('Shift+Tab');await page.keyboard.press('Tab');
+      assert.equal(await disclosureSummary.evaluate(e=>getComputedStyle(e).outlineStyle),'solid');
+      await page.keyboard.press('Enter');assert.notEqual(await disclosure.getAttribute('open'),null);
+      assert.equal(await disclosureSummary.evaluate(e=>getComputedStyle(e,'::after').content),'"收起"');
+      await page.keyboard.press('Space');assert.equal(await disclosure.getAttribute('open'),null);
+      await disclosureSummary.click();assert.notEqual(await disclosure.getAttribute('open'),null);
+      await disclosureSummary.click();assert.equal(await disclosure.getAttribute('open'),null);
+      await disclosureSummary.blur();
+
       assert.equal(await page.locator('.schedule-event.green').count(),1);
       assert.equal(await page.locator('.schedule-event.gold').count(),1);
       await bounded('today');await shot('today');

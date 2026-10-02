@@ -277,9 +277,16 @@ summary { cursor: pointer; width: fit-content; color: var(--muted); font-size: 1
 }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
 .business-details{margin:0 0 20px;padding:18px 22px}
-.business-details>summary{cursor:pointer;font-size:14px;font-weight:550;list-style:none}
-.business-details>summary:after{content:'展开';float:right;color:var(--muted);font-size:12px}
+.business-details>summary{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);cursor:pointer;font-size:14px;font-weight:550;line-height:1.5;list-style:none;transition:background-color .15s,border-color .15s}
+.business-details>summary::-webkit-details-marker{display:none}
+.business-details>summary:after{content:'展开';margin-left:auto;padding-left:14px;border-left:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:400;white-space:nowrap}
+.business-details>summary:before{content:'';order:2;flex:none;width:7px;height:7px;margin:0 2px 4px 0;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;color:var(--muted);transform:rotate(45deg)}
 .business-details[open]>summary:after{content:'收起'}
+.business-details[open]>summary:before{transform:rotate(225deg);margin-top:4px;margin-bottom:0}
+.business-details>summary:focus-visible{outline:2px solid #576b55;outline-offset:3px}
+@media(hover:hover){.business-details>summary:hover{background:#e8e6dd;border-color:#c5c9bc}}
+@media(max-width:480px){.business-details>summary{padding:12px;gap:10px;font-size:13px}.business-details>summary:after{padding-left:10px}}
+@media(prefers-reduced-motion:reduce){.business-details>summary,.business-details>summary:before{transition:none}}
 .business-details h3{font-size:14px;font-weight:550;margin:18px 0 12px}
 .business-columns{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:28px}
 .business-columns section{min-width:0}.business-columns details{padding:12px 0;border-bottom:1px solid var(--line)}
