@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-02 report surface polish (App version: v605)
+
+- Current owner: Codex. Last synchronized base checked: github/main 0d47280324c7f2de68d846dc67a8193ffce9a0d8 (v604). Isolated worktree; original developer checkout and all pending work untouched.
+- User approved the faithful polish and restrained table elevation, then explicitly approved publication. Preserve v604 appointment overview. Only screen CSS plus required shared cache/version markers, regression test and handoff records.
+- No financial calculations, markup layout, API, schema, data, permissions or save/posting logic changed. No forced refresh. Synthetic browser checks and required shared validation/CI gate the release; production financial actions are not exercised.
+- Local validation: existing five-viewport operations presentation regression and the new 1366/390px surface regression passed, covering monthly reading/editing, daily calendar/detail, exact cents, unsaved state, posting/save/upload controls and unchanged financial status colors. Version/release-integrity/smoke/handoff and whitespace gates passed. Full pre-push/shared CI and exact Pages verification remain release gates.
+- Source recovery archive created and validated in this worktree before editing. Reviewed screenshots remain synthetic. Actual-page checks preserve native date-picker and narrow-calendar numeric widths rather than imposing tabular digits where they change automatic sizing.
+
 ## 2026-10-02 frontdesk appointment overview (App version: v604)
 
 - User approved the reviewed one-screen overview for release; isolated latest main 0ba262b. Original developer checkout and all pending Salon/401 work preserved.
