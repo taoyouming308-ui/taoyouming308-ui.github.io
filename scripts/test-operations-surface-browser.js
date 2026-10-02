@@ -20,6 +20,13 @@ let browser;
 (async () => {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
+  // Compare settled layouts, excluding the existing animated navigation scroll.
+  await page.addInitScript(() => {
+    const scrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function(options) {
+      return scrollIntoView.call(this, typeof options === 'object' ? { ...options, behavior: 'instant' } : options);
+    };
+  });
   const errors = [];
   const external = [];
   page.on('pageerror', error => errors.push(error.message));
