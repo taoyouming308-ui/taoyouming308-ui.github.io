@@ -1,6 +1,6 @@
 // Observed store+item-code+name routes. Unknown/renamed products need review.
 // No customer/employee data; keep the SQL catalog regression in sync.
-export const REPORT_MAPPING_VERSION = 'frontdesk-autofill-v2';
+export const REPORT_MAPPING_VERSION = 'frontdesk-autofill-v10';
 export const REPORT_PROJECT_ROUTES_V2 = [
   ['1837032','101','洗吹98元','makeup_styling'],
   ['1837032','103','洗发15分钟','wash_cut_blow'],
@@ -40,7 +40,7 @@ export const REPORT_PROJECT_ROUTES_V7 = [
   ...REPORT_PROJECT_ROUTES_V5,
   ['1009951','523','歌薇酸护（盖白发）880','treatment'],
 ];
-export const REPORT_PROJECT_ROUTES = [
+export const REPORT_PROJECT_ROUTES_V9 = [
   ...REPORT_PROJECT_ROUTES_V7,
   ['1009951','513','歌薇酸护880','treatment'],
   ['1837032','314','健康烫发1380元','perm'],
@@ -51,6 +51,17 @@ export const REPORT_PROJECT_ROUTES = [
   ['1009951','428','健康染长发1460','color'],
   ['1009951','436','健康染长发14603次','color'],
 ];
+export const REPORT_PROJECT_ADDITIONS_V10 = [
+  ['1009951','312','头颅增高烫','perm'],
+  ['1009951','310','造型烫2580','perm'],
+  ['1009951','311','烫刘海400','perm'],
+  ['1009951','430','漂发800','color'],
+  ['1009951','431','漂发1200','color'],
+  ['1009951','406','漂发400','color'],
+  ['1009951','518','Olaplex长发','treatment'],
+  ['1837032','307','烫发1380','perm'],
+];
+export const REPORT_PROJECT_ROUTES = [...REPORT_PROJECT_ROUTES_V9, ...REPORT_PROJECT_ADDITIONS_V10];
 // Approved service family only: excludes retail goods and unverified mixed packages.
 export const APPROVED_ACID_CARE_PATTERN='^歌薇酸护(（盖白发）)?([0-9]+(元)?)?$';
 export function reportProjectCategory(shopId, item) {

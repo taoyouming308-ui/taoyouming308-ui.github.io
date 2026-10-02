@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## Local classification-only candidate (2026-10-02; v600 unchanged)
+
+- Base github/main d330bc9; branch review/mgj-exact-catalog-v10-local.
+- Eight exact catalog additions, frozen v9 generator, v10 writer review/legacy guards.
+- Scope approved for source publication, reviewed v10 migration and bounded affected
+  unconfirmed draft refresh after checks; no runtime/UI/schedule changes or formal posting.
+- Final local full pre-push/finance91 plus offline93 and PostgreSQL17 v10 58 groups passed.
+- Synthetic tests only; docs/mgj-classification-only-local-review.md records gate evidence
+  and forward recovery. Native gates precede remote CI and production verification.
+
 ## 2026-10-01 · 两店当日日报定时核对（App version: v600）
 
 - 基线 github/main `4e69685`，干净工作树；启动门禁及当天源码归档已完成。Current owner: Codex。
