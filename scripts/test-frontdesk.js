@@ -23,7 +23,9 @@ function expect(value, message) {
   if (!value) throw new Error(message);
 }
 
-const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+inlineScripts.forEach(match => new Function(match[1]));
+const scriptMatch = inlineScripts.find(match => match[1].includes('function mergeToday'));
 expect(scriptMatch, 'frontdesk inline script missing');
 new Function(scriptMatch[1]);
 
@@ -36,7 +38,7 @@ function fakeElement() {
   };
 }
 const runtimeScript = scriptMatch[1].replace(
-  'restoreSession();',
+  /var startupStyle=document.getElementById\('frontdesk-startup-style'\);[\s\S]*?Promise\.all\(\[restoreSession\(\),startupStyleReady\]\)\.then\([\s\S]*?window\.ZysyrStartup\.failed\);/,
   'globalThis.__frontdeskTest={timeMinutes,minuteLabel,bookingPlaceholder,resolvedBarber,mergeToday,todayState,scheduleRange,scheduleScrollLeft,phoneSuffixQuery,ledgerRowMatchesQuery,ledgerAmountLabel,openTodayForm,renderToday};',
 );
 const runtimeContext = {

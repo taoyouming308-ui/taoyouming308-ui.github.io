@@ -32,8 +32,8 @@ function expect(value, message) {
 }
 
 const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-expect(inlineScripts.length === 1, 'operations inline script missing or duplicated');
-new vm.Script(inlineScripts[0][1], { filename: 'operations.html' });
+expect(inlineScripts.filter(script => script[1].includes('var API=SUPABASE_URL')).length === 1, 'operations business script missing or duplicated');
+inlineScripts.forEach((script,index) => new vm.Script(script[1], { filename: 'operations.html:inline-'+index }));
 
 expect(new RegExp(`<html[^>]+data-version="${releaseVersion}"`).test(html), 'operations version must match current release');
 expect(html.includes('operations-time.js?v=' + releaseVersion) && operationsTime.includes("TIME_ZONE = 'Asia/Shanghai'"), 'versioned China Standard Time helper missing');
