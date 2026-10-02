@@ -128,7 +128,7 @@ async function run() {
             if (cell && edit.row_label) {
               source.cells.filter(item => item.row_key === cell.row_key && item.section_code === cell.section_code).forEach(item => {
                 item.row_label = edit.row_label;
-                if (edit.row_label_reviewed) item.row_label_source_method = 'manual_entry';
+                if (edit.row_label_reviewed) item.row_label_source_method = 'manual';
               });
             }
             if (!cell || !Object.hasOwn(edit, 'value')) return;

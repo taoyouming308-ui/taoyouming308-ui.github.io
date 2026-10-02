@@ -282,7 +282,7 @@
       if (!Object.prototype.hasOwnProperty.call(edit, 'value')) {
         var row = (sheet.cells || []).filter(function (item) { return item.section_code === edit.section_code && item.row_key === edit.row_key; });
         return row.length > 0 && row.every(function (item) {
-          return String(item.row_label || '').trim() === String(edit.row_label || '').trim() && item.row_label_source_method === 'manual_entry';
+          return String(item.row_label || '').trim() === String(edit.row_label || '').trim() && item.row_label_source_method === 'manual';
         });
       }
       return cell && cell.manual_override === true && (edit.value == null
