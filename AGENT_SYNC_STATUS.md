@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-06 · 烫发研习院（App version: v607）
+
+- Current owner: Codex. Last synchronized base checked: github/main 24a0ad5 (v606), isolated clean clone feature/perm-academy; original dirty checkout untouched. Backup archive created before edits.
+- Existing plans entry renamed directly; eight learning categories, search/details, local favorites/completion, reviewed static feed and explicit empty/error/retry states. Original calculator/cold markup, handlers and perm_data_offline retained; no business data/API/schema/auth or forced refresh changes.
+- One source-verified FDA consultation reading; no fabricated scientific paper, real case or fixed perm recipe. Source date unknown remains null. Below daily 5–8 target is disclosed.
+- Daily ingestion NOT connected: visible automations contain only early shop report, no evening perm-learning task. Existing 02:30 aesthetic collector untouched. Reviewed atomic/deduplicated feed builder and exact integration blockers documented in docs/perm/academy-publishing.md. No duplicate cron/credential/permission expansion.
+- Academy data safety/idempotency/legacy-markup checks and isolated 390/1280 browser search/details/favorites/progress/empty/error/retry/tool-tab checks passed. Full shared hook halted at test-frontdesk.js: frontdesk version must match current release. Auto-review rejected synchronizing other-App frontdesk/operations version/cache markers because user prohibits other App changes; both files untouched. Explicit limited-marker approval is pending. No remote push or Pages publication; GH CLI existing token invalid, GitHub connector and SSH access verified. Required source/module/aesthetic/legacy safety gates pass; 42 existing booking/keepalive/customer tests passed in temporary pinned cryptography 48.0.0 environment (system Python lacks that dependency).
+
+
 ## 2026-10-03 cold-start tolerance (App version: v606)
 
 - Current owner: Codex. Base github/main bf0c911 (v605), isolated review/cold-start-local; user explicitly approved publication of only these three entries. Original dirty checkout and new Salon/401/logo work untouched.

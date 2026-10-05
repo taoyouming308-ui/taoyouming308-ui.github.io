@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "timezone": "Asia/Shanghai",
+  "updatedAt": "2026-10-05T17:32:50.654Z",
+  "items": [
+    {
+      "title": "染烫历史：咨询时先确认顾客做过什么",
+      "category": "顾客沟通",
+      "batchDate": "2026-10-06",
+      "source": {
+        "url": "https://www.fda.gov/cosmetics/cosmetic-products/hair-dyes",
+        "author": "U.S. Food and Drug Administration (FDA)",
+        "publishedAt": null
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "来源为 FDA 消费者安全指引，直接讨论染发及相关操作的注意事项，不是热烫配方试验。把染烫历史整理成咨询记录属于门店应用推断，不据此确定药水、温度或时间。"
+      },
+      "coreKnowledge": "FDA 提醒使用者遵循标签说明，并提醒在漂发、拉直或烫发后染发存在操作间隔要求。咨询时应先了解近期化学处理，而非仅凭外观推断发质。不同产品组合的实际适用条件仍须核对产品说明。",
+      "shopApplication": "先询问并记录最近一次漂发、染发、烫发的时间和产品。顾客记不清时标为未知；不能把未知当成未处理，再依据具体产品说明和发束测试决定是否继续。",
+      "openQuestions": "现用产品说明对染烫组合有何限制？顾客能否提供近期处理记录？门店如何记录未知信息并交接？",
+      "tags": [
+        "咨询",
+        "染烫历史",
+        "适用边界"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源核验；门店应用为明确推断",
+      "reviewedAt": "2026-10-05T17:32:50.635186+00:00",
+      "isRealCase": false,
+      "isExample": false,
+      "authorization": "not_applicable",
+      "id": "f57229634cf3131d046a4093"
+    }
+  ]
+}
