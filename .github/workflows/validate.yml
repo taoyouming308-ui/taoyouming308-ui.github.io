@@ -65,6 +65,8 @@ jobs:
       - name: Run app smoke tests
         run: |
           node scripts/smoke-test-app.js
+          node scripts/test-perm-academy.js
+          node scripts/test-perm-academy-browser.js
           node scripts/test-version-update-flow.js
       - name: Protect customer Codex analysis routing
         run: node scripts/test-ai-codex-route.js
