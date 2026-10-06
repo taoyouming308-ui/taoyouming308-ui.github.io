@@ -1,8 +1,238 @@
 {
   "schemaVersion": 1,
   "timezone": "Asia/Shanghai",
-  "updatedAt": "2026-10-05T17:32:50.654Z",
+  "updatedAt": "2026-10-06T01:27:48.029Z",
   "items": [
+    {
+      "title": "人物设计先问生活，再看轮廓",
+      "category": "烫发设计",
+      "batchDate": "2026-10-06",
+      "coreKnowledge": "基础精读：结合头形、发质和生活习惯理解设计目标，脸型不单独决定方案。先厘清希望呈现的气质、打理投入，以及必须保留的长度和露肤程度。",
+      "shopApplication": "原创教学提问：希望给人什么感觉？愿投入多少打理时间？哪些长度或露肤边界必须保留？用临时夹发或分缝比较体积，再讨论方向；临时造型不是化学烫效果承诺。",
+      "openQuestions": "顾客能否用自己的话讲清设计目标？我们是否把观察、设计推断和效果承诺分开？",
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与适用边界复核（编辑审核，不是临床或门店验证）",
+      "reviewedAt": "2026-10-06T01:27:47.998479+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable",
+      "source": {
+        "url": "https://www.sassoon.com/discover/sassoon-salons",
+        "author": "Sassoon 官方（无个人署名）",
+        "publishedAt": null,
+        "verifiedOn": "2026-10-06",
+        "verifiedAt": "2026-10-06T01:27:47.998479+00:00",
+        "dateNote": "官方页面未注明发布日期；2026-10-06 核验。"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "职业机构的设计原则，不是审美对照实验。下述提问和临时造型比较为原创教学判断，不保证化学烫后的收缩或持久效果。",
+        "parts": [
+          {
+            "type": "职业机构原则",
+            "level": "中",
+            "basis": "Sassoon 官方原则，非审美对照实验。"
+          },
+          {
+            "type": "原创教学判断",
+            "level": "弱",
+            "basis": "提问与临时造型比较是教学建议，未进行效果或问卷验证。"
+          }
+        ]
+      },
+      "tags": [
+        "人物风格",
+        "基础精读",
+        "头形",
+        "生活习惯",
+        "非近7天新发现"
+      ],
+      "id": "53a877ce18c3a7bed955ac3d",
+      "contentFingerprint": "816f7e0bcb33d12218b4bfe1c60e6e6f1ca50b5eb6dcf807d18438ef3410bb49"
+    },
+    {
+      "title": "砖式排杠：先理解错缝，再追求卷度",
+      "category": "排杠技法",
+      "batchDate": "2026-10-06",
+      "coreKnowledge": "基础精读：错开相邻基础区的位置，以理解分缝衔接。排杠图案、杠的方向和 base control 是不同变量，应分别记录。",
+      "shopApplication": "在练习头上固定杠径，比较直列与错缝。记录发流、密度、轻张力和干燥条件；不要同时改变图案、杠径与方向，也不把练习结果推广为真人持久效果。",
+      "openQuestions": "是否一次只改变一个变量？看见的衔接差异能否排除发量、方向和干燥差异？",
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与适用边界复核（编辑审核，不是临床或门店验证）",
+      "reviewedAt": "2026-10-06T01:27:47.998479+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable",
+      "source": {
+        "url": "https://www.milady.com/wp-content/uploads/2022/05/Chapter-15_Pages-551-569-575.pdf",
+        "author": "Milady，Chapter 15，第 569 页",
+        "publishedAt": null,
+        "verifiedOn": "2026-10-06",
+        "verifiedAt": "2026-10-06T01:27:47.998479+00:00",
+        "dateNote": "出版日未注明；路径中的 2022/05 不作出版日依据。"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "教材原理，不是热烫对照实验。URL 的 2022/05 不能当作出版日期。错缝思路用于理解明显分缝衔接，不能保证自然大卷或持久性。",
+        "parts": [
+          {
+            "type": "教材原理",
+            "level": "中",
+            "basis": "Milady Chapter 15，第 569 页；非热烫或真人对照实验。"
+          }
+        ]
+      },
+      "tags": [
+        "base control",
+        "分区",
+        "基础精读",
+        "杠方向",
+        "砖式排杠",
+        "非近7天新发现"
+      ],
+      "id": "57e94d9f4bc166dd7c68a624",
+      "contentFingerprint": "f36b2a63452ab8041b9305ac3354b31c974a9a9ed5870901ee22e35bcf553e80"
+    },
+    {
+      "title": "咨询要交付可实现的日常，不只是一张参考图",
+      "category": "顾客沟通",
+      "batchDate": "2026-10-06",
+      "coreKnowledge": "基础精读：烫发改变结构，但日常仍需要造型；先评估发质与处理历史，再讨论个体方案。参考图需要转成可实现的效果、维护方式与限制。",
+      "shopApplication": "原创话术示意：图里喜欢的是发尾弧、顶部体积还是蓬松？愿意如何打理？示范后请顾客复述。处理历史不清时先评估，不把未知当成未处理。",
+      "openQuestions": "顾客能否复述想要的效果、维护方式和限制？是否把未验证话术当作有效性量表？",
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与适用边界复核（编辑审核，不是临床或门店验证）",
+      "reviewedAt": "2026-10-06T01:27:47.998479+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable",
+      "source": {
+        "url": "https://www.wella.com/professional/en-US/blog/hair-care/does-a-perm-damage-your-hair",
+        "author": "Wella Professionals",
+        "publishedAt": "2022-11-23",
+        "verifiedOn": "2026-10-06",
+        "verifiedAt": "2026-10-06T01:27:47.998479+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "来源为制造商一方建议，中证据，非验证问卷；下述话术是原创示意，弱证据，整体教学条目按弱处理。不能承诺免打理、零损伤或固定持久时间。",
+        "parts": [
+          {
+            "type": "制造商建议",
+            "level": "中",
+            "basis": "制造商一方的职业建议，不是独立研究或验证问卷。"
+          },
+          {
+            "type": "原创话术示意",
+            "level": "弱",
+            "basis": "未验证的教学提问与复述方法，不保证沟通或烫发效果。"
+          }
+        ]
+      },
+      "tags": [
+        "原创话术",
+        "咨询",
+        "基础精读",
+        "日常打理",
+        "非近7天新发现",
+        "预期管理"
+      ],
+      "id": "99ebc14eb4d100fda592b339",
+      "contentFingerprint": "2b3219110e71e9c1ee907b0ded27dbcc9a1c7277981c98578fcdf1d79d3ed209"
+    },
+    {
+      "title": "还原后的冲洗，也是化学过程的一部分",
+      "category": "热烫原理",
+      "batchDate": "2026-10-06",
+      "coreKnowledge": "基础精读：把还原、冲洗、氧化视为连续过程并分别记录，而不是只凭软化手感判断。研究模型和具体试验体系不能直接推广到所有药水或发质。",
+      "shopApplication": "复盘先核对完整处理历史和流程，不直接追加还原或加热。不能据此自行延长冲洗、跳过氧化或提高温度；遵循具体产品说明，并进行适用的发束相容性测试。",
+      "openQuestions": "现有记录能否重建还原、冲洗、氧化全流程？记录中的观察与模型推测是否分开？",
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与适用边界复核（编辑审核，不是临床或门店验证）",
+      "reviewedAt": "2026-10-06T01:27:47.998479+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable",
+      "source": {
+        "url": "https://www.jstage.jst.go.jp/article/fiber/71/2/71_112/_article",
+        "author": "Kazuyuki Suzuta、Kunihiro Hamada、Kozo Arai",
+        "publishedAt": "2015-02-10",
+        "onlinePublishedAt": "2015-02-08",
+        "verifiedOn": "2026-10-06",
+        "verifiedAt": "2026-10-06T01:27:47.998479+00:00",
+        "dateNote": "原文 Published 2015-02-10；Released on J-STAGE 2015-02-08。后者为上线日期，原文未列提前发表日期。"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "原始纤维研究，特定巯基乙酸体系；模型提示冲洗可伴部分角蛋白关联蛋白交联恢复。不是热烫机器参数试验，模型不能换算成门店可测的软化百分比。",
+        "parts": [
+          {
+            "type": "原始纤维研究",
+            "level": "中",
+            "basis": "特定巯基乙酸体系与模型解释，非热烫机器参数或真人门店对照试验。"
+          }
+        ]
+      },
+      "tags": [
+        "TGA",
+        "冲洗",
+        "基础精读",
+        "证据边界",
+        "还原",
+        "非近7天新发现"
+      ],
+      "id": "b3a9c133802c7cd0b271f1d2",
+      "contentFingerprint": "ffa52a336e8aea1f6cf593251cbcb48757223f765c793c41dcc1f7ca108d3f37"
+    },
+    {
+      "title": "齐肩柔和轮廓：先确认长度底线",
+      "category": "中发方案库",
+      "batchDate": "2026-10-06",
+      "coreKnowledge": "基础精读 · 原创示意：齐肩发希望发尾弧度柔和、两侧不膨胀，并仍能扎发。先确认最短干发落点，再比较发尾弧与中段起伏；不编造具体药水或排杠数值。",
+      "shopApplication": "指出长度底线，做临时轮廓比较，并讨论日常打理。实际化学处理须结合发质评估、发束测试与具体产品说明；若发束条件不支持，调整目标。",
+      "openQuestions": "顾客是否确认干发落点、能否扎发及维护要求，而不是只认可参考图？",
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与适用边界复核（编辑审核，不是临床或门店验证）",
+      "reviewedAt": "2026-10-06T01:27:47.998479+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable",
+      "source": {
+        "url": "https://www.hair.com/perfect-haircut-for-your-face-shape.html",
+        "author": "Hair.com / L’Oréal Professional Products Division；受访 Bertram K",
+        "publishedAt": null,
+        "updatedAt": "2026-08-31",
+        "verifiedOn": "2026-10-06",
+        "verifiedAt": "2026-10-06T01:27:47.998479+00:00",
+        "dateNote": "首次发布日期未注明；2026-08-31 是更新日期，不冒充首次发表日期。"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "具体方案是原创示意，非真实顾客案例或验证配方，整体按弱证据处理。来源中的有限职业原则为中证据；不采用所有人都应追求椭圆脸等审美定律或不一致比例。",
+        "parts": [
+          {
+            "type": "有限职业原则",
+            "level": "中",
+            "basis": "职业来源的设计参考，排除审美定律及不一致比例。"
+          },
+          {
+            "type": "原创方案示意",
+            "level": "弱",
+            "basis": "无真实顾客案例、无配方验证，不能据此量化排杠或药水参数。"
+          }
+        ]
+      },
+      "tags": [
+        "中发",
+        "原创示意",
+        "基础精读",
+        "长度底线",
+        "非近7天新发现",
+        "齐肩"
+      ],
+      "id": "dac038183e4f31c672a4fd62",
+      "contentFingerprint": "2053be7a6700865a6e36c6f2b458dca9acac5ea0a0a23e4585d4cba82c92119a"
+    },
     {
       "title": "染烫历史：咨询时先确认顾客做过什么",
       "category": "顾客沟通",
@@ -32,5 +262,13 @@
       "authorization": "not_applicable",
       "id": "f57229634cf3131d046a4093"
     }
-  ]
+  ],
+  "lastBatch": {
+    "id": "perm-2026-10-06",
+    "producedAt": "2026-10-06T01:17:58.611381+00:00",
+    "timezone": "Asia/Shanghai",
+    "label": "基础精读 · 非近7天新发现",
+    "dailySummary": "把化学过程、排杠几何与人物目标分开记录；区分测量、观察和推测。",
+    "lowRiskPractice": "仅用清水在练习头上湿式定型、自然干燥；不用药水、不加热。同一区域比较直列与错缝，两次反转顺序，尽量固定杠径、发量、区域、方向、轻张力、湿润/干燥与拍摄条件，记录分缝衔接和干扰。无差异也记录；不能外推真人持久性、损伤或安全。"
+  }
 }

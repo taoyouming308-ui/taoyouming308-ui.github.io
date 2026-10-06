@@ -8,3 +8,6 @@ const source=fs.readFileSync('perm-app.html','utf8');assert(source.includes("swi
 const legacy=source.slice(source.indexOf('  <!-- Calc Tab -->'),source.indexOf('  </section><!-- /tab-plans -->'));
 assert.equal(require('node:crypto').createHash('sha256').update(legacy).digest('hex'),'bde6ac643c9eaaa4fa526663fcf5604162ff9ba8818b5f3d3c2f651ad6ef62a0','v606 legacy calculator/cold markup unchanged');
 console.log('academy data safety/idempotency/legacy compatibility passed');
+
+// Shared CI already runs this entry; include local ingestion safety without new workflow permissions.
+require('./test-perm-ingestion-safety.js');
