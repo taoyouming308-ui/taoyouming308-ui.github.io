@@ -1,5 +1,15 @@
 # Agent Sync Status
 
+## 2026-10-06 · 导入安全本地候选（App version: v607 unchanged）
+
+- Current owner: Codex. Last synchronized base checked: github/main 84270b0; isolated feature/perm-ingestion-safety. Daily source backup reused and validated by startup gates. User authorized local safety implementation, not scheduler activation or production publication.
+- Builder now retains byte-identical no-op feed/updatedAt, derives Shanghai envelope batches, fingerprints semantic content, preserves old IDs, uses exclusive output lock, bounded transient retries, atomic staging, hash-guarded local recovery. Pending preflight never approves or writes a feed. No network/AI/Git commands in builder.
+- Optional source publication/update/verification metadata, evidence parts and batch summary/practice preserve source-vs-original-example boundaries. Existing arrays/schema and browser learning keys unchanged; formal feed and all HTML/versions untouched.
+- 69 ingestion safety assertions plus legacy/data checks pass using only temporary fixtures. Five real Oct6 source-verified foundational-reading candidates are untracked under artifacts/academy/candidates, remain pending; preflight passed, actual import was correctly rejected with old staged feed byte-identical. No fixture/candidate published.
+- User reports old daily task paused; tool shutdown not independently verified. No new day job, credentials, paid model calls, service installation or Actions permissions. Actual professional approval and one supported future task-to-local-file/Git capability probe remain required. Current validator is structural, not a network source verifier.
+- Focused local review only; no push/PR/merge or production changes. Full release gates remain necessary if later authorized to publish this script change. Integration details: docs/perm/ingestion-safety.md.
+
+
 ## 2026-10-06 · 烫发研习院（App version: v607）
 
 - Current owner: Codex. Last synchronized base checked: github/main 24a0ad5 (v606), isolated clean clone feature/perm-academy; original dirty checkout untouched. Backup archive created before edits.
