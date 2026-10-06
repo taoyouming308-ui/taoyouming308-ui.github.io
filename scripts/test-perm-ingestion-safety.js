@@ -47,7 +47,7 @@ async function run() {
   for (const invalid of [{...entry,reviewStatus:'pending'},{...entry,isRealCase:true,authorization:'unknown'},{...entry,isExample:true,evidence:{level:'强',basis:'fixture'}}]) {
     write([invalid]); await assert.rejects(importFeed(input,output,options)); assert(bytes().equals(originalBytes)); cases += 2;
   }
-  const changed = {...entry,coreKnowledge:entry.coreKnowledge+'\n[仅临时测试：不可发布]',reviewedAt:'2026-10-07T10:00:00+08:00',batchDate:'2026-10-07'};
+  const changed = {...entry,contentFingerprint:undefined,coreKnowledge:entry.coreKnowledge+'\n[仅临时测试：不可发布]',reviewedAt:'2026-10-07T10:00:00+08:00',batchDate:'2026-10-07'};
   assert.throws(() => build(original,[{...changed,reviewedAt:entry.reviewedAt}]));
   assert.strictEqual(build(original,[{...changed,reviewedAt:'2026-01-01T00:00:00Z'}]),original); cases += 2;
   write([changed]);
@@ -105,7 +105,7 @@ async function run() {
   assert.equal(preflight.items[0].reviewedAt,null); assert.equal(preflight.batch.lowRiskPractice,'clean water fixture only');
   assert.throws(() => build(original,metadataBatch));
   assert.throws(() => preflightBatch({...metadataBatch,items:[{...pending,reviewedBy:'not approved'}]})); cases += 6;
-  const rich = {...entry,source:{...entry.source,verifiedOn:'2026-10-06',updatedAt:'2026-08-31',onlinePublishedAt:'2015-02-08',dateNote:'updated vs initial'},evidence:{...entry.evidence,parts:[{type:'professional principle',level:'中',basis:'not experimental'}]}};
+  const rich = {...entry,contentFingerprint:undefined,source:{...entry.source,verifiedOn:'2026-10-06',updatedAt:'2026-08-31',onlinePublishedAt:'2015-02-08',dateNote:'updated vs initial'},evidence:{...entry.evidence,parts:[{type:'professional principle',level:'中',basis:'not experimental'}]}};
   const richNormalized = validate(rich);
   assert.equal(richNormalized.source.updatedAt,'2026-08-31');assert.equal(richNormalized.evidence.parts[0].level,'中');
   assert.equal(richNormalized.contentFingerprint,validate({...rich,source:{...rich.source,verifiedOn:'2026-10-07'}}).contentFingerprint);

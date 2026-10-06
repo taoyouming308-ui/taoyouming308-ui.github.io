@@ -3089,3 +3089,7 @@ Before any agent says the work is done, update this file with:
 - any checks that passed or could not be run
 
 Do not hand work to another agent through chat memory only. The repository must contain the current handoff.
+
+## 2026-10-06 研习院首批内容与导入安全
+
+版本保持v607，未改App代码或其他App。五个公开来源逐条核对，批准基础精读5条，保留FDA1条。科学研究、职业经验、原创教学示意分别标注；无真实客户资料。待审预检、语义幂等、上海批次、锁、瞬态重试、恢复测试69项通过；手机桌面回归随发布验证。每日任务未配置，原任务暂停仅据用户报告。
