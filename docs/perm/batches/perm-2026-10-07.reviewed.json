@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "batch": {
+    "id": "perm-2026-10-07",
+    "timezone": "Asia/Shanghai",
+    "producedAt": "2026-10-07T11:36:15.173344+00:00",
+    "label": "基础精读 · 非近7天新发现",
+    "dailySummary": "把变量、观察、解释分开：杠径不等于落点，细发不等于低密度，设备设定不等于发丝实测温度。先改善一项能记录、能复核的过程。",
+    "lowRiskPractice": "只用清水与同规格工具在练习头同区对照半离/离基面，记录提拉过程。尽量保持材料长度、发片量、轴向、湿润去水、轻张力、固定、环境、观察时点及摄影拆杠一致。先画基面边界，拍基线和卷后侧面；材料允许才完全室温干燥后拆杠，第二轮交换左右。保留全部原始记录及混杂因素；不一致写尚未验证。不加热上药、不增拉力、不在真人头皮试验，不证明永久效果、安全或持久性。"
+  },
+  "items": [
+    {
+      "title": "热损伤与水：别把“摸着干”当成安全判定",
+      "category": "热烫原理",
+      "batchDate": "2026-10-07",
+      "source": {
+        "url": "https://anndermatol.org/DOIx.php?id=10.5021/ad.2011.23.4.455",
+        "author": "Yoonhee Lee; Youn-Duk Kim; Hye-Jin Hyun; Long-quan Pi; Xinghai Jin; Won-Soo Lee",
+        "publishedAt": "2011-11-03",
+        "dateNote": "线上出版2011-11-03；期刊2011年11月号。",
+        "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "Lee等研究离体未化学处理发束：结构观察与最终含水量不是同一终点；距离、温度及时间同时改变，无法单独归因温度。Davies等研究受控pH平衡发样的水中DSC，不是热烫顾客试验；密闭耐压容器内的变性峰不是沙龙安全线。前者部分作者来自企业实验室，后者披露Henkel资助及行业关系。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nYoonhee Lee; Youn-Duk Kim; Hye-Jin Hyun; Long-quan Pi; Xinghai Jin; Won-Soo Lee｜线上出版2011-11-03；期刊2011年11月号。｜https://anndermatol.org/DOIx.php?id=10.5021/ad.2011.23.4.455\nThomas Davies; Katie Hardie; Gabriele Wortmann; Erik Schulze zur Wiesche; Franz J. Wortmann｜出版与Version of record均2025-08-10，期号2025年9月。｜https://link.springer.com/article/10.1007/s10973-025-14574-1",
+        "parts": [
+          {
+            "type": "原始实验与限制",
+            "level": "中",
+            "basis": "Lee等研究离体未化学处理发束：结构观察与最终含水量不是同一终点；距离、温度及时间同时改变，无法单独归因温度。Davies等研究受控pH平衡发样的水中DSC，不是热烫顾客试验；密闭耐压容器内的变性峰不是沙龙安全线。前者部分作者来自企业实验室，后者披露Henkel资助及行业关系。"
+          },
+          {
+            "type": "本期原创教学应用",
+            "level": "弱",
+            "basis": "清水练习、观察标记、设计方案或话术未作效果试验；不是顾客实录或化学操作处方。"
+          }
+        ]
+      },
+      "coreKnowledge": "深度解读 · 基础精读，非近7天新发现。\n较热、较近吹干条件下表面损伤更明显；自然干燥组有CMC局部变化，但含水量组间差异未达统计显著。“不显著”不等于完全相同，也不能用含水量替代结构损伤。研究测温点距样品表面0.5厘米，并非发丝内部。\nDSC变性温度与变性焓是不同指标，有助于区分基质约束与螺旋结构；分析条件与测量终点都要保留。不能推导低于某峰就安全、酸性必然修复或自然干燥一定更差。\n教学管理推论：原有状态、化学过程、含水、卷绕和热暴露分别记录；设备设定不是实测发丝温度。",
+      "shopApplication": "“几成干”改写为区域、判断方法、可见湿段和发片一致性，不写成实测含水率。记录染烫史、发中发尾、分区包裹、设备设定及异常；不把再热一点当默认补救。\n原创低风险练习：相同练习发束只用清水，练习轻压去水滴、分区观察及书面描述；只比较学员描述一致性，不加热、不上药、不在真人头皮试验。\n自检：含水量不显著能否证明损伤相同？不能。相同档位证明相同暴露？不能。",
+      "openQuestions": "具体热烫系统及染烫历史的影响，两篇研究均不能直接回答。门店哪些环节只有口头印象，能否先统一记录而不改化学或加热程序？",
+      "tags": [
+        "基础精读",
+        "深度解读",
+        "非近期新发现",
+        "变量与记录"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与科学外推边界编辑复核（非实操验证）",
+      "reviewedAt": "2026-10-07T11:36:15.173344+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "同一根杠，为什么根部轮廓不同？先分清基面与落点",
+      "category": "排杠技法",
+      "batchDate": "2026-10-07",
+      "source": {
+        "url": "https://www.ehaircollege.com/Resources/Module10/LESSON%205.pdf",
+        "author": "Ehair College",
+        "publishedAt": null,
+        "dateNote": "未标出版日期；学校课程讲义，不是政府安全规范。",
+        "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "Ehair教学讲义用on/half-off/off-base解释不同根部体积；只采用几何教学，不采用其中其他加热安全断言。加拿大职业标准E-11.01支持工具、发片、落点、平顺卷绕及固定检查；密西西比考试要求仅是特定地区考核，不是热烫厂家说明。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nEhair College｜未标出版日期；学校课程讲义，不是政府安全规范。｜https://www.ehaircollege.com/Resources/Module10/LESSON%205.pdf\nMississippi State Board of Cosmetology and Barbering｜修订2024-12-09，不作为首版日期。｜https://www.msbcb.ms.gov/wp-content/uploads/2024/12/PRACTICAL-HANDBOOK-MSBCB.pdf\nCCDA / Employment and Social Development Canada｜版权2019，仅年份已知，不补造月日。｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+        "parts": [
+          {
+            "type": "职业教育原则",
+            "level": "中",
+            "basis": "Ehair教学讲义用on/half-off/off-base解释不同根部体积；只采用几何教学，不采用其中其他加热安全断言。加拿大职业标准E-11.01支持工具、发片、落点、平顺卷绕及固定检查；密西西比考试要求仅是特定地区考核，不是热烫厂家说明。"
+          },
+          {
+            "type": "本期原创教学应用",
+            "level": "弱",
+            "basis": "清水练习、观察标记、设计方案或话术未作效果试验；不是顾客实录或化学操作处方。"
+          }
+        ]
+      },
+      "coreKnowledge": "深度解读 · 基础精读，非近7天新发现。\n基面是发片在头皮的来源区域；on-base位于基面内，half-off-base跨基面边界，off-base在基面外。先看最后落点，再检查实现它的提拉。\n常规教学将三者对应较高、中等、较低体积，只是理解框架，不保证永久发根蓬松。局部头皮是曲面，垂直于局部基面不等于统一朝天花板。\n杠径、轴向、基面落点是不同变量。不能以过度拉紧硬压到位；检查交叉、堆束、钩折和固定带咬根。",
+      "shopApplication": "先在图上记录发片来源、工具轴向、落点。卷后侧面看落点，正面看铺开情况，再看发尾及固定带；几何问题不能靠更强拉力掩盖。\n原创清水对照：同区相近发片、同规格工具，仅改变半离/离基面；记录提拉过程，轻而一致控制，拍标注基面边界的侧面照片，第二轮交换左右位置。不得加热上药。\n自检：同杠改落点改变的是基面控制，不是杠径。上杠整齐不证明药剂均匀或持久。",
+      "openQuestions": "轮廓差异还可能受湿润、发片量、干燥完成度及拆杠手法影响。顾客真正需要体积的是哪个区域？不预填练习结果，不向真人永久效果外推。",
+      "tags": [
+        "基础精读",
+        "深度解读",
+        "非近期新发现",
+        "变量与记录"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与科学外推边界编辑复核（非实操验证）",
+      "reviewedAt": "2026-10-07T11:36:15.173344+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "先找轮廓最宽点，再讨论“蓬不蓬”",
+      "category": "烫发设计",
+      "batchDate": "2026-10-07",
+      "source": {
+        "url": "https://legacy.octe.ca/download_file/view/3777/879",
+        "author": "Ontario Council for Technology Education",
+        "publishedAt": null,
+        "dateNote": "版权2016，仅年份已知；学科协会课堂指南，非政府政策。",
+        "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "OCTE课堂指南支持整体轮廓、比例、平衡与重点分析；澳洲职业标准支持记录内外轮廓、重量区及分布。最高点H、最宽点W、体积区V标记和A/B图例是本期原创教学假设，未证明哪种设计更适合某个人。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nOntario Council for Technology Education｜版权2016，仅年份已知；学科协会课堂指南，非政府政策。｜https://legacy.octe.ca/download_file/view/3777/879\nCommonwealth of Australia / SkillsIQ｜Release 1；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_R1.pdf\nCommonwealth of Australia / SkillsIQ｜Release 1评估要求；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_AssessmentRequirements_R1.pdf",
+        "parts": [
+          {
+            "type": "职业教育原则",
+            "level": "中",
+            "basis": "OCTE课堂指南支持整体轮廓、比例、平衡与重点分析；澳洲职业标准支持记录内外轮廓、重量区及分布。最高点H、最宽点W、体积区V标记和A/B图例是本期原创教学假设，未证明哪种设计更适合某个人。"
+          },
+          {
+            "type": "本期原创教学应用",
+            "level": "弱",
+            "basis": "清水练习、观察标记、设计方案或话术未作效果试验；不是顾客实录或化学操作处方。"
+          }
+        ]
+      },
+      "coreKnowledge": "实用精读 · 基础精读，非近7天新发现。\n卷的形状与体积分布要分开看。把头发放入头、脸、颈肩的整体关系，观察最高点、最宽点、主要体积区；这些只是沟通标记，没有统一最优数值。\n脸型是观察角度之一，还须考虑头形、发量、颈肩及本人希望表达的感觉。原教材含脸型教学，不宣称作者反对脸型分析。\n原创教学情境：同一虚构人物A/B线稿，没有真实面孔、客户反馈或前后效果。",
+      "shopApplication": "同一视角只圈一处希望改变的位置，先询问高度、两侧宽度还是后脑。A/B仅移动主要体积区，长度、脸部、头肩比例和画风保持不变；由同伴先描述差异，再说偏好，不预设标准答案。\n同时复核正面、侧面、后面；文字绘图说明：标H/W/V，注明轮廓比较示意，不是客户前后照。本批未生成或转载教材插图。\n自检：个人偏好比较不证明某脸型必须某烫法，也不验证化学效果。",
+      "openQuestions": "需要卷的清晰度还是轮廓体积？整体更蓬却不喜欢，是否最宽点区域不合意？先指认问题，不把显脸小写成普遍规律。",
+      "tags": [
+        "基础精读",
+        "实用精读",
+        "非近期新发现",
+        "变量与记录",
+        "原创教学",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与科学外推边界编辑复核（非实操验证）",
+      "reviewedAt": "2026-10-07T11:36:15.173344+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "细软中长发示意：把“发丝细”和“发量少”分开设计",
+      "category": "中发方案库",
+      "batchDate": "2026-10-07",
+      "source": {
+        "url": "https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/3002/3002_level_2/additional_documents/3002_level_2_vrq_in_hairdressing_candidate_logbook-pdf.pdf",
+        "author": "City & Guilds",
+        "publishedAt": null,
+        "dateNote": "首印2010；版权2012；重印记录至2021，不能当2021首次发表。",
+        "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "教材与加拿大术语表把单根粗细和区域密度分开；本期四区中长发清水排布是原创假设，无发束或真人效果验证，无成功率、持久时间或化学参数。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nCity & Guilds｜首印2010；版权2012；重印记录至2021，不能当2021首次发表。｜https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/3002/3002_level_2/additional_documents/3002_level_2_vrq_in_hairdressing_candidate_logbook-pdf.pdf\nCCDA / Employment and Social Development Canada｜版权2019，仅年份已知，不补造月日。｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+        "parts": [
+          {
+            "type": "职业教育原则",
+            "level": "中",
+            "basis": "教材与加拿大术语表把单根粗细和区域密度分开；本期四区中长发清水排布是原创假设，无发束或真人效果验证，无成功率、持久时间或化学参数。"
+          },
+          {
+            "type": "本期原创教学应用",
+            "level": "弱",
+            "basis": "清水练习、观察标记、设计方案或话术未作效果试验；不是顾客实录或化学操作处方。"
+          }
+        ]
+      },
+      "coreKnowledge": "原创练习方案 · 基础精读，非近7天新发现。\n单根粗细与一定区域的数量不同；细软不自动等于低密度，也推不出统一杠径或药水。\n原创设定：细发径、中长、普通密度练习头；目标为顶部轻起伏、侧面体积不集中、发尾方向连贯。这是教学意图，不是顾客判断或观察结果。工具规格先统一，避免同时试尺寸、基面、方向。",
+      "shopApplication": "A顶部：半离基面观察走向，不强提拉。B两侧：离基面对照，按各自局部头形记录。C后区：发片清楚平顺，检查方向衔接，不另改尺寸。D发尾：末端平顺包入，无钩折、堆束、滑脱。\n清水轻润同规格工具，轻而一致控制，不加热上药。先拍上杠正侧后视图；材料允许才室温干燥后拆杠，记录与意图的差异，不补画理想结果。\n绘图说明仅为原创四区色块及基面意图，标待验证，本批没有生成插图。讨论真人服务前必须补密度分布、历史处理、当前状态及维护能力，不能当化学操作单。\n自检：细发所以全头小杠，不能由教材定义推出。",
+      "openQuestions": "低密度材料是否出现分缝空隙，须另做一轮而非按标签推断。相同条件下根部与末端能否复现？目前没有结果。",
+      "tags": [
+        "基础精读",
+        "原创练习方案",
+        "非近期新发现",
+        "变量与记录",
+        "原创教学",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与科学外推边界编辑复核（非实操验证）",
+      "reviewedAt": "2026-10-07T11:36:15.173344+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "顾客说“烫失败了”：先把问题分开，再谈补救",
+      "category": "顾客沟通",
+      "batchDate": "2026-10-07",
+      "source": {
+        "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+        "author": "Commonwealth of Australia / SkillsIQ",
+        "publishedAt": null,
+        "dateNote": "Release 1；PDF生成2022-07-05，首次发布日期未核实。",
+        "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "澳洲SHBHREF004的6.2–6.6支持复核设计、当前状态、开放沟通补救及更新记录；City & Guilds Unit206支持权限内处理及升级未解决问题。四类分流和话术是原创应用，不是经过验证的诊断工具。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nCommonwealth of Australia / SkillsIQ｜Release 1；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf\nCity & Guilds｜本版本v3.0日期2024年7月；版本表首次v1为2023年7月，月日未标。｜https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/7002/qualification/qualification-handbook-7002-06-hairdressing-st0213-v1,-d-,2-for-registrations-after-24,-d-,05,-d-,23/7002-06-l2-dip-for-hair-pros-hairdressing-qhb-v3-0-pdf.pdf",
+        "parts": [
+          {
+            "type": "职业教育原则",
+            "level": "中",
+            "basis": "澳洲SHBHREF004的6.2–6.6支持复核设计、当前状态、开放沟通补救及更新记录；City & Guilds Unit206支持权限内处理及升级未解决问题。四类分流和话术是原创应用，不是经过验证的诊断工具。"
+          },
+          {
+            "type": "本期原创教学应用",
+            "level": "弱",
+            "basis": "清水练习、观察标记、设计方案或话术未作效果试验；不是顾客实录或化学操作处方。"
+          }
+        ]
+      },
+      "coreKnowledge": "实用精读 · 基础精读，非近7天新发现。\n失败可能指卷清晰度、体积位置、触感或不适，不可只靠完成照归因。先确认具体区域、时间和当前观察，再对应原设计与记录。\n顾客不满不等于适合立即再烫；没有证据时不直接归责发质、顾客打理或单一步骤。全篇为原创角色扮演，无真实客诉或已执行补救案例。",
+      "shopApplication": "问：最想改变哪个区域，是卷的清晰度、蓬松位置、触感还是不舒服？记录区域、时间、观察和当时记录，观察与原因假设分栏。\n若持续疼痛、灼热、明显头皮异常或异常断裂，停止进一步化学/加热，由负责人按产品安全说明处理；持续或严重不适寻求医疗帮助，造型师不做诊断。设计差异先共同核对、说明选项限制，再确认下一步及复查，不承诺修复结果或统一返工天数。\n原创话术：先请你指出最想改变的地方。我们把卷度、蓬松位置和触感分开看，再核对记录。有不舒服先处理这个问题；确认状态后说明能做的选择和限制，需要进一步评估请负责人一起看。\n两人虚构角色扮演，只练位置、时间、观察和假设的区分，不实际操作或扮演医疗诊断。\n自检：回家不卷不能直接判定还原不足并立即补烫。",
+      "openQuestions": "双方是否指认同一问题？哪些原因有记录支持，哪些是假设？能否先补缺失证据？",
+      "tags": [
+        "基础精读",
+        "实用精读",
+        "非近期新发现",
+        "变量与记录",
+        "原创教学",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 来源与科学外推边界编辑复核（非实操验证）",
+      "reviewedAt": "2026-10-07T11:36:15.173344+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    }
+  ]
+}

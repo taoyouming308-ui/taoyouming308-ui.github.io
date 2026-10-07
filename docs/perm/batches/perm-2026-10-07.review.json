@@ -1,0 +1,130 @@
+{
+  "batchId": "perm-2026-10-07",
+  "verifiedAt": "2026-10-07T11:36:15.173344+00:00",
+  "reviewType": "来源与科学外推边界编辑复核，非实操验证",
+  "sources": [
+    {
+      "id": "S1",
+      "url": "https://anndermatol.org/DOIx.php?id=10.5021/ad.2011.23.4.455",
+      "author": "Yoonhee Lee; Youn-Duk Kim; Hye-Jin Hyun; Long-quan Pi; Xinghai Jin; Won-Soo Lee",
+      "publishedAt": "2011-11-03",
+      "dateNote": "线上出版2011-11-03；期刊2011年11月号。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S2",
+      "url": "https://link.springer.com/article/10.1007/s10973-025-14574-1",
+      "author": "Thomas Davies; Katie Hardie; Gabriele Wortmann; Erik Schulze zur Wiesche; Franz J. Wortmann",
+      "publishedAt": "2025-08-10",
+      "dateNote": "出版与Version of record均2025-08-10，期号2025年9月。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S3",
+      "url": "https://www.ehaircollege.com/Resources/Module10/LESSON%205.pdf",
+      "author": "Ehair College",
+      "publishedAt": null,
+      "dateNote": "未标出版日期；学校课程讲义，不是政府安全规范。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S4",
+      "url": "https://www.msbcb.ms.gov/wp-content/uploads/2024/12/PRACTICAL-HANDBOOK-MSBCB.pdf",
+      "author": "Mississippi State Board of Cosmetology and Barbering",
+      "publishedAt": null,
+      "dateNote": "修订2024-12-09，不作为首版日期。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S5",
+      "url": "https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+      "author": "CCDA / Employment and Social Development Canada",
+      "publishedAt": null,
+      "dateNote": "版权2019，仅年份已知，不补造月日。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S6",
+      "url": "https://legacy.octe.ca/download_file/view/3777/879",
+      "author": "Ontario Council for Technology Education",
+      "publishedAt": null,
+      "dateNote": "版权2016，仅年份已知；学科协会课堂指南，非政府政策。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S7",
+      "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_R1.pdf",
+      "author": "Commonwealth of Australia / SkillsIQ",
+      "publishedAt": null,
+      "dateNote": "Release 1；PDF生成2022-07-05，首次发布日期未核实。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S8",
+      "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_AssessmentRequirements_R1.pdf",
+      "author": "Commonwealth of Australia / SkillsIQ",
+      "publishedAt": null,
+      "dateNote": "Release 1评估要求；PDF生成2022-07-05，首次发布日期未核实。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S9",
+      "url": "https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/3002/3002_level_2/additional_documents/3002_level_2_vrq_in_hairdressing_candidate_logbook-pdf.pdf",
+      "author": "City & Guilds",
+      "publishedAt": null,
+      "dateNote": "首印2010；版权2012；重印记录至2021，不能当2021首次发表。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S10",
+      "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+      "author": "Commonwealth of Australia / SkillsIQ",
+      "publishedAt": null,
+      "dateNote": "Release 1；PDF生成2022-07-05，首次发布日期未核实。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    },
+    {
+      "id": "S11",
+      "url": "https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/7002/qualification/qualification-handbook-7002-06-hairdressing-st0213-v1,-d-,2-for-registrations-after-24,-d-,05,-d-,23/7002-06-l2-dip-for-hair-pros-hairdressing-qhb-v3-0-pdf.pdf",
+      "author": "City & Guilds",
+      "publishedAt": null,
+      "dateNote": "本版本v3.0日期2024年7月；版本表首次v1为2023年7月，月日未标。",
+      "verifiedAt": "2026-10-07T11:36:15.173344+00:00"
+    }
+  ],
+  "approvalReasons": [
+    {
+      "title": "热损伤与水：别把“摸着干”当成安全判定",
+      "decision": "approved",
+      "level": "中",
+      "reason": "Lee等研究离体未化学处理发束：结构观察与最终含水量不是同一终点；距离、温度及时间同时改变，无法单独归因温度。Davies等研究受控pH平衡发样的水中DSC，不是热烫顾客试验；密闭耐压容器内的变性峰不是沙龙安全线。前者部分作者来自企业实验室，后者披露Henkel资助及行业关系。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nYoonhee Lee; Youn-Duk Kim; Hye-Jin Hyun; Long-quan Pi; Xinghai Jin; Won-Soo Lee｜线上出版2011-11-03；期刊2011年11月号。｜https://anndermatol.org/DOIx.php?id=10.5021/ad.2011.23.4.455\nThomas Davies; Katie Hardie; Gabriele Wortmann; Erik Schulze zur Wiesche; Franz J. Wortmann｜出版与Version of record均2025-08-10，期号2025年9月。｜https://link.springer.com/article/10.1007/s10973-025-14574-1"
+    },
+    {
+      "title": "同一根杠，为什么根部轮廓不同？先分清基面与落点",
+      "decision": "approved",
+      "level": "中",
+      "reason": "Ehair教学讲义用on/half-off/off-base解释不同根部体积；只采用几何教学，不采用其中其他加热安全断言。加拿大职业标准E-11.01支持工具、发片、落点、平顺卷绕及固定检查；密西西比考试要求仅是特定地区考核，不是热烫厂家说明。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nEhair College｜未标出版日期；学校课程讲义，不是政府安全规范。｜https://www.ehaircollege.com/Resources/Module10/LESSON%205.pdf\nMississippi State Board of Cosmetology and Barbering｜修订2024-12-09，不作为首版日期。｜https://www.msbcb.ms.gov/wp-content/uploads/2024/12/PRACTICAL-HANDBOOK-MSBCB.pdf\nCCDA / Employment and Social Development Canada｜版权2019，仅年份已知，不补造月日。｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf"
+    },
+    {
+      "title": "先找轮廓最宽点，再讨论“蓬不蓬”",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "OCTE课堂指南支持整体轮廓、比例、平衡与重点分析；澳洲职业标准支持记录内外轮廓、重量区及分布。最高点H、最宽点W、体积区V标记和A/B图例是本期原创教学假设，未证明哪种设计更适合某个人。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nOntario Council for Technology Education｜版权2016，仅年份已知；学科协会课堂指南，非政府政策。｜https://legacy.octe.ca/download_file/view/3777/879\nCommonwealth of Australia / SkillsIQ｜Release 1；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_R1.pdf\nCommonwealth of Australia / SkillsIQ｜Release 1评估要求；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHCUT001_AssessmentRequirements_R1.pdf"
+    },
+    {
+      "title": "细软中长发示意：把“发丝细”和“发量少”分开设计",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "教材与加拿大术语表把单根粗细和区域密度分开；本期四区中长发清水排布是原创假设，无发束或真人效果验证，无成功率、持久时间或化学参数。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nCity & Guilds｜首印2010；版权2012；重印记录至2021，不能当2021首次发表。｜https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/3002/3002_level_2/additional_documents/3002_level_2_vrq_in_hairdressing_candidate_logbook-pdf.pdf\nCCDA / Employment and Social Development Canada｜版权2019，仅年份已知，不补造月日。｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf"
+    },
+    {
+      "title": "顾客说“烫失败了”：先把问题分开，再谈补救",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "澳洲SHBHREF004的6.2–6.6支持复核设计、当前状态、开放沟通补救及更新记录；City & Guilds Unit206支持权限内处理及升级未解决问题。四类分流和话术是原创应用，不是经过验证的诊断工具。\n本期原创练习与应用为弱证据，机构权威不等于个人效果实证。\n\n来源与日期：\nCommonwealth of Australia / SkillsIQ｜Release 1；PDF生成2022-07-05，首次发布日期未核实。｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf\nCity & Guilds｜本版本v3.0日期2024年7月；版本表首次v1为2023年7月，月日未标。｜https://www.cityandguilds.com/-/media/productdocuments/hairdressing/hairdressing/7002/qualification/qualification-handbook-7002-06-hairdressing-st0213-v1,-d-,2-for-registrations-after-24,-d-,05,-d-,23/7002-06-l2-dip-for-hair-pros-hairdressing-qhb-v3-0-pdf.pdf"
+    }
+  ],
+  "freshness": "研究员检查近7天适配内容不足，非全面期刊排查；本批基础精读，旧资料不冒充新发表。",
+  "scope": "只新增静态知识；无客户财务资料，无真实照片，无新增调度或权限。",
+  "adaptation": "原类别映射排杠技法/烫发设计/中发方案库；丰富详情存入现有字段。第3/4/5条整体弱，第1/2职业或实验有限范围中、原创应用弱。无逐字长引用、无转载插图。"
+}

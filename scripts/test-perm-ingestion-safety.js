@@ -6,14 +6,19 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { build, validate, parseBatch, shanghaiDate, retryTransient, importFeed, restoreFeed, preflightBatch } = require('./build-perm-academy-feed');
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const original = JSON.parse(fs.readFileSync('docs/perm/academy-feed.v1.json','utf8'));
+const publishedBytes = fs.readFileSync('docs/perm/academy-feed.v1.json');
+const published = JSON.parse(publishedBytes);
+// Stable legacy fixture: latest daily lessons may have query URLs and newer review dates.
+const fixtureEntry = published.items.find(x => x.source.url === 'https://www.fda.gov/cosmetics/cosmetic-products/hair-dyes');
+assert(fixtureEntry, 'retain original FDA lesson');
+const original = {...published, items:[fixtureEntry]};
 const entry = original.items[0];
 const clone = x => JSON.parse(JSON.stringify(x));
 const transient = code => Object.assign(Error('synthetic transient IO'), { code });
 async function run() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(),'perm-safety-fixtures-'));
   const input = path.join(dir,'reviewed.json'), output = path.join(dir,'feed.json'), recovery = path.join(dir,'private-recovery');
-  const originalBytes = fs.readFileSync('docs/perm/academy-feed.v1.json');
+  const originalBytes = Buffer.from(JSON.stringify(original)+'\n');
   fs.writeFileSync(output,originalBytes);
   const options = { recoveryDir:recovery, retry:{ delayMs:0 } };
   const write = data => fs.writeFileSync(input,JSON.stringify(data));
@@ -113,7 +118,7 @@ async function run() {
   const legacyTracked = {...entry,id:'legacy-learning-id',source:{...entry.source,url:entry.source.url+'?utm_source=legacy'}};
   const revisedLegacy = build({...original,items:[legacyTracked]},[{...changed,source:{...entry.source}}]);
   assert.equal(revisedLegacy.items.length,1);assert.equal(revisedLegacy.items[0].id,'legacy-learning-id');cases += 2;
-  assert(fs.readFileSync('docs/perm/academy-feed.v1.json').equals(originalBytes)); cases++;
+  assert(fs.readFileSync('docs/perm/academy-feed.v1.json').equals(publishedBytes)); cases++;
   console.log('perm ingestion safety passed: '+cases+' assertions; fixtures only in '+dir);
 }
 run().catch(error => {console.error(error);process.exitCode=1;});

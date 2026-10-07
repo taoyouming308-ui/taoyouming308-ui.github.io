@@ -3101,3 +3101,7 @@ Do not hand work to another agent through chat memory only. The repository must 
 - Separate guarded repair only for explicitly approved unposted Xiangli dates; source/head/bill-list/old-cell checks, manual/confirmed/locked guards, immutable before/after audit. No collection, posting, payment/summary/ledger or scheduler changes.
 - Native PostgreSQL 17: 61 safety groups passed; 93 frozen/offline catalog assertions and focused bleaching/production-bundle syntax checks passed. Full shared pre-push suite passed (95 finance commands plus focused new test); new family test is now in the shared manifest. First Edge proposal was rejected before deployment due to JS replacement-string interpolation; corrected callback-built actual package was syntax-tested, all unrelated production files byte-identical.
 - Production: definition-only migration applied; classifier/owner/private ACL/security/search_path verified. frontdesk-api v29 ACTIVE, exact four-file readback verified; production mapping version and existing authentication preserved. Oct4/Oct6 Xiangli unposted drafts each received one audited revision, classification issues cleared, all payment/summary rows byte-identical to pre-images. No confirmed ledger or source write. GitHub publication/readback follows separately; see docs/daily-bleaching-color-repair.md.
+
+## 2026-10-07 研习院日批次
+
+版本v607，仅静态内容/审核、发布交接及必要测试夹具变化。新增5条基础精读，旧6条逐对象相等，11条累计；第3/4/5条原创教学整体弱，职业依据另列。11个原始来源打开复核，日期与限制写入同批审核JSON；69安全断言及字节/mtime/updatedAt零差异重放通过。手机桌面与完整门禁仍为发布检查。没有访问或修改日报业务任务/数据、其他App、凭据权限。自然日任务由父线程管理，必须另以真实任务日志验收持续链。
