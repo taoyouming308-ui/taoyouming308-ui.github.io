@@ -3093,3 +3093,11 @@ Do not hand work to another agent through chat memory only. The repository must 
 ## 2026-10-06 研习院首批内容与导入安全
 
 版本保持v607，未改App代码或其他App。五个公开来源逐条核对，批准基础精读5条，保留FDA1条。科学研究、职业经验、原创教学示意分别标注；无真实客户资料。待审预检、语义幂等、上海批次、锁、瞬态重试、恢复测试69项通过；手机桌面回归随发布验证。每日任务未配置，原任务暂停仅据用户报告。
+
+## 2026-10-07 · 日报漂发分类（App version: v607）
+
+- Current owner: Codex. Base github/main befa455, isolated fix/daily-save-recovery; original dirty checkout and unrelated Salon work untouched. Source archive created before changes; production function bundle backed up locally.
+- User explicitly approved bleaching as dye. Strict two-store bleaching service family; no retail/mixed-package inference, frozen catalogs and mapping version retained. SQL definition-only migration preserves ACL/owner/security/search_path.
+- Separate guarded repair only for explicitly approved unposted Xiangli dates; source/head/bill-list/old-cell checks, manual/confirmed/locked guards, immutable before/after audit. No collection, posting, payment/summary/ledger or scheduler changes.
+- Native PostgreSQL 17: 61 safety groups passed; 93 frozen/offline catalog assertions and focused bleaching/production-bundle syntax checks passed. Full shared pre-push suite passed (95 finance commands plus focused new test); new family test is now in the shared manifest. First Edge proposal was rejected before deployment due to JS replacement-string interpolation; corrected callback-built actual package was syntax-tested, all unrelated production files byte-identical.
+- Production: definition-only migration applied; classifier/owner/private ACL/security/search_path verified. frontdesk-api v29 ACTIVE, exact four-file readback verified; production mapping version and existing authentication preserved. Oct4/Oct6 Xiangli unposted drafts each received one audited revision, classification issues cleared, all payment/summary rows byte-identical to pre-images. No confirmed ledger or source write. GitHub publication/readback follows separately; see docs/daily-bleaching-color-repair.md.

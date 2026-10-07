@@ -8,6 +8,7 @@
     { "runtime": "node", "script": "test-daily-row-label-save-contract.js" },
     { "runtime": "python", "args": ["-m", "unittest", "scripts/test_check_daily_reports.py"] },
     { "runtime": "node", "script": "test-zysyr-frontdesk-autofill-db.js" },
+    { "runtime": "node", "script": "test-daily-bleaching-category.mjs" },
     { "runtime": "node", "script": "test-zysyr-frontdesk-autofill-browser.js" },
     { "runtime": "node", "script": "test-zysyr-daily-autofill-view.mjs" },
     { "runtime": "node", "script": "test-mgj-daily-report-sync.js" },

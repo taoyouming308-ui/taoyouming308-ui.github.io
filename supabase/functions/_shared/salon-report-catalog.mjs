@@ -64,10 +64,11 @@ export const REPORT_PROJECT_ADDITIONS_V10 = [
 export const REPORT_PROJECT_ROUTES = [...REPORT_PROJECT_ROUTES_V9, ...REPORT_PROJECT_ADDITIONS_V10];
 // Approved service family only: excludes retail goods and unverified mixed packages.
 export const APPROVED_ACID_CARE_PATTERN='^歌薇酸护(（盖白发）)?([0-9]+(元)?)?$';
+export const APPROVED_BLEACHING_PATTERN='^漂发([0-9]+(元)?)?$';
 export function reportProjectCategory(shopId, item) {
   if (!['1009951','1837032'].includes(String(shopId))) return null;
   // Explicit user decision: bleaching is dye, for both stores.
-  if (item?.item_name === '褪色') return 'color';
+  if (item?.item_name === '褪色' || new RegExp(APPROVED_BLEACHING_PATTERN).test(item?.item_name || '')) return 'color';
   if (new RegExp(APPROVED_ACID_CARE_PATTERN).test(item?.item_name || '')) return 'treatment';
   return REPORT_PROJECT_ROUTES.find(([shop,code,name]) => shop === String(shopId)
     && code === String(item?.item_code) && name === item?.item_name)?.[3] ?? null;

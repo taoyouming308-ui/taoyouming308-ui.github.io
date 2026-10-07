@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {REPORT_MAPPING_VERSION,REPORT_PROJECT_ADDITIONS_V10 as additions,
-  REPORT_PROJECT_ROUTES_V9 as old,reportProjectCategory} from '../supabase/functions/_shared/salon-report-catalog.mjs';
+  REPORT_PROJECT_ROUTES_V9 as old,APPROVED_BLEACHING_PATTERN,reportProjectCategory} from '../supabase/functions/_shared/salon-report-catalog.mjs';
 import {build,path} from './build-daily-autofill-v10.mjs';
 let checks=0;
 const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
@@ -15,7 +15,8 @@ for(const [shop,code,name,category] of additions) {
     [shop==='1009951'?'1837032':'1009951',code,name],['unknown',code,name],
     [shop,'0'+code,name],[shop,code+'0',name],[shop,code,name+'改名'],
     [shop,code,name+' '],[shop,code,name.replace(/\d+/,'999')===name?name+'其他产品':name.replace(/\d+/,'999')]
-  ])eq(reportProjectCategory(s,{item_code:c,item_name:n}),legacy(s,c,n));
+  ])eq(reportProjectCategory(s,{item_code:c,item_name:n}),
+    ['1009951','1837032'].includes(s)&&new RegExp(APPROVED_BLEACHING_PATTERN).test(n)?'color':legacy(s,c,n));
 }
 eq(reportProjectCategory('1009951',{item_code:'518',item_name:'Olaplex短发'}),null);
 eq(reportProjectCategory('1009951',{item_code:'518',item_name:'Olaplex洗发水'}),null);

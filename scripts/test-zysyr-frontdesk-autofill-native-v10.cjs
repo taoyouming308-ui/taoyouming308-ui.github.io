@@ -593,6 +593,54 @@ let started=false;
   assert.throws(()=>sql("update public.zysyr_daily_autofill_events set review_gaps='[]'"),/IMMUTABLE/);
   assert.equal(sql('select amount from public.legacy_income'),'2126');
  });
+ const repairDay='2026-09-20';let repairDraft;
+ check('bleaching family migration preserves data, privileges and is idempotent',()=>{
+  list('向里造型',repairDay);const p=payload('向里造型',repairDay);p.bills[0].items[0].item_code='430';p.bills[0].items[0].item_name='漂发800';ingest(p);
+  repairDraft=sql(`select id from public.zysyr_daily_sheet_drafts where store_id='${xiang}' and report_date='${repairDay}'`);
+  assert.equal(sql(`select coalesce(ocr_numeric::text,'NULL') from public.zysyr_daily_sheet_cells where draft_id='${repairDraft}' and section_code='stylist' and cell_role='staff_value' and column_code='color'`),'NULL');
+  const before=databaseDigest(),acl=sql("select proacl::text from pg_proc where oid='zysyr_daily_electronic_private.report_project_category(text,text,text)'::regprocedure");
+  const migration=fs.readFileSync('supabase/migrations/20261007044552_zysyr_daily_bleaching_color_family.sql','utf8');
+  sql(migration);sql(migration);assert.deepEqual(databaseDigest(),before);
+  assert.equal(sql("select proacl::text from pg_proc where oid='zysyr_daily_electronic_private.report_project_category(text,text,text)'::regprocedure"),acl);
+  for(const shop of ['1009951','1837032']) {
+   for(const n of ['漂发','漂发400','漂发800','漂发1200','漂发980元'])assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category('${shop}','new-code',${q(n)})`),'color');
+   for(const n of ['漂发粉','漂发产品零售','漂发护理套餐','漂发800改名','漂发800 ','漂发-800'])assert.equal(sql(`select zysyr_daily_electronic_private.report_project_category('${shop}','new-code',${q(n)})`),'');
+  }
+  assert.equal(sql("select zysyr_daily_electronic_private.report_project_category('other','430','漂发800')"),'');
+ });
+ check('bleaching allocation closes dye column without altering subtotal/payment or doubling dye occasion',()=>{
+  const p=payload(),b=p.bills[0];b.items[0].item_code='430';b.items[0].item_name='漂发800';
+  const rows=json(`select zysyr_daily_electronic_private.autofill_cells(${q(JSON.stringify(p))}::jsonb)`);
+  assert.equal(rows.find(x=>x.section_code==='stylist'&&x.cell_role==='staff_value'&&x.column_code==='color').value,100);
+  assert.equal(rows.find(x=>x.section_code==='stylist'&&x.cell_role==='staff_total'&&x.column_code==='subtotal').value,100);
+  assert.deepEqual(issues(p),[]);
+  b.items.push({...b.items[0],source_item_id:'second',item_code:'439',item_name:'健康染699'});
+  b.employee_allocations.push({...b.employee_allocations[1],source_allocation_id:'second-tech',source_item_id:'second'});
+  const combined=json(`select zysyr_daily_electronic_private.autofill_cells(${q(JSON.stringify(p))}::jsonb)`);
+  assert.equal(combined.find(x=>x.section_code==='technician'&&x.cell_role==='technician_value'&&x.column_code==='dye_count').value,1);
+  assert.deepEqual(combined.filter(x=>x.section_code==='payment'),rows.filter(x=>x.section_code==='payment'));
+ });
+ check('bounded bleaching draft repair rejects drift, preserves manual edits, totals and immutable audit',()=>{
+  const repair=fs.readFileSync('scripts/repair-daily-bleaching-drafts.sql','utf8');
+  const run=()=>sql(`begin;set local zysyr.bleaching_repair_dates='["${repairDay}"]';${repair}commit;`);
+  const cellId=sql(`select id from public.zysyr_daily_sheet_cells where draft_id='${repairDraft}' and section_code='stylist' and cell_role='staff_value' and column_code='color'`);
+  const before=databaseDigest();
+  sql(`update public.zysyr_daily_sheet_cells set ocr_numeric=1 where id='${cellId}'`);
+  assert.throws(run,/BLEACHING_REPAIR_CELL_DIVERGED/);
+  sql(`update public.zysyr_daily_sheet_cells set ocr_numeric=null where id='${cellId}'`);
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=777 where id='${cellId}'`);
+  const manual=databaseDigest();run();assert.deepEqual(databaseDigest(),manual);
+  sql(`update public.zysyr_daily_sheet_cells set manual_override=false,corrected_numeric=null where id='${cellId}'`);
+  const protectedCells=()=>json(`select jsonb_agg(to_jsonb(c) order by id) from public.zysyr_daily_sheet_cells c where draft_id='${repairDraft}' and section_code not in('stylist','technician')`);
+  const protectedBefore=protectedCells(),rev=Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${repairDraft}'`));
+  run();assert.equal(sql(`select ocr_numeric from public.zysyr_daily_sheet_cells where id='${cellId}'`),'100.00');
+  assert.deepEqual(protectedCells(),protectedBefore);assert.equal(Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${repairDraft}'`)),rev+1);
+  assert.deepEqual(json(`select ocr_raw_result#>'{autofill,classification_issues}' from public.zysyr_daily_sheet_drafts where id='${repairDraft}'`),[]);
+  assert.equal(sql(`select before_snapshot->>'repair' from public.zysyr_daily_autofill_events where draft_id='${repairDraft}' order by revision desc limit 1`),'bleaching-color-2026-10-07');
+  const after=databaseDigest();run();assert.deepEqual(databaseDigest(),after);
+  sql(`update public.zysyr_daily_sheet_drafts set status='confirmed' where id='${repairDraft}'`);const confirmed=databaseDigest();run();assert.deepEqual(databaseDigest(),confirmed);
+  assert.equal(sql('select amount from public.legacy_income'),'2126');assert.notDeepEqual(after,before);
+ });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));
   sql(`create or replace function zysyr_daily_electronic_private.cash_receipt_projection(p_company uuid,p_store uuid,p_day date) returns jsonb language plpgsql stable set search_path='' as $$begin raise exception 'synthetic_projection_error';end$$;`);
