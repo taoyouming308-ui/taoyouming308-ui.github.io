@@ -1,0 +1,103 @@
+{
+  "batchId": "perm-2026-10-08",
+  "verifiedAt": "2026-10-08T11:30:58.830208+00:00",
+  "reviewType": "原始职业标准与科学外推边界编辑审核，不是化学实验验证",
+  "sources": [
+    {
+      "id": "S1",
+      "title": "Red Seal Occupational Standard — Hairstylist",
+      "url": "https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+      "author": "Canadian Council of Directors of Apprenticeship / Employment and Social Development Canada",
+      "publishedAt": null,
+      "dateNote": "版权2019，仅年份已知，未补造月日；职业标准，非效果试验。",
+      "sections": "E-11.01印刷页70–71，E-11.02页72–74，D-9.04页60–61",
+      "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+    },
+    {
+      "id": "S2",
+      "title": "SHBHREF004 Enhance hair designs using chemical reformation techniques — Release 1",
+      "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+      "author": "Commonwealth of Australia / SkillsIQ",
+      "publishedAt": null,
+      "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+      "sections": "3.2，4.4，5.2，6.5；第3–4页",
+      "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+    },
+    {
+      "id": "S3",
+      "title": "SHBHDES003 Create finished hair designs — Release 1",
+      "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf",
+      "author": "Commonwealth of Australia / SkillsIQ",
+      "publishedAt": null,
+      "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+      "sections": "1.2–1.6，2.1–2.3，4.1–4.3；第2–3页",
+      "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+    }
+  ],
+  "approvalReasons": [
+    {
+      "title": "看见卷形，不等于中和阶段已经完成",
+      "decision": "approved",
+      "level": "中",
+      "reason": "已读原始职业资料与栏目相符；职业判断有限范围中证据，原创示意及应用弱；未提出效果或安全阈值。",
+      "sourceIds": [
+        "S2",
+        "S1"
+      ]
+    },
+    {
+      "title": "杠径与发片量：先保证铺开，再比较工具大小",
+      "decision": "approved",
+      "level": "中",
+      "reason": "已读原始职业资料与栏目相符；职业判断有限范围中证据，原创示意及应用弱；未提出效果或安全阈值。",
+      "sourceIds": [
+        "S1"
+      ]
+    },
+    {
+      "title": "轮廓之外：用卷的方向与节奏表达人物风格",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "已读原始职业资料与栏目相符；职业判断有限范围中证据，原创示意及应用弱；未提出效果或安全阈值。",
+      "sourceIds": [
+        "S3"
+      ]
+    },
+    {
+      "title": "中长发尾段移动：为能扎起、少整理而作的教学方案",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "已读原始职业资料与栏目相符；职业判断有限范围中证据，原创示意及应用弱；未提出效果或安全阈值。",
+      "sourceIds": [
+        "S3",
+        "S2"
+      ]
+    },
+    {
+      "title": "打理说明讲完还不够：让顾客复述自己会怎样做",
+      "decision": "approved",
+      "level": "弱",
+      "reason": "已读原始职业资料与栏目相符；职业判断有限范围中证据，原创示意及应用弱；未提出效果或安全阈值。",
+      "sourceIds": [
+        "S3",
+        "S2"
+      ]
+    }
+  ],
+  "freshness": {
+    "window": "2026-10-01至2026-10-08",
+    "result": "检索工具返回无关结果，不能可靠确定窗口内新研究；明确采用基础精读，不声称所有期刊均无新发表。"
+  },
+  "excludedSources": [
+    {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42825074/",
+      "reason": "当前读取无可复核正文，不据旧会话摘要批准。"
+    },
+    {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4387693/",
+      "reason": "初次返回文章入口，后续具体检索变验证码；未核实具体科学段落，排除。"
+    }
+  ],
+  "dedup": "已读Oct6/7共11条标题与内容；今日新主题为中和验收边界、工具与发片量、方向节奏、尾段移动及维护复述，不重写水热损伤或基面位置。",
+  "scope": "公开知识，无顾客财务信息、长转载、图片或参数配方；保留v608日报修复，未改页面任务凭据权限。"
+}
