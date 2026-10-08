@@ -11,3 +11,4 @@ console.log('academy data safety/idempotency/legacy compatibility passed');
 
 // Shared CI already runs this entry; include local ingestion safety without new workflow permissions.
 require('./test-perm-ingestion-safety.js');
+require('./test-aesthetic-daily.js');

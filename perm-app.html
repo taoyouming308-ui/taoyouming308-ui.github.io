@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="608">
+<html lang="zh-CN" data-version="609">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,7 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link rel="stylesheet" href="perm-academy.css?v=608">
+<link rel="stylesheet" href="perm-academy.css?v=609">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1166,7 +1166,7 @@ body {
   <aside id="home-drawer" class="home-drawer" aria-label="首页菜单">
     <div class="home-drawer-label">工作台</div>
     <button id="employee-report-entry" hidden class="home-drawer-item" type="button"><span>股东报表</span><small>授权门店 · 只读查看</small></button>
-    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')"><span>烫发研习院</span><small>每日一课 · 设计与技法</small></button>
+    <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('plans')"><span>发型审美训练</span><small>每日五分钟 · 图文案例与答案</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('bookings')"><span>今日预约</span><small>门店与顾客日程</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('hair')"><span>发质分析</span><small>开单、任务与归档</small></button>
     <button class="home-drawer-item" type="button" onclick="openHomeDrawerFeature('showcase')"><span>作品灵感</span><small>门店发型作品</small></button>
@@ -1215,11 +1215,11 @@ body {
       .plan-page.active { display:block; padding-top:32px; }
     </style>
     <header class="page-intro page-intro-light">
-      <span class="page-kicker">PERM ACADEMY / 01</span>
-      <h2>烫发研习院</h2>
-      <p>每日一课 · 从发质判断到人物设计，建立完整烫发体系。</p>
+      <span class="page-kicker">HAIR AESTHETICS / 01</span>
+      <h2>发型审美训练</h2>
+      <p>每日五分钟 · 从人物出发，看案例、学判断。</p>
     </header>
-    <nav class="plan-nav" id="plan-nav">
+    <nav class="plan-nav" id="plan-nav" style="display:none" aria-hidden="true">
       <button onclick="switchPlan('academy')" class="on">研习</button>
       <button onclick="switchPlan('calc')">自由换算</button>
       <button onclick="switchPlan('cold')">冷烫</button>
@@ -3144,10 +3144,11 @@ body {
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
 <script src="employee-reports.js?v=539"></script>
-<script defer src="perm-academy.js?v=608"></script>
-<script src="aesthetic-knowledge.v1.js?v=608"></script>
-<script src="hair-vision-training.v1.js?v=608"></script>
-<script src="aesthetic-growth.v2.js?v=608"></script>
+<script defer src="aesthetic-daily.js?v=609"></script>
+<script defer src="hair-calculator-dialog.js?v=609"></script>
+<script src="aesthetic-knowledge.v1.js?v=609"></script>
+<script src="hair-vision-training.v1.js?v=609"></script>
+<script src="aesthetic-growth.v2.js?v=609"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -11244,6 +11245,7 @@ function initApp() {
       '<button type="button" class="hair-view-btn' + (activeView === 'tasks' ? ' active' : '') + '" data-view="tasks" aria-pressed="' + (activeView === 'tasks' ? 'true' : 'false') + '" onclick="switchHairView(\'tasks\')">我的任务</button>' +
     '</div>';
     html += '<div id="hair-form-flow"' + (activeView === 'tasks' ? ' style="display:none;"' : '') + '>';
+    html += '<div class="hair-tools-entry"><button type="button" onclick="openHairCalculator()">自由换算</button><span>填写中可随时打开</span></div>';
     html += '<div class="ha-card"><div class="ha-step">步骤1 · 客户信息</div>';
     html += '<div class="hair-customer-grid" style="display:flex;flex-wrap:wrap;gap:8px;">';
     var currentBarber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
