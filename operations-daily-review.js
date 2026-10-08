@@ -285,9 +285,13 @@
           return String(item.row_label || '').trim() === String(edit.row_label || '').trim() && item.row_label_source_method === 'manual';
         });
       }
-      return cell && cell.manual_override === true && (edit.value == null
-        ? cell.corrected_numeric == null
-        : cell.corrected_numeric != null && Number(cell.corrected_numeric) === Number(edit.value));
+      if (!cell || cell.manual_override !== true) return false;
+      var textRole = ['signature', 'unclosed_order', 'note'].indexOf(cell.cell_role) >= 0;
+      if (textRole) return edit.value == null
+        ? cell.manual_text == null
+        : cell.manual_text != null && String(cell.manual_text) === String(edit.value);
+      return edit.value == null ? cell.corrected_numeric == null
+        : cell.corrected_numeric != null && Number(cell.corrected_numeric) === Number(edit.value);
     })) throw new Error('后台尚未完整保存本页人工核对内容；填写已保留，请核对后重试');
   }
   async function persistDraft(ctx, reason, versionChecked) {

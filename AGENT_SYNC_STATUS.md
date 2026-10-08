@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 2026-10-08 daily text save readback (App version: v608)
+
+- Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.
+- Verify signature, note and unclosed_order using manual_text; numeric cells retain corrected_numeric verification. Confirmed save revisions are adopted without weakening real conflicts or scope/permission guards. No financial values, API/backend, permissions or sync changes.
+- 11 synthetic text/numeric/mixed/blank/lost-reply/conflict/repeat/reentry cases and existing 48 row-label assertions pass; no live posting. User-approved publication; cache v608, no forced refresh.
+
 ## 2026-10-06 · 导入安全本地候选（App version: v607 unchanged）
 
 - Current owner: Codex. Last synchronized base checked: github/main 84270b0; isolated feature/perm-ingestion-safety. Daily source backup reused and validated by startup gates. User authorized local safety implementation, not scheduler activation or production publication.

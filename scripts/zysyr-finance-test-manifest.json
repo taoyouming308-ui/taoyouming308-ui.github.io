@@ -97,6 +97,7 @@
     { "runtime": "node", "script": "test-frontdesk-business-reader.js" },
     { "runtime": "node", "script": "test-mgj-business-detail-sync.js" },
     { "runtime": "node", "script": "test-frontdesk-business-browser.js" },
-    { "runtime": "python", "args": ["-m", "unittest", "scripts/test_mgj_business_detail.py", "scripts/test_sync_mgj_business_details.py", "scripts/test_run_mgj_business_detail_2026.py"] }
+    { "runtime": "python", "args": ["-m", "unittest", "scripts/test_mgj_business_detail.py", "scripts/test_sync_mgj_business_details.py", "scripts/test_run_mgj_business_detail_2026.py"] },
+    { "runtime": "node", "script": "test-daily-text-save-readback.js" }
   ]
 }
