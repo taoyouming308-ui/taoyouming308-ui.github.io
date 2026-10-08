@@ -1,4 +1,5 @@
 // Isolated synthetic page, no production auth or writes.
+require('node:child_process').execFileSync(process.execPath, ['scripts/test-aesthetic-daily-browser.js'], {stdio:'inherit'});
 const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const html=fs.readFileSync('perm-app.html','utf8'),styles=[...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(x=>x[1]).join('\n');
 const section=html.slice(html.indexOf('  <section class="tab-content" id="tab-plans">'),html.indexOf('  </section><!-- /tab-plans -->'))+'</section>';

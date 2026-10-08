@@ -1,0 +1,33 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=require('playwright');
+const html=fs.readFileSync('perm-app.html','utf8');
+const styles=[...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(x=>x[1]).join('\n');
+const section=html.slice(html.indexOf('  <section class="tab-content" id="tab-plans">'),html.indexOf('  </section><!-- /tab-plans -->'))+'</section>';
+const switcher=html.slice(html.indexOf('  window.switchPlan = function(name)'),html.indexOf('  // 初始状态：首页显示'));
+const calc=html.slice(html.indexOf('  function getFixedChem(tga, ca)'),html.indexOf('  // ===== 预约系统 ====='));
+const feed=JSON.parse(fs.readFileSync('docs/aesthetic-training/feed.v1.json'));
+(async()=>{const browser=await chromium.launch({headless:true});try{for(const width of [390,1280]){
+ const page=await browser.newPage({viewport:{width,height:844}}), errors=[]; let mode='ok';
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',r=>{
+  const url=r.request().url();
+  if(url.includes('feed.v1.json'))return r.fulfill(mode==='fail'?{status:500,body:'failed'}:{json:mode==='empty'?{schemaVersion:1,items:[]}:feed});
+  if(url.endsWith(feed.items[0].image))return r.fulfill({contentType:'image/jpeg',body:fs.readFileSync(feed.items[0].image)});
+  return r.fulfill({body:'<!doctype html><meta charset="utf-8"><style>'+styles+fs.readFileSync('perm-academy.css','utf8')+'</style><body><main class="main">'+section+'<input id="unsaved" value="未保存案例"><button id="open" onclick="openHairCalculator()">自由换算</button></main></body>'});
+ });
+ await page.goto('http://training.test/');await page.addScriptTag({content:switcher});
+ await page.evaluate(()=>{document.querySelector('#tab-plans').classList.add('active');switchPlan('academy');});
+ await page.addScriptTag({content:calc});await page.addScriptTag({path:'hair-calculator-dialog.js'});await page.addScriptTag({path:'aesthetic-daily.js'});
+ await page.getByText('参考答案与设计推理',{exact:true}).waitFor();
+ assert(await page.locator('.training-figure img').evaluate(x=>x.complete&&x.naturalWidth>0));
+ assert.equal(await page.locator('#plan-nav').isVisible(),false);
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.getByRole('button',{name:'标记学完',exact:true}).click();assert.equal(await page.getByRole('button',{name:'已学完 ✓'}).count(),1);
+ await page.locator('#open').click();await page.locator('#calc-tga').fill('3');await page.locator('#calc-ca').fill('1');await page.locator('#calc-amount').fill('100');await page.locator('#calc-btn').click();
+ assert((await page.locator('#calc-result').innerText()).includes('75.0 g'));assert((await page.locator('#calc-result').innerText()).includes('25.0 g'));
+ fs.mkdirSync('artifacts/training',{recursive:true});await page.screenshot({path:'artifacts/training/'+width+'-calculator.png'});
+ await page.keyboard.press('Escape');assert.equal(await page.locator('#hair-calculator-dialog').isVisible(),false);assert.equal(await page.locator('#unsaved').inputValue(),'未保存案例');
+ await page.locator('#open').click();assert.equal(await page.locator('#calc-tga').inputValue(),'3');await page.getByRole('button',{name:'冷烫工具',exact:true}).click();assert(await page.locator('#plan-cold').isVisible());await page.getByRole('button',{name:'关闭自由换算',exact:true}).click();
+ await page.screenshot({path:'artifacts/training/'+width+'-case.png',fullPage:true});
+ mode='fail';await page.addScriptTag({path:'aesthetic-daily.js'});await page.getByRole('button',{name:'重新读取'}).waitFor();mode='empty';await page.getByRole('button',{name:'重新读取'}).click();await page.getByText('暂时没有已发布案例。').waitFor();
+ assert.deepEqual(errors,[]);await page.close();
+}console.log('training 390/1280: images, answers, completion, calculator 3:1=75g/25g, input retention, close/cold, error/retry passed');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

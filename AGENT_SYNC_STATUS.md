@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-08 · 发型审美训练候选（App version: v609）
+
+- Current owner: Codex. Last synchronized base checked: github/main b533a62 v608, isolated clean app-work; daily source backup created before edits. User explicitly requested this module replacement and today's illustrated case publication.
+- Replaced the academy entry/runtime with daily illustrated aesthetic cases and complete six-step answers/five-point self-review. Oct8 fictional AI portrait only; old science feed remains unreferenced historical material. No customer images or business data added.
+- Free calculator entry added to the hair form; original calculator/cold DOM and listeners move into a native modal without recreating the form or editing calculation logic. Cold utility retained. Version/cache markers only in frontdesk/operations.
+- Initial gates, 42 sync tests, 31 hair-state cases, archive/admin/booking, legacy markup hash, 69 ingestion assertions and new feed/assets contract passed. The shared pre-push passed version, smoke, update, AI route, care/manual outbound, care monthly, 11 Python care tests, hair-state/photos/save-durability and archive checks, then halted at customer-profile browser launch. Pinned Chromium downloads returned invalid archives; independently installed Google Chrome 155 exited with SIGSEGV before tests. Local browser validation remains unavailable. New isolated 390/1280 browser regression is wired into existing academy CI entry; the candidate will be validated on the independent GitHub PR runner before merging. NOT yet published.
+- Image upload transport recovered using a 352390-byte JPEG at the original 1774x887 dimensions; the same approved fictional case is retained. Code and image blob uploads succeeded through the GitHub connector. No original customer or business image is involved.
+- Daily ChatGPT content task exists; App-sync instructions must be updated only after successful first publication/readback. No new scheduler, backend, permission or business sync changes. Latest status must be confirmed before merging.
+
 ## 2026-10-08 daily text save readback (App version: v608)
 
 - Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.
