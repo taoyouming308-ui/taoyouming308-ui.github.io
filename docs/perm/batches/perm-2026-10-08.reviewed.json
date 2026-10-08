@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "batch": {
+    "id": "perm-2026-10-08",
+    "producedAt": "2026-10-08T11:30:58.830208+00:00",
+    "timezone": "Asia/Shanghai",
+    "label": "职业标准基础精读 · 非近期新研究",
+    "dailySummary": "同一个“做得好”要拆成材料安排、过程执行、设计意图和使用能力；把观察当观察，把尚未验证的效果留下问题。",
+    "lowRiskPractice": "目的：观察工具规格改变时的几何包覆，不测化学或永久效果。只用同来源同长度近似发片量练习材料与清水，记录两个不同工具规格，保持方向、落点、湿润轻压去滴流程、轻张力、固定和拍摄条件；只改变规格。记录圈数、交叉堆束、发尾平顺、固定压痕及混杂；交换左右重复，保存所有照片。允许才室温干后温和拆下观察。不加热上药、不在真人头皮练习、不增拉力，控制不一致就写尚未验证。"
+  },
+  "items": [
+    {
+      "title": "看见卷形，不等于中和阶段已经完成",
+      "category": "热烫原理",
+      "batchDate": "2026-10-08",
+      "source": {
+        "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+        "author": "Commonwealth of Australia / SkillsIQ",
+        "publishedAt": null,
+        "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+        "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "澳洲SHBHREF004将卷度过程检查与匹配中和产品、按说明处理中和分列；加拿大E-11.02也分别列卷度检查与稳定过程。\n来源支持职业判断框架，不证明具体造型优效或跨产品安全；本期原创应用与练习为弱证据。\n\n来源日期与定位：\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜3.2，4.4，5.2，6.5；第3–4页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf\nCanadian Council of Directors of Apprenticeship / Employment and Social Development Canada｜版权2019，仅年份已知，未补造月日；职业标准，非效果试验。｜E-11.01印刷页70–71，E-11.02页72–74，D-9.04页60–61｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+        "parts": [
+          {
+            "type": "职业标准依据",
+            "level": "中",
+            "basis": "澳洲SHBHREF004将卷度过程检查与匹配中和产品、按说明处理中和分列；加拿大E-11.02也分别列卷度检查与稳定过程。"
+          },
+          {
+            "type": "原创教学推论与练习",
+            "level": "弱",
+            "basis": "非真实案例，尚无实测效果；不外推到永久卷度、化学完成率或真人安全。"
+          }
+        ]
+      },
+      "coreKnowledge": "深度解读 · 基础精读，非近7天新研究。\n为什么分开判断：卷形是可见的几何观察，中和阶段是否按具体体系完成是过程证据；两者不是同一张验收单。这里不把外观检查说成化学键重建的测量。\n如何判断：把“观察到什么”和“按哪个产品说明完成了哪个步骤”各写一栏，记录相应区域与偏差。不得用“摸着挺好”替代应有的过程记录。\n解释对比：A记录“卷很好”只留下结果印象；B同时记录阶段、使用体系和异常处理，更可追溯，但B也不能证明每一根发丝的化学状态。\n适用：复盘产品说明执行与信息缺口。不适用：据此估算还原比例、擅延中和、混配中和剂或用空气等待替代该体系指定步骤。\n常见误区：把还原、冲洗、中和和完成造型写成同一个“烫好了”；凭卷形省略步骤；把职业标准中的空气氧化条目当通用操作指令。",
+      "shopApplication": "门店应用：服务前确认同体系产品及说明；阶段记录应含已完成步骤、说明版本、异常及负责人判断。只有符合具体产品与设备说明的受训服务人员才能执行化学操作；本篇不提供浓度、pH、温度、时间或纠正处方。\n原创纸面练习：给两份虚构流程记录，只找遗漏项，不模拟药剂、不加热。\n自测：完成照能测出中和完成率吗？不能。少一项记录证明没做吗？不能，先补核验而不是直接判责。复习：外观、过程执行、材料状态分别描述。",
+      "openQuestions": "当前流程记录哪一阶段最难复核？具体产品有哪些明确要求，哪些超出本篇依据？本批无原始化学实验，不声称验证还原/再氧化效率。",
+      "tags": [
+        "基础精读",
+        "深度解读",
+        "非近期新发现",
+        "判断边界"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 原始来源与科学外推边界编辑审核（非专业实操验证）",
+      "reviewedAt": "2026-10-08T11:30:58.830208+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "杠径与发片量：先保证铺开，再比较工具大小",
+      "category": "排杠技法",
+      "batchDate": "2026-10-08",
+      "source": {
+        "url": "https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+        "author": "Canadian Council of Directors of Apprenticeship / Employment and Social Development Canada",
+        "publishedAt": null,
+        "dateNote": "版权2019，仅年份已知，未补造月日；职业标准，非效果试验。",
+        "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+      },
+      "evidence": {
+        "level": "中",
+        "basis": "加拿大E-11.01要求发片与工具匹配并平顺卷绕；D-9.04按材料特征及目标选工具。不是固定杠径与发片厚度公式。\n来源支持职业判断框架，不证明具体造型优效或跨产品安全；本期原创应用与练习为弱证据。\n\n来源日期与定位：\nCanadian Council of Directors of Apprenticeship / Employment and Social Development Canada｜版权2019，仅年份已知，未补造月日；职业标准，非效果试验。｜E-11.01印刷页70–71，E-11.02页72–74，D-9.04页60–61｜https://www.red-seal.ca/_conf/assets/custom/docms/hairstylist_rsos2019_eng.pdf",
+        "parts": [
+          {
+            "type": "职业标准依据",
+            "level": "中",
+            "basis": "加拿大E-11.01要求发片与工具匹配并平顺卷绕；D-9.04按材料特征及目标选工具。不是固定杠径与发片厚度公式。"
+          },
+          {
+            "type": "原创教学推论与练习",
+            "level": "弱",
+            "basis": "非真实案例，尚无实测效果；不外推到永久卷度、化学完成率或真人安全。"
+          }
+        ]
+      },
+      "coreKnowledge": "深度解读 · 基础精读，非近7天新研究。\n为什么分开：杠径描述工具，发片量描述承载材料；同一工具上增加发片量会改变卷绕层次与铺开状态，因此“杠一样”不代表安排相同。此几何解释是教学推论，不是药剂渗透实验。\n如何判断：先看发片边界是否清楚、发丝是否交叉堆束、发尾能否平顺包入、固定是否压根，再记录工具规格和实际发片量。不能靠加大张力让过量材料硬贴到位。\n对比：同时换更小杠和更厚发片，无法归因卷绕变化；若只比杠径，先尽量保持发片量、长度、方向、湿润及控制方式。\n适用：练习头几何检查和设计记录。不适用：由卷绕外观预测永久卷度、药剂均匀性或受损发安全。\n常见误区：厚薄只凭口头称呼；所有头区套同一发片量；小杠自动等于更持久；为了排整齐增拉力。",
+      "shopApplication": "先给两束练习材料编号，以同来源同长度尽量一致的发片，清水轻润，用两个已记录规格的工具比较卷绕包覆。只改变杠径，落点和方向保持相同；未达到控制条件就写混杂。不加热上药，不用真人。\n指标：发尾平顺、交叉堆束、固定压痕、工具覆盖与圈数，仅作观察描述。两轮交换位置，保存所有照片，包括不理想结果。\n自测：同杠径不同发片量是同一处理吗？不是。上杠顺就证明化学均匀吗？不能。复习先读材料再读工具。",
+      "openQuestions": "练习材料的厚薄如何更一致地记录？圈数变化来自规格还是发片量、长度或压缩差异？尺寸比较不回答永久效果。",
+      "tags": [
+        "基础精读",
+        "深度解读",
+        "非近期新发现",
+        "判断边界"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 原始来源与科学外推边界编辑审核（非专业实操验证）",
+      "reviewedAt": "2026-10-08T11:30:58.830208+00:00",
+      "isExample": false,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "轮廓之外：用卷的方向与节奏表达人物风格",
+      "category": "烫发设计",
+      "batchDate": "2026-10-08",
+      "source": {
+        "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf",
+        "author": "Commonwealth of Australia / SkillsIQ",
+        "publishedAt": null,
+        "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+        "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "澳洲SHBHDES003要求结合设计元素、本人偏好与工具技法，并复核完成结果；本期方向与节奏A/B为原创假设。\n来源支持职业判断框架，不证明具体造型优效或跨产品安全；本期原创应用与练习为弱证据。\n\n来源日期与定位：\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜1.2–1.6，2.1–2.3，4.1–4.3；第2–3页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf",
+        "parts": [
+          {
+            "type": "职业标准依据",
+            "level": "中",
+            "basis": "澳洲SHBHDES003要求结合设计元素、本人偏好与工具技法，并复核完成结果；本期方向与节奏A/B为原创假设。"
+          },
+          {
+            "type": "原创教学推论与练习",
+            "level": "弱",
+            "basis": "非真实案例，尚无实测效果；不外推到永久卷度、化学完成率或真人安全。"
+          }
+        ]
+      },
+      "coreKnowledge": "实用精读 · 基础精读，非近7天新研究。\n原创教学：同一虚构人物、同长度轮廓，A用连续同向曲线，B用局部换向和疏密变化，比较“整齐连贯”与“松散有变化”的个人感受。线稿只表示意图，没有客户偏好或实测结果。\n体积不变也可以讨论运动方向；但疏密线条不是密度测量，画出的方向也不保证真实材料能复现。人物风格由本人选择，不给性格或脸型配唯一答案。",
+      "shopApplication": "先让对方用自己的词选目标，再出同画风同轮廓A/B线稿，只改一个方向或节奏变量。先问看到什么差异，再问喜欢哪处，避免暗示正确答案。\n仅纸面绘制原创无身份轮廓，不复制教材图片；标“方向与节奏示意，待验证”。从正侧后看设计是否连贯，再另评估维护能力，不把插图当烫后承诺。\n自测：更喜欢A能证明A普遍更美吗？不能，是一次偏好沟通。",
+      "openQuestions": "对方喜欢的是连贯运动、卷的清晰度，还是更少两侧体积？能否指认而不是只说自然？当前纸面练习不验证烫发结果。",
+      "tags": [
+        "基础精读",
+        "实用精读",
+        "非近期新发现",
+        "判断边界",
+        "原创示意",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 原始来源与科学外推边界编辑审核（非专业实操验证）",
+      "reviewedAt": "2026-10-08T11:30:58.830208+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "中长发尾段移动：为能扎起、少整理而作的教学方案",
+      "category": "中发方案库",
+      "batchDate": "2026-10-08",
+      "source": {
+        "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf",
+        "author": "Commonwealth of Australia / SkillsIQ",
+        "publishedAt": null,
+        "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+        "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "澳洲设计标准支持从偏好到技法及维护的讨论；本期具体区域方案未经发束或真人效果验证。\n来源支持职业判断框架，不证明具体造型优效或跨产品安全；本期原创应用与练习为弱证据。\n\n来源日期与定位：\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜1.2–1.6，2.1–2.3，4.1–4.3；第2–3页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜3.2，4.4，5.2，6.5；第3–4页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+        "parts": [
+          {
+            "type": "职业标准依据",
+            "level": "中",
+            "basis": "澳洲设计标准支持从偏好到技法及维护的讨论；本期具体区域方案未经发束或真人效果验证。"
+          },
+          {
+            "type": "原创教学推论与练习",
+            "level": "弱",
+            "basis": "非真实案例，尚无实测效果；不外推到永久卷度、化学完成率或真人安全。"
+          }
+        ]
+      },
+      "coreKnowledge": "原创教学方案 · 基础精读，非近7天新研究。\n人物需求（虚构）：工作时要扎起，休息时希望发尾有轻移动，不愿每天做全头复杂整理。发质假设：未经化学处理、普通密度、中等单根粗细的中长练习头，材质允许清水室温定型；这些是设定，不是顾客判断。\n目标轮廓：保留上段整体线条，移动集中尾段并与两侧衔接。设计取舍：接受卷不覆盖整头，优先长度底线与打理可行性；不承诺自然干后完全复制照片。\n排杠思路：先画前侧后衔接区域，同规格工具、清楚发片、轻控制，仅讨论尾段的方向连接，不借强张力改根部。先完成一处清水示范再检查与邻区连接。无固定杠号或化学程序。",
+      "shopApplication": "练习只用清水、合规练习材料，不加热上药；确认发尾平顺、无钩折压痕，拍正侧后上杠图。材料允许才室温完全干后温和拆下，真实记录，不补画理想结果。\n风险边界：真实既往漂染、弹性异常、头皮问题及设备体系都不在假设内，须另评估；图片不能成为化学操作单。\n居家打理沟通（教学）：让虚构顾客选择可接受的整理步骤，并演示尾段方向与扎起需求；用品按说明另选，不承诺零维护或药剂损伤修复。确认能接受的最短干态落点与不同呈现，复述方案限制；不预填收缩百分比。\n本批只交文字排布说明，无实际图片、真实顾客前后照或成功率。",
+      "openQuestions": "从练习材料换成真实发丝，哪些条件未证实？扎起需求与尾段移动是否冲突？如果复现不一致，先记录长度、湿润、方向及拆杠差异，不默认补热补药。",
+      "tags": [
+        "基础精读",
+        "原创教学方案",
+        "非近期新发现",
+        "判断边界",
+        "原创示意",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 原始来源与科学外推边界编辑审核（非专业实操验证）",
+      "reviewedAt": "2026-10-08T11:30:58.830208+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    },
+    {
+      "title": "打理说明讲完还不够：让顾客复述自己会怎样做",
+      "category": "顾客沟通",
+      "batchDate": "2026-10-08",
+      "source": {
+        "url": "https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf",
+        "author": "Commonwealth of Australia / SkillsIQ",
+        "publishedAt": null,
+        "dateNote": "PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。",
+        "verifiedAt": "2026-10-08T11:30:58.830208+00:00"
+      },
+      "evidence": {
+        "level": "弱",
+        "basis": "澳洲SHBHDES003的4.3支持维护指导，SHBHREF004的2.4关注自理因素；复述确认与任务卡是本期原创沟通改编，未作效果研究。\n来源支持职业判断框架，不证明具体造型优效或跨产品安全；本期原创应用与练习为弱证据。\n\n来源日期与定位：\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜1.2–1.6，2.1–2.3，4.1–4.3；第2–3页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHDES003_R1.pdf\nCommonwealth of Australia / SkillsIQ｜PDF生成2022-07-05；首次发布日期未核实，生成日不是首发日。｜3.2，4.4，5.2，6.5；第3–4页｜https://training.gov.au/TrainingComponentFiles/SHB/SHBHREF004_R1.pdf",
+        "parts": [
+          {
+            "type": "职业标准依据",
+            "level": "中",
+            "basis": "澳洲SHBHDES003的4.3支持维护指导，SHBHREF004的2.4关注自理因素；复述确认与任务卡是本期原创沟通改编，未作效果研究。"
+          },
+          {
+            "type": "原创教学推论与练习",
+            "level": "弱",
+            "basis": "非真实案例，尚无实测效果；不外推到永久卷度、化学完成率或真人安全。"
+          }
+        ]
+      },
+      "coreKnowledge": "实用精读 · 基础精读，非近7天新研究。\n“我听懂了”不等于能独立完成。本期用虚构角色练习，让对方指出要整理的区域、自己愿意做的步骤和仍不清楚之处。不是诊断、能力评判或提高满意度的实证工具。\n别把顾客不愿复杂整理说成不配合；应回到共同选择的目标和可接受投入。维护动作与产品按具体说明讨论，不把护理用品说成化学结构已逆转。",
+      "shopApplication": "原创话术：你回家准备先整理哪一处？能否用自己的方式演示一次？哪个步骤不方便，我们一起简化或重新确认目标。\n教学任务卡只记区域、动作顺序、可选替代、用品说明与需要再次询问的情况；不记真实身份或上传服务档案。先在练习头用手轻整示意，不加热上药。对方复述有差异先检查讲法，不责怪。\n自测：复述成功证明长期持久吗？不能，只显示此次沟通观察。误区：发产品清单当作教会；承诺无需整理；把再次询问当失败。",
+      "openQuestions": "同一任务换一位学员能否清楚复述？最难的步骤是什么？是否应在决定造型前确认维护投入而非服务结束才发现不匹配？",
+      "tags": [
+        "基础精读",
+        "实用精读",
+        "非近期新发现",
+        "判断边界",
+        "原创示意",
+        "待验证"
+      ],
+      "reviewStatus": "approved",
+      "reviewedBy": "Codex 原始来源与科学外推边界编辑审核（非专业实操验证）",
+      "reviewedAt": "2026-10-08T11:30:58.830208+00:00",
+      "isExample": true,
+      "isRealCase": false,
+      "authorization": "not_applicable"
+    }
+  ]
+}
