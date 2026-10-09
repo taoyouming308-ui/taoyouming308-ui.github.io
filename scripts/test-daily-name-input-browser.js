@@ -30,7 +30,7 @@ let browser;
     document.getElementById('rows').innerHTML = rows.map(([section,key,label]) => '<tr>'+dailyLabelCell({section,key,label,cells:{}})+'</tr>').join('');
     bindDailyDetailInputs();
     const inputs = [...document.querySelectorAll('[data-row-label-input]')];
-    const attributes = inputs.map(input => ['autocomplete','autocorrect','spellcheck','autocapitalize'].map(name => input.getAttribute(name)));
+    const attributes = inputs.map(input => ['autocomplete','autocorrect','spellcheck','autocapitalize','writingsuggestions'].map(name => input.getAttribute(name)));
     for (const input of inputs.slice(0,2)) {
       input.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true,data:''}));
       input.value='哈'; input.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertCompositionText',data:'哈',isComposing:true}));
@@ -42,10 +42,10 @@ let browser;
     }
     return { attributes, values: inputs.slice(0,2).map(input=>input.value), cells:collectDailySheetCells(document.getElementById('daily-detail-grid')),dirty:state.imports.dirty };
   });
-  assert.deepEqual(result.attributes.slice(0,2),Array(2).fill(['off','off','false','off']));
+  assert.deepEqual(result.attributes.slice(0,2),Array(2).fill(['off','off','false','off','false']));
   assert.ok(result.attributes.slice(2).every(attrs=>attrs.every(value=>value===null)), 'totals and other sections unchanged');
   assert.deepEqual(result.values,['哈维','哈维']);
   assert.deepEqual(result.cells,[{id:null,section_code:'stylist',row_key:'stylist_1',row_label:'哈维'},{id:null,section_code:'technician',row_key:'technician_1',row_label:'哈维'}]);
   assert.deepEqual(result.dirty,{});
-  console.log('daily name input: scope, synthetic composition, 哈维 and actual serialization passed; OS candidate not simulated');
+  console.log('daily name input: scope, writing suggestions off, synthetic composition, 哈维 and actual serialization passed; OS candidate not simulated');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();});
