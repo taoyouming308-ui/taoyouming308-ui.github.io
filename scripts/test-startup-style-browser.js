@@ -22,12 +22,13 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
 (async () => {
   const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
   try {
-    for (const mode of ['delay', 'failed', 'late-failed', 'ready']) {
+    for (const mode of ['script-delay', 'delay', 'failed', 'late-failed', 'ready']) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
       const page = await context.newPage();
       let release;
       const barrier = new Promise(resolve => { release = resolve; });
       let navigations = 0;
+      let showcaseReads = 0;
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       try {
@@ -35,10 +36,15 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
           const url = new URL(route.request().url());
           if (url.origin !== origin) {
             assert.equal(route.request().method(), 'GET', 'startup must not submit external writes');
+            if (url.pathname === '/rest/v1/showcase_images' && (url.searchParams.get('select') || '').startsWith('id,')) {
+              showcaseReads++;
+              return route.fulfill({ json: [] });
+            }
             return route.fulfill({ status: 503, json: { error: 'synthetic unavailable' } });
           }
           const name = url.pathname.slice(1);
           if (name === 'perm-app.html') navigations++;
+          if (mode === 'script-delay' && name === 'staff-access-client.js') await barrier;
           if (name === 'perm-academy.css') {
             if (mode === 'delay') await barrier;
             if (mode === 'late-failed') await new Promise(resolve => setTimeout(resolve, 600));
@@ -50,7 +56,14 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
             : file.endsWith('.js') ? 'application/javascript' : file.endsWith('.css') ? 'text/css' : 'application/json' }).catch(() => {});
         });
         await page.goto(origin + '/perm-app.html', { waitUntil: 'commit' });
-        if (mode === 'delay') {
+        if (mode === 'script-delay') {
+          await page.locator('#app-startup').waitFor({ state: 'visible' });
+          // Longer than the old 1500ms pre-initialization showcase timer.
+          await page.waitForTimeout(2200);
+          assert.deepEqual(errors, [], 'slow scripts must not run showcase before API config exists');
+          assert.equal(showcaseReads, 0, 'no showcase read before main initialization');
+          release();
+        } else if (mode === 'delay') {
           await page.locator('#app-startup').waitFor({ state: 'visible' });
           // A visible DOM node alone does not prove that the screen has painted.
           await page.waitForFunction(() => performance.getEntriesByName('first-contentful-paint').length > 0, {}, { timeout: 3000 });
@@ -70,6 +83,11 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
           assert.deepEqual(errors, []);
           assert.equal(await page.locator('#home-page').evaluate(el => el.inert), false);
           assert.equal(await page.locator('#perm-startup-style').getAttribute('media'), 'all');
+          if (mode === 'script-delay') {
+            await page.waitForTimeout(1700);
+            assert.deepEqual(errors, []);
+            assert.equal(showcaseReads, 1, 'showcase starts once after initialization');
+          }
         }
         assert.equal(navigations, 1, 'no automatic reload');
         console.log('employee startup stylesheet ' + mode + ' passed');

@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-09 · Slow-script initialization race (App version: v613)
+
+- Current owner: Codex. Last synchronized base checked: github/main d400f16 v612; daily recovery archive reused, other checkouts and generated test artifacts preserved. Continues the same authorized mobile-startup repair with no forced refresh or data changes.
+- v612 Pages 37880643894 and Validate 37880644238 succeeded; exact three-entry/version hashes matched. Live cold-load verification then caught a second employee-only defect: three repeated loads raised SUPABASE_URL is not defined; another run had passed. Existing 1500ms showcase timer runs during parsing, before a slow blocking dependency lets the main script initialize its constants. The global startup guard correctly remains failed on that uncaught exception.
+- Move only initial showcase scheduling into initApp, after the main configuration exists; original 1500ms delay/read endpoint/visible-tab polling stay unchanged. The new 2200ms script-stall case failed before this fix with the exact live error, then passed with zero early showcase reads and exactly one post-init synthetic read. CSS delay/failure/recovery and existing entry cases also pass. No Supabase schema, permissions, keys, sessions or API changes; read-only API contract reviewed under Supabase skill.
+- v612's non-blocking style/readiness fix and all-three guard-order gate remain. Frontdesk/operations changes are version/cache markers only. Current phone recovered before either publication; the all-three common failure still lacks phone-side evidence. Full v613 local gate, CI, Pages hash/readiness checks remain required before delivery; no real iPhone certification.
+
 ## 2026-10-09 · Mobile startup stylesheet recovery (App version: v612)
 
 - Current owner: Codex. Last synchronized base checked: github/main 4b7f869 (v611), clean booking-sync checkout fast-forwarded before edits. Recovery branch recovery/mobile-blank-v611-20261009 and daily source archive created; other checkouts untouched.
