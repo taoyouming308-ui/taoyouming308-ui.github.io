@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-09 · Admin-only confirmed daily correction (App version: v614)
+
+- Current owner: Codex. Last synchronized base checked: github/main 2ee9535 v613. Recovery branch recovery/admin-daily-correction-v613-20261009 and daily source archive created. Explicit user authorization: only login admin may correct already-posted daily reports. Other dirty checkouts and unrelated files preserved.
+- Dedicated account capability, no finance role grant or RLS/table changes. Backend and service-only RPC both enforce active Auth-bound admin with existing company shareholder scope; locked months, stale revisions and mismatched totals fail closed. Private frozen copies reuse verified posting functions, with only dedicated guards/private calls/confirmed projection/increasing immutable versions. Future posting fixes must review these copies; public ordinary functions are untouched.
+- One correction transaction reverses the prior effective income/report and posts the replacement with existing validation/reconciliation; old snapshots, source voucher links, actor/reason and cell changes retained. New archive is a server-side immutable copy because report object paths are unique. Failed attempts may leave an unreferenced correction copy; never delete files on uncertain outcomes. No real daily report is corrected by deployment.
+- Synthetic database covers scope/client/helper denial, locked months, validation/downstream rollback, simultaneous revision conflicts, immutable history, vouchers, cash-plus-earned-card policy and idempotency. API covers actor spoofing/immutable copy failure/duplicate byte verification; 390/1280 browser covers hidden entry, tracked edits, navigation/autosave blocking, reason/cancel and lost-response status recovery. Production deployment and shared pre-push/CI/Pages verification still required; final deployment evidence will be added below.
+- Rollback: revoke only the dedicated capability and forward-patch away the correction entry/routes. Do not revert actual financial corrections or delete old/new history. Restore an incorrect amount using another reviewed admin correction. Original function definitions and source archive retained in private backups; backup is not a claim of full production database disaster-recovery validation.
+
 ## 2026-10-09 · Slow-script initialization race (App version: v613)
 
 - Current owner: Codex. Last synchronized base checked: github/main d400f16 v612; daily recovery archive reused, other checkouts and generated test artifacts preserved. Continues the same authorized mobile-startup repair with no forced refresh or data changes.

@@ -486,6 +486,7 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     can_confirm_payments: hasAuthCapability(session, "payment.confirm"),
     can_lock_reports: hasAuthCapability(session, "report.lock"),
     can_adjust_confirmed_finance: hasAuthCapability(session, "confirmed_finance.adjust"),
+    can_correct_confirmed_daily: canCorrectConfirmedDaily(session),
     can_read_salary: hasAuthCapability(session, "salary.read"),
     can_read_petty_cash_reports: hasAuthCapability(session, "dashboard.store.read"),
     can_manage_payroll: role === "finance" && hasAuthCapability(session, "salary.write_approve"),
@@ -5792,12 +5793,47 @@ async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pro
   return dailySheetRead(payload, session);
 }
 
-async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有修改电子日报权限");
+function canCorrectConfirmedDaily(session: JsonRecord): boolean {
+  return cleanText(session.operations_role, 40) === "shareholder"
+    && cleanText(session.username, 80) === "admin"
+    && hasAuthCapability(session, "daily_report.correct_confirmed");
+}
+
+async function archiveDailyCorrectionSource(payload: JsonRecord, session: JsonRecord, store: JsonRecord, expectedRevision: number): Promise<void> {
+  const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
+  const draftId = uuidValue(payload.draft_id, "日报编号无效"), requestId = uuidValue(payload.request_id, "更正请求编号无效");
+  const status = await dailySheetCorrectionStatus(payload, session);
+  if (status.applied === true) return; // The RPC still verifies the original payload hash.
+  const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,status,edit_revision&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  if (!drafts[0] || drafts[0].status !== "confirmed" || Number(drafts[0].edit_revision) !== expectedRevision) throw new Error("日报版本已变化，请核对最新日报再更正");
+  const versions = await restRows(`zysyr_daily_sheet_versions?select=source_report_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=version.desc&limit=1`);
+  const reportId = uuidValue(versions[0]?.source_report_id, "原日报版本不存在");
+  const reports = await restRows(`zysyr_report_uploads?select=bucket_id,object_path,sha256,size_bytes&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${reportId}&status=eq.active&limit=1`);
+  const source = reports[0];
+  if (!source || cleanText(source.bucket_id, 100) !== REPORT_BUCKET || !cleanText(source.object_path, 800)) throw new Error("原日报归档不存在，不能提交更正");
+  const sourcePath = cleanText(source.object_path, 800), destination = sourcePath + ".correction-" + requestId;
+  const headers = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" };
+  // Server-side copy: preserve the original bytes; never move or overwrite the old archive.
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/copy`, { method: "POST", headers,
+    body: JSON.stringify({ bucketId: REPORT_BUCKET, sourceKey: sourcePath, destinationKey: destination }) });
+  if (response.ok) return;
+  const error = await response.json().catch(() => ({})) as JsonRecord;
+  if (response.status !== 409 && String(error.statusCode) !== "409" && error.error !== "Duplicate") throw new Error("更正原件归档失败；原账未修改，请稍后重试");
+  // A prior copy may have succeeded before a reply was lost. Verify its bytes,
+  // not merely existence, before safely reusing that deterministic object.
+  const existing = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(destination)}`, { headers });
+  if (!existing.ok) throw new Error("无法核实已有更正归档；原账未修改");
+  const bytes = new Uint8Array(await existing.arrayBuffer());
+  if (bytes.length !== Number(source.size_bytes) || await sha256Bytes(bytes) !== source.sha256) throw new Error("更正归档与原件不一致；原账未修改");
+}
+
+async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord, correction = false): Promise<JsonRecord> {
+  if (correction ? !canCorrectConfirmedDaily(session) : !hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有修改电子日报权限");
   const store = await selectedStoreInfo(session, payload), reason = cleanText(payload.reason, 500);
   const draftId = uuidValue(payload.draft_id, "电子日报草稿无效");
   const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
   const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
+  if (correction && (expectedRevision === null || payload.reviewed_all !== true)) throw new Error("更正已入账日报必须核对原图并提供当前版本");
   if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新后重新核对再保存");
   if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
   const cells = (payload.cells as JsonRecord[]).map((cell) => {
@@ -5855,12 +5891,27 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pr
   // a newly inserted cell in the same row on the reviewed name, independent
   // of the order in which the user filled the page.
   const orderedCells = Array.from(uniqueCells.values()).sort((a, b) => Number(Boolean(a.row_label_reviewed)) - Number(Boolean(b.row_label_reviewed)));
-  const saved = await financeRpcSaved("rpc/zysyr_save_daily_sheet_cells", {
+  if (correction) await archiveDailyCorrectionSource(payload, session, store, Number(expectedRevision));
+  const saved = await financeRpcSaved(correction ? "rpc/zysyr_correct_confirmed_daily_sheet" : "rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
     p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: orderedCells, p_reason: reason,
     ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
+    ...(correction ? { p_request_id: uuidValue(payload.request_id, "更正请求编号无效") } : {}),
   });
+  // Return the atomic commit receipt before any optional image/readback request.
+  // A slow image must never turn a successful financial correction into a retry.
+  if (correction) return { saved, corrected: true };
   return { saved, ...(await dailySheetRead({ store: cleanText(store.name, 120), draft_id: draftId }, session)) };
+}
+
+async function dailySheetCorrectionStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!canCorrectConfirmedDaily(session)) throw new Error("仅 admin 可查询自己的日报更正结果");
+  const store = await selectedStoreInfo(session, payload);
+  return financeRpcSaved("rpc/zysyr_daily_correction_status", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_draft_id: uuidValue(payload.draft_id, "日报编号无效"),
+    p_request_id: uuidValue(payload.request_id, "更正请求编号无效"),
+  });
 }
 
 async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -6106,6 +6157,7 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable,
+    correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
     upload_original: hasAuthCapability(session, "daily_report.write"),
     void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },
     daily_unlock_approved: hasUnlockApproval, daily_unlock_request_id: approvals[0]?.id ?? null };
@@ -6766,6 +6818,7 @@ async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): P
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
 daily_electronic_sources
 daily_business_details
+daily_sheet_correct daily_sheet_correction_status
 ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
@@ -6913,6 +6966,8 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_import_candidates") return json(await importDailySheetExtraction(payload, session));
     if (operation === "daily_sheet_get") return json(await getDailySheetDraft(payload, session));
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
+    if (operation === "daily_sheet_correct") return json(await saveDailySheetDraft(payload, session, true));
+    if (operation === "daily_sheet_correction_status") return json(await dailySheetCorrectionStatus(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
     if (operation === "daily_sheet_recognize") return json(await recognizeDailySheet(payload, session));
     if (operation === "daily_recognition_job_start") return json(await dailyRecognitionJobStart(payload, session));

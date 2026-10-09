@@ -71,7 +71,8 @@
   function localInputActive() {
     var detail = document.getElementById('daily-report-detail');
     var focused = document.activeElement;
-    return dailySheetDirtyCount() > 0 || !!document.getElementById('daily-detail-reason').value.trim()
+    return !!(window.ZysyrDailyCorrection && window.ZysyrDailyCorrection.protectedInput())
+      || dailySheetDirtyCount() > 0 || !!document.getElementById('daily-detail-reason').value.trim()
       || !!detail.querySelector('details[open]')
       || Array.from(detail.querySelectorAll('input[type=file]')).some(function (input) { return input.files.length > 0; })
       || (detail.contains(focused) && focused.matches('input,textarea,select'));
@@ -453,7 +454,8 @@
     if (!detailOpen() || !state.imports.sheet) return false;
     var ctx = context();
     if (displayedScope) ctx.store = displayedScope.store;
-    return !!active || dailySheetDirtyCount() > 0 || uncertainPosts.has(contextKey(ctx));
+    return !!active || !!(window.ZysyrDailyCorrection && window.ZysyrDailyCorrection.protectedInput())
+      || dailySheetDirtyCount() > 0 || uncertainPosts.has(contextKey(ctx));
   }
   window.ZysyrDailyReview = { hasWork: hasWork, sync: syncDailySheet, isQuietRefresh: function () { return quietRefresh; } };
   setInterval(syncDailySheet, 60000);
