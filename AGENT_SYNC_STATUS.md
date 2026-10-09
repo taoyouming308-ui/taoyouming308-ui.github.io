@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-09 · Confirmed daily correction feedback (App version: v615)
+
+- Current owner: Codex. Synchronized base github/main 3c904c1 v614; recovery branch recovery/daily-correction-feedback-v614-20261009, existing daily archive validated. Scoped continuation of the admin correction feature; other files/checkouts preserved.
+- Confirmed UI defects: mandatory reason and all blocking feedback lived below the long grid; setBusy disabled controls without updating the submit caption. Move the original reason details into a top correction panel only while editing, restore ordinary placement afterward; visible status/toast/focus, explicit cancelled-confirmation feedback and caught preflight exceptions. Validation, permissions, request receipt/idempotency and immutable accounting remain unchanged.
+- New regression fails on v614; corrected 390/1280 synthetic flow covers actual invalid calculation (not stubbed), visible status, reason focus, cancellation, pending disabled caption, preflight failure, and lost-response read-only recovery. Production read-only aggregate found zero successful admin corrections at inspection; this does not prove the user's specific blocking condition. No real correction/amount write, backend deploy or migration performed. Shared gate, CI and Pages readback required before completion.
+- Rollback forward to the v614 interaction under a newer version if necessary; no ledger or source rollback. No forced refresh of active forms; user must retain unsaved values before accepting an update.
+
 ## 2026-10-09 · Admin-only confirmed daily correction (App version: v614)
 
 - Current owner: Codex. Last synchronized base checked: github/main 2ee9535 v613. Recovery branch recovery/admin-daily-correction-v613-20261009 and daily source archive created. Explicit user authorization: only login admin may correct already-posted daily reports. Other dirty checkouts and unrelated files preserved.

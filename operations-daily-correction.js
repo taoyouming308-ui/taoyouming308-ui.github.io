@@ -18,7 +18,11 @@
       && s.permissions.correct_confirmed && s.draft.status === 'confirmed' && !s.locked);
   }
   function editing() { return !!(edit && current(edit.ctx) && allowed() && !edit.uncertain && !edit.committed); }
-  function message(text) { document.getElementById('daily-detail-note').textContent = text; document.getElementById('daily-detail-note').classList.remove('hidden'); }
+  function message(text) {
+    document.getElementById('daily-detail-note').textContent = text;
+    document.getElementById('daily-detail-note').classList.remove('hidden');
+    status.textContent = text; panel.classList.remove('hidden');
+  }
   var actions = document.createElement('div');
   actions.className = 'compact-actions hidden';
   actions.id = 'daily-correction-actions';
@@ -26,9 +30,34 @@
     + '<button id="daily-correction-submit" class="primary hidden" type="button">提交更正</button>'
     + '<button id="daily-correction-cancel" class="ghost hidden" type="button">取消更正</button>';
   document.getElementById('daily-detail-state').parentElement.appendChild(actions);
+  var panel = document.createElement('div');
+  panel.id = 'daily-correction-panel'; panel.className = 'daily-readonly-note hidden';
+  var status = document.createElement('div');
+  status.id = 'daily-correction-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  panel.appendChild(status);
+  document.getElementById('daily-detail-grid').before(panel);
+  var reasonInput = document.getElementById('daily-detail-reason'), reasonDetails = reasonInput.closest('details');
+  var reasonHome = document.createComment('daily correction reason home');
+  reasonDetails.before(reasonHome);
+  var reasonSummary = reasonDetails.querySelector('summary'), originalSummary = reasonSummary.textContent, originalPlaceholder = reasonInput.placeholder;
+  var panelContext = null;
+  function problem(text, target) {
+    message(text); toast(text);
+    (target || panel).scrollIntoView({behavior: 'smooth', block: 'center'});
+    if (target && target.focus) target.focus({preventScroll: true});
+  }
   var start = document.getElementById('daily-correction-start'), submit = document.getElementById('daily-correction-submit'), cancel = document.getElementById('daily-correction-cancel');
   function controls() {
     if (edit && !current(edit.ctx)) edit = null;
+    var ctx = context(), key = ctx && JSON.stringify([ctx.store, ctx.id]);
+    if (panelContext !== key) { panelContext = key; status.textContent = ''; panel.classList.add('hidden'); }
+    if (edit) {
+      panel.classList.remove('hidden'); panel.appendChild(reasonDetails); reasonDetails.open = true;
+      reasonSummary.textContent = '更正原因（必填）'; reasonInput.placeholder = '说明本次更正的原因'; reasonInput.required = true;
+    } else {
+      reasonHome.after(reasonDetails); reasonSummary.textContent = originalSummary;
+      reasonInput.placeholder = originalPlaceholder; reasonInput.required = false;
+    }
     actions.classList.toggle('hidden', !allowed() && !edit);
     start.classList.toggle('hidden', !!edit);
     submit.classList.toggle('hidden', !edit);
@@ -58,6 +87,7 @@
       disabled.set(el, el.disabled); el.disabled = true;
     });
     else { disabled.forEach(function (value, el) { el.disabled = value; }); disabled.clear(); renderDailyDetailControls(); }
+    if (value) controls();
   }
   start.onclick = function () {
     if (!allowed() || busy || edit) return;
@@ -95,22 +125,30 @@
     return false;
   }
   submit.onclick = async function () {
-    if (!edit || busy || !current(edit.ctx)) return;
+    if (busy) return;
+    if (!edit || !current(edit.ctx)) { problem('当前日报已变化，本次未提交；请保留修改内容并核对最新版本。'); return; }
     var ctx = edit.ctx;
     if (edit.uncertain || edit.committed) {
+      message('正在查询上次更正结果，不会重复提交…');
       setBusy(true);
       try { await queryResult(ctx); } catch (error) { message('暂时无法核实更正结果：' + error.message + '；请稍后查询，不要重复提交。'); }
       finally { setBusy(false); }
       return;
     }
-    if (!editing()) return;
+    if (!editing()) { problem('当前没有更正权限或月份已锁定，本次未提交；本页内容已保留。'); return; }
     var reason = document.getElementById('daily-detail-reason').value.trim(), grid = document.getElementById('daily-detail-grid');
-    if (!reason) { message('更正已入账日报必须填写修改原因。'); return; }
-    if (!dailySheetDirtyCount()) { message('还没有修改，无需提交更正。'); return; }
-    if (!calculateDailyControls(grid).valid) { message('合计仍有差异，请核对红色金额；本次未提交，原账不变。'); return; }
-    if (isLocalPreview()) { message('预览页面不能更正生产账。'); return; }
-    if (!confirm('确认已对照原图核对全部金额？将保留旧账并提交更正版，不会重复统计。')) return;
-    var cells = collectDailySheetCells(grid);
+    if (!reason) { problem('更正已入账日报必须填写修改原因。', reasonInput); return; }
+    var cells;
+    try {
+      if (!dailySheetDirtyCount()) { problem('还没有修改，无需提交更正。'); return; }
+      if (!calculateDailyControls(grid).valid) { problem('合计仍有差异，请核对红色金额和表格下方校验项；本次未提交，原账不变。'); return; }
+      if (isLocalPreview()) { problem('预览页面不能更正生产账。'); return; }
+      cells = collectDailySheetCells(grid);
+    } catch (error) { problem('本页校验失败：' + error.message + '；未提交，修改内容已保留。'); return; }
+    if (!confirm('确认已对照原图核对全部金额？将保留旧账并提交更正版，不会重复统计。')) {
+      problem('未确认提交，本次修改仍留在页面，原账不变。'); return;
+    }
+    message('正在提交更正并核实结果，请勿关闭页面或重复点击…');
     setBusy(true);
     try {
       var result = await api('daily_sheet_correct', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision,
