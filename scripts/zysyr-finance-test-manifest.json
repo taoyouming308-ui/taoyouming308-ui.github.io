@@ -4,6 +4,7 @@
   "steps": [
     { "runtime": "node", "script": "test-cold-start-browser.js" },
     { "runtime": "node", "script": "test-entry-startup-browser.js" },
+    { "runtime": "node", "script": "test-startup-style-browser.js" },
     { "runtime": "node", "script": "test-operations-surface-browser.js" },
     { "runtime": "node", "script": "test-daily-row-label-save-contract.js" },
     { "runtime": "python", "args": ["-m", "unittest", "scripts/test_check_daily_reports.py"] },

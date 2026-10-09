@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-09 · Mobile startup stylesheet recovery (App version: v612)
+
+- Current owner: Codex. Last synchronized base checked: github/main 4b7f869 (v611), clean booking-sync checkout fast-forwarded before edits. Recovery branch recovery/mobile-blank-v611-20261009 and daily source archive created; other checkouts untouched.
+- User reports all three mobile entries blank, then spontaneous recovery before any publication. Mac live v611 entries rendered without JS errors; this does NOT identify the phone's common failure. iPhone Mirroring unavailable due to iCloud sync; current phone URLs/network behavior and real iPhone failure remain unverified. Never attribute spontaneous recovery to this unpublished patch.
+- Reproduced employee-only regression: holding perm-academy.css at v611 yields no paint and no ZysyrStartup, despite body existing. v607 had added a render-blocking stylesheet ahead of the v606 guard. Load it non-blocking, retain a readiness barrier and handle early/late failure; normal app appears only after styling and DOM ready. Frontdesk/operations functional code unchanged, required version/cache markers only.
+- Added shared-gate guard-order check for all three entries and four stylesheet browser cases (paint/8s retry/late recovery/early and late 404/normal). These plus existing 13 cold-start cases pass in isolated Chrome/Chromium. No auth, API, database, source sync, storage clearing, automatic reload, or business writes. Full pre-push/CI/Pages verification remains the publication gate; actual iPhone recurrence is still open.
+
 ## 2026-10-09 · 美学研究院学习管理（App version: v611）
 
 - Current owner: Codex. Last synchronized base checked: github/main d0d3a33 v610, clean isolated feature/aesthetic-management-v611. Daily source archive created before edits; original dirty/parallel trees untouched. User explicitly approved development, restricted backend/schema, reversible pending archive, testing and publication.

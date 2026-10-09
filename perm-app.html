@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="611">
+<html lang="zh-CN" data-version="612">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,7 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link rel="stylesheet" href="perm-academy.css?v=611">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=612" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3144,12 +3144,12 @@ body {
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
 <script src="employee-reports.js?v=539"></script>
-<script defer src="aesthetic-study.js?v=611"></script>
-<script defer src="aesthetic-daily.js?v=611"></script>
-<script defer src="hair-calculator-dialog.js?v=611"></script>
-<script src="aesthetic-knowledge.v1.js?v=611"></script>
-<script src="hair-vision-training.v1.js?v=611"></script>
-<script src="aesthetic-growth.v2.js?v=611"></script>
+<script defer src="aesthetic-study.js?v=612"></script>
+<script defer src="aesthetic-daily.js?v=612"></script>
+<script defer src="hair-calculator-dialog.js?v=612"></script>
+<script src="aesthetic-knowledge.v1.js?v=612"></script>
+<script src="hair-vision-training.v1.js?v=612"></script>
+<script src="aesthetic-growth.v2.js?v=612"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -12999,6 +12999,18 @@ window.renderHairServicePhoto = function(photoType) {
   _checkVersion();
 })();
 </script>
-<script data-startup>if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.ZysyrStartup.finish,{once:true});else window.ZysyrStartup.finish();</script>
+<script data-startup>
+(function(){
+  // Keep the recovery panel paintable even when the academy stylesheet stalls.
+  // Do not expose a partly styled app; account for load/error before this listener.
+  var style=document.getElementById('perm-startup-style');
+  var styleReady=style.dataset.failed?Promise.reject(new Error('样式未载入')):style.dataset.loaded==='true'?Promise.resolve():new Promise(function(resolve,reject){
+    style.addEventListener('load',resolve,{once:true});
+    style.addEventListener('error',reject,{once:true});
+  });
+  var documentReady=document.readyState==='loading'?new Promise(function(resolve){document.addEventListener('DOMContentLoaded',resolve,{once:true});}):Promise.resolve();
+  Promise.all([documentReady,styleReady]).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);
+})();
+</script>
 </body>
 </html>
