@@ -1,7 +1,7 @@
 ## 2026-10-09 · v619 preview — clearer aesthetic case picker
 
 - Make only the native “选择案例” control easier to spot with a pale panel, clear outline, arrow, larger touch target and keyboard focus. Preserve current case data and selection behavior.
-- Prepared version/cache references at v619; UI publication remains pending user approval. No business, backend, financial or schedule changes.
+- Prepared shared release/cache references at v619 (frontdesk/operations marker-only alignment); UI publication remains pending user approval. No business, backend, financial or schedule changes.
 
 ## v618 内容批次 · 2026-10-09
 
