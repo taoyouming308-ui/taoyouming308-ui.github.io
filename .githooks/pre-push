@@ -30,6 +30,11 @@ node scripts/run-zysyr-finance-tests.js || exit 1
 node scripts/test-app-ui-system.js || exit 1
 node scripts/test-module-boundaries.js || exit 1
 node scripts/test-aesthetic-system.js || exit 1
+node scripts/test-aesthetic-study.mjs || exit 1
+node --experimental-strip-types scripts/test-aesthetic-study-edge.mjs || exit 1
+node scripts/test-aesthetic-study-sql.cjs || exit 1
+node scripts/test-aesthetic-study-browser.cjs || exit 1
+node scripts/test-aesthetic-study-admin-browser.cjs || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1

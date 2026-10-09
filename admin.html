@@ -171,6 +171,11 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
 #tab-care table td { font-size:11px; }
 #tab-care .care-detail-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.03); }
 #tab-care .care-detail-table tbody tr:hover { background:rgba(255,255,255,0.06); }
+#aesthetic-study-admin input{display:block;width:100%;padding:10px;margin:8px 0 14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;}
+.study-record-cards{display:none;}
+.study-record-card{padding:14px;border:1px solid var(--border);border-radius:10px;line-height:1.7;}
+.study-record-card p{margin:8px 0;}
+@media(max-width:600px){.study-record-cards{display:grid;gap:10px}.study-records-table{display:none}}
 </style>
 </head>
 <body>
@@ -557,10 +562,15 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
   <div class="page-header">
     <div>
       <h1 class="page-title">美学研究院</h1>
-      <div class="page-desc">持续收集、AI 初审、形象设计适用性审核、案例验证与专家评审。审核通过只表示进入试用；只有正式版本发布的知识才进入美感训练。</div>
+      <div class="page-desc">查看员工的案例浏览、有效前台停留和自主学习标记；管理已发布图文案例。</div>
     </div>
-    <div class="page-actions"><button class="btn-add" type="button" onclick="openAestheticCandidateModal()">+ 手动新增</button></div>
+
   </div>
+  <div id="aesthetic-study-admin"></div>
+  <details><summary>旧知识资料与可恢复归档</summary>
+  <div class="page-actions"><button class="btn-add" type="button" onclick="openAestheticCandidateModal()">+ 手动新增</button></div>
+  <p class="page-desc">持续收集、AI 初审、形象设计适用性审核、案例验证与专家评审。审核通过只表示进入试用；只有正式版本发布的知识才进入美感训练。</p>
+  <div id="aesthetic-study-archives" class="panel"></div>
   <div id="aesthetic-admin-stats" class="aesthetic-compact-stats"></div>
   <div class="aesthetic-workflow-nav" id="aesthetic-workflow-nav">
     <button type="button" class="active" data-aesthetic-view="workbench">工作台 <span id="aesthetic-nav-work-count" class="queue-count">0</span></button>
@@ -584,7 +594,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     </div>
   </div>
   <div class="aesthetic-view" data-aesthetic-panel="library">
-    <div class="panel"><div class="panel-title">已发布知识</div><div class="page-desc" style="margin-bottom:12px;">当前正式版本中的能力章节和训练题。这里展示的内容已经发布到员工训练端。</div><div id="aesthetic-module-list" class="action-list"></div></div>
+    <div class="panel"><div class="panel-title">已发布知识</div><div class="page-desc" style="margin-bottom:12px;">历史正式版本中的能力章节和训练题。保留供追溯，不代表当前图文案例内容。</div><div id="aesthetic-module-list" class="action-list"></div></div>
   </div>
   <div class="aesthetic-view" data-aesthetic-panel="sources">
     <div class="panel"><div class="panel-title">已发布来源</div>
@@ -610,6 +620,7 @@ button:disabled, .btn-add:disabled, .btn-save:disabled, .login-box button:disabl
     <div class="panel"><div class="panel-title">发布与安全规则</div><div id="aesthetic-governance" style="display:grid;gap:10px;"></div></div>
     <div class="panel"><div class="panel-title">维护工具</div><div class="page-actions"><button class="btn-edit" type="button" onclick="exportAestheticKnowledge()">导出知识清单</button></div></div>
   </div>
+  </details>
 </div>
 
 <div id="tab-system" class="admin-page">
@@ -4576,5 +4587,6 @@ async function saveCareRecord() {
 initCustAndFu();
 initializeAdminPage();
 </script>
+<script src="aesthetic-study-admin.js?v=611"></script>
 </body>
 </html>

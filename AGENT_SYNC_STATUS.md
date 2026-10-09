@@ -1,5 +1,14 @@
 # Agent Sync Status
 
+## 2026-10-09 · 美学研究院学习管理（App version: v611）
+
+- Current owner: Codex. Last synchronized base checked: github/main d0d3a33 v610, clean isolated feature/aesthetic-management-v611. Daily source archive created before edits; original dirty/parallel trees untouched. User explicitly approved development, restricted backend/schema, reversible pending archive, testing and publication.
+- Independent aesthetic-study endpoint validates existing private employee/admin sessions and current staff status; never trusts supplied username/store. No credentials or broader admin roles. Five private feature tables, service-only ingestion/restore; existing functions and business tables preserved.
+- Employee case visits, effective foreground-time estimates, answer-region exposure and self-completion are distinct. No submitted answers/mastery inference, outside-App tracking or historical browser attribution. IndexedDB atomic per-employee queue; <=25s intervals, 60s inactivity, <=60 event batches, 7-day offline window; server employee locking/interval union prevents overlap and repeats. Detailed events prune after 8 days upon subsequent activity; aggregate progress remains.
+- Correct main workbench is 美学研究院, superadmin only. Historical knowledge/sources retained in collapsed section; new case view follows public feed and registers content hashes server-side, so existing daily content publication needs no new scheduler/backend credentials.
+- Local protocol/Edge identity guards, PostgreSQL17 migration/overlap/concurrency/private grants/restore and synthetic390/1280 employee/admin interactions passed. Full shared pre-push passed all required checks, including97 finance steps; final focused tests preservev610 safe dialog and old calculator3:1=75g/25g. Production additive migration applied, aesthetic-study v1 ACTIVE with two files byte-identical on readback; anonymous/fake identity/fake admin live requests each403. Five new tables have RLS and no anon read/authenticated insert. Exactly30 read-verified pending_review v1 candidates archived in an ID/status/version/whole-row-hash transaction with30 private audits; after-images differ onlystatus/version/updated_at, published/source/review/evidence hashes and five old sessions unchanged. New production learning events remain0, no fabricated staff usage. Private evidence never committed. Frontend PR/CI/Pages verification pending; genuine first staff/admin authenticated end-to-end use has not been exercised.
+
+
 ## 2026-10-09 calculator close placement — authorized publication (App version: v610)
 
 - Isolated worktree close-button-fix, branch fix/calculator-close-safe-area, base github/main 3d3ba97. User requests moving the obstructed tool-dialog close control; publication approved by user on 2026-10-09. Only required version/cache markers move to v610; full pre-push/CI and Pages verification remain release gates.

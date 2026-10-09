@@ -35,6 +35,8 @@ jobs:
           version: 2.109.1
       - name: Type-check operations-api with its frozen lockfile
         run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
+      - name: Type-check private aesthetic study function
+        run: deno check supabase/functions/aesthetic-study/index.ts
       - name: Type-check signed booking sync function
         run: deno check supabase/functions/mgj-booking-sync/index.ts
       - name: Type-check signed daily electronic source function
@@ -106,6 +108,11 @@ jobs:
         run: |
           node scripts/test-module-boundaries.js
           node scripts/test-aesthetic-system.js
+          node scripts/test-aesthetic-study.mjs
+          node --experimental-strip-types scripts/test-aesthetic-study-edge.mjs
+          node scripts/test-aesthetic-study-sql.cjs
+          node scripts/test-aesthetic-study-browser.cjs
+          node scripts/test-aesthetic-study-admin-browser.cjs
           python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
       - name: Run Meiguanjia sync tests
         run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py
