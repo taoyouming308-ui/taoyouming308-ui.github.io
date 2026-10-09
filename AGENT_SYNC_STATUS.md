@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-09 calculator close placement — authorized publication (App version: v610)
+
+- Isolated worktree close-button-fix, branch fix/calculator-close-safe-area, base github/main 3d3ba97. User requests moving the obstructed tool-dialog close control; publication approved by user on 2026-10-09. Only required version/cache markers move to v610; full pre-push/CI and Pages verification remain release gates.
+- Scoped CSS positions the native tool dialog below top safe area, gives standalone portrait a 44px minimum status-bar allowance, keeps toolbar outside the scrollable tool content, accounts for bottom/landscape side insets, and gives close a minimum 44px height. JS handlers, moved original tool nodes, calculation values, chemistry data and form storage unchanged.
+- Parent visually verified original 943×2048 screenshot: title/close overlap iPhone status bar. Child Library download returned403, no further access attempted. Review relies on parent-approved visual description and isolated reproduction.
+- Synthetic local Mac Chrome cases:390×844/top59,320×568/top44,844×390/side59,1280×900, plus standalone-portrait zero-inset fallback and390×320 reduced-height case. CSS env inputs and standalone rule simulated explicitly because host Chrome lacks native safe-area emulation; not a real iPhone/PWA certification. Close hit target, post-scroll position, calculation, switch/repeat/Escape/focus, resize/rotation and unchanged form all pass. Existing training/academy browser and data tests,69 safety assertions,version/integrity/handoff/smoke/whitespace checks pass. Full pre-push/CI will run under the authorized publication flow.
+- Screenshots under artifacts/calculator-close; no business-page navigation or production writes.
+
 ## 2026-10-08 · 发型审美训练候选（App version: v609）
 
 - Current owner: Codex. Last synchronized base checked: github/main b533a62 v608, isolated clean app-work; daily source backup created before edits. User explicitly requested this module replacement and today's illustrated case publication.
