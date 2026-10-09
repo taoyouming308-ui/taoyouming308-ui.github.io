@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 2026-10-09 · Clear native aesthetic case picker (App version: v619 preview only)
+
+- Current owner: Codex. Latest base github/main d4cae94 v618 in isolated ui/aesthetic-case-selector; clean start and recovery archive verified. User asked for a more obvious case picker; additional UI publication is not yet authorized. Do not merge or deploy this branch.
+- Only scoped selector presentation: pale panel, distinct field border, downward arrow, 52px touch target, 16px text, visible keyboard focus. Native select, case IDs, dates, data, rendering and business/auth logic unchanged. Version/cache references prepared consistently at v619 per app-code rules.
+- Library screenshot materialization returned HTTP403; no bypass or repeat. Current public page and actual styles provide the baseline. 320/390/1280 local previews pass long-title fit, native click/change/history, 52px targets, Tab focus and synthetic 44px/34px safe-area layout; content/empty/error/calculator/cold regressions pass. Native system-popup arrow selection remains unverified: headless macOS also fails on a minimal unchanged select, and physical iOS Safari is unavailable. Full shared gate is required before branch push. Screenshots use isolated local preview with login overlay hidden; no staff authentication or backend writes.
+
 ## 2026-10-09 · 当日发型审美训练内容（App version: v618 unchanged）
 
 - Current owner: Codex. Last synchronized base checked: github/main fdd8f7a v618, isolated content/aesthetic-2026-10-09. Clean start and daily recovery archive verified, original/parallel trees untouched. User explicitly authorized today’s original illustrated aesthetic case publication.

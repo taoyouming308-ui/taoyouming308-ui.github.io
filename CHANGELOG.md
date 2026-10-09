@@ -1,3 +1,8 @@
+## 2026-10-09 · v619 preview — clearer aesthetic case picker
+
+- Make only the native “选择案例” control easier to spot with a pale panel, clear outline, arrow, larger touch target and keyboard focus. Preserve current case data and selection behavior.
+- Prepared version/cache references at v619; UI publication remains pending user approval. No business, backend, financial or schedule changes.
+
 ## v618 内容批次 · 2026-10-09
 
 - 新增《细软塌发，蓬松与低维护怎样取舍？》原创约五分钟图文案例：人物与生活条件、思考题、六步参考推理、五项自查复盘。
