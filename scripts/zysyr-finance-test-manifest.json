@@ -7,6 +7,7 @@
     { "runtime": "node", "script": "test-startup-style-browser.js" },
     { "runtime": "node", "script": "test-operations-surface-browser.js" },
     { "runtime": "node", "script": "test-daily-row-label-save-contract.js" },
+    { "runtime": "node", "script": "test-daily-name-input-browser.js" },
     { "runtime": "python", "args": ["-m", "unittest", "scripts/test_check_daily_reports.py"] },
     { "runtime": "node", "script": "test-zysyr-frontdesk-autofill-db.js" },
     { "runtime": "node", "script": "test-daily-bleaching-category.mjs" },
