@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 2026-10-09 · Safari daily name writing suggestions (App version: v618)
+
+- User confirmed Safari and approved this follow-up after v617 did not remove the candidate. Base github/main d7ef360 v617; isolated checkout and daily archive retained. Add only writingsuggestions=false to the same non-total stylist/technician name inputs, retaining the four existing safeguards. Other inputs, handlers, serialization, APIs and business data unchanged.
+- WebKit documents this independent inline prediction control since Safari 18: https://webkit.org/blog/15865/webkit-features-in-safari-18-0/. Scoped synthetic composition/name serialization and existing save contracts plus full shared/CI release gates required. Specific system candidate remains unobserved; user verification required. No global settings or forced refresh. Roll back with a newer forward release.
+
+
 ## 2026-10-09 · Daily employee name input safeguards (App version: v617)
 
 - User-approved minimal frontend change from github/main c906560 v616, isolated checkout and daily archive retained. Only non-total stylist/technician name inputs request autocomplete/autocorrect/spellcheck/autocapitalize off. Numeric, signature, note, login, event handlers, serialization, APIs and business data unchanged.
