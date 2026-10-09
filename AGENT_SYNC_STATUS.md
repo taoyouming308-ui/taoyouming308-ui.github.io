@@ -1,5 +1,11 @@
 # Agent Sync Status
 
+## 2026-10-09 · Daily employee name input safeguards (App version: v617)
+
+- User-approved minimal frontend change from github/main c906560 v616, isolated checkout and daily archive retained. Only non-total stylist/technician name inputs request autocomplete/autocorrect/spellcheck/autocapitalize off. Numeric, signature, note, login, event handlers, serialization, APIs and business data unchanged.
+- Synthetic Chinese composition/name serialization and existing save/readback contracts tested; macOS candidate symptom is not directly reproduced and needs user verification. Full shared hook/CI/Pages required; no forced refresh. Roll back through a newer forward release.
+
+
 ## 2026-10-09 · Corrected daily calendar projection (App version: v616)
 
 - Current owner: Codex. Synchronized github/main c01bd3c v615; recovery branch recovery/daily-calendar-correction-v615-20261009 and existing daily archive verified. Scope: calendar read projection and post-correction refresh only; no financial writes, migration, permission or formula changes.
