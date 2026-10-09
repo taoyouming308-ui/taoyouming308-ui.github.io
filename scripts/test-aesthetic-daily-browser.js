@@ -5,19 +5,25 @@ const section=html.slice(html.indexOf('  <section class="tab-content" id="tab-pl
 const switcher=html.slice(html.indexOf('  window.switchPlan = function(name)'),html.indexOf('  // 初始状态：首页显示'));
 const calc=html.slice(html.indexOf('  function getFixedChem(tga, ca)'),html.indexOf('  // ===== 预约系统 ====='));
 const feed=JSON.parse(fs.readFileSync('docs/aesthetic-training/feed.v1.json'));
+const latest=[...feed.items].sort((a,b)=>b.date.localeCompare(a.date))[0];
 (async()=>{const browser=await chromium.launch({headless:true});try{for(const width of [390,1280]){
  const page=await browser.newPage({viewport:{width,height:844}}), errors=[]; let mode='ok';
  page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',r=>{
   const url=r.request().url();
   if(url.includes('feed.v1.json'))return r.fulfill(mode==='fail'?{status:500,body:'failed'}:{json:mode==='empty'?{schemaVersion:1,items:[]}:feed});
-  if(url.endsWith(feed.items[0].image))return r.fulfill({contentType:'image/jpeg',body:fs.readFileSync(feed.items[0].image)});
+  const asset=feed.items.find(x=>url.endsWith(x.image));
+  if(asset)return r.fulfill({contentType:'image/jpeg',body:fs.readFileSync(asset.image)});
   return r.fulfill({body:'<!doctype html><meta charset="utf-8"><style>'+styles+fs.readFileSync('perm-academy.css','utf8')+'</style><body><main class="main">'+section+'<input id="unsaved" value="未保存案例"><button id="open" onclick="openHairCalculator()">自由换算</button></main></body>'});
  });
  await page.goto('http://training.test/');await page.addScriptTag({content:switcher});
  await page.evaluate(()=>{document.querySelector('#tab-plans').classList.add('active');switchPlan('academy');});
  await page.addScriptTag({content:calc});await page.addScriptTag({path:'hair-calculator-dialog.js'});await page.addScriptTag({path:'aesthetic-daily.js'});
  await page.getByText('参考答案与设计推理',{exact:true}).waitFor();
+ assert.equal(await page.locator('.academy-detail h3').innerText(),latest.title);
+ assert.equal(await page.locator('.training-history option').count(),feed.items.length);
+ if(feed.items.length>1){await page.locator('.training-history select').selectOption(feed.items[0].id);assert.equal(await page.locator('.academy-detail h3').innerText(),feed.items[0].title);await page.locator('.training-history select').selectOption(latest.id);}
+ await page.waitForFunction(()=>{const img=document.querySelector('.training-figure img');return img&&img.complete&&img.naturalWidth>0;});
  assert(await page.locator('.training-figure img').evaluate(x=>x.complete&&x.naturalWidth>0));
  assert.equal(await page.locator('#plan-nav').isVisible(),false);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

@@ -1,6 +1,6 @@
 const fs=require('fs'),crypto=require('crypto'),assert=require('assert/strict'),{chromium}=require('playwright');
-const feed=JSON.parse(fs.readFileSync('docs/aesthetic-training/feed.v1.json')),item=feed.items[0],version=crypto.createHash('sha256').update(JSON.stringify(item)).digest('hex');
-const manifest=[{id:item.id,title:item.title,date:item.date,version}];
+const feed=JSON.parse(fs.readFileSync('docs/aesthetic-training/feed.v1.json')),item=[...feed.items].sort((a,b)=>b.date.localeCompare(a.date))[0],version=crypto.createHash('sha256').update(JSON.stringify(item)).digest('hex');
+const manifest=feed.items.map(x=>({id:x.id,title:x.title,date:x.date,version:crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex')}));
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE?{executablePath:process.env.CHROME_EXECUTABLE}:process.platform==='darwin'?{channel:'chrome'}:{})});
  try{for(const width of [390,1280]){
@@ -13,7 +13,7 @@ const manifest=[{id:item.id,title:item.title,date:item.date,version}];
     if(p.operation==='sync'){synced.push(p);return r.fulfill({json:{accepted:p.events.map(e=>e.event_id)}});}
    }
    if(url.includes('feed.v1.json'))return r.fulfill({json:feed});
-   if(url.endsWith(item.image))return r.fulfill({body:fs.readFileSync(item.image),contentType:'image/jpeg'});
+   const asset=feed.items.find(x=>url.endsWith(x.image));if(asset)return r.fulfill({body:fs.readFileSync(asset.image),contentType:'image/jpeg'});
    return r.fulfill({body:'<!doctype html><meta charset="utf-8"><style>body{margin:16px;font:16px sans-serif}img{max-width:100%}.hidden{display:none}</style><section class="tab-content active"><div id="perm-academy-root"></div></section><script>const SUPABASE_URL="https://db.test",SUPABASE_KEY="synthetic-public";</script>'});
   });
   await page.goto('https://study.test/');await page.evaluate(async()=>{localStorage.setItem('booking-session',JSON.stringify({session_token:'first-token'}));localStorage.setItem('aesthetic_daily_learning_v1',JSON.stringify({completed:['legacy-only']}));});

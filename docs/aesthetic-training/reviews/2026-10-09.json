@@ -1,0 +1,24 @@
+{
+  "batch": "aesthetic-2026-10-09",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "fdd8f7a",
+  "contentType": "original-fictional-aesthetic-teaching",
+  "reviewStatus": "editorially_checked",
+  "scientificValidation": false,
+  "image": {
+    "path": "img/aesthetic-training/2026-10-09-fine-hair.jpg",
+    "sha256": "4b10c921d6457a020191e6a72793b64d9c166929b4822b175756a87b908f040c",
+    "provenance": "Original imagegen illustration created for this batch, fictional person; JPEG encoding only, no crop or visual alteration",
+    "views": "frontal and side profile, starting state only",
+    "rights": "User-authorized AI-generated teaching image; no real customer or third-party image"
+  },
+  "checks": [
+    "Visible image facts distinguished from scenario assumptions and on-site unknowns",
+    "No before/after efficacy claim, face-shape formula, diagnosis or chemical recipe",
+    "Six conditional design/communication steps and five self-review prompts",
+    "Previous case objects unchanged; no retired feed write"
+  ],
+  "previousFeedSha256": "c026d81bc7fd938936958cd082b8f90c373e82b87c10bf11a4b2759ba8962d99",
+  "publishedFeedSha256": "b78de5e01ada94d4a1b2d9eb91ea8fcdcbd5a4217f9d770b3f862c1d509f47cc",
+  "publicationAuthorization": "User explicitly said continue publishing on 2026-10-09 Asia/Shanghai; authorization is not scientific validation"
+}
