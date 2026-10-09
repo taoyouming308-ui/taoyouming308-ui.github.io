@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {validateEvents,allowedEmployee,allowedAdmin} from '../supabase/functions/aesthetic-study/protocol.mjs';
+const now=Date.now(),id='11111111-1111-4111-8111-111111111111',visit='22222222-2222-4222-8222-222222222222';
+const event={event_id:id,visit_id:visit,case_id:'aesthetic-one',content_version:'v1',kind:'time',start_ms:now-20000,end_ms:now,at:new Date(now).toISOString()};
+const cases=[{id:'aesthetic-one',version:'v1'}];
+assert.equal(validateEvents([event],cases,now)[0].start_ms,now-20000);
+for(const patch of [{kind:'submit'},{event_id:'bad'},{visit_id:'bad'},{content_version:'unknown'},{end_ms:now+5000},{start_ms:now-26000},{start_ms:now+1},{at:'bad'},{at:new Date(now+130000).toISOString()}])assert.throws(()=>validateEvents([{...event,...patch}],cases,now));
+assert.throws(()=>validateEvents(Array(61).fill(event),cases,now));
+const stripped=validateEvents([{...event,username:'FAKE',store:'other',employee_answer:'private'}],cases,now)[0];assert(!('username'in stripped)&&!('employee_answer'in stripped));
+const midnight=Date.parse('2026-10-09T16:00:00Z');assert.throws(()=>validateEvents([{...event,start_ms:midnight-1,end_ms:midnight+1,at:new Date(midnight+1).toISOString()}],cases,midnight));
+const employee={id:1,username:'synthetic',store:'A',active:true,employment_status:'active',role:'staff'},session={username:'synthetic',store:'A'};
+assert(allowedEmployee(employee,session));for(const patch of [{active:false},{employment_status:'pending'},{store:'B'},{username:'fake'},{id:null}])assert(!allowedEmployee({...employee,...patch},session));
+assert(!allowedAdmin(employee,{...session,role:'admin'}));assert(allowedAdmin({...employee,role:'admin'},{...session,role:'admin'}));assert(!allowedAdmin({...employee,role:'admin'},{...session,role:'store_admin'}));
+console.log('study protocol: interval/input bounds, midnight, identity/store/activity, superadmin, minimal fields passed');
