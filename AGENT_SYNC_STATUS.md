@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-09 · Corrected daily calendar projection (App version: v616)
+
+- Current owner: Codex. Synchronized github/main c01bd3c v615; recovery branch recovery/daily-calendar-correction-v615-20261009 and existing daily archive verified. Scope: calendar read projection and post-correction refresh only; no financial writes, migration, permission or formula changes.
+- Read-only evidence confirmed a genuine user correction committed with approved replacement and reversed predecessor. dailySheetMonth iterated newest-first but repeatedly overwrote an electronic day with older versions. Skip reversed rows and preserve the first effective approved/locked selection for confirmed days. Single legacy formal reports remain supported.
+- After confirmed readback, invalidate stale calendar requests/cache/DOM and refresh through the existing scoped loader. Failures retain correction success, remove stale amounts and retry only the calendar read on return. Existing store/month/request-generation guards retained; no retry of financial writes.
+- Synthetic API regression failed before fix (old value overwrote replacement); fixed test and 390/1280 browser cases pass, including offline calendar recovery with exactly one correction write. Deno frozen check passed. Production v121 13-file package backed up privately; proposed entry exactly matches tested local code and preserves the other 12 production dependencies and custom-auth verify_jwt=false. Release gate, Edge deployment and Pages readback remain required.
+- Rollback via a newer forward release and saved Edge package only. Never undo genuine corrections or remove their old/new audit history. No forced refresh of active forms.
+
 ## 2026-10-09 · Confirmed daily correction feedback (App version: v615)
 
 - Current owner: Codex. Synchronized base github/main 3c904c1 v614; recovery branch recovery/daily-correction-feedback-v614-20261009, existing daily archive validated. Scoped continuation of the admin correction feature; other files/checkouts preserved.

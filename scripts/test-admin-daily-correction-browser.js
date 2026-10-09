@@ -13,12 +13,16 @@ async function run(){
   await page.evaluate(async()=>{
    await showView('daily-report');const s=previewDailySheetData();s.draft={...s.draft,id:'synthetic-draft',report_date:'2026-10-09',status:'confirmed',edit_revision:4};
    s.permissions={write:false,correct_confirmed:true};s.attachments=[];s.history=[];window.syntheticSheet=s;
+   document.getElementById('month').insertAdjacentHTML('beforeend','<option value="2026-10">2026年10月</option>');document.getElementById('month').value='2026-10';
+   window.syntheticCalendar={month:'2026-10',days:[{report_date:'2026-10-09',draft_id:s.draft.id,status:'confirmed',grand_total:120,edit_revision:4,source:'electronic'}]};
+   state.dailyReportMonth=structuredClone(syntheticCalendar);renderDailyReportCalendar(state.dailyReportMonth);
    state.user.can_correct_confirmed_daily=false;state.imports.sheet=structuredClone(s);state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
    window.syntheticOperations=[];window.syntheticApplied=false;window.syntheticLost=false;window.syntheticStatusFail=false;
    api=async(op,p)=>{syntheticOperations.push(op);if(op==='daily_recognition_job_read')return {job:null};
     if(op==='daily_sheet_correction_status'){if(syntheticStatusFail)throw Error('synthetic offline');return {applied:syntheticApplied};}
     if(op==='daily_sheet_correct'){if(window.syntheticHold)await new Promise(r=>window.syntheticRelease=r);syntheticApplied=true;syntheticSheet.draft.edit_revision=5;if(syntheticLost)throw Error('synthetic reply lost');return {corrected:true,saved:{request_id:p.request_id}};}
     if(op==='daily_sheet_read')return structuredClone(syntheticSheet);throw Error('Unexpected '+op);};
+   const correctionApi=api;api=async(op,p)=>{if(op==='daily_sheet_month'){syntheticOperations.push(op);if(window.syntheticCalendarFail)throw Error('synthetic calendar offline');return {...structuredClone(syntheticCalendar),days:[{...syntheticCalendar.days[0],grand_total:190,edit_revision:5}]};}return correctionApi(op,p);};
    isLocalPreview=()=>false;window.syntheticOriginalControls=calculateDailyControls;window.confirm=()=>true;
   });
   assert.equal(await page.locator('#daily-correction-actions').isVisible(),false,'ordinary users have no correction entry');
@@ -54,8 +58,20 @@ async function run(){
   await page.evaluate(()=>syntheticRelease());
   await page.waitForFunction(()=>document.getElementById('daily-correction-submit').textContent==='查询更正结果');
   assert.equal(await page.locator('#daily-detail-grid [data-daily-cell]').first().evaluate(e=>e.readOnly),true);
-  await page.evaluate(()=>{syntheticStatusFail=false;});await page.locator('#daily-correction-submit').click();
+  await page.evaluate(fail=>{syntheticStatusFail=false;syntheticCalendarFail=fail;},width===390);await page.locator('#daily-correction-submit').click();
   await page.waitForFunction(()=>state.imports.sheet.draft.edit_revision===5&&!ZysyrDailyCorrection.protectedInput());
+  await page.waitForFunction(()=>syntheticOperations.includes('daily_sheet_month'));
+  if(width===390){
+   await page.waitForFunction(()=>document.getElementById('daily-correction-status').textContent.includes('月历暂时刷新失败'));
+   assert.equal(await page.evaluate(()=>state.dailyReportMonth),null,'failed read cannot retain stale cache');
+   assert.doesNotMatch(await page.locator('#daily-report-calendar').textContent(),/¥120/,'failed refresh removes old visible amounts');
+   await page.evaluate(()=>{syntheticCalendarFail=false;backToDailyReportCalendar();});
+  }
+  await page.waitForFunction(()=>state.dailyReportMonth?.days[0].grand_total===190);
+  assert.match(await page.locator('[data-daily-day="2026-10-09"] .day-total').textContent(),/¥190(?:\.00)?$/);
+  assert.match(await page.locator('.daily-month-summary').textContent(),/¥190(?:\.00)?$/,'month sum also updates');
+  await page.evaluate(()=>backToDailyReportCalendar());
+  assert.match(await page.locator('[data-daily-day="2026-10-09"] .day-total').textContent(),/¥190(?:\.00)?$/,'return does not resurrect stale DOM');
   assert.equal(await page.locator('#daily-detail-reason').evaluate(e=>e.closest('.daily-electronic')!==null&&!e.closest('#daily-correction-panel')),true,'ordinary reason placement is restored after correction');
   const ops=await page.evaluate(()=>syntheticOperations);assert.equal(ops.filter(x=>x==='daily_sheet_correct').length,1);assert.equal(ops.some(x=>['daily_sheet_save','daily_sheet_confirm'].includes(x)),false);
   assert.equal(await page.locator('#daily-detail-grid [data-daily-cell]').first().evaluate(e=>e.readOnly),true);

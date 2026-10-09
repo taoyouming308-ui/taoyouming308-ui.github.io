@@ -115,6 +115,14 @@
     document.getElementById('daily-detail-reason').value = '';
     renderDailySheetDetail(); message('更正已完成；旧版本、修改前后值和原因已保留，月报不会重复计入旧版。');
     state.dailyReportMonth = null;
+    ++dailyOverviewRequest; // Discard calendar reads started before this correction.
+    document.getElementById('daily-report-calendar').innerHTML = '<div class="empty">更正已完成，正在更新月历…</div>';
+    var updated = context();
+    if (state.view !== 'daily-report' || document.getElementById('month').value !== ctx.date.slice(0, 7)) return;
+    var refreshed = await loadDailyReportOverview({ background: true });
+    if (current(updated) && state.view === 'daily-report' && document.getElementById('month').value === ctx.date.slice(0, 7) && refreshed === false) {
+      message('更正已完成；月历暂时刷新失败，返回月历后会重新读取。不要重复提交更正。');
+    }
   }
   async function queryResult(ctx) {
     var result = await api('daily_sheet_correction_status', { store: ctx.store, draft_id: ctx.id, request_id: edit.requestId });

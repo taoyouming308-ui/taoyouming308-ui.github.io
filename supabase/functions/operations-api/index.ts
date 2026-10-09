@@ -6112,15 +6112,19 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   }
   for (const report of dailyReports) {
     const date = cleanText(report.report_date, 10);
+    const formalStatus = cleanText(report.status, 20);
+    // Reports are newest-version first. A correction reverses its predecessor;
+    // neither that predecessor nor another older version may replace this selection.
+    if (formalStatus === "reversed") continue;
     const existing = byDate.get(date);
-    if (existing && existing.source === "formal") continue;
+    if (existing?.daily_report_id) continue;
+    if (existing?.status === "confirmed" && formalStatus !== "approved" && formalStatus !== "locked") continue;
     if (existing) { existing.daily_report_id = report.id; existing.source_report_id = report.source_report_id;
       existing.version = Number(report.version ?? 1); existing.formal_status = cleanText(report.status, 20);
       if (existing.status === "confirmed") {
         existing.grand_total = formalTotals.get(cleanText(report.id, 40)) ?? null;
       }
       continue; }
-    const formalStatus = cleanText(report.status, 20);
     byDate.set(date, { report_date: date, draft_id: null, daily_report_id: report.id,
       source_report_id: report.source_report_id, version: Number(report.version ?? 1),
       status: formalStatus === "approved" || formalStatus === "locked" ? "confirmed" : formalStatus,

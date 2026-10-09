@@ -21,6 +21,7 @@ vm.createContext(scope);vm.runInContext(stripTypeScriptTypes(source.slice(start,
 const admin={username:'admin',operations_role:'shareholder',auth_account_id:'server-admin',auth_capabilities:['daily_report.correct_confirmed']};
 const payload={store:'Synthetic',draft_id:'00000000-0000-4000-8000-000000000001',request_id:'00000000-0000-4000-8000-000000000002',expected_revision:4,reviewed_all:true,reason:'Synthetic correction',cells:[{id:'00000000-0000-4000-8000-000000000004',value:120}]};
 async function main(){
+ await testCalendar();
  for(const s of [{...admin,username:'other'},{...admin,operations_role:'finance'},{...admin,auth_capabilities:[]},{...admin,auth_account_id:null}])await assert.rejects(scope.saveDailySheetDraft(payload,s,true));
  assert.equal(calls.length,0);assert.equal(requests.length,0);
  for(const p of [{...payload,reviewed_all:false},{...payload,expected_revision:null},{...payload,reason:''},{...payload,store:'other'},{...payload,cells:[{...payload.cells[0],value:-1}]}])await assert.rejects(scope.saveDailySheetDraft(p,admin,true));
@@ -33,5 +34,33 @@ async function main(){
  hash='different';calls=[];await assert.rejects(scope.saveDailySheetDraft(payload,admin,true));assert.equal(calls.some(c=>c.ep.endsWith('correct_confirmed_daily_sheet')),false);
  applied=true;requests=[];await scope.saveDailySheetDraft(payload,admin,true);assert.equal(requests.length,0);
  console.log('Admin correction API: account-only, server actor/scope, validation, immutable copy, failed/duplicate copy and receipt recovery passed.');
+}
+async function testCalendar(){
+ const begin=source.indexOf('async function dailySheetMonth('),end=source.indexOf('\nasync function dailySheetRead(',begin);
+ const date='2026-10-09';let reports=[],drafts=[],queries=[];
+ const calendarScope={cleanText:scope.cleanText,hasAuthCapability:()=>true,selectedStoreInfo:async()=>({id:'store',company_id:'company'}),
+  parseMonth:()=> '2026-10',uuidIn:ids=>ids.join(','),dailySheetTotal:v=>Number(v),
+  currentDailyValidations:async()=>({byDraft:new Map(),unavailable:false}),
+  restRowsAll:async path=>{queries.push(path);assert.match(path,/company_id=eq.company/);if(!path.startsWith('zysyr_period_locks?'))assert.match(path,/store_id=eq.store/);
+   if(path.startsWith('zysyr_daily_reports?'))return reports;
+   if(path.startsWith('zysyr_daily_sheet_drafts?'))return drafts;
+   if(path.startsWith('zysyr_daily_report_lines?'))return reports.map(r=>({daily_report_id:r.id,line_type:'income',amount:r.total}));
+   return [];}
+ };
+ vm.createContext(calendarScope);vm.runInContext(stripTypeScriptTypes(source.slice(begin,end)),calendarScope);
+ const latest={id:'new',report_date:date,version:2,status:'approved',source_report_id:'new-source',total:190};
+ const old={id:'old',report_date:date,version:1,status:'reversed',source_report_id:'old-source',total:120};
+ drafts=[{id:'draft',report_date:date,status:'confirmed',edit_revision:3,validation_result:{valid:true,grand_total:190}}];
+ reports=[latest,old];
+ let result=await calendarScope.dailySheetMonth({},{});
+ assert.equal(result.days[0].grand_total,190,'reversed old report must never overwrite corrected calendar amount');
+ assert.equal(result.days[0].daily_report_id,'new');assert.equal(result.days[0].version,2);
+ reports=[latest,{...old,status:'approved'}];result=await calendarScope.dailySheetMonth({},{});
+ assert.equal(result.days[0].grand_total,190,'older formal versions cannot overwrite the latest selection');
+ reports=[{...latest,id:'rejected',version:3,status:'rejected',total:999},latest,old];result=await calendarScope.dailySheetMonth({},{});
+ assert.equal(result.days[0].grand_total,190,'confirmed calendar selects effective approved/locked report');
+ drafts=[];reports=[old];result=await calendarScope.dailySheetMonth({},{});assert.equal(result.days.length,0,'fully reversed report is not calendar income');
+ reports=[{...old,status:'approved'}];result=await calendarScope.dailySheetMonth({},{});assert.equal(result.days[0].grand_total,120,'single legacy formal report remains visible');
+ console.log('Calendar correction read: latest effective version, reversed exclusion, legacy formal fallback and scoped reads passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
