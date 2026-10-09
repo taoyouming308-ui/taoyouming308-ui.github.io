@@ -23,3 +23,35 @@
 @media (display-mode:standalone) and (orientation:portrait) {
   #hair-calculator-dialog { --tool-safe-top:max(44px,env(safe-area-inset-top,0px)); }
 }
+/* Keep the native case picker distinct from the shared borderless plan inputs. */
+#tab-plans #perm-academy-root .training-history {
+  padding:14px;
+  border:1px solid #cbd3c0;
+  border-radius:14px;
+  background:#edf0e7;
+  color:#283022;
+  font-size:15px;
+  font-weight:600;
+}
+#tab-plans #perm-academy-root .training-history select {
+  box-sizing:border-box;
+  max-width:100%;
+  min-height:52px;
+  margin-top:10px;
+  padding:12px 42px 12px 14px!important;
+  border:1px solid #7e8b70!important;
+  border-radius:10px!important;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='m5 7.5 5 5 5-5' fill='none' stroke='%233f4d32' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center!important;
+  color:#283022!important;
+  font-size:16px!important;
+  font-weight:600;
+  line-height:1.5;
+  text-overflow:ellipsis;
+  -webkit-appearance:none;
+  appearance:none;
+  cursor:pointer;
+}
+#tab-plans #perm-academy-root .training-history select:focus-visible {
+  outline:3px solid #53683f;
+  outline-offset:3px;
+}
