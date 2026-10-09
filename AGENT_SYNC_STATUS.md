@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-09 · 当日发型审美训练内容（App version: v618 unchanged）
+
+- Current owner: Codex. Last synchronized base checked: github/main fdd8f7a v618, isolated content/aesthetic-2026-10-09. Clean start and daily recovery archive verified, original/parallel trees untouched. User explicitly authorized today’s original illustrated aesthetic case publication.
+- Exactly one new Asia/Shanghai Oct9 case: fine/flat hair, outline stability, visual density, low-maintenance and exercise fastening trade-offs. New original fictional AI front/profile image, starting state only; no customer image, before/after efficacy, face formula, diagnosis or chemical parameters. Six deep conditional reference sections and five self-review prompts; old Oct8 objects unchanged. Audit and image hash in docs/aesthetic-training/reviews/2026-10-09.json.
+- Current feed only; retired scientific feed, runtime/App/versions, business/backend/schema/permissions, paid external services and schedules untouched. Shared date lock held during publication; bounded transient-only verification retries.
+- Existing browser fixtures previously assumed one case/image. Adjust only test fixtures to serve all images, newest-first and history selection, and collapsed admin previews; no product changes. Required content/assets/mobile/desktop plus full shared gate and PR/CI/Pages readback remain publication checks.
+
+
 ## 2026-10-09 · Safari daily name writing suggestions (App version: v618)
 
 - User confirmed Safari and approved this follow-up after v617 did not remove the candidate. Base github/main d7ef360 v617; isolated checkout and daily archive retained. Add only writingsuggestions=false to the same non-total stylist/technician name inputs, retaining the four existing safeguards. Other inputs, handlers, serialization, APIs and business data unchanged.
