@@ -1,6 +1,6 @@
 ## 2026-10-10 · v622 simpler final daily confirmation and archival coordinates
 
-- Real v621 409 at Free Jan1: repeated physical coordinates hit report-cell uniqueness. Read-only verification: draft revision13/manual zero retained, current proof valid, no formal report/income/version/photo batch. No real posting attempted.
+- Repeated physical coordinates can violate report-cell uniqueness during final daily posting. The transaction rolls back on conflict; logical archival coordinates remove the collision while preserving original cells and financial guards.
 - Definition-only logical archival coordinates preserve every original cell and image; registration and atomic income lineage use the same mapping. No amount/source/collector rewrite. One explicit final dialog attests original/channels/card-sale receipts and posts transactionally; no repeated checkboxes or required free-text reason. Unknown/difference/scope/revision/source/authority guards and lost-response readback remain.
 - Synthetic duplicated-row/channel PostgreSQL and actual-page/API full sequence verification required before publication; backend migration/Edge precede Pages. Forward rollback preserves all proofs/history. Physical iOS Safari and real finance confirmation remain user acceptance.
 
