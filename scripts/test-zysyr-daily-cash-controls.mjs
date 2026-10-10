@@ -87,3 +87,15 @@ console.log('Missing-sales regression: visible/reviewable explicit zero; unknown
 vm.runInContext(review.slice(review.indexOf('  function pendingCandidates('),review.indexOf('  function notice(')),context);
 context.grid=()=>({querySelectorAll:()=>[{value:'0',classList:{contains:()=>false}}]});
 assert.equal(context.pendingCandidates().length,1,'visible source zero remains an explicit review candidate rather than skipped blank');
+
+vm.runInContext(review.slice(review.indexOf('  function localBlockReason('),review.indexOf('  var renderControlsBase')),context);
+context.state.user={role:'finance'};context.state.imports.sheet.permissions={write:true};
+context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
+context.grid=()=>({querySelectorAll:()=>fields});
+set(true,{sales:0,grand:100,payment:100,channelsComplete:false});
+assert.match(context.localBlockReason(),/尚有未核实字段/);
+set(true,{sales:null,grand:100,payment:100});
+assert.match(context.localBlockReason(),/充值售卡实收未核实/);
+set(true,{sales:300,grand:100,payment:100});
+assert.match(context.localBlockReason(),/汇总总计为/);
+assert.doesNotMatch(context.localBlockReason(),/未核实字段/);

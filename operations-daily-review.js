@@ -151,7 +151,7 @@
   function showProblem(message) {
     notice(message);
     toast(message);
-    var target = grid().querySelector('.control-mismatch,.control-pending') || document.getElementById('daily-detail-confirm-help');
+    var target = grid().querySelector('.control-mismatch') || grid().querySelector('.control-pending') || document.getElementById('daily-detail-confirm-help');
     if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (target.focus) target.focus(); }
   }
   function controlDifferences(c) {
@@ -187,7 +187,7 @@
     if (!approved) return '请先上传当天原始日报，并完成原件审核。';
     if (!c.valid) {
       var differences = controlDifferences(c);
-      return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
+      return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
     return '';
   }
