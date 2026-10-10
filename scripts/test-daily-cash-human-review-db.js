@@ -25,6 +25,9 @@ async function main(){let created=false;try{
  create function zysyr_daily_electronic_private.cash_receipt_projection(uuid,uuid,date) returns jsonb language sql as $$select '{"metadata":{"different_source":true}}'::jsonb$$;
  create table zysyr_daily_electronic_snapshots(id uuid primary key,source_sha256 text);
  create table zysyr_daily_electronic_heads(store_id uuid,business_date date,source_scope text,snapshot_id uuid,latest_fetched_at timestamptz,primary key(store_id,business_date,source_scope));
+ create table mgj_business_detail_snapshots(id uuid primary key,source_sha256 text);
+ create table mgj_business_detail_heads(shop_name text,business_date date,snapshot_id uuid,last_seen_at timestamptz,primary key(shop_name,business_date));
+ create table mgj_daily_consumption(shop_name text,business_date date,services jsonb,fetched_at timestamptz,primary key(shop_name,business_date));
  insert into zysyr_companies(id,code,name) values('${C}','synthetic','Synthetic only');
  insert into zysyr_stores(id,company_id,name) values('${S}','${C}','Synthetic store');
  insert into zysyr_user_accounts(id,company_id,auth_user_id,login_name,display_name,status) values('${A}','${C}','${U}','finance','Synthetic finance','active');
@@ -45,7 +48,10 @@ async function main(){let created=false;try{
  ('payment','payment','alipay',40,2,'payment_method',100),('payment','payment','cash_flow',40,3,'payment_cashflow',100),
  ('payment','payment','total',40,4,'payment_total',100),('payment','payment','card_consumption',40,5,'payment_card_consumption',0)) as x(section,row_key,code,rownum,colnum,role,amount);
  insert into zysyr_daily_electronic_snapshots values('${id(50)}',repeat('b',64));
- insert into zysyr_daily_electronic_heads values('${S}','2026-10-09','operating_daily_summary','${id(50)}',now());`);
+ insert into zysyr_daily_electronic_heads values('${S}','2026-10-09','operating_daily_summary','${id(50)}',now());
+ insert into mgj_business_detail_snapshots values('${id(51)}',repeat('d',64));
+ insert into mgj_business_detail_heads values('Synthetic store','2026-10-09','${id(51)}',now());
+ insert into mgj_daily_consumption values('Synthetic store','2026-10-09','[{"source_id":"synthetic-bill","amount":100}]',now());`);
  sql(fs.readFileSync('scripts/fixtures/daily-cash-post-core.sql','utf8'));sql(fs.readFileSync('scripts/fixtures/daily-cash-post-support.sql','utf8'));sql(fs.readFileSync('scripts/fixtures/daily-cash-post-functions.sql','utf8'));
  const migration=fs.readFileSync('supabase/migrations/20261010080343_zysyr_daily_cash_human_review.sql','utf8');sql(migration);sql(migration);
  const before=snapshot();
@@ -69,6 +75,8 @@ async function main(){let created=false;try{
   "update zysyr_daily_sheet_cells set corrected_numeric=101 where cell_role='staff_value'",
   "update zysyr_daily_electronic_heads set latest_fetched_at=latest_fetched_at+interval '1 second'",
   "update zysyr_daily_electronic_snapshots set source_sha256=repeat('c',64)",
+  "update mgj_business_detail_heads set last_seen_at=last_seen_at+interval '1 second'",
+  "update mgj_daily_consumption set fetched_at=fetched_at+interval '1 second'",
   "update zysyr_voucher_attachments set audit_status='rejected'",
   "update zysyr_user_role_grants set revoked_at=now(),revoke_reason='Synthetic revoke'",
   "update zysyr_user_accounts set status='disabled'"]){
@@ -86,7 +94,9 @@ async function main(){let created=false;try{
  for(const [i,mutation] of [
   "update zysyr_daily_electronic_heads set latest_fetched_at=latest_fetched_at+interval '1 second'",
   "insert into zysyr_daily_electronic_heads values('"+S+"','2026-10-09','card_sales_daily_summary','"+id(50)+"',now())",
-  "update zysyr_user_role_grants set revoked_at=now(),revoke_reason='Synthetic concurrent revoke'"
+  "update zysyr_user_role_grants set revoked_at=now(),revoke_reason='Synthetic concurrent revoke'",
+  "update mgj_business_detail_heads set last_seen_at=last_seen_at+interval '1 second'",
+  "update mgj_daily_consumption set services='[{\"source_id\":\"synthetic-bill\",\"amount\":101}]'"
  ].entries()){
   const posting=concurrent(post);await new Promise(r=>setTimeout(r,250));sql(mutation);
   const result=await posting;assert.notEqual(result.code,0,'concurrent source/identity change rejects');

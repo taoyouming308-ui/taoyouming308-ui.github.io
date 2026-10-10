@@ -36,6 +36,8 @@ declare d public.zysyr_daily_sheet_drafts%rowtype;
 begin
  select * into d from public.zysyr_daily_sheet_drafts where id=p_draft;
  lock table public.zysyr_daily_electronic_heads in share mode;
+ lock table public.mgj_business_detail_heads in share mode;
+ lock table public.mgj_daily_consumption in share mode;
  lock table public.zysyr_daily_sheet_attachment_voids in share mode;
  perform 1 from public.zysyr_daily_electronic_heads h where h.store_id=d.store_id and h.business_date=d.report_date order by h.source_scope for share;
  perform 1 from public.zysyr_daily_electronic_snapshots s join public.zysyr_daily_electronic_heads h on h.snapshot_id=s.id
@@ -44,6 +46,8 @@ begin
  perform 1 from public.zysyr_voucher_attachments v where v.id=d.source_voucher_id for share;
  perform 1 from public.zysyr_companies c where c.id=d.company_id for share;
  perform 1 from public.zysyr_stores s where s.id=d.store_id for share;
+ perform 1 from public.mgj_business_detail_snapshots s join public.mgj_business_detail_heads h on h.snapshot_id=s.id
+  join public.zysyr_stores st on st.name=h.shop_name where st.id=d.store_id and h.business_date=d.report_date for share of s;
  perform 1 from public.zysyr_user_accounts u where u.id=p_actor or u.id in
   (select r.reviewer_account_id from zysyr_private.daily_cash_reviews r where r.draft_id=p_draft) order by u.id for share;
  perform 1 from public.zysyr_user_role_grants g where g.user_account_id=p_actor or g.user_account_id in
@@ -61,7 +65,7 @@ revoke all on function zysyr_private.lock_daily_cash_review(uuid,uuid) from publ
 
 create or replace function zysyr_private.daily_cash_review_context(p_company uuid,p_store uuid,p_draft uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' as $$
-declare d public.zysyr_daily_sheet_drafts%rowtype; v jsonb; heads jsonb; cells jsonb; original_ready boolean;
+declare d public.zysyr_daily_sheet_drafts%rowtype; v jsonb; heads jsonb; cells jsonb; detail_head jsonb; list_source jsonb; original_ready boolean;
 begin
  select * into d from public.zysyr_daily_sheet_drafts where id=p_draft and company_id=p_company and store_id=p_store;
  if not found then raise exception using errcode='P0002',message='DAILY_SHEET_DRAFT_NOT_FOUND'; end if;
@@ -75,6 +79,13 @@ begin
  from public.zysyr_daily_electronic_heads h join public.zysyr_daily_electronic_snapshots s on s.id=h.snapshot_id
  where h.store_id=p_store and h.business_date=d.report_date and h.source_scope in
  ('operating_daily_summary','card_sales_daily_summary','all_business_daily_summary');
+ select jsonb_build_object('snapshot',h.snapshot_id,'seen',h.last_seen_at,'hash',s.source_sha256) into detail_head
+ from public.mgj_business_detail_heads h join public.mgj_business_detail_snapshots s on s.id=h.snapshot_id
+ join public.zysyr_stores st on st.name=h.shop_name where st.id=p_store and h.business_date=d.report_date;
+ select jsonb_build_object('fetched',c.fetched_at,'bills',(select jsonb_agg(jsonb_build_object('id',x->>'source_id',
+  'amount',x->>'amount') order by x->>'source_id') from jsonb_array_elements(c.services) x)) into list_source
+ from public.mgj_daily_consumption c join public.zysyr_stores st on st.name=c.shop_name
+ where st.id=p_store and c.business_date=d.report_date;
  select coalesce(jsonb_agg(jsonb_build_object('id',c.id,'section',c.section_code,'row',c.row_key,
   'column',c.column_code,'role',c.cell_role,'label',c.row_label,'manual',c.manual_override,
   'corrected',c.corrected_numeric,'text',c.manual_text,'ocr',c.ocr_numeric,'ocr_text',c.ocr_text,
@@ -85,7 +96,7 @@ begin
    'day',d.report_date,'voucher',v,'original_ready',original_ready,'draft_source',d.source_sha256,
    'template',d.template_code,'policy',d.ocr_raw_result#>'{autofill,daily_total_policy}',
    'detail',d.ocr_raw_result#>'{autofill,snapshot_id}','cash',d.ocr_raw_result#>'{autofill,cash_receipts}',
-   'heads',heads)::text,'UTF8')),'hex'),
+   'heads',heads,'detail_head',detail_head,'list_source',list_source)::text,'UTF8')),'hex'),
   'cell_hash',encode(sha256(convert_to(cells::text,'UTF8')),'hex'));
 end $$;
 revoke all on function zysyr_private.daily_cash_review_context(uuid,uuid,uuid) from public,anon,authenticated,service_role;
