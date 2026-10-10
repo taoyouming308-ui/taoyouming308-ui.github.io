@@ -90,4 +90,13 @@ test('missing card-sale source or intervening project receipt is never guessed a
   const cards=cardFixture();cards.source.content.data[0][1]='';
   assert.equal(value(project(fixture(opScope),fixture(allScope),cards),'summary','card_subtotal'),null);
 });
+test('empty rows, parser failure and HTTP error are not trusted no-sales evidence',()=>{
+ for(const mode of ['no_rows','parse_failure','403']){
+  const card=cardFixture();
+  if(mode==='no_rows')card.source.content.data=[];
+  if(mode==='parse_failure')card.source.content.data[0][1]='not-a-number';
+  if(mode==='403')card.source={code:403};
+  assert.throws(()=>project(fixture(opScope),fixture(allScope),card));
+ }
+});
 console.log(`${checks} daily cash policy checks passed; candidate only, no database writes`);

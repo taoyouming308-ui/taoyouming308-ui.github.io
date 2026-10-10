@@ -51,3 +51,39 @@ for(const status of ['draft','confirmed']){
  assert.equal(view.draft.ocr_raw_result.autofill.daily_total_policy,'cash-plus-earned-card-v1');
 }
 console.log('Actual UI checks: independent performance/cash controls, stored-value exclusion, new card-sales separation, old January compatibility and metadata allowlist passed');
+
+// Regression: unknown sales are a missing source, not a numeric discrepancy.
+const missingSales = set(true,{staff:28839,actual:28839,cashflow:28839,sales:null,grand:28839,payment:28839,card:2180});
+assert.equal(missingSales.valid,false);
+const missingMessage=context.controlDifferences(missingSales).find(d=>d.role==='summary_grand');
+assert.equal(missingMessage.kind,'unknown');
+assert.equal(missingMessage.columnCode,'card_subtotal');
+assert.match(missingMessage.message,/充值售卡实收未核实/);
+assert.match(missingMessage.message,/不能凭总计相等推定为0/);
+const realMismatch=context.controlDifferences(set(true,{sales:300,grand:100,payment:100})).find(d=>d.role==='summary_grand');
+assert.equal(realMismatch.kind,'mismatch');
+assert.match(realMismatch.message,/汇总总计/);
+assert.equal(set(true,{sales:0,grand:100,payment:100}).valid,true);
+assert.equal(set(true,{sales:0,grand:100,payment:100,channelsComplete:false}).valid,false,'known sales zero does not bypass other source gaps');
+// Render the real paper cell: explicit source/manual zero is visible and reviewable.
+context.esc=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+vm.runInContext(['dailyCellValue','dailyInputValue','dailyPaperTextRole','dailyAmountDisplay','dailyPaperInput'].map(name=>html.split('\n').find(line=>new RegExp('^\\s*function '+name+'\\(').test(line))).join('\n'),context);
+context.state.imports.sheet.draft.ocr_model='frontdesk-autofill-v2';
+const salesMeta={section:'summary',rowKey:'summary',rowLabel:'汇总',columnCode:'card_subtotal',columnLabel:'卡类小计',rowNumber:30,columnNumber:9,role:'summary_value'};
+function render(cell,meta=salesMeta){const before=JSON.stringify(cell);const out=context.dailyPaperInput(cell,meta);assert.equal(JSON.stringify(cell),before,'render never changes source/manual/confirmed values');return out;}
+const sourceZero={id:'synthetic-zero',source_method:'frontdesk_autofill',manual_override:false,ocr_numeric:0};
+const renderedZero=render(sourceZero);assert.match(renderedZero,/value="0"/);assert.match(renderedZero,/充值售卡实收为0/);assert.match(renderedZero,/recognition-candidate/);
+assert.equal(context.dailyInputValue({value:'0',dataset:{knownZero:'1'}}),0);
+for(const cell of [null,{...sourceZero,ocr_numeric:null},{...sourceZero,ocr_numeric:NaN},{...sourceZero,ocr_numeric:99,manual_override:true,corrected_numeric:null}]){
+ const out=render(cell);assert.match(out,/value=""/);assert.match(out,/充值售卡实收未核实/);assert.doesNotMatch(out,/data-known-zero/);
+}
+assert.match(render({...sourceZero,ocr_numeric:99,manual_override:true,corrected_numeric:0}),/value="0"/);
+assert.match(render({...sourceZero,ocr_numeric:0,manual_override:true,corrected_numeric:77}),/value="77"/);
+context.state.imports.sheet.draft.status='confirmed';assert.match(render({...sourceZero,manual_override:true,corrected_numeric:77}),/value="77"/);
+const cardOut=render(sourceZero,{...salesMeta,section:'payment',columnCode:'card_consumption',role:'payment_card_consumption'});
+assert.doesNotMatch(cardOut,/充值售卡实收/);assert.match(cardOut,/value=""/,'existing card-consumption rendering remains unchanged');
+console.log('Missing-sales regression: visible/reviewable explicit zero; unknown versus mismatch; manual blank/value and confirmed protection; card consumption separate; posting/source gates unchanged');
+
+vm.runInContext(review.slice(review.indexOf('  function pendingCandidates('),review.indexOf('  function notice(')),context);
+context.grid=()=>({querySelectorAll:()=>[{value:'0',classList:{contains:()=>false}}]});
+assert.equal(context.pendingCandidates().length,1,'visible source zero remains an explicit review candidate rather than skipped blank');
