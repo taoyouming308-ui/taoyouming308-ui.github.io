@@ -41,8 +41,8 @@ async function main(){let created=false;try{
  values('${D}','${C}','${S}','2026-10-09','${V}',repeat('a',64),'synthetic','synthetic','${A}','${A}','{"autofill":{"daily_total_policy":"cash-plus-earned-card-v1","cash_receipts":{"policy":"operating-external-cash-v1","state":"candidate","cash_channels_complete":false}}}');
  insert into zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,ocr_numeric,manual_override,corrected_numeric)
  select '${C}','${S}','${D}',section,row_key,'Synthetic',code,code,rownum,colnum,role,'blank_template',amount,true,amount from (values
- ('stylist','stylist_1','cut',3,2,'staff_value',100),('stylist','stylist_1','subtotal',3,3,'staff_total',100),
- ('stylist','stylist_category_total','cut',10,2,'category_total',100),('stylist','stylist_category_total','subtotal',10,3,'summary_value',100),
+ ('stylist','stylist_1','wash_cut_blow',3,2,'staff_value',100),('stylist','stylist_1','subtotal',3,3,'staff_total',100),
+ ('stylist','stylist_category_total','wash_cut_blow',10,2,'category_total',100),('stylist','stylist_category_total','subtotal',10,3,'summary_value',100),
  ('summary','summary','actual_total',30,2,'summary_actual',100),('summary','summary','grand_total',30,3,'summary_grand',100),
  ('summary','summary','card_subtotal',30,6,'summary_value',0),
  ('payment','payment','alipay',40,2,'payment_method',100),('payment','payment','cash_flow',40,3,'payment_cashflow',100),
@@ -107,8 +107,36 @@ async function main(){let created=false;try{
   assert.equal(json(call({request:id(90+i)})).status,'current');
  }
  sql('drop trigger synthetic_slow on zysyr_income_records;drop function public.synthetic_slow_income();');
- const posted=json(post);assert.equal(posted.daily_report_status,'approved');
+ // Production-shaped collision: empty template/dynamic row and bank/Douyin
+ // share physical positions. The old full confirmation must fail atomically.
+ sql(`insert into zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,ocr_numeric,manual_override,corrected_numeric)
+ values('${C}','${S}','${D}','stylist','stylist_empty','Template','wash_cut_blow','wash_cut_blow',3,2,'staff_value','blank_template',0,true,0),
+ ('${C}','${S}','${D}','stylist','stylist_empty','Template','subtotal','subtotal',3,3,'staff_total','blank_template',0,true,0),
+ ('${C}','${S}','${D}','payment','payment','Synthetic','bank_card','bank_card',40,2,'payment_method','blank_template',0,true,0),
+ ('${C}','${S}','${D}','payment','payment','Synthetic','douyin','douyin',40,2,'payment_method','blank_template',0,true,0);`);
+ assert.equal(json(call({request:id(110)})).status,'current');
+ const collisionSnapshot=snapshot();
+ fail(post,/duplicate key.*zysyr_report_cells/);
+ assert.equal(snapshot(),collisionSnapshot,'old 409 rolls back every financial record');
+ sql(fs.readFileSync('supabase/migrations/20261010111632_zysyr_daily_post_logical_cells.sql','utf8'));
+ sql(fs.readFileSync('supabase/migrations/20261010111632_zysyr_daily_post_logical_cells.sql','utf8'));
+ const wrapper=(patch={})=>service+"select public.zysyr_confirm_daily_sheet_reviewed("+[A,patch.auth||U,C,S,D].map(q).join(',')+','+q(JSON.stringify(report))+"::jsonb,true,'Synthetic explicit final consent',"+(patch.revision??0)+','+q(patch.token||status().source_token)+','+q(id(120))+','+q(patch.statement||'cash-original-channels-sales-v1')+');';
+ for(const patch of [{auth:id(99)},{revision:9},{token:'wrong'},{statement:'automatic'}])fail(wrapper(patch),/FORBIDDEN|REVISION_CONFLICT|SOURCE_CHANGED|EXPLICIT_CONFIRMATION_REQUIRED/);
+ assert.equal(snapshot(),collisionSnapshot);
+ // New proof/audit must roll back too if a later ledger step fails.
+ sql("create function public.synthetic_fail_income() returns trigger language plpgsql as $$begin raise exception 'synthetic downstream failure';end$$;create trigger synthetic_fail before insert on zysyr_income_records for each row execute function public.synthetic_fail_income();");
+ fail(wrapper(),/synthetic downstream failure/);assert.equal(snapshot(),collisionSnapshot);
+ sql('drop trigger synthetic_fail on zysyr_income_records;drop function public.synthetic_fail_income();');
+ sql(fs.readFileSync('supabase/migrations/20260920071049_daily_review_atomic_save.sql','utf8'));
+ sql(fs.readFileSync('supabase/migrations/20260920110534_daily_review_explicit_blank.sql','utf8'));
+ sql(fs.readFileSync('supabase/migrations/20260924010116_zysyr_daily_expected_revision_gate.sql','utf8'));
+ await require('./test-daily-post-sequence-harness.js')({sql,json,q,C,S,A,D,V,U});
+ assert.equal(sql("select display_data#>>'{validation,valid}' from zysyr_report_uploads"),'true','archive stores final attested validation');
+ const posted={daily_report_status:sql('select status from zysyr_daily_reports')};assert.equal(posted.daily_report_status,'approved');
+ assert.equal(sql('select count(*) from zysyr_report_cells'),sql('select count(*) from zysyr_daily_sheet_cells'),'every logical cell retained');
+ assert.equal(sql("select count(*) from zysyr_report_cells where sheet_name='原图电子日报/payment' and numeric_value=0"),'3');
+ assert.equal(sql("select count(*) from zysyr_daily_report_lines l join zysyr_report_cells c on c.id=l.source_report_cell_id where l.amount=c.numeric_value"),'1','income maps to its exact logical source');
  assert.equal(sql("select status from zysyr_daily_sheet_drafts"),'confirmed');assert.equal(sql("select count(*) from zysyr_daily_sheet_versions"),'1');assert.equal(sql("select sum(amount) from zysyr_income_records where status='approved'"),'100.00');
- console.log('Cash human review DB: ordinary live posting succeeds; identity/scope/ACL/unknown/difference/revision/source/revocation/idempotency/immutable proof and rollback passed.');
+ console.log('Cash review and full browser/Edge/PostgreSQL sequence: old real-shaped coordinate409 reproduced and fixed; atomic consent/post and lineage verified;  ordinary live posting succeeds; identity/scope/ACL/unknown/difference/revision/source/revocation/idempotency/immutable proof and rollback passed.');
  }finally{if(created)docker(['stop',container]);}}
 main().catch(e=>{console.error(String(e.stderr||e));process.exitCode=1;});

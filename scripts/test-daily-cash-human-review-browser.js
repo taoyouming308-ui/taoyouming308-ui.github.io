@@ -30,11 +30,11 @@ async function setup(page,origin){
     syntheticSheet.cash_review={...syntheticSheet.cash_review,status:'current',reason:p.reason};syntheticSheet.draft.validation_result={valid:true};
     if(syntheticLost)throw Error('synthetic lost response');return structuredClone(syntheticSheet);
    }
-   if(op==='daily_sheet_confirm'){assertSynthetic();syntheticSheet.draft.status='confirmed';return structuredClone(syntheticSheet);}
+   if(op==='daily_sheet_confirm'){if(p.cash_source_confirmation?.statement!=='cash-original-channels-sales-v1')throw Error('explicit consent required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
    if(op==='daily_sheet_month')return {days:[]};throw Error('Unexpected '+op);
   };
   window.assertSynthetic=()=>{if(syntheticSheet.cash_review.status!=='current')throw Error('synthetic proof required');};
-  isLocalPreview=()=>false;window.confirm=()=>true;state.imports.sheet=structuredClone(s);state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
+  isLocalPreview=()=>false;window.syntheticCancel=false;window.syntheticDialogs=[];window.confirm=(text)=>{syntheticDialogs.push(text);return !syntheticCancel;};state.imports.sheet=structuredClone(s);state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
  });
 }
 async function run(){
@@ -43,34 +43,31 @@ async function run(){
  for(const width of [390,1280]){
   const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
-  assert.equal(await page.locator('#daily-cash-review-panel').isVisible(),true);
-  for(const n of ['original','channels','sales'])await page.locator('#daily-cash-review-'+n).check();
-  await page.locator('#daily-cash-review-reason').fill('Synthetic original, channels and no card sale verified');
-  await page.locator('#daily-cash-review-submit').click();
-  assert.match(await page.locator('#daily-detail-note').innerText(),/充值售卡实收未核实/);
-  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false);
+  assert.equal(await page.locator('#daily-cash-review-panel').count(),0);
+  await page.locator('#daily-detail-confirm-top').click();
+  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm')),false,'unknown cannot be posted');
   const sales=page.locator('[data-section="summary"][data-column-code="card_subtotal"]');await sales.fill('0');
-  await page.locator('#daily-cash-review-submit').click();
-  await page.waitForFunction(()=>state.imports.sheet.cash_review.status==='current');
-  assert.equal(await page.evaluate(()=>state.imports.sheet.draft.ocr_raw_result.autofill.cash_receipts.cash_channels_complete),false);
-  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm')),false,'attestation does not post');
-  assert.equal(await page.locator('#daily-detail-confirm-top').evaluate(e=>e.classList.contains('blocked-action')),false);
+  await page.evaluate(()=>syntheticCancel=true);await page.locator('#daily-detail-confirm-top').click();
+  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save'||x.op==='daily_sheet_confirm')),false,'cancel writes nothing');
+  await page.evaluate(()=>{syntheticCancel=false;syntheticDialogs=[];});
   await page.locator('#daily-detail-confirm-top').click();await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
   assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),1);
+  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false,'no separate review step');
+  assert.equal(await page.evaluate(()=>syntheticDialogs.length),1);
+  assert.match(await page.evaluate(()=>syntheticDialogs[0]),/充值售卡实收/);
+  assert.equal(await page.evaluate(()=>Number(syntheticSheet.cells.find(x=>x.column_code==='card_subtotal').corrected_numeric)),0);
   assert.deepEqual(errors,[]);await page.close();
  }
  const page=await browser.newPage();await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
  for(const mode of ['difference','race','lost']){
   await setup(page,origin);await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
-  for(const n of ['original','channels','sales'])await page.locator('#daily-cash-review-'+n).check();
-  await page.locator('#daily-cash-review-reason').fill('Synthetic verified original and all channels');
   if(mode==='difference')await page.locator('[data-role="payment_total"]').fill('99');
   await page.evaluate(mode=>{syntheticRace=mode==='race';syntheticLost=mode==='lost';},mode);
-  await page.locator('#daily-cash-review-submit').click();
-  if(mode==='lost')await page.waitForFunction(()=>state.imports.sheet.cash_review.status==='current');
-  else {await page.waitForFunction(()=>document.getElementById('daily-detail-note').textContent.includes('差异')||document.getElementById('daily-detail-note').textContent.includes('变化'));assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false);}
-  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm')),false);
+  await page.locator('#daily-detail-confirm-top').click();
+  if(mode==='lost')await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
+  else {await page.waitForFunction(()=>document.getElementById('daily-detail-note').textContent.includes('请核对：')||document.getElementById('daily-detail-note').textContent.includes('变化'));assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false);}
+  assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),mode==='lost'?1:0);
  }
- await page.close();console.log('Cash review browser: real desktop/mobile explicit zero, save/adopt, audited proof then separate post; unknown/difference/source race reject and lost reply recovery passed.');
+ await page.close();console.log('Simple final confirmation browser: mobile/desktop explicit zero, one dialog/save/post, cancel no writes, unknown/difference/source races blocked, lost reply recovered once.');
 }
 run().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();server.close();});
