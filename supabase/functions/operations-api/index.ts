@@ -4477,6 +4477,12 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
     if (code === "DAILY_SHEET_REVISION_CONFLICT") throw new Error("这张日报已被其他页面修改；本次没有覆盖，请刷新并重新核对后再保存或入账");
     if (code === "DAILY_SHEET_EXPECTED_REVISION_REQUIRED") throw new Error("日报版本信息无效，请刷新页面后重新核对");
+    if (code === "DAILY_CASH_REVIEW_SOURCE_CHANGED" || code === "DAILY_CASH_REVIEW_CHANGED_BEFORE_POST") throw new Error("原件、金额、收款来源或财务权限已变化；本次未入账，请重新核对并确认来源");
+    if (code === "DAILY_CASH_REVIEW_VALUES_INCOMPLETE") throw new Error("仍有未核实金额或合计差异；来源确认不能绕过金额校验，请补齐后重试");
+    if (code === "DAILY_CASH_REVIEW_APPROVED_ORIGINAL_REQUIRED") throw new Error("请先上传当天原始日报，并完成原件审核");
+    if (code === "DAILY_CASH_REVIEW_FINANCE_FORBIDDEN") throw new Error("当前财务登录身份或门店权限已失效，请重新登录核对");
+    if (code === "DAILY_CASH_REVIEW_REQUEST_REUSED") throw new Error("核实请求与已有记录不一致，请重新打开日报后核对");
+    if (path === "rpc/zysyr_review_daily_cash_sources" && (sqlState === "55P03" || sqlState === "40P01")) throw new Error("来源正在更新，本次核实未完成；请稍后重新核对");
     if (code === "DAILY_ATTACHMENT_CONFIRMED_REQUIRES_REVERSAL") throw new Error("这张日报已经入账，原图不能删除或替换；请先走冲销流程");
     if (code === "DAILY_ATTACHMENT_NOT_FOUND") throw new Error("所选原图不存在或不属于当前日报");
     if (code === "DAILY_ATTACHMENT_ALREADY_VOIDED") throw new Error("这份误传原图已经作废，无需重复操作");
@@ -5512,8 +5518,14 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   }));
   const activeAttachments = attachments.filter((item) => item.voided !== true);
   const primary = activeAttachments.find((item) => ["image/jpeg", "image/png"].includes(cleanText(item.mime_type, 80))) || activeAttachments[0] || null;
+  let cashReview: JsonRecord = { status: "unavailable" };
+  if ((draft.autofill_view as JsonRecord)?.cash_receipts) {
+    try { cashReview = await financeRpcSaved("rpc/zysyr_daily_cash_review_status", {
+      p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId }); }
+    catch (_) { /* A missing/failed contract never authorizes a review or posting. */ }
+  }
   const view = dailyAutofillView(draft, cells, storeId);
-  return { draft: view.draft, current_validation_review: currentValidationReview,
+  return { draft: view.draft, current_validation_review: currentValidationReview, cash_review: cashReview,
     cells: view.cells.map((cell: JsonRecord) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
@@ -5912,6 +5924,24 @@ async function dailySheetCorrectionStatus(payload: JsonRecord, session: JsonReco
     p_store_id: cleanText(store.id, 40), p_draft_id: uuidValue(payload.draft_id, "日报编号无效"),
     p_request_id: uuidValue(payload.request_id, "更正请求编号无效"),
   });
+}
+
+async function reviewDailyCashSources(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "仅财务账号可以核实日报收款来源");
+  const store = await selectedStoreInfo(session, payload);
+  const revision = Number(payload.expected_revision), reason = cleanText(payload.reason, 500);
+  if (!Number.isInteger(payload.expected_revision) || revision < 0 || reason.length < 5
+    || payload.reviewed_original !== true || payload.reviewed_channels !== true || payload.reviewed_card_sales !== true
+    || !/^[a-f0-9]{64}$/.test(cleanText(payload.source_token, 100))) throw new Error("请主动核对原件、收款渠道和充值售卡实收，并填写核实说明");
+  const saved = await financeRpcSaved("rpc/zysyr_review_daily_cash_sources", {
+    p_actor_user_id: uuidValue(session.auth_account_id, "财务登录身份无效"),
+    p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_draft_id: uuidValue(payload.draft_id, "日报编号无效"), p_expected_revision: revision,
+    p_source_token: cleanText(payload.source_token, 100), p_request_id: uuidValue(payload.request_id, "核实请求编号无效"),
+    p_reviewed_original: true, p_reviewed_channels: true, p_reviewed_card_sales: true, p_reason: reason,
+  });
+  return { ...(await dailySheetRead(payload, session)), cash_review_saved: saved };
 }
 
 async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -6823,7 +6853,7 @@ const OPERATIONS_API_LOG_OPERATIONS = new Set(`
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
-ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
 function safeOperationsApiLogOperation(value: unknown): string {
@@ -6972,6 +7002,7 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_save") return json(await saveDailySheetDraft(payload, session));
     if (operation === "daily_sheet_correct") return json(await saveDailySheetDraft(payload, session, true));
     if (operation === "daily_sheet_correction_status") return json(await dailySheetCorrectionStatus(payload, session));
+    if (operation === "daily_sheet_cash_review") return json(await reviewDailyCashSources(payload, session));
     if (operation === "daily_sheet_confirm") return json(await confirmDailySheetDraft(payload, session));
     if (operation === "daily_sheet_recognize") return json(await recognizeDailySheet(payload, session));
     if (operation === "daily_recognition_job_start") return json(await dailyRecognitionJobStart(payload, session));

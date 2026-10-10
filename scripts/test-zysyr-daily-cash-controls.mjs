@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {dailyAutofillView} from '../supabase/functions/_shared/daily-autofill-view.mjs';
 const html=fs.readFileSync('operations.html','utf8'),review=fs.readFileSync('operations-daily-review.js','utf8');
-const calc=html.slice(html.indexOf('function calculateDailyControls('),html.indexOf('  function renderDailyControls()'));
+const calc=html.slice(html.indexOf('function dailyCashReviewCurrent('),html.indexOf('  function renderDailyControls()'));
 const messages=review.slice(review.indexOf('  function controlDifferences('),review.indexOf('  function localBlockReason('));
 let fields=[],draft={};
 const context=vm.createContext({state:{imports:{sheet:{draft}}},Number,Array,Math,Object,String,
@@ -93,7 +93,7 @@ context.state.user={role:'finance'};context.state.imports.sheet.permissions={wri
 context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
 context.grid=()=>({querySelectorAll:()=>fields});
 set(true,{sales:0,grand:100,payment:100,channelsComplete:false});
-assert.match(context.localBlockReason(),/尚有未核实字段/);
+assert.match(context.localBlockReason(),/收款来源仍待人工核实/);
 set(true,{sales:null,grand:100,payment:100});
 assert.match(context.localBlockReason(),/充值售卡实收未核实/);
 set(true,{sales:300,grand:100,payment:100});

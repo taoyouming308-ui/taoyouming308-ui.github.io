@@ -1,3 +1,7 @@
+## v621 · 2026-10-10
+
+财务可主动核对原件、收款渠道及充值售卡实收，填写说明后保存独立来源审核，再单独确认入账。审核绑定真实财务身份、门店、草稿版本及来源/金额指纹；变化后失效。未知与差额继续拦截，原始来源缺口不改写。新增隔离数据库、接口和桌面/手机实际页面回归；不代确认真实日报，不修改历史补采和调度。
+
 ## 2026-10-09 · v619 preview — clearer aesthetic case picker
 
 - Make only the native “选择案例” control easier to spot with a pale panel, clear outline, arrow, larger touch target and keyboard focus. Preserve current case data and selection behavior.

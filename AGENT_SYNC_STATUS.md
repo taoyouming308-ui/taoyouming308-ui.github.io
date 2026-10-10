@@ -1,5 +1,13 @@
 # Agent Sync Status
 
+## 2026-10-10 · Audited daily cash-source review (App version: v621)
+
+- Latest base github/main 4da00c8 v620; isolated fix/daily-cash-human-review, daily archive retained. User approved compatible frontend/backend/schema release at 16:01 and clarified scope again at 16:25. Historical collection and OS scheduling remain untouched; no real Jan1/Jan2 values, reviews or posting are performed.
+- Finance explicitly reviews approved original, every cash channel and recharge/card-sale receipts, gives a required reason, then saves a separate append-only attestation. Existing request_role handles both modern JSON and legacy JWT claims. Server-selected actor/Auth/store, revision, original/cash-head/detail-head/list-source fingerprint and exact cell fingerprint bind the proof; edits, source refresh or authority revocation invalidate it. Original cash_channels_complete=false stays false. Only the source-completeness guard accepts current proof; all existing unknown-value, math, period and posting checks remain.
+- Separate final posting confirmation stays mandatory. Existing nonempty/known numeric-zero candidates may be adopted only after explicit review; no absent source or user-cleared blank is inferred as zero. Short source/identity locks and final posting-boundary validation prevent partial posting on concurrent updates; conflicts fail closed with a 5-second lock timeout.
+- Synthetic actual page/API/PostgreSQL tests cover explicit zero versus unknown, difference/source races, trusted Auth identity, immutable audit, idempotency, revoked permission and ordinary posting with exact income. Frozen Deno checks preserve all 12 live Edge dependencies and replace only index.ts. Shared hook, PR CI and Pages/readback verification required; physical iOS Safari and real user attestation are not simulated.
+- Rollback forward: hide the entry/revert Edge route, restore the exact source guard in a reviewed forward migration and remove the posting guard trigger if required; preserve daily_cash_reviews and audits. Never delete review history, change amounts or alter collector schedules. Migration and Edge deploy precede UI publication.
+
 ## 2026-10-10 · Daily card-sales missing evidence feedback (App version: v620)
 
 - User-authorized repair from github/main 95d7d52 v619; isolated checkout and daily archive retained. Missing card_subtotal is now identified as unverified recharge/card-sale external receipts, shown amber rather than a false numeric total mismatch. Known numeric contradictions remain red; posting validation is unchanged.
