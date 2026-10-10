@@ -131,6 +131,7 @@ async function main(){let created=false;try{
  sql(fs.readFileSync('supabase/migrations/20260920110534_daily_review_explicit_blank.sql','utf8'));
  sql(fs.readFileSync('supabase/migrations/20260924010116_zysyr_daily_expected_revision_gate.sql','utf8'));
  await require('./test-daily-post-sequence-harness.js')({sql,json,q,C,S,A,D,V,U});
+ assert.equal(sql("select display_data#>>'{validation,valid}' from zysyr_report_uploads"),'true','archive stores final attested validation');
  const posted={daily_report_status:sql('select status from zysyr_daily_reports')};assert.equal(posted.daily_report_status,'approved');
  assert.equal(sql('select count(*) from zysyr_report_cells'),sql('select count(*) from zysyr_daily_sheet_cells'),'every logical cell retained');
  assert.equal(sql("select count(*) from zysyr_report_cells where sheet_name='原图电子日报/payment' and numeric_value=0"),'3');

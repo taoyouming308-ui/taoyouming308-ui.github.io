@@ -93,7 +93,9 @@ context.state.user={role:'finance'};context.state.imports.sheet.permissions={wri
 context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
 context.grid=()=>({querySelectorAll:()=>fields});
 set(true,{sales:0,grand:100,payment:100,channelsComplete:false});
-assert.match(context.localBlockReason(),/收款来源仍待人工核实/);
+assert.match(context.localBlockReason(),/收款来源核实服务须可用/);
+context.state.imports.sheet.cash_review={status:'required',source_token:'a'.repeat(64),original_ready:true};
+assert.equal(context.localBlockReason(),'','known numbers can proceed to one explicit final source confirmation');
 set(true,{sales:null,grand:100,payment:100});
 assert.match(context.localBlockReason(),/充值售卡实收未核实/);
 set(true,{sales:300,grand:100,payment:100});

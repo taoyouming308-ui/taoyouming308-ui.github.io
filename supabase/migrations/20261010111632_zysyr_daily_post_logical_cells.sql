@@ -57,6 +57,8 @@ begin
   perform public.zysyr_review_daily_cash_sources(p_actor_user_id,p_actor_auth_user_id,p_company_id,p_store_id,
    p_draft_id,p_expected_revision,p_cash_source_token,p_cash_request_id,true,true,true,p_reason);
  end if;
+ -- Archive the same final validation used for posting, rather than the pre-proof cache.
+ p_report:=jsonb_set(p_report,'{display_data,validation}',zysyr_private.daily_sheet_validation(p_company_id,p_store_id,p_draft_id),true);
  return public.zysyr_confirm_daily_sheet(p_actor_user_id,p_company_id,p_store_id,p_draft_id,p_report,p_is_business_day,p_reason,p_expected_revision);
 end $$;
 revoke all on function public.zysyr_confirm_daily_sheet_reviewed(uuid,uuid,uuid,uuid,uuid,jsonb,boolean,text,integer,text,uuid,text) from public,anon,authenticated;
