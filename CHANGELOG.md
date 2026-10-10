@@ -1,3 +1,8 @@
+## 2026-10-10 · Daily original aesthetic training (v622 unchanged)
+
+- Add one original fictional illustrated case: “自然波纹、常扎发：刘海该先剪短吗？” with observed facts/assumptions/unknowns, a decision question, six conditional reference sections and five self-review prompts.
+- Preserve previous case objects and the current financial repair release. Only content/assets/audit; no app, backend, business-data, retired-feed or schedule changes. Publish after shared safety checks with same-date deduplication and actual feed/image readback.
+
 ## 2026-10-10 · v622 simpler final daily confirmation and archival coordinates
 
 - Repeated physical coordinates can violate report-cell uniqueness during final daily posting. The transaction rolls back on conflict; logical archival coordinates remove the collision while preserving original cells and financial guards.
