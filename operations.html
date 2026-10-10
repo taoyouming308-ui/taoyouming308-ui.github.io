@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="622">
+<html lang="zh-CN" data-version="623">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -698,13 +698,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=622"></script>
-<script src="operations-staff-view.js?v=622"></script>
-<script src="operations-monthly-daily-performance.js?v=622"></script>
-  <script src="operations-report-fit.js?v=622"></script>
-  <script src="operations-auth-bridge.js?v=622"></script>
-  <script src="operations-voucher-preview.js?v=622"></script>
-  <script src="operations-voucher-view.js?v=622"></script>
+<script src="operations-time.js?v=623"></script>
+<script src="operations-staff-view.js?v=623"></script>
+<script src="operations-monthly-daily-performance.js?v=623"></script>
+  <script src="operations-report-fit.js?v=623"></script>
+  <script src="operations-auth-bridge.js?v=623"></script>
+  <script src="operations-voucher-preview.js?v=623"></script>
+  <script src="operations-voucher-view.js?v=623"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -870,7 +870,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=622';
+      script.src='operations-petty-cash-evidence.js?v=623';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1296,7 +1296,7 @@ html+='<tr class="total-row">'+dailyLabelCell(paymentRow)+dailyPaperInput(paymen
 html+='<tr class="paper-note"><td class="row-label">备注</td>'+dailyPaperInput(paymentMap.note&&paymentMap.note.cells.note,{section:'payment',rowKey:'note',rowLabel:'备注',columnCode:'note',columnLabel:'备注',rowNumber:34,columnNumber:2,role:'note'},24)+'</tr>';
 return html+'</tbody></table></div>'}
 function dailyCashReviewCurrent(){var imports=typeof state!=='undefined'&&state.imports,sheet=imports&&imports.sheet,review=sheet&&sheet.cash_review;return !!review&&review.status==='current'&&Number(review.revision)===Number(sheet.draft.edit_revision)&&Object.keys(imports.dirty||{}).length===0&&Object.keys(imports.dirtyLabels||{}).length===0}
-function calculateDailyControls(root){
+function calculateDailyControls(root,cardSalesCheck){
   var scope=root||document,inputs=Array.from(scope.querySelectorAll('[data-daily-cell],[data-new-cell]')),
     read=function(input){return dailyInputValue(input)},
     sum=function(list){return list.reduce(function(total,input){return total+(read(input)||0)},0)},
@@ -1309,6 +1309,8 @@ function calculateDailyControls(root){
     cashMode=!!cashMetadata&&cashMetadata.policy==='operating-external-cash-v1'&&cashMetadata.state==='candidate',
     earnedMode=!!(typeof state!=='undefined'&&state.imports&&state.imports.sheet&&state.imports.sheet.draft.ocr_raw_result&&state.imports.sheet.draft.ocr_raw_result.autofill&&state.imports.sheet.draft.ocr_raw_result.autofill.daily_total_policy==='cash-plus-earned-card-v1'),
     cardSalesInput=inputs.find(function(input){return input.dataset.section==='summary'&&input.dataset.columnCode==='card_subtotal'}),cardSales=read(cardSalesInput);
+  // Readiness only: does not infer, fill or save a missing cash receipt.
+  if(cardSalesCheck===true&&cardSales==null)cardSales=0;
   atomic.forEach(function(input){rowKeys[input.dataset.rowKey]=true});
   var rowMismatchKeys=Object.keys(rowKeys).filter(function(key){var values=atomic.filter(function(input){return input.dataset.rowKey===key}),total=staffTotal.find(function(input){return input.dataset.rowKey===key}),a=sum(values),t=read(total);return(a!==0||t!=null)&&(t==null||Math.abs(a-t)>tol)}),
     categoryMismatchCodes=category.filter(function(total){var a=sum(atomic.filter(function(input){return input.dataset.columnCode===total.dataset.columnCode})),t=read(total);return(a!==0||t!=null)&&(t==null||Math.abs(a-t)>tol)}).map(function(input){return input.dataset.columnCode}),
@@ -1527,11 +1529,11 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=622"></script>
-  <script src="operations-daily-correction.js?v=622"></script>
-  <script src="operations-daily-electronic.js?v=622"></script>
-  <script src="operations-monthly-workbench.js?v=622"></script>
-  <script src="operations-daily-recognition.js?v=622"></script>
+  <script src="operations-daily-review.js?v=623"></script>
+  <script src="operations-daily-correction.js?v=623"></script>
+  <script src="operations-daily-electronic.js?v=623"></script>
+  <script src="operations-monthly-workbench.js?v=623"></script>
+  <script src="operations-daily-recognition.js?v=623"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>

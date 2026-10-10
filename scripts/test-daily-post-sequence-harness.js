@@ -27,10 +27,17 @@ module.exports=async function({sql,json,q,C,S,A,D,V,U}){
  for(const [start,end] of [['async function saveDailySheetDraft(','\nasync function dailySheetCorrectionStatus('],['async function confirmDailySheetDraft(','\nasync function importCenter(']]){
   const a=edge.indexOf(start),b=edge.indexOf(end,a);vm.runInContext(stripTypeScriptTypes(edge.slice(a,b)),context);
  }
- // Model the user changing known card-sales candidate to explicit manual zero
+ // Reproduce the reported blank new-card receipt; the final user choice supplies zero
  // and adopting remaining nonempty recognition candidates on final confirmation.
  sql(`update zysyr_daily_sheet_cells set manual_override=false,source_method='codex_local_candidate' where row_label<>'';
- update zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=null where column_code='card_subtotal';`);
+ update zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=null where column_code='card_subtotal';
+ update zysyr_daily_sheet_drafts set ocr_raw_result=ocr_raw_result #- '{autofill,daily_total_policy}';
+ update zysyr_daily_sheet_cells set ocr_numeric=null,corrected_numeric=null,manual_override=false where column_code='card_consumption';
+ update zysyr_daily_sheet_cells set ocr_numeric=60,corrected_numeric=60 where column_code='alipay';
+ insert into zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,ocr_numeric,manual_override,corrected_numeric)
+ values('${C}','${S}','${D}','payment','payment','Synthetic','wechat','wechat',40,18,'payment_method','codex_local_candidate',20,false,null),
+ ('${C}','${S}','${D}','payment','payment','Synthetic','group_buy','group_buy',40,19,'payment_method','codex_local_candidate',20,false,null),
+ ('${C}','${S}','${D}','summary','summary','Synthetic','membership_card','membership_card',30,20,'summary_value','blank_template',null,true,null);`);
  const server=http.createServer(async(req,res)=>{try{
   if(req.url==='/synthetic-api'){
    let data='';for await(const chunk of req)data+=chunk;const {op,p}=JSON.parse(data);let out;
@@ -52,15 +59,17 @@ module.exports=async function({sql,json,q,C,S,A,D,V,U}){
    api=async(op,p)=>{const response=await fetch('/synthetic-api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op,p})});const out=await response.json();if(!response.ok)throw Error(out.error);return out;};
    state.imports.sheet=s;state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
   },initial);
-  await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
+  assert.equal(await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').inputValue(),'');
+  assert.match(await page.locator('#daily-detail-controls').innerText(),/空白待确认/);
   await page.locator('#daily-detail-confirm-top').click();
   try{await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed',{},{timeout:15000});}
   catch(e){console.error(await page.locator('#daily-detail-note').innerText());throw e;}
-  assert.equal(await page.evaluate(()=>sequenceDialogs.length),1);assert.match(await page.evaluate(()=>sequenceDialogs[0]),/没有未知收款/);
+  assert.equal(await page.evaluate(()=>sequenceDialogs.length),1);assert.match(await page.evaluate(()=>sequenceDialogs[0]),/没有未知收款/);assert.match(await page.evaluate(()=>sequenceDialogs[0]),/本日没有充值/);
   assert.equal(calls.filter(x=>x.name==='rpc/zysyr_save_daily_sheet_cells').length,1);
   const posts=calls.filter(x=>x.name==='rpc/zysyr_confirm_daily_sheet_reviewed');assert.equal(posts.length,1);assert.equal(posts[0].p.p_expected_revision,1);
   assert.equal(posts[0].p.p_actor_user_id,A);assert.equal(posts[0].p.p_actor_auth_user_id,U);assert.equal(uploads.length,1);
   assert.equal(sql("select corrected_numeric from zysyr_daily_sheet_cells where column_code='card_subtotal'"),'0.00');
+  assert.equal(sql("select corrected_numeric is null and manual_override from zysyr_daily_sheet_cells where column_code='membership_card'"),'t','ordinary manual blank retained through actual save and archive');
   assert.equal(sql("select count(*) from zysyr_private.daily_cash_reviews where edit_revision=1"),'1');
   assert.equal(sql("select ocr_raw_result#>>'{autofill,cash_receipts,cash_channels_complete}' from zysyr_daily_sheet_drafts"),'false');
   await page.locator('#daily-detail-confirm-top').click({force:true});assert.equal(calls.filter(x=>x.name==='rpc/zysyr_confirm_daily_sheet_reviewed').length,1,'confirmed page never repeats post');

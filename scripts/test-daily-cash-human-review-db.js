@@ -134,7 +134,7 @@ async function main(){let created=false;try{
  assert.equal(sql("select display_data#>>'{validation,valid}' from zysyr_report_uploads"),'true','archive stores final attested validation');
  const posted={daily_report_status:sql('select status from zysyr_daily_reports')};assert.equal(posted.daily_report_status,'approved');
  assert.equal(sql('select count(*) from zysyr_report_cells'),sql('select count(*) from zysyr_daily_sheet_cells'),'every logical cell retained');
- assert.equal(sql("select count(*) from zysyr_report_cells where sheet_name='原图电子日报/payment' and numeric_value=0"),'3');
+ assert.equal(sql("select count(*) from zysyr_report_cells where sheet_name='原图电子日报/payment' and numeric_value=0"),'2','blank stored-value field stays blank rather than synthesized zero');
  assert.equal(sql("select count(*) from zysyr_daily_report_lines l join zysyr_report_cells c on c.id=l.source_report_cell_id where l.amount=c.numeric_value"),'1','income maps to its exact logical source');
  assert.equal(sql("select status from zysyr_daily_sheet_drafts"),'confirmed');assert.equal(sql("select count(*) from zysyr_daily_sheet_versions"),'1');assert.equal(sql("select sum(amount) from zysyr_income_records where status='approved'"),'100.00');
  console.log('Cash review and full browser/Edge/PostgreSQL sequence: old real-shaped coordinate409 reproduced and fixed; atomic consent/post and lineage verified;  ordinary live posting succeeds; identity/scope/ACL/unknown/difference/revision/source/revocation/idempotency/immutable proof and rollback passed.');

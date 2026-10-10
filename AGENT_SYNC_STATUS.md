@@ -1,3 +1,8 @@
+## 2026-10-10 · blank-receipt final choice (App version: v623)
+
+- Final posting now includes one explicit choice for an otherwise balanced sheet with blank new-card receipts: confirm no such receipts and post, or cancel to enter the real amount. This never derives financial truth from equality. Ordinary empty details and deliberate manual blanks remain unchanged. A visible pending receipt status explains the missing fact alongside the totals; complete sheets retain the normal black posting button.
+- Read-only incident follow-up distinguished a successfully posted day from a different unposted blank-receipt day. No real posting/review/collector operation was replayed. Compatibility requires no migration or Edge change; preserve latest shared-main learning content. Regression must reproduce the blocked blank flow before testing actual page/Edge/PG posting, cancellation, ordinary blanks, mismatches and races. Physical mobile and real finance acceptance remain open.
+
 ## 2026-10-10 · simpler final daily confirmation and archival coordinates (App version: v622)
 
 - Repeated physical coordinates can violate report-cell uniqueness during final daily posting. The transaction rolls back on conflict; logical archival coordinates remove the collision while preserving original cells and financial guards.
