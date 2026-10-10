@@ -1,0 +1,29 @@
+{
+  "batch": "aesthetic-2026-10-10",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "251cf3d881797cdbad47772a5b6f7011cbaa0c37",
+  "publishedDate": "2026-10-10",
+  "author": "Original AI-assisted editorial training",
+  "contentType": "original-fictional-aesthetic-teaching",
+  "reviewStatus": "editorially_checked",
+  "scientificValidation": false,
+  "evidenceStrength": "weak: conditional design reasoning, not tested treatment efficacy; on-site observations and customer feedback required",
+  "sourceUrl": "https://taoyouming308-ui.github.io/img/aesthetic-training/2026-10-10-waves-ponytail.jpg",
+  "image": {
+    "path": "img/aesthetic-training/2026-10-10-waves-ponytail.jpg",
+    "sha256": "d876a4099d04c7dec45ded42e734baafb4ee0b345c13bc92d28b9ff4e102fdce",
+    "provenance": "Original AI-generated fictional person for this batch; JPEG encoding only, no crop or visual alteration",
+    "views": "Same fictional person, loose naturally wavy hair and ordinary low ponytail starting states; not before/after",
+    "rights": "User-authorized original AI illustration; no customer or third-party photograph"
+  },
+  "checks": [
+    "Image observations, scenario assumptions and on-site unknowns separated",
+    "No face-shape formula, diagnosis, chemical recipe or efficacy promise",
+    "Six conditional design/communication sections and five self-review prompts",
+    "Exactly one stable Shanghai-date case; previous two case objects unchanged",
+    "Retired scientific feed, app code, versions, backend, finance and schedules untouched"
+  ],
+  "previousFeedSha256": "b78de5e01ada94d4a1b2d9eb91ea8fcdcbd5a4217f9d770b3f862c1d509f47cc",
+  "publishedFeedSha256": "7eaade7f1797c7b9496b60eea234968b92c6a2ceab8ac7946e5e5277fb18ebc3",
+  "publicationAuthorization": "Continuing user-authorized daily original aesthetic training publication; authorization is not scientific validation"
+}

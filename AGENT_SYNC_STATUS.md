@@ -6,6 +6,13 @@
 
 # Agent Sync Status
 
+## 2026-10-10 · Original daily aesthetic case (App version: v622 unchanged)
+
+- Current owner: Codex. Isolated content/aesthetic-2026-10-10 started from clean github/main v621 with recovery archive; financial repair PR25 takes publication priority. Fast-forwarded to latest github/main 251cf3d v622 after that repair merged, preserving all its source/version changes. Continuing user authorization covers today's one original illustrated case; no new schedule or legacy scientific batch.
+- Exactly one stable Asia/Shanghai Oct10 case: naturally wavy hair, everyday low ponytail, forehead coverage versus face-framing flexibility and maintenance. New original fictional loose/low-tied image, starting states only; not a real customer or before/after. Six conditional reasoning sections, five self-review prompts; previous Oct8/9 objects unchanged. Editorial audit and image hash in docs/aesthetic-training/reviews/2026-10-10.json; design hypotheses require on-site/customer validation, not scientific proof.
+- Only feed, original image, editorial audit and necessary changelog/handoff. App/runtime/version/retired feed/backend/finance/business/schema/permissions/schedules unchanged. Per-day lock prevents duplication; shared publication window is acquired only after the urgent repair's Pages deployment. Related 390/1280 content, legacy calculator, learning/admin and empty/error regressions pass; full shared gate and final PR/CI/Pages/hash checks remain mandatory. No employee authentication or production writes in previews.
+
+
 ## 2026-10-10 · Audited daily cash-source review (App version: v621)
 
 - Latest base github/main 4da00c8 v620; isolated fix/daily-cash-human-review, daily archive retained. User approved compatible frontend/backend/schema release at 16:01 and clarified scope again at 16:25. Historical collection and OS scheduling remain untouched; no real Jan1/Jan2 values, reviews or posting are performed.
