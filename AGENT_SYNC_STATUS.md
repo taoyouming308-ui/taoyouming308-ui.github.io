@@ -1,5 +1,12 @@
 # Agent Sync Status
 
+## 2026-10-10 · Daily card-sales missing evidence feedback (App version: v620)
+
+- User-authorized repair from github/main 95d7d52 v619; isolated checkout and daily archive retained. Missing card_subtotal is now identified as unverified recharge/card-sale external receipts, shown amber rather than a false numeric total mismatch. Known numeric contradictions remain red; posting validation is unchanged.
+- Existing explicit source zero for card_subtotal now renders as 0 and remains a review candidate instead of being hidden/skipped as blank. Manual zero stays 0; manual blank/value and confirmed records are never rewritten. No inference from equal totals, raw card consumption, missing rows or failed requests. Current parser rejects empty summary rows as unavailable; there is no trusted no-record closure to convert automatically.
+- Synthetic regression covers zero/unknown/mismatch, malformed/403/no-row source rejection, manual/confirmed protection and card consumption separation. Full shared hook/CI/Pages required. Jan1/Jan2 remain unposted and need sale/source verification and candidate confirmation; this release writes no real data, deploys no backend/migration and changes no permissions. Rollback forward; no forced refresh.
+
+
 ## 2026-10-09 · Clear native aesthetic case picker (App version: v619 preview only)
 
 - Current owner: Codex. Latest base github/main d4cae94 v618 in isolated ui/aesthetic-case-selector; clean start and recovery archive verified. User asked for a more obvious case picker; additional UI publication is not yet authorized. Do not merge or deploy this branch.

@@ -151,7 +151,7 @@
   function showProblem(message) {
     notice(message);
     toast(message);
-    var target = grid().querySelector('.control-mismatch') || document.getElementById('daily-detail-confirm-help');
+    var target = grid().querySelector('.control-mismatch') || grid().querySelector('.control-pending') || document.getElementById('daily-detail-confirm-help');
     if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (target.focus) target.focus(); }
   }
   function controlDifferences(c) {
@@ -170,10 +170,11 @@
     return [
       ['stylist_category_subtotal', '造型区总小计', c.stylistSubtotal, c.staffAtomic, '员工明细合计'],
     ].concat(receiptChecks).filter(function (item) {
+      if (c.cashMode && c.cardSales == null && item[0] === 'summary_grand') return false;
       return item[2] == null || item[3] == null || Math.abs(item[2] - item[3]) > 0.01;
     }).map(function (item) {
-      return { role: item[0], message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) };
-    });
+      return { role: item[0], kind: item[2] == null || item[3] == null ? 'unknown' : 'mismatch', message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) };
+    }).concat(c.cashMode && c.cardSales == null ? [{ role: 'summary_grand', columnCode: 'card_subtotal', kind: 'unknown', message: '充值售卡实收未核实（汇总栏卡类小计为空白），无法核对汇总总计；卡金消费不是充值售卡实收，不能凭总计相等推定为0' }] : []);
   }
   function localBlockReason() {
     var sheet = state.imports.sheet, c = calculateDailyControls(grid());
@@ -186,7 +187,7 @@
     if (!approved) return '请先上传当天原始日报，并完成原件审核。';
     if (!c.valid) {
       var differences = controlDifferences(c);
-      return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
+      return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
     return '';
   }
@@ -198,11 +199,14 @@
     var uncertain = uncertainPosts.has(contextKey(context()));
     var writable = sheet.permissions && sheet.permissions.write && !confirmed && !uncertain && (!sheet.locked || sheet.daily_unlock_approved);
     var dirty = dailySheetDirtyCount(), pending = pendingCandidates().length;
-    var differences = controlDifferences(calculateDailyControls(grid()));
+    var controls = calculateDailyControls(grid()), differences = controlDifferences(controls);
     grid().querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
       var issue = differences.find(function (item) { return item.role === input.dataset.role; });
       input.setAttribute('aria-label', (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel);
-      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) input.classList.toggle('control-mismatch', !!issue);
+      var pendingSales = !confirmed && controls.cashMode && controls.cardSales == null && input.dataset.section === 'summary' && input.dataset.columnCode === 'card_subtotal';
+      input.classList.toggle('control-pending', pendingSales || !!issue && issue.kind === 'unknown');
+      if (pendingSales) input.classList.remove('control-mismatch');
+      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) input.classList.toggle('control-mismatch', !!issue && issue.kind !== 'unknown');
       input.readOnly = !writable;
     });
     grid().querySelectorAll('[data-row-label-input]').forEach(function (input) { input.readOnly = !writable; });
