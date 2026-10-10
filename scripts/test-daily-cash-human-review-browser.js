@@ -44,8 +44,9 @@ async function run(){
   const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
   assert.equal(await page.locator('#daily-cash-review-panel').count(),0);
+  await page.evaluate(()=>syntheticCancel=true);
   await page.locator('#daily-detail-confirm-top').click();
-  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm')),false,'unknown cannot be posted');
+  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save'||x.op==='daily_sheet_confirm')),false,'cancelled blank choice never writes');
   const sales=page.locator('[data-section="summary"][data-column-code="card_subtotal"]');await sales.fill('0');
   await page.evaluate(()=>syntheticCancel=true);await page.locator('#daily-detail-confirm-top').click();
   assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save'||x.op==='daily_sheet_confirm')),false,'cancel writes nothing');
@@ -57,6 +58,44 @@ async function run(){
   assert.match(await page.evaluate(()=>syntheticDialogs[0]),/充值售卡实收/);
   assert.equal(await page.evaluate(()=>Number(syntheticSheet.cells.find(x=>x.column_code==='card_subtotal').corrected_numeric)),0);
   assert.deepEqual(errors,[]);await page.close();
+ }
+ // Screenshot-shaped blank receipt: known three-channel totals, ordinary blanks,
+ // no earned-card policy. Synthetic normalized amounts contain no business data.
+ for(const width of [390,1280])for(const mode of ['blank-post','blank-cancel','blank-unknown','blank-mismatch','blank-no-source']){
+  const page=await browser.newPage({viewport:{width,height:900}});
+  await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
+  await page.evaluate(mode=>{
+   syntheticSheet.draft.ocr_raw_result.autofill.daily_total_policy=null;
+   syntheticSheet.cells.find(x=>x.column_code==='alipay').ocr_numeric=60;
+   const add=(id,section,key,code,role,value)=>syntheticSheet.cells.push({id,section_code:section,row_key:key,row_label:'Synthetic',column_code:code,column_label:code,cell_role:role,row_number:30,column_number:15,ocr_numeric:value,manual_override:true,corrected_numeric:value,source_method:'blank_template'});
+   add('synthetic-wechat','payment','payment','wechat','payment_method',20);
+   add('synthetic-group','payment','payment','group_buy','payment_method',20);
+   add('synthetic-blank','stylist','stylist_1','perm','staff_value',null);
+   syntheticSheet.cells.find(x=>x.column_code==='card_consumption').ocr_numeric=null;
+   if(mode==='blank-mismatch')syntheticSheet.cells.find(x=>x.cell_role==='payment_total').ocr_numeric=99;
+   if(mode==='blank-no-source')syntheticSheet.cash_review.original_ready=false;
+   state.imports.sheet=structuredClone(syntheticSheet);renderDailySheetDetail();
+   if(mode==='blank-unknown'){
+    document.querySelector('[data-daily-cell="synthetic-blank"]').dataset.autofillUnknown='1';renderDailyDetailControls();
+   }
+   syntheticCancel=mode==='blank-cancel';syntheticDialogs=[];
+  },mode);
+  assert.equal(await page.locator('[data-column-code="card_subtotal"][data-section="summary"]').inputValue(),'');
+  assert.match(await page.locator('#daily-detail-controls').innerText(),/空白待确认/,'all-green totals never imply receipt completeness');
+  await page.locator('#daily-detail-confirm-top').click();
+  if(mode==='blank-post'){
+   await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
+   assert.equal(await page.evaluate(()=>syntheticDialogs.length),1);
+   assert.match(await page.evaluate(()=>syntheticDialogs[0]),/本日没有充值/);
+   assert.equal(await page.evaluate(()=>Number(syntheticSheet.cells.find(x=>x.column_code==='card_subtotal').corrected_numeric)),0);
+   assert.equal(await page.evaluate(()=>syntheticSheet.cells.find(x=>x.id==='synthetic-blank').corrected_numeric),null,'ordinary manual blank retained');
+   assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),1);
+  }else{
+   assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save'||x.op==='daily_sheet_confirm')),false);
+   assert.equal(await page.locator('[data-column-code="card_subtotal"][data-section="summary"]').inputValue(),'','no inferred zero before explicit consent');
+   assert.equal(await page.evaluate(()=>syntheticDialogs.length),mode==='blank-cancel'?1:0);
+  }
+  await page.close();
  }
  const page=await browser.newPage();await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
  for(const mode of ['difference','race','lost']){

@@ -91,13 +91,14 @@ assert.equal(context.pendingCandidates().length,1,'visible source zero remains a
 vm.runInContext(review.slice(review.indexOf('  function localBlockReason('),review.indexOf('  var renderControlsBase')),context);
 context.state.user={role:'finance'};context.state.imports.sheet.permissions={write:true};
 context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
-context.grid=()=>({querySelectorAll:()=>fields});
+context.grid=()=>({querySelectorAll:()=>fields,querySelector:()=>fields.find(x=>x.dataset.section==='summary'&&x.dataset.columnCode==='card_subtotal')});
 set(true,{sales:0,grand:100,payment:100,channelsComplete:false});
 assert.match(context.localBlockReason(),/收款来源核实服务须可用/);
 context.state.imports.sheet.cash_review={status:'required',source_token:'a'.repeat(64),original_ready:true};
 assert.equal(context.localBlockReason(),'','known numbers can proceed to one explicit final source confirmation');
 set(true,{sales:null,grand:100,payment:100});
-assert.match(context.localBlockReason(),/充值售卡实收未核实/);
+assert.equal(context.localBlockReason(),'','balanced blank receipt can request explicit final no-business choice');
+assert.equal(context.calculateDailyControls(context.grid()).cardSales,null,'readiness does not infer or fill zero');
 set(true,{sales:300,grand:100,payment:100});
 assert.match(context.localBlockReason(),/汇总总计为/);
 assert.doesNotMatch(context.localBlockReason(),/未核实字段/);
