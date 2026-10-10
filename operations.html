@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="621">
+<html lang="zh-CN" data-version="622">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -389,7 +389,7 @@
           <div class="daily-month-bar"><button id="daily-month-prev" class="ghost" type="button">上一月</button><select id="daily-month" class="hidden" aria-hidden="true" tabindex="-1"></select><button id="daily-month-next" class="ghost" type="button">下一月</button><button id="daily-report-refresh" class="ghost" type="button">刷新</button><button id="daily-open-import" class="import-entry ghost" type="button">填写日报</button></div>
           <div id="daily-report-calendar"></div>
           <div id="daily-report-detail" class="hidden">
-            <section class="daily-electronic"><div class="finance-record-head"><div><h3 style="margin:0" id="daily-detail-title"></h3><div id="daily-detail-meta" class="help"></div></div><div class="compact-actions"><span id="daily-detail-state" class="voucher-status draft">待填写</span><span id="daily-detail-unsaved" class="voucher-status unsaved hidden">有未保存修改</span><button id="daily-detail-unlock" class="secondary hidden" type="button">申请修改锁账月份</button><button id="daily-detail-save-top" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm-top" class="primary" type="button" disabled>入账</button><button id="daily-readonly-back" class="ghost" type="button">← 返回月历</button></div></div><div id="daily-detail-historical-validation" class="candidate-warning hidden" role="alert" aria-live="polite"></div><section id="daily-cash-review-panel" class="candidate-warning hidden" aria-label="人工核实收款来源"><strong>人工核实收款来源（不入账）</strong><p id="daily-cash-review-status" role="status"></p><p>先核对原始日报和收款凭证。充值售卡实收填汇总“卡类小计”；只有确认无业务时才填0。卡金消费不是充值，未知不能填0。</p><button id="daily-cash-review-locate" type="button" class="secondary">定位充值售卡实收</button><div class="daily-cash-review-checks"><label><input id="daily-cash-review-original" type="checkbox">我已逐格核对已审核原件，金额及空白含义均已核实</label><label><input id="daily-cash-review-channels" type="checkbox">我已核实各收款渠道及其空白，没有尚未知晓的收款</label><label><input id="daily-cash-review-sales" type="checkbox">我已核实充值售卡实收并填明确金额（确认无业务填0）</label></div><label for="daily-cash-review-reason">核实说明（必填，至少5字）</label><textarea id="daily-cash-review-reason" maxlength="500" rows="2"></textarea><button id="daily-cash-review-submit" type="button" class="secondary">保存核对并确认来源（不入账）</button><p>集中保存已核对的非空候选，不替你填写未知值；金额、原件或来源变化后重新核实。随后仍须主动点击“入账”。</p></section><div id="daily-detail-grid"></div><div id="daily-detail-controls" class="daily-control-grid"></div><div id="daily-detail-candidates" class="help"></div><details class="daily-more-options"><summary>备注 / 修改说明（选填）</summary><div class="field"><label for="daily-detail-reason">说明会随本次操作保存</label><input id="daily-detail-reason" maxlength="500" placeholder="例如：对照原图修正金额"></div></details><div id="daily-detail-note" class="daily-readonly-note hidden" role="status" aria-live="polite"></div><div class="daily-confirm-bar"><div id="daily-detail-confirm-help" class="help">保存草稿可继续编辑；入账后计入当天和月报。</div><div class="actions"><button id="daily-detail-save" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm" class="primary" type="button" disabled>入账</button></div></div></section>
+            <section class="daily-electronic"><div class="finance-record-head"><div><h3 style="margin:0" id="daily-detail-title"></h3><div id="daily-detail-meta" class="help"></div></div><div class="compact-actions"><span id="daily-detail-state" class="voucher-status draft">待填写</span><span id="daily-detail-unsaved" class="voucher-status unsaved hidden">有未保存修改</span><button id="daily-detail-unlock" class="secondary hidden" type="button">申请修改锁账月份</button><button id="daily-detail-save-top" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm-top" class="primary" type="button" disabled>入账</button><button id="daily-readonly-back" class="ghost" type="button">← 返回月历</button></div></div><div id="daily-detail-historical-validation" class="candidate-warning hidden" role="alert" aria-live="polite"></div><div id="daily-detail-grid"></div><div id="daily-detail-controls" class="daily-control-grid"></div><div id="daily-detail-candidates" class="help"></div><details class="daily-more-options"><summary>备注 / 修改说明（选填）</summary><div class="field"><label for="daily-detail-reason">说明会随本次操作保存</label><input id="daily-detail-reason" maxlength="500" placeholder="例如：对照原图修正金额"></div></details><div id="daily-detail-note" class="daily-readonly-note hidden" role="status" aria-live="polite"></div><div class="daily-confirm-bar"><div id="daily-detail-confirm-help" class="help">保存草稿可继续编辑；入账后计入当天和月报。</div><div class="actions"><button id="daily-detail-save" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm" class="primary" type="button" disabled>入账</button></div></div></section>
             <section class="daily-original" style="margin-top:16px"><div class="finance-record-head"><div><strong>原始日报表 / 原始凭证（永久留底）</strong><div class="help">自动绑定当前门店、当前日期和本张电子日报；误传文件只作废、不删除，同步日报上传仅留存凭证，可手动核对差异；未同步日报照片可自动识别为空白格候选。</div></div><div class="daily-source-actions"><button id="daily-detail-upload" class="daily-source-action upload" type="button"><span class="action-label">上传 / 重传正确日报</span><span class="action-help">支持 JPG、PNG、PDF、Excel</span></button></div></div><div id="daily-source-action-status" class="daily-source-status" role="status" aria-live="polite">同步日报上传原图不会覆盖表格；未同步日报 JPG / PNG 上传后自动识别。</div><div id="daily-detail-original-alert" class="candidate-warning"></div><div id="daily-detail-attachments" class="finance-list"></div><div id="daily-detail-preview" class="daily-original-stage hidden"><img id="daily-detail-image" alt="原始日报预览"></div></section>
             <section class="form-card" style="margin-top:16px"><h3>日报修改记录</h3><div class="help">每次修改的前值、后值、修改人、时间和原因永久保留。</div><div id="daily-detail-history" class="finance-list"></div></section>
           </div>
@@ -698,13 +698,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=621"></script>
-<script src="operations-staff-view.js?v=621"></script>
-<script src="operations-monthly-daily-performance.js?v=621"></script>
-  <script src="operations-report-fit.js?v=621"></script>
-  <script src="operations-auth-bridge.js?v=621"></script>
-  <script src="operations-voucher-preview.js?v=621"></script>
-  <script src="operations-voucher-view.js?v=621"></script>
+<script src="operations-time.js?v=622"></script>
+<script src="operations-staff-view.js?v=622"></script>
+<script src="operations-monthly-daily-performance.js?v=622"></script>
+  <script src="operations-report-fit.js?v=622"></script>
+  <script src="operations-auth-bridge.js?v=622"></script>
+  <script src="operations-voucher-preview.js?v=622"></script>
+  <script src="operations-voucher-view.js?v=622"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -870,7 +870,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=621';
+      script.src='operations-petty-cash-evidence.js?v=622';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1527,11 +1527,11 @@ function calculateDailyControls(root){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=621"></script>
-  <script src="operations-daily-correction.js?v=621"></script>
-  <script src="operations-daily-electronic.js?v=621"></script>
-  <script src="operations-monthly-workbench.js?v=621"></script>
-  <script src="operations-daily-recognition.js?v=621"></script>
+  <script src="operations-daily-review.js?v=622"></script>
+  <script src="operations-daily-correction.js?v=622"></script>
+  <script src="operations-daily-electronic.js?v=622"></script>
+  <script src="operations-monthly-workbench.js?v=622"></script>
+  <script src="operations-daily-recognition.js?v=622"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>

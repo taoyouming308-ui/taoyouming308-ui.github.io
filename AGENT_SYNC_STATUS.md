@@ -1,3 +1,9 @@
+## 2026-10-10 · simpler final daily confirmation and archival coordinates (App version: v622)
+
+- Real v621 409 at Free Jan1: repeated physical coordinates hit report-cell uniqueness. Read-only verification: draft revision13/manual zero retained, current proof valid, no formal report/income/version/photo batch. No real posting attempted.
+- Definition-only logical archival coordinates preserve every original cell and image; registration and atomic income lineage use the same mapping. No amount/source/collector rewrite. One explicit final dialog attests original/channels/card-sale receipts and posts transactionally; no repeated checkboxes or required free-text reason. Unknown/difference/scope/revision/source/authority guards and lost-response readback remain.
+- Synthetic duplicated-row/channel PostgreSQL reproduced old409; actual page→Edge save/read/archive→transactional proof/post→PG17 ledger passed with one dialog, revision increment and manual0. Mobile/desktop cancellation, unknown/difference/source-race/lost-reply checks passed; shared hook and PR CI remain release gates; backend migration/Edge precede Pages. Forward rollback preserves all proofs/history. Physical iOS Safari and real finance confirmation remain user acceptance.
+
 # Agent Sync Status
 
 ## 2026-10-10 · Audited daily cash-source review (App version: v621)

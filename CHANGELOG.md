@@ -1,3 +1,9 @@
+## 2026-10-10 · v622 simpler final daily confirmation and archival coordinates
+
+- Real v621 409 at Free Jan1: repeated physical coordinates hit report-cell uniqueness. Read-only verification: draft revision13/manual zero retained, current proof valid, no formal report/income/version/photo batch. No real posting attempted.
+- Definition-only logical archival coordinates preserve every original cell and image; registration and atomic income lineage use the same mapping. No amount/source/collector rewrite. One explicit final dialog attests original/channels/card-sale receipts and posts transactionally; no repeated checkboxes or required free-text reason. Unknown/difference/scope/revision/source/authority guards and lost-response readback remain.
+- Synthetic duplicated-row/channel PostgreSQL and actual-page/API full sequence verification required before publication; backend migration/Edge precede Pages. Forward rollback preserves all proofs/history. Physical iOS Safari and real finance confirmation remain user acceptance.
+
 ## v621 · 2026-10-10
 
 财务可主动核对原件、收款渠道及充值售卡实收，填写说明后保存独立来源审核，再单独确认入账。审核绑定真实财务身份、门店、草稿版本及来源/金额指纹；变化后失效。未知与差额继续拦截，原始来源缺口不改写。新增隔离数据库、接口和桌面/手机实际页面回归；不代确认真实日报，不修改历史补采和调度。

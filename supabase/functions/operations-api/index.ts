@@ -4465,6 +4465,7 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     const error = data && typeof data === "object" ? data as JsonRecord : {};
     const code = cleanText(error.message ?? error.code, 160);
     const sqlState = cleanText(error.code, 20);
+    if (sqlState === "23505" && code.includes("zysyr_report_cells")) throw new Error("日报归档单元格位置重复，本次未入账；请更新页面后重试（DAILY_ARCHIVE_COORDINATE_CONFLICT）");
     console.error("finance rpc failed", path, response.status, sqlState);
     if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
     if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
@@ -5956,7 +5957,10 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
   if (expectedRevision !== null && Number(draft.edit_revision) !== expectedRevision) throw new Error("日报已被其他页面修改，请刷新、重新核对后再入账");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
-  if (validation.valid !== true) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
+  const cashConsent = payload.cash_source_confirmation && typeof payload.cash_source_confirmation === "object" ? payload.cash_source_confirmation as JsonRecord : null;
+  if (cashConsent && (cashConsent.statement !== "cash-original-channels-sales-v1" || !/^[a-f0-9]{64}$/.test(cleanText(cashConsent.source_token, 100))
+    || expectedRevision === null)) throw new Error("请重新核对收款来源并确认入账");
+  if (validation.valid !== true && !cashConsent) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
   const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);
   const sourceHash = await sha256Bytes(bytes);
@@ -5977,13 +5981,16 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     source_voucher_id: draft.source_voucher_id,
     validation, original_image_preserved: true };
   try {
-    const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_sheet", {
+    const saved = await financeRpcSaved(cashConsent ? "rpc/zysyr_confirm_daily_sheet_reviewed" : "rpc/zysyr_confirm_daily_sheet", {
       p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId,
       p_report: { original_filename: cleanText(voucher.original_filename, 200), mime_type: mime,
         size_bytes: bytes.length, sha256: sourceHash, bucket_id: REPORT_BUCKET,
         object_path: objectPath, display_data: displayData },
       p_is_business_day: payload.is_business_day == null ? null : Boolean(payload.is_business_day), p_reason: reason,
       ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
+      ...(cashConsent ? { p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
+        p_cash_source_token: cleanText(cashConsent.source_token, 100), p_cash_request_id: uuidValue(cashConsent.request_id, "核实请求编号无效"),
+        p_cash_statement: cashConsent.statement } : {}),
     });
     return { saved, confirmed: true, formal_daily_report_created: true, income_created_from: "nonzero_stylist_atomic_cells_only", meiguanjia_used: false };
   } catch (error) {

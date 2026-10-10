@@ -73,8 +73,6 @@
     var focused = document.activeElement;
     return !!(window.ZysyrDailyCorrection && window.ZysyrDailyCorrection.protectedInput())
       || dailySheetDirtyCount() > 0 || !!document.getElementById('daily-detail-reason').value.trim()
-      || !!document.getElementById('daily-cash-review-panel')?.querySelector('input:checked')
-      || !!document.getElementById('daily-cash-review-reason')?.value.trim()
       || !!detail.querySelector('details[open]')
       || Array.from(detail.querySelectorAll('input[type=file]')).some(function (input) { return input.files.length > 0; })
       || (detail.contains(focused) && focused.matches('input,textarea,select'));
@@ -188,7 +186,7 @@
     });
     if (!approved) return '请先上传当天原始日报，并完成原件审核。';
     if (!c.valid) {
-      if (c.numericValid && c.sourceMissing) return '收款来源仍待人工核实，请完成上方人工核实收款来源，保存确认后再入账。';
+      if (c.numericValid && c.sourceMissing) return sheet.cash_review?.source_token && sheet.cash_review?.original_ready ? '' : '请先上传并审核原始日报；收款来源核实服务须可用。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -239,84 +237,8 @@
       button.disabled = !writable || dirty === 0 || !!active;
     });
     if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
-    renderCashReviewPanel();
     lockControls();
   };
-
-  var cashPanelKey = '';
-  function renderCashReviewPanel() {
-    var panel = document.getElementById('daily-cash-review-panel');
-    if (!panel) return;
-    var sheet = state.imports.sheet, meta = sheet?.draft?.ocr_raw_result?.autofill?.cash_receipts;
-    var relevant = !!meta && meta.policy === 'operating-external-cash-v1' && sheet.draft.status === 'draft';
-    panel.classList.toggle('hidden', !relevant);
-    if (!relevant) return;
-    var review = sheet.cash_review || {}, key = sheet.draft.id + ':' + sheet.draft.edit_revision + ':' + review.source_token;
-    if (key !== cashPanelKey) {
-      ['original', 'channels', 'sales'].forEach(function (name) { document.getElementById('daily-cash-review-' + name).checked = false; });
-      document.getElementById('daily-cash-review-reason').value = '';
-      cashPanelKey = key;
-    }
-    var current = dailyCashReviewCurrent(), writable = sheet.permissions?.write && state.user.role === 'finance' && !sheet.locked && !active;
-    document.getElementById('daily-cash-review-status').textContent = current
-      ? '人工核实已记录：' + (review.reason || '') + '。可继续核对后点击入账。'
-      : review.status === 'unavailable' ? '人工核实服务暂不可用，不能据此入账；请稍后重新打开核对。'
-      : !review.original_ready ? '请先上传当天原始日报，并完成原件审核。'
-      : '尚未完成人工来源核实。先补齐明确金额、核对凭证，再勾选确认。';
-    ['original', 'channels', 'sales', 'reason'].forEach(function (name) { document.getElementById('daily-cash-review-' + name).disabled = !writable || current; });
-    document.getElementById('daily-cash-review-submit').disabled = !writable || current || !review.source_token || !review.original_ready;
-    document.getElementById('daily-cash-review-locate').disabled = !!active;
-  }
-  document.getElementById('daily-cash-review-locate')?.addEventListener('click', function () {
-    var input = grid().querySelector('[data-section="summary"][data-column-code="card_subtotal"]');
-    if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); }
-  });
-  document.getElementById('daily-cash-review-submit')?.addEventListener('click', reviewCashSources);
-  async function reviewCashSources() {
-    if (active || !state.imports.sheet) return;
-    var ctx = context(), sheet = state.imports.sheet, review = sheet.cash_review || {};
-    var reason = document.getElementById('daily-cash-review-reason').value.trim();
-    var checked = ['original', 'channels', 'sales'].every(function (name) { return document.getElementById('daily-cash-review-' + name).checked; });
-    var c = calculateDailyControls(grid());
-    if (!sheet.permissions?.write || state.user.role !== 'finance' || sheet.locked || sheet.draft.status !== 'draft') { showProblem('仅有权限的财务可核实未入账且未锁账的日报。'); return; }
-    if (!checked || reason.length < 5) { showProblem('请主动勾选原件、收款渠道及充值售卡核实，并填写至少5字的核实说明。'); return; }
-    if (!review.original_ready || !review.source_token) { showProblem('请先上传并审核当天原始日报；来源核实服务须可用。'); return; }
-    if (c.cardSales == null) { showProblem('充值售卡实收未核实：请定位卡类小计，查证后填写明确金额；只有确认无业务时才填写0。'); return; }
-    if (!c.numericValid) { showProblem('金额或项目仍有差异／未知，请先核对并补齐；来源确认不能绕过金额校验。'); return; }
-    var sourceToken = review.source_token;
-    begin('cash-review');
-    try {
-      var fresh = await checkBeforeWrite(ctx);
-      if (fresh.cash_review?.source_token !== sourceToken) throw new Error('原件或来源已变化，请重新核对后确认来源。');
-      grid().querySelectorAll('input.recognition-candidate[data-known-zero="1"]').forEach(function (input) {
-        if (!input.classList.contains('manual-edit') && input.value.trim() === '') { input.value = '0'; syncDailyAmountDisplay(input); }
-      });
-      pendingCandidates().forEach(function (input) {
-        if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
-        else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
-        input.classList.add('manual-edit');
-      });
-      if (dailySheetDirtyCount()) await persistDraft(ctx, reason, true);
-      if (!isCurrent(ctx) || state.imports.sheet.cash_review?.source_token !== sourceToken) throw new Error('日报或来源已变化，请重新核对后确认来源。');
-      notice('候选已保存，正在记录人工来源核实；不会入账…');
-      var result;
-      try {
-        result = await api('daily_sheet_cash_review', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision,
-          source_token: sourceToken, request_id: crypto.randomUUID(), reviewed_original: true, reviewed_channels: true,
-          reviewed_card_sales: true, reason: reason });
-      } catch (error) {
-        var recovered = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
-        if (recovered.cash_review?.status !== 'current' || recovered.cash_review?.source_token !== sourceToken
-          || Number(recovered.draft.edit_revision) !== ctx.revision) throw error;
-        result = recovered;
-      }
-      if (!isCurrent(ctx) || result.cash_review?.source_token !== sourceToken || Number(result.draft.edit_revision) !== ctx.revision) throw new Error('核实结果与当前日报不一致，请重新打开核对。');
-      applySheet(ctx, result);
-      if (!dailyCashReviewCurrent()) throw new Error('来源核实尚未生效，请重新核对。');
-      notice('人工核实已记录，尚未入账。请再点击入账完成最终确认。');
-    } catch (error) { if (isCurrent(ctx)) showProblem('来源核实未完成：' + error.message); }
-    finally { end(); }
-  }
 
   var lastDraftId = '';
   var renderDetailBase = renderDailySheetDetail;
@@ -467,14 +389,21 @@
     if (reason) { showProblem(reason); return; }
     if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
     var c = calculateDailyControls(grid());
-    if (!window.confirm('确认入账？\n\n门店：' + ctx.store + '\n日期：' + ctx.date + '\n金额：¥' + Number(c.grand).toFixed(2) + '\n\n点击“确定”表示：我已逐格核对原图，确认姓名、金额、空白格及支付方式正确。\n系统将保存本页修改与已核对的识别内容，通过校验后入账并计入月报。')) return;
+    var cashConsent = c.cashMode ? { statement: 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
+    if (cashConsent && (!cashConsent.source_token || !sheet.cash_review?.original_ready)) { showProblem('请先上传并审核原始日报；收款来源核实服务须可用。'); return; }
+    if (!window.confirm('确认入账？\n\n门店：' + ctx.store + '\n日期：' + ctx.date + '\n金额：¥' + Number(c.grand).toFixed(2) + '\n\n点击“确定”表示：我已核对已审核原图、姓名、金额、各收款渠道及空白含义，充值售卡实收已填写明确金额（仅确认无业务才填0），没有未知收款。\n系统将保存本页修改与已核对的识别内容，通过校验后入账并计入月报。')) return;
     var snapshot = reviewedValues();
-    var saveReason = document.getElementById('daily-detail-reason').value.trim() || '财务逐格核对原图并确认入账';
+    var saveReason = '财务确认：已核对原件、金额、收款渠道及空白含义、充值售卡实收，无未知收款并确认入账'
+      + (document.getElementById('daily-detail-reason').value.trim() ? '；备注：' + document.getElementById('daily-detail-reason').value.trim() : '');
     begin('post');
     var submitted = false;
     notice('正在保存并校验日报…');
     try {
       var latest = await checkBeforeWrite(ctx);
+      if (cashConsent && latest.cash_review?.source_token !== cashConsent.source_token) throw new Error('收款来源已变化，请重新核对后入账');
+      grid().querySelectorAll('input.recognition-candidate[data-known-zero="1"]').forEach(function (input) {
+        if (!input.classList.contains('manual-edit') && input.value.trim() === '') { input.value = '0'; syncDailyAmountDisplay(input); }
+      });
       pendingCandidates().forEach(function (input) {
         if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
         else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
@@ -492,13 +421,14 @@
       reason = localBlockReason();
       if (reason) throw new Error(reason);
       var validation = state.imports.sheet.draft.validation_result || {};
-      if (validation.valid !== true || pendingCandidates().length) {
+      if ((validation.valid !== true && !cashConsent) || pendingCandidates().length) {
         var missing = Array.isArray(validation.missing_controls) ? validation.missing_controls.join('、') : '';
         throw new Error(missing ? '后台校验未通过，需核对：' + missing : '后台校验尚未通过，请核对合计或未核对的识别内容');
       }
+      if (cashConsent && state.imports.sheet.cash_review?.source_token !== cashConsent.source_token) throw new Error('收款来源已变化，请重新核对后入账');
       notice('校验通过，正在入账…');
       submitted = true;
-      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, is_business_day: null, reviewed_all: true, reason: saveReason });
+      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, is_business_day: null, reviewed_all: true, reason: saveReason, cash_source_confirmation: cashConsent });
       var posted = null;
       try { posted = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }); } catch (_) {}
       await finishPosted(ctx, posted && posted.draft.status === 'confirmed' ? posted : null);
