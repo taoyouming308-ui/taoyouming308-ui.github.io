@@ -58,7 +58,9 @@ async function main(){let created=false;try{
   fail('begin; update zysyr_daily_sheet_cells set '+mutation+';'+call(),/VALUES_INCOMPLETE/);assert.equal(snapshot(),before);
  }
  fail("begin;update zysyr_voucher_attachments set audit_status='rejected';"+call(),/SOURCE_CHANGED|APPROVED_ORIGINAL/);assert.equal(snapshot(),before);
- assert.equal(current(),'required');assert.equal(json(call()).status,'current');assert.equal(current(),'current');
+ assert.equal(current(),'required');
+ assert.equal(json("set request.jwt.claim.role='';set request.jwt.claims='{\"role\":\"service_role\"}';select public.zysyr_daily_cash_review_status("+[C,S,D].map(q).join(',')+");").status,'required','modern JSON JWT claims accepted');
+ assert.equal(json(call().replace(service,"set request.jwt.claim.role='';set request.jwt.claims='{\"role\":\"service_role\"}';")).status,'current');assert.equal(current(),'current');
  assert.equal(sql("select ocr_raw_result#>>'{autofill,cash_receipts,cash_channels_complete}' from zysyr_daily_sheet_drafts"),'false');
  const after=snapshot();assert.equal(json(call()).status,'current');assert.equal(snapshot(),after,'idempotency preserves audit and proofs');
  fail(call({reason:'Different reused request'}),/REQUEST_REUSED/);assert.equal(snapshot(),after);

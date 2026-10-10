@@ -120,7 +120,7 @@ create or replace function public.zysyr_daily_cash_review_status(p_company_id uu
 returns jsonb language plpgsql volatile security definer set search_path='' as $$
 declare c jsonb; r zysyr_private.daily_cash_reviews%rowtype; current_review boolean;
 begin
- if current_setting('request.jwt.claim.role',true) is distinct from 'service_role' then
+ if zysyr_private.request_role() is distinct from 'service_role' then
   raise exception using errcode='42501',message='DAILY_CASH_REVIEW_SERVICE_ONLY'; end if;
  c:=zysyr_private.daily_cash_review_context(p_company_id,p_store_id,p_draft_id);
  current_review:=zysyr_private.daily_cash_review_is_current(p_company_id,p_store_id,p_draft_id);
@@ -142,7 +142,7 @@ create or replace function public.zysyr_review_daily_cash_sources(p_actor_user_i
 returns jsonb language plpgsql security definer set search_path='' set lock_timeout='5s' as $$
 declare d public.zysyr_daily_sheet_drafts%rowtype; c jsonb; v jsonb; r zysyr_private.daily_cash_reviews%rowtype;
 begin
- if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ if zysyr_private.request_role() is distinct from 'service_role'
   or not zysyr_private.daily_cash_reviewer_valid(p_actor_user_id,p_actor_auth_user_id,p_company_id,p_store_id) then
   raise exception using errcode='42501',message='DAILY_CASH_REVIEW_FINANCE_FORBIDDEN'; end if;
  if p_reviewed_original is distinct from true or p_reviewed_channels is distinct from true
