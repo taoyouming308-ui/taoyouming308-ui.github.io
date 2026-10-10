@@ -73,6 +73,8 @@
     var focused = document.activeElement;
     return !!(window.ZysyrDailyCorrection && window.ZysyrDailyCorrection.protectedInput())
       || dailySheetDirtyCount() > 0 || !!document.getElementById('daily-detail-reason').value.trim()
+      || !!document.getElementById('daily-cash-review-panel')?.querySelector('input:checked')
+      || !!document.getElementById('daily-cash-review-reason')?.value.trim()
       || !!detail.querySelector('details[open]')
       || Array.from(detail.querySelectorAll('input[type=file]')).some(function (input) { return input.files.length > 0; })
       || (detail.contains(focused) && focused.matches('input,textarea,select'));
@@ -186,6 +188,7 @@
     });
     if (!approved) return '请先上传当天原始日报，并完成原件审核。';
     if (!c.valid) {
+      if (c.numericValid && c.sourceMissing) return '收款来源仍待人工核实，请完成上方人工核实收款来源，保存确认后再入账。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -236,8 +239,84 @@
       button.disabled = !writable || dirty === 0 || !!active;
     });
     if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
+    renderCashReviewPanel();
     lockControls();
   };
+
+  var cashPanelKey = '';
+  function renderCashReviewPanel() {
+    var panel = document.getElementById('daily-cash-review-panel');
+    if (!panel) return;
+    var sheet = state.imports.sheet, meta = sheet?.draft?.ocr_raw_result?.autofill?.cash_receipts;
+    var relevant = !!meta && meta.policy === 'operating-external-cash-v1' && sheet.draft.status === 'draft';
+    panel.classList.toggle('hidden', !relevant);
+    if (!relevant) return;
+    var review = sheet.cash_review || {}, key = sheet.draft.id + ':' + sheet.draft.edit_revision + ':' + review.source_token;
+    if (key !== cashPanelKey) {
+      ['original', 'channels', 'sales'].forEach(function (name) { document.getElementById('daily-cash-review-' + name).checked = false; });
+      document.getElementById('daily-cash-review-reason').value = '';
+      cashPanelKey = key;
+    }
+    var current = dailyCashReviewCurrent(), writable = sheet.permissions?.write && state.user.role === 'finance' && !sheet.locked && !active;
+    document.getElementById('daily-cash-review-status').textContent = current
+      ? '人工核实已记录：' + (review.reason || '') + '。可继续核对后点击入账。'
+      : review.status === 'unavailable' ? '人工核实服务暂不可用，不能据此入账；请稍后重新打开核对。'
+      : !review.original_ready ? '请先上传当天原始日报，并完成原件审核。'
+      : '尚未完成人工来源核实。先补齐明确金额、核对凭证，再勾选确认。';
+    ['original', 'channels', 'sales', 'reason'].forEach(function (name) { document.getElementById('daily-cash-review-' + name).disabled = !writable || current; });
+    document.getElementById('daily-cash-review-submit').disabled = !writable || current || !review.source_token || !review.original_ready;
+    document.getElementById('daily-cash-review-locate').disabled = !!active;
+  }
+  document.getElementById('daily-cash-review-locate')?.addEventListener('click', function () {
+    var input = grid().querySelector('[data-section="summary"][data-column-code="card_subtotal"]');
+    if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); }
+  });
+  document.getElementById('daily-cash-review-submit')?.addEventListener('click', reviewCashSources);
+  async function reviewCashSources() {
+    if (active || !state.imports.sheet) return;
+    var ctx = context(), sheet = state.imports.sheet, review = sheet.cash_review || {};
+    var reason = document.getElementById('daily-cash-review-reason').value.trim();
+    var checked = ['original', 'channels', 'sales'].every(function (name) { return document.getElementById('daily-cash-review-' + name).checked; });
+    var c = calculateDailyControls(grid());
+    if (!sheet.permissions?.write || state.user.role !== 'finance' || sheet.locked || sheet.draft.status !== 'draft') { showProblem('仅有权限的财务可核实未入账且未锁账的日报。'); return; }
+    if (!checked || reason.length < 5) { showProblem('请主动勾选原件、收款渠道及充值售卡核实，并填写至少5字的核实说明。'); return; }
+    if (!review.original_ready || !review.source_token) { showProblem('请先上传并审核当天原始日报；来源核实服务须可用。'); return; }
+    if (c.cardSales == null) { showProblem('充值售卡实收未核实：请定位卡类小计，查证后填写明确金额；只有确认无业务时才填写0。'); return; }
+    if (!c.numericValid) { showProblem('金额或项目仍有差异／未知，请先核对并补齐；来源确认不能绕过金额校验。'); return; }
+    var sourceToken = review.source_token;
+    begin('cash-review');
+    try {
+      var fresh = await checkBeforeWrite(ctx);
+      if (fresh.cash_review?.source_token !== sourceToken) throw new Error('原件或来源已变化，请重新核对后确认来源。');
+      grid().querySelectorAll('input.recognition-candidate[data-known-zero="1"]').forEach(function (input) {
+        if (!input.classList.contains('manual-edit') && input.value.trim() === '') { input.value = '0'; syncDailyAmountDisplay(input); }
+      });
+      pendingCandidates().forEach(function (input) {
+        if (input.dataset.dailyCell) state.imports.dirty[input.dataset.dailyCell] = input.value;
+        else state.imports.dirtyLabels[input.dataset.rowLabelInput] = input.value;
+        input.classList.add('manual-edit');
+      });
+      if (dailySheetDirtyCount()) await persistDraft(ctx, reason, true);
+      if (!isCurrent(ctx) || state.imports.sheet.cash_review?.source_token !== sourceToken) throw new Error('日报或来源已变化，请重新核对后确认来源。');
+      notice('候选已保存，正在记录人工来源核实；不会入账…');
+      var result;
+      try {
+        result = await api('daily_sheet_cash_review', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision,
+          source_token: sourceToken, request_id: crypto.randomUUID(), reviewed_original: true, reviewed_channels: true,
+          reviewed_card_sales: true, reason: reason });
+      } catch (error) {
+        var recovered = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+        if (recovered.cash_review?.status !== 'current' || recovered.cash_review?.source_token !== sourceToken
+          || Number(recovered.draft.edit_revision) !== ctx.revision) throw error;
+        result = recovered;
+      }
+      if (!isCurrent(ctx) || result.cash_review?.source_token !== sourceToken || Number(result.draft.edit_revision) !== ctx.revision) throw new Error('核实结果与当前日报不一致，请重新打开核对。');
+      applySheet(ctx, result);
+      if (!dailyCashReviewCurrent()) throw new Error('来源核实尚未生效，请重新核对。');
+      notice('人工核实已记录，尚未入账。请再点击入账完成最终确认。');
+    } catch (error) { if (isCurrent(ctx)) showProblem('来源核实未完成：' + error.message); }
+    finally { end(); }
+  }
 
   var lastDraftId = '';
   var renderDetailBase = renderDailySheetDetail;

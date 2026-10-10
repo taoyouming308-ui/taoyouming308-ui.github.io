@@ -27,6 +27,7 @@ const controlsFixture = {
   dailyInputValue(input) { return !input || input.value === '' ? null : Number(input.value); },
 };
 vm.createContext(controlsFixture);
+vm.runInContext(pageSource.match(/^function dailyCashReviewCurrent[^\n]+/m)[0],controlsFixture);
 for (const name of ['dailyPaperCells', 'calculateDailyControls']) {
   const functionLine = name === 'dailyPaperCells'
     ? pageSource.match(/^function dailyPaperCells\([^\n]+/m)
