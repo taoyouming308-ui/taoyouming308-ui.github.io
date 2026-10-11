@@ -2,7 +2,7 @@
 
 - Owner: original visual task, turn 01a12afb-4265-746f-a62f-1b3138bd8fce. Existing exclusive daily-report-morandi-v629 lock, isolated style/daily-report-morandi-v629 from c90fcaf; daily archive and private reference preserved.
 - User prefers Morandi colors for future App work; this release only styles the daily report. Warm gray/white, mist blue headers, sage totals and black ready-to-post controls. Financial red/amber/green and disabled/focus semantics retain priority.
-- CSS and version/cache metadata only; no field/order/geometry/amount/default/validation/API/backend/permission/posting changes. Preserve v628 finance and PR32 content. Synthetic desktop/mobile preview and related/full hook/PR CI/Pages exact readback are release gates. Physical iOS acceptance remains with the user.
+- CSS and version/cache metadata only; no field/order/geometry/amount/default/validation/API/backend/permission/posting changes. Preserve v628 finance and PR32 content. Synthetic desktop/mobile browser comparisons passed with 0px geometry delta, identical values/permissions/buttons and retained red/amber/green status; existing surface and cash-review browser regressions passed. Stylesheet uses nonblocking loading to preserve startup recovery. Full hook/PR CI/Pages exact readback remain release gates. Physical iOS acceptance remains with the user.
 
 ## 2026-10-11 · Original daily aesthetic case (App version: v628 unchanged)
 
