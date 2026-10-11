@@ -1,4 +1,4 @@
-/* Presentation only: audit data/loading and financial editing remain untouched. */
+/* Owner-only history presentation; financial editing is independent. */
 (function () {
   'use strict';
   var button = document.getElementById('daily-history-toggle');
@@ -21,7 +21,11 @@
     var element = document.getElementById(id);
     if (element) element.addEventListener('click', reset);
   });
+  var lastAccount = '';
   function syncAccess() {
+    var account = state.user && (state.user.auth_user_id || state.user.username) || '';
+    if (account !== lastAccount) reset();
+    lastAccount = account;
     var allowed = !!(state.user && state.user.can_read_daily_history === true && state.imports.sheet && state.imports.sheet.permissions && state.imports.sheet.permissions.read_history === true);
     document.getElementById('daily-history-panel').hidden = !allowed;
     if (!allowed) {

@@ -1,8 +1,9 @@
-## 2026-10-11 · Collapsed daily audit history (App version: v630)
+## 2026-10-11 · Owner-only collapsed daily audit history (App version: v630)
 
-- Owner: Codex, isolated style/daily-audit-collapse-v630 from df74c443 v629. Exclusive own publication lock, daily backup and private Library reference checked. Real reference remains private; test screenshots use synthetic data.
-- Compact default-closed history with native keyboard button, aria-expanded/aria-controls and 44px touch target. Store/month and actual detail/view re-entry reset presentation only. Uses a button rather than details so existing details-open idle refresh protection is unchanged. No dirty form, permissions, audit data/load/write, financial validation or warning changes.
-- Related repeated toggle, keyboard, store/month, return/re-entry, dirty edit and desktop/mobile regressions plus full hook/PR CI/Pages/exact online bytes are release gates. Preserve v629 Morandi and all v628 finance/PR32 content.
+- Owner: continuation of daily-audit-collapse-v630 from df74c443 v629; original exclusive publication lock preserved. Recovery checkpoint 32bebcd and same-day complete archive preserved. Library reference download failed including one explicit local retry; private originals remain outside repository. Only synthetic screenshots.
+- Server owner identity: exact existing account/Auth/company UUID mapping verified read-only against active company shareholder and its direct, live daily_report.correct_confirmed grant. Existing v614 migration and runbook identify that account as owner; no display name, client role, generic finance/admin grant or new authority.
+- Default-closed compact history, keyboard/ARIA/touch; reset on store/month/view/account transitions without modifying dirty edits. Nonowners never query/receive cell-change history; client SELECT of changes/old snapshots revoked, restrictive daily-audit-event policy preserves all other audit visibility and service read/write. No business/amount/posting/store-scope changes.
+- Verified: synthetic direct HTTP owner/nonowner/spoof/revoked/scope denial, PostgreSQL history denial/service append and other-audit preservation, desktop/mobile keyboard/dirty/logout/late-response behavior, frozen Deno. Full pre-push/PR CI follow. Publication blocked: classic main protection returns 404 and effective branch rules are empty; AI_COLLABORATION_RULES requires Validate shared app as a protected required check. No repository-permission change authorized; do not merge or deploy backend until administrator restores that gate. Production remains v629/operations-api v126. Synthetic Library preview libfile_f7aceece41608191b9060c4ffbc1f755.
 
 ## 2026-10-11 · Daily report Morandi surfaces (App version: v629)
 

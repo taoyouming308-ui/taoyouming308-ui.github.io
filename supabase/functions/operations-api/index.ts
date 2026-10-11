@@ -403,7 +403,6 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
 
   return {
     username: cleanText(user.login_name, 80) || cleanText(user.display_name, 120),
-    auth_login_name: cleanText(user.login_name, 80),
     role: `auth_${operationsRole}`,
     position: roleLabel(operationsRole),
     store: storeName,
@@ -5828,12 +5827,15 @@ async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Pro
   return dailySheetRead(payload, session);
 }
 
-// Owner identity is resolved by operations-auth from live account/grants, never client metadata.
+// Existing owner account was explicitly authorized by the confirmed-daily correction migration.
+// Match immutable server account/Auth/company IDs and require its live, unrevoked grant.
 function canReadDailyHistory(session: JsonRecord): boolean {
-  return Boolean(cleanText(session.auth_user_id, 40))
+  return cleanText(session.auth_account_id, 40) === "57aba56a-23ca-482b-acc2-e00da5a5d1f7"
+    && cleanText(session.auth_user_id, 40) === "d205de6f-2bbe-46f3-a591-4725a2423777"
+    && cleanText(session.auth_company_id, 40) === "02463a53-dfdb-4291-b04d-dd1d85f9d998"
     && cleanText(session.auth_scope_type, 20) === "company"
-    && cleanText(session.auth_login_name, 80) === "admin"
-    && canCorrectConfirmedDaily(session);
+    && cleanText(session.operations_role, 40) === "shareholder"
+    && hasAuthCapability(session, "daily_report.correct_confirmed");
 }
 
 function canCorrectConfirmedDaily(session: JsonRecord): boolean {
