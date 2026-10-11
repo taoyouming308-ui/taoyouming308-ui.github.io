@@ -1,0 +1,40 @@
+// Private tmpfs PostgreSQL, synthetic rows only; no production authentication.
+const fs=require('node:fs'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
+const name='daily-history-owner-'+process.pid,owner='d205de6f-2bbe-46f3-a591-4725a2423777',company='02463a53-dfdb-4291-b04d-dd1d85f9d998';
+const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe']});
+const sql=s=>execFileSync('docker',['exec','-i',name,'psql','-X','-q','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input:s,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
+const denied=s=>assert.throws(()=>sql(s),e=>String(e.stderr).includes('permission denied'));
+async function main(){let started=false;try{
+ docker(['run','--rm','-d','--network','none','--tmpfs','/var/lib/postgresql/data:rw','--name',name,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);started=true;
+ let ready=false;for(let i=0;i<100;i++){try{sql('select 1');ready=true;break}catch(_){await new Promise(r=>setTimeout(r,300))}}if(!ready)throw Error('Synthetic PostgreSQL did not become ready within 30 seconds');
+ sql(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema zysyr_private;
+ create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+ create function zysyr_private.has_capability(uuid,uuid,text) returns boolean language sql as $$select current_setting('test.cap',true)='live'$$;
+ grant usage on schema public,auth,zysyr_private to anon,authenticated,service_role;
+ create table zysyr_daily_sheet_cell_changes(id int,reason text);create table zysyr_daily_sheet_versions(id int,confirmed_snapshot jsonb);
+ create table zysyr_audit_events(id int,company_id uuid,store_id uuid,entity_type text,reason text);
+ alter table zysyr_audit_events enable row level security;
+ create policy existing_audit_read on zysyr_audit_events for select to authenticated using(true);
+ grant select on zysyr_daily_sheet_cell_changes,zysyr_daily_sheet_versions,zysyr_audit_events to authenticated;
+ grant select,insert on zysyr_daily_sheet_cell_changes,zysyr_daily_sheet_versions,zysyr_audit_events to service_role;
+ insert into zysyr_daily_sheet_cell_changes values(1,'synthetic private');insert into zysyr_daily_sheet_versions values(1,'{"synthetic":true}');
+ insert into zysyr_audit_events values(1,'${company}',null,'daily_sheet_draft','synthetic daily'),(2,'${company}',null,'ordinary_business','unchanged');
+ create function append_only() returns trigger language plpgsql as $$begin raise exception 'append-only';end$$;
+ create trigger immutable before update or delete on zysyr_daily_sheet_cell_changes for each row execute function append_only();`);
+ const snapshot=sql("select jsonb_agg(t) from zysyr_daily_sheet_cell_changes t;");
+ const grants=sql("select relname,has_table_privilege('service_role',oid,'INSERT'),has_table_privilege('service_role',oid,'SELECT') from pg_class where relname in ('zysyr_daily_sheet_cell_changes','zysyr_daily_sheet_versions','zysyr_audit_events') order by relname;");
+ sql(fs.readFileSync('supabase/migrations/20261011141428_zysyr_daily_history_owner_read.sql','utf8'));
+ assert.equal(sql("select jsonb_agg(t) from zysyr_daily_sheet_cell_changes t;"),snapshot);
+ assert.equal(sql("select relname,has_table_privilege('service_role',oid,'INSERT'),has_table_privilege('service_role',oid,'SELECT') from pg_class where relname in ('zysyr_daily_sheet_cell_changes','zysyr_daily_sheet_versions','zysyr_audit_events') order by relname;"),grants);
+ for(const role of ['anon','authenticated'])for(const table of ['zysyr_daily_sheet_cell_changes','zysyr_daily_sheet_versions'])denied(`set role ${role};select * from ${table};`);
+ const read=(uid,cap)=>sql(`set role authenticated;set test.uid='${uid}';set test.cap='${cap}';select string_agg(entity_type,',' order by id) from zysyr_audit_events;`);
+ assert.equal(read(owner,'live'),'daily_sheet_draft,ordinary_business');
+ assert.equal(read(owner,'revoked'),'ordinary_business');
+ assert.equal(read('00000000-0000-4000-8000-000000000001','live'),'ordinary_business');
+ sql("set role service_role;insert into zysyr_daily_sheet_cell_changes values(2,'synthetic appended');insert into zysyr_daily_sheet_versions values(2,'{}');insert into zysyr_audit_events values(3,'"+company+"',null,'daily_sheet_draft','synthetic write');");
+ assert.equal(sql('set role service_role;select count(*) from zysyr_daily_sheet_cell_changes;'),'2');
+ denied('set role authenticated;select reason from zysyr_daily_sheet_cell_changes;');
+ assert.throws(()=>sql('delete from zysyr_daily_sheet_cell_changes;'),e=>String(e.stderr).includes('append-only'));
+ console.log('PostgreSQL direct reads denied for anon/authenticated, owner-only daily audit metadata with live grant, ordinary audit unaffected, old rows unchanged and service audit append/immutable protection preserved.');
+ }finally{if(started)docker(['stop',name]);}}
+main().catch(e=>{console.error(String(e.stderr||e));process.exitCode=1});

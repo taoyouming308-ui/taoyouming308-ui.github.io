@@ -106,6 +106,9 @@
     { "runtime": "node", "script": "test-admin-daily-correction-db.js" },
     { "runtime": "node", "script": "test-daily-cash-human-review-api.js" },
     { "runtime": "node", "script": "test-daily-cash-human-review-db.js" },
-    { "runtime": "node", "script": "test-daily-cash-human-review-browser.js" }
+    { "runtime": "node", "script": "test-daily-cash-human-review-browser.js" },
+    { "runtime": "node", "script": "test-daily-history-owner-api.js" },
+    { "runtime": "node", "script": "test-daily-history-owner-db.js" },
+    { "runtime": "node", "script": "test-daily-history-collapse-browser.js" }
   ]
 }
