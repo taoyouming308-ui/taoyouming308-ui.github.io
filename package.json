@@ -7,6 +7,7 @@
     "test:finance": "node scripts/test-zysyr-validation-manifest.js && node scripts/run-zysyr-finance-tests.js"
   },
   "devDependencies": {
+    "exceljs": "4.4.0",
     "playwright": "1.62.1"
   }
 }
