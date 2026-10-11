@@ -1,3 +1,8 @@
+## v629 · 2026-10-11
+
+- 日报编辑区采用暖灰白、雾蓝表头与鼠尾草绿汇总；识别候选改为近白底与细线提示，正常入账保持黑色。
+- 红色差额、黄色待核对、绿色完成及禁用/焦点语义保留；字段、纸表几何、金额、校验、API与入账流程不变。
+
 ## 2026-10-11 · Original aesthetic short-hair training (v628 unchanged)
 
 - Add one fictional illustrated case “短发两侧撑开：继续推短，还是留长借重量？” with observation/assumption separation, practice question, six conditional reference sections and five self-review prompts.
