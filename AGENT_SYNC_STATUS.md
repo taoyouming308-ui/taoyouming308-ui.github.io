@@ -1,3 +1,10 @@
+## 2026-10-11 · Remove redundant receipt card (App version: v626)
+
+- Current owner: Codex. Last synchronized base checked: github/main de90b5d v625, focused fix/daily-receipt-hint; tracked tree clean before edits and existing daily archive verified. Unrelated untracked backups and screenshots preserved.
+- User requested removal of the extra recharge/card-sale receipt status card, not a financial formula change. Remove only its rendering. Preserve the original field, explicit blank/no-receipt final choice, cancellation, numeric/source/revision/permission guards, and financial amounts. No Edge or schema change.
+- Synthetic desktop/mobile browser and real page/Edge/isolated PostgreSQL sequence regressions prove card absence without bypassing confirmation or source failures. Full shared gate including all 105 finance checks passed; CI and Pages readback remain publication gates. UI removal alone does not repair missing electronic evidence.
+- User separately authorized a bounded one-store/day evidence supplement and, after disclosure of the existing trigger, refresh of unposted automatic candidates while preserving saved manual values. Existing collector accepted the complete snapshot; production electronic context now ready, draft remains unposted, and before/after manual-value and formal-income fingerprints are unchanged. No posting, scheduler change or historical amount repair performed. Source refresh increments the draft revision; preserve unsaved browser edits and re-read before final user confirmation.
+
 ## 2026-10-11 · Electronic-source daily posting (App version: v625)
 
 - User explicitly authorized backup, synthetic tests, then deployment; never change historical records or amounts and never post a real day on their behalf. Base github/main 730d16d v623; recovery branch recovery/pre-electronic-post-20261011; daily archive and production operations-api v124 package saved outside commits.

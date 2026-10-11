@@ -60,7 +60,7 @@ module.exports=async function({sql,json,q,C,S,A,D,V,U}){
    state.imports.sheet=s;state.imports.dirty={};state.imports.dirtyLabels={};renderDailySheetDetail();
   },initial);
   assert.equal(await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').inputValue(),'');
-  assert.match(await page.locator('#daily-detail-controls').innerText(),/空白待确认/);
+  assert.doesNotMatch(await page.locator('#daily-detail-controls').innerText(),/充值售卡实收|空白待确认/);
   await page.locator('#daily-detail-confirm-top').click();
   try{await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed',{},{timeout:15000});}
   catch(e){console.error(await page.locator('#daily-detail-note').innerText());throw e;}

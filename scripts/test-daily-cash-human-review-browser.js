@@ -81,7 +81,7 @@ async function run(){
    syntheticCancel=mode==='blank-cancel';syntheticDialogs=[];
   },mode);
   assert.equal(await page.locator('[data-column-code="card_subtotal"][data-section="summary"]').inputValue(),'');
-  assert.match(await page.locator('#daily-detail-controls').innerText(),/空白待确认/,'all-green totals never imply receipt completeness');
+  assert.doesNotMatch(await page.locator('#daily-detail-controls').innerText(),/充值售卡实收|空白待确认/,'no redundant receipt status card; final consent still checks blank receipts');
   await page.locator('#daily-detail-confirm-top').click();
   if(mode==='blank-post'){
    await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
