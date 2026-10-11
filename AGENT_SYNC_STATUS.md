@@ -1,3 +1,9 @@
+## 2026-10-11 · Collapsed daily audit history (App version: v630)
+
+- Owner: Codex, isolated style/daily-audit-collapse-v630 from df74c443 v629. Exclusive own publication lock, daily backup and private Library reference checked. Real reference remains private; test screenshots use synthetic data.
+- Compact default-closed history with native keyboard button, aria-expanded/aria-controls and 44px touch target. Store/month and actual detail/view re-entry reset presentation only. Uses a button rather than details so existing details-open idle refresh protection is unchanged. No dirty form, permissions, audit data/load/write, financial validation or warning changes.
+- Related repeated toggle, keyboard, store/month, return/re-entry, dirty edit and desktop/mobile regressions plus full hook/PR CI/Pages/exact online bytes are release gates. Preserve v629 Morandi and all v628 finance/PR32 content.
+
 ## 2026-10-11 · Daily report Morandi surfaces (App version: v629)
 
 - Owner: original visual task, turn 01a12afb-4265-746f-a62f-1b3138bd8fce. Existing exclusive daily-report-morandi-v629 lock, isolated style/daily-report-morandi-v629 from c90fcaf; daily archive and private reference preserved.

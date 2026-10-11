@@ -403,6 +403,7 @@ async function authSession(request: Request): Promise<JsonRecord | null> {
 
   return {
     username: cleanText(user.login_name, 80) || cleanText(user.display_name, 120),
+    auth_login_name: cleanText(user.login_name, 80),
     role: `auth_${operationsRole}`,
     position: roleLabel(operationsRole),
     store: storeName,
@@ -487,6 +488,7 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     can_lock_reports: hasAuthCapability(session, "report.lock"),
     can_adjust_confirmed_finance: hasAuthCapability(session, "confirmed_finance.adjust"),
     can_correct_confirmed_daily: canCorrectConfirmedDaily(session),
+    can_read_daily_history: canReadDailyHistory(session),
     can_read_salary: hasAuthCapability(session, "salary.read"),
     can_read_petty_cash_reports: hasAuthCapability(session, "dashboard.store.read"),
     can_manage_payroll: role === "finance" && hasAuthCapability(session, "salary.write_approve"),
@@ -5471,7 +5473,7 @@ async function dailyBusinessDetails(payload: JsonRecord, session: JsonRecord): P
   return {...projectBusinessDay(source),readonly:true,finance_confirmation_required:true,automatic_posting_enabled:false};
 }
 
-async function dailySheetData(companyId: string, storeId: string, draftId: string): Promise<JsonRecord> {
+async function dailySheetData(companyId: string, storeId: string, draftId: string, readHistory = false): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,autofill_view:ocr_raw_result->autofill,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
@@ -5493,7 +5495,7 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
     restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,row_label_source_method,row_label_confidence,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
     restRowsAll(`zysyr_daily_sheet_attachments?select=id,voucher_id,attachment_kind,note,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=linked_at.desc&limit=200`, 200),
     restRowsAll(`zysyr_daily_sheet_attachment_voids?select=id,daily_sheet_attachment_id,voucher_id,reason,voided_by_user_id,voided_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=voided_at.desc&limit=200`, 200),
-    restRowsAll(`zysyr_daily_sheet_cell_changes?select=id,cell_id,revision,before_value,after_value,before_text,after_text,before_label,after_label,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=changed_at.desc&limit=500`, 500),
+    readHistory ? restRowsAll(`zysyr_daily_sheet_cell_changes?select=id,cell_id,revision,before_value,after_value,before_text,after_text,before_label,after_label,changed_by_user_id,changed_at,reason&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=changed_at.desc&limit=500`, 500) : Promise.resolve([]),
     restRowsAll(`zysyr_period_locks?select=id,scope_type,store_id,status,locked_at,unlock_reason&company_id=eq.${companyId}&period_month=eq.${month}-01&status=eq.locked&limit=100`, 100),
   ]);
   const voucherIds = links.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean);
@@ -5550,10 +5552,10 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
     cells: view.cells.map((cell: JsonRecord) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
-    history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
+    ...(readHistory ? { history: changes.map((change) => { const cell = cellMap.get(cleanText(change.cell_id, 40)) || {};
       return { ...change, section_code: cell.section_code ?? null, row_label: cell.row_label ?? null,
         column_label: cell.column_label ?? null,
-        changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }),
+        changed_by_name: actorMap.get(cleanText(change.changed_by_user_id, 40)) || "已授权账号" }; }) } : {}),
     locked: locks.some((lock) => cleanText(lock.scope_type, 20) === "company" || cleanText(lock.store_id, 40) === storeId),
     manual_entry_only: false, ai_candidates_review_only: true, final_confirmation_required: true,
     meiguanjia_used: cleanText(draft.template_code,80) === "zysyr_frontdesk_project_draft",
@@ -5824,6 +5826,14 @@ async function dailyRecognitionItemRetry(payload: JsonRecord, session: JsonRecor
 async function getDailySheetDraft(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有电子日报权限");
   return dailySheetRead(payload, session);
+}
+
+// Owner identity is resolved by operations-auth from live account/grants, never client metadata.
+function canReadDailyHistory(session: JsonRecord): boolean {
+  return Boolean(cleanText(session.auth_user_id, 40))
+    && cleanText(session.auth_scope_type, 20) === "company"
+    && cleanText(session.auth_login_name, 80) === "admin"
+    && canCorrectConfirmedDaily(session);
 }
 
 function canCorrectConfirmedDaily(session: JsonRecord): boolean {
@@ -6262,14 +6272,14 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const companyId = cleanText(store.company_id, 40), storeId = cleanText(store.id, 40);
   const draftId = uuidValue(payload.draft_id, "请选择日报草稿");
   if (!draftId) throw new Error("请选择日报草稿");
-  const data = await dailySheetData(companyId, storeId, draftId);
+  const data = await dailySheetData(companyId, storeId, draftId, canReadDailyHistory(session));
   const actorId = cleanText(session.auth_account_id, 40), reportDate = cleanText((data.draft as JsonRecord).report_date, 10);
   const approvals = data.locked === true && actorId ? await restRowsAll(`zysyr_monthly_cell_unlock_requests?select=id,status,decided_at,decision_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&period_month=eq.${reportDate.slice(0, 7)}-01&requested_by_user_id=eq.${actorId}&status=eq.approved&consumed_at=is.null&limit=10`, 10) : [];
   const hasUnlockApproval = approvals.length > 0;
   const writable = hasAuthCapability(session, "daily_report.write")
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
-  return { ...data, readonly: !writable, permissions: { write: writable,
+  return { ...data, readonly: !writable, permissions: { write: writable, read_history: canReadDailyHistory(session),
     correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
     upload_original: hasAuthCapability(session, "daily_report.write"),
     void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },
