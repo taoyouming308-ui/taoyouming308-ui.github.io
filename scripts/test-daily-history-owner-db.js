@@ -2,11 +2,11 @@
 const fs=require('node:fs'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const name='daily-history-owner-'+process.pid,owner='d205de6f-2bbe-46f3-a591-4725a2423777',company='02463a53-dfdb-4291-b04d-dd1d85f9d998';
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe']});
-const sql=s=>execFileSync('docker',['exec','-i',name,'psql','-X','-q','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input:s,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
+const sql=s=>execFileSync('docker',['exec','-i',name,'psql','-X','-q','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input:s,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const denied=s=>assert.throws(()=>sql(s),e=>String(e.stderr).includes('permission denied'));
 async function main(){let started=false;try{
  docker(['run','--rm','-d','--network','none','--tmpfs','/var/lib/postgresql/data:rw','--name',name,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);started=true;
- for(let i=0;i<80;i++){try{sql('select 1');break}catch(_){await new Promise(r=>setTimeout(r,100))}}
+ let ready=false;for(let i=0;i<100;i++){try{sql('select 1');ready=true;break}catch(_){await new Promise(r=>setTimeout(r,300))}}if(!ready)throw Error('Synthetic PostgreSQL did not become ready within 30 seconds');
  sql(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema zysyr_private;
  create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function zysyr_private.has_capability(uuid,uuid,text) returns boolean language sql as $$select current_setting('test.cap',true)='live'$$;
