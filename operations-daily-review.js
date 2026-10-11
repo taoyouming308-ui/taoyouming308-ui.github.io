@@ -227,9 +227,6 @@
     }
     help.classList.toggle('hidden', !help.textContent);
     var reason = localBlockReason(), salesBlank = !confirmed && blankSalesReady();
-    if (!confirmed && controls.cashMode && controls.cardSales == null) {
-      document.getElementById('daily-detail-controls').insertAdjacentHTML('beforeend', '<div class="daily-control pending">充值售卡实收<strong>空白待确认</strong>' + (salesBlank ? '点击入账时确认本日是否无此项收入，无需逐格补0' : '仅此必要金额需核对；普通无业务明细无需补0') + '</div>');
-    }
     document.getElementById('daily-detail-confirm-help').textContent = confirmed
       ? '已入账，已计入当天及月报；更正需走修订流程。'
       : uncertain ? '上次入账结果待查询；点击“入账”先查询结果。'
