@@ -51,7 +51,7 @@
   function sheetVersion(sheet) {
     // Signed image URLs change on reads; they are not a financial revision.
     return JSON.stringify([sheet.draft.edit_revision, sheet.draft.status, sheet.draft.source_voucher_id,
-      sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved, sheet.cash_review,
+      sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved, sheet.cash_review, sheet.project_review,
       (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
   }
   function sourceBusy() { return !!(window.ZysyrDailySourceActions && window.ZysyrDailySourceActions.busy()); }
@@ -154,6 +154,63 @@
     var target = grid().querySelector('.control-mismatch') || grid().querySelector('.control-pending') || document.getElementById('daily-detail-confirm-help');
     if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (target.focus) target.focus(); }
   }
+  function projectReviewState() {
+    var sheet = state.imports.sheet, reference = sheet.project_review;
+    var required = sheet.draft.template_code === 'zysyr_frontdesk_project_draft';
+    if (!required) return { required: false, ready: false, items: [] };
+    if (!reference?.ready || !/^[a-f0-9]{64}$/.test(reference.source_token || '') || !Array.isArray(reference.cells)) {
+      return { required: true, ready: false, items: [], reason: reference?.reason || '项目来源复核暂不可用，请先保存填写内容，稍后重新打开日报。' };
+    }
+    var byId = new Map(Array.from(grid().querySelectorAll('[data-daily-cell]')).map(function (input) { return [input.dataset.dailyCell, input]; }));
+    if (reference.cells.some(function (cell) { return !byId.has(cell.cell_id); })
+      || calculateDailyControls(grid()).pendingInputs.some(function (input) { return !reference.cells.some(function (cell) { return cell.cell_id === input.dataset.dailyCell; }); })) {
+      return { required: true, ready: false, items: [], reason: '项目来源行与当前表格不一致，请先保存并重新打开核对；未自动补填。' };
+    }
+    var items = reference.cells.map(function (cell) {
+      var input = byId.get(cell.cell_id), value = dailyInputValue(input);
+      return { cell_id: cell.cell_id, value: value, source_value: cell.source_value, unknown: cell.unknown,
+        label: (input.dataset.rowLabel || cell.row_label) + ' · ' + (input.dataset.columnLabel || cell.column_label), input: input };
+    }).filter(function (cell) { return cell.value !== cell.source_value || cell.unknown === true; });
+    return { required: true, ready: true, source_token: reference.source_token, items: items };
+  }
+  async function confirmProjectSources(review) {
+    if (!review.required) return null;
+    var consent = { statement: 'finance-project-review-v1', source_token: review.source_token,
+      items: review.items.map(function (item) { return { cell_id: item.cell_id, value: item.value, acknowledged: true }; }) };
+    if (!review.items.length) return consent;
+    var before = reviewedValues(), ctx = context(), previousFocus = document.activeElement;
+    var dialog = document.createElement('dialog');
+    dialog.id = 'daily-project-review'; dialog.className = 'daily-project-review';
+    dialog.setAttribute('aria-labelledby', 'daily-project-review-title');
+    var money = function (value) { return value == null ? '未明确' : Number(value).toFixed(2) + ' 元'; };
+    dialog.innerHTML = '<h2 id="daily-project-review-title">逐项核对项目来源</h2><p>合计一致不等于项目归栏一致。下列是来源参考与当前填写的差异，系统不会替你改金额或补零。</p>'
+      + '<div class="daily-project-review-items">' + review.items.map(function (item, index) {
+        return '<label class="daily-project-review-item"><input type="checkbox" data-project-review-item="' + index + '"><span><strong>' + esc(item.label) + '</strong><span>来源参考：' + esc(money(item.source_value))
+          + '；当前填写：' + esc(item.value == null ? '空白' : money(item.value)) + '</span><span>'
+          + (item.value == null ? '我已核对原件及项目归栏，确认本栏无业务，保留空白（不写入0）。' : '我已核对原件及项目归栏，确认保留当前财务填写值。')
+          + '</span></span></label>';
+      }).join('') + '</div><p>如发现漏项或归栏不对，请返回修改；不要重复加到总额。</p><div class="compact-actions"><button type="button" data-project-review-cancel>返回核对 / 修改</button><button type="button" data-project-review-continue disabled>逐项确认后继续</button></div>';
+    document.body.appendChild(dialog);
+    begin('review');
+    try {
+      var accepted = await new Promise(function (resolve) {
+        var proceed = dialog.querySelector('[data-project-review-continue]');
+        dialog.onchange = function () { proceed.disabled = Array.from(dialog.querySelectorAll('[data-project-review-item]')).some(function (input) { return !input.checked; }); };
+        dialog.querySelector('[data-project-review-cancel]').onclick = function () { resolve(false); };
+        dialog.oncancel = function (event) { event.preventDefault(); resolve(false); };
+        proceed.onclick = function () { if (!proceed.disabled) resolve(true); };
+        dialog.showModal();
+      });
+      if (!accepted) return false;
+      if (!isCurrent(ctx) || before !== reviewedValues() || state.imports.sheet.project_review?.source_token !== review.source_token) {
+        throw new Error('复核期间日报或来源发生变化，请按最新内容重新核对');
+      }
+      return consent;
+    } finally { dialog.close(); dialog.remove(); end(); if (previousFocus?.isConnected) previousFocus.focus(); }
+  }
+  function canReviewNumeric(c) {
+    return c.numericValid || c.arithmeticValid && projectReviewState().ready;
+  }
   function controlDifferences(c) {
     var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
     var inputs = Array.from(grid().querySelectorAll('[data-daily-cell],[data-new-cell]'));
@@ -205,7 +262,7 @@
       var waiting = pending || issues.some(function (item) { return item.kind === 'unknown'; });
       return '<div class="daily-control ' + (bad ? 'bad' : waiting ? 'pending' : 'ok') + '">' + esc(label) + '<strong>' + esc(amounts) + '</strong>' + (bad ? '有差额，请核对红色格子' : waiting ? '待核对，不能仅凭合计相等入账' : '一致') + '</div>';
     };
-    var projectPending = c.pendingRows.length > 0;
+    var projectPending = c.pendingRows.length > 0 && !projectReviewState().ready;
     document.getElementById('daily-detail-controls').innerHTML =
       card('员工明细 ↔ 员工小计', value(c.staffAtomic) + ' / ' + value(c.staffReported), roles(['staff_total']).concat(differences.filter(function (i) { return i.input && i.kind === 'mismatch'; })), projectPending)
       + card('项目列小计', value(c.staffAtomic) + ' / ' + value(c.categoryReported), roles(['category_total']), projectPending)
@@ -216,7 +273,7 @@
   function blankSalesReady() {
     var c = calculateDailyControls(grid());
     return c.cashMode && c.cardSales == null && !!grid().querySelector('[data-section="summary"][data-column-code="card_subtotal"]')
-      && calculateDailyControls(grid(), true).numericValid;
+      && canReviewNumeric(calculateDailyControls(grid(), true));
   }
   function localBlockReason() {
     var sheet = state.imports.sheet, c = calculateDailyControls(grid());
@@ -228,8 +285,11 @@
     });
     var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
     if (!approved && !electronic) return sheet.cash_review?.electronic_reason || '请先上传当天原始日报，并完成原件审核；有电子来源的日报须先完成来源核对。';
+    var project = projectReviewState();
+    if (project.required && !project.ready) return project.reason;
     if (!c.valid) {
-      if ((c.numericValid && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
+      if (canReviewNumeric(c) && !c.sourceMissing) return '';
+      if ((canReviewNumeric(c) && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -243,7 +303,7 @@
     var uncertain = uncertainPosts.has(contextKey(context()));
     var writable = sheet.permissions && sheet.permissions.write && !confirmed && !uncertain && (!sheet.locked || sheet.daily_unlock_approved);
     var dirty = dailySheetDirtyCount(), pending = pendingCandidates().length;
-    var controls = calculateDailyControls(grid()), differences = controlDifferences(controls);
+    var controls = calculateDailyControls(grid()), differences = controlDifferences(controls), project = projectReviewState();
     renderControlSummary(controls, differences);
     grid().querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
       var issues = differences.filter(function (item) {
@@ -260,7 +320,7 @@
       });
       var mismatch = projectDifference || issues.some(function (item) { return item.kind === 'mismatch'; });
       input.classList.toggle('control-mismatch', mismatch);
-      input.classList.toggle('control-pending', !mismatch && (pendingSales || issues.some(function (item) { return item.kind === 'unknown'; })));
+      input.classList.toggle('control-pending', !mismatch && (pendingSales || issues.some(function (item) { return item.kind === 'unknown'; }) || project.items.some(function (item) { return item.input === input; })));
       input.setAttribute('aria-invalid', String(mismatch));
       input.readOnly = !writable;
     });
@@ -278,7 +338,8 @@
     document.getElementById('daily-detail-confirm-help').textContent = confirmed
       ? '已入账，已计入当天及月报；更正需走修订流程。'
       : uncertain ? '上次入账结果待查询；点击“入账”先查询结果。'
-      : reason || (salesBlank ? '合计已一致；点击入账时确认充值售卡空白的含义，普通无业务明细无需补0。' : '') || '保存草稿：留存修改，可继续编辑。入账：核对后计入当天和月报。';
+      : reason || (project.items.length ? '金额合计已一致；有 ' + project.items.length + ' 项来源差异或空白待复核。点击“入账”逐项确认，系统不改金额、不自动补零。' : '')
+      || (salesBlank ? '合计已一致；点击入账时确认充值售卡空白的含义，普通无业务明细无需补0。' : '') || '保存草稿：留存修改，可继续编辑。入账：核对后计入当天和月报。';
     postButtons.forEach(function (button) {
       button.textContent = confirmed ? '已入账' : active === 'post' ? '正在入账…' : '入账';
       button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active;
@@ -307,7 +368,9 @@
   function reviewedValues(root) {
     return JSON.stringify(Array.from((root || grid()).querySelectorAll('[data-daily-cell],[data-new-cell],[data-row-label-input]')).map(function (input) {
       var key = [input.dataset.section, input.dataset.rowKey || input.dataset.rowLabelInput, input.dataset.columnCode || 'row_label'];
-      var value = input.type === 'number' && input.value.trim() !== '' ? Number(input.value) : input.value.trim();
+      // A source-confirmed zero is displayed blank in the paper layout. Compare
+      // its existing numeric value through save/readback; an unknown blank stays blank.
+      var value = input.type === 'number' && (input.value.trim() !== '' || input.dataset.knownZero === '1') ? Number(input.value) : input.value.trim();
       return [key, value];
     }).sort(function (a, b) { return JSON.stringify(a[0]).localeCompare(JSON.stringify(b[0])); }));
   }
@@ -442,6 +505,10 @@
     var reason = localBlockReason();
     if (reason) { showProblem(reason); return; }
     if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
+    var projectConsent;
+    try { projectConsent = await confirmProjectSources(projectReviewState()); }
+    catch (error) { showProblem(error.message); return; }
+    if (projectConsent === false) { notice('已取消复核，填写内容未修改，尚未入账。'); return; }
     var c = calculateDailyControls(grid());
     var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
     var cashConsent = c.cashMode ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
@@ -467,6 +534,7 @@
     notice('正在保存并校验日报…');
     try {
       var latest = await checkBeforeWrite(ctx);
+      if (projectConsent && latest.project_review?.source_token !== projectConsent.source_token) throw new Error('项目来源已变化，请重新逐项复核');
       if (cashConsent && latest.cash_review?.source_token !== cashConsent.source_token) throw new Error('收款来源已变化，请重新核对后入账');
       grid().querySelectorAll('input.recognition-candidate[data-known-zero="1"]').forEach(function (input) {
         if (!input.classList.contains('manual-edit') && input.value.trim() === '') { input.value = '0'; syncDailyAmountDisplay(input); }
@@ -493,9 +561,10 @@
         throw new Error(missing ? '后台校验未通过，需核对：' + missing : '后台校验尚未通过，请核对合计或未核对的识别内容');
       }
       if (cashConsent && state.imports.sheet.cash_review?.source_token !== cashConsent.source_token) throw new Error('收款来源已变化，请重新核对后入账');
+      if (projectConsent && state.imports.sheet.project_review?.source_token !== projectConsent.source_token) throw new Error('项目来源已变化，请重新逐项复核');
       notice('校验通过，正在入账…');
       submitted = true;
-      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, is_business_day: null, reviewed_all: true, reason: saveReason, cash_source_confirmation: cashConsent });
+      await api('daily_sheet_confirm', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision, is_business_day: null, reviewed_all: true, reason: saveReason, cash_source_confirmation: cashConsent, project_source_confirmation: projectConsent });
       var posted = null;
       try { posted = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }); } catch (_) {}
       await finishPosted(ctx, posted && posted.draft.status === 'confirmed' ? posted : null);

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="627">
+<html lang="zh-CN" data-version="628">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -34,6 +34,8 @@
   /* Validation must stay visible above yellow source-candidate styling. */
   .daily-grid input.control-mismatch{background:#fde5df!important;box-shadow:inset 0 0 0 1px #b74635!important}
   .daily-grid input.control-pending{background:#fff3cd!important;box-shadow:inset 0 0 0 1px #bb8b23!important}
+  .daily-project-review{width:min(720px,calc(100vw - 24px));max-height:88dvh;box-sizing:border-box;padding:22px;border:1px solid #c9ccc9;border-radius:14px;background:#fff;color:#202b29;overflow:auto;font:14px/1.6 system-ui,sans-serif}
+  .daily-project-review::backdrop{background:rgba(20,30,27,.45)}.daily-project-review h2{font-size:20px;margin:0 0 8px}.daily-project-review p{margin:8px 0 14px}.daily-project-review-items{display:grid;gap:10px}.daily-project-review-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #dadcd7;border-radius:8px;background:#faf9f4}.daily-project-review-item input{flex:none;width:19px;height:19px;margin:4px 0}.daily-project-review-item span span{display:block}.daily-project-review .compact-actions{position:sticky;bottom:-22px;background:#fff;padding:12px 0;display:flex;flex-wrap:wrap;gap:8px}.daily-project-review button{font:inherit;padding:9px 14px;border:1px solid #c9ccc9;border-radius:8px;cursor:pointer}.daily-project-review [data-project-review-continue]{background:#172c27;color:#fff}.daily-project-review button:disabled{opacity:.45;cursor:not-allowed}
   .daily-control.pending{background:#fff3cd;color:#785b16}
   .daily-grid input[type="number"]::-webkit-inner-spin-button,.daily-grid input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   .daily-money-wrap{display:block;position:relative;width:100%;height:100%}.daily-grid .daily-money-wrap input:not(:focus){color:transparent}.daily-money-visible{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:2px;pointer-events:none;font-family:Arial,sans-serif;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}.daily-money-wrap:focus-within .daily-money-visible{display:none}.daily-grid input.control-mismatch+.daily-money-visible{color:#8d2f25}
@@ -702,13 +704,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=627"></script>
-<script src="operations-staff-view.js?v=627"></script>
-<script src="operations-monthly-daily-performance.js?v=627"></script>
-  <script src="operations-report-fit.js?v=627"></script>
-  <script src="operations-auth-bridge.js?v=627"></script>
-  <script src="operations-voucher-preview.js?v=627"></script>
-  <script src="operations-voucher-view.js?v=627"></script>
+<script src="operations-time.js?v=628"></script>
+<script src="operations-staff-view.js?v=628"></script>
+<script src="operations-monthly-daily-performance.js?v=628"></script>
+  <script src="operations-report-fit.js?v=628"></script>
+  <script src="operations-auth-bridge.js?v=628"></script>
+  <script src="operations-voucher-preview.js?v=628"></script>
+  <script src="operations-voucher-view.js?v=628"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -874,7 +876,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=627';
+      script.src='operations-petty-cash-evidence.js?v=628';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1329,12 +1331,13 @@ function calculateDailyControls(root,cardSalesCheck){
     pendingRows=Object.keys(rowKeys).filter(function(key){return pendingInputs.some(function(input){return input.dataset.rowKey===key})}),
     pendingCategories=category.filter(function(total){return pendingInputs.some(function(input){return input.dataset.columnCode===total.dataset.columnCode})}).map(function(input){return input.dataset.columnCode}),
     invalidInputs=inputs.filter(function(input){return !['signature','unclosed_order','note'].includes(input.dataset.role)&&((input.validity&&input.validity.badInput)||(input.value.trim()!==''&&read(input)==null))});
-  var numericValid=!missing&&invalidInputs.length===0&&pendingRows.length===0&&staffAtomic>0&&rowMismatchKeys.length===0&&categoryMismatchCodes.length===0&&!stylistSubtotalMismatch
+  var arithmeticValid=!missing&&invalidInputs.length===0&&staffAtomic>0&&rowMismatchKeys.length===0&&categoryMismatchCodes.length===0&&!stylistSubtotalMismatch
     &&Math.abs(staffAtomic-staffReported)<=tol&&Math.abs(staffAtomic-categoryReported)<=tol
     &&Math.abs(methodTotal-cashValue)<=tol
     &&(cashMode?Math.abs(actualValue-cashValue-(earnedMode?cardValue:0))<=tol&&Math.abs(actualValue+cardSales-grandValue)<=tol&&Math.abs(grandValue-paymentValue)<=tol
       :Math.abs(staffAtomic-actualValue)<=tol&&Math.abs(staffAtomic-grandValue)<=tol&&Math.abs(cashValue+cardValue-paymentValue)<=tol&&Math.abs(staffAtomic-paymentValue)<=tol);
-  return{pendingInputs:pendingInputs,invalidInputs:invalidInputs,pendingRows:pendingRows,pendingCategories:pendingCategories,valid:numericValid&&!sourceMissing,numericValid:numericValid,sourceMissing:sourceMissing,cashReviewCurrent:cashReviewCurrent,staffAtomic:staffAtomic,staffReported:staffReported,categoryReported:categoryReported,
+  var numericValid=arithmeticValid&&pendingRows.length===0;
+  return{arithmeticValid:arithmeticValid,pendingInputs:pendingInputs,invalidInputs:invalidInputs,pendingRows:pendingRows,pendingCategories:pendingCategories,valid:numericValid&&!sourceMissing,numericValid:numericValid,sourceMissing:sourceMissing,cashReviewCurrent:cashReviewCurrent,staffAtomic:staffAtomic,staffReported:staffReported,categoryReported:categoryReported,
     stylistSubtotal:stylistSubtotalValue,stylistSubtotalMismatch:stylistSubtotalMismatch,
     actual:actualValue,grand:grandValue,methodTotal:methodTotal,cashflow:cashValue,card:cardValue,payment:paymentValue,cashMode:cashMode,earnedMode:earnedMode,cardSales:cardSales,
     rowMismatch:rowMismatchKeys.length,categoryMismatch:categoryMismatchCodes.length,
@@ -1535,11 +1538,11 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=627"></script>
-  <script src="operations-daily-correction.js?v=627"></script>
-  <script src="operations-daily-electronic.js?v=627"></script>
-  <script src="operations-monthly-workbench.js?v=627"></script>
-  <script src="operations-daily-recognition.js?v=627"></script>
+  <script src="operations-daily-review.js?v=628"></script>
+  <script src="operations-daily-correction.js?v=628"></script>
+  <script src="operations-daily-electronic.js?v=628"></script>
+  <script src="operations-monthly-workbench.js?v=628"></script>
+  <script src="operations-daily-recognition.js?v=628"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>
