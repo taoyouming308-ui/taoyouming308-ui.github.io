@@ -1215,11 +1215,27 @@ body {
       .plan-page.active { display:block; padding-top:32px; }
     </style>
     <header class="page-intro page-intro-light">
-      <span class="page-kicker">HAIR AESTHETICS / 01</span>
-      <h2>发型审美训练</h2>
-      <a href="academy/index.html" style="display:block;margin:12px 0;padding:14px;border-radius:12px;background:#16181c;color:#fff;text-decoration:none;font-weight:600">烫发研习院 · 每日图文课 →<small style="display:block;font-weight:400;color:#bbb">课程目录｜每日一课 · 历史归档</small></a>
-      <p>每日五分钟 · 从人物出发，看案例、学判断。</p>
+      <span class="page-kicker">HAIR EDUCATION / 学习中心</span>
+      <h2>发型专业研习</h2>
+      <p>选择一个学习方向，进入对应的课程。</p>
     </header>
+    <div id="hair-learning-chooser" style="display:grid;gap:12px;margin:18px 0 22px">
+      <button type="button" onclick="window.selectHairLearningTrack('aesthetic')" style="text-align:left;width:100%;padding:20px;border:1px solid #dedbd5;border-radius:16px;background:#fff;color:#171717;cursor:pointer;font:inherit">
+        <span style="display:block;font-size:12px;color:#777;letter-spacing:1px">01 / AESTHETICS</span>
+        <strong style="display:block;font-size:20px;margin:5px 0">发型审美训练 ↗</strong>
+        <span style="display:block;font-size:14px;color:#666">人物分析 · 风格定位 · 轮廓层次 · 每日案例</span>
+      </button>
+      <a href="academy/index.html" style="display:block;padding:20px;border:1px solid #dedbd5;border-radius:16px;background:#f2f0eb;color:#171717;text-decoration:none">
+        <span style="display:block;font-size:12px;color:#777;letter-spacing:1px">02 / PERM ACADEMY</span>
+        <strong style="display:block;font-size:20px;margin:5px 0">烫发研习院 ↗</strong>
+        <span style="display:block;font-size:14px;color:#666">热烫科学 · 药剂原理 · 排杠技术 · 每日图文课</span>
+      </a>
+    </div>
+    <div id="hair-learning-aesthetic" style="display:none">
+      <button type="button" onclick="window.selectHairLearningTrack('home')" style="border:0;background:transparent;padding:8px 0 14px;color:#555;font:inherit">← 返回学习中心</button>
+      <h3 style="font-size:21px;margin:0 0 6px">发型审美训练</h3>
+      <p style="color:#777;font-size:14px">每日五分钟 · 从人物出发，看案例、学判断。</p>
+    </div>
     <nav class="plan-nav" id="plan-nav" style="display:none" aria-hidden="true">
       <button onclick="switchPlan('academy')" class="on">研习</button>
       <button onclick="switchPlan('calc')">自由换算</button>
@@ -1227,7 +1243,7 @@ body {
     </nav>
 
   <section class="plan-page active" id="plan-academy">
-    <a href="academy/index.html" style="display:block;margin:0 0 18px;padding:18px;border-radius:14px;background:#f4f1eb;color:#171717;text-decoration:none;border:1px solid #dedad3"><strong style="display:block;font-size:17px">烫发研习院 · 每日图文课 →</strong><span style="font-size:13px">今日新课：为什么同样软化程度，卷度却不同？</span></a>
+    
     <div id="perm-academy-root" aria-live="polite"></div>
   </section>
 
@@ -13013,6 +13029,23 @@ window.renderHairServicePhoto = function(photoType) {
   });
   var documentReady=document.readyState==='loading'?new Promise(function(resolve){document.addEventListener('DOMContentLoaded',resolve,{once:true});}):Promise.resolve();
   Promise.all([documentReady,styleReady]).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);
+})();
+</script>
+<script>
+(function(){
+  function choose(track){
+    var chooser=document.getElementById('hair-learning-chooser');
+    var heading=document.getElementById('hair-learning-aesthetic');
+    var lesson=document.getElementById('plan-academy');
+    if(!chooser||!heading||!lesson)return;
+    var open=track==='aesthetic';
+    chooser.style.display=open?'none':'grid';
+    heading.style.display=open?'block':'none';
+    lesson.style.display=open?'block':'none';
+  }
+  window.selectHairLearningTrack=choose;
+  function init(){choose('home');}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 </body>
