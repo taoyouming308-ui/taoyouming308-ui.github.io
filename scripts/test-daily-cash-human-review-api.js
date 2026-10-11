@@ -18,6 +18,28 @@ async function main(){
  assert.equal(calls.length,1,'invalid requests never reach privileged RPC');
  context.financeRpcSaved=async()=>{throw Error('DAILY_CASH_REVIEW_SOURCE_CHANGED');};
  await assert.rejects(context.reviewDailyCashSources(payload,session),/SOURCE_CHANGED/);
+ // Exercise the real confirmation dispatcher, not only the archive helper.
+ let archived=0;let draft={status:'draft',edit_revision:10,source_voucher_id:null};
+ context.hasAuthCapability=(s,c)=>s.auth_capabilities?.includes(c);
+ context.restRows=async query=>{assert.match(query,new RegExp('company_id=eq.'+id(1)));assert.match(query,new RegExp('store_id=eq.'+id(2)));return [draft];};
+ context.confirmElectronicDailySheet=async(company,store,draftId,actor,actualSession,actualDraft,consent,revision)=>{
+  assert.equal(company,id(1));assert.equal(store,id(2));assert.equal(draftId,id(5));assert.equal(actor,id(3));
+  assert.equal(actualSession.auth_user_id,id(4));assert.equal(revision,10);archived++;return {confirmed:true};};
+ vm.runInContext(stripTypeScriptTypes(source.slice(end,source.indexOf('\nasync function confirmElectronicDailySheet(',end))),context);
+ const electronic={store:'Synthetic',draft_id:id(5),expected_revision:10,reviewed_all:true,reason:'Synthetic explicit final review',
+  company_id:id(98),actor_user_id:id(99),cash_source_confirmation:{statement:'electronic-channels-sales-v1',source_token:'a'.repeat(64),request_id:id(6)}};
+ assert.equal((await context.confirmDailySheetDraft(electronic,session)).confirmed,true);
+ for(const patch of [{store:'Other'},{expected_revision:9},{expected_revision:null},{reviewed_all:false},
+  {cash_source_confirmation:{...electronic.cash_source_confirmation,source_token:'bad'}},
+  {cash_source_confirmation:{...electronic.cash_source_confirmation,statement:'automatic'}}])
+  await assert.rejects(context.confirmDailySheetDraft({...electronic,...patch},session));
+ for(const patch of [{operations_role:'shareholder'},{auth_capabilities:[]}])
+  await assert.rejects(context.confirmDailySheetDraft(electronic,{...session,...patch}));
+ draft={...draft,source_voucher_id:id(7)};
+ await assert.rejects(context.confirmDailySheetDraft(electronic,session),/原件状态已变化/);
+ draft={...draft,source_voucher_id:null,status:'confirmed'};
+ await assert.rejects(context.confirmDailySheetDraft(electronic,session),/已经确认/);
+ assert.equal(archived,1,'invalid electronic requests never start a storage archive');
  console.log('Cash review API: trusted server actor/Auth binding, selected store, strict attestation, revision and RPC failure propagation passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
