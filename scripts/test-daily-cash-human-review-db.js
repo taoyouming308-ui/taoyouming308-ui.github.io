@@ -120,6 +120,21 @@ async function main(){let created=false;try{
  assert.equal(snapshot(),collisionSnapshot,'old 409 rolls back every financial record');
  sql(fs.readFileSync('supabase/migrations/20261010111632_zysyr_daily_post_logical_cells.sql','utf8'));
  sql(fs.readFileSync('supabase/migrations/20261010111632_zysyr_daily_post_logical_cells.sql','utf8'));
+ // January-shaped legacy metadata retains the original-photo posting path.
+ // Only synthetic data inside a rolled-back transaction; no conversion to the
+ // newer cash policy and no extra source attestation is invented for old sheets.
+ const legacyReport={...report,report_date:'2026-01-04'};
+ const legacyPost=service+"select public.zysyr_confirm_daily_sheet("+[A,C,S,D].map(q).join(',')+','+q(JSON.stringify(legacyReport))+"::jsonb,true,'Synthetic reviewed legacy sheet',0);";
+ const legacyResult=json(`begin;
+ update zysyr_daily_sheet_drafts set report_date='2026-01-04',ocr_model='frontdesk-autofill-v2',ocr_raw_result='{"autofill":{"cash_receipts":{"policy":"operating-external-cash-v1","state":"unavailable"}}}';
+ insert into zysyr_daily_sheet_cells(company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,ocr_numeric,manual_override,corrected_numeric)
+ values('${C}','${S}','${D}','stylist','stylist_1','Synthetic','douyin','Synthetic project',3,4,'staff_value','frontdesk_autofill',null,true,0),
+ ('${C}','${S}','${D}','stylist','stylist_1','Synthetic','treatment','Synthetic project',3,5,'staff_value','frontdesk_autofill',null,true,0);
+ ${legacyPost}
+ select jsonb_build_object('status',(select status from zysyr_daily_sheet_drafts),'date',(select report_date from zysyr_daily_sheet_drafts),'income',(select sum(amount) from zysyr_income_records where status='approved'));
+ rollback;`);
+ assert.deepEqual(legacyResult,{status:'confirmed',date:'2026-01-04',income:100},'reviewed legacy January values post through existing database path');
+ assert.equal(snapshot(),collisionSnapshot,'legacy regression leaves the newer cash fixture and ledger unchanged');
  const wrapper=(patch={})=>service+"select public.zysyr_confirm_daily_sheet_reviewed("+[A,patch.auth||U,C,S,D].map(q).join(',')+','+q(JSON.stringify(report))+"::jsonb,true,'Synthetic explicit final consent',"+(patch.revision??0)+','+q(patch.token||status().source_token)+','+q(id(120))+','+q(patch.statement||'cash-original-channels-sales-v1')+');';
  for(const patch of [{auth:id(99)},{revision:9},{token:'wrong'},{statement:'automatic'}])fail(wrapper(patch),/FORBIDDEN|REVISION_CONFLICT|SOURCE_CHANGED|EXPLICIT_CONFIRMATION_REQUIRED/);
  assert.equal(snapshot(),collisionSnapshot);

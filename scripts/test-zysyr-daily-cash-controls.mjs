@@ -8,6 +8,7 @@ const calc=html.slice(html.indexOf('function dailyCashReviewCurrent('),html.inde
 const messages=review.slice(review.indexOf('  function controlDifferences('),review.indexOf('  function localBlockReason('));
 let fields=[],draft={};
 const context=vm.createContext({state:{imports:{sheet:{draft}}},Number,Array,Math,Object,String,
+ grid:()=>({querySelectorAll:()=>fields}),
  dailyInputValue:input=>!input||input.value===''?null:Number(input.value)});
 vm.runInContext(calc+messages,context);
 function set(cash=true,{staff=979,actual=100,cashflow=100,card=879,sales=300,grand=400,payment=400,channelsComplete=true,earned=false}={}){
@@ -55,7 +56,7 @@ console.log('Actual UI checks: independent performance/cash controls, stored-val
 // Regression: unknown sales are a missing source, not a numeric discrepancy.
 const missingSales = set(true,{staff:28839,actual:28839,cashflow:28839,sales:null,grand:28839,payment:28839,card:2180});
 assert.equal(missingSales.valid,false);
-const missingMessage=context.controlDifferences(missingSales).find(d=>d.role==='summary_grand');
+const missingMessage=context.controlDifferences(missingSales).find(d=>d.columnCode==='card_subtotal');
 assert.equal(missingMessage.kind,'unknown');
 assert.equal(missingMessage.columnCode,'card_subtotal');
 assert.match(missingMessage.message,/充值售卡实收未核实/);

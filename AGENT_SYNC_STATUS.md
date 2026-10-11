@@ -1,3 +1,10 @@
+## 2026-10-11 · Legacy daily validation feedback (App version: v627)
+
+- Current owner: Codex. Base github/main addd87c v626; isolated fix/daily-validation-feedback, existing daily archive verified, unrelated private backups/screenshots preserved. This is a frontend compatibility/feedback repair, not a new accounting rule or source backfill.
+- Read-only diagnosis compared legacy January and current October metadata. Balanced totals did not resolve two legacy unknown project fields. The prior UI suppressed row/column mismatches when unknown fields existed, retained stale pending state after explicit numeric edits, and let candidate-yellow CSS override error-red backgrounds.
+- Derive pending state from live input, retain independent numeric mismatches, map errors to actual fields, and use the same old/new policy checks for the summary cards and posting explanation. Preserve ordinary blank versus source-unknown, explicit zero, current source/authority/revision guards and historical/manual amounts. No production write or posting performed.
+- Regression covers mobile/desktop actual styles, unknown-plus-error coexistence, live corrections, legacy save/readback/post, new cash/earned-card cards, cancelled confirmation, source races and lost replies. Isolated January-shaped PostgreSQL posting rolls back after verification. Full shared gate, PR CI and Pages readback remain release gates; actual user confirmation is not simulated.
+
 ## 2026-10-11 · Remove redundant receipt card (App version: v626)
 
 - Current owner: Codex. Last synchronized base checked: github/main de90b5d v625, focused fix/daily-receipt-hint; tracked tree clean before edits and existing daily archive verified. Unrelated untracked backups and screenshots preserved.
