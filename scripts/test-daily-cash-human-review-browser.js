@@ -23,14 +23,14 @@ async function setup(page,origin){
    if(op==='daily_sheet_read'){const copy=structuredClone(syntheticSheet);if(syntheticRace)copy.cash_review.source_token='b'.repeat(64);return copy;}
    if(op==='daily_sheet_save'){
     for(const change of p.cells){const c=syntheticSheet.cells.find(x=>x.id===change.id);if(c){if('value' in change){c.manual_override=true;c.corrected_numeric=change.value;}if('row_label' in change)c.row_label=change.row_label;}}
-    syntheticSheet.draft.edit_revision++;syntheticSheet.cash_review.revision=syntheticSheet.draft.edit_revision;return structuredClone(syntheticSheet);
+    syntheticSheet.draft.edit_revision++;syntheticSheet.cash_review.revision=syntheticSheet.draft.edit_revision;syntheticSheet.draft.validation_result={valid:calculateDailyControls(document.getElementById('daily-detail-grid')).numericValid};return structuredClone(syntheticSheet);
    }
    if(op==='daily_sheet_cash_review'){
     if(p.expected_revision!==syntheticSheet.draft.edit_revision||p.source_token!==syntheticSheet.cash_review.source_token)throw Error('synthetic stale');
     syntheticSheet.cash_review={...syntheticSheet.cash_review,status:'current',reason:p.reason};syntheticSheet.draft.validation_result={valid:true};
     if(syntheticLost)throw Error('synthetic lost response');return structuredClone(syntheticSheet);
    }
-   if(op==='daily_sheet_confirm'){if(p.cash_source_confirmation?.statement!==(syntheticSheet.cash_review.electronic_ready?'electronic-channels-sales-v1':'cash-original-channels-sales-v1'))throw Error('explicit consent required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
+   if(op==='daily_sheet_confirm'){if(syntheticSheet.draft.ocr_raw_result.autofill.cash_receipts.state==='candidate'){if(p.cash_source_confirmation?.statement!==(syntheticSheet.cash_review.electronic_ready?'electronic-channels-sales-v1':'cash-original-channels-sales-v1'))throw Error('explicit consent required');}else if(p.cash_source_confirmation||syntheticSheet.draft.validation_result.valid!==true)throw Error('legacy numeric validation required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
    if(op==='daily_sheet_month')return {days:[]};throw Error('Unexpected '+op);
   };
   window.assertSynthetic=()=>{if(syntheticSheet.cash_review.status!=='current')throw Error('synthetic proof required');};
@@ -58,6 +58,70 @@ async function run(){
   assert.match(await page.evaluate(()=>syntheticDialogs[0]),/充值售卡实收/);
   assert.equal(await page.evaluate(()=>Number(syntheticSheet.cells.find(x=>x.column_code==='card_subtotal').corrected_numeric)),0);
   assert.deepEqual(errors,[]);await page.close();
+ }
+ // Legacy source draft: balanced visible totals do not resolve two unknown project
+ // cells. Typing a value resolves that cell immediately; no inferred zero or write.
+ for(const width of [390,1280]){
+  const page=await browser.newPage({viewport:{width,height:900}});
+  await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
+  await page.evaluate(()=>{
+   syntheticSheet.draft.ocr_model='frontdesk-autofill-v2';
+   syntheticSheet.draft.ocr_raw_result.autofill={cash_receipts:{policy:'operating-external-cash-v1',state:'unavailable'}};
+   syntheticSheet.cells.filter(c=>c.section_code==='stylist').forEach(c=>c.source_method='frontdesk_autofill');
+   for(const code of ['douyin','treatment'])syntheticSheet.cells.push({id:'unknown-'+code,section_code:'stylist',row_key:'stylist_1',row_label:'Synthetic',column_code:code,column_label:code,cell_role:'staff_value',row_number:3,column_number:3,ocr_numeric:null,manual_override:false,source_method:'frontdesk_autofill'});
+   state.imports.sheet=structuredClone(syntheticSheet);renderDailySheetDetail();syntheticCancel=true;
+  });
+  const first=page.locator('[data-daily-cell="synthetic-0"]'),unknown=page.locator('[data-daily-cell="unknown-douyin"]'),second=page.locator('[data-daily-cell="unknown-treatment"]');
+  assert.equal(await page.locator('#daily-detail-controls .pending').count()>0,true,'balanced unknown projects must not present all-green readiness');
+  assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/Synthetic.*抖音.*护理/);
+  await first.fill('101');
+  assert.equal(await first.evaluate(el=>el.classList.contains('control-mismatch')),true,'wrong amount remains red even with unknown project cells in same row');
+  assert.equal(await page.locator('[data-daily-cell="synthetic-1"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(253, 229, 223)','red validation visibly overrides the yellow candidate style');
+  assert.equal(await page.locator('[data-daily-cell="synthetic-3"]').evaluate(el=>el.classList.contains('control-mismatch')),true,'the actual stylist subtotal cell is highlighted, not just a nonexistent virtual role');
+  assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/差额.*1\.00/);
+  await page.locator('#daily-detail-confirm-top').click();
+  assert.equal(await page.evaluate(()=>syntheticDialogs.length),0,'wrong amount never reaches final consent');
+  await first.fill('100');await unknown.fill('0');
+  assert.equal(await unknown.evaluate(el=>el.classList.contains('control-pending')),false,'live explicit zero clears stale unknown marker');
+  assert.equal(await second.evaluate(el=>el.classList.contains('control-pending')),true,'other unknown remains unresolved');
+  await second.fill('0');
+  assert.equal(await page.locator('#daily-detail-confirm-top').getAttribute('data-block-reason'),'');
+  await page.locator('#daily-detail-confirm-top').click();
+  assert.equal(await page.evaluate(()=>syntheticDialogs.length),1,'balanced explicitly reviewed projects reach final consent');
+  assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save'||x.op==='daily_sheet_confirm')),false,'cancelled consent never writes');
+  await unknown.fill('');
+  assert.equal(await unknown.evaluate(el=>el.classList.contains('control-pending')),true,'clearing the input restores unknown state');
+  await unknown.fill('0');await first.fill('-1');
+  assert.equal(await first.evaluate(el=>el.classList.contains('control-mismatch')),true,'negative input is immediately red');
+  assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/非负/);
+  await first.fill('100');
+  const method=page.locator('[data-daily-cell="synthetic-7"]');await method.fill('99');
+  assert.equal(await method.getAttribute('aria-invalid'),'true','wrong payment channel is visibly marked');
+  assert.equal(await method.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(253, 229, 223)');
+  assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/现金流.*差额.*1\.00/);
+  await page.locator('[data-daily-cell="synthetic-8"]').fill('99');await page.locator('[data-daily-cell="synthetic-9"]').fill('99');
+  assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/支付总计.*员工合计.*差额.*-1\.00/,'legacy payment-to-staff guard has an explicit reason');
+  await method.fill('100');await page.locator('[data-daily-cell="synthetic-8"]').fill('100');await page.locator('[data-daily-cell="synthetic-9"]').fill('100');
+  assert.equal(await page.locator('#daily-detail-controls .bad,#daily-detail-controls .pending').count(),0,'resolved legacy draft restores consistent cards');
+  await page.evaluate(()=>{syntheticCancel=false;syntheticDialogs=[];});
+  await page.locator('#daily-detail-confirm-top').click();await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
+  assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),1,'legacy save/readback/final posting still works after explicit corrections');
+  assert.equal(await page.evaluate(()=>Number(syntheticSheet.cells.find(x=>x.id==='unknown-douyin').corrected_numeric)),0);
+  await page.close();
+ }
+ // New cash and earned-card policies must not inherit legacy staff=receipt
+ // presentation. Different amounts can legitimately reconcile under each policy.
+ for(const earned of [false,true]){
+  const page=await browser.newPage();await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
+  await page.evaluate(earned=>{
+   const m=syntheticSheet.draft.ocr_raw_result.autofill;m.daily_total_policy=earned?'cash-plus-earned-card-v1':null;m.cash_receipts.cash_channels_complete=true;
+   for(const c of syntheticSheet.cells){if(['alipay','cash_flow'].includes(c.column_code))c.ocr_numeric=80;if(c.column_code==='card_consumption')c.ocr_numeric=20;if(c.column_code==='card_subtotal')c.ocr_numeric=0;if(['actual_total','grand_total','total'].includes(c.column_code))c.ocr_numeric=earned?100:80;}
+   state.imports.sheet=structuredClone(syntheticSheet);renderDailySheetDetail();
+  },earned);
+  assert.equal(await page.locator('#daily-detail-controls .bad,#daily-detail-controls .pending').count(),0,'cash policy cards agree with the numeric gate');
+  assert.equal(await page.locator('#daily-detail-confirm-top').getAttribute('data-block-reason'),'');
+  if(earned){await page.locator('[data-role="payment_card_consumption"]').fill('');assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/卡金消费尚未核实/);}
+  await page.close();
  }
  // Screenshot-shaped blank receipt: known three-channel totals, ordinary blanks,
  // no earned-card policy. Synthetic normalized amounts contain no business data.

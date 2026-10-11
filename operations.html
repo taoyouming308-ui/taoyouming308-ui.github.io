@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="626">
+<html lang="zh-CN" data-version="627">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -31,6 +31,10 @@
   .daily-grid input.paper-text{text-align:left}.daily-grid .row-label input{width:100%;min-width:0;border:0;background:transparent;font-weight:800;text-align:center;padding:2px 0;font-size:11px;outline:0}
   .daily-grid{min-width:1600px}
   .daily-grid input[type="number"]{appearance:textfield;-moz-appearance:textfield;font-family:Arial,sans-serif;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}
+  /* Validation must stay visible above yellow source-candidate styling. */
+  .daily-grid input.control-mismatch{background:#fde5df!important;box-shadow:inset 0 0 0 1px #b74635!important}
+  .daily-grid input.control-pending{background:#fff3cd!important;box-shadow:inset 0 0 0 1px #bb8b23!important}
+  .daily-control.pending{background:#fff3cd;color:#785b16}
   .daily-grid input[type="number"]::-webkit-inner-spin-button,.daily-grid input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   .daily-money-wrap{display:block;position:relative;width:100%;height:100%}.daily-grid .daily-money-wrap input:not(:focus){color:transparent}.daily-money-visible{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:2px;pointer-events:none;font-family:Arial,sans-serif;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums}.daily-money-wrap:focus-within .daily-money-visible{display:none}.daily-grid input.control-mismatch+.daily-money-visible{color:#8d2f25}
   .daily-month-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0}.daily-month-bar input[type="month"],.daily-month-bar select{padding:6px 10px;border:1px solid #b8b5aa;border-radius:8px;font:inherit}
@@ -698,13 +702,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=626"></script>
-<script src="operations-staff-view.js?v=626"></script>
-<script src="operations-monthly-daily-performance.js?v=626"></script>
-  <script src="operations-report-fit.js?v=626"></script>
-  <script src="operations-auth-bridge.js?v=626"></script>
-  <script src="operations-voucher-preview.js?v=626"></script>
-  <script src="operations-voucher-view.js?v=626"></script>
+<script src="operations-time.js?v=627"></script>
+<script src="operations-staff-view.js?v=627"></script>
+<script src="operations-monthly-daily-performance.js?v=627"></script>
+  <script src="operations-report-fit.js?v=627"></script>
+  <script src="operations-auth-bridge.js?v=627"></script>
+  <script src="operations-voucher-preview.js?v=627"></script>
+  <script src="operations-voucher-view.js?v=627"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -870,7 +874,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=626';
+      script.src='operations-petty-cash-evidence.js?v=627';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1319,16 +1323,18 @@ function calculateDailyControls(root,cardSalesCheck){
     methodTotal=sum(methods),actualValue=read(actual),grandValue=read(grand),cashValue=read(cashflow),cardValue=read(card)||0,paymentValue=read(payment),
     cashReviewCurrent=dailyCashReviewCurrent(),sourceMissing=cashMode&&cashMetadata.cash_channels_complete!==true&&!cashReviewCurrent,
     missing=[actualValue,grandValue,cashValue,paymentValue].some(function(value){return value==null})||!atomic.some(function(input){return read(input)!=null})||(earnedMode&&read(card)==null)||(cashMode&&cardSales==null);
-  var pendingRows=Object.keys(rowKeys).filter(function(key){return atomic.some(function(input){return input.dataset.rowKey===key&&input.dataset.autofillUnknown==='1'})}),pendingCategories=category.filter(function(total){return atomic.some(function(input){return input.dataset.columnCode===total.dataset.columnCode&&input.dataset.autofillUnknown==='1'})}).map(function(input){return input.dataset.columnCode});
-  rowMismatchKeys=rowMismatchKeys.filter(function(key){return pendingRows.indexOf(key)<0});
-  categoryMismatchCodes=categoryMismatchCodes.filter(function(code){return pendingCategories.indexOf(code)<0});
-  if(pendingRows.length)stylistSubtotalMismatch=false;
-  var numericValid=!missing&&pendingRows.length===0&&staffAtomic>0&&rowMismatchKeys.length===0&&categoryMismatchCodes.length===0&&!stylistSubtotalMismatch
+  // A live explicit numeric edit resolves its old source-unknown marker. An
+  // unresolved neighbour must never suppress independently visible differences.
+  var pendingInputs=atomic.filter(function(input){return input.dataset.autofillUnknown==='1'&&read(input)==null}),
+    pendingRows=Object.keys(rowKeys).filter(function(key){return pendingInputs.some(function(input){return input.dataset.rowKey===key})}),
+    pendingCategories=category.filter(function(total){return pendingInputs.some(function(input){return input.dataset.columnCode===total.dataset.columnCode})}).map(function(input){return input.dataset.columnCode}),
+    invalidInputs=inputs.filter(function(input){return !['signature','unclosed_order','note'].includes(input.dataset.role)&&((input.validity&&input.validity.badInput)||(input.value.trim()!==''&&read(input)==null))});
+  var numericValid=!missing&&invalidInputs.length===0&&pendingRows.length===0&&staffAtomic>0&&rowMismatchKeys.length===0&&categoryMismatchCodes.length===0&&!stylistSubtotalMismatch
     &&Math.abs(staffAtomic-staffReported)<=tol&&Math.abs(staffAtomic-categoryReported)<=tol
     &&Math.abs(methodTotal-cashValue)<=tol
     &&(cashMode?Math.abs(actualValue-cashValue-(earnedMode?cardValue:0))<=tol&&Math.abs(actualValue+cardSales-grandValue)<=tol&&Math.abs(grandValue-paymentValue)<=tol
       :Math.abs(staffAtomic-actualValue)<=tol&&Math.abs(staffAtomic-grandValue)<=tol&&Math.abs(cashValue+cardValue-paymentValue)<=tol&&Math.abs(staffAtomic-paymentValue)<=tol);
-  return{pendingRows:pendingRows,pendingCategories:pendingCategories,valid:numericValid&&!sourceMissing,numericValid:numericValid,sourceMissing:sourceMissing,cashReviewCurrent:cashReviewCurrent,staffAtomic:staffAtomic,staffReported:staffReported,categoryReported:categoryReported,
+  return{pendingInputs:pendingInputs,invalidInputs:invalidInputs,pendingRows:pendingRows,pendingCategories:pendingCategories,valid:numericValid&&!sourceMissing,numericValid:numericValid,sourceMissing:sourceMissing,cashReviewCurrent:cashReviewCurrent,staffAtomic:staffAtomic,staffReported:staffReported,categoryReported:categoryReported,
     stylistSubtotal:stylistSubtotalValue,stylistSubtotalMismatch:stylistSubtotalMismatch,
     actual:actualValue,grand:grandValue,methodTotal:methodTotal,cashflow:cashValue,card:cardValue,payment:paymentValue,cashMode:cashMode,earnedMode:earnedMode,cardSales:cardSales,
     rowMismatch:rowMismatchKeys.length,categoryMismatch:categoryMismatchCodes.length,
@@ -1529,11 +1535,11 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=626"></script>
-  <script src="operations-daily-correction.js?v=626"></script>
-  <script src="operations-daily-electronic.js?v=626"></script>
-  <script src="operations-monthly-workbench.js?v=626"></script>
-  <script src="operations-daily-recognition.js?v=626"></script>
+  <script src="operations-daily-review.js?v=627"></script>
+  <script src="operations-daily-correction.js?v=627"></script>
+  <script src="operations-daily-electronic.js?v=627"></script>
+  <script src="operations-monthly-workbench.js?v=627"></script>
+  <script src="operations-daily-recognition.js?v=627"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>

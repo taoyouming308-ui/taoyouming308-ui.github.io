@@ -156,6 +156,24 @@
   }
   function controlDifferences(c) {
     var amount = function (value) { return value == null ? '空白' : Number(value).toFixed(2) + ' 元'; };
+    var inputs = Array.from(grid().querySelectorAll('[data-daily-cell],[data-new-cell]'));
+    var sum = function (list) { return list.reduce(function (n, input) { return n + (dailyInputValue(input) || 0); }, 0); };
+    var delta = function (actual, expected) { return actual == null || expected == null ? '' : '，差额 ' + (actual - expected).toFixed(2) + ' 元'; };
+    var detailed = (c.invalidInputs || []).map(function (input) {
+      return { input: input, kind: 'mismatch', message: (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel + '必须填写有效的非负金额或数量' };
+    }).concat(c.rowMismatchKeys.map(function (key) {
+      var cells = inputs.filter(function (input) { return input.dataset.role === 'staff_value' && input.dataset.rowKey === key; });
+      var total = inputs.find(function (input) { return input.dataset.role === 'staff_total' && input.dataset.rowKey === key; });
+      var actual = sum(cells), expected = dailyInputValue(total);
+      return { role: 'staff_total', rowKey: key, kind: expected == null ? 'unknown' : 'mismatch', message: (cells[0]?.dataset.rowLabel || key) + '：已填项目合计 ' + amount(actual) + '，员工小计 ' + amount(expected) + delta(actual, expected) };
+    })).concat(c.categoryMismatchCodes.map(function (code) {
+      var cells = inputs.filter(function (input) { return input.dataset.role === 'staff_value' && input.dataset.columnCode === code; });
+      var total = inputs.find(function (input) { return input.dataset.role === 'category_total' && input.dataset.columnCode === code; });
+      var actual = sum(cells), expected = dailyInputValue(total);
+      return { role: 'category_total', columnCode: code, kind: expected == null ? 'unknown' : 'mismatch', message: (total?.dataset.columnLabel || code) + '：已填项目合计 ' + amount(actual) + '，列小计 ' + amount(expected) + delta(actual, expected) };
+    })).concat((c.pendingInputs || []).map(function (input) {
+      return { input: input, kind: 'unknown', message: (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel + '来源未知，请核对后填写；确认无此项业务才填0，普通空白不需要补0' };
+    }));
     var receiptChecks = c.cashMode ? [
       ['summary_actual', '实做', c.actual, c.cashflow == null ? null : c.cashflow + (c.earnedMode ? c.card : 0), c.earnedMode ? '现金业绩＋实际获得卡金业绩' : '项目及零售实际收款'],
       ['summary_grand', '汇总总计', c.grand, c.cashflow == null || c.cardSales == null ? null : c.cashflow + c.cardSales + (c.earnedMode ? c.card : 0), '实做＋充值售卡实收'],
@@ -166,15 +184,34 @@
       ['summary_grand', '汇总总计', c.grand, c.staffAtomic, '员工合计'],
       ['payment_cashflow', '现金流', c.cashflow, c.methodTotal, '支付方式合计'],
       ['payment_total', '支付总计', c.payment, c.cashflow == null ? null : c.cashflow + c.card, '现金流＋卡金消费'],
+      ['payment_total', '支付总计', c.payment, c.staffAtomic, '员工合计'],
     ];
-    return [
+    return detailed.concat([
       ['stylist_category_subtotal', '造型区总小计', c.stylistSubtotal, c.staffAtomic, '员工明细合计'],
     ].concat(receiptChecks).filter(function (item) {
       if (c.cashMode && c.cardSales == null && item[0] === 'summary_grand') return false;
       return item[2] == null || item[3] == null || Math.abs(item[2] - item[3]) > 0.01;
     }).map(function (item) {
-      return { role: item[0], kind: item[2] == null || item[3] == null ? 'unknown' : 'mismatch', message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) };
-    }).concat(c.cashMode && c.cardSales == null ? [{ role: 'summary_grand', columnCode: 'card_subtotal', kind: 'unknown', message: '充值售卡实收未核实（汇总栏卡类小计为空白），无法核对汇总总计；卡金消费不是充值售卡实收，不能凭总计相等推定为0' }] : []);
+      return { role: item[0], kind: item[2] == null || item[3] == null ? 'unknown' : 'mismatch', message: item[1] + '为 ' + amount(item[2]) + '，' + item[4] + '为 ' + amount(item[3]) + delta(item[2], item[3]) };
+    }).concat(c.cashMode && c.cardSales == null ? [{ columnCode: 'card_subtotal', kind: 'unknown', message: '充值售卡实收未核实（汇总栏卡类小计为空白），无法核对汇总总计；卡金消费不是充值售卡实收，不能凭总计相等推定为0' }] : [])
+      .concat(c.earnedMode && dailyInputValue(inputs.find(function (input) { return input.dataset.role === 'payment_card_consumption'; })) == null ? [{ role: 'payment_card_consumption', kind: 'unknown', message: '卡金消费尚未核实，请填写实际获得卡金业绩；确认无此项业务才填0' }] : [])
+      .concat(c.staffAtomic <= 0 ? [{ role: 'staff_total', kind: 'unknown', message: '员工项目合计尚无有效正金额，请核对明细；当前规则不支持零金额日报入账' }] : []));
+  }
+  function renderControlSummary(c, differences) {
+    var value = function (n) { return n == null ? '空白' : Number(n).toFixed(2); };
+    var roles = function (names) { return differences.filter(function (item) { return names.includes(item.role) || item.columnCode === 'card_subtotal' && names.includes('summary_grand'); }); };
+    var card = function (label, amounts, issues, pending) {
+      var bad = issues.some(function (item) { return item.kind === 'mismatch'; });
+      var waiting = pending || issues.some(function (item) { return item.kind === 'unknown'; });
+      return '<div class="daily-control ' + (bad ? 'bad' : waiting ? 'pending' : 'ok') + '">' + esc(label) + '<strong>' + esc(amounts) + '</strong>' + (bad ? '有差额，请核对红色格子' : waiting ? '待核对，不能仅凭合计相等入账' : '一致') + '</div>';
+    };
+    var projectPending = c.pendingRows.length > 0;
+    document.getElementById('daily-detail-controls').innerHTML =
+      card('员工明细 ↔ 员工小计', value(c.staffAtomic) + ' / ' + value(c.staffReported), roles(['staff_total']).concat(differences.filter(function (i) { return i.input && i.kind === 'mismatch'; })), projectPending)
+      + card('项目列小计', value(c.staffAtomic) + ' / ' + value(c.categoryReported), roles(['category_total']), projectPending)
+      + card('造型区总小计', value(c.staffAtomic) + ' / ' + value(c.stylistSubtotal), roles(['stylist_category_subtotal']), projectPending)
+      + card(c.cashMode ? '实做 / 汇总总计（含售卡实收）' : '员工合计 ↔ 实做/总计', (c.cashMode ? '' : value(c.staffAtomic) + ' / ') + value(c.actual) + ' / ' + value(c.grand), roles(['summary_actual', 'summary_grand']), false)
+      + card(c.cashMode ? '渠道 / 现金业绩 / 卡金 / 支付总计' : '支付方式 ↔ 现金流+卡金 ↔ 总计', value(c.methodTotal) + ' / ' + value(c.cashflow) + (c.cashMode ? ' / ' : ' + ') + value(c.card) + ' / ' + value(c.payment), roles(['payment_cashflow', 'payment_total', 'payment_card_consumption']), false);
   }
   function blankSalesReady() {
     var c = calculateDailyControls(grid());
@@ -207,13 +244,24 @@
     var writable = sheet.permissions && sheet.permissions.write && !confirmed && !uncertain && (!sheet.locked || sheet.daily_unlock_approved);
     var dirty = dailySheetDirtyCount(), pending = pendingCandidates().length;
     var controls = calculateDailyControls(grid()), differences = controlDifferences(controls);
+    renderControlSummary(controls, differences);
     grid().querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function (input) {
-      var issue = differences.find(function (item) { return item.role === input.dataset.role; });
+      var issues = differences.filter(function (item) {
+        if (item.input) return item.input === input;
+        var roleMatches = !item.role || item.role === input.dataset.role
+          || item.role === 'stylist_category_subtotal' && input.dataset.section === 'stylist' && input.dataset.rowKey === 'stylist_category_total' && input.dataset.columnCode === 'subtotal'
+          || item.role === 'payment_cashflow' && input.dataset.role === 'payment_method';
+        return roleMatches && (!item.rowKey || item.rowKey === input.dataset.rowKey) && (!item.columnCode || item.columnCode === input.dataset.columnCode);
+      });
       input.setAttribute('aria-label', (input.dataset.rowLabel || '') + ' · ' + input.dataset.columnLabel);
       var pendingSales = !confirmed && controls.cashMode && controls.cardSales == null && input.dataset.section === 'summary' && input.dataset.columnCode === 'card_subtotal';
-      input.classList.toggle('control-pending', pendingSales || !!issue && issue.kind === 'unknown');
-      if (pendingSales) input.classList.remove('control-mismatch');
-      if (['summary_actual', 'summary_grand', 'payment_cashflow', 'payment_total'].includes(input.dataset.role)) input.classList.toggle('control-mismatch', !!issue && issue.kind !== 'unknown');
+      var projectDifference = input.dataset.section === 'stylist' && ['staff_value', 'staff_total', 'category_total'].includes(input.dataset.role) && differences.some(function (item) {
+        return item.kind === 'mismatch' && (item.role === 'staff_total' && item.rowKey === input.dataset.rowKey || item.role === 'category_total' && item.columnCode === input.dataset.columnCode);
+      });
+      var mismatch = projectDifference || issues.some(function (item) { return item.kind === 'mismatch'; });
+      input.classList.toggle('control-mismatch', mismatch);
+      input.classList.toggle('control-pending', !mismatch && (pendingSales || issues.some(function (item) { return item.kind === 'unknown'; })));
+      input.setAttribute('aria-invalid', String(mismatch));
       input.readOnly = !writable;
     });
     grid().querySelectorAll('[data-row-label-input]').forEach(function (input) { input.readOnly = !writable; });
