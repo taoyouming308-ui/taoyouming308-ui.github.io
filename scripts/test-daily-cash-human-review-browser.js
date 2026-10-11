@@ -30,7 +30,7 @@ async function setup(page,origin){
     syntheticSheet.cash_review={...syntheticSheet.cash_review,status:'current',reason:p.reason};syntheticSheet.draft.validation_result={valid:true};
     if(syntheticLost)throw Error('synthetic lost response');return structuredClone(syntheticSheet);
    }
-   if(op==='daily_sheet_confirm'){if(p.cash_source_confirmation?.statement!=='cash-original-channels-sales-v1')throw Error('explicit consent required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
+   if(op==='daily_sheet_confirm'){if(p.cash_source_confirmation?.statement!==(syntheticSheet.cash_review.electronic_ready?'electronic-channels-sales-v1':'cash-original-channels-sales-v1'))throw Error('explicit consent required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
    if(op==='daily_sheet_month')return {days:[]};throw Error('Unexpected '+op);
   };
   window.assertSynthetic=()=>{if(syntheticSheet.cash_review.status!=='current')throw Error('synthetic proof required');};
@@ -97,6 +97,27 @@ async function run(){
   }
   await page.close();
  }
+ for(const width of [390,1280])for(const mode of ['ready','missing','cancel','lost']){
+  const page=await browser.newPage({viewport:{width,height:900}});
+  await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
+  await page.evaluate(mode=>{
+   syntheticSheet.draft.source_voucher_id=null;syntheticSheet.attachments=[];
+   syntheticSheet.cash_review.original_ready=false;syntheticSheet.cash_review.electronic_ready=mode!=='missing';
+   syntheticSheet.cash_review.electronic_reason='电子明细与来源清单尚未同步一致';
+   syntheticCancel=mode==='cancel';syntheticLost=mode==='lost';
+   state.imports.sheet=structuredClone(syntheticSheet);renderDailySheetDetail();
+  },mode);
+  await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
+  assert.equal(await page.locator('#daily-detail-confirm-top').evaluate(b=>b.classList.contains('blocked-action')),mode==='missing');
+  await page.locator('#daily-detail-confirm-top').click();
+  if(['ready','lost'].includes(mode)){
+   try { await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed',{},{timeout:5000}); }
+   catch(e){console.error({mode,width,note:await page.locator('#daily-detail-note').innerText(),ops:await page.evaluate(()=>syntheticOps.map(x=>x.op))});throw e;}
+   assert.match(await page.evaluate(()=>syntheticDialogs[0]),/电子来源.*无需上传照片/);
+   assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),1);
+  }else assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm'||x.op==='daily_sheet_save')),false);
+  await page.close();
+ }
  const page=await browser.newPage();await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
  for(const mode of ['difference','race','lost']){
   await setup(page,origin);await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
@@ -104,7 +125,7 @@ async function run(){
   await page.evaluate(mode=>{syntheticRace=mode==='race';syntheticLost=mode==='lost';},mode);
   await page.locator('#daily-detail-confirm-top').click();
   if(mode==='lost')await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed');
-  else {await page.waitForFunction(()=>document.getElementById('daily-detail-note').textContent.includes('请核对：')||document.getElementById('daily-detail-note').textContent.includes('变化'));assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false);}
+  else {await page.waitForFunction(()=>/请核对：|变化|更新/.test(document.getElementById('daily-detail-note').textContent));assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_cash_review')),false);}
   assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),mode==='lost'?1:0);
  }
  await page.close();console.log('Simple final confirmation browser: mobile/desktop explicit zero, one dialog/save/post, cancel no writes, unknown/difference/source races blocked, lost reply recovered once.');

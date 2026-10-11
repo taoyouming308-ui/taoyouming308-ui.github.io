@@ -138,5 +138,6 @@ async function main(){let created=false;try{
  assert.equal(sql("select count(*) from zysyr_daily_report_lines l join zysyr_report_cells c on c.id=l.source_report_cell_id where l.amount=c.numeric_value"),'1','income maps to its exact logical source');
  assert.equal(sql("select status from zysyr_daily_sheet_drafts"),'confirmed');assert.equal(sql("select count(*) from zysyr_daily_sheet_versions"),'1');assert.equal(sql("select sum(amount) from zysyr_income_records where status='approved'"),'100.00');
  console.log('Cash review and full browser/Edge/PostgreSQL sequence: old real-shaped coordinate409 reproduced and fixed; atomic consent/post and lineage verified;  ordinary live posting succeeds; identity/scope/ACL/unknown/difference/revision/source/revocation/idempotency/immutable proof and rollback passed.');
+ await require('./test-daily-electronic-post-cases.js')({sql,json,q,C,S,A,U,id});
  }finally{if(created)docker(['stop',container]);}}
 main().catch(e=>{console.error(String(e.stderr||e));process.exitCode=1;});

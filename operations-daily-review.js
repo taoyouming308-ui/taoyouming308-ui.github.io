@@ -51,7 +51,7 @@
   function sheetVersion(sheet) {
     // Signed image URLs change on reads; they are not a financial revision.
     return JSON.stringify([sheet.draft.edit_revision, sheet.draft.status, sheet.draft.source_voucher_id,
-      sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved,
+      sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved, sheet.cash_review,
       (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
   }
   function sourceBusy() { return !!(window.ZysyrDailySourceActions && window.ZysyrDailySourceActions.busy()); }
@@ -189,9 +189,10 @@
     var approved = !!sheet.draft.source_voucher_id || (sheet.attachments || []).some(function (item) {
       return item.audit_status === 'approved' && item.document_type === 'daily_report';
     });
-    if (!approved) return '请先上传当天原始日报，并完成原件审核。';
+    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
+    if (!approved && !electronic) return sheet.cash_review?.electronic_reason || '请先上传当天原始日报，并完成原件审核；有电子来源的日报须先完成来源核对。';
     if (!c.valid) {
-      if ((c.numericValid && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && sheet.cash_review?.original_ready ? '' : '请先上传并审核原始日报；收款来源核实服务须可用。';
+      if ((c.numericValid && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -397,13 +398,15 @@
     if (reason) { showProblem(reason); return; }
     if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
     var c = calculateDailyControls(grid());
-    var cashConsent = c.cashMode ? { statement: 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
-    if (cashConsent && (!cashConsent.source_token || !sheet.cash_review?.original_ready)) { showProblem('请先上传并审核原始日报；收款来源核实服务须可用。'); return; }
+    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
+    var cashConsent = c.cashMode ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
+    if (cashConsent && (!cashConsent.source_token || !(sheet.cash_review?.original_ready || electronic))) { showProblem('原件或电子来源尚未就绪；收款来源核实服务须可用。'); return; }
     var salesBlank = blankSalesReady();
     var statement = salesBlank
       ? '充值售卡实收栏为空白。点击“确定”确认：本日没有充值、套餐或售卡实收，并按无此项收入保存为0；如有此项收入，请取消后填写实际金额。\n普通无业务明细保持空白，无需逐格补0。'
-      : '我已核对已审核原图、姓名、金额、各收款渠道及空白含义，充值售卡实收已填写明确金额（仅确认无业务才填0），没有未知收款。';
-    if (!window.confirm('确认入账？\n\n门店：' + ctx.store + '\n日期：' + ctx.date + '\n金额：¥' + Number(c.grand).toFixed(2) + '\n\n' + statement + '\n点击“确定”同时确认已核对原件、收款渠道及空白含义，没有未知收款；系统保存并校验后入账计入月报。')) return;
+      : '我已核对' + (electronic ? '电子来源' : '已审核原图') + '、姓名、金额、各收款渠道及空白含义，充值售卡实收已填写明确金额（仅确认无业务才填0），没有未知收款。';
+    if (electronic) statement += '\n本次依据电子来源入账，无需上传照片；系统留存电子来源版本和财务核对记录。';
+    if (!window.confirm('确认入账？\n\n门店：' + ctx.store + '\n日期：' + ctx.date + '\n金额：¥' + Number(c.grand).toFixed(2) + '\n\n' + statement + '\n点击“确定”同时确认已核对' + (electronic ? '电子来源' : '原件') + '、收款渠道及空白含义，没有未知收款；系统保存并校验后入账计入月报。')) return;
     // Only this necessary receipt is set by the user's explicit final choice.
     // All ordinary empty cells and deliberate manual blanks remain untouched.
     if (salesBlank) {
@@ -412,7 +415,7 @@
       salesInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     var snapshot = reviewedValues();
-    var saveReason = (salesBlank ? '财务明确确认本日无充值售卡实收；普通无业务明细空白保留；' : '') + '财务确认：已核对原件、金额、收款渠道及空白含义、充值售卡实收，无未知收款并确认入账'
+    var saveReason = (salesBlank ? '财务明确确认本日无充值售卡实收；普通无业务明细空白保留；' : '') + '财务确认：已核对' + (electronic ? '电子来源' : '原件') + '、金额、收款渠道及空白含义、充值售卡实收，无未知收款并确认入账'
       + (document.getElementById('daily-detail-reason').value.trim() ? '；备注：' + document.getElementById('daily-detail-reason').value.trim() : '');
     begin('post');
     var submitted = false;

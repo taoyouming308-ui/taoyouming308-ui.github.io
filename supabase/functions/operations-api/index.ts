@@ -5525,6 +5525,14 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
       p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId }); }
     catch (_) { /* A missing/failed contract never authorizes a review or posting. */ }
   }
+  if (!legacyVoucherId && draft.status === "draft" && cashReview.source_token) {
+    try {
+      const electronic = await financeRpcSaved("rpc/zysyr_daily_electronic_post_context", {
+        p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId });
+      cashReview.electronic_ready = electronic.ready === true;
+      cashReview.electronic_reason = electronic.reason ?? null;
+    } catch (_) { cashReview.electronic_ready = false; }
+  }
   const view = dailyAutofillView(draft, cells, storeId);
   return { draft: view.draft, current_validation_review: currentValidationReview, cash_review: cashReview,
     cells: view.cells.map((cell: JsonRecord) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
@@ -5958,8 +5966,12 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   if (expectedRevision !== null && Number(draft.edit_revision) !== expectedRevision) throw new Error("日报已被其他页面修改，请刷新、重新核对后再入账");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
   const cashConsent = payload.cash_source_confirmation && typeof payload.cash_source_confirmation === "object" ? payload.cash_source_confirmation as JsonRecord : null;
-  if (cashConsent && (cashConsent.statement !== "cash-original-channels-sales-v1" || !/^[a-f0-9]{64}$/.test(cleanText(cashConsent.source_token, 100))
+  if (cashConsent && (!["cash-original-channels-sales-v1", "electronic-channels-sales-v1"].includes(String(cashConsent.statement)) || !/^[a-f0-9]{64}$/.test(cleanText(cashConsent.source_token, 100))
     || expectedRevision === null)) throw new Error("请重新核对收款来源并确认入账");
+  if (cashConsent?.statement === "electronic-channels-sales-v1") {
+    if (draft.source_voucher_id) throw new Error("日报原件状态已变化，请重新核对后入账");
+    return confirmElectronicDailySheet(companyId, storeId, draftId as string, actorId, session, draft, cashConsent, expectedRevision as number, reason);
+  }
   if (validation.valid !== true && !cashConsent) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
   const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);
@@ -6013,6 +6025,46 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     console.error("daily sheet confirmation outcome requires readback; archive retained", draftId, objectPath);
     throw new Error(`${detail}；原图归档已保留，请刷新核实日报状态后再操作，避免重复入账。`);
   }
+}
+
+async function confirmElectronicDailySheet(companyId: string, storeId: string, draftId: string, actorId: string,
+  session: JsonRecord, draft: JsonRecord, consent: JsonRecord, revision: number, reason: string): Promise<JsonRecord> {
+  const evidence = await financeRpcSaved("rpc/zysyr_daily_electronic_post_context", {
+    p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId });
+  if (evidence.ready !== true) throw new Error(cleanText(evidence.reason, 300) || "电子来源尚未核对齐全，不能入账");
+  if (evidence.source_token !== consent.source_token) throw new Error("电子来源已变化，请重新核对后入账");
+  const requestId = uuidValue(consent.request_id, "核实请求编号无效") as string;
+  const cells = await restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,column_code,column_label,cell_role,ocr_numeric,corrected_numeric,manual_override&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=section_code.asc,row_key.asc,column_code.asc&limit=1000`, 1000);
+  const workbook = new ExcelJS.Workbook();
+  const metadata = workbook.addWorksheet("电子来源留档");
+  metadata.addRows([["归档类型", "电子来源及财务核对记录，非纸质日报照片"], ["日期", String(draft.report_date)],
+    ["门店编号", storeId], ["核对账号编号", actorId], ["草稿修订", revision], ["核对说明", reason],
+    ["来源依据", JSON.stringify(evidence.evidence)]]);
+  const values = workbook.addWorksheet("财务核对值");
+  values.addRow(["分区", "行标识", "姓名/栏位", "项目", "金额/数值"]);
+  for (const cell of cells) values.addRow([String(cell.section_code), String(cell.row_key), String(cell.row_label || ""),
+    String(cell.column_label || cell.column_code), effectiveCellValue(cell)]);
+  const bytes = new Uint8Array(await workbook.xlsx.writeBuffer());
+  if (bytes.length > MAX_REPORT_BYTES) throw new Error("电子来源归档过大，未入账");
+  const sha = await sha256Bytes(bytes), mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const objectPath = `${companyId}/${storeId}/daily/${draft.report_date}/electronic-${draftId}-${requestId}.xlsx`;
+  // Separate buckets retain the existing report/voucher access contracts.
+  for (const bucket of [VOUCHER_BUCKET, REPORT_BUCKET]) {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${storagePath(objectPath)}`, {
+      method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime,
+        "x-upsert": "false" }, body: exactArrayBuffer(bytes) });
+    if (!response.ok) throw new Error(`电子来源留档失败 (${response.status})，尚未提交入账`);
+  }
+  const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_electronic_sheet", {
+    p_actor_user_id: actorId, p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
+    p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId, p_expected_revision: revision,
+    p_source_token: evidence.source_token, p_cell_hash: evidence.cell_hash, p_request_id: requestId,
+    p_statement: consent.statement, p_reason: reason,
+    p_report: { original_filename: `电子来源核对归档-${draft.report_date}.xlsx`, mime_type: mime, size_bytes: bytes.length,
+      sha256: sha, bucket_id: REPORT_BUCKET, object_path: objectPath,
+      display_data: { source_kind: "finance-reviewed-electronic-v1", electronic_source: evidence.evidence } },
+  });
+  return { saved, confirmed: true, formal_daily_report_created: true, electronic_evidence_archived: true };
 }
 
 async function importCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
