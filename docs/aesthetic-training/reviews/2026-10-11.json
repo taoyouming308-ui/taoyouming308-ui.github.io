@@ -1,0 +1,30 @@
+{
+  "batch": "aesthetic-2026-10-11",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "e2315cafd8ba81bdeeb4c35772da7d07e8dc54ee",
+  "publishedDate": "2026-10-11",
+  "author": "Original AI-assisted editorial training",
+  "contentType": "original-fictional-aesthetic-teaching",
+  "reviewStatus": "editorially_checked",
+  "scientificValidation": false,
+  "evidenceStrength": "weak: conditional design hypotheses, not tested treatment efficacy; on-site observation and customer feedback required",
+  "sourceUrl": "https://taoyouming308-ui.github.io/img/aesthetic-training/2026-10-11-short-side-volume.jpg",
+  "image": {
+    "path": "img/aesthetic-training/2026-10-11-short-side-volume.jpg",
+    "sha256": "accc3989201aa3b1aafd4df40ff064fe1b6af16e5d2643aa5d850e0e0d1beada",
+    "provenance": "Original AI illustration generated for this date; JPEG encoding only, no visual edits",
+    "views": "Same fictional short-haired person, front and side starting states; not before/after",
+    "rights": "User-authorized original AI illustration; no real customer or third-party photograph"
+  },
+  "checks": [
+    "Visible contour separated from hypothetical hair properties and on-site unknowns",
+    "No guaranteed flattening, diagnosis, chemical recipe, fixed clipper length or face formula",
+    "Question before six reference sections and five self-review prompts",
+    "Previous three case objects unchanged; existing academy daily lesson preserved",
+    "No runtime, finance, business-data, automation or permission changes"
+  ],
+  "previousFeedSha256": "7eaade7f1797c7b9496b60eea234968b92c6a2ceab8ac7946e5e5277fb18ebc3",
+  "publishedFeedSha256": "7e424a4f996f2cff36c4dad505287566fc26234445861005eb586aad0de29d65",
+  "publicationAuthorization": "Continuing user authorization for one original daily aesthetic case, not scientific validation",
+  "priorConversationReuse": "Personal context unavailable; repository/live same-day dedup checked, this is new original content, not attributed to unseen conversation"
+}

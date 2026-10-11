@@ -1,3 +1,8 @@
+## 2026-10-11 · Original aesthetic short-hair training (v628 unchanged)
+
+- Add one fictional illustrated case “短发两侧撑开：继续推短，还是留长借重量？” with observation/assumption separation, practice question, six conditional reference sections and five self-review prompts.
+- Preserve all three earlier cases and today’s existing academy lesson. Content/audit only; no App/runtime/version/finance/automation changes. Verify unique daily ID and actual feed/image hashes before reporting publication.
+
 ## v628 · 2026-10-11
 
 - 旧来源项目空白及人工归栏差异改为逐项显式复核；真实金额差额仍标红并禁止入账，不把合计一致当作来源正确。

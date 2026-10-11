@@ -1,3 +1,9 @@
+## 2026-10-11 · Original daily aesthetic case (App version: v628 unchanged)
+
+- Current owner: Codex. Clean isolated content/aesthetic-2026-10-11 from latest github/main e2315ca v628; daily recovery archive checked. Same-day repository/online checks find three older aesthetic cases and the separate existing academy lesson, which is preserved. No open competing PR or daily lock; own exclusive batch lock acquired. Prior course conversation lookup unavailable, so today's content is explicitly original, not a claimed reuse.
+- One stable Shanghai-date original fictional short-hair case: side volume, contour transition, skin exposure, natural flow versus maintenance. New front/profile image, starting state only; no real customer or efficacy claim. Six conditional reasoning sections, five self-review prompts; old three objects identical. Audit records provenance/weak design evidence and required on-site validation.
+- Only feed, original image, editorial audit and handoff/changelog. All v628 runtime, finance fixes, colored entries, new academy paths/lesson, backend, business data, permissions and automations unchanged. Continuing user authorization permits normal tested publication; exclusive merge/Pages lock with bounded waiting, no force push/refresh. Related browser/full gate and actual dated feed/image/hash verification required; no production employee authentication or business writes in previews.
+
 ## 2026-10-11 · Explicit legacy project review (App version: v628)
 
 - Current owner: Codex. User explicitly authorized backup/test/release of this posting rule, with no historical/amount changes and no automatic posting. Base github/main 213bb63 v627; branch fix/daily-project-review. Daily archive checked; live operations-api v125 package privately backed up. Existing unrelated files retained.
