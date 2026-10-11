@@ -40,6 +40,18 @@ async function main(){
  draft={...draft,source_voucher_id:null,status:'confirmed'};
  await assert.rejects(context.confirmDailySheetDraft(electronic,session),/已经确认/);
  assert.equal(archived,1,'invalid electronic requests never start a storage archive');
+ // Project-review failures must explain the next step instead of a generic 409.
+ const rpcStart=source.indexOf('async function financeRpcSaved('),rpcEnd=source.indexOf('\nasync function ',rpcStart+1);
+ const errors={cleanText:context.cleanText,console:{error:()=>{}},rest:null};vm.createContext(errors);
+ vm.runInContext(stripTypeScriptTypes(source.slice(rpcStart,rpcEnd)),errors);
+ for(const [message,code,pattern] of [
+  ['PROJECT_REVIEW_FINANCE_FORBIDDEN','42501',/身份或门店权限/],['PROJECT_REVIEW_SERVICE_ONLY','42501',/身份或门店权限/],
+  ['PROJECT_REVIEW_NOT_READY','55000',/来源复核暂不可用/],['PROJECT_REVIEW_EXPLICIT_ITEMS_REQUIRED','22023',/逐项复核/],
+  ['PROJECT_REVIEW_SOURCE_CHANGED','PT409',/最新来源重新逐项复核/],['PROJECT_REVIEW_ITEMS_CHANGED','PT409',/填写值或复核项目已变化/],
+  ['lock unavailable','55P03',/来源正在更新/],['deadlock','40P01',/来源正在更新/]]){
+  errors.rest=async()=>({ok:false,status:409,json:async()=>({message,code})});
+  await assert.rejects(errors.financeRpcSaved('rpc/zysyr_confirm_daily_project_review',{}),pattern);
+ }
  console.log('Cash review API: trusted server actor/Auth binding, selected store, strict attestation, revision and RPC failure propagation passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -4478,6 +4478,12 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "DAILY_SHEET_DRAFT_NOT_EDITABLE") throw new Error("这张电子日报已确认或已取消，不能继续修改");
     if (code === "DAILY_SHEET_REVISION_CONFLICT") throw new Error("这张日报已被其他页面修改；本次没有覆盖，请刷新并重新核对后再保存或入账");
     if (code === "DAILY_SHEET_EXPECTED_REVISION_REQUIRED") throw new Error("日报版本信息无效，请刷新页面后重新核对");
+    if (code === "PROJECT_REVIEW_FINANCE_FORBIDDEN" || code === "PROJECT_REVIEW_SERVICE_ONLY") throw new Error("当前财务登录身份或门店权限已失效；本次未入账，请重新登录核对");
+    if (code === "PROJECT_REVIEW_NOT_READY") throw new Error("项目来源复核暂不可用；本次未入账，填写内容未改动，请先保存并重新打开核对");
+    if (code === "PROJECT_REVIEW_EXPLICIT_ITEMS_REQUIRED") throw new Error("请先保存并重新打开日报，逐项复核项目来源后再入账");
+    if (code === "PROJECT_REVIEW_SOURCE_CHANGED") throw new Error("项目来源已变化；本次未入账，请按最新来源重新逐项复核");
+    if (code === "PROJECT_REVIEW_ITEMS_CHANGED") throw new Error("项目填写值或复核项目已变化；本次未入账，请重新逐项核对，不能只确认合计");
+    if (path === "rpc/zysyr_confirm_daily_project_review" && (sqlState === "55P03" || sqlState === "40P01")) throw new Error("日报或来源正在更新；本次未入账，请稍后重新核对");
     if (code === "DAILY_CASH_REVIEW_SOURCE_CHANGED" || code === "DAILY_CASH_REVIEW_CHANGED_BEFORE_POST") throw new Error("原件、金额、收款来源或财务权限已变化；本次未入账，请重新核对并确认来源");
     if (code === "DAILY_CASH_REVIEW_VALUES_INCOMPLETE") throw new Error("仍有未核实金额或合计差异；来源确认不能绕过金额校验，请补齐后重试");
     if (code === "DAILY_CASH_REVIEW_APPROVED_ORIGINAL_REQUIRED") throw new Error("请先上传当天原始日报，并完成原件审核");
@@ -5534,7 +5540,13 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
     } catch (_) { cashReview.electronic_ready = false; }
   }
   const view = dailyAutofillView(draft, cells, storeId);
-  return { draft: view.draft, current_validation_review: currentValidationReview, cash_review: cashReview,
+  let projectReview: JsonRecord = { required: false };
+  if (draft.status === "draft" && draft.template_code === "zysyr_frontdesk_project_draft") {
+    try { projectReview = await financeRpcSaved("rpc/zysyr_daily_project_review_context", {
+      p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId }); }
+    catch (_) { projectReview = { required: true, ready: false, reason: "项目来源复核暂不可用，填写内容未改动，请稍后重试" }; }
+  }
+  return { draft: view.draft, current_validation_review: currentValidationReview, cash_review: cashReview, project_review: projectReview,
     cells: view.cells.map((cell: JsonRecord) => ({ ...cell, effective_numeric: effectiveCellValue(cell) })),
     attachments, original_image_url: primary?.private_url ?? null,
     original_filename: primary?.original_filename ?? null, image_url_expires_in: 300,
@@ -5961,16 +5973,21 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
   const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
   if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新原图并重新逐格核对后入账");
   if (!reason || payload.reviewed_all !== true) throw new Error("最终确认前必须逐格核对原图并填写复核说明");
-  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,validation_result,status,edit_revision&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
+  const draftRows = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,validation_result,status,edit_revision&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = draftRows[0]; if (!draft || cleanText(draft.status, 30) !== "draft") throw new Error("电子日报草稿不存在或已经确认");
   if (expectedRevision !== null && Number(draft.edit_revision) !== expectedRevision) throw new Error("日报已被其他页面修改，请刷新、重新核对后再入账");
   const validation = draft.validation_result && typeof draft.validation_result === "object" ? draft.validation_result as JsonRecord : {};
   const cashConsent = payload.cash_source_confirmation && typeof payload.cash_source_confirmation === "object" ? payload.cash_source_confirmation as JsonRecord : null;
+  const projectConsent = draft.template_code === "zysyr_frontdesk_project_draft" ? payload.project_source_confirmation as JsonRecord | null : null;
+  if (draft.template_code === "zysyr_frontdesk_project_draft" && (!projectConsent
+    || projectConsent.statement !== "finance-project-review-v1" || !Array.isArray(projectConsent.items)
+    || projectConsent.items.length > 2000 || !/^[a-f0-9]{64}$/.test(cleanText(projectConsent.source_token, 100))
+    || expectedRevision === null)) throw new Error("请先保存草稿，重新打开最新版日报并逐项复核项目来源后入账；金额未改动");
   if (cashConsent && (!["cash-original-channels-sales-v1", "electronic-channels-sales-v1"].includes(String(cashConsent.statement)) || !/^[a-f0-9]{64}$/.test(cleanText(cashConsent.source_token, 100))
     || expectedRevision === null)) throw new Error("请重新核对收款来源并确认入账");
   if (cashConsent?.statement === "electronic-channels-sales-v1") {
     if (draft.source_voucher_id) throw new Error("日报原件状态已变化，请重新核对后入账");
-    return confirmElectronicDailySheet(companyId, storeId, draftId as string, actorId, session, draft, cashConsent, expectedRevision as number, reason);
+    return confirmElectronicDailySheet(companyId, storeId, draftId as string, actorId, session, draft, cashConsent, expectedRevision as number, reason, projectConsent);
   }
   if (validation.valid !== true && !cashConsent) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
@@ -5993,14 +6010,15 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     source_voucher_id: draft.source_voucher_id,
     validation, original_image_preserved: true };
   try {
-    const saved = await financeRpcSaved(cashConsent ? "rpc/zysyr_confirm_daily_sheet_reviewed" : "rpc/zysyr_confirm_daily_sheet", {
+    const saved = await financeRpcSaved(projectConsent ? "rpc/zysyr_confirm_daily_project_review" : cashConsent ? "rpc/zysyr_confirm_daily_sheet_reviewed" : "rpc/zysyr_confirm_daily_sheet", {
       p_actor_user_id: actorId, p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId,
       p_report: { original_filename: cleanText(voucher.original_filename, 200), mime_type: mime,
         size_bytes: bytes.length, sha256: sourceHash, bucket_id: REPORT_BUCKET,
         object_path: objectPath, display_data: displayData },
       p_is_business_day: payload.is_business_day == null ? null : Boolean(payload.is_business_day), p_reason: reason,
       ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
-      ...(cashConsent ? { p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
+      ...(projectConsent ? { p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
+        p_project_confirmation: projectConsent, p_cash_confirmation: cashConsent, p_electronic_cell_hash: null } : cashConsent ? { p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
         p_cash_source_token: cleanText(cashConsent.source_token, 100), p_cash_request_id: uuidValue(cashConsent.request_id, "核实请求编号无效"),
         p_cash_statement: cashConsent.statement } : {}),
     });
@@ -6028,7 +6046,7 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
 }
 
 async function confirmElectronicDailySheet(companyId: string, storeId: string, draftId: string, actorId: string,
-  session: JsonRecord, draft: JsonRecord, consent: JsonRecord, revision: number, reason: string): Promise<JsonRecord> {
+  session: JsonRecord, draft: JsonRecord, consent: JsonRecord, revision: number, reason: string, projectConsent: JsonRecord | null = null): Promise<JsonRecord> {
   const evidence = await financeRpcSaved("rpc/zysyr_daily_electronic_post_context", {
     p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId });
   if (evidence.ready !== true) throw new Error(cleanText(evidence.reason, 300) || "电子来源尚未核对齐全，不能入账");
@@ -6055,11 +6073,13 @@ async function confirmElectronicDailySheet(companyId: string, storeId: string, d
         "x-upsert": "false" }, body: exactArrayBuffer(bytes) });
     if (!response.ok) throw new Error(`电子来源留档失败 (${response.status})，尚未提交入账`);
   }
-  const saved = await financeRpcSaved("rpc/zysyr_confirm_daily_electronic_sheet", {
+  const saved = await financeRpcSaved(projectConsent ? "rpc/zysyr_confirm_daily_project_review" : "rpc/zysyr_confirm_daily_electronic_sheet", {
     p_actor_user_id: actorId, p_actor_auth_user_id: uuidValue(session.auth_user_id, "财务登录身份无效"),
     p_company_id: companyId, p_store_id: storeId, p_draft_id: draftId, p_expected_revision: revision,
-    p_source_token: evidence.source_token, p_cell_hash: evidence.cell_hash, p_request_id: requestId,
-    p_statement: consent.statement, p_reason: reason,
+    ...(projectConsent ? { p_project_confirmation: projectConsent, p_cash_confirmation: consent,
+      p_electronic_cell_hash: evidence.cell_hash, p_is_business_day: null } : {
+      p_source_token: evidence.source_token, p_cell_hash: evidence.cell_hash, p_request_id: requestId, p_statement: consent.statement }),
+    p_reason: reason,
     p_report: { original_filename: `电子来源核对归档-${draft.report_date}.xlsx`, mime_type: mime, size_bytes: bytes.length,
       sha256: sha, bucket_id: REPORT_BUCKET, object_path: objectPath,
       display_data: { source_kind: "finance-reviewed-electronic-v1", electronic_source: evidence.evidence } },

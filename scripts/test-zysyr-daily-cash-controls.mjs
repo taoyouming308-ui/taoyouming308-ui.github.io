@@ -89,6 +89,7 @@ vm.runInContext(review.slice(review.indexOf('  function pendingCandidates('),rev
 context.grid=()=>({querySelectorAll:()=>[{value:'0',classList:{contains:()=>false}}]});
 assert.equal(context.pendingCandidates().length,1,'visible source zero remains an explicit review candidate rather than skipped blank');
 
+vm.runInContext(review.slice(review.indexOf('  function projectReviewState('),review.indexOf('  function controlDifferences(')),context);
 vm.runInContext(review.slice(review.indexOf('  function localBlockReason('),review.indexOf('  var renderControlsBase')),context);
 context.state.user={role:'finance'};context.state.imports.sheet.permissions={write:true};
 context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
