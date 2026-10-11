@@ -1,3 +1,9 @@
+## 2026-10-11 · Electronic-source daily posting (App version: v625)
+
+- User explicitly authorized backup, synthetic tests, then deployment; never change historical records or amounts and never post a real day on their behalf. Base github/main 730d16d v623; recovery branch recovery/pre-electronic-post-20261011; daily archive and production operations-api v124 package saved outside commits.
+- Additive RPCs allow only finance-reviewed, current same-store/date electronic detail/list evidence to enter the existing posting pipeline. No existing database function/table/RLS or financial formula is replaced. Source hash, cell hash, revision, period, authority and explicit consent are checked under locks; generated XLSX is labelled electronic evidence, not a paper/photo original. Attachment, immutable source audit, cash attestation and final ledger transaction roll back together. Storage objects are retained on uncertain outcomes; no automatic posting or historical backfill.
+- Existing original-photo path remains. Fresh read carries electronic readiness, dirty editing is never force-refreshed; source readiness now participates in read-only version checks. Synthetic desktop/mobile confirm/cancel/missing-source/lost-response tests and real Edge/XLSX/PostgreSQL posting pass, with old confirmed row and all entered cells unchanged. Full shared release gate, production migration/Edge/Pages verification and real user acceptance remain pending until recorded below.
+
 ## 2026-10-10 · blank-receipt final choice (App version: v623)
 
 - Final posting now includes one explicit choice for an otherwise balanced sheet with blank new-card receipts: confirm no such receipts and post, or cancel to enter the real amount. This never derives financial truth from equality. Ordinary empty details and deliberate manual blanks remain unchanged. A visible pending receipt status explains the missing fact alongside the totals; complete sheets retain the normal black posting button.
@@ -3238,9 +3244,3 @@ Do not hand work to another agent through chat memory only. The repository must 
 ## 2026-10-08 研习院日批次（v608保留）
 
 基于最新main496386e，不回退日报文本修复。仅内容、两份审核JSON及发布交接变动；旧11条逐对象不变，新增5条，共16条。三份原始职业标准直接读取，前两条精读中证据限定职业范围，后三条原创整体弱；未核实的PMC/PubMed及无关搜索不当新研究。69安全断言与真实重放字节/mtime/updatedAt不变通过；手机桌面和完整推送门禁为发布检查。未修改业务数据、其他App、凭据、权限、定时任务或付费调用。
-## 2026-10-11 · Electronic-source daily posting (App version: v624)
-
-- User explicitly authorized backup, synthetic tests, then deployment; never change historical records or amounts and never post a real day on their behalf. Base github/main 730d16d v623; recovery branch recovery/pre-electronic-post-20261011; daily archive and production operations-api v124 package saved outside commits.
-- Additive RPCs allow only finance-reviewed, current same-store/date electronic detail/list evidence to enter the existing posting pipeline. No existing database function/table/RLS or financial formula is replaced. Source hash, cell hash, revision, period, authority and explicit consent are checked under locks; generated XLSX is labelled electronic evidence, not a paper/photo original. Attachment, immutable source audit, cash attestation and final ledger transaction roll back together. Storage objects are retained on uncertain outcomes; no automatic posting or historical backfill.
-- Existing original-photo path remains. Fresh read carries electronic readiness, dirty editing is never force-refreshed; source readiness now participates in read-only version checks. Synthetic desktop/mobile confirm/cancel/missing-source/lost-response tests and real Edge/XLSX/PostgreSQL posting pass, with old confirmed row and all entered cells unchanged. Full shared release gate, production migration/Edge/Pages verification and real user acceptance remain pending until recorded below.
-

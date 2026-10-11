@@ -1,3 +1,9 @@
+## v625 · 2026-10-11
+
+- 修复电子来源日报金额核对一致后仍因缺少照片无法入账：财务明确确认后归档电子来源和核对值，复用现有正式入账流程。
+- 保留金额、未知字段、门店权限、来源/修订冲突与重复提交校验；来源缺失继续提示，不自动入账、不改历史数据及金额。
+- 新增仅合成数据的电子归档、数据库回滚和手机/电脑入账回归。
+
 ## 2026-10-10 · v623 blank-receipt final choice
 
 - Final posting now includes one explicit choice for an otherwise balanced sheet with blank new-card receipts: confirm no such receipts and post, or cancel to enter the real amount. This never derives financial truth from equality. Ordinary empty details and deliberate manual blanks remain unchanged. A visible pending receipt status explains the missing fact alongside the totals; complete sheets retain the normal black posting button.
@@ -1850,9 +1856,3 @@
 - 月历只选取当天最新有效正式账，排除已冲销版本，避免旧版覆盖更正金额；保留原有门店权限与财务计算。
 - 更正成功并读回新修订后，清除旧月历并只读刷新日期金额及月合计；失败明确提示，返回月历重读，不重复提交更正。
 - 合成回归覆盖新旧版本、冲销、较新的驳回版本、历史单版本、电脑/手机刷新及断网恢复。无数据库迁移，不修改真实日报或历史金额。
-## v624 · 2026-10-11
-
-- 修复电子来源日报金额核对一致后仍因缺少照片无法入账：财务明确确认后归档电子来源和核对值，复用现有正式入账流程。
-- 保留金额、未知字段、门店权限、来源/修订冲突与重复提交校验；来源缺失继续提示，不自动入账、不改历史数据及金额。
-- 新增仅合成数据的电子归档、数据库回滚和手机/电脑入账回归。
-
