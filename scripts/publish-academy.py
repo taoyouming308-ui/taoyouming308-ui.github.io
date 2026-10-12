@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import hashlib
 import html
+from html.parser import HTMLParser
 import json
 import os
 import re
@@ -229,11 +230,41 @@ def render(draft, review):
             "。审核记录说明来源、版权和适用限制，不代表新增科学验证或效果保证。</aside></section></html>")
 
 
+def catalog(root, new_course=None):
+    class Heading(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.active = False
+            self.parts = []
+        def handle_starttag(self, tag, attrs):
+            if tag == "h1":
+                self.active = True
+        def handle_endtag(self, tag):
+            if tag == "h1":
+                self.active = False
+        def handle_data(self, value):
+            if self.active:
+                self.parts.append(value)
+    rows = {}
+    for file in (root / "academy").glob("*.html"):
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", file.stem):
+            heading = Heading()
+            heading.feed(file.read_text(encoding="utf-8"))
+            title = "".join(heading.parts).strip()
+            require(title, "Course heading required for catalog: " + file.stem)
+            rows[file.stem] = {"date": file.stem, "title": title, "url": file.name}
+    if new_course:
+        rows[new_course["date"]] = {"date": new_course["date"], "title": new_course["title"],
+                                    "url": new_course["date"] + ".html"}
+    return {"schemaVersion": 1, "items": [rows[key] for key in sorted(rows, reverse=True)]}
+
+
 def stage(root, date, draft, review, digests, files, output):
     doc = render(draft, review).encode("utf-8")
     relative = "academy/" + date + ".html"
     contents = {relative: doc, "academy/drafts/" + date + ".json": canonical(draft) + b"\n",
                 "academy/reviews/" + date + ".json": canonical(review) + b"\n"}
+    contents["academy/catalog.json"] = canonical(catalog(root, draft)) + b"\n"
     contents.update({"academy/" + path: file.read_bytes() for path, file in files.items()})
     manifest = {"state": "candidate_ready", "date": date, **digests,
                 "fileSha256": {path: sha(data) for path, data in contents.items()},
@@ -294,6 +325,7 @@ def verify_published(root, legacy_hash=None):
         date = target.stem
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
             continue
+        dt.date.fromisoformat(date)
         source = root / "academy/drafts" / (date + ".json")
         record = root / "academy/reviews" / (date + ".json")
         if date == "2026-10-11" and not source.exists() and sha(target.read_bytes()) == legacy_hash:
@@ -309,7 +341,11 @@ def verify_published(root, legacy_hash=None):
         require(target.read_bytes() == render(draft, review).encode("utf-8"),
                 "Published HTML differs from reviewed rendering: " + date)
         verified.append({"date": date, "state": "review_bound_course"})
-    return {"state": "published_files_verified", "courses": verified}
+    expected = catalog(root)
+    path = root / "academy/catalog.json"
+    require(path.is_file() and json.loads(path.read_text()) == expected,
+            "Static course catalog missing or inconsistent with verified lessons")
+    return {"state": "published_files_verified", "courses": verified, "catalogVerified": True}
 
 
 def main():

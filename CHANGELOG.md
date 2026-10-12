@@ -1,3 +1,8 @@
+## 2026-10-12 · Reliable academy course directory (v630 unchanged)
+
+- Online validation found today's reviewed course files deployed but directory did not reveal them through anonymous GitHub API. Read a same-site static catalog instead; include it in reviewed candidates and CI consistency checks.
+- Preserve page style, navigation, known-course fallback, all reviewed body/image bytes and every App/finance/version/permission/schedule setting. No new lesson or scientific approval.
+
 ## 2026-10-12 · Reviewed academy handoff and original daily course (v630 unchanged)
 
 - Replace direct-main academy publishing with a reviewed candidate artifact and ordinary protected-PR handoff; preserve existing schedule, concurrency, permissions and all App/finance behavior.
