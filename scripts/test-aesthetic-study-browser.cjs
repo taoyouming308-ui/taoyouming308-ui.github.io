@@ -14,7 +14,7 @@ const manifest=feed.items.map(x=>({id:x.id,title:x.title,date:x.date,version:cry
    }
    if(url.includes('feed.v1.json'))return r.fulfill({json:feed});
    const asset=feed.items.find(x=>url.endsWith(x.image));if(asset)return r.fulfill({body:fs.readFileSync(asset.image),contentType:'image/jpeg'});
-   return r.fulfill({body:'<!doctype html><meta charset="utf-8"><style>body{margin:16px;font:16px sans-serif}img{max-width:100%}.hidden{display:none}</style><section class="tab-content active"><div id="perm-academy-root"></div></section><script>const SUPABASE_URL="https://db.test",SUPABASE_KEY="synthetic-public";</script>'});
+   return r.fulfill({body:'<!doctype html><meta charset="utf-8"><style>body{margin:16px;font:16px sans-serif}img{max-width:100%}.hidden{display:none}</style><style>'+fs.readFileSync('perm-academy.css','utf8')+'</style><section class="tab-content active"><div id="perm-academy-root"></div></section><script>const SUPABASE_URL="https://db.test",SUPABASE_KEY="synthetic-public";</script>'});
   });
   await page.goto('https://study.test/');await page.evaluate(async()=>{localStorage.setItem('booking-session',JSON.stringify({session_token:'first-token'}));localStorage.setItem('aesthetic_daily_learning_v1',JSON.stringify({completed:['legacy-only']}));});
   await page.clock.install();await page.addScriptTag({path:'aesthetic-study.js'});await page.addScriptTag({path:'aesthetic-daily.js'});
