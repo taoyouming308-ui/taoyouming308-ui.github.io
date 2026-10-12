@@ -64,6 +64,11 @@ jobs:
         run: node scripts/check-release-integrity.js
       - name: Validate synchronized versions
         run: node scripts/check-version-sync.js
+      - name: Validate reviewed academy handoff
+        run: |
+          python3 -m unittest scripts/test_publish_academy.py
+          python3 scripts/publish-academy.py --verify-published
+          node scripts/test-academy-publisher-browser.cjs
       - name: Run app smoke tests
         run: |
           node scripts/smoke-test-app.js

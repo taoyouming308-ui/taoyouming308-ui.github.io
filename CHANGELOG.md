@@ -1,3 +1,9 @@
+## 2026-10-12 · Reviewed academy handoff and original daily course (v630 unchanged)
+
+- Replace direct-main academy publishing with a reviewed candidate artifact and ordinary protected-PR handoff; preserve existing schedule, concurrency, permissions and all App/finance behavior.
+- Bind actual source/rights/privacy review records to正文、元数据及图片哈希；pending/missing/invalid cannot render, CI checks actual HTML and safe local figure rendering.
+- Add the independently revised 10/12 foundation-reading course and three original, actually inspected SVGs; preserve 10/11 and four aesthetic cases. No new credentials or auto-approval; final online publication is a separate verified step.
+
 ## v630 · 2026-10-11
 
 - 日报修改记录仅既有老板账号可读取，默认收起，保留紧凑查看/收起入口；切店、换月、重新进入或切号恢复收起。

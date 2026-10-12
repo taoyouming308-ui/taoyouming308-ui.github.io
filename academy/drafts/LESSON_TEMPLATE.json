@@ -1,6 +1,5 @@
 {
   "date": "YYYY-MM-DD",
-  "approved": false,
   "title": "今日核心问题（审核通过后改为真实日期）",
   "theory": "解释角蛋白、二硫键、水分、温度、张力、干燥和氧化的作用，区分机理和推测。",
   "evidence": "列出可核查题名、年份、类型、结论、证据强度、支持范围与不能证明的内容。",
@@ -11,5 +10,10 @@
   "communication": "包含3至5个诊断问题、需求拆解、参考图差异与可直接使用的话术。",
   "exercise": "先给题目，再提供独立参考答案、判断依据和完整思维路径。",
   "experiment": "设计低风险离体毛束单变量对照实验，记录24小时及洗后观察指标。",
-  "conclusion": "一个核心原理、一个常见错误、一个明天要观察的细节。"
+  "conclusion": "一个核心原理、一个常见错误、一个明天要观察的细节。",
+  "schemaVersion": 2,
+  "caseType": "simulation",
+  "caseAuthorization": null,
+  "sources": [],
+  "images": []
 }
