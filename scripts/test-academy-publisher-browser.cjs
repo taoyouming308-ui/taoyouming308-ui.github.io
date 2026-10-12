@@ -13,7 +13,7 @@ try{
   assert.equal(await img.getAttribute('src'),'assets/2026-10-12/fixture.svg');
   assert((await page.locator('body').innerText()).includes('作者未知'));
   assert((await page.locator('body').innerText()).includes('发表日期未知'));
-  assert((await page.locator('aside').innerText()).includes('SYNTHETIC AI source-verification fixture role'));
+  assert((await page.locator('section aside').innerText()).includes('SYNTHETIC AI source-verification fixture role'));
   assert.equal(await page.locator('nav a').first().getAttribute('href'),'../perm-app.html');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);fs.mkdirSync('artifacts/academy-publisher',{recursive:true});await page.screenshot({path:'artifacts/academy-publisher/synthetic-'+width+'.png',fullPage:true});await page.close();

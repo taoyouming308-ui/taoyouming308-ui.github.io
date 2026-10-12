@@ -78,12 +78,14 @@ def validate_asset(root, date, image):
     if suffix == ".svg":
         raw = data.decode("utf-8")
         require(not re.search(r"<!DOCTYPE|<!ENTITY", raw, re.I), "SVG declarations forbidden")
+        require(not re.search(r"<\?(?!xml\s)", raw, re.I), "SVG processing instructions forbidden")
         allowed = {"svg", "g", "defs", "marker", "path", "line", "polyline", "polygon",
                    "circle", "ellipse", "rect", "text", "tspan", "title", "desc"}
         svg = ET.fromstring(raw)
-        require(svg.tag.split("}")[-1] == "svg", "Not an SVG")
+        require(svg.tag == "{http://www.w3.org/2000/svg}svg", "SVG namespace required")
         for node in svg.iter():
-            require(node.tag.split("}")[-1] in allowed, "Unsafe SVG element")
+            require(node.tag.startswith("{http://www.w3.org/2000/svg}")
+                    and node.tag.split("}")[-1] in allowed, "Unsafe SVG element")
             for key, value in node.attrib.items():
                 key = key.split("}")[-1].lower()
                 # Drawing markers may reference a local ID; external resources remain forbidden.

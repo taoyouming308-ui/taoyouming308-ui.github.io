@@ -213,7 +213,7 @@ class PublisherTests(unittest.TestCase):
         self.assert_blocked()
 
     def test_ci_rejects_html_or_asset_tampering_and_unreviewed_html(self):
-        result, _ = self.run_case()
+        self.run_case()
         page = self.output / "academy" / (DATE + ".html")
         target = self.academy / (DATE + ".html")
         target.write_bytes(page.read_bytes())
@@ -228,6 +228,13 @@ class PublisherTests(unittest.TestCase):
         (self.academy / "reviews" / (DATE + ".json")).unlink()
         with self.assertRaisesRegex(ValueError, "missing draft/review"):
             p.verify_published(self.root)
+
+    def test_svg_stylesheet_processing_instruction_and_foreign_namespace_rejected(self):
+        for raw in ['<?xml-stylesheet href="https://example.invalid/x.css"?><svg xmlns="http://www.w3.org/2000/svg"/>',
+                    '<svg xmlns="http://example.invalid/not-svg"><rect/></svg>']:
+            with self.subTest(svg=raw):
+                self.asset.write_text(raw)
+                self.assert_blocked()
 
 
 if __name__ == "__main__":
