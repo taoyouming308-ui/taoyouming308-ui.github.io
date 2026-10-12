@@ -4,6 +4,9 @@ git fetch github main >/dev/null 2>&1 || exit 1
 node scripts/check-version-sync.js || exit 1
 node scripts/check-release-integrity.js || exit 1
 node scripts/smoke-test-app.js || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_publish_academy.py || exit 1
+"$ZYSYR_HOOK_PYTHON" scripts/publish-academy.py --verify-published || exit 1
+node scripts/test-academy-publisher-browser.cjs || exit 1
 node scripts/test-version-update-flow.js || exit 1
 node scripts/test-ai-codex-route.js || exit 1
 node scripts/test-care-outbound.js || exit 1

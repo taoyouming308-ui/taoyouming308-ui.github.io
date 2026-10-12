@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "date": "YYYY-MM-DD",
+  "status": "pending",
+  "reviewedBy": null,
+  "reviewedAt": null,
+  "approvalReference": null,
+  "privacyVerified": false,
+  "sourceChecks": [],
+  "rightsChecks": [],
+  "contentSha256": null,
+  "assetSha256": {}
+}
