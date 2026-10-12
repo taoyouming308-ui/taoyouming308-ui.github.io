@@ -1,0 +1,58 @@
+{
+  "batch": "aesthetic-2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "37fc533891e4239c79650950f031972536256a7f",
+  "preparedDate": "2026-10-12",
+  "author": "Original AI-assisted editorial training",
+  "contentType": "original-fictional-aesthetic-teaching",
+  "reviewStatus": "editorially_checked",
+  "scientificValidation": false,
+  "evidenceStrength": "weak: conditional design hypotheses, not tested treatment efficacy; on-site observation and customer feedback required",
+  "publicationStatus": "approved_for_normal_pr_pending_deployment",
+  "image": {
+    "path": "img/aesthetic-training/2026-10-12-glasses-face-frame.png",
+    "provenance": "Original AI illustration generated for this date; PNG unchanged, no visual edits",
+    "rights": "Original fictional illustration; no real customer or third-party photograph",
+    "sha256": "623d8689fdc750342134725e2dfa4356ffc9a5be91dcd4ec0d27ceb44aa9bcbf",
+    "views": "Same fictional adult, front and right-side starting states; not before/after",
+    "visualReview": "Actual visual inspection: eyeglasses, temple arm, side hair strand, matching clothing/person and two starting-state views present; illustration cannot verify physical properties or real catching of hair."
+  },
+  "checks": [
+    "Latest main and public feed contain only Oct8–11; no same-day case",
+    "Theme differs from all four previous cases",
+    "Facts/fictional assumptions/unknowns separated",
+    "Question precedes six reference steps and five self-review prompts",
+    "No chemical recipe, diagnosis, fixed cut parameters or promised outcome",
+    "Previous four objects unchanged; academy and runtime untouched",
+    "Actual image/body mapping reviewed; no third-party/customer image"
+  ],
+  "previousFeedSha256": "7e424a4f996f2cff36c4dad505287566fc26234445861005eb586aad0de29d65",
+  "reviewedAt": "2026-10-12T10:09:30.372585+00:00",
+  "reviewedBy": "Codex AI editorial and visual self-review, not independent human or scientific validation",
+  "publishedDate": "2026-10-12",
+  "publicationAuthorization": "Continuing user authorization for one original daily aesthetic case and normal publication after checks; not scientific validation",
+  "publishedFeedSha256": "9b70b9f8a77a6107748eb2e177ceff38f4e0d4f3b9af79efba9f9501f7a5009c",
+  "contentSha256": "2aeb6df4e82167748fe09d9decba8e5221b0ec11440a86588d02c97c3d0c97a7",
+  "independentReview": {
+    "reviewer": "Independent AI editor in coordinating conversation; not human certification",
+    "scope": "Read all text, actual original PNG and 390/320 scaled views; theme/image mapping, fictional assumptions, six answer steps, five recap prompts, feed/ID/hash consistency",
+    "result": "No mandatory correction; wording clarified to distinguish heat-treatment parameters from ordinary brief blow-drying",
+    "followUp": "Codex applied proposed wording clarification and recalculated content/feed hashes; no other body or image changes"
+  },
+  "sameDayReplay": "Shanghai date + stable aesthetic-2026-10-12 ID: reuse if present; never append or regenerate a second case",
+  "priorConversationReuse": "New original case; dedup against current repository and public feed, no attribution to unseen prior chat",
+  "uiChecks": {
+    "browserWidths": [
+      390,
+      1280
+    ],
+    "scope": "Actual unchanged production component rendered in isolated test browser; live deployment verification still required",
+    "imageDecoded": true,
+    "largeImageOpened": true,
+    "questionBeforeAnswer": true,
+    "answerInitiallyExpanded": true,
+    "answerUnlockOrCollapseControl": false,
+    "limitation": "Existing page renders question before answer but does not gate answers on submission; no UI redesign in this content batch",
+    "regression": "Old cases, local completion, calculator 3:1=75g/25g, input retention, close/cold tools, feed error/retry/empty passed"
+  }
+}
