@@ -1,3 +1,9 @@
+## 2026-10-12 · Academy static catalog readback repair (App version: v630 unchanged)
+
+- Current owner: Codex. Base github/main 32432fe, isolated fix/academy-static-catalog, clean start and recovery archive. First PR35 Pages/course/body/review/3-image hashes pass, but actual 390/1280 directory reads fail to reveal today via anonymous GitHub API; never claimed final entry sync. Same approved task needs this necessary read-path fix, not new course/science or rights.
+- Same-site static catalog carries actual dates/titles; candidate includes it, required validate binds it to verified course files. Existing page style/navigation and both known links retained; unavailable/unsafe metadata falls back. No anonymous API dependency, new service, permissions, schedule or App/finance/version change. Existing 10/11 and all reviewed 10/12 body/source/figure bytes unchanged, no reapproval or regenerated lesson.
+- 19 synthetic publisher guards and directory 390/1280 unavailable/unsafe/link/title/no-external-request tests pass; ordinary full hook/PR/Pages and actual directory/course/hash readback remain required. Shared lock released after first deployment and held again only for next merge/Pages; own day lock prevents duplicate content.
+
 ## 2026-10-12 · Reviewed academy handoff and daily course (App version: v630 unchanged)
 
 - Current owner: Codex. Latest synchronized base checked github/main a1b788e v630, clean isolated fix/academy-reviewed-handoff and recovery archive. User explicitly authorized the protected ordinary-PR repair and reviewed original daily lesson; no new workflow rights/tokens/schedules. Existing course 10/11, four aesthetic cases, employee/finance/runtime/version files unchanged.

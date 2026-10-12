@@ -217,6 +217,7 @@ class PublisherTests(unittest.TestCase):
         page = self.output / "academy" / (DATE + ".html")
         target = self.academy / (DATE + ".html")
         target.write_bytes(page.read_bytes())
+        (self.academy / "catalog.json").write_bytes((self.output / "academy/catalog.json").read_bytes())
         self.assertEqual(p.verify_published(self.root)["courses"][0]["state"], "review_bound_course")
         target.write_text(target.read_text() + "<p>UNREVIEWED CHANGE</p>")
         with self.assertRaisesRegex(ValueError, "differs from reviewed"):
@@ -235,6 +236,16 @@ class PublisherTests(unittest.TestCase):
             with self.subTest(svg=raw):
                 self.asset.write_text(raw)
                 self.assert_blocked()
+
+    def test_static_catalog_is_in_candidate_and_cannot_advertise_unverified_page(self):
+        self.run_case()
+        items = json.loads((self.output / "academy/catalog.json").read_text())["items"]
+        self.assertEqual(items, [{"date": DATE, "title": self.draft["title"], "url": DATE + ".html"}])
+        target = self.academy / (DATE + ".html")
+        target.write_bytes((self.output / "academy" / (DATE + ".html")).read_bytes())
+        (self.academy / "catalog.json").write_text('{"schemaVersion":1,"items":[]}')
+        with self.assertRaisesRegex(ValueError, "catalog"):
+            p.verify_published(self.root)
 
 
 if __name__ == "__main__":
