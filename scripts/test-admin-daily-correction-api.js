@@ -33,6 +33,18 @@ async function main(){
  archiveFailure=false;copyStatus=409;calls=[];requests=[];await scope.saveDailySheetDraft(payload,admin,true);assert.equal(requests.length,2);
  hash='different';calls=[];await assert.rejects(scope.saveDailySheetDraft(payload,admin,true));assert.equal(calls.some(c=>c.ep.endsWith('correct_confirmed_daily_sheet')),false);
  applied=true;requests=[];await scope.saveDailySheetDraft(payload,admin,true);assert.equal(requests.length,0);
+ applied=false;hash='hash';requests=[];calls=[];
+ const auth=id=>`00000000-0000-4000-8000-${String(id).padStart(12,'0')}`;
+ const owner={...admin,auth_user_id:auth(30)};
+ const consent={statement:'owner-confirmed-cash-review-v1',source_token:'a'.repeat(64),reviewed_original:true,reviewed_channels:true,reviewed_card_sales:true};
+ for(const c of [[],{}, {...consent,statement:'finance'}, {...consent,reviewed_original:false}, {...consent,reviewed_channels:false}, {...consent,reviewed_card_sales:false}, {...consent,source_token:'bad'}])
+  await assert.rejects(scope.saveDailySheetDraft({...payload,cash_source_confirmation:c},owner,true));
+ await assert.rejects(scope.saveDailySheetDraft({...payload,cash_source_confirmation:consent},admin,true));
+ assert.equal(requests.length,0,'invalid/missing explicit consent is denied before immutable copy');
+ await scope.saveDailySheetDraft({...payload,actor_auth_user_id:auth(99),cash_source_confirmation:{...consent,actor_user_id:'client-spoof'}},owner,true);
+ const reviewed=calls.at(-1);assert.equal(reviewed.ep,'rpc/zysyr_correct_confirmed_daily_sheet_with_cash_review');
+ assert.equal(reviewed.body.p_actor_user_id,'server-admin');assert.equal(reviewed.body.p_actor_auth_user_id,owner.auth_user_id);
+ assert.deepEqual(JSON.parse(JSON.stringify(reviewed.body.p_cash_source_confirmation)),consent,'only explicit attestations and source token cross the broker');
  console.log('Admin correction API: account-only, server actor/scope, validation, immutable copy, failed/duplicate copy and receipt recovery passed.');
 }
 async function testCalendar(){

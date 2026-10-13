@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="631">
+<html lang="zh-CN" data-version="632">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -130,7 +130,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=631" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=632" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -705,13 +705,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=631"></script>
-<script src="operations-staff-view.js?v=631"></script>
-<script src="operations-monthly-daily-performance.js?v=631"></script>
-  <script src="operations-report-fit.js?v=631"></script>
-  <script src="operations-auth-bridge.js?v=631"></script>
-  <script src="operations-voucher-preview.js?v=631"></script>
-  <script src="operations-voucher-view.js?v=631"></script>
+<script src="operations-time.js?v=632"></script>
+<script src="operations-staff-view.js?v=632"></script>
+<script src="operations-monthly-daily-performance.js?v=632"></script>
+  <script src="operations-report-fit.js?v=632"></script>
+  <script src="operations-auth-bridge.js?v=632"></script>
+  <script src="operations-voucher-preview.js?v=632"></script>
+  <script src="operations-voucher-view.js?v=632"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -877,7 +877,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=631';
+      script.src='operations-petty-cash-evidence.js?v=632';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1539,12 +1539,12 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=631"></script>
-  <script src="operations-daily-correction.js?v=631"></script>
-  <script src="operations-daily-electronic.js?v=631"></script>
-  <script src="operations-monthly-workbench.js?v=631"></script>
-  <script src="operations-daily-recognition.js?v=631"></script>
-<script src="operations-daily-history.js?v=631"></script>
+  <script src="operations-daily-review.js?v=632"></script>
+  <script src="operations-daily-correction.js?v=632"></script>
+  <script src="operations-daily-electronic.js?v=632"></script>
+  <script src="operations-monthly-workbench.js?v=632"></script>
+  <script src="operations-daily-recognition.js?v=632"></script>
+<script src="operations-daily-history.js?v=632"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>

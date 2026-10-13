@@ -36,7 +36,7 @@ async function run(){
   assert.equal(await page.locator('#daily-detail-reason').evaluate(e=>e===document.activeElement),true,'missing reason receives focus');
   await page.locator('#daily-detail-reason').fill('Synthetic validation test');
   await page.locator('#daily-correction-submit').click();
-  assert.match(await page.locator('#daily-correction-status').textContent(),/差异/,'actual calculation blocks invalid amounts with visible feedback');
+  assert.match(await page.locator('#daily-correction-status').textContent(),/金额或待核对字段/,'actual calculation blocks invalid amounts with visible feedback');
   await page.waitForFunction(()=>{const r=document.getElementById('daily-correction-status').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;});
   assert.equal(await page.evaluate(()=>syntheticOperations.includes('daily_sheet_correct')),false,'invalid totals never reach write API');
   await page.evaluate(()=>{calculateDailyControls=()=>{throw Error('synthetic calculation failure');};});
@@ -45,7 +45,7 @@ async function run(){
   await page.evaluate(()=>{calculateDailyControls=syntheticOriginalControls;});
   await page.locator('#daily-correction-cancel').click();assert.equal(await page.evaluate(()=>dailySheetDirtyCount()),0);assert.equal(await input.evaluate(e=>e.readOnly),true);
   await page.locator('#daily-correction-start').click();await page.locator('#daily-detail-grid [data-daily-cell]').first().fill('130');await page.locator('#daily-detail-reason').fill('Synthetic reviewed correction');
-  await page.evaluate(()=>{calculateDailyControls=g=>({...syntheticOriginalControls(g),valid:true});window.confirm=()=>false;});
+  await page.evaluate(()=>{calculateDailyControls=g=>({...syntheticOriginalControls(g),valid:true,numericValid:true,sourceMissing:false});window.confirm=()=>false;});
   await page.locator('#daily-correction-submit').click();
   assert.match(await page.locator('#daily-correction-status').textContent(),/未确认/);
   assert.equal(await page.evaluate(()=>syntheticOperations.includes('daily_sheet_correct')),false);
@@ -75,6 +75,7 @@ async function run(){
   assert.equal(await page.locator('#daily-detail-reason').evaluate(e=>e.closest('.daily-electronic')!==null&&!e.closest('#daily-correction-panel')),true,'ordinary reason placement is restored after correction');
   const ops=await page.evaluate(()=>syntheticOperations);assert.equal(ops.filter(x=>x==='daily_sheet_correct').length,1);assert.equal(ops.some(x=>['daily_sheet_save','daily_sheet_confirm'].includes(x)),false);
   assert.equal(await page.locator('#daily-detail-grid [data-daily-cell]').first().evaluate(e=>e.readOnly),true);
+  await require('./fixtures/owner-correction-cash-browser.cjs')(page);
   assert.deepEqual(errors,[]);await page.close();
  }
  console.log('Admin correction browser: desktop/mobile, required reason beside actions, visible actual-validation failure, preflight exceptions, cancelled confirmation, immediate pending feedback, denied entry, no autosave and lost-response read-only recovery passed.');

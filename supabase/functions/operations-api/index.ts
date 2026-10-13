@@ -4474,6 +4474,10 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (code === "APPROVED_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("已审核日报不能覆盖，必须先走冲销流程");
     if (code === "DAILY_SOURCE_REPORT_NOT_FOUND") throw new Error("日报原件不存在、已被替代或不属于当前门店");
     if (code === "DAILY_REPORT_SOURCE_CELL_NOT_FOUND") throw new Error("日报数字没有对应到当前原表单元格");
+    if (code === "DAILY_CORRECTION_CASH_LEDGER_MISMATCH") throw new Error("现有更正入账路径无法保持已核对的现金口径；本次事务已回滚，原账不变");
+    if (code === "DAILY_CORRECTION_CASH_SOURCE_CHANGED") throw new Error("收款来源已变化；修改内容保留，请重新核对后再更正");
+    if (code === "DAILY_CORRECTION_CASH_SOURCE_NOT_READY") throw new Error("收款原件或来源尚未就绪；本次未更正，原账不变");
+    if (code === "DAILY_CORRECTION_CASH_CONSENT_REQUIRED") throw new Error("请明确确认已核对原图、收款渠道和充值售卡实收");
     if (code === "DAILY_SHEET_CONTROL_MISMATCH") throw new Error("员工行、项目列、实做或支付合计不一致，已禁止入账");
     if (code === "EXISTING_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("当天已有正式日报，必须先冲销后再确认新版本");
     if (code === "DAILY_SHEET_ALREADY_CONFIRMED") throw new Error("这张电子日报已经最终确认，不能重复入账");
@@ -5881,6 +5885,18 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord, cor
   const hasExpectedRevision = payload.expected_revision !== undefined && payload.expected_revision !== null && payload.expected_revision !== "";
   const expectedRevision = hasExpectedRevision ? Number(payload.expected_revision) : null;
   if (correction && (expectedRevision === null || payload.reviewed_all !== true)) throw new Error("更正已入账日报必须核对原图并提供当前版本");
+  const rawCashConsent = correction ? payload.cash_source_confirmation : null;
+  let correctionCashConsent: JsonRecord | null = null;
+  if (rawCashConsent != null) {
+    if (typeof rawCashConsent !== "object" || Array.isArray(rawCashConsent)) throw new Error("请明确核对更正后的收款来源");
+    const consent = rawCashConsent as JsonRecord;
+    if (consent.statement !== "owner-confirmed-cash-review-v1" || consent.reviewed_original !== true
+      || consent.reviewed_channels !== true || consent.reviewed_card_sales !== true
+      || !/^[a-f0-9]{64}$/.test(cleanText(consent.source_token, 100))) throw new Error("请明确核对原图、收款渠道和充值售卡实收");
+    if (!uuidValue(session.auth_user_id, "老板 Auth 登录身份无效")) throw new Error("老板 Auth 登录身份无效");
+    correctionCashConsent = { statement: "owner-confirmed-cash-review-v1", source_token: cleanText(consent.source_token, 100),
+      reviewed_original: true, reviewed_channels: true, reviewed_card_sales: true };
+  }
   if (hasExpectedRevision && (!Number.isInteger(expectedRevision) || Number(expectedRevision) < 0)) throw new Error("当前日报版本信息无效，请刷新后重新核对再保存");
   if (!reason || !Array.isArray(payload.cells) || !payload.cells.length || payload.cells.length > 1000) throw new Error("请选择修改单元格并填写复核说明");
   const cells = (payload.cells as JsonRecord[]).map((cell) => {
@@ -5939,11 +5955,14 @@ async function saveDailySheetDraft(payload: JsonRecord, session: JsonRecord, cor
   // of the order in which the user filled the page.
   const orderedCells = Array.from(uniqueCells.values()).sort((a, b) => Number(Boolean(a.row_label_reviewed)) - Number(Boolean(b.row_label_reviewed)));
   if (correction) await archiveDailyCorrectionSource(payload, session, store, Number(expectedRevision));
-  const saved = await financeRpcSaved(correction ? "rpc/zysyr_correct_confirmed_daily_sheet" : "rpc/zysyr_save_daily_sheet_cells", {
+  const saved = await financeRpcSaved(correctionCashConsent ? "rpc/zysyr_correct_confirmed_daily_sheet_with_cash_review"
+    : correction ? "rpc/zysyr_correct_confirmed_daily_sheet" : "rpc/zysyr_save_daily_sheet_cells", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
     p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_cells: orderedCells, p_reason: reason,
     ...(expectedRevision === null ? {} : { p_expected_revision: expectedRevision }),
     ...(correction ? { p_request_id: uuidValue(payload.request_id, "更正请求编号无效") } : {}),
+    ...(correctionCashConsent ? { p_actor_auth_user_id: cleanText(session.auth_user_id, 40),
+      p_cash_source_confirmation: correctionCashConsent } : {}),
   });
   // Return the atomic commit receipt before any optional image/readback request.
   // A slow image must never turn a successful financial correction into a retry.
