@@ -72,5 +72,7 @@
   },
   "publishedDate": "2026-10-13",
   "publishedFeedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
-  "publicationAuthorization": "Continuing user daily-case and normal protected publication authorization after actual independent review; no human certification or scientific validation"
+  "publicationAuthorization": "Continuing user daily-case and normal protected publication authorization after actual independent review; no human certification or scientific validation",
+  "publicationBaseCommit": "b37724fad675de438a78d1dbcd758101b90e0c53",
+  "publicationAppVersion": 631
 }
