@@ -74,6 +74,7 @@
     { "runtime": "node", "script": "test-zysyr-storage-anon-policy.js" },
     { "runtime": "node", "script": "test-zysyr-report-permissions-v512.js" },
     { "runtime": "node", "script": "test-monthly-review-identity-db.js" },
+    { "runtime": "node", "script": "test-monthly-review-versions-db.js" },
     { "runtime": "node", "script": "test-zysyr-daily-layout-v508.js" },
     { "runtime": "node", "script": "test-operations-report-fit.js" },
     { "runtime": "node", "script": "test-operations-report-fit-targeted.js" },
