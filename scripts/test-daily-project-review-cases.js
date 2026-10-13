@@ -74,7 +74,8 @@ module.exports=async function({sql,json,q,C,S,A,U,V:baseVoucher,id}){
  await browserSequence();
  assert.equal(history(),priorHistory,'all previously posted drafts and cells remain byte-identical');
  // The same project proof also wraps the existing electronic-evidence transaction.
- const E=id(305),ES=id(306),EQ=id(307),day='2026-10-07';
+ for(const legacy of [false,true]){
+ const E=id(legacy?308:305),ES=id(legacy?309:306),EQ=id(legacy?310:307),day=legacy?'2026-02-25':'2026-10-07';
  sql(`insert into zysyr_daily_sheet_drafts select (jsonb_populate_record(null::zysyr_daily_sheet_drafts,to_jsonb(d)||jsonb_build_object(
  'id','${E}','report_date','${day}','status','draft','edit_revision',0,'source_voucher_id',null,'confirmed_at',null,'confirmed_by_user_id',null,'confirm_reason',null,
  'ocr_raw_result',jsonb_set(d.ocr_raw_result,'{autofill,snapshot_id}',to_jsonb('${ES}'::text))))).* from zysyr_daily_sheet_drafts d where id='${D}';
@@ -82,16 +83,20 @@ module.exports=async function({sql,json,q,C,S,A,U,V:baseVoucher,id}){
  insert into mgj_business_detail_snapshots(id,source_sha256,shop_name,business_date,payload,source_count) select '${ES}',source_sha256,shop_name,'${day}',payload,source_count from mgj_business_detail_snapshots where id='${SN}';
  insert into mgj_business_detail_heads values('Synthetic store','${day}','${ES}',now());
  insert into mgj_daily_consumption select shop_name,'${day}',services,fetched_at from mgj_daily_consumption where business_date='2026-01-02';`);
+ if(legacy)sql(`update zysyr_daily_sheet_drafts set ocr_raw_result=jsonb_set(ocr_raw_result,'{autofill,cash_receipts}','{"policy":"operating-external-cash-v1","state":"unavailable"}'::jsonb) where id='${E}';
+ delete from zysyr_daily_sheet_cells where draft_id='${E}' and column_code='card_subtotal';
+ update zysyr_daily_sheet_cells set corrected_numeric=case when column_code='card_consumption' then 20 else 80 end where draft_id='${E}' and column_code in('alipay','cash_flow','card_consumption');`);
  const er=json(service+`select public.zysyr_daily_project_review_context('${C}','${S}','${E}');`),ee=json(service+`select public.zysyr_daily_electronic_post_context('${C}','${S}','${E}');`);
  assert.equal(ee.ready,true);
  const ep={statement:'finance-project-review-v1',source_token:er.source_token,items:er.cells.filter(x=>x.value!==x.source_value||x.unknown).map(x=>({cell_id:x.cell_id,value:x.value,acknowledged:true}))};
  const ec={statement:'electronic-channels-sales-v1',source_token:ee.source_token,request_id:EQ};
- const archive={...report,original_filename:'synthetic-electronic.xlsx',mime_type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',object_path:`${C}/${S}/daily/${day}/electronic-${E}-${EQ}.xlsx`,display_data:{electronic_source:ee.evidence}};
+ const archive={...report,sha256:legacy?'c'.repeat(64):report.sha256,original_filename:'synthetic-electronic.xlsx',mime_type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',object_path:`${C}/${S}/daily/${day}/electronic-${E}-${EQ}.xlsx`,display_data:{electronic_source:ee.evidence}};
  const epost=hash=>service+`select public.zysyr_confirm_daily_project_review('${A}','${U}','${C}','${S}','${E}',0,${q(JSON.stringify(archive))}::jsonb,null,'Synthetic electronic project review',${q(JSON.stringify(ep))}::jsonb,${q(JSON.stringify(ec))}::jsonb,${q(hash)});`;
  const eBefore=sql(`select jsonb_agg(to_jsonb(c) order by id) from zysyr_daily_sheet_cells c where draft_id='${E}'`);
  fail(epost('stale'),/SOURCE_OR_CELLS_CHANGED/);json(epost(ee.cell_hash));
  assert.equal(sql(`select jsonb_agg(to_jsonb(c) order by id) from zysyr_daily_sheet_cells c where draft_id='${E}'`),eBefore);
  assert.equal(sql(`select count(*) from zysyr_audit_events where entity_id='${E}' and action in('review_project_sources','review_electronic_source')`),'2');
+ }
  async function browserSequence(){
   const calls=[],uploads=[];
   const read=()=>json(service+`select jsonb_build_object('draft',(select to_jsonb(d) from zysyr_daily_sheet_drafts d where id='${D}'),

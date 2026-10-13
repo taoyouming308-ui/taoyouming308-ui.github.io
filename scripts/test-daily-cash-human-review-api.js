@@ -29,6 +29,7 @@ async function main(){
  const electronic={store:'Synthetic',draft_id:id(5),expected_revision:10,reviewed_all:true,reason:'Synthetic explicit final review',
   company_id:id(98),actor_user_id:id(99),cash_source_confirmation:{statement:'electronic-channels-sales-v1',source_token:'a'.repeat(64),request_id:id(6)}};
  assert.equal((await context.confirmDailySheetDraft(electronic,session)).confirmed,true);
+ await assert.rejects(context.confirmDailySheetDraft({...electronic,cash_source_confirmation:null},session),/未提交电子来源确认/);
  for(const patch of [{store:'Other'},{expected_revision:9},{expected_revision:null},{reviewed_all:false},
   {cash_source_confirmation:{...electronic.cash_source_confirmation,source_token:'bad'}},
   {cash_source_confirmation:{...electronic.cash_source_confirmation,statement:'automatic'}}])
@@ -48,7 +49,8 @@ async function main(){
   ['PROJECT_REVIEW_FINANCE_FORBIDDEN','42501',/身份或门店权限/],['PROJECT_REVIEW_SERVICE_ONLY','42501',/身份或门店权限/],
   ['PROJECT_REVIEW_NOT_READY','55000',/来源复核暂不可用/],['PROJECT_REVIEW_EXPLICIT_ITEMS_REQUIRED','22023',/逐项复核/],
   ['PROJECT_REVIEW_SOURCE_CHANGED','PT409',/最新来源重新逐项复核/],['PROJECT_REVIEW_ITEMS_CHANGED','PT409',/填写值或复核项目已变化/],
-  ['lock unavailable','55P03',/来源正在更新/],['deadlock','40P01',/来源正在更新/]]){
+  ['lock unavailable','55P03',/来源正在更新/],['deadlock','40P01',/来源正在更新/],
+  ['canceling statement due to statement timeout','57014',/超时.*回滚.*草稿仍保留/]]){
   errors.rest=async()=>({ok:false,status:409,json:async()=>({message,code})});
   await assert.rejects(errors.financeRpcSaved('rpc/zysyr_confirm_daily_project_review',{}),pattern);
  }

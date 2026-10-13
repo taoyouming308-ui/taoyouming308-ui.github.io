@@ -4468,6 +4468,7 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     const sqlState = cleanText(error.code, 20);
     if (sqlState === "23505" && code.includes("zysyr_report_cells")) throw new Error("日报归档单元格位置重复，本次未入账；请更新页面后重试（DAILY_ARCHIVE_COORDINATE_CONFLICT）");
     console.error("finance rpc failed", path, response.status, sqlState);
+    if (sqlState === "57014") throw new Error("入账核对超时，本次数据库事务已回滚，草稿仍保留；请重新打开日报核对状态后再提交，不要连续点击");
     if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
     if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
     if (code === "APPROVED_DAILY_REPORT_REQUIRES_REVERSAL") throw new Error("已审核日报不能覆盖，必须先走冲销流程");
@@ -5323,6 +5324,7 @@ async function signedStorageUrl(bucket: string, objectPath: string): Promise<str
 }
 
 async function approvedDailyVoucher(companyId: string, storeId: string, voucherId: string): Promise<JsonRecord> {
+  if (!voucherId) throw new Error("当天没有已关联的日报原件；请重新打开日报，核对电子来源后入账，或上传并审核原件");
   const rows = await restRows(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&audit_status=eq.approved&document_type=eq.daily_report&limit=1`);
   if (!rows[0]) throw new Error("请选择当前门店已审核通过的日报原图");
   return rows[0];
@@ -6001,6 +6003,7 @@ async function confirmDailySheetDraft(payload: JsonRecord, session: JsonRecord):
     if (draft.source_voucher_id) throw new Error("日报原件状态已变化，请重新核对后入账");
     return confirmElectronicDailySheet(companyId, storeId, draftId as string, actorId, session, draft, cashConsent, expectedRevision as number, reason, projectConsent);
   }
+  if (!draft.source_voucher_id) throw new Error("本次未提交电子来源确认；请先保存草稿，重新打开最新版日报并核对电子来源后入账");
   if (validation.valid !== true && !cashConsent) throw new Error("员工、项目、实做与支付合计尚未全部一致，不能最终确认");
   const voucher = await approvedDailyVoucher(companyId, storeId, cleanText(draft.source_voucher_id, 40));
   const bytes = await voucherSourceBytes(voucher), mime = cleanText(voucher.mime_type, 80);

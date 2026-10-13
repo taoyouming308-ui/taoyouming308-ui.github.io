@@ -511,7 +511,9 @@
     if (projectConsent === false) { notice('已取消复核，填写内容未修改，尚未入账。'); return; }
     var c = calculateDailyControls(grid());
     var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
-    var cashConsent = c.cashMode ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
+    // Evidence routing is independent of the amount-calculation policy. Legacy
+    // source drafts can have reviewed electronic evidence without cash candidates.
+    var cashConsent = (electronic || c.cashMode) ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
     if (cashConsent && (!cashConsent.source_token || !(sheet.cash_review?.original_ready || electronic))) { showProblem('原件或电子来源尚未就绪；收款来源核实服务须可用。'); return; }
     var salesBlank = blankSalesReady();
     var statement = salesBlank
