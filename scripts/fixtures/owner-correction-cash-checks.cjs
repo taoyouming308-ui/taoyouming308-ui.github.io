@@ -65,6 +65,7 @@ module.exports=function ({sql,json,fail,state,C,S,A,D,id,q,service}) {
  const changed=json(reviewed(numericCells,{rev:revision+1,request:id(94)}));assert.equal(changed.edit_revision,revision+2);
  assert.equal(sql("select sum(amount) from zysyr_income_records where status='approved';"),'200.00','explicit balanced cash correction changes only the new effective ledger');
  assert.equal(sql("select count(*) from zysyr_daily_reports where status='approved';"),'1');
+ require('./correction-logical-archive-checks.cjs')({sql,json,fail,state,C,S,A,D,id,q,service});
  sql(`update zysyr_user_capability_grants set revoked_at=now(),revoked_by_user_id='${A}',revoke_reason='Synthetic owner revoke' where user_account_id='${A}';`);
  assert.equal(sql(service+`select zysyr_private.daily_cash_review_is_current('${C}','${S}','${D}');`).split('\n').at(-1),'f','revoked owner cannot keep a live correction authority');
  console.log('Owner cash correction PG: old failure reproduced; one explicit new-revision proof, exact roles/Auth/source/hash, unchanged arithmetic/ACL, rollback, ledger uniqueness, immutable history and idempotency passed.');

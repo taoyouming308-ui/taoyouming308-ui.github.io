@@ -1,3 +1,10 @@
+## 2026-10-13 · Correction logical archival repair (App version: v633)
+
+- Owner: Codex, same isolated worktree, fix/daily-correction-logical-archive from latest main 727feda7. Existing complete daily backup and prior release artifacts retained; exclusive v633 publication lock acquired.
+- Actual read-only failure: reviewed correction RPC reached old archive registration and raised SQLSTATE23505 on duplicate stylist B3; transaction rolled back, draft still confirmed revision5 with no successful correction audit. Retail is already staff_value/SERVICE_RETAIL. Source screenshot privately materialized/viewed; no production data or image enters the repository.
+- Scope: definition-only admin_correction_confirm_daily_sheet repair reuses existing daily_sheet_archive_coordinates for archived row/column/address and atomic income source linkage. No monetary line rules, v632 proof/rollback guards, role/capability/function ACL/table RLS, old records or original sheet coordinates changed. No Edge source change needed; v129 remains canonical.
+- Synthetic regression keeps exact542 logical/402 physical coordinates including duplicate B3 and verifies retail100 completes with unchanged cash controls, all542 archived cells retained, unique exact income/source linkage, old audit/proof/snapshots, duplicate recovery and every denial/rollback boundary. Full pre-push and protected CI/Pages/deployed definition readback required before completion. User page untouched; no replay or real correction submission.
+
 ## 2026-10-13 · Owner correction source review release (App version: v632)
 
 - Current owner: Codex, isolated fix/daily-correction-cash-review from latest main 3fe7a2a (PR39/v631 + PR40). Clean start and local complete backup verified. Source screenshot actually materialized/viewed privately; real rows read-only, never in repository or test artifacts. User's pending page untouched; no source collection, production transaction, credential or role creation.

@@ -1,3 +1,8 @@
+## v633 · 2026-10-13
+
+- Fix confirmed daily correction archival coordinate collisions by reusing the existing logical-cell mapping, including matching each income line to its exact archived source. Preserve all logical cells, original coordinates, financial formulas, permissions and v632 transaction protections.
+- Add a 542-logical/402-physical synthetic regression reproducing duplicate B3, then completing retail100 correction with unchanged cash controls, exact lineage, immutable history and atomic denial/duplicate tests.
+
 ## v632 · 2026-10-13 · 候选
 
 - 修复老板已入账更正的来源核实闭环：金额校验与来源状态分开，一次明确确认原图、收款渠道及售卡实收；只刷新核实上下文，不覆盖未保存输入。
