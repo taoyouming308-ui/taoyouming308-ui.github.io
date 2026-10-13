@@ -1,3 +1,10 @@
+## 2026-10-13 · Legacy electronic routing and bounded posting deadline (App version: v631)
+
+- Current owner: Codex. Last synchronized base checked github/main f3b0d9a; isolated fix/daily-electronic-routing. Daily recovery archive and live operations-api v127 / RPC config+definition privately backed up. No real posting or amount/history writes.
+- Two separate causes: ready legacy electronic evidence did not generate consent when cash candidate was unavailable; another attempt reached PostgreSQL archive insertion but hit SQLSTATE 57014 / inherited 8s API deadline. Successful RPC aggregate mean 6.6s/max 7.8s supports narrowly bounded 30s budget, not unlimited timeout or global role change.
+- UI evidence route independent of cash calculation policy. API rejects empty evidence path clearly; SQL timeout mapped honestly. Function-only migration preserves body/ACL and 5s lock limit; reset setting + reload schema rolls it back. Preserve all v630 owner-history, manual values, unknowns, arithmetic red warnings and no-auto-post/no-auto-retry guarantees.
+- Targeted synthetic browser/API/full PG pipeline passed. Local PostgREST14 reproduced 8s rollback and verified 30s success, unchanged body/ACL/lock and unrelated 8s endpoints, then restored timeout. Full hook, protected Validate shared app PR, production metadata/readback and Pages verification remain release gates; no production transaction tested on behalf of user.
+
 ## 2026-10-12 · Academy static catalog readback repair (App version: v630 unchanged)
 
 - Current owner: Codex. Base github/main 32432fe, isolated fix/academy-static-catalog, clean start and recovery archive. First PR35 Pages/course/body/review/3-image hashes pass, but actual 390/1280 directory reads fail to reveal today via anonymous GitHub API; never claimed final entry sync. Same approved task needs this necessary read-path fix, not new course/science or rights.
