@@ -97,6 +97,7 @@ async function main(){
   assert.equal(sql("select validation_result->>'cash_policy' from zysyr_daily_sheet_drafts where id='"+D+"'"),'operating-external-cash-v1');
   assert.equal(Number(sql("select validation_result->>'cashflow_total' from zysyr_daily_sheet_drafts where id='"+D+"'")),100);
   assert.equal(sql('select count(*) from zysyr_daily_reports where status=\'approved\''),'1');
+  require('./fixtures/owner-correction-cash-checks.cjs')({sql,json,fail,state,C,S,A,D,id,q,service});
   sql(`update zysyr_user_capability_grants set revoked_at=now(),revoked_by_user_id='${A}',revoke_reason='synthetic revoke';`);fail(call(changes(130),{request:id(82),revision:2}),/FORBIDDEN/);
   console.log('Admin-only correction PostgreSQL: scope, client/helper deny, locks, validation rollback, revision conflict, immutable history, voucher trace, exact effective income and idempotency passed.');
  }finally{if(created)docker(['stop',container]);}

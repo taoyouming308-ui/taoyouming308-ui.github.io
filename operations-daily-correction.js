@@ -146,21 +146,51 @@
     if (!editing()) { problem('当前没有更正权限或月份已锁定，本次未提交；本页内容已保留。'); return; }
     var reason = document.getElementById('daily-detail-reason').value.trim(), grid = document.getElementById('daily-detail-grid');
     if (!reason) { problem('更正已入账日报必须填写修改原因。', reasonInput); return; }
-    var cells;
+    var cells, validation, needsCashReview = false, cashSourceToken = '';
     try {
       if (!dailySheetDirtyCount()) { problem('还没有修改，无需提交更正。'); return; }
-      if (!calculateDailyControls(grid).valid) { problem('合计仍有差异，请核对红色金额和表格下方校验项；本次未提交，原账不变。'); return; }
+      validation = calculateDailyControls(grid);
+      if (!validation.numericValid) { problem('金额或待核对字段尚未通过校验，请核对红色金额和表格下方具体项目；本次未提交，原账不变。'); return; }
+      needsCashReview = validation.cashMode && validation.sourceMissing;
+      if (needsCashReview) {
+        // Refresh only the proof context. Never adopt server cells over unsaved edits.
+        setBusy(true);
+        try {
+          var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+          if (!current(ctx) || String(fresh.draft.id) !== ctx.id || String(fresh.draft.report_date) !== ctx.date
+            || Number(fresh.draft.edit_revision) !== ctx.revision || fresh.draft.status !== 'confirmed'
+            || !fresh.permissions || fresh.permissions.correct_confirmed !== true || fresh.locked) {
+            throw new Error('日报版本、权限或锁账状态已变化；本页修改已保留');
+          }
+          var review = fresh.cash_review;
+          if (!review || review.original_ready !== true || !/^[a-f0-9]{64}$/.test(String(review.source_token || ''))) {
+            throw new Error('收款来源核实信息暂不可用；本页修改已保留');
+          }
+          cashSourceToken = String(review.source_token);
+        } finally { setBusy(false); }
+      } else if (!validation.valid) {
+        problem('来源核实尚未通过；本页修改已保留，本次未提交，原账不变。'); return;
+      }
       if (isLocalPreview()) { problem('预览页面不能更正生产账。'); return; }
       cells = collectDailySheetCells(grid);
     } catch (error) { problem('本页校验失败：' + error.message + '；未提交，修改内容已保留。'); return; }
-    if (!confirm('确认已对照原图核对全部金额？将保留旧账并提交更正版，不会重复统计。')) {
+    var confirmation = needsCashReview
+      ? '确认已对照原图核对全部金额、收款渠道和充值售卡实收？\n现金流 ' + Number(validation.cashflow).toFixed(2)
+        + ' 元；卡金业绩 ' + Number(validation.card).toFixed(2) + ' 元；充值售卡实收 ' + Number(validation.cardSales).toFixed(2)
+        + ' 元。\n确认后将核实并提交更正，旧版和原件永久保留，不会重复统计。'
+      : '确认已对照原图核对全部金额？将保留旧账并提交更正版，不会重复统计。';
+    if (!confirm(confirmation)) {
       problem('未确认提交，本次修改仍留在页面，原账不变。'); return;
     }
     message('正在提交更正并核实结果，请勿关闭页面或重复点击…');
     setBusy(true);
     try {
-      var result = await api('daily_sheet_correct', { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision,
-        request_id: edit.requestId, cells: cells, reason: reason, reviewed_all: true });
+      var payload = { store: ctx.store, draft_id: ctx.id, expected_revision: ctx.revision,
+        request_id: edit.requestId, cells: cells, reason: reason, reviewed_all: true };
+      // Set explicit attestations only after the user accepts this single confirmation.
+      if (needsCashReview) payload.cash_source_confirmation = { statement: 'owner-confirmed-cash-review-v1',
+        source_token: cashSourceToken, reviewed_original: true, reviewed_channels: true, reviewed_card_sales: true };
+      var result = await api('daily_sheet_correct', payload);
       if (!current(ctx) || !result.corrected || !result.saved || result.saved.request_id !== edit.requestId) throw new Error('未收到匹配的更正确认');
       edit.committed = true;
       await adopt(ctx);
