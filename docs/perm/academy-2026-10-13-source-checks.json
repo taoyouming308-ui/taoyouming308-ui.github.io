@@ -1,0 +1,167 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "f3b0d9acf4b42468ef7036b215e7adfc4c8ce767",
+  "status": "final_v2_independent_ai_review_passed",
+  "notScientificValidation": true,
+  "primaryDOI": "10.2115/fiber.69.65",
+  "sourceRows": [
+    {
+      "id": "S1",
+      "url": "https://www.jstage.jst.go.jp/article/fiber/69/4/69_65/_pdf/-char/en",
+      "actuallyOpened": true,
+      "readMethod": "Original publisher/official full text opened with web reader, relevant methods/results/metadata inspected",
+      "checkedAt": "2026-10-13T07:28:04.078519+00:00",
+      "sourceKind": "original_experiment",
+      "locator": "PDF方法2.2.5（印刷p67）、结果3.3（印刷pp68–71）、结论（印刷pp71–72）；J-STAGE元数据页明确发行2013-04-10/公开2013-04-09。",
+      "publicationDate": "2013-04-10",
+      "basis": "原始离体实验；本课只取测量对象与外推边界。2013-04-09为J-STAGE公开日，非期刊发行日。",
+      "supports": "毛束湿/干态表观长度与卷数可分别记录，不能替代人物轮廓评估。",
+      "limits": "商业购入材料，供发者数量未报告；并非独立顾客研究，不测顶部体积、维护或满意度。不转译热烫配方，不引用原图或产品效果。",
+      "archive": {
+        "available": true,
+        "sha256": "46a4f608ab4b41c95836c8ed1dde616c768024843ee4d25547d6f4f138379766",
+        "note": "Private source bytes, not redistributed in Library/review bundle"
+      },
+      "independentReviewStatus": "actual_final_v2_review_passed_for_stated_scope",
+      "metadataUrl": "https://www.jstage.jst.go.jp/article/fiber/69/4/69_65/_article/-char/en",
+      "independentArchiveByteShaReproduced": false
+    },
+    {
+      "id": "S2",
+      "url": "https://www.ukstandards.org.uk/en/nos-finder/SKAHDBR11/provide-advanced-perming-techniques",
+      "actuallyOpened": true,
+      "readMethod": "Original publisher/official full text opened with web reader, relevant methods/results/metadata inspected",
+      "checkedAt": "2026-10-13T07:28:04.078519+00:00",
+      "sourceKind": "official_vocational_document",
+      "locator": "官方页面Performance criteria 3/4/6/13/33–36；页尾Approved2021、Version3、Current、Indicative review2024。",
+      "publicationDate": null,
+      "basis": "官方职业标准，2021批准、版本3；批准日不是首次发布日期。页面访问时标Current。",
+      "supports": "咨询目标、发况评估、视觉讨论及结果记录的流程。",
+      "limits": "不是原始实验或中国法规；不证明A/B有效、不提供本课通用参数。",
+      "archive": {
+        "available": false,
+        "sha256": null,
+        "note": "Official page read via web succeeded; direct HTML archival request returned HTTP403, not retried or bypassed"
+      },
+      "independentReviewStatus": "actual_final_v2_review_passed_for_stated_scope",
+      "independentArchiveByteShaReproduced": false
+    },
+    {
+      "id": "S3",
+      "url": "https://saskapprenticeship.ca/wp-content/uploads/2025/05/Hairstylist-Practical-Examination-Candidate-Information-Package_2025.pdf",
+      "actuallyOpened": true,
+      "readMethod": "Original publisher/official full text opened with web reader, relevant methods/results/metadata inspected",
+      "checkedAt": "2026-10-13T07:28:04.078519+00:00",
+      "sourceKind": "official_vocational_document",
+      "locator": "PDF封面截至2025-05-01；印刷页11 Permanent Wave Demonstration，分区/杠匹配/基座/分布/张力/发尾清单。",
+      "publicationDate": null,
+      "basis": "官方实操考试资料，信息截至2025-05-01；非首次发表日期，未宣称今日最新版。",
+      "supports": "可将分区、杠与发片、基座、分布、张力及发尾分别观察。",
+      "limits": "特定考试的碱性烫要求，不能迁移其基座/比例为所有热烫处方；不验证人物设计效果。",
+      "archive": {
+        "available": true,
+        "sha256": "d1257b6153dee0c090277b86500bdb9cddd5d13a5384ed4cc049b9ea2c261df2",
+        "note": "Private source bytes, not redistributed in Library/review bundle"
+      },
+      "independentReviewStatus": "actual_final_v2_review_passed_for_stated_scope",
+      "independentArchiveByteShaReproduced": false
+    }
+  ],
+  "copyright": "No original figures, numerical tables or full-text PDFs copied into deliverable. All teaching figures independently composed.",
+  "freshness": "Foundation reading; limited retrieval not a claim of latest literature coverage.",
+  "excluded": "Search summaries and unopened cited papers not used as independent evidence.",
+  "missingDraftRun": {
+    "id": 38358717641,
+    "state": "missing_draft",
+    "exitCode": 2,
+    "action": "No rerun; draft preparation only"
+  },
+  "revisionHistory": [
+    {
+      "at": "2026-10-13T07:42:31.489899+00:00",
+      "trigger": "Independent AI final opinion on initial package: changes_requested; revised package awaits actual re-review",
+      "changes": [
+        "Replaced reused front outline with distinct front/profile/oblique head-neck-shoulder and hair projections; A/B skeleton shared within each view only",
+        "Added visible section boundaries and rod-location projection in figure2",
+        "Corrected S1 Conclusion printed-page locator to71–72",
+        "Expanded S1 locator correction to methods p67/results3.3 pp68–71/Conclusion pp71–72 and clarified nonchemical release/fixation/free-length recording"
+      ],
+      "status": "revised_pending_independent_final_review"
+    }
+  ],
+  "independentReviewOutcome": {
+    "status": "approved_for_hash_bound_v2",
+    "sourcesActuallyOpened": [
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "blockingIssue": "Initial figure3 reused frontal hair/neck/shoulder contours for side and45-degree; could not support multi-view assessment",
+    "preparerResolution": "Redrawn distinct per-view head/neck/shoulder and hair projections; figure2 section boundaries added; S1 locator and nonchemical observation protocol revised",
+    "resolutionVerifiedByIndependentReviewer": true,
+    "approvalGranted": true,
+    "revisedVersion1Checks": "Actual independent re-review confirmed figure3, source locators and exercise details; final digest approval not granted",
+    "reviewer": "Independent AI content reviewer",
+    "reviewedAt": "2026-10-13T08:00:34Z",
+    "approvedPackageVersion": 2,
+    "approvedPackageSizeBytes": 30970,
+    "approvedPackageSha256": "5e0e861196168e4f74c103781672db4d7f6a8b97c26ff121ae53a8c6ab407f6f",
+    "approvedContentSha256": "7c93761659930e245412f6b8bb83c9b58bd73a05abacd127f5ab01cd1cd6b862",
+    "approvedAssetSha256": {
+      "assets/2026-10-13/principle-levels.svg": "66a8c0635530588c0d42f2b5b8209918acb162beb11f0419c9430d3887718ed1",
+      "assets/2026-10-13/winding-record.svg": "b3c43d70032ad87c1377eb6baecefb4e98b94b9f385f66e33d07e0cf1dbc9f6c",
+      "assets/2026-10-13/silhouette-options.svg": "14acf3feaa42ef1bdb951bb5374b0df93e1ddb520ca4dd06708d2a413d01c29a"
+    },
+    "closedIssues": [
+      "view-specific head/neck/shoulder and hair outlines",
+      "S1 accurate methods/results/conclusion locators",
+      "visible section boundary and grey local tangent",
+      "nonchemical rod release/fixation/free-length recording",
+      "final three wording replacements and raw-byte bindings"
+    ],
+    "approvalReference": "academy-2026-10-13-independent-ai-content-review-library-v2-20261013T080034Z",
+    "approvalScope": "Exact course PAYLOAD and three exact SVG hashes only; not CI, deployment, authenticated/live UI, human professional certification or experimentally validated outcomes.",
+    "verificationLimits": [
+      "Original sources and S1 metadata were actually opened; private archive PDF byte hashes not independently reproduced",
+      "S2 direct-archive403 does not negate actual original-page reading",
+      "Three SVGs rendered; final figure2 re-rendered; figures1/3 byte-identical to reviewed v1",
+      "Global image-similarity search not performed",
+      "Local and online390/1280 UI checks remain publisher responsibility",
+      "Later substantive content/asset changes require actual re-review"
+    ],
+    "hashRulesNotApprovalMeaning": "Hash rules only describe digest construction. notApproval=true does not negate this independent review decision."
+  },
+  "reviewTimeline": [
+    {
+      "version": 0,
+      "decision": "changes_requested",
+      "closedLater": [
+        "view-specific contours",
+        "source page locators"
+      ]
+    },
+    {
+      "version": 1,
+      "decision": "corrections_verified",
+      "closedLater": [
+        "section boundary/tangent legend",
+        "nonchemical release/fixation/free-length clarity"
+      ]
+    },
+    {
+      "version": 2,
+      "decision": "approved_exact_digest",
+      "reviewedAt": "2026-10-13T08:00:34Z",
+      "reviewer": "Independent AI content reviewer",
+      "packageSha256": "5e0e861196168e4f74c103781672db4d7f6a8b97c26ff121ae53a8c6ab407f6f",
+      "contentSha256": "7c93761659930e245412f6b8bb83c9b58bd73a05abacd127f5ab01cd1cd6b862",
+      "assetSha256": {
+        "assets/2026-10-13/principle-levels.svg": "66a8c0635530588c0d42f2b5b8209918acb162beb11f0419c9430d3887718ed1",
+        "assets/2026-10-13/winding-record.svg": "b3c43d70032ad87c1377eb6baecefb4e98b94b9f385f66e33d07e0cf1dbc9f6c",
+        "assets/2026-10-13/silhouette-options.svg": "14acf3feaa42ef1bdb951bb5374b0df93e1ddb520ca4dd06708d2a413d01c29a"
+      },
+      "finalDiff": "Only3 exact course wording replacements and one灰 character in figure2 vs reviewed v1; source audit metadataUrl added; no remaining required corrections"
+    }
+  ]
+}
