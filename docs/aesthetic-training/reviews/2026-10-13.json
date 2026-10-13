@@ -1,0 +1,78 @@
+{
+  "batch": "aesthetic-2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "22632eac20977b79631cdcc757d0a3d771ebe9da",
+  "preparedDate": "2026-10-13",
+  "author": "Original AI-assisted editorial training",
+  "contentType": "original-fictional-aesthetic-teaching",
+  "reviewStatus": "independent_ai_approved_exact_hashes",
+  "scientificValidation": false,
+  "evidenceStrength": "weak: original conditional design hypotheses; not a measured wardrobe effect or validated salon result",
+  "publicationStatus": "approved_for_normal_pr_pending_deployment",
+  "image": {
+    "path": "img/aesthetic-training/2026-10-13-collar-outline.png",
+    "provenance": "Original AI illustration generated via existing permitted image generation capability for this date; PNG copied unchanged, no visual edits",
+    "rights": "Original fictional adult; no real customer or third-party photograph; generation declaration and visual review are not a legal ownership guarantee",
+    "sha256": "901e6a32964d6526119cfc55f3116fbc6302443272a8f27745cf5cdb8e62be8d",
+    "views": "Top open-neck blouse, bottom high-neck sweater; front left/right profile right, one fictional adult and nominally same starting hair",
+    "visualPreparerCheck": "Actual original PNG viewed: four consistent adult panels, distinct front/profile shoulder geometry, open/high collar visible. Minor illustration differences are not quantitative evidence or wardrobe-induced hair change."
+  },
+  "previousFeedSha256": "9b70b9f8a77a6107748eb2e177ceff38f4e0d4f3b9af79efba9f9501f7a5009c",
+  "candidateFeedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
+  "contentSha256": "00641e34c9c8e4d50f978964c5df2d39e1a6fb2cf3475d862bb1d5e175504fcb",
+  "hashRules": "Case JSON canonical sorted object keys, compact separators, ensure_ascii=False, allow_nan=False, UTF8, no trailing newline; arrays preserve order. Image hash uses raw bytes.",
+  "independentReview": {
+    "status": "approved",
+    "reviewer": "Independent AI content and visual reviewer",
+    "reviewedAt": "2026-10-13T08:56:39.821668+00:00",
+    "approvalReference": "aesthetic-2026-10-13-independent-ai-content-visual-review-v0-20261013T085639821668Z",
+    "scope": "Actually materialized review package, read full case/candidate/hash/handoff, viewed original PNG and390px static image; approval binds exact case/image/feed hashes",
+    "packageVersion": 0,
+    "packageSha256": "f2370c8932c5d744d67d1a31ac413a29d5a505063b2ce6e0172bb97c3998051c",
+    "contentSha256": "00641e34c9c8e4d50f978964c5df2d39e1a6fb2cf3475d862bb1d5e175504fcb",
+    "imageSha256": "901e6a32964d6526119cfc55f3116fbc6302443272a8f27745cf5cdb8e62be8d",
+    "feedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
+    "requiredCorrectionsRemaining": [],
+    "checks": [
+      "Six reference steps and five recap prompts agree",
+      "B is prioritized validation, current tieability not presumed",
+      "Four fictional adult panels and starting hair broadly consistent, neckline and view geometry clear; no blocking distortion",
+      "Observation/assumption/unknown separated, no real-client privacy, invented effect or dangerous chemical parameters"
+    ],
+    "limits": [
+      "Answers initially expanded; no submission/answer gating",
+      "Production CSS/interaction/live390-1280 not accepted by independent review; publisher must verify",
+      "Originality basis is generation declaration and reviewed image, not legal ownership guarantee",
+      "Independent AI review, not human professional or scientific certification"
+    ]
+  },
+  "checks": [
+    "Latest main and public feed: no Oct13 case, five old cases retained",
+    "Distinct wardrobe/shoulder-neck/length tradeoff, not yesterday eyeglasses or academy scalp volume",
+    "Six reference sections and five recap prompts after question",
+    "Facts/assumptions/unknowns distinguished; no fixed chemical/heat/cut parameters or outcome promise",
+    "Image/body mapping: upper/lower neckline states identified; no mechanical effect attributed to drawing variation; current tie-up ability explicitly unknown"
+  ],
+  "sameDayReplay": "Shanghai date+stable aesthetic-2026-10-13: reuse once present; no second generation",
+  "priorConversationReuse": "New original case, not attributed to unseen prior chat",
+  "preparerCheckedAt": "2026-10-13T08:45:40.657942+00:00",
+  "preparer": "Codex AI editorial/visual self-check, independent review pending",
+  "localPreviewChecks": {
+    "widths": [
+      390,
+      1280
+    ],
+    "scope": "Pending private candidate in unchanged production component; not deployment or authenticated app acceptance",
+    "imageDecoded": true,
+    "largeImageOpened": true,
+    "questionBeforeReferences": true,
+    "answerInitiallyExpanded": true,
+    "answerUnlockFeatureAdded": false,
+    "oldCaseSelectionAndCalculatorRegression": "passed; isolated synthetic browser only"
+  },
+  "publishedDate": "2026-10-13",
+  "publishedFeedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
+  "publicationAuthorization": "Continuing user daily-case and normal protected publication authorization after actual independent review; no human certification or scientific validation",
+  "publicationBaseCommit": "b37724fad675de438a78d1dbcd758101b90e0c53",
+  "publicationAppVersion": 631
+}
