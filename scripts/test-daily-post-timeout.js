@@ -21,7 +21,7 @@ async function main(){let network=false,db=false,rest=false;try{
  create function public.synthetic_settings() returns text language sql as $$ select current_setting('statement_timeout') $$;
  grant execute on function public.synthetic_settings() to service_role;`);
  const fingerprint=()=>sql(`select md5(prosrc)||proacl::text from pg_proc where oid='${signature}'::regprocedure;`),before=fingerprint();
- docker(['run','--rm','-d','--network',net,'--name',api,'-p','127.0.0.1::3000','-e',`PGRST_DB_URI=postgres://authenticator@${pg}:5432/postgres`,'-e','PGRST_DB_ANON_ROLE=service_role','public.ecr.aws/supabase/postgrest:v14.14']);rest=true;
+ docker(['run','--rm','-d','--network',net,'--name',api,'-p','127.0.0.1::3000','-e',`PGRST_DB_URI=postgres://authenticator@${pg}:5432/postgres`,'-e','PGRST_DB_ANON_ROLE=service_role','postgrest/postgrest:v14.14@sha256:d2009b5c9deffc210c8a5592698472fede14fd9f6ca89823c8474ca54d58c012']);rest=true;
  const port=docker(['port',api,'3000/tcp']).split(':').pop(),url='http://127.0.0.1:'+port;
  for(let i=0;i<60;i++){try{if((await fetch(url+'/')).ok)break}catch(e){}if(i===59)throw Error('local REST unavailable');await sleep(200);}
  const body={p_actor_user_id:null,p_actor_auth_user_id:null,p_company_id:null,p_store_id:null,p_draft_id:null,p_expected_revision:0,p_report:{},p_is_business_day:true,p_reason:'synthetic',p_project_confirmation:{},p_cash_confirmation:{},p_electronic_cell_hash:''};
