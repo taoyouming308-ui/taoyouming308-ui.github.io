@@ -1,3 +1,9 @@
+## v631 · 2026-10-13
+
+- 修复历史日报已有可核对电子凭证、但现金候选不可用时误走照片原件分支的问题；保持既有金额口径，缺少电子确认的旧页面返回明确提示，不查询空凭证 ID。
+- 仅入账项目复核 RPC 增加 30 秒事务预算，保留 5 秒锁等待、函数正文、权限及全部金额/来源校验；超时提示明确事务回滚和草稿保留，不自动重试或入账。
+- 新增手机/电脑旧来源回归及隔离 PostgreSQL/PostgREST 8 秒超时、函数级预算、回滚验证。不修改历史数据、人工金额或采集计划。
+
 ## 2026-10-12 · Reliable academy course directory (v630 unchanged)
 
 - Online validation found today's reviewed course files deployed but directory did not reveal them through anonymous GitHub API. Read a same-site static catalog instead; include it in reviewed candidates and CI consistency checks.

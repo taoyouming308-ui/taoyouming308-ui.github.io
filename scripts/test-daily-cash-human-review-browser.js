@@ -30,7 +30,7 @@ async function setup(page,origin){
     syntheticSheet.cash_review={...syntheticSheet.cash_review,status:'current',reason:p.reason};syntheticSheet.draft.validation_result={valid:true};
     if(syntheticLost)throw Error('synthetic lost response');return structuredClone(syntheticSheet);
    }
-   if(op==='daily_sheet_confirm'){if(syntheticSheet.draft.ocr_raw_result.autofill.cash_receipts.state==='candidate'){if(p.cash_source_confirmation?.statement!==(syntheticSheet.cash_review.electronic_ready?'electronic-channels-sales-v1':'cash-original-channels-sales-v1'))throw Error('explicit consent required');}else if(p.cash_source_confirmation||syntheticSheet.draft.validation_result.valid!==true)throw Error('legacy numeric validation required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
+   if(op==='daily_sheet_confirm'){if(syntheticSheet.cash_review.electronic_ready||syntheticSheet.draft.ocr_raw_result.autofill.cash_receipts?.state==='candidate'){if(p.cash_source_confirmation?.statement!==(syntheticSheet.cash_review.electronic_ready?'electronic-channels-sales-v1':'cash-original-channels-sales-v1'))throw Error('explicit consent required');}else if(p.cash_source_confirmation||syntheticSheet.draft.validation_result.valid!==true)throw Error('legacy numeric validation required');syntheticSheet.cash_review.status='current';syntheticSheet.draft.status='confirmed';if(syntheticLost)throw Error('synthetic lost reply');return structuredClone(syntheticSheet);}
    if(op==='daily_sheet_month')return {days:[]};throw Error('Unexpected '+op);
   };
   window.assertSynthetic=()=>{if(syntheticSheet.cash_review.status!=='current')throw Error('synthetic proof required');};
@@ -161,7 +161,7 @@ async function run(){
   }
   await page.close();
  }
- for(const width of [390,1280])for(const mode of ['ready','missing','cancel','lost']){
+ for(const width of [390,1280])for(const mode of ['ready','missing','cancel','lost','legacy-unavailable','legacy-stripped']){
   const page=await browser.newPage({viewport:{width,height:900}});
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
   await page.evaluate(mode=>{
@@ -169,16 +169,28 @@ async function run(){
    syntheticSheet.cash_review.original_ready=false;syntheticSheet.cash_review.electronic_ready=mode!=='missing';
    syntheticSheet.cash_review.electronic_reason='电子明细与来源清单尚未同步一致';
    syntheticCancel=mode==='cancel';syntheticLost=mode==='lost';
+   if(mode.startsWith('legacy-')){
+    syntheticSheet.draft.ocr_raw_result.autofill.cash_receipts=mode==='legacy-unavailable'?{policy:'operating-external-cash-v1',state:'unavailable'}:null;
+    syntheticSheet.cells=syntheticSheet.cells.filter(c=>c.column_code!=='card_subtotal');
+    syntheticSheet.cells.find(c=>c.column_code==='alipay').ocr_numeric=80;
+    syntheticSheet.cells.find(c=>c.column_code==='cash_flow').ocr_numeric=80;
+    syntheticSheet.cells.find(c=>c.column_code==='card_consumption').ocr_numeric=20;
+    syntheticSheet.draft.validation_result={valid:true};
+   }
    state.imports.sheet=structuredClone(syntheticSheet);renderDailySheetDetail();
   },mode);
-  await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
+  if(!mode.startsWith('legacy-'))await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
   assert.equal(await page.locator('#daily-detail-confirm-top').evaluate(b=>b.classList.contains('blocked-action')),mode==='missing');
   await page.locator('#daily-detail-confirm-top').click();
-  if(['ready','lost'].includes(mode)){
+  if(['ready','lost'].includes(mode)||mode.startsWith('legacy-')){
    try { await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed',{},{timeout:5000}); }
    catch(e){console.error({mode,width,note:await page.locator('#daily-detail-note').innerText(),ops:await page.evaluate(()=>syntheticOps.map(x=>x.op))});throw e;}
    assert.match(await page.evaluate(()=>syntheticDialogs[0]),/电子来源.*无需上传照片/);
    assert.equal(await page.evaluate(()=>syntheticOps.filter(x=>x.op==='daily_sheet_confirm').length),1);
+   if(mode.startsWith('legacy-')){
+    assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_save')),false,'legacy evidence routing does not rewrite amounts');
+    assert.equal(await page.evaluate(()=>syntheticSheet.cells.find(c=>c.column_code==='card_consumption').ocr_numeric),20);
+   }
   }else assert.equal(await page.evaluate(()=>syntheticOps.some(x=>x.op==='daily_sheet_confirm'||x.op==='daily_sheet_save')),false);
   await page.close();
  }
