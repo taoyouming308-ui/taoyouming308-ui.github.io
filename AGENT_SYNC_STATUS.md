@@ -1,3 +1,11 @@
+## 2026-10-13 · Monthly shareholder confirmation identity foundation (App version: v633 unchanged; not deployed)
+
+- Owner: Codex, feature/monthly-shareholder-confirmation, latest main 0aab79b. Original untracked artifacts/backups preserved; existing daily recovery archive retained. No production DDL/DML, finance confirmation, source collection or schedule change.
+- User confirmed the staff App login 无名 and financial Auth login admin are the SAME owner. Confirmation means reviewed/no objections, once per person per published monthly version; old read acknowledgements are not upgraded into this stronger assertion. New monetary version needs a new finance publication and a new shareholder confirmation; old records remain immutable. Reminders are App inbox/red-dot only, not push while closed.
+- This first isolated migration adds an empty explicit identity-link table, service-only principal resolver and private deduplicated recipient helper. It does not link any real accounts yet. Linking never inherits permission: every login must retain its own live account/employment/role/date/store grant. Equal names do not identify the same person. Do not seed via usernames or grant extra rights to make tests pass.
+- 39 synthetic PostgreSQL identity/duplicate-name/denial/revocation/expiry/cross-store/cross-company/immutable-ACL checks passed locally. This is NOT live acceptance or completion of the confirmation feature.
+- Pending: immutable published snapshots, per-version once-only receipts, finance submission, visible shareholder action, pending inbox/red dots, API/browser/concurrency/permission regression and explicit owner link enrollment. Do not expose a working confirmation button or claim reminders delivered before that end-to-end flow exists. Other authorized review fixes (backup/restore, monitor delivery receipt, crash draft recovery, measured latency and next-year support) remain uncompleted.
+
 ## 2026-10-13 · Correction logical archival repair (App version: v633)
 
 - Owner: Codex, same isolated worktree, fix/daily-correction-logical-archive from latest main 727feda7. Existing complete daily backup and prior release artifacts retained; exclusive v633 publication lock acquired.

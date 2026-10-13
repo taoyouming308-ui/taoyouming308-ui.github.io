@@ -1,3 +1,9 @@
+## 未发布 · 月报股东确认：身份基础
+
+- 增加独立的确认身份映射设计：经明确核实的两个登录入口可算同一位股东，不合并登录凭据，不继承对方门店权限，不按同名自动合并。
+- 添加 39 项独立 PostgreSQL 验证，覆盖撤权、离职、账号停用、到期、跨店/跨公司、直接接口访问与不可变映射。
+- 尚未应用生产迁移、登记真实映射或接入按钮/提醒；历史“已阅”、金额、已入账记录和权限均未修改。完整确认流程仍待后续实现和验收。
+
 ## v633 · 2026-10-13
 
 - Fix confirmed daily correction archival coordinate collisions by reusing the existing logical-cell mapping, including matching each income line to its exact archived source. Preserve all logical cells, original coordinates, financial formulas, permissions and v632 transaction protections.
