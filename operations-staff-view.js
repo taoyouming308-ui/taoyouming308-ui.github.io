@@ -26,7 +26,7 @@
       if(token()!==session){blocked('员工登录已变化，请返回工作台重新打开报表。');throw new Error('员工登录已变化')}
       if(!r.ok){var e=new Error(data.error||'报表读取失败');e.status=r.status;e.code=data.code||'';if(r.status===401||r.status===403)blocked(e.message);throw e}return data;
     }catch(error){
-      if(controller&&controller.signal.aborted){var timeout=new Error('股东报表读取超时，未提交任何修改；请点击重新读取报表');timeout.code='STAFF_REPORT_READ_TIMEOUT';throw timeout}
+      if(controller&&controller.signal.aborted){var timeout=new Error(operation==='monthly_review_confirm'?'未收到确认结果，请先重新读取本月确认状态，不要重复提交':'股东报表读取超时，未提交任何修改；请点击重新读取报表');timeout.code='STAFF_REPORT_READ_TIMEOUT';throw timeout}
       throw error;
     }finally{if(timer)clearTimeout(timer)}
   }};

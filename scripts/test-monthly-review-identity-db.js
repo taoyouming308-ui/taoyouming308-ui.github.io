@@ -5,7 +5,7 @@ const path=require('node:path');
 const assert=require('node:assert/strict');
 const name='zysyr-review-identity-'+process.pid+'-'+Date.now();
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe']});
-const sql=text=>execFileSync('docker',['exec','-i',name,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-At'],
+const sql=text=>execFileSync('docker',['exec','-i',name,'psql','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-At'],
   {input:text,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 let checks=0;

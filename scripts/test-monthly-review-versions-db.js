@@ -6,7 +6,9 @@ const assert=require('node:assert/strict');
 const root=path.join(__dirname,'..');
 const name='zysyr-review-versions-'+process.pid+'-'+Date.now();
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe']});
-const args=['exec','-i',name,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-Atq'];
+// TCP becomes ready only after the Docker entrypoint's temporary init server
+// has stopped; its Unix socket can accept a query just before shutting down.
+const args=['exec','-i',name,'psql','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-Atq'];
 const sql=text=>execFileSync('docker',args,{input:text,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const asyncSQL=text=>new Promise((resolve,reject)=>{const child=execFile('docker',args,{encoding:'utf8'},(error,out,stderr)=>{
   if(error){error.stderr=stderr;reject(error)}else resolve(out.trim());});child.stdin.end(text);});
