@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="634">
+<html lang="zh-CN" data-version="635">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -130,7 +130,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=634" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=635" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -214,10 +214,22 @@
           <div id="report-state" class="report-state"></div>
           <div id="monthly-materials" class="monthly-materials hidden">
             <form id="monthly-material-form">
-              <div class="field wide-mobile"><label for="monthly-material-file">上传文件（自动识别报表类型和所属月份）</label><input id="monthly-material-file" type="file" accept=".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><small>系统读取文件内容和当前工作表，识别日报、工资表或月报；无法明确识别时不会保存。月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计。</small></div>
-              <div class="field wide-mobile"><label for="monthly-material-vouchers">月报照片 / PDF（可单独补传、多选）</label><input id="monthly-material-vouchers" type="file" multiple accept="image/jpeg,image/png,application/pdf"></div>
-              <button class="primary" type="submit">自动识别并保存</button>
-              <div id="monthly-material-result" class="help">选择 XLSX / DOCX 后会自动识别类型和月份并保存到对应期间。已有本月月报时，也可以只选择右侧照片 / PDF 补传；补传只增加原件留底，不重算或覆盖月报金额。</div>
+              <div class="monthly-upload-intro"><h3>上传月报表</h3><p>按文件类型选择，可只选一种，也可一起上传。</p></div>
+              <div class="field monthly-upload-card">
+                <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 9v12"/></svg><label for="monthly-material-file">月报数据</label><span class="monthly-upload-format">Excel · Word</span></div>
+                <p id="monthly-table-purpose">读取月报表内的数据，自动识别所属月份。</p>
+                <input id="monthly-material-file" type="file" aria-describedby="monthly-table-purpose monthly-table-formats" accept=".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                <small id="monthly-table-formats">XLSX / 含表格的 DOCX · 单个不超过 10MB</small>
+              </div>
+              <div class="field monthly-upload-card">
+                <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 6-6 4 4 3-3 5 5"/></svg><label for="monthly-material-vouchers">月报凭证</label><span class="monthly-upload-format">照片 · PDF</span></div>
+                <p id="monthly-photo-purpose">留存月报表照片或 PDF 原件，不修改金额。</p>
+                <input id="monthly-material-vouchers" type="file" aria-describedby="monthly-photo-purpose monthly-photo-formats monthly-photo-help" multiple accept="image/jpeg,image/png,application/pdf">
+                <small id="monthly-photo-formats">JPG / PNG / PDF · 可多选 · 每份不超过 10MB</small>
+              </div>
+              <div class="monthly-upload-footer"><p id="monthly-photo-help">已有本月月报，可单独补照片；首次上传请同时选择数据表格。</p><button class="primary" type="submit">上传并保存</button></div>
+              <details class="monthly-upload-details"><summary>识别与保存说明</summary><p>系统读取文件内容和当前工作表，识别日报、工资表或月报；无法明确识别时不会保存。照片 / PDF 随表格上传时，关联到识别出的月报；单独补传时，关联当前门店和月份的月报。原件只作留底，不会自动入账。</p><p>月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计。</p></details>
+              <div id="monthly-material-result" class="help" role="status" aria-live="polite"></div>
             </form>
           </div>
           <div id="monthly-sheet" class="sheet-scroll"></div>
@@ -538,7 +550,34 @@
     .trace-summary span:not(.warn) { background:var(--report-soft); color:var(--muted); }
     .sheet-scroll { box-shadow:none; }
     .monthly-materials { padding:16px; margin:0 0 16px; border-radius:var(--report-radius); background:var(--card); }
-    .monthly-materials:before { margin-bottom:14px; font-size:14px; font-weight:650; }
+    #monthly-materials:before { content:none; }
+    #monthly-material-form { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:stretch; }
+    .monthly-upload-intro,.monthly-upload-footer,.monthly-upload-details { grid-column:1/-1; }
+    .monthly-upload-intro h3 { margin:0; font-size:18px; font-weight:650; }
+    .monthly-upload-intro p { margin:5px 0 0; color:var(--muted); font-size:13px; line-height:1.6; }
+    #monthly-materials .monthly-upload-card { margin:0; padding:20px; border:1px solid var(--line); border-radius:12px; background:var(--report-soft); align-content:start; gap:12px; }
+    .monthly-upload-heading { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .monthly-upload-heading svg { width:24px; height:24px; flex-shrink:0; }
+    #monthly-materials .monthly-upload-heading label { font-size:18px; font-weight:650; line-height:1.4; color:var(--ink); cursor:pointer; }
+    .monthly-upload-format { margin-left:auto; color:var(--muted); font-size:12px; white-space:nowrap; }
+    .monthly-upload-card p { margin:0; font-size:14px; line-height:1.6; color:var(--ink); }
+    #monthly-materials input[type=file] { width:100%; min-height:48px; padding:7px; background:var(--card); color:var(--ink); font:inherit; font-size:14px; }
+    #monthly-materials input[type=file]::file-selector-button { margin-right:10px; padding:7px 12px; border:1px solid var(--line); border-radius:6px; background:var(--report-soft); color:var(--ink); font:inherit; font-weight:600; cursor:pointer; }
+    .monthly-upload-card small { font-size:12px; color:var(--muted); line-height:1.6; }
+    .monthly-upload-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .monthly-upload-footer p { margin:0; color:var(--muted); font-size:12px; line-height:1.6; }
+    .monthly-upload-footer button { min-width:140px; min-height:44px; flex-shrink:0; font-size:15px; }
+    .monthly-upload-details { border-top:1px solid var(--line); padding-top:12px; color:var(--muted); font-size:12px; line-height:1.7; }
+    .monthly-upload-details summary { cursor:pointer; width:fit-content; }
+    .monthly-upload-details p { margin:8px 0 0; }
+    #monthly-material-result { margin:0; padding:12px; border:1px solid var(--line); border-radius:9px; background:var(--report-soft); white-space:pre-wrap; overflow-wrap:anywhere; }
+    #monthly-material-result:empty { display:none; }
+    @media(max-width:700px) {
+      #monthly-material-form { grid-template-columns:minmax(0,1fr); gap:12px; }
+      #monthly-materials .monthly-upload-card { padding:16px; }
+      .monthly-upload-footer { align-items:stretch; flex-direction:column; gap:12px; }
+      .monthly-upload-format { margin-left:0; }
+    }
     .monthly-source-details { padding-top:12px; border-top:1px solid var(--line); font-size:12px; }
     .monthly-source-details summary { padding:4px 0; }
     .monthly-daily-completeness-text { margin:14px 0 10px; font-size:12px; }
@@ -705,13 +744,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=634"></script>
-<script src="operations-staff-view.js?v=634"></script>
-<script src="operations-monthly-daily-performance.js?v=634"></script>
-  <script src="operations-report-fit.js?v=634"></script>
-  <script src="operations-auth-bridge.js?v=634"></script>
-  <script src="operations-voucher-preview.js?v=634"></script>
-  <script src="operations-voucher-view.js?v=634"></script>
+<script src="operations-time.js?v=635"></script>
+<script src="operations-staff-view.js?v=635"></script>
+<script src="operations-monthly-daily-performance.js?v=635"></script>
+  <script src="operations-report-fit.js?v=635"></script>
+  <script src="operations-auth-bridge.js?v=635"></script>
+  <script src="operations-voucher-preview.js?v=635"></script>
+  <script src="operations-voucher-view.js?v=635"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -877,7 +916,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=634';
+      script.src='operations-petty-cash-evidence.js?v=635';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1539,14 +1578,14 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=634"></script>
-  <script src="operations-daily-correction.js?v=634"></script>
-  <script src="operations-daily-electronic.js?v=634"></script>
-  <script src="operations-monthly-workbench.js?v=634"></script>
-  <script src="operations-daily-recognition.js?v=634"></script>
-<script src="operations-daily-history.js?v=634"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=634">
-<script src="operations-monthly-review.js?v=634"></script>
+  <script src="operations-daily-review.js?v=635"></script>
+  <script src="operations-daily-correction.js?v=635"></script>
+  <script src="operations-daily-electronic.js?v=635"></script>
+  <script src="operations-monthly-workbench.js?v=635"></script>
+  <script src="operations-daily-recognition.js?v=635"></script>
+<script src="operations-daily-history.js?v=635"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=635">
+<script src="operations-monthly-review.js?v=635"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>
