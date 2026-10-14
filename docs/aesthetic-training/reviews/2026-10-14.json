@@ -1,0 +1,66 @@
+{
+  "batch": "aesthetic-2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "ada089209ffe0e8de49e9c45247aef70b95d88ee",
+  "reviewStatus": "independent_ai_approved_exact_hashes",
+  "publicationStatus": "approved_for_normal_pr_pending_deployment",
+  "scientificValidation": false,
+  "evidenceStrength": "weak: original conditional design reasoning, occupational source support for process only",
+  "independentReview": {
+    "status": "approved",
+    "reviewer": "Independent AI content and visual reviewer; not human expert certification",
+    "reviewedAt": "2026-10-14T05:22:17.370524Z",
+    "approvalReference": "independent-aesthetic-2026-10-14-review",
+    "packageVersion": 0,
+    "packageSha256": "aceba150998b93e42fb9c66844ed53f01a730734f780fadbf0b66b3701567465",
+    "parentRecordSha256": "7a1b4e0873272e3779f4a8f0fba9aeac42484996dece7851dd07b89c08494461",
+    "recordAvailability": "Parent supplied receipt summary; full record bytes not present locally and not reconstructed",
+    "scope": "Full case, seven-case candidate, sources and handoff read; original1774x887 and390x195 image viewed. Three perspectives, image/body mapping, six answers/five recap and conditional tradeoffs passed. No required changes.",
+    "sourceVerification": "SATCC current2025-05-01 printed10/14/21 text and O*NET39-5012.00 Updated2026 tasks independently opened. Occupational process only; no design efficacy proof. PDF screenshot cache failed; no claim of screenshot verification.",
+    "contentSha256": "5e72c0372c5840f12e9189b5a7ce1730239dbb7524e1ff9519d9f537d3035f9a",
+    "rawCaseSha256": "2e402a6969d04dd62b967b0ac08cd804a4a4b47c263e7a9f7fda27788d1cde8a",
+    "imageSha256": "f4418d24aa01a30e9d34c056ceed5f2c58b6579df8ddff90f796b97f4a81e2d1",
+    "feedSha256": "d4bf0ab47137b82853bea9bff795f63562c084e8aa4f8d9044f0f64515b9fa8a",
+    "previousFeedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
+    "requiredCorrectionsRemaining": [],
+    "limits": [
+      "Independent AI review, not human expert or scientific certification",
+      "Actual publication and live UI verification remain publisher responsibilities"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-14-growout.png",
+    "rights": "Original fictional adult illustration via existing permitted generation capability; not legal/global originality guarantee",
+    "provenance": "Original AI illustration via existing allowed imagegen capability; PNG copied unchanged, no visual edits",
+    "sha256": "f4418d24aa01a30e9d34c056ceed5f2c58b6579df8ddff90f796b97f4a81e2d1",
+    "actualPreparerVisualCheck": "Original PNG actually viewed: one fictional adult, front/right profile/back starting views, same nominal current hairstyle/clothing; no before/after or predicted growth; distinct shoulder/neck geometry",
+    "minorDifferences": "Drawn view variations are not measurement data or proof of growth rate"
+  },
+  "previousFeedSha256": "e1f9493ab137a36994cec197fbcc7940f76d814f957d8e8ea6e7db431fc74b28",
+  "candidateFeedSha256": "d4bf0ab47137b82853bea9bff795f63562c084e8aa4f8d9044f0f64515b9fa8a",
+  "contentSha256": "5e72c0372c5840f12e9189b5a7ce1730239dbb7524e1ff9519d9f537d3035f9a",
+  "sameDayReplay": "Reuse aesthetic-2026-10-14 once present; do not append or regenerate another same-day case",
+  "hashRules": "Case sorted object keys, compact JSON, ensure_ascii=False, allow_nan=False, UTF8 no trailing newline; arrays ordered. PNG raw bytes.",
+  "preparerCheckedAt": "2026-10-14T05:12:11.270347+00:00",
+  "localPreviewChecks": {
+    "checkedAt": "2026-10-14T05:17:00Z",
+    "status": "passed",
+    "scope": "Local existing UI with intercepted candidate feed, no authenticated or live business calls",
+    "widths": [
+      390,
+      1280
+    ],
+    "checks": [
+      "original image decoded and opened",
+      "question before answer",
+      "previous six cases available",
+      "completion UI",
+      "calculator 3:1 100g yields75g/25g",
+      "input retention",
+      "close and cold tool",
+      "error/retry/empty"
+    ]
+  },
+  "publicationBaseCommit": "ada089209ffe0e8de49e9c45247aef70b95d88ee",
+  "publicationAppVersion": 635
+}
