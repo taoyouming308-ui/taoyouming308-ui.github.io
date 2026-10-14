@@ -83,7 +83,8 @@ async function run(){
       insert into zysyr_report_uploads values('${id(22)}','${id(1)}','${id(2)}','monthly_profit_loss','2026-01-01','active','{}'),('${id(23)}','${id(1)}','${id(3)}','monthly_profit_loss','2026-01-01','active','{}');
       insert into zysyr_report_cells values('${id(30)}','${id(1)}','${id(2)}','${id(22)}',100);
       insert into zysyr_report_acknowledgements values('${id(31)}','2026-01-05T12:00:00Z');
-      grant usage on schema public,zysyr_private to service_role;
+      grant usage on schema public to service_role;
+      grant usage on schema zysyr_private to authenticated;
       grant select on all tables in schema public to service_role;`);
     sql(existingFunction('20260820095920_zysyr_sprint1_employee_store_management.sql','zysyr_private.account_has_capability')
       +existingFunction('20260820102856_zysyr_sprint2_voucher_center.sql','zysyr_private.account_is_finance_in_scope')
@@ -92,6 +93,11 @@ async function run(){
     sql(file('20261013130139_zysyr_monthly_review_identity.sql'));
     sql(`insert into zysyr_monthly_review_identity_links values('${id(1)}',10,'${id(4)}','Synthetic explicit owner identity',now());`);
     sql(file('20261013143641_zysyr_monthly_review_versions.sql'));
+    denied(service(inbox()),/permission denied for schema zysyr_private/);
+    const existingACL=sql("select jsonb_agg(jsonb_build_array(oid,proacl) order by oid) from pg_proc where pronamespace='zysyr_private'::regnamespace;");
+    sql(file('20261014014800_zysyr_monthly_review_service_namespace.sql'));
+    equal(sql("select jsonb_agg(jsonb_build_array(oid,proacl) order by oid) from pg_proc where pronamespace='zysyr_private'::regnamespace;"),existingACL);
+    denied(service('select zysyr_private.assert_finance_scope(null,null,null,null);'),/permission denied/);
     equal(count('zysyr_monthly_review_publications'),'0');equal(count('zysyr_monthly_review_receipts'),'0');
     equal(json(inbox()).count,0);equal(json(status()).publication,null);
     const before=sql(`select jsonb_build_array((select jsonb_agg(to_jsonb(r)) from zysyr_report_uploads r),(select jsonb_agg(to_jsonb(c)) from zysyr_report_cells c),(select jsonb_agg(to_jsonb(a)) from zysyr_report_acknowledgements a));`);

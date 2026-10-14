@@ -10,7 +10,7 @@ Only the administrator's existing backend store grants authorize App readers. Pu
 
 1. Preserve the daily archive and exact live Edge function package outside Git. Verify main ancestry and normal required `validate` protection.
 2. Run `test-monthly-review-identity-db.js`, `test-monthly-review-versions-db.js`, `test-monthly-review-api.mjs`, `test-monthly-review-browser.js`, frozen Deno and the full shared pre-push gate. Fixtures are synthetic. No real month's submission/confirmation is a test.
-3. Apply only `20261013130139_zysyr_monthly_review_identity.sql` and `20261013143641_zysyr_monthly_review_versions.sql`. Both are additive, service-only and do not seed real reports, receipts, role grants or financial values.
+3. Apply `20261013130139_zysyr_monthly_review_identity.sql`, `20261013143641_zysyr_monthly_review_versions.sql`, then `20261014014800_zysyr_monthly_review_service_namespace.sql`. These are additive, service-only and do not seed real reports, receipts, role grants or financial values. The final migration grants only namespace USAGE to the trusted service; existing function EXECUTE/table/client/store ACLs remain unchanged. Production-shaped tests reproduce missing USAGE before applying it. If rollback is required, revoke that USAGE only when it was absent before this release; retain all review evidence.
 4. Reverify the specifically user-confirmed owner entrances and enroll their identity alias in one guarded transaction, only before any publication. Do not merge by name or enroll anybody else.
 5. Build the deployment from the saved operations-api v129 package. Replace only `supabase/functions/operations-api/index.ts`, `_shared/staff-report-access.ts`; add `_shared/monthly-review.mjs`. Retain its prior verify_jwt setting: custom authenticated routes verify every request. Preserve the live catalog dependency, which predates main's classification changes; do not deploy that unrelated diff incidentally. All other package contents must remain identical to the backup.
 6. Merge the versioned front-end PR only through the existing required CI check. Read back Pages version and changed assets, live Edge package hashes and migration/ACL metadata. Unauthorized live requests must fail without returning data.
@@ -25,3 +25,10 @@ If a reply is lost, reopen the monthly status; do not automatically retry a publ
 ## Evidence limits
 
 Synthetic database, HTTP and browser tests do not substitute for a human checking a real financial statement. Production release verification is non-mutating except the approved additive schema and verified identity alias. The first real monthly publication/confirmation is performed by finance/shareholders, not the release agent.
+
+## 2026-10-14 backend verification
+
+- operations-api v130: all 14 deployed file contents match the reviewed candidate manifest, including the preserved live classification dependency.
+- Both granted stores: real service-role inbox/status/source-token reads pass; no real publications or confirmations were created.
+- 41 identity and 145 version synthetic PostgreSQL checks pass. Forced RLS, no client table reads or RPC execution, no direct service table writes, and unchanged old private finance helper ACLs verified live. No new security advisor notices versus the pre-release baseline.
+- Anonymous HTTP status/inbox/overview calls return 403. This does not claim authenticated human financial acceptance. Frontend remains gated by the normal complete hook, required PR check and exact Pages readback.

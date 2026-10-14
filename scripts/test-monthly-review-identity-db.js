@@ -33,10 +33,14 @@ async function run(){
       insert into zysyr_user_accounts values('${id(1)}','${id(4)}','active','Owner'),('${id(1)}','${id(5)}','active','Owner'),('${id(9)}','${id(6)}','active','Other');
       insert into zysyr_roles values('${id(7)}','shareholder');
       insert into zysyr_user_role_grants values('${id(1)}','${id(4)}','${id(7)}','company',null,'2020-01-01',null,null),('${id(1)}','${id(5)}','${id(7)}','store','${id(2)}','2020-01-01',null,null);
-      grant usage on schema public,zysyr_private to service_role;
+      grant usage on schema public to service_role;
+      grant usage on schema zysyr_private to authenticated;
       grant select on all tables in schema public to service_role;
     `);
     sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261013130139_zysyr_monthly_review_identity.sql'),'utf8'));
+    denied('set role service_role;'+recipients(),/permission denied for schema zysyr_private/);
+    sql(fs.readFileSync(path.join(__dirname,'../supabase/migrations/20261014014800_zysyr_monthly_review_service_namespace.sql'),'utf8'));
+    equal(sql("select has_schema_privilege('service_role','zysyr_private','USAGE') and not has_schema_privilege('service_role','zysyr_private','CREATE') and has_schema_privilege('authenticated','zysyr_private','USAGE') and not has_schema_privilege('anon','zysyr_private','USAGE');"),'t');
     equal(sql(recipients()),'4'); // Same names must NOT merge without explicit authorization.
     sql(`insert into zysyr_monthly_review_identity_links values('${id(1)}',10,'${id(4)}','Owner explicitly confirmed both entrances',now());`);
     equal(sql(recipients()),'3');
