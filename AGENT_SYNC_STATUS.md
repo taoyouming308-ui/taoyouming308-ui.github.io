@@ -1,3 +1,10 @@
+## 2026-10-14 · Monthly upload clarity (App version: v635 candidate, not published)
+
+- Current owner: Codex. Last synchronized base checked: github/main 474284da, released v634. Clean tracked start, existing Oct14 daily archive retained; focused ui/monthly-upload-clarity branch. All unrelated untracked backups/artifacts preserved.
+- User approved concise monthly-specific names: 月报数据 / 月报凭证. Two aligned cards identify Excel/Word vs photo/PDF, purpose, accepted formats and limits; a single explicit save action keeps combined or photo-only semantics. Desktop columns/mobile stack; detailed existing accounting explanation retained under disclosure.
+- Markup/CSS only; original submit handler, API payloads, auto routing, amounts, evidence, permissions and monthly confirmation behavior remain unchanged. No production calls, financial writes, migrations or Edge deployment needed.
+- Synthetic 320/390/768/844/1366 browser checks, existing upload/partial failure/duplicate guard, auto-upload contract, monthly workbench and monthly review browser checks pass. Actual desktop/mobile upload screenshots inspected. The complete local pre-push gate passed, including all 114 finance commands; all inline runtime scripts match v634 except cache URLs. User explicitly authorized this UI-only release after tests; ordinary protected PR/CI/Pages verification still required, no bypass or force refresh.
+
 ## 2026-10-14 · Monthly review integrated release candidate (App version: v634)
 
 - Final backend readback: service namespace migration applied, both authorized stores' inbox/status/source-token reads succeed as the real service role; old private finance helpers still deny direct service execution. All four new tables have forced RLS and deny client reads/direct service writes, all new RPCs deny anon/authenticated; no new security advisories. Anonymous live monthly status/inbox/overview return 403. 41 identity + 145 version synthetic checks now reproduce the production ACL baseline and pass. No real month published or confirmed. Full final hook and protected PR/Pages are still the frontend publication gate.

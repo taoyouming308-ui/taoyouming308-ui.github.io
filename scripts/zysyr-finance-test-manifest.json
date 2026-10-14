@@ -42,6 +42,7 @@
     { "runtime": "node", "script": "test-monthly-summary-v516.js" },
     { "runtime": "node", "script": "test-monthly-summary-browser-v516.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-photo-upload-browser-v521.js" },
+    { "runtime": "node", "script": "test-monthly-upload-clarity-browser.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-photo-upload-db-v521.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-daily-performance-v525.js" },
     { "runtime": "node", "script": "test-zysyr-monthly-daily-performance-browser-v525.js" },

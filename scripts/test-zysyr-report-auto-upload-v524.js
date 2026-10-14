@@ -7,7 +7,9 @@ const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
 const api = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 
-assert.match(page, /上传文件（自动识别报表类型和所属月份）/);
+assert.match(page, /label for="monthly-material-file">月报数据<\/label>/);
+assert.match(page, /读取月报表内的数据，自动识别所属月份/);
+assert.match(page, /label for="monthly-material-vouchers">月报凭证<\/label>/);
 assert.match(page, /id="monthly-material-vouchers"[^>]*multiple[^>]*accept="image\/jpeg,image\/png,application\/pdf"/);
 assert.doesNotMatch(page, /id="monthly-material-type"|id="monthly-material-date"/);
 assert.match(page, /api\('report_upload_auto',\{store:currentStore\(\),filename:file\.name,mime_type:mime,base64:await fileBase64\(file\),require_monthly:vouchers\.length>0\}\)/);
