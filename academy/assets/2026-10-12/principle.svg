@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520"><rect x="0" y="0" width="900" height="520" rx="24" fill="#FFFDFC"/><text x="450" y="44" text-anchor="middle" font-size="27" font-weight="700" fill="#2E2B29">旧烫发尾：能重新塑形，不等于结构完全恢复</text><rect x="75" y="100" width="750" height="145" rx="22" fill="#DCE4D4"/><text x="115" y="135" text-anchor="start" font-size="20" font-weight="700" fill="#74816C">较新发段</text>
+ <path d="M140 185 C240 130 340 235 440 180 S640 130 760 185" fill="none" stroke="#74816C" stroke-width="10" stroke-linecap="round"/>
+ <g stroke="#74816C" stroke-width="4"><line x1="230" y1="158" x2="230" y2="205"/><line x1="370" y1="166" x2="370" y2="208"/><line x1="515" y1="158" x2="515" y2="202"/><line x1="650" y1="161" x2="650" y2="205"/></g>
+ <rect x="75" y="285" width="750" height="145" rx="22" fill="#E8D8D2"/><text x="115" y="320" text-anchor="start" font-size="20" font-weight="700" fill="#A07870">旧烫发尾</text>
+ <path d="M140 370 C240 305 340 430 440 355 S640 305 760 385" fill="none" stroke="#A07870" stroke-width="10" stroke-linecap="round"/>
+ <g stroke="#A07870" stroke-width="4"><line x1="230" y1="340" x2="230" y2="382"/><line x1="515" y1="345" x2="515" y2="380"/></g>
+ <text x="450" y="470" text-anchor="middle" font-size="16" font-weight="400" fill="#746F69">线条与横杠为结构示意，不代表二硫键数量或损伤百分比</text></svg>
