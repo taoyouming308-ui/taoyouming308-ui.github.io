@@ -9,6 +9,10 @@ async function main(){
  await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.fulfill({status:200,contentType:'application/json',body:'{}'}));
  for(const width of [1366,390]){
   await page.setViewportSize({width,height:900});await page.goto(origin+'/operations.html?preview=1&role=finance');await page.waitForFunction(()=>state.user&&state.data.monthly_report);
+  await page.locator('#monthly-review-bar').waitFor();
+  assert.deepEqual(await page.evaluate(()=>['monthly_review_status','monthly_review_inbox','monthly_review_preview','monthly_review_publish','monthly_review_confirm'].map(op=>API_READ_ONLY_OPERATIONS.has(op))),[true,true,true,false,false]);
+  await page.evaluate(()=>showView('daily-report'));assert.equal(await page.locator('#monthly-review-bar').isVisible(),false);
+  await page.evaluate(()=>showView('monthly'));await page.locator('#monthly-review-bar').waitFor();assert.match(await page.locator('#monthly-review-bar').innerText(),/本地预览/);
   await page.evaluate(()=>{
     const snapshot={schema_version:1,store_id:'synthetic',store_name:'合成测试店',month:'2026-01',report:{display_data:structuredClone(state.data.monthly_report.display_data)},daily_performance:state.data.monthly_daily_performance};
     snapshot.report.display_data.values[2][2]=12345.67;
@@ -49,6 +53,6 @@ async function main(){
  // Ignore only navigation-to-isolated-test iframe initialization on cleared DOM;
  // every actual page/dialog above must have had no errors.
  assert.deepEqual(errors,[]);
- console.log('Monthly review browser 390/1366: real modules, explicit preview/consent, one confirmation, immutable view, lost reply readback, dirty guard, overflow, App reminder and revoked grants passed.');
+ console.log('Monthly review browser 390/1366: actual view return/read deadlines, real modules, explicit preview/consent, one confirmation, immutable view, lost reply readback, dirty guard, overflow, App reminder and revoked grants passed.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();server.close()});

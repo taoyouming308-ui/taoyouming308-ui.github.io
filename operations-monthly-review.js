@@ -73,11 +73,13 @@
   }
   global.MonthlyReviewUI={create:create,snapshotTable:snapshotTable};
   if(!global.state||!global.api||!document.getElementById('monthly-sheet'))return;
+  if(global.API_READ_ONLY_OPERATIONS)['monthly_review_status','monthly_review_inbox','monthly_review_preview'].forEach(function(op){global.API_READ_ONLY_OPERATIONS.add(op)});
   var bar=node('section',null,'monthly-review-bar');bar.id='monthly-review-bar';bar.hidden=true;document.getElementById('monthly-sheet').before(bar);
   var review=create({bar:bar,api:global.api,dirty:global.monthlyHasUnsaved,notify:global.toast,context:function(){var s=global.state,u=s.user;return {key:u?String(u.username)+':'+String(s.session)+':'+String(u.role):'',store:global.currentStore(),month:document.getElementById('month').value,allowed:!!u&&['finance','shareholder'].includes(u.role)&&s.view==='monthly'&&!(s.monthlySummary&&s.monthlySummary.active)&&s.monthlyOverviewReady!==false,preview:global.isLocalPreview()}}});
   var render=global.renderAll;global.renderAll=function(){var result=render.apply(this,arguments),old=document.getElementById('monthly-ack');if(old)old.remove();review.refresh();return result};
   var load=global.loadOverview;global.loadOverview=function(){review.reset();return load.apply(this,arguments)};
-  ['showLogin','showView'].forEach(function(name){var fn=global[name];global[name]=function(){review.reset();return fn.apply(this,arguments)}});
+  var login=global.showLogin;global.showLogin=function(){review.reset();return login.apply(this,arguments)};
+  var view=global.showView;global.showView=async function(){var before=global.state.view,result=await view.apply(this,arguments);if(global.state.view!==before){review.reset();if(global.state.view==='monthly')await review.refresh()}return result};
   var initial=global.loadInitialView;global.loadInitialView=function(){var params=new URLSearchParams(location.search),store=params.get('review_store'),month=params.get('review_month'),select=document.getElementById('store-select');if(store&&Array.from(select.options).some(function(o){return o.value===store}))select.value=store;if(/^\d{4}-(0[1-9]|1[0-2])$/.test(month||'')){var months=document.getElementById('month');if(!Array.from(months.options).some(function(o){return o.value===month}))months.add(new Option(month,month));months.value=month}return initial.apply(this,arguments)};
   global.addEventListener('storage',function(e){if(e.key==='booking-session'||e.key==='zysyr-operations-session-v1')review.reset()});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)review.refresh()});
