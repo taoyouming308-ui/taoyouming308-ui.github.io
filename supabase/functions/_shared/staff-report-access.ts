@@ -5,6 +5,7 @@ export const STAFF_REPORT_OPERATIONS = new Set([
   "session", "overview", "monthly_summary", "report_cells", "report_lineage", "cell_trace", "report_url",
   "daily_sheet_month", "daily_sheet_read", "salary_sheet_read", "payroll_center",
   "petty_cash_report", "voucher_url", "history_evidence_images", "history_import_file_url",
+  "monthly_review_status", "monthly_review_inbox", "monthly_review_confirm",
 ]);
 export const STAFF_REPORT_CAPABILITIES = ["dashboard.store.read", "voucher.read", "salary.read"];
 export async function staffReportIdentity(token: unknown, rows: Rows, hash: (v: string) => Promise<string>) {
@@ -27,5 +28,5 @@ export async function staffReportSession(payload: Row, rows: Rows, hash: (v: str
   return { username: staff.username, role: "staff_report_reader", position: "股东（只读）",
     operations_role: "shareholder", store: stores[0].name, staff_report_readonly: true,
     auth_scope_type: "assigned_stores", auth_stores: stores.map(s=>s.name), auth_store_records: stores,
-    auth_capabilities: STAFF_REPORT_CAPABILITIES, auth_account_id: "" };
+    auth_capabilities: STAFF_REPORT_CAPABILITIES, auth_account_id: "", auth_staff_id: Number(staff.id) };
 }

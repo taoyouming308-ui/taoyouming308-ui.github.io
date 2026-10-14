@@ -36,6 +36,8 @@ async function run(){
         return ok({user});
       }
       if(data.operation==='overview')return ok(overview);
+      if(data.operation==='monthly_review_status')return ok({publication:null,receipt:null,history:[],finance:false});
+      if(data.operation==='monthly_review_inbox')return ok({pending:[],count:0});
       if(data.operation==='daily_sheet_month')return ok(month);
       if(data.operation==='daily_sheet_read')return ok(daily);
       return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'未授权操作 '+data.operation})});

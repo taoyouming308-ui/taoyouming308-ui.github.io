@@ -11,6 +11,7 @@ import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } 
 import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
 import { dailyAutofillView, isSyncedDailySheet } from "../_shared/daily-autofill-view.mjs";
+import { MONTHLY_REVIEW_OPERATIONS, monthlyReviewRequest, monthlyReviewError } from "../_shared/monthly-review.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -6962,7 +6963,20 @@ async function historyImportFileUrl(payload: JsonRecord, session: JsonRecord): P
   return { url: signedPath.startsWith("http") ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`, filename, expires_in: 300 };
 }
 
+async function monthlyReviewRpc(name: string, body: JsonRecord): Promise<unknown> {
+  const response = await rest(`rpc/${name}`, {method:"POST",body:JSON.stringify(body)});
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code = cleanText(data?.message || data?.code,160);
+    // Never retry a write or leak SQL/row details to a browser.
+    if (data?.code === "57014" || data?.code === "55P03") throw new Error("月报确认核对超时，本次事务已回滚，请重新读取状态后重试");
+    throw new Error(monthlyReviewError(code));
+  }
+  return data;
+}
+
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
+monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
@@ -7025,6 +7039,10 @@ async function handleOperationsApiRequest(
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
     }
+    if (operation.startsWith("monthly_review_") && MONTHLY_REVIEW_OPERATIONS.has(operation)) return json(await monthlyReviewRequest(payload,session,{
+      rpc:monthlyReviewRpc, selectedStore:selectedStoreInfo, overview, hash:sha256,
+      requireFinance:(actor:JsonRecord) => requireFinanceCapability(actor,"report.upload","只有已授权财务可以提交月报"),
+    }));
     if (operation === "overview") return json(await overview(payload, session));
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));

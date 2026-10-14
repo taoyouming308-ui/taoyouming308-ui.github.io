@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-monthly-review-api.mjs" },
+    { "runtime": "node", "script": "test-monthly-review-browser.js" },
     { "runtime": "node", "script": "test-cold-start-browser.js" },
     { "runtime": "node", "script": "test-entry-startup-browser.js" },
     { "runtime": "node", "script": "test-startup-style-browser.js" },
@@ -73,6 +75,8 @@
     { "runtime": "node", "script": "test-zysyr-shared-public-acl-db.js" },
     { "runtime": "node", "script": "test-zysyr-storage-anon-policy.js" },
     { "runtime": "node", "script": "test-zysyr-report-permissions-v512.js" },
+    { "runtime": "node", "script": "test-monthly-review-identity-db.js" },
+    { "runtime": "node", "script": "test-monthly-review-versions-db.js" },
     { "runtime": "node", "script": "test-zysyr-daily-layout-v508.js" },
     { "runtime": "node", "script": "test-operations-report-fit.js" },
     { "runtime": "node", "script": "test-operations-report-fit-targeted.js" },
