@@ -1,0 +1,38 @@
+{
+  "batch": "aesthetic-2026-10-15",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "20d8bf9f2defc82feb60491a1a4a94b648c14dae",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "original conditional design reasoning; requires on-site texture and maintenance validation",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional mixed-texture case, image/body mapping, six answer sections, five self-check sections and conditional A/B trade-off",
+    "checks": [
+      "visible image facts, scenario assumptions and on-site unknowns are separated",
+      "no personality or occupation is inferred from appearance",
+      "reference-photo similarity is not promised under air-dry conditions",
+      "no fixed thinning ratio, chemical formula, heat setting or universal haircut length is prescribed",
+      "customer wording includes an explicit trade-off and change condition",
+      "no user performance is invented without an answer"
+    ],
+    "requiredCorrectionsRemaining": [],
+    "limits": [
+      "AI-generated fictional training content, not a real-client record or verified makeover",
+      "preparer review is not an independent expert or scientific review",
+      "actual publication and live UI verification remain release responsibilities"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-15-mixed-texture.webp",
+    "rights": "Original fictional adult image generated for this teaching case; not a legal or global originality guarantee",
+    "provenance": "Generated with the permitted image generation capability; converted from original PNG to mobile-friendly WebP without content edits",
+    "sha256": "7cedf660b77570ab186877d2338b78b8c0cc74cab2c69254e91dd77d1326304b",
+    "visualCheck": "Original 1774x887 image viewed: same fictional adult in front, right profile and back views; full head, neck and shoulders; current state only; no text, watermark or before/after claim"
+  },
+  "candidateFeedSha256": "63de16a76c53e8ecdf50452643a3c443fb1ea1b4deae282f1b4494e93c4bd69b",
+  "caseCanonicalSha256": "ad257e33a5ae85545bb05de27e1a34b552cc6cd97a387387615264f09c281c2b",
+  "sameDayReplay": "Reuse and update aesthetic-2026-10-15 if already present; do not append a second same-day case",
+  "publicationAppVersion": 635
+}

@@ -130,6 +130,13 @@
 
 # Agent Sync Status
 
+## 2026-10-15 · Original mixed-texture aesthetic case (App version: v635 unchanged)
+
+- Current owner: Codex. Clean isolated `content/aesthetic-2026-10-15` worktree from `github/main` `20d8bf9`; mandatory version, release-integrity and agent-sync checks passed and the daily recovery archive was created before edits.
+- Exactly one stable Shanghai-date case is added: a fictional adult with a comparatively smooth surface and stronger inner S-wave, comparing a solid perimeter with a softer texture-releasing direction under a three-minute/no-daily-flat-iron constraint. Front/right-profile/back image shows current state only, not a real customer, before/after or verified outcome.
+- Six conditional reasoning sections and five self-check prompts distinguish image-visible facts, scenario settings and on-site unknowns. The case does not infer personality or occupation, diagnose damage from appearance, prescribe fixed thinning/chemical parameters, promise reference-photo replication, or invent user performance.
+- Scope is limited to the new feed item, its original WebP, transparent preparer audit and public handoff records. Runtime/version, old academy feed, calculator, customer, finance, database, login, permission, business sync and automation are unchanged. Focused content/browser checks, complete required gate, protected PR, Pages deployment and exact online feed/image readback remain required before claiming App synchronization.
+
 ## 2026-10-10 · Original daily aesthetic case (App version: v622 unchanged)
 
 - Current owner: Codex. Isolated content/aesthetic-2026-10-10 started from clean github/main v621 with recovery archive; financial repair PR25 takes publication priority. Fast-forwarded to latest github/main 251cf3d v622 after that repair merged, preserving all its source/version changes. Continuing user authorization covers today's one original illustrated case; no new schedule or legacy scientific batch.
