@@ -1,3 +1,9 @@
+## 2026-10-15 · Mixed-texture aesthetic training case (v635 unchanged)
+
+- Add one fictional front/profile/back teaching case about a smooth outer layer, wavier inner layer, and the trade-off between a solid straight-reference perimeter and realistic air-dry maintenance.
+- Include six conditional design sections, five self-review prompts, visible/assumed/unknown boundaries, an explicit A/B change condition, and customer wording that does not promise the reference photo's straightened result.
+- Add one original AI-generated current-state image and a transparent preparer audit. No App runtime, retired academy feed, calculator, customer, finance, database, authentication, permission, business-sync or schedule change.
+
 ## v635 · 2026-10-14 · 月报上传入口说明（待发布）
 
 - 月报上传区分为“月报数据 · Excel / Word”和“月报凭证 · 照片 / PDF”，分别说明读取表格与留存原件的用途；电脑并排、手机竖屏上下排列。
