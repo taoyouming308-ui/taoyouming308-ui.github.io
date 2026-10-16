@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-15",
+    "2026-10-16"
+  ],
+  "baseSha": "2c0563208142f7b3e85919b1dac18cb2aa6767b4",
+  "preparedHeadSha": "6ab1a8853b62bdd26cb50fa2f5ebe3d60c393978",
+  "preparationRun": 38850934492,
+  "preparationArtifact": 12025561466,
+  "backupArtifact": 12025162098,
+  "contentBindingSha256": "3d5fa88800c9b235e995d68f1f3d53bf6d3e817e8bc94271640fc982ef46fc55",
+  "verification": {
+    "isolatedTests": 45,
+    "reviewBoundCatalogDates": [
+      "2026-10-16",
+      "2026-10-15",
+      "2026-10-14",
+      "2026-10-13",
+      "2026-10-12",
+      "2026-10-11"
+    ],
+    "unchangedLegacyDate": "2026-10-11",
+    "idempotentPreparation": true,
+    "cloudReportMatchesLocalReadback": true,
+    "fullPrePushRun": "38850934492/116811761432"
+  },
+  "fileSha256": {
+    "academy/2026-10-15.html": "e17e60422b7914f114e6f30ed86d92d9bc5d2497b479a914030ecf28dc886c57",
+    "academy/2026-10-16.html": "1aa3aba801b1ad3bda4236569eb4e30041f631d55227fd882c07047c9749535d"
+  },
+  "remaining": [
+    "exact-head validate",
+    "exact-head backup-main",
+    "normal protected merge",
+    "main and actual Pages byte readback"
+  ],
+  "scope": "Public academy content only. Existing reviews and app version unchanged; no production business data accessed."
+}

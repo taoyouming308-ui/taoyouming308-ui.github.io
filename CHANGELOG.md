@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:3d5fa88800c9b235e995d68f1f3d53bf6d3e817e8bc94271640fc982ef46fc55 -->
+## 2026-10-16 · Reviewed academy publication candidate (App version: v635 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 2c0563208142f7b3e85919b1dac18cb2aa6767b4.
+- Dates: 2026-10-15, 2026-10-16. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-15 · Mixed-texture aesthetic training case (v635 unchanged)
 
 - Add one fictional front/profile/back teaching case about a smooth outer layer, wavier inner layer, and the trade-off between a solid straight-reference perimeter and realistic air-dry maintenance.

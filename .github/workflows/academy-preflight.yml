@@ -1,0 +1,93 @@
+name: Academy publication preflight
+
+# A read-only PR gate. It neither approves lessons nor publishes to main.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'academy/**'
+      - 'scripts/*academy*'
+      - '.github/workflows/*academy*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-preflight-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  backup-main:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Shanghai
+      PYTHONDONTWRITEBYTECODE: '1'
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout immutable production baseline, never the proposal
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Verify latest clean baseline and run existing backup script
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add github "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch github main
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test "$(git rev-parse github/main)" = "$BASE_SHA"
+          git status --short --branch
+          test -z "$(git status --porcelain)"
+          git config core.hooksPath .githooks
+          node scripts/check-version-sync.js
+          node scripts/check-release-integrity.js
+          node scripts/check-agent-sync-status.js
+          bash scripts/backup-zysyr.sh
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, tarfile
+          today = datetime.date.today().isoformat()
+          archives = sorted(pathlib.Path('backups/daily').glob('ZYSYR_' + today + '_*.tar.gz'))
+          if len(archives) != 1 or not archives[0].is_file():
+              raise SystemExit('Expected one complete daily baseline backup')
+          archive = archives[0]
+          with tarfile.open(archive, 'r:gz') as t:
+              names = set(t.getnames())
+              required = {'./AGENTS.md', './perm-app.html', './academy/catalog.json'}
+              if not required <= names:
+                  raise SystemExit('Baseline backup is incomplete')
+              if any(n == './scripts/backup.env' or n.startswith('./.git/') for n in names):
+                  raise SystemExit('Private configuration must not enter code backup')
+              for member in t.getmembers():
+                  if member.isfile():
+                      with t.extractfile(member) as stream:
+                          while stream.read(1024 * 1024):
+                              pass
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          report = {'state': 'baseline_backup_verified', 'baseSha': os.environ['BASE_SHA'],
+                    'proposalHeadSha': os.environ['HEAD_SHA'], 'archive': archive.name,
+                    'sha256': digest, 'bytes': archive.stat().st_size,
+                    'scope': 'Clean public main checkout only; not a database or workstation backup',
+                    'published': False}
+          report_path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'academy-baseline-backup.json'
+          report_path.write_text(json.dumps(report, indent=2) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('Baseline backup verified for `' + os.environ['BASE_SHA'] + '`. '
+                      'No course has been published by this job.\n')
+          PY
+      - name: Retain verified public-code baseline and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-baseline-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          path: |
+            backups/daily/ZYSYR_*.tar.gz
+            ${{ runner.temp }}/academy-baseline-backup.json
+          if-no-files-found: error
+          retention-days: 30

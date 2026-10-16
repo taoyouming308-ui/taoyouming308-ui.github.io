@@ -3,6 +3,14 @@ on:
   schedule:
     - cron: '15 0 * * *'
   workflow_dispatch:
+  push:
+    branches: [main, 'content/academy-*']
+    paths:
+      - 'academy/**'
+      - 'scripts/prepare-academy-pr.py'
+      - 'scripts/test_prepare_academy_pr.py'
+      - '.github/workflows/publish-academy.yml'
+      - 'docs/perm/academy-connected-publication.md'
 permissions:
   contents: write
 concurrency:
@@ -10,12 +18,13 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'push'
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          persist-credentials: true
-      - uses: actions/setup-python@v5
+          persist-credentials: false
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Validate review and stage candidate (not publication)
@@ -28,3 +37,194 @@ jobs:
           name: academy-pr-candidate-${{ github.run_id }}
           path: ${{ runner.temp }}/academy-candidate
           if-no-files-found: error
+
+  prepare-content-branch:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/content/academy-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TZ: Asia/Shanghai
+      PYTHONDONTWRITEBYTECODE: '1'
+      CONTENT_BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Verify current branch and back up immutable main before preparation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add github "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch github main
+          test "$(git ls-remote github "refs/heads/$CONTENT_BRANCH" | cut -f1)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor github/main HEAD
+          git status --short --branch
+          test -z "$(git status --porcelain)"
+          git config core.hooksPath .githooks
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git worktree add --detach "$RUNNER_TEMP/academy-clean-base" github/main
+          (
+            cd "$RUNNER_TEMP/academy-clean-base"
+            test -z "$(git status --porcelain)"
+            node scripts/check-version-sync.js
+            node scripts/check-release-integrity.js
+            node scripts/check-agent-sync-status.js
+            bash scripts/backup-zysyr.sh
+          )
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, tarfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'academy-clean-base'
+          archives = sorted((root / 'backups/daily').glob('ZYSYR_*.tar.gz'))
+          if len(archives) != 1:
+              raise SystemExit('Expected one clean-main backup')
+          archive = archives[0]
+          with tarfile.open(archive, 'r:gz') as backup:
+              if not {'./AGENTS.md', './perm-app.html', './academy/catalog.json'} <= set(backup.getnames()):
+                  raise SystemExit('Incomplete main backup')
+              for entry in backup.getmembers():
+                  if entry.isfile():
+                      with backup.extractfile(entry) as stream:
+                          while stream.read(1024 * 1024):
+                              pass
+          record = {'state': 'main_backup_verified', 'published': False,
+                    'baseSha': subprocess.check_output(['git', 'rev-parse', 'github/main'], text=True).strip(),
+                    'inputHeadSha': os.environ['GITHUB_SHA'],
+                    'archive': archive.name, 'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+                    'scope': 'Clean public source only; not a private workstation/database backup'}
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'academy-backup.json').write_text(json.dumps(record, indent=2) + '\n')
+          PY
+      - name: Retain verified main recovery point
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-preparation-backup-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/academy-clean-base/backups/daily/ZYSYR_*.tar.gz
+            ${{ runner.temp }}/academy-backup.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Test isolated preparation and original review binding
+        run: python3 -m unittest scripts/test_prepare_academy_pr.py
+      - name: Render with trusted main publisher and preserve all history
+        id: prepare
+        run: python3 scripts/prepare-academy-pr.py --report "$RUNNER_TEMP/academy-prepared.json"
+      - name: Install existing pre-push Python dependency
+        if: steps.prepare.outputs.changed == 'true'
+        run: python3 -m pip install cryptography==48.0.0
+      - name: Install pinned Deno for existing regression gate
+        if: steps.prepare.outputs.changed == 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.6
+      - name: Install pinned Supabase CLI for existing regression gate
+        if: steps.prepare.outputs.changed == 'true'
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.109.1
+      - name: Install pinned browser tooling
+        if: steps.prepare.outputs.changed == 'true'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Commit prepared content and run complete pre-push gate
+        if: steps.prepare.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --cached --check
+          git diff --quiet
+          git commit -m 'content(academy): render reviewed lessons and preserve catalog history'
+          git fetch github main
+          git merge-base --is-ancestor github/main HEAD
+          test "$(git ls-remote github "refs/heads/$CONTENT_BRANCH" | cut -f1)" = "$GITHUB_SHA"
+          test "$(git config core.hooksPath)" = '.githooks'
+          # Ordinary branch push invokes every existing pre-push test. Never force.
+          git push github "HEAD:refs/heads/$CONTENT_BRANCH"
+          test "$(git ls-remote github "refs/heads/$CONTENT_BRANCH" | cut -f1)" = "$(git rev-parse HEAD)"
+          echo "Prepared branch head: $(git rev-parse HEAD). NOT merged or deployed." >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain preparation result, never mark it as online
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-prepared-${{ github.run_id }}
+          path: ${{ runner.temp }}/academy-prepared.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  verify-main-pages:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Verify reviewed main and bounded exact-byte Pages readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/publish-academy.py --verify-published
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, time, urllib.request
+          root = pathlib.Path('.')
+          catalog = json.loads((root / 'academy/catalog.json').read_text())
+          paths = {'academy/catalog.json', 'academy/index.html'}
+          for row in catalog['items']:
+              if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', row['date']) or row['url'] != row['date'] + '.html':
+                  raise SystemExit('Invalid main catalog')
+              paths.add('academy/' + row['url'])
+              draft = root / 'academy/drafts' / (row['date'] + '.json')
+              if draft.exists():
+                  for image in json.loads(draft.read_text())['images']:
+                      paths.add('academy/' + image['path'])
+          expected = {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in sorted(paths)}
+          failures, checked = {}, {}
+          for attempt in range(12):
+              failures = {}
+              for path, digest in expected.items():
+                  url = 'https://taoyouming308-ui.github.io/' + path + '?academy_sha=' + os.environ['GITHUB_SHA']
+                  try:
+                      request = urllib.request.Request(url, headers={'Cache-Control': 'no-cache', 'User-Agent': 'Academy-Readback/1'})
+                      with urllib.request.urlopen(request, timeout=15) as response:
+                          data = response.read(6 * 1024 * 1024)
+                      if hashlib.sha256(data).hexdigest() != digest:
+                          raise ValueError('Pages bytes differ from checked-out main')
+                      checked[path] = digest
+                  except Exception as error:
+                      failures[path] = str(error)
+              if not failures:
+                  break
+              if attempt < 11:
+                  time.sleep(20)
+          report = {'state': 'online_verified' if not failures else 'pages_readback_failed',
+                    'mainSha': os.environ['GITHUB_SHA'], 'dates': [r['date'] for r in catalog['items']],
+                    'verifiedSha256': checked, 'failures': failures, 'publishedByThisJob': False}
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'academy-online-readback.json').write_text(json.dumps(report, indent=2) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Academy readback: ' + report['state'] + '. This read-only job does not deploy.\n')
+          if failures:
+              raise SystemExit(json.dumps(failures))
+          PY
+      - name: Retain actual online readback evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-online-readback-${{ github.run_id }}
+          path: ${{ runner.temp }}/academy-online-readback.json
+          if-no-files-found: warn
+          retention-days: 30
