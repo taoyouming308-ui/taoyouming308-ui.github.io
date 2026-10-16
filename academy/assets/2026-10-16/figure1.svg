@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img"><rect width="900" height="520" rx="22" fill="#F7F4EF"/><text x="38" y="48" font-size="27" font-weight="bold" fill="#2E2B29">原理 · 细软发为何更难靠自身保持体积</text>
+<text x="38" y="78" font-size="15" fill="#746F69">结构示意｜非测量图｜不代表两根头发的实际放大比例</text>
+<rect x="28" y="112" width="405" height="348" rx="18" fill="#DCE5EB" opacity="0.9"/>
+<rect x="466" y="112" width="406" height="348" rx="18" fill="#E5E8E0"/>
+<text x="56" y="146" font-size="19" font-weight="bold" fill="#2E2B29">A. 毛发截面与弯曲</text>
+<circle cx="167" cy="254" r="49" fill="#C6D8D9" stroke="#57727D" stroke-width="9"/>
+<circle cx="167" cy="254" r="36" fill="#EADCC9" stroke="#E6CDB4" stroke-width="3"/>
+<text x="140" y="335" font-size="18" fill="#2E2B29">细发径</text>
+<circle cx="324" cy="254" r="76" fill="#C6D8D9" stroke="#57727D" stroke-width="12"/>
+<circle cx="324" cy="254" r="58" fill="#EADCC9" stroke="#E6CDB4" stroke-width="4"/>
+<text x="292" y="354" font-size="18" fill="#2E2B29">粗发径</text>
+<text x="58" y="396" font-size="16" fill="#45525A">理想圆截面近似：弯曲刚度 EI</text>
+<text x="58" y="426" font-size="15" fill="#45525A">几何项 I 与直径四次方相关；</text>
+<text x="58" y="448" font-size="15" fill="#45525A">真实发丝的形状、E 与损伤仍会改变结果。</text>
+<text x="492" y="146" font-size="19" font-weight="bold" fill="#2E2B29">B. 设计中的真正问题</text>
+<path d="M533 228 C540 192 563 176 584 195 C602 217 593 275 619 315" fill="none" stroke="#55746B" stroke-width="15" stroke-linecap="round"/>
+<path d="M675 214 C694 185 721 194 731 218 C740 242 731 262 749 284 S787 310 775 340" fill="none" stroke="#B98670" stroke-width="15" stroke-linecap="round"/>
+<path d="M520 340 L823 340" stroke="#C6B6A6" stroke-width="2" stroke-dasharray="5 7"/>
+<text x="500" y="378" font-size="17" fill="#4E645B">左：少量支撑 + 保留下摆密度</text>
+<text x="500" y="409" font-size="17" fill="#875E51">右：过度卷曲 + 发尾外扩</text>
+<text x="500" y="441" font-size="15" fill="#5C625C">体积位置不是卷度数量</text></svg>

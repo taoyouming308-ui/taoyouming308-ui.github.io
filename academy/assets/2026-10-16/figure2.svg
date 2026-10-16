@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img"><rect width="900" height="520" rx="22" fill="#F7F4EF"/><text x="38" y="48" font-size="27" font-weight="bold" fill="#2E2B29">技术 · 五区分工，不是全头统一卷密度</text>
+<text x="38" y="77" font-size="15" fill="#746F69">中发细软｜分区方向与支撑位置示意｜实际分线需顺毛流调整</text>
+<rect x="28" y="108" width="410" height="364" rx="18" fill="#E2EAE4"/>
+<rect x="460" y="108" width="412" height="364" rx="18" fill="#EEE8DB"/>
+<text x="54" y="143" font-size="19" fill="#2E2B29">正面分区与卷向</text>
+<path d="M160 370 C118 352 108 280 119 219 C128 163 174 143 235 148 C300 151 347 187 348 246 C351 295 331 352 306 377 Z" fill="#DDC3C4" stroke="#665E59" stroke-width="4"/>
+<ellipse cx="236" cy="244" rx="87" ry="106" fill="#F0E3D5" stroke="#665E59" stroke-width="3"/>
+<path d="M144 221 C163 194 192 183 236 177 C277 185 315 205 337 234" fill="none" stroke="#9AAFA2" stroke-width="18"/>
+<path d="M127 281 C153 289 173 305 188 322 M340 280 C309 294 290 311 279 324" fill="none" stroke="#A16D70" stroke-width="11" stroke-linecap="round"/>
+<path d="M235 161 L234 205" stroke="#4B776E" stroke-width="4"/><polygon points="234,209 225,195 244,195" fill="#4B776E"/>
+<path d="M139 240 L111 264 M325 240 L357 263" stroke="#8B6460" stroke-width="4"/>
+<text x="58" y="417" font-size="16" fill="#4B6158">顶部：轻支撑，不炸根</text>
+<text x="58" y="441" font-size="16" fill="#845B58">脸周：从下颌附近启动柔和S</text>
+<text x="486" y="143" font-size="19" fill="#2E2B29">侧后区：圆度 / 轻盈分开</text>
+<path d="M622 179 C684 143 769 167 800 226 C820 267 792 296 779 312 C777 344 782 368 792 399 L628 399 C643 350 620 329 596 298 C573 271 579 210 622 179Z" fill="#D1DCCF" stroke="#596B61" stroke-width="4"/>
+<path d="M635 194 C683 169 751 180 774 224 C760 258 725 271 669 273 C628 265 603 244 635 194Z" fill="#B1C8BD"/>
+<ellipse cx="695" cy="273" rx="61" ry="48" fill="#AEC2CE" opacity="0.9"/>
+<path d="M644 341 Q690 361 770 335" fill="none" stroke="#B98670" stroke-width="24" stroke-linecap="round" opacity="0.9"/>
+<path d="M728 195 L759 165" stroke="#4B776E" stroke-width="4"/><polygon points="761,164 749,171 755,183" fill="#4B776E"/>
+<text x="483" y="421" font-size="16" fill="#526879">雾蓝：后枕建立柔和圆度</text>
+<text x="483" y="445" font-size="16" fill="#875E51">陶土：后颈减重，避免堆积</text></svg>
