@@ -139,6 +139,13 @@
 
 # Agent Sync Status
 
+## 2026-10-16 · Original reference-adaptation aesthetic case (App version: v635 unchanged)
+
+- Current owner: Codex. Clean isolated content/aesthetic-2026-10-16 from latest github/main c51cb774; required starting version/integrity/handoff checks passed and complete daily recovery archive created before edits. Separate Oct15/16 academy courses and their catalog remain untouched.
+- One stable Shanghai-date aesthetic-2026-10-16 case adds a fictional current-state front/right-profile/back WebP and conditional short-hair reference adaptation. Six answers cover person, style, contour, texture, daily feasibility and customer wording; five recaps explicitly do not evaluate an unanswered user.
+- Previous eight parsed feed objects are unchanged. Image was actually viewed, converted at original dimensions, and hash-bound in preparer audit. No independent scientific/expert approval is fabricated. Reference person's fuller hair/neck/shoulder conditions are explicitly text assumptions, not a claimed displayed photo. Temporary clipping is not proof of true post-cut volume or ear-tucking.
+- Only new feed item, image, transparent audit and necessary public records change. No App code/version, old feed, calculator, customer, finance, backend, database, login, permission, business sync or automation changes. Content contract passes; local Chromium absent and ordinary browser download fails as invalid archive. Existing protected CI invokes the exact daily browser through test-perm-academy-browser.js; all required checks must succeed before normal merge. Final Pages and exact feed/date/title/image readback remain mandatory; candidate is not yet synchronization.
+
 ## 2026-10-15 · Original mixed-texture aesthetic case (App version: v635 unchanged)
 
 - Current owner: Codex. Clean isolated `content/aesthetic-2026-10-15` worktree from `github/main` `20d8bf9`; mandatory version, release-integrity and agent-sync checks passed and the daily recovery archive was created before edits.

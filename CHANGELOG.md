@@ -7,6 +7,12 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-10-16 · Reference-photo adaptation case (v635 unchanged)
+
+- Add one new fictional aesthetic case: fine-looking longer hair, a fuller chin-length short-hair reference, and the trade-off between preserving visual language and copying length. Compare two conditional outlines, density, head/shoulder balance and a five-minute routine.
+- Original current-state front/profile/back WebP, six reference answers and five self-check sections. Reference person's features are explicitly fictional text, not an unseen verified image; no user performance is invented.
+- Preserve all eight previous cases and all runtime/version, retired feed, calculator, customer, finance, database, login, permission, business-sync and schedule files. Local browser absence is transparent; unchanged protected CI supplies the identical required daily browser checks before any merge.
+
 ## 2026-10-15 · Mixed-texture aesthetic training case (v635 unchanged)
 
 - Add one fictional front/profile/back teaching case about a smooth outer layer, wavier inner layer, and the trade-off between a solid straight-reference perimeter and realistic air-dry maintenance.
