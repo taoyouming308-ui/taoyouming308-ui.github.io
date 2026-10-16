@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-10-16",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "c51cb7746ae01afafbeafb57b72508f12c152454",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design hypotheses, not empirically verified haircut outcomes",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "Current-state image, explicit fictional reference description, six reasoning sections and five self-check sections",
+    "checks": [
+      "Previous eight feed objects preserved exactly as parsed objects",
+      "No same-day duplicate; stable aesthetic-2026-10-16 identifier",
+      "Visible facts, fictional assumptions and on-site unknowns distinguished",
+      "No personality, occupation, hair-loss diagnosis or damage diagnosis inferred from image",
+      "A/B trade-offs include head-to-shoulder relationship without treating broad shoulders as a defect",
+      "Temporary clipping explicitly cannot validate actual post-cut volume or ear-tucking",
+      "No fixed haircut measurement, thinning ratio, chemical or heating parameters",
+      "No submitted user answer and no claimed personal score, completion or learning outcome"
+    ],
+    "limits": [
+      "AI fictional teaching material, not real-client data or a verified makeover",
+      "Preparer review is not independent scientific or expert certification",
+      "Protected PR checks and final Pages/feed/image readback required before claiming sync"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-16-reference-proportion.webp",
+    "sha256": "7a3392ec6a4b389b3f25fb0c1e9f0c38d5f6daddbee70e6ecfeb43abb0e301eb",
+    "rights": "Original fictional adult image generated for this teaching case; no real customer or third-party photo used",
+    "provenance": "Built-in image generation, original PNG converted to same-size 1774x887 WebP without content editing",
+    "promptSummary": "Same fictional adult woman, front/right-profile/back current longer fine-looking dark hair, wispy ends, sage shirt, natural neutral light, complete head/neck/shoulder context; no labels or redesign",
+    "visualCheck": "Generated original and final WebP actually viewed; consistent person, clothing, hair condition and lighting; current state only. Not measurement evidence; no reference short-haired person shown."
+  },
+  "candidateFeedSha256": "6eca8208aa57ac75a485a14f43855743e0299b47218560279557a7dac9f9172c",
+  "caseCanonicalSha256": "7f4d14b8ac0a3255a4af6dd0d4756227a58d22700573a7e956d11973d5c53c4c",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON and no trailing newline for case",
+  "sameDayReplay": "Update the same aesthetic-2026-10-16 object if retrying; never duplicate or regenerate a different same-day lesson",
+  "localChecks": {
+    "contentContract": "passed: nine cases, previous eight preserved",
+    "browser": "blocked locally: required Chromium executable absent; browser installation download returned invalid archive; existing protected CI runs test-perm-academy-browser.js which invokes the identical daily browser script",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 635
+}
