@@ -148,6 +148,13 @@
 
 # Agent Sync Status
 
+## 2026-10-17 · Original styling-effort aesthetic case (App version: v635 unchanged)
+
+- Owner: Codex. Clean isolated content/aesthetic-2026-10-17 from latest github/main 19febf184; required starting version/integrity/handoff checks passed, recovery archive created before edits. Oct17 academy publication, seven-course catalog and all existing lessons remain unchanged.
+- Exactly one stable Shanghai-date aesthetic-2026-10-17 case: fictional adult male current front/right-profile/back lay, liking a prior salon side-back opening but declining repeated root styling. Six sections compare tested maintenance versus a side-forward target; five recaps never score an unanswered user. Two extra styling minutes do not replace necessary drying.
+- Prior nine parsed feed objects unchanged. Original output and final original-size WebP viewed; exact image/feed/case hashes and prompt in transparent preparer audit. No independent expert/scientific approval, real customer, predicted post-cut result or demonstrated root-direction claim. Skill, tools and willingness remain separate; one successful rehearsal is not all-day or home proof.
+- Only feed, original image, audit and necessary public change/handoff records change. App/runtime/version, old feed, calculator, customer, finance, backend/database, login/permissions, business sync and automation untouched. Daily contract passes; local browser executable absent, existing protected CI invokes the identical daily browser script through test-perm-academy-browser.js. Complete exact-head Validate shared app, normal protected merge, Pages success and online ID/date/title/feed/image hash readback remain mandatory before claiming App synchronization.
+
 ## 2026-10-16 · Original reference-adaptation aesthetic case (App version: v635 unchanged)
 
 - Current owner: Codex. Clean isolated content/aesthetic-2026-10-16 from latest github/main c51cb774; required starting version/integrity/handoff checks passed and complete daily recovery archive created before edits. Separate Oct15/16 academy courses and their catalog remain untouched.
