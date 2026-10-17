@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="冲水后分区检查与杠向技术示意图">
+<defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0 L0 6 L9 3Z" fill="#667F78"/></marker></defs><rect width="1200" height="720" rx="28" fill="#F7F4EF"/><text x="58" y="75" font-size="41" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-weight="bold" fill="#2E2B29">图 02｜分区均匀吸水，而不是统一“吹几分钟”</text><text x="58" y="119" font-size="22" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" fill="#756F6A">示意范围按发质与配套工艺调整；下方杠径和角度是门店讨论候选值</text>
+<rect x="54" y="164" width="505" height="480" rx="26" fill="#DCE4D4"/>
+<path d="M221 588 Q153 544 144 434 Q124 311 192 238 Q266 157 380 233 Q456 317 419 446 Q405 536 328 590Z" fill="#DFC9B6" stroke="#807768" stroke-width="5"/>
+<path d="M171 371 Q136 205 267 207 Q451 179 435 390" fill="none" stroke="#66534B" stroke-width="45" stroke-linecap="round"/>
+<path d="M170 364 Q148 470 218 574 M435 371 Q465 499 380 574" fill="none" stroke="#66534B" stroke-width="46" stroke-linecap="round"/>
+<path d="M222 251 Q313 208 387 274" fill="none" stroke="#D8E5EA" stroke-width="11" stroke-dasharray="21 12"/>
+<path d="M183 381 Q264 355 413 370" fill="none" stroke="#F3E9D7" stroke-width="10" stroke-dasharray="19 14"/>
+<path d="M202 481 Q290 511 392 464" fill="none" stroke="#E8D8D2" stroke-width="10" stroke-dasharray="19 14"/>
+<path d="M324 250 q-45 34 0 68" fill="none" stroke="#667F78" stroke-width="5" marker-end="url(#a)"/>
+<path d="M238 398 q-20 42 21 68" fill="none" stroke="#667F78" stroke-width="5" marker-end="url(#a)"/>
+<path d="M380 472 q-36 40 2 68" fill="none" stroke="#667F78" stroke-width="5" marker-end="url(#a)"/>
+<g font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="22" fill="#2E2B29"><text x="75" y="197">后脑分区（教学图）</text><text x="82" y="621">同区检查：湿润感 / 不滴水 / 纸尾平整</text></g>
+<rect x="587" y="164" width="562" height="480" rx="26" fill="#D7E2EA"/>
+<g font-family="Noto Sans CJK SC, PingFang SC, sans-serif" fill="#2E2B29"><text x="615" y="206" font-size="29" font-weight="bold">候选排杠观察表</text><text x="623" y="267" font-size="23">顶部：轻 C 支撑｜60–80°｜28–32 mm</text><text x="623" y="322" font-size="23">枕部：轻圆弧衔接｜45–70°｜24–28 mm</text><text x="623" y="377" font-size="23">两侧：首弯下移｜25–50°｜30–34 mm</text><text x="623" y="432" font-size="23">后颈：控量留白｜0–25°｜不卷/大杠</text><text x="623" y="487" font-size="23">刘海：顺分缝毛流｜20–45°｜可不卷</text><text x="623" y="555" font-size="20">角度相对局部头皮切线；不是设备参数</text><text x="623" y="589" font-size="20">实际杠体外径优先于“14/16/18号”</text></g>
+<text x="58" y="683" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" fill="#A16959" font-size="22">风险边界：染漂旧尾若湿态异常软黏、拉伸不回弹或易断，退出化学热烫范围。</text></svg>
