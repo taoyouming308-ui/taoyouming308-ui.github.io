@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-10-17",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "19febf1844ce957b4fd2a11b95e2114bfa270f1d",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning; not a verified haircut or styling-outcome study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional daily-maintenance conflict, six design/communication answers and five unscored self-checks",
+    "checks": [
+      "Nine previous parsed feed objects preserved; stable same-day ID without duplication",
+      "Visible current lay, fictional previous salon service and on-site root-flow unknowns separated",
+      "No temperament or occupation inferred from appearance; unwillingness is not labelled laziness",
+      "Styling allowance is two extra active minutes beyond necessary drying, not two-minute incomplete drying",
+      "A and B are conditional choices; declining both permits no haircut and renewed goal discussion",
+      "Customer demonstration is distinct from stylist performance and from all-day/home proof",
+      "No chemical formula, heat setting, thinning percentage or guaranteed lasting outcome",
+      "No fabricated user answers, score, completion or personal learning outcome"
+    ],
+    "limits": [
+      "AI fictional teaching material, not a real client, before/after or evidence of root direction",
+      "Preparer audit is not independent expert or scientific certification",
+      "Protected PR checks plus Pages and exact live content/image readback remain release gates"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-17-styling-budget.webp",
+    "sha256": "03f8adf8d9b29c3f8d15cc15ccbe1778b426d16ff8b8f50fc95cb892eed7820e",
+    "rights": "Original fictional adult image generated for the teaching case; no customer or third-party photograph used",
+    "provenance": "Built-in image generation; original PNG converted at unchanged 1774x887 dimensions to WebP without visual content edits",
+    "prompt": "Use case: photorealistic-natural.\nAsset type: mobile professional hairstylist teaching case.\nPrimary request: one horizontal three-panel image of the SAME fictional adult East Asian man in his late 30s, showing front view, exact right-side profile and back view of ONE CURRENT UNSTYLED hairstyle. Same identity, same natural head proportions, same beige cotton crew-neck top, same lighting and framing in all views. Natural relaxed expression, lightly textured skin, no beauty reshaping. Distinct broad gentle jaw, no beard, no glasses.\nCurrent hair: medium-length natural black-brown hair with soft irregular natural bends, not a perm-advertising curl. The fringe naturally falls loosely forwards and diagonally around the eyebrows, leaving a small uneven off-center forehead opening; no slicked-back roots, no sculpted quiff, no dramatic root lift. Hair over the upper ears and at the sides is a little full, with longer irregular ends around the nape; crown low-to-moderate volume. No fade, no skin exposure, no tight curls. This is a believable wash-and-dry everyday starting state, not a proposed redesign.\nComposition: three equal panels, front/profile/back, at the same neutral eye-level camera scale. Include full top of head, complete fringe and nape hair perimeter, neck, BOTH shoulder contours and upper chest with generous margin in each panel. Shoulders relaxed, head not tilted. Plain neutral warm-gray background and consistent soft natural light. Realistic individual strands and ordinary mild shine, no salon glossy finish.\nPurpose: learners compare current fringe direction, crown height, side fullness, back outline and head-neck-shoulder context before discussing styling effort.\nConstraints: current condition only in all panels; no before/after, no styled-versus-unstyled comparison, no promised result; no text, labels, arrows, watermark, hands, tools, accessories, logos or inset reference pictures. Do not change facial proportions or hair length between views.",
+    "visualCheck": "Original output and final WebP actually viewed: consistent fictional adult in front/right-profile/back, current forward-diagonal fringe, upper-side fullness and loose nape; head, complete hair perimeter and neck/shoulder context visible. Not a root-direction measurement or styled/home comparison."
+  },
+  "candidateFeedSha256": "509b60db6975169be448a785a6ffee84993818acb3422df6c25fa96a0b6c7063",
+  "caseCanonicalSha256": "c124a75957611a42cc615e4110e42ce310d8ad03fc9904164318ccb12453f4a1",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse and update aesthetic-2026-10-17 if retrying; never append a second same-day case",
+  "localChecks": {
+    "contentContract": "passed: ten cases; prior nine parsed objects unchanged",
+    "browser": "Blocked locally: required Chromium executable absent. Existing protected CI runs the identical daily browser via test-perm-academy-browser.js; no skipped-test success claim.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 635
+}

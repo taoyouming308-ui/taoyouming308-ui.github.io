@@ -16,6 +16,12 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-10-17 · Styling-effort aesthetic case (v635 unchanged)
+
+- Add one original fictional case about liking a salon side-back style while declining repeated root styling at home. Compare a tested maintenance commitment with a softer side-forward target; distinguish willingness, skill and tools instead of blaming the customer.
+- Same-person current-state front/profile/back AI WebP, six conditional answers and five unscored self-checks. Two extra styling minutes explicitly exclude necessary drying; customer reproduction is not proof of all-day or home stability.
+- Keep nine previous objects, all academy courses/catalog, App/runtime/version, old feed, calculator, customer, finance, database, login, permission, business-sync and schedules unchanged. Local browser absence is documented; existing protected CI must complete identical daily and full shared checks before merge.
+
 ## 2026-10-16 · Reference-photo adaptation case (v635 unchanged)
 
 - Add one new fictional aesthetic case: fine-looking longer hair, a fuller chin-length short-hair reference, and the trade-off between preserving visual language and copying length. Compare two conditional outlines, density, head/shoulder balance and a five-minute routine.
