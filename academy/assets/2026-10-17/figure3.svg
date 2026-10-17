@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="颧骨外扩与下颌以下柔和S弯的视觉对比示意图">
+<defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0 L0 6 L9 3Z" fill="#A16959"/></marker></defs>
+<rect width="1200" height="720" rx="28" fill="#F7F4EF"/><text x="55" y="74" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="40" font-weight="bold" fill="#2E2B29">图 03｜同一脸型，“第一弯”位置决定宽度重心</text><text x="55" y="114" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="22" fill="#756F6A">同一虚构人物的轮廓模拟，非真实前后对照，非效果承诺</text>
+<g transform="translate(79 153)"><rect width="465" height="493" rx="26" fill="#E8D8D2"/><text x="26" y="45" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="30" fill="#2E2B29" font-weight="bold">A｜颧骨处卷群外扩</text>
+<path d="M175 371v75h127v-75" fill="#EAD4C1" stroke="#947A6C" stroke-width="3"/><path d="M190 430l-58 40h214l-58-40" fill="#F2E4D6"/>
+<ellipse cx="234" cy="243" rx="95" ry="137" fill="#EAD4C1" stroke="#947A6C" stroke-width="3"/>
+<path d="M147 238 Q95 76 236 82 Q381 76 322 240" stroke="#4F403B" stroke-width="36" fill="none" stroke-linecap="round"/>
+<path d="M151 195 Q83 210 119 271 Q72 305 123 346 Q94 404 153 439 M318 197 Q391 204 350 272 Q396 305 350 355 Q387 396 318 439" fill="none" stroke="#55453E" stroke-width="39" stroke-linecap="round"/>
+<path d="M138 265H328" stroke="#AE6C66" stroke-width="4" stroke-dasharray="9 7"/><path d="M136 274H72 M332 274h60" stroke="#AE6C66" stroke-width="4" marker-end="url(#ar)"/>
+<text x="22" y="474" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="19" fill="#74494B">颧骨附近成为最宽点</text></g>
+<g transform="translate(656 153)"><rect width="465" height="493" rx="26" fill="#DCE4D4"/><text x="26" y="45" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="30" fill="#2E2B29" font-weight="bold">B｜后枕轻圆＋下颌起 S</text>
+<path d="M175 371v75h127v-75" fill="#EAD4C1" stroke="#947A6C" stroke-width="3"/><path d="M190 430l-58 40h214l-58-40" fill="#F2E4D6"/>
+<ellipse cx="234" cy="243" rx="95" ry="137" fill="#EAD4C1" stroke="#947A6C" stroke-width="3"/>
+<path d="M147 238 Q95 76 236 82 Q381 76 322 240" stroke="#4F403B" stroke-width="36" fill="none" stroke-linecap="round"/>
+<path d="M150 194 Q122 280 154 334 Q128 359 146 398 Q112 428 143 447 M318 194 Q347 277 314 335 Q341 361 321 395 Q350 431 324 447" fill="none" stroke="#55453E" stroke-width="35" stroke-linecap="round"/>
+<path d="M150 356H319" stroke="#738B7B" stroke-width="4" stroke-dasharray="9 7"/><text x="24" y="474" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="19" fill="#466357">第一明显弯从下颌附近出现</text></g>
+<text x="55" y="687" font-family="Noto Sans CJK SC, PingFang SC, sans-serif" font-size="21" fill="#A16959">观察：正面量最大宽度；45°看颧骨与首弯；侧面看后枕—后颈曲线。</text></svg>

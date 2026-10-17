@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-17"
+  ],
+  "baseSha": "cbf245881f5732a8dfef800bcfb25f1dbb45be74",
+  "preparedHeadSha": "5b0e1d58c0fca9c1fc4c6169aedcdedcee090400",
+  "preparationRun": 38996007462,
+  "preparationArtifact": 12087461000,
+  "backupArtifact": 12086124972,
+  "contentBindingSha256": "19c170cfda421a8cbe2d9b67856add17e4091ab118613f7d191502f5b9e59f53",
+  "verification": {
+    "isolatedTests": 45,
+    "cloudReportMatchesLocalReadback": true,
+    "independentRenderedHtmlAndCatalogMatch": true,
+    "completeStaticFallbackMatches": true,
+    "priorLessonsAndBusinessCodeUnchanged": true,
+    "originalReviewAndAssetDigestsMatch": true,
+    "fullPrePushRun": "38996007462/117288613613",
+    "backupVerifiedBySuccessfulCloudJob": true,
+    "backupVerificationScope": "Clean public main source; not production data or a private workstation."
+  },
+  "fileSha256": {
+    "academy/2026-10-17.html": "2197f455db925fe319fd507f44779eaaf21b9153e8bee85f0fb95b7df19a4c71",
+    "academy/catalog.json": "4a07a54d93a6e6034673cfc94481581f1d6400ed9dcdaff308d443f635e08d2a",
+    "academy/index.html": "c30f10922f764065abb53aa16e79a395a1159cf1114db8bf6a67cb712184bcff"
+  },
+  "remaining": [
+    "exact-head validate",
+    "exact-head backup-main",
+    "normal protected merge",
+    "main and actual Pages byte readback"
+  ],
+  "scope": "Public academy content only. Existing reviews and app version unchanged; no production business data accessed. This record does not attest future scheduled executor availability."
+}
