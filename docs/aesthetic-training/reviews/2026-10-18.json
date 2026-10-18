@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "91cbb03204567a83957e698303df73bf130febf7",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning; not a verified haircut, curl-retention or event-styling study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional two-occasion design case, six conditional reference sections and five unscored self-checks",
+    "checks": [
+      "Ten previous parsed feed objects preserved; stable same-day ID without duplication",
+      "Visible current loose-hair state, fictional daily/event requirements and on-site unknowns are distinguished",
+      "Style preference comes from explicit scenario, not temperament or occupation inferred from face",
+      "Daily extra styling allowance is separate from necessary drying; event styling has additional time and steps",
+      "A and B both have conditional benefits, costs and switch conditions; high-frequency daily needs are not automatically sacrificed for a single event",
+      "Length and temporary clipping do not prove actual fastening; one trial does not prove all-evening retention",
+      "No chemical formula, heat setting, thinning percentage or guaranteed result",
+      "No invented user answer, score, training completion or personal learning outcome"
+    ],
+    "limits": [
+      "AI fictional teaching material, not a real-client record or an actual daily/event comparison",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Protected exact-head checks, normal merge, Pages and exact live feed/image readback remain release gates"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-18-two-occasions.webp",
+    "sha256": "f1da19c0031c7fa2a0b6ed6038f4e708ed42e6214454bf80fdda28126f9eff0a",
+    "rights": "Original fictional adult image generated for this teaching case; no real customer or third-party photo used",
+    "provenance": "Built-in image generation; PNG converted at unchanged 1774x887 dimensions to mobile-friendly WebP without content edits",
+    "prompt": "Use case: photorealistic-natural.\nAsset type: mobile hairstylist teaching case, one CURRENT starting hairstyle only.\nPrimary request: a horizontal triptych showing the exact SAME fictional adult East Asian woman, about 40, front view, exact right-side profile, and back view. Keep facial and head proportions, hair length, clothing, lighting, and camera scale consistent across all three panels.\nCurrent hairstyle: dark chestnut-brown, predominantly straight, slightly below collarbone length. A gently off-center part with long front sections and no short fringe. Fairly continuous medium-weight perimeter, a few soft natural bends at the ends, ordinary modest shine, no elaborate blowout, no round-brush root lift, no set waves or updo. Slightly fuller lower half, not dramatic bulk. All three panels must show this SAME current loose hairstyle, not alternatives.\nPerson: a natural softly angular face, relaxed neutral expression, normal unretouched skin texture. Muted dusty-blue cotton scoop-neck top with a modest neckline, same garment in all views. No jewellery, headpiece or accessories.\nComposition: three equal panels separated by narrow neutral dividers. Pull camera back enough to include the ENTIRE head with margin, complete hair ends, the full neck, both complete shoulder outlines with visible space beyond their edges, and the upper chest to below sternum. Do NOT crop the shoulder edges. Same neutral eye-level lens, no head tilt or perspective exaggeration. Natural realistic head-neck-shoulder anatomy.\nSetting: plain warm-grey background, consistent soft neutral natural light. Salon documentation feeling rather than fashion editorial. Clear individual strands, no beauty filter, no face slimming, no artificial glossy finish.\nConstraints: no text, arrows, labels, watermark, salon tools, hands or logos. No reference-photo inset. NO daily/event comparison, no before/after, no proposed result. This is current condition to be analysed, NOT a validated transformation.",
+    "visualCheck": "Original output and final WebP actually viewed: consistent fictional adult, garment, current collarbone-area loose hair and lighting across front/right-profile/back. Full head, hair perimeter, visible neck and shoulder context. Not measurement evidence, not proposed daily/event results."
+  },
+  "candidateFeedSha256": "5c6ac9a71d99922cc353c5c857706973efb1c848b1ab9664d0c2e243c2104a9f",
+  "caseCanonicalSha256": "74c5d398ab978e4f9735c89f16c5f1d3c5925b5f1e77082fd2861047c49ba1d9",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse and update aesthetic-2026-10-18 if retrying; never duplicate or substitute a different same-day case",
+  "localChecks": {
+    "contentContract": "passed: eleven cases; prior ten parsed objects unchanged",
+    "browser": "Blocked locally: required Chromium executable absent. Existing protected CI invokes the identical daily browser through test-perm-academy-browser.js.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 635
+}

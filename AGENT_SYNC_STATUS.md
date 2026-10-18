@@ -157,6 +157,13 @@
 
 # Agent Sync Status
 
+## 2026-10-18 · Original two-occasion aesthetic case (App version: v635 unchanged)
+
+- Owner: Codex. Clean isolated content/aesthetic-2026-10-18 from latest github/main 91cbb032; required starting version/integrity/handoff checks passed and complete daily recovery archive created before edits. Separate Oct18 academy lesson and eight-course catalog remain untouched.
+- Exactly one stable Shanghai-date aesthetic-2026-10-18 case: fictional adult current front/right-profile/back hair state; shared daily outline versus one-off event waves and partial fastening. Six answers distinguish durable structure, temporary styling and unverified conditions; five recaps never score an unanswered user. Both A/B have explicit costs and a change condition.
+- Prior ten parsed feed objects unchanged. Original image and final original-size WebP actually viewed; full prompt and image/feed/case hashes in transparent preparer audit. No real customer, before/after, independent expert/scientific certification, demonstrated fastening or all-evening retention claim. Temporary clipping/trial styling remains illustrative, not proof of post-cut or home/event outcomes.
+- Only feed, original image, audit and necessary public handoff/change records change. App/runtime/version, old feed, calculator, customer, finance, backend/database, login/permissions, business sync and automation unchanged. Daily contract passes; local Chromium absent. Existing protected CI invokes identical daily/browser checks through test-perm-academy entries; complete exact-head Validate shared app, ordinary merge, Pages success and online ID/date/title/feed/image hashes remain mandatory before claiming App synchronization.
+
 ## 2026-10-17 · Original styling-effort aesthetic case (App version: v635 unchanged)
 
 - Owner: Codex. Clean isolated content/aesthetic-2026-10-17 from latest github/main 19febf184; required starting version/integrity/handoff checks passed, recovery archive created before edits. Oct17 academy publication, seven-course catalog and all existing lessons remain unchanged.
