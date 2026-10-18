@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "dates": [
+    "2026-10-18"
+  ],
+  "baseSha": "47b04b9a3cd995730b3c6bd4f6e0e64d3a05774b",
+  "scope": "Public academy only; request read-only baseline backup. No course inputs, approvals or production publication yet.",
+  "remaining": [
+    "immutable-main backup-main success and backup artifact",
+    "reviewed dated draft and original figures",
+    "cloud preparation and prepared artifact/head readback",
+    "authenticated publication-status verification commit",
+    "exact-head protected validate and backup-main",
+    "expected-head protected normal merge",
+    "real Pages per-file SHA256 readback"
+  ]
+}
