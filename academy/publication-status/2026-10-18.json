@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-18"
+  ],
+  "baseSha": "47b04b9a3cd995730b3c6bd4f6e0e64d3a05774b",
+  "preparedHeadSha": "dc8559c89c7a93c72a81bec9f39f53641ece6946",
+  "preparationRun": 39087706578,
+  "preparationArtifact": 12121900898,
+  "backupArtifact": 12120674009,
+  "baselineBackupArtifact": 12120897455,
+  "baselineBackupSha256": "7b9d791d594a3e83153946dc5a785e4cc555c0e792bc48dba20decb50b928411",
+  "contentBindingSha256": "db867f45f4df3bb364e9d5b833150a528118fcc1e28783f33f328d0a87d4723c",
+  "verification": {
+    "isolatedTests": 64,
+    "cloudReportMatchesLocalReadback": true,
+    "independentRenderedHtmlAndCatalogMatch": true,
+    "completeStaticFallbackMatches": true,
+    "priorLessonsAndBusinessCodeUnchanged": true,
+    "originalReviewAndAssetDigestsMatch": true,
+    "fullPrePushRun": "39087706578/117557651169",
+    "backupVerifiedBySuccessfulCloudJob": true,
+    "baselineArchiveDownloadedAndSha256Verified": true,
+    "backupVerificationScope": "Clean public main source only; not production data or a private workstation."
+  },
+  "fileSha256": {
+    "academy/drafts/2026-10-18.json": "a9aa655bfb66328a46c7cb2ab28c2f78223fa8e6ccdba2169bf54881a4a25072",
+    "academy/reviews/2026-10-18.json": "f3c7feb1c878842cbefbc6065b7e0f1d1eddfe920c401ed3876500ca61f976bf",
+    "academy/assets/2026-10-18/figure1.svg": "eaef48a0c0485afb8c5d8f02649936f794f8cdb32fda4d429a7324a967b72c70",
+    "academy/assets/2026-10-18/figure2.svg": "e002d580882e9d0c02fa3dad1875ebb492c4123c8f1e12fd71b12a68702c18f9",
+    "academy/assets/2026-10-18/figure3.svg": "f546d65165f7e71b78daf38559f9818ade217cafe20d9075ef0ef2d7008970b9",
+    "academy/2026-10-18.html": "dd2d6925a94da550fe4db00eb50e6b685d2b730b12b26d8bab0eeb1212679ff0",
+    "academy/catalog.json": "0c0c3c42fdfe006af6342b734e0f9fb9caf5a1690cacee912e3c1dde60a935e7",
+    "academy/index.html": "343206aa67c45d9ab7dd2580db590f9c406326a0ee4d8801bbe33b2a876aa2f3",
+    "AGENT_SYNC_STATUS.md": "86b77804142c76c53216e2a046fc791564382d77ae0262550a86020f521e1a81",
+    "CHANGELOG.md": "cae8b1c834ea37d754a6c020178bcd8d4a66a1ae4385e25af6ab5730dbe71b84"
+  },
+  "remaining": [
+    "exact-head validate",
+    "exact-head backup-main",
+    "normal protected merge",
+    "main and actual Pages byte readback"
+  ],
+  "scope": "Original reviewed 2026-10-18 academy content only. Review provenance and app version unchanged; no production business data accessed. This record does not attest future scheduled executor availability."
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-18",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（AI科研来源、版权与隐私逐项核验；非人工科学评审）",
+  "reviewedAt": "2026-10-18T00:51:50+00:00",
+  "approvalReference": "用户已授权每日课程经真实来源/版权/隐私审查后按受保护流程发布；此处仅为本轮AI独立内容与素材审查，不是平台真人审批或科研同行评审。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "已实际读取PubMed PMID 3608576 的1987年6月题录及摘要，确认典型硫代盐还原、过氧化氢氧化机理；未假称厂家对照实验。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "已实际读取Wiley DOI 10.1002/bip.20646 与 PubMed PMID 17143860 摘要，核验首次在线2006-12-01、2007年刊载、拉曼与电镜结果；未将其外推为安全配方。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "已实际读取Wiley DOI 10.1111/ics.12967 摘要和正文，核验2024-05-11发表及作者、键型异质性和证据边界。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "实际读取本轮从零绘制SVG并完成XML解析及禁止外链/脚本检查，仅抽象路径与文字，未使用第三方图片/真人照片。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "实际读取本轮从零绘制SVG并完成XML解析及禁止外链/脚本检查，仅抽象路径与文字，未使用第三方图片/真人照片。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "实际读取本轮从零绘制SVG并完成XML解析及禁止外链/脚本检查，仅抽象路径与文字，未使用第三方图片/真人照片。"
+    }
+  ],
+  "contentSha256": "c4933e30d4c66825752fe61be07324d1dad4500dedc0e384a940a9783da0e55c",
+  "assetSha256": {
+    "assets/2026-10-18/figure1.svg": "eaef48a0c0485afb8c5d8f02649936f794f8cdb32fda4d429a7324a967b72c70",
+    "assets/2026-10-18/figure2.svg": "e002d580882e9d0c02fa3dad1875ebb492c4123c8f1e12fd71b12a68702c18f9",
+    "assets/2026-10-18/figure3.svg": "f546d65165f7e71b78daf38559f9818ade217cafe20d9075ef0ef2d7008970b9"
+  }
+}
