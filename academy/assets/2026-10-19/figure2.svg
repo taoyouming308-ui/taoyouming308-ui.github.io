@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" font-family="Noto Sans CJK SC, sans-serif" role="img" aria-label="技术图｜发尾纸与进杠方向：同杠径不同结局">
+ <defs><marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#796e68"/></marker></defs>
+ <rect width="1200" height="710" rx="24" fill="#f8f5ef"/>
+ <text x="62" y="77" font-size="34" font-weight="700" fill="#2f3739">技术图｜发尾纸与进杠方向：同杠径不同结局</text><text x="62" y="113" font-size="19" fill="#746f6c">示范只在公仔头或离体发束；不得由图给出具体药剂处方</text>
+ 
+<rect x="62" y="154" width="516" height="425" rx="22" fill="#e8e0dc"/><rect x="619" y="154" width="519" height="425" rx="22" fill="#dce7df"/>
+<text x="95" y="200" font-size="28" font-weight="700" fill="#855f57">A｜折尾风险</text>
+<text x="650" y="200" font-size="28" font-weight="700" fill="#476d57">B｜平铺进入</text>
+<circle cx="310" cy="397" r="100" fill="#b8a69a" stroke="#866d63" stroke-width="5"/>
+<path d="M135 309 L292 309 Q330 309 353 349 L418 460" stroke="#6d5949" stroke-width="24" fill="none" stroke-linecap="round"/>
+<path d="M418 460 L468 427" stroke="#b46051" stroke-width="24" fill="none" stroke-linecap="round"/>
+<rect x="356" y="438" width="105" height="26" fill="#eee6d7" stroke="#b46051" stroke-width="3"/>
+<text x="116" y="548" font-size="20" fill="#855f57">夹角突变、纸尾翻折、张力过大</text>
+<circle cx="863" cy="397" r="100" fill="#a8c1b0" stroke="#658673" stroke-width="5"/>
+<path d="M678 309 L843 309 Q888 309 914 352 Q957 400 964 476" stroke="#6d5949" stroke-width="24" fill="none" stroke-linecap="round"/>
+<rect x="912" y="436" width="93" height="27" fill="#f1ede4" stroke="#658673" stroke-width="3"/>
+<text x="672" y="548" font-size="20" fill="#476d57">纸尾贴合、连续曲率、张力轻而匀</text>
+
+ <rect x="62" y="625" width="1076" height="59" rx="12" fill="#ede6dd"/><text x="88" y="663" font-size="20" fill="#55504d">观察次序：发尾耐受 → 发片厚度 → 纸尾平铺 → 进杠方向 → 张力与圈数。</text>
+ </svg>

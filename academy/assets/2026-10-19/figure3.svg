@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" font-family="Noto Sans CJK SC, sans-serif" role="img" aria-label="人物美感图｜把“外翘”变成有意图的方向">
+ <defs><marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#796e68"/></marker></defs>
+ <rect width="1200" height="710" rx="24" fill="#f8f5ef"/>
+ <text x="62" y="77" font-size="34" font-weight="700" fill="#2f3739">人物美感图｜把“外翘”变成有意图的方向</text><text x="62" y="113" font-size="19" fill="#746f6c">相同中发长度：第一弯位置与脸周方向会改变视觉宽度</text>
+ 
+<rect x="62" y="149" width="520" height="435" rx="20" fill="#efe2df"/><rect x="617" y="149" width="521" height="435" rx="20" fill="#e1e6dd"/>
+<text x="92" y="191" font-size="26" font-weight="700" fill="#80544f">A｜颧骨处外扩</text>
+<text x="650" y="191" font-size="26" font-weight="700" fill="#506c54">B｜下颌以下首弯</text>
+<ellipse cx="320" cy="350" rx="76" ry="113" fill="#ead0b7" stroke="#a58575" stroke-width="5"/>
+<path d="M259 251 Q192 275 181 349 Q154 372 159 398 Q191 432 157 480 Q241 527 272 485" fill="none" stroke="#735d50" stroke-width="22"/>
+<path d="M380 251 Q442 276 459 354 Q501 370 480 406 Q452 427 481 482 Q415 535 381 485" fill="none" stroke="#735d50" stroke-width="22"/>
+<line x1="157" y1="360" x2="487" y2="360" stroke="#ad7568" stroke-width="4" stroke-dasharray="10 9"/>
+<ellipse cx="876" cy="350" rx="76" ry="113" fill="#ead0b7" stroke="#a58575" stroke-width="5"/>
+<path d="M815 251 Q769 273 764 380 Q757 446 728 486 Q775 544 841 505" fill="none" stroke="#735d50" stroke-width="22"/>
+<path d="M938 251 Q983 278 988 380 Q992 449 1030 486 Q983 544 909 505" fill="none" stroke="#735d50" stroke-width="22"/>
+<line x1="711" y1="441" x2="1040" y2="441" stroke="#7b987d" stroke-width="4" stroke-dasharray="10 9"/>
+<text x="160" y="551" font-size="19" fill="#80544f">中脸宽度更明显</text><text x="763" y="551" font-size="19" fill="#506c54">颧骨收，锁骨处建立曲线</text>
+
+ <rect x="62" y="625" width="1076" height="59" rx="12" fill="#ede6dd"/><text x="88" y="663" font-size="20" fill="#55504d">这是抽象人物教学图，不是真实顾客前后对比；具体方向以自然毛流与肩颈比例判断。</text>
+ </svg>

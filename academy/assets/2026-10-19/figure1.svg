@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" font-family="Noto Sans CJK SC, sans-serif" role="img" aria-label="原理图｜发尾折痕不是一种“药力百分比”">
+ <defs><marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#796e68"/></marker></defs>
+ <rect width="1200" height="710" rx="24" fill="#f8f5ef"/>
+ <text x="62" y="77" font-size="34" font-weight="700" fill="#2f3739">原理图｜发尾折痕不是一种“药力百分比”</text><text x="62" y="113" font-size="19" fill="#746f6c">化学结构、弯曲几何、表面摩擦：三个不同层面</text>
+ 
+<rect x="60" y="155" width="340" height="425" rx="22" fill="#dce8ea"/><text x="86" y="194" font-size="25" fill="#2f4751" font-weight="700">① 发丝内部</text>
+<ellipse cx="228" cy="370" rx="92" ry="150" fill="#b6c5c9" stroke="#627e83" stroke-width="6"/>
+<ellipse cx="228" cy="370" rx="66" ry="123" fill="#e2e6e1" stroke="#7a9190" stroke-width="5"/>
+<path d="M200 260 Q260 300 200 342 T215 455" stroke="#627c7d" fill="none" stroke-width="8"/><path d="M255 260 Q189 330 255 395 T250 465" stroke="#aa8c79" fill="none" stroke-width="7"/>
+<text x="95" y="541" font-size="17" fill="#3b5154">角蛋白+多种分子间作用</text>
+<rect x="427" y="155" width="340" height="425" rx="22" fill="#dfe8dd"/><text x="454" y="194" font-size="25" fill="#365548" font-weight="700">② 卷杠末端</text>
+<circle cx="593" cy="359" r="94" fill="none" stroke="#789281" stroke-width="30"/>
+<path d="M470 297 C520 264 560 280 615 314 C656 344 688 391 713 425" fill="none" stroke="#695a4e" stroke-width="17" stroke-linecap="round"/>
+<path d="M713 425 L714 484" stroke="#ba6c55" stroke-width="17" stroke-linecap="round"/><line x1="715" y1="455" x2="740" y2="490" stroke="#ba6c55" stroke-width="5" marker-end="url(#arr)"/>
+<text x="471" y="541" font-size="17" fill="#365548">尾端未贴平 → 局部折点</text>
+<rect x="794" y="155" width="344" height="425" rx="22" fill="#ece0de"/><text x="820" y="194" font-size="25" fill="#79534e" font-weight="700">③ 成品表现</text>
+<path d="M830 272 Q1025 230 905 383 T1052 475" stroke="#715d50" fill="none" stroke-width="19" stroke-linecap="round"/>
+<path d="M1052 475 L1093 440" stroke="#b96752" fill="none" stroke-width="19" stroke-linecap="round"/>
+<text x="822" y="541" font-size="17" fill="#79534e">外翘、尾端干涩并不等于软化不足</text>
+
+ <rect x="62" y="625" width="1076" height="59" rx="12" fill="#ede6dd"/><text x="88" y="663" font-size="20" fill="#55504d">本图为原创教学抽象示意，非显微图；机械折点≠已测定二硫键断裂比例。</text>
+ </svg>
