@@ -1,3 +1,11 @@
+## 2026-10-19 · MGJ MCP review correction (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized main remains 3b665d599293eb092b834cad2314572bb528ae8f; reviewed PR #60 head 5988bebed676bbbbd80e4c66b170e5fde9ce3115 in an isolated clean worktree. Daily source backup and version/integrity/handoff checks passed before edits.
+- Independently reproduced preflight-to-payload KeyError(phone), missing-status false success, and unmasked comment leakage using synthetic data. Corrected these and session business-code/host checks, staff ambiguity, canonical shops, service-ID comparison, short-lived bounded private read plans.
+- Removed the environment-enabled live confirm path: timing/pagination/cross-day semantics are still missing and original MCP did not use the existing durable core. Current tools are strictly read-only; no claim that all writes are ready pending tunnel authorization. Low-level create payload/transport tests are prototypes, not production write availability.
+- 54 MCP synthetic tests pass (SDK stub for tool boundary), plus 79 booking/keepalive/customer tests. Added MCP tests to the existing hook/CI without changing permissions/triggers or removing existing checks. Full local hook is not claimed; the pinned Chromium absence from the previous environment remains. Exact candidate remote CI must be checked separately.
+- No Mac access/deployment, new tunnels/keys, source bookings, customer/financial data or sync/scheduler changes. Hermes must update its local MCP copy from the reviewed candidate and repeat read-only checks before connecting. The existing completed booking remains unchanged.
+
 ## 2026-10-19 · MGJ local evidence follow-up (App version: v635 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f. Clean feature branch and daily backup verified before this focused follow-up.

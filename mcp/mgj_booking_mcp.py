@@ -3,51 +3,62 @@
 只暴露窄接口：健康、门店、客户查询、老师/项目查询、预约查询、冲突预检、确认预约、写后回读。
 没有通用 shell、没有任意 URL、没有顾客建档、没有取消、没有财务写入。
 
-安全闸：
-- MGJ_MCP_ALLOW_WRITE 未设为 "1" 时，确认预约工具一律拒绝（默认只读）。
-- 写入前必须带预检返回的 plan_id 做一次性绑定，且本次进程内只能用一次。
+当前版本严格只读。MGJ_MCP_ALLOW_WRITE 不能启用生产写入。
+未来必须接入已有 mgj_booking_core 的持久化日志与完整快照编排后才能写入。
 """
 from __future__ import annotations
 
 import json
 import os
+import secrets
+import time as clock
 
 from mcp.server.mcpserver import MCPServer
 
 import mgj_gateway as gw
 
-WRITE_ENABLED = os.environ.get("MGJ_MCP_ALLOW_WRITE") == "1"
-
 server = MCPServer(
     name="mgj-booking",
-    version="1.0.0",
+    version="1.0.1",
     instructions=(
         "自由手艺人 / 向里造型 门店预约专用工具。"
-        "写预约前必须先调用预检工具拿到 plan_id，再把 plan_id 原样传给确认工具；"
-        "plan_id 一次有效，取消失败或结果不明时不要重试，先用回读工具核查。"
+        "当前版本仅提供只读查询和部分预检，不能创建预约。"
+        "未发现同开始时间预约不表示没有服务时段冲突。"
+        "plan_id 仅用于五分钟内回查，不是授权凭据；不得据此宣称新建成功。"
         "所有工具只返回脱敏信息，不含任何凭据。"
     ),
 )
 
-# 进程内一次性计划表：plan_id -> plan（不落盘，避免持久化客户资料）
-_PLANS: dict[str, dict] = {}
-_USED: set[str] = set()
+# Bounded temporary read-only plans, not a durable creation journal.
+_PLANS: dict[str, tuple[float, dict]] = {}
+PLAN_TTL = 300
+MAX_PLANS = 128
+
+
+def _prune_plans():
+    now = clock.monotonic()
+    for key, (expires, _) in list(_PLANS.items()):
+        if expires <= now:
+            _PLANS.pop(key, None)
 
 
 def _cfg():
     return gw.load_config()
 
 
-@server.tool(description="只读健康检查：确认会话配置、门店白名单和写入闸门状态。不读取任何凭据内容。")
+@server.tool(description="只读健康检查：用现有本机会话调用元数据接口核验有效性。仅返回状态，不返回凭据。")
 def mgj_health() -> dict:
     cfg = gw.load_config()
+    gw.metadata(gw.SHOPS[0], cfg)
     return {
         "ok": True,
-        "session_file": str(gw.CONFIG_PATH),
         "session_present": gw.CONFIG_PATH.is_file(),
-        "write_enabled": WRITE_ENABLED,
+        "session_valid": True,
+        "write_enabled": False,
+        "write_requested": os.environ.get("MGJ_MCP_ALLOW_WRITE") == "1",
+        "write_block_reason": gw.WRITE_BLOCK_REASON,
         "shops": [{"name": s["name"], "shop_id": s["shopId"]} for s in gw.SHOPS],
-        "mode": "read_write" if WRITE_ENABLED else "read_only",
+        "mode": "read_only",
     }
 
 
@@ -79,6 +90,8 @@ def mgj_catalog(shop: str, date: str) -> dict:
         "barbers": [{"name": k, "id": v} for k, v in sorted(info["barbers"].items())],
         "services": catalog,
         "reservations_total": info["reservations_total"],
+        "staff_directory_complete": False,
+        "note": "老师为当天预约中观察到的身份，不代表完整在职/可预约名单",
     }
 
 
@@ -89,57 +102,35 @@ def mgj_booking_find(shop: str, date: str, phone: str) -> dict:
     return gw.find_bookings(s, cfg, date, phone)
 
 
-@server.tool(description="只读冲突预检。核对客户唯一、老师存在、项目存在、该时段老师是否已被占、该客户是否已有同时间预约。返回 plan_id 供确认工具使用（若 blocked=true 则禁止创建）。")
+@server.tool(description="只读部分预检：查询客户、项目和已知同开始时间预约。时长/分页/跨日尚未核验，始终 blocked=true；plan_id 仅用于回查，不授权创建。")
 def mgj_booking_preflight(shop: str, date: str, time: str, barber: str,
                           phone: str, services: list[str]) -> dict:
     cfg = _cfg()
     s = gw.shop_by_ref(shop)
     result = gw.preflight(s, cfg, date, time, barber, phone, services)
     plan = result.pop("_plan")
-    _PLANS[result["plan_id"]] = plan
+    _prune_plans()
+    while len(_PLANS) >= MAX_PLANS:
+        _PLANS.pop(next(iter(_PLANS)))
+    plan_id = secrets.token_urlsafe(24)
+    result["plan_id"] = plan["plan_id"] = plan_id
+    result["expires_in_seconds"] = PLAN_TTL
+    _PLANS[plan_id] = (clock.monotonic() + PLAN_TTL, plan)
     return result
 
 
-# 已提交的计划留档，供回读使用（不含凭据，进程退出即失效）
-_PLAN_ARCHIVE: dict[str, dict] = {}
-
-
-@server.tool(description="提交预约确认。必须传预检返回的 plan_id。写请求严格只发一次：超时或结果不明时不重发，改调回读工具核查。需要服务端开启写入闸门。")
+@server.tool(description="当前版本禁用预约写入；任何 plan_id 和环境变量都不能启用。返回明确阻断原因，不发送写请求。")
 def mgj_booking_confirm(plan_id: str, comment: str = "") -> dict:
-    if not WRITE_ENABLED:
-        raise gw.Blocked("写入闸门未开启（MGJ_MCP_ALLOW_WRITE 未设为 1），当前只能只读")
-    if plan_id in _USED:
-        raise gw.Blocked("该 plan_id 已使用过，不能重复提交")
-    plan = _PLANS.get(plan_id)
-    if plan is None:
-        raise gw.Blocked("plan_id 无效或已过期，请重新预检")
-
-    cfg = _cfg()
-    # 提交前再核一次冲突，防止预检与写入之间被占用
-    recheck = gw.preflight(plan["shop"], cfg, plan["date"], plan["time"],
-                           plan["barber_name"],
-                           plan["customer"]["phone"], plan["service_names"])
-    if recheck["blocked"]:
-        raise gw.Blocked("提交前复查发现时段已被占用或已存在相同预约，已中止")
-
-    _USED.add(plan_id)
-    _PLANS.pop(plan_id, None)
-    _PLAN_ARCHIVE[plan_id] = plan  # 保留供回读，不再可用于写入
-
-    outcome = gw.create_once(plan, cfg, comment)
-    result = dict(outcome)
-    result["plan_id"] = plan_id
-    result["next"] = ("调用 mgj_booking_readback 核查结果"
-                      if outcome["outcome"] in ("accepted", "unknown")
-                      else "未写入，可直接重新预检")
-    return result
+    raise gw.Blocked(gw.WRITE_BLOCK_REASON)
 
 
-@server.tool(description="写后回读核对。按 客户+时间+老师+项目 全部一致才判定 verified=true，并返回预约 ID。")
+@server.tool(description="按只读计划回查已有预约。比对客户手机号、开始时间、老师、项目 ID 和名称；完整时长/覆盖未知，所以不宣告创建成功。")
 def mgj_booking_readback(plan_id: str) -> dict:
-    plan = _PLAN_ARCHIVE.get(plan_id) or _PLANS.get(plan_id)
-    if plan is None:
+    _prune_plans()
+    record = _PLANS.get(plan_id)
+    if record is None:
         raise gw.Blocked("plan_id 不在本进程记录中，请用 mgj_booking_find 按日期和手机号核查")
+    _, plan = record
     cfg = _cfg()
     return gw.readback(plan, cfg)
 

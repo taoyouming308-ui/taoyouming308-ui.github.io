@@ -1,5 +1,12 @@
 # Hermes Handoff
 
+## 2026-10-19 MCP review correction (App version: v635 unchanged)
+
+- PR #60 initial head 5988beb has independently reproduced defects: actual preflight plans lack customer.phone; missing status can verify as active; raw comments can export unmasked data. Memory-only write attempts and exact-start-only conflicts are not the durable/range-safe core from PR #59.
+- Corrected candidate is strictly read-only, including when MGJ_MCP_ALLOW_WRITE=1. No live confirm path until complete timing/pagination/cross-day/customer/staff contracts and the existing mgj_booking_core Journal/execute orchestration are integrated. Do not toggle a flag to activate the unverified low-level request prototype.
+- Actual plans now retain phone only privately; output excludes raw remarks. Business success/session checks, strict active status, service IDs, staff name ambiguity, canonical shop loading, bounded expiring read plans are enforced. Readback identity_match is partial observation, not verified creation.
+- 54 synthetic MCP gateway/tool-boundary tests and 79 existing booking/keepalive/customer tests pass. Tool-boundary tests use an SDK stub, not a live MCP/tunnel claim. Mac deployment and fresh stdio/ChatGPT read-only validation remain with the local executor; copy tracked MCP files, preserve credentials/venv and the canonical sync runtime, then restart. No source appointment or customer/finance/scheduler mutation.
+
 ## 2026-10-19 local booking evidence follow-up (App version: v635 unchanged)
 
 - User relayed Hermes's successful local add endpoint and existing-booking readback report. This is local-source evidence, not a ChatGPT live write/readback. Details and remaining full itemProp/response/status/duration contract gaps are in docs/mgj-quick-booking.md. Preserve the existing booking, including its reported service/comment difference; do not cancel or recreate it.

@@ -143,9 +143,11 @@ class ShieldTests(unittest.TestCase):
         with self.assertRaises(gw.Blocked):
             gw.shop_by_ref("不存在的店")
 
-    def test_expiry_never_defaults_true(self):
-        fake = FakeResponse(rows=[])
-        fake.__call__ = None  # unused
+    def test_expired_session_cannot_supply_a_success_list(self):
+        response = {"code": 3, "content": {"reservations": []}}
+        with mock.patch.object(gw, "_request", return_value=response):
+            with self.assertRaises(gw.Blocked):
+                gw.day_reservations(SHOP, CFG, DAY)
 
 
 class CustomerTests(unittest.TestCase):
@@ -182,7 +184,9 @@ class PreflightTests(unittest.TestCase):
         with mock.patch.object(gw, "_request", fake):
             res = gw.preflight(SHOP, CFG, DAY, "18:00", BARBER, PHONE,
                                ["合成剪发", "合成染发"])
-        self.assertFalse(res["blocked"])
+        self.assertTrue(res["blocked"])
+        self.assertFalse(res["same_start_conflict"])
+        self.assertFalse(res["conflict_check_complete"])
         self.assertEqual([s["name"] for s in res["services"]], ["合成剪发", "合成染发"])
         self.assertEqual(len(res["services"]), 2)
         self.assertEqual(res["plan_id"], res["_plan"]["plan_id"])
@@ -228,12 +232,13 @@ class PreflightTests(unittest.TestCase):
         self.assertTrue(res["blocked"])
         self.assertEqual(res["barber_slot_taken"][0]["id"], 2)
 
-    def test_cancelled_row_does_not_block(self):
-        cancelled = _row(id=3, memmobile="13900000000", status=2)
-        fake = FakeResponse(rows=[cancelled])
+    def test_unknown_status_does_not_authorize_creation(self):
+        unknown = _row(id=3, memmobile="13900000000", status=2)
+        fake = FakeResponse(rows=[unknown])
         with mock.patch.object(gw, "_request", fake):
             res = gw.preflight(SHOP, CFG, DAY, "18:00", BARBER, PHONE, ["合成剪发"])
-        self.assertFalse(res["blocked"])
+        self.assertTrue(res["blocked"])
+        self.assertFalse(res["conflict_check_complete"])
 
     def test_no_secret_in_plan_output(self):
         fake = FakeResponse(rows=[])
@@ -333,11 +338,13 @@ class ReadbackTests(unittest.TestCase):
             "services": [{"id": 1, "name": "合成剪发"}, {"id": 2, "name": "合成染发"}],
         }
 
-    def test_full_match_verifies(self):
+    def test_partial_identity_match_does_not_claim_create_success(self):
         fake = FakeResponse(rows=[_row()])
         with mock.patch.object(gw, "_request", fake):
             out = gw.readback(self._plan(), CFG)
-        self.assertTrue(out["verified"])
+        self.assertFalse(out["verified"])
+        self.assertTrue(out["identity_match"])
+        self.assertFalse(out["verification_complete"])
         self.assertEqual(out["booking_id"], 5001)
 
     def test_missing_readback_not_verified(self):
@@ -387,6 +394,74 @@ class NoWriteLeakTests(unittest.TestCase):
         with mock.patch.object(gw, "_request", fake):
             gw.readback(plan, CFG)
         self.assertEqual(count(fake, "reservation!add.action"), 0)
+
+
+class BoundaryRegressionTests(unittest.TestCase):
+    def test_actual_preflight_plan_builds_payload_without_leaking_phone(self):
+        with mock.patch.object(gw, "_request", FakeResponse()):
+            result = gw.preflight(SHOP, CFG, DAY, "18:00", BARBER, PHONE, ["合成剪发"])
+        plan = result.pop("_plan")
+        self.assertEqual(gw.build_payload(plan)["memmobile"], PHONE)
+        self.assertNotIn(PHONE, json.dumps(result))
+
+    def test_free_text_comment_is_not_exported(self):
+        row = _row(comment=PHONE + " " + CFG["cookies"])
+        with mock.patch.object(gw, "_request", FakeResponse(rows=[row])):
+            out = gw.find_bookings(SHOP, CFG, DAY, PHONE)
+        public = json.dumps(out)
+        self.assertNotIn(PHONE, public)
+        self.assertNotIn(CFG["cookies"], public)
+
+    def test_missing_status_is_not_an_active_match(self):
+        for state in (None, False, "", 2, 3):
+            with self.subTest(state=state), mock.patch.object(
+                    gw, "_request", FakeResponse(rows=[_row(status=state)])):
+                result = gw.readback(ReadbackTests()._plan(), CFG)
+                self.assertFalse(result["verified"])
+                self.assertFalse(result.get("identity_match", False))
+
+    def test_matching_names_with_different_service_ids_is_not_a_match(self):
+        row = _row(itemProp=json.dumps({"items": {
+            "99": {"name": "合成剪发"}, "100": {"name": "合成染发"}}}))
+        with mock.patch.object(gw, "_request", FakeResponse(rows=[row])):
+            result = gw.readback(ReadbackTests()._plan(), CFG)
+        self.assertFalse(result["identity_match"])
+
+    def test_missing_booking_id_is_not_a_match(self):
+        with mock.patch.object(gw, "_request", FakeResponse(rows=[_row(id=None)])):
+            result = gw.readback(ReadbackTests()._plan(), CFG)
+        self.assertFalse(result["identity_match"])
+
+    def test_legacy_cookie_is_not_used(self):
+        with self.assertRaises(gw.Blocked):
+            gw._cookie({"cookie": "STALE"})
+
+    def test_session_host_mismatch_is_blocked(self):
+        with self.assertRaises(gw.Blocked):
+            gw._base_url(dict(CFG, cookie_server="vip99.meiguanjia.net"))
+
+    def test_malformed_row_cannot_be_silently_dropped(self):
+        response = _list_payload([None])
+        with mock.patch.object(gw, "_request", return_value=response):
+            with self.assertRaises(gw.Blocked):
+                gw.day_reservations(SHOP, CFG, DAY)
+
+    def test_same_name_staff_collision_is_blocked(self):
+        rows = [_row(barberId=777), _row(barberId=888)]
+        with mock.patch.object(gw, "_request", FakeResponse(rows=rows)):
+            with self.assertRaises(gw.Blocked):
+                gw.barbers(SHOP, CFG, DAY)
+
+    def test_duplicate_service_selection_is_blocked(self):
+        with mock.patch.object(gw, "_request", FakeResponse()):
+            with self.assertRaises(gw.Blocked):
+                gw.preflight(SHOP, CFG, DAY, "18:00", BARBER, PHONE,
+                             ["合成剪发", "合成剪发"])
+
+    def test_metadata_business_error_is_not_valid_data(self):
+        with mock.patch.object(gw, "_request", return_value=dict(METADATA, code=3)):
+            with self.assertRaises(gw.Blocked):
+                gw.metadata(SHOP, CFG)
 
 
 if __name__ == "__main__":

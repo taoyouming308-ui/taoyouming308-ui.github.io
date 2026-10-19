@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import ast
 import os
 import re
 import ssl
@@ -25,11 +26,34 @@ CHINA = timezone(timedelta(hours=8))
 
 CONFIG_PATH = Path(os.path.expanduser("~/.hermes/meiguanjia-config.json"))
 
-# 门店白名单：与既有 sync_mgj_bookings.py 的 SHOPS 保持一致，不另建一套
-SHOPS = (
-    {"shopId": "1009951", "name": "自由手艺人", "parentShopId": "1103470"},
-    {"shopId": "1837032", "name": "向里造型", "parentShopId": "1103470"},
-)
+def _canonical_shops() -> tuple:
+    # Read the tracked literal without importing signing/financial dependencies.
+    candidates = (Path(__file__).resolve().parents[1] / "scripts/sync_mgj_bookings.py",
+                  Path.home() / ".hermes/scripts/sync_mgj_bookings.py")
+    for path in candidates:
+        if not path.is_file():
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == "SHOPS" for t in node.targets):
+                shops = ast.literal_eval(node.value)
+                if not isinstance(shops, (list, tuple)) or not shops:
+                    raise RuntimeError("canonical 门店配置无效")
+                required = {"shopId", "name", "parentShopId"}
+                if any(not isinstance(s, dict) or not required <= s.keys()
+                       or any(not isinstance(s[k], str) or not s[k] for k in required)
+                       for s in shops):
+                    raise RuntimeError("canonical 门店配置字段无效")
+                return tuple({k: s[k] for k in required} for s in shops)
+        raise RuntimeError("canonical 同步脚本缺少 SHOPS")
+    raise RuntimeError("缺少 canonical sync_mgj_bookings.py，拒绝使用独立门店副本")
+
+
+SHOPS = _canonical_shops()
+LIVE_WRITE_AVAILABLE = False
+WRITE_BLOCK_REASON = ("真实写入未启用：尚缺完整时长/分页/跨日契约及持久化防重编排；"
+                      "设置 MGJ_MCP_ALLOW_WRITE 不能解除此限制")
 
 # 预约写失败的已知业务码（来自本机既有成功/失败观察，非推测）
 CODE_OK = 0
@@ -67,6 +91,8 @@ def _base_url(cfg: dict) -> str:
     server = str(cfg.get("server") or cfg.get("cookie_server") or "").strip()
     if not re.fullmatch(r"vip\d+\.meiguanjia\.net", server):
         raise Blocked("会话配置中的主机不在允许的 vip 美管加范围内")
+    if cfg.get("cookie_server") not in (None, "", server):
+        raise Blocked("会话与目标主机不匹配")
     return f"https://{server}/shair"
 
 
@@ -76,10 +102,9 @@ def _cookie(cfg: dict) -> str:
     本机配置里同时存在两个字段：`cookies`（既有同步脚本维护的当前有效会话）
     和 `cookie`（历史遗留，可能已过期）。只信 `cookies`，没有再回退。
     """
-    for key in ("cookies", "cookie"):
-        val = cfg.get(key)
-        if isinstance(val, str) and val.strip():
-            return val.strip()
+    val = cfg.get("cookies")
+    if isinstance(val, str) and val.strip() and not any(c in val for c in "\r\n"):
+        return val.strip()
     raise Blocked("会话配置缺少凭据")
 
 
@@ -175,13 +200,26 @@ def shop_by_ref(ref: str) -> dict:
 # ---------------------------------------------------------------- 只读能力
 
 
+def _content(res: dict) -> dict:
+    if type(res.get("code")) is not int or res["code"] != CODE_OK:
+        if res.get("code") == 3:
+            raise Blocked("美管加会话已失效，请由本机既有登录流程处理")
+        raise Blocked("美管加未返回业务成功状态，不能使用响应数据")
+    content = res.get("content")
+    if not isinstance(content, dict):
+        raise Blocked("响应缺少 content")
+    return content
+
+
+def _active(row: dict) -> bool:
+    value = row.get("status")
+    return (type(value) is int and value == 0) or (type(value) is str and value == "0")
+
+
 def metadata(shop: dict, cfg: dict) -> dict:
     """人员/项目/配置的权威来源。GET，与既有只读诊断一致。"""
     res = _request(f"{_base_url(cfg)}/metedata!reservationMetadata.action", _cookie(cfg))
-    content = res.get("content")
-    if not isinstance(content, dict):
-        raise Blocked("元数据响应缺少 content")
-    return content
+    return _content(res)
 
 
 def service_catalog(shop: dict, cfg: dict) -> list[dict]:
@@ -189,7 +227,7 @@ def service_catalog(shop: dict, cfg: dict) -> list[dict]:
 
     返回全部分类项。`reservable_entry=True` 标记「预约剪发/预约染发/…」这类
     入口项——它们是美管加预约界面上的占位项目名，不是真实服务项；
-    真做服务组合时应选具体项目（如 剪发380 + 基础染发560）。
+    组合中的每项都须明确选择；不能自动把入口项替换成某个收费档位。
     """
     content = metadata(shop, cfg)
     items = content.get("serviceItems")
@@ -248,7 +286,7 @@ def barbers(shop: dict, cfg: dict, day: str) -> dict:
         "jsonObj": json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
         "shopid": shop["shopId"],
     })
-    content = res.get("content")
+    content = _content(res)
     if not isinstance(content, dict) or not isinstance(content.get("reservations"), list):
         raise Blocked("预约响应缺少完整列表，不能把缺失当作空")
     found = {}
@@ -257,8 +295,11 @@ def barbers(shop: dict, cfg: dict, day: str) -> dict:
             continue
         bid, bname = row.get("barberId"), row.get("barberName")
         if bid and bname and int(bid) > 0:
+            if str(bname) in found and found[str(bname)] != int(bid):
+                raise Blocked("同名老师对应多个 ID，不能选择")
             found[str(bname)] = int(bid)
-    return {"barbers": found, "reservations_total": len(content["reservations"])}
+    return {"barbers": found, "reservations_total": len(content["reservations"]),
+            "staff_directory_complete": False}
 
 
 def day_reservations(shop: dict, cfg: dict, day: str) -> list[dict]:
@@ -272,10 +313,12 @@ def day_reservations(shop: dict, cfg: dict, day: str) -> list[dict]:
         "jsonObj": json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
         "shopid": shop["shopId"],
     })
-    content = res.get("content")
+    content = _content(res)
     if not isinstance(content, dict) or not isinstance(content.get("reservations"), list):
         raise Blocked("预约响应缺少完整列表，不能把缺失当作空")
-    return [r for r in content["reservations"] if isinstance(r, dict)]
+    if any(not isinstance(r, dict) for r in content["reservations"]):
+        raise Blocked("预约列表含无效条目，不能当作完整列表")
+    return content["reservations"]
 
 
 def _norm_services(row: dict) -> list[str]:
@@ -300,7 +343,7 @@ def _row_view(row: dict) -> dict:
         "services": _norm_services(row),
         "phone_masked": mask_phone(str(row.get("memmobile") or "")),
         "customer_masked": mask_name(str(row.get("custName") or "")),
-        "comment": row.get("comment") or "",
+        "comment_present": bool(row.get("comment")),
     }
 
 
@@ -328,6 +371,8 @@ def preflight(shop: dict, cfg: dict, day: str, hhmm: str, barber_name: str,
         raise Blocked("至少选择一个服务项目")
     if len(services) > 5:
         raise Blocked("服务项目过多，最多 5 项")
+    if len({str(s).strip() for s in services}) != len(services):
+        raise Blocked("服务项目不能重复选择")
 
     cust = find_customer(shop, cfg, number)
     catalog = service_catalog(shop, cfg)
@@ -357,11 +402,11 @@ def preflight(shop: dict, cfg: dict, day: str, hhmm: str, barber_name: str,
     for row in rows:
         if str(row.get("barberId")) == str(barber_map[barber_name]) and \
                 int(row.get("reservationTime") or 0) == target_ms and \
-                int(row.get("status") or 0) == STATUS_ACTIVE:
+                _active(row):
             barber_clash.append(_row_view(row))
         if re.sub(r"\D", "", str(row.get("memmobile") or "")) == number and \
                 int(row.get("reservationTime") or 0) == target_ms and \
-                int(row.get("status") or 0) == STATUS_ACTIVE:
+                _active(row):
             same_customer.append(_row_view(row))
 
     plan = {
@@ -371,7 +416,7 @@ def preflight(shop: dict, cfg: dict, day: str, hhmm: str, barber_name: str,
         "time_ms": target_ms,
         "barber_name": barber_name,
         "barber_id": barber_map[barber_name],
-        "customer": cust,
+        "customer": dict(cust, phone=number),  # Private plan only; never part of tool output.
         "services": chosen,
         "service_names": [c["name"] for c in chosen],
     }
@@ -398,9 +443,12 @@ def preflight(shop: dict, cfg: dict, day: str, hhmm: str, barber_name: str,
         "services": [{"id": c["id"], "name": c["name"]} for c in chosen],
         "duplicate_same_time": same_customer,
         "barber_slot_taken": barber_clash,
-        "blocked": bool(same_customer or barber_clash),
+        "blocked": True,
+        "same_start_conflict": bool(same_customer or barber_clash),
+        "conflict_check_complete": False,
+        "write_available": False,
         "note": ("该时段该老师或该客户已有预约，禁止创建"
-                 if (same_customer or barber_clash) else "预检通过，可提交确认"),
+                 if (same_customer or barber_clash) else WRITE_BLOCK_REASON),
         "_plan": plan,
     }
 
@@ -415,8 +463,8 @@ def build_item_prop(services: list[dict], shop: dict) -> str:
         items[str(s["id"])] = {
             "id": s["id"],
             "name": s["name"],
-            "itemid": s.get("itemid", "2000"),
-            "classid": s.get("classid", "2"),
+            "itemid": s["itemid"],
+            "classid": s["classid"],
             "sorting": None,
             "price": 0,
             "adjustPrice": None,
@@ -469,15 +517,15 @@ def create_once(plan: dict, cfg: dict, comment: str = "") -> dict:
     code = res.get("code")
     if code == CODE_OK:
         return {"outcome": "accepted", "code": code,
-                "message": str(res.get("message") or "")}
+                "message": "源系统接受请求，仍需回读"}
     if code == CODE_CONFLICT:
         return {"outcome": "conflict", "code": code,
-                "message": str(res.get("message") or "该时段已有预约")}
+                "message": "该时段已有预约"}
     if code == CODE_NO_MEMBER:
         return {"outcome": "no_member", "code": code,
-                "message": str(res.get("message") or "会员未找到")}
+                "message": "会员未找到"}
     return {"outcome": "unknown", "code": code,
-            "message": str(res.get("message") or "")}
+            "message": "结果不明，只能回读，不得重发"}
 
 
 def readback(plan: dict, cfg: dict) -> dict:
@@ -493,7 +541,7 @@ def readback(plan: dict, cfg: dict) -> dict:
             continue
         if re.sub(r"\D", "", str(row.get("memmobile") or "")) != plan["customer"]["phone"]:
             continue
-        if int(row.get("status") or 0) != STATUS_ACTIVE:
+        if not _active(row):
             continue
         hits.append(row)
 
@@ -505,10 +553,22 @@ def readback(plan: dict, cfg: dict) -> dict:
                 "matched": [_row_view(r) for r in hits]}
 
     view = _row_view(hits[0])
-    service_ok = sorted(view["services"]) == wanted_services
+    try:
+        prop = json.loads(hits[0]["itemProp"])
+        observed_ids = sorted(str(k) for k in prop["items"])
+    except (KeyError, TypeError, ValueError):
+        observed_ids = []
+    service_ok = (sorted(view["services"]) == wanted_services
+                  and observed_ids == sorted(str(s["id"]) for s in plan["services"]))
+    booking_id = view["id"]
+    identity_ok = (service_ok and type(booking_id) in (str, int)
+                   and bool(str(booking_id).strip()) and str(booking_id) != "0")
     return {
-        "verified": bool(service_ok),
-        "reason": "" if service_ok else f"项目不一致：期望{wanted_services}，实际{view['services']}",
+        "verified": False,
+        "identity_match": bool(identity_ok),
+        "verification_complete": False,
+        "reason": ("发现相同预约；完整时长、列表覆盖及写入归属尚未核验，不能宣告新建成功"
+                   if identity_ok else "项目不一致或预约缺少稳定 ID，不能确认"),
         "matched": [view],
         "booking_id": view["id"],
         "barber_match": True,
