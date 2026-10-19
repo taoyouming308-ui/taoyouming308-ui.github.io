@@ -121,7 +121,9 @@ jobs:
           node scripts/test-aesthetic-study-admin-browser.cjs
           python3 -m unittest scripts/test_aesthetic_coach_endpoint.py
       - name: Run Meiguanjia sync tests
-        run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py
+        run: |
+          python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py scripts/test_mgj_booking_quick.py
+          python3 -m unittest discover -s mcp -p 'test_*.py'
       - name: Validate Codex and Hermes handoff
         run: node scripts/check-agent-sync-status.js
       - name: Reject whitespace errors

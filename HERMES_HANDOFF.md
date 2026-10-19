@@ -1,5 +1,31 @@
 # Hermes Handoff
 
+## 2026-10-19 structured MCP refusal (App version: v635 unchanged)
+
+- User relayed Hermes's local deployment/read-only recheck of 9c4d5be. The SDK reportedly hides exception details, so the local confirm tool returns outcome=blocked, written=false, reason instead of raising. Canonical MCP now matches this behavior; no configuration read, HTTP or create call precedes the return.
+- The two existing tool-boundary regressions now verify structured refusal, visible reason and zero HTTP/create calls even with the write environment set, repeated confirmation and a restarted server. Total remains 54 synthetic tests (47 gateway + 7 tool boundary).
+- This report is not ChatGPT tunnel verification. No new tunnel/key or live booking is created here; source semantics and durable write orchestration remain prerequisites for future creation. Do not treat a successful MCP transport response as a successful reservation.
+
+## 2026-10-19 MCP review correction (App version: v635 unchanged)
+
+- PR #60 initial head 5988beb has independently reproduced defects: actual preflight plans lack customer.phone; missing status can verify as active; raw comments can export unmasked data. Memory-only write attempts and exact-start-only conflicts are not the durable/range-safe core from PR #59.
+- Corrected candidate is strictly read-only, including when MGJ_MCP_ALLOW_WRITE=1. No live confirm path until complete timing/pagination/cross-day/customer/staff contracts and the existing mgj_booking_core Journal/execute orchestration are integrated. Do not toggle a flag to activate the unverified low-level request prototype.
+- Actual plans now retain phone only privately; output excludes raw remarks. Business success/session checks, strict active status, service IDs, staff name ambiguity, canonical shop loading, bounded expiring read plans are enforced. Readback identity_match is partial observation, not verified creation.
+- 54 synthetic MCP gateway/tool-boundary tests and 79 existing booking/keepalive/customer tests pass. Tool-boundary tests use an SDK stub, not a live MCP/tunnel claim. Mac deployment and fresh stdio/ChatGPT read-only validation remain with the local executor; copy tracked MCP files, preserve credentials/venv and the canonical sync runtime, then restart. No source appointment or customer/finance/scheduler mutation.
+
+## 2026-10-19 local booking evidence follow-up (App version: v635 unchanged)
+
+- User relayed Hermes's successful local add endpoint and existing-booking readback report. This is local-source evidence, not a ChatGPT live write/readback. Details and remaining full itemProp/response/status/duration contract gaps are in docs/mgj-quick-booking.md. Preserve the existing booking, including its reported service/comment difference; do not cancel or recreate it.
+- Fixed Python 3.9 Plan annotation evaluation by using Optional[str]. Prefer the existing Hermes /opt/homebrew/bin/python3.11 environment; do not replace system Python or cron interpreters. Production creation stays disabled until an observed-contract adapter exists.
+- No ChatGPT-callable local booking service currently exists according to Hermes. Proposed dedicated stdio MCP plus OpenAI Secure MCP Tunnel is documented for review, not installed or authorized by this note. Collect sanitized mgj_book.py contracts; do not export local cookies/passwords, enable public ingress, or change sync/finance/customer runtime.
+
+## 2026-10-19 quick-booking preflight (App version: v635 unchanged)
+
+- New canonical files: scripts/mgj_booking_quick.py / scripts/mgj_booking_core.py; guide docs/mgj-quick-booking.md. The CLI only supports doctor, inspect and offline plan; production creation remains unavailable.
+- Reuse original booking configuration and shop list. Inspect never reads auth/password files or renews sessions; no changes to existing sync, cadence, cron, customer records or finance. Do not deploy these as a replacement for sync_mgj_bookings.py.
+- Continue on the already-authorized Hermes Mac by inspecting the existing successful reservation and successful create implementation. Preserve local credentials. Implement an adapter only from observed endpoint/ID/status/duration/pagination evidence, then test using a genuinely new authorized booking. The already completed booking must never be replayed.
+- Synthetic core tests cover duplicate/conflict, durable intent before send, unknown-result no-retry and readback; they are not evidence of real creation. A shared local journal cannot guarantee atomicity against unrelated browser or other-host clients.
+
 ## 2026-10-08 daily text save readback (App version: v608)
 
 - Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.
