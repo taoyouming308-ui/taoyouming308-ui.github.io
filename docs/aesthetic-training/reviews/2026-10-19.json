@@ -1,0 +1,47 @@
+{
+  "batch": "aesthetic-2026-10-19",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "3b665d599293eb092b834cad2314572bb528ae8f",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional visual-design reasoning, not an empirical haircut or styling-retention study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional adjacent-visual-language case, six conditional answers and five unscored self-checks",
+    "checks": [
+      "All eleven prior parsed feed objects preserved; exactly one stable same-day ID",
+      "Current image facts, fictional density/history/preferences and on-site unknowns separated",
+      "Whole silhouette, edge transitions and surface texture are distinguished; softness is not equated with roundness or global thinning",
+      "B is conditional on stated preferences; A has a benefit, cost and switch condition",
+      "Head/shoulder and facial proportions are comparison context, not defects or personality evidence",
+      "Three extra minutes exclude normal necessary drying; temporary clipping is not proof of post-cut lay",
+      "No chemical formula, heat temperature, fixed thinning percentage, guaranteed effect or invented user performance"
+    ],
+    "limits": [
+      "Fictional generated adult, no real client or reference portrait",
+      "Preparer review is not independent scientific or human approval",
+      "Required exact-head CI, ordinary protected merge, Pages and live feed/image readback remain gates"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-19-softness-not-roundness.webp",
+    "sha256": "70b030a8163f876fbb115f9befa5a9d661eeb05524d850fc05d67a072a474ee5",
+    "rights": "Original fictional adult generated for this teaching case; no real client or third-party photograph used",
+    "provenance": "Built-in image generation followed by built-in framing-only revision; selected PNG converted at unchanged 2172x724 size to WebP quality86 without content editing",
+    "prompt": "Use case: photorealistic-natural.\nAsset type: current-hairstyle documentation for a fictional adult haircut-aesthetics teaching case.\nPrimary request: one horizontal triptych of the SAME fictional adult East Asian woman, about 36, with front, exact right profile, and back views. Show only the SAME CURRENT unstyled haircut in every panel, NOT proposed results or a comparison.\nCurrent hair: natural dark brown, straight-looking bob with an off-centre part, long uncut front pieces, no short fringe. Ends between jaw and shoulders, clearly above shoulders, at mid-neck. A dense fairly continuous perimeter with a small natural inward bend at the tips, low crown height, modest lower-side fullness. Ordinary individual strands and a few flyaways, no glamorous blowout, no waves, no upward curled ends, no layered shag.\nPerson: natural oval-soft-angular face with a gently visible jaw line, ordinary proportions, neutral expression, unretouched skin. Same muted sage green wide round-neck cotton top in all panels, no accessories.\nComposition: three equal portrait panels with narrow pale dividers; identical eye-level camera and scale, no tilt. Each panel must include entire head and all hair ends, full neck, BOTH shoulder outlines entirely within frame with space outside them, and upper chest below sternum. Back view must show same haircut length and neckline. The profile must show the complete head and rear perimeter.\nLighting: consistent soft diffuse daylight, plain pale warm-grey background, faithful natural skin and fabric, realistic anatomy.\nConstraints: no text, no labels, no diagram, arrows, logos, beauty filter, face slimming, real person likeness, inset reference, before/after, makeover result, glamour styling or salon tools. Do not alter face/head-neck-shoulder proportions across angles. This is fictional current-condition teaching material, not a validated haircut result.",
+    "framingRevisionPrompt": "Edit the referenced fictional teaching triptych. Change ONLY framing: pull the camera back in ALL three panels so every head, entire hair perimeter, full neck, BOTH complete shoulder contours and upper torso are visible with clear neutral background margin on both sides. Make this a WIDE horizontal 3:1-ish triptych, not three tightly cropped busts. In each front/back panel the complete left and right shoulder-to-arm junctions must be INSIDE its panel; in the profile show full front and back shoulder context. Preserve exactly the same fictional woman's face and natural proportions, hair bob length/part/bends/current starting hairstyle, sage green round-neck top, neutral background and diffuse light. Same current condition, no makeover, no alternative styles, no beauty retouch, no text. Three equally sized panels, front/right-profile/back. This framing correction must not change any hairstyle design condition.",
+    "visualCheck": "Original and revised tool outputs and final WebP actually viewed. Revised frame includes complete head, current short bob perimeter, neck and shoulder outlines; same sage top and neutral light across front/right-profile/back. Not a measured head/shoulder study or proposed A/B results."
+  },
+  "candidateFeedSha256": "99bca0928a2f87ba8d16b3c74e82516d647865db8bf5b0ac6d4ae2abc7c8395b",
+  "caseCanonicalSha256": "e0bcfef736dfc04ddf4bdad196884e99ae0fce0f3cb3eae6a0e69525cbd05026",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-19, do not duplicate or replace with unrelated same-date material",
+  "localChecks": {
+    "contentContract": "passed: twelve cases; prior eleven parsed objects unchanged",
+    "fullHook": "Executed: version/integrity/smoke, nineteen academy publisher unit tests and nine-course verification passed; stopped at academy publisher browser because Chromium executable is absent. Not claimed fully passed; unchanged trusted PR CI must supply all required checks.",
+    "browser": "Blocked locally by absent Chromium executable; unchanged protected CI invokes identical daily 390/1280 test via test-perm-academy-browser.js",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 635
+}

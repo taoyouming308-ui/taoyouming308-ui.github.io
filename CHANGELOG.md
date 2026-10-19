@@ -1,3 +1,9 @@
+## 2026-10-19 · Softness versus roundness aesthetic case (v635 unchanged)
+
+- Add one original fictional adjacent-visual-language case: distinguish whole-contour roundness, local edge transitions and surface texture before choosing a haircut technique. Six conditional reference answers compare clear silhouette/soft edges with fuller inward curves; five self-checks do not score an unanswered user.
+- Original same-person current front/profile/back AI WebP; framing revision includes shoulder context. Image is not a real customer, an A/B outcome or proof of post-cut/home behavior; prompt and exact hashes are in the transparent preparer audit, not independent expert certification.
+- Preserve all eleven earlier feed objects, all academy lessons/catalog and all runtime/version, old feed, calculator, customer, finance, database, login, permission, business-sync and automation files. Existing protected CI must complete identical daily/browser and full shared checks before normal merge; exact live readback remains required.
+
 <!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
 ## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
 
