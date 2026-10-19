@@ -1,7 +1,7 @@
 """Booking orchestration, with no HTTP or production write implementation.
 
-The adapter contract is deliberately independent of Meiguanjia's unverified
-create endpoint. See docs/mgj-quick-booking.md before implementing an adapter.
+The adapter contract is independent of the locally reported create endpoint;
+a live adapter is still absent. See docs/mgj-quick-booking.md before adding one.
 """
 
 from contextlib import contextmanager
@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+from typing import Optional
 
 
 CHINA = timezone(timedelta(hours=8))
@@ -137,7 +138,7 @@ class Plan:
     request_hash: str
     confirmation: str
     expires_at: str
-    booking_id: str | None = None
+    booking_id: Optional[str] = None
     reason: str = ""
 
     def public(self):
@@ -351,7 +352,7 @@ def execute(request, plan, confirmation, gateway, journal, clock):
             if same_customer_day or barber_overlap:
                 raise Blocked("相关预约仍有结果不明的尝试，不能通过改时间/项目绕过")
         if getattr(gateway, "write_verified", False) is not True:
-            raise Blocked("真实新增预约接口尚未验证，写入关闭")
+            raise Blocked("真实预约写入适配器尚未核验，写入关闭")
         if clock() >= observed_time(plan.expires_at):
             raise Blocked("查询期间确认已过期，未写入")
         entry = dict(state="pending", request_hash=plan.request_hash, shop_id=request.shop_id,

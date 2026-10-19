@@ -181,7 +181,7 @@ class SafetyTests(unittest.TestCase):
     def test_verified_adapter_required(self):
         gateway = SyntheticGateway()
         gateway.write_verified = False
-        with self.assertRaisesRegex(core.Blocked, "接口尚未验证"):
+        with self.assertRaisesRegex(core.Blocked, "写入关闭"):
             self.run_booking(gateway)
         self.assertEqual(gateway.writes, 0)
 

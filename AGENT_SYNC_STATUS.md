@@ -1,3 +1,11 @@
+## 2026-10-19 · MGJ local evidence follow-up (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f. Clean feature branch and daily backup verified before this focused follow-up.
+- User relayed Hermes local add-interface evidence and existing-booking readback. Prior statement that no create endpoint was found is superseded by this report; complete sanitized itemProp/response/status/duration contracts and an authenticated local execution connection are still missing here. No actual booking identifiers or raw customer data are committed.
+- Replaced the Python 3.10-only evaluated union annotation with Optional[str] for Python 3.9 import compatibility. Real write adapter remains absent; no source booking mutation or runtime deployment. Docs describe a dedicated stdio MCP with official Secure MCP Tunnel as a proposal only; no tunnel, key, listening port, access expansion, scheduler or financial change.
+- Follow-up verification: all 37 isolated quick-booking tests pass in a separate Linux Python 3.9.25 virtual environment with the existing cryptography 48.0.0 pin; 79 combined booking/keepalive/customer tests pass on Python 3.12. Version/integrity/handoff and diff whitespace checks pass. This is not a test on the user's Mac Python 3.9.6 and includes no live MGJ writes.
+- Previous PR head b9b4db885a3ac1098ac53e3771a6118503df70ad passed remote validate. Follow-up validation must be evaluated on its own exact head; previous success is not release approval. Full local pre-push remains blocked by the missing pinned Chromium executable recorded in the earlier entry below.
+
 ## 2026-10-19 · MGJ quick-booking preflight (App version: v635 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f; clean isolated feat/mgj-quick-booking-preflight, canonical daily source backup created before edits.
