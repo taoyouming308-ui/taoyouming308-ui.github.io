@@ -1,3 +1,9 @@
+## 2026-10-19 美管加快捷预约只读预检（App v635 不变）
+
+- 增加复用 Hermes 会话/门店配置的只读诊断，以及独立的顾客、指定老师、项目、时段预检核心。
+- 隔离测试覆盖精确匹配、防重复、时间冲突、确认过期、持久化尝试记录、超时/中断不重发、完整回读；加入既有测试步骤，不改 CI 权限或定时规则。
+- 真实新增预约接口和 ChatGPT 到 Hermes 本机连接尚未验证；没有实际新增预约、上线写入或修改客户/财务/同步系统。继续条件见 docs/mgj-quick-booking.md。
+
 <!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
 ## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
 

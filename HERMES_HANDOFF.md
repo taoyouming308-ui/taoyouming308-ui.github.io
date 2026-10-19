@@ -1,5 +1,12 @@
 # Hermes Handoff
 
+## 2026-10-19 quick-booking preflight (App version: v635 unchanged)
+
+- New canonical files: scripts/mgj_booking_quick.py / scripts/mgj_booking_core.py; guide docs/mgj-quick-booking.md. The CLI only supports doctor, inspect and offline plan; production creation remains unavailable.
+- Reuse original booking configuration and shop list. Inspect never reads auth/password files or renews sessions; no changes to existing sync, cadence, cron, customer records or finance. Do not deploy these as a replacement for sync_mgj_bookings.py.
+- Continue on the already-authorized Hermes Mac by inspecting the existing successful reservation and successful create implementation. Preserve local credentials. Implement an adapter only from observed endpoint/ID/status/duration/pagination evidence, then test using a genuinely new authorized booking. The already completed booking must never be replayed.
+- Synthetic core tests cover duplicate/conflict, durable intent before send, unknown-result no-retry and readback; they are not evidence of real creation. A shared local journal cannot guarantee atomicity against unrelated browser or other-host clients.
+
 ## 2026-10-08 daily text save readback (App version: v608)
 
 - Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.
