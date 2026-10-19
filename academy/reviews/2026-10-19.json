@@ -3,47 +3,47 @@
   "date": "2026-10-19",
   "status": "approved",
   "reviewedBy": "ChatGPT（AI来源/版权/隐私逐项审核；非真人同行评审）",
-  "reviewedAt": "2026-10-19T00:58:14+00:00",
-  "approvalReference": "用户既有每日课程无需逐篇确认之授权；本轮已独立核对3份原始题录/正文、三张原创SVG内容及虚构人物隐私边界。审核不声称科学实验已实施。",
+  "reviewedAt": "2026-10-19T01:29:57+00:00",
+  "approvalReference": "沿用2026-10-19T00:58:14+00:00原有来源/版权/隐私审核和既有每日发布授权；本次仅移除三张SVG空白行尾空格并统一末尾换行，以满足git diff --check。三图在同一CairoSVG渲染器下逐字节PNG一致；正文与来源未改。原审核Git blob 9b413def32ac1c2bada36f0fbf92d726a5e673e3。此复核不代表新增科学验证。",
   "privacyVerified": true,
   "sourceChecks": [
     {
       "id": "s1",
       "verified": true,
-      "basis": "实际阅读Wiley 2006-01-27题录与摘要，确认发径、弯曲刚度、摩擦实测及非热烫方案边界。"
+      "basis": "沿用2026-10-19T00:58:14+00:00已完成的原来源审核；本次正文与来源字节未变。实际阅读Wiley 2006-01-27题录与摘要，确认发径、弯曲刚度、摩擦实测及非热烫方案边界。"
     },
     {
       "id": "s2",
       "verified": true,
-      "basis": "实际阅读PubMed PMID17143860及Wiley原文摘要，核对首次在线2006-12、2007刊载与拉曼/电镜结果。"
+      "basis": "沿用2026-10-19T00:58:14+00:00已完成的原来源审核；本次正文与来源字节未变。实际阅读PubMed PMID17143860及Wiley原文摘要，核对首次在线2006-12、2007刊载与拉曼/电镜结果。"
     },
     {
       "id": "s3",
       "verified": true,
-      "basis": "实际阅读Wiley DOI10.1111/ics.12967综述与正文，核对2024-05-11在线时间及异质性键型。"
+      "basis": "沿用2026-10-19T00:58:14+00:00已完成的原来源审核；本次正文与来源字节未变。实际阅读Wiley DOI10.1111/ics.12967综述与正文，核对2024-05-11在线时间及异质性键型。"
     }
   ],
   "rightsChecks": [
     {
       "id": "principle",
       "verified": true,
-      "basis": "本人本轮生成的纯SVG路径、形状与文字；XML已解析，逐项检查无script、外部资源、真实人物或顾客数据。"
+      "basis": "实际复核本次仅空白规范化的原始SVG：安全解析通过，无脚本/外链/真人数据；修改前后用同一CairoSVG渲染为PNG的字节完全一致。原图原创权利依据不变。"
     },
     {
       "id": "technical",
       "verified": true,
-      "basis": "本人本轮生成的纯SVG路径、形状与文字；XML已解析，逐项检查无script、外部资源、真实人物或顾客数据。"
+      "basis": "实际复核本次仅空白规范化的原始SVG：安全解析通过，无脚本/外链/真人数据；修改前后用同一CairoSVG渲染为PNG的字节完全一致。原图原创权利依据不变。"
     },
     {
       "id": "aesthetic",
       "verified": true,
-      "basis": "本人本轮生成的纯SVG路径、形状与文字；XML已解析，逐项检查无script、外部资源、真实人物或顾客数据。"
+      "basis": "实际复核本次仅空白规范化的原始SVG：安全解析通过，无脚本/外链/真人数据；修改前后用同一CairoSVG渲染为PNG的字节完全一致。原图原创权利依据不变。"
     }
   ],
   "contentSha256": "1eb18ecdfa7c3a590c3719f4f4b80aebf5b0a3d32f49ae4a2fae05f4653cc883",
   "assetSha256": {
-    "assets/2026-10-19/figure1.svg": "e59d008be5f606f89052467de38671049e2c694690f24a65ec8189527b9e4819",
-    "assets/2026-10-19/figure2.svg": "d3cb5d912db32cc03e383e19b85085194eabf9455b46d1900a222ecc42cbef6f",
-    "assets/2026-10-19/figure3.svg": "69bfc83b1590f886d7aabe1f093c81ae9a08e4d8d796c765f6992ea2197201ac"
+    "assets/2026-10-19/figure1.svg": "aac7083a891c824b6c3664baac1e04096f9a779f3bc46cd85967b380c1473235",
+    "assets/2026-10-19/figure2.svg": "5bc7940f1c7e5c73bd3864471b454b326536798863f6646524155071a7b21bed",
+    "assets/2026-10-19/figure3.svg": "234af1c543bf1f2e2d585fe2638ac7bbb5c88aa4db7a2cfb1d28fbe42bd072b7"
   }
 }

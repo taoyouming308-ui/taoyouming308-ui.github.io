@@ -2,7 +2,7 @@
  <defs><marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#796e68"/></marker></defs>
  <rect width="1200" height="710" rx="24" fill="#f8f5ef"/>
  <text x="62" y="77" font-size="34" font-weight="700" fill="#2f3739">技术图｜发尾纸与进杠方向：同杠径不同结局</text><text x="62" y="113" font-size="19" fill="#746f6c">示范只在公仔头或离体发束；不得由图给出具体药剂处方</text>
- 
+
 <rect x="62" y="154" width="516" height="425" rx="22" fill="#e8e0dc"/><rect x="619" y="154" width="519" height="425" rx="22" fill="#dce7df"/>
 <text x="95" y="200" font-size="28" font-weight="700" fill="#855f57">A｜折尾风险</text>
 <text x="650" y="200" font-size="28" font-weight="700" fill="#476d57">B｜平铺进入</text>

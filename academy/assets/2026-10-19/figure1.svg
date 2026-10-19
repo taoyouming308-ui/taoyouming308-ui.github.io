@@ -2,7 +2,7 @@
  <defs><marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0 L10 4 L0 8 Z" fill="#796e68"/></marker></defs>
  <rect width="1200" height="710" rx="24" fill="#f8f5ef"/>
  <text x="62" y="77" font-size="34" font-weight="700" fill="#2f3739">原理图｜发尾折痕不是一种“药力百分比”</text><text x="62" y="113" font-size="19" fill="#746f6c">化学结构、弯曲几何、表面摩擦：三个不同层面</text>
- 
+
 <rect x="60" y="155" width="340" height="425" rx="22" fill="#dce8ea"/><text x="86" y="194" font-size="25" fill="#2f4751" font-weight="700">① 发丝内部</text>
 <ellipse cx="228" cy="370" rx="92" ry="150" fill="#b6c5c9" stroke="#627e83" stroke-width="6"/>
 <ellipse cx="228" cy="370" rx="66" ry="123" fill="#e2e6e1" stroke="#7a9190" stroke-width="5"/>
