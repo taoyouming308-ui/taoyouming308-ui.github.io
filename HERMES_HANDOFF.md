@@ -1,5 +1,18 @@
 # Hermes Handoff
 
+## 2026-10-19 local booking evidence follow-up (App version: v635 unchanged)
+
+- User relayed Hermes's successful local add endpoint and existing-booking readback report. This is local-source evidence, not a ChatGPT live write/readback. Details and remaining full itemProp/response/status/duration contract gaps are in docs/mgj-quick-booking.md. Preserve the existing booking, including its reported service/comment difference; do not cancel or recreate it.
+- Fixed Python 3.9 Plan annotation evaluation by using Optional[str]. Prefer the existing Hermes /opt/homebrew/bin/python3.11 environment; do not replace system Python or cron interpreters. Production creation stays disabled until an observed-contract adapter exists.
+- No ChatGPT-callable local booking service currently exists according to Hermes. Proposed dedicated stdio MCP plus OpenAI Secure MCP Tunnel is documented for review, not installed or authorized by this note. Collect sanitized mgj_book.py contracts; do not export local cookies/passwords, enable public ingress, or change sync/finance/customer runtime.
+
+## 2026-10-19 quick-booking preflight (App version: v635 unchanged)
+
+- New canonical files: scripts/mgj_booking_quick.py / scripts/mgj_booking_core.py; guide docs/mgj-quick-booking.md. The CLI only supports doctor, inspect and offline plan; production creation remains unavailable.
+- Reuse original booking configuration and shop list. Inspect never reads auth/password files or renews sessions; no changes to existing sync, cadence, cron, customer records or finance. Do not deploy these as a replacement for sync_mgj_bookings.py.
+- Continue on the already-authorized Hermes Mac by inspecting the existing successful reservation and successful create implementation. Preserve local credentials. Implement an adapter only from observed endpoint/ID/status/duration/pagination evidence, then test using a genuinely new authorized booking. The already completed booking must never be replayed.
+- Synthetic core tests cover duplicate/conflict, durable intent before send, unknown-result no-retry and readback; they are not evidence of real creation. A shared local journal cannot guarantee atomicity against unrelated browser or other-host clients.
+
 ## 2026-10-08 daily text save readback (App version: v608)
 
 - Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.

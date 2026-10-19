@@ -1,3 +1,19 @@
+## 2026-10-19 · MGJ local evidence follow-up (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f. Clean feature branch and daily backup verified before this focused follow-up.
+- User relayed Hermes local add-interface evidence and existing-booking readback. Prior statement that no create endpoint was found is superseded by this report; complete sanitized itemProp/response/status/duration contracts and an authenticated local execution connection are still missing here. No actual booking identifiers or raw customer data are committed.
+- Replaced the Python 3.10-only evaluated union annotation with Optional[str] for Python 3.9 import compatibility. Real write adapter remains absent; no source booking mutation or runtime deployment. Docs describe a dedicated stdio MCP with official Secure MCP Tunnel as a proposal only; no tunnel, key, listening port, access expansion, scheduler or financial change.
+- Follow-up verification: all 37 isolated quick-booking tests pass in a separate Linux Python 3.9.25 virtual environment with the existing cryptography 48.0.0 pin; 79 combined booking/keepalive/customer tests pass on Python 3.12. Version/integrity/handoff and diff whitespace checks pass. This is not a test on the user's Mac Python 3.9.6 and includes no live MGJ writes.
+- Previous PR head b9b4db885a3ac1098ac53e3771a6118503df70ad passed remote validate. Follow-up validation must be evaluated on its own exact head; previous success is not release approval. Full local pre-push remains blocked by the missing pinned Chromium executable recorded in the earlier entry below.
+
+## 2026-10-19 · MGJ quick-booking preflight (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f; clean isolated feat/mgj-quick-booking-preflight, canonical daily source backup created before edits.
+- Added a separate read-only doctor/inspect CLI and offline exact-customer/stylist/service preflight. Shops/config are read from canonical sync source; no password read, relogin, source writes, cloud writes, runtime deployment or scheduler changes. Existing booking/customer/finance code and app version remain unchanged.
+- Creation orchestration is independently tested with synthetic adapters: short-lived specific-plan confirmation, fresh duplicate/conflict checks, private durable single-attempt journal, no retry after timeout/crash, full source readback required. No real create adapter or CLI write-enable switch exists.
+- 37 new isolated tests pass. Existing 42 booking/keepalive/customer tests, version/integrity/smoke and relevant static business guards passed before edits. Combined post-edit regression: 79 tests pass. Full local pre-push stops at the existing academy browser gate because the pinned Chromium executable is absent; no pass claimed and no merge/runtime release is authorized by these tests. Candidate may be reviewed with protected CI, but these tests do not establish a working real MGJ create endpoint.
+- Blocked external steps: this environment has no Hermes Mac/session files; current cloud browser is at the MGJ sign-in page. No successful create URL/payload/response/readback evidence found in current main or prior context. User-reported completed booking was not recreated or independently verified. See docs/mgj-quick-booking.md for the exact local continuation contract; do not guess fields or weaken permissions.
+
 <!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
 ## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
 
