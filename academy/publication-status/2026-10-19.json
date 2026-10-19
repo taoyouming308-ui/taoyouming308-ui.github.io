@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "dates": [
+    "2026-10-19"
+  ],
+  "baseSha": "0c803bb0af86cca04a988938351ace4ff0c7ec59",
+  "scope": "Public academy lessons only. Clean source recovery preflight; no reviewed inputs or production changes yet.",
+  "remaining": [
+    "immutable main backup-main success and verified artifact",
+    "reviewed draft and original local SVGs",
+    "cloud preparation and artifact/head readback",
+    "authenticated preparation-status commit",
+    "exact-head validate and backup-main",
+    "expected-head protected merge",
+    "Pages SHA256 per-file readback"
+  ]
+}
