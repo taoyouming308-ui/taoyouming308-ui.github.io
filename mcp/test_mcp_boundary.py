@@ -50,19 +50,27 @@ class ToolBoundaryTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"MGJ_MCP_ALLOW_WRITE": "1"}):
             self.server = load_server()
             result = self.preflight()
-            with mock.patch.object(gw, "create_once") as create:
+            with mock.patch.object(gw, "create_once") as create, \
+                    mock.patch.object(gw, "_request") as request:
                 for _ in range(2):
-                    with self.assertRaises(gw.Blocked):
-                        self.server.mgj_booking_confirm(result["plan_id"])
+                    blocked = self.server.mgj_booking_confirm(result["plan_id"])
+                    self.assertEqual(blocked["outcome"], "blocked")
+                    self.assertIs(blocked["written"], False)
+                    self.assertTrue(blocked["reason"])
                 create.assert_not_called()
+                request.assert_not_called()
 
     def test_restart_cannot_turn_an_old_plan_into_a_write(self):
         result = self.preflight()
         restarted = load_server()
-        with mock.patch.object(gw, "create_once") as create:
-            with self.assertRaises(gw.Blocked):
-                restarted.mgj_booking_confirm(result["plan_id"])
+        with mock.patch.object(gw, "create_once") as create, \
+                mock.patch.object(gw, "_request") as request:
+            blocked = restarted.mgj_booking_confirm(result["plan_id"])
+            self.assertEqual(blocked["outcome"], "blocked")
+            self.assertIs(blocked["written"], False)
+            self.assertTrue(blocked["reason"])
             create.assert_not_called()
+            request.assert_not_called()
 
     def test_public_plan_is_masked_and_incomplete(self):
         result = self.preflight()

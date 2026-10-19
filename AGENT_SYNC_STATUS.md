@@ -1,3 +1,10 @@
+## 2026-10-19 · MGJ structured refusal alignment (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized main remains 3b665d599293eb092b834cad2314572bb528ae8f; PR #60 head 9c4d5be reviewed, clean feature worktree and daily backup verified.
+- User relayed Hermes local MCP deployment and nine read-only checks; its structured refusal adjustment is now incorporated into canonical code to avoid runtime drift. confirm returns blocked/false/reason before any HTTP or create call, with no writable path added.
+- Existing two tool-boundary tests now assert visible refusal and zero network/create calls for enabled-env/repeated/restarted scenarios; no tests removed or gate weakened. ChatGPT tunnel connectivity and production creation are still unverified. No appointment/customer/finance/scheduler or account permission changes.
+- All 54 synthetic MCP regressions pass after this adjustment, as do diff whitespace and handoff checks. These tests use a stub SDK at the tool boundary and do not replace real local or ChatGPT tunnel validation.
+
 ## 2026-10-19 · MGJ MCP review correction (App version: v635 unchanged)
 
 - Current owner: Codex. Last synchronized main remains 3b665d599293eb092b834cad2314572bb528ae8f; reviewed PR #60 head 5988bebed676bbbbd80e4c66b170e5fde9ce3115 in an isolated clean worktree. Daily source backup and version/integrity/handoff checks passed before edits.

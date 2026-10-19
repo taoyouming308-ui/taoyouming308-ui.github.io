@@ -1,7 +1,9 @@
 # 专用预约 MCP 接入说明（本机 stdio + OpenAI Secure MCP Tunnel）
 
-状态：**Hermes 报告旧版本本机只读调用通过；代码复核发现阻断问题，已修为严格只读候选。新版本尚未部署到 Mac 或通过 ChatGPT 隧道验收。**
+状态：**Hermes 已报告修正版在本机部署并完成只读重验；ChatGPT 经隧道的端到端验收尚未完成。当前严格禁止预约写入。**
 日期：2026-10-19。
+
+18:59 用户转交 Hermes 后续报告：已将 `9c4d5be` 同步到本机并完成 9 项只读检查，既有预约保持原样；这不是 ChatGPT 经隧道的独立验收。本机发现 SDK 隐藏异常细节，因此确认工具改为结构化返回 `{"outcome":"blocked","written":false,"reason":"..."}`；仓库已采纳同样的行为，任何 HTTP/写入调用之前就返回。工具调用正常返回仅表示得到阻断说明，不代表预约成功。
 
 本文件给出接入所需的启动命令、工具清单、鉴权与撤销方式。
 不含任何 Cookie、Token、密码、手机号或客户资料。
@@ -66,7 +68,7 @@
 | `mgj_catalog` | 只读 | 某日老师 ID 清单 + 服务项目清单（含「是否入口项」标记） |
 | `mgj_booking_find` | 只读 | 某天某手机号的预约（脱敏） |
 | `mgj_booking_preflight` | 只读 | 部分预检，始终 blocked=true；plan_id 仅供 5 分钟内回查 |
-| `mgj_booking_confirm` | **禁用** | 无条件拒绝，不发送写请求；环境变量不能放行 |
+| `mgj_booking_confirm` | **禁用** | 返回 outcome=blocked / written=false / reason；不发送请求，环境变量不能放行 |
 | `mgj_booking_readback` | 只读 | 返回部分身份是否匹配；完整契约未验证，verified 始终为 false |
 
 **没有提供**：通用 shell、任意 URL 请求、顾客建档、取消预约、财务/库存写入、跨店操作。

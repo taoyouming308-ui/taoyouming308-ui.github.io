@@ -1,5 +1,11 @@
 # Hermes Handoff
 
+## 2026-10-19 structured MCP refusal (App version: v635 unchanged)
+
+- User relayed Hermes's local deployment/read-only recheck of 9c4d5be. The SDK reportedly hides exception details, so the local confirm tool returns outcome=blocked, written=false, reason instead of raising. Canonical MCP now matches this behavior; no configuration read, HTTP or create call precedes the return.
+- The two existing tool-boundary regressions now verify structured refusal, visible reason and zero HTTP/create calls even with the write environment set, repeated confirmation and a restarted server. Total remains 54 synthetic tests (47 gateway + 7 tool boundary).
+- This report is not ChatGPT tunnel verification. No new tunnel/key or live booking is created here; source semantics and durable write orchestration remain prerequisites for future creation. Do not treat a successful MCP transport response as a successful reservation.
+
 ## 2026-10-19 MCP review correction (App version: v635 unchanged)
 
 - PR #60 initial head 5988beb has independently reproduced defects: actual preflight plans lack customer.phone; missing status can verify as active; raw comments can export unmasked data. Memory-only write attempts and exact-start-only conflicts are not the durable/range-safe core from PR #59.

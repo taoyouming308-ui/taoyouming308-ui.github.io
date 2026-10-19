@@ -121,7 +121,9 @@ def mgj_booking_preflight(shop: str, date: str, time: str, barber: str,
 
 @server.tool(description="当前版本禁用预约写入；任何 plan_id 和环境变量都不能启用。返回明确阻断原因，不发送写请求。")
 def mgj_booking_confirm(plan_id: str, comment: str = "") -> dict:
-    raise gw.Blocked(gw.WRITE_BLOCK_REASON)
+    # Keep the reason visible even when the SDK hides exception details.
+    # This is a blocked operation, not a successful reservation.
+    return {"outcome": "blocked", "written": False, "reason": gw.WRITE_BLOCK_REASON}
 
 
 @server.tool(description="按只读计划回查已有预约。比对客户手机号、开始时间、老师、项目 ID 和名称；完整时长/覆盖未知，所以不宣告创建成功。")
