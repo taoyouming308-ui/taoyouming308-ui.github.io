@@ -123,6 +123,26 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(result["status"], "exists")
         self.assertEqual(gateway.writes, 0)
 
+    def test_observed_existing_booking_cannot_be_recreated_after_cancellation(self):
+        gateway = SyntheticGateway()
+        gateway.data["bookings"] = [row(self.plan.identity)]
+        self.assertEqual(self.run_booking(gateway)["status"], "exists")
+        gateway.data["bookings"] = []
+        with self.assertRaises(core.Blocked):
+            self.run_booking(gateway)
+        self.assertEqual(gateway.writes, 0)
+
+    def test_adapter_mutation_cannot_change_the_confirmed_plan(self):
+        gateway = SyntheticGateway()
+        original = gateway.create_once
+        def mutate(identity):
+            identity["service_ids"].append("not-confirmed")
+            return original(identity)
+        gateway.create_once = mutate
+        with self.assertRaises(core.Blocked):
+            self.run_booking(gateway)
+        self.assertEqual(self.plan.identity["service_ids"], ["s1", "s2"])
+
     def test_same_customer_slot_different_service_never_creates(self):
         self.data["bookings"] = [row(self.plan.identity, service_ids=["s1"])]
         self.assertEqual(core.prepare(self.req, self.data, NOW).status, "needs_review")

@@ -323,20 +323,23 @@ def execute(request, plan, confirmation, gateway, journal, clock):
         entries = state["entries"]
         key = digest([request.shop_id, request.customer_phone, request.start])
         previous = entries.get(key)
+        customer_hash = digest(request.customer_phone)
         if fresh.status == "exists":
             if previous and (previous.get("request_hash") != plan.request_hash
                              or (previous.get("booking_id") and previous["booking_id"] != fresh.booking_id)
                              or (previous.get("response_id") and previous["response_id"] != fresh.booking_id)):
                 raise Blocked("旧尝试与回读预约不一致，需人工核查")
-            if previous:
-                previous.update(state="confirmed", booking_id=fresh.booking_id)
-                journal.save(state)
+            observed = previous or dict(request_hash=plan.request_hash, shop_id=request.shop_id,
+                customer_hash=customer_hash, barber_id=plan.identity["barber_id"],
+                start=request.start, end=request.end.isoformat())
+            observed.update(state="confirmed", booking_id=fresh.booking_id)
+            entries[key] = observed
+            journal.save(state)
             return {"status": "exists", "booking_id": fresh.booking_id, "write_attempted": False}
         if previous:
             raise Blocked("已有尝试记录但未回读到相同预约；只可核查，不能再次写入")
         if fresh.status != "ready":
             raise Blocked(fresh.reason)
-        customer_hash = digest(request.customer_phone)
         for entry in entries.values():
             if entry["state"] == "confirmed" or entry["shop_id"] != request.shop_id:
                 continue
@@ -358,7 +361,7 @@ def execute(request, plan, confirmation, gateway, journal, clock):
         journal.save(state)  # fsync BEFORE network: a crash cannot trigger a blind retry.
         result_id = None
         try:
-            result = gateway.create_once(dict(plan.identity))
+            result = gateway.create_once(json.loads(json.dumps(plan.identity)))
             result_id = identifier(result.get("booking_id"))
         except Exception:
             pass  # Timeout/HTTP/invalid response: never log raw exception or retry a write.
