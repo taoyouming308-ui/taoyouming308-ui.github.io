@@ -1,3 +1,10 @@
+## 2026-10-19 · Original visual-language aesthetic case (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f; clean isolated content/aesthetic-2026-10-19. Starting version/integrity/handoff checks and complete daily recovery archive passed before edits; separate Oct19 academy lesson/catalog retained.
+- Exactly one stable aesthetic-2026-10-19 case: fictional adult current front/right-profile/back short bob. Distinguish whole silhouette, edge transition and surface texture; conditional A/B benefit, cost and switch condition. Six complete answers and five unscored self-checks; no inferred personality or invented user completion.
+- All eleven previous parsed objects unchanged. Original, framing revision and final 2172x724 WebP actually viewed; complete prompt set and exact case/feed/image hashes in transparent preparer audit. No real-client photo, A/B result, independent expert/scientific approval, clipping-based proof or post-cut/home guarantee.
+- Scope limited to feed, original image, audit and public change/handoff records. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation unchanged. Local content contract passes; Chromium executable absent. Unchanged protected CI invokes identical daily/browser checks and full shared gates; exact-head success, ordinary merge, Pages deployment and online ID/date/title/image/hash readback are mandatory before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
 ## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
 
