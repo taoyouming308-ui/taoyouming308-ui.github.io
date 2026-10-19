@@ -1,3 +1,21 @@
+<!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
+## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 0c803bb0af86cca04a988938351ace4ff0c7ec59.
+- Dates: 2026-10-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+<!-- academy-reviewed-inputs:78a39d05baac5ffea5df668cb3d7d73a2206eede27515bb97c35fe884ab71fcd -->
+## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 0c803bb0af86cca04a988938351ace4ff0c7ec59.
+- Dates: 2026-10-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 <!-- academy-reviewed-inputs:db867f45f4df3bb364e9d5b833150a528118fcc1e28783f33f328d0a87d4723c -->
 ## 2026-10-18 · Reviewed academy publication candidate (App version: v635 unchanged)
 

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-19"
+  ],
+  "baseSha": "0c803bb0af86cca04a988938351ace4ff0c7ec59",
+  "preparedHeadSha": "5972124e3b08ca6f7b1bfe5f66d94d93c3cb95dd",
+  "preparationRun": 39186316218,
+  "preparationArtifact": 12157949687,
+  "preparationArtifactSha256": "d015ed1559032a9547eaadd4152356fba07818d106f1c26b3b89c653a726ea76",
+  "backupArtifact": 12157898786,
+  "preparationBackupZipSha256": "f37fc0b45aac19d332d198a51147931038f7c933c1eab65a561b0039f6dbe712",
+  "preparationBackupArchiveSha256": "a725d636851840aa5a944d52c6bfac58b83921f03f03fcac68ac6a733ed70155",
+  "baselineBackupArtifact": 12156519456,
+  "baselineBackupSha256": "987ecf15ffa6f3db76e5f6f1614f7eb0b38b277840c1a869bfd086c3ed478f59",
+  "contentBindingSha256": "460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb",
+  "verifiedAt": "2026-10-19T01:52:34+00:00",
+  "verification": {
+    "isolatedTests": 64,
+    "cloudReportMatchesIndependentPreparation": true,
+    "allListedGitBlobsMatchConnectedReadback": true,
+    "independentRenderedHtmlAndCatalogMatch": true,
+    "completeStaticFallbackMatches": true,
+    "courseCount": 9,
+    "priorLessonsAndBusinessCodeUnchanged": true,
+    "reviewAndAssetDigestsMatch": true,
+    "whitespaceOnlyAssetCorrection": "SVG trailing whitespace and final newline only; before/after CairoSVG PNG bytes identical. Review provenance explicitly retained and mechanically reverified.",
+    "fullPrePushRun": "39186316218/117849389708",
+    "backupVerifiedBySuccessfulCloudJob": true,
+    "baselineAndPreparationArchivesDownloadedAndSha256Verified": true,
+    "backupVerificationScope": "Clean public main source only; not production data or a private workstation.",
+    "fileVerificationMethod": "SHA256 computed from independently reproduced bytes; each full-file Git blob SHA matched authenticated GitHub readback at preparedHeadSha. Prepared report ZIP and HTML SHA256 also matched.",
+    "localBrowserCheck": "Unavailable: local Chromium navigation blocked by environment policy; not claimed passed. Existing complete cloud pre-push includes browser regressions."
+  },
+  "fileSha256": {
+    "academy/drafts/2026-10-19.json": "3ef39c108112efa09cb3e8c4d09ce594c09e1c7b25f19d4bce7d412d55ef0d4a",
+    "academy/reviews/2026-10-19.json": "625f70b1eae075aad7fc07bcc130e801a4a569c192286c6a4887e77adbab9e26",
+    "academy/assets/2026-10-19/figure1.svg": "aac7083a891c824b6c3664baac1e04096f9a779f3bc46cd85967b380c1473235",
+    "academy/assets/2026-10-19/figure2.svg": "5bc7940f1c7e5c73bd3864471b454b326536798863f6646524155071a7b21bed",
+    "academy/assets/2026-10-19/figure3.svg": "234af1c543bf1f2e2d585fe2638ac7bbb5c88aa4db7a2cfb1d28fbe42bd072b7",
+    "academy/2026-10-19.html": "afeacc8700a8f15638b2029d9a1475c363ae82ef3a0278d4a1d2e834ab436d81",
+    "academy/catalog.json": "cb02415f78a3dc3770683e05576c02df9f1c59a22ac0c5e8284b945b46056557",
+    "academy/index.html": "19e4cdd2c561276900c93cb58c63d9cbe65f3e1b1ec18ca550510d2cd58d58e1",
+    "AGENT_SYNC_STATUS.md": "ea059aab182de7720dfbd9ea5bcf488a74376cd8f3325e1cb7515ecb39389ed6",
+    "CHANGELOG.md": "fa69681bc3b5bfabec2e2b3989048f0b74be1b6e974f30c9cefb09f1555f4c4c"
+  },
+  "gitBlobSha1": {
+    "academy/drafts/2026-10-19.json": "4324fd643816f503efd3dcb029eefc7e49567758",
+    "academy/reviews/2026-10-19.json": "57b565ff2992fab06fce801a86a28fa2258d1119",
+    "academy/assets/2026-10-19/figure1.svg": "b791ee4cb4f510a31eeb9452bea5a367c6986bce",
+    "academy/assets/2026-10-19/figure2.svg": "cdd5c730405cc60ce08ac1790275e0b81e7ee4a6",
+    "academy/assets/2026-10-19/figure3.svg": "10f3d05c6b68af83e3d597273d86cc7f8c6fcb4a",
+    "academy/2026-10-19.html": "8ca72dc0ca09724307b18c6cd0096c35aa7d8a30",
+    "academy/catalog.json": "1da87b9b288fc60413660e996ce7b5da02941145",
+    "academy/index.html": "2d2373ce0b833a6bd3d18c8c398b39111e649dac",
+    "AGENT_SYNC_STATUS.md": "6dcc2e350d72d842cae779af63a6dca128cd9e8d",
+    "CHANGELOG.md": "452c6d502753cb9b7d0897f0da1a69d07117120f"
+  },
+  "remaining": [
+    "exact-head complete validate",
+    "exact-head backup-main",
+    "expected-head normal protected merge",
+    "main and actual Pages per-file SHA256 readback"
+  ],
+  "scope": "Reviewed 2026-10-19 academy content and whitespace-only figure normalization with explicit review provenance; app v635 and business code unchanged. Not an online publication claim or guarantee of future scheduled executor availability."
+}
