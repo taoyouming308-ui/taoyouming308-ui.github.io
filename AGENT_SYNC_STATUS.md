@@ -1,3 +1,10 @@
+## 2026-10-20 · Original visual-balance aesthetic case (App version: v635 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 49484dd9c5541d9a7dd6f14b3a5799bb4768adf7; clean isolated content/aesthetic-2026-10-20 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing nine academy courses/catalog unchanged.
+- One stable aesthetic-2026-10-20 case, fictional current front/two side views/back. Compare actual length, bends and apparent width before pursuing mirror symmetry; conditional A/B costs and change conditions, six answers and five unscored self-checks. No inferred personality/habits, anatomical diagnosis or invented training completion.
+- All twelve earlier parsed feed objects unchanged. Original output and final original-size1312x1199WebP actually viewed; prompt and case/feed/image hashes in transparent preparer audit. No real client, measured equal lengths, verified root cause, A/B haircut result, scientific/independent expert certification, clipping-based proof or home/all-day guarantee.
+- Only feed, image, audit and public handoff/change records change. App/runtime/version, academy, old feed, calculator, customer, finance, database/backend, login/permission, business sync and automation untouched. Content contract and safe starting/synthetic regressions pass. Daily browser and full hook executed but stopped at absent local Chromium; unchanged trusted PR CI must supply identical daily browser and all shared gates. Exact-head success, ordinary protected merge, Pages and live ID/date/title/feed/image readback required before claiming synchronization.
+
 ## 2026-10-19 · Original visual-language aesthetic case (App version: v635 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f; clean isolated content/aesthetic-2026-10-19. Starting version/integrity/handoff checks and complete daily recovery archive passed before edits; separate Oct19 academy lesson/catalog retained.

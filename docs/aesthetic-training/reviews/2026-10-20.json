@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-20",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "49484dd9c5541d9a7dd6f14b3a5799bb4768adf7",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, root-direction or retention study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional visual-balance case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twelve earlier parsed feed objects preserved; one unique stable same-day ID",
+      "Visible end-lay differences are not equated with measured structural length errors",
+      "Current image, fictional hair history/preferences and on-site unknowns are separated",
+      "Image-derived labels do not assert anatomical right/left; additional second-side view supports comparison, not measurement",
+      "A/B benefits, costs and change conditions are explicit; neither mirror symmetry nor natural asymmetry is imposed as the only valid preference",
+      "Natural length, bend, distribution, shoulder contact and daily styling are hypotheses to check, not diagnosed causes",
+      "Necessary drying is separate from extra three-minute styling; clipping is not a post-cut or all-day proof",
+      "No chemical/temperature/thinning formula, real-client data or invented user learning score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured four-camera capture",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-20-balance-not-mirror.webp",
+    "sha256": "f7c6c9667c629534ff8b0d0f33bb0a65ec8b0cc335b066278bb03a527afda7c0",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original1312x1199PNG converted at unchanged dimensions to WebP quality86 without content edits",
+    "prompt": "Use case: photorealistic-natural.\nAsset type: fictional adult current-hairstyle documentation for a hairstylist teaching case about visual balance versus mirror symmetry.\nPrimary request: a coherent FOUR-VIEW contact sheet, a 2 by 2 grid, SAME fictional adult East Asian woman about 38 in every panel. Top left FRONT, top right exact RIGHT PROFILE (nose to image right), bottom left exact LEFT PROFILE (nose to image left), bottom right BACK. These are different camera views of the SAME current starting hairstyle, NOT makeover comparisons.\nCurrent hair: natural dark brown shoulder-length lob with a long side part and no short fringe. Ends just touch shoulder level. Modest loose natural bends, not a styled wave. One front end on the WOMAN'S LEFT (viewer's right in the front panel) has a noticeable but not extreme outward flick; the WOMAN'S RIGHT front end (viewer's left in front) curves slightly inward. Preserve this same anatomical side relationship across views: left-profile panel shows outward flick, right-profile panel shows inward bend, back view has a little more outward turn on viewer's left and a quieter viewer's right. Perimeter generally continuous, modest ordinary volume, no dramatic haircut asymmetry. Do not depict a hidden cause or guaranteed equal strand length; just the current unequal lay.\nPerson: natural oval face with gently angular jaw, realistic unretouched skin, relaxed neutral expression, head UPRIGHT without tilt in all views. Same muted dusty-blue plain wide round-neck cotton top, no jewellery or hair accessories.\nFraming: camera pulled back in every panel. ENTIRE HEAD and all hair ends, full neck, BOTH complete shoulder outlines and upper torso to mid chest INSIDE each panel with background space beyond shoulders. Same natural head-neck-shoulder proportions, clothes, camera scale, eye-level lens and lighting. Do not crop shoulder edges. Four equal panels separated by narrow pale grey lines.\nSetting: plain warm-grey background, consistent soft diffuse daylight, realistic salon documentation rather than glamorous editorial.\nConstraints: no text, letters, labels, arrows, watermark, beauty filter, face slimming, tools, hands, before/after, proposed haircut or result simulation. Do not force identical hair lay between anatomical sides; do keep identity, hair length and current condition consistent across camera views.",
+    "visualCheck": "Original tool output and final WebP actually inspected. Same fictional adult, dusty-blue round-neck top, current shoulder-area hair and neutral light across front/two side views/back. Current end bends differ; no claim of measured strand equality or anatomical diagnostic accuracy. Complete head, hair perimeter, neck and shoulder context visible. No A/B results."
+  },
+  "candidateFeedSha256": "d81df67a8d3d0def13d809b603d1f246f5c1a46a26a0596272cc6baa39b3fa1a",
+  "caseCanonicalSha256": "839394796691ae094f5245cf05d1e781974aba06b27c4a2545fb97c531d48a74",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-20 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: thirteen cases; twelve previous objects unchanged",
+    "baseChecks": "version/integrity/smoke/handoff and care/hair/customer/admin/booking checks passed;42 isolated sync regressions passed",
+    "browser": "Daily browser executed but blocked by absent Chromium executable. Unchanged protected PR CI invokes identical390/1280daily script through test-perm-academy-browser.js.",
+    "fullHook": "Executed; version/integrity/smoke,19academy publisher unit tests and nine-course published-file verification passed, then stopped at absent Chromium. Not claimed fully passed; trusted PR CI must complete all gates.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 635
+}
