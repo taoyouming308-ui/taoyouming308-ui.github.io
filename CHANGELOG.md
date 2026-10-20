@@ -1,3 +1,9 @@
+## 2026-10-20 · Visual balance versus mirror symmetry case (v635 unchanged)
+
+- Add one original fictional shoulder-area hairstyle case distinguishing actual length, bends and apparent width before cutting an outward-turning side. Six conditional answers compare closer visual matching with length-preserving balance; five recaps do not evaluate an unanswered user.
+- Same-person current four-view AI WebP adds the second side for observation. No measured length/root cause, real client, post-cut result or independent scientific/expert approval is implied; exact hashes and complete prompt are in transparent preparer audit.
+- Preserve all twelve earlier parsed feed objects, all academy lessons/catalog, App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and schedules. Local browser absence is documented; exact-head protected CI and ordinary merge/Pages/live readback remain release gates.
+
 ## 2026-10-19 · Softness versus roundness aesthetic case (v635 unchanged)
 
 - Add one original fictional adjacent-visual-language case: distinguish whole-contour roundness, local edge transitions and surface texture before choosing a haircut technique. Six conditional reference answers compare clear silhouette/soft edges with fuller inward curves; five self-checks do not score an unanswered user.
