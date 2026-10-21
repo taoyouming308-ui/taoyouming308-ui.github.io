@@ -317,6 +317,12 @@ Verified shell/monthly loading separation; bounded frontdesk/main identity recov
 
 # Changelog
 
+## 2026-10-21 · 晚间发型审美训练（v638不变）
+
+- 新增原创虚构教学案例《参考图要高层次，工作却要低扎：先追轻盈，还是保留收纳？》与同一成年人物当前披发三视角、低扎动作示意图。
+- 六步参考答案区分剪裁必须提供、临时造型可提供与当前限制下不能同时保证的目标；低扎生成画面不作为未来剪后收纳证明，未虚构个人训练成绩。
+- 保留此前13个案例与当日已发布academy、性能和静态壳改动；只更新审美feed、配图、审核记录与发布交接，不改App代码、版本、业务数据、权限、凭据或自动化。
+
 ## 2026-10-10 · Daily card-sales missing evidence feedback (App version: v620)
 
 - User-authorized repair from github/main 95d7d52 v619; isolated checkout and daily archive retained. Missing card_subtotal is now identified as unverified recharge/card-sale external receipts, shown amber rather than a false numeric total mismatch. Known numeric contradictions remain red; posting validation is unchanged.
