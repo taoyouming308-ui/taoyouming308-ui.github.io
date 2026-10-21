@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-21",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（AI逐项核验公开来源/原创图/隐私；非真人科研同行评审）",
+  "reviewedAt": "2026-10-21T01:06:39.733205+00:00",
+  "approvalReference": "2026-10-21单独进行AI来源核验（2026-09 ACS Omega原始论文、2024 PubMed机制综述、2006 Wiley DSC）；原创SVG经XML/外部资源排查。依据已有每日内容发布授权，审核仅覆盖来源/版权/虚构人物与格式，不代表真人审批和临床验证。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-09-15 ACS Omega 原始离体发束实验，实际核对出版社论文摘要、试验条件、洗涤周期与局限"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "实际核对PubMed PMID 38733167，确认2024-05-11在线发表、作者及氢键/二硫键/离子键差异"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "实际核对Wiley论文题录与摘要：2005-12-15首次在线，Biopolymers 2006年刊载，差示扫描量热测玻璃化与含水关系"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮使用原创几何路径、虚构抽象人物与文字从零绘制，无第三方图片、无真人照片、无脚本外链。 XML解析通过；无script、href、外部URL，且本次预览图由同源SVG本地渲染。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮使用原创几何路径、虚构抽象人物与文字从零绘制，无第三方图片、无真人照片、无脚本外链。 XML解析通过；无script、href、外部URL，且本次预览图由同源SVG本地渲染。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮使用原创几何路径、虚构抽象人物与文字从零绘制，无第三方图片、无真人照片、无脚本外链。 XML解析通过；无script、href、外部URL，且本次预览图由同源SVG本地渲染。"
+    }
+  ],
+  "contentSha256": "462e6e3d025f9a38be110c3a9922107ae096de9dfe1c569dcf4917c4403a6c7e",
+  "assetSha256": {
+    "assets/2026-10-21/figure1.svg": "66f98140538713aada62f0dfcf86e9ff6ad8fe54c6f547ebd98482433df2fd2c",
+    "assets/2026-10-21/figure2.svg": "c0bf17408d687f3f64b0b055f89c8c55caa279cb0efbd6ff5fdbada5a6cb217c",
+    "assets/2026-10-21/figure3.svg": "e7e988306fa054264dfbd069f979b51d7331b4223b1dfd324578f1610d7bbbec"
+  }
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" role="img" aria-label="技术｜分区排杠与复湿观察位" font-family="Noto Sans CJK SC"><defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0L10 4L0 8Z" fill="#7b716b"/></marker></defs><rect width="1200" height="710" rx="24" fill="#F7F4EF"/><text x="60" y="75" font-size="34" font-weight="700" fill="#303437">技术｜分区排杠与复湿观察位</text><text x="60" y="113" font-size="20" fill="#676963">公仔头几何示教；蓝箭头标第一弯，灰箭头标自然毛流</text>
+<rect x="60" y="145" width="524" height="456" rx="22" fill="#DCE6DC"/><rect x="614" y="145" width="526" height="456" rx="22" fill="#E9DFD3"/>
+<text x="90" y="187" font-size="28" fill="#44634f" font-weight="700">正侧混合｜分区</text><text x="645" y="187" font-size="28" fill="#6e6258" font-weight="700">卷度与重心｜侧面</text>
+<ellipse cx="321" cy="314" rx="104" ry="131" fill="#e4c7b6" stroke="#a58b79" stroke-width="5"/>
+<path d="M217 307 Q215 202 322 188 Q419 203 420 304" fill="none" stroke="#79655c" stroke-width="31"/>
+<path d="M215 298 Q182 376 198 486 Q280 536 312 493" fill="none" stroke="#79655c" stroke-width="28"/>
+<path d="M425 306 Q475 378 457 486 Q398 539 338 491" fill="none" stroke="#79655c" stroke-width="28"/>
+<path d="M238 247 Q324 211 399 254" fill="none" stroke="#61816a" stroke-width="7"/><path d="M216 328 Q325 360 445 328" fill="none" stroke="#61816a" stroke-width="7" stroke-dasharray="10 8"/>
+<line x1="316" y1="211" x2="306" y2="162" stroke="#6d817c" stroke-width="5" marker-end="url(#arrow)"/>
+<text x="84" y="527" font-size="17" fill="#45664e">顶区45–65° ｜ 枕骨35–55°</text><text x="84" y="557" font-size="17" fill="#45664e">两侧15–35° ｜ 后颈0–20°/不卷</text>
+<ellipse cx="845" cy="327" rx="96" ry="134" fill="#e5c9b5" stroke="#b0907d" stroke-width="5"/>
+<path d="M776 205 Q867 168 920 240 Q980 341 973 456 Q947 527 885 551" fill="none" stroke="#7b6354" stroke-width="29"/>
+<path d="M775 223 Q688 280 719 366 Q696 435 719 485 Q742 545 780 550" fill="none" stroke="#7b6354" stroke-width="29"/>
+<path d="M933 266 Q984 338 981 395" fill="none" stroke="#808d88" stroke-width="5" marker-end="url(#arrow)"/>
+<path d="M764 423 Q719 454 740 485" fill="none" stroke="#628eaa" stroke-width="8" marker-end="url(#arrow)"/>
+<line x1="710" y1="428" x2="1009" y2="428" stroke="#628eaa" stroke-width="4" stroke-dasharray="9 8"/>
+<text x="656" y="558" font-size="18" fill="#5a6267">第一明显S：下颌以下；后颈收紧</text>
+<rect x="60" y="625" width="1080" height="58" rx="12" fill="#E8D8CE"/><text x="85" y="663" font-size="20" fill="#554942">角度与外径仅用于公仔头训练，真实热烫应按厂家工艺与毛束耐受。</text>
+</svg>
