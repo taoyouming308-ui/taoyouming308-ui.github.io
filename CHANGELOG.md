@@ -1,3 +1,7 @@
+## v636 local review follow-up — 2026-10-21 (not published)
+
+Independent review fixes: defer saved private hair view until verification, reject stale booking/picker responses across identity/date changes, freeze private views on cross-tab account changes, preserve same-user unsaved form DOM through reauthentication, and block background keyboard access with opaque identity gates. Added synthetic scope and actual hair-input regressions; see `docs/startup-independent-review-2026-10-21.md`.
+
 ## v636 — 2026-10-21 (local candidate, not published)
 
 Verified shell/monthly loading separation; bounded frontdesk/main identity recovery with transient failures retaining credentials; defer non-first-screen import and pre-verification report reads. Business write order and auth scope preserved. See `docs/startup-review-2026-10-21.md` for synthetic Chromium/WebKit results, iPhone acceptance and cache design limits.

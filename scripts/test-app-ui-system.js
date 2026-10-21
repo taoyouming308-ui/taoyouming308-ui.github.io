@@ -30,7 +30,27 @@ assert(app.includes('id="hair-form-flow"') && app.includes('class="hair-tasks-in
 assert(app.includes('class="hair-rod-row"') && styles.includes('grid-template-columns:1fr 1fr !important'), 'mobile rod inputs are still using the cramped five-column layout');
 assert(app.includes('const HAIR_PHOTO_ANALYSIS_VISIBLE = false;') && app.includes('if (HAIR_PHOTO_ANALYSIS_VISIBLE) {'), 'hair photo analysis is not hidden behind the recovery switch');
 assert(app.includes('步骤2 · 发质诊断（三段式填写）') && !app.includes('步骤2 · 发质诊断（三段式填写+上传照片）'), 'hair diagnosis heading still asks employees to upload a photo');
-assert(app.includes("setTimeout(function(){ showHairAnalysisPage(); }, 0)"), 'restoring the hair page can run before its renderer is registered');
+// The old literal timer assertion did not protect authentication ordering.
+const restoreStart = app.indexOf("  var startupSavedPage =");
+const restoreEnd = app.indexOf("  // === 安装引导", restoreStart);
+assert(restoreStart >= 0 && restoreEnd > restoreStart, 'saved-page restoration missing');
+let verified = false, restored = 0;
+const deferred = [], restoreContext = {
+  sessionStorage: { getItem: () => 'hair' },
+  verifiedEmployeeSession: () => verified,
+  setTimeout: callback => deferred.push(callback),
+};
+require('node:vm').createContext(restoreContext);
+require('node:vm').runInContext(app.slice(restoreStart, restoreEnd), restoreContext);
+restoreContext.restoreSavedPage();
+assert(deferred.length === 0, 'unverified saved hair must not schedule rendering');
+verified = true; restoreContext.restoreSavedPage();
+assert(deferred.length === 1 && restored === 0, 'hair restore must be deferred until renderer registration');
+restoreContext.showHairAnalysisPage = () => restored++;
+deferred.shift()();
+assert(restored === 1, 'verified saved hair must restore after initialization');
+restoreContext.restoreSavedPage();
+assert(deferred.length === 0, 'restoration must not rebuild unsaved input on reauthentication');
 assert(app.includes('class="hair-archive-section"') && app.includes('class="profile-record"'), 'customer archive content is missing shared section styles');
 assert(styles.includes('.hair-task-card') && styles.includes('.hair-local-record'), 'hair task and local record surfaces are not covered');
 assert(styles.includes('.hair-analysis .chip.active') && styles.includes('.hair-analysis .chip.active::after') && styles.includes('background:var(--ui-black) !important'), 'hair analysis controls do not expose a strong selected state');

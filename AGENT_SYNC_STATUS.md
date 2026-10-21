@@ -1,3 +1,9 @@
+## 2026-10-21 · Independent startup review follow-up (local v636, NOT published)
+
+- Independent reviewer reproduced premature saved hair rendering before identity validation, stale booking response races, and cross-tab identity mismatch in 78e84bb. Fixed verified-only private view restoration, token/store/date/generation checks, cross-tab private view lock, different-owner draft lock, and opaque/inert keyboard-safe identity gate while retaining same-account input DOM.
+- Added actual hair name/phone preservation and Tab/opacity browser tests, plus delayed callback scope tests, to the original shared manifest. Chromium/WebKit synthetic focused tests passed. Full original pre-push is being run with pinned isolated dependencies; exact command/result logs are in ../validation-review. First run stopped at missing exceljs; fixed via isolated npm ci --ignore-scripts, not by skipping tests.
+- No push/merge/deployment, backend permission change or production writes. No supported iPhone route established; no external port, tunnel or credentials created. Final gate outcomes and code commit recorded in validation-review/results.md. Details: docs/startup-independent-review-2026-10-21.md.
+
 ## 2026-10-21 · Local startup isolation candidate (App version: v636, NOT published)
 
 - Owner: Codex. Base github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99; isolated fix/startup-isolation-20261021 clone, clean start, original hooks and daily source backup preserved. No push/merge/deploy authorized this round.
