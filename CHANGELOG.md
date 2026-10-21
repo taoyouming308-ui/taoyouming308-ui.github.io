@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:7240c0a05adef312fa65d7c5d8efaf73615129c9e1d580af00117a7a9ea23f4b -->
+## 2026-10-21 · Reviewed academy publication candidate (App version: v635 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99.
+- Dates: 2026-10-21. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-20 · Visual balance versus mirror symmetry case (v635 unchanged)
 
 - Add one original fictional shoulder-area hairstyle case distinguishing actual length, bends and apparent width before cutting an outward-turning side. Six conditional answers compare closer visual matching with length-preserving balance; five recaps do not evaluate an unanswered user.

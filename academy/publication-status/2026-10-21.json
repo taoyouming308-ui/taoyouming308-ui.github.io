@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-21"
+  ],
+  "baseSha": "b713720a0970cf66c4d55de4f83ea63fd5e57a99",
+  "inputHeadSha": "c6d9fdb7b976d6c9017be1dd4f513fdbe52567df",
+  "preparedHeadSha": "99e09548de30e1aedfddc11d8de55dffcc75b91c",
+  "preparationRun": 39528330491,
+  "preparationArtifact": 12314706624,
+  "preparationArtifactSha256": "6ee0db6e9bb779817f02a9d19b11dade2d3c1f75bd0a353f46a38c4f18e0c239",
+  "backupArtifact": 12314575498,
+  "preparationBackupZipSha256": "c496819321f0975282f4ed04465a69ab06f21e32e734269273f0ed416c7056ba",
+  "preparationBackupArchiveSha256": "1a1096766a55b21936a5b8b16c198380667055a385bd1a2157a74c45ea1fc055",
+  "baselinePreflightRun": 39527157330,
+  "baselineBackupArtifact": 12313722964,
+  "baselineBackupZipSha256": "1964174d0f39860268d3f9e90fa684f63d35962ac0b3c44a33590d2e9d94dea7",
+  "baselineBackupArchiveSha256": "6177b08d8604d15f943b2b5555f2fc6f07a0b0c33dcfb32f94d7bc69f2bd0f55",
+  "contentBindingSha256": "7240c0a05adef312fa65d7c5d8efaf73615129c9e1d580af00117a7a9ea23f4b",
+  "verifiedAt": "2026-10-21T01:49:07.512156+00:00",
+  "verification": {
+    "isolatedTests": 45,
+    "cloudReportMatchesIndependentPreparation": true,
+    "allListedGitBlobsMatchConnectedReadback": true,
+    "independentRenderedHtmlAndCatalogMatch": true,
+    "completeStaticFallbackMatches": true,
+    "courseCount": 10,
+    "priorLessonsAndBusinessCodeUnchanged": true,
+    "reviewAndAssetDigestsMatch": true,
+    "originalReviewedInputsPreservedByteForByte": true,
+    "idempotentSecondPreparationProducesNoChanges": true,
+    "fullPrePushRun": "39528330491/118988126676",
+    "fullPrePushConclusion": "success",
+    "baselineAndPreparationArchivesDownloadedAndSha256Verified": true,
+    "backupVerificationScope": "Clean public main source only; not production data or a private workstation.",
+    "fileVerificationMethod": "SHA256 from independent trusted-main reproduction, matched to authenticated full-file Git blob hashes and cloud report; preparation commit changes only five expected generated/governance files.",
+    "localBrowserCheck": "Not run in this continuation; the unchanged complete cloud pre-push gate includes browser regressions."
+  },
+  "fileSha256": {
+    "academy/drafts/2026-10-21.json": "11140c6746e20ac5a060c5df9bc9043bdc65e93787fc3fe22e456bc1b35d95fa",
+    "academy/reviews/2026-10-21.json": "f40fd220817da614eadde12f3860819ef02b3399fcb6d2dcd6c823e1c3266c5e",
+    "academy/assets/2026-10-21/figure1.svg": "66f98140538713aada62f0dfcf86e9ff6ad8fe54c6f547ebd98482433df2fd2c",
+    "academy/assets/2026-10-21/figure2.svg": "c0bf17408d687f3f64b0b055f89c8c55caa279cb0efbd6ff5fdbada5a6cb217c",
+    "academy/assets/2026-10-21/figure3.svg": "e7e988306fa054264dfbd069f979b51d7331b4223b1dfd324578f1610d7bbbec",
+    "academy/2026-10-21.html": "4fd618b96da5f2ea9903826ab08b96d1e7aff1b289284f51bd89a830f0a0d92c",
+    "academy/catalog.json": "435d934198ef6781e28b13b12d19a3fac044a0fb4a6d6486488fec3ba8075a14",
+    "academy/index.html": "d59075b8f812942185e62819863f166400ca11e1e7be25d36e1aa04cf8b7c1b7",
+    "AGENT_SYNC_STATUS.md": "948801ac1b45f2cdfc70278c23550ae0e653e8c09006e92738cec18c1c21af8c",
+    "CHANGELOG.md": "a17cc27cdd8db18e2a07b145c92f64f520c10329e9d803e6919d559e791c4afc"
+  },
+  "gitBlobSha1": {
+    "academy/drafts/2026-10-21.json": "c67a7a92a5f4aa75c40aed45124e607e96077d91",
+    "academy/reviews/2026-10-21.json": "d94bae3866d70dc41ec7b4b84777fb027854aef7",
+    "academy/assets/2026-10-21/figure1.svg": "ed647022c507af1d32c9eaa66a203984ea21b0de",
+    "academy/assets/2026-10-21/figure2.svg": "904eac7dd4a07457e235fe6f6c7d73c4abd14805",
+    "academy/assets/2026-10-21/figure3.svg": "97afcd97496cc2e594bc636c9908f57c2a95f5e5",
+    "academy/2026-10-21.html": "5d33602b6f981c22e69d44bd05ffde6ec8849d94",
+    "academy/catalog.json": "ed1af40c1a9347c6eed8c334ffc1297b32564852",
+    "academy/index.html": "fce3c80dd25db5e876c75e9f6bc216f8bbdd4173",
+    "AGENT_SYNC_STATUS.md": "cd824f221e43ebeeb2da917eeefbabf4cc5945df",
+    "CHANGELOG.md": "d37b73289f6a3ed3ddab71d37e42fd8bfa04e5e3"
+  },
+  "remaining": [
+    "exact-head complete validate",
+    "exact-head backup-main",
+    "expected-head normal protected merge",
+    "main and actual Pages per-file SHA256 readback"
+  ],
+  "scope": "Reviewed 2026-10-21 academy lesson, unchanged original review and figures, full catalog/static fallback and required governance. App v635 and all business code unchanged. This is preparation verification, not publication or a guarantee of future automation availability."
+}
