@@ -23,7 +23,14 @@ const server=http.createServer(async(req,res)=>{
  res.writeHead(404);res.end('not cached');
 });
 const engine=process.env.STARTUP_BROWSER||'chromium';
-function waitFor(page,fn,arg){return page.waitForFunction(fn,arg,{timeout:30000});}
+async function waitFor(page,fn,arg){
+ // Playwright treats a Promise predicate as truthy: await each actual result, with a hard deadline.
+ let expired=false,timer;
+ try { await Promise.race([
+  (async()=>{while(!expired){if(await page.evaluate(fn,arg))return;await page.waitForTimeout(50);}})(),
+  new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(new Error('Timed out after 30000ms awaiting shell lifecycle condition: '+fn.toString()));},30000);})
+ ]); } finally {expired=true;clearTimeout(timer);}
+}
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const browser=await require('playwright')[engine].launch({headless:true});
@@ -69,6 +76,15 @@ function waitFor(page,fn,arg){return page.waitForFunction(fn,arg,{timeout:30000}
   assert.equal(await page.evaluate(async()=>(await caches.keys()).length),1,'failed partial cache removed after all downloads settle');
   stage='bad-install-complete';console.log(stage);
   corrupt='';await page.evaluate(async()=>(await navigator.serviceWorker.getRegistration()).update());
+  await waitFor(page,async()=>!!(await navigator.serviceWorker.getRegistration()).installing);
+  // Repeated button/online events must not queue another update while installation is running.
+  assert.equal(await page.evaluate(()=>{
+   const original=ServiceWorkerRegistration.prototype.update;let calls=0;
+   ServiceWorkerRegistration.prototype.update=function(){calls++;return original.call(this);};
+   try {window.ZysyrAppShell.requestUpdate();window.ZysyrAppShell.requestUpdate();window.dispatchEvent(new Event('online'));return calls;}
+   finally {ServiceWorkerRegistration.prototype.update=original;}
+  }),0,'installing worker must not receive duplicate update jobs');
+  assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   await waitFor(page,async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
   assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   await page.evaluate(()=>window.ZysyrAppShell.requestUpdate());assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
@@ -120,6 +136,6 @@ function waitFor(page,fn,arg){return page.waitForFunction(fn,arg,{timeout:30000}
   await old.evaluate(()=>navigator.serviceWorker.register('/app-shell-sw.js',{updateViaCache:'none'}));await waitFor(old,async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
   assert.ok(await old.evaluate(()=>navigator.serviceWorker.controller.scriptURL.endsWith('/legacy-sw.js')));
   await old.close();await new Promise(r=>setTimeout(r,1000));old=await legacy.newPage();await old.goto(origin+'/harness');await waitFor(old,async()=>{const r=await navigator.serviceWorker.getRegistration();return r&&r.active.scriptURL.endsWith('/app-shell-sw.js')&&!r.waiting;});await legacy.close();
-  console.log(JSON.stringify({engine,simulatedStaticDelayMs:delay,networkFailure:engine==='webkit'?'loopback server closes sockets; Playwright offline navigation failed':'browser offline emulation',coldInstallMs:coldMs,warmNavigationMs:warm,publicFiles:paths.length,publicBytes:paths.reduce((n,p)=>n+fs.statSync(path.join(root,p)).size,0),passed:['cold no claim','warm zero static network','offline three entries/auth gate','no API or write cache','failed atomic install','unsaved input preserved','multi-tab waiting','version mismatch denied','natural version activation','eviction hash repair','legacy worker waiting','runtime-only failure preserves cache','admin shared resources untouched','downgrade rejected'],scope:'desktop browser loopback synthetic; not iPhone or production performance'},null,2));
+  console.log(JSON.stringify({engine,simulatedStaticDelayMs:delay,networkFailure:engine==='webkit'?'loopback server closes sockets; Playwright offline navigation failed':'browser offline emulation',coldInstallMs:coldMs,warmNavigationMs:warm,publicFiles:paths.length,publicBytes:paths.reduce((n,p)=>n+fs.statSync(path.join(root,p)).size,0),passed:['installing duplicate button/online guarded','cold no claim','warm zero static network','offline three entries/auth gate','no API or write cache','failed atomic install','unsaved input preserved','multi-tab waiting','version mismatch denied','natural version activation','eviction hash repair','legacy worker waiting','runtime-only failure preserves cache','admin shared resources untouched','downgrade rejected'],scope:'desktop browser loopback synthetic; not iPhone or production performance'},null,2));
  } finally {clearTimeout(watchdog);await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.closeAllConnections();server.close();process.exitCode=1;});

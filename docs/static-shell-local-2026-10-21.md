@@ -46,3 +46,13 @@ node scripts/test-version-update-flow.js
 本轮没有已确认支持的隔离iPhone测试入口。现有README只有Mac localhost，现有工作流无PR预览部署；USB Web Inspector本身不会映射Mac localhost到手机。没有打开局域网端口、建立隧道、改安全设置、新建凭据或外部部署。
 
 最小后续方案：先由用户指定一个已有、获批准的隔离HTTPS测试站及合成测试账号，并明确批准仅部署该候选到测试站；再用iPhone Safari/主屏幕进行首次联网、重复打开、飞行模式、锁屏/系统回收、跨窗口更新、未保存表单、退出/换账号、断网写入失败验收。如果没有现成站点，需另行批准创建隔离测试环境；本轮没有执行。WebKit不是iPhone真机通过，候选不具备上线授权。
+
+## WebKit follow-up diagnosis
+
+The old test helper passed async predicates to `page.waitForFunction`; the installed Playwright implementation treats the Promise itself as truthy and adopts its first result, rather than polling until true. Logs showed a second update only 5ms after the first update resolved, before installation downloads completed. Explicit awaited polling with the same hard 30-second bound fixes the full WebKit suite without changing the worker. A small client guard additionally prevents update button/online events from queueing updates while installing/waiting; real browser coverage checks duplicate events and unchanged inputs before natural activation and failed runtime-only update. No timeout extension or scenario removal. See task validation logs for exact runs.
+
+Concrete iPhone choices (not executed):
+1. Use an existing approved **separate HTTPS origin**: the owner supplies its deployment target and authorizes only this isolated candidate deployment. Test with synthetic fixtures, no production login or production API access.
+2. If none exists, approve creation/deployment of a temporary isolated HTTPS test site in an already connected hosting account. Serve only public candidate assets plus synthetic APIs, enforce `connect-src 'self'`, and set an expiry/removal plan. Hosting/public static exposure and the test deployment require explicit approval. Do not use a subpath of the production origin: the existing root worker may affect results.
+
+After one option is approved: open the URL on iPhone Safari and add it to the Home Screen; test first online load, cached reopen, airplane mode auth/write denial, two open windows plus unsaved form during update, close all windows then reopen, failed/missing static resource recovery, sign-out/account switch, and OS cache eviction. Capture device/iOS version and observed results. First install, update and recovery after storage eviction require network. No local port/tunnel, new credential or production change is needed under these options. Neither option is currently approved or provisioned.

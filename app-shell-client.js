@@ -18,8 +18,17 @@
   function readyNotice() {
     notice('新版界面资源已准备。请先保存未提交内容，再关闭本站所有页面（含主应用、经营页、前台和主屏幕窗口）后重新打开。');
   }
+  function preparing() {
+    if (registration && registration.waiting) { readyNotice(); return true; }
+    if (registration && registration.installing) {
+      notice('新版界面资源正在准备，请稍后重试。当前页面和未提交内容保留，不会自动刷新。');
+      return true;
+    }
+    return false;
+  }
   window.ZysyrAppShell = {
     requestUpdate: function () {
+      if (preparing()) return true;
       if (!navigator.serviceWorker.controller && (registrationFailed || (registration && !registration.active && !registration.waiting && !registration.installing))) { register(); return false; }
       notice('请先保存未提交内容。正在检查界面资源；不会自动刷新当前页面。');
       if (registration) registration.update().then(function () {
@@ -48,5 +57,5 @@
   // Do not compete with the first visible page and identity verification.
   if (document.readyState === 'complete') setTimeout(register, 0);
   else window.addEventListener('load', register, { once: true });
-  window.addEventListener('online', function () { if (registration) registration.update().catch(function () {}); });
+  window.addEventListener('online', function () { if (registration && !registration.installing && !registration.waiting) registration.update().catch(function () {}); });
 })();
