@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" role="img" aria-label="原理｜永久定形与临时吹整不是同一层" font-family="Noto Sans CJK SC"><defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0L10 4L0 8Z" fill="#7b716b"/></marker></defs><rect width="1200" height="710" rx="24" fill="#F7F4EF"/><text x="60" y="75" font-size="34" font-weight="700" fill="#303437">原理｜永久定形与临时吹整不是同一层</text><text x="60" y="113" font-size="20" fill="#676963">同样的可见S弯，复湿后可能显示不同的基础曲线</text>
+<rect x="60" y="145" width="515" height="452" rx="22" fill="#D7E2EA"/><rect x="620" y="145" width="520" height="452" rx="22" fill="#E9E1D7"/>
+<text x="90" y="192" font-size="29" fill="#345061" font-weight="700">A｜化学处理形成的基础弯</text><text x="650" y="192" font-size="29" fill="#715e53" font-weight="700">B｜吹整增强的临时弯</text>
+<path d="M150 242 C300 305 143 365 303 420 S183 550 348 546" fill="none" stroke="#526f7a" stroke-width="22" stroke-linecap="round"/>
+<path d="M415 255 C470 323 403 397 457 465" fill="none" stroke="#9c7b72" stroke-width="10" stroke-dasharray="16 15"/>
+<path d="M710 245 C860 294 673 359 864 418 S760 550 935 548" fill="none" stroke="#8e7062" stroke-width="22" stroke-linecap="round"/>
+<path d="M1020 252 C1071 328 1002 397 1060 464" fill="none" stroke="#526f7a" stroke-width="10" stroke-dasharray="16 15"/>
+<text x="91" y="573" font-size="18" fill="#345061">复湿自然干：观察仍保留的基础曲线</text><text x="651" y="573" font-size="18" fill="#715e53">复湿自然干：吹整临时弯可能减弱</text>
+<line x1="584" y1="320" x2="615" y2="320" stroke="#7b716b" stroke-width="4" marker-end="url(#arrow)"/>
+<rect x="60" y="625" width="1080" height="58" rx="12" fill="#E6D3C8"/><text x="85" y="663" font-size="21" fill="#554942">两种卷度变化机制互相作用；图中曲线仅是教学抽象，不表示键比例或特定效果。</text>
+</svg>

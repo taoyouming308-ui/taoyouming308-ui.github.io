@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 710" role="img" aria-label="人物设计｜同一发长，不同的体积位置" font-family="Noto Sans CJK SC"><defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0L10 4L0 8Z" fill="#7b716b"/></marker></defs><rect width="1200" height="710" rx="24" fill="#F7F4EF"/><text x="60" y="75" font-size="34" font-weight="700" fill="#303437">人物设计｜同一发长，不同的体积位置</text><text x="60" y="113" font-size="20" fill="#676963">对比正面轮廓；45°与侧面仍需现场复查</text>
+<rect x="60" y="145" width="520" height="457" rx="22" fill="#EADAD7"/><rect x="613" y="145" width="527" height="457" rx="22" fill="#DEE5DB"/>
+<text x="90" y="188" font-size="29" font-weight="700" fill="#86554d">A｜颧骨处最鼓</text><text x="645" y="188" font-size="29" font-weight="700" fill="#516d5d">B｜补圆后枕，首弯下移</text>
+<ellipse cx="322" cy="342" rx="79" ry="118" fill="#ead1bd" stroke="#a98b78" stroke-width="5"/>
+<path d="M251 251 Q184 276 163 365 Q116 392 145 423 Q204 443 158 507 Q242 547 273 503" fill="none" stroke="#776053" stroke-width="27"/>
+<path d="M390 252 Q462 289 489 369 Q533 393 503 423 Q445 447 490 507 Q410 547 368 503" fill="none" stroke="#776053" stroke-width="27"/>
+<line x1="131" y1="380" x2="522" y2="380" stroke="#B87A69" stroke-width="4" stroke-dasharray="10 8"/>
+<ellipse cx="876" cy="342" rx="79" ry="118" fill="#ead1bd" stroke="#a98b78" stroke-width="5"/>
+<path d="M810 251 Q760 281 764 383 Q759 463 722 497 Q781 555 838 506" fill="none" stroke="#776053" stroke-width="27"/>
+<path d="M943 252 Q990 287 990 383 Q994 463 1037 497 Q973 555 907 506" fill="none" stroke="#776053" stroke-width="27"/>
+<line x1="711" y1="450" x2="1050" y2="450" stroke="#759779" stroke-width="4" stroke-dasharray="10 8"/>
+<text x="141" y="565" font-size="19" fill="#86554d">视觉宽度集中在中脸</text><text x="685" y="565" font-size="19" fill="#516d5d">颧骨旁收敛，下颌下出现曲线</text>
+<rect x="60" y="625" width="1080" height="58" rx="12" fill="#E9E1D7"/><text x="85" y="663" font-size="20" fill="#544d48">本图为虚构轮廓，非真人对照，也不证明哪种设计适合所有脸型。</text>
+</svg>

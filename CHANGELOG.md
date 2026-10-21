@@ -1,3 +1,7 @@
+## 2026-10-21 · Startup draft PR preparation (v636, not deployed)
+
+User authorized pushing only the isolated startup branch and opening a draft PR with remote checks; no merge, auto-merge or production deployment. Integrated main 251c5b1 (academy PR #63), preserving all academy bytes and both handoff histories. Cumulative original pre-push gate will run against this main baseline before branch publication; exact-head remote CI remains required. iPhone acceptance still lacks an approved supported test route; no ports, tunnels or credentials added.
+
 ## v636 local review follow-up — 2026-10-21 (not published)
 
 Independent review fixes: defer saved private hair view until verification, reject stale booking/picker responses across identity/date changes, freeze private views on cross-tab account changes, preserve same-user unsaved form DOM through reauthentication, and block background keyboard access with opaque identity gates. Added synthetic scope and actual hair-input regressions; see `docs/startup-independent-review-2026-10-21.md`.
@@ -5,6 +9,15 @@ Independent review fixes: defer saved private hair view until verification, reje
 ## v636 — 2026-10-21 (local candidate, not published)
 
 Verified shell/monthly loading separation; bounded frontdesk/main identity recovery with transient failures retaining credentials; defer non-first-screen import and pre-verification report reads. Business write order and auth scope preserved. See `docs/startup-review-2026-10-21.md` for synthetic Chromium/WebKit results, iPhone acceptance and cache design limits.
+
+<!-- academy-reviewed-inputs:7240c0a05adef312fa65d7c5d8efaf73615129c9e1d580af00117a7a9ea23f4b -->
+## 2026-10-21 · Reviewed academy publication candidate (App version: v635 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99.
+- Dates: 2026-10-21. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
 ## 2026-10-20 · Visual balance versus mirror symmetry case (v635 unchanged)
 
