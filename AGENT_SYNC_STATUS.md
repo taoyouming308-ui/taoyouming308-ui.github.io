@@ -1,3 +1,9 @@
+## 2026-10-21 · Static shell phase 2 (App version: v637 local only, PR #64 untouched)
+
+- Isolated from 2d9cea7/main251c5b1; academy preserved. Public explicit37-file shell, hash-verified atomic install, natural activation only, no API/private data/write queue. Independent review fixes cover downgrade/runtime/same-cache reinstall, admin resource ownership, query version bypass and update retry.
+- New build/browser regressions and integrity generation check preserve original gates. Chromium synthetic lifecycle checks passed during development; WebKit offline emulation hit a browser internal error, server-drop alternative and final full gate results are recorded in ../validation-review/static-shell-results.md. No iPhone claim.
+- Local implementation/testing only: no phase2 push, PR update, merge, deployment, backend or business data change. See docs/static-shell-local-2026-10-21.md for limitations and device-test approval gap.
+
 ## 2026-10-21 · Startup draft PR preparation (v636, not deployed)
 
 User authorized pushing only the isolated startup branch and opening a draft PR with remote checks; no merge, auto-merge or production deployment. Integrated main 251c5b1 (academy PR #63), preserving all academy bytes and both handoff histories. Cumulative original pre-push gate will run against this main baseline before branch publication; exact-head remote CI remains required. iPhone acceptance still lacks an approved supported test route; no ports, tunnels or credentials added.

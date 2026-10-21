@@ -4,6 +4,8 @@
   "steps": [
     { "runtime": "node", "script": "test-monthly-review-api.mjs" },
     { "runtime": "node", "script": "test-monthly-review-browser.js" },
+    { "runtime": "node", "script": "test-app-shell-build.js" },
+    { "runtime": "node", "script": "test-app-shell-browser.js" },
     { "runtime": "node", "script": "test-cold-start-browser.js" },
     { "runtime": "node", "script": "test-entry-startup-browser.js" },
     { "runtime": "node", "script": "test-startup-style-browser.js" },

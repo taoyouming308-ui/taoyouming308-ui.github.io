@@ -98,4 +98,5 @@ if (baseRef) {
   }
 }
 
+cp.execFileSync(process.execPath, ['scripts/build-app-shell.js', '--check'], { stdio: 'inherit' });
 console.log(`release integrity ok: v${version}`);

@@ -32,7 +32,7 @@ function response(version) {
   };
 }
 
-function createScenario(currentVersion, storedVersion, serverVersion, search) {
+function createScenario(currentVersion, storedVersion, serverVersion, search, shell) {
   const bannerAttrs = new Map();
   const banner = {
     style: { display: 'none' },
@@ -60,6 +60,7 @@ function createScenario(currentVersion, storedVersion, serverVersion, search) {
   }
   const context = {
     Promise,
+    confirm: () => true,
     URLSearchParams,
     XMLHttpRequest: FakeXHR,
     console: { info() {}, warn() {} },
@@ -70,7 +71,7 @@ function createScenario(currentVersion, storedVersion, serverVersion, search) {
       body: { appendChild() {} },
     },
     fetch: fakeFetch,
-    window: { fetch: fakeFetch },
+    window: { fetch: fakeFetch, ZysyrAppShell: shell },
     navigator: {
       serviceWorker: {
         getRegistrations: async () => [{ unregister: async () => { unregisters += 1; return true; } }],
@@ -108,7 +109,7 @@ async function settle() {
     fail('update click did not reload-fetch the v402 document');
   }
   if (!oldPage.replacements.some((url) => url.includes('_v=402'))) fail('verified update did not navigate to v402');
-  if (oldPage.getUnregisters() < 1) fail('update did not unregister old service worker control');
+  if (oldPage.getUnregisters() !== 0) fail('update must not unregister workers owned by the static shell or other apps');
 
   const newPage = createScenario(402, 401, 402, '?_v=402&_t=test');
   await settle();
@@ -117,5 +118,12 @@ async function settle() {
     fail('loaded v402 page did not refresh canonical entry cache');
   }
 
+  let requests = 0;
+  const controlled = createScenario(637, 637, 638, '', {requestUpdate(){requests++;return true;}});
+  await settle(); controlled.banner.onclick(); await settle(); controlled.banner.onclick(); await settle();
+  if (requests !== 2 || controlled.replacements.length) fail('shell update must stay retryable without navigating dirty pages');
+  const unavailable = createScenario(637,637,638,'',{requestUpdate(){return false;}});
+  await settle(); unavailable.banner.onclick(); await settle();
+  if (!unavailable.replacements.length) fail('uncontrolled unavailable shell must retain confirmed network update fallback');
   console.log('version update flow test ok: verify-before-install and canonical-cache refresh');
 })().catch((error) => fail(error.message));
