@@ -1,3 +1,7 @@
+## 2026-10-21 · Startup guard follow-up (App version: v637 local only)
+
+- Original full gate caught external deferred shell script before the inline startup guard. Moved client script after existing page content/guards; original style regression passed without relaxing its assertions. Browser cache-deletion assertion now waits boundedly for actual cleanup visibility. Final frozen full gate and WebKit outcome are in ../validation-review/static-shell-results.md.
+
 ## 2026-10-21 · Static shell phase 2 (App version: v637 local only, PR #64 untouched)
 
 - Isolated from 2d9cea7/main251c5b1; academy preserved. Public explicit37-file shell, hash-verified atomic install, natural activation only, no API/private data/write queue. Independent review fixes cover downgrade/runtime/same-cache reinstall, admin resource ownership, query version bypass and update retry.

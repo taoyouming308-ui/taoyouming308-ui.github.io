@@ -131,7 +131,6 @@
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
   <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=637" media="print" onload="this.media='all'">
-  <script defer src="app-shell-client.js?v=637"></script>
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1590,5 +1589,6 @@ function calculateDailyControls(root,cardSalesCheck){
 <link rel="stylesheet" href="operations-monthly-review.css?v=637">
 <script src="operations-monthly-review.js?v=637"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
+<script defer src="app-shell-client.js?v=637"></script>
 </body>
 </html>

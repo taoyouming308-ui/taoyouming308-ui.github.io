@@ -1068,7 +1068,6 @@ body {
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
 <link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=637" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-  <script defer src="app-shell-client.js?v=637"></script>
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -13115,5 +13114,6 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+<script defer src="app-shell-client.js?v=637"></script>
 </body>
 </html>

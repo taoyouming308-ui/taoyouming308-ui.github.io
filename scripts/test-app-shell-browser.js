@@ -65,6 +65,7 @@ function waitFor(page,fn,arg){return page.waitForFunction(fn,arg,{timeout:30000}
   await waitFor(page,()=>window.__installStates.includes('redundant'));
   assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');assert.equal(await page.evaluate(()=>document.documentElement.dataset.version),String(base));
   assert.equal(await page.evaluate(async()=>(await navigator.serviceWorker.getRegistration()).waiting),null);
+  await waitFor(page,async()=>(await caches.keys()).length===1);
   assert.equal(await page.evaluate(async()=>(await caches.keys()).length),1,'failed partial cache removed after all downloads settle');
   stage='bad-install-complete';console.log(stage);
   corrupt='';await page.evaluate(async()=>(await navigator.serviceWorker.getRegistration()).update());
