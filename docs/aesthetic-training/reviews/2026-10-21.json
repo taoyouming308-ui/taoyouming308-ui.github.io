@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-21",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "54f0acd158c60eb7878d35eda576255aa1b0bcf8",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, retention or styling-duration study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional reference-goal versus low-tie case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Loose front, side and back views are separated from the reversible low-tie illustration and an unseen reference goal",
+      "Current image observations, fictional density/texture/history/preferences and on-site unknowns are explicitly separated",
+      "Generated low-tie panel is not treated as proof that a future layered cut will remain contained",
+      "A/B benefits, costs and change conditions are explicit; neither option is presented as the only valid answer",
+      "Cut-provided, styling-provided and currently incompatible outcomes are separated before technique selection",
+      "Necessary drying is separate from extra four-minute styling; teacher styling and clipping are not durability proof",
+      "No chemical/temperature/thinning formula, real-client data or invented user learning score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Reference image is scenario information and is not shown or independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-21-layers-vs-low-tie.webp",
+    "sha256": "ab611958086a86a844cef5164ef97358028bcab5a523156b52d2f2771f7b4e18",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1214x1295 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: mobile hairstyling education case image, a clean 2x2 comparison sheet with no text\nPrimary request: create four consistent observational salon photographs of the same fictional adult East Asian woman showing her current hairstyle and one current low-tie action; this is not a before-and-after transformation\nScene/backdrop: plain warm light gray salon wall, uncluttered, identical background in every panel\nSubject: same adult woman in all four panels, natural unretouched skin, calm neutral expression, simple muted sage-green crew-neck top; complete head, hairline, neck and both shoulders visible\nHair: dark brown collarbone-length hair, medium overall density; softly centered-to-slightly-off-center part; mostly straight and smooth through crown and sides, with a subtle irregular S-bend more visible underneath and at the nape; continuous moderately full perimeter, long face-framing pieces that reach below the cheekbone; no bangs, no dramatic layers, no styling-product shine\nComposition/framing: 2x2 grid with equal panels and thin neutral gutters. Panel 1 straight front view with hair loose. Panel 2 true side profile with hair loose, ear partly visible naturally. Panel 3 direct back view with hair loose, showing the full hemline and nape. Panel 4 rear three-quarter view of the same woman gathering the current hair into a low ponytail at the nape with a plain dark elastic; a few natural shorter edge strands may remain but do not exaggerate. Keep camera height, distance, clothing, facial identity, hair color and apparent length consistent across all panels.\nLighting/mood: soft even daylight-balanced studio light, honest salon consultation photography, realistic hair texture and flyaways, no beauty filter\nConstraints: one adult only; same identity and hairstyle across all four panels; current condition only; no transformation, no scissors, no tools, no labels, no measurements, no arrows, no watermark, no logos; show full head, haircut bottom edge, neck and both shoulders in every relevant panel; the low pony is only a reversible demonstration of the current hair, not proof of future cut behavior\nAvoid: glamour editorial styling, exaggerated volume, curled ends, perfect mirror symmetry, face reshaping, retouching, high ponytail, bun, braid, accessories other than one plain dark elastic, cropped crown, cropped shoulders, text"
+  },
+  "feedSha256": "e75ca0fd663b31c1f248fa7cddecc8bb0735c9f676896bb91022680bb6ce77d3",
+  "caseCanonicalSha256": "90650287d4284a03b06b9ad81ce027749fceb127150d2f110ee08d3e0f1af753",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-21 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: fourteen cases; thirteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing",
+    "browser": "Daily and wrapper browser tests were executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and ten-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}
