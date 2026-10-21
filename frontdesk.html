@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="637">
+<html lang="zh-CN" data-version="638">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=637" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=638" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -325,7 +325,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=637"></script>
+  <script src="frontdesk-business-details.js?v=638"></script>
   <script>
   (function(){
     'use strict';
@@ -348,6 +348,10 @@
 
     function isSessionInvalidError(error){return !!(error&&((error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED')||((error.status===401||error.status===403)&&/^(请重新登录|登录已过期|账号已停用)/.test(error.message||''))))}
     async function api(operation,data){
+      var send=function(){return apiRequest(operation,data);};
+      return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('frontdesk',operation==='dashboard'||operation==='business_details',JSON.stringify([operation,data,state.session&&state.session.session_token,state.store]),send) : send();
+    }
+    async function apiRequest(operation,data){
       var body=Object.assign({},data||{},{operation:operation});
       if(state.session&&state.session.session_token)body.session_token=state.session.session_token;
       if(state.store&&!body.store)body.store=state.store;
@@ -496,8 +500,9 @@
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
       var silent=options&&options.silent===true;
       state.dashboardLoading=true;if(!silent)setBusy(btn,true,'刷新中…');
-      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});$('consumption-status').textContent='正在读取本店当日数据…';businessUI.refresh();}
-      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);businessUI.refresh();}
+      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});$('consumption-status').textContent='正在读取本店当日数据…';}
+      businessUI.refresh();
+      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);}
       catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
@@ -639,6 +644,7 @@
     Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
-<script defer src="app-shell-client.js?v=637"></script>
+<script defer src="data-read-client.js?v=638"></script>
+<script defer src="app-shell-client.js?v=638"></script>
 </body>
 </html>

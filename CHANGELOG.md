@@ -1,3 +1,9 @@
+## 2026-10-21 · Data read candidate (App version: v638 local only)
+
+- Base github/main ac0cfd26 (published v637); isolated perf/data-load-20261021. No push, merge, deployment, backend or production business data changes.
+- Optional memory-only concurrent read coalescing for three entries; pending reads expire from the join window after five seconds, mutations invalidate flights, settled results are never cached. Frontdesk expanded details refresh once in parallel with dashboard. Auth/scope/latest-response guards and complete payloads remain intact.
+- Same synthetic sample proves fewer duplicate calls/JSON bytes, not production latency gains. Commands, coverage and evidence limitations: docs/data-loading-performance-2026-10-21.md. Original cumulative local gate passed (120 finance steps plus remaining original checks); focused WebKit recovery/shell passed. Desktop WebKit does not replace iPhone acceptance.
+
 ## 2026-10-21 · WebKit update diagnosis (App version: v637 local only)
 
 - Confirmed the test helper incorrectly treated async predicates as completed; explicit awaited polling now retains a hard 30-second deadline, all original scenarios and assertions. WebKit/Chromium full lifecycle passes, including runtime-only bad resource updates.

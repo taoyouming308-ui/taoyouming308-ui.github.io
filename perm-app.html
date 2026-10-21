@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="637">
+<html lang="zh-CN" data-version="638">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,7 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=637" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=638" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3161,13 +3161,13 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=637"></script>
-<script defer src="aesthetic-study.js?v=637"></script>
-<script defer src="aesthetic-daily.js?v=637"></script>
-<script defer src="hair-calculator-dialog.js?v=637"></script>
-<script src="aesthetic-knowledge.v1.js?v=637"></script>
-<script src="hair-vision-training.v1.js?v=637"></script>
-<script src="aesthetic-growth.v2.js?v=637"></script>
+<script src="employee-reports.js?v=638"></script>
+<script defer src="aesthetic-study.js?v=638"></script>
+<script defer src="aesthetic-daily.js?v=638"></script>
+<script defer src="hair-calculator-dialog.js?v=638"></script>
+<script src="aesthetic-knowledge.v1.js?v=638"></script>
+<script src="hair-vision-training.v1.js?v=638"></script>
+<script src="aesthetic-growth.v2.js?v=638"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6460,6 +6460,10 @@ function initApp() {
 
   function isEmployeeSessionInvalid(error) { return !!(error && (error.status === 401 || error.status === 403) && /^(请重新登录|登录已过期|账号已停用)/.test(error.message || '')); }
   function employeeBookingsApi(operation, payload) {
+    var send=function(){return employeeBookingsRequest(operation,payload);};
+    return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('employee',operation==='today_bookings',JSON.stringify([operation,payload]),send) : send();
+  }
+  function employeeBookingsRequest(operation, payload) {
     var body = Object.assign({}, payload || {}, { operation: operation });
     var controller = operation === 'session' ? new AbortController() : null;
     var timer = controller ? setTimeout(function(){ controller.abort(); }, 15000) : null;
@@ -13114,6 +13118,7 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="app-shell-client.js?v=637"></script>
+<script defer src="data-read-client.js?v=638"></script>
+<script defer src="app-shell-client.js?v=638"></script>
 </body>
 </html>
