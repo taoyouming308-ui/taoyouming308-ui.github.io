@@ -1,3 +1,7 @@
+## v636 — 2026-10-21 (local candidate, not published)
+
+Verified shell/monthly loading separation; bounded frontdesk/main identity recovery with transient failures retaining credentials; defer non-first-screen import and pre-verification report reads. Business write order and auth scope preserved. See `docs/startup-review-2026-10-21.md` for synthetic Chromium/WebKit results, iPhone acceptance and cache design limits.
+
 ## 2026-10-20 · Visual balance versus mirror symmetry case (v635 unchanged)
 
 - Add one original fictional shoulder-area hairstyle case distinguishing actual length, bends and apparent width before cutting an outward-turning side. Six conditional answers compare closer visual matching with length-preserving balance; five recaps do not evaluate an unanswered user.

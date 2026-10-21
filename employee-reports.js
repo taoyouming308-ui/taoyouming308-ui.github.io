@@ -3,7 +3,7 @@
   var generation=0,button,config,pendingButton,dot,timer;
   function hidePending(){if(pendingButton)pendingButton.hidden=true;if(dot)dot.hidden=true}
   function visible(show){button.hidden=!show;button.style.display=show?'':'none';if(!show){hidePending();close();var choices=document.getElementById('employee-review-choices');if(choices)choices.remove()}}
-  function session(){try{return JSON.parse(localStorage.getItem('booking-session')||'null')}catch(_){return null}}
+  function session(){if(config&&typeof config.session==='function')return config.session();try{return JSON.parse(localStorage.getItem('booking-session')||'null')}catch(_){return null}}
   function close(){var panel=document.getElementById('employee-report-panel');if(panel)panel.remove();}
   async function inbox(token){
     var controller=new AbortController(),timeout=setTimeout(function(){controller.abort()},15000);

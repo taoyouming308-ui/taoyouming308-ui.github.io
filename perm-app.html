@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="635">
+<html lang="zh-CN" data-version="636">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,7 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=635" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=636" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3161,13 +3161,13 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=635"></script>
-<script defer src="aesthetic-study.js?v=635"></script>
-<script defer src="aesthetic-daily.js?v=635"></script>
-<script defer src="hair-calculator-dialog.js?v=635"></script>
-<script src="aesthetic-knowledge.v1.js?v=635"></script>
-<script src="hair-vision-training.v1.js?v=635"></script>
-<script src="aesthetic-growth.v2.js?v=635"></script>
+<script src="employee-reports.js?v=636"></script>
+<script defer src="aesthetic-study.js?v=636"></script>
+<script defer src="aesthetic-daily.js?v=636"></script>
+<script defer src="hair-calculator-dialog.js?v=636"></script>
+<script src="aesthetic-knowledge.v1.js?v=636"></script>
+<script src="hair-vision-training.v1.js?v=636"></script>
+<script src="aesthetic-growth.v2.js?v=636"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -5541,7 +5541,7 @@ function initApp() {
       // 方案、预约和美感训练使用白底
       document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings' || tabName === 'aesthetic');
       if (tabName === 'plans') { loadPermData(); switchPlan('academy'); }
-      if (tabName === 'bookings') { renderDateStrip(); checkIdentity(); loadBookings(true); }
+      if (tabName === 'bookings') { renderDateStrip(); checkIdentity().then(function(valid){ if(valid) loadBookings(true); }); }
       if (tabName === 'showcase') { startShowcasePoll(); }
       if (tabName === 'aesthetic') { initAestheticTraining(); }
     }
@@ -6457,9 +6457,13 @@ function initApp() {
   var AUTHENTICATED_STAFF = null;
   var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
+  function isEmployeeSessionInvalid(error) { return !!(error && (error.status === 401 || error.status === 403) && /^(请重新登录|登录已过期|账号已停用)/.test(error.message || '')); }
   function employeeBookingsApi(operation, payload) {
     var body = Object.assign({}, payload || {}, { operation: operation });
+    var controller = operation === 'session' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function(){ controller.abort(); }, 15000) : null;
     return fetch(EMPLOYEE_BOOKINGS_ENDPOINT, {
+      signal: controller ? controller.signal : undefined,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
       body: JSON.stringify(body)
@@ -6472,10 +6476,10 @@ function initApp() {
         }
         return data;
       });
-    });
+    }).finally(function(){ if (timer) clearTimeout(timer); });
   }
 
-  EmployeeReports.init({url:SUPABASE_URL,key:SUPABASE_KEY});
+  EmployeeReports.init({url:SUPABASE_URL,key:SUPABASE_KEY,session:function(){return AUTHENTICATED_STAFF;}});
   function clearBookingSession() {
     localStorage.removeItem('booking-session');
     localStorage.removeItem('booking-barber');
@@ -6492,37 +6496,41 @@ function initApp() {
     localStorage.setItem('booking-device-id', DEVICE_ID);
   }
 
+  var identityPending = null;
   function checkIdentity() {
-    var session = null;
-    try { session = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch(e) {}
+    if (identityPending) return identityPending;
+    var stored = localStorage.getItem('booking-session'), session = null;
+    try { session = JSON.parse(stored || 'null'); } catch(e) {}
     if (!session || !session.username || !session.store || !session.session_token || !session.loggedAt ||
         Date.now() - Number(session.loggedAt) > APP_SESSION_MAX_AGE) {
-      clearBookingSession();
-      showIdentityModal();
-      return;
+      clearBookingSession(); showIdentityModal(); return Promise.resolve(false);
     }
-    applyAuthenticatedIdentity(session, false);
-    employeeBookingsApi('session', { session_token: session.session_token }).then(function(data) {
+    if (!AUTHENTICATED_STAFF) showIdentityRecovery('正在验证登录状态…', false);
+    identityPending = employeeBookingsApi('session', { session_token: session.session_token }).then(function(data) {
+      if (localStorage.getItem('booking-session') !== stored) return false;
       var user = data.user || {};
-      applyAuthenticatedIdentity({
-        username: user.username,
-        store: user.store,
-        position: user.position || session.position || '',
-        session_token: session.session_token,
-        expires_at: data.expires_at || session.expires_at || '',
-        loggedAt: Date.now()
-      }, true);
-    }).catch(function(e) {
-      // 仅服务器明确判定会话失效(403)才清会话+弹登录；网络/瞬时错误保留本地缓存身份，
-      // 与 loadBookings 的 403-only 处理一致，避免弱网/离线时被锁在工作台外
-      if (e && e.status === 403) {
-        clearBookingSession();
-        showIdentityModal();
-      } else {
-        console.warn('[identity] 会话校验失败(非403)，保留本地身份，下次进预约自动重试', e && e.message);
-      }
-    });
+      if (!user.username || !user.store) throw new Error('会话响应无效');
+      applyAuthenticatedIdentity({username:user.username, store:user.store, position:user.position || '',
+        session_token:session.session_token, expires_at:data.expires_at || session.expires_at || '', loggedAt: Date.now()}, true);
+      var recovery = document.getElementById('identity-recovery'); if (recovery) recovery.remove();
+      return true;
+    }).catch(function(error) {
+      if (localStorage.getItem('booking-session') !== stored) return false;
+      if (isEmployeeSessionInvalid(error)) { clearBookingSession(); showIdentityModal(); }
+      else if (!AUTHENTICATED_STAFF) showIdentityRecovery('网络暂不可用，登录凭据已保留。', true);
+      return false;
+    }).finally(function(){ identityPending = null; });
+    return identityPending;
   }
+  function showIdentityRecovery(message, retry) {
+    var box = document.getElementById('identity-recovery');
+    if (!box) { box = document.createElement('div'); box.id = 'identity-recovery'; box.className = 'identity-modal'; document.body.appendChild(box); }
+    box.innerHTML = '<div class="box"><h3>自由手艺人</h3><p role="status"></p><button type="button">重试恢复登录</button></div>';
+    box.querySelector('p').textContent = message;
+    box.querySelector('button').disabled = !retry;
+    box.querySelector('button').onclick = function(){ checkIdentity(); };
+  }
+  window.addEventListener('online', function(){ if (!AUTHENTICATED_STAFF && localStorage.getItem('booking-session')) checkIdentity(); });
 
   function applyAuthenticatedIdentity(staff, persist) {
     if (!staff || !staff.username || !staff.store) return false;
@@ -6579,6 +6587,7 @@ function initApp() {
   }
 
   window.showIdentityModal = function() {
+    var recovery = document.getElementById('identity-recovery'); if (recovery) recovery.remove();
     var existing = document.getElementById('identity-modal');
     if (existing) { existing.remove(); }
     var div = document.createElement('div');
@@ -6719,6 +6728,7 @@ function initApp() {
   };
 
   function loadBookings(showLoading) {
+    if (!AUTHENTICATED_STAFF) return;
     var list = document.getElementById('booking-list');
     if (!list) return;
 
@@ -6761,7 +6771,7 @@ function initApp() {
       try { localStorage.setItem(cacheKey, JSON.stringify(rows)); } catch(e) {}
       renderBookings(rows, list, false);
     }).catch(function(e){
-      if (e && e.status === 403) {
+      if (isEmployeeSessionInvalid(e)) {
         clearBookingSession();
         showIdentityModal();
       }
@@ -11052,7 +11062,7 @@ function initApp() {
       }
       list.innerHTML = html;
     }).catch(function(e) {
-      if (e && e.status === 403) {
+      if (isEmployeeSessionInvalid(e)) {
         clearBookingSession();
         showIdentityModal();
       }

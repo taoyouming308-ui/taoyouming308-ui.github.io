@@ -1,3 +1,10 @@
+## 2026-10-21 · Local startup isolation candidate (App version: v636, NOT published)
+
+- Owner: Codex. Base github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99; isolated fix/startup-isolation-20261021 clone, clean start, original hooks and daily source backup preserved. No push/merge/deploy authorized this round.
+- Operations shell no longer waits for monthly reads after verified access; existing editor/scope guards preserved. Frontdesk transient failures retain credentials, session/dashboard reads bounded, import batches deferred. Main App verifies cached identity before applying it, has bounded retry/recovery, and report access follows verified identity. Ordinary permission failures are not session expiry.
+- Chromium and WebKit synthetic startup recovery: 14 scenarios each passed. Existing cold-start/entry/style and monthly editor/period-isolation regressions passed. No real data writes or iPhone device claim. No SW reenable or new sensitive persistence. Full pre-push/SQL/CI and device acceptance remain release gates; recheck main/version before any publication.
+- Scope, reproducible tests, remaining token-refresh limitation, iPhone checklist and next-stage static shell caching design: docs/startup-review-2026-10-21.md.
+
 ## 2026-10-20 · Original visual-balance aesthetic case (App version: v635 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 49484dd9c5541d9a7dd6f14b3a5799bb4768adf7; clean isolated content/aesthetic-2026-10-20 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing nine academy courses/catalog unchanged.

@@ -7,6 +7,7 @@
     { "runtime": "node", "script": "test-cold-start-browser.js" },
     { "runtime": "node", "script": "test-entry-startup-browser.js" },
     { "runtime": "node", "script": "test-startup-style-browser.js" },
+    { "runtime": "node", "script": "test-startup-recovery-browser.js" },
     { "runtime": "node", "script": "test-operations-surface-browser.js" },
     { "runtime": "node", "script": "test-daily-row-label-save-contract.js" },
     { "runtime": "node", "script": "test-daily-name-input-browser.js" },
