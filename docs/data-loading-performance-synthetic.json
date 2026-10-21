@@ -1,0 +1,104 @@
+{
+  "baseline_sha": "ac0cfd26e52abf72ef95ffede2f0c2f7a69a069f",
+  "before": {
+    "baseline": true,
+    "scope": "Node VM executes actual wrappers; synthetic 40ms network + 60ms query, JSON bytes only, no real network/DB/render timing",
+    "results": [
+      {
+        "entry": "perm-app.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 4,
+        "bytes": 46080,
+        "parseMs": 0.24991600000001313,
+        "elapsedMs": 103,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "frontdesk.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 4,
+        "bytes": 46128,
+        "parseMs": 0.5455410000000711,
+        "elapsedMs": 103,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "operations.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 4,
+        "bytes": 46116,
+        "parseMs": 0.5102490000000444,
+        "elapsedMs": 103,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "frontdesk.html",
+        "scenario": "new date, details already expanded",
+        "dashboardReads": 1,
+        "businessDetailRefreshes": 2,
+        "renderCalls": 2,
+        "renderMs": null
+      }
+    ]
+  },
+  "after": {
+    "baseline": false,
+    "scope": "Node VM executes actual wrappers; synthetic 40ms network + 60ms query, JSON bytes only, no real network/DB/render timing",
+    "results": [
+      {
+        "entry": "perm-app.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 1,
+        "bytes": 11520,
+        "parseMs": 0.05629199999999912,
+        "elapsedMs": 102,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "frontdesk.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 1,
+        "bytes": 11532,
+        "parseMs": 0.0514999999999759,
+        "elapsedMs": 101,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "operations.html",
+        "scenario": "4 concurrent identical scoped reads",
+        "calls": 1,
+        "bytes": 11529,
+        "parseMs": 0.057916999999974905,
+        "elapsedMs": 102,
+        "fixtureRows": 80,
+        "modeledNetworkMs": 40,
+        "modeledQueryMs": 60,
+        "renderMs": null
+      },
+      {
+        "entry": "frontdesk.html",
+        "scenario": "new date, details already expanded",
+        "dashboardReads": 1,
+        "businessDetailRefreshes": 1,
+        "renderCalls": 2,
+        "renderMs": null
+      }
+    ]
+  },
+  "limitation": "Synthetic actual-wrapper test, not production network/database latency, browser rendering or iPhone measurement."
+}

@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-data-read-performance.js" },
     { "runtime": "node", "script": "test-monthly-review-api.mjs" },
     { "runtime": "node", "script": "test-monthly-review-browser.js" },
     { "runtime": "node", "script": "test-app-shell-build.js" },
