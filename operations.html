@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="635">
+<html lang="zh-CN" data-version="636">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -130,7 +130,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=635" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=636" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -744,13 +744,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=635"></script>
-<script src="operations-staff-view.js?v=635"></script>
-<script src="operations-monthly-daily-performance.js?v=635"></script>
-  <script src="operations-report-fit.js?v=635"></script>
-  <script src="operations-auth-bridge.js?v=635"></script>
-  <script src="operations-voucher-preview.js?v=635"></script>
-  <script src="operations-voucher-view.js?v=635"></script>
+<script src="operations-time.js?v=636"></script>
+<script src="operations-staff-view.js?v=636"></script>
+<script src="operations-monthly-daily-performance.js?v=636"></script>
+  <script src="operations-report-fit.js?v=636"></script>
+  <script src="operations-auth-bridge.js?v=636"></script>
+  <script src="operations-voucher-preview.js?v=636"></script>
+  <script src="operations-voucher-view.js?v=636"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -787,9 +787,10 @@
   function refreshRoleEntries(){if(window.ZysyrDailyHistory)window.ZysyrDailyHistory.syncAccess();document.querySelectorAll('.finance-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_reports)});document.querySelectorAll('.finance-voucher-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_vouchers)});document.querySelectorAll('.import-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_import_photo_reports)});document.querySelectorAll('.history-import-entry').forEach(function(el){el.classList.toggle('hidden',state.user.role!=='finance'||!state.user.can_manage_finance_workbench)});document.querySelectorAll('.daily-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_daily_reports)});document.querySelectorAll('.salary-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_salary)});document.querySelectorAll('.finance-workbench-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_manage_finance_workbench||state.user.can_read_petty_cash_reports))});document.querySelectorAll('.payroll-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_salary||state.user.can_view_personal_payroll))});document.querySelectorAll('.inventory-entry').forEach(function(el){el.classList.toggle('hidden',!['shareholder','finance','store_manager'].includes(state.user.role))});document.querySelectorAll('.analysis-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_ai_analysis||state.user.can_create_question||state.user.can_respond_question))});var allowed=canManageFinanceAccounts();document.querySelectorAll('.finance-account-admin').forEach(function(el){el.classList.toggle('hidden',!allowed)});var isShareholderAdmin=state.user.role==='shareholder'&&(state.user.can_manage_stores||state.user.can_manage_finance_accounts);document.querySelectorAll('.catalog-admin').forEach(function(el){el.classList.toggle('hidden',!state.user.can_manage_stores)});if(state.user.role==='shareholder'&&!isShareholderAdmin)document.querySelectorAll('.nav [data-view]').forEach(function(el){var v=el.dataset.view;el.classList.toggle('hidden',['monthly','daily-report','salary-report','finance-workbench','archive'].indexOf(v)<0)});if(state.user.personal_scope)document.querySelectorAll('.nav [data-view]:not([data-view="payroll"])').forEach(function(el){el.classList.add('hidden')});var stores=state.auth&&state.auth.scope&&state.auth.scope.stores||[];$('finance-store').innerHTML=stores.filter(function(store){return store&&store.status==='active'}).map(function(store){return'<option value="'+esc(store.id)+'">'+esc(store.name)+'</option>'}).join('')}
   function orderedReportStores(authorizedStores){var stores=(authorizedStores||[]).slice(),preferred='自由手艺人',index=stores.indexOf(preferred);if(index>0){stores.splice(index,1);stores.unshift(preferred)}return stores}
   function showApp(){if(StaffReportView.enabled)StaffReportView.ready();$('login').classList.add('hidden');$('app').classList.remove('hidden');document.body.classList.toggle('report-focus',['monthly','daily-report','salary-report'].indexOf(state.view)>=0);var stores=orderedReportStores(state.user.stores);$('store-select').innerHTML=stores.map(function(store){return'<option>'+esc(store)+'</option>'}).join('');var defaultStore=stores.indexOf('自由手艺人')>=0?'自由手艺人':state.user.store;if(defaultStore&&stores.indexOf(defaultStore)>=0)$('store-select').value=defaultStore;$('store-select').disabled=stores.length<2;refreshRoleEntries();renderUserCard()}
+  function startInitialView(){Promise.resolve(loadInitialView()).catch(function(error){if(isSessionInvalidError(error))showLogin(error.message);else $('sync-status').textContent='数据暂时加载失败，请点击刷新重试'})}
   async function loadInitialView(){if(state.user.personal_scope){showView('payroll');return}showView('monthly');await loadOverview()}
   function resultNeedsAuth(user){return user&&['shareholder','finance','store_manager','employee'].indexOf(user.role)>=0}
-  async function restoreSession(){if(StaffReportView.enabled){state.session='';state.auth=null;try{state.user=(await api('session')).user;showApp();await loadInitialView()}catch(e){StaffReportView.blocked(e.message)}return}if(isLocalPreview()){startLocalPreview();return}if(restoreInFlight)return restoreInFlight;restoreInFlight=(async function(){try{state.auth=await authBridge.restore();if(state.auth||state.session){state.user=(await api('session')).user;reconnectDelay=3000;showApp();try{await loadInitialView()}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('数据暂时加载失败，登录状态已保留并会自动重试')}return}showLogin()}catch(error){if(isSessionInvalidError(error)){showLogin(error.message);return}showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}})();try{return await restoreInFlight}finally{restoreInFlight=null}}
+  async function restoreSession(){if(StaffReportView.enabled){state.session='';state.auth=null;try{state.user=(await api('session')).user;showApp();startInitialView()}catch(e){StaffReportView.blocked(e.message)}return}if(isLocalPreview()){startLocalPreview();return}if(restoreInFlight)return restoreInFlight;restoreInFlight=(async function(){try{state.auth=await authBridge.restore();if(state.auth||state.session){state.user=(await api('session')).user;reconnectDelay=3000;showApp();startInitialView();return}showLogin()}catch(error){if(isSessionInvalidError(error)){showLogin(error.message);return}showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}})();try{return await restoreInFlight}finally{restoreInFlight=null}}
   $('login-form').addEventListener('submit',async function(event){event.preventDefault();if(StaffReportView.enabled)return;var username=$('login-name').value.trim(),password=$('login-pass').value;$('login-error').textContent='正在验证…';state.auth=null;state.authWarning='';var legacy=null,legacyError=null;try{legacy=await api('login',{username:username,password:password})}catch(error){legacyError=error}try{if(legacy){state.session=legacy.session_token;state.user=legacy.user;localStorage.setItem('zysyr-operations-session-v1',state.session);if(resultNeedsAuth(state.user)||state.user.role==='employee'){try{state.auth=await authBridge.login(username,password);state.user=(await api('session')).user}catch(_){authBridge.clear();state.authWarning='新认证暂未完成，当前已安全使用旧登录'}}}else{state.auth=await authBridge.login(username,password);state.session='';localStorage.removeItem('zysyr-operations-session-v1');state.user=(await api('session')).user}$('login-pass').value='';reconnectDelay=3000;showApp()}catch(error){state.auth=null;authBridge.clear();$('login-pass').value='';$('login-error').textContent=(legacyError&&legacyError.message)||error.message;return}try{await loadInitialView();if(state.auth)toast('Supabase Auth 已验证');else if(state.authWarning)toast(state.authWarning);else toast('已安全登录')}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('数据暂时加载失败，登录状态仍然保留')}});
   $('login-to-register').addEventListener('click',function(){$('login-form').classList.add('hidden');$('register-form').classList.remove('hidden');$('login-error').textContent=''});
   $('register-to-login').addEventListener('click',function(){$('register-form').classList.add('hidden');$('login-form').classList.remove('hidden')});
@@ -916,7 +917,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=635';
+      script.src='operations-petty-cash-evidence.js?v=636';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1053,6 +1054,7 @@
     var store=currentStore(),month=$('month').value,requestId=(state.monthlyLoadRequest||0)+1;
     state.monthlyLoadRequest=requestId;state.monthlyOverviewReady=false;
     $('sync-status').textContent='读取财务上传记录…';
+    if(!monthlyHasUnsaved()){$('report-state').textContent='月报正在加载，可先使用其他已授权栏目。';$('monthly-sheet').innerHTML='<div class="empty" role="status">正在读取本店本月月报…</div>'}
     $('monthly-edit-toggle').disabled=true;$('monthly-save-cells').disabled=true;
     $('monthly-sheet').style.pointerEvents='none';
     var isCurrent=function(){return requestId===state.monthlyLoadRequest&&store===currentStore()&&month===$('month').value&&!(state.view==='monthly'&&state.monthlySummary&&state.monthlySummary.active)};
@@ -1578,14 +1580,14 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=635"></script>
-  <script src="operations-daily-correction.js?v=635"></script>
-  <script src="operations-daily-electronic.js?v=635"></script>
-  <script src="operations-monthly-workbench.js?v=635"></script>
-  <script src="operations-daily-recognition.js?v=635"></script>
-<script src="operations-daily-history.js?v=635"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=635">
-<script src="operations-monthly-review.js?v=635"></script>
+  <script src="operations-daily-review.js?v=636"></script>
+  <script src="operations-daily-correction.js?v=636"></script>
+  <script src="operations-daily-electronic.js?v=636"></script>
+  <script src="operations-monthly-workbench.js?v=636"></script>
+  <script src="operations-daily-recognition.js?v=636"></script>
+<script src="operations-daily-history.js?v=636"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=636">
+<script src="operations-monthly-review.js?v=636"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
 </body>
 </html>

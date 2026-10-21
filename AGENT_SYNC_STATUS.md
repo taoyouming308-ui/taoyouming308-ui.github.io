@@ -1,3 +1,20 @@
+## 2026-10-21 · Startup draft PR preparation (v636, not deployed)
+
+User authorized pushing only the isolated startup branch and opening a draft PR with remote checks; no merge, auto-merge or production deployment. Integrated main 251c5b1 (academy PR #63), preserving all academy bytes and both handoff histories. Cumulative original pre-push gate will run against this main baseline before branch publication; exact-head remote CI remains required. iPhone acceptance still lacks an approved supported test route; no ports, tunnels or credentials added.
+
+## 2026-10-21 · Independent startup review follow-up (local v636, NOT published)
+
+- Independent reviewer reproduced premature saved hair rendering before identity validation, stale booking response races, and cross-tab identity mismatch in 78e84bb. Fixed verified-only private view restoration, token/store/date/generation checks, cross-tab private view lock, different-owner draft lock, and opaque/inert keyboard-safe identity gate while retaining same-account input DOM.
+- Added actual hair name/phone preservation and Tab/opacity browser tests, plus delayed callback scope tests, to the original shared manifest. Chromium/WebKit synthetic focused tests passed. Full original pre-push is being run with pinned isolated dependencies; exact command/result logs are in ../validation-review. First run stopped at missing exceljs; fixed via isolated npm ci --ignore-scripts, not by skipping tests.
+- No push/merge/deployment, backend permission change or production writes. No supported iPhone route established; no external port, tunnel or credentials created. Final gate outcomes and code commit recorded in validation-review/results.md. Details: docs/startup-independent-review-2026-10-21.md.
+
+## 2026-10-21 · Local startup isolation candidate (App version: v636, NOT published)
+
+- Owner: Codex. Base github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99; isolated fix/startup-isolation-20261021 clone, clean start, original hooks and daily source backup preserved. No push/merge/deploy authorized this round.
+- Operations shell no longer waits for monthly reads after verified access; existing editor/scope guards preserved. Frontdesk transient failures retain credentials, session/dashboard reads bounded, import batches deferred. Main App verifies cached identity before applying it, has bounded retry/recovery, and report access follows verified identity. Ordinary permission failures are not session expiry.
+- Chromium and WebKit synthetic startup recovery: 14 scenarios each passed. Existing cold-start/entry/style and monthly editor/period-isolation regressions passed. No real data writes or iPhone device claim. No SW reenable or new sensitive persistence. Full pre-push/SQL/CI and device acceptance remain release gates; recheck main/version before any publication.
+- Scope, reproducible tests, remaining token-refresh limitation, iPhone checklist and next-stage static shell caching design: docs/startup-review-2026-10-21.md.
+
 <!-- academy-reviewed-inputs:7240c0a05adef312fa65d7c5d8efaf73615129c9e1d580af00117a7a9ea23f4b -->
 ## 2026-10-21 · Reviewed academy publication candidate (App version: v635 unchanged)
 

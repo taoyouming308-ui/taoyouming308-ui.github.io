@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="635">
+<html lang="zh-CN" data-version="636">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=635" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=636" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -232,6 +232,7 @@
         <button class="primary" id="login-btn" type="submit">进入前台</button>
         <button class="ghost login-secondary" id="show-register-btn" type="button">注册前台账号</button>
         <div class="login-error" id="login-error"></div>
+        <button type="button" id="session-retry" class="hidden">重试恢复登录</button>
         <div class="login-note">前台电脑或固定 iPad 登录一次后会保持登录；只有主动退出、账号停用或前台权限被撤销才需要重登。实际收银继续在美管加完成。</div>
       </form>
       <form class="hidden" id="register-form">
@@ -324,7 +325,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=635"></script>
+  <script src="frontdesk-business-details.js?v=636"></script>
   <script>
   (function(){
     'use strict';
@@ -345,19 +346,23 @@
     function toast(message,isError){ var el=$('toast'); el.textContent=message; el.className='toast'+(isError?' err':''); clearTimeout(toast.timer); toast.timer=setTimeout(function(){el.className='toast hidden';},3200); }
     function setBusy(button,busy,label){ if(!button)return; if(!button.dataset.label)button.dataset.label=button.textContent; button.disabled=busy; button.textContent=busy?(label||'处理中…'):button.dataset.label; }
 
+    function isSessionInvalidError(error){return !!(error&&((error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED')||((error.status===401||error.status===403)&&/^(请重新登录|登录已过期|账号已停用)/.test(error.message||''))))}
     async function api(operation,data){
       var body=Object.assign({},data||{},{operation:operation});
       if(state.session&&state.session.session_token)body.session_token=state.session.session_token;
       if(state.store&&!body.store)body.store=state.store;
-      var response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify(body)});
-      var result={}; try{result=await response.json();}catch(e){}
-      if(!response.ok){if(response.status===403&&['login','register','registration_options'].indexOf(operation)<0)clearSession();throw new Error(result.error||('请求失败 '+response.status));}
+      var controller=operation==='session'||operation==='dashboard'?new AbortController():null,timer=controller?setTimeout(function(){controller.abort()},15000):null;
+      try{
+      var response=await fetch(ENDPOINT,{signal:controller?controller.signal:undefined,method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify(body)});
+      var result={}; try{result=await response.json();}catch(e){if(controller)throw e;}
+      if(!response.ok){var error=new Error(result.error||('请求失败 '+response.status));error.status=response.status;error.code=result.code;if(isSessionInvalidError(error)&&operation!=='session'&&state.session&&state.session.session_token===body.session_token)clearSession();throw error;}
       return result;
+      }finally{if(timer)clearTimeout(timer)}
     }
     businessUI.init({api:api,scope:function(){return {session:state.session&&state.session.session_token,store:state.store,date:$('today-date').value||localDate()};}});
 
     function saveSession(session){ state.session=session; localStorage.setItem(STORAGE_KEY,JSON.stringify(session)); applySession(); }
-    function clearSession(){ state.session=null;businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;state.selected=null;state.drawerCustomer=null;state.drawerData=null;$('customer-results').innerHTML='';$('customer-detail').innerHTML='';$('customer-drawer-content').innerHTML='';$('customer-drawer').classList.add('hidden');localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
+    function clearSession(){ state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.store='';state.session=null;businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;state.selected=null;state.drawerCustomer=null;state.drawerData=null;$('customer-results').innerHTML='';$('customer-detail').innerHTML='';$('customer-drawer-content').innerHTML='';$('customer-drawer').classList.add('hidden');localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
     function configureStores(user){
       var stores=Array.isArray(user.stores)?user.stores.filter(Boolean):[];if(user.store&&stores.indexOf(user.store)<0)stores.unshift(user.store);
       var remembered=localStorage.getItem(STORE_KEY)||'',selected=stores.indexOf(remembered)>=0?remembered:(user.store||stores[0]||'');
@@ -371,15 +376,37 @@
       $('login').classList.add('hidden'); $('head-user').textContent=(state.store||user.store||'请选择分店')+' · '+user.username;
       $('scope-store').textContent=state.store||user.store||'请选择分店'; $('scope-user').textContent=user.username+' · '+(user.position||user.role||'员工');
       $('import-denied').classList.toggle('hidden',!!user.can_import); $('import-tools').classList.toggle('hidden',!user.can_import);
-      loadDashboard(); if(user.can_import)loadBatches();
+      loadDashboard(); if(state.view==='import'&&user.can_import)loadBatches();
     }
 
-    async function restoreSession(){
-      try{state.session=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch(e){state.session=null;}
-      if(!state.session||!state.session.session_token)return;
-      if(state.session.expires_at&&new Date(state.session.expires_at).getTime()<Date.now()){clearSession();return;}
-      try{var result=await api('session');state.session.user=result.user;state.session.expires_at=result.expires_at||state.session.expires_at;saveSession(state.session);}catch(e){clearSession();}
+    var restorePending=null;
+    function restoreSession(){
+      if(restorePending)return restorePending;
+      restorePending=restoreStoredSession().finally(function(){restorePending=null});
+      return restorePending;
     }
+    async function restoreStoredSession(){
+      var stored=localStorage.getItem(STORAGE_KEY),session;
+      try{session=JSON.parse(stored||'null');}catch(e){return;}
+      if(!session||!session.session_token)return;
+      if(session.expires_at&&new Date(session.expires_at).getTime()<Date.now()){clearSession();return;}
+      // Keep unverified cached identity out of the active business scope.
+      try{
+        var result=await api('session',{session_token:session.session_token});
+        if(localStorage.getItem(STORAGE_KEY)!==stored)return;
+        if(!result.user)throw new Error('会话响应无效');
+        session.user=result.user;session.expires_at=result.expires_at||session.expires_at;
+        $('session-retry').classList.add('hidden');saveSession(session);
+      }catch(e){
+        if(localStorage.getItem(STORAGE_KEY)!==stored)return;
+        if(isSessionInvalidError(e)){clearSession();$('login-error').textContent=e.message;return;}
+        $('login-error').textContent='网络暂不可用，登录凭据已保留，请重试恢复。';
+        $('session-retry').classList.remove('hidden');
+      }
+    }
+    var sessionRetry=$('session-retry');
+    sessionRetry.onclick=function(){restoreSession()};
+    if(typeof window!=='undefined')window.addEventListener('online',function(){if(!state.session)restoreSession()});
 
     $('login-form').addEventListener('submit',async function(event){
       event.preventDefault();var btn=$('login-btn');setBusy(btn,true,'正在验证…');$('login-error').textContent='';
@@ -469,7 +496,7 @@
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
       var silent=options&&options.silent===true;
       state.dashboardLoading=true;if(!silent)setBusy(btn,true,'刷新中…');
-      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});businessUI.refresh();}
+      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});$('consumption-status').textContent='正在读取本店当日数据…';businessUI.refresh();}
       try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);businessUI.refresh();}
       catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}

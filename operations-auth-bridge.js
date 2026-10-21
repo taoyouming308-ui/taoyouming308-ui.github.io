@@ -35,10 +35,15 @@
     function clear(){try{global.localStorage.removeItem(STORAGE_KEY)}catch(_){}}
 
     async function request(url,options){
-      var response=await global.fetch(url,options||{});
+      // Only the read-only scope check is cancellable; token rotation and writes keep their original semantics.
+      var controller=/\/functions\/v1\/operations-auth$/.test(url)&&global.AbortController?new global.AbortController():null;
+      var timer=controller?global.setTimeout(function(){controller.abort()},15000):null;
+      try{
+      var response=await global.fetch(url,Object.assign({},options||{},controller?{signal:controller.signal}:{}));
       var body=await response.json().catch(function(){return{error:'认证服务响应无效'}});
       if(!response.ok){var error=new Error(clean(body.error_description||body.error||body.message,300)||'认证请求失败');error.status=response.status;error.code=clean(body.error_code||body.code,100);throw error}
       return body;
+      }finally{if(timer)global.clearTimeout(timer)}
     }
 
     function roleScope(scope,code){
