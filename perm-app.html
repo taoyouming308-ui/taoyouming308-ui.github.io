@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="636">
+<html lang="zh-CN" data-version="637">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,7 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=636" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=637" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3161,13 +3161,13 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=636"></script>
-<script defer src="aesthetic-study.js?v=636"></script>
-<script defer src="aesthetic-daily.js?v=636"></script>
-<script defer src="hair-calculator-dialog.js?v=636"></script>
-<script src="aesthetic-knowledge.v1.js?v=636"></script>
-<script src="hair-vision-training.v1.js?v=636"></script>
-<script src="aesthetic-growth.v2.js?v=636"></script>
+<script src="employee-reports.js?v=637"></script>
+<script defer src="aesthetic-study.js?v=637"></script>
+<script defer src="aesthetic-daily.js?v=637"></script>
+<script defer src="hair-calculator-dialog.js?v=637"></script>
+<script src="aesthetic-knowledge.v1.js?v=637"></script>
+<script src="hair-vision-training.v1.js?v=637"></script>
+<script src="aesthetic-growth.v2.js?v=637"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -12957,12 +12957,7 @@ window.renderHairServicePhoto = function(photoType) {
   if (location.search.indexOf('reset_ai=1') >= 0) {
     try { localStorage.removeItem('ai_analyzed'); } catch(e) {}
   }
-  // 清理旧Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      regs.forEach(function(reg) { reg.unregister(); });
-    }).catch(function(e){ console.warn('Service Worker清理失败:', e); });
-  }
+  // Static shell lifecycle is owned by app-shell-client.js; never unregister unrelated workers.
   // ★ 版本更新检测：只允许升级，不允许把本机已见过的版本写低
   var VER = parseInt(document.documentElement.getAttribute('data-version')) || 1;
   var STORED_VER = parseInt(localStorage.getItem('app-version')) || 0;
@@ -12985,13 +12980,16 @@ window.renderHairServicePhoto = function(photoType) {
       banner.textContent = '🔄 正在更新到 v' + v + '…';
     }
     var target = buildVersionUrl(v);
-    var unregisterTask = Promise.resolve();
-    if ('serviceWorker' in navigator) {
-      unregisterTask = navigator.serviceWorker.getRegistrations().then(function(regs) {
-        return Promise.all(regs.map(function(reg) { return reg.unregister(); }));
-      });
+    // A waiting shell must not replace a document with unsaved business inputs.
+    if (window.ZysyrAppShell && window.ZysyrAppShell.requestUpdate()) {
+      if (banner) { banner.removeAttribute('data-updating'); banner.textContent = '界面更新准备中，点此重试'; }
+      return;
     }
-    unregisterTask.then(function() {
+    if (!confirm('更新会重新打开页面。请先保存未提交内容，确定继续吗？')) {
+      if (banner) banner.removeAttribute('data-updating');
+      return;
+    }
+    Promise.resolve().then(function() {
       if (!window.fetch) return true;
       return fetch(target, { cache: 'reload', credentials: 'same-origin' }).then(function(response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -13116,5 +13114,6 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+<script defer src="app-shell-client.js?v=637"></script>
 </body>
 </html>

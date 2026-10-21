@@ -1,3 +1,18 @@
+## 2026-10-21 · WebKit update diagnosis (App version: v637 local only)
+
+- Confirmed the test helper incorrectly treated async predicates as completed; explicit awaited polling now retains a hard 30-second deadline, all original scenarios and assertions. WebKit/Chromium full lifecycle passes, including runtime-only bad resource updates.
+- Guard repeated button/online update requests while a worker is installing or waiting. Real-browser synthetic regression preserves unsaved input and subsequent natural activation/update failure recovery. No auth/business/cache-scope changes. Exact results and original failure evidence are retained in ../validation-review/static-shell-results.md; desktop WebKit is not iPhone acceptance. No push, PR #64 edit, merge or deployment.
+
+## 2026-10-21 · Startup guard follow-up (App version: v637 local only)
+
+- Original full gate caught external deferred shell script before the inline startup guard. Moved client script after existing page content/guards; original style regression passed without relaxing its assertions. Browser cache-deletion assertion now waits boundedly for actual cleanup visibility. Final frozen full gate and WebKit outcome are in ../validation-review/static-shell-results.md.
+
+## 2026-10-21 · Static shell phase 2 (v637 local only, PR #64 untouched)
+
+- Isolated from 2d9cea7/main251c5b1; academy preserved. Public explicit37-file shell, hash-verified atomic install, natural activation only, no API/private data/write queue. Independent review fixes cover downgrade/runtime/same-cache reinstall, admin resource ownership, query version bypass and update retry.
+- New build/browser regressions and integrity generation check preserve original gates. Chromium synthetic lifecycle checks passed during development; WebKit offline emulation hit a browser internal error, server-drop alternative and final full gate results are recorded in ../validation-review/static-shell-results.md. No iPhone claim.
+- Local implementation/testing only: no phase2 push, PR update, merge, deployment, backend or business data change. See docs/static-shell-local-2026-10-21.md for limitations and device-test approval gap.
+
 ## 2026-10-21 · Startup draft PR preparation (v636, not deployed)
 
 User authorized pushing only the isolated startup branch and opening a draft PR with remote checks; no merge, auto-merge or production deployment. Integrated main 251c5b1 (academy PR #63), preserving all academy bytes and both handoff histories. Cumulative original pre-push gate will run against this main baseline before branch publication; exact-head remote CI remains required. iPhone acceptance still lacks an approved supported test route; no ports, tunnels or credentials added.
