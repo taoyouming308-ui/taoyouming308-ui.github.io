@@ -1,0 +1,47 @@
+{
+  "batch": "aesthetic-2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "692feb71bf9c358bbae63cb002c6ea8976959462",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured fringe-density, sweat or retention study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional fringe-goal versus exercise-recovery case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All fourteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current four views are separated from fictional density, reference-goal and exercise conditions",
+      "No image observation is treated as a medical hair-loss diagnosis or measured skull/face proportion",
+      "A/B benefits, costs and change conditions are explicit; neither fringe route is presented as the only valid answer",
+      "Density, self-performed recovery action and target priority each provide a distinct change signal",
+      "Necessary cleaning/drying is separate from extra three-minute styling; clipping and one salon trial are not sweat or all-day proof",
+      "No chemical/temperature/thinning formula, real-client data or invented user learning score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Reference fringe image and post-exercise state are scenario information, not shown or independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-22-fringe-vs-sweat.webp",
+    "sha256": "03d1bd4b178043314449dbb3007a49d785dd74bb3dcdb3415a45884cfa456827",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1312x1199 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: mobile hairstyling education case image, a clean 2x2 four-view salon contact sheet with no text\nPrimary request: create four consistent observational salon photographs of the same fictional adult East Asian woman showing only her current hairstyle; this is not a before-and-after comparison\nScene/backdrop: plain soft warm-gray salon wall, uncluttered, identical background in every panel\nSubject: same adult woman in every panel, natural unretouched skin and realistic facial texture, neutral relaxed expression, upright head, simple muted terracotta crew-neck top; complete head, hairline, neck and both shoulders visible\nCurrent hair: dark brown neck-length bob ending between jaw and shoulder, natural center-to-slightly-off-center part, forehead exposed, no bangs; front hairline density looks modest rather than thick, with a realistic slightly wider part near the front but no bald patches and no medical-looking hair loss; medium overall density, fine-to-medium strands, mostly straight crown and sides with a faint irregular bend at the ends; continuous moderately full perimeter, modest ordinary volume, long front pieces\nComposition/framing: 2x2 grid with equal panels and thin neutral gutters. Top left true front view. Top right exact right profile. Bottom left exact left profile. Bottom right direct back view. Keep facial identity, head-neck-shoulder proportions, clothing, hair color, part, apparent length, perimeter and lighting consistent. Camera at eye level, pulled back enough to include the entire head, all hair ends, full neck, both complete shoulder outlines and upper torso in each panel.\nLighting/mood: soft even daylight-balanced studio light, honest salon consultation photography, realistic individual hairs and small flyaways, no beauty filter\nConstraints: one adult only; current starting condition only; no fringe, no transformation, no reference hairstyle, no exercise scene, no wet/sweaty hair, no tools, no labels, no arrows, no measurements, no watermark, no logos; hair outside shape must not exaggerate or claim skull anatomy; do not diagnose thinning\nAvoid: glamour editorial styling, exaggerated volume, perfect mirror symmetry, dramatic curls, face reshaping, skin smoothing, heavy makeup, jewellery, cropped crown, cropped shoulders, text"
+  },
+  "feedSha256": "668bc8a6d6ae268f5117efb73f25455241f59257368de7f40d46c6eec153c111",
+  "caseCanonicalSha256": "4041e992debb5ec503bddb94fb143ead195e3f47838ac7ddfbc17de42661bf92",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-22 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: fifteen cases; fourteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing",
+    "browser": "Daily and wrapper browser tests were executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and ten-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}
