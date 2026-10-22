@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "692feb71bf9c358bbae63cb002c6ea8976959462",
+  "reviewed": false,
+  "scope": "Request immutable main public-source backup before submitting reviewed lesson inputs. No lesson, approvals or production changes in this commit.",
+  "requiredBeforeContent": "Academy publication preflight / backup-main must succeed and evidence must bind to this main SHA."
+}
