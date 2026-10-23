@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-23",
+  "state": "preflight_requested",
+  "published": false,
+  "requestedAt": "2026-10-23T00:26:00Z",
+  "baseSha": "bd54d07b2f8858b855e11ded44b20bbf0b0041ce",
+  "scope": "Request Academy publication preflight backup-main for immutable clean main. No lesson draft, review, assets, prepared output, approval or publication is claimed."
+}
