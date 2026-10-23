@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-23",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "bd54d07b2f8858b855e11ded44b20bbf0b0041ce",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, wave-formation or home-maintenance study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional loose-wave-reference versus haircut-only case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All fifteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current four-view haircut is separated from fictional strand diameter, reference target and daily-maintenance conditions",
+      "Reference contour, strand separation and wave formation are treated as distinct outcomes with distinct possible causes",
+      "No image observation is treated as a skull measurement, exact strand-diameter assessment or proof that haircut creates curl",
+      "A/B benefits, costs and switch conditions are explicit; haircut-only B is a conditional first test, not the only valid answer",
+      "Primary stop condition protects perimeter density and ear-tucking function; backup upgrade requires a real change in target and accepted effort",
+      "Necessary drying is separate from extra two-minute styling; clipping and one salon finish are not post-cut or home proof",
+      "No fixed layer height, thinning formula, chemical, rod, temperature, real-client data or invented user learning score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Loose-wave reference image, haircut result and any texture-service result are not shown or independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-23-cut-vs-wave.webp",
+    "sha256": "5a59aa5c76890f0a8bf52bf5ee613d6842d7015b2556d5622b46afcd9446e82d",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1536x1024 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet showing the CURRENT hairstyle of one fictional adult East Asian woman from four consistent views: front, exact right profile, exact left profile, and exact back. This is not a makeover and not a before/after comparison.\nScene/backdrop: identical plain warm light-gray studio background in all four panels, no salon tools or props\nSubject: the exact same woman in every panel, around early 30s, natural unretouched facial texture, neutral relaxed expression. Current hair is dark brown, medium-to-coarse looking, mostly straight with only a very slight natural bend at the ends, medium density, a jaw-to-upper-neck bob with a fairly continuous blunt lower edge, modest width through the lower sides, low/flat root lift at the crown, long open face-framing pieces, no short bangs. The shape should look somewhat firm and structured rather than airy or wavy. Show full head, complete hair outline and baseline, ears as naturally visible for the angle, full neck and both shoulders.\nClothing: identical simple muted sage-gray crew-neck top in all panels, no jewelry\nStyle/medium: honest photorealistic studio reference photography, realistic individual hair strands and skin texture, no beauty filter\nComposition/framing: landscape contact sheet, four equal panels in a clean 2x2 grid; top-left front, top-right exact right profile, bottom-left exact left profile, bottom-right exact back; consistent camera height, scale, lens, crop, posture and lighting; shoulders level and centered\nLighting/mood: soft neutral diffused daylight, even exposure, no dramatic shadows\nConstraints: same identity, proportions, hairstyle, hair length, clothing and lighting in every panel; show only the current haircut; no labels, no text, no arrows, no watermark; no simulated curls, no perm result, no styling comparison\nAvoid: glamour retouching, skin smoothing, makeup changes, exaggerated face reshaping, inconsistent hair length or face between views, hidden neckline, cropped head, three-quarter views, duplicated front views, extra people, salon background"
+  },
+  "feedSha256": "eb6efb50faedf6a7c9816619aa2f8d909694034275cd2ee20ab95b0e2a5c31a0",
+  "caseCanonicalSha256": "e086731414c98cde19a10b4c41c3568e6c6a138015a15e07f5659fe2f2bcadf5",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-23 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: sixteen cases; fifteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing",
+    "browser": "Daily browser test was executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and ten-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}

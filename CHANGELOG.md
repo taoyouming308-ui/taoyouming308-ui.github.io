@@ -1,3 +1,9 @@
+## 2026-10-23 · Haircut-only versus waved-reference aesthetic case (v638 unchanged)
+
+- Add one original fictional current-state four-view case separating a loose-wave reference into contour, strand separation and wave formation before choosing a haircut-only plan. Six conditional answers include a primary stop condition and a backup upgrade condition; five self-checks do not score an unanswered user.
+- Original same-person 1536×1024 AI WebP shows only the current straight bob, not the undisplayed reference, post-cut result or texture-service result. No real customer, skull/hair-diameter measurement, curl prediction, scientific validation or independent human expert certification is implied.
+- Preserve all fifteen earlier parsed feed objects and every academy lesson/catalog. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; protected exact-head CI, ordinary merge, Pages success and exact live feed/image readback remain required before claiming App synchronization.
+
 ## 2026-10-21 · Data read candidate (App version: v638 local only)
 
 - Base github/main ac0cfd26 (published v637); isolated perf/data-load-20261021. No push, merge, deployment, backend or production business data changes.
