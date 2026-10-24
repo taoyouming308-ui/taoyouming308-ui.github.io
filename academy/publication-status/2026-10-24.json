@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "20e3bcfa241c13d0edc87e3e45633c1d72b0189b",
+  "request": "Run Academy publication preflight backup-main on immutable public main before submitting reviewed course inputs.",
+  "approvalClaim": false,
+  "scope": "Only the current main source recovery point; not private data or production database"
+}
