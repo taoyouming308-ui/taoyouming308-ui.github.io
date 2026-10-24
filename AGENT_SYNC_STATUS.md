@@ -1,3 +1,10 @@
+## 2026-10-24 · Grown-out perm transition aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main d9b83da01f74d129dd1cfe81cf122082809009c9; clean isolated codex/aesthetic-2026-10-24 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing academy publication and all sixteen earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-24 case separates visible root-to-end fall from fictional old-perm history and live elasticity evidence. Conditional A/B compare preserving short-lived residual curl with a future-stable straight-growth base; six answers and five unscored self-checks include time horizon, shoulder contact, stop and switch conditions without inventing user completion.
+- Original 1536×1024 AI WebP shows only one fictional adult's current front/two profiles/back, not the undisplayed reference, cut, first wash, reperm or six-month result. No real customer, measured growth, verified chemical history, damage grade, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:d1f3c90c9b28ba6d8dfb3c2907f715af0ec0ec5289914954d933e994e5fbc032 -->
 ## 2026-10-24 · Reviewed academy publication candidate (App version: v638 unchanged)
 
