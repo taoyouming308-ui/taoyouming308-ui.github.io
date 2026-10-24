@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:d1f3c90c9b28ba6d8dfb3c2907f715af0ec0ec5289914954d933e994e5fbc032 -->
+## 2026-10-24 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 20e3bcfa241c13d0edc87e3e45633c1d72b0189b.
+- Dates: 2026-10-24. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-23 · Haircut-only versus waved-reference aesthetic case (v638 unchanged)
 
 - Add one original fictional current-state four-view case separating a loose-wave reference into contour, strand separation and wave formation before choosing a haircut-only plan. Six conditional answers include a primary stop condition and a backup upgrade condition; five self-checks do not score an unanswered user.
