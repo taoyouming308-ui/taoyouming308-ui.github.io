@@ -1,10 +1,59 @@
 {
   "schemaVersion": 1,
-  "date": "2026-10-24",
-  "state": "preflight_requested",
+  "state": "preparation_verified_pending_protected_checks",
   "published": false,
+  "dates": [
+    "2026-10-24"
+  ],
   "baseSha": "20e3bcfa241c13d0edc87e3e45633c1d72b0189b",
-  "request": "Run Academy publication preflight backup-main on immutable public main before submitting reviewed course inputs.",
-  "approvalClaim": false,
-  "scope": "Only the current main source recovery point; not private data or production database"
+  "inputHeadSha": "89898eb48053b437b080d0fb53b2d8ca7ecefdb9",
+  "preparedHeadSha": "87fd87aca5bb101330058eb0acf958d286ad9726",
+  "preparationRun": 40046395178,
+  "preparationArtifact": 12541821637,
+  "preparationArtifactSha256": "00f3287913af1d428c5ed802cb3c5bdc07623ed827964c585d7bd427870f5d33",
+  "backupArtifact": 12540984903,
+  "preparationBackupZipSha256": "ebc2fc033fb55baa6aa945d3fb0d1a0d17848d6e7378ba13525609eb06049e2b",
+  "preparationBackupArchiveSha256": "1fc8884d0247bd3eb4fba8ce8534f92f6b7719f7311b6110adc1b24f55448988",
+  "baselinePreflightRun": 40045921879,
+  "baselineBackupArtifact": 12540929278,
+  "baselineBackupZipSha256": "fa7b5982f62e57b47ba68ab9d412f24cc958b1c054ac56af26ded5719ed8fbf6",
+  "baselineBackupArchiveSha256": "a873552101b889a219838d182e3b782e894e2f3cb7a3917c5a0f78d1c51e9274",
+  "contentBindingSha256": "d1f3c90c9b28ba6d8dfb3c2907f715af0ec0ec5289914954d933e994e5fbc032",
+  "reviewedAt": "2026-10-24T00:43:32.853Z",
+  "verifiedAt": "2026-10-24T00:54:06.455Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "catalogItems": 11,
+    "allTenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Authenticated GitHub full-file content read at immutable preparedHeadSha; recomputed UTF-8 SHA256 independently and compared generated HTML to downloaded signed workflow artifact",
+    "backupArchive": "Both clean main recovery artifacts downloaded, tar SHA256 recomputed; only public source, not private computer/database",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/drafts/2026-10-24.json": "092c6e6ce5cb14fe1c0241f4df82b346a6735f45a72a4116a3487019f4f0f997",
+    "academy/reviews/2026-10-24.json": "e2e483c4cb7bd525cf0f17d71550cebbbbfe47c06f8fe20d2d1ec30495e3b45f",
+    "academy/assets/2026-10-24/figure1.svg": "ff8777202ad1918ea864e1072f0c2511d65cbcff2979faa542eb8d7470565bac",
+    "academy/assets/2026-10-24/figure2.svg": "c632419417490719527f049370db339b97e7897f1f2e9d8ae3e310d54f7fa579",
+    "academy/assets/2026-10-24/figure3.svg": "6c64c882fd0635cf08257405a3611cc127361f629435c94ca9d3b0134f70dbfe",
+    "academy/2026-10-24.html": "5e239d5432792c3a761baa0f631f6b3d9694b36af98780b90465f8b35f8f0d7f",
+    "academy/catalog.json": "306829a1eeb43fa45018ddf52f1c57c6baf6ed95151326efb699aaec871131ac",
+    "academy/index.html": "4af248b57dc03f42459389bd3ee6b18fde8139f4b7ef5d98e676b6895de346f0",
+    "AGENT_SYNC_STATUS.md": "2f092199b94183af5d85fd221ea127b0f123667b806f978e655ff431076ca256",
+    "CHANGELOG.md": "4ccf02e7c0b21fb5aef67908bfed8963fbfa97c633aed310482551bee7d95789"
+  },
+  "remaining": [
+    "exact-final-head Validate shared app / validate success",
+    "exact-final-head Academy publication preflight / backup-main success",
+    "expected_head_sha normal protected merge",
+    "actual Pages SHA256 readback on merged main"
+  ]
 }
