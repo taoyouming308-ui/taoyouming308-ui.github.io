@@ -1,3 +1,9 @@
+## 2026-10-24 · Grown-out perm transition aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about straight new growth, uneven residual perm and a six-month no-reperm plan. Six conditional answers compare preserving temporary curl with building a future-stable straight-growth base; five self-checks remain unscored without a user answer.
+- Original same-person 1536×1024 AI WebP shows current root-to-end transition and shoulder contact only, not the undisplayed reference, haircut, first-wash or future result. No real customer, chemical history, elasticity, damage grade, scientific validation or independent human expert certification is implied.
+- Preserve the 2026-10-24 academy publication and all sixteen earlier parsed feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; protected exact-head CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:d1f3c90c9b28ba6d8dfb3c2907f715af0ec0ec5289914954d933e994e5fbc032 -->
 ## 2026-10-24 · Reviewed academy publication candidate (App version: v638 unchanged)
 

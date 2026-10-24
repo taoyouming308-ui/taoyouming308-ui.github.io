@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-24",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "d9b83da01f74d129dd1cfe81cf122082809009c9",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, residual-perm durability or home-maintenance study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional grown-out-perm transition case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All sixteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current four-view fall pattern is separated from fictional perm history, growth length, color history and daily-maintenance conditions",
+      "Root, transition and old-perm segments are analyzed across surface, sides, back and nape instead of assigning one texture label to the whole head",
+      "No image observation is treated as exact strand-diameter, elasticity, damage-grade, skull or chemical-history evidence",
+      "A/B benefits, costs, time horizon, stop conditions and switch feedback are explicit; future-oriented B is a conditional first test, not the only valid answer",
+      "Shoulder contact, face frame, weight, volume location, natural drying, three-minute handling and next-cut loss are included",
+      "Clipping, wetting and one salon finish are decision aids, not proof of the cut, first wash, six-month state or reference result",
+      "No fixed cutting centimeters, thinning formula, chemical, rod, temperature, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Undisplayed reference, haircut result, first-wash result and future six-month state are not independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-24-grown-out-perm.webp",
+    "sha256": "7b38ea7c0ffac9eb2069260c3142efd64115e1446402f80f2b30b65b5e2f0896",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1536x1024 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet showing the CURRENT hairstyle of one fictional adult East Asian woman from four consistent views: front, exact right profile, exact left profile, and exact back. This is one current-state documentation image, not a makeover and not a before/after comparison.\n\nScene/backdrop: identical plain warm light-gray studio background in every panel, no salon tools, no furniture, no props.\nSubject: the exact same fictional woman in every panel, early 30s, natural unretouched skin texture, neutral relaxed expression, ordinary realistic appearance. Her current hair is dark natural brown, medium density, fine-to-medium-looking strands, collarbone length. The first approximately 9–11 cm from the scalp looks mostly straight, smooth and relatively flat from grown-out new hair. Loose old-perm bends begin around the lower ear to jaw area and become clearer through the lower half; the surface wave is broad and relaxed while the inner nape area shows a slightly tighter irregular S-bend. Ends are unevenly wavy, a little dry-looking but not severely damaged, and spread where they meet the upper shoulders. The overall visual weight sits low, with limited crown lift. Show an honest current grown-out perm transition, not fresh uniform curls.\nHairline/style: slightly off-center natural part, no short bangs, long face-framing pieces, both sides worn down. No tucked hair.\nFraming: show full head, complete hairstyle outline and baseline, full neck, both shoulders, and the upper chest in every panel.\nClothing: identical simple matte dusty-blue wide crew-neck top in all panels, no jewelry.\nStyle/medium: honest photorealistic studio reference photography, realistic individual strands, flyaways, pores and subtle everyday texture; no beauty filter, no glamour retouching.\nComposition/layout: landscape 2-by-2 contact sheet with four equal panels separated by narrow neutral gutters. Top-left front, top-right exact right profile, bottom-left exact left profile, bottom-right exact back. Same camera height, scale, focal length, crop, posture, shoulder level and soft neutral daylight in every panel.\nOutput intent: current-condition evidence for advanced hairstylist training about straight new growth versus remaining old perm, length-to-shoulder interaction, and long-term design tradeoffs.\nConstraints/invariants: same identity, head/face proportions, neck and shoulder proportions, clothing, hairstyle length, root-to-curl transition and lighting across all four panels. Only one adult person repeated across views. No labels, no text, no arrows, no watermark. Do not show a reference hairstyle, proposed design, haircut result, salon styling result or chemical service result.\nAvoid: fresh uniform salon curls, curls starting at the scalp, highly defined ringlets, extreme frizz, wet hair, hair extensions, cropped head, hidden shoulders, three-quarter angles in place of true profiles, duplicated front views, inconsistent length or face, extra people, dramatic makeup, face reshaping, glossy advertising finish."
+  },
+  "feedSha256": "fd7710b809906d243c8c0f6166962f502606fed7a0fc9ee61480cc4b4aa10d5f",
+  "caseCanonicalSha256": "8d6e3ca51f38f8886cf69bd3fba08f6118d8e62e46a804bf6eead4a9766db4a8",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-24 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: seventeen cases; sixteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing",
+    "browser": "Daily browser test was executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and eleven-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}
