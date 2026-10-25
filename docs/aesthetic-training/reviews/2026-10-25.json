@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-25",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "19bc665a358a926f762fe835381c3a923208ddbe",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, nape-growth or eight-to-ten-week durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional low-hairline and upward-nape-flow maintenance case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All seventeen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current four-view grown-out outline is separated from fictional hairline, growth direction, service interval and maintenance conditions",
+      "Clean neckline is decomposed into neck exposure, boundary continuity and back volume rather than treated as one fixed short length",
+      "No image observation is treated as follicle direction, exact hairline-height, breakage, damage, skull or growth-rate evidence",
+      "A/B benefits, costs, stop conditions and switch feedback are explicit; grow-out-oriented B is a conditional first test, not the only valid answer",
+      "Front, two profiles, back, head position, wet/dry nape flow, face frame, weight, volume location and full service cycle are included",
+      "Clipping, wetting, combing and one salon finish are decision aids, not proof of the cut, first wash, fourth week or tenth week",
+      "No fixed cut centimeters, clipper height, graduation angle, thinning percentage, chemical parameter, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Undisplayed reference, haircut result, first-wash and eight-to-ten-week states are not independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-25-nape-growout.webp",
+    "sha256": "02550a9bdaa93abd46814a72271c3420f7a433a9fe490a219cafaa2f4990b410",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1536x1024 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet documenting the CURRENT haircut of one fictional adult East Asian woman from four consistent views: front, exact right profile, exact left profile, and exact back. This is one current-state record about a short bob growing out after roughly seven weeks, not a makeover and not a before/after comparison.\n\nScene/backdrop: identical plain warm light-gray studio background in every panel; no salon tools, mirrors, chairs, props or extra people.\nSubject: the exact same fictional woman in every panel, early-to-mid 30s, natural unretouched skin, neutral relaxed expression, ordinary realistic appearance. Dark natural brown hair, medium-to-high density, medium-to-coarse-looking straight strands. Current haircut is a grown-out short bob: side lengths around the lower jaw, back baseline around the middle-to-lower nape, moderate compact weight through the lower sides, modest crown lift, no short bangs, softly open off-center part. The neckline is intentionally imperfect from regrowth: a naturally low, slightly irregular nape hairline is visible below the main back baseline, with small center and side nape sections growing upward and pushing outward into short wisps. The nape wisps must look like natural growth pattern and seven-week regrowth, not razor damage or a fresh designed texture. The main bob still has enough length and weight to partially cover and control the upper nape, while lower regrowth remains visible in the back and profile views.\nBody/framing: full head, complete hair outline and baseline, both ears as naturally appropriate to the view, entire neck, both shoulders and upper chest visible in every panel. Keep posture and head level neutral; no head tilt.\nClothing: identical simple matte muted clay-beige wide crew-neck top in all four panels; no collar, jewelry or accessories, so the neck and shoulder relationship stays visible.\nStyle/medium: honest photorealistic studio reference photography with realistic individual strands, subtle flyaways, pores and everyday texture; no beauty filter, no glamour retouching.\nComposition/layout: landscape 2-by-2 contact sheet with four equal panels and narrow neutral gutters. Top-left front, top-right exact right profile, bottom-left exact left profile, bottom-right exact back. Same camera height, subject scale, focal length, crop, shoulder level and soft diffused daylight in all panels.\nOutput intent: current-condition evidence for advanced hairstylist training about low nape hairline, upward-growing nape flow, neck exposure, outline stability and eight-to-ten-week haircut cycle.\nConstraints/invariants: same identity, head and face proportions, neck and shoulder proportions, clothing, current haircut length, visible nape regrowth pattern and lighting in every panel. Only one adult person repeated across views. Show only the current grown-out haircut. No labels, no text, no arrows, no watermark. Do not show a cleaner proposed neckline, clipper result, haircut result, shaved undercut or design comparison.\nAvoid: fresh polished salon finish, perfectly sharp new baseline, high undercut, shaved nape, skin fade, severe asymmetry, wet hair, dramatic curls, damaged-looking broken hair, hidden neck, cropped shoulders, three-quarter angles in place of true profiles, inconsistent hair length or identity, duplicated front views, dramatic makeup, face reshaping, glossy advertising finish."
+  },
+  "feedSha256": "8955ec3b18beec9c181b2e677391872e300b70ab7ce8f56782555a0d4e87675c",
+  "caseCanonicalSha256": "5db4a17a7d2c394b3edd7d5ce95354fcfcf516d39a0a84380d2382c0982ed298",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-25 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: eighteen cases; seventeen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing",
+    "browser": "Daily browser test was executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and twelve-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}

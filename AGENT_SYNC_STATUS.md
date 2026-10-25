@@ -1,3 +1,10 @@
+## 2026-10-25 · Nape grow-out and maintenance-cycle aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 19bc665a358a926f762fe835381c3a923208ddbe; clean isolated codex/aesthetic-2026-10-25 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-25 academy publication and all seventeen earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-25 case separates visible nape wisps from fictional low hairline/upward flow and live wet/dry evidence. Conditional A/B compare higher exposed neckline with a bridge-length grow-out plan; six answers and five unscored self-checks include first-day through tenth-week timepoints without inventing user completion.
+- Original 1536×1024 AI WebP shows only one fictional adult's current front/two profiles/back grown-out short bob, not the undisplayed reference, new cut, first wash or future result. No real customer, measured hairline, verified follicle direction, growth rate, damage grade, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:b4cb12a2de82b8af296901acad43e7af184fe14997124eab9d2eb2bd13a2e3ac -->
 ## 2026-10-25 · Reviewed academy publication candidate (App version: v638 unchanged)
 

@@ -1,3 +1,9 @@
+## 2026-10-25 · Nape grow-out and maintenance-cycle aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about low nape hairline, upward-growing nape flow, neck exposure and an eight-to-ten-week service interval. Six conditional answers compare a higher exposed line with bridge-length grow-out control; five self-checks remain unscored without a user answer.
+- Original same-person 1536×1024 AI WebP shows one current seven-week grown-out short bob, not the undisplayed reference, fresh haircut, first wash or tenth-week result. No real customer, measured hairline, follicle direction, growth rate, scientific validation or independent human expert certification is implied.
+- Preserve the 2026-10-25 academy publication and all seventeen earlier parsed feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; protected exact-head CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:b4cb12a2de82b8af296901acad43e7af184fe14997124eab9d2eb2bd13a2e3ac -->
 ## 2026-10-25 · Reviewed academy publication candidate (App version: v638 unchanged)
 
