@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-25",
+  "state": "preflight_requested",
+  "mainBaselineSha": "a0e937b467151e218671e227e1128b9ac5eb74e2",
+  "publication": false,
+  "requestedFor": "Academy publication preflight / backup-main; no reviewed draft, assets or rendered HTML written before baseline backup",
+  "note": "Not a content approval, validation result or deployment"
+}
