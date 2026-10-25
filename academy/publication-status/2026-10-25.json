@@ -1,8 +1,59 @@
 {
-  "date": "2026-10-25",
-  "state": "preflight_requested",
-  "mainBaselineSha": "a0e937b467151e218671e227e1128b9ac5eb74e2",
-  "publication": false,
-  "requestedFor": "Academy publication preflight / backup-main; no reviewed draft, assets or rendered HTML written before baseline backup",
-  "note": "Not a content approval, validation result or deployment"
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-25"
+  ],
+  "baseSha": "a0e937b467151e218671e227e1128b9ac5eb74e2",
+  "inputHeadSha": "0592afb0d00e9e4448fb71a900edc6d7b052a9fe",
+  "preparedHeadSha": "f4d5ed0c2052d37e17d600dd7ffe6412d2d316f5",
+  "preparationRun": 40148415307,
+  "preparationArtifact": 12581975904,
+  "preparationArtifactSha256": "ba9f6f67d61da3e531115f2f8905b4dc84a652b34abf5f8b5cba182ed4aad05b",
+  "backupArtifact": 12580534942,
+  "preparationBackupZipSha256": "a67bb1db12e14fb8774ee62f321475c7754bba2aed31fd099553bc5d2ff72b90",
+  "preparationBackupArchiveSha256": "587f94ea54f47bdc97f650a6784bbd1889877e29fef33f6bf49303c01cb3e86c",
+  "baselinePreflightRun": 40147871312,
+  "baselineBackupArtifact": 12581239325,
+  "baselineBackupZipSha256": "66ac2e781e88b990f8dc900c9bb0e48b21e08c2eeadfa8d33efd9dc9aff4e2f5",
+  "baselineBackupArchiveSha256": "0e2f345c7e424be477c3943214d51bb68f86cc12154d170aced811c2b70263f5",
+  "contentBindingSha256": "b4cb12a2de82b8af296901acad43e7af184fe14997124eab9d2eb2bd13a2e3ac",
+  "reviewedAt": "2026-10-25T00:52:46.612Z",
+  "verifiedAt": "2026-10-25T01:03:43.828Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "catalogItems": 12,
+    "allElevenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "GitHub authenticated contents at immutable prepared head; independently computed UTF-8 SHA256 for all ten recorded files, verified prepared artifact HTML SHA, prior catalog and static fallback coverage, branch ancestry/diff scope and exact reviewed SVG hashes",
+    "backupArchive": "Initial PR preflight and clean-main preparation artifacts downloaded; both public-source tar.gz archives were integrity-checked and SHA256 recomputed; excludes private workstation and production database",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-10-25.html": "3fbb506a8acc321f2258a9f4640cb27b069914a87a05992122ebdbba614988af",
+    "academy/catalog.json": "08c3a943a08ae74c454c925b84cc3e56f1e29b416a5860149a6bedbfff2f3d9c",
+    "academy/index.html": "85e06a6f1db088e744ae521d1bed971568dfcfebe8dcb71fc146dfc8ff8afbfc",
+    "academy/drafts/2026-10-25.json": "b1fa3d31f922dcd89d734c48d74cbb35f6adbe0ae198e18d55165733adb3eaa0",
+    "academy/reviews/2026-10-25.json": "bfd142246f1221819510ce268a9db36d0ff74f787a9e1abfd1c34bead41ac595",
+    "academy/assets/2026-10-25/figure1.svg": "25409d4be6d68fd20eadea1ef0b0439d2bd91789cc2063244f7c179956a6be4d",
+    "academy/assets/2026-10-25/figure2.svg": "1e0acc67b4077d277228a84e6903327ae1844164c6963ddb378ade55ccf72c96",
+    "academy/assets/2026-10-25/figure3.svg": "2c2bdd9faf4c6b944ea8a789d4952527523c7853f61be42067a1e7aedf2dea0a",
+    "AGENT_SYNC_STATUS.md": "f251860a422d2a405404c63ae58df8a0935b186c5b88b30af562f40685b08fd4",
+    "CHANGELOG.md": "570ab254c2b6c2ae593294b477d4a71b952ca905cc7c76b34c5d142388b024d1"
+  },
+  "remaining": [
+    "exact-final-head Validate shared app / validate success",
+    "exact-final-head Academy publication preflight / backup-main success",
+    "expected_head_sha normal protected merge",
+    "actual Pages SHA256 readback on merged main"
+  ]
 }
