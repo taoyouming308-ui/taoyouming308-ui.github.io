@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:b4cb12a2de82b8af296901acad43e7af184fe14997124eab9d2eb2bd13a2e3ac -->
+## 2026-10-25 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main a0e937b467151e218671e227e1128b9ac5eb74e2.
+- Dates: 2026-10-25. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-24 · Grown-out perm transition aesthetic case (v638 unchanged)
 
 - Add one original fictional four-view current-state case about straight new growth, uneven residual perm and a six-month no-reperm plan. Six conditional answers compare preserving temporary curl with building a future-stable straight-growth base; five self-checks remain unscored without a user answer.
