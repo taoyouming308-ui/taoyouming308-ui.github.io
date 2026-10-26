@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-26",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "9aab0716c0211e51ea07c63c82b22a1692e3462a",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured haircut, reference-match, headset-recovery or eight-to-ten-week durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional geometric-reference adaptation case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All eighteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current collarbone outline is separated from fictional density, texture, reference, headset and service-cycle conditions",
+      "Reference is decomposed into length, horizontal boundary, upper-side width, ear exposure and surface finish instead of copied as one package",
+      "No hair outline is treated as skull measurement, and no image observation is treated as hair-diameter, density, damage, temperament or profession evidence",
+      "A/B benefits, costs, stop conditions and switch feedback are explicit; adaptable B is a conditional first test, not the only valid answer",
+      "Front, two true profiles, back, head/shoulder relationship, temple coverage, nape bend, ear tuck, headset use and growth timeline are included",
+      "Clipping, salon finish and one three-minute test are decision aids, not proof of haircut result, home reproduction or ten-week stability",
+      "No fixed cut centimeters, graduation angle, thinning percentage, chemical parameter, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Undisplayed reference, haircut result, first-wash, fourth-week and ten-week states are not independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-26-box-bob-adaptation.webp",
+    "sha256": "8531046ff2c1c830f8fd481e487238a9f968726a7996a7b7c278e2f167cd9ff8",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1536x1024 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet documenting the CURRENT hairstyle and body proportions of one fictional adult East Asian woman from four fully consistent views: front, exact right profile, exact left profile, and exact back. This is one current-condition record for analysing whether a jaw-length geometric box bob from a reference can be adapted to her; it is not a makeover, not a before/after comparison, and must not show the reference hairstyle or any proposed result.\n\nScene/backdrop: identical plain warm light-gray studio background in every panel; no salon tools, mirror, chair, props, extra people, text or labels.\nSubject: the exact same fictional woman in every panel, early-to-mid 30s, natural unretouched skin, neutral relaxed expression, ordinary realistic appearance. Dark natural brown hair with medium-to-high visible density and medium-to-coarse-looking strands. Current haircut is a straight collarbone-length lob with a continuous slightly heavy baseline resting just above and lightly touching the shoulders, low-to-mid visual weight, modest root lift, softly off-center natural part, no short bangs, long face-framing pieces that can tuck behind the ears. Most of the hair looks straight, while the inner nape and very ends show a subtle irregular inward/outward bend from natural growth and shoulder contact. Temple areas should look slightly less full than the back, but not balding or medically abnormal. Hair is clean and naturally blow-dried, not flat-ironed, not wet, not glossy slick.\nProportions for teaching: full shoulders visibly somewhat broad relative to the head silhouette; neck of medium length; head and face proportions natural and consistent. Do not exaggerate or beautify. The current lower hair width should sit near the collarbone/shoulder area, leaving the upper sides comparatively quiet.\nBody/framing: full head, complete hairstyle outline and baseline, both ears as naturally appropriate to each angle, entire neck, both shoulders and upper chest visible in every panel. Neutral level head and posture; no tilt. On the front view the hair remains down rather than tucked so the current outline is readable.\nClothing: identical simple matte muted slate-blue wide crew-neck top in all panels, no collar, jewelry or accessories, so neck and shoulder proportions stay visible.\nStyle/medium: honest photorealistic studio reference photography, realistic individual strands, flyaways, pores and everyday texture; no beauty filter, glamour retouching or face reshaping.\nComposition/layout: landscape 2-by-2 contact sheet with four equal panels and narrow neutral gutters. Top-left front, top-right exact right profile, bottom-left exact left profile, bottom-right exact back. Same camera height, subject scale, focal length, crop, shoulder level and soft diffused daylight in all panels.\nOutput intent: current-condition evidence for advanced hairstylist training about adapting a geometric jaw-length reference to head/shoulder proportions, temple density, mixed straight-and-bent texture, ear-tuck function and low-maintenance styling.\nConstraints/invariants: same identity, face, head, neck and shoulder proportions, clothing, current haircut length, density pattern, bend pattern and lighting in all four panels. Only one adult person repeated across views. Show only the current collarbone lob. No reference image, no haircut result, no geometric jaw bob, no before/after, no comparison hairstyle, no salon finish. No labels, text, arrows or watermark.\nAvoid: short bob result, micro bangs, heavy fringe, dramatic layers, strong curls, wet look, severe asymmetry, shaved areas, polished advertising hair, hidden neck, cropped shoulders, three-quarter angles substituted for true profiles, inconsistent identity or hair length, duplicated front views, dramatic makeup, medical-looking hair loss."
+  },
+  "feedSha256": "a5a5ea159a653382fc589349690bfa43315247ace233f6c920d576b2bbd0aa91",
+  "caseCanonicalSha256": "e778eca194b02fb866daf767d7c741255040e6f387fcbffe062ac7a74294ab10",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-26 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: nineteen cases; eighteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "browser": "Daily browser test was executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and thirteen-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}
