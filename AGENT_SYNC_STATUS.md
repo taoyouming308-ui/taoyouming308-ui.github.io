@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:274fdccc24a83f9466a7c328f6a9ed1bac369e16dc6e5c0c30495cd2eeee1231 -->
+## 2026-10-26 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main a6015d26ddf4376fbfcc6617f986e2c582336832.
+- Dates: 2026-10-26. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-25 · Nape grow-out and maintenance-cycle aesthetic case (App version: v638 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 19bc665a358a926f762fe835381c3a923208ddbe; clean isolated codex/aesthetic-2026-10-25 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-25 academy publication and all seventeen earlier aesthetic cases remain preserved.
