@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（AI内容编辑、来源/版权/隐私核验；非真人同行评审）",
+  "reviewedAt": "2026-10-26T00:58:02.578Z",
+  "approvalReference": "本轮阅读核对PMC 2024/2025微CT成像论文、MDPI 2019人发弯曲力学研究和Wiley 2024化学键综述的题名、作者、日期与支持边界，审查完模拟案例不含真实顾客资料；3张SVG由本轮原创绘制，按无外链无脚本的白名单实际核验，未借用第三方图片。这是AI实际核验记录，不假冒外部专家/客户审批或实验结果。",
+  "privacyVerified": true,
+  "contentSha256": "bff5ef883c2b618590b26ba1820a480c6ca37de98bc76152a7522ba7b277f924",
+  "assetSha256": {
+    "assets/2026-10-26/figure1.svg": "8bb03a2292b1dedfd4449004bb2e499a996e40c2f84ca4993eada456e579030c",
+    "assets/2026-10-26/figure2.svg": "4b3454585a0f0c1f273d5727cd1762aa9c71dc90479017558084dd88bc38b9f9",
+    "assets/2026-10-26/figure3.svg": "2003a1452341475d729d48014b767a96db1d06bf8a6423071bd894a944c36cc8"
+  },
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "核查论文正文及期刊记录：2024年11月20日线上、2025年2月刊载，微CT和显微成像分析3位供发者的天然卷曲毛发，研究曲线与纤维形状差异。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "核对Cosmetics 2019年第6卷第2期原始毛发实验、DOI及作者，研究弯曲力学指标与皮质细胞结构的关系。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "核对2024年5月11日Wiley International Journal of Cosmetic Science发表的化学键综述摘要及研究范围，讨论二硫键、氢键、离子与疏水作用。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本课AI编辑从零绘制，只有SVG原生路径、基础形状与中文标注；无第三方插画、照片、真实人像、个人信息、外部URL或活动脚本。逐图核对了元素、属性和版权出处。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本课AI编辑从零绘制，只有SVG原生路径、基础形状与中文标注；无第三方插画、照片、真实人像、个人信息、外部URL或活动脚本。逐图核对了元素、属性和版权出处。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本课AI编辑从零绘制，只有SVG原生路径、基础形状与中文标注；无第三方插画、照片、真实人像、个人信息、外部URL或活动脚本。逐图核对了元素、属性和版权出处。"
+    }
+  ]
+}
