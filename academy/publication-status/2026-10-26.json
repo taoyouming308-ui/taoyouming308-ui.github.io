@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "state": "preflight_requested",
+  "published": false,
+  "phase": "prepare_draft_pr_only",
+  "baselineMainSha": "a6015d26ddf4376fbfcc6617f986e2c582336832",
+  "intent": "Request immutable main-source backup via Academy publication preflight before uploading draft, reviews, or assets.",
+  "restrictions": [
+    "No lesson content submitted at this stage",
+    "Not an approval, preparation success, merge, or deployment assertion",
+    "Main and business code remain unchanged"
+  ]
+}
