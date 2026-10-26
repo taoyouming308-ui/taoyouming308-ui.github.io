@@ -1,3 +1,9 @@
+## 2026-10-26 · Geometric-reference adaptation aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about adapting a jaw-length geometric box-bob reference to shoulder/head proportion, temple coverage, mixed nape bend, ear-tuck/headset function and an eight-to-ten-week service cycle. Six conditional answers separate permanent structure from reversible styling; five self-checks remain unscored without a user answer.
+- Original same-person 1536×1024 AI WebP shows one current collarbone lob, not the undisplayed reference, proposed haircut, first wash, fourth week or ten-week result. No real customer, measured skull/face ratio, verified density, hair diameter, damage grade, scientific validation or independent human expert certification is implied.
+- Preserve the 2026-10-26 academy publication and all eighteen earlier parsed feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; protected exact-head CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:274fdccc24a83f9466a7c328f6a9ed1bac369e16dc6e5c0c30495cd2eeee1231 -->
 ## 2026-10-26 · Reviewed academy publication candidate (App version: v638 unchanged)
 

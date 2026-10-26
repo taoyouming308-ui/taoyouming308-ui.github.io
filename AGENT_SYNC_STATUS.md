@@ -1,3 +1,10 @@
+## 2026-10-26 · Geometric-reference adaptation aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 9aab0716c0211e51ea07c63c82b22a1692e3462a; clean isolated content/aesthetic-2026-10-26 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-26 academy publication and all eighteen earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-26 case separates a visible current collarbone outline from fictional density/texture, an undisplayed jaw-length box-bob reference and live headset/ear-tuck evidence. Conditional A/B compare direct geometric copying with a reversible structural base; six answers and five unscored self-checks distinguish permanent structure from temporary styling without inventing user completion.
+- Original 1536×1024 AI WebP shows only one fictional adult's current front/two true profiles/back collarbone lob, not the undisplayed reference, proposed cut, first wash, fourth week or ten-week result. No real customer, measured skull/face ratio, verified density, hair diameter, damage grade, reference match, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:274fdccc24a83f9466a7c328f6a9ed1bac369e16dc6e5c0c30495cd2eeee1231 -->
 ## 2026-10-26 · Reviewed academy publication candidate (App version: v638 unchanged)
 
