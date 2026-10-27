@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:9544c97ad27c8e2d14cb7b5a2dd0b49ed954914ae763f9cbb14d2dcbc735239d -->
+## 2026-10-27 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8519da154775a5e9fa35a8662a0ba8d38022eb6c.
+- Dates: 2026-10-27. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-26 · Geometric-reference adaptation aesthetic case (v638 unchanged)
 
 - Add one original fictional four-view current-state case about adapting a jaw-length geometric box-bob reference to shoulder/head proportion, temple coverage, mixed nape bend, ear-tuck/headset function and an eight-to-ten-week service cycle. Six conditional answers separate permanent structure from reversible styling; five self-checks remain unscored without a user answer.
