@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430"><title>烫发研习院 2026-10-27 原创教学示意图</title><desc>虚构人物正面、45度、侧面体积示意，非真实效果保证。</desc><rect width="900" height="430" rx="24" fill="#F8F4EC"/>
+ <text x="44" y="54" font-size="28" font-weight="bold" fill="#353B3A">人物三视角：保留需要的宽度，控制后颈膨胀</text>
+ <g fill="none" stroke="#353B3A" stroke-width="3">
+ <ellipse cx="176" cy="214" rx="76" ry="106" fill="#E1D4C4"/>
+ <ellipse cx="451" cy="214" rx="68" ry="100" fill="#E1D4C4"/>
+ <ellipse cx="714" cy="210" rx="65" ry="102" fill="#E1D4C4"/>
+ <path d="M119 262 Q102 323 123 350 M233 260 Q251 327 231 350"/>
+ <path d="M393 265 Q389 332 404 358 M502 253 Q522 327 509 355"/>
+ <path d="M680 257 Q656 325 678 354 M772 264 Q791 329 776 350"/>
+ </g>
+ <g fill="none" stroke="#B77C68" stroke-width="6" stroke-linecap="round">
+ <path d="M95 185 Q51 235 111 282 Q64 305 112 340"/>
+ <path d="M253 185 Q301 245 252 282 Q292 313 257 341"/>
+ <path d="M381 170 Q330 229 389 283 Q342 321 401 346"/>
+ <path d="M524 179 Q577 238 522 283 Q556 315 521 342"/>
+ <path d="M790 179 Q833 241 778 287 Q812 314 782 340"/>
+ </g>
+ <g fill="none" stroke="#AEBDB0" stroke-width="4">
+ <ellipse cx="176" cy="285" rx="111" ry="35" stroke-dasharray="6 5"/>
+ <ellipse cx="451" cy="276" rx="100" ry="33" stroke-dasharray="6 5"/>
+ <ellipse cx="718" cy="315" rx="82" ry="28" stroke-dasharray="6 5"/>
+ </g>
+ <g font-size="22" fill="#353B3A" text-anchor="middle">
+ <text x="176" y="95">正面：颧骨下补宽</text>
+ <text x="451" y="95">45°：侧后顺接</text>
+ <text x="714" y="95">侧面：后颈留白</text>
+ </g>
+ <text x="176" y="376" font-size="16" text-anchor="middle">首弯不机械齐平</text>
+ <text x="451" y="376" font-size="16" text-anchor="middle">最大横向体积受控</text>
+ <text x="714" y="376" font-size="16" text-anchor="middle">避免肩颈毛束散开</text><text x="450" y="409" text-anchor="middle" font-size="16" fill="#353B3A">原创教学示意 · 非真实烫后效果或实验测量</text></svg>

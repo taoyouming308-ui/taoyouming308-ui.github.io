@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430"><title>烫发研习院 2026-10-27 原创教学示意图</title><desc>毛发高湿吸水与毛束分散的概念比较，绝非同一毛束定量实验。</desc><rect width="900" height="430" rx="24" fill="#F8F4EC"/>
+ <text x="48" y="52" font-size="28" font-weight="bold" fill="#353B3A">同一卷度：为什么高湿时毛束看着变宽？</text>
+ <rect x="44" y="80" width="382" height="284" rx="16" fill="#B9C8D0" opacity="0.45"/>
+ <rect x="474" y="80" width="382" height="284" rx="16" fill="#D6B8B8" opacity="0.43"/>
+ <text x="235" y="117" text-anchor="middle" font-size="22" fill="#353B3A">干燥/相对低湿 · 毛束聚拢</text>
+ <text x="665" y="117" text-anchor="middle" font-size="22" fill="#353B3A">高湿 · 水分吸附与离散风险</text>
+ <path d="M195 148 Q142 183 195 225 Q244 265 190 325" stroke="#536D70" stroke-width="8" fill="none" stroke-linecap="round"/>
+ <path d="M210 148 Q159 185 212 227 Q259 270 206 325" stroke="#536D70" stroke-width="8" fill="none" stroke-linecap="round"/>
+ <path d="M226 148 Q176 186 227 226 Q275 265 224 325" stroke="#536D70" stroke-width="8" fill="none" stroke-linecap="round"/>
+ <path d="M606 148 Q536 181 586 226 Q650 260 580 325" stroke="#A07374" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <path d="M654 148 Q601 196 666 222 Q713 260 647 325" stroke="#A07374" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <path d="M706 148 Q646 186 721 225 Q784 266 706 325" stroke="#A07374" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <text x="118" y="352" font-size="16" fill="#353B3A">整体横向宽度较小</text><text x="542" y="352" font-size="16" fill="#353B3A">卷形仍可见，横向宽度增大</text>
+ <line x1="356" y1="210" x2="526" y2="210" stroke="#B77C68" stroke-width="4" stroke-dasharray="8 8"/>
+ <polygon points="518,200 535,210 518,220" fill="#B77C68"/><text x="440" y="192" text-anchor="middle" font-size="17" fill="#353B3A">环境变化</text><text x="450" y="409" text-anchor="middle" font-size="16" fill="#353B3A">原创教学示意 · 非真实烫后效果或实验测量</text></svg>
