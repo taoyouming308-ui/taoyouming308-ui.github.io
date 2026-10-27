@@ -1,0 +1,48 @@
+{
+  "batch": "aesthetic-2026-10-27",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "662d8c766dda7ab8b428b5f448e6e2fb24eda9c5",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured density, haircut, three-minute styling or eight-to-ten-week durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional mixed regional-density and weight-distribution case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All nineteen earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible upper-versus-lower outline is separated from fictional density, diameter, texture, dye history and daily routine",
+      "Top fullness, lower weight, perimeter density, surface texture and reference-photo generation are analysed as separate variables",
+      "No part line or hair outline is treated as baldness, skull, medical, measured density, diameter or damage evidence",
+      "A/B benefits, costs, stop conditions and switch feedback are explicit; regional B is a conditional first test, not the only valid answer",
+      "Front, two true profiles, back, temple coverage, occipital/nape bulk, natural bend, three-minute root lift, tie/clip function and growth timeline are included",
+      "Clipping, section tests, salon finish and one blow-dry trial are decision aids, not proof of haircut result, home reproduction or ten-week stability",
+      "No fixed cut centimeters, layer elevation, thinning percentage, chemical parameter, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Undisplayed reference, haircut result, first-wash, fourth-week and eight-to-ten-week states are not independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-27-mixed-density-weight.webp",
+    "sha256": "134ee98bc97add699d64c096306c14e536927794d223ca7f0510c4263dabb4dd",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1448x1086 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet documenting the CURRENT hairstyle of one fictional adult East Asian woman from four fully consistent views: front, exact right profile, exact left profile, and exact back. This is one current-condition record for analysing uneven density and weight distribution; it is not a makeover, not a before/after comparison, and must not show any proposed haircut or styled result.\n\nScene/backdrop: identical plain warm light-gray studio background in every panel; no salon tools, mirror, chair, props, extra people, text or labels.\nSubject: the exact same fictional woman in every panel, early-to-mid 30s, natural unretouched skin, neutral relaxed expression, ordinary realistic appearance. Dark natural brown shoulder-to-upper-chest length hair. Current silhouette is slightly triangular: crown and temple areas lie comparatively close to the head, while the occipital, lower back and nape areas visibly carry more bulk and density. The perimeter is long, continuous and somewhat heavy, with most visual weight below the ears. The surface is mostly straight with modest natural texture; the inner nape has a subtle shallow wave and the lower ends have small irregular inward/outward bends. A softly off-center natural part reveals a normal narrow scalp line, not baldness or medical hair loss. No short bangs; long face-framing sections blend into the perimeter. Hair is clean and naturally blow-dried, not flat-ironed, wet, glossy-slick or heavily styled.\nTeaching condition visible in the image: upper surface and temples appear less full than the dense lower back, but this must remain subtle, realistic and non-medical. The back view should clearly show bulk concentrated from the occipital area downward, while the crown is flatter and quieter.\nBody/framing: full head, complete hair outline and entire baseline, both ears as naturally appropriate to each angle, entire neck, both shoulders and upper chest visible in every panel. Neutral level head and posture; no tilt. Hair remains down in every panel so density distribution and lower bulk are readable.\nClothing: identical simple matte muted olive-gray wide crew-neck top in all panels, no collar, jewelry or accessories.\nStyle/medium: honest photorealistic studio reference photography with realistic individual strands, small flyaways, pores and everyday texture; no beauty filter, glamour retouching or face reshaping.\nComposition/layout: landscape 2-by-2 contact sheet with four equal panels and narrow neutral gutters. Top-left front, top-right exact right profile, bottom-left exact left profile, bottom-right exact back. Same camera height, subject scale, focal length, crop, shoulder level and soft diffused daylight in all panels.\nOutput intent: current-condition evidence for advanced hairstylist training about mixed regional density, mixed strand support, crown fullness, lower-back bulk, perimeter density, weight removal and low-maintenance haircut decisions.\nConstraints/invariants: same identity, face, head, neck and shoulder proportions, clothing, current hair length, regional density pattern, bend pattern and lighting in all four panels. Only one adult person repeated across views. Show only the current long heavy silhouette. No proposed layers, no thinned result, no waves added, no before/after, no comparison hairstyle, no salon-finish transformation. No labels, text, arrows or watermark.\nAvoid: obvious bald spots, widening medical-looking part, scalp disorder, extreme thinning, exaggerated bouffant, high layers, wolf cut, shag result, short bob, dramatic curls, wet look, severe asymmetry, damaged broken hair, polished advertising hair, hidden neck, cropped shoulders, three-quarter angles substituted for true profiles, inconsistent identity or hair length, duplicated front views, dramatic makeup."
+  },
+  "feedSha256": "9ec4faa5830e20fadb421eff4ff18a35f565574750aed8c33a2d5dc81595210f",
+  "caseCanonicalSha256": "0ee76b45568e9ecd975bf76d6ffb4ad531f0beb1c38e5641a0657e5b539b0402",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-27 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: twenty cases; nineteen previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "browser": "Daily browser test was executed locally but blocked by the absent Playwright Chromium executable. The unchanged protected-PR workflow must run the identical 390/1280 validation.",
+    "fullHook": "Executed locally: version, integrity, smoke, nineteen academy publisher unit tests and fourteen-course published-file verification passed, then the hook stopped at the absent Chromium executable. Full success is not claimed; exact-head trusted PR CI remains mandatory.",
+    "publication": "not yet verified"
+  },
+  "publicationAppVersion": 638
+}

@@ -1,3 +1,10 @@
+## 2026-10-27 · Mixed regional-density aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 662d8c766dda7ab8b428b5f448e6e2fb24eda9c5; clean isolated content/aesthetic-2026-10-27 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-27 academy publication and all nineteen earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-27 case separates a visible upper-versus-lower weight pattern from fictional regional density/diameter, natural bend and routine. Conditional A/B compare uniform high-layer/global thinning with regional coverage-and-weight management; six answers and five unscored self-checks include root lift, tie/clip function and stop/switch signals without inventing user completion.
+- Original 1448×1086 AI WebP shows only one fictional adult's current front/two true profiles/back medium-long silhouette, not the undisplayed reference, proposed layers, thinning result, first wash, fourth week or ten-week state. No real customer, medical hair-loss claim, measured density/diameter, damage grade, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:9544c97ad27c8e2d14cb7b5a2dd0b49ed954914ae763f9cbb14d2dcbc735239d -->
 ## 2026-10-27 · Reviewed academy publication candidate (App version: v638 unchanged)
 
