@@ -1,3 +1,9 @@
+## 2026-10-27 · Mixed regional-density aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about comparatively quiet crown/temple coverage, dense occipital/nape weight, mixed strand support and an eight-to-ten-week low-maintenance cycle. Six conditional answers compare uniform high layers/global thinning with regional coverage-and-weight management; five self-checks remain unscored without a user answer.
+- Original same-person 1448×1086 AI WebP shows one current medium-long silhouette, not the undisplayed reference, proposed layers, thinning result, first wash, fourth week or ten-week state. No real customer, medical hair-loss claim, measured density/diameter, damage grade, scientific validation or independent human expert certification is implied.
+- Preserve the 2026-10-27 academy publication and all nineteen earlier parsed feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; protected exact-head CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:9544c97ad27c8e2d14cb7b5a2dd0b49ed954914ae763f9cbb14d2dcbc735239d -->
 ## 2026-10-27 · Reviewed academy publication candidate (App version: v638 unchanged)
 
