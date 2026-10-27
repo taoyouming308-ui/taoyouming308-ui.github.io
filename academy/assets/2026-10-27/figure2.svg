@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430"><title>烫发研习院 2026-10-27 原创教学示意图</title><desc>顶部、两侧、后颈教学分区及箭头，公仔头机械练习不包含化学流程。</desc><rect width="900" height="430" rx="24" fill="#F8F4EC"/>
+ <text x="46" y="54" font-size="28" font-weight="bold" fill="#353B3A">公仔头：先定收放区，再按毛流设计卷向</text>
+ <ellipse cx="305" cy="219" rx="166" ry="150" fill="#E1D4C4" stroke="#353B3A" stroke-width="3"/>
+ <path d="M167 185 Q302 145 443 183" stroke="#353B3A" stroke-width="3" fill="none"/>
+ <path d="M155 252 Q305 227 452 251" stroke="#353B3A" stroke-width="3" fill="none"/>
+ <path d="M301 70 L301 369" stroke="#353B3A" stroke-width="2" stroke-dasharray="8 6"/>
+ <rect x="229" y="111" width="148" height="65" rx="14" fill="#B9C8D0" opacity="0.7"/>
+ <rect x="163" y="199" width="110" height="76" rx="12" fill="#AEBDB0" opacity="0.8"/>
+ <rect x="340" y="199" width="108" height="76" rx="12" fill="#AEBDB0" opacity="0.8"/>
+ <rect x="227" y="289" width="152" height="50" rx="12" fill="#D6B8B8" opacity="0.8"/>
+ <text x="303" y="149" text-anchor="middle" font-size="21">顶部轻C</text>
+ <text x="215" y="242" text-anchor="middle" font-size="19">左侧收</text>
+ <text x="394" y="242" text-anchor="middle" font-size="19">右侧收</text>
+ <text x="304" y="322" text-anchor="middle" font-size="18">后颈控体积</text>
+ <line x1="445" y1="138" x2="525" y2="112" stroke="#B77C68" stroke-width="3"/>
+ <polygon points="517,107 534,109 523,123" fill="#B77C68"/>
+ <text x="546" y="114" font-size="18" fill="#353B3A">杠轴应顺目标弧线</text>
+ <text x="538" y="162" font-size="18" fill="#353B3A">张力：温和、均匀</text>
+ <text x="538" y="210" font-size="18" fill="#353B3A">控制发片厚度与尾纸</text>
+ <text x="538" y="258" font-size="18" fill="#353B3A">先看自然毛流再定卷向</text>
+ <text x="538" y="307" font-size="18" fill="#B77C68">不靠加温补救受潮蓬开</text><text x="450" y="409" text-anchor="middle" font-size="16" fill="#353B3A">原创教学示意 · 非真实烫后效果或实验测量</text></svg>

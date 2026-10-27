@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（AI内容编辑与来源/版权/隐私核验；非外部科学或真人同行审稿）",
+  "reviewedAt": "2026-10-27T00:46:42.131Z",
+  "approvalReference": "本轮逐项阅读核对Wiley 2024/2025三项期刊页面的题名、日期、研究类型和可支持边界；2026-10-20至27日检索未取得直接适用于真人抗潮烫发参数的新试验。三张图为本轮原创本地SVG，完成禁止外链/脚本/真实人像的结构检查，模拟案例无真实顾客个人资料。此记录是本轮AI实际编辑审核，不假冒门店主管/顾客/独立研究者审批，也不声称实验已经实施。",
+  "privacyVerified": true,
+  "contentSha256": "bd9e01a59493667ffb689dc272907a31ef16916dbe3f544e4ba31faaf39a9dec",
+  "assetSha256": {
+    "assets/2026-10-27/figure1.svg": "e13529e73d24c12675a37de1b6fc1d3707100d099e5b0688466834d8a1828744",
+    "assets/2026-10-27/figure2.svg": "1e5934b6fdd0bda94c03a2ced69d98d972408e00a1e93f02121f262502edf880",
+    "assets/2026-10-27/figure3.svg": "00c3a9cce54e6e813b27f9554779bc9d88259c7c97d92c33bca0dce012e6713b"
+  },
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "Wiley期刊原始研究页面核对：2024-11-11线上首次发表，2025年47卷2期；DVS对未经处理、热处理、漂色和分离的毛鳞片/皮质样本测量水分吸附动力学。 研究结论与限制已在本课科研部分独立写明。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "Wiley期刊原始文章：2025-03-12首次发表；AFM、纳米压痕及DVS研究毛鳞片和皮质区室吸湿后的膨润及力学表现。 研究结论与限制已在本课科研部分独立写明。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "Wiley科学综述页面核对，2024-05-11首次发表；归纳角蛋白纤维中氢键、二硫键、离子及疏水相互作用。 研究结论与限制已在本课科研部分独立写明。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "AI课程编辑本轮从零绘制纯SVG本地形状、路径和中文标注，无第三方照片、模板或外链。 已核对SVG元素类别与无主动/外部引用。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "AI课程编辑本轮原创基础图形与文字，本地图示不含照片、脚本、外部引用。 已核对SVG元素类别与无主动/外部引用。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本课原创三视角示意，没有实拍顾客图、第三方素材、外链或授权问题。 已核对SVG元素类别与无主动/外部引用。"
+    }
+  ]
+}
