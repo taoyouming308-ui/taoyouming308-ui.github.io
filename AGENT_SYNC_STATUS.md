@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:9708badbb91d468c03ca0e41a8e159e38b3d6b241d13480e469f4b5e61dda6e7 -->
+## 2026-10-28 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main d87d949a4a2d4f8a9cfe6209d331003a20d5ee4a.
+- Dates: 2026-10-28. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-27 · Mixed regional-density aesthetic case (App version: v638 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 662d8c766dda7ab8b428b5f448e6e2fb24eda9c5; clean isolated content/aesthetic-2026-10-27 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-27 academy publication and all nineteen earlier aesthetic cases remain preserved.

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-10-28"
+  ],
+  "baseSha": "d87d949a4a2d4f8a9cfe6209d331003a20d5ee4a",
+  "inputHeadSha": "b395c5e750fe14bf8a19b601f1c41935bf90e528",
+  "preparedHeadSha": "765b64a467f47a4a81e4ce343acd9fbc3833578d",
+  "preparationRun": 40609467807,
+  "preparationArtifact": 12781324726,
+  "preparationArtifactSha256": "185dcb56acdb185a987a7bc9fda6c8e9a5c8e5dd57e41903def14f8c8fa0fcd5",
+  "backupArtifact": 12781664705,
+  "preparationBackupZipSha256": "832d9945e323c6fa73959b8169264384c36b6598c96bfc350abe850cd9d329ff",
+  "preparationBackupArchiveSha256": "ac6c9916d86d166efdebf7b65a6eff9ef0092006867260dabce0807ac6b3a0ac",
+  "baselinePreflightRun": 40607866577,
+  "baselineBackupArtifact": 12782111566,
+  "baselineBackupZipSha256": "537baf01a46468a481c4d671fbfde946985d77892c357da3a7023c23b14960f5",
+  "baselineBackupArchiveSha256": "99740c24e382803ed4cd2fa2af932af3a5c2d0a5788633842649fe151c5d7e6e",
+  "contentBindingSha256": "9708badbb91d468c03ca0e41a8e159e38b3d6b241d13480e469f4b5e61dda6e7",
+  "reviewedAt": "2026-10-28T00:32:55.657Z",
+  "verifiedAt": "2026-10-28T00:47:58.385Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 15,
+    "allFourteenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Authenticated GitHub contents at immutable prepared head: SHA256 of dated HTML, catalog, static index, draft, review, three original SVG assets and two governance notes; canonical JSON review digest independently verified. Prepared artifact SHA256/HTML matched; catalog retains 14 earlier courses and static fallback includes all 15. Git compare main..prepared head: 3 commits, 11 allowlisted paths. Source details rechecked against PubMed and Wiley.",
+    "backupArchive": "Downloaded actual baseline PR preflight ZIP and clean-main preparer ZIP; separately checked ZIP SHA256 and each enclosed ZYSYR tar.gz SHA256 against JSON evidence. Both contain public-source recovery files, exclude .git and secrets, and bind to immutable main d87d949a. No production database or private workstation backup claimed.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-10-28.html": "f93eded92f2435cd8ea50e4d00527f6cd9f828e94bd41fcceb4454506d905dc6",
+    "academy/catalog.json": "e856df53deb8355294d97d750d775e8ecd936189e0bb5a447ed30ca2c2dd0a17",
+    "academy/index.html": "877ac17236f0fd5ea934988ae28a1b2abbfe78112e460a4e35cd72d9bfe737a2",
+    "academy/drafts/2026-10-28.json": "720c27de78242b7910e6a29cc1b24bd21fbfe8ef9695e0c6c9a92155908bcc9e",
+    "academy/reviews/2026-10-28.json": "a4aa09564e3767e33fcb9bcee1e7b2929f5dda2cca042644030c5df5e51cf625",
+    "academy/assets/2026-10-28/figure1.svg": "66a38ffa170e223424b011e91af363cabc58fd93c6b43c93305b8eea38705c81",
+    "academy/assets/2026-10-28/figure2.svg": "6379b49ede8b4946f0704ff10307a6d9dfe96351790aa0f45b5b37f6e408efc0",
+    "academy/assets/2026-10-28/figure3.svg": "ffabf7526168804ae999e529701cb6773f5a2cc89c360fa8a8af0543e2a28174",
+    "AGENT_SYNC_STATUS.md": "5ccb23cdd2435da9cdc15c32f66969297328c0995805906b52f9daca2ea52969",
+    "CHANGELOG.md": "c4e0b33d5a7f2949112cb3b9ed70e6590d8606ef2be401c422da589eafb170a1"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "All other protected branch requirements",
+    "Expected_head_sha normal merge after draft conversion",
+    "Actual Pages all-course SHA256 readback on merged main"
+  ]
+}
