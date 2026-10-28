@@ -1,3 +1,10 @@
+## 2026-10-28 · Head-face-neck-shoulder proportion aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 0a09908e68674b7e60fbbd2915dee8ebff50e200; clean isolated content/aesthetic-2026-10-28 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Reviewed 2026-10-28 academy publication and all twenty earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-28 case separates visible current outline from fictional hair properties, self-described proportion concerns, wardrobe and routine. Conditional A/B compare broad upper-side volume with controlled upper width and a lower shoulder-neck transition; six answers and five unscored self-checks include face opening, fringe/face frame, occipital volume, clothing, shoulder bag, ear tuck and stop/switch signals without inventing user completion.
+- Original 1312×1199 AI WebP shows only one fictional adult's current front/two profiles/back shoulder-length lob, not the undisplayed reference, proposed haircut, home result or eight-to-ten-week state. No real customer, measured anatomy/proportion, verified density/diameter, damage grade, personality/occupation, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:9708badbb91d468c03ca0e41a8e159e38b3d6b241d13480e469f4b5e61dda6e7 -->
 ## 2026-10-28 · Reviewed academy publication candidate (App version: v638 unchanged)
 

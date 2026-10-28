@@ -1,3 +1,9 @@
+## 2026-10-28 · Head-face-neck-shoulder proportion aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about a relatively small face opening, long visible neck, narrow sloping shoulders and dense medium-coarse hair whose current width sits around the jaw and upper neck. Six conditional answers compare broad upper-side volume with a lower, continuous shoulder-neck transition; five self-checks remain unscored without a user answer.
+- Original same-person 1312×1199 AI WebP shows one current shoulder-length blunt lob, not the undisplayed reference or proposed result. No real customer, measured face/skull/neck/shoulder ratio, verified hair diameter/density, personality, occupation, scientific validation or independent human expert certification is implied.
+- Preserve the reviewed 2026-10-28 academy publication and all twenty earlier aesthetic feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; exact-head protected CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 <!-- academy-reviewed-inputs:9708badbb91d468c03ca0e41a8e159e38b3d6b241d13480e469f4b5e61dda6e7 -->
 ## 2026-10-28 · Reviewed academy publication candidate (App version: v638 unchanged)
 

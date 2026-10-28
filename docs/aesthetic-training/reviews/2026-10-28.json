@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-10-28",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "0a09908e68674b7e60fbbd2915dee8ebff50e200",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured facial, skull, neck, shoulder, density, haircut or eight-to-ten-week durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional head-face-neck-shoulder proportion conflict case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible outline and relative neck/shoulder relationship are separated from fictional hair properties, self-described concerns, wardrobe and routine",
+      "No image proportion is treated as a clinical, anatomical or measured diagnosis",
+      "A/B benefits, costs, stop conditions and switch feedback are explicit; lower-width B is a conditional first test, not the only valid answer",
+      "Face opening, maximum width, fringe/face frame, occipital volume, perimeter, clothing neckline, shoulder bag, ear tuck and maintenance cycle are included",
+      "Clipping, salon blow-dry and one clothing test are decision aids, not proof of haircut result or ten-week stability",
+      "No fixed cut centimeters, layer elevation, thinning percentage, chemical parameter, personality/occupation inference, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or measured multi-camera capture",
+      "Undisplayed reference, haircut result, home styling and eight-to-ten-week states are not independently verified",
+      "Preparer audit is not independent scientific or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-28-narrow-shoulder-width.webp",
+    "sha256": "7aa5fab0f912430b2e26a10ab5b209a47f23fd124e59c6a1e98cad491f3ce03a",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1312x1199 PNG converted at unchanged dimensions to WebP quality 86 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile training app\nPrimary request: Create a realistic 2-by-2 contact sheet documenting the CURRENT hairstyle of one fictional adult East Asian woman from four consistent views: front, exact right profile, exact left profile, and exact back.\nScene/backdrop: identical plain warm light-gray studio background in every panel.\nSubject: the exact same fictional adult in every panel, natural unretouched skin, neutral expression, relatively small-scale facial features, long slender visible neck, narrow gently sloping shoulders, and a simple matte charcoal-gray wide crew-neck top. Current hair is a dense, medium-coarse, mostly straight collarbone-length blunt lob with a slight natural bend underneath; weight and maximum width collect around the jaw-to-upper-neck area, ends spread subtly outward when they meet the shoulders, crown is comparatively quiet and compact, no bangs, natural center-to-soft-off-center part. Dark natural brown hair with realistic individual strands and ordinary shine.\nStyle/medium: highly realistic neutral salon documentation photography, no beauty filter or glamour retouching.\nComposition/framing: landscape 2-by-2 contact sheet, four equal panels, same camera height, subject scale, focal length, crop and lighting; complete head, hair outline, baseline, neck, both shoulders and upper chest visible.\nConstraints: same identity, face, head, neck and shoulder proportions, clothing, current haircut, density pattern and bend pattern in all panels; current condition only, no proposed result, labels, arrows, logos, watermark or text.\nAvoid: fashion posing, exaggerated shoulders, changed identity or haircut, cropped head or shoulders, makeover, heavy curls, wet hair, medical hair-loss appearance."
+  },
+  "feedSha256": "28705bfa00665c8a2fbd70b73887ce68ced95a8010c73b4b154b9849c3f5a9a9",
+  "caseCanonicalSha256": "32ad441135b545685e374dae2f189e249856cc0facfeb352b2cd3591d7256340",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-28 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: twenty-one cases; twenty previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "executed: version/integrity/smoke, nineteen academy publisher unit tests and fifteen-course published-file verification passed; stopped at the same missing local Chromium before browser suites"
+  }
+}
