@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑和来源、版权及隐私核验；非人工主管或科研同行审稿）",
+  "reviewedAt": "2026-10-28T00:32:55.657Z",
+  "approvalReference": "本轮实际核对PubMed PMID42925696（2026-10-21论文）、PMID18528588（2008原始比较）、PMID26383008及Wiley线上首发日期（2015-09-18），分别标注可支持和不可证明的事项；三张本轮原创SVG只使用矢量基本元素和中文，不含外链、脚本、真实顾客或个人数据；模拟案例与低风险未实施实验均已标识。审核为本轮AI编辑真实操作，不假冒其他人批准。",
+  "privacyVerified": true,
+  "contentSha256": "f3af71863d3a6c44f40b9e3874a0e4a2968099abdfc1ecbc6f195a4a6433f8cc",
+  "assetSha256": {
+    "assets/2026-10-28/figure1.svg": "66a38ffa170e223424b011e91af363cabc58fd93c6b43c93305b8eea38705c81",
+    "assets/2026-10-28/figure2.svg": "6379b49ede8b4946f0704ff10307a6d9dfe96351790aa0f45b5b37f6e408efc0",
+    "assets/2026-10-28/figure3.svg": "ffabf7526168804ae999e529701cb6773f5a2cc89c360fa8a8af0543e2a28174"
+  },
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "本轮实际核对PubMed PMID42925696，2026-10-21角蛋白取向偏振FTIR方法学，非烫发对照。 已区分科学结论与门店工艺外推的限制。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "本轮实际核对PubMed PMID18528588：2008年5—6月原始离体DP/CWP及两药液、重复处理的比较。 已区分科学结论与门店工艺外推的限制。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "本轮实际核对PubMed与Wiley；2015-09-18线上首发、2016刊载的还原/热松弛/氧化拉曼研究。 已区分科学结论与门店工艺外推的限制。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮从零绘制几何形状和中文说明，未使用第三方图片、模板、脚本、外链或真人肖像。 已逐图检查元素、文本与非效果保证标注。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮从零绘制几何形状和中文说明，未使用第三方图片、模板、脚本、外链或真人肖像。 已逐图检查元素、文本与非效果保证标注。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮从零绘制几何形状和中文说明，未使用第三方图片、模板、脚本、外链或真人肖像。 已逐图检查元素、文本与非效果保证标注。"
+    }
+  ]
+}
