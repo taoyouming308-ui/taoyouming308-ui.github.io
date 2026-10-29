@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "def17efeeefb8b04f0b3d4b0f124a325887b23f4",
+  "requestedBy": "ChatGPT academy content publisher",
+  "purpose": "PR-triggered immutable main backup only; lesson draft, review and assets forbidden until verified baseline preflight",
+  "notApproval": true,
+  "notOnline": true
+}
