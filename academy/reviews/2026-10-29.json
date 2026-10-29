@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑和来源、版权、隐私核验；非人工主管或科研同行审稿）",
+  "reviewedAt": "2026-10-29T00:56:36.664Z",
+  "approvalReference": "本轮实际核验Wiley2024化学键综述、MDPI2019弯曲刚度实验和PubMed39642655还原氧化膨润研究，区分了可支持的机制与不能支持的真人杠位参数；检查三张仅矢量形状及中文的原创SVG，无第三方照片、外链、脚本或真实顾客数据；案例为模拟，实验尚未实施。本记录是真实本轮AI编辑检查，非第三方人工批准。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "本轮核对Wiley原刊发表日期和综述摘要；研究化学键/毛发行为，不研究夹具压点。 已核查其支持和限制。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "本轮核对MDPI原刊及2019-04-01日期；156名受试者毛发弯曲模量与皮质细胞组成相关。 已核查其支持和限制。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "本轮核对PubMed PMID39642655：2024-11-30首次在线发表、2025年刊载、毛发还原氧化及角蛋白膨润实验。 已核查其支持和限制。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮从零绘制纯静态SVG，只有路径、矩形、椭圆、线条和中文标注，不含第三方照片/模板、真人肖像、外部资源、脚本或私有信息；逐图校对箭头和概念限制。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮从零绘制纯静态SVG，只有路径、矩形、椭圆、线条和中文标注，不含第三方照片/模板、真人肖像、外部资源、脚本或私有信息；逐图校对箭头和概念限制。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮从零绘制纯静态SVG，只有路径、矩形、椭圆、线条和中文标注，不含第三方照片/模板、真人肖像、外部资源、脚本或私有信息；逐图校对箭头和概念限制。"
+    }
+  ],
+  "contentSha256": "5d26a4af17aa97f354dc3a68cfab7957027168ef6fa98cb6b8d920441f8175cc",
+  "assetSha256": {
+    "assets/2026-10-29/figure1.svg": "dd5188f232264774d839e0014d6aeeed11636c2979edfd6a79ae74ba456a822e",
+    "assets/2026-10-29/figure2.svg": "7a93a4ba4b509e6a7cdeeab0e321d075e28d55913c322f3b78870a717fe6b4eb",
+    "assets/2026-10-29/figure3.svg": "ccaf5b7a8de16455d0b284bd2affe82c26ade0684e21d912fa598e18ca1d222d"
+  }
+}
