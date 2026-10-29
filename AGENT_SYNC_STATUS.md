@@ -1,4 +1,11 @@
 <!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
+## 2026-10-30 · Helmet-recovery crown-balance aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main fb3137722ae5b4dd4da273672811ec167765490b; clean isolated content/aesthetic-2026-10-30 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. All twenty-two earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-30 case separates visible current outline from fictional opposing crown whorls, medium-coarse support, helmet routine, clothing context and recovery time. Conditional A/B compare aggressive short crown height with a recovery-first directional structure; six answers and five unscored self-checks include crown, face opening, maximum width, occipital/nape balance, helmet safety, two-minute recovery, stop and switch signals without inventing user completion.
+- Original 1942×809 AI WebP shows only one fictional adult's current front/two true profiles/back grown-out short hair without a helmet, not the undisplayed reference, proposed haircut, helmet test, recovery result or eight-week state. No real customer, measured anatomy/density/diameter, verified helmet performance, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 ## 2026-10-29 · Reference-result feasibility aesthetic case (App version: v638 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 2e6510f0783d158823d2d9cfdd982193b4380a8c; clean isolated content/aesthetic-2026-10-29 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Reviewed 2026-10-29 academy publication and all twenty-one earlier aesthetic cases remain preserved.

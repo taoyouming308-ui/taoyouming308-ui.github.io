@@ -1,4 +1,10 @@
 <!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
+## 2026-10-30 · Helmet-recovery crown-balance aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about high-crown reference goals, two opposing crown whorls, medium-coarse support, broad-shoulder clothing context, twice-daily forty-minute helmet use and a two-minute no-heat recovery budget. Six conditional answers compare aggressive short crown height with a recovery-first directional structure; five self-checks remain unscored without a user answer.
+- Original same-person 1942×809 AI WebP shows one current grown-out short silhouette without a helmet, not the reference, proposed cut, helmet test, two-minute recovery or eight-week result. No real customer, measured anatomy/density/diameter, verified helmet performance, scientific validation or independent human expert certification is implied.
+- Preserve all twenty-two earlier aesthetic feed objects. App/runtime/version, academy, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; exact-head protected CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 ## 2026-10-29 · Reference-result feasibility aesthetic case (v638 unchanged)
 
 - Add one original fictional four-view current-state case about an undisplayed airy large-wave reference, zonally resistant upper hair, twice-lightened face frame and ends, slow wet-state return, natural-dry expectations and a three-minute routine. Six conditional answers compare full-head curl pursuit with a structural-first, test-gated route; five self-checks remain unscored without a user answer.

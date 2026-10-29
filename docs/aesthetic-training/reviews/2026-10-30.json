@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-10-30",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "fb3137722ae5b4dd4da273672811ec167765490b",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured cranial, facial, shoulder, helmet-recovery or eight-week durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional helmet-recovery and high-crown proportion case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-two earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline is separated from fictional double-whorl, strand properties, helmet routine and recovery time",
+      "The undisplayed reference is decomposed into crown height, face opening, side taper, nape edge and directional texture rather than promised as a copy",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; recovery-first B is a conditional first test, not the only valid answer",
+      "Front, profiles, back, crown, maximum width, face frame, occipital volume, nape, neck/shoulder/clothing relationship and real helmet workflow are included",
+      "No fixed layer length, thinning percentage, root-perm parameter, measured anatomy, helmet performance guarantee, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or controlled multi-camera capture",
+      "Double whorls, helmet behavior, proposed cut, two-minute recovery and eight-week state are case conditions or future checks, not image-proven results",
+      "Preparer audit is not independent scientific, helmet-safety or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-30-helmet-crown-balance.webp",
+    "sha256": "b182ac8534333db10e25d732e90a281b9de94f44125ceadcbe089bd2f0426137",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1942x809 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: educational salon assessment image for a mobile hair-aesthetics training case\nPrimary request: Create one horizontal four-panel contact sheet showing the SAME fictional adult East Asian woman in her CURRENT hairstyle only: front view, true right profile, true left profile, and back view. This is not a makeover or a proposed design.\nScene/backdrop: neutral warm-gray salon studio backdrop, no branding, furniture, tools, or props.\nSubject: one fictional adult woman with consistent identity, face proportions, skin tone, clothing, hair color, and exact hairstyle across all four panels. Current hair is a dark natural-brown grown-out short layered bixie: top surface mostly straight and relatively flat, no artificial root lift; the maximum width and weight collect around the lower temple, ear, and jaw areas; the side lengths reach just below the jaw, the back shows a comparatively quiet upper occipital area and a soft grown-out nape ending above the shoulders. Medium-to-coarse-looking strands with ordinary natural shine, but no diagnosis of density or damage. Hair worn down in every panel. Calm neutral expression in the front panel. Simple matte black wide-neck top, clearly showing full neck and both moderately broad shoulders.\nStyle/medium: highly realistic neutral salon documentation photography, real skin pores and individual hair fibers, no beauty filter, no glamour retouching.\nComposition/framing: four equal vertical panels in one landscape image; each panel shows the complete head, crown, hairstyle baseline, neck, both shoulders, and upper chest. Same camera height, focal length, distance, scale, and lighting. Front must be truly frontal; side panels true 90-degree profiles; back directly from behind. No cropping of crown, nape, neck, or shoulders.\nLighting/mood: soft even neutral daylight with enough separation to read crown height, side width, occipital contour, nape, neck, and shoulder relationship.\nConstraints: current-state documentation only; same person and exact current hairstyle in all panels; no helmet in the image, no proposed high crown, no perm, no after photo, no cutting guides, no labels, no text, no watermark.\nAvoid: split identities, three-quarter side views, mirrored duplicate side views, beautification, exaggerated skull shape, wet hair, curls, accessories, hands, tools, logos, measurements, before/after claims."
+  },
+  "feedSha256": "6ce1f4bb763955a210a323da343342e43ced20fd0c97c73fc8c066822c4bc5b6",
+  "caseCanonicalSha256": "56070641a2d2b9f70b61e35ae79252c4f94faf0d0c6f1e33d95dd7f1e9adc7ab",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-30 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: twenty-three cases; twenty-two previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "executed: version/integrity/smoke, nineteen academy publisher unit tests and sixteen-course published-file verification passed; stopped at the same missing local Chromium before browser suites"
+  }
+}
