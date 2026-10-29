@@ -1,11 +1,61 @@
 {
   "schemaVersion": 1,
-  "date": "2026-10-29",
-  "state": "preflight_requested",
+  "state": "preparation_verified_pending_protected_checks",
   "published": false,
+  "dates": [
+    "2026-10-29"
+  ],
   "baseSha": "def17efeeefb8b04f0b3d4b0f124a325887b23f4",
-  "requestedBy": "ChatGPT academy content publisher",
-  "purpose": "PR-triggered immutable main backup only; lesson draft, review and assets forbidden until verified baseline preflight",
-  "notApproval": true,
-  "notOnline": true
+  "inputHeadSha": "a26954855ade6ec39055978e5bd25b0bdb2b1eaa",
+  "preparedHeadSha": "1c724181fd68253305f2b9aca874973243afda64",
+  "preparationRun": 40797330920,
+  "preparationArtifact": 12864433127,
+  "preparationArtifactSha256": "bfd4bccec027551b2d33df57d55cde7cc87d25e75cbe5513ead57986b36e68f3",
+  "backupArtifact": 12864281755,
+  "preparationBackupZipSha256": "58963246d169660d9c0e7b3e9e7ddbd87de8f15444c2bbe84acfcee23de19ebe",
+  "preparationBackupArchiveSha256": "c8b8c1c3847146f569bdc61a8a0d980ef17995f3ba5068ed936cea44cdeef272",
+  "baselinePreflightRun": 40796467432,
+  "baselineBackupArtifact": 12864261028,
+  "baselineBackupZipSha256": "95fb6a6ca78c257120605212f2c2901cdef87bbd5a9896c667e3659b03e523ee",
+  "baselineBackupArchiveSha256": "3c763c9590e88b51fe0fce4da8d07c355f33dbb425c44f875b825c2f015bdecc",
+  "contentBindingSha256": "288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc",
+  "reviewedAt": "2026-10-29T00:56:36.664Z",
+  "verifiedAt": "2026-10-29T01:08:51.639Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 16,
+    "allFifteenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Read immutable prepared PR head via authenticated GitHub: verified SHA256 of generated dated HTML against downloaded prepared-run artifact; rehashed catalog, static fallback, draft/review and all 3 original SVG; independent Python-compatible sorted compact canonical JSON digest matches exact review binding; checked 16 catalog entries retaining all 15 original dates; ordinary compare showed 3 commits, 11 allowlisted paths; preparation job and full original pre-push successful. This is not Pages evidence.",
+    "backupArchive": "Downloaded actual PR preflight ZIP and main preparer ZIP; separately verified ZIP SHA256, contained ZYSYR tar.gz SHA256 and evidence JSON bound to immutable def17 main; inspected 841 tar members including AGENTS.md, perm-app.html and catalog; .git/ and private configuration excluded. Public-source backup only, not production database or private workstation.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-10-29.html": "aa37b1b2f519ac9989a69921fd171aef2b4f1d861a0ad2cf0c47ad7926e0290d",
+    "academy/catalog.json": "42abbf95b8e7a29b990297ceaec72d8671740404c3de7bcda1c5afbf87715c7e",
+    "academy/index.html": "efb7ed406253f35b4af04135bfbcdbf466a3b3a9d3f497a61c6d915f1151cab3",
+    "academy/drafts/2026-10-29.json": "d39d99aa689694653c7d680ce7fd59577ce1f8f9c2b78761681c19c5e80e88e6",
+    "academy/reviews/2026-10-29.json": "babd452116ceeac801cf1e412ba37c05364055573dc8c40266b4c37768e158de",
+    "academy/assets/2026-10-29/figure1.svg": "dd5188f232264774d839e0014d6aeeed11636c2979edfd6a79ae74ba456a822e",
+    "academy/assets/2026-10-29/figure2.svg": "7a93a4ba4b509e6a7cdeeab0e321d075e28d55913c322f3b78870a717fe6b4eb",
+    "academy/assets/2026-10-29/figure3.svg": "ccaf5b7a8de16455d0b284bd2affe82c26ade0684e21d912fa598e18ca1d222d",
+    "AGENT_SYNC_STATUS.md": "d50cb8eff493a95736ba04a12f96ec31543808a19979d451f42180667f0438db",
+    "CHANGELOG.md": "5fcf195dc6b595d4661ffe15e1a545b40cde89ef1a8b2e202eb866b2065989b5"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "All other protected branch requirements",
+    "Expected_head_sha normal merge after draft conversion",
+    "Actual GitHub Pages all-course SHA256 readback on merged main"
+  ]
 }
