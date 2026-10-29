@@ -1,4 +1,10 @@
 <!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
+## 2026-10-29 · Reference-result feasibility aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about an undisplayed airy large-wave reference, zonally resistant upper hair, twice-lightened face frame and ends, slow wet-state return, natural-dry expectations and a three-minute routine. Six conditional answers compare full-head curl pursuit with a structural-first, test-gated route; five self-checks remain unscored without a user answer.
+- Original same-person 1916×821 AI WebP shows one current medium-long fall only, not the reference, proposed cut, strand test, chemical result or home result. No real customer, verified diameter/porosity/damage grade, chemical safety approval, scientific validation or independent human expert certification is implied.
+- Preserve the reviewed 2026-10-29 academy publication and all twenty-one earlier aesthetic feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; exact-head protected CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+
 ## 2026-10-29 · Reviewed academy publication candidate (App version: v638 unchanged)
 
 - Current owner: ChatGPT content publisher. Last synchronized base checked: github/main def17efeeefb8b04f0b3d4b0f124a325887b23f4.

@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "2e6510f0783d158823d2d9cfdd982193b4380a8c",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured hair-property, chemical-safety, makeover or durability study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional reference-versus-feasibility case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-one earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current fall is separated from fictional chemical history, zonal resistance, elasticity findings and routine",
+      "The undisplayed reference is decomposed into contour, face frame, shine, volume and curl rather than treated as a guaranteed copy target",
+      "A/B benefits, costs, test gates, stop conditions and switch signals are explicit; the structural-first route is a conditional first test, not the only valid answer",
+      "Outline, weight, face frame, layers, regional strand testing, low-tie function, three-minute routine and ten-to-twelve-week cycle are included",
+      "No chemical formula, processing time, strand-test pass, damage grade, natural-dry match, personality/occupation inference, real-client data or invented user score/completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or controlled multi-camera capture",
+      "Undisplayed reference, proposed cut, chemical result, natural-dry result and durability are not independently verified",
+      "Preparer audit is not independent scientific, chemical-safety or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-29-reference-vs-feasibility.webp",
+    "sha256": "11f2f8bc294fb2a53541b9d3174f523a83e7a97d695aed2dc6c4cb54b808a6ad",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1916x821 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: educational salon assessment image for a mobile hair-aesthetics training case\nPrimary request: Create one horizontal four-panel contact sheet showing the SAME fictional adult East Asian woman in her CURRENT hairstyle only: front view, true right profile, true left profile, and back view. This is not a makeover and not a proposed result.\nScene/backdrop: neutral warm-gray salon studio backdrop, no salon branding or props.\nSubject: one fictional adult woman, consistent identity, face proportions, skin tone, clothing, hair color, and hairstyle across all four panels. Current hair is dark brown, mostly straight and smooth at the upper surface, medium-long with the baseline about 5 cm below the collarbone, subtle irregular natural bends in the inner lower layers, slightly dry-looking uneven ends and a few softly lighter face-framing strands from old color. Hair is worn down in every panel. Calm neutral expression in the front panel. Simple matte charcoal wide-neck top so the full neck and both shoulders remain clearly visible.\nStyle/medium: natural documentary salon photography, realistic skin pores and individual hair fibers, no beauty retouching, no glamour styling.\nComposition/framing: four equal vertical panels in one landscape image; each panel shows the complete head, full hairstyle baseline, neck, and both shoulders; consistent camera height, lens, distance, lighting, and scale. Front must be truly frontal; side panels must be true 90-degree profiles; back must be directly from behind. No cropping of crown, hair ends, neck, or shoulders.\nLighting/mood: soft even neutral daylight, enough separation to read the outer silhouette and surface texture, no dramatic highlights.\nConstraints: current-state documentation only; keep the same person and exact current hairstyle across all panels; no perm curls, no redesign, no after photo, no cutting guides, no labels, no text, no watermark. The apparent dryness is only visual and must not imply a diagnosed damage grade.\nAvoid: split identities, three-quarter views, mirrored duplicate side views, beautification, exaggerated frizz, wet hair, hair extensions, accessories, hands, tools, logos, measurement marks, before/after claims."
+  },
+  "feedSha256": "4d7b83ca9a724b99362f3da906fae31f10ca9918f4978493697ea4530ccae718",
+  "caseCanonicalSha256": "44acdbd07a061dbb5b0155c3d913e0936167e619089fda4f87da4fdb00855c91",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-29 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "contentContract": "passed: twenty-two cases; twenty-one previous objects unchanged",
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "executed: version/integrity/smoke, nineteen academy publisher unit tests and sixteen-course published-file verification passed; stopped at the same missing local Chromium before browser suites"
+  }
+}
