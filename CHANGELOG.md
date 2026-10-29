@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
+## 2026-10-29 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main def17efeeefb8b04f0b3d4b0f124a325887b23f4.
+- Dates: 2026-10-29. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-10-28 · Head-face-neck-shoulder proportion aesthetic case (v638 unchanged)
 
 - Add one original fictional four-view current-state case about a relatively small face opening, long visible neck, narrow sloping shoulders and dense medium-coarse hair whose current width sits around the jaw and upper neck. Six conditional answers compare broad upper-side volume with a lower, continuous shoulder-neck transition; five self-checks remain unscored without a user answer.
