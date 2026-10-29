@@ -1,4 +1,11 @@
 <!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
+## 2026-10-29 · Reference-result feasibility aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 2e6510f0783d158823d2d9cfdd982193b4380a8c; clean isolated content/aesthetic-2026-10-29 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Reviewed 2026-10-29 academy publication and all twenty-one earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-10-29 case separates visible current fall from fictional zonal resistance, twice-lightened lengths, elasticity findings, undisplayed airy-wave reference and natural-dry routine. Conditional A/B compare full-head visible curl with a structural-first, strand-test-gated route; six answers and five unscored self-checks include reference decomposition, low-tie function, three-minute styling, test failure and stop/switch signals without inventing user completion.
+- Original 1916×821 AI WebP shows only one fictional adult's current front/two true profiles/back medium-long hair, not the undisplayed reference, proposed haircut, test strand, chemical service, home result or ten-to-twelve-week state. No real customer, verified diameter/porosity/damage grade, chemical safety approval, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 ## 2026-10-29 · Reviewed academy publication candidate (App version: v638 unchanged)
 
 - Current owner: ChatGPT content publisher. Last synchronized base checked: github/main def17efeeefb8b04f0b3d4b0f124a325887b23f4.
