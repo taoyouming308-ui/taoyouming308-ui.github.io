@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-30",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑与科学来源、版权、隐私审查；非人工主管或科研同行）",
+  "reviewedAt": "2026-10-30T01:10:44.060Z",
+  "approvalReference": "本轮实际核验PubMed PMID26383008、PMID39642655及Wiley 2005原文摘要；逐节排除无根据的通用冷却时长和真人工艺参数；逐图检查三张原创静态SVG没有外部素材、脚本和顾客隐私。此为AI编辑的真实审核，不冒充人工认可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "本轮核验PubMed PMID26383008、DOI10.1111/ics.12278及Wiley首次发表2015-09-18，另有2015-10-26电子记录；其为受控拉曼实验。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "本轮核验PubMed PMID39642655、DOI10.1016/j.bpc.2024.107364，2024-11-30首次在线、2025年刊载；离体毛发SAXS/NMR研究。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "本轮核验Wiley原刊2005-02-28发表及DOI10.1002/bip.20221；研究的是永久拉直中的还原、加热及氧化。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮原创纯静态SVG图形、箭头和中文注释，无照片、外部模板、脚本、私有数据或可识别顾客；逐图审核与正文相符。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮原创纯静态SVG图形、箭头和中文注释，无照片、外部模板、脚本、私有数据或可识别顾客；逐图审核与正文相符。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮原创纯静态SVG图形、箭头和中文注释，无照片、外部模板、脚本、私有数据或可识别顾客；逐图审核与正文相符。"
+    }
+  ],
+  "contentSha256": "80b3f732c68f193325f1e01418370c2f5ea4b71136b727ea6f104017619d8b43",
+  "assetSha256": {
+    "assets/2026-10-30/figure1.svg": "0cdf48211e2be13c78295a20e113323025506608a3f87eafef438a11cc8cab08",
+    "assets/2026-10-30/figure2.svg": "1033885dabca95add9ad5f7ce5c136def2e48e89077ecbec534e8380e7e32b87",
+    "assets/2026-10-30/figure3.svg": "499e49ae5a7c5a05a08a3f3d34aedffe7cca637f3f0a1ed190eb04b3459007fb"
+  }
+}
