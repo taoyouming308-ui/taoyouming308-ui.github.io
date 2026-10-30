@@ -1,12 +1,61 @@
 {
   "schemaVersion": 1,
-  "state": "preflight_requested",
+  "state": "preparation_verified_pending_protected_checks",
   "published": false,
   "dates": [
     "2026-10-30"
   ],
   "baseSha": "b305ff02ecff46492fd8b947c786ea77fab37595",
-  "purpose": "Request immutable current-main public-source backup via Academy publication preflight / backup-main before any reviewed lesson draft, review, or local figure is committed.",
-  "notApproval": true,
-  "notPublication": true
+  "inputHeadSha": "0486c50b5acdd4ad58afcbaad3dbddd24f5fd691",
+  "preparedHeadSha": "5b4f35f66d33d4dda059e0b3666ca15f714d01c5",
+  "preparationRun": 40984272119,
+  "preparationArtifact": 12947165282,
+  "preparationArtifactSha256": "c74871b6327c096a6dcb56f61d38d8d14fc9c54cb42c380b0ea04959b074c0ff",
+  "backupArtifact": 12946286522,
+  "preparationBackupZipSha256": "84bab04e8a09586479247db587b09b29e8b60ab85f0d9b5d8864d04ba8a19a93",
+  "preparationBackupArchiveSha256": "6b0a3e7487938939d392205560ef022d5bc9776f19a469b1712ec445618d3c24",
+  "baselinePreflightRun": 40982700018,
+  "baselineBackupArtifact": 12945607145,
+  "baselineBackupZipSha256": "5cd2bfa237efc2062b177f376730677ed5d6dcda1bb77db6ed82bd93a20e47f4",
+  "baselineBackupArchiveSha256": "e5ef1a556f48a680d7f6a752d09d0a3246e746436c6f351d3d87701f899ab84b",
+  "contentBindingSha256": "fc33a7584463584df5636f2fe38a63f9b519c35b2fb9ba2ea8870338061f762f",
+  "reviewedAt": "2026-10-30T01:10:44.060Z",
+  "verifiedAt": "2026-10-30T01:23:21.439Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 17,
+    "allSixteenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Read authenticated immutable prepared head 5b4f35f6 through GitHub: SHA256 of generated HTML 84c3c623 matches actual downloaded academy-prepared-40984272119 evidence; separately hashed catalog/index/draft/review/3 original SVGs and two governance files; canonical compact sorted review payload SHA256 equals recorded exact draft binding; checked 17 dated catalog entries retaining all 16 previous courses, static index contains 2026-10-30; compare main..prepared head shows exactly 3 fast-forward commits/11 expected allowlisted paths. Completed cloud pre-push gate and preparer step are both success. No Pages evidence yet.",
+    "backupArchive": "Downloaded and inspected actual initial preflight ZIP and clean-main preparer ZIP: independently verified each artifact ZIP SHA256, enclosed ZYSYR tar.gz SHA256, and evidence JSON both bound to immutable clean main b305ff; each tar had 853 members including AGENTS.md, perm-app.html, academy/catalog.json and excluded .git/ and actual scripts/backup.env. This is public-source recovery point only, not production database or workstation backup.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-10-30.html": "84c3c6239a408318f6ce66c24854da00dcc08befae0362a489b276cd51fca4a2",
+    "academy/catalog.json": "9e10736f3402eeaa88b443ef59add6a4de064ed77577d641afca5383060f35f4",
+    "academy/index.html": "f839a278fe8b838fd30e9ebbb887eebe43935bcc0079d3c38ae05bd2300a10ee",
+    "academy/drafts/2026-10-30.json": "a490d2b9340dc02dd3d5b32f6a58614a5ee19b52103e775a11bef8502aaff01c",
+    "academy/reviews/2026-10-30.json": "84210feb60f49b2a29d119730b354b55b5e8b32bc67511bea879e96885f29986",
+    "academy/assets/2026-10-30/figure1.svg": "0cdf48211e2be13c78295a20e113323025506608a3f87eafef438a11cc8cab08",
+    "academy/assets/2026-10-30/figure2.svg": "1033885dabca95add9ad5f7ce5c136def2e48e89077ecbec534e8380e7e32b87",
+    "academy/assets/2026-10-30/figure3.svg": "499e49ae5a7c5a05a08a3f3d34aedffe7cca637f3f0a1ed190eb04b3459007fb",
+    "AGENT_SYNC_STATUS.md": "18c7b74ae3a1b50c6f94bfab18b9ee7788b304ac1ff41e5f4a63b2b3fd6a0621",
+    "CHANGELOG.md": "1fcd8d6e589df7f493ddd4437e0dc5b399fdb238dbdc6392c861a751d55588b6"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "All other protected branch requirements",
+    "Expected_head_sha normal merge after draft conversion",
+    "Actual Pages all-course SHA256 readback on merged main"
+  ]
 }
