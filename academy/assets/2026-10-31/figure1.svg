@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 610" width="1100" height="610" role="img"><title>原理图｜工具杠径 ≠ 各层真实卷绕半径</title><rect width="1100" height="610" fill="#F8F5EE"/><rect x="24" y="24" width="1052" height="562" rx="25" fill="#FFFEFA" stroke="#D4D2CA"/><text x="60" y="84" font-size="30" fill="#303B3A" font-family="PingFang SC,Microsoft Yahei,sans-serif" font-weight="bold">原理图｜工具杠径 ≠ 各层真实卷绕半径</text><path d="M60 109 H1040" stroke="#BCC9C9" stroke-width="2"/><text x="80" y="145" font-size="23" fill="#4F6B76" font-family="PingFang SC,Microsoft Yahei,sans-serif">同一支32mm工具杠，毛束各层的路径半径并不一定相同</text>
+<circle cx="316" cy="347" r="127" fill="#DDE8E7" opacity="0.8"/><circle cx="316" cy="347" r="100" fill="#D9E5DC"/><circle cx="316" cy="347" r="80" fill="#E7D8C9" stroke="#9C746B" stroke-width="4"/>
+<circle cx="316" cy="347" r="104" fill="none" stroke="#658D89" stroke-width="6" stroke-dasharray="13 9"/>
+<circle cx="316" cy="347" r="129" fill="none" stroke="#BE8F83" stroke-width="6" stroke-dasharray="12 11"/>
+<line x1="316" y1="347" x2="396" y2="347" stroke="#7E655D" stroke-width="5"/><circle cx="316" cy="347" r="5" fill="#283635"/>
+<text x="310" y="339" text-anchor="end" font-size="18" fill="#563F3D" font-family="PingFang SC,Microsoft Yahei,sans-serif">杠中心</text>
+<text x="292" y="454" font-size="21" fill="#7B5C52" font-family="PingFang SC,Microsoft Yahei,sans-serif">工具半径 r = 16mm（几何示例）</text>
+<path d="M410 292 L566 246" stroke="#658D89" stroke-width="3"/><text x="572" y="242" font-size="22" fill="#567C75" font-family="PingFang SC,Microsoft Yahei,sans-serif">内层路径半径较小</text>
+<path d="M442 401 L565 432" stroke="#C18C80" stroke-width="3"/><text x="572" y="442" font-size="22" fill="#B47E72" font-family="PingFang SC,Microsoft Yahei,sans-serif">外层叠加后的路径更大</text>
+<rect x="613" y="278" width="397" height="130" rx="14" fill="#F0F3F0" stroke="#BCC8C2"/>
+<text x="630" y="311" font-size="20" fill="#33433F" font-family="PingFang SC,Microsoft Yahei,sans-serif">理想圆周路径：L ≈ 2πr</text>
+<text x="630" y="346" font-size="19" fill="#33433F" font-family="PingFang SC,Microsoft Yahei,sans-serif">r = 16mm → 一圈约 101mm</text>
+<text x="630" y="380" font-size="19" fill="#33433F" font-family="PingFang SC,Microsoft Yahei,sans-serif">r = 20mm → 一圈约 126mm</text>
+<text x="620" y="492" font-size="20" fill="#A46D59" font-family="PingFang SC,Microsoft Yahei,sans-serif">注意：示例半径并非测得发束厚度；</text>
+<text x="620" y="521" font-size="19" fill="#A46D59" font-family="PingFang SC,Microsoft Yahei,sans-serif">真实螺旋有轴向位移，不能直接预测成品卷径。</text><text x="62" y="568" font-size="17" fill="#6D726F" font-family="PingFang SC,Microsoft Yahei,sans-serif">烫发研习院 · 2026-10-31 · 原创教学示意（非真实效果与仪器数据）</text></svg>

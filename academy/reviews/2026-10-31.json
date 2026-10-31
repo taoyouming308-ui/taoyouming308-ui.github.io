@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-31",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑与公开来源、版权及隐私核查；非人工导师、非科研同行评审）",
+  "reviewedAt": "2026-10-31T00:45:35Z",
+  "approvalReference": "本轮AI逐篇核对Wiley两篇原文出版信息、MDPI原始研究与DOI；核对近7天无可直接外推的真人发片厚度研究；审查全部正文区分基础圆周几何、科研证据和公仔头示教，不给无依据真人药力/热参数；逐张检查本轮自行绘制的静态SVG无外链、脚本、版权或顾客隐私。AI审核真实进行，不代表人工或临床安全批准。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-10-31核验Wiley开放原文：首次发表2024-11-20，Journal of Microscopy 2025卷，DOI 10.1111/jmi.13365；原始微CT与显微方法学研究，真实人发但非卷杠试验。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-10-31核验Cosmetics原论文，2019-04-01发表、156名女性毛发样本的弯曲模量与皮质研究，DOI 10.3390/cosmetics6020024。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-10-31核验Wiley综述原文，2024-05-11首次发表，DOI 10.1111/ics.12967；作者与期刊及机制描述均与出版页一致。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮自行绘制的轻量静态SVG几何、分区与抽象人物图；逐元素检查无照片、第三方模板、脚本、外链、隐私或真实顾客内容；图注与对应正文一致。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮自行绘制的轻量静态SVG几何、分区与抽象人物图；逐元素检查无照片、第三方模板、脚本、外链、隐私或真实顾客内容；图注与对应正文一致。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮自行绘制的轻量静态SVG几何、分区与抽象人物图；逐元素检查无照片、第三方模板、脚本、外链、隐私或真实顾客内容；图注与对应正文一致。"
+    }
+  ],
+  "contentSha256": "e54e7801aba75d0a03fa0530154a8c266950373b0d4e6657cb8c1df3e87c5182",
+  "assetSha256": {
+    "assets/2026-10-31/figure1.svg": "0c4666dbf9aae5c4eb5b7cc377c99b51e241bee10534797f38fce2058cecd547",
+    "assets/2026-10-31/figure2.svg": "f3ddec3df6d9688218df50a3ea251e1921bb3d9245a24b19141a34c04f4feda6",
+    "assets/2026-10-31/figure3.svg": "8e0ae9045197080581c3a75a453f9b0bc543aad354e63d315179c12d0d47dab4"
+  }
+}
