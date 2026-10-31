@@ -2221,3 +2221,8 @@ Verified shell/monthly loading separation; bounded frontdesk/main identity recov
 
 ## 2026-10-14 审美训练内容
 新增「想留长又要整洁：过渡期短发的边界怎样取舍？」及原创虚构成年人三视角示意。独立AI内容审核通过，非真人专家或科学认证。保留旧6例，内容更新不改App v635或业务接口。
+## 2026-10-31 · Natural silver contrast and structural clarity aesthetic case (v638 unchanged)
+
+- Add one original fictional four-view current-state case about an undisplayed sharp jaw-bob reference, uneven natural silver distribution, zonal support, shallow nape bend, four-minute hand-dry routine and ten-to-twelve-week maintenance. Six conditional answers compare direct blunt geometric copying with a structure-first route that preserves optical transparency; five self-checks remain unscored without a user answer.
+- Original same-person 1916×821 AI WebP shows one current salt-and-pepper collarbone bob only, not the reference, proposed cut, styling result or future grow-out. No real customer, measured gray percentage, verified density/diameter/cuticle condition, damage grade, personality, occupation, scientific validation or independent human expert certification is implied.
+- Preserve the reviewed 2026-10-31 academy publication and all twenty-three earlier aesthetic feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; exact-head protected CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
