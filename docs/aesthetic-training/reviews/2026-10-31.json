@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-10-31",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "fea171c3f7bfa006409ba81c9decd60d80133e60",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured gray-percentage, hair-density, cuticle-condition, haircut-result or maintenance study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional natural-silver optical-density and geometric-bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-three earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline and silver/dark distribution are separated from fictional zonal diameter, support, nape bend, routine and maintenance cycle",
+      "The undisplayed reference is decomposed into length, baseline, surface, controlled volume and reflected shine rather than promised as a copy",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; structure-first B is a conditional first test, not the only valid answer",
+      "Front, profiles, back, face opening, maximum width, baseline, nape, ear tuck, wet/dry return, three lighting conditions and four-minute home workflow are included",
+      "No universal claim that gray hair is coarse, dry or damaged; no fixed layer length, thinning percentage, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or controlled multi-camera capture",
+      "Zonal diameter/support, nape behavior, proposed cut, four-minute result and ten-to-twelve-week state are case conditions or future checks, not image-proven results",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-10-31-silver-structure-shine.webp",
+    "sha256": "f729f5efbb089686d801ae9598eeb55f1a46ad65726dc353d6aa38a07d51185e",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1916x821 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: educational hairstyle-analysis case image for a mobile app\nPrimary request: Create one seamless horizontal four-panel contact sheet showing the exact same fictional adult East Asian woman in her late 50s, photographed in a salon before any haircut or styling change. Panels, left to right: front view, true left profile, true right profile, true back view.\nScene/backdrop: plain warm light-gray salon wall, no mirrors, tools, logos or text.\nSubject: same person, same natural expression, same charcoal crew-neck top, same upright neutral head position and shoulder level in every panel. Current hair is a grown-out collarbone-length salt-and-pepper bob/lob. Approximately half gray visually, with brighter silver concentrated around temples and front hairline, darker strands through crown and back. Top lies fairly quiet; maximum width sits from lower cheek to upper neck. Ends touch the shoulders and form a mixture of gentle inward and outward bends. Nape inner layer has a shallow natural wave. Hair is clean, air-dried, unretouched, with realistic flyaways and visible mixed shine; no salon blowout.\nStyle/medium: highly realistic smartphone documentary portrait photography, honest skin and hair texture, neutral color, no beauty filter, no fashion editorial polish.\nComposition/framing: landscape contact sheet; every panel shows the complete top of head, full hairstyle outline and bottom line, neck and both shoulders. True orthographic-like front/profile/back documentation, matched camera distance and lens perspective. Keep facial identity, head/face proportions, hair length, gray distribution, clothing and lighting exactly consistent across all views.\nLighting/mood: soft even window-like daylight, low contrast, analytical and neutral.\nConstraints: image shows only the current pre-service state; not a reference hairstyle, not a proposed cut, not a before/after, not a chemical service result. No labels, no arrows, no measurements, no watermark, no text. Do not infer or exaggerate age. Do not hide hair behind shoulders or crop the head, neckline, bottom line, or shoulders. Profiles must be genuine 90-degree side views and back view must show no face.\nAvoid: split identities, inconsistent gray pattern, inconsistent length, glamour makeup, professional studio blur, dramatic lighting, retouching, wigs, overly white hair, curls, obvious perm, smiling teeth, jewelry, glasses, hats, hair clips, hands, extra people."
+  },
+  "feedSha256": "e7e6ca170214a16c4858926f3f50d55a4f05b5b1beae7e559737da75963ed6ae",
+  "caseCanonicalSha256": "1dd75dd3874d3f47d07bba8e1c7590fc3b944c0063fce506a84c21fe4abdeada",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-10-31 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed: twenty-four cases; twenty-three previous objects unchanged",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "executed: version/integrity/smoke, nineteen academy publisher unit tests and eighteen-course published-file verification passed; stopped at the same missing local Chromium before browser suites"
+  }
+}
