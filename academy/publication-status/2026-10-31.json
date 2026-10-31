@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "dates": [
+    "2026-10-31"
+  ],
+  "baseSha": "f26d809e0a1642adaee5e6fa39c1bb0c1bfcc6d1",
+  "purpose": "Request immutable current-main public-source backup via Academy publication preflight / backup-main before any reviewed lesson draft, review, or local figure is committed.",
+  "notApproval": true,
+  "notPublication": true
+}
