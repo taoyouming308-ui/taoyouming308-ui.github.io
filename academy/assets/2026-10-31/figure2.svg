@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 610" width="1100" height="610" role="img"><title>技术图｜六区排杠与薄铺/厚叠对照</title><rect width="1100" height="610" fill="#F8F5EE"/><rect x="24" y="24" width="1052" height="562" rx="25" fill="#FFFEFA" stroke="#D4D2CA"/><text x="60" y="84" font-size="30" fill="#303B3A" font-family="PingFang SC,Microsoft Yahei,sans-serif" font-weight="bold">技术图｜六区排杠与薄铺/厚叠对照</text><path d="M60 109 H1040" stroke="#BCC9C9" stroke-width="2"/><text x="80" y="143" font-size="21" fill="#4F6B76" font-family="PingFang SC,Microsoft Yahei,sans-serif">分区先明确目标流向，再让发片平铺贴杠</text>
+<path d="M185 203 Q254 152 333 203 Q391 255 363 391 Q343 478 269 513 Q195 482 171 392 Q145 267 185 203Z" fill="#E9E5DA" stroke="#637B75" stroke-width="4"/>
+<path d="M178 279 Q266 310 364 279 M180 363 Q266 390 361 360" fill="none" stroke="#9CAFAB" stroke-width="4"/>
+<path d="M266 183 L266 488" stroke="#9CAFAB" stroke-width="3" stroke-dasharray="10 8"/>
+<rect x="220" y="211" width="91" height="22" rx="11" fill="#91ABA8"/><rect x="210" y="246" width="111" height="22" rx="11" fill="#91ABA8"/>
+<rect x="189" y="314" width="67" height="20" rx="10" fill="#C9B6B2"/><rect x="280" y="314" width="67" height="20" rx="10" fill="#C9B6B2"/>
+<rect x="203" y="402" width="122" height="18" rx="9" fill="#BDB5A0"/>
+<text x="83" y="231" font-size="19" fill="#40524B" font-family="PingFang SC,Microsoft Yahei,sans-serif">顶部轻C</text><path d="M160 226 L216 226" stroke="#637B75" stroke-width="3"/>
+<text x="70" y="330" font-size="19" fill="#846B78" font-family="PingFang SC,Microsoft Yahei,sans-serif">两侧首弯</text><path d="M161 327 L188 327" stroke="#9F8A92" stroke-width="3"/>
+<text x="60" y="428" font-size="19" fill="#756E5A" font-family="PingFang SC,Microsoft Yahei,sans-serif">后颈收紧</text><path d="M159 422 L203 418" stroke="#AA9E89" stroke-width="3"/>
+<rect x="494" y="185" width="530" height="137" rx="19" fill="#E4ECEA"/>
+<text x="515" y="220" font-size="24" fill="#405B55" font-family="PingFang SC,Microsoft Yahei,sans-serif">A：薄铺（同源同质量毛束）</text>
+<rect x="525" y="250" width="455" height="23" rx="12" fill="#9FB7B3"/>
+<path d="M532 246 L975 246 M532 239 L975 239 M532 233 L975 233" stroke="#657F79" stroke-width="2.5"/>
+<text x="521" y="300" font-size="17" fill="#536762" font-family="PingFang SC,Microsoft Yahei,sans-serif">多束均匀分布，更容易看清压点与尾端折返</text>
+<rect x="494" y="339" width="530" height="147" rx="19" fill="#F0E7E0"/>
+<text x="515" y="375" font-size="24" fill="#995F52" font-family="PingFang SC,Microsoft Yahei,sans-serif">B：厚叠（相同毛量集中堆放）</text>
+<rect x="525" y="416" width="455" height="23" rx="12" fill="#D1AA9B"/>
+<path d="M532 395 Q700 376 975 395 M532 400 Q700 383 975 400 M532 406 Q700 390 975 406" stroke="#AF7465" stroke-width="3" fill="none"/>
+<text x="521" y="466" font-size="18" fill="#8A5D53" font-family="PingFang SC,Microsoft Yahei,sans-serif">层间抬高、局部鼓包；不能由此推算药剂扩散率</text><text x="62" y="568" font-size="17" fill="#6D726F" font-family="PingFang SC,Microsoft Yahei,sans-serif">烫发研习院 · 2026-10-31 · 原创教学示意（非真实效果与仪器数据）</text></svg>
