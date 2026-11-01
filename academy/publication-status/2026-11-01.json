@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "dates": [
+    "2026-11-01"
+  ],
+  "baseSha": "85c109de09028eca525679513686d2c7558ad89f",
+  "requestedAt": "2026-11-01T00:52:00Z",
+  "scope": "Clean public main only, not private computer/database backup",
+  "note": "Preflight-only request. No course inputs submitted or approved. Wait for Academy publication preflight / backup-main with exact baseline SHA before review-bound lesson submission."
+}
