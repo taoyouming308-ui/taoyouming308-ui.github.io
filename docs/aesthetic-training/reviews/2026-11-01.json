@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-11-01",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "7ab8c738252a6354763f3fa8757de24d141e801c",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design and communication reasoning, not a measured haircut, perm-result, home-reproduction or maintenance study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional ambiguous-natural-language hairstyle case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-four earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline is separated from fictional zonal diameter, density, natural bend, chemical history, routine and customer meaning",
+      "The word natural is decomposed into curl visibility, outline order, surface feel and home reproducibility instead of assumed to mean a fixed technical parameter",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; reproducibility-first B is a conditional first test, not the only valid answer",
+      "Front, two true profiles, back, face opening, crown, maximum width, occipital/nape weight, shoulder contact, ear tuck, low tie, first wash, second morning and eighth week are covered",
+      "No fixed layer length, thinning percentage, rod, chemical formula, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Zonal diameter/density/bend, proposed design, test strand, five-minute result and eight-to-ten-week state are case conditions or future checks, not image-proven results",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-01-natural-language-translation.webp",
+    "sha256": "195a44a7377e6703a65ead82081ca65feaaf0215bbe2dd9f8b7e73d72820cb24",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2056x765 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile app\nPrimary request: Create one horizontal four-panel contact sheet showing the SAME fictional adult East Asian woman in her CURRENT unstyled haircut from four true views: front, exact left profile, exact right profile, and back. This is not a makeover and must not show a proposed result.\nScene/backdrop: plain warm light-gray studio background, identical neutral camera distance and soft daylight in all panels.\nSubject: adult woman around 34, natural skin texture, calm neutral expression, softly rectangular-to-oval face, moderate head size, medium neck length, gently sloping shoulders, wearing the exact same simple muted blue-gray crew-neck top in every panel. Current hair is dark natural brown, a grown-out shoulder-grazing lob with a near-center natural part; crown lies relatively quiet/flat; face-framing pieces start below the cheekbone; visible weight collects from lower cheek through upper neck; ends brush the shoulders and show small irregular inward and outward bends rather than styled waves; the back has moderate fullness and a slightly uneven natural fall. Hair should look clean, dry, lightly air-dried, with normal flyaways and no salon blowout.\nStyle/medium: highly realistic editorial salon documentation photograph, honest hair texture, no beauty filter.\nComposition/framing: 4 equal vertical panels in one landscape image, full top of head, full hairstyle outline, bottom line, neck and both shoulders. True front/profile/back documentation, matched camera distance and lens perspective. Keep identity, head/face proportions, hair length, clothing and lighting exactly consistent.\nLighting/mood: soft even daylight, analytical and neutral.\nConstraints: current pre-service state only; not a reference hairstyle, proposed cut, before/after or chemical result. No labels, arrows, measurements, watermark or text. Do not crop crown, neckline, bottom line or shoulders. Profiles are genuine 90-degree views and back shows no face.\nAvoid: split identities, glamour retouching, obvious curls, salon blowout, wet hair, excessive symmetry, three-quarter angles, hands, accessories or extra people."
+  },
+  "feedSha256": "035e945de6e9fe31b3b0e35a9e6f35f2654b6e21d76b3acc2239eb400e5be507",
+  "caseCanonicalSha256": "244903670a52aee99ddce98ed246996614920807df63e8590e018cbedbd6837a",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-01 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed: twenty-five cases; twenty-four previous objects unchanged",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "executed: version/integrity/smoke, nineteen academy publisher unit tests and nineteen-course published-file verification passed; stopped at the same missing local Chromium before browser suites"
+  }
+}
