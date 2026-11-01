@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-01",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑；来源、版权、隐私与内容边界核验，非人工导师或学术同行评审）",
+  "reviewedAt": "2026-11-01T00:56:00Z",
+  "approvalReference": "本轮AI逐一核对Wiley综述原文日期、MDPI发丝弯曲论文和Wiley微CT出版信息；明确二分风格为课堂启发式而非科学定律，逐段检查未虚构真人药剂、发质测试与顾客记录；逐张审视原创SVG仅含几何、文字、方向箭头，不含第三方图片、脚本、外链及私密信息；此为真实AI编辑审核，不代表真人操作安全认证。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-01核验Wiley原始出版页：2024-05-11首次发表，International Journal of Cosmetic Science机制综述，DOI 10.1111/ics.12967；重点说明化学键非均匀贡献。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-01核验MDPI正文与出版日期：2019-04-01，Cosmetics 6(2):24；156名日本女性发样弯曲模量与皮质细胞组成研究。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-01核验Wiley原始研究，2024-11-20首次发表、2025年卷期，Journal of Microscopy；微CT观察不同卷曲纤维空间形态，供发者人数有限。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮从空白路径与文字标签独立编写的轻量静态SVG；检查仅含允许的SVG形状、文字、局部路径和配色，不含外部素材、照片、脚本、外链或顾客私密信息。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮从空白路径与文字标签独立编写的轻量静态SVG；检查仅含允许的SVG形状、文字、局部路径和配色，不含外部素材、照片、脚本、外链或顾客私密信息。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮从空白路径与文字标签独立编写的轻量静态SVG；检查仅含允许的SVG形状、文字、局部路径和配色，不含外部素材、照片、脚本、外链或顾客私密信息。"
+    }
+  ],
+  "contentSha256": "32ca400177bfc161080711ac4e7dee449387b18ffd630b6659775160637f2620",
+  "assetSha256": {
+    "assets/2026-11-01/figure1.svg": "674a3169834257ff584f5f89e8ef3e9fff8d985f1c37b6afd2e0f7912ac11fa6",
+    "assets/2026-11-01/figure2.svg": "5134bdaba374cbfed46fc9e03e3d6fe7bfd186d24e1cdc071a413e2d06b9f5e3",
+    "assets/2026-11-01/figure3.svg": "72db897defd71d1aa69af88129cdfebbd19ba6cf68d5bdf23c8f64423b3b8968"
+  }
+}
