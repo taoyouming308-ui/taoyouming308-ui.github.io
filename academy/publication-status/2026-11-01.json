@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-01"
+  ],
+  "baseSha": "85c109de09028eca525679513686d2c7558ad89f",
+  "inputHeadSha": "08d68f0c43f757a69857523006933349cdf1af05",
+  "preparedHeadSha": "99a4d481528d6757988e2ec2b8e177a69cd084a9",
+  "preparationRun": 41258978999,
+  "preparationArtifact": 13064840908,
+  "preparationArtifactSha256": "dd2f2120d78054865d189ccbe8f3a0dd0460399cabaccd4887e47510f70a4dab",
+  "backupArtifact": 13064381829,
+  "preparationBackupZipSha256": "a94e8600fafc1db69862057ee451e026e08838c4e02b8b9ec1ec518785ab3a0a",
+  "preparationBackupArchiveSha256": "1084cb6bfe46581ae0244415a327798716e42274259adbeb82d6d197cd95db5a",
+  "baselinePreflightRun": 41258688106,
+  "baselineBackupArtifact": 13063974535,
+  "baselineBackupZipSha256": "9db3fc6606bf74264398bd6ffee47daa3921f81306063f364bf75e08e404a5b7",
+  "baselineBackupArchiveSha256": "cc1ac973309cb1331f51be54e9216ae1f9d0e9dadc829974dfa695bb0643fc38",
+  "contentBindingSha256": "f82cc0ba95f4bf5d191369d72a23a3dfdcb1580e3a4f88226c509e55611e354d",
+  "reviewedAt": "2026-11-01T00:56:00Z",
+  "verifiedAt": "2026-11-01T01:08:46.167Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 19,
+    "allEighteenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Read 10 immutable GitHub prepared-head text files at 99a4d481; computed independent UTF-8 SHA256 and exact canonical sorted-compact JSON content binding; HTML digest 7725c878 agrees with downloaded academy-prepared-41258978999. Confirmed all three SVG hashes with reviewed assetSha256, 19 unique descending catalog items, static fallback and only academy/ plus AGENT_SYNC_STATUS.md and CHANGELOG.md changes (main..prepared: 3 fast-forward commits, 11 scoped paths). No Pages claim.",
+    "backupArchive": "Independently downloaded/inspected baseline ZIP SHA256 9db3fc66 and preparation ZIP SHA256 a94e8600; enclosed tar.gz SHA256 cc1ac973 and 1084cb6b, both evidence JSON bound to clean immutable main 85c109de; both archives 871 entries including AGENTS.md, perm-app.html, academy/catalog.json, excluding Git history and scripts/backup.env. Public code only, not private workstation/database.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-11-01.html": "7725c87861e47d0d3e3c9831c547f2722875e8e2d09211b9a681eea841b4afd0",
+    "academy/catalog.json": "29f62d5d7d4cd3b5f14bdb1d5ddb2246f8e33e30f1de819f2543505d3b760df2",
+    "academy/index.html": "bc9a2768c420008fdb9a20f1d106a5d8a25f891d295f8350212f9af6556f72f0",
+    "academy/drafts/2026-11-01.json": "5bd068b46c0fd84061d4676c241d04b979c1d9369ea69fd394c0bd62e7b53532",
+    "academy/reviews/2026-11-01.json": "d68b6517cca80bef7be908fff7ad90ef732b78b0baf337f4faf362e22462e8df",
+    "academy/assets/2026-11-01/figure1.svg": "674a3169834257ff584f5f89e8ef3e9fff8d985f1c37b6afd2e0f7912ac11fa6",
+    "academy/assets/2026-11-01/figure2.svg": "5134bdaba374cbfed46fc9e03e3d6fe7bfd186d24e1cdc071a413e2d06b9f5e3",
+    "academy/assets/2026-11-01/figure3.svg": "72db897defd71d1aa69af88129cdfebbd19ba6cf68d5bdf23c8f64423b3b8968",
+    "AGENT_SYNC_STATUS.md": "fd2d166b8e57cf23791dfe30e690ef29d5686acbfb9436ab5f8c763ed749422d",
+    "CHANGELOG.md": "5e62db2f12f7ac99ddddea17c2623584209955a58374ff9b93ffe32e1125d7d0"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "Other protected checks and current main/head recheck",
+    "Expected_head_sha ordinary merge after draft conversion",
+    "Actual Pages all-course SHA256 readback on merged main"
+  ]
+}
