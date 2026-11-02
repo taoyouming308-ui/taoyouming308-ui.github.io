@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-02"
+  ],
+  "baseSha": "af1948c2d8a35c59efb5c4a9a413076bb91876c1",
+  "inputHeadSha": "14cf7cfe175698a90a870af9d1adae2144e0ba35",
+  "preparedHeadSha": "a468bd571f5732a73075bb170e55f3023ccdec8e",
+  "preparationRun": 41369427346,
+  "preparationArtifact": 13108823061,
+  "preparationArtifactSha256": "a266369fe1c6fbd8ae37c369f72f92533e99a0e8b2bdd90d2c85e3fd16ba4e49",
+  "backupArtifact": 13108642282,
+  "preparationBackupZipSha256": "d025eb564dde60a754992444df8b2d2c8406795cebedf24a2370eb129a52c8e3",
+  "preparationBackupArchiveSha256": "6ff323c64fe167ba3d68f9a87811599c4a498d5484a3afabe6b5c00d3049b062",
+  "baselinePreflightRun": 41368645608,
+  "baselineBackupArtifact": 13108410669,
+  "baselineBackupZipSha256": "9249324ac65c098280117ab1101c9164d47bb3237aece4cf3d19b84531a2123f",
+  "baselineBackupArchiveSha256": "132287428de3184dfe455df71a2f2cce25b509017eec3b5546f12e573dc9af1b",
+  "contentBindingSha256": "09fb236c3dc2f3e31ad7e947208327d564b971a0fd2dd232753c594e53061b0a",
+  "reviewedAt": "2026-11-02T00:51:36Z",
+  "verifiedAt": "2026-11-02T01:04:16.001Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 20,
+    "allNineteenPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Independently fetched exact prepared-head UTF-8 bytes at a468bd571f5732a73075bb170e55f3023ccdec8e for ten files and calculated SHA256; all 3 SVG digests match academy/reviews date-bound assetSha256, approved draft contentSha256 was independently computed before atomic Git commit, one-date canonical contentBindingSha256 matches cloud preparer report. HTML matches prepared artifact sha256 72dae951, catalog has 20 unique newest-first dates preserving all nineteen old entries, static fallback and 3 image references checked, compare main..prepared shows exactly 11 scoped paths (3 ordinary fast-forward commits), no business/version files. No Pages claim.",
+    "backupArchive": "Baseline SHA-bound public-source archive verified (preflight run 41368645608, zip and embedded tar SHA256); cloud preparation backup verified independently (run 41369427346, zip and tar SHA256), both include required public source and omit .git and backup.env. No private workstation/database backup claimed.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-11-02.html": "72dae951e63e0b4af21fd086721edfcac965a0c754f67e7dd09f7ff7696169d2",
+    "academy/catalog.json": "b6aa77ec7d32dd2a9598977cb37fe65279baa734e9753f4b6602ba9529d3d5b8",
+    "academy/index.html": "13bc601b4dc1ef059db5c786bd849026eb11657bc4333ac8f9d45ea39599850b",
+    "academy/drafts/2026-11-02.json": "307d46e2d6d6ead33521975649f5b7ef1c3edd7b32815af58f7b22a4591c4c6f",
+    "academy/reviews/2026-11-02.json": "fdd4d64df6e501f1cbf5c718f87874f38ff8e6d54ff7956e955a9dab066617bd",
+    "academy/assets/2026-11-02/figure1.svg": "0952aef8c12b1e0fbdba5e8d4c27b6f22d04c4664be7bef0d4f4496636317d63",
+    "academy/assets/2026-11-02/figure2.svg": "934079fad196eafde0564134609f9bef1bb3f8d21e990499443a9d43e2b205e8",
+    "academy/assets/2026-11-02/figure3.svg": "d154999e8ca1e8f6ffe2db33ef88ccf22b7423653a500a2fedb6686a2d5ac42f",
+    "AGENT_SYNC_STATUS.md": "b80947441b87c5e9fc1fdc215a5911291265a6c7988b4f86a661b2d6167f2da3",
+    "CHANGELOG.md": "391d8906139aff2b6d90bba60607dd11df26ba830a65d0647cbcb851c8e1cfe1"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "Other protected checks and current main/head recheck",
+    "Expected_head_sha ordinary merge after draft conversion",
+    "Actual Pages all-course SHA256 readback on merged main"
+  ]
+}
