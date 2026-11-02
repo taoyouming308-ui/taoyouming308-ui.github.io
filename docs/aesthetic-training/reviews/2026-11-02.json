@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-11-02",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "04f91f9a343a9c37b4476bd7e9e97bb527b6bd69",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not a measured cranial proportion, haircut outcome, home-recovery or eight-week maintenance study",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional crown-versus-occipital volume-allocation case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-five earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current silhouette is separated from fictional zonal diameter, density, whorl direction, nape flow, routine and reference conditions",
+      "The undisplayed high-crown reference is decomposed into crown height, temple width, occipital depth, nape control and maintenance instead of promised as a copy",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; depth-and-connection-first B is a conditional first test, not the only valid answer",
+      "Front, two true profiles, back, crown, maximum width, occipital volume, face-frame diagonal, nape, shoulder line, two-minute styling, first wash, fourth week and eighth week are included",
+      "No fixed layer length, thinning percentage, rod or chemical formula, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Actual head shape, zonal diameter/density, whorl force, proposed cut, two-minute result and eight-week state are case conditions or future checks, not image-proven results",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-02-crown-occipital-volume.webp",
+    "sha256": "66cb1f9875e1efa01abea324bab9d70ba0a7c850228158199772af8e7962a1d0",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1774x887 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile app\nPrimary request: Create one horizontal four-panel contact sheet showing the SAME fictional adult East Asian woman in her CURRENT grown-out short haircut from four true views: front, exact left profile, exact right profile, and back. This is a pre-service analysis image, not a makeover and not a proposed haircut.\nScene/backdrop: plain warm light-gray salon wall, identical neutral camera distance, lens and soft daylight in all panels.\nSubject: adult woman around 33 with natural skin texture and calm neutral expression. Her visible facial outline is elongated oval with a moderately high forehead; the current head-and-hair silhouette reads slightly tall and narrow from the front. From both profiles the upper crown looks a little high while the occipital transition looks relatively flat. Neck is medium length; shoulders are medium-to-broad and gently squared. She wears the exact same simple muted taupe-gray crew-neck top in every panel.\nCurrent hair: dark natural brown, grown-out short pixie-bob. Near-center-to-slight-side natural part. Crown length has grown and lies in a narrow elevated arc, not a salon-teased high crown. Temple and ear areas are relatively close/tucked, with a few long face-framing pieces reaching the upper cheek to jaw. The occipital area lacks a strong rounded projection; lower back and nape have grown soft uneven wisps. Hair is clean, dry, lightly air-dried, medium-textured straight hair with realistic flyaways; no obvious curls, perm, shine spray, or blowout.\nStyle/medium: highly realistic editorial salon documentation photograph, honest hair and skin texture, no beauty filter or facial reshaping.\nComposition/framing: four equal vertical panels in one landscape image. Every panel must show the complete top of head, full hair outline and neckline, neck and both shoulders. True orthographic-feeling views; profiles are genuine 90-degree side views, and back shows no face. Keep facial identity, anatomy, hair length, parting, clothing and lighting consistent across all panels.\nLighting/mood: soft diffused neutral daylight, analytical and clear, no dramatic highlights.\nConstraints: no text, labels, arrows, measurements, watermark, accessories, earrings, glasses, hands, salon tools or extra people. Do not change hairstyle between panels. Show only the current grown-out state. Do not exaggerate anatomy or make medical claims.\nAvoid: makeover comparison, after image, reference hairstyle, glamorous styling, obvious perm curls, teased roots, wet hair, excessive symmetry, synthetic wig texture, cropped crown, cropped shoulders, missing nape, three-quarter profiles, different person or clothing."
+  },
+  "feedSha256": "13a34efa749b5e11677339873b2f6134749095eb6852f10c147fd86938b72d95",
+  "caseCanonicalSha256": "2929a10def429f78cf2ee6ef67fc22f3dd460a225cd33dc8ac049e5161d4b3aa",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-02 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed: twenty-six cases; twenty-five previous objects unchanged",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "started and passed version, static manifest, release integrity, smoke, academy Python unit and published-file verification; stopped at the first browser gate because the pinned local Playwright Chromium executable is absent. Protected PR CI must execute the complete hook before merge; no skipped browser pass claimed"
+  }
+}
