@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "9a52c092ca0b379fd1c5ee1c878a6d3328608d3c",
+  "requestedChecks": [
+    "Academy publication preflight / backup-main"
+  ],
+  "note": "Preflight-only request. No draft, review, content render, publication or approval. Await immutable main backup evidence before reviewed lesson inputs."
+}
