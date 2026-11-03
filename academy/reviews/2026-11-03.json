@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑；核验来源、版权及隐私，不是真人导师或科学同行评审）",
+  "reviewedAt": "2026-11-03T00:37:53.169Z",
+  "approvalReference": "2026-11-03本轮AI编辑实际核对PubMed/Wiley：2024-08-20电子发表、2025-02正式刊载的568人额前毛流观察研究，2022单丝弯曲与牵拉力学实验，1995简化弯曲力学理论；审核全文案例明确虚构、无真实顾客或精确危险药剂参数，三张原创SVG只含静态几何/文字、无外链、脚本或第三方肖像。本批准仅是实际完成的AI编辑来源、版权、隐私内容审核，不冒充临床安全证明和真人专业审核。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-03核对PubMed PMID 39163645，2024-08-20电子发表、2025-02正式刊载于Dermatologic Surgery，DOI 10.1097/DSS.0000000000004376；568位中国成年女性的额前发际轮廓和生长方向观察分类。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-03核对PubMed PMID 35780570，2022-06-28电子发表，Journal of the Mechanical Behavior of Biomedical Materials，DOI 10.1016/j.jmbbm.2022.105346；离体单丝弯曲拉伸实验、横截面纳米压痕和理论模型联合分析。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-03核对Wiley期刊原文及PubMed PMID 19245472，1995年12月发表于International Journal of Cosmetic Science，DOI 10.1111/j.1467-2494.1995.tb00129.x；用简化各向同性材料模型研究毛发截面形状与弯曲刚度。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-03本轮AI课程编辑独立制作纯静态SVG：只使用原创路径、形状、抽象人物与标注，不含第三方照片、真人客户资料、脚本、外链或受限素材。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-03本轮AI课程编辑独立制作纯静态SVG：只使用原创路径、形状、抽象人物与标注，不含第三方照片、真人客户资料、脚本、外链或受限素材。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-03本轮AI课程编辑独立制作纯静态SVG：只使用原创路径、形状、抽象人物与标注，不含第三方照片、真人客户资料、脚本、外链或受限素材。"
+    }
+  ],
+  "contentSha256": "1e84a4082a9cab702327da590221ccffa93d96fb8ee85bf11245155098ac211b",
+  "assetSha256": {
+    "assets/2026-11-03/figure1.svg": "fd7daa089a79cbce3df6215a053055e108be0e6a21dfc631eaae8d11dab703ea",
+    "assets/2026-11-03/figure2.svg": "c15a1ba1af0ee84a115a56c6f020b7196e5d184c752db61b838ea46a2bc34f2a",
+    "assets/2026-11-03/figure3.svg": "dd7cf96716b9f418dd8f4e1452289ff09ac6ac93bd616a6a973924c0034b0190"
+  }
+}
