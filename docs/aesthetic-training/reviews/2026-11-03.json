@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-11-03",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "718f3263ed758f291cc0a611b59d581a57784dc4",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof that AI reference views share one three-dimensional haircut or that the proposed structure has been cut and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional AI-reference-coherence case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-six earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline is separated from fictional zonal density/diameter, shallow nape bend, undisplayed AI references, routine and customer priorities",
+      "Three undisplayed AI reference views are treated as potentially inconsistent visual language, not evidence of one executable three-dimensional structure",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; coherence-first B is a conditional first test, not the only valid answer",
+      "Front, two true profiles, back, highest point, maximum width, occipital depth, face frame, baseline, ear tuck, three-minute styling, first wash, fourth week and eighth week are included",
+      "No fixed layer length, thinning percentage, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "The undisplayed AI references, zonal density/diameter, shallow nape bend, proposed cut, three-minute result and eight-week state are case conditions or future checks, not image-proven outcomes",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-03-ai-reference-coherence.webp",
+    "sha256": "62706da1a92c0cb4aafd9bf3ef8c7781e99e6333b9ec4752b06f9b297431f73b",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural\nAsset type: professional hairstyle-analysis teaching image for a mobile app\nPrimary request: Create one horizontal four-panel contact sheet showing the SAME fictional adult East Asian woman in her CURRENT chin-to-upper-neck bob from four true views: front, exact left profile, exact right profile, and back. This is a pre-service analysis image only, not a makeover, not an AI reference hairstyle, and not a proposed haircut.\nScene/backdrop: plain warm light-gray salon wall, identical neutral camera distance, lens, color balance and soft daylight in every panel.\nSubject: fictional adult woman around 31, natural skin texture, calm neutral expression. Visible face outline is softly angular oval with moderate cheekbone width and a gently squared jaw. Neck is medium length; shoulders are narrow-to-medium with a natural relaxed slope. Exact same muted stone-blue crew-neck top in every panel.\nCurrent hair: natural very dark brown chin-to-upper-neck grown-out bob. Near-center natural part. Top and frontal hairline visually lie rather quiet and close, with delicate temple coverage; do not show baldness. Lower sides, behind ears, occipital and nape look more compact and weighty. Outer surface is mostly straight with subtle real flyaways; inner nape has only a faint natural bend, not obvious curls. Face-framing pieces currently reach cheek-to-jaw. Baseline is soft and slightly uneven from grow-out, with ear-tuck memory on both sides. No salon blowout, no teasing, no wet look, no perm, no iron styling, no heavy product.\nStyle/medium: highly realistic editorial salon documentation photograph, honest skin and hair texture, no beauty filter, no facial reshaping.\nComposition/framing: four equal vertical panels in one landscape image. Every panel must show the full crown, complete hair outline and baseline, both ears where the view permits, neck and both shoulders. Profiles are genuine 90-degree side views; back shows no face. Keep identity, head/face proportion, hair length, parting, clothing and lighting consistent across all panels.\nLighting/mood: soft diffused neutral daylight, analytical and clear, no dramatic highlights.\nConstraints: no text, labels, arrows, measurements, watermark, accessories, glasses, earrings, hands, tools or extra people. Show only the current hairstyle. The image must not imply measured density, hair diameter, damage grade or future result.\nAvoid: makeover comparison, after image, AI reference hairstyle, exaggerated airy crown, inflated occiput, wolf cut, obvious layers, wet look, glamorous styling, synthetic wig texture, cropped crown, cropped shoulders, missing nape, three-quarter profiles, mismatched people or clothing."
+  },
+  "feedSha256": "7289bb58edabceefd96044b2e0deef8474305b41dfb34395ff19a62964b35306",
+  "caseCanonicalSha256": "0eb9a27ac4e2a325a305c8f9c250ba726f8ebfe7e479e2c3c55cd2ef5b7f4844",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-03 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed: twenty-seven cases; twenty-six previous objects unchanged",
+    "browserGate": "executed but blocked locally because the pinned Playwright Chromium executable is absent; no browser pass claimed",
+    "sharedHook": "started and passed version, static manifest, release integrity, smoke, academy Python unit and published-file verification; stopped at the first browser gate because the pinned local Playwright Chromium executable is absent. Protected PR CI must execute the complete hook before merge; no skipped browser pass claimed"
+  }
+}
