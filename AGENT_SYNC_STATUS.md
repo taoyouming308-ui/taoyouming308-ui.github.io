@@ -1,3 +1,10 @@
+## 2026-11-04 · Six-zone curl-function aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main e07749550ef3073c6ca03e831053f9bd2a23c646; GitHub recovery branch backup/pre-aesthetic-2026-11-04-e0774955 created before the focused content branch. Existing 2026-11-04 academy publication and all twenty-seven earlier aesthetic cases remain preserved.
+- One stable aesthetic-2026-11-04 case separates visible current outline from fictional six-zone density/diameter, nape direction, undisplayed wet-look S-wave reference and four-minute routine. Conditional A/B compare uniform visible S-waves with function-distributed regional curl; six answers and five unscored self-checks include first wash, fourth/eighth week, stop and switch signals without inventing user completion.
+- Original AI PNG shows only one fictional adult's current front/two true profiles/back grown-out short bob, not the undisplayed reference, test strand, proposed perm, home result or eight-week state. No real customer, measured anatomy/density/diameter, verified damage grade, chemical formula, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local executor was unavailable, so no local command/browser pass is claimed; exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f -->
 ## 2026-11-04 · Reviewed academy publication candidate (App version: v638 unchanged)
 

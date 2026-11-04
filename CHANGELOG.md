@@ -1,3 +1,8 @@
+## 2026-11-04 · 发型审美训练：六区卷度功能案例（v638 不变）
+
+- 新增 `aesthetic-2026-11-04`：训练顶区细软、后区粗密、后颈外向时，如何在“全头统一S纹”与“六区按功能分配卷度”之间取舍。
+- 同步原创AI虚构人物四视图、六段资深基准答案、首次洗后/第四周/第八周验收，以及五项未评分复盘；未改 App 代码、版本或业务数据。
+
 <!-- academy-reviewed-inputs:aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f -->
 ## 2026-11-04 · Reviewed academy publication candidate (App version: v638 unchanged)
 

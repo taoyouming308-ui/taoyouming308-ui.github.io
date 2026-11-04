@@ -1,0 +1,41 @@
+{
+  "batch": "aesthetic-2026-11-04",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "e07749550ef3073c6ca03e831053f9bd2a23c646",
+  "reviewStatus": "preparer_checked_pending_protected_ci",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof that six zones will respond identically or that the proposed perm has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional six-zone curl-function case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-seven earlier parsed feed objects preserved; one unique stable same-day ID appended or updated",
+      "Visible current outline is separated from fictional zonal density/diameter, nape direction, undisplayed wet-look reference, routine and customer priorities",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; function-distributed B is conditional, not the only valid answer",
+      "No fixed rod size, chemical formula, processing time, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Test-strand response, proposed perm, four-minute result and eight-week state are future checks, not image-proven outcomes",
+      "Local executor was unavailable; no local command or browser pass is claimed. Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-04-six-zone-curl-function.png",
+    "sha256": "41201d2de651fbed132a9555991c1ac111ee032726471de9ea06ad08fd98c955",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original PNG retained without content edits because the local conversion environment was unavailable"
+  },
+  "feedSha256": "e1ae65de75f5086694bb2b09334382d909d6f5eb8b285275bd2b5979ed3b5a08",
+  "caseCanonicalSha256": "73e176d7c5dc5a561dfdd80745c0b9e7e0ec4c1ec7dfa2de1dce431821635441",
+  "hashRules": "Raw UTF-8 feed bytes and decoded image bytes; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-04 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "recovery": "GitHub recovery branch backup/pre-aesthetic-2026-11-04-e0774955 from exact main e07749550ef3073c6ca03e831053f9bd2a23c646",
+    "baseChecks": "Local executor unavailable; no local command pass claimed",
+    "contentContract": "Prepared: twenty-eight cases; twenty-seven previous parsed objects preserved",
+    "browserGate": "Not executed locally; protected CI required",
+    "sharedHook": "Not executed locally; protected exact-head Validate shared app must pass before merge"
+  }
+}
