@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-04"
+  ],
+  "baseSha": "1c9f1edb6bf1db9385ceeac86e74337a21c345f0",
+  "inputHeadSha": "a5425555e3e36d2ae696d6f6a723fb9f1342e1c7",
+  "preparedHeadSha": "402e2f6d3e51db3d3cdc4d3e4c8bc24689403d71",
+  "preparationRun": 41750537433,
+  "preparationArtifact": 13285749903,
+  "preparationArtifactSha256": "0fa4a4a8d707090e6c1bedd3b8ae4d8d0bc27f5526be18598ea6091fcf5ba32e",
+  "backupArtifact": 13284204967,
+  "preparationBackupZipSha256": "4532ff9860442ab936cb22880fbae364a1fdac91f9d5d8f145ffd53e89b2596a",
+  "preparationBackupArchiveSha256": "8bba41a461be57a41e24da0a39b85881e87b7fe0a8604dd89b1ad937d27a4eeb",
+  "baselinePreflightRun": 41750544272,
+  "baselineBackupArtifact": 13285258910,
+  "baselineBackupZipSha256": "0bc5dda522caed06fbb1f007d0fdd4f2fd19caf3b5f2e62a6e360307b4e4b68c",
+  "baselineBackupArchiveSha256": "b949bc5d5b05e7db91b78c2eecacb26e0be5ba2c9a9cbd957041321f6c891891",
+  "contentBindingSha256": "aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f",
+  "reviewedAt": "2026-11-04T00:56:30.481Z",
+  "verifiedAt": "2026-11-04T01:08:37.987Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifact": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 22,
+    "allTwentyOnePreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "readbackMethod": "Independently fetched 11 exact UTF-8 files on immutable prepared branch head 402e2f6d3e51db3d3cdc4d3e4c8bc24689403d71 and computed SHA-256 in V8; rendered HTML matches downloaded prepared artifact; all SVGs match exact reviewed asset hashes; canonical sorted draft digest and content binding match; 22 catalog rows unique newest-first, preserves 21 previous entries; main unchanged; diff only 11 academy/governance paths. This is NOT an online claim.",
+    "backupArchive": "Downloaded SHA-bound preflight and preparation ZIP artifacts, verified embedded clean-public-source .tar.gz SHA-256, expected members and absence of private .git and backup.env; no claim of personal workstation or database backup.",
+    "notPublication": true
+  },
+  "fileSha256": {
+    "academy/2026-11-04.html": "02c7b932c395d7c327d2fb9091b8086b4380dc5177c749e4e307340bce913055",
+    "academy/catalog.json": "a6f4e67813b43f7863dfd84ec17c143477f03a3e12c274b87fcba5801ca21ef6",
+    "academy/index.html": "02faa868db1c5fa51a3db250b6b23cde76c9d8d7e5fcb1fa6c666d7974fb45ac",
+    "academy/drafts/2026-11-04.json": "83a00526b578c0f62182ba2383cb50c17aa9ef565d59117c4aa5907531f813af",
+    "academy/reviews/2026-11-04.json": "4cd38a0e39c63c49e60e42ffd7adf9566244709a002e34bef89de8c0539c34b8",
+    "academy/assets/2026-11-04/figure1.svg": "59fbdf47c4b05676196086d5b6a0c3721d141266c22789715cdf0c3690ed5581",
+    "academy/assets/2026-11-04/figure2.svg": "91d1446fe50c3ebf61c6cba9d33c1da0ee89ec1db69948609019cb4572496a45",
+    "academy/assets/2026-11-04/figure3.svg": "2d0048c2da56c52692801555d8b345687ad2a0539bb100ea8ed9967960543c1e",
+    "AGENT_SYNC_STATUS.md": "e8e7f07631a451a0628cd27e973b8c80175852108e1ebb1a436eb83b38c700c5",
+    "CHANGELOG.md": "eaa53e3d6a70659173fa42636e07c2d66a6ac914f799561ab360a681ecf0d186"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "Other protected checks and current main/head recheck",
+    "Expected_head_sha ordinary merge after draft conversion",
+    "Actual Pages all-course SHA256 readback on merged main"
+  ]
+}

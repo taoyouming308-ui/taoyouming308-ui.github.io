@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560"><rect width="960" height="560" fill="#F8F5F0"/><rect x="25" y="25" width="910" height="510" rx="22" fill="#FFFDF9" stroke="#DFDBD2"/><text x="54" y="78" font-family="sans-serif" font-size="29" font-weight="bold" fill="#303B3A">图二｜六区与分区涂放时间账</text><text x="55" y="111" font-family="sans-serif" font-size="17" fill="#7D817B">箭头表示记录先后，不是药剂推荐涂放次序</text><rect x="55" y="145" width="390" height="324" rx="17" fill="#ECF0E9"/><ellipse cx="240" cy="285" rx="118" ry="145" fill="#F3EEE7" stroke="#778C7E" stroke-width="3"/>
+<path d="M129 275 Q238 230 353 275" fill="none" stroke="#72887A" stroke-width="2"/>
+<path d="M225 143 V431 M120 315 H355 M165 397 H316" fill="none" stroke="#72887A" stroke-width="2"/>
+<rect x="189" y="162" width="85" height="53" rx="18" fill="#A6BBC5"/><text x="210" y="194" font-size="17" fill="#303B3A">顶区</text>
+<text x="158" y="254" font-size="17" fill="#303B3A">左侧</text><text x="285" y="254" font-size="17" fill="#303B3A">右侧</text>
+<text x="179" y="348" font-size="17" fill="#303B3A">枕骨区域</text><text x="198" y="419" font-size="17" fill="#303B3A">后颈</text>
+<text x="165" y="145" font-size="16" fill="#BD846E">刘海与脸周</text>
+<rect x="480" y="145" width="430" height="324" rx="17" fill="#F3E8E2"/><text x="506" y="187" font-size="21" font-weight="bold" fill="#303B3A">分区记录卡</text>
+<text x="510" y="229" font-size="18" fill="#303B3A">区位</text><text x="626" y="229" font-size="18" fill="#303B3A">首次接触</text><text x="770" y="229" font-size="18" fill="#303B3A">规定停止</text>
+<path d="M505 243 H876 M505 291 H876 M505 339 H876 M505 387 H876" stroke="#C6ADA1" stroke-width="2"/>
+<text x="512" y="277" font-size="17" fill="#303B3A">A 顶部</text><text x="648" y="277" font-size="17" fill="#303B3A">待记录</text><text x="798" y="277" font-size="17" fill="#303B3A">待核验</text>
+<text x="512" y="327" font-size="17" fill="#303B3A">B 两侧</text><text x="648" y="327" font-size="17" fill="#303B3A">待记录</text><text x="798" y="327" font-size="17" fill="#303B3A">待核验</text>
+<text x="512" y="374" font-size="17" fill="#303B3A">C 后枕</text><text x="648" y="374" font-size="17" fill="#303B3A">待记录</text><text x="798" y="374" font-size="17" fill="#303B3A">待核验</text>
+<text x="506" y="428" font-size="17" fill="#BD846E">必须依据实际产品说明安排停留与冲洗</text><text x="55" y="514" font-family="sans-serif" font-size="15" fill="#747974">ZY SYR · 2026-11-04 · 原创静态教学示意，非实际检测或烫后效果</text></svg>
