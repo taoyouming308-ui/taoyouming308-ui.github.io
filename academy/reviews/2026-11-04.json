@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-04",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑；实际核对来源、版权和隐私，不是人类导师或同行评审）",
+  "reviewedAt": "2026-11-04T00:56:30.481Z",
+  "approvalReference": "2026-11-04本轮AI编辑独立阅读Wiley 2004显微扩散论文摘要、Wiley及PubMed 2005扩散/拉曼研究、J-STAGE 2008还原氧化实验原文记录并明确外推局限；逐节审核模拟案例、无真实顾客、无具体产品却不编造药剂pH和操作分钟数；三张SVG为本轮原创纯静态绘图。该批准仅限已完成的来源/版权/隐私编辑审核，不声称真人专业安全审批或同行评审。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "本轮核对Wiley原刊DOI 10.1002/app.21019，2004-08-31首次发表，Journal of Applied Polymer Science 原始离体白发显微分光扩散实验。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "本轮核对PubMed PMID 16130128和Wiley DOI 10.1002/bip.20362；2005-08-29首次发表，2005-12正式刊载，原始显微分光与拉曼实验。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "本轮核对J-STAGE期刊原文DOI 10.2115/fiber.64.137、2008年64卷6期137—144页；受控还原氧化毛发FT-IR等材料试验，作者包含Milbon研发人员。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-04本轮AI课程编辑使用原创静态SVG路径、矩形、抽象截面与人物线条和中文标注独立绘制；无第三方照片、肖像、商标、脚本、外链、真实顾客资料或敏感信息；仅作教学示意。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-04本轮AI课程编辑使用原创静态SVG路径、矩形、抽象截面与人物线条和中文标注独立绘制；无第三方照片、肖像、商标、脚本、外链、真实顾客资料或敏感信息；仅作教学示意。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-04本轮AI课程编辑使用原创静态SVG路径、矩形、抽象截面与人物线条和中文标注独立绘制；无第三方照片、肖像、商标、脚本、外链、真实顾客资料或敏感信息；仅作教学示意。"
+    }
+  ],
+  "contentSha256": "edeca2505514a3ccba7b7e03b4f725d310366c60ffe3c228776e61d9aee802b9",
+  "assetSha256": {
+    "assets/2026-11-04/figure1.svg": "59fbdf47c4b05676196086d5b6a0c3721d141266c22789715cdf0c3690ed5581",
+    "assets/2026-11-04/figure2.svg": "91d1446fe50c3ebf61c6cba9d33c1da0ee89ec1db69948609019cb4572496a45",
+    "assets/2026-11-04/figure3.svg": "2d0048c2da56c52692801555d8b345687ad2a0539bb100ea8ed9967960543c1e"
+  }
+}
