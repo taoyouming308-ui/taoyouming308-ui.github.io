@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-05",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑；实际核对来源、版权与隐私，并非人类导师或同行评审）",
+  "reviewedAt": "2026-11-05T00:17:05.232Z",
+  "approvalReference": "本轮AI编辑核对Kim等2024年漂色SEM/TEM论文、Kwon等2024年染色AFM/FTIR/拉伸实验、Takagi等2026年氧化损伤实验及原刊/DOI与日期；逐节审阅虚构人物、非处方化学内容、无真人数据、无无依据的pH或分钟数；三张静态SVG原创并核对元素/外链/版权与隐私。审批仅为AI编辑资料和图示审核，不是经过授权的人类导师评审或真人药剂安全批准。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-05本轮核对DOAJ和Applied Microscopy DOI及2024-12-17刊期，SEM/TEM过度漂色原始对照研究，样本与强度有限。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-05核对PubMed PMID 39315135及Heliyon DOI 10.1016/j.heliyon.2024.e37871：2024-09-12电子发表（9月30日卷期），AFM/FTIR/拉伸原始实验，含企业研发作者。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-05核对2026-04-20原刊Applied Cosmetic Science and Technology DOI 10.69336/acst.2025-10及企业/大学混合作者、氧化与力学观察。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-05本轮AI课程编辑独立使用SVG基础几何图元绘制的静态教学示意；未调用第三方照片、肖像、商标、外部资源或真实顾客数据；仅供结构/技术/美感教学，不作为真实效果证据。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-05本轮AI课程编辑独立使用SVG基础几何图元绘制的静态教学示意；未调用第三方照片、肖像、商标、外部资源或真实顾客数据；仅供结构/技术/美感教学，不作为真实效果证据。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-05本轮AI课程编辑独立使用SVG基础几何图元绘制的静态教学示意；未调用第三方照片、肖像、商标、外部资源或真实顾客数据；仅供结构/技术/美感教学，不作为真实效果证据。"
+    }
+  ],
+  "contentSha256": "cf26f92aa42ba3aac0b889dbe2c6e47d1510c5d739f51b48eec5889ed2c3259c",
+  "assetSha256": {
+    "assets/2026-11-05/figure1.svg": "f789f1885b371559b5cbc57ab5762c0b9635ece14cbdf664c3d7b366e6de36f4",
+    "assets/2026-11-05/figure2.svg": "f90508a954bf32cd3e9bc91c378a50308ac6357d8d3a88da5572c3be9890823d",
+    "assets/2026-11-05/figure3.svg": "74fa45e0842f0b3adca693182b42431d383763ffc99089ce2bde90938cf7ed8a"
+  }
+}

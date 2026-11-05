@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:2922202a2a62bd1bc6a9fa32e607db5a154d8c1c69e9fc7eb5326c930e25e7b0 -->
+## 2026-11-05 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main e07749550ef3073c6ca03e831053f9bd2a23c646.
+- Dates: 2026-11-05. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 <!-- academy-reviewed-inputs:aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f -->
 ## 2026-11-04 · Reviewed academy publication candidate (App version: v638 unchanged)
 
