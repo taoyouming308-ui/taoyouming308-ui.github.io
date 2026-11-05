@@ -1,0 +1,43 @@
+{
+  "batch": "aesthetic-2026-11-05",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "bcd313b38d0864b079efd8f8f0ff3779f52895f2",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomical asymmetry or that the proposed visual-balance approach has been cut and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional asymmetry-to-visual-balance case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-eight earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current left/right fall is separated from fictional zonal coverage, hair-flow direction, occipital support, nape direction, shoulder-bag posture and ear-tuck routine",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; structure-based visual-balance B is a conditional first test, not the only valid answer",
+      "Neutral head position, natural fall, two true profiles, back baseline, face frame, crown, occiput, nape, three-minute styling, ear tuck, first wash, fourth week and eighth week are included",
+      "No fixed millimeter offset, thinning percentage, measured anatomy, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Ear position, skull asymmetry, zonal coverage, hair-flow direction, proposed cut, three-minute result and eight-week state are case conditions or future checks, not image-proven outcomes",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-05-asymmetry-visual-balance.webp",
+    "sha256": "7b9f6b3d148a9a2249061f7b3e17db200e06bf0937c5cd8d96d50d16eb458bb3",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Use case: photorealistic-natural. Professional hairstyle-analysis teaching image: one horizontal four-panel contact sheet of the same fictional adult East Asian woman in her current unstyled chin-to-upper-neck grown-out bob, true front, exact left profile, exact right profile and back. Complete crown, baseline, full neck and both shoulders; identical slate-blue top, neutral gray salon background and soft daylight. Natural 6:4 side part, subtle left/right fall difference, realistic ear-tuck memory and faint one-sided nape kick; no makeover, proposed cut, perm, wet look, labels, retouching, accessories or watermark."
+  },
+  "feedSha256": "006763da7d0ef23cbb067461aea099b3543aa90e543f8aed53c4e5da0f3873ca",
+  "caseCanonicalSha256": "c9ae161ac3f8a8fe6ab6bd29966276271af827a72b7c8e50f4374ab618706f89",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-05 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed locally: twenty-nine cases; twenty-eight previous parsed objects preserved",
+    "browserGate": "executed locally but blocked because the pinned Playwright Chromium executable is absent; no browser pass claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedHook": "version, release integrity, smoke, care outbound, hair task, customer archive, admin workflow, booking UI, 42 Python unit tests, agent handoff and diff checks passed locally; complete pre-push hook and exact-head protected CI remain required"
+  }
+}
