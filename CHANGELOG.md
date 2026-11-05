@@ -1,3 +1,8 @@
+## 2026-11-05 · 发型审美训练：左右非对称与视觉平衡案例（v638 不变）
+
+- 新增 `aesthetic-2026-11-05`：训练左右毛流、覆盖、别耳习惯与肩线参照不一致时，如何区分“参数完全对称”和“真实使用后的视觉平衡”。
+- 同步原创AI虚构人物四视图、六段资深基准答案、三状态及首次洗后/第四周/第八周验收、五项未评分复盘；同时安全恢复已通过检查但未合并的11月4日案例。未改 App 代码、版本或业务数据。
+
 <!-- academy-reviewed-inputs:2922202a2a62bd1bc6a9fa32e607db5a154d8c1c69e9fc7eb5326c930e25e7b0 -->
 ## 2026-11-05 · Reviewed academy publication candidate (App version: v638 unchanged)
 
@@ -6,6 +11,11 @@
 - Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+## 2026-11-04 · 发型审美训练：六区卷度功能案例（v638 不变）
+
+- 新增 `aesthetic-2026-11-04`：训练顶区细软、后区粗密、后颈外向时，如何在“全头统一S纹”与“六区按功能分配卷度”之间取舍。
+- 同步原创AI虚构人物四视图、六段资深基准答案、首次洗后/第四周/第八周验收，以及五项未评分复盘；未改 App 代码、版本或业务数据。
 
 <!-- academy-reviewed-inputs:aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f -->
 ## 2026-11-04 · Reviewed academy publication candidate (App version: v638 unchanged)
