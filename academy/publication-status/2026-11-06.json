@@ -1,8 +1,64 @@
 {
   "schemaVersion": 1,
-  "date": "2026-11-06",
-  "state": "preflight_requested",
+  "state": "preparation_verified_pending_protected_checks",
   "published": false,
+  "dates": [
+    "2026-11-06"
+  ],
   "baseSha": "7e5eadb4e69b33b0e4be71642aebd2f0822eefc6",
-  "notes": "Preparation request only. No lesson draft, approval, protected checks or Pages publication at this stage."
+  "inputHeadSha": "e3e3ffaba81a9fa34ce780a14cf1f23586fc6bd9",
+  "preparedHeadSha": "3ecd0945d014351080874e6dc13ec848ae7f6594",
+  "preparationRun": 42135529091,
+  "preparationArtifact": 13465048299,
+  "preparationArtifactSha256": "02f75c26044b06a614f9d6633a881213e5c149da233c6f3de7d3ce444d5e85aa",
+  "backupArtifact": 13465975578,
+  "preparationBackupZipSha256": "435d532c4ddb37db4398376c20337cba3a0b857461b3b62e2cfdd78b1c32b355",
+  "preparationBackupArchiveSha256": "416d68994c9aacf55ccf2a080d2cc5e83773135ff129b0ad08020317b49a9110",
+  "baselinePreflightRun": 42134701320,
+  "baselineBackupArtifact": 13464004526,
+  "baselineBackupZipSha256": "c940adb31d73191229e457333995b520aafeb9b9c4539398094c849c28aa30d9",
+  "baselineBackupArchiveSha256": "f0186264781e56ed76844677fa896f6b31cc42c79ad11a21332030410aad59d4",
+  "latestInputPreflightRun": 42135535001,
+  "latestInputBackupArtifact": 13465841193,
+  "latestInputBackupZipSha256": "489f70982c1fbb708ebd1e9e499292f7a2e3455ab44a608749e25f0780380540",
+  "latestInputBackupArchiveSha256": "11a973a176f7c0084e226ebcabfef9f9c10871cca68116069e487feaed67579a",
+  "contentBindingSha256": "985027dc0aeb844f4b72e5f49c083038298a609773a8b6d288bd09ba57b73a38",
+  "reviewedAt": "2026-11-06T00:15:27.638Z",
+  "verifiedAt": "2026-11-06T00:28:41.539Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 24,
+    "allTwentyThreePreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Downloaded and SHA256-verified prepared run artifact 42135529091, preflight backups 42134701320 and 42135535001, and prep backup. Independently fetched and SHA256-hashed 10 exact files from immutable prepared head 3ecd0945. HTML equals artifact report digest, 3 SVGs match reviewed hashes. Inspected 24 unique newest-first catalog entries and all 24 static fallback links. Compared 11 changed paths and unchanged baseline main SHA. Archives contain public required files and exclude .git and backup.env. This is preparation evidence, NOT Pages publication."
+  },
+  "fileSha256": {
+    "academy/2026-11-06.html": "53c077b597c982b08bab17f6b98d4364ef0c3888647b9e4e07898d9c83e7abaa",
+    "academy/catalog.json": "16ec126665d696fa293621b0b279ac8925cbd6ffdf6e452072b9ebfb2cff1c17",
+    "academy/index.html": "d677cccb35240dbebc1430168eff6219476b9dc1d52a45d29894389296455df0",
+    "academy/drafts/2026-11-06.json": "256b11cb7d95e8ae99fa2b1d2ea4f197063cd387eafb9aa8d84113caa9ff49d6",
+    "academy/reviews/2026-11-06.json": "1429cc40483f8be56839383a2dff1a8eb65a4c8819bb048d4a9d1c14dd46d327",
+    "academy/assets/2026-11-06/figure1.svg": "6f6112186acb7301cb50c53419f65d80372f5fd97b60c71a20d9e839013eb731",
+    "academy/assets/2026-11-06/figure2.svg": "080bcd07f37fd421f8b06fed968a1b56a00ff4433741a043916f646485b59b25",
+    "academy/assets/2026-11-06/figure3.svg": "0bbd3283277ae25d87596b47d2cb9147aba10d39457ebd90a41902cea77d165f",
+    "AGENT_SYNC_STATUS.md": "a3d700ac5beb14c0f5163e3f5c1c5436073acb3eb4c938059a2632913b23619b",
+    "CHANGELOG.md": "797ae65b1ff38783c29b83fe7e4f10bc488ec87e71bbe751551f0f5c61e276d5"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "All other protected checks and main/head recheck",
+    "expected_head_sha normal merge after removing draft",
+    "Actual Pages full catalog and all lesson/image SHA256 readback"
+  ]
 }
