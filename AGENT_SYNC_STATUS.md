@@ -1,3 +1,10 @@
+## 2026-11-07 · Adjacent-style switching aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 29dd4db991899d4563f027f05f6211a0376ca93e; clean focused `content/aesthetic-2026-11-07` branch, starting version/integrity/handoff checks and daily backup passed before edits. Existing 2026-11-06 publication and all thirty earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-07` case separates visible current proportions from fictional regional hair properties and customer-confirmed professional/weekend goals. Conditional A/B compare fixed sweet-youthful signals with a professional structural base plus reversible softening; six answers and five unscored self-checks include work, weekend, low-tie, first-wash, fourth-week and eighth-week validation without inventing user completion.
+- Original 2172×724 AI WebP shows only one fictional adult's current front/two true profiles/back collarbone lob, not a proposed cut, perm, makeover, home result or future state. No real customer, measured anatomy/density/diameter, verified damage, occupation, personality, age effect, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-06 · Staged reference-adaptation aesthetic case (App version: v638 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 907a2a82a233f2eeb8346304b6f968247036c8f5; clean focused `content/aesthetic-2026-11-06` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-11-06 academy publication and all twenty-nine earlier aesthetic cases remain preserved.
