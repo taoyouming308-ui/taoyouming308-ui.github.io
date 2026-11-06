@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-06",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑；实际核对文献、版权及隐私，不是人类导师/独立同行评审）",
+  "reviewedAt": "2026-11-06T00:15:27.638Z",
+  "approvalReference": "本轮AI编辑于2026-11-06实际核对J-STAGE Yamada等2026热分析原刊、Wiley Watanabe等2024红外原刊及Lima等2019热损伤原刊；逐段审阅无通用真人温度/pH/时间、无危险补热建议、模拟人物不涉及顾客；三张SVG系本轮独立绘制且审阅了安全元素与使用权。批准仅代表AI来源、版权、隐私和内容边界审核，不构成人类导师签字或真人技术安全许可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-06核对J-STAGE《Bunseki Kagaku》2026年75卷9期539—545页、DOI，页面载明2026-09-05出版、10-17 J-STAGE上线；原始热分析/TG/TMA研究，包含企业联合作者，样本与外推有限。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-06核对《International Journal of Cosmetic Science》原刊，2024-05-27首次发表、2024年46卷6期850—864页；红外偏振显微对漂染、烫发及特定受热实验的原始材料研究，含企业研发作者。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-06核对《Journal of Cosmetic Dermatology》原刊与DOI，2019-03-12首次发表；热夹板条件下的TG/DSC/FTIR、蛋白质流失与SEM原始对照实验，样本有限。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-06本轮AI课程编辑独立使用SVG基础几何图元生成，复核元素仅限静态svg/rect/path/line/polygon/ellipse/text；没有第三方图片、肖像、商标、外链、脚本或真实顾客信息；仅表示热传递概念、无药排杠与人物比例，不可当作测得温度、真实造型结果或科学证据。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-06本轮AI课程编辑独立使用SVG基础几何图元生成，复核元素仅限静态svg/rect/path/line/polygon/ellipse/text；没有第三方图片、肖像、商标、外链、脚本或真实顾客信息；仅表示热传递概念、无药排杠与人物比例，不可当作测得温度、真实造型结果或科学证据。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-06本轮AI课程编辑独立使用SVG基础几何图元生成，复核元素仅限静态svg/rect/path/line/polygon/ellipse/text；没有第三方图片、肖像、商标、外链、脚本或真实顾客信息；仅表示热传递概念、无药排杠与人物比例，不可当作测得温度、真实造型结果或科学证据。"
+    }
+  ],
+  "contentSha256": "9595bd6962ba6831325e9c303143da3f2da467a2d14c030c35471c18eae0bdd3",
+  "assetSha256": {
+    "assets/2026-11-06/figure1.svg": "6f6112186acb7301cb50c53419f65d80372f5fd97b60c71a20d9e839013eb731",
+    "assets/2026-11-06/figure2.svg": "080bcd07f37fd421f8b06fed968a1b56a00ff4433741a043916f646485b59b25",
+    "assets/2026-11-06/figure3.svg": "0bbd3283277ae25d87596b47d2cb9147aba10d39457ebd90a41902cea77d165f"
+  }
+}

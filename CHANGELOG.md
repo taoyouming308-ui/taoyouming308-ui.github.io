@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:985027dc0aeb844f4b72e5f49c083038298a609773a8b6d288bd09ba57b73a38 -->
+## 2026-11-06 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 7e5eadb4e69b33b0e4be71642aebd2f0822eefc6.
+- Dates: 2026-11-06. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-05 · 发型审美训练：左右非对称与视觉平衡案例（v638 不变）
 
 - 新增 `aesthetic-2026-11-05`：训练左右毛流、覆盖、别耳习惯与肩线参照不一致时，如何区分“参数完全对称”和“真实使用后的视觉平衡”。
