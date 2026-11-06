@@ -1,0 +1,43 @@
+{
+  "batch": "aesthetic-2026-11-06",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "907a2a82a233f2eeb8346304b6f968247036c8f5",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured porosity, chemical safety or that the staged haircut/perm has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional mixed-porosity staged-reference-adaptation case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All twenty-nine earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline is separated from fictional lightening/perm history, zonal porosity, low-ponytail requirement, high-collar collision and routine",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; staged B is a conditional first test, not the only valid answer",
+      "Natural fall, three-minute styling, low ponytail, high collar, first wash, fourth week and six-to-eight-week review are included",
+      "No fixed formula, rod size, processing time, measured porosity, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Porosity, elasticity, prior lightening, chemical suitability, proposed cut/perm and future results are case conditions or future checks, not image-proven outcomes",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-06-staged-reference-adaptation.webp",
+    "sha256": "a43053fd1b361e40a652db75f018bc8378be09126c0acf2d30a18aadb83c4a42",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1774x887 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Photorealistic-natural four-panel contact sheet of the same fictional adult East Asian woman in her current unstyled shoulder-length lob: true front, exact left profile, exact right profile and back; complete crown, baseline, neck and shoulders; straight roots, loose old mid-length bends, slightly dry shoulder-contact ends, thinner face frame and fuller back; identical sage top and neutral salon background; current state only, no reference or makeover."
+  },
+  "feedSha256": "6e824839b3875febcacd52e633db51512b5aba1c837738c219da468e2f33c10c",
+  "caseCanonicalSha256": "d6fa548f4587ce4d0a34e9e8aa48f9eaf97d4a268122ec1a98148223da9093a1",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-06 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; complete daily backup created",
+    "contentContract": "passed locally: thirty cases; twenty-nine previous parsed objects preserved",
+    "browserGate": "executed locally but blocked because the pinned Playwright Chromium executable is absent; no browser pass claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedHook": "version, release integrity, smoke, care outbound, hair task, customer archive, admin workflow, booking UI, 42 Python unit tests, agent handoff and diff checks passed locally; complete pre-push hook and exact-head protected CI remain required"
+  }
+}
