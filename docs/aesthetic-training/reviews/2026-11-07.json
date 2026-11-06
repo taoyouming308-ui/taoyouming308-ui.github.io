@@ -1,0 +1,43 @@
+{
+  "batch": "aesthetic-2026-11-07",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "29dd4db991899d4563f027f05f6211a0376ca93e",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, age effect, occupation fit or that the proposed switchable haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional adjacent-style and multi-scenario case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current proportions are separated from fictional regional hair properties, customer-stated goals and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; professional-base B is a conditional first test, not the only valid answer",
+      "Work, weekend, low-tie, three-minute styling, first wash, fourth week and eighth week are included",
+      "No fixed formula, rod size, processing time, personality/occupation inference, real-client data or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Regional density/diameter, occipital shape, lifestyle, style preference, proposed cut/texture and future results are case conditions or future checks, not image-proven outcomes",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-07-adjacent-style-switching.webp",
+    "sha256": "b2697ecae1d64bd021bcb504d244fc9b1ce8e2f71d99a2bd74f4646cd012cf52",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Photorealistic-natural four-panel contact sheet of the same fictional adult East Asian woman in her current unstyled collarbone lob: true front, exact left profile, exact right profile and back; complete crown, baseline, neck and shoulders; soft 6:4 part, mostly straight hair, subtle C-bend, quiet crown, fuller lower back, longer cheek-to-jaw face frame; identical blue-gray top and neutral salon background; current state only, no makeover."
+  },
+  "feedSha256": "65fc611d96cc91337640b49ec5f82fab48ecd0c5d258783671c620bd4cd11f96",
+  "caseCanonicalSha256": "cae679578614b76dc1a8cb7afd98e96d48ea58f880f497083dc81b3f65835142",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-07 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v638 before editing; daily backup command completed without creating a duplicate same-day archive",
+    "contentContract": "passed locally: thirty-one cases; thirty previous parsed objects preserved",
+    "browserGate": "executed locally but blocked because the pinned Playwright Chromium executable is absent; no browser pass claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "version, release integrity, smoke, care outbound, hair task, customer archive, admin workflow, booking UI, 53 Python unit tests, agent handoff and diff checks passed locally; complete pre-push hook and exact-head protected CI remain required"
+  }
+}
