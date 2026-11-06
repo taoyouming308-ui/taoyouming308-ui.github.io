@@ -1,3 +1,10 @@
+## 2026-11-06 · Staged reference-adaptation aesthetic case (App version: v638 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 907a2a82a233f2eeb8346304b6f968247036c8f5; clean focused `content/aesthetic-2026-11-06` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-11-06 academy publication and all twenty-nine earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-06` case separates visible current outline from fictional mixed porosity, prior lightening/perm history, low-ponytail requirement, high-collar collision and three-minute routine. Conditional A/B compare one-session photo matching with a reversible staged plan; six answers and five unscored self-checks include test strands, four real-use states, first wash, fourth week, six-to-eight-week review, stop and switch signals without inventing user completion.
+- Original 1774×887 AI WebP shows only one fictional adult's current front/two true profiles/back shoulder-length lob, not the undisplayed reference, proposed cut/perm, home result or later-stage outcome. No real customer, measured porosity, verified chemical history, breakage grade, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:985027dc0aeb844f4b72e5f49c083038298a609773a8b6d288bd09ba57b73a38 -->
 ## 2026-11-06 · Reviewed academy publication candidate (App version: v638 unchanged)
 
