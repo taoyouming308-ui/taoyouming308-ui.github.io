@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "date": "2026-11-07",
+  "baseSha": "9c8072fdb6218b04352a0ae7ba7812fdabc2bc57",
+  "purpose": "Trigger mandatory Academy publication preflight backup for an immutable clean main SHA; no content input, review approval, merge, or online publication is implied."
+}
