@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:b8ab0d324fc11df97385fdb3de7e37c42dfb07254277a19cbb87a6fbe8410a4b -->
+## 2026-11-07 · Reviewed academy publication candidate (App version: v638 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 9c8072fdb6218b04352a0ae7ba7812fdabc2bc57.
+- Dates: 2026-11-07. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-07 · 发型审美训练：相邻风格与场景切换案例（v638 不变）
 
 - 新增 `aesthetic-2026-11-07`：训练“减龄但不装嫩、工作专业、周末松弛”发生相邻风格冲突时，如何把稳定结构和可变细节分开设计。

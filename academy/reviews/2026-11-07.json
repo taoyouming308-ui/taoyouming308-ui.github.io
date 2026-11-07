@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-07",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-07本轮AI课程编辑；实际完成文献原刊核对、版权与隐私审阅；不是人类导师/独立同行评审）",
+  "reviewedAt": "2026-11-07T00:49:12.407Z",
+  "approvalReference": "2026-11-07本轮AI编辑已核对Wiley Kuzuhara 2017原刊与PMID 28922460、Wiley Adav等2024原刊 DOI 10.1111/ics.13029及PubMed Ueno/Namiki 2015 PMID 26152046；按来源强度限定外推，检查全部模拟案例、真人化学安全边界；逐项审阅三张原创静态SVG元素和无外链/隐私；此审核仅为AI来源、内容与版权核验，不代表真人操作许可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-07核验Wiley原刊与PMID 28922460，首次发表2017-09-18，2018年正式刊载；原始白发TG体系拉曼与显微实验，特定pH9.0条件中氨与单乙醇胺调节组不同；适用范围严格受限。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-07核验Wiley原刊，2024-11-11首次发表、2025年正式刊载；SEM及蛋白质组学的不同pH毛发原始材料研究，并非不同烫发剂效果对照。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-07核验PubMed PMID26152046，2015年1—2月《Journal of Cosmetic Science》原始离体拉伸与卷曲实验，特定日本烫发液与力学指标；样本与配方限制外推。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-07本轮课程编辑以静态SVG基础图元独立创作并逐项检查；不含外部图片、顾客肖像、链接、脚本、商标、远程资源和虚构实验读数；仅作解释性教学图示。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-07本轮课程编辑以静态SVG基础图元独立创作并逐项检查；不含外部图片、顾客肖像、链接、脚本、商标、远程资源和虚构实验读数；仅作解释性教学图示。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-07本轮课程编辑以静态SVG基础图元独立创作并逐项检查；不含外部图片、顾客肖像、链接、脚本、商标、远程资源和虚构实验读数；仅作解释性教学图示。"
+    }
+  ],
+  "contentSha256": "f58cf4619bc1cb534b843ba63ff3796e1db7525532d5fa0d8340ccd1c361ec07",
+  "assetSha256": {
+    "assets/2026-11-07/figure1.svg": "004d76647cd2a0dc7270fb996eed352a10ee73b3af41451cdca5041a9a972ff5",
+    "assets/2026-11-07/figure2.svg": "9156469c1cf7913bee09c6ba7c414d15bd67da4ae7e30ebd5fff93e5cd849bb7",
+    "assets/2026-11-07/figure3.svg": "e44c4652a898124ebb6e761e4019951e7057e08327565e848f1ec002c25e2e4c"
+  }
+}
