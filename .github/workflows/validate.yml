@@ -26,13 +26,15 @@ jobs:
       - name: Install booking sync signing dependency
         run: python3 -m pip install cryptography==48.0.0
       - name: Install pinned Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: 2.9.6
+        run: |
+          npm install --prefix "$RUNNER_TEMP/zysyr-deno" --no-save --package-lock=false --ignore-scripts deno@2.9.6
+          echo "$RUNNER_TEMP/zysyr-deno/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/zysyr-deno/node_modules/.bin/deno" eval 'if (Deno.version.deno !== "2.9.6") Deno.exit(1)'
       - name: Install pinned Supabase CLI
-        uses: supabase/setup-cli@v2
-        with:
-          version: 2.109.1
+        run: |
+          npm install --prefix "$RUNNER_TEMP/zysyr-supabase" --no-save --package-lock=false --ignore-scripts supabase@2.109.1
+          echo "$RUNNER_TEMP/zysyr-supabase/node_modules/.bin" >> "$GITHUB_PATH"
+          test "$(SUPABASE_TELEMETRY_DISABLED=1 "$RUNNER_TEMP/zysyr-supabase/node_modules/.bin/supabase" --version)" = "2.109.1"
       - name: Type-check operations-api with its frozen lockfile
         run: deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen supabase/functions/operations-api/index.ts
       - name: Type-check private aesthetic study function
