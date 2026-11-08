@@ -18,6 +18,12 @@ node scripts/test-hair-service-photos.js || exit 1
 node scripts/test-hair-save-durability.js || exit 1
 node scripts/test-customer-archive-rendering.js || exit 1
 node scripts/test-customer-profile-modal-browser.js || exit 1
+node scripts/test-customer-profile-scope.mjs || exit 1
+node scripts/test-customer-design-api.cjs || exit 1
+node scripts/test-customer-design-archive-sql.cjs || exit 1
+node scripts/test-customer-design-archive-browser.js || exit 1
+node scripts/test-customer-design-integration-browser.cjs || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_import_customer_design_archive.py || exit 1
 node scripts/test-admin-workflow.js || exit 1
 node scripts/test-booking-ui.js || exit 1
 node scripts/test-employee-bookings.mjs || exit 1

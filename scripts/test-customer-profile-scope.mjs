@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import { webcrypto } from 'node:crypto';
 import { customerProfileStoreFilter, scopeCustomerProfile, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerRecordsStoreFilter } from '../supabase/functions/_shared/customer-profile-scope.mjs';
+import { CustomerDesignError, isCustomerDesignOperation } from '../supabase/functions/_shared/customer-design-archive.ts';
 import { mergeEmployeeBookingRows } from '../supabase/functions/_shared/employee-booking-merge.mjs';
 import { customerHairPhoneFilter, customerHairIdentityRows } from '../supabase/functions/_shared/customer-profile-scope.mjs';
 
@@ -34,6 +35,7 @@ assert(filter.includes('shop_name.eq.') && filter.includes('card_packages.cs.') 
 let context, validSession = true;
 const reads = [], writes = [];
 context = vm.createContext({ Request, Response, TextEncoder, crypto: webcrypto,
+  CustomerDesignError, isCustomerDesignOperation,
   mergeEmployeeBookingRows, customerProfileStoreFilter, scopeCustomerProfile, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows,
   Deno: { env: { get: k => k === 'SUPABASE_URL' ? 'https://synthetic.local' : 'synthetic-key' }, serve: fn => { context.handler = fn; } },
   fetch: async (url, init = {}) => {
