@@ -9,14 +9,14 @@ for (const key of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CE
 const container = 'customer-design-sql-' + process.pid + '-' + Date.now();
 const docker = args => spawnSync('docker',['--context','default',...args],{env,encoding:'utf8',maxBuffer:8*1024*1024});
 const check = result => { if (result.status!==0) throw new Error(result.stderr || result.stdout || String(result.error)); return result.stdout.trim(); };
-const sqlRaw = input => spawnSync('docker',['--context','default','exec','-i',container,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres'],{env,input,encoding:'utf8',maxBuffer:8*1024*1024});
+const sqlRaw = input => spawnSync('docker',['--context','default','exec','-i',container,'psql','-h','127.0.0.1','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres'],{env,input,encoding:'utf8',maxBuffer:8*1024*1024});
 const sql = input => check(sqlRaw(input));
 const json = input => JSON.parse(sql(input).split('\n').at(-1));
 const q = value => "'" + String(value).replace(/'/g,"''") + "'";
 const id = () => crypto.randomUUID();
 const body = value => q(JSON.stringify(value))+'::jsonb';
 const failure = (input,re) => {const r=sqlRaw(input);assert.notEqual(r.status,0,'expected failure');assert.match(r.stderr,re);};
-const asyncSql = input => new Promise(resolve=>{const p=spawn('docker',['--context','default','exec','-i',container,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres'],{env});let stdout='',stderr='';p.stdout.on('data',x=>stdout+=x);p.stderr.on('data',x=>stderr+=x);p.on('close',status=>resolve({status,stdout,stderr}));p.stdin.end(input);});
+const asyncSql = input => new Promise(resolve=>{const p=spawn('docker',['--context','default','exec','-i',container,'psql','-h','127.0.0.1','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres'],{env});let stdout='',stderr='';p.stdout.on('data',x=>stdout+=x);p.stderr.on('data',x=>stderr+=x);p.on('close',status=>resolve({status,stdout,stderr}));p.stdin.end(input);});
 const context = {customer_profile_id:1,booking_id:101,booking_date:'2026-01-08'};
 const version = (overrides={}) => ({...context,request_id:id(),expected_latest_version_id:null,status:'baseline',baseline:{outline:'Oval',root_flow:'Forward',steps:{style:'Initial style'}},optimized:{},reasons:{},photo_ids:[],archive_url:'https://chatgpt.com/space/page_synthetic',...overrides});
 const append = p => `select public.append_customer_design_version(${body(p)},'Synthetic employee','manual');`;
@@ -27,7 +27,7 @@ const register = p => `select public.register_customer_design_asset(${body(p)},'
  let started=false;
  try {
   check(docker(['run','--rm','--detach','--network','none','--name',container,'-e','POSTGRES_PASSWORD=synthetic-test-only','postgres:17']));started=true;
-  for(let n=0;n<100;n++){if(docker(['exec',container,'pg_isready','-U','postgres']).status===0)break;if(n===99)throw new Error('PostgreSQL did not become ready');await new Promise(r=>setTimeout(r,150));}
+  for(let n=0;n<100;n++){if(docker(['exec',container,'pg_isready','-h','127.0.0.1','-U','postgres']).status===0)break;if(n===99)throw new Error('PostgreSQL did not become ready');await new Promise(r=>setTimeout(r,150));}
   sql(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     insert into storage.buckets values('customer-design-photos','customer-design-photos',true,999999999,array['image/svg+xml']);

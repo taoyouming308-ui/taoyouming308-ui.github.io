@@ -97,12 +97,12 @@ jobs:
         run: node scripts/test-admin-workflow.js
       - name: Protect versioned customer design archives
         run: |
-          node scripts/test-customer-profile-scope.mjs
-          node scripts/test-customer-design-api.cjs
-          node scripts/test-customer-design-archive-sql.cjs
-          node scripts/test-customer-design-archive-browser.js
-          node scripts/test-customer-design-integration-browser.cjs
-          python3 -m unittest scripts/test_import_customer_design_archive.py
+          design_gate_failed=0
+          for design_test in scripts/test-customer-profile-scope.mjs scripts/test-customer-design-api.cjs scripts/test-customer-design-archive-sql.cjs scripts/test-customer-design-archive-browser.js scripts/test-customer-design-integration-browser.cjs; do
+            node "$design_test" || design_gate_failed=1
+          done
+          python3 -m unittest scripts/test_import_customer_design_archive.py || design_gate_failed=1
+          test "$design_gate_failed" = 0
       - name: Protect admin customer archive access
         run: node scripts/test-customer-admin-api.js
       - name: Protect booking page UI

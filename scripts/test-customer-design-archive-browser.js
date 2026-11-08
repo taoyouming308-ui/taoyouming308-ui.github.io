@@ -26,7 +26,10 @@ async function boot(width,overrides={}) {
     window.calls=[];window.failMode='';window.serial=0;
     window.api=async(operation,payload)=>{
       window.calls.push({operation,payload:JSON.parse(JSON.stringify(payload))});
-      if(operation==='customer_design_history')return {can_write:true,customer_profile_id:'fixture-customer',latest_version_id:window.fixtureVersions.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at))[0]?.id || null,versions:window.fixtureVersions};
+      if(operation==='customer_design_history') {
+        const visit=window.fixtureVersions.filter(v=>payload.booking_id ? v.booking_id===payload.booking_id : !v.booking_id && v.booking_date===payload.booking_date);
+        return {can_write:true,customer_profile_id:'fixture-customer',latest_version_id:visit.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at))[0]?.id || null,versions:window.fixtureVersions};
+      }
       if(operation==='customer_design_photo_urls')return {assets:payload.asset_ids.map(id=>({id,url:'https://fixture.invalid/storage/v1/object/sign/customer-design/'+encodeURIComponent(id)+'?token=synthetic'}))};
       if(operation==='customer_design_upload') {
         if(window.failMode==='upload')throw new Error('模拟上传失败');
@@ -60,6 +63,7 @@ async function file(page,name='original.png') {
   for(const width of [320,390,768]) {
     const page=await boot(width);
     const first=page.locator('.cda-visit').first();
+    await first.locator('.cda-version').first().locator('img').nth(2).waitFor();
     assert((await first.locator('.cda-version').first().innerText()).includes('第 2 版'),'latest revision first');
     assert.equal(await first.locator('.cda-version').first().locator('.cda-photo-group').first().locator('img').count(),3,'three before originals');
     assert((await first.innerText()).includes('完成照片'),'after photo is distinct');
@@ -99,7 +103,7 @@ async function file(page,name='original.png') {
   await page.locator('[data-action="record"]').waitFor();
   const writes=await page.evaluate(()=>window.calls.filter(c=>c.operation==='customer_design_save'||c.operation==='customer_design_upload'));
   assert.equal(writes[0].payload.data_base64,pixel.toString('base64'),'upload preserves original file bytes');
-  assert.equal(writes[1].payload.expected_latest_version_id,'v2');
+  assert.equal(writes[1].payload.expected_latest_version_id,null,'a new manual visit does not continue another appointment');
   assert.equal(writes[1].payload.baseline.steps.style,'知性为主');
   assert.equal(writes[1].payload.optimized.steps.style,'知性加柔美');
   assert.equal(writes[1].payload.reasons.style,'顾客沟通后确认柔美细节');
