@@ -64,19 +64,22 @@ async function file(page,name='original.png') {
     const page=await boot(width);
     const first=page.locator('.cda-visit').first();
     await first.locator('.cda-version').first().locator('img').nth(2).waitFor();
-    assert((await first.locator('.cda-version').first().innerText()).includes('第 2 版'),'latest revision first');
+    assert.equal(await first.locator('.cda-version').count(),1,'each visit shows one current plan');
+    assert.equal(await first.locator('.cda-version').getAttribute('data-version-id'),'v2','latest confirmed plan selected');
     assert.equal(await first.locator('.cda-version').first().locator('.cda-photo-group').first().locator('img').count(),3,'three before originals');
     assert((await first.innerText()).includes('完成效果'),'after photo is distinct');
     assert((await first.innerText()).includes('初始判断') && (await first.innerText()).includes('优化方案') && (await first.innerText()).includes('减少横向体积'),'baseline, optimization and reasons visible');
     assert.equal(await first.locator('.cda-version').first().locator('.cda-eight .cda-compare').count(),8,'eight steps');
     assert((await first.innerText()).includes('合成员工乙 · ChatGPT 协作'),'source and author visible');
-    await first.locator('.cda-version').nth(1).locator('summary').click();
-    assert((await first.innerText()).includes('合成员工甲 · 员工手动填写'),'old author/source preserved');
+    assert(!(await first.innerText()).includes('合成员工甲'),'intermediate saves stay out of the current plan');
+    assert(!(await first.innerText()).includes('第 2 版') && !(await first.innerText()).includes('个保存版本'),'save counts are not shown');
+    assert.equal(await page.evaluate(()=>window.fixtureVersions.find(v=>v.id==='v1').author),'合成员工甲','original author remains in stored history');
     await page.locator('.cda-visit').nth(1).locator('summary').first().click();
-    await page.locator('.cda-visit').nth(1).locator('.cda-version summary').click();
     assert((await page.locator('.cda-history').innerText()).includes('历史员工'),'previous visit preserved');
     await first.locator('.cda-photo-open').first().click();
     assert.equal(await page.locator('.cda-viewer[open]').count(),1,'photos open at larger size');
+    const close=await page.locator('.cda-viewer button').boundingBox();
+    assert(close.y>=64 && close.height>=44,'viewer close clears status bar with a 44px touch target');
     await page.locator('.cda-viewer button').click();
     await page.locator('[data-action="record"]').click();
     await fill(page,'baseline','person','可手动输入的现场条件');
@@ -107,9 +110,17 @@ async function file(page,name='original.png') {
   assert.equal(writes[1].payload.baseline.steps.style,'知性为主');
   assert.equal(writes[1].payload.optimized.steps.style,'知性加柔美');
   assert.equal(writes[1].payload.reasons.style,'顾客沟通后确认柔美细节');
-  assert.equal(await page.locator('.cda-version').count(),4,'append keeps all older versions');
+  assert.equal(await page.locator('.cda-version').count(),3,'one displayed plan per visit after saving a new manual visit');
+  assert.equal(await page.evaluate(()=>window.fixtureVersions.length),4,'append keeps all older revisions in stored history');
   assert.equal(await page.evaluate(()=>window.handle.hasUnsavedChanges()),false);
   await page.close();
+  // An unconfirmed later edit does not replace the current confirmed design.
+  const priority=await boot(390);
+  await priority.evaluate(()=>{window.fixtureVersions.push({...JSON.parse(JSON.stringify(window.fixtureVersions[1])),id:'new-draft',created_at:'2026-11-08T05:00:00Z',status:'optimizing'});});
+  await priority.evaluate(()=>window.handle.refresh());
+  assert.equal(await priority.locator('.cda-visit').first().locator('.cda-version').getAttribute('data-version-id'),'v2','confirmed design takes priority over a later optimization draft');
+  assert.equal(await priority.evaluate(()=>window.fixtureVersions.length),4,'selection preserves every stored state');
+  await priority.close();
   // Upload/save failures retain fields and files, never automatically retry writes.
   for(const failure of ['upload','save','conflict']) {
     const failed=await boot(390,{bookingId:null});

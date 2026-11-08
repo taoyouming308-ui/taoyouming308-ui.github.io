@@ -56,13 +56,16 @@
       if (version.visit_id) return 'visit:'+version.visit_id;
       return version.booking_date || version.service_date ? 'manual:'+(version.booking_date || version.service_date) : 'record:'+version.id;
     }
+    function currentVisitVersion(versions) {
+      return versions.find(v=>['confirmed','completed','followup'].includes(v.status)) || versions[0];
+    }
     function displayedVersionPhotos(version) {
       const photos=version.photos || [],key=visitIdentity(version);
       if (photos.some(p=>p.stage==='after')) return {photos};
-      const latest=state.versions.find(v=>visitIdentity(v)===key);
+      const latest=currentVisitVersion(state.versions.filter(v=>visitIdentity(v)===key));
       if (!latest || latest.id!==version.id) return {photos};
       const completed=state.versions.find(v=>visitIdentity(v)===key && (v.photos || []).some(p=>p.stage==='after'));
-      return completed ? {photos:photos.concat(completed.photos.filter(p=>p.stage==='after')),completionSource:'沿用本次服务第 '+(completed.version_no || '1')+' 版完成照片'} : {photos};
+      return completed ? {photos:photos.concat(completed.photos.filter(p=>p.stage==='after')),completionSource:'本次已保存完成效果 · '+formatDate(completed.created_at)} : {photos};
     }
     function versionPhotosMarkup(version) {
       const display=displayedVersionPhotos(version);
@@ -77,7 +80,7 @@
           const src = p.file && /^blob:/.test(p.local_url || '') ? p.local_url : state.urls.get(p.id) || '';
           const label = (ANGLE[p.angle] || '其他角度') + (p.file && !p.id ? ' · 待保存' : '');
           const meta=editable && p.file && !p.id?'<label class="cda-photo-meta">类别<select data-photo-meta="stage" data-local-id="'+esc(p.local_id)+'">'+Object.keys(STAGE).map(k=>'<option value="'+k+'"'+(p.stage===k?' selected':'')+'>'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-photo-meta">角度<select data-photo-meta="angle" data-local-id="'+esc(p.local_id)+'">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'"'+(p.angle===k?' selected':'')+'>'+ANGLE[k]+'</option>').join('')+'</select></label>':'';
-          return '<figure class="cda-photo">'+(src ? '<button type="button" class="cda-photo-open" data-photo="'+esc(p.id || p.local_id)+'" aria-label="放大'+esc(STAGE[stage]+' '+label)+'"><img loading="lazy" data-asset-id="'+esc(p.id || '')+'" src="'+esc(src)+'" alt="'+esc(STAGE[stage]+' '+label)+'"></button>' : '<button type="button" class="cda-photo-placeholder" data-photo="'+esc(p.id || p.local_id)+'">点击载入原图</button>')+'<figcaption>'+esc(label)+'</figcaption>'+meta+(editable?'<button type="button" class="cda-remove" data-remove-photo="'+esc(p.id || p.local_id)+'">移出本版</button>':'')+'</figure>';
+          return '<figure class="cda-photo">'+(src ? '<button type="button" class="cda-photo-open" data-photo="'+esc(p.id || p.local_id)+'" aria-label="放大'+esc(STAGE[stage]+' '+label)+'"><img loading="lazy" data-asset-id="'+esc(p.id || '')+'" src="'+esc(src)+'" alt="'+esc(STAGE[stage]+' '+label)+'"></button>' : '<button type="button" class="cda-photo-placeholder" data-photo="'+esc(p.id || p.local_id)+'">点击载入原图</button>')+'<figcaption>'+esc(label)+'</figcaption>'+meta+(editable?'<button type="button" class="cda-remove" data-remove-photo="'+esc(p.id || p.local_id)+'">移出本次设计</button>':'')+'</figure>';
         }).join('')+'</div>' : '<p class="cda-muted'+(stage==='after'?' cda-after-empty':'')+'">'+(stage==='before'?'尚未上传原始照片。':stage==='after'?'尚未上传完成照。':'尚未上传。')+'</p>')+'</div>';
       }).join('');
     }
@@ -91,15 +94,15 @@
     }
     function versionMarkup(version,open) {
       const link = chatLink(version.archive_url || version.chatgpt_url);
-      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '设计记录')+' <small>第 '+esc(version.version_no || '1')+' 版</small></span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
+      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '当前方案')+'</span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
     }
     function historyMarkup() {
       if (!state.versions.length) return '<div class="cda-empty"><p>还没有结构化设计记录</p><span>上传原始照片，按八步填写初始判断；沟通后再记录优化方案。</span></div>';
       const groups = new Map();
-      state.versions.forEach(v => { const key = String(v.visit_key || v.booking_id || v.visit_id || v.booking_date || v.service_date || v.id); if (!groups.has(key)) groups.set(key,[]); groups.get(key).push(v); });
+      state.versions.forEach(v => { const key = visitIdentity(v); if (!groups.has(key)) groups.set(key,[]); groups.get(key).push(v); });
       return Array.from(groups.values()).map((versions,index) => {
-        const first = versions[0], date = first.booking_date || first.service_date || first.visit_date || first.created_at;
-        return '<details class="cda-visit"'+(index===0?' open':'')+'><summary><span>'+esc(formatDate(date))+'<small>'+ (index===0?'最近一次设计':'历史到店')+'</small></span><span class="cda-pill">'+versions.length+' 个保存版本</span></summary><div class="cda-visit-body">'+versions.map((v,i)=>versionMarkup(v,index===0 && i===0)).join('')+'</div></details>';
+        const first = currentVisitVersion(versions), date = first.booking_date || first.service_date || first.visit_date || first.created_at;
+        return '<details class="cda-visit"'+(index===0?' open':'')+'><summary><span>'+esc(formatDate(date))+'<small>'+ (index===0?'最近一次设计':'历史到店')+'</small></span></summary><div class="cda-visit-body">'+versionMarkup(first,true)+'</div></details>';
       }).join('');
     }
     function input(group,key,value,label) {
@@ -113,11 +116,11 @@
         const b = key==='outline' || key==='root_flow' ? d.optimized[key] : d.optimized.steps[key];
         return '<div class="cda-edit-compare">'+input('baseline',key,a,'初始判断')+input('optimized',key,b,'优化方案')+'</div>'+input('reasons',key,d.reasons[key] || '','调整理由（有改动时填写）');
       }
-      return '<form class="cda-editor" novalidate><div class="cda-editor-title"><h4>记录本次设计</h4><button type="button" class="cda-text-btn" data-action="cancel">收起</button></div><p class="cda-muted">手动填写即可。每次保存新增一个版本，原照片和历史记录保留。</p><div class="cda-form-meta"><label class="cda-field"><span>服务日期</span><input type="date" data-meta="booking_date" value="'+esc(d.booking_date)+'"'+(options.bookingId?' readonly':'')+'></label><label class="cda-field"><span>本次状态</span><select data-meta="status">'+Object.keys(STATUS).map(k=>'<option value="'+k+'"'+(d.status===k?' selected':'')+'>'+STATUS[k]+'</option>').join('')+'</select></label></div><fieldset class="cda-photo-editor"><legend>本版照片</legend>'+photosMarkup(d.photos,true)+'<div class="cda-upload-fields"><label class="cda-field"><span>照片类别</span><select data-upload="stage">'+Object.keys(STAGE).map(k=>'<option value="'+k+'">'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-field"><span>拍摄角度</span><select data-upload="angle">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'">'+ANGLE[k]+'</option>').join('')+'</select></label><label class="cda-upload-btn">添加照片<input type="file" data-upload="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><p class="cda-muted">JPEG / PNG / WebP，每张最多 8 MB；保留上传原文件，不压缩替换原图。</p></fieldset><div class="cda-editor-outline"><h5>整体轮廓</h5>'+editRow('outline','整体轮廓')+'<h5>发根毛流方向</h5>'+editRow('root_flow','发根毛流方向')+'</div><div class="cda-editor-steps">'+STEPS.map(([key,label],i)=>'<details'+(i===0?' open':'')+'><summary>'+ (i+1)+'. '+label+'</summary>'+editRow(key,label)+'</details>').join('')+'</div><div class="cda-draft-feedback" role="status"></div><div class="cda-save-row"><button type="submit" class="cda-primary"'+(state.saving || state.conflict?' disabled':'')+'>'+(state.saving?'保存中…':'保存新版本')+'</button><span>填写人：'+esc(options.barberName || '当前登录员工')+'</span></div></form>';
+      return '<form class="cda-editor" novalidate><div class="cda-editor-title"><h4>记录本次设计</h4><button type="button" class="cda-text-btn" data-action="cancel">收起</button></div><p class="cda-muted">手动填写即可。保存后更新本次设计，原照片和历次到店记录保留。</p><div class="cda-form-meta"><label class="cda-field"><span>服务日期</span><input type="date" data-meta="booking_date" value="'+esc(d.booking_date)+'"'+(options.bookingId?' readonly':'')+'></label><label class="cda-field"><span>本次状态</span><select data-meta="status">'+Object.keys(STATUS).map(k=>'<option value="'+k+'"'+(d.status===k?' selected':'')+'>'+STATUS[k]+'</option>').join('')+'</select></label></div><fieldset class="cda-photo-editor"><legend>本次照片</legend>'+photosMarkup(d.photos,true)+'<div class="cda-upload-fields"><label class="cda-field"><span>照片类别</span><select data-upload="stage">'+Object.keys(STAGE).map(k=>'<option value="'+k+'">'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-field"><span>拍摄角度</span><select data-upload="angle">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'">'+ANGLE[k]+'</option>').join('')+'</select></label><label class="cda-upload-btn">添加照片<input type="file" data-upload="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><p class="cda-muted">JPEG / PNG / WebP，每张最多 8 MB；保留上传原文件，不压缩替换原图。</p></fieldset><div class="cda-editor-outline"><h5>整体轮廓</h5>'+editRow('outline','整体轮廓')+'<h5>发根毛流方向</h5>'+editRow('root_flow','发根毛流方向')+'</div><div class="cda-editor-steps">'+STEPS.map(([key,label],i)=>'<details'+(i===0?' open':'')+'><summary>'+ (i+1)+'. '+label+'</summary>'+editRow(key,label)+'</details>').join('')+'</div><div class="cda-draft-feedback" role="status"></div><div class="cda-save-row"><button type="submit" class="cda-primary"'+(state.saving || state.conflict?' disabled':'')+'>'+(state.saving?'保存中…':'保存设计')+'</button><span>填写人：'+esc(options.barberName || '当前登录员工')+'</span></div></form>';
     }
     function render() {
       if (state.destroyed) return;
-      root.innerHTML = '<header class="cda-header"><div><h3>设计思路</h3><p class="cda-customer">'+esc(options.name || '顾客')+'</p><p>八步设计 · 原图对照 · 历次版本</p></div>'+(!state.draft?'<button type="button" class="cda-primary" data-action="record"'+(!state.canWrite || state.loading?' disabled':'')+'>记录设计</button>':'')+'</header>'+(!state.loading && !state.canWrite && !state.error?'<p class="cda-message">此顾客当前门店的设计档案仅供查看。</p>':'')+(state.error?'<div class="cda-message cda-error" role="alert">'+esc(state.error)+' <button type="button" class="cda-text-btn" data-action="refresh">重新读取</button></div>':'')+(state.notice?'<p class="cda-message" role="status">'+esc(state.notice)+'</p>':'')+(state.conflict?'<div class="cda-message cda-error" role="alert">已有其他新版本，草稿和照片已保留。请先核对下方最新记录。<button type="button" class="cda-text-btn" data-action="refresh">读取最新记录</button><button type="button" class="cda-text-btn" data-action="resolve">已核对，保留草稿继续</button></div>':'')+editorMarkup()+(state.loading?'<p class="cda-muted" role="status">正在读取设计档案…</p>':'')+'<div class="cda-history">'+historyMarkup()+'</div>';
+      root.innerHTML = '<header class="cda-header"><div><h3>设计思路</h3><p class="cda-customer">'+esc(options.name || '顾客')+'</p><p>八步设计 · 原图与完成效果</p></div>'+(!state.draft?'<button type="button" class="cda-primary" data-action="record"'+(!state.canWrite || state.loading?' disabled':'')+'>记录设计</button>':'')+'</header>'+(!state.loading && !state.canWrite && !state.error?'<p class="cda-message">此顾客当前门店的设计档案仅供查看。</p>':'')+(state.error?'<div class="cda-message cda-error" role="alert">'+esc(state.error)+' <button type="button" class="cda-text-btn" data-action="refresh">重新读取</button></div>':'')+(state.notice?'<p class="cda-message" role="status">'+esc(state.notice)+'</p>':'')+(state.conflict?'<div class="cda-message cda-error" role="alert">设计已被其他人更新，草稿和照片已保留。请先核对下方最新记录。<button type="button" class="cda-text-btn" data-action="refresh">读取最新记录</button><button type="button" class="cda-text-btn" data-action="resolve">已核对，保留草稿继续</button></div>':'')+editorMarkup()+(state.loading?'<p class="cda-muted" role="status">正在读取设计档案…</p>':'')+'<div class="cda-history">'+historyMarkup()+'</div>';
     }
     async function load(preserve) {
       const seq = ++state.loadSeq;
@@ -155,14 +158,17 @@
       } catch (_) { state.notice = '部分原图暂未载入，可重新读取档案。设计文字和历史仍保留。'; }
     }
     async function loadVersionPhotos(el) {
-      if (!el.open || state.destroyed) return;
+      if (!el.open || !el.closest('.cda-visit')?.open || state.destroyed) return;
       const id=el.dataset.versionId,version=state.versions.find(v=>String(v.id)===id);
       if (!version || state.signing.has(id))return;
       const work=signPhotos(displayedVersionPhotos(version).photos);state.signing.set(id,work);await work;state.signing.delete(id);
       if(state.destroyed || !root.contains(el))return;
       const target=el.querySelector('.cda-version-photos');if(target)target.innerHTML=versionPhotosMarkup(version);
     }
-    function toggle(event) {if(event.target.matches('.cda-version[open]'))loadVersionPhotos(event.target);}
+    function toggle(event) {
+      if(event.target.matches('.cda-version[open]'))loadVersionPhotos(event.target);
+      if(event.target.matches('.cda-visit[open]'))event.target.querySelectorAll('.cda-version[open]').forEach(el=>loadVersionPhotos(el));
+    }
     async function imageError(event) {
       const image=event.target,id=image.dataset && image.dataset.assetId;
       if(!id || state.destroyed || (state.imageRetries.get(id)||0)>=1)return;
@@ -174,7 +180,7 @@
       const history = root.querySelector('.cda-history');
       if (history) history.innerHTML = historyMarkup();
       const saving = root.querySelector('.cda-save-row button');
-      if (saving) { saving.disabled = state.saving || state.conflict || !state.canWrite; saving.textContent = state.saving?'保存中…':'保存新版本'; }
+      if (saving) { saving.disabled = state.saving || state.conflict || !state.canWrite; saving.textContent = state.saving?'保存中…':'保存设计'; }
     }
     function feedback(message,error) {
       const el = root.querySelector('.cda-draft-feedback');
@@ -225,7 +231,7 @@
         const result = await api('customer_design_save',{booking_date:d.booking_date,request_id:d.requestId,expected_latest_version_id:d.expected,status:d.status,baseline:d.baseline,optimized:d.optimized,reasons:d.reasons,photo_ids:d.photos.map(p=>p.id)});
         if (state.destroyed) return;
         if (result.version) { state.versions = [result.version].concat(state.versions.filter(v=>v.id!==result.version.id)); state.latest = result.latest_version_id || result.version.id; }
-        clearDraft(); state.notice = '已保存新版本。原有设计、照片和历史版本均已保留。'; state.saving = false; render();
+        clearDraft(); state.notice = '已保存设计。原有设计、照片和历史版本均已保留。'; state.saving = false; render();
         await load(false);
         if (options.onSaved) options.onSaved(result);
       } catch (error) {
@@ -236,7 +242,7 @@
         root.querySelectorAll('.cda-editor input,.cda-editor textarea,.cda-editor select,.cda-editor button').forEach(el=>{el.disabled=false;});
         if (options.bookingId) root.querySelector('[data-meta="booking_date"]').readOnly=true;
         updateHistory();
-        feedback((state.conflict?'已有其他新版本。请读取最新记录并核对后再保存。':'保存未确认：'+error.message+'。请先重新读取核对；不会自动重试。')+' 草稿和所选照片已保留。',true);
+        feedback((state.conflict?'设计已被其他人更新。请读取最新记录并核对后再保存。':'保存未确认：'+error.message+'。请先重新读取核对；不会自动重试。')+' 草稿和所选照片已保留。',true);
         if (!root.querySelector('.cda-conflict-tools')) {
           const tools = document.createElement('div'); tools.className='cda-conflict-tools';
           tools.innerHTML='<button type="button" class="cda-text-btn" data-action="refresh">读取最新记录</button>'+(state.conflict?'<button type="button" class="cda-text-btn" data-action="resolve">已核对，保留草稿继续</button>':'');
@@ -271,7 +277,7 @@
       if(action==='record' && state.canWrite)startDraft();
       if(action==='cancel' && !state.saving) { if(state.draft.dirty) {feedback('草稿已保留，可继续编辑并保存。若要关闭档案，请使用页面的关闭按钮。',false);return;} clearDraft();render(); }
       if(action==='refresh')load(true);
-      if(action==='resolve' && !state.loading && state.draft) {if(!state.conflictRead){feedback('请先读取最新记录，核对后再继续。草稿仍保留。',true);return;}state.draft.expected=state.latest;state.conflict=false;dirty();updateHistory();feedback('草稿保留。请核对差异后点击“保存新版本”。',false);button.remove();}
+      if(action==='resolve' && !state.loading && state.draft) {if(!state.conflictRead){feedback('请先读取最新记录，核对后再继续。草稿仍保留。',true);return;}state.draft.expected=state.latest;state.conflict=false;dirty();updateHistory();feedback('草稿保留。请核对差异后点击“保存设计”。',false);button.remove();}
     }
     function change(event) {
       const el=event.target,d=state.draft; if(!d || state.saving)return;
