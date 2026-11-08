@@ -99,6 +99,7 @@ class Server:
             if payload["expected_latest_version_id"] != current:
                 raise MODULE.ArchiveError("Synthetic concurrency conflict.")
             version = {key: copy.deepcopy(payload[key]) for key in ("request_id", "status", "baseline", "optimized", "reasons", "archive_url")}
+            version.update({key: copy.deepcopy(payload[key]) for key in ("execution", "process", "review") if key in payload})
             version.update({"id": str(uuid.uuid4()), "source": "chatgpt", "photos": [self.assets[id].copy() for id in payload["photo_ids"]],
                             "customer_profile_id": "123", "booking_id": "456", "booking_date": "2026-11-08", "visit_key": "booking:456"})
             self.versions.append(version)
@@ -426,6 +427,139 @@ class ImportSafetyTests(unittest.TestCase):
                 MODULE.save_private(self.path, {"test": "new"})
         self.assertEqual(self.path.read_bytes(), previous)
         self.assertEqual(list(self.directory.glob(".archive-import-*")), [])
+
+    def test_six_zone_process_review_round_trip_is_independent_of_eight_steps(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][1].update({
+            "execution": {"top": {"issue": "  Synthetic flat crown  ", "target": "Some lift",
+                                    "actions": "Retain surface length", "check": "Natural fall"},
+                          "ear_front": {"target": "Face framing"}},
+            "process": {"styling": "  Hand dry  ", "proposal": "Agreed synthetic plan"},
+            "review": {"achieved": "  Shape retained  ", "pending": "Wash-day check", "next": "Recheck crown"}})
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        self.run_import(verify=True)
+        saved = self.server.versions[1]
+        self.assertEqual(saved["execution"]["top"], {"issue": "Synthetic flat crown", "target": "Some lift",
+                                                    "actions": "Retain surface length", "check": "Natural fall"})
+        self.assertEqual(saved["execution"]["ear_front"], {"issue": "", "target": "Face framing", "actions": "", "check": ""})
+        self.assertEqual(saved["execution"]["bottom"], {"issue": "", "target": "", "actions": "", "check": ""})
+        self.assertEqual(set(saved["execution"]), {"bangs", "top", "ear_front", "ear_back", "middle", "bottom"})
+        self.assertEqual(saved["process"]["styling"], "Hand dry")
+        self.assertEqual(saved["process"]["application"], "")
+        self.assertEqual(saved["review"], {"achieved": "Shape retained", "pending": "Wash-day check", "next": "Recheck crown"})
+        self.assertNotIn("execution", self.server.versions[0])
+        self.assertEqual(saved["optimized"]["steps"]["bangs"], "Synthetic revised bangs")
+        self.run_import()
+        self.assertEqual(len(self.server.versions), 2)
+
+    def test_legacy_prepared_manifest_and_write_payload_remain_unchanged(self):
+        config = json.loads(self.path.read_text())
+        originals = []
+        for photo in config["photos"]:
+            data = Path(photo["path"]).read_bytes()
+            originals.append({"sha256": MODULE.digest(data), "byte_size": len(data), "mime_type": "image/png"})
+        old_manifest = MODULE.digest(MODULE.canonical({"config": config, "originals": originals}))
+        self.prepare()
+        private = json.loads(self.path.read_text())
+        self.assertEqual(private["_import"]["manifest_sha256"], old_manifest)
+        self.assertEqual({k: v for k, v in private.items() if k != "_import"}, config)
+        self.run_import()
+        saves = [c for c in self.server.calls if c["operation"] == "customer_design_save"]
+        for saved in saves:
+            self.assertTrue({"execution", "process", "review"}.isdisjoint(saved))
+        # A new server's additive empty columns must also accept this old config.
+        for version in self.server.versions:
+            version.update({"execution": {}, "process": {}, "review": {}})
+        self.run_import()
+        self.assertEqual(len(self.server.versions), 2)
+
+    def test_explicit_empty_fields_are_sent_while_absent_legacy_fields_are_omitted(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][0].update({"execution": {"top": {"target": "  "}}, "process": {}, "review": {"achieved": ""}})
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        self.run_import()
+        saves = [c for c in self.server.calls if c["operation"] == "customer_design_save"]
+        self.assertEqual({key: saves[0][key] for key in ("execution", "process", "review")},
+                         {"execution": {}, "process": {}, "review": {}})
+        self.assertTrue({"execution", "process", "review"}.isdisjoint(saves[1]))
+
+    def test_explicit_clear_is_preserved_after_nonempty_execution(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][0]["execution"] = {"top": {"target": "Some lift"}}
+        config["versions"][1]["execution"] = {}
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        self.run_import()
+        saves = [c for c in self.server.calls if c["operation"] == "customer_design_save"]
+        self.assertEqual(saves[0]["execution"]["top"]["target"], "Some lift")
+        self.assertEqual(saves[1]["execution"], {})
+        self.assertEqual(self.server.versions[1]["execution"], {})
+        self.assertEqual(self.server.versions[0]["execution"]["top"]["target"], "Some lift")
+
+    def test_new_fields_reject_unknown_keys_types_and_excess_length_before_http(self):
+        initial = json.loads(self.path.read_text())
+        cases = [
+            {"execution": None}, {"execution": []}, {"execution": {"old_five_zone": {}}},
+            {"execution": {"top": None}}, {"execution": {"top": {"angle": "90"}}},
+            {"execution": {"top": {"actions": 90}}}, {"execution": {"top": {"check": "x" * 4001}}},
+            {"process": None}, {"process": []}, {"process": {"unexpected": "x"}},
+            {"process": {"winding": False}}, {"process": {"application": "x" * 4001}},
+            {"review": None}, {"review": []}, {"review": {"satisfaction": "guessed"}},
+            {"review": {"achieved": None}}, {"review": {"pending": "x" * 4001}}]
+        for fields in cases:
+            config = copy.deepcopy(initial)
+            config["versions"][0].update(fields)
+            MODULE.save_private(self.path, config)
+            with self.subTest(fields=list(fields)), self.assertRaises(MODULE.ArchiveError):
+                self.prepare()
+        self.assertEqual(self.server.calls, [])
+
+    def test_six_zone_change_after_prepare_cannot_reuse_immutable_request_ids(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][1]["execution"] = {"bottom": {"actions": "Retain length"}}
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        config = json.loads(self.path.read_text())
+        config["versions"][1]["execution"]["bottom"]["actions"] = "Shorten length"
+        MODULE.save_private(self.path, config)
+        with self.assertRaisesRegex(MODULE.ArchiveError, "changed"):
+            self.run_import()
+        self.assertEqual(self.server.calls, [])
+
+    def test_new_fields_survive_lost_reply_with_same_request_and_precondition(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][0].update({"execution": {"bangs": {"target": "Open fringe"}},
+                                      "process": {"proposal": "Synthetic approved plan"},
+                                      "review": {"pending": "Completion not yet recorded"}})
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        self.server.lost_save_reply = True
+        with self.assertRaisesRegex(MODULE.ArchiveError, "save reply"):
+            self.run_import()
+        self.run_import()
+        saves = [c for c in self.server.calls if c["operation"] == "customer_design_save"]
+        self.assertEqual(saves[0], saves[1])
+        self.assertEqual(len(self.server.versions), 2)
+        self.assertEqual(self.server.versions[0]["execution"]["bangs"]["target"], "Open fringe")
+
+    def test_final_readback_detects_dropped_execution_process_and_review(self):
+        config = json.loads(self.path.read_text())
+        config["versions"][0].update({"execution": {"middle": {"target": "Retain width"}},
+                                      "process": {"care_texture": "Natural dry texture"},
+                                      "review": {"achieved": "Observed result"}})
+        MODULE.save_private(self.path, config)
+        self.prepare()
+        self.run_import()
+        saved = copy.deepcopy(self.server.versions[0])
+        for field in ("execution", "process", "review"):
+            self.server.versions[0] = copy.deepcopy(saved)
+            self.server.versions[0].pop(field)
+            with self.subTest(field=field), self.assertRaisesRegex(MODULE.ArchiveError, "did not match"):
+                self.run_import()
+        self.server.versions[0] = saved
+        self.run_import()
 
 
 if __name__ == "__main__":

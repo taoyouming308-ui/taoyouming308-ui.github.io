@@ -7,6 +7,10 @@ const { chromium } = require('playwright');
 const javascript = fs.readFileSync('customer-design-archive.js','utf8');
 const css = fs.readFileSync('customer-design-archive.css','utf8');
 const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/4z8AAAAASUVORK5CYII=','base64');
+const zoneKeys = ['bangs','top','ear_front','ear_back','middle','bottom'];
+const zoneFields = ['issue','target','actions','check'];
+const processKeys = ['care_texture','styling','style_feel','application','winding','rod_direction','curl_control','thinning_space','proposal','technique_layers'];
+const reviewKeys = ['achieved','pending','next'];
 let browser;
 async function boot(width,overrides={}) {
   const page = await browser.newPage({viewport:{width,height:844}});
@@ -38,7 +42,7 @@ async function boot(width,overrides={}) {
       if(operation==='customer_design_save') {
         if(window.failMode==='save')throw new Error('模拟保存断线');
         if(window.failMode==='conflict')return {error:'另一个员工已保存',code:'version_conflict'};
-        const version={id:'saved-'+(++window.serial),version_no:3,created_at:'2026-11-08T04:00:00Z',booking_id:payload.booking_id,booking_date:payload.booking_date,status:payload.status,baseline:payload.baseline,optimized:payload.optimized,reasons:payload.reasons,photos:payload.photo_ids.map(id=>({id,stage:'before',angle:'front'})),source:'manual',author:'当前员工'};
+        const version={id:'saved-'+(++window.serial),version_no:3,created_at:'2026-11-08T04:00:00Z',booking_id:payload.booking_id,booking_date:payload.booking_date,status:payload.status,baseline:payload.baseline,optimized:payload.optimized,reasons:payload.reasons,execution:payload.execution,process:payload.process,review:payload.review,photos:payload.photo_ids.map(id=>({id,stage:'before',angle:'front'})),source:'manual',author:'当前员工'};
         window.fixtureVersions.push(version);return {saved:true,version,latest_version_id:version.id};
       }
       throw new Error('Unexpected operation '+operation);
@@ -50,8 +54,8 @@ async function boot(width,overrides={}) {
   await page.waitForFunction(()=>!document.querySelector('.cda-header button').disabled);
   return page;
 }
-async function fill(page,group,key,value) {
-  const field=page.locator('[data-group="'+group+'"][data-key="'+key+'"]');
+async function fill(page,group,key,value,zone) {
+  const field=page.locator('[data-group="'+group+'"][data-key="'+key+'"]'+(zone?'[data-zone="'+zone+'"]':''));
   await field.evaluate(el=>{let p=el.parentElement;while(p){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement;}});
   await field.fill(value);
 }
@@ -99,6 +103,12 @@ async function file(page,name='original.png') {
   assert((await page.locator('.cda-draft-feedback').innerText()).includes('填写调整理由'),'changed decision requires reason');
   assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.operation==='customer_design_save').length),0);
   await fill(page,'reasons','style','顾客沟通后确认柔美细节');
+  const execution=Object.fromEntries(zoneKeys.map(zone=>[zone,Object.fromEntries(zoneFields.map(key=>[key,'合成-'+zone+'-'+key]))]));
+  const processNotes=Object.fromEntries(processKeys.map(key=>[key,'合成流程-'+key]));
+  const review=Object.fromEntries(reviewKeys.map(key=>[key,'合成复盘-'+key]));
+  for(const zone of zoneKeys)for(const key of zoneFields)await fill(page,'execution',key,execution[zone][key],zone);
+  for(const key of processKeys)await fill(page,'process',key,processNotes[key]);
+  for(const key of reviewKeys)await fill(page,'review',key,review[key]);
   await file(page);
   assert.equal(await page.locator('.cda-editor .cda-photo').count(),1,'one file event adds exactly one original');
   await page.locator('.cda-save-row button').click();
@@ -110,9 +120,17 @@ async function file(page,name='original.png') {
   assert.equal(writes[1].payload.baseline.steps.style,'知性为主');
   assert.equal(writes[1].payload.optimized.steps.style,'知性加柔美');
   assert.equal(writes[1].payload.reasons.style,'顾客沟通后确认柔美细节');
+  assert.deepEqual(writes[1].payload.execution,execution,'all six zones and their four decisions are saved independently of eight-step design');
+  assert.deepEqual(writes[1].payload.process,processNotes,'optional ten-process notes survive save');
+  assert.deepEqual(writes[1].payload.review,review,'actual completion review survives save');
   assert.equal(await page.locator('.cda-version').count(),3,'one displayed plan per visit after saving a new manual visit');
   assert.equal(await page.evaluate(()=>window.fixtureVersions.length),4,'append keeps all older revisions in stored history');
   assert.equal(await page.evaluate(()=>window.handle.hasUnsavedChanges()),false);
+  assert.equal(await page.evaluate(()=>window.fixtureVersions[0].execution),undefined,'saving new six-zone work does not invent execution in historical eight-step-only records');
+  await page.locator('[data-action="record"]').click();
+  for(const zone of zoneKeys)for(const key of zoneFields)assert.equal(await page.locator('[data-group="execution"][data-zone="'+zone+'"][data-key="'+key+'"]').inputValue(),execution[zone][key],'reopening restores '+zone+'/'+key);
+  for(const key of processKeys)assert.equal(await page.locator('[data-group="process"][data-key="'+key+'"]').inputValue(),processNotes[key]);
+  for(const key of reviewKeys)assert.equal(await page.locator('[data-group="review"][data-key="'+key+'"]').inputValue(),review[key]);
   await page.close();
   // An unconfirmed later edit does not replace the current confirmed design.
   const priority=await boot(390);
@@ -126,10 +144,16 @@ async function file(page,name='original.png') {
     const failed=await boot(390,{bookingId:null});
     await failed.locator('[data-action="record"]').click();
     await fill(failed,'baseline','style','失败后应保留的草稿');await file(failed,'retained.png');
+    await fill(failed,'execution','actions','失败后仍保留的六区动作','ear_front');
+    await fill(failed,'process','proposal','失败后仍保留的提案');
+    await fill(failed,'review','pending','失败后仍保留的复盘');
     await failed.evaluate(value=>{window.failMode=value;},failure);
     await failed.locator('.cda-save-row button').click();
     await failed.waitForFunction(()=>document.querySelector('.cda-draft-feedback').textContent.includes('草稿和所选照片已保留'));
     assert.equal(await failed.locator('[data-group="baseline"][data-key="style"]').inputValue(),'失败后应保留的草稿');
+    assert.equal(await failed.locator('[data-group="execution"][data-zone="ear_front"][data-key="actions"]').inputValue(),'失败后仍保留的六区动作');
+    assert.equal(await failed.locator('[data-group="process"][data-key="proposal"]').inputValue(),'失败后仍保留的提案');
+    assert.equal(await failed.locator('[data-group="review"][data-key="pending"]').inputValue(),'失败后仍保留的复盘');
     assert.equal(await failed.locator('.cda-editor .cda-photo').count(),1,'failed '+failure+' keeps original');
     const count=await failed.evaluate(()=>window.calls.filter(c=>c.operation==='customer_design_save'||c.operation==='customer_design_upload').length);
     await failed.waitForTimeout(100);
@@ -144,6 +168,8 @@ async function file(page,name='original.png') {
       await failed.locator('[data-action="resolve"]').click();
       assert(!(await failed.locator('.cda-save-row button').isDisabled()),'explicit reviewed resolution allows later save');
       assert.equal(await failed.locator('[data-group="baseline"][data-key="style"]').inputValue(),'失败后应保留的草稿');
+      assert.equal(await failed.locator('[data-group="execution"][data-zone="ear_front"][data-key="actions"]').inputValue(),'失败后仍保留的六区动作','conflict history refresh preserves execution draft');
+      assert.equal(await failed.locator('[data-group="review"][data-key="pending"]').inputValue(),'失败后仍保留的复盘','review survives explicit conflict resolution');
     }
     await failed.evaluate(()=>window.handle.destroy());
     assert.equal(await failed.locator('.cda').count(),0,'destroy removes module');
@@ -155,6 +181,9 @@ async function file(page,name='original.png') {
     window.handle.destroy();window.pwned=false;
     window.fixtureVersions[1].baseline.steps.style='<img src=x onerror="window.pwned=true">';
     window.fixtureVersions[1].author={name:'<script>window.pwned=true</script>'};
+    window.fixtureVersions[1].execution={ear_front:{actions:'<img src=x onerror="window.pwned=true">'},rogue:{actions:'hidden unknown field'}};
+    window.fixtureVersions[1].process={proposal:'<script>window.pwned=true</script>',rogue:'hidden unknown field'};
+    window.fixtureVersions[1].review={achieved:'<img src=x onerror="window.pwned=true">',rogue:'hidden unknown field'};
     window.fixtureVersions[1].archive_url='javascript:alert(1)';
     window.fixtureVersions[1].photos=[{id:'unsafe',stage:'before',angle:'front',local_url:'https://attacker.invalid/track'}];
     const oldApi=window.api;window.options.api=(op,payload)=>op==='customer_design_photo_urls'?Promise.resolve({assets:[{id:'unsafe',url:'https://attacker.invalid/image.png'}]}):oldApi(op,payload);
@@ -162,8 +191,9 @@ async function file(page,name='original.png') {
   });
   await xss.waitForFunction(()=>document.querySelector('.cda-eight')?.textContent.includes('<img'));
   assert.equal(await xss.evaluate(()=>window.pwned),false);
+  assert(!(await xss.locator('#archive').textContent()).includes('hidden unknown field'),'unknown execution/process/review fields never become rendered content');
   assert.equal(await xss.locator('.cda-link,.cda img').count(),0,'untrusted link and image URL blocked');
   assert(!(await xss.locator('#archive').innerHTML()).includes('13800000000'),'phone never in DOM');
   await xss.close();
-  console.log('customer design archive browser tests passed: responsive compare/photos/history, manual append, original bytes, failures/conflict, XSS');
+  console.log('customer design archive browser tests passed: responsive eight-step/six-zone workflow, ten-process notes and review roundtrip, legacy history, original bytes, failures/conflict, XSS');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();});

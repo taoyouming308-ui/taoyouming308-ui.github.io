@@ -14,6 +14,7 @@ node scripts/test-care-outbound.js || exit 1
 node scripts/test-care-monthly.js || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_care_outbound_worker.py || exit 1
 node scripts/test-hair-task-state.js || exit 1
+node scripts/test-hair-design-link.cjs || exit 1
 node scripts/test-hair-service-photos.js || exit 1
 node scripts/test-hair-save-durability.js || exit 1
 node scripts/test-customer-archive-rendering.js || exit 1

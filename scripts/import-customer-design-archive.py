@@ -42,6 +42,12 @@ FIELDS = ("outline", "root_flow", *STEPS)
 STATUSES = {"baseline", "optimizing", "confirmed", "completed", "followup"}
 STAGES = {"before", "after", "reference"}
 ANGLES = {"front", "back", "left", "right", "detail"}
+ZONES = ("bangs", "top", "ear_front", "ear_back", "middle", "bottom")
+ZONE_FIELDS = ("issue", "target", "actions", "check")
+PROCESS_FIELDS = ("care_texture", "styling", "style_feel", "application", "winding",
+                  "rod_direction", "curl_control", "thinning_space", "proposal", "technique_layers")
+REVIEW_FIELDS = ("achieved", "pending", "next")
+EXTENDED_FIELDS = ("execution", "process", "review")
 
 
 class ArchiveError(Exception):
@@ -265,6 +271,30 @@ def normalized_reasons(value):
     return {key: value.get(key, "").strip() for key in FIELDS}
 
 
+def text_document(value, keys, label):
+    if not isinstance(value, dict) or set(value) - set(keys):
+        raise ArchiveError(f"{label} must be an object using the supported field keys.")
+    if any(not isinstance(text, str) or len(text) > 4000 for text in value.values()):
+        raise ArchiveError(f"{label} fields must be text of at most 4000 characters.")
+    result = {key: value.get(key, "").strip() for key in keys}
+    return result if any(result.values()) else {}
+
+
+def normalized_extended(version):
+    """Keep empty legacy input empty; never change the prepared manifest itself."""
+    execution = version.get("execution", {})
+    if not isinstance(execution, dict) or set(execution) - set(ZONES):
+        raise ArchiveError("Six-zone execution must be an object using the supported zone keys.")
+    zones = {key: text_document(execution.get(key, {}), ZONE_FIELDS, "Six-zone execution") for key in ZONES}
+    if any(zones.values()):
+        zones = {key: {field: zones[key].get(field, "") for field in ZONE_FIELDS} for key in ZONES}
+    else:
+        zones = {}
+    return {"execution": zones,
+            "process": text_document(version.get("process", {}), PROCESS_FIELDS, "Ten-process reference"),
+            "review": text_document(version.get("review", {}), REVIEW_FIELDS, "Completion review")}
+
+
 def validate_config(config):
     if set(config) - {"endpoint", "customer_profile_id", "booking_id", "booking_date", "visit_key", "photos", "versions", "_import"}:
         raise ArchiveError("Config contains unsupported fields; do not add credentials or unrelated customer data.")
@@ -296,12 +326,13 @@ def validate_config(config):
         data, mime = photo_bytes(photo)
         photo_meta.append({"sha256": digest(data), "byte_size": len(data), "mime_type": mime})
     for version in versions:
-        if not isinstance(version, dict) or set(version) - {"status", "baseline", "optimized", "reasons", "photo_indices", "archive_url"}:
+        if not isinstance(version, dict) or set(version) - {"status", "baseline", "optimized", "reasons", "photo_indices", "archive_url", *EXTENDED_FIELDS}:
             raise ArchiveError("Version contains unsupported fields.")
         if version.get("status") not in STATUSES:
             raise ArchiveError("Each saved version requires a supported explicit status.")
         archive_url(version.get("archive_url"))
         baseline, optimized = model(version.get("baseline")), model(version.get("optimized"))
+        normalized_extended(version)
         reasons = version.get("reasons")
         if not isinstance(reasons, dict) or set(reasons) - set(FIELDS) or any(not isinstance(v, str) or len(v) > 4000 for v in reasons.values()):
             raise ArchiveError("Adjustment reasons must use the outline/root_flow/eight-step field keys.")
@@ -485,6 +516,9 @@ class ImportRunner:
             content = normalized_reasons(expected[key]) if key == "reasons" else model(expected[key])
             if actual.get(key) != content:
                 raise ArchiveError("Saved eight-step design content did not match; import stopped.")
+        for key, content in normalized_extended(expected).items():
+            if actual.get(key, {}) != content:
+                raise ArchiveError("Saved six-zone execution, process or completion review did not match; import stopped.")
         if archive_url(actual.get("archive_url")) != archive_url(expected.get("archive_url")):
             raise ArchiveError("Saved version did not retain the selected ChatGPT archive link.")
         assets = actual.get("photos")
@@ -518,11 +552,15 @@ class ImportRunner:
             if "expected_latest_version_id" not in state:
                 state["expected_latest_version_id"] = latest
                 self.persist()
+            # Only absent additions are omitted, preserving old prepared writes
+            # exactly. An explicit {} is an intentional empty snapshot, including
+            # an explicitly requested clear of previously saved content.
+            extended = {key: value for key, value in normalized_extended(version).items() if key in version}
             result = self.call("customer_design_save", request_id=state["request_id"],
                                expected_latest_version_id=state["expected_latest_version_id"],
                                status=version["status"], baseline=model(version["baseline"]), optimized=model(version["optimized"]),
                                reasons=normalized_reasons(version["reasons"]), photo_ids=photo_ids,
-                               archive_url=archive_url(version.get("archive_url")))
+                               archive_url=archive_url(version.get("archive_url")), **extended)
             actual = result.get("version")
             state["version_id"] = self.verify_version(actual, version, photo_ids)
             latest = state["version_id"]

@@ -1,7 +1,11 @@
 /* Customer design archive: append-only visit revisions and private original photos. */
 (function (global) {
   'use strict';
-  const STEPS = [['style','风格'],['person','人物'],['length','长度'],['features','发型特点'],['layers','层次'],['bangs','刘海'],['curls','卷度'],['care','打理']];
+  const STEPS = [['style','风格'],['person','人物适配'],['length','长度'],['features','发型特点'],['layers','层次'],['bangs','刘海'],['curls','卷度'],['care','打理']];
+  const ZONES = [['bangs','刘海区','额前风格与目标流向'],['top','顶区','高度支撑与主要纹理'],['ear_front','耳前区','脸周修饰与流向衔接'],['ear_back','耳后区','侧后转角与上下连接'],['middle','中区','侧向宽度与主体过渡'],['bottom','底区','后颈轮廓与底线重量']];
+  const ZONE_FIELDS = [['issue','当前问题'],['target','目标'],['actions','具体怎么做'],['check','完成核对点']];
+  const PROCESS = [['care_texture','打理与质感'],['styling','造型方式'],['style_feel','风格与感觉'],['application','上药位置'],['winding','卷杠方法'],['rod_direction','排杠方向'],['curl_control','卷度与控卷'],['thinning_space','打薄与空间'],['proposal','设计提案'],['technique_layers','技术与层次']];
+  const REVIEW = [['achieved','已达成'],['pending','待调整'],['next','下次重点']];
   const STATUS = {baseline:'初始判断',optimizing:'设计优化中',confirmed:'方案已确认',completed:'服务已完成',followup:'回访记录'};
   const STAGE = {before:'原始照片',after:'完成效果',reference:'参考图'};
   const ANGLE = {front:'正面',back:'背面',left:'左侧',right:'右侧',detail:'局部'};
@@ -17,6 +21,24 @@
     const result = {outline:text(value.outline),root_flow:text(value.root_flow),steps:{}};
     STEPS.forEach(([key]) => { result.steps[key] = text(value.steps && value.steps[key]); });
     return result;
+  }
+  function fieldsModel(value, fields) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const result = {};
+    fields.forEach(([key]) => { result[key] = text(Object.hasOwn(source,key) ? source[key] : ''); });
+    return result;
+  }
+  function executionModel(value) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const result = {};
+    ZONES.forEach(([key]) => { result[key] = fieldsModel(Object.hasOwn(source,key) ? source[key] : null,ZONE_FIELDS); });
+    return result;
+  }
+  function hasFields(value) { return Object.values(value).some(v => typeof v === 'string' && v.trim()); }
+  function hasExecution(value) { return ZONES.some(([key]) => hasFields(value[key])); }
+  function workflowPayload(d) {
+    const execution = executionModel(d.execution), process = fieldsModel(d.process,PROCESS), review = fieldsModel(d.review,REVIEW);
+    return {execution:hasExecution(execution)?execution:{},process:hasFields(process)?process:{},review:hasFields(review)?review:{}};
   }
   function signedURL(value) {
     try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && u.pathname.includes('/storage/v1/object/sign/') && u.searchParams.has('token') ? u.href : ''; }
@@ -90,14 +112,22 @@
         const changed = !!b.trim() && a.trim() !== b.trim();
         return '<article class="cda-compare'+(prominent?' cda-prominent':'')+'"><h5>'+esc(label)+(changed?'<span class="cda-change">已优化</span>':'')+'</h5><div class="cda-compare-columns"><div><span class="cda-label">初始判断</span><p>'+meaningful(a)+'</p></div><div><span class="cda-label">'+(version.status==='baseline'?'设计方向':'优化方案')+'</span><p>'+meaningful(b)+'</p></div></div>'+(text(reasons[key]).trim()?'<p class="cda-reason"><span>调整理由</span>'+esc(reasons[key])+'</p>':'')+'</article>';
       }
-      return '<div class="cda-outline">'+row('outline','整体轮廓',baseline.outline,optimized.outline,true)+row('root_flow','发根毛流方向',baseline.root_flow,optimized.root_flow,true)+'</div><div class="cda-eight">'+STEPS.map(([key,label],i)=>row(key,(i+1)+'. '+label,baseline.steps[key],optimized.steps[key],false)).join('')+'</div>';
+      return '<div class="cda-outline">'+row('outline','整体轮廓',baseline.outline,optimized.outline,true)+row('root_flow','发根毛流方向',baseline.root_flow,optimized.root_flow,true)+'</div><section class="cda-design"><h4>八步人物设计</h4><div class="cda-eight">'+STEPS.map(([key,label],i)=>row(key,(i+1)+'. '+label,baseline.steps[key],optimized.steps[key],false)).join('')+'</div></section>';
+    }
+    function workflowMarkup(version) {
+      const execution = executionModel(version.execution), process = fieldsModel(version.process,PROCESS), review = fieldsModel(version.review,REVIEW);
+      const valueRow = (label,value) => '<div class="cda-workflow-value"><span class="cda-label">'+esc(label)+'</span><p>'+meaningful(value)+'</p></div>';
+      const zones = '<section class="cda-execution"><h4>六区执行</h4><p class="cda-muted">把八步设计落实到区域目标、操作与完成核对。</p>'+(hasExecution(execution)?'<div class="cda-zone-grid">'+ZONES.map(([key,label,hint],i)=>'<article class="cda-zone"><h5>'+String(i+1).padStart(2,'0')+' '+esc(label)+'</h5><p class="cda-zone-hint">'+esc(hint)+'</p><div class="cda-zone-values">'+ZONE_FIELDS.map(([field,title])=>valueRow(title,execution[key][field])).join('')+'</div></article>').join('')+'</div>':'<p class="cda-workflow-empty">本次尚未记录六区执行。</p>')+'</section>';
+      const processMarkup = '<details class="cda-process"><summary>剪烫十大流程<span>按本次项目记录</span></summary><p class="cda-muted">核对本次剪发、烫发与造型安排；没有涉及的项目可以留空。</p>'+(hasFields(process)?'<div class="cda-process-values">'+PROCESS.filter(([key])=>process[key].trim()).map(([key,label])=>valueRow(label,process[key])).join('')+'</div>':'<p class="cda-workflow-empty">本次尚未记录流程安排。</p>')+'</details>';
+      const reviewMarkup = '<section class="cda-review"><h4>完成复盘</h4><p class="cda-muted">结合上方原始照片与完成效果核对。</p>'+(hasFields(review)?'<div class="cda-review-values">'+REVIEW.map(([key,label])=>valueRow(label,review[key])).join('')+'</div>':'<p class="cda-workflow-empty">本次尚未记录完成复盘。</p>')+'</section>';
+      return zones+processMarkup+reviewMarkup;
     }
     function versionMarkup(version,open) {
       const link = chatLink(version.archive_url || version.chatgpt_url);
-      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '当前方案')+'</span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
+      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '当前方案')+'</span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+workflowMarkup(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
     }
     function historyMarkup() {
-      if (!state.versions.length) return '<div class="cda-empty"><p>还没有结构化设计记录</p><span>上传原始照片，按八步填写初始判断；沟通后再记录优化方案。</span></div>';
+      if (!state.versions.length) return '<div class="cda-empty"><p>还没有结构化设计记录</p><span>上传原始照片，先做八步设计，再记录六区执行与完成复盘。</span></div>';
       const groups = new Map();
       state.versions.forEach(v => { const key = visitIdentity(v); if (!groups.has(key)) groups.set(key,[]); groups.get(key).push(v); });
       return Array.from(groups.values()).map((versions,index) => {
@@ -105,8 +135,14 @@
         return '<details class="cda-visit"'+(index===0?' open':'')+'><summary><span>'+esc(formatDate(date))+'<small>'+ (index===0?'最近一次设计':'历史到店')+'</small></span></summary><div class="cda-visit-body">'+versionMarkup(first,true)+'</div></details>';
       }).join('');
     }
-    function input(group,key,value,label) {
-      return '<label class="cda-field"><span>'+esc(label)+'</span><textarea data-group="'+group+'" data-key="'+key+'" rows="2" maxlength="4000">'+esc(value)+'</textarea></label>';
+    function input(group,key,value,label,zone) {
+      return '<label class="cda-field"><span>'+esc(label)+'</span><textarea data-group="'+group+'" data-key="'+key+'"'+(zone?' data-zone="'+zone+'"':'')+' rows="2" maxlength="4000">'+esc(value)+'</textarea></label>';
+    }
+    function workflowEditor(d) {
+      const zones = '<section class="cda-editor-execution"><h4>六区执行</h4><p class="cda-muted">按区域填写当前问题、目标、具体动作与完成核对点。</p>'+ZONES.map(([key,label,hint],i)=>'<details class="cda-zone-editor"><summary>'+String(i+1).padStart(2,'0')+' '+esc(label)+'<small>'+esc(hint)+'</small></summary><div class="cda-zone-inputs">'+ZONE_FIELDS.map(([field,title])=>input('execution',field,d.execution[key][field],title,key)).join('')+'</div></details>').join('')+'</section>';
+      const process = '<details class="cda-process cda-editor-process"><summary>剪烫十大流程<span>按本次项目选填</span></summary><p class="cda-muted">按实际剪烫与造型安排记录，没有涉及的项目可以留空。</p>'+PROCESS.map(([key,label],i)=>input('process',key,d.process[key],String(i+1).padStart(2,'0')+' '+label)).join('')+'</details>';
+      const review = '<section class="cda-editor-review"><h4>完成复盘</h4><p class="cda-muted">完成后结合原始照片与完成效果填写，尚未完成的项目留空。</p>'+REVIEW.map(([key,label])=>input('review',key,d.review[key],label)).join('')+'</section>';
+      return zones+process+review;
     }
     function editorMarkup() {
       const d = state.draft;
@@ -116,11 +152,11 @@
         const b = key==='outline' || key==='root_flow' ? d.optimized[key] : d.optimized.steps[key];
         return '<div class="cda-edit-compare">'+input('baseline',key,a,'初始判断')+input('optimized',key,b,'优化方案')+'</div>'+input('reasons',key,d.reasons[key] || '','调整理由（有改动时填写）');
       }
-      return '<form class="cda-editor" novalidate><div class="cda-editor-title"><h4>记录本次设计</h4><button type="button" class="cda-text-btn" data-action="cancel">收起</button></div><p class="cda-muted">手动填写即可。保存后更新本次设计，原照片和历次到店记录保留。</p><div class="cda-form-meta"><label class="cda-field"><span>服务日期</span><input type="date" data-meta="booking_date" value="'+esc(d.booking_date)+'"'+(options.bookingId?' readonly':'')+'></label><label class="cda-field"><span>本次状态</span><select data-meta="status">'+Object.keys(STATUS).map(k=>'<option value="'+k+'"'+(d.status===k?' selected':'')+'>'+STATUS[k]+'</option>').join('')+'</select></label></div><fieldset class="cda-photo-editor"><legend>本次照片</legend>'+photosMarkup(d.photos,true)+'<div class="cda-upload-fields"><label class="cda-field"><span>照片类别</span><select data-upload="stage">'+Object.keys(STAGE).map(k=>'<option value="'+k+'">'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-field"><span>拍摄角度</span><select data-upload="angle">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'">'+ANGLE[k]+'</option>').join('')+'</select></label><label class="cda-upload-btn">添加照片<input type="file" data-upload="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><p class="cda-muted">JPEG / PNG / WebP，每张最多 8 MB；保留上传原文件，不压缩替换原图。</p></fieldset><div class="cda-editor-outline"><h5>整体轮廓</h5>'+editRow('outline','整体轮廓')+'<h5>发根毛流方向</h5>'+editRow('root_flow','发根毛流方向')+'</div><div class="cda-editor-steps">'+STEPS.map(([key,label],i)=>'<details'+(i===0?' open':'')+'><summary>'+ (i+1)+'. '+label+'</summary>'+editRow(key,label)+'</details>').join('')+'</div><div class="cda-draft-feedback" role="status"></div><div class="cda-save-row"><button type="submit" class="cda-primary"'+(state.saving || state.conflict?' disabled':'')+'>'+(state.saving?'保存中…':'保存设计')+'</button><span>填写人：'+esc(options.barberName || '当前登录员工')+'</span></div></form>';
+      return '<form class="cda-editor" novalidate><div class="cda-editor-title"><h4>记录本次设计</h4><button type="button" class="cda-text-btn" data-action="cancel">收起</button></div><p class="cda-muted">手动填写即可。保存后更新本次设计，原照片和历次到店记录保留。</p><div class="cda-form-meta"><label class="cda-field"><span>服务日期</span><input type="date" data-meta="booking_date" value="'+esc(d.booking_date)+'"'+(options.bookingId?' readonly':'')+'></label><label class="cda-field"><span>本次状态</span><select data-meta="status">'+Object.keys(STATUS).map(k=>'<option value="'+k+'"'+(d.status===k?' selected':'')+'>'+STATUS[k]+'</option>').join('')+'</select></label></div><fieldset class="cda-photo-editor"><legend>本次照片</legend>'+photosMarkup(d.photos,true)+'<div class="cda-upload-fields"><label class="cda-field"><span>照片类别</span><select data-upload="stage">'+Object.keys(STAGE).map(k=>'<option value="'+k+'">'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-field"><span>拍摄角度</span><select data-upload="angle">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'">'+ANGLE[k]+'</option>').join('')+'</select></label><label class="cda-upload-btn">添加照片<input type="file" data-upload="file" accept="image/jpeg,image/png,image/webp" multiple></label></div><p class="cda-muted">JPEG / PNG / WebP，每张最多 8 MB；保留上传原文件，不压缩替换原图。</p></fieldset><div class="cda-editor-outline"><h5>整体轮廓</h5>'+editRow('outline','整体轮廓')+'<h5>发根毛流方向</h5>'+editRow('root_flow','发根毛流方向')+'</div><div class="cda-editor-steps"><h4>八步人物设计</h4>'+STEPS.map(([key,label],i)=>'<details'+(i===0?' open':'')+'><summary>'+ (i+1)+'. '+label+'</summary>'+editRow(key,label)+'</details>').join('')+'</div>'+workflowEditor(d)+'<div class="cda-draft-feedback" role="status"></div><div class="cda-save-row"><button type="submit" class="cda-primary"'+(state.saving || state.conflict?' disabled':'')+'>'+(state.saving?'保存中…':'保存设计')+'</button><span>填写人：'+esc(options.barberName || '当前登录员工')+'</span></div></form>';
     }
     function render() {
       if (state.destroyed) return;
-      root.innerHTML = '<header class="cda-header"><div><h3>设计思路</h3><p class="cda-customer">'+esc(options.name || '顾客')+'</p><p>八步设计 · 原图与完成效果</p></div>'+(!state.draft?'<button type="button" class="cda-primary" data-action="record"'+(!state.canWrite || state.loading?' disabled':'')+'>记录设计</button>':'')+'</header>'+(!state.loading && !state.canWrite && !state.error?'<p class="cda-message">此顾客当前门店的设计档案仅供查看。</p>':'')+(state.error?'<div class="cda-message cda-error" role="alert">'+esc(state.error)+' <button type="button" class="cda-text-btn" data-action="refresh">重新读取</button></div>':'')+(state.notice?'<p class="cda-message" role="status">'+esc(state.notice)+'</p>':'')+(state.conflict?'<div class="cda-message cda-error" role="alert">设计已被其他人更新，草稿和照片已保留。请先核对下方最新记录。<button type="button" class="cda-text-btn" data-action="refresh">读取最新记录</button><button type="button" class="cda-text-btn" data-action="resolve">已核对，保留草稿继续</button></div>':'')+editorMarkup()+(state.loading?'<p class="cda-muted" role="status">正在读取设计档案…</p>':'')+'<div class="cda-history">'+historyMarkup()+'</div>';
+      root.innerHTML = '<header class="cda-header"><div><h3>设计思路</h3><p class="cda-customer">'+esc(options.name || '顾客')+'</p><p>八步设计 · 六区执行 · 完成复盘</p></div>'+(!state.draft?'<button type="button" class="cda-primary" data-action="record"'+(!state.canWrite || state.loading?' disabled':'')+'>记录设计</button>':'')+'</header>'+(!state.loading && !state.canWrite && !state.error?'<p class="cda-message">此顾客当前门店的设计档案仅供查看。</p>':'')+(state.error?'<div class="cda-message cda-error" role="alert">'+esc(state.error)+' <button type="button" class="cda-text-btn" data-action="refresh">重新读取</button></div>':'')+(state.notice?'<p class="cda-message" role="status">'+esc(state.notice)+'</p>':'')+(state.conflict?'<div class="cda-message cda-error" role="alert">设计已被其他人更新，草稿和照片已保留。请先核对下方最新记录。<button type="button" class="cda-text-btn" data-action="refresh">读取最新记录</button><button type="button" class="cda-text-btn" data-action="resolve">已核对，保留草稿继续</button></div>':'')+editorMarkup()+(state.loading?'<p class="cda-muted" role="status">正在读取设计档案…</p>':'')+'<div class="cda-history">'+historyMarkup()+'</div>';
     }
     async function load(preserve) {
       const seq = ++state.loadSeq;
@@ -189,7 +225,7 @@
     function startDraft() {
       const previous = state.versions.find(v=>options.bookingId?String(v.booking_id || '')===String(options.bookingId):!v.booking_id && String(v.visit_key || 'manual:'+v.booking_date)===state.visitKey);
       const latest = previous || null;
-      state.draft = {baseline:model(latest && latest.baseline),optimized:model(latest && latest.optimized),reasons:clone(latest && latest.reasons || {}),photos:clone(latest && latest.photos || []),booking_date:text(options.bookingDate || localDate()).slice(0,10),visit_key:state.visitKey,status:latest && latest.status || 'baseline',expected:latest?latest.id:state.latest,dirty:false,contentDirty:false,requestId:uuid()};
+      state.draft = {baseline:model(latest && latest.baseline),optimized:model(latest && latest.optimized),reasons:fieldsModel(latest && latest.reasons,[['outline'],['root_flow']].concat(STEPS)),execution:executionModel(latest && latest.execution),process:fieldsModel(latest && latest.process,PROCESS),review:fieldsModel(latest && latest.review,REVIEW),photos:clone(latest && latest.photos || []),booking_date:text(options.bookingDate || localDate()).slice(0,10),visit_key:state.visitKey,status:latest && latest.status || 'baseline',expected:latest?latest.id:state.latest,dirty:false,contentDirty:false,requestId:uuid()};
       state.conflict = false; state.notice = ''; render();
       signPhotos(state.draft.photos).then(()=>{if(state.draft && !state.destroyed){const gallery=root.querySelector('.cda-photo-editor');if(gallery){const fieldsets=root.querySelectorAll('.cda-photo-editor .cda-photo-group');fieldsets.forEach(el=>el.remove());gallery.querySelector('legend').insertAdjacentHTML('afterend',photosMarkup(state.draft.photos,true));}}});
       root.querySelector('.cda-editor').scrollIntoView({block:'nearest'});
@@ -209,9 +245,12 @@
       for (const key of keys) {
         const a = key==='outline'||key==='root_flow'?d.baseline[key]:d.baseline.steps[key];
         const b = key==='outline'||key==='root_flow'?d.optimized[key]:d.optimized.steps[key];
+        if ([a,b,d.reasons[key]].some(value=>text(value).length>4000)) return '单项设计内容最多填写 4000 字。';
         if (b.trim() && a.trim()!==b.trim() && !text(d.reasons[key]).trim()) return '请为“'+({outline:'整体轮廓',root_flow:'发根毛流方向'}[key] || STEPS.find(s=>s[0]===key)[1])+'”填写调整理由。';
       }
-      if (!keys.some(k=>(k==='outline'||k==='root_flow'?d.baseline[k] || d.optimized[k]:d.baseline.steps[k] || d.optimized.steps[k]).trim()) && !d.photos.length) return '请填写初始判断或添加本次照片。';
+      const extended = ZONES.flatMap(([key])=>ZONE_FIELDS.map(([field])=>d.execution[key][field])).concat(Object.values(d.process),Object.values(d.review));
+      if (extended.some(value=>text(value).length>4000)) return '六区执行、流程安排和复盘的单项内容最多填写 4000 字。';
+      if (!keys.some(k=>(k==='outline'||k==='root_flow'?d.baseline[k] || d.optimized[k]:d.baseline.steps[k] || d.optimized.steps[k]).trim()) && !extended.some(value=>text(value).trim()) && !d.photos.length) return '请填写设计、六区执行或完成复盘，或添加本次照片。';
       return '';
     }
     async function save() {
@@ -228,7 +267,7 @@
           if (!asset.id) throw new Error('原图上传未返回凭据，草稿已保留');
           Object.assign(photo,asset);
         }
-        const result = await api('customer_design_save',{booking_date:d.booking_date,request_id:d.requestId,expected_latest_version_id:d.expected,status:d.status,baseline:d.baseline,optimized:d.optimized,reasons:d.reasons,photo_ids:d.photos.map(p=>p.id)});
+        const result = await api('customer_design_save',{booking_date:d.booking_date,request_id:d.requestId,expected_latest_version_id:d.expected,status:d.status,baseline:d.baseline,optimized:d.optimized,reasons:d.reasons,...workflowPayload(d),photo_ids:d.photos.map(p=>p.id)});
         if (state.destroyed) return;
         if (result.version) { state.versions = [result.version].concat(state.versions.filter(v=>v.id!==result.version.id)); state.latest = result.latest_version_id || result.version.id; }
         clearDraft(); state.notice = '已保存设计。原有设计、照片和历史版本均已保留。'; state.saving = false; render();
@@ -281,12 +320,22 @@
     }
     function change(event) {
       const el=event.target,d=state.draft; if(!d || state.saving)return;
-      if(el.dataset.group) { const g=el.dataset.group,k=el.dataset.key; if(g==='reasons')d.reasons[k]=el.value;else if(k==='outline'||k==='root_flow')d[g][k]=el.value;else d[g].steps[k]=el.value;d.contentDirty=true;dirty(); }
+      if(el.dataset.group) {
+        const g=el.dataset.group,k=el.dataset.key,z=el.dataset.zone;
+        if(g==='execution' && ZONES.some(([key])=>key===z) && ZONE_FIELDS.some(([key])=>key===k)) d.execution[z][k]=el.value;
+        else if(g==='process' && PROCESS.some(([key])=>key===k)) d.process[k]=el.value;
+        else if(g==='review' && REVIEW.some(([key])=>key===k)) d.review[k]=el.value;
+        else if(g==='reasons' && ['outline','root_flow'].concat(STEPS.map(([key])=>key)).includes(k)) d.reasons[k]=el.value;
+        else if((g==='baseline'||g==='optimized') && (k==='outline'||k==='root_flow')) d[g][k]=el.value;
+        else if((g==='baseline'||g==='optimized') && STEPS.some(([key])=>key===k)) d[g].steps[k]=el.value;
+        else return;
+        d.contentDirty=true;dirty();
+      }
       if(el.dataset.meta==='booking_date' && el.value!==d.booking_date) {
         if(d.contentDirty || d.photos.some(p=>p.file)) {el.value=d.booking_date;feedback('已填写的设计和照片仍保留。请先保存本次记录，再更换服务日期。',true);return;}
         d.booking_date=el.value;d.visit_key='manual:'+el.value;
         const previous=state.versions.find(v=>!v.booking_id && String(v.visit_key || 'manual:'+v.booking_date)===d.visit_key);
-        d.baseline=model(previous && previous.baseline);d.optimized=model(previous && previous.optimized);d.reasons=clone(previous && previous.reasons || {});d.photos=clone(previous && previous.photos || []);d.status=previous && previous.status || 'baseline';d.expected=previous?previous.id:null;dirty();render();return;
+        d.baseline=model(previous && previous.baseline);d.optimized=model(previous && previous.optimized);d.reasons=fieldsModel(previous && previous.reasons,[['outline'],['root_flow']].concat(STEPS));d.execution=executionModel(previous && previous.execution);d.process=fieldsModel(previous && previous.process,PROCESS);d.review=fieldsModel(previous && previous.review,REVIEW);d.photos=clone(previous && previous.photos || []);d.status=previous && previous.status || 'baseline';d.expected=previous?previous.id:null;dirty();render();return;
       }
       if(el.dataset.meta && el.dataset.meta!=='booking_date') {d[el.dataset.meta]=el.value;d.contentDirty=true;dirty();}
       if(el.dataset.photoMeta) {

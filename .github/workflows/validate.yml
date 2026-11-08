@@ -87,6 +87,7 @@ jobs:
       - name: Run hair task state tests
         run: |
           node scripts/test-hair-task-state.js
+          node scripts/test-hair-design-link.cjs
           node scripts/test-hair-service-photos.js
           node scripts/test-hair-save-durability.js
       - name: Protect customer archive rendering

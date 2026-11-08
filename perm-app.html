@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="640">
+<html lang="zh-CN" data-version="641">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,8 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=640" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=640" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=641" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=641" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1909,6 +1909,8 @@ body {
         .date-chip { flex-basis:54px; }
       }
       .plan-modal { position:fixed; top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10030;display:flex;align-items:center;justify-content:center; }
+      .plan-modal.hair-form-design-modal { z-index:100001; }
+      .plan-modal .hair-design-return { display:block;min-height:44px;width:100%;margin-bottom:12px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer; }
       .plan-modal .box { background:var(--surface); border-radius:12px; padding:24px; max-width:340px; width:90%; max-height:80vh; overflow-y:auto; }
       .plan-modal h3 { font-size:16px; margin-bottom:8px; color:var(--text); }
       .plan-modal .sub { font-size:12px; color:var(--text-secondary); margin-bottom:16px; }
@@ -3162,14 +3164,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=640"></script>
-<script src="customer-design-archive.js?v=640"></script>
-<script defer src="aesthetic-study.js?v=640"></script>
-<script defer src="aesthetic-daily.js?v=640"></script>
-<script defer src="hair-calculator-dialog.js?v=640"></script>
-<script src="aesthetic-knowledge.v1.js?v=640"></script>
-<script src="hair-vision-training.v1.js?v=640"></script>
-<script src="aesthetic-growth.v2.js?v=640"></script>
+<script src="employee-reports.js?v=641"></script>
+<script src="customer-design-archive.js?v=641"></script>
+<script defer src="aesthetic-study.js?v=641"></script>
+<script defer src="aesthetic-daily.js?v=641"></script>
+<script defer src="hair-calculator-dialog.js?v=641"></script>
+<script src="aesthetic-knowledge.v1.js?v=641"></script>
+<script src="hair-vision-training.v1.js?v=641"></script>
+<script src="aesthetic-growth.v2.js?v=641"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -7171,7 +7173,8 @@ function initApp() {
     '杨帆': '烫发/护理'
   };
   var _profileCache = {};
-  window.showPlanModal = function(phone, name, barberName, bookingDate, bookingId) {
+  window.showPlanModal = function(phone, name, barberName, bookingDate, bookingId, contextOptions) {
+    contextOptions = { hairForm: !!(contextOptions && contextOptions.hairForm === true) };
     var old = document.getElementById('plan-modal');
     if (old) {
       if (old._customerDesignArchive && old._customerDesignArchive.hasUnsavedChanges && old._customerDesignArchive.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定离开这份记录吗？')) return false;
@@ -7179,14 +7182,14 @@ function initApp() {
       old.remove();
     }
     var div = document.createElement('div');
-    div.className = 'plan-modal';
+    div.className = 'plan-modal' + (contextOptions.hairForm ? ' hair-form-design-modal' : '');
     div.id = 'plan-modal';
     var scope = getCustomerReadScope();
-    div.innerHTML = '<div class="box"><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="customer-design-root"></div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
+    div.innerHTML = '<div class="box">' + (contextOptions.hairForm ? '<button type="button" class="hair-design-return" onclick="closePlanModal()">← 返回发质分析</button>' : '') + '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="customer-design-root"></div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
     div.querySelector('.customer-read-scope').value = scope;
     div.querySelector('.customer-read-scope').addEventListener('change', function(event) {
       window._customerReadScope = event.target.value;
-      if (showPlanModal(phone, name, barberName, bookingDate, bookingId) === false) {
+      if (showPlanModal(phone, name, barberName, bookingDate, bookingId, contextOptions) === false) {
         window._customerReadScope = scope;
         event.target.value = scope;
       }
@@ -7487,6 +7490,48 @@ function initApp() {
       if (m._customerDesignArchive && m._customerDesignArchive.hasUnsavedChanges && m._customerDesignArchive.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定关闭吗？')) return;
       if (m._customerDesignArchive && m._customerDesignArchive.destroy) m._customerDesignArchive.destroy();
       m.remove();
+    }
+  };
+
+  // The hair form and the customer archive share the appointment identity; this
+  // entry neither saves the form nor copies design snapshots into record_data.
+  function hairFormDesignContext(form, anchor) {
+    form = form || {};
+    anchor = anchor || {};
+    var customerName = String(form.name || '').trim();
+    var rawPhone = String(form.phone || '').trim();
+    var customerPhone = rawPhone.replace(/[\s+-]/g, '').replace(/^86(?=1\d{10}$)/, '');
+    var bookingId = String(anchor.bookingId || '').trim();
+    var bookingDate = normalizeHairBookingDate(anchor.bookingDate);
+    if (!bookingId || !/^\d+$/.test(bookingId) || !Number.isSafeInteger(Number(bookingId)) || Number(bookingId) < 1 || !bookingDate || !Number.isFinite(Date.parse(bookingDate + 'T00:00:00Z')) || new Date(bookingDate + 'T00:00:00Z').toISOString().slice(0, 10) !== bookingDate) {
+      throw new Error('请先从预约选择客户，关联本次预约后再记录设计。');
+    }
+    if (!customerName || !/^1\d{10}$/.test(customerPhone)) {
+      throw new Error('请先补全本次顾客的姓名和完整手机号。');
+    }
+    if ((anchor.phone && normalizeHairCustomerPhone(anchor.phone) !== customerPhone) ||
+        (anchor.name && normalizeHairCustomerName(anchor.name) !== normalizeHairCustomerName(customerName))) {
+      throw new Error('当前姓名或手机号与预约不一致，请重新从预约选择客户。');
+    }
+    return { phone: customerPhone, name: customerName, barberName: String(form.barber || anchor.barber || ''), bookingDate: bookingDate, bookingId: bookingId };
+  }
+
+  window.openHairFormDesignArchive = function() {
+    var anchor = window._activeHairBookingContext;
+    var record = _cloudRecordData;
+    if ((!anchor || !anchor.bookingId) && !record && _editingHairId) {
+      record = getHairRecords().find(function(item) { return item.id === _editingHairId; });
+    }
+    if ((!anchor || !anchor.bookingId) && record) {
+      anchor = hairBookingContext(record.bookingId || record.booking_id, record.bookingDate || record.booking_date || record.visitDate || record.date, record.customerPhone, record.customerName, record.barber);
+    }
+    var field = function(id) { var element = document.getElementById(id); return element ? element.value : ''; };
+    try {
+      var context = hairFormDesignContext({ name: field('hair-form-name'), phone: field('hair-form-phone'), barber: field('hair-form-barber') }, anchor);
+      return showPlanModal(context.phone, context.name, context.barberName, context.bookingDate, context.bookingId, { hairForm: true });
+    } catch (error) {
+      alert(error.message || '本次预约暂未关联，请重新选择客户。');
+      return false;
     }
   };
 
@@ -11558,6 +11603,12 @@ function initApp() {
     html += '</select></div>';
     html += '</div>';
 
+    // The same appointment-backed design is available without replacing the
+    // in-progress diagnosis form or changing its legacy operation parameters.
+    html += '<div class="ha-card hair-design-entry"><div class="ha-title"><span>设计思路</span></div>';
+    html += '<p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin:8px 0;">八步人物设计 · 六区执行 · 完成复盘<br>前后照片和设计记录关联本次预约，返回后可继续填写发质分析。</p>';
+    html += '<button type="button" id="hair-form-design-open" onclick="openHairFormDesignArchive()" style="width:100%;min-height:44px;padding:10px;background:var(--accent);border:0;border-radius:6px;color:var(--bg);font:inherit;cursor:pointer;">查看 / 记录本次设计</button></div>';
+
     // ===== 步骤3: 烫发方案（无切换，一直显示） =====
     html += '<div class="ha-card hair-plan-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">';
     html += '<div class="ha-step" style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">步骤3 · 烫发方案</div>';
@@ -13188,7 +13239,7 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=640"></script>
-<script defer src="app-shell-client.js?v=640"></script>
+<script defer src="data-read-client.js?v=641"></script>
+<script defer src="app-shell-client.js?v=641"></script>
 </body>
 </html>

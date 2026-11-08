@@ -16,9 +16,21 @@ function section(start, end) {
 const modal = section('window.showPlanModal = function', 'function hairRecordPersonText(rec)');
 const archives = section('function parseHairArrayField(value)', 'function fetchCareRecordsByHairIds(ids)');
 const profileDetail = section('window.showCustomerProfile = function', '// 色调选择');
+const hairFormHelpers = section('function normalizeHairBookingDate(value)', 'function hairRecordBookingId(row)') + '\n' +
+  section('function hairBookingContext(bookingId', '// ===== 烫染标记') + '\n' +
+  section('function normalizeHairCustomerPhone(value)', 'function normalizeHairCloudRecord(row)');
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=';
 const keys = ['style', 'person', 'length', 'features', 'layers', 'bangs', 'curls', 'care'];
-const labels = ['风格', '人物', '长度', '发型特点', '层次', '刘海', '卷度', '打理'];
+const labels = ['风格', '人物适配', '长度', '发型特点', '层次', '刘海', '卷度', '打理'];
+const zoneKeys = ['bangs', 'top', 'ear_front', 'ear_back', 'middle', 'bottom'];
+const zoneLabels = ['刘海区', '顶区', '耳前区', '耳后区', '中区', '底区'];
+const zoneFields = ['issue', 'target', 'actions', 'check'];
+const processKeys = ['care_texture', 'styling', 'style_feel', 'application', 'winding', 'rod_direction', 'curl_control', 'thinning_space', 'proposal', 'technique_layers'];
+const workflow = {
+  execution: Object.fromEntries(zoneKeys.map(zone => [zone, Object.fromEntries(zoneFields.map(key => [key, '合成执行-' + zone + '-' + key]))])),
+  process: Object.fromEntries(processKeys.map(key => [key, '合成流程-' + key])),
+  review: { achieved: '合成完成核对', pending: '合成待调整', next: '合成下次重点' }
+};
 const makeModel = prefix => ({ outline: prefix + '轮廓', root_flow: prefix + '毛流', steps: Object.fromEntries(keys.map(key => [key, prefix + key])) });
 const reasons = Object.fromEntries(['outline', 'root_flow', ...keys].map(key => [key, '沟通调整理由-' + key]));
 const uuid = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
@@ -27,7 +39,7 @@ function fixture() {
   photos.push({ id: uuid(103), stage: 'after', angle: 'front', bucket: 'customer-design-originals', path: 'synthetic/after.png', mime_type: 'image/png' });
   const version = (id, versionNo, date, booking, extra = {}) => ({ id: uuid(id), version_no: versionNo, booking_id: booking, visit_id: booking ? 'booking:' + booking : uuid(400), visit_key: booking ? 'booking:' + booking : 'manual:' + date, booking_date: date, created_at: date + 'T04:' + String(versionNo).padStart(2, '0') + ':00.000Z', status: 'confirmed', baseline: makeModel('初始-'), optimized: makeModel('优化-'), reasons, photos, source: 'manual', author: { name: '合成员工' }, shop_name: '自由手艺人', ...extra });
   return {
-    versions: [version(3, 2, '2026-11-08', 900001), version(2, 1, '2026-11-08', 900001), version(1, 1, '2026-09-18', 899999)],
+    versions: [version(3, 2, '2026-11-08', 900001, structuredClone(workflow)), version(2, 1, '2026-11-08', 900001), version(1, 1, '2026-09-18', 899999)],
     profiles: [{ id: 9001, phone: '13800000000', name: '合成客户', shop_name: '自由手艺人', summary_scope: 'synced_store_records', total_visits: 7, total_consumption: 381.5, last_visit_date: '2026-11-08 12:00', notes: '均消¥54 | 正常客户备注 | [ChatGPT设计档案 预约900001]不应在消费区出现的旧设计正文 https://chatgpt.com/space/page_synthetic', card_packages: [{ id: 'synthetic-package', name: '剪发280', package_name: '合成五次剪发卡', left: 4, total: 5, shop: '自由手艺人', expire_date: '2027-12-31' }], service_history: Array.from({ length: 7 }, (_, i) => ({ id: 'synthetic-bill-' + i, date: '2026-09-' + String(20 + i).padStart(2, '0'), time: '12:00', amount: i === 0 ? 0 : 63.58, items: [{ name: '合成洗剪吹' }], staff: ['合成员工'], shop: '自由手艺人', bill_no: 'TEST-' + i })) }]
   };
 }
@@ -39,7 +51,7 @@ async function setup(browser, width, config = {}) {
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', route => route.request().url().startsWith('https://synthetic.invalid/storage/v1/object/sign/') ? route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from(PNG, 'base64') }) : route.abort());
   await page.setContent('<!doctype html><html><head><style>' + styles + '</style></head><body class="plan-white-mode"><button id="appointment" onclick="showPlanModal(\'13800000000\',\'合成客户\',\'合成员工\',\'2026-11-08\',900001)">预约入口</button><button id="customer" onclick="showPlanModal(\'13800000000\',\'合成客户\')">客户档案入口</button><button id="profile" onclick="showCustomerProfile(\'synthetic\')">真正客户档案页</button><div id="profile-list">合成列表</div><div id="profile-search-box">合成搜索</div><div id="profile-detail" style="display:none;padding:10px;max-width:100%;box-sizing:border-box"></div></body></html>');
-  await page.addScriptTag({ content: moduleSource + '\n' + modal + '\n' + archives + '\n' + profileDetail });
+  await page.addScriptTag({ content: moduleSource + '\n' + hairFormHelpers + '\n' + modal + '\n' + archives + '\n' + profileDetail });
   await page.evaluate(({ data, config }) => {
     window.esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     window.renderAiButton = () => '<button class="ai-btn" type="button">AI分析建议</button>';
@@ -81,7 +93,7 @@ async function setup(browser, width, config = {}) {
       if (operation === 'customer_design_save') {
         if (window.failSave) { window.failSave = false; throw new Error('synthetic save failed'); }
         const sameVisit = window.fixture.versions.filter(v => payload.booking_id ? String(v.booking_id) === String(payload.booking_id) : !v.booking_id && v.booking_date === payload.booking_date);
-        const version = { id: '00000000-0000-4000-8000-' + String(800 + window.saved.length).padStart(12, '0'), version_no: sameVisit.length + 1, previous_version_id: payload.expected_latest_version_id, booking_id: payload.booking_id, visit_id: payload.visit_id || 'manual:' + payload.booking_date, visit_key: payload.visit_key, booking_date: payload.booking_date, created_at: payload.booking_date + 'T05:00:00.000Z', baseline: payload.baseline, optimized: payload.optimized, reasons: payload.reasons, status: payload.status, source: 'manual', author: { name: '合成员工' }, shop_name: '自由手艺人', photos: payload.photo_ids.map(id => { const found = window.fixture.versions.flatMap(v => v.photos || []).find(p => p.id === id); return found || { id, stage: 'after', angle: 'right', mime_type: 'image/png' }; }) };
+        const version = { id: '00000000-0000-4000-8000-' + String(800 + window.saved.length).padStart(12, '0'), version_no: sameVisit.length + 1, previous_version_id: payload.expected_latest_version_id, booking_id: payload.booking_id, visit_id: payload.visit_id || 'manual:' + payload.booking_date, visit_key: payload.visit_key, booking_date: payload.booking_date, created_at: payload.booking_date + 'T05:00:00.000Z', baseline: payload.baseline, optimized: payload.optimized, reasons: payload.reasons, execution: payload.execution, process: payload.process, review: payload.review, status: payload.status, source: 'manual', author: { name: '合成员工' }, shop_name: '自由手艺人', photos: payload.photo_ids.map(id => { const found = window.fixture.versions.flatMap(v => v.photos || []).find(p => p.id === id); return found || { id, stage: 'after', angle: 'right', mime_type: 'image/png' }; }) };
         window.saved.push(JSON.parse(JSON.stringify(payload)));
         window.fixture.versions.unshift(version);
         return { saved: true, version, latest_version_id: version.id };
@@ -100,9 +112,9 @@ async function open(page, entry = 'appointment') {
   await page.locator('.cda-history .cda-visit').first().waitFor();
   await page.locator('.hair-archive-title').filter({ hasText: '消费记录' }).waitFor();
 }
-async function fill(page, group, key, value) {
-  const locator = page.locator('.cda-editor [data-group="' + group + '"][data-key="' + key + '"]');
-  await locator.evaluate(element => { const details = element.closest('details'); if (details) details.open = true; });
+async function fill(page, group, key, value, zone) {
+  const locator = page.locator('.cda-editor [data-group="' + group + '"][data-key="' + key + '"]' + (zone ? '[data-zone="' + zone + '"]' : ''));
+  await locator.evaluate(element => { let parent = element.parentElement; while (parent) { if (parent.tagName === 'DETAILS') parent.open = true; parent = parent.parentElement; } });
   await locator.fill(value);
 }
 async function upload(page, stage = 'after', angle = 'right') {
@@ -137,6 +149,18 @@ async function viewing(browser, width) {
     }
     assert((await latest.locator('.cda-outline').innerText()).includes('整体轮廓'));
     assert((await latest.locator('.cda-outline').innerText()).includes('发根毛流方向'));
+    assert.equal(await latest.locator('.cda-execution .cda-zone').count(), 6, 'six independent zones follow eight-step design');
+    for (const [index, label] of zoneLabels.entries()) {
+      const zone = latest.locator('.cda-execution .cda-zone').nth(index);
+      const content = await zone.innerText();
+      assert(content.includes(label), 'standard zone order includes ' + label);
+      for (const field of zoneFields) assert(content.includes(workflow.execution[zoneKeys[index]][field]), 'zone retains ' + field + ' for ' + label);
+    }
+    assert(await latest.locator('.cda-eight').evaluate(element => !!(element.compareDocumentPosition(element.closest('.cda-version-body').querySelector('.cda-execution')) & Node.DOCUMENT_POSITION_FOLLOWING)), 'six-zone execution is after the existing eight-step design');
+    assert.equal(await latest.locator('.cda-process').getAttribute('open'), null, 'ten-process reference stays folded for onsite scanning');
+    await latest.locator('.cda-process > summary').click();
+    for (const key of processKeys) assert((await latest.locator('.cda-process').innerText()).includes(workflow.process[key]), 'optional process note visible: ' + key);
+    assert((await latest.locator('.cda-review').innerText()).includes(workflow.review.achieved), 'completion review is direct alongside photo comparison');
     assert((await latest.locator('.cda-byline').innerText()).includes('合成员工 · 员工手动填写'));
     await latest.locator('.cda-photo-open').first().click();
     assert.equal(await page.locator('dialog.cda-viewer[open]').count(), 1, 'original photo opens enlarged');
@@ -145,6 +169,9 @@ async function viewing(browser, width) {
     assert.equal(await page.locator('dialog.cda-viewer').count(), 0, 'viewer cleans up');
     await page.locator('.cda-visit').nth(1).locator(':scope > summary').click();
     assert((await page.locator('.cda-visit').nth(1).innerText()).includes('2026-09-18'), 'past visit/revision is expandable');
+    assert.equal(await page.locator('.cda-visit').nth(1).locator('.cda-zone').count(), 0, 'legacy eight-step-only records do not acquire invented six-zone execution');
+    assert((await page.locator('.cda-visit').nth(1).locator('.cda-execution').innerText()).includes('尚未记录六区执行'));
+    assert((await page.locator('.cda-visit').nth(1).locator('.cda-review').innerText()).includes('尚未记录完成复盘'));
     const body = await page.locator('.plan-customer-body').innerText();
     assert(body.includes('合成五次剪发卡') && body.includes('剩4/5次') && body.includes('2027-12-31'), 'existing package, remaining balance and expiry retained');
     assert(body.includes('¥381.5') || body.includes('¥382'), 'consumption total retained with original rendering');
@@ -175,12 +202,19 @@ async function manualSave(browser, width, entry) {
     await fill(page, 'baseline', 'style', '自然知性');
     await fill(page, 'optimized', 'style', '自然知性增加少量柔美');
     await fill(page, 'reasons', 'style', '沟通后保留日常好打理');
+    await fill(page, 'execution', 'target', '人工顶区目标：适量支撑', 'top');
+    await fill(page, 'execution', 'check', '人工底区核对：肩颈比例', 'bottom');
+    await fill(page, 'process', 'proposal', '人工提案：八步与六区衔接');
+    await fill(page, 'review', 'achieved', '人工复盘：轮廓已核对');
     await upload(page);
     await fit(page, width);
     await page.evaluate(() => { window.failSave = true; });
     await page.locator('.cda-save-row button[type="submit"]').click();
     await page.waitForFunction(() => document.querySelector('.cda-draft-feedback')?.textContent.includes('synthetic save failed'));
     assert.equal(await page.locator('[data-group="baseline"][data-key="outline"]').inputValue(), '人工初判：纵向椭圆', 'failed save retains all text');
+    assert.equal(await page.locator('[data-group="execution"][data-zone="top"][data-key="target"]').inputValue(), '人工顶区目标：适量支撑', 'save failure retains six-zone execution');
+    assert.equal(await page.locator('[data-group="process"][data-key="proposal"]').inputValue(), '人工提案：八步与六区衔接');
+    assert.equal(await page.locator('[data-group="review"][data-key="achieved"]').inputValue(), '人工复盘：轮廓已核对');
     assert.equal(await page.locator('.cda-editor img[alt^="完成"]').count(), entry === 'appointment' ? 2 : 1, 'failed save retains picked files and existing after originals');
     const firstWrite = await page.evaluate(() => window.calls.find(call => call.operation === 'customer_design_save'));
     assert.equal(firstWrite.transport, 'authenticated-writer', 'save bypasses cached/retrying read wrapper');
@@ -211,6 +245,12 @@ async function manualSave(browser, width, entry) {
     assert.equal(saved.request_id, firstWrite.payload.request_id, 'explicit retry keeps same idempotency request');
     assert.equal(saved.baseline.outline, '人工初判：纵向椭圆');
     assert.equal(saved.optimized.steps.style, '自然知性增加少量柔美');
+    assert.equal(saved.execution.top.target, '人工顶区目标：适量支撑');
+    assert.equal(saved.execution.bottom.check, '人工底区核对：肩颈比例');
+    assert.equal(saved.process.proposal, '人工提案：八步与六区衔接');
+    assert.equal(saved.review.achieved, '人工复盘：轮廓已核对');
+    assert.deepEqual(Object.keys(saved.execution), zoneKeys, 'all six known zones have a stable stored shape');
+    if (entry === 'appointment') assert.equal(saved.execution.ear_back.actions, workflow.execution.ear_back.actions, 'untouched existing execution is retained when continuing the visit');
     assert(saved.photo_ids.length === (entry === 'appointment' ? 5 : 1), 'saved new version carries its precise photos');
     assert.equal(await page.evaluate(() => window.fixture.versions.length), 4, 'new save appends rather than overwriting prior states');
     assert.equal(await page.locator('.cda-version').count(), entry === 'appointment' ? 2 : 3, 'only the final design per visit remains in the customer view');
@@ -442,6 +482,66 @@ async function mobileViewerClose(browser) {
   } finally { await page.close(); }
 }
 
+async function hairFormLinkedVisit(browser, width) {
+  const { page, errors } = await setup(browser, width);
+  try {
+    assert(source.includes('id="hair-form-design-open"') && source.includes('openHairFormDesignArchive()'), 'actual hair-analysis form exposes the shared-design entry');
+    await page.evaluate(() => {
+      window._cloudRecordData = null;
+      window._editingHairId = null;
+      window._activeHairBookingContext = { bookingId: '900001', bookingDate: '2026-11-08', phone: '13800000000', name: '合成客户', barber: '合成员工' };
+      window.getHairRecords = () => [];
+      window.hairWrites = 0;
+      window.saveHairRecord = () => { window.hairWrites++; };
+      window.formAlerts = [];
+      window.alert = message => { window.formAlerts.push(String(message)); };
+      const form = document.createElement('section');
+      form.id = 'hair-source-form';
+      form.style.cssText = 'position:relative;z-index:99999;background:white';
+      form.innerHTML = '<input id="hair-form-name" value="合成客户"><input id="hair-form-phone" value="13800000000"><input id="hair-form-barber" value="合成员工"><textarea id="hair-form-perm-notes">发质分析表未保存的操作备注</textarea><button id="hair-form-design-open" onclick="openHairFormDesignArchive()">打开本次设计思路</button>';
+      document.body.appendChild(form);
+    });
+    await page.click('#hair-form-design-open');
+    await page.locator('#plan-modal .cda-visit').first().waitFor();
+    await page.locator('#plan-modal .hair-archive-title').filter({ hasText: '消费记录' }).waitFor();
+    assert.equal(await page.locator('#plan-modal.hair-form-design-modal').count(), 1, 'design opens above the existing hair form');
+    assert(await page.locator('.hair-design-return').isVisible(), 'onsite employee has a direct return to hair analysis');
+    const call = await page.evaluate(() => window.calls.find(item => item.operation === 'customer_design_history'));
+    assert.equal(String(call.payload.booking_id), '900001', 'real hair form entry reads the exact active booking');
+    assert.equal(call.payload.booking_date, '2026-11-08');
+    assert.equal(call.payload.visit_key, 'booking:900001');
+    assert.equal(call.payload.phone, '13800000000');
+    assert.equal(await page.evaluate(() => window.hairWrites), 0, 'opening design never implicitly saves hair-analysis business data');
+    const stack = await page.evaluate(() => ({ form: Number(getComputedStyle(document.querySelector('#hair-source-form')).zIndex), design: Number(getComputedStyle(document.querySelector('#plan-modal')).zIndex) }));
+    assert(stack.design > stack.form, 'shared archive remains operable above the source form');
+    await page.locator('#plan-modal .customer-read-scope').selectOption('all');
+    await page.locator('#plan-modal .cda-visit').first().waitFor();
+    assert.equal(await page.locator('#plan-modal.hair-form-design-modal .hair-design-return').count(), 1, 'scope reload preserves the hair-form return context');
+    await page.locator('[data-action="record"]').click();
+    await fill(page, 'execution', 'actions', '未保存的耳前执行动作', 'ear_front');
+    await upload(page);
+    await fit(page, width);
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.locator('.hair-design-return').click();
+    assert.equal(await page.locator('.cda-editor').count(), 1, 'return cancellation retains linked design draft');
+    assert.equal(await page.locator('[data-group="execution"][data-zone="ear_front"][data-key="actions"]').inputValue(), '未保存的耳前执行动作');
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('.hair-design-return').click();
+    assert.equal(await page.locator('#plan-modal,.cda').count(), 0, 'confirmed return destroys only the design modal');
+    assert.equal(await page.locator('#hair-form-perm-notes').inputValue(), '发质分析表未保存的操作备注', 'source form survives design entry/scope changes/return intact');
+    assert.equal(await page.evaluate(() => window.hairWrites), 0);
+    assert.equal(await page.evaluate(() => window.calls.filter(item => /customer_design_(save|upload)$/.test(item.operation)).length), 0, 'opening and discarding makes no design writes or uploads');
+    assert.equal(await page.evaluate(() => window.revokeCount), 1, 'discarded linked design releases only its local preview');
+    const priorCalls = await page.evaluate(() => window.calls.length);
+    await page.locator('#hair-form-phone').fill('13800000001');
+    await page.click('#hair-form-design-open');
+    assert.equal(await page.locator('#plan-modal').count(), 0, 'edited identity cannot open a different customer under the old appointment');
+    assert.equal(await page.evaluate(() => window.calls.length), priorCalls, 'identity mismatch is stopped before network lookup');
+    assert((await page.evaluate(() => window.formAlerts.at(-1))).includes('不一致'));
+    assert.equal(errors.length, 0, 'hair-form linked entry has no runtime errors: ' + errors.join(', '));
+  } finally { await page.close(); }
+}
+
 let browser;
 (async () => {
   browser = await chromium.launch({ headless: true });
@@ -455,6 +555,7 @@ let browser;
     await check('appointment/manual save ' + width, () => manualSave(browser, width, 'appointment'));
     await check('customer archive/manual visit ' + width, () => manualSave(browser, width, 'customer'));
     await check('actual customer profile/manual visit ' + width, () => manualSave(browser, width, 'profile'));
+    await check('hair analysis shares exact design visit ' + width, () => hairFormLinkedVisit(browser, width));
     for (const mode of ['empty', 'three-after', 'same-visit-fallback']) {
       await check('completion inline ' + mode + ' ' + width, () => completionInline(browser, width, mode));
     }
