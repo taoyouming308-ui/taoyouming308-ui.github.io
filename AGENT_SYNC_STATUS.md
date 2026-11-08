@@ -1,3 +1,10 @@
+## 2026-11-08 · Humidity-state aesthetic case (App version: v641 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main 53ac7628b56ea09b8964a10eed230faf196bd8a2; clean focused `content/aesthetic-2026-11-08` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing v641 six-zone release and all thirty-one earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-08` case separates visible indoor current fall from fictional zonal hair properties and customer-reported humidity response. Conditional A/B compare photo-first geometric straightness with humidity-resilient structure; six answers and five unscored self-checks include three-minute styling, controlled micro-damp simulation, real commute, first wash, fourth week and eighth week without inventing user completion.
+- Original 1774×887 AI WebP shows only one fictional adult's current front/two true profiles/back shoulder-grazing lob in ordinary indoor air-dried condition, not humid-weather deformation, a proposed bob, straightening, perm, makeover or verified future result. No real customer, measured anatomy/density/diameter/porosity, verified damage, climate performance, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-08 · Six-zone execution candidate (App version: v641)
 
 - Current owner: Codex. Last synchronized base checked: github/main a8b790f928f8f49f14451a41462a357f66ab9a74 (v640). Starting version/integrity/handoff checks passed; daily recovery archive confirmed before edits.

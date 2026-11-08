@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-11-08",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "53ac7628b56ea09b8964a10eed230faf196bd8a2",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, porosity, climate response or that the proposed humidity-resilient haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional indoor-versus-humid-state design case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-one earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible indoor current fall is separated from fictional zonal hair properties, customer-reported humidity response and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; humidity-resilient B is a conditional first test, not the only valid answer",
+      "Three-minute styling, controlled micro-damp simulation, real commute, first wash, fourth week and eighth week are included",
+      "No fixed chemical formula, temperature, straightening claim, personality/occupation inference, real-client data, climate guarantee or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Regional diameter, density, porosity, chemical history, humidity response, proposed cut and future results are case conditions or future checks, not image-proven outcomes",
+      "Controlled micro-damp testing does not prove performance in real weather and is explicitly followed by real-commute review",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-08-humidity-state-design.webp",
+    "sha256": "a9f36ae1a8451fcb626656bb0439d2a09c34540f30afce2c7e834068ba47624b",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 1774x887 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Photorealistic-natural four-panel contact sheet of the same fictional adult East Asian woman in her current indoor air-dried shoulder-grazing lob: true front, exact left profile, exact right profile and back; complete crown, baseline, neck and shoulders; quiet crown, mostly straight outer layer, irregular shallow C/S bends in inner and lower sections, mixed ends touching shoulders; identical olive-gray top and neutral salon background; current state only, no humid-state simulation or makeover."
+  },
+  "feedSha256": "426609b0c290042157e6498da2b9d531757480865b5091768b96fed0d2fef821",
+  "caseCanonicalSha256": "154094797820b76e64bf76f770105446d79cc843d2a1a49b20943187219ebaac",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-08 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v641 before editing; complete daily backup created",
+    "contentContract": "passed locally: thirty-two cases; thirty-one previous parsed objects preserved",
+    "browserGate": "attempted locally; Playwright browser download was truncated by the network proxy and the available system Chromium cannot create its process socket in the managed sandbox, so no local browser pass is claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "version, release integrity, smoke, academy publisher, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, Meiguanjia sync, aesthetic system/study/coach, 53 private-sync Python tests, agent handoff and other non-browser/non-Docker checks passed locally; Docker/PostgreSQL, browser and pinned-Node manifest gates remain for exact-head protected CI"
+  }
+}
