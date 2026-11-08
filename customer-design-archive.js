@@ -163,7 +163,7 @@
       if (el) { const tools=el.querySelector('.cda-conflict-tools'); el.textContent = message; if(tools)el.appendChild(tools); el.classList.toggle('cda-error',!!error); }
     }
     function startDraft() {
-      const previous = state.versions.find(v=>options.bookingId?String(v.booking_id || '')===String(options.bookingId):String(v.visit_key || 'manual:'+v.booking_date)===state.visitKey);
+      const previous = state.versions.find(v=>options.bookingId?String(v.booking_id || '')===String(options.bookingId):!v.booking_id && String(v.visit_key || 'manual:'+v.booking_date)===state.visitKey);
       const latest = previous || null;
       state.draft = {baseline:model(latest && latest.baseline),optimized:model(latest && latest.optimized),reasons:clone(latest && latest.reasons || {}),photos:clone(latest && latest.photos || []),booking_date:text(options.bookingDate || localDate()).slice(0,10),visit_key:state.visitKey,status:latest && latest.status || 'baseline',expected:latest?latest.id:state.latest,dirty:false,contentDirty:false,requestId:uuid()};
       state.conflict = false; state.notice = ''; render();

@@ -139,6 +139,7 @@ async function viewing(browser, width) {
     await latest.locator('.cda-photo-open').first().click();
     assert.equal(await page.locator('dialog.cda-viewer[open]').count(), 1, 'original photo opens enlarged');
     await page.locator('dialog.cda-viewer button').click();
+    await page.locator('dialog.cda-viewer').waitFor({ state: 'detached' });
     assert.equal(await page.locator('dialog.cda-viewer').count(), 0, 'viewer cleans up');
     await page.locator('.cda-visit').nth(1).locator(':scope > summary').click();
     await page.locator('.cda-visit').nth(1).locator('.cda-version > summary').click();
