@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-08"
+  ],
+  "baseSha": "a074388d42ad21a2693f5645a26034e2fde087f0",
+  "inputHeadSha": "9f9a46534e67ba81b5ebd01bbb1204d27b4679d7",
+  "preparedHeadSha": "703bcd8683b78831e715522a7e6ef384161994c3",
+  "preparationRun": 42431982221,
+  "preparationArtifact": 13598520721,
+  "preparationArtifactSha256": "32339d4bc1f2213045b1ddbf3920f0120758d3c2ed78375811758db2e0fa7bf0",
+  "backupArtifact": 13597956005,
+  "preparationBackupZipSha256": "18c3f3d31af99db8099cc9f839ea25ca4f0b5bde6f189427e59dd15a0da51b0c",
+  "preparationBackupArchiveSha256": "08b6a73ce9e45003f089b6ab16bd2ebd361b1941399fec7e980b078d63054055",
+  "baselinePreflightRun": 42431398877,
+  "baselineBackupArtifact": 13596953818,
+  "baselineBackupZipSha256": "8f3b39030223a8a025c292b5982399870933bf64e892b1ebb5486b2b4c2346e1",
+  "baselineBackupArchiveSha256": "a4cbf556601f799e71c7c37ca013922bc53f88ff69b68296e92d933cf826c12d",
+  "contentBindingSha256": "5feb1e3c6d831a197bd6ab738cb6e046149dff84b64be4c10b9b696efe0eb73f",
+  "reviewedAt": "2026-11-08T00:55:31.436Z",
+  "verifiedAt": "2026-11-08T01:05:02.141Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 26,
+    "allTwentyFivePreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "实际下载并SHA256核对不可变基线预检artifact ZIP及tar归档、云端准备备份ZIP及tar归档、prepared report；从已验证prepared head逐个回读10份文本文件并逐字节SHA256核对；检验draft canonical SHA256与review记录、三幅原创SVG digest、目录26条倒序无重复、回退HTML完整链接及提交范围。此记录不表示Pages已上线。"
+  },
+  "fileSha256": {
+    "academy/2026-11-08.html": "eceed61e9765227ff7e34a22bd79de1832c33a2a30908c2b12f878e1acb7232e",
+    "academy/catalog.json": "ceaf97d2aa50dee5da0ccbd5951928d1b34dde6257c120109fa3bb63ace15b56",
+    "academy/index.html": "4b4621d38ad4f7fe4e94b194218a24c0a7da642f69881efd5a29b97ab79ad991",
+    "academy/drafts/2026-11-08.json": "80dd01f926c3c7878d469148e9a7bd02be0a7fa148a78e2eb34a04b70b5e6818",
+    "academy/reviews/2026-11-08.json": "e02210a264ff38f87e3aaefc5e8bf755bb8a9dcc85fb140b79a442595a251419",
+    "academy/assets/2026-11-08/figure1.svg": "3a5ea4d68c1000c211afc77c7d4a3207b152dcb6e60d89f8eb1618f7c6dcb4cd",
+    "academy/assets/2026-11-08/figure2.svg": "06730474a0ab73a8cca54b9064d834ef1f4a793514280d12189bec1e19897b21",
+    "academy/assets/2026-11-08/figure3.svg": "ae50234b2af11b1550f13b6713c6fc743187a00a1d5430a11defac5dac6390f0",
+    "AGENT_SYNC_STATUS.md": "4d18c9e5bf94173c32e26b534500dbfd7b2a37a2f11b484edfe043c0a4917aca",
+    "CHANGELOG.md": "fc6137789f916e0638cbbd0323984f96bec8348bd4cebed99cc15e3df042f2e6"
+  },
+  "remaining": [
+    "Exact-final-head Validate shared app / validate success",
+    "Exact-final-head Academy publication preflight / backup-main success",
+    "All other protected checks and main/head recheck",
+    "expected_head_sha normal merge after removing draft",
+    "Actual Pages full catalog and all lesson/image SHA256 readback"
+  ]
+}

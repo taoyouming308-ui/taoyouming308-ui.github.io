@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-08",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-08本轮AI课程编辑；执行来源原刊核查、著作权/隐私审核；非真人导师、非独立同行评审）",
+  "reviewedAt": "2026-11-08T00:55:31.436Z",
+  "approvalReference": "2026-11-08本轮实际核对Wiley 2024年DVS研究 DOI 10.1111/ics.13028、Wiley 2025年AFM/DVS研究 DOI 10.1111/ics.13061 与SAGE 2003年湿度弯曲实验 DOI 10.1177/0006355X2003040004002；逐项核对不外推为真人药剂、热、时间；原创3张SVG是静态教学图，无脚本/隐私/外部版权。此记录仅是本轮AI内容、来源与版权审核，不代表人类或独立专家批准，也不代表真实服务安全许可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-08实际核对Wiley原刊、首发2024-11-11、DOI 10.1111/ics.13028、DVS原始研究和厂家作者背景；研究非真人法式烫。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-08核对Wiley原刊、DOI、日期和AFM+DVS原始毛发微结构测量；标注企业研发样本及模型外推限制。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-08核对SAGE原刊公开摘要、首次发表2003年7月、弯曲松弛实验、模型外推限制。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-08本轮ChatGPT编辑使用基本静态SVG图元独立绘制，逐项核对仅包含安全路径、圆形、矩形及文字；未复制外部图片，无真人/顾客数据、商标、脚本、外链、远程资源或虚构实验数据。非真人烫发效果证据。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-08本轮ChatGPT编辑使用基本静态SVG图元独立绘制，逐项核对仅包含安全路径、圆形、矩形及文字；未复制外部图片，无真人/顾客数据、商标、脚本、外链、远程资源或虚构实验数据。非真人烫发效果证据。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-08本轮ChatGPT编辑使用基本静态SVG图元独立绘制，逐项核对仅包含安全路径、圆形、矩形及文字；未复制外部图片，无真人/顾客数据、商标、脚本、外链、远程资源或虚构实验数据。非真人烫发效果证据。"
+    }
+  ],
+  "contentSha256": "db2a9edfd2d0b064cafee0bb0cf87ff46c6d0a3247c1e42a9689bfbcf9156c44",
+  "assetSha256": {
+    "assets/2026-11-08/figure1.svg": "3a5ea4d68c1000c211afc77c7d4a3207b152dcb6e60d89f8eb1618f7c6dcb4cd",
+    "assets/2026-11-08/figure2.svg": "06730474a0ab73a8cca54b9064d834ef1f4a793514280d12189bec1e19897b21",
+    "assets/2026-11-08/figure3.svg": "ae50234b2af11b1550f13b6713c6fc743187a00a1d5430a11defac5dac6390f0"
+  }
+}
