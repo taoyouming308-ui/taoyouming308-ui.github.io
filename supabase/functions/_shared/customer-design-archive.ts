@@ -18,6 +18,10 @@ export class CustomerDesignError extends Error {
 }
 const OPS = new Set(['customer_design_history', 'customer_design_save', 'customer_design_upload', 'customer_design_photo_urls']);
 const KEYS = ['style', 'person', 'length', 'features', 'layers', 'bangs', 'curls', 'care'];
+const ZONES = ['bangs', 'top', 'ear_front', 'ear_back', 'middle', 'bottom'];
+const ZONE_FIELDS = ['issue', 'target', 'actions', 'check'];
+const PROCESS_FIELDS = ['care_texture', 'styling', 'style_feel', 'application', 'winding', 'rod_direction', 'curl_control', 'thinning_space', 'proposal', 'technique_layers'];
+const REVIEW_FIELDS = ['achieved', 'pending', 'next'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const BUCKET = 'customer-design-photos';
 export const MAX_DESIGN_PHOTO_BYTES = 8 * 1024 * 1024;
@@ -56,6 +60,7 @@ async function rpc(deps: DesignDependencies, fn: string, body: Row): Promise<any
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = String(result.message || '');
+    if (/CUSTOMER_DESIGN_CLIENT_UPGRADE_REQUIRED/.test(detail)) fail('这份档案已有新的六区执行记录，请在方便时更新 App 后再保存；当前草稿和照片已保留', 409, 'DESIGN_CLIENT_UPGRADE_REQUIRED');
     if (/DESIGN_CONFLICT|latest.version|最新版本|version.conflict/i.test(detail) || result.code === '40001') fail('已有新版本，请读取最新档案后再保存', 409, 'DESIGN_CONFLICT');
     if (/IDEMPOTENCY|request.*conflict|request.*reuse|重复请求|幂等/i.test(detail)) fail('同一请求编号的内容发生变化，请核对后重试', 409, 'DESIGN_REQUEST_CONFLICT');
     if (['42501', 'P0002'].includes(result.code) || /scope|identity|binding|mismatch|not.found|denied|forbidden|expired|invalid.*grant|门店|身份|绑定|过期/i.test(detail)) fail('客户、预约或访问范围未通过核对', 403, 'DESIGN_SCOPE_DENIED');
@@ -128,8 +133,37 @@ function archiveURL(value: unknown): string | null {
   } catch (_) { /* reject below */ }
   return fail('协作档案链接无效');
 }
+function workflowObject(value: unknown, keys: string[]): Row {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(k => !keys.includes(k))) fail('执行与复盘内容的字段无效');
+  return value as Row;
+}
+function workflowText(value: unknown, keys: string[]): Row {
+  const v = workflowObject(value, keys), result: Row = {};
+  for (const key of keys) {
+    if (Object.hasOwn(v, key) && typeof v[key] !== 'string') fail('执行与复盘内容必须为文字');
+    if (String(v[key] || '').length > 4000) fail('执行与复盘的单项内容过长');
+    result[key] = text(v[key]);
+  }
+  return Object.values(result).some(Boolean) ? result : {};
+}
+function workflowExecution(value: unknown): Row {
+  const v = workflowObject(value, ZONES), result: Row = {};
+  let meaningful = false;
+  for (const zone of ZONES) {
+    const fields = workflowText(Object.hasOwn(v, zone) ? v[zone] : {}, ZONE_FIELDS);
+    meaningful ||= Object.keys(fields).length > 0;
+    result[zone] = Object.fromEntries(ZONE_FIELDS.map(key => [key, fields[key] || '']));
+  }
+  return meaningful ? result : {};
+}
 function snapshot(payload: Row): Row {
   const baseline = model(payload.baseline), optimized = model(payload.optimized), reasons: Row = {};
+  const workflow: Row = {};
+  // Keep missing distinct from an explicit empty object: old clients must not
+  // erase workflow data that was entered with a newer App version.
+  if (Object.hasOwn(payload, 'execution')) workflow.execution = workflowExecution(payload.execution);
+  if (Object.hasOwn(payload, 'process')) workflow.process = workflowText(payload.process, PROCESS_FIELDS);
+  if (Object.hasOwn(payload, 'review')) workflow.review = workflowText(payload.review, REVIEW_FIELDS);
   for (const key of ['outline', 'root_flow', ...KEYS]) {
     const a = KEYS.includes(key) ? baseline.steps[key] : baseline[key];
     const b = KEYS.includes(key) ? optimized.steps[key] : optimized[key];
@@ -142,10 +176,10 @@ function snapshot(payload: Row): Row {
   if (!['baseline', 'optimizing', 'confirmed', 'completed', 'followup'].includes(payload.status)) fail('设计状态无效');
   if (!Array.isArray(payload.photo_ids) || payload.photo_ids.length > 30) fail('照片列表无效');
   if (!Object.hasOwn(payload, 'expected_latest_version_id')) fail('缺少版本核对条件');
-  return { baseline, optimized, reasons, status: payload.status, photo_ids: [...new Set(payload.photo_ids.map(uuid))], request_id: uuid(payload.request_id), expected_latest_version_id: payload.expected_latest_version_id === null ? null : uuid(payload.expected_latest_version_id), archive_url: archiveURL(payload.archive_url) };
+  return { baseline, optimized, reasons, ...workflow, status: payload.status, photo_ids: [...new Set(payload.photo_ids.map(uuid))], request_id: uuid(payload.request_id), expected_latest_version_id: payload.expected_latest_version_id === null ? null : uuid(payload.expected_latest_version_id), archive_url: archiveURL(payload.archive_url) };
 }
 const ASSET_FIELDS = 'id,request_id,customer_profile_id,booking_id,booking_date,visit_key,store,stage,angle,bucket,path,mime_type,byte_size,sha256,filename,caption,source,author,created_at';
-const VERSION_FIELDS = 'id,request_id,customer_profile_id,booking_id,booking_date,visit_key,store,version_no,previous_version_id,status,baseline,optimized,reasons,photo_ids,source,author,created_at,archive_url';
+const VERSION_FIELDS = 'id,request_id,customer_profile_id,booking_id,booking_date,visit_key,store,version_no,previous_version_id,status,baseline,optimized,reasons,execution,process,review,photo_ids,source,author,created_at,archive_url';
 function storeFilter(stores: string[]): string { return 'store=in.' + enc('(' + stores.map(value => JSON.stringify(value)).join(',') + ')'); }
 function isVisibleAsset(asset: Row, actor: Row): boolean {
   return Number(asset.customer_profile_id) === actor.context.customer_profile_id && actor.stores.includes(asset.store) &&

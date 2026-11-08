@@ -99,6 +99,41 @@ async function rejects(fn,code,status){await assert.rejects(fn,e=>e instanceof a
  await run('authorized original links are signed for five minutes only',async()=>{const f=fixture();await api.handleCustomerDesign(upload(),session,f.deps);const r=await api.handleCustomerDesign({...common,operation:'customer_design_photo_urls',asset_ids:[A]},session,f.deps);assert.equal(r.assets[0].expires_in,300);assert.ok(r.assets[0].url.startsWith('https://synthetic.supabase.co/storage/v1/object/sign/customer-design-photos/'));});
  await run('ingest cannot sign another visit even for same person',async()=>{const f=fixture();const r=await api.handleCustomerDesign(upload(),session,f.deps);f.assets[0]={...r.asset,booking_id:11,visit_key:'booking:11'};await rejects(()=>api.handleCustomerDesign({...common,operation:'customer_design_photo_urls',asset_ids:[A],ingest_token:'s'.repeat(64)},null,f.deps),'DESIGN_PHOTO_SCOPE_DENIED',403);});
  await run('current visit cannot reference a previous visit photo',async()=>{const f=fixture();const r=await api.handleCustomerDesign(upload(),session,f.deps);f.assets[0]={...r.asset,booking_id:11,visit_key:'booking:11'};await rejects(()=>api.handleCustomerDesign({...draft(),photo_ids:[A]},session,f.deps),'DESIGN_PHOTO_SCOPE_DENIED',403);});
+ await run('six-zone execution, process and review survive save and history readback',async()=>{
+  const f=fixture(),p={...draft(),execution:{top:{issue:' 顶区偏塌 ',target:'适度支撑',actions:'保留表层长度',check:'自然落发后核对'}},process:{proposal:' 八步后六区 ',styling:'手吹'},review:{achieved:'轮廓更清楚',pending:'洗后待核对',next:'复查支撑'}};
+  const saved=await api.handleCustomerDesign(p,session,f.deps);
+  assert.equal(saved.version.execution.top.issue,'顶区偏塌');assert.equal(saved.version.execution.top.actions,'保留表层长度');
+  assert.deepEqual(Object.keys(saved.version.execution),['bangs','top','ear_front','ear_back','middle','bottom']);
+  assert.deepEqual(saved.version.execution.bottom,{issue:'',target:'',actions:'',check:''});
+  assert.equal(Object.keys(saved.version.process).length,10);assert.equal(saved.version.process.proposal,'八步后六区');assert.equal(saved.version.review.pending,'洗后待核对');
+  const history=await api.handleCustomerDesign({...common,operation:'customer_design_history'},session,f.deps);
+  assert.deepEqual(history.versions[0].execution,saved.version.execution);assert.deepEqual(history.versions[0].process,saved.version.process);assert.deepEqual(history.versions[0].review,saved.version.review);
+  assert.ok(f.calls.some(c=>c[0]==='read'&&c[1].includes('reasons,execution,process,review,photo_ids')));
+ });
+ await run('legacy omission remains missing while explicit empty workflow is retained',async()=>{
+  const a=fixture();await api.handleCustomerDesign(draft(),session,a.deps);
+  const legacy=a.calls.find(c=>c[1]==='rpc/append_customer_design_version')[2].p_payload;
+  for(const key of ['execution','process','review'])assert.equal(Object.hasOwn(legacy,key),false);
+  const b=fixture();await api.handleCustomerDesign({...draft(),execution:{top:{target:' '}},process:{},review:{achieved:''}},session,b.deps);
+  const explicit=b.calls.find(c=>c[1]==='rpc/append_customer_design_version')[2].p_payload;
+  for(const key of ['execution','process','review'])assert.deepEqual(explicit[key],{});
+ });
+ await run('unknown workflow keys and non-text values are rejected before persistence',async()=>{
+  for(const change of [
+   {execution:null},{execution:[]},{execution:{unknown:{target:'x'}}},{execution:{top:null}},
+   {execution:{top:[]}},{execution:{top:{unknown:'x'}}},{execution:{top:{target:null}}},{execution:{top:{check:7}}},
+   {process:null},{process:[]},{process:{unknown:'x'}},{process:{styling:1}},
+   {review:null},{review:[]},{review:{unknown:'x'}},{review:{achieved:{nested:'x'}}}
+  ]){const f=fixture();await rejects(()=>api.handleCustomerDesign({...draft(),...change},session,f.deps),'DESIGN_INVALID');assert.equal(f.calls.filter(c=>c[1]==='rpc/append_customer_design_version').length,0);}
+ });
+ await run('all new workflow text fields enforce the same size boundary',async()=>{
+  for(const change of [{execution:{bottom:{actions:'x'.repeat(4001)}}},{process:{application:'x'.repeat(4001)}},{review:{next:'x'.repeat(4001)}}])await rejects(()=>api.handleCustomerDesign({...draft(),...change},session,fixture().deps),'DESIGN_INVALID');
+  const f=fixture();assert.equal((await api.handleCustomerDesign({...draft(),execution:{top:{target:'x'.repeat(4000)}}},session,f.deps)).saved,true);
+ });
+ await run('legacy-client workflow protection returns a private structured upgrade conflict',async()=>{
+  const f=fixture();f.rpcError={code:'22023',message:'CUSTOMER_DESIGN_CLIENT_UPGRADE_REQUIRED private SQL'};
+  await assert.rejects(()=>api.handleCustomerDesign(draft(),session,f.deps),e=>e.code==='DESIGN_CLIENT_UPGRADE_REQUIRED'&&e.status===409&&e.message.includes('草稿')&&!e.message.includes('private SQL'));
+ });
  await run('API dispatch confines import tokens before legacy auth routes',async()=>{const source=fs.readFileSync(resolve(__dirname,'../supabase/functions/employee-bookings-api/index.ts'),'utf8');assert.ok(source.indexOf('payload.ingest_token !== undefined && !isCustomerDesignOperation')<source.indexOf('if (operation === "login")'));assert.ok(source.includes('payload.ingest_token !== undefined ? null : await requireEmployeeSession(payload)'));assert.ok(source.includes('error instanceof CustomerDesignError'));});
  console.log(`${tests} customer design API boundary tests passed (synthetic only)`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

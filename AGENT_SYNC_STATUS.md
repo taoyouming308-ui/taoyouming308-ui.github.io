@@ -1,3 +1,11 @@
+## 2026-11-08 · Six-zone execution candidate (App version: v641)
+
+- Current owner: Codex. Last synchronized base checked: github/main a8b790f928f8f49f14451a41462a357f66ab9a74 (v640). Starting version/integrity/handoff checks passed; daily recovery archive confirmed before edits.
+- Eight design elements retain baseline/optimized/reasons; additive execution/process/review snapshots implement the user-confirmed six zones, optional ten-process reference and completion review. No old five-zone remapping or invented customer facts.
+- Hair analysis opens the same explicit appointment-backed design archive with identity/date checks; the unsaved diagnosis form stays in place. Manual staff entry and protected ChatGPT imports share the contract.
+- Immutable history, private original photos, scope guards, CAS and request replay remain required. Old clients may not silently omit existing workflow fields; explicit empty objects can clear only the new snapshot.
+- Focused local syntax/identity/import checks and exact-head protected CI are required before publication; real browser/PostgreSQL checks run in the existing complete GitHub publication gate. No customer snapshot or original-byte mutation is part of this release.
+
 <!-- academy-reviewed-inputs:5feb1e3c6d831a197bd6ab738cb6e046149dff84b64be4c10b9b696efe0eb73f -->
 ## 2026-11-08 · Reviewed academy publication candidate (App version: v638 unchanged)
 

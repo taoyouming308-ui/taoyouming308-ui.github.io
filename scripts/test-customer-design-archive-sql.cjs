@@ -39,6 +39,19 @@ const register = p => `select public.register_customer_design_asset(${body(p)},'
   const sourceState=sql("select jsonb_build_object('profiles',(select jsonb_agg(p order by id) from customer_profiles p),'bookings',(select jsonb_agg(b order by id) from bookings b));");
   const migration=fs.readFileSync('supabase/migrations/20261108052541_customer_design_archive.sql','utf8');
   sql(migration);sql(migration);
+  // Save through the original RPC before upgrading, then verify byte-for-byte legacy state.
+  const preUpgradePayload=version({booking_id:null,booking_date:'2025-12-24'});
+  const preUpgrade=json(append(preUpgradePayload)).version;
+  const preUpgradeState=sql(`select to_jsonb(v) from customer_design_versions v where id=${q(preUpgrade.id)};`);
+  const extensionPath=fs.readdirSync('supabase/migrations').find(name=>name.endsWith('_customer_design_six_zone_execution.sql'));
+  assert.ok(extensionPath,'six-zone additive migration is required');
+  const extension=fs.readFileSync('supabase/migrations/'+extensionPath,'utf8');
+  sql(extension);sql(extension);
+  assert.equal(sql(`select to_jsonb(v)-'execution'-'process'-'review' from customer_design_versions v where id=${q(preUpgrade.id)};`),preUpgradeState,'upgrade does not rewrite legacy rows or hashes');
+  const legacyReplay=json(append(preUpgradePayload));
+  assert.equal(legacyReplay.already_applied,true);assert.equal(legacyReplay.version.id,preUpgrade.id);
+  for(const key of ['execution','process','review']) assert.deepEqual(legacyReplay.version[key],{});
+  assert.equal(json(append({...preUpgradePayload,execution:{},process:{},review:{}})).already_applied,true,'explicit empty extensions retain legacy hash');
   assert.equal(sql("select public::text||':'||file_size_limit::text from storage.buckets where id='customer-design-photos';"),'false:8388608');
   assert.equal(sql("select count(*) from pg_class where oid in ('customer_design_versions'::regclass,'customer_design_assets'::regclass,'customer_design_ingest_grants'::regclass) and relrowsecurity;"),'3');
   for(const role of ['anon','authenticated']){
@@ -108,8 +121,39 @@ const register = p => `select public.register_customer_design_asset(${body(p)},'
   const chat=json(`select append_customer_design_version(${body(version({customer_profile_id:2,booking_id:201}))},'Not an impersonated employee','chatgpt');`).version;
   assert.equal(chat.author,'ChatGPT');assert.equal(chat.source,'chatgpt');
   assert.equal(sql("select jsonb_build_object('profiles',(select jsonb_agg(p order by id) from customer_profiles p),'bookings',(select jsonb_agg(b order by id) from bookings b));"),sourceState,'source identities, booking and finance-style notes untouched');
+  // New fields are private immutable snapshots, never inferred from legacy five-zone notes.
+  const extensionVisit={booking_id:null,booking_date:'2026-02-01'};
+  const legacyPayload=version(extensionVisit), legacy=json(append(legacyPayload)).version;
+  const zones=['bangs','top','ear_front','ear_back','middle','bottom'];
+  const extensionPayload=version({...extensionVisit,expected_latest_version_id:legacy.id,status:'completed',execution:{top:{issue:' Flat ',target:'Lift',actions:'Preserve surface',check:'Natural dry'}},process:{care_texture:'Soft',styling:'Hand dry'},review:{achieved:'Lift visible',pending:'First wash',next:'Review later'}});
+  const extended=json(append(extensionPayload)).version;
+  assert.deepEqual(Object.keys(extended.execution).sort(),zones.sort());
+  for(const zone of zones) assert.deepEqual(Object.keys(extended.execution[zone]).sort(),['issue','target','actions','check'].sort());
+  assert.equal(extended.execution.top.issue,'Flat');assert.equal(extended.execution.bangs.actions,'');
+  assert.equal(Object.keys(extended.process).length,10);assert.equal(extended.process.styling,'Hand dry');
+  assert.equal(Object.keys(extended.review).length,3);assert.equal(extended.review.pending,'First wash');
+  assert.equal(json(append(extensionPayload)).already_applied,true,'same normalized extension request is idempotent');
+  assert.equal(json(append(legacyPayload)).already_applied,true,'old request replay survives a newer extended version');
+  failure(append({...extensionPayload,review:{achieved:'Changed result'}}),/REQUEST_REUSED/);
+  failure(append({...extensionPayload,execution:{top:{actions:'Changed action'}}}),/REQUEST_REUSED/);
+  failure(append({...extensionPayload,process:{styling:'Changed routine'}}),/REQUEST_REUSED/);
+  const fresh=extra=>version({...extensionVisit,expected_latest_version_id:extended.id,execution:extended.execution,process:extended.process,review:extended.review,...extra});
+  for(const key of ['execution','process','review']) {
+    const missing=fresh({});delete missing[key];failure(append(missing),/CLIENT_UPGRADE_REQUIRED/);
+  }
+  for(const extra of [{execution:[]},{execution:null},{execution:{unknown:{}}},{execution:{top:[]}},{execution:{top:null}},{execution:{top:{unknown:'discard me'}}},{execution:{top:{actions:4}}},{execution:{top:{check:null}}},{process:[]},{process:{unknown:'discard me'}},{process:{styling:3}},{review:null},{review:{unknown:'discard me'}},{review:{next:false}}]) failure(append(fresh(extra)),/OBJECT_REQUIRED|UNKNOWN_ZONE|UNKNOWN_KEY|TEXT_REQUIRED/);
+  for(const extra of [{execution:{top:{actions:'x'.repeat(4001)}}},{process:{styling:'x'.repeat(4001)}},{review:{pending:'x'.repeat(4001)}}]) failure(append(fresh(extra)),/TEXT_TOO_LONG/);
+  failure(append(fresh({expected_latest_version_id:legacy.id})),/VERSION_CONFLICT/);
+  const extendedState=sql(`select to_jsonb(v) from customer_design_versions v where id=${q(extended.id)};`);
+  const cleared=json(append(fresh({execution:{top:{issue:'  '}},process:{styling:' '},review:{achieved:' '}}))).version;
+  for(const key of ['execution','process','review']) assert.deepEqual(cleared[key],{},'explicit empty documents deliberately clear only new snapshot');
+  assert.equal(sql(`select to_jsonb(v) from customer_design_versions v where id=${q(extended.id)};`),extendedState,'later clear does not change historical execution');
+  const explicitCleared=json(append(version({...extensionVisit,expected_latest_version_id:cleared.id,execution:{},process:{},review:{}}))).version;
+  assert.equal(explicitCleared.version_no,cleared.version_no+1);
+  for(const role of ['anon','authenticated']) for(const call of ["select customer_design_private.execution_document('{}');","select customer_design_private.optional_text_document('{}',array['a']);"]) failure(`set role ${role};${call}`,/permission denied/);
+  assert.equal(json(`set role service_role;select customer_design_private.execution_document(${body({top:{actions:'Keep'}})});`).top.actions,'Keep');
   sql('delete from bookings where id=101;');
   assert.equal(sql("select count(*) from customer_design_versions where booking_id=101;"),'3','historical designs survive normal upstream appointment cleanup');
-  console.log('Customer design SQL passed: private ACLs/bucket, identity and visit scope, grant expiry/revocation, idempotent uploads, all8step reasons, immutable before/after originals, old snapshots, per-visit concurrency and history preservation.');
+  console.log('Customer design SQL passed: private ACLs/bucket, identity and visit scope, grant expiry/revocation, idempotent uploads, all8step reasons, six-zone/process/review normalization and legacy hash/upgrade protection, immutable before/after originals, old snapshots, per-visit concurrency and history preservation.');
  } finally {if(started)docker(['rm','--force',container]);}
 })().catch(error=>{console.error(error.stack||error.message);process.exitCode=1;});
