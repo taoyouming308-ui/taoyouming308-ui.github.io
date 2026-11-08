@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="638">
+<html lang="zh-CN" data-version="639">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,7 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=638" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=639" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=639">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3161,13 +3162,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=638"></script>
-<script defer src="aesthetic-study.js?v=638"></script>
-<script defer src="aesthetic-daily.js?v=638"></script>
-<script defer src="hair-calculator-dialog.js?v=638"></script>
-<script src="aesthetic-knowledge.v1.js?v=638"></script>
-<script src="hair-vision-training.v1.js?v=638"></script>
-<script src="aesthetic-growth.v2.js?v=638"></script>
+<script src="employee-reports.js?v=639"></script>
+<script src="customer-design-archive.js?v=639"></script>
+<script defer src="aesthetic-study.js?v=639"></script>
+<script defer src="aesthetic-daily.js?v=639"></script>
+<script defer src="hair-calculator-dialog.js?v=639"></script>
+<script src="aesthetic-knowledge.v1.js?v=639"></script>
+<script src="hair-vision-training.v1.js?v=639"></script>
+<script src="aesthetic-growth.v2.js?v=639"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6477,6 +6479,7 @@ function initApp() {
         if (!response.ok || data.error) {
           var error = new Error(data.error || ('请求失败 (' + response.status + ')'));
           error.status = response.status;
+          error.code = data.code || '';
           throw error;
         }
         return data;
@@ -7170,18 +7173,29 @@ function initApp() {
   var _profileCache = {};
   window.showPlanModal = function(phone, name, barberName, bookingDate, bookingId) {
     var old = document.getElementById('plan-modal');
-    if (old) old.remove();
+    if (old) {
+      if (old._customerDesignArchive && old._customerDesignArchive.hasUnsavedChanges && old._customerDesignArchive.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定离开这份记录吗？')) return false;
+      if (old._customerDesignArchive && old._customerDesignArchive.destroy) old._customerDesignArchive.destroy();
+      old.remove();
+    }
     var div = document.createElement('div');
     div.className = 'plan-modal';
     div.id = 'plan-modal';
     var scope = getCustomerReadScope();
-    div.innerHTML = '<div class="box"><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
+    div.innerHTML = '<div class="box"><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="customer-design-root"></div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
     div.querySelector('.customer-read-scope').value = scope;
     div.querySelector('.customer-read-scope').addEventListener('change', function(event) {
       window._customerReadScope = event.target.value;
-      showPlanModal(phone, name, barberName, bookingDate, bookingId);
+      if (showPlanModal(phone, name, barberName, bookingDate, bookingId) === false) {
+        window._customerReadScope = scope;
+        event.target.value = scope;
+      }
     });
     document.body.appendChild(div);
+    div._customerDesignArchive = mountCustomerDesignArchive(div.querySelector('.customer-design-root'), {
+      phone: phone, name: name, barberName: barberName, bookingId: bookingId,
+      bookingDate: bookingDate || getLocalDateStr(), scope: scope
+    });
 
     // 共享档案统一走登录保护的云端接口；本地方案接口没有门店范围契约。
     Promise.resolve().then(function(){
@@ -7348,7 +7362,7 @@ function initApp() {
           // 上次消费项目（从notes取）
           var lastService = '';
           var rowsWithNotes = (rows || []).filter(function(r){ return r.notes; });
-          if (rowsWithNotes.length > 0) lastService = rowsWithNotes[0].notes;
+          if (rowsWithNotes.length > 0) lastService = customerNonDesignNotes(rowsWithNotes[0].notes);
           if (lastService) {
             htmlContent += '<div class="row" style="border-bottom:none;"><span class="label">📋 上次项目</span><span class="val" style="font-weight:400;">'+esc(lastService)+'</span></div>';
           }
@@ -7469,8 +7483,31 @@ function initApp() {
 
   window.closePlanModal = function() {
     var m = document.getElementById('plan-modal');
-    if (m) m.remove();
+    if (m) {
+      if (m._customerDesignArchive && m._customerDesignArchive.hasUnsavedChanges && m._customerDesignArchive.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定关闭吗？')) return;
+      if (m._customerDesignArchive && m._customerDesignArchive.destroy) m._customerDesignArchive.destroy();
+      m.remove();
+    }
   };
+
+  function mountCustomerDesignArchive(container, context) {
+    if (!container) return null;
+    if (!window.CustomerDesignArchive || typeof window.CustomerDesignArchive.mount !== 'function') {
+      container.innerHTML = '<section class="hair-archive-section"><h3>设计思路</h3><p>设计档案组件暂未加载，请稍后重新打开。</p></section>';
+      return null;
+    }
+    return window.CustomerDesignArchive.mount(container, Object.assign({}, context, {
+      barberName: (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || context.barberName,
+      api: function(operation, payload) {
+        var body = Object.assign({}, payload || {}, {
+          session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token
+        });
+        // Writes never enter read-flight deduplication or automatic retries.
+        return operation === 'customer_design_save' || operation === 'customer_design_upload'
+          ? employeeBookingsRequest(operation, body) : employeeBookingsApi(operation, body);
+      }
+    }));
+  }
 
   function getCustomerReadScope() {
     return window._customerReadScope === 'store' ? 'store' : 'all';
@@ -8423,6 +8460,12 @@ function initApp() {
     return list;
   }
 
+  function customerNonDesignNotes(value) {
+    return String(value || '').split(' | ').filter(function(part) {
+      return !/^\s*\[ChatGPT设计档案 预约\d+\]/.test(part);
+    }).join(' | ');
+  }
+
   function summarizeCustomerProfiles(profileRows) {
     var summary = { visits: 0, consumption: 0, lastVisit: '', avgTicket: 0, notes: [] };
     var seenNotes = {};
@@ -8431,9 +8474,10 @@ function initApp() {
       summary.consumption += Number(row.total_consumption || 0) || 0;
       var last = row.last_visit_date ? String(row.last_visit_date).slice(0, 16) : '';
       if (last && last > summary.lastVisit) summary.lastVisit = last;
-      if (row.notes && !seenNotes[row.notes]) {
-        seenNotes[row.notes] = true;
-        summary.notes.push(row.notes);
+      var nonDesignNotes = customerNonDesignNotes(row.notes);
+      if (nonDesignNotes && !seenNotes[nonDesignNotes]) {
+        seenNotes[nonDesignNotes] = true;
+        summary.notes.push(nonDesignNotes);
       }
     });
     summary.avgTicket = summary.visits > 0 ? Math.round(summary.consumption / summary.visits) : 0;
@@ -8475,7 +8519,7 @@ function initApp() {
     if (summary.consumption > 0) rows.push([scoped ? '已同步金额' : '总消费', '¥' + Math.round(summary.consumption)]);
     if (summary.avgTicket > 0) rows.push(['均消', '¥' + summary.avgTicket]);
     if (summary.lastVisit) rows.push(['最后到店', summary.lastVisit]);
-    if (summary.notes.length) rows.push(['备注', summary.notes.join(' / ')]);
+    if (summary.notes.length) rows.push(['客户备注', summary.notes.join(' / ')]);
     var updated = profileRows.map(function(row){ return row.last_updated || ''; }).filter(Boolean).sort().pop();
     if (updated && !isNaN(new Date(updated).getTime())) rows.push(['资料更新', new Date(updated).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai', hour12:false})]);
     var html = rows.length ? hairArchiveInfoRows(rows) : '';
@@ -12679,15 +12723,25 @@ function initApp() {
     var groups = window._profileGroups;
     if (!groups || !groups[phone]) return;
     var g = groups[phone];
+    var existingDetail = document.getElementById('profile-detail');
+    if (existingDetail && existingDetail._customerDesignArchive) {
+      var existingDesign = existingDetail._customerDesignArchive;
+      if (existingDesign.hasUnsavedChanges && existingDesign.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定离开这份记录吗？')) return;
+      if (existingDesign.destroy) existingDesign.destroy();
+      existingDetail._customerDesignArchive = null;
+    }
+    var requestSeq = window._profileDetailLoadSeq = (window._profileDetailLoadSeq || 0) + 1;
     document.getElementById('profile-list').style.display = 'none';
     document.getElementById('profile-search-box').style.display = 'none';
     var detailEl = document.getElementById('profile-detail');
     detailEl.style.display = 'block';
     detailEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">正在加载完整消费和套餐记录...</div>';
     fetchCustomerProfileRows(g.phone, g.name, 2000).then(function(rows) {
+      if (requestSeq !== window._profileDetailLoadSeq) return;
       if (rows && rows.length) g.profileRows = rows;
       renderCustomerProfileDetail(g);
     }).catch(function() {
+      if (requestSeq !== window._profileDetailLoadSeq) return;
       renderCustomerProfileDetail(g);
     });
   };
@@ -12701,6 +12755,7 @@ function initApp() {
     html += '</div>';
     html += '<div style="font-size:16px;font-weight:700;color:var(--accent);">' + esc(name) + '</div>';
     html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">' + esc(g.phone || '') + (g.phone ? ' · ' : '') + g.records.length + '条发质记录</div>';
+    html += '<div class="customer-design-profile-root"></div>';
 
     var consumptionArchive = renderCustomerConsumptionArchive(g.profileRows || []);
     var packagesArchive = renderCustomerPackagesArchive(g.profileRows || []);
@@ -12792,9 +12847,24 @@ function initApp() {
       html += '</div>';
     }
     detailEl.innerHTML = html;
+    var ownProfiles = (g.profileRows || []).filter(function(row) {
+      return AUTHENTICATED_STAFF && row.shop_name === AUTHENTICATED_STAFF.store;
+    });
+    detailEl._customerDesignArchive = mountCustomerDesignArchive(detailEl.querySelector('.customer-design-profile-root'), {
+      phone: g.phone, name: name, customerId: ownProfiles.length === 1 ? ownProfiles[0].id : undefined,
+      bookingDate: getLocalDateStr(), scope: getCustomerReadScope()
+    });
   }
 
   window.backToProfileList = function() {
+    var detailEl = document.getElementById('profile-detail');
+    if (detailEl && detailEl._customerDesignArchive) {
+      var design = detailEl._customerDesignArchive;
+      if (design.hasUnsavedChanges && design.hasUnsavedChanges() && !window.confirm('设计尚未保存，确定返回列表吗？')) return;
+      if (design.destroy) design.destroy();
+      detailEl._customerDesignArchive = null;
+    }
+    window._profileDetailLoadSeq = (window._profileDetailLoadSeq || 0) + 1;
     document.getElementById('profile-list').style.display = '';
     document.getElementById('profile-search-box').style.display = '';
     document.getElementById('profile-detail').style.display = 'none';
@@ -13118,7 +13188,7 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=638"></script>
-<script defer src="app-shell-client.js?v=638"></script>
+<script defer src="data-read-client.js?v=639"></script>
+<script defer src="app-shell-client.js?v=639"></script>
 </body>
 </html>

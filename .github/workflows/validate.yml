@@ -95,6 +95,14 @@ jobs:
           node scripts/test-customer-profile-modal-browser.js
       - name: Protect backend workflows
         run: node scripts/test-admin-workflow.js
+      - name: Protect versioned customer design archives
+        run: |
+          node scripts/test-customer-profile-scope.mjs
+          node scripts/test-customer-design-api.cjs
+          node scripts/test-customer-design-archive-sql.cjs
+          node scripts/test-customer-design-archive-browser.js
+          node scripts/test-customer-design-integration-browser.cjs
+          python3 -m unittest scripts/test_import_customer_design_archive.py
       - name: Protect admin customer archive access
         run: node scripts/test-customer-admin-api.js
       - name: Protect booking page UI
@@ -124,5 +132,17 @@ jobs:
         run: python3 -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py scripts/test_sync_mgj_daily_consumption.py scripts/test_backfill_mgj_daily_consumption_2026.py
       - name: Validate Codex and Hermes handoff
         run: node scripts/check-agent-sync-status.js
+      - name: Run complete shared publication gate
+        run: |
+          git remote add github https://github.com/${{ github.repository }}.git
+          sh .githooks/pre-push
       - name: Reject whitespace errors
         run: git diff --check HEAD^ HEAD
+      - name: Retain synthetic design archive previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: customer-design-browser-previews
+          path: /tmp/customer-design-*.png
+          if-no-files-found: ignore
+          retention-days: 1

@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { CustomerDesignError, handleCustomerDesign, isCustomerDesignOperation } from "../_shared/customer-design-archive.ts";
 import { mergeEmployeeBookingRows } from "../_shared/employee-booking-merge.mjs";
 import { customerProfileStoreFilter, scopeCustomerProfile, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
 
@@ -218,6 +219,19 @@ Deno.serve(async (request: Request) => {
   try { payload = await request.json(); } catch { return json({ error: "请求格式错误" }, 400); }
   const operation = cleanText(payload.operation, 40);
   try {
+    // Scoped import tokens never participate in employee/login operations.
+    if (payload.ingest_token !== undefined && !isCustomerDesignOperation(operation)) {
+      return json({ error: "导入授权不可用于其他操作", code: "DESIGN_INGEST_DENIED" }, 403);
+    }
+    if (isCustomerDesignOperation(operation)) {
+      const designSession = payload.ingest_token !== undefined ? null : await requireEmployeeSession(payload);
+      return json(await handleCustomerDesign(payload, designSession, {
+        rest, restRows, supabaseUrl: SUPABASE_URL,
+        storage: (path: string, init: RequestInit = {}) => fetch(`${SUPABASE_URL}/storage/v1${path}`, {
+          ...init, headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, ...(init.headers || {}) },
+        }),
+      }));
+    }
     if (operation === "login") {
       for (const key of [`employee:${cleanText(payload.username,80).toLowerCase()}`, `employee-client:${request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"}`]) {
         const gate = await rest("rpc/staff_access_rate_limit", {method:"POST",body:JSON.stringify({p_key_hash:await sha256(key),p_max_attempts:key.startsWith('employee-client:')?120:20})});
@@ -235,6 +249,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "customer_hair_records") return json(await customerHairRecords(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
+    if (error instanceof CustomerDesignError) return json({ error: error.message, code: error.code }, error.status);
     const message = (error as Error).message || "请求失败";
     const authError = /登录|账号|姓名|密码|审核|停用|门店已变化/.test(message);
     return json({ error: message }, authError ? 403 : 400);
