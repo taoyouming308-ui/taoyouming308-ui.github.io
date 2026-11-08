@@ -3801,3 +3801,10 @@ Independent AI content/visual review binds exact case/image/feed hashes; not hum
 - Focused PostgreSQL 17/API/importer/browser tests and full shared pre-push are required before publication. Deploy additive migration and compatible API before the UI, then normal protected PR with exact-head Validate shared app, merge and live Pages readback. Preparation alone is not publication.
 - Real service imports must preserve original bytes and source statuses; no fabricated completed results or incidental salon chatter. Each future save appends a version; do not rewrite customer notes with growing design transcripts.
 - Focused local API (35), importer (21), existing employee/customer scope and cached Deno type checks passed. The managed workspace sandbox denies Docker/browser execution; the protected GitHub validation runner executes the identical complete `.githooks/pre-push` gate, including PostgreSQL 17 and browser tests, before merge. No local gate success is claimed without those results.
+
+
+## 2026-11-08 · Inline completion gallery (App version: v640)
+
+- Current owner: Codex. Last synchronized base checked: github/main d05d958064e34bb0a2c677f4964b6f11800a306a, published v639. The customer-design v639 protected CI, complete publication gate, Pages deployment and live source hashes passed; private originals and completed results were separately imported and verified. An additional tracked-source v639 backup precedes this release.
+- User requested an always-visible completion section beneath original views. Added the empty-state panel, all uploaded completion angles inline, and explicitly labelled same-visit fallback only for its latest version. Historical snapshots and other visits stay isolated; no production database/API/finance changes in this follow-up.
+- Added mobile/tablet integration coverage for empty completion, three completion views and same-visit fallback. Full protected exact-head validation, normal merge and live Pages readback remain required for v640. Do not report preparation as publication.

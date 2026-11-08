@@ -66,7 +66,7 @@ async function file(page,name='original.png') {
     await first.locator('.cda-version').first().locator('img').nth(2).waitFor();
     assert((await first.locator('.cda-version').first().innerText()).includes('第 2 版'),'latest revision first');
     assert.equal(await first.locator('.cda-version').first().locator('.cda-photo-group').first().locator('img').count(),3,'three before originals');
-    assert((await first.innerText()).includes('完成照片'),'after photo is distinct');
+    assert((await first.innerText()).includes('完成效果'),'after photo is distinct');
     assert((await first.innerText()).includes('初始判断') && (await first.innerText()).includes('优化方案') && (await first.innerText()).includes('减少横向体积'),'baseline, optimization and reasons visible');
     assert.equal(await first.locator('.cda-version').first().locator('.cda-eight .cda-compare').count(),8,'eight steps');
     assert((await first.innerText()).includes('合成员工乙 · ChatGPT 协作'),'source and author visible');

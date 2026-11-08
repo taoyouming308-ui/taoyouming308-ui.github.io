@@ -3,7 +3,7 @@
   'use strict';
   const STEPS = [['style','风格'],['person','人物'],['length','长度'],['features','发型特点'],['layers','层次'],['bangs','刘海'],['curls','卷度'],['care','打理']];
   const STATUS = {baseline:'初始判断',optimizing:'设计优化中',confirmed:'方案已确认',completed:'服务已完成',followup:'回访记录'};
-  const STAGE = {before:'原始照片',after:'完成照片',reference:'参考图'};
+  const STAGE = {before:'原始照片',after:'完成效果',reference:'参考图'};
   const ANGLE = {front:'正面',back:'背面',left:'左侧',right:'右侧',detail:'局部'};
   const MAX_BYTES = 8 * 1024 * 1024;
   const TYPES = ['image/jpeg','image/png','image/webp'];
@@ -50,17 +50,35 @@
       return result;
     }
     function meaningful(value) { return esc(text(value).trim() || '待填写'); }
-    function photosMarkup(photos,editable) {
+    function visitIdentity(version) {
+      if (version.visit_key) return String(version.visit_key);
+      if (version.booking_id != null && version.booking_id !== '') return 'booking:'+version.booking_id;
+      if (version.visit_id) return 'visit:'+version.visit_id;
+      return version.booking_date || version.service_date ? 'manual:'+(version.booking_date || version.service_date) : 'record:'+version.id;
+    }
+    function displayedVersionPhotos(version) {
+      const photos=version.photos || [],key=visitIdentity(version);
+      if (photos.some(p=>p.stage==='after')) return {photos};
+      const latest=state.versions.find(v=>visitIdentity(v)===key);
+      if (!latest || latest.id!==version.id) return {photos};
+      const completed=state.versions.find(v=>visitIdentity(v)===key && (v.photos || []).some(p=>p.stage==='after'));
+      return completed ? {photos:photos.concat(completed.photos.filter(p=>p.stage==='after')),completionSource:'沿用本次服务第 '+(completed.version_no || '1')+' 版完成照片'} : {photos};
+    }
+    function versionPhotosMarkup(version) {
+      const display=displayedVersionPhotos(version);
+      return photosMarkup(display.photos,false,display.completionSource);
+    }
+    function photosMarkup(photos,editable,completionSource) {
       return Object.keys(STAGE).map(stage => {
         const list = (photos || []).filter(p => p.stage === stage);
-        if (!list.length && !editable && stage !== 'before') return '';
+        if (!list.length && !editable && stage === 'reference') return '';
         const count = stage === 'before' ? ' · 建议正面、背面、侧面各一张' : '';
-        return '<div class="cda-photo-group"><h5>'+STAGE[stage]+(editable?'<span>'+count+'</span>':'')+'</h5>'+(list.length ? '<div class="cda-photos">'+list.map((p,index) => {
+        return '<div class="cda-photo-group" data-stage="'+stage+'"><h5>'+STAGE[stage]+(editable?'<span>'+count+'</span>':'')+'</h5>'+(stage==='after' && completionSource?'<p class="cda-completion-source">'+esc(completionSource)+'</p>':'')+(list.length ? '<div class="cda-photos">'+list.map((p,index) => {
           const src = p.file && /^blob:/.test(p.local_url || '') ? p.local_url : state.urls.get(p.id) || '';
           const label = (ANGLE[p.angle] || '其他角度') + (p.file && !p.id ? ' · 待保存' : '');
           const meta=editable && p.file && !p.id?'<label class="cda-photo-meta">类别<select data-photo-meta="stage" data-local-id="'+esc(p.local_id)+'">'+Object.keys(STAGE).map(k=>'<option value="'+k+'"'+(p.stage===k?' selected':'')+'>'+STAGE[k]+'</option>').join('')+'</select></label><label class="cda-photo-meta">角度<select data-photo-meta="angle" data-local-id="'+esc(p.local_id)+'">'+Object.keys(ANGLE).map(k=>'<option value="'+k+'"'+(p.angle===k?' selected':'')+'>'+ANGLE[k]+'</option>').join('')+'</select></label>':'';
           return '<figure class="cda-photo">'+(src ? '<button type="button" class="cda-photo-open" data-photo="'+esc(p.id || p.local_id)+'" aria-label="放大'+esc(STAGE[stage]+' '+label)+'"><img loading="lazy" data-asset-id="'+esc(p.id || '')+'" src="'+esc(src)+'" alt="'+esc(STAGE[stage]+' '+label)+'"></button>' : '<button type="button" class="cda-photo-placeholder" data-photo="'+esc(p.id || p.local_id)+'">点击载入原图</button>')+'<figcaption>'+esc(label)+'</figcaption>'+meta+(editable?'<button type="button" class="cda-remove" data-remove-photo="'+esc(p.id || p.local_id)+'">移出本版</button>':'')+'</figure>';
-        }).join('')+'</div>' : '<p class="cda-muted">'+(stage==='before'?'尚未上传原始照片。':'尚未上传。')+'</p>')+'</div>';
+        }).join('')+'</div>' : '<p class="cda-muted'+(stage==='after'?' cda-after-empty':'')+'">'+(stage==='before'?'尚未上传原始照片。':stage==='after'?'尚未上传完成照。':'尚未上传。')+'</p>')+'</div>';
       }).join('');
     }
     function comparison(version) {
@@ -73,7 +91,7 @@
     }
     function versionMarkup(version,open) {
       const link = chatLink(version.archive_url || version.chatgpt_url);
-      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '设计记录')+' <small>第 '+esc(version.version_no || '1')+' 版</small></span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+photosMarkup(version.photos,false)+'</div>'+comparison(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
+      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '设计记录')+' <small>第 '+esc(version.version_no || '1')+' 版</small></span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
     }
     function historyMarkup() {
       if (!state.versions.length) return '<div class="cda-empty"><p>还没有结构化设计记录</p><span>上传原始照片，按八步填写初始判断；沟通后再记录优化方案。</span></div>';
@@ -140,9 +158,9 @@
       if (!el.open || state.destroyed) return;
       const id=el.dataset.versionId,version=state.versions.find(v=>String(v.id)===id);
       if (!version || state.signing.has(id))return;
-      const work=signPhotos(version.photos || []);state.signing.set(id,work);await work;state.signing.delete(id);
+      const work=signPhotos(displayedVersionPhotos(version).photos);state.signing.set(id,work);await work;state.signing.delete(id);
       if(state.destroyed || !root.contains(el))return;
-      const target=el.querySelector('.cda-version-photos');if(target)target.innerHTML=photosMarkup(version.photos,false);
+      const target=el.querySelector('.cda-version-photos');if(target)target.innerHTML=versionPhotosMarkup(version);
     }
     function toggle(event) {if(event.target.matches('.cda-version[open]'))loadVersionPhotos(event.target);}
     async function imageError(event) {

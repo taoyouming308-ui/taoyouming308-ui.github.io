@@ -125,7 +125,7 @@ async function viewing(browser, width) {
     assert.equal(await page.locator('.cda-version').count(), 3, 'every saved revision remains in DOM');
     await latest.locator('img[alt^="原始照片"]').nth(2).waitFor();
     assert.equal(await latest.locator('.cda-photo-group').filter({ has: page.locator('h5', { hasText: '原始照片' }) }).locator('img').count(), 3, 'front, back, side originals appear in App');
-    assert.equal(await latest.locator('img[alt^="完成照片"]').count(), 1, 'after stage remains distinct');
+    assert.equal(await latest.locator('img[alt^="完成"]').count(), 1, 'after stage remains distinct');
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.cda-version[open] img')).every(img => img.complete && img.naturalWidth > 0));
     assert.equal(await latest.locator('.cda-eight .cda-compare').count(), 8, 'eight design steps are individually shown');
     for (const [index, label] of labels.entries()) {
@@ -180,7 +180,7 @@ async function manualSave(browser, width, entry) {
     await page.locator('.cda-save-row button[type="submit"]').click();
     await page.waitForFunction(() => document.querySelector('.cda-draft-feedback')?.textContent.includes('synthetic save failed'));
     assert.equal(await page.locator('[data-group="baseline"][data-key="outline"]').inputValue(), '人工初判：纵向椭圆', 'failed save retains all text');
-    assert.equal(await page.locator('.cda-editor img[alt^="完成照片"]').count(), entry === 'appointment' ? 2 : 1, 'failed save retains picked files and existing after originals');
+    assert.equal(await page.locator('.cda-editor img[alt^="完成"]').count(), entry === 'appointment' ? 2 : 1, 'failed save retains picked files and existing after originals');
     const firstWrite = await page.evaluate(() => window.calls.find(call => call.operation === 'customer_design_save'));
     assert.equal(firstWrite.transport, 'authenticated-writer', 'save bypasses cached/retrying read wrapper');
     assert.equal(firstWrite.payload.session_token, 'synthetic-session-only', 'session attached by real modal adapter');
@@ -314,6 +314,68 @@ async function longArchiveLazyPhotos(browser) {
   } finally { await page.close(); }
 }
 
+
+async function completionInline(browser, width, mode) {
+  const { page, errors } = await setup(browser, width);
+  try {
+    await page.evaluate(mode => {
+      const versions = window.fixture.versions;
+      const after = ['front', 'back', 'left'].map((angle, index) => ({
+        id: 'completion-' + mode + '-' + index, stage: 'after', angle,
+        bucket: 'customer-design-originals', path: 'synthetic/completion-' + index + '.png', mime_type: 'image/png'
+      }));
+      // An older visit has an after photo in every fixture, to detect accidental cross-visit fallback.
+      versions[2].photos = versions[2].photos.filter(photo => photo.stage !== 'after').concat({
+        id: 'different-visit-after', stage: 'after', angle: 'front', mime_type: 'image/png'
+      });
+      versions[0].photos = versions[0].photos.filter(photo => photo.stage !== 'after');
+      versions[1].photos = versions[1].photos.filter(photo => photo.stage !== 'after');
+      if (mode === 'three-after') versions[0].photos.push(...after);
+      if (mode === 'same-visit-fallback') versions[1].photos.push(...after);
+    }, mode);
+    // Exercise real customer page as well as the real appointment modal. No design/history click occurs.
+    await open(page, width === 390 ? 'profile' : 'appointment');
+    const visit = page.locator('.cda-visit').first();
+    const latest = visit.locator('.cda-version').first();
+    assert.equal(await visit.getAttribute('open'), '', 'latest visit is expanded initially');
+    assert.equal(await latest.getAttribute('open'), '', 'latest revision is expanded initially');
+    const original = latest.locator('.cda-photo-group[data-stage="before"]');
+    const completed = latest.locator('.cda-photo-group[data-stage="after"]');
+    assert.equal(await completed.count(), 1, 'one permanent completion area per snapshot');
+    assert.equal(await completed.locator('h5').innerText(), '完成效果');
+    assert(await completed.isVisible(), 'completion area is visible without entering another page or expanding revision');
+    assert(await original.evaluate((element) => {
+      const after = element.parentElement.querySelector('.cda-photo-group[data-stage="after"]');
+      return !!after && !!(element.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }), 'completion area follows original photos on the same page');
+    if (mode === 'empty') {
+      assert.equal(await completed.locator('img').count(), 0, 'an earlier visit never supplies this visit completion photos');
+      assert(await completed.locator('.cda-after-empty').isVisible(), 'unuploaded completion has a visible placeholder');
+      assert((await completed.innerText()).includes('尚未上传完成照'));
+      assert.equal(await completed.locator('.cda-completion-source').count(), 0);
+    } else {
+      await completed.locator('img').nth(2).waitFor();
+      assert.equal(await completed.locator('img').count(), 3, 'all completed front/back/side photos are inline');
+      for (const angle of ['正面', '背面', '左侧']) {
+        assert(await completed.locator('img[alt$="' + angle + '"]').isVisible(), 'completed ' + angle + ' is visible without a click');
+      }
+      assert.equal(await completed.locator('.cda-after-empty').count(), 0);
+      if (mode === 'same-visit-fallback') {
+        assert(/第\s*1\s*版/.test(await completed.locator('.cda-completion-source').innerText()), 'fallback clearly names the saved version in the same visit');
+        assert.equal(await page.evaluate(() => window.fixture.versions[0].photos.filter(photo => photo.stage === 'after').length), 0, 'display fallback never mutates latest immutable snapshot');
+        assert.equal(await page.evaluate(() => window.fixture.versions[1].photos.filter(photo => photo.stage === 'after').length), 3, 'earlier completion snapshot remains intact');
+      }
+    }
+    const calls = await page.evaluate(() => window.calls);
+    assert.equal(calls.filter(call => /customer_design_(save|upload)$/.test(call.operation)).length, 0, 'viewing completion never creates or repeats records');
+    assert(!calls.filter(call => call.operation === 'customer_design_photo_urls').some(call => call.payload.asset_ids.includes('different-visit-after')), 'latest rendering never signs another visit after photo');
+    assert.equal(await page.locator('.cda-version').count(), 3, 'every original revision is retained');
+    assert.equal(await page.locator('.cda-visit').count(), 2, 'visits remain separate');
+    await fit(page, width);
+    assert.equal(errors.length, 0, 'no completion render runtime errors: ' + errors.join(', '));
+  } finally { await page.close(); }
+}
+
 let browser;
 (async () => {
   browser = await chromium.launch({ headless: true });
@@ -327,6 +389,9 @@ let browser;
     await check('appointment/manual save ' + width, () => manualSave(browser, width, 'appointment'));
     await check('customer archive/manual visit ' + width, () => manualSave(browser, width, 'customer'));
     await check('actual customer profile/manual visit ' + width, () => manualSave(browser, width, 'profile'));
+    for (const mode of ['empty', 'three-after', 'same-visit-fallback']) {
+      await check('completion inline ' + mode + ' ' + width, () => completionInline(browser, width, mode));
+    }
   }
   await check('long archive lazy original photos', () => longArchiveLazyPhotos(browser));
   await check('actual profile back guard and response race', () => profileReturnAndRace(browser));
