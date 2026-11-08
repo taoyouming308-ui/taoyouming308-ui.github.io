@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-08",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "a074388d42ad21a2693f5645a26034e2fde087f0",
+  "purpose": "Request protected Academy publication preflight backup-main before submitting any lesson drafts, reviews or assets.",
+  "reviewed": false,
+  "lessonInputsSubmitted": false,
+  "notes": "Preparation marker only. No scientific review, editorial approval, generated lesson, merge or Pages publication asserted. Wait for verified SHA-bound immutable main backup and artifact."
+}
