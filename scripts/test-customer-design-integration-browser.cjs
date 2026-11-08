@@ -70,7 +70,7 @@ async function setup(browser, width, config = {}) {
       if (operation === 'customer_design_history') {
         if (window.failHistory) throw new Error('synthetic history unavailable');
         const versions = window.fixture.versions;
-        const current = versions.find(v => payload.booking_id ? String(v.booking_id) === String(payload.booking_id) : v.visit_key === payload.visit_key); 
+        const current = versions.find(v => payload.booking_id ? String(v.booking_id) === String(payload.booking_id) : v.visit_key === payload.visit_key);
         return { versions, visit_key: payload.visit_key, customer_profile_id: window.activeProfile, latest_version_id: current ? current.id : null, can_write: !config.otherStore, writable: !config.otherStore, editable: !config.otherStore, read_only: !!config.otherStore, shop_name: config.otherStore ? '向里造型' : '自由手艺人', store: config.otherStore ? '向里造型' : '自由手艺人' };
       }
       if (operation === 'customer_design_photo_urls') return { assets: payload.asset_ids.map(id => ({ id, url: 'https://synthetic.invalid/storage/v1/object/sign/customer-design-originals/' + id + '.png?token=synthetic' })) };
