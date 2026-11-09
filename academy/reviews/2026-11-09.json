@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-09",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-09本轮AI课程编辑；执行来源、版权及隐私审核；非人类导师、非独立同行评审）",
+  "reviewedAt": "2026-11-09T00:32:10.815Z",
+  "approvalReference": "本轮实际核对2026-11-02原始研究DOI 10.1111/ics.70142、10.1111/ics.70143、10.1111/ics.70098之原刊/PMC页面、日期、研究方法、行业资助和外推边界；3幅原创SVG经本轮内容/版权/隐私检查，不包含真实顾客、第三方图像、可执行内容或不实测量。该批准仅为当前AI内容审核，不冒充人类专业审核或真人安全许可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-09本轮已检查原刊/PMC与DOI、发表日期、摘要和适用范围：核验2026-11-02发表于International Journal of Cosmetic Science，DOI 10.1111/ics.70142，原始单纤维疲劳与一次拉伸比较；TRI联盟获多家公司资助，针对高卷曲毛发，外推有限。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-09本轮已检查原刊/PMC与DOI、发表日期、摘要和适用范围：核验2026-11-02发表于International Journal of Cosmetic Science，DOI 10.1111/ics.70143；多位美国、南非受试者毛发的疲劳测试，存在卷曲类型趋势与同类型内显著个体差异；行业联合赞助。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-09本轮已检查原刊/PMC与DOI、发表日期、摘要和适用范围：核验2026-11-02发表于International Journal of Cosmetic Science，DOI 10.1111/ics.70098；受控Walker 4高卷曲毛束湿梳峰值阻力及重复梳理断发实验，操作员和样本限制明确，企业联合资助。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-09本轮原创SVG静态节点检查，未复制外图、无真人隐私、无脚本/链接/远程依赖，内容与教学一一对应。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-09本轮原创SVG静态节点检查，未复制外图、无真人隐私、无脚本/链接/远程依赖，内容与教学一一对应。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-09本轮原创SVG静态节点检查，未复制外图、无真人隐私、无脚本/链接/远程依赖，内容与教学一一对应。"
+    }
+  ],
+  "contentSha256": "67e3b6be22815c1bdec3f9e193444fb5fbc41f25b88ad1356cee3a77e5006a79",
+  "assetSha256": {
+    "assets/2026-11-09/figure1.svg": "e5e47a3e497dcded3b70b25125282c1a884501068c061fa9e4324ad5925a0ff0",
+    "assets/2026-11-09/figure2.svg": "59ea39f51ffcc77ac43697c4c5ae7d3b32deef3d98d5bd68314d604f274cb503",
+    "assets/2026-11-09/figure3.svg": "02a8b310b6d1ce967c6d04ffc5062397e0b66a041039a59b388bb3663ac85402"
+  }
+}
