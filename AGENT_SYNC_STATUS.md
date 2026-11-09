@@ -1,2698 +1,186 @@
-<!-- academy-reviewed-inputs:f69ecbf680ec3bc8aaa6c37bf130781ceb7dcf5aedb1f6690b47753c633dc417 -->
-## 2026-11-09 · Reviewed academy publication candidate (App version: v641 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 5a31e6090a78a16338305c2999782e1cc0994287.
-- Dates: 2026-11-09. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-11-09 · Helmet/headset recovery aesthetic case (App version: v641 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main fa5c5b3a63fe8fa8139ed8a91113586069f91e8d; clean focused `content/aesthetic-2026-11-09` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing same-day academy publication and all thirty-two earlier aesthetic cases remain preserved.
-- One stable `aesthetic-2026-11-09` case separates visible current male proportions from fictional zonal hair properties, customer-confirmed reference goal, helmet commute, over-ear headset pressure, two-minute routine and six-to-eight-week maintenance. Conditional A/B compare photo-first Korean styling with a recoverable structural base; six answers and five unscored self-checks include natural/formal/helmet/headset states, first wash, third week and eighth week without inventing user completion.
-- Original 2172×724 AI WebP shows only one fictional adult man's current front/two true profiles/back grown-out medium-short haircut in ordinary indoor fall, not the undisplayed reference, proposed cut, styling result, equipment-pressure simulation or future state. No real customer, measured anatomy/density/diameter, verified occupation/personality, pressure recovery, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
-
-## 2026-11-08 · Humidity-state aesthetic case (App version: v641 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 53ac7628b56ea09b8964a10eed230faf196bd8a2; clean focused `content/aesthetic-2026-11-08` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing v641 six-zone release and all thirty-one earlier aesthetic cases remain preserved.
-- One stable `aesthetic-2026-11-08` case separates visible indoor current fall from fictional zonal hair properties and customer-reported humidity response. Conditional A/B compare photo-first geometric straightness with humidity-resilient structure; six answers and five unscored self-checks include three-minute styling, controlled micro-damp simulation, real commute, first wash, fourth week and eighth week without inventing user completion.
-- Original 1774×887 AI WebP shows only one fictional adult's current front/two true profiles/back shoulder-grazing lob in ordinary indoor air-dried condition, not humid-weather deformation, a proposed bob, straightening, perm, makeover or verified future result. No real customer, measured anatomy/density/diameter/porosity, verified damage, climate performance, occupation, personality, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
-
-## 2026-11-08 · Six-zone execution candidate (App version: v641)
-
-- Current owner: Codex. Last synchronized base checked: github/main a8b790f928f8f49f14451a41462a357f66ab9a74 (v640). Starting version/integrity/handoff checks passed; daily recovery archive confirmed before edits.
-- Eight design elements retain baseline/optimized/reasons; additive execution/process/review snapshots implement the user-confirmed six zones, optional ten-process reference and completion review. No old five-zone remapping or invented customer facts.
-- Hair analysis opens the same explicit appointment-backed design archive with identity/date checks; the unsaved diagnosis form stays in place. Manual staff entry and protected ChatGPT imports share the contract.
-- Immutable history, private original photos, scope guards, CAS and request replay remain required. Old clients may not silently omit existing workflow fields; explicit empty objects can clear only the new snapshot.
-- Focused local syntax/identity/import checks and exact-head protected CI are required before publication; real browser/PostgreSQL checks run in the existing complete GitHub publication gate. No customer snapshot or original-byte mutation is part of this release.
-
-<!-- academy-reviewed-inputs:5feb1e3c6d831a197bd6ab738cb6e046149dff84b64be4c10b9b696efe0eb73f -->
-## 2026-11-08 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main a074388d42ad21a2693f5645a26034e2fde087f0.
-- Dates: 2026-11-08. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:b8ab0d324fc11df97385fdb3de7e37c42dfb07254277a19cbb87a6fbe8410a4b -->
-## 2026-11-07 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 9c8072fdb6218b04352a0ae7ba7812fdabc2bc57.
-- Dates: 2026-11-07. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-11-07 · Adjacent-style switching aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 29dd4db991899d4563f027f05f6211a0376ca93e; clean focused `content/aesthetic-2026-11-07` branch, starting version/integrity/handoff checks and daily backup passed before edits. Existing 2026-11-06 publication and all thirty earlier aesthetic cases remain preserved.
-- One stable `aesthetic-2026-11-07` case separates visible current proportions from fictional regional hair properties and customer-confirmed professional/weekend goals. Conditional A/B compare fixed sweet-youthful signals with a professional structural base plus reversible softening; six answers and five unscored self-checks include work, weekend, low-tie, first-wash, fourth-week and eighth-week validation without inventing user completion.
-- Original 2172×724 AI WebP shows only one fictional adult's current front/two true profiles/back collarbone lob, not a proposed cut, perm, makeover, home result or future state. No real customer, measured anatomy/density/diameter, verified damage, occupation, personality, age effect, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
-
-## 2026-11-06 · Staged reference-adaptation aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 907a2a82a233f2eeb8346304b6f968247036c8f5; clean focused `content/aesthetic-2026-11-06` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-11-06 academy publication and all twenty-nine earlier aesthetic cases remain preserved.
-- One stable `aesthetic-2026-11-06` case separates visible current outline from fictional mixed porosity, prior lightening/perm history, low-ponytail requirement, high-collar collision and three-minute routine. Conditional A/B compare one-session photo matching with a reversible staged plan; six answers and five unscored self-checks include test strands, four real-use states, first wash, fourth week, six-to-eight-week review, stop and switch signals without inventing user completion.
-- Original 1774×887 AI WebP shows only one fictional adult's current front/two true profiles/back shoulder-length lob, not the undisplayed reference, proposed cut/perm, home result or later-stage outcome. No real customer, measured porosity, verified chemical history, breakage grade, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:985027dc0aeb844f4b72e5f49c083038298a609773a8b6d288bd09ba57b73a38 -->
-## 2026-11-06 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 7e5eadb4e69b33b0e4be71642aebd2f0822eefc6.
-- Dates: 2026-11-06. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-11-05 · Asymmetry-to-visual-balance aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main bcd313b38d0864b079efd8f8f0ff3779f52895f2; clean isolated content/aesthetic-2026-11-05 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. The recovered 2026-11-04 aesthetic case, existing 2026-11-05 academy publication and all twenty-seven earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-11-05 case separates visible current left/right fall from fictional zonal coverage, hair-flow direction, occipital support, nape direction, shoulder-bag posture and ear-tuck routine. Conditional A/B compare parameter symmetry with structure-based visual balance; six answers and five unscored self-checks include neutral head position, natural fall, three-minute styling, ear tuck, first wash, fourth/eighth week, stop and switch signals without inventing user completion.
-- Original 2172×724 AI WebP shows only one fictional adult's current front/two true profiles/back grown-out short bob, not the undisplayed reference, proposed cut, corrected posture, home result or eight-week state. No real customer, measured anatomy/ear position/density/diameter, verified haircut result, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
-
-## 2026-11-04 · Six-zone curl-function aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main e07749550ef3073c6ca03e831053f9bd2a23c646; GitHub recovery branch backup/pre-aesthetic-2026-11-04-e0774955 created before the focused content branch. Existing 2026-11-04 academy publication and all twenty-seven earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-11-04 case separates visible current outline from fictional six-zone density/diameter, nape direction, undisplayed wet-look S-wave reference and four-minute routine. Conditional A/B compare uniform visible S-waves with function-distributed regional curl; six answers and five unscored self-checks include first wash, fourth/eighth week, stop and switch signals without inventing user completion.
-- Original AI PNG shows only one fictional adult's current front/two true profiles/back grown-out short bob, not the undisplayed reference, test strand, proposed perm, home result or eight-week state. No real customer, measured anatomy/density/diameter, verified damage grade, chemical formula, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local executor was unavailable, so no local command/browser pass is claimed; exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:2922202a2a62bd1bc6a9fa32e607db5a154d8c1c69e9fc7eb5326c930e25e7b0 -->
-## 2026-11-05 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main e07749550ef3073c6ca03e831053f9bd2a23c646.
-- Dates: 2026-11-05. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:aed595596c1a35931dc15d8d7f3712293af1ae6d1871259cbc99ade0f34c705f -->
-## 2026-11-04 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 1c9f1edb6bf1db9385ceeac86e74337a21c345f0.
-- Dates: 2026-11-04. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:fd333520898287122640f88a6ea63708f99ff6b2b200e77105ad1c6c8d9f5477 -->
-## 2026-11-03 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 9a52c092ca0b379fd1c5ee1c878a6d3328608d3c.
-- Dates: 2026-11-03. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:09fb236c3dc2f3e31ad7e947208327d564b971a0fd2dd232753c594e53061b0a -->
-## 2026-11-02 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main af1948c2d8a35c59efb5c4a9a413076bb91876c1.
-- Dates: 2026-11-02. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:f82cc0ba95f4bf5d191369d72a23a3dfdcb1580e3a4f88226c509e55611e354d -->
-## 2026-11-01 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 85c109de09028eca525679513686d2c7558ad89f.
-- Dates: 2026-11-01. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:372155555c5c55a7533e6bac918908a569548a9b8f816b30e2e8758863ca0637 -->
-## 2026-10-31 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main f26d809e0a1642adaee5e6fa39c1bb0c1bfcc6d1.
-- Dates: 2026-10-31. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:fc33a7584463584df5636f2fe38a63f9b519c35b2fb9ba2ea8870338061f762f -->
-## 2026-10-30 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main b305ff02ecff46492fd8b947c786ea77fab37595.
-- Dates: 2026-10-30. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:288ca513cbdeaf21aaf859faecd87442e6e5dd038d314bb557cc7a7adb877afc -->
-## 2026-10-30 · Helmet-recovery crown-balance aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main fb3137722ae5b4dd4da273672811ec167765490b; clean isolated content/aesthetic-2026-10-30 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. All twenty-two earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-30 case separates visible current outline from fictional opposing crown whorls, medium-coarse support, helmet routine, clothing context and recovery time. Conditional A/B compare aggressive short crown height with a recovery-first directional structure; six answers and five unscored self-checks include crown, face opening, maximum width, occipital/nape balance, helmet safety, two-minute recovery, stop and switch signals without inventing user completion.
-- Original 1942×809 AI WebP shows only one fictional adult's current front/two true profiles/back grown-out short hair without a helmet, not the undisplayed reference, proposed haircut, helmet test, recovery result or eight-week state. No real customer, measured anatomy/density/diameter, verified helmet performance, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-## 2026-10-29 · Reference-result feasibility aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 2e6510f0783d158823d2d9cfdd982193b4380a8c; clean isolated content/aesthetic-2026-10-29 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Reviewed 2026-10-29 academy publication and all twenty-one earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-29 case separates visible current fall from fictional zonal resistance, twice-lightened lengths, elasticity findings, undisplayed airy-wave reference and natural-dry routine. Conditional A/B compare full-head visible curl with a structural-first, strand-test-gated route; six answers and five unscored self-checks include reference decomposition, low-tie function, three-minute styling, test failure and stop/switch signals without inventing user completion.
-- Original 1916×821 AI WebP shows only one fictional adult's current front/two true profiles/back medium-long hair, not the undisplayed reference, proposed haircut, test strand, chemical service, home result or ten-to-twelve-week state. No real customer, verified diameter/porosity/damage grade, chemical safety approval, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-## 2026-10-29 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main def17efeeefb8b04f0b3d4b0f124a325887b23f4.
-- Dates: 2026-10-29. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-28 · Head-face-neck-shoulder proportion aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 0a09908e68674b7e60fbbd2915dee8ebff50e200; clean isolated content/aesthetic-2026-10-28 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Reviewed 2026-10-28 academy publication and all twenty earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-28 case separates visible current outline from fictional hair properties, self-described proportion concerns, wardrobe and routine. Conditional A/B compare broad upper-side volume with controlled upper width and a lower shoulder-neck transition; six answers and five unscored self-checks include face opening, fringe/face frame, occipital volume, clothing, shoulder bag, ear tuck and stop/switch signals without inventing user completion.
-- Original 1312×1199 AI WebP shows only one fictional adult's current front/two profiles/back shoulder-length lob, not the undisplayed reference, proposed haircut, home result or eight-to-ten-week state. No real customer, measured anatomy/proportion, verified density/diameter, damage grade, personality/occupation, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:9708badbb91d468c03ca0e41a8e159e38b3d6b241d13480e469f4b5e61dda6e7 -->
-## 2026-10-28 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main d87d949a4a2d4f8a9cfe6209d331003a20d5ee4a.
-- Dates: 2026-10-28. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-27 · Mixed regional-density aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 662d8c766dda7ab8b428b5f448e6e2fb24eda9c5; clean isolated content/aesthetic-2026-10-27 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-27 academy publication and all nineteen earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-27 case separates a visible upper-versus-lower weight pattern from fictional regional density/diameter, natural bend and routine. Conditional A/B compare uniform high-layer/global thinning with regional coverage-and-weight management; six answers and five unscored self-checks include root lift, tie/clip function and stop/switch signals without inventing user completion.
-- Original 1448×1086 AI WebP shows only one fictional adult's current front/two true profiles/back medium-long silhouette, not the undisplayed reference, proposed layers, thinning result, first wash, fourth week or ten-week state. No real customer, medical hair-loss claim, measured density/diameter, damage grade, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:9544c97ad27c8e2d14cb7b5a2dd0b49ed954914ae763f9cbb14d2dcbc735239d -->
-## 2026-10-27 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8519da154775a5e9fa35a8662a0ba8d38022eb6c.
-- Dates: 2026-10-27. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-26 · Geometric-reference adaptation aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 9aab0716c0211e51ea07c63c82b22a1692e3462a; clean isolated content/aesthetic-2026-10-26 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-26 academy publication and all eighteen earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-26 case separates a visible current collarbone outline from fictional density/texture, an undisplayed jaw-length box-bob reference and live headset/ear-tuck evidence. Conditional A/B compare direct geometric copying with a reversible structural base; six answers and five unscored self-checks distinguish permanent structure from temporary styling without inventing user completion.
-- Original 1536×1024 AI WebP shows only one fictional adult's current front/two true profiles/back collarbone lob, not the undisplayed reference, proposed cut, first wash, fourth week or ten-week result. No real customer, measured skull/face ratio, verified density, hair diameter, damage grade, reference match, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:274fdccc24a83f9466a7c328f6a9ed1bac369e16dc6e5c0c30495cd2eeee1231 -->
-## 2026-10-26 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main a6015d26ddf4376fbfcc6617f986e2c582336832.
-- Dates: 2026-10-26. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-25 · Nape grow-out and maintenance-cycle aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 19bc665a358a926f762fe835381c3a923208ddbe; clean isolated codex/aesthetic-2026-10-25 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing 2026-10-25 academy publication and all seventeen earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-25 case separates visible nape wisps from fictional low hairline/upward flow and live wet/dry evidence. Conditional A/B compare higher exposed neckline with a bridge-length grow-out plan; six answers and five unscored self-checks include first-day through tenth-week timepoints without inventing user completion.
-- Original 1536×1024 AI WebP shows only one fictional adult's current front/two profiles/back grown-out short bob, not the undisplayed reference, new cut, first wash or future result. No real customer, measured hairline, verified follicle direction, growth rate, damage grade, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:b4cb12a2de82b8af296901acad43e7af184fe14997124eab9d2eb2bd13a2e3ac -->
-## 2026-10-25 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main a0e937b467151e218671e227e1128b9ac5eb74e2.
-- Dates: 2026-10-25. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-24 · Grown-out perm transition aesthetic case (App version: v638 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main d9b83da01f74d129dd1cfe81cf122082809009c9; clean isolated codex/aesthetic-2026-10-24 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing academy publication and all sixteen earlier aesthetic cases remain preserved.
-- One stable aesthetic-2026-10-24 case separates visible root-to-end fall from fictional old-perm history and live elasticity evidence. Conditional A/B compare preserving short-lived residual curl with a future-stable straight-growth base; six answers and five unscored self-checks include time horizon, shoulder contact, stop and switch conditions without inventing user completion.
-- Original 1536×1024 AI WebP shows only one fictional adult's current front/two profiles/back, not the undisplayed reference, cut, first wash, reperm or six-month result. No real customer, measured growth, verified chemical history, damage grade, scientific validation or independent expert certification is implied.
-- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image readback remain publication requirements.
-
-<!-- academy-reviewed-inputs:d1f3c90c9b28ba6d8dfb3c2907f715af0ec0ec5289914954d933e994e5fbc032 -->
-## 2026-10-24 · Reviewed academy publication candidate (App version: v638 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 20e3bcfa241c13d0edc87e3e45633c1d72b0189b.
-- Dates: 2026-10-24. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-21 · Data read candidate (App version: v638 local only)
-
-- Base github/main ac0cfd26 (published v637); isolated perf/data-load-20261021. No push, merge, deployment, backend or production business data changes.
-- Optional memory-only concurrent read coalescing for three entries; pending reads expire from the join window after five seconds, mutations invalidate flights, settled results are never cached. Frontdesk expanded details refresh once in parallel with dashboard. Auth/scope/latest-response guards and complete payloads remain intact.
-- Same synthetic sample proves fewer duplicate calls/JSON bytes, not production latency gains. Commands, coverage and evidence limitations: docs/data-loading-performance-2026-10-21.md. Original cumulative local gate passed (120 finance steps plus remaining original checks); focused WebKit recovery/shell passed. Desktop WebKit does not replace iPhone acceptance.
-
-## 2026-10-21 · WebKit update diagnosis (App version: v637 local only)
-
-- Confirmed the test helper incorrectly treated async predicates as completed; explicit awaited polling now retains a hard 30-second deadline, all original scenarios and assertions. WebKit/Chromium full lifecycle passes, including runtime-only bad resource updates.
-- Guard repeated button/online update requests while a worker is installing or waiting. Real-browser synthetic regression preserves unsaved input and subsequent natural activation/update failure recovery. No auth/business/cache-scope changes. Exact results and original failure evidence are retained in ../validation-review/static-shell-results.md; desktop WebKit is not iPhone acceptance. No push, PR #64 edit, merge or deployment.
-
-## 2026-10-21 · Startup guard follow-up (App version: v637 local only)
-
-- Original full gate caught external deferred shell script before the inline startup guard. Moved client script after existing page content/guards; original style regression passed without relaxing its assertions. Browser cache-deletion assertion now waits boundedly for actual cleanup visibility. Final frozen full gate and WebKit outcome are in ../validation-review/static-shell-results.md.
-
-## 2026-10-21 · Static shell phase 2 (App version: v637 local only, PR #64 untouched)
-
-- Isolated from 2d9cea7/main251c5b1; academy preserved. Public explicit37-file shell, hash-verified atomic install, natural activation only, no API/private data/write queue. Independent review fixes cover downgrade/runtime/same-cache reinstall, admin resource ownership, query version bypass and update retry.
-- New build/browser regressions and integrity generation check preserve original gates. Chromium synthetic lifecycle checks passed during development; WebKit offline emulation hit a browser internal error, server-drop alternative and final full gate results are recorded in ../validation-review/static-shell-results.md. No iPhone claim.
-- Local implementation/testing only: no phase2 push, PR update, merge, deployment, backend or business data change. See docs/static-shell-local-2026-10-21.md for limitations and device-test approval gap.
-
-## 2026-10-21 · Startup draft PR preparation (v636, not deployed)
-
-User authorized pushing only the isolated startup branch and opening a draft PR with remote checks; no merge, auto-merge or production deployment. Integrated main 251c5b1 (academy PR #63), preserving all academy bytes and both handoff histories. Cumulative original pre-push gate will run against this main baseline before branch publication; exact-head remote CI remains required. iPhone acceptance still lacks an approved supported test route; no ports, tunnels or credentials added.
-
-## 2026-10-21 · Independent startup review follow-up (local v636, NOT published)
-
-- Independent reviewer reproduced premature saved hair rendering before identity validation, stale booking response races, and cross-tab identity mismatch in 78e84bb. Fixed verified-only private view restoration, token/store/date/generation checks, cross-tab private view lock, different-owner draft lock, and opaque/inert keyboard-safe identity gate while retaining same-account input DOM.
-- Added actual hair name/phone preservation and Tab/opacity browser tests, plus delayed callback scope tests, to the original shared manifest. Chromium/WebKit synthetic focused tests passed. Full original pre-push is being run with pinned isolated dependencies; exact command/result logs are in ../validation-review. First run stopped at missing exceljs; fixed via isolated npm ci --ignore-scripts, not by skipping tests.
-- No push/merge/deployment, backend permission change or production writes. No supported iPhone route established; no external port, tunnel or credentials created. Final gate outcomes and code commit recorded in validation-review/results.md. Details: docs/startup-independent-review-2026-10-21.md.
-
-## 2026-10-21 · Local startup isolation candidate (App version: v636, NOT published)
-
-- Owner: Codex. Base github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99; isolated fix/startup-isolation-20261021 clone, clean start, original hooks and daily source backup preserved. No push/merge/deploy authorized this round.
-- Operations shell no longer waits for monthly reads after verified access; existing editor/scope guards preserved. Frontdesk transient failures retain credentials, session/dashboard reads bounded, import batches deferred. Main App verifies cached identity before applying it, has bounded retry/recovery, and report access follows verified identity. Ordinary permission failures are not session expiry.
-- Chromium and WebKit synthetic startup recovery: 14 scenarios each passed. Existing cold-start/entry/style and monthly editor/period-isolation regressions passed. No real data writes or iPhone device claim. No SW reenable or new sensitive persistence. Full pre-push/SQL/CI and device acceptance remain release gates; recheck main/version before any publication.
-- Scope, reproducible tests, remaining token-refresh limitation, iPhone checklist and next-stage static shell caching design: docs/startup-review-2026-10-21.md.
-
-<!-- academy-reviewed-inputs:7240c0a05adef312fa65d7c5d8efaf73615129c9e1d580af00117a7a9ea23f4b -->
-## 2026-10-21 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main b713720a0970cf66c4d55de4f83ea63fd5e57a99.
-- Dates: 2026-10-21. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-20 · Original visual-balance aesthetic case (App version: v635 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 49484dd9c5541d9a7dd6f14b3a5799bb4768adf7; clean isolated content/aesthetic-2026-10-20 worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing nine academy courses/catalog unchanged.
-- One stable aesthetic-2026-10-20 case, fictional current front/two side views/back. Compare actual length, bends and apparent width before pursuing mirror symmetry; conditional A/B costs and change conditions, six answers and five unscored self-checks. No inferred personality/habits, anatomical diagnosis or invented training completion.
-- All twelve earlier parsed feed objects unchanged. Original output and final original-size1312x1199WebP actually viewed; prompt and case/feed/image hashes in transparent preparer audit. No real client, measured equal lengths, verified root cause, A/B haircut result, scientific/independent expert certification, clipping-based proof or home/all-day guarantee.
-- Only feed, image, audit and public handoff/change records change. App/runtime/version, academy, old feed, calculator, customer, finance, database/backend, login/permission, business sync and automation untouched. Content contract and safe starting/synthetic regressions pass. Daily browser and full hook executed but stopped at absent local Chromium; unchanged trusted PR CI must supply identical daily browser and all shared gates. Exact-head success, ordinary protected merge, Pages and live ID/date/title/feed/image readback required before claiming synchronization.
-
-## 2026-10-19 · Original visual-language aesthetic case (App version: v635 unchanged)
-
-- Current owner: Codex. Last synchronized base checked: github/main 3b665d599293eb092b834cad2314572bb528ae8f; clean isolated content/aesthetic-2026-10-19. Starting version/integrity/handoff checks and complete daily recovery archive passed before edits; separate Oct19 academy lesson/catalog retained.
-- Exactly one stable aesthetic-2026-10-19 case: fictional adult current front/right-profile/back short bob. Distinguish whole silhouette, edge transition and surface texture; conditional A/B benefit, cost and switch condition. Six complete answers and five unscored self-checks; no inferred personality or invented user completion.
-- All eleven previous parsed objects unchanged. Original, framing revision and final 2172x724 WebP actually viewed; complete prompt set and exact case/feed/image hashes in transparent preparer audit. No real-client photo, A/B result, independent expert/scientific approval, clipping-based proof or post-cut/home guarantee.
-- Scope limited to feed, original image, audit and public change/handoff records. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation unchanged. Local content contract passes; Chromium executable absent. Unchanged protected CI invokes identical daily/browser checks and full shared gates; exact-head success, ordinary merge, Pages deployment and online ID/date/title/image/hash readback are mandatory before claiming App synchronization.
-
-<!-- academy-reviewed-inputs:460b48200ed97a923e42da6e29318a7c2ec43b688cd02153d54db8b6280d7eeb -->
-## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 0c803bb0af86cca04a988938351ace4ff0c7ec59.
-- Dates: 2026-10-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:78a39d05baac5ffea5df668cb3d7d73a2206eede27515bb97c35fe884ab71fcd -->
-## 2026-10-19 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 0c803bb0af86cca04a988938351ace4ff0c7ec59.
-- Dates: 2026-10-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:db867f45f4df3bb364e9d5b833150a528118fcc1e28783f33f328d0a87d4723c -->
-## 2026-10-18 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 47b04b9a3cd995730b3c6bd4f6e0e64d3a05774b.
-- Dates: 2026-10-18. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:19c170cfda421a8cbe2d9b67856add17e4091ab118613f7d191502f5b9e59f53 -->
-## 2026-10-17 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main cbf245881f5732a8dfef800bcfb25f1dbb45be74.
-- Dates: 2026-10-17. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-<!-- academy-reviewed-inputs:3d5fa88800c9b235e995d68f1f3d53bf6d3e817e8bc94271640fc982ef46fc55 -->
-## 2026-10-16 · Reviewed academy publication candidate (App version: v635 unchanged)
-
-- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 2c0563208142f7b3e85919b1dac18cb2aa6767b4.
-- Dates: 2026-10-15, 2026-10-16. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
-- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
-- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
-- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
-
-## 2026-10-14 · Monthly upload clarity (App version: v635 candidate, not published)
-
-- Current owner: Codex. Last synchronized base checked: github/main 474284da, released v634. Clean tracked start, existing Oct14 daily archive retained; focused ui/monthly-upload-clarity branch. All unrelated untracked backups/artifacts preserved.
-- User approved concise monthly-specific names: 月报数据 / 月报凭证. Two aligned cards identify Excel/Word vs photo/PDF, purpose, accepted formats and limits; a single explicit save action keeps combined or photo-only semantics. Desktop columns/mobile stack; detailed existing accounting explanation retained under disclosure.
-- Markup/CSS only; original submit handler, API payloads, auto routing, amounts, evidence, permissions and monthly confirmation behavior remain unchanged. No production calls, financial writes, migrations or Edge deployment needed.
-- Synthetic 320/390/768/844/1366 browser checks, existing upload/partial failure/duplicate guard, auto-upload contract, monthly workbench and monthly review browser checks pass. Actual desktop/mobile upload screenshots inspected. The complete local pre-push gate passed, including all 114 finance commands; all inline runtime scripts match v634 except cache URLs. User explicitly authorized this UI-only release after tests; ordinary protected PR/CI/Pages verification still required, no bypass or force refresh.
-
-## 2026-10-14 · Monthly review integrated release candidate (App version: v634)
-
-- Final backend readback: service namespace migration applied, both authorized stores' inbox/status/source-token reads succeed as the real service role; old private finance helpers still deny direct service execution. All four new tables have forced RLS and deny client reads/direct service writes, all new RPCs deny anon/authenticated; no new security advisories. Anonymous live monthly status/inbox/overview return 403. 41 identity + 145 version synthetic checks now reproduce the production ACL baseline and pass. No real month published or confirmed. Full final hook and protected PR/Pages are still the frontend publication gate.
-- Production v130 exact 14-file Edge package and both additive review migrations are now installed; user-confirmed owner alias enrolled once, no financial publications/receipts or grant changes. Live service-role readback exposed missing private-schema USAGE (synthetic fixtures had pre-granted it). Add a separate USAGE-only service migration and production-shaped regression; leave every existing helper EXECUTE/table/RLS/client/store grant unchanged. Keep frontend off main until service readback and protected gates pass.
-- Complete 113-command finance/shared pre-push gate passed and integration checkpoint 1b4f4a7 is on the feature branch. Final scoped regression adds monthly return-navigation recovery and read-only deadline classification; write/confirmation requests never auto-retry. Production remains unchanged until migrations/backend/protected PR/Pages verification below completes.
-- Current owner: Codex. Last synchronized base checked github/main 0aab79b; recovery 9ee783b pushed through the complete hook; Oct14 daily archive and operations-api v129 privately backed up. No historical amounts, real monthly publications/receipts, grants or schedules modified during implementation.
-- Scoped Edge adapter builds a whitelisted deterministic snapshot from existing overview, between matching source tokens; server-only actor/store IDs, preview-content hash, explicit finance publication/individual no-objection consent. Staff allowlist adds only status/inbox/confirmation; no finance writes. Manual backend grants remain authoritative; identity links deduplicate only and never inherit permissions.
-- New visible monthly bar and fixed-version dialog; old read acknowledgements remain labelled history, no longer mistaken for no-objection confirmation. App red dot/pending pill and selected month iframe, current grant refresh, logout/revocation clearing, dirty-edit guard, no automatic publication or retry after uncertain writes. UI does not reload active forms.
-- 39 identity + 142 version synthetic PostgreSQL checks, real HTTP adapter tests, Deno frozen check and 390/1366 UI/App reminder tests passed. Test PG connection uses TCP so init-only temporary Unix server cannot cause flaky startup. Complete pre-push and protected validate/Pages checks remain required before claiming online completion.
-- Production dependency drift detected: operations-api v129 bundles an older salon-report-catalog.mjs than main. This monthly-review deployment must PRESERVE that exact live catalog, not silently mix classification changes into the release. All other live package files match main; new adapter/index/staff allowlist are the only runtime changes. Exact deployment manifest and rollback runbook below.
-- Deployment order: additive identity/versions migrations, separately verified owner alias enrollment (no grants), exact backed-up v129 package plus three review files, protected PR/CI to main, Pages readback. No live month publication/confirmation as a test. Production identity matches were read-only reverified; guarded enrollment not yet performed at this checkpoint.
-
-## 2026-10-13 · Monthly review immutable version/receipt workflow (App version: v633 unchanged; not deployed)
-
-- Owner: Codex, feature/monthly-shareholder-confirmation; current main 0aab79b included, recovery checkpoint aa6e526 and existing daily archive preserved. Production inspection was schema-only/read-only and confirmed no monthly-review tables are deployed. No real financial records, identity links, publication, confirmations, reminders, grants or schedules changed.
-- Additive service-only candidate: immutable publications, recipient assignments and once-per-person/version no-objection receipts; the only mutation gateways are private scoped functions. Public wrappers are security invoker; anon/authenticated have no access and service has no direct table writes. Reuse existing finance report.upload authorization; do not relax any old helper ACL, RLS, money rule or old read acknowledgement.
-- Freeze the server monthly display at explicit finance submission. The source token covers monthly uploads/cells/revisions, income adjustments, historical monthly entries/batches and confirmed daily totals/channels. It does not calculate new money or return raw source data. Same-content retry is idempotent; explicit re-submit may assign newly authorized readers without resetting receipts. Receipt checks fresh scope again after taking the month lock, current publication, explicit no-objection statement and current server-generated display/source token. New amounts without a new finance publication reject confirmation. Lost-response readback returns the original receipt/time, never confirms a newer version.
-- 142 synthetic PostgreSQL checks passed: duplicate/concurrent two-entrance clicks, publication concurrency, new version while waiting, revocation while waiting, same-content retry, source changes/dependencies, permissions/company/store/date, new recipients, immutable receipts, transaction rollback and unchanged original report/old acknowledgement fixtures. Existing 39 identity checks also passed. Catalog ACL/RLS/public-definer checks passed locally; production schema dependencies match. Complete local pre-push gate passed, including all 111 finance commands and unchanged app/browser/API/PG/sync regressions. The NEW monthly-review feature still lacks end-to-end Auth/Edge/browser and real financial acceptance.
-- GitHub development-branch push was blocked by the safety review before execution; no bypass attempted. User was asked for explicit permission to push only feature/monthly-shareholder-confirmation in the existing taoyouming308-ui.github.io repository. This module is committed locally only until that authorization arrives; do not claim it is remote, merged or deployed. Protected CI remains a later release gate.
-- Integration contract still pending: authenticated Edge MUST derive actor IDs and build a minimal deterministic snapshot from the EXISTING monthly projection between matching before/after source-token reads. Never forward browser snapshot, actor ID, role or source token as trusted input. Repeat requests may read their old receipt but must still display any newer pending publication. Keep per-login store scope independent. Do not wire UI/deploy until this contract and permission/concurrency/browser tests pass.
-- Remaining feature work: Edge adapter, prominent finance submit and shareholder no-objection buttons, App-visible pending list/red dot and explicit owner identity enrollment, then full release verification. Rollback before deployment is the saved Git checkpoint; after eventual deployment disable the new UI/API forward-only, retain published snapshots/receipts and never delete evidence. Other audit fixes remain pending. No claim that the feature is already live.
-
-## 2026-10-13 · Monthly shareholder confirmation identity foundation (App version: v633 unchanged; not deployed)
-
-- Owner: Codex, feature/monthly-shareholder-confirmation, latest main 0aab79b. Original untracked artifacts/backups preserved; existing daily recovery archive retained. No production DDL/DML, finance confirmation, source collection or schedule change.
-- User confirmed the staff App login 无名 and financial Auth login admin are the SAME owner. Confirmation means reviewed/no objections, once per person per published monthly version; old read acknowledgements are not upgraded into this stronger assertion. New monetary version needs a new finance publication and a new shareholder confirmation; old records remain immutable. Reminders are App inbox/red-dot only, not push while closed.
-- This first isolated migration adds an empty explicit identity-link table, service-only principal resolver and private deduplicated recipient helper. It does not link any real accounts yet. Linking never inherits permission: every login must retain its own live account/employment/role/date/store grant. Equal names do not identify the same person. Do not seed via usernames or grant extra rights to make tests pass.
-- 39 synthetic PostgreSQL identity/duplicate-name/denial/revocation/expiry/cross-store/cross-company/immutable-ACL checks passed locally. This is NOT live acceptance or completion of the confirmation feature.
-- Pending: immutable published snapshots, per-version once-only receipts, finance submission, visible shareholder action, pending inbox/red dots, API/browser/concurrency/permission regression and explicit owner link enrollment. Do not expose a working confirmation button or claim reminders delivered before that end-to-end flow exists. Other authorized review fixes (backup/restore, monitor delivery receipt, crash draft recovery, measured latency and next-year support) remain uncompleted.
-
-## 2026-10-13 · Correction logical archival repair (App version: v633)
-
-- Owner: Codex, same isolated worktree, fix/daily-correction-logical-archive from latest main 727feda7. Existing complete daily backup and prior release artifacts retained; exclusive v633 publication lock acquired.
-- Actual read-only failure: reviewed correction RPC reached old archive registration and raised SQLSTATE23505 on duplicate stylist B3; transaction rolled back, draft still confirmed revision5 with no successful correction audit. Retail is already staff_value/SERVICE_RETAIL. Source screenshot privately materialized/viewed; no production data or image enters the repository.
-- Scope: definition-only admin_correction_confirm_daily_sheet repair reuses existing daily_sheet_archive_coordinates for archived row/column/address and atomic income source linkage. No monetary line rules, v632 proof/rollback guards, role/capability/function ACL/table RLS, old records or original sheet coordinates changed. No Edge source change needed; v129 remains canonical.
-- Synthetic regression keeps exact542 logical/402 physical coordinates including duplicate B3 and verifies retail100 completes with unchanged cash controls, all542 archived cells retained, unique exact income/source linkage, old audit/proof/snapshots, duplicate recovery and every denial/rollback boundary. Full pre-push and protected CI/Pages/deployed definition readback required before completion. User page untouched; no replay or real correction submission.
-
-## 2026-10-13 · Owner correction source review release (App version: v632)
-
-- Current owner: Codex, isolated fix/daily-correction-cash-review from latest main 3fe7a2a (PR39/v631 + PR40). Clean start and local complete backup verified. Source screenshot actually materialized/viewed privately; real rows read-only, never in repository or test artifacts. User's pending page untouched; no source collection, production transaction, credential or role creation.
-- Actual record and synthetic JS/PG establish the mutually exclusive dirty/current-source guard and old-revision receipt rejection. Candidate preserves all numeric/unknown guards, refreshes proof context without adopting cells, and combines original/channels/card-sales in one explicit unselected confirmation. Actor/Auth remain server bound; new owner review is append-only, hash/revision/request/audit bound within existing atomic correction.
-- Approved scope: two private proof functions and one new service-only reviewed correction RPC; no user capabilities, table ACL/RLS, finance reviewer or monetary functions changed. Existing finance branch preserved. Cash-only synthetic success, forbidden identities/source/revision/locks/unknowns, rollback, immutable history and duplicate recovery covered.
-- Additional safety finding: frozen legacy posting can generate staff income different from cashflow. New RPC must reject and roll back any final cash-ledger mismatch; do not alter the old financial formula under source-review authority. Broader compatibility remains separately reportable. Do not claim unsupported cash/card cases fixed.
-- Required release gates: complete pre-push/required validate, current main, reviewed monetary guard scope, function/ACL/JWT/source readback and exact Pages. Complete local pre-push gate passed (109 finance cases); normal protected PR and scoped backend deployment in progress. Current v631 page has no durable correction edit recovery; do not refresh/inject into it or promise old-tab migration without an explicitly permitted safe handoff.
-
-## 2026-10-13 · Legacy electronic routing and bounded posting deadline (App version: v631)
-
-- Current owner: Codex. Last synchronized base checked github/main f3b0d9a; isolated fix/daily-electronic-routing. Daily recovery archive and live operations-api v127 / RPC config+definition privately backed up. No real posting or amount/history writes.
-- Two separate causes: ready legacy electronic evidence did not generate consent when cash candidate was unavailable; another attempt reached PostgreSQL archive insertion but hit SQLSTATE 57014 / inherited 8s API deadline. Successful RPC aggregate mean 6.6s/max 7.8s supports narrowly bounded 30s budget, not unlimited timeout or global role change.
-- UI evidence route independent of cash calculation policy. API rejects empty evidence path clearly; SQL timeout mapped honestly. Function-only migration preserves body/ACL and 5s lock limit; reset setting + reload schema rolls it back. Preserve all v630 owner-history, manual values, unknowns, arithmetic red warnings and no-auto-post/no-auto-retry guarantees.
-- Targeted synthetic browser/API/full PG pipeline passed. Local PostgREST14 reproduced 8s rollback and verified 30s success, unchanged body/ACL/lock and unrelated 8s endpoints, then restored timeout. Full hook, protected Validate shared app PR, production metadata/readback and Pages verification remain release gates; no production transaction tested on behalf of user.
-
-## 2026-10-12 · Academy static catalog readback repair (App version: v630 unchanged)
-
-- Current owner: Codex. Base github/main 32432fe, isolated fix/academy-static-catalog, clean start and recovery archive. First PR35 Pages/course/body/review/3-image hashes pass, but actual 390/1280 directory reads fail to reveal today via anonymous GitHub API; never claimed final entry sync. Same approved task needs this necessary read-path fix, not new course/science or rights.
-- Same-site static catalog carries actual dates/titles; candidate includes it, required validate binds it to verified course files. Existing page style/navigation and both known links retained; unavailable/unsafe metadata falls back. No anonymous API dependency, new service, permissions, schedule or App/finance/version change. Existing 10/11 and all reviewed 10/12 body/source/figure bytes unchanged, no reapproval or regenerated lesson.
-- 19 synthetic publisher guards and directory 390/1280 unavailable/unsafe/link/title/no-external-request tests pass; ordinary full hook/PR/Pages and actual directory/course/hash readback remain required. Shared lock released after first deployment and held again only for next merge/Pages; own day lock prevents duplicate content.
-
-## 2026-10-12 · Reviewed academy handoff and daily course (App version: v630 unchanged)
-
-- Current owner: Codex. Latest synchronized base checked github/main a1b788e v630, clean isolated fix/academy-reviewed-handoff and recovery archive. User explicitly authorized the protected ordinary-PR repair and reviewed original daily lesson; no new workflow rights/tokens/schedules. Existing course 10/11, four aesthetic cases, employee/finance/runtime/version files unchanged.
-- Publisher now stages only hash-bound reviewed candidates: actual role/time/approval reference, source/right/privacy checks, canonical body/source/metadata hash and raw image hashes. Unknown author/date remain null; pending/missing/invalid states are not publication. CI verifies actual new HTML against reviewed rendering and rejects asset/body tampering. Legacy 10/11 is retained byte-identically. No software-generated scientific approval or claim of human expert certification.
-- Original independent v2 text/source audit closes 15 issues; imported ten chapters unchanged. Three original SVGs were revised to its plans, actually rendered/inspected and mapped: no anatomy-layer inference, no measured damage data, no chemical/heating practice, clear pause-chemical/reassess and tangent convention, fictional A/B discussion only. Public record truthfully names AI source-review roles and this Codex visual/integration role; private source packages and identifiers remain in untracked artifacts.
-- Existing 08:15 Shanghai workflow/concurrency/permission blocks unchanged; remove direct main git push and retain candidate artifact for existing authorized ordinary PR actor. Workflow does not generate lessons, approve, create PRs or verify online deployment. Related 18 synthetic guards, real course 390/1280 and figure decoding tests pass; full hook/required validate/Pages and online date/assets/hash checks remain mandatory. No finance/business data or permission writes; generation-to-review future automation still needs its existing producer/actor handoff, not a new schedule.
-
-## 2026-10-11 · Owner-only collapsed daily audit history (App version: v630)
-
-- Owner: continuation of daily-audit-collapse-v630 from df74c443 v629; original exclusive publication lock preserved. Recovery checkpoint 32bebcd and same-day complete archive preserved. Library reference download failed including one explicit local retry; private originals remain outside repository. Only synthetic screenshots.
-- Server owner identity: exact existing account/Auth/company UUID mapping verified read-only against active company shareholder and its direct, live daily_report.correct_confirmed grant. Existing v614 migration and runbook identify that account as owner; no display name, client role, generic finance/admin grant or new authority.
-- Default-closed compact history, keyboard/ARIA/touch; reset on store/month/view/account transitions without modifying dirty edits. Nonowners never query/receive cell-change history; client SELECT of changes/old snapshots revoked, restrictive daily-audit-event policy preserves all other audit visibility and service read/write. No business/amount/posting/store-scope changes.
-- Verified: synthetic direct HTTP owner/nonowner/spoof/revoked/scope denial, PostgreSQL history denial/service append and other-audit preservation, desktop/mobile keyboard/dirty/logout/late-response behavior, frozen Deno. Full pre-push/PR CI follow. Publication blocked: classic main protection returns 404 and effective branch rules are empty; AI_COLLABORATION_RULES requires Validate shared app as a protected required check. No repository-permission change authorized; do not merge or deploy backend until administrator restores that gate. Production remains v629/operations-api v126. Synthetic Library preview libfile_f7aceece41608191b9060c4ffbc1f755.
-
-## 2026-10-11 · Daily report Morandi surfaces (App version: v629)
-
-- Owner: original visual task, turn 01a12afb-4265-746f-a62f-1b3138bd8fce. Existing exclusive daily-report-morandi-v629 lock, isolated style/daily-report-morandi-v629 from c90fcaf; daily archive and private reference preserved.
-- User prefers Morandi colors for future App work; this release only styles the daily report. Warm gray/white, mist blue headers, sage totals and black ready-to-post controls. Financial red/amber/green and disabled/focus semantics retain priority.
-- CSS and version/cache metadata only; no field/order/geometry/amount/default/validation/API/backend/permission/posting changes. Preserve v628 finance and PR32 content. Synthetic desktop/mobile browser comparisons passed with 0px geometry delta, identical values/permissions/buttons and retained red/amber/green status; existing surface and cash-review browser regressions passed. Stylesheet uses nonblocking loading to preserve startup recovery. Full hook/PR CI/Pages exact readback remain release gates. Physical iOS acceptance remains with the user.
-
-## 2026-10-11 · Original daily aesthetic case (App version: v628 unchanged)
-
-- Current owner: Codex. Clean isolated content/aesthetic-2026-10-11 from latest github/main e2315ca v628; daily recovery archive checked. Same-day repository/online checks find three older aesthetic cases and the separate existing academy lesson, which is preserved. No open competing PR or daily lock; own exclusive batch lock acquired. Prior course conversation lookup unavailable, so today's content is explicitly original, not a claimed reuse.
-- One stable Shanghai-date original fictional short-hair case: side volume, contour transition, skin exposure, natural flow versus maintenance. New front/profile image, starting state only; no real customer or efficacy claim. Six conditional reasoning sections, five self-review prompts; old three objects identical. Audit records provenance/weak design evidence and required on-site validation.
-- Only feed, original image, editorial audit and handoff/changelog. All v628 runtime, finance fixes, colored entries, new academy paths/lesson, backend, business data, permissions and automations unchanged. Continuing user authorization permits normal tested publication; exclusive merge/Pages lock with bounded waiting, no force push/refresh. Related browser/full gate and actual dated feed/image/hash verification required; no production employee authentication or business writes in previews.
-
-## 2026-10-11 · Explicit legacy project review (App version: v628)
-
-- Current owner: Codex. User explicitly authorized backup/test/release of this posting rule, with no historical/amount changes and no automatic posting. Base github/main 213bb63 v627; branch fix/daily-project-review. Daily archive checked; live operations-api v125 package privately backed up. Existing unrelated files retained.
-- January root cause: stale source-unknown project markers block balanced manual sheets. Current source classification is a read-only reference, never an autofill refresh. Per-cell blank/no-business or keep-finance-value acknowledgments are required for actual source differences; numerical mismatches remain red hard blocks. Source NULL is not inferred as zero. Ordinary paper/non-source paths retain their previous checks.
-- Additive migration 20261011074944 adds service-only scoped reference and transactional project-review wrapper; no core tables, formulas, RLS, source schedules or existing function definitions are changed. Wrapper binds trusted actor/Auth, store, revision, current projection/source token and exact acknowledged values, then calls the existing original/electronic posting pipeline. Proof/ledger failures roll back together. No real posting or draft correction by Codex.
-- Isolated regression models 13 old NULL project cells plus one positive category conflict, verifies explicit choices/cancellation, red arithmetic, source and permission races, preserved manual amounts/NULLs, legacy October compatibility and actual page -> Edge -> PostgreSQL posting. Full shared hook including all 105 finance groups passed; final push reruns it, and PR CI/Pages readback remain mandatory release gates. Mobile/desktop dialogs inspected, frozen Deno type check passed; explicit project/source/conflict failure messages tested. Physical Safari and actual finance confirmation remain user acceptance.
-- Rollback forward: restore v125 Edge code and v627 UI behavior at a higher frontend version; leave additive definitions and audit evidence intact. Do not delete proof/history, change amounts, auto-post, clear browser drafts or force a refresh. Backends are published and verified before the new UI; an older open source-draft client receives a save/reopen message instead of bypassing per-item review.
-
-## 2026-10-11 · Legacy daily validation feedback (App version: v627)
-
-- Current owner: Codex. Base github/main addd87c v626; isolated fix/daily-validation-feedback, existing daily archive verified, unrelated private backups/screenshots preserved. This is a frontend compatibility/feedback repair, not a new accounting rule or source backfill.
-- Read-only diagnosis compared legacy January and current October metadata. Balanced totals did not resolve two legacy unknown project fields. The prior UI suppressed row/column mismatches when unknown fields existed, retained stale pending state after explicit numeric edits, and let candidate-yellow CSS override error-red backgrounds.
-- Derive pending state from live input, retain independent numeric mismatches, map errors to actual fields, and use the same old/new policy checks for the summary cards and posting explanation. Preserve ordinary blank versus source-unknown, explicit zero, current source/authority/revision guards and historical/manual amounts. No production write or posting performed.
-- Regression covers mobile/desktop actual styles, unknown-plus-error coexistence, live corrections, legacy save/readback/post, new cash/earned-card cards, cancelled confirmation, source races and lost replies. Isolated January-shaped PostgreSQL posting rolls back after verification. Full shared gate, PR CI and Pages readback remain release gates; actual user confirmation is not simulated.
-
-## 2026-10-11 · Remove redundant receipt card (App version: v626)
-
-- Current owner: Codex. Last synchronized base checked: github/main de90b5d v625, focused fix/daily-receipt-hint; tracked tree clean before edits and existing daily archive verified. Unrelated untracked backups and screenshots preserved.
-- User requested removal of the extra recharge/card-sale receipt status card, not a financial formula change. Remove only its rendering. Preserve the original field, explicit blank/no-receipt final choice, cancellation, numeric/source/revision/permission guards, and financial amounts. No Edge or schema change.
-- Synthetic desktop/mobile browser and real page/Edge/isolated PostgreSQL sequence regressions prove card absence without bypassing confirmation or source failures. Full shared gate including all 105 finance checks passed; CI and Pages readback remain publication gates. UI removal alone does not repair missing electronic evidence.
-- User separately authorized a bounded one-store/day evidence supplement and, after disclosure of the existing trigger, refresh of unposted automatic candidates while preserving saved manual values. Existing collector accepted the complete snapshot; production electronic context now ready, draft remains unposted, and before/after manual-value and formal-income fingerprints are unchanged. No posting, scheduler change or historical amount repair performed. Source refresh increments the draft revision; preserve unsaved browser edits and re-read before final user confirmation.
-
-## 2026-10-11 · Electronic-source daily posting (App version: v625)
-
-- User explicitly authorized backup, synthetic tests, then deployment; never change historical records or amounts and never post a real day on their behalf. Base github/main 730d16d v623; recovery branch recovery/pre-electronic-post-20261011; daily archive and production operations-api v124 package saved outside commits.
-- Additive RPCs allow only finance-reviewed, current same-store/date electronic detail/list evidence to enter the existing posting pipeline. No existing database function/table/RLS or financial formula is replaced. Source hash, cell hash, revision, period, authority and explicit consent are checked under locks; generated XLSX is labelled electronic evidence, not a paper/photo original. Attachment, immutable source audit, cash attestation and final ledger transaction roll back together. Storage objects are retained on uncertain outcomes; no automatic posting or historical backfill.
-- Existing original-photo path remains. Fresh read carries electronic readiness, dirty editing is never force-refreshed; source readiness now participates in read-only version checks. Full shared gate (105 finance steps), synthetic desktop/mobile, actual Edge/XLSX/PostgreSQL and exact deployment bundle type checks pass. Additive migration applied; service-only ACL verified. Production operations-api v125 ACTIVE, all 13 files readback match, existing live catalog preserved. Draft/cell/income fingerprints unchanged. GitHub CI/Pages and real user acceptance remain release checks; no real posting performed. See docs/electronic-daily-post-release.md.
-
-## 2026-10-10 · blank-receipt final choice (App version: v623)
-
-- Final posting now includes one explicit choice for an otherwise balanced sheet with blank new-card receipts: confirm no such receipts and post, or cancel to enter the real amount. This never derives financial truth from equality. Ordinary empty details and deliberate manual blanks remain unchanged. A visible pending receipt status explains the missing fact alongside the totals; complete sheets retain the normal black posting button.
-- Read-only incident follow-up distinguished a successfully posted day from a different unposted blank-receipt day. No real posting/review/collector operation was replayed. Compatibility requires no migration or Edge change; preserve latest shared-main learning content. Regression must reproduce the blocked blank flow before testing actual page/Edge/PG posting, cancellation, ordinary blanks, mismatches and races. Physical mobile and real finance acceptance remain open.
-
-## 2026-10-10 · simpler final daily confirmation and archival coordinates (App version: v622)
-
-- Repeated physical coordinates can violate report-cell uniqueness during final daily posting. The transaction rolls back on conflict; logical archival coordinates remove the collision while preserving original cells and financial guards.
-- Definition-only logical archival coordinates preserve every original cell and image; registration and atomic income lineage use the same mapping. No amount/source/collector rewrite. One explicit final dialog attests original/channels/card-sale receipts and posts transactionally; no repeated checkboxes or required free-text reason. Unknown/difference/scope/revision/source/authority guards and lost-response readback remain.
-- Synthetic duplicated-row/channel PostgreSQL reproduced old409; actual page→Edge save/read/archive→transactional proof/post→PG17 ledger passed with one dialog, revision increment and manual0. Mobile/desktop cancellation, unknown/difference/source-race/lost-reply checks passed; shared hook and PR CI remain release gates; backend migration/Edge precede Pages. Forward rollback preserves all proofs/history. Physical iOS Safari and real finance confirmation remain user acceptance.
-
-# Agent Sync Status
-
-## 2026-10-23 · 晚间审美训练内容候选（App version: v638）
-
-- Owner Codex；基于最新 `github/main` `bd54d07b2f8858b855e11ded44b20bbf0b0041ce` 的独立 `content/aesthetic-2026-10-23` 分支，修改前版本、完整性与交接检查通过并建立当日源码备份。
-- 仅向 `docs/aesthetic-training/feed.v1.json` 追加稳定ID `aesthetic-2026-10-23`，新增原创虚构成人四视图和透明审核记录；旧15个解析对象逐条不变，不触碰旧academy feed、既有academy、自由换算、客户、财务、数据库、登录权限、业务同步或自动化。
-- 主题为松卷参考图与“只剪不烫、无热工具、少产品、两分钟整理、双侧别耳”条件的取舍；将圆度、发束分离与波纹生成方式分开，主方案有停手条件、备选方案有升级条件，不含固定层次、去量、药剂、卷杠或温度参数，也不虚构个人学习成绩。
-- App版本保持v638。当前为发布候选；必须完成完整门禁、受保护PR、精确head检查、正常合并、Pages成功和线上feed/图片精确回读后，才可声称已同步。
-
-## 2026-10-22 · 晚间审美训练内容候选（App version: v638）
-
-- Owner Codex；基于最新 `github/main` `692feb71bf9c358bbae63cb002c6ea8976959462` 的独立 `content/aesthetic-2026-10-22` 分支，修改前版本、完整性与交接检查通过并建立当日源码备份。
-- 仅向 `docs/aesthetic-training/feed.v1.json` 追加稳定ID `aesthetic-2026-10-22`，新增原创虚构成人四视图和透明审核记录；旧14个解析对象逐条不变，不触碰旧academy feed、既有academy、自由换算、客户、财务、数据库、登录权限、业务同步或自动化。
-- 主题为轻薄刘海目标与高频运动出汗、前区密度、三分钟恢复和头肩整体关系的多信号取舍；图片不当作脱发诊断或运动后证明，答案不含固定长度、去量、药剂或温度参数，也不虚构个人学习成绩。
-- App版本保持v638。当前为发布候选；必须完成完整门禁、受保护PR、精确head检查、正常合并、Pages成功和线上feed/图片精确回读后，才可声称已同步。
-
-## 2026-10-21 · 晚间审美训练内容候选（App version: v638）
-
-- Owner Codex；基于最新 `github/main` `54f0acd158c60eb7878d35eda576255aa1b0bcf8` 的独立 `content/aesthetic-2026-10-21` 分支，修改前版本、完整性与交接检查通过并建立当日源码备份。
-- 仅向 `docs/aesthetic-training/feed.v1.json` 追加稳定ID `aesthetic-2026-10-21`，新增原创虚构成人四格当前状态图和透明审核记录；旧13个解析对象逐条不变，不触碰旧academy feed、当日已发布academy、自由换算、客户、财务、数据库、登录权限、业务同步或自动化。
-- 主题为高层次参考目标与工作低扎、混合弯度和四分钟整理预算的多目标取舍；图片低扎格不当作剪后或六小时稳定证明，答案不含固定长度、去量、药剂或温度参数，也不虚构个人学习成绩。
-- App版本保持v638。当前为发布候选；必须完成完整门禁、受保护PR、精确head检查、正常合并、Pages成功和线上feed/图片精确回读后，才可声称已同步。
-
-## 2026-10-18 · Original two-occasion aesthetic case (App version: v635 unchanged)
-
-- Owner: Codex. Clean isolated content/aesthetic-2026-10-18 from latest github/main 91cbb032; required starting version/integrity/handoff checks passed and complete daily recovery archive created before edits. Separate Oct18 academy lesson and eight-course catalog remain untouched.
-- Exactly one stable Shanghai-date aesthetic-2026-10-18 case: fictional adult current front/right-profile/back hair state; shared daily outline versus one-off event waves and partial fastening. Six answers distinguish durable structure, temporary styling and unverified conditions; five recaps never score an unanswered user. Both A/B have explicit costs and a change condition.
-- Prior ten parsed feed objects unchanged. Original image and final original-size WebP actually viewed; full prompt and image/feed/case hashes in transparent preparer audit. No real customer, before/after, independent expert/scientific certification, demonstrated fastening or all-evening retention claim. Temporary clipping/trial styling remains illustrative, not proof of post-cut or home/event outcomes.
-- Only feed, original image, audit and necessary public handoff/change records change. App/runtime/version, old feed, calculator, customer, finance, backend/database, login/permissions, business sync and automation unchanged. Daily contract passes; local Chromium absent. Existing protected CI invokes identical daily/browser checks through test-perm-academy entries; complete exact-head Validate shared app, ordinary merge, Pages success and online ID/date/title/feed/image hashes remain mandatory before claiming App synchronization.
-
-## 2026-10-17 · Original styling-effort aesthetic case (App version: v635 unchanged)
-
-- Owner: Codex. Clean isolated content/aesthetic-2026-10-17 from latest github/main 19febf184; required starting version/integrity/handoff checks passed, recovery archive created before edits. Oct17 academy publication, seven-course catalog and all existing lessons remain unchanged.
-- Exactly one stable Shanghai-date aesthetic-2026-10-17 case: fictional adult male current front/right-profile/back lay, liking a prior salon side-back opening but declining repeated root styling. Six sections compare tested maintenance versus a side-forward target; five recaps never score an unanswered user. Two extra styling minutes do not replace necessary drying.
-- Prior nine parsed feed objects unchanged. Original output and final original-size WebP viewed; exact image/feed/case hashes and prompt in transparent preparer audit. No independent expert/scientific approval, real customer, predicted post-cut result or demonstrated root-direction claim. Skill, tools and willingness remain separate; one successful rehearsal is not all-day or home proof.
-- Only feed, original image, audit and necessary public change/handoff records change. App/runtime/version, old feed, calculator, customer, finance, backend/database, login/permissions, business sync and automation untouched. Daily contract passes; local browser executable absent, existing protected CI invokes the identical daily browser script through test-perm-academy-browser.js. Complete exact-head Validate shared app, normal protected merge, Pages success and online ID/date/title/feed/image hash readback remain mandatory before claiming App synchronization.
-
-## 2026-10-16 · Original reference-adaptation aesthetic case (App version: v635 unchanged)
-
-- Current owner: Codex. Clean isolated content/aesthetic-2026-10-16 from latest github/main c51cb774; required starting version/integrity/handoff checks passed and complete daily recovery archive created before edits. Separate Oct15/16 academy courses and their catalog remain untouched.
-- One stable Shanghai-date aesthetic-2026-10-16 case adds a fictional current-state front/right-profile/back WebP and conditional short-hair reference adaptation. Six answers cover person, style, contour, texture, daily feasibility and customer wording; five recaps explicitly do not evaluate an unanswered user.
-- Previous eight parsed feed objects are unchanged. Image was actually viewed, converted at original dimensions, and hash-bound in preparer audit. No independent scientific/expert approval is fabricated. Reference person's fuller hair/neck/shoulder conditions are explicitly text assumptions, not a claimed displayed photo. Temporary clipping is not proof of true post-cut volume or ear-tucking.
-- Only new feed item, image, transparent audit and necessary public records change. No App code/version, old feed, calculator, customer, finance, backend, database, login, permission, business sync or automation changes. Content contract passes; local Chromium absent and ordinary browser download fails as invalid archive. Existing protected CI invokes the exact daily browser through test-perm-academy-browser.js; all required checks must succeed before normal merge. Final Pages and exact feed/date/title/image readback remain mandatory; candidate is not yet synchronization.
-
-## 2026-10-15 · Original mixed-texture aesthetic case (App version: v635 unchanged)
-
-- Current owner: Codex. Clean isolated `content/aesthetic-2026-10-15` worktree from `github/main` `20d8bf9`; mandatory version, release-integrity and agent-sync checks passed and the daily recovery archive was created before edits.
-- Exactly one stable Shanghai-date case is added: a fictional adult with a comparatively smooth surface and stronger inner S-wave, comparing a solid perimeter with a softer texture-releasing direction under a three-minute/no-daily-flat-iron constraint. Front/right-profile/back image shows current state only, not a real customer, before/after or verified outcome.
-- Six conditional reasoning sections and five self-check prompts distinguish image-visible facts, scenario settings and on-site unknowns. The case does not infer personality or occupation, diagnose damage from appearance, prescribe fixed thinning/chemical parameters, promise reference-photo replication, or invent user performance.
-- Scope is limited to the new feed item, its original WebP, transparent preparer audit and public handoff records. Runtime/version, old academy feed, calculator, customer, finance, database, login, permission, business sync and automation are unchanged. Focused content/browser checks, complete required gate, protected PR, Pages deployment and exact online feed/image readback remain required before claiming App synchronization.
-
-## 2026-10-10 · Original daily aesthetic case (App version: v622 unchanged)
-
-- Current owner: Codex. Isolated content/aesthetic-2026-10-10 started from clean github/main v621 with recovery archive; financial repair PR25 takes publication priority. Fast-forwarded to latest github/main 251cf3d v622 after that repair merged, preserving all its source/version changes. Continuing user authorization covers today's one original illustrated case; no new schedule or legacy scientific batch.
-- Exactly one stable Asia/Shanghai Oct10 case: naturally wavy hair, everyday low ponytail, forehead coverage versus face-framing flexibility and maintenance. New original fictional loose/low-tied image, starting states only; not a real customer or before/after. Six conditional reasoning sections, five self-review prompts; previous Oct8/9 objects unchanged. Editorial audit and image hash in docs/aesthetic-training/reviews/2026-10-10.json; design hypotheses require on-site/customer validation, not scientific proof.
-- Only feed, original image, editorial audit and necessary changelog/handoff. App/runtime/version/retired feed/backend/finance/business/schema/permissions/schedules unchanged. Per-day lock prevents duplication; shared publication window is acquired only after the urgent repair's Pages deployment. Related 390/1280 content, legacy calculator, learning/admin and empty/error regressions pass; full shared gate and final PR/CI/Pages/hash checks remain mandatory. No employee authentication or production writes in previews.
-
-
-## 2026-10-10 · Audited daily cash-source review (App version: v621)
-
-- Latest base github/main 4da00c8 v620; isolated fix/daily-cash-human-review, daily archive retained. User approved compatible frontend/backend/schema release at 16:01 and clarified scope again at 16:25. Historical collection and OS scheduling remain untouched; no real Jan1/Jan2 values, reviews or posting are performed.
-- Finance explicitly reviews approved original, every cash channel and recharge/card-sale receipts, gives a required reason, then saves a separate append-only attestation. Existing request_role handles both modern JSON and legacy JWT claims. Server-selected actor/Auth/store, revision, original/cash-head/detail-head/list-source fingerprint and exact cell fingerprint bind the proof; edits, source refresh or authority revocation invalidate it. Original cash_channels_complete=false stays false. Only the source-completeness guard accepts current proof; all existing unknown-value, math, period and posting checks remain.
-- Separate final posting confirmation stays mandatory. Existing nonempty/known numeric-zero candidates may be adopted only after explicit review; no absent source or user-cleared blank is inferred as zero. Short source/identity locks and final posting-boundary validation prevent partial posting on concurrent updates; conflicts fail closed with a 5-second lock timeout.
-- Synthetic actual page/API/PostgreSQL tests cover explicit zero versus unknown, difference/source races, trusted Auth identity, immutable audit, idempotency, revoked permission and ordinary posting with exact income. Frozen Deno checks preserve all 12 live Edge dependencies and replace only index.ts. Shared hook, PR CI and Pages/readback verification required; physical iOS Safari and real user attestation are not simulated.
-- Rollback forward: hide the entry/revert Edge route, restore the exact source guard in a reviewed forward migration and remove the posting guard trigger if required; preserve daily_cash_reviews and audits. Never delete review history, change amounts or alter collector schedules. Migration and Edge deploy precede UI publication.
-
-## 2026-10-10 · Daily card-sales missing evidence feedback (App version: v620)
-
-- User-authorized repair from github/main 95d7d52 v619; isolated checkout and daily archive retained. Missing card_subtotal is now identified as unverified recharge/card-sale external receipts, shown amber rather than a false numeric total mismatch. Known numeric contradictions remain red; posting validation is unchanged.
-- Existing explicit source zero for card_subtotal now renders as 0 and remains a review candidate instead of being hidden/skipped as blank. Manual zero stays 0; manual blank/value and confirmed records are never rewritten. No inference from equal totals, raw card consumption, missing rows or failed requests. Current parser rejects empty summary rows as unavailable; there is no trusted no-record closure to convert automatically.
-- Synthetic regression covers zero/unknown/mismatch, malformed/403/no-row source rejection, manual/confirmed protection and card consumption separation. Full shared hook/CI/Pages required. Jan1/Jan2 remain unposted and need sale/source verification and candidate confirmation; this release writes no real data, deploys no backend/migration and changes no permissions. Rollback forward; no forced refresh.
-
-
-## 2026-10-09 · Clear native aesthetic case picker (App version: v619 preview only)
-
-- Current owner: Codex. Latest base github/main d4cae94 v618 in isolated ui/aesthetic-case-selector; clean start and recovery archive verified. User asked for a more obvious case picker; additional UI publication is not yet authorized. Do not merge or deploy this branch.
-- Only scoped selector presentation: pale panel, distinct field border, downward arrow, 52px touch target, 16px text, visible keyboard focus. Native select, case IDs, dates, data, rendering and business/auth logic unchanged. Version/cache references prepared consistently at v619 per app-code rules, including only required frontdesk/operations version and cache markers (byte-identical after marker normalization); their functions and finance fields are untouched.
-- Library screenshot materialization returned HTTP403; no bypass or repeat. Current public page and actual styles provide the baseline. 320/390/1280 local previews pass long-title fit, native click/change/history, 52px targets, Tab focus and synthetic 44px/34px safe-area layout; content/empty/error/calculator/cold regressions pass. Native system-popup arrow selection remains unverified: headless macOS also fails on a minimal unchanged select, and physical iOS Safari is unavailable. Full shared gate is required before branch push. Screenshots use isolated local preview with login overlay hidden; no staff authentication or backend writes.
-
-## 2026-10-09 · 当日发型审美训练内容（App version: v618 unchanged）
-
-- Current owner: Codex. Last synchronized base checked: github/main fdd8f7a v618, isolated content/aesthetic-2026-10-09. Clean start and daily recovery archive verified, original/parallel trees untouched. User explicitly authorized today’s original illustrated aesthetic case publication.
-- Exactly one new Asia/Shanghai Oct9 case: fine/flat hair, outline stability, visual density, low-maintenance and exercise fastening trade-offs. New original fictional AI front/profile image, starting state only; no customer image, before/after efficacy, face formula, diagnosis or chemical parameters. Six deep conditional reference sections and five self-review prompts; old Oct8 objects unchanged. Audit and image hash in docs/aesthetic-training/reviews/2026-10-09.json.
-- Current feed only; retired scientific feed, runtime/App/versions, business/backend/schema/permissions, paid external services and schedules untouched. Shared date lock held during publication; bounded transient-only verification retries.
-- Existing browser fixtures previously assumed one case/image. Adjust only test fixtures to serve all images, newest-first and history selection, and collapsed admin previews; no product changes. Required content/assets/mobile/desktop plus full shared gate and PR/CI/Pages readback remain publication checks.
-
-
-## 2026-10-09 · Safari daily name writing suggestions (App version: v618)
-
-- User confirmed Safari and approved this follow-up after v617 did not remove the candidate. Base github/main d7ef360 v617; isolated checkout and daily archive retained. Add only writingsuggestions=false to the same non-total stylist/technician name inputs, retaining the four existing safeguards. Other inputs, handlers, serialization, APIs and business data unchanged.
-- WebKit documents this independent inline prediction control since Safari 18: https://webkit.org/blog/15865/webkit-features-in-safari-18-0/. Scoped synthetic composition/name serialization and existing save contracts plus full shared/CI release gates required. Specific system candidate remains unobserved; user verification required. No global settings or forced refresh. Roll back with a newer forward release.
-
-
-## 2026-10-09 · Daily employee name input safeguards (App version: v617)
-
-- User-approved minimal frontend change from github/main c906560 v616, isolated checkout and daily archive retained. Only non-total stylist/technician name inputs request autocomplete/autocorrect/spellcheck/autocapitalize off. Numeric, signature, note, login, event handlers, serialization, APIs and business data unchanged.
-- Synthetic Chinese composition/name serialization and existing save/readback contracts tested; macOS candidate symptom is not directly reproduced and needs user verification. Full shared hook/CI/Pages required; no forced refresh. Roll back through a newer forward release.
-
-
-## 2026-10-09 · Corrected daily calendar projection (App version: v616)
-
-- Current owner: Codex. Synchronized github/main c01bd3c v615; recovery branch recovery/daily-calendar-correction-v615-20261009 and existing daily archive verified. Scope: calendar read projection and post-correction refresh only; no financial writes, migration, permission or formula changes.
-- Read-only evidence confirmed a genuine user correction committed with approved replacement and reversed predecessor. dailySheetMonth iterated newest-first but repeatedly overwrote an electronic day with older versions. Skip reversed rows and preserve the first effective approved/locked selection for confirmed days. Single legacy formal reports remain supported.
-- After confirmed readback, invalidate stale calendar requests/cache/DOM and refresh through the existing scoped loader. Failures retain correction success, remove stale amounts and retry only the calendar read on return. Existing store/month/request-generation guards retained; no retry of financial writes.
-- Synthetic API regression failed before fix (old value overwrote replacement); fixed test and 390/1280 browser cases pass, including offline calendar recovery with exactly one correction write. Deno frozen check passed. Production v121 13-file package backed up privately; proposed entry exactly matches tested local code and preserves the other 12 production dependencies and custom-auth verify_jwt=false. Release gate, Edge deployment and Pages readback remain required.
-- Rollback via a newer forward release and saved Edge package only. Never undo genuine corrections or remove their old/new audit history. No forced refresh of active forms.
-
-## 2026-10-09 · Confirmed daily correction feedback (App version: v615)
-
-- Current owner: Codex. Synchronized base github/main 3c904c1 v614; recovery branch recovery/daily-correction-feedback-v614-20261009, existing daily archive validated. Scoped continuation of the admin correction feature; other files/checkouts preserved.
-- Confirmed UI defects: mandatory reason and all blocking feedback lived below the long grid; setBusy disabled controls without updating the submit caption. Move the original reason details into a top correction panel only while editing, restore ordinary placement afterward; visible status/toast/focus, explicit cancelled-confirmation feedback and caught preflight exceptions. Validation, permissions, request receipt/idempotency and immutable accounting remain unchanged.
-- New regression fails on v614; corrected 390/1280 synthetic flow covers actual invalid calculation (not stubbed), visible status, reason focus, cancellation, pending disabled caption, preflight failure, and lost-response read-only recovery. Production read-only aggregate found zero successful admin corrections at inspection; this does not prove the user's specific blocking condition. No real correction/amount write, backend deploy or migration performed. Shared gate, CI and Pages readback required before completion.
-- Rollback forward to the v614 interaction under a newer version if necessary; no ledger or source rollback. No forced refresh of active forms; user must retain unsaved values before accepting an update.
-
-## 2026-10-09 · Admin-only confirmed daily correction (App version: v614)
-
-- Current owner: Codex. Last synchronized base checked: github/main 2ee9535 v613. Recovery branch recovery/admin-daily-correction-v613-20261009 and daily source archive created. Explicit user authorization: only login admin may correct already-posted daily reports. Other dirty checkouts and unrelated files preserved.
-- Dedicated account capability, no finance role grant or RLS/table changes. Backend and service-only RPC both enforce active Auth-bound admin with existing company shareholder scope; locked months, stale revisions and mismatched totals fail closed. Private frozen copies reuse verified posting functions, with only dedicated guards/private calls/confirmed projection/increasing immutable versions. Future posting fixes must review these copies; public ordinary functions are untouched.
-- One correction transaction reverses the prior effective income/report and posts the replacement with existing validation/reconciliation; old snapshots, source voucher links, actor/reason and cell changes retained. New archive is a server-side immutable copy because report object paths are unique. Failed attempts may leave an unreferenced correction copy; never delete files on uncertain outcomes. No real daily report is corrected by deployment.
-- Synthetic database covers scope/client/helper denial, locked months, validation/downstream rollback, simultaneous revision conflicts, immutable history, vouchers, cash-plus-earned-card policy and idempotency. API covers actor spoofing/immutable copy failure/duplicate byte verification; 390/1280 browser covers hidden entry, tracked edits, navigation/autosave blocking, reason/cancel and lost-response status recovery. Full shared pre-push (101 finance commands) and Deno2.9.6 frozen check passed. Initial default Python lacked cryptography; rerun used existing /private/tmp/academy-check-venv, with no checks skipped or new dependencies installed.
-- Production additive migration succeeded; exactly one company grant belongs to admin, no role-wide grant and zero other account capability matches. Both RPCs deny anon/authenticated; all private helpers deny client/service direct execution. Ordinary function hashes, existing ledger statuses/counts and immutable version count are unchanged. operations-api v121 ACTIVE, custom-auth verify_jwt=false preserved, all13 readback files exactly match the deployed package; non-entry dependencies preserved from productionv120. Anonymous new route returns403/AUTH_SESSION_INVALID. Code commit d0f25ad pushed main; CI and Pages pending at this handoff update. No genuine authenticated admin correction was submitted; user must review and correct their own report in the Auth-bound report App, not the separate employee read-only iframe.
-- Rollback: revoke only the dedicated capability and forward-patch away the correction entry/routes. Do not revert actual financial corrections or delete old/new history. Restore an incorrect amount using another reviewed admin correction. Original function definitions and source archive retained in private backups; backup is not a claim of full production database disaster-recovery validation.
-
-## 2026-10-09 · Slow-script initialization race (App version: v613)
-
-- Current owner: Codex. Last synchronized base checked: github/main d400f16 v612; daily recovery archive reused, other checkouts and generated test artifacts preserved. Continues the same authorized mobile-startup repair with no forced refresh or data changes.
-- v612 Pages 37880643894 and Validate 37880644238 succeeded; exact three-entry/version hashes matched. Live cold-load verification then caught a second employee-only defect: three repeated loads raised SUPABASE_URL is not defined; another run had passed. Existing 1500ms showcase timer runs during parsing, before a slow blocking dependency lets the main script initialize its constants. The global startup guard correctly remains failed on that uncaught exception.
-- Move only initial showcase scheduling into initApp, after the main configuration exists; original 1500ms delay/read endpoint/visible-tab polling stay unchanged. The new 2200ms script-stall case failed before this fix with the exact live error, then passed with zero early showcase reads and exactly one post-init synthetic read. CSS delay/failure/recovery and existing entry cases also pass. No Supabase schema, permissions, keys, sessions or API changes; read-only API contract reviewed under Supabase skill.
-- v612's non-blocking style/readiness fix and all-three guard-order gate remain. Frontdesk/operations changes are version/cache markers only. Current phone recovered before either publication; the all-three common failure still lacks phone-side evidence. Full v613 local gate, CI, Pages hash/readiness checks remain required before delivery; no real iPhone certification.
-
-## 2026-10-09 · Mobile startup stylesheet recovery (App version: v612)
-
-- Current owner: Codex. Last synchronized base checked: github/main 4b7f869 (v611), clean booking-sync checkout fast-forwarded before edits. Recovery branch recovery/mobile-blank-v611-20261009 and daily source archive created; other checkouts untouched.
-- User reports all three mobile entries blank, then spontaneous recovery before any publication. Mac live v611 entries rendered without JS errors; this does NOT identify the phone's common failure. iPhone Mirroring unavailable due to iCloud sync; current phone URLs/network behavior and real iPhone failure remain unverified. Never attribute spontaneous recovery to this unpublished patch.
-- Reproduced employee-only regression: holding perm-academy.css at v611 yields no paint and no ZysyrStartup, despite body existing. v607 had added a render-blocking stylesheet ahead of the v606 guard. Load it non-blocking, retain a readiness barrier and handle early/late failure; normal app appears only after styling and DOM ready. Frontdesk/operations functional code unchanged, required version/cache markers only.
-- Added shared-gate guard-order check for all three entries and four stylesheet browser cases (paint/8s retry/late recovery/early and late 404/normal). These plus existing 13 cold-start cases pass in isolated Chrome/Chromium. No auth, API, database, source sync, storage clearing, automatic reload, or business writes. Full pre-push/CI/Pages verification remains the publication gate; actual iPhone recurrence is still open.
-
-## 2026-10-09 · 美学研究院学习管理（App version: v611）
-
-- Current owner: Codex. Last synchronized base checked: github/main d0d3a33 v610, clean isolated feature/aesthetic-management-v611. Daily source archive created before edits; original dirty/parallel trees untouched. User explicitly approved development, restricted backend/schema, reversible pending archive, testing and publication.
-- Independent aesthetic-study endpoint validates existing private employee/admin sessions and current staff status; never trusts supplied username/store. No credentials or broader admin roles. Five private feature tables, service-only ingestion/restore; existing functions and business tables preserved.
-- Employee case visits, effective foreground-time estimates, answer-region exposure and self-completion are distinct. No submitted answers/mastery inference, outside-App tracking or historical browser attribution. IndexedDB atomic per-employee queue; <=25s intervals, 60s inactivity, <=60 event batches, 7-day offline window; server employee locking/interval union prevents overlap and repeats. Detailed events prune after 8 days upon subsequent activity; aggregate progress remains.
-- Correct main workbench is 美学研究院, superadmin only. Historical knowledge/sources retained in collapsed section; new case view follows public feed and registers content hashes server-side, so existing daily content publication needs no new scheduler/backend credentials.
-- Local protocol/Edge identity guards, PostgreSQL17 migration/overlap/concurrency/private grants/restore and synthetic390/1280 employee/admin interactions passed. Full shared pre-push passed all required checks, including97 finance steps; final focused tests preservev610 safe dialog and old calculator3:1=75g/25g. Production additive migration applied, aesthetic-study v1 ACTIVE with two files byte-identical on readback; anonymous/fake identity/fake admin live requests each403. Five new tables have RLS and no anon read/authenticated insert. Exactly30 read-verified pending_review v1 candidates archived in an ID/status/version/whole-row-hash transaction with30 private audits; after-images differ onlystatus/version/updated_at, published/source/review/evidence hashes and five old sessions unchanged. New production learning events remain0, no fabricated staff usage. Private evidence never committed. Frontend PR/CI/Pages verification pending; genuine first staff/admin authenticated end-to-end use has not been exercised.
-
-
-## 2026-10-09 calculator close placement — authorized publication (App version: v610)
-
-- Isolated worktree close-button-fix, branch fix/calculator-close-safe-area, base github/main 3d3ba97. User requests moving the obstructed tool-dialog close control; publication approved by user on 2026-10-09. Only required version/cache markers move to v610; full pre-push/CI and Pages verification remain release gates.
-- Scoped CSS positions the native tool dialog below top safe area, gives standalone portrait a 44px minimum status-bar allowance, keeps toolbar outside the scrollable tool content, accounts for bottom/landscape side insets, and gives close a minimum 44px height. JS handlers, moved original tool nodes, calculation values, chemistry data and form storage unchanged.
-- Parent visually verified original 943×2048 screenshot: title/close overlap iPhone status bar. Child Library download returned403, no further access attempted. Review relies on parent-approved visual description and isolated reproduction.
-- Synthetic local Mac Chrome cases:390×844/top59,320×568/top44,844×390/side59,1280×900, plus standalone-portrait zero-inset fallback and390×320 reduced-height case. CSS env inputs and standalone rule simulated explicitly because host Chrome lacks native safe-area emulation; not a real iPhone/PWA certification. Close hit target, post-scroll position, calculation, switch/repeat/Escape/focus, resize/rotation and unchanged form all pass. Existing training/academy browser and data tests,69 safety assertions,version/integrity/handoff/smoke/whitespace checks pass. Full pre-push/CI will run under the authorized publication flow.
-- Screenshots under artifacts/calculator-close; no business-page navigation or production writes.
-
-## 2026-10-08 · 发型审美训练候选（App version: v609）
-
-- Current owner: Codex. Last synchronized base checked: github/main b533a62 v608, isolated clean app-work; daily source backup created before edits. User explicitly requested this module replacement and today's illustrated case publication.
-- Replaced the academy entry/runtime with daily illustrated aesthetic cases and complete six-step answers/five-point self-review. Oct8 fictional AI portrait only; old science feed remains unreferenced historical material. No customer images or business data added.
-- Free calculator entry added to the hair form; original calculator/cold DOM and listeners move into a native modal without recreating the form or editing calculation logic. Cold utility retained. Version/cache markers only in frontdesk/operations.
-- Initial gates, 42 sync tests, 31 hair-state cases, archive/admin/booking, legacy markup hash, 69 ingestion assertions and new feed/assets contract passed. The shared pre-push passed version, smoke, update, AI route, care/manual outbound, care monthly, 11 Python care tests, hair-state/photos/save-durability and archive checks, then halted at customer-profile browser launch. Pinned Chromium downloads returned invalid archives; independently installed Google Chrome 155 exited with SIGSEGV before tests. Local browser validation remains unavailable. New isolated 390/1280 browser regression is wired into existing academy CI entry; the candidate will be validated on the independent GitHub PR runner before merging. NOT yet published.
-- Image upload transport recovered using a 352390-byte JPEG at the original 1774x887 dimensions; the same approved fictional case is retained. Code and image blob uploads succeeded through the GitHub connector. No original customer or business image is involved.
-- Daily ChatGPT content task exists; App-sync instructions must be updated only after successful first publication/readback. No new scheduler, backend, permission or business sync changes. Latest status must be confirmed before merging.
-
-## 2026-10-08 daily text save readback (App version: v608)
-
-- Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.
-- Verify signature, note and unclosed_order using manual_text; numeric cells retain corrected_numeric verification. Confirmed save revisions are adopted without weakening real conflicts or scope/permission guards. No financial values, API/backend, permissions or sync changes.
-- 11 synthetic text/numeric/mixed/blank/lost-reply/conflict/repeat/reentry cases and existing 48 row-label assertions pass; no live posting. User-approved publication; cache v608, no forced refresh.
-
-## 2026-10-06 · 导入安全本地候选（App version: v607 unchanged）
-
-- Current owner: Codex. Last synchronized base checked: github/main 84270b0; isolated feature/perm-ingestion-safety. Daily source backup reused and validated by startup gates. User authorized local safety implementation, not scheduler activation or production publication.
-- Builder now retains byte-identical no-op feed/updatedAt, derives Shanghai envelope batches, fingerprints semantic content, preserves old IDs, uses exclusive output lock, bounded transient retries, atomic staging, hash-guarded local recovery. Pending preflight never approves or writes a feed. No network/AI/Git commands in builder.
-- Optional source publication/update/verification metadata, evidence parts and batch summary/practice preserve source-vs-original-example boundaries. Existing arrays/schema and browser learning keys unchanged; formal feed and all HTML/versions untouched.
-- 69 ingestion safety assertions plus legacy/data checks pass using only temporary fixtures. Five real Oct6 source-verified foundational-reading candidates are untracked under artifacts/academy/candidates, remain pending; preflight passed, actual import was correctly rejected with old staged feed byte-identical. No fixture/candidate published.
-- User reports old daily task paused; tool shutdown not independently verified. No new day job, credentials, paid model calls, service installation or Actions permissions. Actual professional approval and one supported future task-to-local-file/Git capability probe remain required. Current validator is structural, not a network source verifier.
-- Focused local review only; no push/PR/merge or production changes. Full release gates remain necessary if later authorized to publish this script change. Integration details: docs/perm/ingestion-safety.md.
-
-
-## 2026-10-06 · 烫发研习院（App version: v607）
-
-- Current owner: Codex. Last synchronized base checked: github/main 24a0ad5 (v606), isolated clean clone feature/perm-academy; original dirty checkout untouched. Backup archive created before edits.
-- Existing plans entry renamed directly; eight learning categories, search/details, local favorites/completion, reviewed static feed and explicit empty/error/retry states. Original calculator/cold markup, handlers and perm_data_offline retained; no business data/API/schema/auth or forced refresh changes.
-- One source-verified FDA consultation reading; no fabricated scientific paper, real case or fixed perm recipe. Source date unknown remains null. Below daily 5–8 target is disclosed.
-- Daily ingestion NOT connected: visible automations contain only early shop report, no evening perm-learning task. Existing 02:30 aesthetic collector untouched. Reviewed atomic/deduplicated feed builder and exact integration blockers documented in docs/perm/academy-publishing.md. No duplicate cron/credential/permission expansion.
-- Academy data safety/idempotency/legacy-markup checks and isolated 390/1280 browser search/details/favorites/progress/empty/error/retry/tool-tab checks passed. Full shared hook halted at test-frontdesk.js: frontdesk version must match current release. Initial auto-review blocked other-App version/cache markers. User subsequently explicitly approved only frontdesk.html/operations.html version/cache synchronization; their functional code remains unchanged. Full local shared pre-push suite passed, including 95 finance manifest steps; final CI and Pages checks remain release gates. Publication is authorized; original daily task connection remains blocked. GH CLI existing token invalid, GitHub connector and SSH access verified. Required source/module/aesthetic/legacy safety gates pass; 42 existing booking/keepalive/customer tests passed in temporary pinned cryptography 48.0.0 environment (system Python lacks that dependency).
-
-
-## 2026-10-03 cold-start tolerance (App version: v606)
-
-- Current owner: Codex. Base github/main bf0c911 (v605), isolated review/cold-start-local; user explicitly approved publication of only these three entries. Original dirty checkout and new Salon/401/logo work untouched.
-- Visible startup guard before blocking dependencies, preserved synchronous order, frontdesk CSS readiness barrier, explicit pre-ready reload only. Existing auth/permissions, business writes, active edits and cache state retained. No automatic refresh, API retries, schema/data/Edge changes.
-- 13 sequential isolated Chromium synthetic cases passed plus frontdesk/operations/API-read-timeout/version checks; previous operations surface desktop/mobile passed. Required hook/CI and exact Pages resource tests gate publication. Eight seconds is a visible waiting threshold, not request cancellation; actual iPhone cause and icon URLs remain unverified.
-- Forward recovery: restore three entry behavior from bf0c911 in a higher version and retain normal update prompting. No data rollback.
-
-## 2026-10-02 report surface polish (App version: v605)
-
-- Current owner: Codex. Last synchronized base checked: github/main 0d47280324c7f2de68d846dc67a8193ffce9a0d8 (v604). Isolated worktree; original developer checkout and all pending work untouched.
-- User approved the faithful polish and restrained table elevation, then explicitly approved publication. Preserve v604 appointment overview. Only screen CSS plus required shared cache/version markers, regression test and handoff records.
-- No financial calculations, markup layout, API, schema, data, permissions or save/posting logic changed. No forced refresh. Synthetic browser checks and required shared validation/CI gate the release; production financial actions are not exercised.
-- Local validation: existing five-viewport operations presentation regression and the new 1366/390px surface regression passed, covering monthly reading/editing, daily calendar/detail, exact cents, unsaved state, posting/save/upload controls and unchanged financial status colors. Version/release-integrity/smoke/handoff and whitespace gates passed. Full pre-push/shared CI and exact Pages verification remain release gates.
-- Source recovery archive created and validated in this worktree before editing. Reviewed screenshots remain synthetic. Actual-page checks preserve native date-picker and narrow-calendar numeric widths rather than imposing tabular digits where they change automatic sizing.
-
-## 2026-10-02 frontdesk appointment overview (App version: v604)
-
-- User approved the reviewed one-screen overview for release; isolated latest main 0ba262b. Original developer checkout and all pending Salon/401 work preserved.
-- All-day proportional rails and chronological customer cards retain every appointment; overlap labels, detail/create controls, keyboard focus on polling, and detailed timeline toggle remain. Dense/mobile agendas expand naturally.
-- Synthetic 7 staff / 17 customers fit 1366x768, 1280x800 and 1920x1080; 390px, 45 overlaps, empty staff and interactions verified. Required shared checks and remote CI gate release.
-- Only frontdesk UI, required version/cache markers and tests; no API, schema, data, permissions, runtime install or forced refresh.
-
-## 2026-10-02 frontdesk disclosure v603
-
-- User approved this one visual update for release. CSS-only disclosure styling plus required version/cache references; no Salon development, API, migration, data, sync or permission changes.
-- Native details interaction verified on isolated Chromium at 320/390/1280px, including pointer, Enter/Space, focus and no overflow; synthetic preview only. Shared checks and CI gate release.
-- Isolated clean main worktree; original developer checkout and all pending work preserved. No forced refresh; normal update prompting remains.
-
-
-## 2026-10-02 · 日报人工姓名保存契约（App version: v603）
-
-- Current owner: Codex。基线 github/main 487c63b（v601），隔离克隆 fix/daily-manual-label-contract-v602；用户明确批准最小前端修复发布，原开发目录及用户旧页面保持。
-- 仅将行名回读校验 manual_entry 改为后台规范 manual；后台已有成功人工保存却前端误拒绝的契约差异已只读核实。保留所有内容、修订、权限和锁账保护。
-- 既有浏览器模拟保存也改用真实后台 manual 标记，断言保持；前台入口同步必要v602缓存标记。首轮CI版本遗漏与次轮旧模拟标记失败均保留记录。
-- 48项合成回归通过，旧基线同一测试失败；正常/丢回包、重复保存/入账前核验和真实冲突均覆盖，模拟正式入账调用为0。测试规范值与现有SQL保存迁移核对。
-- 当日隔离源码归档已完成。资源warning下本地顺序执行轻量门禁，完整共享套件由远端必需 Validate shared app 执行，CI通过后才合并。未改数据库、权限、同步任务或生产日报。
-- 用户旧页未保存输入仍在内存；不刷新、不关闭、不承诺本地持久备份。发布后另开新页核验后台草稿，与旧页逐项比较，再由用户核对保存和决定正式入账。
-
-## 2026-10-02 · 日报保存结果恢复（App version: v601）
-
-- Current owner: Codex。基线 github/main `6c18169`，独立干净工作树 `zysyr-daily-save-recovery`；保留并行项目分类 PR #5。启动版本/发布完整性/交接通过，10/2 源码归档已校验。
-- 视频中向里 3/17 日报反复提示版本更新；只读诊断显示草稿已有人工保存修订但未入账。已用合成 API 复现旧版保存成功但响应丢失后卡住，修复前新增回归实际失败。不能据此声称已确定生产最初回包丢失的网络原因。
-- 仅修改 operations-daily-review：写失败一次只读回查，严格验证同作用域、修订增加、全表显示值、人工持久化值/姓名、权限/锁账/原件后接续；下一次显式操作同样可恢复已保存旧页。不盲改 expected_revision、不自动重写，不更改真实冲突保护。
-- Chrome 与 WebKit 的两店/桌面/手机合成回归通过，包括丢保存回包、回读失败后重试、仅保存不入账、角分与姓名、原件/权限/锁账/人工未落地拒绝、实际金额冲突、迟到响应及重复确认。
-- 待本轮核验：真实完整 pre-push、远端 Validate/Pages 与线上无缓存哈希。真实财务账号最终入账留给用户核对操作；本轮未写生产财务数据，不部署 Edge、不应用迁移、不改自动化。
-- 回滚：以更高 App 版本恢复 `6c18169` 的 operations-daily-review.js 并同步缓存标记；不回滚账务。主开发目录的其他未提交工作完全未动。
-
-## Local classification-only candidate (2026-10-02; v600 unchanged)
-
-- Base github/main d330bc9; branch review/mgj-exact-catalog-v10-local.
-- Eight exact catalog additions, frozen v9 generator, v10 writer review/legacy guards.
-- Scope approved for source publication, reviewed v10 migration and bounded affected
-  unconfirmed draft refresh after checks; no runtime/UI/schedule changes or formal posting.
-- Final local full pre-push/finance91 plus offline93 and PostgreSQL17 v10 58 groups passed.
-- Synthetic tests only; docs/mgj-classification-only-local-review.md records gate evidence
-  and forward recovery. Native gates precede remote CI and production verification.
-
-## 2026-10-01 · 两店当日日报定时核对（App version: v600）
-
-- 基线 github/main `4e69685`，干净工作树；启动门禁及当天源码归档已完成。Current owner: Codex。
-- 用户要求每日自动检查日报。仅新增只读脚本/SQL、15项测试、运行说明和财务测试清单，不修改页面、财务公式、数据库/权限、历史账或现有同步调度；维护模块无需提升App版本。
-- 使用候选/人工优先显示值独立核对，不把正式入账函数的人工-only空值误判为草稿数据丢失。源列表/详情快照、来源逐员工预期格、分类遗漏、行列合计、支付控制和未知字段分层提示。
-- 10/1 21:35生产只读试运行：两店当前来源员工项目无差异，但收款控制有未知字段，正确返回attention；本轮未写任何真实日报。定时执行采用23:30 Asia/Shanghai，稳定副本目录`/Users/a1/Documents/Codex/2026-06-20/zysyr-daily-monitor`，不依赖临时checkout。
-- 后续核验：完整pre-push与远端CI、稳定副本哈希、heartbeat激活；依赖本机开机/Codex运行/Supabase可用，不宣称无人值守云端SLA。回滚只需暂停此heartbeat，无数据库迁移或数据恢复。
-
-## 2026-10-01 · 日报项目归类完整性（App version: v600）
-
-- 基线 github/main `7b74c1f` v599，干净工作树；fetch/版本/发布完整性/交接及当天源码归档完成。Current owner: Codex。
-- 用户确认歌薇酸护（含盖白发）归护理，并明确授权分类规则上线、补齐今天两店未入账草稿。已核实烫发/染发项目新增精确店+编号+名称规则；歌薇已确认服务家族支持价格变体，不把零售商品或未知混合套餐猜成护理。
-- v9 单独迁移沿用 v8 writer、卡金/现金公式、锁账、人工修改保护和不可变前后审计；追加私有纯函数生成未分类/平台不明/缺金额逐笔说明。统一 JS/SQL 项目目录；未知非零仍留待核对，不因总额正确就冒充明细完整。
-- operations-api 仅透传当前草稿有效员工行的白名单说明，不泄露客户/原单载荷；日报提示员工、项目、金额、单号，提醒已计入小计不可重复增加。已确认表不加新提示。frontdesk-api 同步共享分类目录，其他逻辑不改。
-- 本地50组隔离 SQL、390/1280宽实际纸表和实际 reader 回归通过，Deno 两个 API 类型检查通过；完整 pre-push/CI/Pages/生产迁移及草稿回读仍由本轮部署步骤核验。
-- 回滚基线 `7b74c1f`；生产原函数受控备份 `/private/tmp/zysyr-project-v9-functions-before-20261001.json`。必要时以前向迁移恢复旧分类/writer，不删除审计；草稿只按对应事件前像、人工修订核对后单张恢复，不改正式账。没有自动入账、不重新采集美管加、不改调度。
-- 实际发布：`9a93479` 已经真实 pre-push 全门禁（财务90/90）推送 main；Validate #36865432972 和 Pages #36865431054 success。线上 version=600，operations/frontdesk HTML 无缓存逐字匹配。
-- operations-api ACTIVE v120 / frontdesk-api ACTIVE v28，13/4个部署文件逐字回读匹配；保留原 custom-auth。frontdesk 首次部署审核疑似旧包而拒绝，已用明确 v600 commit 和生产逐文件差异证明仅分类文件变化后获准，无绕过发布渠道。
-- CLI linked dry-run 因 checkout 无 project-ref 停止；远端单独迁移 `20261001130016 zysyr_daily_project_completeness_v9` 成功。原函数 owner/ACL/security-definer不变；新纯函数仅postgres可执行，安全Advisor无新增项。
-- 10/1向里草稿修订28；自由经原有正常同步自然推进至修订25，均为v9、未入账、classification_issues=[]。逐员工项目合计等于小计；向里同源财务总额/付款/员工小计未变。自由新增来源使员工业绩自然增长，原付款汇总未随此分类修复改写；源收款批次暂不同步仍需核对，不冒充完整日报可入账。
-- 手动修复事务在来源变更或金额保护不符时完整回滚；核实其中变化仅为技师项目次数补齐后，将金额保护限于员工金额/汇总/支付，未解除任何人工或正式账保护。自由由既有正常同步触发，不强制旧来源覆盖。55张确认日报、21645确认格、2480人工格、正式日报/收入及350附件摘要均与发布前一致。
-
-## 2026-10-01 · 日报安全静默同步（App version: v599）
-
-- 基线 github/main `a099b97` v598；工作树干净，fetch/版本/发布完整性/交接检查完成，复用 10/1 源码归档。Current owner: Codex。
-- 用户确认按“安全静默同步”方案执行：仅 `operations-daily-review.js` 的详情后台检查和写前预检，以及 `operations.html` 静默渲染不滚回顶部；其他两个入口只同步版本/缓存标记。
-- 前台详情每60秒及 focus/pageshow/online/visibility 唤醒读取既有鉴权 `daily_sheet_read`，30秒合并及 single-flight；隐藏/离线/正在写入或原件处理中跳过。请求前后校验上下文和 sheet 对象，保护金额/姓名/备注/文件选择/展开核对；无变化不重建DOM。
-- 未编辑自动读取最新日报；有修改只提示，不更换 expected_revision 强行保存。保存和入账先核对版本/权限/锁账；不改 v598 数据库冲突保护、公式、历史数据、RLS或登录续期。没有自动确认任何真实日报，无需 Edge 或迁移部署。
-- 聚焦 Chrome 与 WebKit 隔离浏览器用例通过，覆盖输入/迟到响应/重复唤醒/离线隐藏/权限变化/写前冲突/入账结果恢复。完整 pre-push 与 Pages/CI/线上哈希在本轮发布时核验；真实财务长时间挂页仍需实际使用验收。
-- 回退：从 `a099b97` 恢复该前端模块及静默渲染条件，以更高版本发布；不回滚数据、不恢复旧40001错误码。
-
-## 2026-10-01 · 日报版本冲突非重试修复（App version: v598）
-
-- 基线 github/main `bebf7e2` v597，干净工作树；fetch/版本/完整性/交接检查及 10/1 源码归档完成。Current owner: Codex。
-- 生产证据：12:20–13:00 窗口数据库大量 `DAILY_SHEET_REVISION_CONFLICT` / 40001；两次 daily_sheet_save 耗时约 126.8 秒。官方已确认 PostgREST 对此自定义可重试状态的重复事务问题。
-- 用户明确批准最小数据库修复。仅两个带 expected_revision 的 save/confirm RPC 将该错误码改 PT409；保持锁、作用域、权限、委托旧实现和金额规则。生产迁移 `20261001045401` 已成功应用，本地 CLI 文件时间 `20261001045133`；前后函数逐字比较确认只有错误码变化，proacl/owner/security_definer 相同。
-- 原生产函数恢复副本：`/private/tmp/zysyr-daily-revision-functions-before-20261001.json`（0600）；旧定义同时可由基线迁移重建。回退只恢复函数错误处理，不回滚账务；优先前向修复，不恢复会无限重试的 40001。
-- 隔离 PostgreSQL 并发/错误码/正确确认/拒绝越权及原子保存、入账不确定结果保护均通过。CLI linked dry-run 因本工作树无 project-ref 不可用；未伪造绑定或整库推送，改由已授权单迁移 MCP 应用。
-- 只读确认向里 2026-03-04 金额780、revision2仍为草稿；未替用户入账。没有 Edge 代码部署，三个入口只有发布版本标记更新。真实 pre-push、Actions/Pages 和迁移后日志/安全检查将在本轮收尾核验；正式入账仍由财务重新打开核对后操作。
-- 生产迁移后函数/ACL逐字核验通过；安全Advisor无新增。首次 pre-push 财务90/90处的同步调度用例读取本机真实冷却状态而失败；单独测试修复为注入空 backoff_reader，与同类合成用例一致，不改实际同步或冷却文件，随后重新跑完整门禁。
-
-## 2026-09-30 · 日报金额清晰显示（App version: v597）
-
-- Last synchronized base checked: GitHub main `c98f810`（v596）；Current owner: Codex。起始工作树干净，最新基线、版本/完整性/交接检查及当天源码备份检查完成。
-- Safari/WebKit 本地合成纸表复现数字末位被原生 number 步进箭头盖住；原输入和整数覆盖层字号均为 10px。移除日报数字步进箭头，数字改为 12px Arial/tabular-nums、表格最小宽度 1600px；沿用现有整表 fit，用与月报一致的 transform 缩放避免 Safari 字号膨胀。
-- 只调整报表显示；v596 整数展示、点击后原始角分、保存载荷、自动来源、财务计算、权限和数据库不变。员工/收银端只有全局版本及资源缓存标记同步。
-- 聚焦验证：Chrome 和 WebKit 八种尺寸/旋转的金额边界（含 123456.78 编辑值）、点击编辑 828.24 保留角分通过；两店桌面/手机日报保存与入账保护回归通过。完整真实 pre-push、Pages/CI 与无缓存回读在发布时核验；不把合成测试称为真实财务账号验收。
-- 回退：以更高版本恢复本次日报 CSS 与 fit 分支，不需数据回滚。
-
-## 2026-09-30 · 日报金额整数展示（App version: v596）
-
-- 基于 github/main `b3e023b`（v595）；工作树干净、版本/完整性/交接检查通过，9/30 完整源码归档复用。Current owner: Codex。
-- 两店日报纸表的金额格和日报月历只显示直接截去小数后的整数，例如 828.24 显示 828；技师个数、其他计数不变。点入格子可核对与编辑完整金额，保存载荷、核对规则、财务审计及月报原值不截断。
-- 两店桌面/手机合成浏览器回归增加 828.24 显示 828、编辑和保存仍 828.24 的断言；发布后还需核验 Pages 版本和线上文件。无数据库、接口、同步任务及生产财务数据改动。
-- 首次真实 pre-push 在默认 Homebrew Python 3.14 缺少 cryptography 时停于同步测试；第二次在财务 manifest 的 Python 步骤因同一缺依赖停住，均未推送。钩子与财务 runner 共用可选 `ZYSYR_HOOK_PYTHON`，默认仍为 python3；本机用已验证的系统 Python 3.9（cryptography 48.0.0）完成全门禁。
-
-## 2026-09-30 · 客户弹窗关闭按钮可见性（App version: v595，已发布）
-
-- 基于 github/main `a500efe` 和 9/30 源码归档，保留并行 v594 日报卡金更新。用户截图显示员工端客户详情“消费记录”下方关闭位置空白；代码仍生成关闭按钮，v589 暖色 CSS 将背景变浅而文字保持白色，合成手机浏览器实测对比度约 1.04:1。
-- 员工端仅移除这两个按钮的浅底覆盖，让既有深底白字样式生效；关闭回调及套餐、消费、发质档案数据逻辑不变。收银和报表只同步全局版本及静态资源标记。
-- 聚焦浏览器回归覆盖 320/390/768 宽度、三种客户档案分支，对比度至少 4.5:1，点击关闭后弹窗消失。真实 pre-push 全套通过（财务 90/90）；功能提交 `df74a3f` 已推 github/main，Validate #36707553741 与 Pages #36707552232 均 success。线上无缓存回读 version.txt=595，员工 App SHA-256 与发布文件一致；真实手机点击验收仍待用户确认。
-
-## 2026-09-30 · 日报卡金业绩与月报现金分离（App version: v594）
-
-- 用户最终口径：日报实做与两处总计包含实际获得卡金业绩，不用原始划卡额；现金流不加卡金，月报美发收入继续只读取已确认日报现金流。充值售卡新钱仍不计实做。
-- 基线 e174c66；fetch/版本/完整性/当日备份通过。v8 增量迁移、私有卡金投影、精确自由513护理分类；旧v7生成器固定目录。保留已确认表、原始快照、人工格与审计，不自动入账，不改美管加或调度。
-- UI/API仅白名单透传新口径，旧确认表仍按原政策校验；回归47组隔离SQL通过，截图2934+828.24=3762.24及月报现金独立取数通过。生产迁移/部署/今天草稿回读以本轮后续验收为准，不能把本地通过视为上线。
-
-## 2026-09-30 · 历史补采白天错峰与失败让路（App version: v593，后台任务专项）
-
-- 基线 a1a0f20，工作树干净；fetch/版本/完整性/交接检查通过，当日归档复用，无新建外传备份。页面/API/数据库结构无修改，不发布其他App功能。
-- 用户批准加速全年历史：保持当天两店各15分钟不变，增加单一白天历史12/27/42/57分全局轮换；夜间仍5分钟。90秒源预算、共享锁、429/鉴权冷却、消费同步优先不变。历史失败或超预算按日期延期6小时，其他日期继续，不清空检查点。
-- 已完成明细只补整组现金来源（保留三组汇总的采集一致性），新增只读--status分店统计，明确来源完成不等于日报完成。40项相关Python回归通过；受控只读实测和安装哈希/原cron备份由本轮核验。
-- 已将8张旧映射未入账草稿用既有云端来源升级v7，缺失科目仍未知，保留人工格、不自动入账。所有11张有自动填表记录的日报已是v7，不代表全年完成。正式账务/附件/人工格摘要需前后核验。
-- 不新增无界循环，不改预约/客户同步，不写美管加；Mac须开机联网。下一步按新增完整店日、剩余日期和失败原因汇报，不能用有表/采集通过冒充财务核对完成。
-
-## 2026-09-30 · 同步日报保护与护理归类（App version: v593）
-
-- 基线 bfde9e9；保留并合并并行发布 e77a937（v592 门店排序），本次顺延 v593。Current owner: Codex。用户确认“歌薇酸护（盖白发）880”为护理，并批准上传核对不覆盖方案。
-- 精确限定自由门店/523/完整项目名；明确零业绩附带项目不阻断已知金额列，未知非零或 NULL 仍待核对。历史 v5 生成器固定原目录，旧迁移未重写。
-- v7 云端迁移已应用；自由9/29未入账草稿修订8，护理无名2240、娄云680、小计2920。人工5格逐字段未变；42张确认日报、16638格、正式日报/收入/版本/280附件数量及摘要与修复前一致。不自动入账。
-- 同步日报照片仅附件留底；手动识别只返回差异并留审计，不改金额、姓名、行数或修订。数据库层阻断旧客户端覆盖/扩行。以后自动同步保留人工金额与刻意留空，差异提示待核对。
-- operations-api v118 / frontdesk-api v27 ACTIVE，部署前全bundle与基线核对；鉴权原配置不变。45组隔离SQL、实际reader渲染及桌面/手机来源操作测试通过，Deno frozen检查通过。CLI linked dry-run缺project-ref，未伪造绑定，使用单一授权MCP迁移。
-- 后续核验：真实pre-push、Actions和线上回读。未知技师项目个数仍待核对，全年补采不宣称完成；本次不改同步任务或美管加。回退使用前向修复，不重置账务、快照或审计。
-
-## 2026-09-30 · 报表门店默认顺序（App version: v592）
-
-- Last synchronized base checked: GitHub main `bfde9e9`（v591）；起始工作树干净，fetch、版本/完整性/交接检查通过，当日源码备份已存在。Current owner: Codex。
-- 仅在报表页对 `session.user.stores` 的本地副本排序；获授权多店账号默认“自由手艺人”，单店账号维持原门店。没有新增可访问门店，也不修改服务端鉴权、RLS、数据库或任何财务数据。
-- 增加浏览器回归，分别检查双店默认顺序和仅向里造型授权账号不出现自由手艺人；五种视口、股东只读与页面数据未变的本地 Chromium 回归通过。版本/完整性/交接检查与 `test-operations.js` 通过。发布后需核验 Pages 版本与线上文件；真实门店账号的最终显示仍需用户确认。
-- 回退：在更高版本中恢复原门店排序和默认选择；不需数据回滚。
-
-## 2026-09-30 · 独立银行卡栏（App version: v591，用户已授权发布）
-
-- Last synchronized base checked: GitHub main `eda9737`（v590）；Current owner: Codex。起始工作树干净，fetch、版本、完整性和交接检查通过，当日源码归档已存在。此前 v590 Pages #36667029328、Validate #36667029744 均 success。
-- Last Completed Work: 用户明确选择“增加银行卡栏，保留真实来源”。美管加经营日汇总银联列只映射 payment/bank_card，不归公/私刷卡、微信、支付宝或卡金；payment_method 纳入既有付款合计。未知仍未知，权限和确认条件不放宽。
-- 纸表利用原付款区空格维持25列及原栏位置，只有存在 bank_card 格时显示新栏；旧确认表不改，未来确认表保留银行卡栏。既有 API 按格子 ID 和修订号校验，本次无接口部署。
-- v6 私有投影/writer 单一迁移已部署；两店9/27、9/29、9/30六个已具三组现金来源的未入账店日已重算。向里9/29独立银行卡56元，支付宝1036、微信1174、团购1450，付款与现金流总计3716元。保留原源空白和待核对状态，不自动入账。
-- 42张已确认日报、16638格，以及正式日报、收入、确认版本和附件的数量与整体摘要均与本轮前完全一致。14组纯策略、40组隔离 SQL、390/1280宽度浏览器回归通过；Advisor 数量及级别不变，无新增提示。
-- 发布采用真实 pre-push 门禁及 Pages/CI/无缓存回读；本条记录发布范围和发布前核验，实际部署结果以 Actions 与当前对话验收为准。
-- Open Work For Next Agent: 自由“歌薇酸护（盖白发）880”归护理或染发仍待用户确认；历史2026仍按原队列分批补采，禁止推断分类或宣称全年完成。前向回退保留格子、来源与审计，确认账不动。
-
-## 2026-09-30 · 明细同步、现金汇总和静默刷新（App version: v590，已发布并线上回读）
-
-- Last synchronized base checked: GitHub main `2b4779b`（v589），起始工作树干净、版本/完整性/交接检查通过，当日源码归档已存在。Current owner: Codex。
-- Last Completed Work: 修复上游 JSON 浮点极小残差导致整日明细拒绝的问题；只容忍 float 的不足 0.0000001 分残差，真实分以下金额/字符串仍拒绝。已重新接收自由门店 9/29 的 26 单、73 个员工分配，草稿由既有受保护 writer 更新。
-- 三组经营/售卡/全业务现金汇总接入现有明细时隙，共享 90 秒预算、原源锁和正常同步优先级；历史已完成明细只补现金，失败延期 6 小时不堵塞后续日期。六运行文件已备份并哈希核验安装，cron_changed=false；白天每店 15 分钟、夜间两店交替每 5 分钟不变，全年历史仍未完成。
-- 前台同门店/同日期后台刷新保留旧数据；相同内容不重建 DOM，保留展开行和双向滚动，失败保留旧内容；切店/切日/退出立即隔离，定时刷新不显示按钮忙态。桌面/平板/手机五尺寸与异步返回/错误回归通过。
-- 精确项目白名单新增 5 个已观察的门店+编号+名称组合；现金业绩归平台允许一个正价项目附带明确零元、零业绩项目，未知/负数/多正价/不完整分量仍拒绝。v5 单一迁移已应用，38 组隔离 SQL、55 个 Python 回归通过；v2 历史生成器固定原目录，未重写已发布迁移。
-- 两店 9/29 实做/现金流/总计已按三份独立来源补入未入账草稿。向里员工明细/小计/分类合计闭合。原源空白不补零；自由“盖白发”项目归类与向里银联收款的纸表栏位已向用户询问，未擅自混入其他科目。财务仍需确认、不自动入账。
-- 已确认 42 张/16638 格、正式日报42张、收入379条、确认版本42个、附件280个的数量及整体摘要与本轮前一致。数据库助手权限不扩大；安全检查级别/数量不变（既有51项私有RLS无客户端policy提示、1项Auth泄露密码保护提示）。两个接口只共享目录更新，部署前线上bundle与HEAD基线核对一致；Pages、完整pre-push、发布后回读待完成后记录。
-- Open Work For Next Agent: 不宣称全年补齐或全部财务校验通过；继续既有队列，等待两项业务归栏确认，未知保留。回退用前向版本恢复旧helper/writer与运行备份，不删除快照、事件或重置检查点。
-- 发布证据：运行提交 `9b28b737754092893eabf6c3c863e118db6c088f` 已由真实 `.githooks/pre-push` 全部通过后推到 GitHub main（财务90/90）；Pages #36667029328 success，三HTML入口、两个版本文件与明细脚本六份无缓存HTTP200回读逐字一致。未替真实财务账号点击入账；已发布不等于用户财务验收。
-- 云端迁移记录 `20260930035426 zysyr_daily_project_routes_v5` 对应本地CLI生成文件 `20260930034900`；frontdesk-api v26 / operations-api v117 ACTIVE、原 verify_jwt=false 自定义鉴权不变，未登录请求均403。9/29自由135格、向里171格与新只读投影回算差异均0；这是映射一致性，不代表未知科目已补齐。两店9/30最新明细及三组现金来源均接通为待核对草稿。最终受保护摘要仍与部署前一致。
-- 安全检查没有新增项；既有 Auth [泄露密码保护提示](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) 未在本次业务修复中改动。只读权限和入账保护回归保持通过。
-
-## 2026-09-29 · 三个 App 柔和底色（App version: v589，已发布并核验）
-
-- Last synchronized base checked: GitHub main `0d1048b`（v588），fetch 与版本/发布完整性/交接检查通过；起始工作树干净，当日源码备份已存在。Current owner: Codex。
-- 收银中心将近黑底调为暖炭色；员工端预约/方案/弹窗纯白面改为浅暖灰与暖白；报表应用暖灰底和柔和卡片/导航底色。报表内原始表格纸面、警示状态色、文字对比、布局与业务行为不变。
-- Last Completed Work: 只改 `frontdesk.html`、`perm-app.html`、`operations.html` 的 CSS / 主题色和静态缓存版本，以及版本号、Changelog；未动数据、公式、API、权限、云端或同步任务。
-- Verification: `git diff --check`、版本/发布完整性/交接检查、`smoke-test-app.js`、`test-frontdesk.js`、`test-booking-ui.js`、`test-operations.js` 均通过。定向 Chromium 视觉回归无法启动：本机浏览器进程触发 SIGABRT（Chromium 和备用 WebKit 均如此），不是断言失败；按环境故障停止重试。
-- Release: commit `01251ee` 已推送至 GitHub `main`；完整 pre-push 通过。无缓存线上复查确认 `version.txt`、`perm-app.html`、`frontdesk.html`、`operations.html` 均为 v589。未强制刷新用户。
-- Open Work For Next Agent: 无；继续保持原始日报纸面白底，待后续用户反馈。
-- Handoff Rule: 保持字体和状态色对比；月报原始账表及工资纸表继续白底，避免改变原始凭证/表格的识读观感。
-
-## 2026-09-29 · 现金口径 v4（App version: v588，已发布；两店9/27已填可用汇总）
-
-- 用户确认现金包含全部外部实收；卡金扣款不算收入，充值/套餐/年卡新收款不计实做。仅适用未入账汇总，不改一月份等已确认历史账。
-- 起始 bb2dbbc，工作树干净；当日源码归档存在，版本/发布完整性检查通过。新建候选迁移由 CLI 2.109.1 生成，固定 store/date、来源配对、v4 既有 writer 前后审计、独立现金/员工业绩校验；保留原件与财务确认，不新增客户端权限。
-- 经营现金 source incomeType 1+2，售卡新实收用独立3+4+5来源；不能把跨次读取的总额差当售卡，也不能用卡金扣款或员工业绩代替。三组闭合、来源时间窗口，四个公私账号列不猜填写，未知保留 NULL。现金查看只白名单返回政策，保留原单隐私。
-- 最终独立售卡和可选故障保护版通过真实pre-push全套门禁（财务90/90）、两个配套函数Deno类型检查、34组隔离SQL（含不误分类新增项目收款、缺源不猜金额、业务快照FK下接受源不回滚）、纯政策13组及Python27项；迁移生成一致性、版本完整性和差异空白检查通过。正常推送9a0118a，Validate #36446982441及Pages #36446981383均success；版本/三个入口/两个运行脚本无缓存逐字一致v588。
-- linked dry-run 仍提示缺 project ref，未伪造配置或 migration history。单次只读采集向里9/27按正常同步优先主动让出，未请求原源、未追加数据；不能称已实测新来源配对。上线前仍需实际备份状态、迁移历史比对及明确批准。
-- 用户明确答复“发布”后，单一MCP迁移20260928155351 zysyr_daily_cash_candidate_v4成功（本地候选文件时间戳20260928141730，不修远端历史）；线上v4 writer和新现金校验标记存在。operations-api ACTIVE116、mgj-daily-report-sync ACTIVE2，14文件与源码一致，原verify_jwt=false及内部会话/签名鉴权保留；无会话403、无签名401。私有helper及writer最小权限核验通过；Advisor类别/数量与之前相同，无新增WARN/ERROR。
-- 两店9/27三种证据已签名追加/回读，向里经营首次transport_uncertain后先查云端确认缺源再有限重采，不盲重试。向里草稿revision6，自由草稿revision3；每店10个现金投影格与真实持久化格差异0。向里实做/现金流/汇总总计/支付总计9687.90（含零售59.90），自由6500.00；未把9628.00员工业绩当向里全业务收款。
-- 售卡源当天总额及部分渠道原始空白仍保留NULL，cash_channels_complete=false、待财务核对；卡类小计未猜零，没有宣称全部缺项已填满。重复writer返回already_applied；旧格子ID删除0，完整before/after审计保留。41张已确认表/16164格、正式日报/收入/确认版本/两类附件全量SHA-256与发布前一致，空业绩/月报表仍无新增；未自动入账。真实财务账号手机/桌面点击验收仍待进行。
-- 运行模块用既有安装器备份到~/.hermes/mgj-business-backup-393v4r7n并核验六文件一致，cron_changed=false，不新增现金/年度任务。年度现金来源队列尚未接通，全年未补齐。审批、备份级别、有限核验和前向停用方案见docs/daily-cash-candidate-release.md。
-- 发布前数据库ACTIVE_HEALTHY、Git基线bb2dbbc无漂移；云端备份2026-09-28T06:38:17.402Z状态COMPLETED（PITR关闭，不含Storage文件），目标草稿精确前像、旧SQL/函数与受保护账表摘要已存/private/tmp/zysyr-cash-release.jbZ9Wi（目录0700、before文件0600）。源码当日归档存在；未进行真实恢复演练，不将源码归档或临时前像称为完整异地备份。
-
-## 2026-09-28 · 现金收入汇总补齐：先留存原源（App version: v587，无页面/函数发布）
-
-- Owner: Codex；起始HEAD/github/main `c89147f`，工作树干净，必需版本核验和当日源码归档检查通过。用户要求补齐汇总，并明确“卡金不算，只算现金收入”；这个新要求只用于未入账汇总，旧确认表按原口径保留，不据此重算历史账。
-- 源营业日页面及已观察脚本只读回读，确认incomeType可分别选择项目、卖品、充值、套餐与年卡。源汇总不回显门店，仍必须标记request_only，不能升格为门店完整性已验证。浏览器连续两次读取超时后停止重试，没有改会话、凭据或清缓存。
-- 使用既有签名source_append写入、共享锁、日常同步优先和401/403/429冷却保护，有限追加两店9/27的项目/全业务各一份原始快照，共4个head；签名回执与云端hash逐项一致、stage=source_only/status=needs_review/scope_verified=false。不是完整日报候选、不是草稿金额已补齐、不是全年采集完成。
-- 41张已确认表/16164格、正式日报/业绩/收入、确认版本及两类附件整体摘要与追加前完全相同。本轮无草稿金额修改、无迁移/接口修改/调度变化、不写美管加；原字段缺值没有补零。
-- 待用户确认两个会影响账务的口径：现金是否含微信/支付宝/点评/抖音等全部实际收款，充值/售卡新钱是否计入实做。答复前暂停收入格写入，不将全业务现金组直接复制到实做/现金流，不将当前不参与收入的卡金混入总计。下一步需按确认口径接通有证据关联的未入账现金汇总，并修正独立收款核对，保留人工确认和来源范围警告。
-
-## 2026-09-28 · 日报重复员工行与已确认昵称（App version: v587，云端和页面已发布）
-
-- Owner: Codex；起始HEAD/github/main `6b9c993`，工作树干净，源码日归档存在。用户报告向里9/27旧空表行与按源编号自动行同时显示；真实云行核实旧行未在active_staff_row_keys内、原金额已清空，员工有效行不存在金额重复累加。
-- 根因是operations-api的dailySheetData遗漏选择autofill元数据，纸表已有隐藏规则但真实返回没有有效行清单；原浏览器测试仅手工添加元数据，未覆盖API→纸表链。修正只读reader并加入真实reader→手机/桌面纸表回归，保留旧行/ID/原图/审计，不删除或合并金额。
-- 只投影ocr_raw_result.autofill并向页面白名单返回active_staff_row_keys，不泄露原始OCR/单据或前像。缺标记时从已验证格式的源行推导，不按姓名去重、不把不同员工编号合并。用户明确确认郭小康=小康：仅向里该源员工ID的自动行用小康显示；自定姓名、其他编号/门店和已确认表不变，不重命名美管加或云员工。
-- 图二缺项不冒充已补齐：真实单日只读项目/全业务/零售汇总显示有额外零售收款，卡类等分组仍缺值且响应不回显门店。没有把发型师小计复制到实做/总计或把卡金补零。旧41张已确认表只读对照实做/支付总计均与现金流+卡金一致；完整零售/售卡/卡金明细及凭证确认桥接仍待接通。
-- 新模块、真实reader→合成手机/桌面纸表测试和Deno冻结锁类型检查已通过；真实pre-push全套通过、财务88/88。operations-api ACTIVE v115，13个在线文件与候选逐字一致，既有自定义会话鉴权不变、匿名请求403。41张已确认表/16164格及正式日报/收入/业绩/确认版本/附件整体摘要与部署前一致；页面/CI仍待发布核验，真实财务账号点击尚未验收。本轮无数据库迁移、无业务数据写入、无调度或源频率变化。回退仅前向恢复旧reader/页面，旧记录仍完整保留。
-- 正常推送运行提交 `6b0c0005b7bca672875ea7c2dcde045c5aa93c1c`，Validate #36411365382 / Pages #36411363911均success；五入口/版本文件无缓存回读逐字一致v587。上述页面/CI待验项已完成；真实财务账号点击尚待用户验收。本次不宣称缺失汇总或全年日报完成，下一模块须补齐完整零售/售卡/卡金来源与门店日证据，独立核对支付和营业总额，不复制员工业绩或按NULL补零。
-
-## 2026-09-28 · 支付缺项下的明确现金业绩归栏（App version: v586，云端和页面已发布）
-
-- Owner: Codex；起始 github/main / HEAD `6474f3c`，工作树干净，当日源码归档存在。只修正原私有项目归栏和已授权未入账 writer，不写美管加、不新增客户端权限、不改已确认账务。
-- 原单回读确认七个非现金支付字段真实缺失，不是解析器漏值。只有一个实际项目、一种已知平台支付，项目/已知支付/原单金额精确闭合；每条员工分配现金业绩明确等于总业绩，卡类/其他分量明确零，才允许归平台业绩栏。缺失支付仍 NULL，不据此填完整财务总额或标为已核对。
-- v3 审计版本区分本次映射；保留兼容 v2 纸表标记、稳定格子 ID、精确前后像、幂等/锁账/确认保护。24组隔离SQL回归通过，包括12项现金证据缺项/混合/退款/项目变异拒绝矩阵。线上迁移、草稿及账务摘要复核待记录。
-- 用户已确认向里旧表“祥骏/祥云”为美管加“十一”。仅只读身份对照，不重命名源员工、不改已确认表；向里1月1—3日对应378格无差额（不是整月或全业务验证）。
-- 历史完整项目明细检查点6/540店日；白天采集历史的许可已询问，答复前保留夜间每5分钟、当天每店15分钟的已安装计划。未宣称2026全部日报完成，完整业务/电子凭证确认桥接和真实财务页面验收仍待完成。
-- 回退：用新的迁移恢复v2函数、保留v3审计约束；不删除来源、审计或草稿。需要单张草稿恢复时核对当前revision及后续人工修改，再按精确before_snapshot审阅，不盲目覆盖。源码备份不是云数据库异地灾备。
-- 线上单一MCP迁移 `20260928095904 zysyr_daily_autofill_cash_evidence_v3` 成功；向里9/27草稿revision 3、170源格差异0，原1位员工3个未解格归栏后计数0。原7个支付NULL仍在，validation.valid=false、automatic_posting_enabled=false；同源重试already_applied、仅1条v3审计。已确认41张/16164格、正式日报/收入/业绩、确认版本及两类附件整体SHA-256与本轮前完全一致。
-- 最小权限复核：私有helper不授予anon/authenticated/service_role直接execute，writer仍仅service execute；Advisor数量/级别/对象不变，无新增WARN/ERROR。Edge接口未改无需再部署。真实pre-push全部通过、财务87/87；系统Python与运行签名库一致，未修改环境或绕测试。真实财务账号页面点击尚待验收。
-- 正常推送运行提交 `2ba2ba0408c0b0e5a939ca1dcd62078e0d871f1d`，Pages #36407363624 / Validate #36407365446均success；五入口/版本文件无缓存回读逐字一致v586。18:02真实定时任务自然推进自由手艺人当日head，草稿自动升级v3/revision 3，未伪造时间或额外抓取；来源为0单仍是待核对项目草稿，不据此认定全天无营业。六个运行文件哈希与源码一致。
-- 18:01检查点仍6/540历史店日，云端8个详细head（含2个今天）；既有项目消费两店各270日已在，不能与详细源覆盖混淆。只读检查历史列表最多每日55/42单，未超过现有100单上限；这不是90秒预算必然成功或全年完成的保证。历史白天提速许可待用户答复，未修改夜间计划、进度或冷却。后续还须完整业务汇总、电子凭证人工确认桥接及全部历史采集，不冒充完整自动财务日报。
-
-## 2026-09-28 · 精确分栏与技师去重（App version: v585，页面与云端已发布）
-
-- Owner: Codex；latest github/main 已只读核对至 a9df89a，起始工作树干净，工程归档存在。仅日报映射、共享技师统计和已授权未入账草稿；不写美管加、不改已确认账务。
-- 新私有分类/平台整项目唯一匹配函数、v2审计版本约束和原自动草稿 writer 升级；权限不扩张。相同快照的v1草稿只升级一次，留修改前后完整审计；原服务写入、已确认/锁账保护继续生效。
-- 21组隔离SQL及手机/桌面纸表回归通过，Deno两函数类型检查通过。向里1月1—3日114个可匹配格/日无金额差异；员工未核实别名及未接通的完整财务汇总明确排除，不是完整日报验收。
-- 来源只完整取得8个店日，其中向里1月1—3日已确认必须跳过；其余5个草稿可升级。2026全年详细源尚未补齐，不宣称全年完成。公私四栏不自动填，零售/充值/售卡等完整业务总额不猜。
-- 回滚：保留v1源码和旧审计，用新迁移恢复原函数；草稿修改前像按事件追溯，不删除审计、不修改确认表。线上迁移、API、Pages及确认表/正式账整体哈希核验待本节后续记录。
-- 云端阶段已成功：MCP只应用本次单一迁移（CLI linked dry-run 缺项目链接，未伪造基线或整库push），frontdesk-api ACTIVE v25 / operations-api ACTIVE v114，JWT与既有自定义鉴权不变。5张可用源草稿已升级v2，3张向里1月确认表准确跳过；41张确认表、其格子、正式收入/日报/业绩、确认版本和两类附件整体SHA-256与本次操作前一致。实际pre-push全套及财务87/87通过；Pages仍待发布核验。
-- 已正常推送运行提交 `48ce2b0`；Pages #36403202565 success，五个入口/版本文件无缓存回读逐字一致 v585。线上两函数共享模块/目录文件与本次修复逐字一致，匿名探针均403，三个新/更新私有辅助函数不给 anon/authenticated/service_role 直接执行权限。5张草稿490格持久化与来源投影差异0；重复调用均already_applied，审计各保留5条v1/v2版本。
-- 已知未完成：向里9/27只有1位在用员工行仍因原源7个支付字段缺项待核对；自由手艺人9/27项目分栏已无未解行。读取那笔美管加原单主动让位正常日常同步，未绕锁/冷却、未硬填零。向里历史“祥骏/祥云”与“十一”的身份未确认；全业务总额/全年明细及真实财务账号点击仍待验收，不宣称整份/全年日报完成。运行提交对应 Validate #36403202956 success，Pages #36403202565 success。
-
-## 2026-09-28 · 收银明细自动填写草稿（App version: v584，云端已接通）
-
-- Last synchronized base checked: github/main `16655226621d5d45ba05dbfc399ec6b53005f559`，Current owner: Codex。页面 v584、operations-api ACTIVE v113 和已审阅单一云端迁移均已发布。没有全库 push、强推或绕门禁；真实 pre-push 财务 87/87 通过，Validate #36367228288 与 Pages #36367227684 success。
-- 用户在明确说明具体三项影响后回复“允许以上三项”：三个系统作者字段允许 NULL、新增两张私有审计/状态表、同门店同日期 head 更新自动修改两店 2026 未入账草稿。再次提交 MCP apply_migration 成功，远端 history `20260928015608 zysyr_frontdesk_daily_autofill`；前一轮拦截没有通过其他通道绕过。
-- 9/27 自由手艺人 129 个自动源格（69 个数值）、向里造型 169 个自动源格（71 个数值）已真实持久化，均 draft/revision 1，源投影差异 0。向里原 472 格 ID 全保留，完整 before/after 留在不可改审计；两店重试 already_applied，不重复生成/加版本。真实财务金额、原文、业务 ID 不发布进公开文档。
-- 已具备详细来源的自由手艺人 1/1 未入账草稿已按最新授权更新；两店 9/28 建立无已核实数值的待核对草稿，空源不猜零。向里 1/1 已确认入口实测 confirmed_preserved。全年详细源仍只覆盖少量店日，原定夜间采集继续逐日补齐；不能宣称完整全年财务报表已完成。
-- 技师仅烫/染/护整数个数；线上非整数次数和其他技师自动金额字段计数均 0。发型师采用源分配业绩、可核实平台/项目分类；全业务总額、现金流、卡金、新老客及歧义分类仍空，validation.valid=false/needs_finance_review=true，不自动入账。电子凭证替代纸图的最终确认桥接仍是独立未完成模块。
-- Security/transaction evidence: 新表 RLS/force RLS true，anon/authenticated/service 直接 CRUD 均 false；新入口仅 service execute，固定公司/两店/2026 范围、search_path 空。trigger enabled=O，头推进后数据库内同步，无新美管加请求/轮询；草稿失败独立状态，不回滚合法源。Advisor 只有这两张故意无客户端策略的 INFO 新提示，无新增 WARN/ERROR；原密码保护 WARN 未擅改。
-- Online evidence: v584 日报 HTML/脚本/版本文件和 v113 全部在线文件已逐字核对，匿名接口 403；41 张旧确认表及 16164 格、正式收入/日报、确认版本/附件整体摘要在写入后与基线完全一致。浏览器连接超时，未伪造授权账号或宣称真实登录点击验收。
-- Open Work For Next Agent: 核验下一次自然收银 head 更新的自动触发状态（不要伪造 fresh timestamp）；真实财务页面点击验收；逐日历史详细源覆盖和缺字段口径补证。不得把项目消费草稿或工程备份称作完整财务报表/异地 DB 灾备，不据岗位业绩编造收入。详见 `docs/frontdesk-daily-autofill-release.md`。
-
-## 2026-09-28 · 已授权明细同步提速（App version: v583，页面/接口不变）
-
-- 用户明确同意当天每店 15 分钟、夜间两店合计每 5 分钟一个店日。仅调整 canonical Python 调度和安装器，不修改云表/Edge/页面/既有正式账务；每次最多源采集 90 秒、等待日常消费刷新 90 秒，保留共享锁、逐单/完整列表核对和 401/403/429 的 15 分钟全局冷却。
-- 定时器精确替换已识别的旧业务明细块，其他 crontab 行逐字保留；白天 9–21 时自由手艺人 :02/:17/:32/:47、向里 :07/:22/:37/:52，夜间 22–08 时一个 */5 history 作业两店交替，全局限速/单调度锁不并发。进度保留，日期硬限定 2026；每个任务有界，无新增无限循环。电脑睡眠/关机会暂停，错过时隙不追发突发请求。
-- 已安装并核验六文件哈希，备份 `~/.hermes/mgj-business-backup-a749oqdv`；补充范围终止保护后运行器副本备份 `~/.hermes/mgj-business-backup-t0tbzx_2`（cron 无再次变化）。08:26 首轮自由手艺人 2026-01-01 16 单 accepted，约 22 秒，云端回读 16 单一致；检查点从 3/540 到 4/540 过去店日。08:27:51 预约状态 healthy/连续失败 0，消费状态 healthy；尚不能凭一轮保证 4–6 晚完成，全年仍在补录。
-- 聚焦 Python 37 项及共用投影通过；发布基线和 v583 完整性核对通过。代码提交/远程回归状态待本轮发布核验；无需部署新 Edge 或刷新用户页面。
-
-## 2026-09-28 · 两店 2026 项目明细自动补录与技师次数（App version: v583，页面已发布）
-
-- 用户授权两店 2026 年明细同步安装；原始美管加接口只读、签名私有快照追加，旧正式日报/原图/账务及原有同步任务不改。先用 Supabase 私有快照按岗位/项目聚合核对：已观测 A/C 级技师的源分类均为“美发部”，无法据该字段直接识别烫染护；项目名“烫/染/护”可明确归类，“洗发”不计，“褪色”等歧义项待分类。
-- 运行器每店每滚动小时最多一次真实来源尝试，白天优先今天、夜间先固定昨天再从 2026-01-01 逐日补历史；共享消费源锁，等原日常同步刷新最多 90 秒，401/403/429 冷却沿用采集器保护。进度检查点不含客户、金额、凭据。:17 自由手艺人 / :47 向里造型 cron 已安装并核对，原 crontab 保持，原件备份在 `~/.hermes/mgj-business-backup-8pc3lf2d`；运行器修正备份 `~/.hermes/mgj-business-backup-gnvz8fs1`。
-- 向里造型 2026-09-27 首轮 31 张完整项目单获签名回执，夜间终态进度 1/540 过去店日；自由手艺人首轮仅因原同步待刷新让出，未发来源请求，等待下一有效时隙。先前手动核对的 5 个店日云端快照仍在；任务安装不等于 2026 全年或完整财务日报已完成。
-- v583 前台和财务来源展示已改为发型师金额、技师烫染护个数；私有原始员工分配保留作审计但不将技师金额作为统计值，日报仍需财务确认。共用 Edge 投影 frontdesk-api ACTIVE v24、operations-api ACTIVE v112，逐个对照在线依赖均仅更改同一共享投影；两个无会话探针均为 403。功能提交 `81cdc39` 已正常推送 `github/main`，完整 pre-push 及财务 85/85 命令（含新增调度测试）通过；GitHub Validate #36356707734 与 Pages #36356707231 成功。无缓存回读 version.txt=583、两端 HTML `data-version=583`/脚本引用 v583，两个脚本 SHA-256 均与本地候选一致。真实门店登录页面点击验收尚未做。
-
-## 2026-09-28 · 收银共用营业明细接入（App version: v582，页面已发布）
-
-- 功能提交 `7f36b6b` 已留存。用户针对具体仓库 main/Pages 的发布问题明确回复“允许”后，正常快进发布 `4ad8fe9` 至 `github/main`，本轮真实 pre-push 全通过，没有强推或绕过审核。先前发布授权阻挡已解除。
-- Pages #36353464591 成功；无缓存回读 version.txt/version.json、frontdesk.html、operations.html、perm-app.html、frontdesk-business-details.js、operations-daily-electronic.js 和 frontdesk-minimal.css，八个文件与候选逐字一致，线上 v582。Validate #36353465186 在记录时正在执行完整财务套件，类型检查及此前步骤已通过；最终状态以该精确提交工作流为准。真实门店登录点击验收仍待用户确认。
-- 在用户“立即执行”授权下，新增两张隔离快照/水位表、签名同步函数、前台 business_details 与财务 daily_business_details 读取入口，两个 App 使用同一源。迁移已应用生产，writer ACTIVE v1、frontdesk-api ACTIVE v23、operations-api ACTIVE v111；在线源码与本地候选一致。
-- 新表强制 RLS、无匿名/普通认证/服务角色直接表权限；只有命名 RPC 能读写。完整单据集合及入账金额与既有私有消费快照核对，缺单/错店/分币/迟到写拒绝，旧账不变；源单据新增或改金额会显待同步。
-- 前台新增可展开员工业绩/付款区域，按源员工编号显示岗位、项目、次数、业绩分量。财务日报旁可读同一天同门店来源。页面范围请求隔离、退出清空、缺项不填零；不生成正式日报或自动确认。
-- 新增有界默认 dry-run 全店日明细采集器，共享消费源锁、正常同步优先、前后列表及逐单金额一致检查。原先完整 dry-run 不含新增金额检查，不能作为当前完整核验；两店 6 张原先样本解析通过。真实重验遇源 429 已停止，未上传部分结果；没有新定时器、全年补录或运行副本。新采集器含每单 1 秒间隔和限流独立 15 分钟冷却。
-- 验证：完整真实 pre-push 通过，财务 85/85 命令通过；新 Python 27 项通过。新数据库/RLS/完整性、签名/读取权限、共用投影、手机/桌面和迟到门店响应通过，三函数 Deno 检查通过。无签名/会话探针 401/403/403。上轮云端核验明细快照 0，旧 41 张已确认、279 附件和 542 店日消费均保持；本轮仅发布静态页面与记录，不再次采集源数据或写入账务。
-- 仍需核对日报按列映射、点评团/抖音与项目业绩口径、技师基础/技术次数、零售/充值售卡/退款范围。已向用户提出渠道列口径问题，待答复；全年日报仍未完成。
-
-## 2026-09-28 · 收银与日报共用营业明细（本地数据模块，App version: v581 页面仍待发布）
-
-- 用户修正方向：先补齐收银 App 的员工分配业绩与付款来源，再由日报读取共用数据；格式参照向里造型 2026 年 1 月。架构与当前边界见 docs/frontdesk-business-detail-contract.md。
-- 最新 github/main 已 fetch，HEAD 包含其提交；专用 checkout 开始干净，当日源码备份存在。只改本任务诊断/数据模块，不触碰其他 Salon checkout。
-- 新增纯函数 normalize_bill/build_day，保留项目、30 个付款原字段、员工分配及源编号；整数分、缺项 null、完整账单集合核对、分岗位业绩与门店入账分别输出。没有把员工分配加为营业额。
-- 实测修复：empList 的 id/employeeId 是重复占位值，empfees.empid 应关联 empList.empId；旧诊断混合命名空间导致 employee_id_alias_conflict。新代码不再把占位值当有效员工编号，真实主键冲突仍拒绝。
-- 两店 2026-01-01 各 3 张只读样本均通过新解析，共 6 张/12 条员工分配正确关联，每张 30 个支付字段有值。脱敏输出不含金额、姓名或手机号；没有保存真实个人资料到仓库。
-- 新模块及现有来源测试共 42 项通过。本轮是可复用数据整理/核验代码，未新增云端表/接口、接入前台展示、部署运行副本、安装调度或生成全年日报。既有 v581 后端/页面状态延续下节。
-- 剩余：项目/支付/状态与 1 月表格映射；零售/充值/售卡/退款完整来源；私有快照及限定门店读取接口；前台展示与日报候选联动；全年有界补齐。共用数据模块仍 report_ready=false，不能当作完整财务候选。
-
-## 2026-09-28 · 电子日报第一阶段后端已部署（App version: v581，页面待发布）
-
-- Last synchronized base checked: GitHub main `326a138`；当前本地提交 `9b6a04c`，等待获准推送。Astra high 完成独立数据库实现及安全回归，Luna 完成采集器，主线程完成签名接口、财务只读 API/UI 和集成检查。
-- 用户已确认公-刷卡、公-支微、私-刷卡、私-支微不需要填写：新来源候选为 null/not_applicable/nonblocking，不清空旧已确认值。
-- Last Completed Work: 新增独立快照/候选/水位/审计，幂等和迟到保护、两店隔离、财务只读对照入口、默认 dry-run 有界采集。完整财务套件 79/79 命令通过，含新库 43 项和来源 Python 25 项；operations-api 冻结依赖 Deno 类型检查通过。
-- 当前仅 source_only，不会生成完整日报或登记电子凭证，不改变旧草稿、41 张已确认日报、原图、正式账、月报和美管加。迁移与两个 Edge 接口已部署；页面尚未发布，未运行全年补录，未安装定时器。
-- Cloud: migration 已追加四张隔离来源表及服务端读写 RPC；核对旧数据仍为 41 份已确认、311 份日报和 279 个附件，匿名/普通登录无新 RPC 权限。签名 source writer ACTIVE v1；operations-api ACTIVE v110，保留更高版本线上报表逻辑，仅新增财务只读来源读取。无签名 writer 探针 401。未采集/写入任何来源。
-- Release blockers: `supabase db push --dry-run --linked --include-all` 因 checkout 未关联项目不可用；改由目标项目 migration history 只读核对后逐项应用。数据库/Storage 备份与恢复点状态未能从可用连接器核验，只有源码归档。单日采集试跑为日常同步让路，未取得新真实源。页面 v581 尚未推送。
-- Open Work For Next Agent: 先完成 v581 页面发布授权；然后还需员工及项目等可靠映射、电子凭证/采用/人工确认路径、全年有界补录与逐日核对，不能把来源参考当全年完整日报。数据库/Storage 备份恢复点仍待有权限者核验。
-
-## 2026-09-28 · 两店电子日报来源诊断（App version: v580，财务功能未部署）
-
-- Last synchronized base checked: GitHub main `cd849b1`；Current owner: Codex。复用 perm-pages-hair-picker-sync，开始时干净；9/28 源码归档已完成，不冒充数据库/Storage 备份。
-- 用户批准两店 2026 年至今自动日报及电子明细凭证，仍需财务人工确认；已有照片、人工草稿和 41 张已确认日报保持不变。Astra high 审查架构，Luna 实现有界只读诊断，主线程核验真实样本。
-- Last Completed Work: 只读核实 bill detail 的支付/项目/岗位结构与日汇总查询合同；两店差异样本、向里首周 6 份已确认日报现金业绩及非空支付分项匹配。员工分类汇总请求出现门店回显不匹配，结果作废，不用于导入。13 项脱敏/请求/金额/范围合成回归通过，单日日汇总真实解析通过。
-- 新诊断工具不是生产同步器，不含客户原始数据、秘密、财务写入或定时器；单次最多 3 张单据或一个店日汇总，60 秒预算，共享消费锁。没有部署数据库/Edge/页面改动，App 保持 v580。
-- Open Work For Next Agent: 先读 docs/daily-electronic-evidence-plan.md；完成业务映射、完整来源与电子证据/候选/审核确认链路。对公对私规则已由上节用户答复更新。发布财务迁移前按 finance-release-runbook 取得具体影响/备份/回退确认；不能把政策批准当部署完成。
-- Handoff Rule: 前台项目消费 540 店日已补齐，不等于财务日报完整。当前截至 9/28 的目标为 542 店日，分别统计既有已确认、完整候选、缺口与今天草稿；未知不填零，岗位业绩不重复计收入，不自动入账。
-
-## 2026-09-27 · 两店 2026 历史消费补齐完成（App version: v580，云端已核验）
-
-- Last synchronized base checked: GitHub main `8014ce4`（v580），专用干净 checkout；未改动其他工作区。功能提交 `969f9f3` / `8014ce4` 已发布，完整本地 pre-push 通过；v580 GitHub Validate #36328991865 / Pages #36328991474 均成功，线上 version.txt / frontdesk.html 无缓存回读与候选逐字一致。
-- Last Completed Work: 23:52:09 有限补录进程退出 0，检查点 complete，1/1–9/25 的 536/536 店日全部成功。逐日云端回读单数、金额分、排序账单 ID 摘要，536/536 一致；加上日常维护的 9/26–27，两店各 270 天、共 540 店日，缺失日期 0。两店各 45 个源明确的零消费日期也已保存。
-- 完整范围复核：相同门店跨日期重复账单 ID 为 0，账单日期/门店与快照不一致为 0。23:52 日常消费和预约状态 healthy；当天源快照 23:49:43/46 正常更新。未改美管加账单、客户主档、历史预约、回访表或财务表。
-- 线上 mgj-customer-sync v3 / frontdesk-api v22 ACTIVE，部署源与候选逐字一致；内部签名/会话认证保留，无签名 writer 401、无会话 reader 403。核心运行文件已由跟踪源码安装，备份 ~/.hermes/mgj-core-backup.araOX6，哈希与发布版本一致。未新增定时器。
-- 两次有界停止均保留成功进度：91 店日的调度等待由 v580 修复；252 店日时瞬时 URLError 经只读源检查和云端核对后续传成功。最终检查点权限 0600，仅含汇总和 ID 摘要，保留用于审计，不删除重跑。
-- Open Work For Next Agent: 无剩余历史消费补录；用户可在前台“今日客户”选择历史日期查看。真实门店登录设备点击验收仍由用户确认，未冒充实机测试。历史预约未回填，不能把预约匹配数当作已补齐的历史预约统计；既有人工核对队列及护理 worker 差异不在本轮范围。
-- Handoff Rule: 本轮是项目消费入账统计，不等于现金收入或全部客户档案历史补齐；日常同步继续沿用现有有限频率和私有权限。
-
-## 2026-09-27 · 历史补录等待窗口兼容实际调度（App version: v580，阶段记录，已由上节完成）
-
-- 基于已发布 `969f9f3` v579；GitHub Validate #36328465499 / Pages #36328464613 全通过，线上 v579 文件逐字一致；核心运行副本备份到 ~/.hermes/mgj-core-backup.araOX6 后安装并核验哈希。
-- 历史已成功 91/536 店日，首周逐日单数/金额分/账单 ID 摘要与云端完全一致；1 月两店各 31 日已覆盖。23:13:31 为当天让路等待 100 秒到期而安全停止；现有当天任务 23:13:41/44 正常完成，说明是分钟调度与 5 分钟成功间隔错位，不是源失效。
-- 将等待上限由 100 秒改为 180 秒，仍受总预算限制，不提前重拉美管加，不改变定时器；保留检查点，从未完成日期继续。新增超过 100 秒仍可等到正常任务的回归。Open Work For Next Agent: 继续补齐其余日期，最终逐日全量回读核验；不能把 v579 发布成功视为历史全部完成。
-
-## 2026-09-27 · 两店 2026 历史消费补齐（App version: v579，执行中）
-
-- Last synchronized base checked: GitHub main `1ddec3f`（v578）。干净专用 checkout；当日备份已存在。v578 GitHub Validate #36326534924 / Pages #36326534842 已成功，用户确认当天数字正确。
-- 用户授权从 2026 年 1 月 1 日补到今天；按上一轮明确范围包含自由手艺人和向里造型。只补项目消费快照，不改美管加账单、客户主档、预约、回访导入或财务表。
-- 新增有界签名操作，仅接受 1/1–9/25 两店历史，9/26–27 保留日常维护；日常 31 天上限不放宽。历史脚本按最多一周读取，完整分页校验后分日写入，明确空营业日记录 0。限定时间/组数，断点续传、共享消费锁、当天优先、限速、错误停机，无新定时器。
-- Last Completed Work: 两店年初逐日与首周分页只读核对一致；13 个解析/补录 Python 测试、签名安全 Node、PostgreSQL RLS/原子快照和 Deno 两函数检查通过。历史页面不再误套当天 15 分钟新鲜度提示。
-- 云端：mgj-customer-sync v3 / frontdesk-api v22 ACTIVE，线上源码与候选逐字一致，内部签名/会话认证与 verify_jwt=false 保留。首周有限真实补录启动，自由手艺人 1/1–1/7 回读已成功（包含 1/5 明确零消费日），尚未宣称全年完成。
-- Open Work For Next Agent: 完整发布门禁和运行副本安装、536 历史店日有限补齐、总共 540 店日云端单数/金额/ID 摘要核对，以及当天同步健康检查。完成前不能报全年已补齐。
-- Handoff Rule: `docs/frontdesk-daily-consumption.md` 记录固定范围/检查点/停止条件；消费统计不等于现金收入或历史预约补齐。保留其他工作区和旧人工核对队列。
-
-## 2026-09-27 · 前台完整项目消费数据源修复（App version: v578，页面及自动同步已上线）
-
-- Last synchronized base checked: GitHub main `e3ff217`（v576），保留本线程未发布 v577 横屏保存修复。Current owner: Codex。干净专用 checkout，修改前当日源码备份完成。
-- 根因已实证：dashboard 读 `mgj_service_records`，但该表只收烫/染/护理核对明细且客户轮换同步不全。自由手艺人该日旧表 2 笔、2428，不是全店总数。v575 只是改统计标签和手机号去重，未修复这个缺口；此前“真实统计”的描述在此更正。
-- 新建私有店日快照：美管加项目消费页面实际表单只读读取，全部普通/套餐/年卡消费按稳定单号分页核对，金额按入账列，不含充值售卡和卖品。只读实测自由手艺人 24 笔/24 手机号/6500，向里造型 31 笔/29 手机号/1 笔无手机/9628；无手机号不猜人数。
-- 私有签名 writer 固定操作 + 原子店日快照 + 旧快照拒绝。保留现有核对、客户主档、预约及财务表。复用每分钟预约调度，独立消费 5 分钟间隔与 45 秒预算，昨日每日补读，失败保留旧数据并退避；前台 30 秒自有云端刷新，缺数据显待同步，超时显旧数据。
-- Last Completed Work: 新源两店/空营业日只读验证、Python 分页/失败保留/间隔测试、签名与范围拒绝、PostgreSQL 17 隔离迁移/RLS/旧快照防覆盖、前台统计口径测试通过；Deno 两函数检查通过；原横屏回归已在正式提升权限的独立 Chromium 五尺寸通过，并修正延迟 focus 的滚动干扰。
-- 云端进度：私有快照迁移已成功；mgj-customer-sync v2 / frontdesk-api v21 ACTIVE，两函数线上源码逐字回读一致，内部签名/会话认证保留。真实签名同步及数据库回读当天自由手艺人 24 笔/24 手机号/6500、向里造型 31 笔/29 手机号/1 笔无手机/9628；RLS 与匿名/普通认证角色无读取权限已核验；无会话 reader 403、无签名 writer 401。
-- 发布：7467f6a 已推送 main，完整 pre-push 通过（财务 74/74、同步 53 项、新消费源及安全回归）。Pages #36326012129 成功，无缓存回读 version.txt/version.json/frontdesk.html/frontdesk-minimal.css 与本地 v578 逐字一致。GitHub Validate #36326012543 的 Chromium 五尺寸均通过（旧横屏故障已消除），但新增 SQL 测试把 Docker 初始化临时 Unix socket 误认就绪；测试改用仅最终服务器监听的 TCP，未放宽业务断言，定向重跑通过，后续 Validate 以该测试修复提交为准。
-- 运行：六个核心运行文件已备份到 ~/.hermes/mgj-core-backup.zLF0Ts 后按顺序原子安装，哈希一致。唯一现有任务 9ef3f10b20d9 在 22:32 自动执行消费模块，两店今日及昨日均成功；今日云端 fetched_at 由手动首轮 22:23 更新到 22:32:29/32，状态 healthy。未新增定时器或手动触发冒充自动轮。
-- Open Work For Next Agent: 测试修复提交的 GitHub Validate 最终状态须检查；真实门店设备登录后的点击验收未完成（连接现有浏览器超时），不能冒充用户实机验收。既有 50 个历史客户需人工核对、旧护理 worker 漂移不在本次范围内，没有重置或覆盖。
-- Handoff Rule: `docs/frontdesk-daily-consumption.md` 是数据口径与运行说明；全店项目消费不等于全店现金收入。历史无快照日期不猜值，不额外启动另一套定时器。
-
-## 2026-09-27 · 横屏接待表单固定保存区（App version: v577，待发布）
-
-- Last synchronized base checked: GitHub main `e3ff217`（v576）；本任务隔离 checkout；当日源码归档已存在。
-- v576 Pages 已部署，但 GitHub Validate 两次在 Linux 844×390 前台浏览器断言失败：接待表单保存按钮滚动后底部仍在视口外；macOS 本机各尺寸通过。仅调 KPI 列数未消除。
-- 横屏下将当天接待表单操作区固定在抽屉可视区底部，解决保存入口可达性；保留 v575 的手机号去重消费人数、无手机号消费单提示、匹配来源拆分及 v576 五卡单行布局。
-- Last Completed Work: v577 代码已修改；版本/发布完整性/交接检查通过，定向 Playwright 在 Chrome 启动时 SIGABRT，未能完成；按本机已知环境处理停止浏览器重试。v577 未发布，线上仍为 Pages 已部署的 v576。
-- Open Work For Next Agent: 在安全可用的浏览器测试环境完成 844×390 回归及完整 pre-push，再推送 v577 并检查 Pages；不能跳过 pre-push。
-- Handoff Rule: 手机号缺失人数不猜测；历史消费源同步完整度不因新增统计而改变。
-
-## 2026-09-27 · 横屏统计卡片适配（App version: v576，已发布但远端回归失败）
-
-- Last synchronized base checked: GitHub main `02dd441`（v575）；本任务隔离 checkout；当日源码归档已存在。
-- v575 已发布到 Pages，GitHub Validate 在 Linux 844×390 横屏步骤发现添加第 5 张统计卡后的保存按钮露出断言失败；同机多尺寸浏览器断言通过。重跑也在该步骤失败。
-- 调整横屏平板 KPI 为 5 列单行，以保留指标同时避免增加一行页面高度。消费人数继续只按手机号去重，无手机号消费单显式列出；预约匹配继续区分手机号与姓名兜底。
-- Last Completed Work: v576 已推送，Pages build/deploy 成功，无缓存回读确认线上 v576。完整本地 pre-push 通过；GitHub Validate 仍在 844×390 横屏表单保存按钮断言失败。未改 Supabase、预约/收银源数据或权限。
-- Open Work For Next Agent: 由 v577 的横屏固定保存区修复该失败；完成安全浏览器回归与发布门禁。
-- Handoff Rule: 区分 GitHub Pages 部署和 Validate 状态；页面已提供 v575 暂行统计，等 v576 通过回归后再报本轮完成。
-
-## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，已发布）
-
-- Last synchronized base checked: GitHub main `89338ad`（v574），由本任务隔离分支快进同步；当日 ZYSYR 源码归档已存在。
-- 用户确认统计口径：消费单数按当天门店同步到的 Meiguanjia 服务单条数；消费人数按非空手机号去重，无手机号服务单数作为提示且不计入人数；消费总额仍按服务单金额合计。
-- 预约已匹配继续保留总数，副标题拆出手机号匹配与姓名兜底匹配数量，避免把姓名兜底误认成手机号精确匹配。只改前台展示逻辑和缓存版本，不改 Supabase、源业务记录或收银流程。
-- Last Completed Work: v575 Pages build/deploy 成功并无缓存回读确认线上统计实现；Validate 的横屏保存按钮断言失败，后由 v576/v577 跟进。
-- Open Work For Next Agent: 查看当前 v577 横屏可用性修复和发布状态。
-- Handoff Rule: 手机号缺失时人数不猜测；手机号匹配人数不等于无手机号顾客数，也不宣称消费源数据覆盖完整。
-
-## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，已发布）
-
-- Last synchronized base checked: github/main cf5725d（v573）；Current owner: Codex；复用 perm-pages-booking-sync 干净隔离 checkout，保留财务 v573 和用户其他工作区。修改前检查与当日源码备份完成。
-- 用户批准自由手艺人员工 App 与前台客户中心同步共享客户资料。两端默认“全部门店”、可切“本店”；共享范围固定为自由手艺人/向里造型，旧客户端不传范围仍按本店。登录与在职/岗位校验保留，未公开 customer_profiles 或前台表权限。
-- 套餐、消费、备注按来源门店展示；同手机号不同姓名、无完整手机号不静默合并；历史单号与套餐去重包含门店。前台新增发质分析和服务前后照片只读展示；前台今日接待、编辑、删除、导入、台账和收银边界不变。没有跨店核销、生产数据合并/改写或自动出入库变更。
-- 现有 605 份非删除 hair_records 均未记录门店，不按当前员工归属猜测历史门店；全部门店保留并标注待确认，本店只显示有明确门店的档案。新建档案记录当前登录门店，编辑旧档案不补猜门店。发现 4 份手机号只在 record_data 中，新增兼容读取，避免漏档。
-- Last Completed Work: 两个 Edge 线上源与修改前 HEAD 逐字一致（employee v5/frontdesk v19）；Deno 类型检查、真实 handler 的合成身份/范围/权限/只读回归、保存与照片回归通过。员工三尺寸、前台 Chromium/WebKit 各五尺寸验证范围切换、来源、过期套餐、只读照片和可编辑接待入口；浏览器不使用生产账号。
-- 真实只读样本经新投影核对：全部门店 358 笔消费、本店 356 笔；5 项余额中 4 项未过期、1 项过期，原主档归属未变。生产 REST 零数据请求确认新筛选可解析，私有客户/前台表匿名请求仍 401。
-- 发布进度：完整 pre-push 通过（财务 74/74、同步 Python 53 项和双端客户回归）；employee-bookings-api v6 / frontdesk-api v20 已 ACTIVE，全部部署源文件逐字回读一致，内部会话认证和 verify_jwt=false 保持既有契约。前台与员工三个查档操作未登录实测均 403。
-- 发布完成：功能提交 c71c1c5 已推送 main；GitHub Validate #36317951723 和 Pages #36317951231 均成功。无缓存回读 version.txt/version.json/perm-app.html/frontdesk.html/operations.html 全部逐字匹配本地 v574；operations 仅全局缓存版本联动，无财务功能改动。
-- Open Work For Next Agent: 真实门店手机点击验收尚未完成。历史未同步缺口仍走已有补档流程，本次共享不等于全部历史自动补齐。
-- Handoff Rule: 区分代码测试、生产数据只读核对、后端/页面发布与真实账号验收；不要把“全部门店”读取范围传给接待或财务写入逻辑。
-
-## 2026-09-27 · 月报美发收入恢复财务编辑（App version: v573，待发布）
-
-- Last synchronized base checked: GitHub main `cd5f52a`（v572），已快进同步并保留客户消费/套餐修复；本日源码备份已存在。
-- 根因：线上 operations-daily-review.js 在月报渲染后把 daily_rollup 金额格强制设为 readonly。只删除该覆盖，让财务编辑模式继续走现有 monthly_income_adjustment_save 审计通道。
-- 日报现金业绩、不含卡金、月报调整和原表留存逻辑不变；未修改 API、数据库、权限或生产金额。
-- 定向日报校验、现金收入、月报公式/调整、审计测试及合成浏览器编辑/保存/读回通过；已将已入账日报来源输入框纳入浏览器回归。Open Work For Next Agent: 完成发布门禁、推送并核验 Pages；真实一月账不写入测试金额。
-- Handoff Rule: 线上新资源验证与合成数据回归不等于真实账金额保存验收。
-
-## 2026-09-27 · 套餐余额有效期核对（App version: v572，已发布）
-
-- Last synchronized base checked: github/main 593a0dd（本轮 v571）。Current owner: Codex。v571 完整 pre-push 通过，含统一财务 74/74 和同步 Python 53 项；employee-bookings-api v5 ACTIVE，线上源码逐字匹配，未登录请求 403。真实样本已回读并运行相同门店裁剪，得到 5 项有余额套餐、356 笔本店消费且其他门店记录/备注不外泄。
-- 最后核对有效期发现 5 项余额中一项护理季卡已于 2024-05-11 过期，源 status 仍是 active。前端改为按北京时间判断并清楚标注过期，保留档案，但不计入可用推荐；实际未过期 4 项。前文“有效 5 项”在此更正为“有余额 5 项”。
-- Last Completed Work: v572 完整 pre-push（含财务 74/74、同步 Python 53 项）通过，61d398a 已推送；Pages #36315157869 成功，线上 version.txt/perm-app.html 无缓存回读与本地逐字一致。真实云端数据经同一前端归档函数验证为可用 4 项、过期余额 1 项（2024-05-11）。
-- 云端首次新增浏览器测试失败于 macOS 专属 /private/tmp 截图路径（不是业务断言失败）；已改用 os.tmpdir() 并通过本机重跑，保持 Linux 使用固定 Playwright Chromium。后续云端测试结果以 GitHub Validate 运行记录为准，不绕过检查。
-- Open Work For Next Agent: 真实门店设备点击验收；其他旧档案历史缺口继续由既有后台补档流程处理。本次无登录真实页面控制工具超时，不能宣称用户手机实测通过。
-
-## 2026-09-27 · 员工客户套餐与消费明细修复（App version: v571，已发布并由 v572 补充有效期）
-
-- Last synchronized base checked: github/main e8c6cf8（v570 的发布核验文档已快进保留）。Current owner: Codex；复用干净 perm-pages-booking-sync checkout，未修改用户 Salon 工作区；修改前备份 ZYSYR_2026-09-27_184944.tar.gz。
-- 根因已用真实数据核对：截图客户主档 shop_name=向里造型，但套餐和多数消费属于自由手艺人；旧 employee-bookings-api 按主档门店过滤，导致降级为 34 条预约。生产聚合显示向里主档内有自由明细的客户 482 位，反向 242 位。
-- 新 customer-profile-scope.mjs 按登录员工门店做 JSON 子项匹配和返回裁剪；跨店主档备注、偏好、全局金额、全局次数不外泄。手机号历史查档用精确匹配。无数据库迁移，无客户主档归属改写，无公开权限恢复，无护理自动出入库改动。
-- Last Completed Work: 源站与云端样本刷新核验通过（33 个套餐项目中本店有效 5 项，358 笔消费中本店 356 笔，最新 2026-09-27）；Deno 类型检查、门店隔离/认证/只读回归、消费渲染回归通过；Chromium 三尺寸 x 本地API/云档案/无档案分支通过。线上 PostgREST 新筛选解析成功且匿名读取仍 401/42501，错误语法对照返回 400/PGRST100。
-- 发布范围：employee-bookings-api + 员工 perm-app.html；operations/frontdesk 仅同步全局缓存版本。需部署 Edge、完整 pre-push、GitHub Validate/Pages 和线上无缓存回读。Open Work For Next Agent: 真实门店设备点击验收；旧客户历史明细缺口继续走已有后台补档，不能声称所有客户历史均完整。
-- Handoff Rule: 不把合成浏览器验证冒充真实账号验收；不把已同步笔数称为完整历史消费次数。
-
-
-## 2026-09-27 · 月报照片与单笔凭证隔离（App version: v570，已发布）
-
-- Last synchronized base checked: GitHub main `dbfda7c`，保留客户私有同步与预约刷新发布。源码备份已存在。
-- 凭证追溯按显式 `monthly-report:` 来源排除月报整月附件；精确逐笔关联、人工上传的单笔凭证仍保留。月报照片仍由月报入口访问。
-- 凭证浏览器回归桌面、手机竖屏和横屏通过；完整 pre-push 财务 74/74、同步/健康 Python 53 项及 GitHub Validate #36313666708 成功。Pages #36313666438 成功；无缓存回读 v570 页面与脚本含修复。提交 `e07add7` 已发布。
-- 仅前端展示过滤、版本和交接记录；未修改数据库、API、Storage、财务数据、凭证关系、权限或登录入口。Open Work For Next Agent: 等用户用原问题中的月份/凭证实机复测；若单笔凭证文件本身仍有问题，继续按该凭证 ID 独立排查。
-- Handoff Rule: 发布回读与合成凭证回归通过不等于真实账号实机验收；没有生产财务写操作。
-
-## 2026-09-27 · 客户私有同步恢复与当天预约提速（App version: v569，已发布）
-
-- Last synchronized base checked: github/main e32b4cf（包含最新财务极简界面，已保留）；本线程干净隔离 checkout 开始，备份已核验。Current owner: Codex。用户同意先修复消费/套餐授权，再实施当天预约 1 分钟、未来日期约 15 分钟轮换及前台云端 30 秒刷新。
-- 根因：bookings 与 customer_profiles 已无 anon 读写权限，但旧客户脚本仍直连公开 REST。新增 mgj-customer-sync 签名通道，复用本机 mode-0600 Ed25519 私钥但使用独立签名域；仅允许固定预约手机号读取、客户单条读取/扫描和按精确手机号写入，拒绝未知表/字段/门店/操作，不含删除。未放开数据库权限、未分发 service-role key，也不写美管加。
-- 生产 mgj-customer-sync v1 已部署，ACTIVE、verify_jwt=false（函数内部验证签名/时戳）；线上源码与候选一致。匿名请求 401，签名读取成功。客户同步首批 8/8 成功；独立 services 1 成功。只读聚合确认最近更新 9 份档案（自由手艺人 6、向里造型 3），均含消费历史，其中 5 份有套餐。未清空失败来源数组。
-- 预约脚本 --scheduled 每轮优先当天两店，最多增加一个到期未来日期；未来日期仅在两店写入成功后推进 15 分钟计时，失败退避、不删失败范围；55 秒预算、单实例锁，源站 429 冷却 5 分钟，网络超时不再误判为会话失效而重登。现有唯一 Hermes 任务 9ef3f10b20d9 已改每分钟 cron；18:22 受控首轮、18:24 自动轮均 healthy。后台四个文件已备份到 ~/.hermes/mgj-core-backup.p0bn2p 后部署，哈希与仓库一致。
-- 前台仅将可见“今日客户”云端轮询从 60 秒改为 30 秒，已有请求未结束时跳过自动轮询；不直接请求美管加。同步健康检查对本轮三个同步模块使用本地 github/main 发布对象，避免开发工作区的未发布代码造成假漂移告警。
-- Last Completed Work: 提交 588b4ae 已发布；完整 pre-push（财务 74/74、Python 同步/健康 53 项及签名通道 Node 回归）通过；GitHub Validate #36312882843、Pages #36312882633 均成功。线上无缓存 version.txt 与 frontdesk.html 逐字匹配 v569，页面包含 30 秒前台轮询。首次门禁发现 Git hook 环境变量干扰巡检仓库定位，已过滤 GIT_* 后完整重跑，无绕过。
-- 真实自动验证：18:25:59、18:26:59、18:27:59 连续预约轮成功，18:31 前当天+未来七天均已完成首轮；18:33/18:35 自动轮只刷新当天两店，证明未来未到期时不重查整周。18:30 的正常客户定时任务自动完成 8/8，18:31 状态 healthy。健康脚本已备份后部署，三个核心同步文件相对 github/main 哈希一致；既有护理 worker 差异仍独立保留。
-- Open Work For Next Agent: 真实门店持续使用验收及下列 50 个查无历史客户待核对；保留原消费/套餐任务每 30 分钟的小批量轮换，近期明细每小时 :15，不宣称全部历史已补齐。
-- 已知独立遗留：50 个历史客户 needs_review 原因为“未搜索到该客户”，不是 401；未重置/删除/自动无限重试。护理 worker 的既有源码/运行差异未修改。Handoff Rule: 有限批次成功不等于所有历史客户已补齐，也不证明美管加零限流风险；不改变出库、收银或门店登录权限。
-## 2026-09-27 · 月报照片不再混入单笔凭证（App version: v570，待发布）
-
-- 基于 GitHub main `588b4ae`（v569），先同步并保留客户私有同步与预约刷新改动；本日源码备份已存在。该修复单独升为 v570。
-- 单笔凭证预览现在排除明确标为 `monthly-report:` 的月报整月附件；若同一附件另有精确逐笔关联，则仍展示。单笔凭证及人工确认的凭证不受影响。月报照片仍留在月报入口。
-- 仅前端展示过滤及版本/交接记录，不修改 API、数据库、Storage、财务数据、凭证关联、权限或财务登录入口。
-- Open Work For Next Agent: 完成本地发布门禁、推送 GitHub main 并核验 Pages 上 v570；真实门店账号/设备回归仍由用户复测。
-- Handoff Rule: 代码展示过滤不删除原附件关系；未运行生产写操作。
-
-## 2026-09-27 · 报表 App 极简界面统一（App version: v568，待发布）
-
-- Last synchronized base checked: github/main 68b9459；复用干净隔离 checkout，修改前完成每日源码备份，保留 v567 收银中心改动及用户原工作区。
-- Current owner: Codex。按自由手艺人 App 业务页面的浅色极简体系统一报表登录、导航、月报操作区、日报月历、工资/库存表单及凭证追溯抽屉。主要操作黑色，次要操作轻边框；风险/缺凭证/待入账颜色保留。
-- Last Completed Work: 仅新增集中呈现层样式；保留一张完整月报、右侧整月日报及原字号/缩放，不改任何金额、公式、业务 API、数据库、门店权限或财务独立登录入口。修正表单内在宽度撑开页面，以及横屏上传面板遮住收起按钮的布局问题。
-- 新增 test-operations-minimal.js 并接入统一财务回归清单，使用全部拦截外网的虚构预览数据验证五种尺寸、登录/注册、主要财务页面、上传入口、凭证追溯与股东只读控件；样式开关前后报表文本和源数据保持一致。Chromium/WebKit 各五种尺寸及原月报/整表缩放回归通过；最终完整门禁待运行。
-- Open Work For Next Agent: 发布前完成完整 pre-push、GitHub Actions / Pages 和线上资源回读；真实门店账号、实际手机和平板的视觉验收仍由用户确认。此次不恢复此前暂停的全面重构，不部署 Supabase，不修改生产数据。
-- Handoff Rule: 本地合成测试不等于真实业务或实机验收；发布状态以 SHA、CI/Pages、线上资源为准。
-
-## 2026-09-27 · 收银中心浅色极简界面（App version: v567，已发布）
-
-- Last synchronized base checked: github/main d3af07c；复用本线程隔离 checkout，修改前完成源码备份。保留最新财务页面改动，不修改其他工作区。
-- Current owner: Codex。按用户要求参考自由手艺人员工 App 的极简风格，统一收银登录、今日客户排班、客户档案、客户数据表、洗发统计及编辑弹窗；采用浅色背景、细线图标、轻量卡片与柔和状态色。历史导入及较长说明可展开，保留原功能。
-- 修复手机文档滚动裁切并让切换页面回到顶部；排班保留横向滑动，当前时间线跟随真实列宽；长姓名、金额与编辑按钮保持可读。新增独立 frontdesk-minimal.css 和合成浏览器回归。仅修改呈现层及页面导航滚动，不改 API、数据库、客户数据、门店权限或美管加同步/预约去重逻辑。
-- Last Completed Work: frontdesk 定向测试及 Chromium/WebKit 各 5 种尺寸（桌面、平板、手机竖横屏）通过；验证登录/注册、四个页面、排班客户数量及状态、横向滑动、时间线、档案/表格编辑、金额说明与导入展开。全部使用虚构预览数据且拦截外网，未执行真实保存或删除。
-- 发布证据：提交 14807d8 已推送 github/main；完整 pre-push 通过（含统一财务 73/73、美管加同步 47 项），GitHub Validate #36309950498 的 validate job 和 Pages #36309950010 成功。无缓存回读 version.txt、frontdesk.html、frontdesk-minimal.css 与本地逐字一致；新建无登录 Chrome 打开线上页面，确认 data-version=567、浅色登录背景和新版样式加载。首次门禁因未提供既有 Playwright 依赖路径停止，补齐环境后完整重跑通过，未绕过检查。
-- Open Work For Next Agent: 真实门店账号及实际设备视觉体验仍需用户验收；本轮没有使用真实账号进行保存/删除验证。
-- Handoff Rule: 合成测试与线上资源存在不等于真实业务验收；此次不包含此前预约重复问题的处理。
-
-## 2026-09-27 · 单表月报布局恢复（App version: v566，待发布）
-
-- Last synchronized base checked: github/main d577c3c；复用干净隔离 checkout，修改前已运行 scripts/backup-zysyr.sh。用户原工作区未修改。
-- Current owner: Codex。用户要求撤回上下双表；恢复右侧 P:W 的整月日报展示、31 个自然日槽位和合计，并保留当前整表缩放/字号。财务数据来源与现金收入口径不变。
-- Last Completed Work: 本地 Chromium/WebKit 多尺寸单表/金额不重叠、精确日期跳转回归及统一财务 73/73 通过；发布门禁首次在未安装 cryptography 的系统 Python 处失败，改用既有隔离依赖环境继续，不修改同步业务代码。日期点击使用绑定参数避免旧闭包跳错日期。
-- Open Work For Next Agent: 验证 v566 CI/Pages 与真实设备显示；原目标仅保留备份可恢复及股东门店权限两项，不恢复全面重构，不新建付费恢复项目。生产数据/历史凭证未修改。
-- Handoff Rule: 本地合成测试不等于真实账号验收；发布状态以远端 SHA、CI/Pages、线上资源回读为准。
-
-## 2026-09-27 · 历史凭证多定位回退修复（App version: v565，已发布）
-
-- 根据凭证追溯实现确认：服务端追加式保存人工确认的页码关系；前端此前只请求最早页码。若该位置在当前 DOCX 包中不存在，读取立即失败，即使后续已补充正确位置也看不到凭证。
-- 前端现在仅在收到精确的“请求的原图页不属于当前凭证包”错误时，继续尝试同一凭证其他人工确认页码；不会按金额/文件名猜测。原图成功显示时，仍对失效旧位置提示关联未完全核实。没有改写/删除数据库关系或财务数据。
-- 凭证预览单测通过；浏览器回归在桌面 1280×900、手机 390×844、横屏 844×390 通过，含旧无效 locator 后接正确 locator 的合成场景。统一财务测试 73/73、完整仓库 pre-push（含 47 项 Meiguanjia 同步测试）通过；GitHub Validate #36277796758 与 Pages #36277795787 成功。无缓存线上读取确认 `version.txt=565`、`operations.html data-version=565` 且部署代码含多定位回退。真实财务用户对截图中那笔凭证的复测仍待完成。
-- 已从 GitHub main `ffc38ba` 同步；源码恢复包已生成于本 worktree 的 `backups/daily/`。提交 `552420b` 已发布。仅改前端读取和版本标记，没有生产 API/数据库部署、没有改财务数据、凭证关系或财务登录入口。
-- Current owner: Codex; Last Completed Work: v565 凭证定位回退发布并完成 CI/Pages 无缓存核验；Open Work For Next Agent: 请财务用户复测原问题凭证；继续处理 A02/Auth、B01 历史账签认、G01 隔离恢复、受限队列权限、真实财务/股东设备验收及性能稳定性遗留；Required Checks Before Editing: `git fetch github main`、版本/release/agent-sync 检查和每日备份；Required Checks Before Publishing: 完整财务测试、pre-push、GitHub Actions、Pages 无缓存回读；Handoff Rule: 合成凭证包及代码线上存在不等于真实账目追溯已验收；上线审计目标继续 active。
-
-## 2026-09-27 · overview阶段计时诊断（operations-api v108 已部署）
-
-- 为解释生产 `overview` 请求约 4.6 秒的延迟，在 `overview` 的各个读取批次记录单次阶段耗时；只输出一个 JSON 日志事件，包含总耗时与固定阶段名，不记录公司/门店/月/账号/报表 ID/金额/凭证信息，也不改变返回数据或计算口径。
-- 生产只读复核：当前 `operations-api` 为 ACTIVE v107。UTC 2026-09-26 00:00 至 2026-09-27 00:00 的 Edge 请求日志中，v107 全函数 43 次 HTTP 200 的 p50 为 1,643 ms、p95 为 4,535.8 ms、最大值 5,199 ms；另有 2 次 400、1 次 403。该遥测按整支函数聚合，不区分 overview 与其他操作，因此只能确认延迟问题仍值得拆阶段调查，不能作为 overview 单独的线上性能结论。
-- overview 并发与凭证范围、日报去重、450 单元月报读取、公式重算、现金业绩口径等定向测试及统一财务回归 73/73 通过（最终退出码 0）；项目 CI 原命令 `deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen ...` 使用 SHA-256 验证的官方 Deno 2.9.6 二进制通过。`check-agent-sync-status.js` 与 `git diff --check` 通过。
-- 已将完整 `operations-api` 包部署为生产 v108；线上回读确认 ACTIVE、`verify_jwt=false`（保留自定义 session 鉴权）、import map、时序事件与全部阶段标记均存在。一次无凭据只读 `overview` 请求返回 403 `AUTH_SESSION_INVALID`，确认匿名请求仍被拦截；未读取或修改财务业务数据。首次打包尝试因分块输出截断被 Supabase 拒绝，回读确认仍为 v107 后，改用字节分块并核验文件长度才部署成功。
-- 部署后短时日志窗口尚无授权 `overview` 请求，因此没有 `zysyr_overview_timing_v1` 真实计时样本，不能宣称性能问题已修复；后续要等真实财务用户自然打开页面，再只汇总各阶段时长。之前 24h v107 全函数 p95 4,535.8ms 为整支 API 聚合基线，不单独代表 overview。
-- 日志保持每次成功 `overview` 一条聚合事件，不逐查询/逐单元记录；候选基于与 GitHub `main` 同步的 `e12ee7c`，仅包含 API 时序诊断、回归和交接记录。生产 v108 已部署，完整 pre-push 通过，源码提交 `ce6f50d` 已推送至 GitHub `main`；后续仍需等待真实财务会话产生脱敏阶段计时样本，才能定位具体慢阶段并决定是否需要数据查询优化。
-
-## 2026-09-27 · 月报字体可读性微调（App version: v564；已发布）
-
-- 原月报表标签从 13px 调至 14px、金额/输入从 12px 调至 13px；整月日报桌面表格调至 14px，手机端汇总金额与逐日卡片数值调至 15px、卡片标签调至 14px。保留手机端卡片布局、原表整表适配和双指放大；不改变计算、数据源、表格内容或凭证追溯。
-- 更新 `operations.html`、`perm-app.html`、`frontdesk.html`、`version.txt`、`version.json` 至 v564，并同步静态/浏览器回归断言。提交 `b630f291849ee0903a05c6b031597d9510bab991` 已推送 GitHub main；Validate shared app #36260935609 与 Pages build/deployment #36260935463 均成功。线上无缓存回读 `version.txt=564`、`operations.html data-version=564`。真实桌面/平板/手机视觉验收仍待用户确认，不声称实机问题已解决。
-- 仅改前端样式、版本标记、测试断言和交接记录；未改数据库、API、财务公式/历史金额、权限、认证或登录入口。
-- 本轮只读回查生产项目为 `ACTIVE_HEALTHY`；`operations-api` 为 ACTIVE v107、`verify_jwt=false`（函数内部仍做鉴权）。生产 `care_outbound_queue` 的 anon `SELECT/INSERT/UPDATE` 策略仍存在；公开权限清单还含 `hair_records`、`care_records`、`hair_analysis_queue`、`mgj_service_records`、`showcase_images`。没有运行生产写操作或读取业务行。`CARE_OUTBOUND_AUTOMATIC_ENABLED=false`；worker 继续以 publishable key 直接请求 Data API，不能先应用现有 ACL 迁移再补认证。
-- A02 最新生产匿名化聚合（仅计数）：active legacy staff 26、active V2 employees 24、存在 legacy-id 映射的 active 旧员工 23，其中门店与目标员工档案一致 22、跨门店不一致 1；active V2 Auth accounts 2、有效迁移白名单 2、其中已关联 active V2 account 1；近 24h Auth migration success 2、failure 2、blocked 0。仍有 3 个在职旧员工没有映射，且 1 个 V2 在职员工没有旧员工映射；不读姓名/账号/哈希，不自动绑定、停用或重置。
-- A02 按门店匿名化复核：向里造型 active legacy 14，其中 12 个映射门店一致、1 个映射到自由手艺人、另 1 个未映射；自由手艺人 active legacy 11 / 一致映射 10 / 未映射 1；另有 store 字段为空的 active legacy 1 / 未映射。跨店映射员工目前没有有效 Auth 迁移白名单、关联账户或有效角色授权（均为 0），尚无证据表明权限已沿错误门店映射发放；但仍是 P0 身份/数据边界异常，管理员必须在受控员工管理页面确认正确目标档案及门店后才能修正。未查个人标识，不做自动修复。
-- A02 查询口径复核：26 个旧员工中 23 个有指向 active V2 employee 的映射；按映射目标门店一致性再过滤后为 22，差异是上列 1 个跨店映射，不是单纯统计噪声。全局 2 个 active V2 Auth accounts 均未删除/封禁，但只有 1 个关联 active employee；两条已批准迁移白名单中，1 个已有 active Auth 关联。近 24h 迁移事件 success 2 / failure 2 / blocked 0。全部为无标识聚合；跨店错配未被 allowlist/account/role grant 使用。
-- 2026-09-27 生产性能只读样本：从 `function_logs` 的 `operations_api_timing` 结构化事件按当前 ACTIVE v107 聚合；overview 成功 10 次，p50 3,093ms / p95 4,583ms / max 4,583ms；overview 无权请求 1 次，403 用时 3ms。另有 cell_trace 2 次 p95 3,525ms、daily_sheet_month 2 次 p95 3,010ms。样本来自最近 24 小时且量仍偏少；overview 目前仍约 4.6 秒 p95，不能宣布性能达标；应继续观察授权自然流量或在获准环境补压测，避免对财务生产造负载。
-- 2026-09-27 G01 本机 LaunchAgent 只读核对：`gui/501/com.zysyr.daily-backup` 存在但 `active count=0`、`state=not running`、`runs=4`、`last exit code=126`；program 指向仓库 `scripts/backup-zysyr.sh`，日志路径在 `~/Library/Logs/ZYSYR`。没有 kickstart/修改 plist/重跑生产备份；既有诊断为 launchd 因 macOS `Operation not permitted` 无法访问 Documents 工程目录。解决需用户侧 TCC/Full Disk Access 或经批准迁移脚本及源到可访问位置，之后还需明确 DB/Storage 异地恢复目的地和费用。
-- 本轮 `node scripts/test-operations-auth-migration.js`、`test-zysyr-legacy-login-security.js`、`test-operations-auth-bridge.js`、`test-operations-finance-account-admin.js`、`test-care-outbound.js` 与 worker Python 11 项测试均通过；它们是本地静态/模拟证据，不代表真实财务账号验收、生产权限已收紧或后台 worker 已认证。另从 Supabase `function_logs` 结构化事件取得 operations-api v107 近 24 小时按操作分组计时，overview 有 10 次 200 成功 (p95 4583ms)；日志数值及样本限制已记录于上方，不代表全量负载/真实设备性能验收。
-- 本轮财务口径回归 `test-monthly-formula-recalculation.js`、`test-zysyr-monthly-cash-income-v527.js`、`test-zysyr-monthly-overview-daily-dedupe-v546.js`、`test-zysyr-monthly-overview-vouchers-scope-v547.js` 与 `test-zysyr-daily-validation-warning-v557.js` 通过；`test-zysyr-report-cell-request-scope.js` 属浏览器用例，受当前 loopback `listen EPERM` 限制，未启动浏览器，仍待在允许的 QA 环境验证。
-- 2026-09-27 生产只读复核：`zysyr_cash_opening_balances`、`zysyr_report_acknowledgements`、`zysyr_shareholder_registrations` 均启用 RLS；`anon` 与 `authenticated` 均无 SELECT/INSERT 权限，`service_role` 保留 SELECT。仅核对 ACL 元数据，没有读取业务行或修改授权；股东跨门店隔离仍须用真实门店身份会话验证。
-- Storage 进一步核实：生产 migration ledger 已记录 `20260924051925 zysyr_storage_remove_global_public_policy`；`storage.objects` 启用 RLS 且当前策略数为 0（`anon_all` 不存在），底层表级 SELECT/INSERT grants 仍在；财务私有桶 `zysyr-reports`、`zysyr-vouchers` 均 `public=false`。线上 ACTIVE v107 的 operations-api 文件上传/读取使用服务端 SERVICE_KEY，凭证签名链接 300 秒；源码读取确认，不等于真实财务端到端上传/展示验收。匿名 HTTP 探针受当前代理 `127.0.0.1:7890` 不可达阻断（HTTP 000），没有绕过代理；因此 Storage 仍需在授权联网/真实财务会话中做匿名拒绝及上传、查看回归。
-- Storage 本地 `test-zysyr-storage-anon-policy.js`、凭证预览静态/视口约束测试及备用金批量匹配测试通过；备用金凭证浏览器测试在本地服务器 `listen EPERM 127.0.0.1` 处未启动浏览器。没有对生产运行删除操作，本轮只读确认既有迁移已登记。
-- 2026-09-27 Supabase Advisor 复核（Advisor findings 的 observed_at 为 2026-09-26 17:37Z）：Security 有 42 条 RLS-enabled/no-policy INFO 与 1 条 Auth 泄露密码保护关闭 WARN；Performance 有 135 条未覆盖外键 INFO、145 条未使用索引 INFO、4 条重复 permissive policy WARN、Auth 固定连接数 INFO。它们覆盖全库多个 App；未批量建/删索引、改 Auth 或改策略。定向只读核对确认 `perm_data` 与 `staff` 的重复策略都为 `USING (true)`；`perm_data` 的公开配方读取是现有契约。`staff` 对 anon 有非敏感目录列的列级 SELECT（含 username/role/store/position/active/employment_status），`password_hash` 不可读；代码中旧预约/员工目录入口仍使用显式列查询，故不能据 advisor 警告直接撤销目录访问。注意 `has_table_privilege(...,'SELECT')=false` 只表示没有整表 SELECT，并不否定列级 SELECT；目前只核对授权元数据和代码，未发匿名 HTTP 请求读取目录数据。后续如要收紧目录暴露，需先替换这些公开客户端查询并经兼容验证，再单独批准生产权限调整。
-- B01 历史账签认最新生产聚合：正式账本仍有 3,739 笔 `posted_review_status=pending`（向里造型 1,694、自由手艺人 2,045）；其中 1,115 笔 `posted_validation_status=warning`（向里造型 516、自由手艺人 599）。本次只按门店/entry_type/状态汇总，没有读取金额或逐笔内容，没有代财务签认/修账；剩余逐笔签认须由财务人员依据原件决定。
-- 本轮新跑 `test-zysyr-monthly-daily-performance-v525.js` 与 5 项财务公式/分类/现金收入/日报来源/凭证范围/异常提示回归均通过；`check-version-sync.js`、`check-release-integrity.js`、`check-agent-sync-status.js` 和 `git diff --check` 通过（v564）。在获准监听本机临时端口后，`test-operations-report-fit.js` 的 Chromium 与 WebKit 两套浏览器回归均通过：覆盖手机竖屏/横屏、iPad 与桌面视口，确认大额数字完整、不重叠、表格适配且保留缩放；浏览器仅加载本地合成数据。截图 `/tmp/zysyr-monthly-fit-chromium.png`、`/tmp/zysyr-monthly-fit-webkit.png` 已生成供视觉检查。自动化不等于真实设备验收；v564 已发布，实机复核待完成。
-- Current owner: Codex; Last Completed Work: v564 月报字号样式已推送并由 GitHub CI/Pages 无缓存回读验证；Storage 全局 anon 策略迁移确认已上线、财务桶 private；A02 新发现 1 条跨店 employee mapping mismatch（尚无 Auth/授权绑定）；取得 operations-api v107 按操作的线上延迟样本。Open Work For Next Agent: 管理员确认错配员工的正确身份/门店；取得实际设备视觉验收；完成 A02/Auth、B01 历史账签认、G01 隔离恢复、护理队列权限方案、真实财务/股东会话隔离及性能稳定性验收；Handoff Rule: 静态回归不能替代真实浏览器、真实账号或灾备恢复证据，审计目标继续 active。
-
-## 2026-09-27 · operations-api v107 历史月报独立读取并发化（已部署）
-
-- 历史月报 fallback 中 3 个独立数据源请求以及原始工作簿、凭证关联、证据规则、上传人读取原为串行等待；改为两阶段 `Promise.all`，只改变只读请求调度，`effectiveHistoryMonthlyEntries`、金额投影、门店范围、凭证关联状态与响应内容保持不变。
-- `node scripts/test-monthly-load-recovery-v499.js`、统一财务测试 73/73 和完整 pre-push 通过；GitHub Validate #36253525110（含 Deno frozen type check）及 Pages #36253524876 成功。生产 `operations-api` v107 ACTIVE，10 文件包已部署，`verify_jwt=false` 保持；匿名 overview 探针仍为预期 403 `AUTH_SESSION_INVALID`。无授权财务会话自然样本，线上性能对照仍开放，不声称已证实提速。
-- App 前端版本保持 v563；无数据库、权限、财务登录端口、历史财务数据或对象变更。
-- Current owner: Codex; Last Completed Work: operations-api v107 历史月报独立读取并发化部署；Open Work For Next Agent: v107 生产授权会话自然延迟证据；A02/Auth 身份核验、B01 历史账签认、G01 隔离恢复和获批配置仍未完成；Required Checks Before Publishing: 全仓 pre-push、GitHub main 同步、Edge frozen type check；Handoff Rule: 73/73 合成回归不代表生产延迟验收。
-
-## 2026-09-26 · 上线遗留项最新只读复核（目标继续未完成）
-
-- 本轮没有改动生产或本地业务代码。`operations-api` ACTIVE v106（部署时间 2026-09-26 10:08:22 UTC）之后的新结构化日志中，授权 `overview` 成功样本仅 2 次，p95 4,959ms / 最大 5,096ms；另 1 次无权请求 403（2ms）不计入。样本太少，只能作为初步信号，性能验收仍开放；不得据此宣称达标。
-- A02 最新生产聚合仍为 active legacy staff 26、有效 V2 employee 映射 23、有效审批白名单 2、白名单中已有 active V2 Auth 账号 1、active V2 Auth 账号共 2；最近 24 小时 Auth 迁移事件 2 次（成功 1、失败 1、阻断 0）。所有值均为汇总计数，未读取个人身份或凭据，也未绑定、停用、重置任何账号；真实员工身份/门店/角色核验及财务账号登录验收仍开放。
-- A02 按门店代码脱敏复核：向里造型 12 名在职旧员工 / 12 名 active V2 员工映射 / 1 个有效迁移白名单 / 0 个已关联 active Auth；自由手艺人 11 / 11 / 1 / 1。另 3 名在职旧员工没有 V2 员工映射，不能自动推断其归属门店。当前 active Auth 的有效角色范围只有公司级 finance 1 个、公司级 shareholder 1 个，门店级授权为 0；这不足以证明各门店股东数据隔离已实测通过。仍需管理员核对 3 名身份/门店并为真实门店股东完成获批授权和登录验收；不自动补映射或改变现有授权。
-- 为准备人工核对，对 3 个未映射的在职旧账号仅用其旧门店/岗位和账号显示名查询候选计数；结果在可识别门店内均为 0 个同名 active V2 员工候选。未读取联系方式/密码哈希，未在公开交接中记录账号标识；姓名或门店不一致时不能自动建映射，现等待管理员指定目标员工档案或确认保留/停用决策。
-- Supabase Advisor 最新聚合：security 有 42 条 RLS-enabled/no-policy INFO（其中 11 条 `zysyr_*`）和 1 条 leaked-password protection WARN；performance 有 135 条未索引外键 INFO（其中 128 条 `zysyr_*`）、145 条 unused-index INFO（其中 127 条 `zysyr_*`）、4 条 multiple-permissive-policy WARN（无 `zysyr_*` 命中）。对所有 `zysyr_*` 且 RLS 开启但无策略的对象，另以 `has_table_privilege` 检查 anon/authenticated 的 SELECT/INSERT/UPDATE/DELETE，有效授权结果为 0 行；没有根据 Advisor 批量改 RLS、Auth 或索引。
-- G01 仍未完成。现有生产组织 `taoyouming308-ui's Org`、区域 `us-east-1`；隔离项目成本查询为约 USD 10/月。数据库约 276.7 MB，私有财务 Storage 约 1.40 GiB。已向用户单独询问是否同意创建隔离项目并复制恢复样本，以及是否启用泄露密码防护；等待明确答复前，不创建项目、不复制数据、不改 Auth 策略。
-- 仍待外部业务人员处理：B01 3,739 条历史已入账待财务签认（其中 1,115 条 warning），不得自动确认；care outbound 队列 ACL 生产变更继续等待安全 worker 认证方案/用户选择；真实财务设备、真实股东门店隔离、签名凭证查看、备份恢复抽验均未完成。本轮没有改历史数据、权限、登录端口或 LaunchAgent/TCC。
-- 上述实时证据仅用于审计状态，不代表全部修复完成。上线审计目标保持 active；本轮没有可发布的 App 代码变化。
-
-## G01 源码归档保留顺序加固（本地回归通过，DB/Storage 灾备仍未完成）
-
-- 复现并修复源码备份脚本的清理顺序缺陷：过去先删超 30 天本地归档，再尝试云端复制；若云端目标失败，会丢失本地旧恢复点。现在先检查本地 tar，再复制至云端临时文件并逐字节 `cmp`，原子落盘后才清理过期云端/本地归档；云端失败时本地旧归档保持不动。
-- `node scripts/test-zysyr-backup-retention.js` 先在旧逻辑上按预期失败（明确证实旧归档会在云端失败时被删除），修复后通过；同时 `bash -n scripts/backup-zysyr.sh` 与 `git diff --check` 通过。测试只使用隔离临时目录和合成文件。
-- 当前 App version 仍为 v563，本次仅为备份脚本/测试/交接文档维护，不部署网页或 Supabase。未运行真实备份脚本、未访问/复制生产 DB 或 Storage 对象。G01 仍等待获批的隔离目的地与费用，以及数据库和对象真实恢复抽验；LaunchAgent/TCC 仍未改动。
-- Current owner: Codex; Last Completed Work: G01 源码归档失败保护及隔离回归；Open Work For Next Agent: A02 身份/真实账号验收、B01 历史账签认、G01 DB/Storage 隔离恢复、共享权限决策、真实设备/性能验收仍开放；Required Checks Before Publishing: 本地脚本测试、版本/发布/同步检查及仓库门禁；Handoff Rule: 源码归档和合成测试不等于生产 DB/Storage 灾备恢复。
-
-## v563 月报整月日报可读布局（已发布）
-
-- App version: v563。将已入账日报的整月业绩从原月报 22 列表格右侧移出，放到月报区域前部独立展示：宽屏为 8 列整月表，手机窄屏为逐日卡片和月合计。原始月报表不被覆盖，仍完整保留在下方；空缺日期显示“—”，只汇总已入账的当前门店日报，日期入口保留日报追溯。
-- 本地 Chromium 回归通过：桌面、手机竖屏/横屏、平板尺寸下检查表格/卡片切换、数字边界、无横向页面溢出；工资表和原始月报适配回归未退化。财务 73/73、全仓 pre-push 门禁及 47 项同步测试通过。提交 `61ebe742c34a1477b65735f672e6c34940f189f2` 已推送 main；GitHub Validate `36243451181` 与 Pages `36243450907` 成功；无缓存确认 `version.txt=563`、`operations.html data-version=563`，模块 SHA-256 `23e5e170187d2a4ff5b137085d1f5ac8db591c13e4a26f2b48f0e5e48785d964` 与提交源码一致。真实 iPhone/iPad 和财务账号仍需验收。
-- 仅改 HTML/显示模块/回归测试/版本标记；未改 Supabase、财务 API、数据库、权限、历史账务/公式、原始凭证或财务独立登录入口。
-- Current owner: Codex; Last Completed Work: v563 月报可读布局已通过线上回读；Open Work For Next Agent: 上线审计其余 A02、B01、G01、共享权限及真实账号/设备验收持续未完成；Required Checks Before Next Publishing: fetch/版本/release/agent sync 检查、财务测试清单、pre-push、GitHub Actions 与 Pages 无缓存核验；Handoff Rule: 合成回归与 Pages 部署不等于真实财务账号和设备验收。
-
-## 共享业务数据权限：护理出库队列客户端封闭（迁移已测，生产待审批）
-
-- 2026-09-26 生产只读目录复核：`public.care_outbound_queue` 仍有 3 条授予 `anon` 的无条件 SELECT/INSERT/UPDATE RLS 策略；`anon` 与 `authenticated` 对该表有效享有 SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER，`service_role` 也有完整权限。只查询了 ACL/RLS 元数据，没有读取队列业务行。
-- App 的 `CARE_OUTBOUND_AUTOMATIC_ENABLED` 当前固定为 `false`；新增、重试、恢复和状态刷新都短路跳过浏览器队列请求。更正：仓库与 `~/.hermes/scripts/` 安装副本的 `care_outbound_worker.py` 都将 `sb_publishable_...` 用作 Data API `apikey` 和 Bearer token，并关闭 TLS 证书校验；它不是 `service_role` worker。故撤销 `anon`/`authenticated` 权限后，worker 若重新启用将无法访问队列表，TLS 设置也有中间人风险。当前 LaunchAgent label 在 gui/501 中未加载、tracked store config `runtime_enabled=false`；生产队列状态聚合为 completed 275、failed 1、legacy_review 11、needs_review 14，无 pending/processing。macOS 拒绝本会话读取进程列表，因此不宣称其他方式启动的进程不存在。
-- `20260926103914_care_outbound_queue_private_acl.sql` 在隔离 PostgreSQL 17 的 ACL 回归已通过，且保留 `service_role` 与行数据；但该测试没有覆盖真实后台 worker 的 publishable-key 身份，**不足以作为生产部署依据**。应用前需要先为后台 worker 设计/部署受限的服务端认证并恢复 TLS 校验，或由用户明确接受 worker 继续停用；没有删除或改动任何队列数据。
-- `node scripts/test-care-outbound.js`、隔离 ACL PostgreSQL 回归及完整 `.githooks/pre-push` 均已通过（含 73 项财务测试、浏览器视口测试、共享权限回归和应用测试）。生产迁移尚未应用。此前“worker 通过 service_role”的依据已被本轮实际源码/安装副本证据推翻，因此旧审批提问作废；现等待用户选择“先设计兼容的安全后台认证，再收紧 ACL”或“立即收紧 ACL 并继续停用 worker”。只有收到明确选择后才可实施；随后需回读 grants/policies 并验证后台访问。此变更不涉及财务表、金额、历史账、财务公式或财务登录端口。
-- Current owner: Codex; Last Completed Work: 生产权限元数据复核、隔离迁移回归及完整发布门禁；Open Work For Next Agent: 等待用户批准后应用并回读生产权限；Required Checks Before Publishing: 发布门禁通过；生产核验及对应 CI 状态待确认；Handoff Rule: 合成数据库通过不等于生产权限已经收紧。
-
-## operations-api v106 月报总览独立读取并行化（已部署，性能观测待样本）
-
-- 基于生产日志中的 v105 `overview` 慢请求样本（3 次成功调用，约 14.4–14.7 秒），将月报列表/日报来源/股东签认读取、凭证与上传人读取、月报单元格与证据规则读取、各类修订/锁/收入调整读取改为并行等待；仅并行彼此独立的只读请求，不改筛选条件、金额计算、财务公式、数据库、权限或登录端口。
-- 定向回归与完整 `npm run test:finance` 73/73 通过。完整仓库 pre-push 门禁（财务 73 项、应用/权限/前台及美管加同步测试）通过；GitHub Validate #36234632685 与 Pages build #36234632382 成功，Validate 包含 Deno 2.9.6 冻结依赖类型检查。
-- 提交 `298de94` 已推送 `github/main`；生产 `operations-api` 已为 v106 ACTIVE，整包 10 文件与 main 本地版本逐文件完全一致，`verify_jwt=false` 与 import map 均保持。无会话 overview 生产探针返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。没有部署迁移、改账、改权限或改财务独立登录入口。
-- App 前端版本仍为 v562；本次是独立 Edge Function 更新，Pages 内容未变。v105 基线只有 3 个 `overview` 慢请求；v106 部署后的已发请求尚无有效登录业务样本，匿名 403 不作为性能样本，需取得自然产生的授权 overview 请求后再比较耗时。上线审计目标仍保持 active。
-- 本机浏览器验收规则：优先使用已连接浏览器工具或应用内浏览器；不得在受限 shell 直接启动 Chrome/Chromium/Playwright/Puppeteer。若出现 `SIGABRT`、`_RegisterApplication` 或 `TransformProcessType`，停止原样重试并区分测试浏览器启动故障与业务会话问题；不得退出日常浏览器、批量结束进程或清理用户配置。
-- Last synchronized base checked: `298de94`; Current owner: Codex; Last Completed Work: v106 API bundle deployed and source/auth rejection verified; Open Work For Next Agent: A02, B01, G01, shared app permission remediation, real-account/device acceptance, and representative post-v106 performance evidence remain open; Required Checks Before Next Publishing: fetch main, release/sync hooks, complete pre-push suite, GitHub Actions and production readback; Handoff Rule: local tests and anonymous auth probes do not equal real finance account acceptance or post-deployment performance proof.
-
-## v562 工资表 Safari 窄屏适配（已发布）
-
-- App version: v562。继续上线审计整改中的已知 UI 缺陷：WebKit 下原工资表 `CSS zoom` 被最小字号限制，手机竖屏表格仍溢出（复现值：wrapper 376px、scrollWidth 635px）。`operations-report-fit.js` 现对工资表改用整表几何缩放；保留 21 列/金额和原生手势放大，输入框仍可交互。不改财务公式、数据、数据库、权限、凭证或独立财务登录入口。
-- `scripts/test-operations-report-fit.js` 新增 WebKit 工资表覆盖，断言适配边界、缩放路径和输入交互；WebKit、Chromium phone portrait/landscape、iPad、desktop 以及定向重测和 `git diff --check` 已通过。截图仅为本地 synthetic preview；生产设备未验收。
-- 修改前 `git fetch github main` 与版本/release/agent-sync 检查通过；当天源码恢复归档已存在。完整 `npm run test:finance` 73/73、完整预推送门禁、WebKit/Chromium报表适配及交互检查通过。提交 `635fe0596258e7308d3f7e2229e196af62f0ab3d` 已推送 GitHub main；Validate `36232501432` 和 Pages `36232501018` 均成功。线上无缓存 `version.txt=562`、`operations.html data-version=562`，`operations-report-fit.js` SHA-256 与提交文件一致。未改数据库、财务金额/公式、权限或独立财务登录入口。真实 iPhone/iPad 与财务账号体验仍待用户验收。
-- Last synchronized base checked: `635fe0596258e7308d3f7e2229e196af62f0ab3d` (`github/main`); Current owner: Codex; Last Completed Work: v562 工资表 WebKit overflow 修复已发布且线上文件/版本回读一致；Open Work For Next Agent: 独立上线审计仍有 A02、B01、G01、共享表权限及真实账号设备验收未完成；Required Checks Before Next Publishing: 完整财务/仓库测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 本地合成测试不等于真实设备/生产账号验收。
-
-## 继续推进状态（2026-09-26）
-
-- 上线审计目标保持未完成 / active。本轮重跑 A02 本地回归：`test-zysyr-legacy-login-security.js` 与 `test-operations-auth-migration.js` 均通过；仅验证本地兼容登录门禁和滚动迁移，不代表生产门禁已部署或真实员工已迁移。
-- 2026-09-26 生产 Auth 最新聚合只读复核：在职员工 26、有效 Auth 账号 2、获批迁移白名单 2；仅 1 条白名单可与在职员工及有效 Auth 账号匹配。Security Advisor 仍报告 leaked-password protection disabled。未读取账号标识/密码、未创建或绑定用户；仍需管理员核对身份、门店与角色并确认密码策略变更影响。
-- 2026-09-26 后续生产源回读确认 `operations-api` 当前为 ACTIVE v106（`verify_jwt=false`，符合该端点既有自定义会话认证配置）：代码包含旧兼容会话签发时拒绝已有 Auth 迁移状态的身份、失败关闭的迁移状态检查，以及读取时同时验证未过期和创建时间不超过 30 天。此为生产函数源/版本证据，不等于真实员工逐一登录验收；26 名在职旧员工的身份/门店/角色映射仍未完成，财务独立登录入口保持不变。
-- 2026-09-26 13:25 UTC 刷新生产性能日志（最近 24 小时，按 `operations-api` function id 聚合）：v106 成功 POST 11 次，p50 2,671ms / p95 4,696.5ms / max 5,638ms，另有 1 次 403；v105 成功 POST 10 次，p50 2,341ms / p95 13,965.7ms / max 15,484ms；v104 成功 POST 26 次，另有 1 次 400。v106 `function_logs` shutdown 样本 CPU p50 237ms / p95 368ms、最大内存约 21MB，但运行时样本与请求样本不保证一一对应，且未记录业务动作标签，故只能提示等待型 I/O 值得调查，不能定位到具体 SQL/RPC 或据此宣称性能达标。需要真实财务账号下按具体操作补充可关联的性能测量；未为测性能调用写接口或读取用户身份数据。
-- A02 的生产旧登录保护已由 v106 源回读确认；仍等待管理员逐一确认身份/门店/角色，以及真实员工账号登录验收。不自动绑定或停用账号，财务独立登录入口不变。G01 已查到完成的物理备份点，但仍等待获批隔离目的地/实际费用及数据库与 Storage 恢复抽验；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
-- 2026-09-26 再次对生产历史导入行做脱敏聚合：2026-01 至 2026-06 共 3,739 条，`review_status=pending` 全部未签认，其中 2,624 条 valid、1,115 条 warning；各月 warning 数仍为 224、122、195、190、206、178。检查了签认路径：Edge API 与数据库 RPC 都要求 `expense.create_submit` 财务能力、说明理由并拒绝无效行；整月原表签认只写审核状态/审计事件，不会写正式历史账；之后的批次确认另行要求全部明细已确认。未查询金额/人员/原文，也未执行签认、正式入账或历史更改。
-- 本轮工资表适配是本地前端显示修复；没有生产写入、部署、数据库/Storage/Auth/权限/历史财务数据变更。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相应上线门槛。
-- 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；后台 worker 实际使用 publishable key（更正前述误判），因此直接撤销 anon 权限会破坏后续 worker 运行。生产权限变更仍待设计兼容的受限后台认证并取得确认；没有读取业务行、改策略或 grants。
-- 2026-09-26 最新 24 小时 `operations-api` Edge 聚合仍是 v104 175 个 POST 200（p50 1,927ms / p95 5,408ms / max 10,582ms）、6 个 POST 400、3 个 POST 403、125 个 OPTIONS；v105 只有 1 个 OPTIONS，没有业务 POST，函数日志仍只有该版本的一条 Log。当前性能结论为新版本缺代表性样本、整体旧版 POST 有较长延迟；未把延迟归因到单个 RPC/SQL 或宣称优化见效。
-- G01 复核：生产 DB `pg_database_size` 为 276,688,019 bytes；Storage 元数据汇总为 `zysyr-reports` 74 对象 / 274,875,340 bytes、`zysyr-vouchers` 349 / 1,228,759,809 bytes、公开 `showcase` 2 / 5 bytes。仅查数量与 size，没有读取对象内容。当天源码归档 `ZYSYR_2026-09-26_111333.tar.gz` 可由 `tar -tzf` 完整读取，但 LaunchAgent 仍 `not running`、runs=4、last exit=126；都不构成 DB/Storage 备份或恢复演练。
-- G01 2026-09-26 增补：生产项目当前物理备份列表返回 8 个连续日期的 `COMPLETED` 点（2026-09-19 至 2026-09-26，最近点 06:36 UTC），WALG 开启、PITR 关闭。当前 Supabase CLI `backups restore --help` 仅提供带时间戳的 PITR 恢复参数，故不可用来对当前生产项目做隔离物理备份演练；须在明确审批目标后按官方“恢复到另一个项目”流程验证。恢复目标及费用确认前未创建项目、导出数据库或复制 Storage 对象。
-- 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；在获准网络执行环境完成 `git fetch github main`，基线为 `578a2cee3a1cc501ba455ceeee98dba9f94cff8e`。修改前版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
-
-## P0 权限复核：共享 Supabase 中遗留的公开业务表（2026-09-26，只读，待授权整改）
-
-- 对 15 张非财务 public 表只查了 `information_schema`、`pg_policies` 和有效权限，没有读取业务行或执行写入。anon 与 authenticated 均获这些表的 INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER 表级授权。
-- 7 张表存在 `TO public USING (true) WITH CHECK (true) FOR ALL`：`care_products`、`care_records`、`coach_messages`、`coach_scores`、`coach_sessions`、`hair_records`、`showcase_images`。另 `hair_analysis_queue` 与 `care_outbound_queue` 允许 anon 全表 SELECT/INSERT/UPDATE；`mgj_service_records` 允许 anon/authenticated 全表 SELECT，并可对 `source='meiguanjia'` 的记录 INSERT/UPDATE。活跃 `perm-app.html` 直接用 publishable key 访问其中多张表，查询字段含顾客姓名/电话、头发记录及分析；这是可由 Data API 触达的跨用户读写边界，不是 Advisor 告警本身。
-- `content_articles/settings/titles`、`hair_analysis`、`shooting_methods` 当前 RLS 无策略，虽有表级授权，当前 RLS 会挡常规 REST 行访问；但表级 TRUNCATE 不受 RLS 保护，PostgREST 本身没有直接 SQL TRUNCATE 端点，未发现/测试可利用的公开 RPC。不能把该风险表述成已证明可由普通 HTTP 用户直接 TRUNCATE。
-- 财务 `zysyr_*` 表单独复核：anon 无表级权限；authenticated 仅有 88 张表的 SELECT，没有 INSERT/UPDATE/DELETE/TRUNCATE。日报/月报/收入/付款/历史账/凭证关键读策略调用 `zysyr_private.has_capability(company_id, store_id, ...)`，工资读取另校验 `salary.read` 或本人；函数把 `auth.uid()` 绑定到 active 账号并校验公司、门店授权。筛查未发现这些财务表 `USING/WITH CHECK true` 的策略。真实股东双门店/跨公司 token 验收仍未完成，不能仅凭 SQL 定义宣称验收通过。
-- 2026-09-26 追加只读核对 public 下 112 个 `zysyr_* SECURITY DEFINER` 函数：`anon` 可执行 0、`authenticated` 可执行 0、缺少函数级固定 `search_path` 为 0；按财务命名筛查且可被上述角色调用的 definer 函数为 0。该结论只覆盖函数权限/配置，不替代真实会话下的股东门店隔离验收。
-- 2026-09-26 本地 `npm run test:finance` 完整跑完 73/73：需本机 listener 与 OrbStack 的隔离 PostgreSQL 用例在普通沙箱首次执行时因环境权限无法启动；在批准的本机测试环境中重跑后，浏览器、Auth、财务、数据库隔离测试全部通过。仅为本地合成/隔离测试，不构成真实财务账号、生产 API、跨门店 token 或线上凭证验收。
-- 2026-09-26 另行重跑股东报表权限专项：`test-staff-report-browser-v514.js` 通过（股东月/日报显示、无财务登录闪屏、只读、无识别任务、财务会话隔离、权限撤销、横屏适配）；`test-staff-report-access-v514.js` 的 Edge 合成会话/操作白名单/门店范围拒绝全部通过，断网 PostgreSQL 17 子测也通过（ACL、管理员角色、门店 grant、离职会话撤销、原子回滚、审计记录和财务 fixture 不变）。普通沙箱首次被 loopback/Docker 权限挡住，批准的本机测试运行通过；这仍不是线上真实股东账号/双门店 token 验收。
-- 2026-09-26 继续运行 `test-zysyr-report-permissions-v512.js`：隔离 PostgreSQL 17 权限回归通过，3 张报表表保留数据/`service_role` 访问，anon/authenticated 的直接读写被阻断，4 个 RPC 不可被客户端角色直接执行；测试容器断网，仅合成数据，不访问/修改生产数据库。
-- 2026-09-26 后续生产有效权限复核（Supabase 只读 SQL）：`zysyr_cash_opening_balances`、`zysyr_report_acknowledgements`、`zysyr_shareholder_registrations` 均启用 RLS；anon 的 SELECT/INSERT 与 authenticated 的 SELECT/INSERT/UPDATE 均为 false，service_role SELECT 为 true。`zysyr_acknowledge_report`、`zysyr_admin_complete_shareholder_account`、`zysyr_record_petty_cash`、`zysyr_upsert_cash_opening_balance` 对 anon/authenticated 的 EXECUTE 均为 false、service_role 为 true。没有读取行数据或更改权限。本轮重跑隔离专项脚本被本机 OrbStack Docker socket `permission denied` 阻止，因此本轮没有新的本地容器测试结果；不得将生产 ACL 回读误作真实股东会话/跨门店 token 验收。
-- 不能直接撤销全部 anon/authenticated grants：活跃浏览器页面仍有上述表的直接读写调用，立刻撤权会中断功能。需先获得用户确认把客户/员工数据权限整改纳入本轮，再将调用迁到经过认证及门店范围校验的 API、补兼容回归，最后单独批准生产 RLS/GRANT 切换；当前未做任何权限变更。
-- 2026-09-26 静态扫描当前 `perm-app.html` 的 `/rest/v1/...` URL，直接涉及 8 张表：`hair_records`、`care_records`、`hair_analysis_queue`、`care_outbound_queue`、`mgj_service_records`、`showcase_images`、`perm_data`、`staff`。其中前 6 张包含顾客/发质/服务记录或展示图工作流；若要纳入整改，需要逐类替换其浏览器读写调用并为页面保持既有行为，不能仅移除 grants。此项仅为静态调用清单，不据此假设各表所有路径都由 anon 权限成功放行。
-- 2026-09-26 继续检查调用点：`perm-app.html` 对上述 8 张表有 42 处 `/rest/v1/` 引用；这些调用使用公开 publishable `apikey`，没有随请求携带员工身份 bearer token。现有 `employee-bookings-api` 通过哈希后的 `employee_booking_sessions` token 校验员工 active 状态和当前门店，但仅支持预约、客户资料/历史；`staff-access-api` 的会话限定 admin/store_admin 并服务员工管理，不能直接复用为全员敏感数据代理。若要收紧，需先设计按业务角色/门店过滤的专用操作，再分模块迁移并回归，最后单独批准生产策略/GRANT 切换；未执行任何生产写操作。
-- 2026-09-26 继续只读梳理实现边界：`employee-bookings-api` 的会话解析会重新读取当前 `staff` 状态并校验当前门店，现有可用操作仅为 `session`、`today_bookings`、`customer_profiles`、`customer_history`；它没有发质档案、护理记录、分析队列或美管加服务记录代理。不能只把浏览器 URL 改成该 API 就认为风险关闭。已有元数据显示 `hair_records` 缺独立门店列，不能安全地按当前登录门店过滤历史档案；应先逐模块确定可信门店关联和完整 CRUD 业务路径，再实现/测试专用代理，最后单独批准生产 grants/RLS 收紧。此轮仅检查源码与既有列级元数据，没有改代码或生产状态。
-- 2026-09-26 只读重查上述表的生产 RLS/GRANT 元数据：`hair_records`、`care_records`、`showcase_images` 对 `public` 有 `ALL USING true WITH CHECK true`；`hair_analysis_queue`、`care_outbound_queue` 对 `anon` 的 SELECT/INSERT/UPDATE policy 条件为 true；`mgj_service_records` 对 anon/authenticated 可全表 SELECT，且可对 `source='meiguanjia'` 写入/更新；`perm_data` 仅公开 SELECT；`staff` 虽有 SELECT policy，但 anon/authenticated 当前无表级权限。多个表同时授予 anon/authenticated 多项表级 DML 与 TRUNCATE 权限。此为权限与策略元数据检查，未查询业务行；不要把 TRUNCATE 表级授权误说成已验证存在普通 REST 调用路径。
-- 2026-09-26 只读检查数据模型列：`hair_records` 没有专用门店列，仅有 barber/technician 和 `record_data` JSON；`care_records`、`hair_analysis_queue`、`mgj_service_records` 则有 `shop_name`。因此先迁移有明确门店列的门店队列/护理/美管加读写相对可控；发质档案需先确认历史行门店归属能否由可信数据确定，不能按当前员工门店或前端传值臆测，更不能给旧档案错分店。
-- 生产 Supabase Advisor 于 2026-09-26 06:27Z 刷新：security 仍为 42 条 `rls_enabled_no_policy` INFO 和 1 条 leaked-password protection disabled WARN；performance 仍有 135 条 unindexed-FK INFO、4 条 multiple-permissive-policy WARN，以及 unused-index/Auth-connection INFO。结果覆盖共享项目全部业务模块，不能将汇总告警全归属财务 App，也没有据告警批量改权限、Auth 或索引。
-- Auth 警告只读复核了 Supabase 当前官方[密码安全文档](https://supabase.com/docs/guides/auth/password-security)：泄露密码保护通过 Auth 设置启用，Pro 及以上计划可用；文档说明更新密码要求可能使不符合强度规则的既有账号在登录时出现 `WeakPasswordError`。这与“仅阻止新设/改密”不同，故在真实财务账号及现行长度/复杂度设置未核验前，不直接切生产开关；现有 MCP 不提供读取/更新该 Auth 设置的专用接口，本轮未改生产 Auth 配置。
-
-## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
-
-- Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；当前已从实时列表核实生产有 8 个连续日 `COMPLETED` 物理备份，PITR 未启用。数据库备份不包含 Storage 对象；恢复到另一项目也需单独迁移 Storage 对象和重建桶/函数/Auth 设置。生产项目恢复会造成不可访问，不能拿生产 restore 当演练。
-- 2026-09-26 重新核实官方备份文档：可通过 Management API `GET /v1/projects/{ref}/database/backups` 列出恢复点，但当时的 MCP 未提供备份列表方法、shell 没有 `SUPABASE_ACCESS_TOKEN`；Dashboard 浏览器初始化超时。
-- 2026-09-26 后续只读补证：Supabase CLI v2.109.1 的 `supabase backups list --project-ref pdssrmpeiuwvxzsgschm` 成功返回生产备份元数据：`walg_enabled=true`、`pitr_enabled=false`，最近一次物理备份 `COMPLETED` 于 2026-09-26 06:36:41 UTC，并列出 8 个连续日完成点（2026-09-19 至 2026-09-26）。这证明平台有完成的备份点，不证明可恢复；没有下载、复制或执行恢复。
-- Supabase 当前官方指引提供 “Restore to another project” 的物理备份恢复流程；数据库恢复与 Storage 对象恢复仍是分离步骤。当前项目属于 `taoyouming308-ui's Org`；已向用户询问是否在该组织查价并准备隔离环境，尚未创建项目、恢复数据库或复制约 1.40 GiB 对象。
-- 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
-- 2026-09-26 只读容量估算（仅 `storage.objects` 元数据 size 聚合，未读对象内容）：`zysyr-reports` 74 个对象 / 274,875,340 bytes，`zysyr-vouchers` 349 个 / 1,228,759,809 bytes，`showcase` 2 个 / 5 bytes；数据库 `pg_database_size` 为 276,679,827 bytes（约 264 MiB）。Storage 对象合计约 1.40 GiB，连同数据库约 1.66 GiB 原始数据；恢复空间还需覆盖临时文件、索引/数据库恢复开销及版本/桶配置，不能据原始大小直接当作磁盘下限。该清单可用于备份容量规划，不等于已经备份或完成恢复。
-- 权限边界复核：关键财务 3 表对 `anon` 和 `authenticated` 的表级 SELECT/INSERT/UPDATE/DELETE 均无权限，`service_role` 仍有服务访问；`storage.objects` 表级 CRUD grants 对 anon/authenticated 仍存在，但 RLS 已启用、无策略，使用 `SET ROLE anon` 的只读查询返回 0 个对象。该结果证明当前匿名读被 RLS 拦截，不代表表级授权已被撤销；未做 Storage 写探针或修改 grants/policy。
-- 2026-09-26 当前 Supabase 账号下只列出生产项目 `pdssrmpeiuwvxzsgschm`，`list_branches` 返回空；本地 `scripts/backup-zysyr.sh` 仅打包源码并排除 `.git`、`node_modules`、`backup.env` 等，不包含数据库 dump、Storage 对象复制或 restore 命令，不能充当 DB/Storage 灾备。创建隔离 Supabase 项目的当前成本查询为每月 USD 10；等待用户确认费用后才可创建，未创建任何资源。
-- 当前完整审计仍要求隔离恢复练习：已核实有最新 completed physical backup，但没有生产 DB/Storage 恢复点进入隔离目标的证据。新项目/分支需另行确认组织和当前价格；复制约 1.40 GiB 私有财务 Storage 对象也涉及获批目标与数据复制授权。恢复范围仅限隔离目标，禁止对生产执行 restore。
-- 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。2026-09-26 再读 `launchctl print gui/501/com.zysyr.daily-backup` 仍为 `state=not running`、last exit code 126；未尝试加载或修改 LaunchAgent/TCC。
-
-## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
-
-- 对生产 `zysyr_history_ledger_entries` 仅执行聚合 SELECT，按月、账类、已存储校验状态分组，未返回姓名、金额、源定位、payload、原表行或凭证内容。当前 posted 状态待签认 3,739 行：valid 2,624、warning 1,115；查询分桶覆盖 2026-01 至 2026-06，reversed 为 0。
-- warning 问题代码的非互斥受影响行数：monthly `label_unresolved` 953；employee_purchase `product_unmatched` 88、`employee_unmatched` 19、`retail_sale_preserved` 12、`possible_duplicate` 8；salary `employee_unmatched` 66、`net_formula_mismatch` 1；petty_cash `sequence_unusual` 7。单行可能同时带多个代码，因此代码行数不可相加替代 1,115 个 warning 行。
-- 按 `period_month × entry_type` 重新脱敏交叉核对：warning 行在 2026-01 至 06 分别为 224、122、195、190、206、178，合计 1,115；账类合计 monthly_profit_loss 953、employee_purchase 88、salary 67、petty_cash 7。2026-05 的 206 行中有 4 行 petty_cash warning；此前简略分桶摘要未单列，这次用月度总数及 5 月分类聚合复核，未读取明细。
-- 结果支持财务按月/账类/问题代码安排逐笔核对，但不能替代源凭证审核或财务签认。没有更新 review_status、修正金额、导入历史账或改变任何生产行。项目当日恢复备份脚本确认源码归档已存在，未新增归档。
-- Last Completed Work: 只读完成 warning 分桶；Open Work For Next Agent: 由财务按正式原件逐批核验并通过受审计工作流签认/更正；不得批量确认或按代码自动修复。
-
-## A02 旧兼容登录收口第一步（v106 已部署，真实账号验收待完成）
-
-- `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
-- 2026-09-26 随 `operations-api` v106 整包部署，生产 bundle 已确认包含 `legacyStaffHasManagedV2Account` / `supabase_auth_required` 门禁；10 个 bundle 文件与 main 逐文件一致，`verify_jwt=false` 与函数内 Auth 校验保持。`operations-auth-migrate` v6、`operations-auth` v6 ACTIVE。
-- 生产脱敏聚合：旧 active staff 26；映射到 active V2 员工 23，其中 22 名尚无 V2 account、1 名已有 active account；legacy→employee 映射总数 27；active approved allowlist 2。当前 active V2 Auth account 总数 2：1 个关联有效旧员工迁移白名单，另 1 个未关联该白名单（不据此推断角色或权限）。本次只查 counts，没有查看姓名、账号标识、哈希或业务凭证。
-- 本轮本地重新运行 `node scripts/test-zysyr-legacy-login-security.js` 与 `node scripts/test-operations-auth-migration.js` 均通过。门禁仅阻止已精确映射且 V2 账号已管理的员工继续获得旧兼容会话；旧登录入口仍保留给过渡账号。不得据聚合数批量建号、停用账号或改变财务登录端口。生产真实账号登录/恢复验收仍未完成。
-- 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
-- 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub Validate run `36218103714` 成功，Deno frozen `operations-api` 类型检查成功，Pages run `36218103325` 成功。真实财务账号验收未完成。
-- 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入真实验收。没有更改账号、密码、会话、登录端口或财务数据。
-- A02 仍未关闭：管理员需逐账号确认身份/门店/角色，并在真实财务端分别验收已迁移和未迁移账号；不得自动建号、改密码、撤销会话或停用财务登录。
-- Current owner: Codex; Last Completed Work: `operations-api` v106 已生产部署且 Auth 精确映射门禁已回读；Open Work For Next Agent: 管理员确认后做真实迁移账号/未迁移账号登录验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码与 bundle 回读不等于真实财务账号端到端验收。
-
-## 上线审计：operations-api 操作级耗时诊断（v106 已部署，性能根因待观测）
-
-- 2026-09-26 11:16 UTC 再查近 24 小时结构化计时日志：v106 仅 1 个 `overview` HTTP 403（2ms，未授权探测，不是有效财务操作样本）；v105 有 3 个成功 `overview`（p50 11,489ms / p95 14,412ms / max 14,737ms）、1 个成功 `cell_trace` 4,540ms、1 个成功 `daily_sheet_month` 1,828ms、2 个 `history_evidence_images` 成功（p50 1,298ms / max 1,318ms）、1 个 `history_import_file_url` 1,471ms、1 个 `daily_recognition_job_read` 1,054ms、1 个 `session` 890ms，另有 8 个 unknown/200（预检）。这些有效成功样本仍来自 v105；v106 尚无授权业务请求，不能证明并行读取优化效果。
-
-- 2026-09-26 早前生产日志聚合仅有 1 条 v105 `operation=unknown`、HTTP 200、1ms 的预检事件；该历史窗口不含有效业务路由样本，后续 11:16 UTC 刷新结果见下。
-- 2026-09-25 07:34:47Z 至 2026-09-26 07:34:47Z 重新查生产 `function_logs`，在线 v105 仍仅有上述 1 条 `operations_api_timing`：OPTIONS 预检、operation unknown、200、1ms；该窗口没有可用的真实 POST/财务操作样本。计时日志管线有运行证据，业务端到端性能和是否改善仍不可判断。
-- 按函数版本重新切分同一窗口：v104 有 OPTIONS 125、POST 200 共 175、POST 400 共 6、POST 403 共 3；v105 仅 OPTIONS 1、无 POST。所有 11 个 ≥5 秒的 POST 200 和最长 10,582ms 样本都来自 v104。v105 的 `operations_api_timing` 结构化日志也仍只有 1 条，无法形成业务操作分布；不能把旧版慢请求归因于 v105，也不能据没有新样本声称性能已改善。
-- 2026-09-25 07:53:51 至 2026-09-26 07:53:51 UTC 再次只读刷新近 24 小时 Edge 网关统计：`operations-api` 共 310 次，v104 OPTIONS 125、POST 200 175（p50 1,927ms / p95 5,408ms / max 10,582ms）、POST 400 6、POST 403 3；v105 仅 OPTIONS 1（1,540ms），没有业务 POST。v104 的 175 个成功 POST 中仍有 11 个达到或超过 5 秒；这是函数总耗时，不是单个 SQL 或前端端到端时间。v105 尚无可用业务延迟样本，不能声称性能改善或把旧版慢请求归因于新版本。
-- 2026-09-26 当前生产 `pg_stat_statements_info.stats_reset=2026-06-09 23:21:03Z`。自重置以来财务 RPC 累计：日报确认 `zysyr_confirm_daily_sheet` 41 次，均值 1,486.68ms、最大 4,048.65ms；保存日报格子 75 次，均值 828.44ms、最大 1,824.97ms；应用识别候选 299 次，均值 799.73ms、最大 1,731.84ms；创建日报草稿 315 次，均值 274.15ms、最大 4,133.75ms。它们是跨三月累计的数据库语句数据，不代表当前版本或单次用户端到端延迟。统计中最慢的 2.53s 查询实际是 Supabase 元数据/表结构 introspection，不是财务交易。
-- 再查生产 `current_setting('track_functions')` 返回 `none`，因此没有 `pg_stat_user_functions` 子函数耗时可用于拆解日报确认内部阶段；未修改数据库参数。当前数据库证据不足以定位可安全优化的具体子查询，避免仅凭 1.49s 整体均值重写入账事务。
-- 2026-09-25 07:16 至 2026-09-26 07:15 UTC Postgres 日志安全聚合另见 195 个 PostgREST `authenticator` BIND / SQLSTATE `42501` 权限拒绝，另有 4 个 `mgmt-api` SELECT 错误。聚合日志没有可用的请求路径/财务操作标签；这些是拒绝结果，不能据此认定为数据泄露、财务用户错误或授权问题，也不据此改变 grants/RLS。PostgREST 聚合字段未提供可关联具体财务 API 的请求耗时，性能瓶颈仍未定位。
-- 复核本地日志钩子：`handleOperationsApiRequest` 在 OPTIONS 分支立即返回；业务 `operation` 只在 POST JSON 解析后提取并传给日志回调。因此唯一 v105 事件显示 `unknown` 符合预检路径，不表示操作名解析故障。当前没有足够 v105 业务请求样本来定位或验证性能修复。
-- 2026-09-26 最新 Advisor：Security 为 42 条 RLS-no-policy INFO、Auth leaked-password protection disabled WARN；Performance 为 135 条未索引 FK INFO、4 条重复 permissive policy WARN 和 Auth 固定连接数 INFO。范围包含非财务表；没有基于 Advisor 批量建索引、改 Auth 或改 RLS。
-- 06:01Z Advisor 的 4 条重复策略已只读核实：`perm_data` 的两条 `SELECT USING (true)` 与匿名/登录用户可读授权是配方查询的既有公开契约（字段为烫发配方/步骤，不含员工或财务记录）；不得为清告警撤销。`staff` 的两条 `SELECT USING (true)` 策略虽然冗余，但生产 `has_table_privilege` 对 anon/authenticated 均为 false，当前不能经 PostgREST 直接读取；未删策略或授予权限。另有 42 张启用 RLS 无策略的表，需与实际 grants 分开核验，Advisor INFO 本身不等于公开可读。
-- 同一日志窗口重新按 HTTP 方法/状态读取，发现慢请求主要在 POST 200；不能仅凭网关总耗时把根因归于数据库，也未尝试生产压测或执行会改财务数据的 API。
-
-- Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
-- 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
-- GitHub main commit `ead651c` 已将完整 operations-api bundle 部署到生产 v105 ACTIVE；回读确认 `verify_jwt=false` 保持原值，在线源码包含 allowlist 与计时事件。无凭证 OPTIONS 探测返回 200；生产日志回读事件 `operations_api_timing` / `operation=unknown` / `status=200` / `duration_ms=1`，仅是预检请求，不含业务数据。
-- 本批是诊断能力，不是性能修复或 P0/P1 闭环。待收集至少 24 小时真实按 operation 分布的耗时与日志量，确认具体瓶颈后再按路由逐项修复；不要据单次 OPTIONS 耗时推断业务 API 性能，也不要过度采样扩大日志成本。
-- Current owner: Codex; Last Completed Work: operations-api v105 生产部署已核验；2026-09-26 补充复核了 Auth 聚合、LaunchAgent/源码归档与性能统计证据（均只读）；Open Work For Next Agent: 观察真实 operation 分布与日志量；等待旧员工身份映射、历史账签认、备份目的地/系统授权及真实财务设备验收；Required Checks Before Next Publishing: 完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，按范围部署后回读 ACTIVE 版本、鉴权标志和所需运行证据；Handoff Rule: 未观察到有代表性的真实 operation 数据前，不声称性能问题已修复。
-
-## 上线整改续核（2026-09-26，只读状态与证据更新）
-
-- G01：当前 `com.zysyr.daily-backup` LaunchAgent 已指向本项目，但 `launchctl print gui/501/com.zysyr.daily-backup` 显示 `state=not running`、累计 runs=4、last exit code=126；错误日志最近仍为 macOS `Operation not permitted`。本机 2026-09-26 11:13 的源码 tar.gz 归档可完整列出，备份目录有 8 份近 30 天归档，且归档未包含 `backup.env`、`.git`、`node_modules`、`supabase/.temp`；这仅证明源码归档可读，不是生产 DB/Storage 备份或恢复演练。未改 LaunchAgent/TCC 权限，未导出生产数据；灾备目的地和隔离恢复仍待授权。
-- A02：生产匿名化聚合复核仍为 active legacy staff 26、approved allowlist 2、映射员工中具备 active V2 account 1（不要与 active V2 employee 档案映射数混为一谈）。近 24 小时 Auth 安全事件只有聚合计数：12 attempts、6 次 `invalid_credentials`、6 次 `direct_auth_login` 成功；没有读取用户标识或哈希，不能据此判断具体人员已迁移或授权停用旧登录。
-- 2026-09-26 再次只读回查确认员工迁移覆盖为 26 个 active 旧员工、23 个映射 active V2 员工（其中 22 个还没有 V2 account、1 个 account 为 active）、2 个有效审批白名单；迁移事件共 12 次 started、6 次失败、6 次 direct Auth 成功。生产源码回读确认 `operations-api` v105 ACTIVE 未包含 commit `60affb7` 的兼容登录门禁；定向本地测试通过。仍无身份级动作依据。
-- A02 当前仍未达到关闭条件：生产 `operations-api` v105 未部署旧兼容登录门禁；真实逐账号身份、角色/门店和 Auth 登录验收未完成。上述匿名化计数不授权自动绑定/停用账号；部署该门禁会改变已绑定员工的旧登录结果，需针对这一生产 Auth 行为取得确认，财务独立登录入口/URL 保持不变。
-- 性能：部署 v105 后最近 24 小时仅观测到 1 条 `operations_api_timing`，为 HTTP OPTIONS 预检；尚无真实 operation 分布。数据库 `pg_stat_statements` 自 2026-06-09 重置以来累计数据中，日报确认 RPC 平均/最大约 1.49/4.05 秒（41 次），保存单元格 0.83/1.82 秒（75 次），识别候选应用 0.80/1.73 秒（299 次），创建草稿 0.27/4.13 秒（315 次）。累计值不代表最近 24 小时或用户侧端到端延迟，只用于后续选取排查候选，不据此改索引/公式。
-- Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
-- 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
-- 本次只有只读生产查询、LaunchAgent 状态/日志核查和现有源码归档完整性检查；无代码、数据库、Auth、RLS、历史账、Storage 对象、端口或系统权限变更。
-- 本轮独立启动财务回归时，第 13 项因普通 shell 无权连接 OrbStack Docker socket 中止；随后完整 pre-push 在授权发布环境重跑全部门禁，73/73 财务回归、其他 App 回归及 47 项美管加同步测试均通过。GitHub Validate `36220733338` 与 Pages `36220732712` 也已成功。
-
-## 月报表字号微调（v561，已发布）
-
-- App version: v561。用户确认月报表在手机、iPad 和电脑都偏小；本批仅提高月报原始单元格、金额、整月日报栏和财务编辑输入的字号，不改表格列结构、财务数字、计算、数据库、权限或财务独立登录入口。
-- 继续用 v560 的整表 `scale` 防止 WebKit 最小字号跨格；长金额仍按单格实际宽度局部适配。Chromium/WebKit 合成浏览器回归覆盖手机竖屏、横屏、iPad 和桌面，完整金额不重叠、无横向表格滚动，新增字号回归断言。完整财务回归 73/73、版本/发布/同步检查和 App smoke 通过；生产真机仍待用户复核。
-- v561 提交 `bdb0ec0` 已同步 GitHub main；GitHub Validate 与 Pages 成功，生产 `version.txt=561`，`operations.html` 无缓存回读哈希与发布提交一致。用户已确认字号调整。真实财务账户真机验收仍待财务配合。
-- Last synchronized base checked: `bdb0ec0` (`github/main`); Current owner: Codex; Last Completed Work: v561 已发布，生产版本/文件回读一致；Open Work For Next Agent: 继续上线审计整改及真实财务账号验收；Required Checks Before Editing: fetch 与版本/发布/同步门禁、工作区状态检查、当日恢复归档；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
-
-## 上线整改：A02 / B01 / G01 生产复核（2026-09-26，只读与本地归档）
-
-- Supabase 生产只读聚合复核员工 Auth 覆盖：旧 active staff 26；映射到 active V2 员工 23；approved allowlist 2；具备 active Auth account 的旧员工 1。与 9 月 25 日计数一致。不能依据聚合结果自动补绑/停用账号；仍须管理员逐一确认身份、门店、角色与迁移安排，财务独立登录入口保持不变。
-- 历史正式账本只读聚合：posted 3,739；validation valid 2,624、warning 1,115；warning 记录仍全部 pending，confirmed 0、needs_correction 0。无金额、姓名、原始行或凭证内容被查询/返回；B01 仍须财务按门店/月/类型核对原表与凭证，未更改历史账。
-- 生产迁移账本只读列表与仓库最新迁移 `20260924051925` 一致，没有发现线上迁移落后。G01 本机 LaunchAgent 仍 inactive；错误日志确认 macOS `Operation not permitted` 阻止它读取/执行 Documents 下的脚本。今日项目源码归档已创建；它不包含生产数据库/Storage 备份，也不代表灾备恢复完成。尚需获批数据库/Storage 备份目的地与 macOS 授权，并做真实隔离恢复抽验；未导出生产数据或启用 PITR。
-- 本批没有生产写入、数据库/权限/财务逻辑/代码修改；只执行聚合查询、迁移账本列表与项目源码归档。A02、B01、G01 均保持开放并等待各自所需的管理员/财务决策或环境授权。
-
-## 凭证精确追溯与月报手机端防重叠（v560，Pages 已发布，云端回归复核中）
-
-- App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。
-- WebKit 移动环境实测 CSS zoom 会把小字放大越过固定列；月报改为布局后整表 scale，并只对超宽金额按实际宽度适配，撤销裁切/固定手机小字方案。保持完整小数和原数值、原位置、原宽度适配及原生手势缩放；不改其他报表缩放方式。
-- 已通过凭证单测、operations、真实响应形状的凭证浏览器（1280×900、390×844、844×390）、备用金精确原图重开、Chromium 适配和定向重测；额外 WebKit 月报测试覆盖横竖屏/旋转，生产财务账户仍未接入。另发现 WebKit 工资表现有缩放溢出（不属本次两项修复，保留待办，不扩改）。未改数据库、权限、历史财务数据、公式或财务独立登录入口。
-- 2026-09-26 对生产 2026-01 正式历史行只做聚合元数据核验：53 条 `page_confirmed` 关联、涉及 4 份 DOCX；关联定位均符合 `word/media/<文件名>` 格式，4 个底层 Storage 对象都存在，未发现缺对象或 0 嵌入图片数。该检查没有读取文件内容，不能证明 DOCX 内每个精确 locator 可解析，也不能替代真实财务账号点击打开；本轮未重新关联、补传或修改历史行。下一步需在授权的财务会话中复现，核对页面请求的图片名与 API 返回的 `image_manifest`，再决定是否需要小范围代码修复。
-- 2026-09-26 只读回读生产 `operations-api` 为 v105 ACTIVE，在线源码包含历史凭证页读取的 `image_manifest` 与请求页存在性校验；本地合成凭证预览单测、历史导入解析测试、1280×900 / 390×844 / 844×390 凭证浏览器回归均通过。线上对象元数据与代码路径均有证据，但由于没有真实财务会话，尚未复现“人工确认后无法读取”，不能据此判定线上交互已修好。
-- 完整财务回归 73/73、WebKit 月报专项、版本/发布/同步检查、smoke 与 diff check 已通过。测试数据均为本地合成数据；隔离数据库测试使用无网络临时 PostgreSQL 容器。
-- 提交 `ab40039` 已通过完整 pre-push 并推送 main；Pages `36126025448` 成功，无缓存回读 8 个版本/页面/修复脚本与提交哈希一致。首次推送缺 Python cryptography 后在临时 venv 安装 CI 指定 48.0.0，47 项同步测试通过；未改系统 Python。Validate `36126026134` 的财务第 57 项定向测量测试在 100ms 内未等到 RAF，前 56 项通过；本次仅将该测试等待改为真实测量事件加两帧排空，仍保留精确次数及不重测无关表格的断言，不改 App 代码。
-- Last synchronized base checked: `ab40039` (`github/main`); Current owner: Codex; Last Completed Work: v560 Pages 已发布且线上文件一致；Open Work For Next Agent: 复核修正等待方式后的 GitHub CI；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
-
-## D01 月报/凭证样式 token 试点（v559，已发布）
-
-- App version: v559。月报操作条、月报数字与凭证详情页开始复用间距、圆角、按钮高度和数字字形 token；保留现有字号、表格尺寸、财务登录入口及按钮行为，不涉及数据库、权限或财务计算。
-- 专项浏览器回归通过，覆盖桌面、手机竖屏、横屏及凭证细节间距；金额列无溢出，现有字号与按钮尺寸保持。财务测试清单 73/73、全仓 pre-push、App smoke、版本/发布/同步门禁通过。提交 `ad4e970` 已推送 GitHub main；Validate `36114979252`、Pages `36114978591` 成功，无缓存线上读到 `version.json=559`、`operations.html data-version=559` 与 CSS tokens。页面只改 CSS tokens；无 DB/财务计算/权限/登录入口变更。
-- 仓库 pre-push 的 frontdesk 测试要求所有首页 `data-version` 同步；仅将 `frontdesk.html` 的发布标记从 v558 升到 v559，没有修改前台页面行为。
-- Last synchronized base checked: `ad4e970` (`github/main`); Current owner: Codex; Last Completed Work: D01 样式 token v559 已发布并线上回读；Open Work For Next Agent: 继续推进审计整改，优先梳理可独立验证的 P1/B09/B10；Required Checks Before Editing: 先确认工作区干净并完成备份；Required Checks Before Publishing: 全量财务测试、版本/发布/同步门禁及 GitHub CI；Handoff Rule: 未验证不声称完成。
-- git fetch github main；node scripts/check-version-sync.js；node scripts/smoke-test-app.js。
-
-## CI Node 20 runner 退役兼容（2026-09-25，已验证）
-
-- GitHub 于 2026-09-23 移除 Actions runner 的 Node 20；旧 `actions/checkout@v4`、`setup-node@v4`、`setup-python@v5` 仍能在 runner 的 Node 24 强制兼容模式下运行，但近期 workflow 明确出现弃用警告。
-- 将这三项官方 action 更新至当前官方主版本 `checkout@v7`、`setup-node@v7`、`setup-python@v7`，均支持 Node 24；保留 `.node-version=22.22.1`、Python 3.12、npm cache 和所有测试/门禁逻辑不变。工作流无 `registry-url` / `always-auth` 等新版本破坏性配置。
-- 提交 `7051ba7` 已推送 GitHub main；Validate `36108524238` 与 Pages `36108523746` 均成功，日志未再出现 Node 20 forced-runtime warning。此处不改应用版本、财务逻辑、数据库、权限或生产数据。
-
-## 上线审计状态复核（2026-09-25）
-
-- 旧上线报告中的日报多人/多端并发覆盖（A03）已不是未修状态：当前生产迁移 `20260924010116` 与 `operations-api` v95 的 expected-revision 检查已在 9 月 24 日生产只读回读中核实；旧修订冲突隔离 PostgreSQL 回归此前通过。真实财务账号的成功写入端到端验收仍需财务配合，不能由合成测试替代。
-- 本轮尝试重跑 A03 隔离 PostgreSQL 用例时，受限环境无法连接 OrbStack Docker socket（permission denied）；因此本次不声称该用例已重新运行。已存在的上次通过记录仍保留。
-- 其余需要外部条件/业务确认的上线门槛仍开放：生产数据库及 Storage 原图隔离恢复演练、零收入与休息日规则、财务真实账号/设备验收、历史草稿/凭证逐项签认，以及旧 Auth 账号迁移和非财务旧模块的权限边界审查。未猜测数据、改变财务端口或擅自修改 Auth/RLS。
-
-## 上线审计：Auth 迁移覆盖只读复核（2026-09-25）
-
-- 仅运行生产只读聚合 SQL，不读取或导出姓名、用户名、电话、邮箱、密码、Auth UUID 或单条账号映射。旧 `staff` 中 active 账号共 26 个：role=admin 2 个、role=staff 24 个；其中 2 个 admin 已进入 approved Auth allowlist，普通 staff 尚无 allowlist。
-- `zysyr_employees` 当前 active 且未软删除共 24 个；旧 staff 到当前 active 员工的 legacy ID 映射为 admin 2/2、staff 21/24。当前 active Auth account 共 2 个，授权角色分别为 company finance 1、company shareholder 1；当前可关联 active 员工档案的 active Auth account 仅 1 个。
-- 该只读结果与旧交接中的“25/26”估计不一致，现以本次生产聚合为准，但不能仅凭聚合判断 3 条未映射员工是否应新增、停用或合并。A02/员工 Auth 迁移仍为上线门槛：需要管理员逐一确认旧账号与员工、门店、角色的对应关系及登录安排；未创建账号、重置密码、停用旧登录或修改财务端口。
-- 当前没有安全的自动修复：身份绑定错误会造成越权或锁号。待获批的准确身份清单后，再以逐条校验、可回滚的小批次推进。
-
-## 上线审计：Supabase Advisor 再核（2026-09-25）
-
-- 最新 Security Advisor：42 张 public 表为 RLS enabled/no policy INFO；独立只读 ACL 聚合确认其中 37 张对 anon/authenticated 无 SELECT/INSERT/UPDATE/DELETE 表权限，5 张有表级权限的旧内容/分析表为 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods`，因无 RLS policy 仍 fail-closed。Auth `auth_leaked_password_protection` WARN 仍存在。没有新增财务范围匿名可读发现。
-- Performance Advisor 目前报告 135 个未索引外键、4 个重复 permissive policy WARN，以及 Auth 固定连接数 INFO。本次在日报、月报、凭证和工资核心表范围独立核实 14 个未覆盖外键：附件 1、日报草稿 3、日报版本 4、工资 6；未自动创建索引。
-- 4 个重复策略分属 `perm_data` 与 `staff` 两张表；只读策略定义显示重复项均为 `USING (true)`，同表仍有另一条同样覆盖公开读取的策略。当前表现为性能/维护告警，不是已证实的数据泄露；移除策略仍属于 RLS 变更，须先经所有者确认并检查权限设计。
-- Advisor 查询和目录查询均只读。本轮未改 Auth 设置、RLS、索引、数据库、业务权限或生产数据；平台 Auth 密码保护配置需要管理员 Dashboard/平台设置权限，当前连接工具未提供该设置入口。
-
-## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
-
-- 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。
-- 此测试不连接生产 Supabase、不含任何真实财务数据，也不验证 Supabase PITR/项目备份或 Storage 原件恢复。仓库 `backup-zysyr.sh` 仅归档项目文件；本机 `scripts/backup.env` 不存在，因此未配置异地副本。
-- 同日生产只读 SQL 回读 `storage.objects` 上的 `anon_all` 策略为空；Supabase Security Advisor 当前仍有 42 条 RLS enabled/no policy 的 INFO 与 1 条 Auth 泄露密码保护 WARN。未改权限或 Auth 设置；INFO 须按服务端专用表与公开/用户表逐项区分，不能批量加策略。
-- 对 42 张 public RLS/no-policy 表再按有效表权限分组：37 张对 `anon` 和 `authenticated` 均无 SELECT/INSERT/UPDATE/DELETE 表权限；5 张 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods` 有角色级 GRANT，但 RLS 开启且无策略，当前行访问 fail-closed。该权限差异需要结合旧内容/分析模块的设计逐表审查；未读取业务行、未撤销权限或补策略。
-- G01 仍为 P0 开放：需要获批的数据库/Storage 备份目的地、LaunchAgent 对当前仓库路径的 macOS 授权或受控运行位置，以及隔离环境内的实际数据库与对象恢复抽验。未导出生产数据、未启用可能计费的 PITR。
-
-## 上线整改：B10 财务请求结果未确认提示（v558，已发布）
-
-- App version: v558
-- 财务 API 客户端遇到网络失败或无法解析响应体时，不再把异常 JSON 响应伪装成普通成功返回；写入/未分类操作统一返回 `API_OUTCOME_UNCONFIRMED`，提示先刷新核对结果，不要直接重复提交。服务器明确返回的业务错误保持原样；只读超时仍沿用既有“未提交任何修改”提示。
-- 未给写操作增加 AbortSignal、超时取消或自动重试；未实现服务端幂等键/逐操作结果查询，因此“刷新核对”仍取决于各业务页的读取状态，B10 整体及弱网实机验收保持开放。
-- 定向测试覆盖读超时、响应体阶段超时、写操作不被中止、网络失败结果不明、成功状态但响应体损坏，以及明确 409 业务响应保持原样。完整财务 manifest 73/73 与全仓 pre-push 通过。提交 `20b142a` 已推送 `github/main`；Validate `36105124316`、Pages `36105123290` 成功。无缓存确认 `version.txt=558`、`operations.html data-version=558`，且线上包含结果未确认文案与 `API_OUTCOME_UNCONFIRMED`。无数据库、财务公式、历史金额、权限或财务独立登录入口修改。
-
-## 上线整改：B11 财务测试门禁同步复核（2026-09-25，已验证）
-
-- 旧审计指出的失效选择器 `#daily-recognition-status` 已不在当前测试中；`test-operations-voucher-browser.js` 使用现行 `#daily-source-action-status`，并在本地合成环境的桌面 1280×900、手机竖屏 390×844、横屏 844×390 三种视口全部通过，覆盖原件预览、分页/缩放、凭证下钻、缺失证据及过期范围。
-- 当前 `scripts/zysyr-finance-test-manifest.json` 是唯一财务回归清单；manifest 校验通过，GitHub Actions 和 pre-push 均调用 `test-zysyr-validation-manifest.js` 与 `run-zysyr-finance-tests.js`，完整财务集由同一 manifest 执行。清单包含 A03 expected-revision、A04 入账结果不确定、A06 月报失败恢复及 B06 月份/门店响应隔离回归。
-- 本轮定向运行：共享清单校验、A04、A03 隔离 PostgreSQL、A06、B06 响应隔离均通过；未连接生产数据库或写入生产数据。B11 报告中“旧失效选择器及 CI/本地财务清单不同步”这两个已证实子问题现关闭；真实角色/设备及完整月结验收仍由 B12 管理，不因这些合成测试而关闭。
-- 仅更新交接证据与变更日志；未改 App 代码、版本、数据库、财务公式、历史数据、权限或财务独立登录入口。
-
-## 上线整改：A05 已入账日报差额提示可读性（v557，已发布）
-
-- 生产只读复核再次确认向里造型 2026-02-03 与 2026-02-07 的日报均为 confirmed、历史快照 `valid=true`，现行重算 `valid=false`；前者员工明细 6,087 元/造型小计 6,081 元，后者 15,598 元/15,998 元。异常源于造型区总小计，不是员工行或项目列小计；未读取姓名、原图或凭证。
-- 月历红色告警由笼统的“现行规则复核异常”改为具体显示员工明细与造型小计相差金额；打开详情显示两项原值和绝对差额，并明确要求对照原始日报后按修订/冲销流程处理。当前 API/RPC 已只读重算并返回原值；没有重写历史快照、金额或入账记录。
-- 新增专项用例覆盖 6 元、400 元、员工/项目小计和缺控制项告警，并纳入财务门禁。未改财务公式、数据库、历史数据、权限或财务独立登录端口；财务仍须确认原件并按流程修正两天账务。
-- App version: v557；专项告警测试通过，财务回归 73/73、全仓 pre-push 通过（包括合成 PostgreSQL 隔离测试及前台/权限回归）。提交 `569c480` 已推送 `github/main`；Validate `36094276320` 和 Pages `36094276004` 成功。CDN 无缓存确认 `version.txt=557`、`operations.html data-version=557`，且月历差额/详情提示已在线。没有数据库、财务 API、金额、历史数据、权限或独立登录入口变更。
-
-## 上线整改：C03 财务 API 分页上限边界保护（v556，已发布）
-
-- App version: v556。分页读取改用调用方的精确行上限，拒绝无效上限、异常响应形状及超量页；恰好达到上限时 fail closed，提示结果可能不完整并要求缩小范围，不将潜在截断结果用于财务展示。
-- 新增分页边界单测并纳入 72 项财务测试清单；完整财务回归 72/72 通过，包含隔离且断网的临时 PostgreSQL 用例。未改数据库、公式、历史金额、权限或财务独立登录入口。
-- 全仓 pre-push 通过，提交 `6822224` 已推送 `github/main`。生产 `operations-api` 为 ACTIVE v104，远端源码确认修复存在且 `verify_jwt=false` 未改变；Pages 无缓存回读 `version.txt=556`、`operations.html data-version=556`、脚本 `v=556`。此修复只关闭分页边界误报/超量请求风险，不代表 C03 性能与规模风险整体关闭。
-
-## 上线整改：C06 财务发布环境与门禁交接（文档子项）
-
-- 新增 `docs/finance-release-runbook.md` 并从 README 链接：明确 Node/Playwright/Chromium/Python/Deno/Supabase CLI/PostgreSQL 版本、复现测试命令、按函数归属的 Supabase 环境变量**名称**、迁移/Edge/Pages 分阶段核验及授权边界。
-- 只记录变量名称，不读取或写入秘密值；文档明确隔离迁移重放、生产迁移与函数部署、正式账号验收以及数据库/Storage 恢复演练均不能由本地测试替代。
-- 本项不改生产配置、数据库、财务公式、历史数据、权限或财务独立登录端口。C06 整体仍开放：一次性生产同构环境的完整迁移/发布演练及 GitHub Actions 实际运行证据仍待完成。
-
-## 上线整改：B13 日报识别桥脱敏健康探针（v555，代码已验证；共享运行端未部署）
-
-- App version: v555。候选识别桥新增 Bearer 鉴权健康处理器，仅检查 Codex CLI 文件是否存在且可执行；明确返回 `codex_login: not_checked`，不启动 Codex、不检查个人会话、不回传路径/令牌/图片/财务数据。
-- Hermes 部署补丁增加 `/api/zysyr-daily-health` 路由。该补丁仍只在本仓库；没有读取、编辑或重启共享 Hermes `plan_server.py`，没有触发识别或改生产数据。系统工具对本机进程列表受限，运行端健康仍未实测；B13 保持开放。
-- Python 桥接单测 8/8 与识别静态门禁通过；完整 pre-push 的 71 项财务回归、跨应用回归和 47 项同步测试均通过。提交 `412964b` 已推送 `github/main`；无缓存核验 GitHub Pages `version.json=555`、`operations.html data-version=555`、识别脚本 `v=555`。此提交未部署共享 Hermes 路由；未经单独授权不部署共享服务。
-
-## 上线整改：B10 股东 iframe 只读请求超时（v554，已发布）
-
-- App version: v554。自由手艺人 App 内股东报表 iframe 的 `session`、`overview` 等请求现在在网络等待及 JSON 响应体解析阶段共用 45 秒超时；报表读取卡住时显示“未提交任何修改，可重新读取”，不清除员工会话，不自动重试。
-- 变更仅覆盖股东只读请求器；财务独立登录端口、Auth、写操作、金额、公式、数据库、权限和历史数据均未改。
-- 新增专项测试覆盖网络挂起、响应体挂起、定时器清理及会话保留，并加入统一财务测试清单。完整 pre-push 与 GitHub Validate #36083168817 通过，Pages #36083168390 成功；线上无缓存核验 `version.txt=554`、报表页 `data-version=554`，股东请求脚本含超时中止逻辑。真实员工账号弱网及 Safari 真机尚待验收。
-
-## 美管加预约同步恢复（2026-09-25，生产已补跑）
-
-- App version: v553（本次仅改服务端同步与运行脚本，不改 App 静态资源或版本）。
-- 原因：2026-09-24 的预约/顾客私有 ACL 收紧后，Hermes 预约任务仍以公开 key 直写 `bookings`，连续收到 401。保留 RLS，不恢复公开写权限。
-- 新增 `mgj-booking-sync` Edge Function（生产 ACTIVE），只接受本机 Ed25519 签名、两家白名单门店和北京时间当天起 8 天的预约；每个门店/日期先写入再按该门店/日期清理源头已不存在的记录。签名私钥只在本机 Hermes 运行目录（0600），没有进入仓库或前端。
-- 生产探针：未签名 401、有效签名但无效门店 400；2026-09-25 09:13（北京时间）手动补跑 16/16 个门店/日期，读取并写入 346 条，清理 10 条，状态 healthy、连续失败 0。当天美管加源头与生产库聚合均为自由手艺人 90 条、向里造型 67 条；未读取或展示顾客明细。
-- 本地预约/保活/顾客档案/健康审计 Python 回归 47/47、员工预约合并、固定 Deno 2.9.6 类型检查、版本同步、发布完整性、App smoke、预约 UI、护理出库和交接门禁均通过；完整 pre-push（含 70 项财务回归）通过，运行脚本与仓库 SHA-256 一致。首轮 GitHub Validate 暴露新 Deno 检查的类型依赖和缓冲区问题，已修复；修正提交 `c895c5f` 的 Validate #36082041449 与 Pages #36082041147 均成功。
-- 09:28 曾有一次写入连接重置：该轮源头读取 16/16、写入 0，Supabase 函数请求日志没有收到这些写入请求。09:32 手动重跑及 09:33 自动轮次均再次 healthy（16/16，349 条，0 错误、连续失败 0）；当天源头与库内计数随后一致：自由手艺人 93、向里造型 67。仍需继续留意偶发网络失败和用已登录员工 App 人工查看界面；本次未改顾客档案同步、护理出入库或财务流程。
-
-## 上线整改：B08 多份历史凭证视口按需加载（v553，已发布）
-
-- App version: v553。
-- 月报金额追溯保留全部已关联凭证卡片与原件范围提示；只有进入视口或距视口 320px 内的卡片才申请附件 URL/单页图像，最多 3 个并发。切换页面会取消尚未开始的请求。
-- 不改凭证关系、准确页码、文件、金额、财务公式、数据库、权限或财务独立登录入口。原整包候选警告在图片加载前仍可见；失败重试与 Word 翻页保持。
-- 纯单测及桌面 1280x900、手机竖屏 390x844、横屏 844x390 合成浏览器回归通过；v553 已通过 GitHub Validate #36079718309 与 Pages #36079717709，线上无缓存核验 `version.txt=553`、报表页 `data-version=553` 及凭证按需加载脚本版本。真实大附件和生产网络耗时仍待授权会话实测。
-
-## 上线整改：A02 认证迁移覆盖只读复核（2026-09-25）
-
-- 生产仅执行脱敏聚合 SQL，没有返回或读取员工姓名、账号名、密码、财务数据，也未做写入。结果：在职旧 staff 26；其中 legacy→V2 employee 映射 23；有效迁移白名单 2；已绑定 active Auth account 1。
-- 这些计数说明身份迁移尚未覆盖全体在职人员，不能停用旧登录、批量建号、重置密码或将“已映射”推定为本人授权。A02 继续开放；需管理员逐一核对并授权账号身份/门店对应关系后，再安排受控迁移与登录验收。财务独立登录入口保持不变。
-
-## 上线整改：C06 完整迁移链遇到身份审批门槛（2026-09-25，未闭环）
-
-- 在临时 Supabase PostgreSQL 17 项目中继续隔离回放：用全合成的 28 条旧 staff fixture、两家合成门店及仅用于旧迁移检查的空 `hair_records` / `care_records` / `bookings` 兼容表，Gate B 数据映射断言通过，随后 Auth rolling migration 通过。
-- Gate C1 在事务内准确失败：`Gate C1 expected exactly two approved active administrator mappings, found 0`。该迁移要求现有的 `admin/ziyou` 与 `哈维/xiangli` 两名已批准管理员映射，并会基于授权建立股东 allowlist 和审计事件。不得用虚构身份填充、跳过门槛或在生产执行该迁移。
-- 回放仅接触独立临时数据库；Gate C1 的复现包在事务中回滚。未触及生产 Supabase、真实账户、财务数据、权限或历史记录。临时测试不能证明整条 migration chain 可由空白 Supabase 独立重建。
-- C06 继续开放。后续须由项目负责人/管理员确认并提供受控的真实旧身份基线与审批方式，或确认独立新环境应采用的身份引导流程；确认前不继续伪造 Gate C1 身份，也不宣称生产迁移已闭环。
-
-## 上线整改：C06 legacy staff 基线迁移回归（2026-09-25，窄项已验证）
-
-- 新增 PostgreSQL 17 隔离测试，使用生产只读 schema 元数据构造 synthetic `public.staff` 旧基线，只含两条明确虚构数据；回放 `20260729023135_staff_employment_status.sql`，检查必需列、约束，以及 active true/false 到 `active/pending` 的历史映射。隔离测试已实际通过。
-- GitHub Actions 将执行该测试；容器网络关闭，fixture 凭据值为明确的无效占位字符串。没有添加生产 migration，没有包含真实员工数据/密码，没有触及生产 Supabase。
-- 这只验证 C06 已知的首个 legacy schema 依赖，不等于完整 99 条 Supabase migration chain、Auth/Storage extension 运行环境或迁移 dry-run 已闭环。需先从 CI 的 PostgreSQL 17 结果确认这一窄项，再继续定位其后迁移依赖。
-
-## 上线整改：C06 本地迁移回放与生产结构对照（2026-09-25，只读核验）
-
-- 使用 Supabase CLI 2.109.1 在隔离临时项目从空库回放仓库 99 条迁移；回放在 `20260729023135_staff_employment_status.sql` 失败，原因是迁移链未创建 `public.staff`。本地报错为 `relation "public.staff" does not exist`；没有触及生产数据库。
-- 生产只读核验确认 `public.staff` 存在，包含 `id, username, password_hash, role, store, active, created_at, position, employment_status`，并带 `pending/active/departed` 检查约束；生产迁移账本已包含仓库最新迁移 `20260924051925`。因此当前证据指向仓库依赖外部初始化的旧基线，而非线上缺表或迁移落后。
-- 生产只读权限复核确认日报草稿、月报、凭证附件均启用 RLS；`anon` 无 SELECT，`authenticated` 的 SELECT policy 使用公司/门店能力检查。此前已删除的 `storage.objects.anon_all` policy 当前不存在。Security Advisor 仍报告 Auth 泄露密码保护关闭及 42 张 RLS 无策略的信息提示；没有批量放行或改动 Auth。
-- 另查 `public.staff`：线上仍有匿名/认证用户可读取目录字段的列级 GRANT 与 `staff_directory_read` 策略；`password_hash` 不可读，匿名/认证角色均无 INSERT/UPDATE/DELETE。旧自由手艺人/预约 UI 仍有直接读取员工目录的客户端，因此不可贸然撤销整个目录策略；此策略是公开目录兼容边界，不等于可匿名读取员工凭据。
-- 未读取员工凭据、财务行数据、凭证对象；未执行生产写入、迁移、策略调整。C06 仍开放：若要求从空白 Supabase 独立部署，须先由项目负责人确认如何管理既有 `staff` 身份基线；不复制密码哈希、不猜造员工身份，也不擅自补生产 schema。下一步可在隔离环境提供明确的旧基线 fixture 后继续回放，并记录后续首个缺失依赖。
-
-## 上线整改：B05 手机月报整月日报可读性（v552，已发布）
-
-- App version: v552。
-- 保留原月报整月 8 列日报嵌入表和既有金额映射；新增可选的“清晰查看日报明细”第二层，按日期选择并以正常字号展示劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音。
-- 未入账日期和已入账但缺失的字段均显示“—”，明确解释空值不等于 0；默认选择首个已入账日期。此仅重用 overview 已读取数据，不增 API / 数据库请求，不改变汇总口径、数据、权限或财务登录入口。
-- 专项静态测试、隔离 Playwright 桌面/手机竖屏/横屏测试及完整财务回归 70/70 通过；覆盖七项数值映射、未入账不是零、详情 16px 字号。v552 版本同步、发布完整性、应用 smoke、财务/全仓 pre-push 与交接状态检查均通过。提交 `d9cfc9c` 已推送 `github/main`；Validate #36072440810 与 Pages #36072439858 成功。CDN 无缓存确认 `version.txt=552`、月报页 `data-version=552`、所加载脚本 `operations-monthly-daily-performance.js?v=552` 含新控件与“空值不是 0”说明。没有改数据库、API、财务数据或计算口径。
-
-## 上线整改：D02 股东月报首屏信息收敛（v551，已发布）
-
-- App version: v551。
-- 月报首屏说明改为本月与已入账日报的直白提示；缺少日报不代表零收入。来源与统计口径收进可访问的原生展开区，全文保留原表、财务调整、不覆盖日报原数和数据来源边界；日报完整性仍保持首屏可见。
-- 月报专项回归通过；完整财务回归 70/70、版本同步、发布完整性、应用 smoke 与全仓 pre-push 全部通过。提交 `b841b01` 已推送 `github/main`；GitHub Validate #36068085447 和 Pages #36068084817 成功。
-- CDN 无缓存读取 `version.txt=551`、`operations.html data-version=551`，并确认新提示及“数据来源与统计口径”在线。未改数据库、金额、计算公式、权限、历史数据或财务独立登录入口。
-
-## 上线整改：C04 备用金月底批量附件续传反馈（v550，已发布）
-
-- App version: v550。
-- 批量上传仍保持最多 60 份/批，但采用最多 2 份并发并逐文件显示状态；网络错误显示“结果未确认”，建议刷新本月批次与凭证中心核验后再只补传确认未保存的文件。没有改变 OCR 候选/人工确认或备用金金额。
-- 专项浏览器测试和完整 70 项财务回归通过；提交 `1f65340` 已推送 `github/main`，Validate `36063837813` 与 Pages `36063837337` 成功。CDN 无缓存核验 `version.txt=550`、备用金模块 `operations-petty-cash-evidence.js?v=550`。本修改不改 API/数据库/权限/财务登录端口。
-
-## 上线整改：C04 月报附件可见进度与有限并发（v549，代码已验证）
-
-- App version: v549。
-- 月报原表保存成功后清空原件选择，照片 / PDF 最多两份并发，结果按文件列出；上传请求错误视为“结果未确认”，要求刷新凭证列表核验后再决定是否补传，避免自动重复上传。正式金额不变。
-- 专项浏览器回归覆盖自动识别、既有照片流、部分失败、并发上限和原件重复提交保护通过；完整 70 项财务回归、版本/发布完整性、财务清单、App smoke 均通过。提交 `4ce2dc0` 已推送 `github/main`；Validate `36062196321` 与 Pages `36062195181` 成功。无缓存线上核验 `version.txt=549`，线上月报页包含新进度/失败核验逻辑。真实财务会话与弱网实测仍待验收。
-- 不涉及数据库、财务金额/公式、历史数据、权限、文件桶策略或财务独立登录入口。
-
-## 上线整改：B01 历史 warning 生产复核一致（只读，2026-09-25）
-
-- 再次只读核对 `zysyr_history_ledger_entries` 与对应导入批次，限定 `status=posted`、`posted_review_status=pending`、`posted_validation_status=warning`；仅按门店、月份、导入类型和 issue code 聚合计数，没有读取金额、员工姓名、原始行内容或凭证对象。
-- 结果与上线审计附录一致：3,739 条历史账均 `posted_with_warning=true` 且仍待财务验收；其中 validation_status=`warning` 为 1,115 条、`valid` 为 2,624 条、`invalid` 为 0。warning 标签共 1,154 次（仅统计上述 1,115 条 warning 记录，同一条可有多个）：月报 `label_unresolved` 953、员工自购 `product_unmatched` 88 / `employee_unmatched` 19 / `possible_duplicate` 8 / `retail_sale_preserved` 12、工资 `employee_unmatched` 66 / `net_formula_mismatch` 1、备用金 `sequence_unusual` 7。各标签仍是原始导入提示快照，不能据此自动判错或放行。
-- 本次无生产写入、无代码或金额修改。B01 继续开放：下一步仍须财务按门店/月/类型对照原表与凭证认领，尤其先核工资净额、疑似重复和员工/商品匹配；不得批量清 warning 或自动改历史账。
-
-## 上线整改：B07 历史月报原件解析短缓存（后端已发布；性能验收待授权会话）
-
-- 仅在当前 Edge isolate 内缓存最多 2 份不可变历史 Excel 的解析展示投影；以公司、门店、原件存储位置及 SHA-256、门店名称和工作表共同隔离。原件身份无效时回到原有下载/解析路径。
-- 每次 overview 仍执行当前请求的门店授权、历史账务修订、日报汇总、凭证/证据规则和上传者读取；缓存命中返回独立副本后才叠加最新账务内容。未加数据库/持久缓存，未更改财务公式、历史数据、权限与财务独立登录入口。
-- 新专项用例覆盖跨公司/门店/展示上下文隔离、克隆、LRU 上限、无效哈希不缓存；完整财务套件 70/70、pre-push 与 GitHub Validate #36056379241（含 frozen Deno 类型检查）通过。提交 `56ea246` 已推 main，Pages #36056379466 成功，生产 `operations-api` v103 ACTIVE，bundle 回读确认缓存代码存在。
-- 生产保留 `verify_jwt=false`；无会话 overview 探针实测返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。生产冷/热响应耗时及缓存命中率仍待授权财务会话验收，故 B07 不宣称整体闭环。
-
-## 上线整改：C02 报表表格定向重测（v548，已发布）
-
-- App version: v548。
-- 内容变化仅重新适配发生变化的报表表格；页面插入/可见性切换只适配受影响的表格；窗口尺寸、方向变化与初始加载仍全量适配，缩放公式不变。
-- 新增合成浏览器专项回归通过：初始全量测量、单元格变更定向测量、祖先显隐变化重新适配全部子表格。完整财务回归 69/69、全仓 pre-push 与 GitHub Validate #36053189399、Pages #36053188699 均成功；提交 `8e6a1e5` 已推送 main，无缓存线上确认 `version.txt=548`、财务页 `data-version=548`。
-- 本次只验证避免无关表格测量；授权真实财务会话与设备下的页面时延改善幅度尚未量化。
-- 不涉及数据库、财务金额/公式、历史数据、权限、文件访问或财务独立登录端口。
-
-## 上线整改：C03 月报凭证查询按当前报表收窄（v547，已发布）
-
-- App version: v547。
-- 月报首页之前按门店读取最多 1,000 条所有月份 `record_type=report` 凭证，再仅把当前已加载报表 ID 对应的附件显示出来；过往凭证不会显示，却占用读取配额，并可能让本月附件被历史附件挤出。
-- 当前改为先取当前门店/月报表，再按报表 ID 查询凭证；每批最多 100 个 ID，空月不发起凭证请求。使用既有公司/门店过滤与附件字段，前端响应结构和展示关联键不变。
-- 专项/完整财务回归 68/68、跨应用预推送门禁和 CI 类型检查通过；v547 已推 GitHub main，Validate #36049656057 与 Pages #36049654752 成功。
-- `operations-api` v102 ACTIVE，在线源码含限定当前报表 ID 的查询，`verify_jwt=false` 保持且无会话 overview 探针为 403 `AUTH_SESSION_INVALID`。未执行迁移/财务数据写入。只确认读取集合缩小，实际响应耗时/字节改善尚未量化。
-- 仅缩小只读查询集合；未修改财务金额、公式、凭证关系、数据库结构、权限、登录入口或生产数据。
-- 全量回归发现并修复一条旧浏览器测试把按需脚本版本固定为 v546 的断言；现随 `version.txt` 检查。
-- 预推送门禁还发现 `frontdesk.html` 的版本 marker 停在 v546，已同步至 v547；不涉及前台业务逻辑。
-
-## 上线整改：B07 月报 overview 日报来源请求内去重（v546，已发布）
-
-- App version: v546。
-- 按仓库全站版本门禁，将主 App、财务页及前台页版本标记统一到 v546；前台仅更新版本标记，不含前台功能改动。
-- 月报 overview 对同一门店/月只加载一次已确认日报草稿及相关单元格，从相同只读来源生成整月日报业绩与月报使用的现金汇总；历史月报回退路径复用该来源，不再重复请求。
-- 保留原有重复日期、现金业绩单元格缺失/重复、入账时间缺失时阻断汇总的规则；现金汇总仍采用人工修正后的 `payment_cashflow`，不包含卡金。未增加跨请求缓存、数据库结构、权限、财务公式或历史金额修改。
-- 新增 `test-zysyr-monthly-overview-daily-dedupe-v546.js` 并纳入统一财务清单；完整财务套件 67/67、全仓 pre-push、版本同步、发布完整性、交接状态和 diff 检查通过。提交 `dc7a37f` 已推送 `github/main`；Validate #36044427681 和 Pages #36044427168 均成功，含 Deno frozen type-check，线上 `version.txt=546`。
-- `operations-api` 已整包部署为生产 v101 ACTIVE，`verify_jwt=false` 与内部自定义会话鉴权保持原样；无会话 overview 探针返回 403 `AUTH_SESSION_INVALID`。未执行数据库迁移。B07 的历史原 Excel 下载/解析及真实生产分阶段响应耗时仍未处理/取得，不宣称 B07 整项关闭。
-
-## 上线整改：C01 延后备用金凭证与关闭汇总模块（v545，已发布）
-
-- App version: v545。
-- 备用金逐笔凭证增强脚本改为首次进入财务工作台时按需加载；多月汇总入口已关闭，因此生产首屏不再下载该汇总模块。模块文件仍保留，专项测试可加载它验证内部逻辑。
-- 页面初始加载不请求备用金增强脚本；进入财务工作台才加载。浏览器回归覆盖懒加载触发、逐笔凭证、批量上传、汇总逻辑；未更改财务金额、公式、数据、权限或数据库。
-- v545 已推送 GitHub main，Pages 与 Validate 均成功；线上无缓存读取版本 545，月报页源码没有静态引入备用金与月度汇总脚本，按需备用金脚本资源返回 HTTP 200（38,211 字节）。
-- 这是 C01 的模块级优化，不代表全部首屏负载、冷/热启动、弱网或真机指标已达标；生产冷/热登录计时待有授权的真实财务/股东设备验收。
-
-## 上线整改：C02 日报渲染重复适配合并（v544，已发布）
-
-- App version: v544。
-- 日报电子表格渲染过程中，基础表格与追加动态列/输入框的适配调用现合并到同一微任务，在最终 DOM 布局后只执行一次，避免同一帧重复扫描并重算表格适配。
-- 新增浏览器回归断言：一次完整日报渲染只触发一次 fit。静态专项测试和统一财务回归 66/66 通过；未更改财务金额、公式、数据、权限或数据库。
-- v544 已推送 main；Validate 与 Pages 均成功，线上无缓存读取版本 544。本项只关闭重复同步适配这一具体子问题；低端设备实测和真实财务端页面体验仍需观察。
-
-## 上线整改：A01 匿名共享表边界复验（2026-09-25）
-
-- 对生产 Supabase REST 逐表执行匿名只读空结果请求（`select=id&limit=0`）：bookings、customer_profiles、hair_types、perm_styles、barber_identities 均 HTTP 401；公开配方目录 perm_data HTTP 206。没有读取业务行、提交写入或修改权限。
-- A01 原报告定义的匿名直接访问漏洞满足修复验收；perm_data 的公开内容审查和登录身份/跨门店授权矩阵仍属于上线前验收，不宣称整个 App 权限审计已结束。
-- `operations-api` v100 与 30 天旧会话上限、日报 expected_revision 门禁、入账结果不确定保护、月报部分保存恢复均有相应回归；本次已验证 A03 隔离 PostgreSQL、A04 响应丢失、A06 月报浏览器用例通过。A02 仍因旧密码兼容和 Auth 绑定覆盖不足保持 P0 开放。
-
-## 上线整改：A02 旧兼容会话绝对期限（生产 v100）
-
-- 生产只读聚合核对：26 个在职员工中 2 个已关联有效 Auth 账号；仍有 17 个旧兼容会话，数据库 `expires_at` 最远可到 2036-09-02。核对时这 17 个会话均在创建后 30 天内，因此新期限不会在部署时立即让当前会话失效。
-- `operations-api` 旧会话现要求同时满足数据库过期时间有效、创建时间不超过 30 天；新旧通道新签发期限同为 30 天。超过 30 天的旧会话即使数据库 `expires_at` 被设为远期也会被拒绝。没有撤销会话、改 Auth 配置、密码/账号、数据库结构或财务登录端口。
-- 新增回归覆盖 29 天会话仍可用、31 天会话拒绝；legacy 登录安全测试、Deno frozen 类型检查、全仓 pre-push 及 66/66 财务套件通过。`d3e62c5` 已推送 main，Validate #36024458779、Pages #36024457879 成功；生产 `operations-api` v100 ACTIVE，部署后 10 个函数文件与本地逐字节一致，`verify_jwt=false` 未改。
-- **A02 仍开放：** 旧 API 仍兼容明文/裸 SHA-256 等旧密码格式；仅 2/26 个在职员工完成 Auth 绑定，无法停用 legacy 登录。须逐账号确认身份映射、迁移/密码轮换和恢复路径后再收窄旧通道；不自动创建账号或重置密码。
-
-## 上线整改：C06 operations-api 类型安全与生产部署（Validate 成功；生产 v99）
-
-- 修复 `operations-api/deno.lock` 未把已声明直接依赖 `jszip@3.10.1` 纳入 Deno workspace 的问题；为 `report-auto-detection.mjs` 补充参数类型，修复类型检查揭出的结果形状/空值类型问题，并为日报草稿 ID 增加显式非空保护。财务金额和公式未改。
-- CI 固定 Deno 2.9.6，新增针对函数的 frozen `deno check`；通过 `--config` 明确使用函数配置、`--node-modules-dir=none` 隔离根目录 Playwright 依赖。独立临时副本与仓库根目录两种执行方式均通过 Deno 检查。
-- 自动上传/防止美发现金收入重复统计用例加入共用财务测试清单，更新两条已过时的断言以对应现行现金日报汇总＋留痕财务调整规则；完整财务回归 66/66 与全仓 pre-push 均通过。
-- 提交 `9b6bd4d`、`7167cab` 已推送 `github/main`；Pages #36018705857 与 Validate #36018707030 均成功，Validate 的 frozen Deno 类型检查、发布命令契约、财务回归与 release integrity 全部通过。
-- 按用户此前授权，将完整 `operations-api` bundle 部署到 Supabase 生产 v99，状态 `ACTIVE`；部署后拉回的 10 个源文件与本地逐字节一致，`verify_jwt=false` 保持原值。没有应用数据库迁移，也没有更改历史数据、权限或财务独立登录入口。
-- 生产迁移清单只读核验已覆盖仓库当前最新迁移 `20260924051925`；没有本次待应用迁移。**C06 仍开放：** 隔离环境 migration dry-run、Edge 发布/环境变量矩阵及完整可复现部署演练仍待完成；本次生产函数部署不替代这些验证。
-
-## 上线整改：历史导入原表预览未定义函数修复（v543，已推送；生产函数已部署）
-
-- App version: v543。
-- 生产只读回读 `operations-api` v97 确认，`history_import_sheet_preview` 路径调用未定义的 `displayValue` / `formulaText`，因此财务打开历史导入批次的 Excel 原表预览会在服务端抛出运行时错误。
-- 改为复用现有的 `excelCellText` / `formulaCellText`，并添加回归保护，确保预览路由只用已定义的单元格提取函数。
-- 完整本地 pre-push 门禁已通过，功能提交 `f5b00dd` 已推送 `github/main`；`operations-api` 整包部署为 v98 ACTIVE。部署后生产回读确认 10 个文件、预览路由使用 `excelCellText` / `formulaCellText` 且不再调用未定义 helper，`verify_jwt=false` 保持原值。未读写历史财务原件/金额或生产数据库，未改公式、权限、Auth 设置或财务独立登录入口。
-- Pages build/deployment #36006467617 与 Validate #36006469238 均成功；线上无缓存 `version.txt` 回读为 543。真实财务会话下打开历史批次的浏览器端到端预览仍待验收；这项函数修复不代表 C06 CLI/迁移 dry-run 缺口或整份上线审计已关闭。
-
-## 上线整改：C06 固定 Supabase CLI 发布工具链（2026-09-24，CI 已验证）
-
-- GitHub Actions `validate` 工作流现安装并锁定 Supabase CLI `2.109.1`，禁用遥测；校验运行版本确切匹配，并确认 `db push --dry-run` 与 `functions deploy --use-api` 两项预期发布参数存在。
-- 本地以相同 CLI 版本只读验证上述版本和帮助参数；未运行任何部署、数据库推送、链接生产项目或使用生产凭据。
-- **C06 仍开放：** 仓库没有 `supabase/config.toml`，本地也没有 Deno；本次没有伪造项目配置、自动链接生产或增加不可执行的迁移 dry-run。现有 CLI 版本检查不等于 Edge Function 编译/部署或数据库迁移核验。后续须建立经审批的隔离 Supabase 项目/runner 与配置后，再补真实 dry-run、函数 bundle 检查和发布前核对。
-- CI run #35999863919 (`4c41fd1`) 成功，确认 runner 可安装并执行指定 CLI 版本及帮助检查。仅改 CI 与交接文档；财务 App 仍为 v542，财务登录入口、数据库、金额公式、历史数据、权限和生产服务均未改。
-
-## 上线整改：B03 月报日报覆盖状态说明（2026-09-24，v542 已发布）
-
-- App version: v542。
-- 月报表下方补充“已入账日报 X / 当月自然日天数”说明，并标注其余日期只是“尚无已入账日报”，不能解读为休息日或零收入；整月金额仍只统计已入账日报。
-- 增加纯函数及浏览器回归，检查月度计数和提醒随门店/月视图重绘更新。
-- 仅改前端展示及回归；未改数据库、金额、计算公式、历史数据、权限或财务登录入口。专项浏览器测试和完整 pre-push 财务 65/65、跨应用回归全部通过。提交 `659ce48` 已推送 `github/main`；Pages #35997774095、Validate #35997774565 成功，线上无缓存 `version.txt=542`。此项不代表 B03 其他来源说明与财务实际验收已全部完成。
-
-## 上线整改：B10 财务只读请求超时（2026-09-24，v541 已发布）
-
-- App version: v541。月报、日报、工资、备用金、库存、经营分析、凭证等明确只读操作在请求与 JSON 响应体阶段统一受 45 秒上限；超时会中止客户端读取并明确提示“未提交任何修改，可刷新重试”。
-- 保存、上传、入账、审批、冲销等写操作，以及未分类的操作，不附加超时 AbortSignal，不自动重试；员工/股东独立报表请求器也未改。此为 B10 的只读读取子范围，写请求超时后的幂等查询仍未实现。
-- 新回归覆盖网络挂起、响应体挂起以及日报确认/报表上传/月报调整/未分类操作不被中止，已加入统一财务测试清单。定向回归、统一财务回归 65/65 和完整 pre-push 全仓门禁通过。
-- 无数据库、财务公式、权限、历史数据、账号或财务独立登录入口改动。
-- 提交 `e9232cf` 已推送 `github/main`；Validate #35994819723 的 `validate` job 与 Pages #35994818768 成功，线上无缓存 `version.txt=541`。未实测真实财务会话弱网体验；员工/股东 iframe 与写请求超时恢复仍为 B10 后续范围。
-
-## 上线整改：B06 工资/业绩原表候选请求竞态（2026-09-24，v540 已发布）
-
-- App version: v540。工资表和发型师业绩表的原表单元格异步读取现绑定当前请求序号、门店、月份、视图及选中原表；旧请求即使在新结果之后成功或失败也不会覆盖候选，清空来源同样使旧请求失效。
-- 新增合成浏览器回归并纳入统一财务测试清单，覆盖工资旧失败/清空来源以及业绩旧成功迟到。隔离浏览器定向测试、统一财务测试 64/64 和完整 pre-push 发布钩子全部通过。
-- 共享版本校验要求自由手艺人 App、财务页与前台页使用同一发布号；同步三个入口的版本标记/缓存版本，不改变前台功能。
-- 提交 `baedd43` 已推送 `github/main`；Validate #35991994482 与 Pages #35991993701 均成功。线上无缓存回读 `version.txt=540`；工作区干净。未改工资/业绩计算、数据库、财务数据、凭证、权限或财务独立登录入口。
-
-## 上线整改：B09 月报公式凭证追溯批量请求（2026-09-24，v539 已发布）
-
-- App version: v539。公式金额下钻将同层地址最多 8 个合并为一次 `cell_trace_batch` API 请求；服务端单请求最多 4 个格子并发，先一次校验当前登录会话和门店，再逐格按已授权的公司/门店/报表查询。公式遍历上限保持最多 240 个格子并新增 24 层上限；达到上限会显式报告未完整，不会显示为已核清。
-- 月报调整/已确认日报只读上下文通过请求本地 Promise 缓存复用，仅在该批 HTTP 请求期间存活；没有跨用户/请求缓存。单元格失败独立标出，其他格子仍继续呈现。没有改财务公式、金额、数据库、凭证或权限规则；财务登录入口保持不变。
-- 本地单测、静态 API 边界测试、真实浏览器合成测试（桌面/手机竖屏/横屏）、完整 63 项财务套件和全仓 pre-push 全部通过。`operations-api` v97 已部署并为 ACTIVE，保持既有 `verify_jwt=false`；新批量读取接口的无会话探针返回 `403 AUTH_SESSION_INVALID`。提交 `ff127b9` 推送 `github/main`；Validate #35987122619、Pages #35987122105 均成功。生产无缓存回读 `version.txt=539`、`operations.html data-version=539`、凭证预览脚本 `?v=539`。真实财务会话下端到端体验和门店越权探针未测，不能据此声称完成。
-
-## 2026-09-24 上线审计 P0 状态复核（生产只读）
-
-- A01 客户/预约公开表权限：生产迁移 `20260924040520` 已应用。SQL 回读确认 `bookings`、`customer_profiles` 及停用的三个配置表均启用 RLS；anon/authenticated 无直接 SELECT，`service_role` 权限保留。公共 `perm_data` 仍仅公开读取。当前 Security Advisor 不再报告这两张客户/预约表 `rls_disabled_in_public` 的 ERROR；受保护 API 仍需按既有角色/门店范围使用。
-- A05 历史日报复核：生产迁移 `20260924040811` 已应用；当前 `operations-api` v97 包含每月最多 100 个确认日报的只读重算入口。重算不回写快照、日报或金额。系统发现的历史差异仍须财务按原件签认，不自动纠正账务。
-- A02 认证：滚动迁移/限流迁移已在生产，`operations-auth-migrate` v6 ACTIVE；当前 Auth 安全 Advisor 仍提示 leaked-password protection 未启用。未更改 Auth 密码策略、撤销会话或重置账号；启用前需验证实际 Auth 设置及密码变更流程，并维持财务现有登录入口。
-- G01 备份仍为 P0 未闭环：本轮没有创建数据库/Storage 备份或改变计划任务；异地备份目的地和 macOS 对定时任务访问仓库目录的授权仍未解决。财务历史原件与生产数据未读取或修改。
-- 追加只读复核：生产 26 个 active staff 中，2 个存在有效 Auth 迁移白名单、1 个已关联 active Auth account、25 个尚未关联；因此不能停用旧兼容登录或批量创建账号，需管理员逐项确认员工/门店身份映射。未读取密码、账号名或写入任何认证/角色数据。
-- G01 本机复核：iCloud 备份目录存在，但最新归档仍为 2026-09-12；LaunchAgent 日志重现 `/bin/bash: .../Documents/.../backup-zysyr.sh: Operation not permitted`。当前执行环境没有 `pg_dump`，Docker API socket 返回 permission denied；未导出数据库/Storage、未做恢复、未启用 PITR。等待确认安全目的地和 macOS 访问方案。
-
-## 上线整改：B08 历史凭证预览按需加载（2026-09-24，v538 已发布）
-
-- App version: v538。凭证详情初次打开 Word 原件时只由 `operations-api` 提取并返回第一页，页面翻页时按 `image_filename` 再取对应单页；原始图片/PDF 改用 5 分钟私有签名链接，不再先由 Edge 下载并编码整个文件。每次 Word 翻页仍需服务端读取原 DOCX 压缩包，后续若实测瓶颈在这一段，再评估带成本/存储权衡的独立缩略图方案。
-- 保留 company/store/evidence 范围校验和私有桶；仅在精确页关联时请求已登记的那一张，整包凭证仍显式标记“整包候选”。没有改文件、凭证关联、金额、财务登录端口、数据库或存储策略。
-- `operations-api` 生产 v96 ACTIVE；远端回读入口、deno.json 和 8 个相对依赖共 10 个文件，均与本地部署源逐字相同；保持既有 `verify_jwt=false` 和函数内部会话校验。无会话的 `history_evidence_images` 探针返回 `403 AUTH_SESSION_INVALID`。没有修改数据库、凭证对象、财务金额、财务登录入口或权限策略。
-- 未使用真实财务会话和真实生产大附件测量端到端耗时；已验证传输逻辑/合成浏览器行为，不把它等同于真实文件压测。后续如果 DOCX 解包仍慢，应基于实际样本耗时再决定是否采用独立缩略图/预提取存储方案（会涉及新增存储与成本）。
-
-## 上线整改：G01 灾备只读核查与定时任务故障（2026-09-24，未闭环）
-
-- Supabase 只读确认生产项目为 Pro、ACTIVE_HEALTHY、PostgreSQL 17。官方文档说明 Pro 每日自动数据库备份保留 7 天，但数据库备份不包含 Storage 原件；因此这不能证明报表/凭证文件可恢复。未启用 PITR（涉及持续费用，未授权），未执行恢复。
-- 本机 LaunchAgent `com.zysyr.daily-backup` 原先指向旧 `perm-pages` 仓库，最近记录 exit code 126。已获准将任务入口改为当前财务仓库脚本；重新 kickstart 后仍因 macOS `Operation not permitted` 无法从 launchd 读取/执行 Documents 目录下脚本（exit code 126）。配置路径已纠正，但自动备份运行尚未恢复。
-- 当前仓库 2026-09-24 两个既有归档均通过 `tar -tzf` 完整性读取；它们只打包工程文件，不含生产数据库或 Storage 对象。`scripts/backup.env` 不存在，iCloud 备份目录最近副本为 2026-09-12；没有近期异地备份证据。
-- **G01 保持 P0 未完成：** 需先解决 macOS 定时任务对项目目录的授权/部署位置，再建立受保护的数据库导出与 Storage 原件异地备份，并在隔离项目完成恢复、金额/对象哈希抽验及 RPO/RTO 记录。未修改业务代码、数据库、生产数据、权限或 PITR 计费设置。
-
-## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，CI/Pages 已核验）
-
-- 财务回归清单统一为 `scripts/zysyr-finance-test-manifest.json`：本地 pre-push 和 GitHub Actions 共用 63 条测试，本地 63/63 通过；Actions #35965591930 与 Pages workflow #35965591838 均成功。两处浏览器截图路径已改为跨 macOS/Linux 的系统临时目录。提交 `58f2ef7` 已在 `github/main`，工作区干净。
-- 使用 Supabase CLI 2.109.1 对生产项目只读列出配置名称，共 21 项；只在发布矩阵记录名称核对结果，不读取/记录值，不更改生产配置。核心服务 URL、service-role 配置名和 worker token 名已配置；Auth publishable key 走已存在的 anon-key fallback；AI 使用已配置的 DeepSeek fallback；OCR URL/model 使用代码默认值。此核对不证明密钥有效、额度充足或实际调用成功。
-- Supabase CLI 命令帮助已在允许 telemetry 写入后验证；本轮没有运行 deploy、db push 或任何写生产命令。
-- **C06 仍开放：** 还需固定 CI/受控发布 runner 的 Supabase CLI 版本，并验证 Edge/数据库发布校验流程；只读变量名称及命令帮助不代表部署/运行验收。财务登录端口、应用版本、数据库结构、公式和生产数据均未改。
-
-## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
-
-- 经用户明确授权，生产迁移 `20260924051925 zysyr_storage_remove_global_public_policy` 已应用；删除的只有 `storage.objects.anon_all` 全局策略。匿名角色此前可读取 74 个报表对象、349 个凭证对象及 2 个 showcase 对象的元数据；应用后匿名对象查询为空。
-- 生产回读确认 `service_role` 仍能访问原有 425 个对象；`showcase` 仍保持 public，`zysyr-reports` 与 `zysyr-vouchers` 仍为 private。没有删除/改写任何对象、财务数据或 bucket 设置。
-- 本地迁移按 Supabase 实际登记版本号对齐，并新增迁移范围回归测试；此项仅数据库安全迁移，无前端发布或财务计算变化。服务端财务接口继续通过 service_role 与短时签名 URL 访问私有对象。
-
-## 审计整改进度：v537 发布及权限依赖核验（2026-09-24）
-
-- v537 提交 `f0435ee` 已通过完整 pre-push 门禁并推送 GitHub `main`；只读访问 Pages 的 `version.txt` 确认为 `537`，线上 `perm-app.html` 使用会话校验 API，不再直接请求 `bookings` / `customer_profiles`。
-- `employee-bookings-api` v4 为 ACTIVE；未登录 `session` 探测返回应用层 403。生产迁移 `20260924040520 zysyr_customer_booking_private_acl` 已应用：两表启用 RLS，anon/authenticated 无 SELECT 权限，service_role 的读写权限保留；匿名 REST 探测返回 401。无数据行被修改或删除。
-- 已应用 `20260924040811 daily_confirmed_validation_review`，只读日报复核 RPC 仅 service_role 可执行，`search_path` 固定为空；anon/authenticated 执行权限为 false。它不写入日报或金额。
-- 安全 Advisor 中 `bookings` / `customer_profiles` 的 `rls_disabled_in_public` 两个 ERROR 已消失；保留的 RLS 无策略项是 INFO，另有 Supabase Auth 泄露密码保护 WARN 尚待管理员在 Dashboard 决定启用。真实财务账号完整读写流程、本轮 API 有效会话读数据仍未做端到端验证；财务独立登录端口、公式和数据未改。
-
-## 审计整改进度：后台受保护接口与日报版本兼容层已分阶段上线（2026-09-24）
-
-- `staff-access-api` 已从 v1 更新到 v2；新增客户档案/跟进操作仅限有效总管理员会话，未登录线上探测返回 403。旧后台登录与管理员接口保留。财务端口、财务登录及财务数据未改。
-- 日报并发门禁迁移 `20260924010116 zysyr_daily_expected_revision_gate` 已应用。新版本参数化 RPC 只允许 service_role 调用并做事务内版本比较；为保持 v529 页面兼容，旧 RPC 服务端通道暂时保留，普通浏览器角色仍无直接执行权限。
-- 隔离 PostgreSQL 测试通过：陈旧并发只允许一个写入、陈旧确认拒绝、当前版本可确认、旧签名兼容；后台访问测试通过 ACL/角色/回滚/审计/财务 fixture 检查。
-- 经用户明确授权并完成整包部署，`operations-api` 生产版本现为 v95、状态 ACTIVE、`verify_jwt=false`（沿用原有自定义会话鉴权设计）；部署包含入口、相对依赖、提示词模块及 `deno.json` import map。无会话只读探测 `session`、`daily_sheet_get`、`monthly_summary` 均返回应用层 403 `AUTH_SESSION_INVALID`，确认请求进入函数鉴权逻辑；尚未用真实财务会话完成读写全链路验收。前端 Pages 仍未发布；客户/预约权限迁移及员工门店范围仍待确认，故整批前端暂不推送。
-
-## 审计整改进度：A01 共享配置表权限第一阶段已上线（2026-09-24）
-
-- 生产迁移 `20260924004040 zysyr_shared_public_table_acl` 已应用。`hair_types`、`perm_styles`、`barber_identities`、`perm_data` 均启用 RLS；anon/authenticated 不再读写前三张停用表，`perm_data` 只保留公开 SELECT。
-- 生产 SQL 回读确认 RLS 与表权限符合预期，anon 仍能读取全部 125 条公开方案；服务端角色访问保留。安全 Advisor 对 `bookings`、`customer_profiles` 的两个 P0 告警仍在，尚未应用客户/预约撤权迁移。
-- 这一步没有改业务行、财务金额或财务登录端口；Supabase 迁移版本已按平台实际生成号同步到本地文件。完整 Edge/Pages 变更仍未发布，日报旧客户端兼容和残余客户表直连调用须先解决。
-
-## 审计整改进度：B01 历史导入与财务验收状态分离（2026-09-24）
-
-- App version: v537，已随 `f0435ee` 推送 main，线上 version.txt 曾回读为 537。历史导入批次“已入正式账”和“整月财务验收”分开显示；摘要列出整月验收、待验明细、自动 warning、invalid、需修正与已入账数量，并明确入账不等于核清。
-- 对线上只做分组 COUNT 只读核验：3,739 条导入历史目前 review_status=pending，其中 1,115 条 validation_status=warning、2,624 条 validation_status=valid；无记录写入或修订。
-- parser 与汇总状态单测通过。财务仍须按门店/月/业务类型逐批签认 warning 与原件，不能清空标记或自动更改历史金额；功能已发布，但真实财务验收尚未完成。
-
-## 审计整改进度：A05 历史日报只读复核提示（2026-09-24）
-
-- App version: v536。月历对每天当前显示的已入账电子日报做最多 100 笔的只读批量复核；若现行规则与历史校验结论不同或当前规则发现异常，会标明日历状态，并在详情说明差异。
-- 新 RPC 限定公司/门店/日报 ID、仅 service_role 可执行；不写回日报、校验快照或金额。隔离 PostgreSQL 17 测试验证差异可见、跨门店返回空、匿名无权限、批量上限及金额不变；静态日历/日报回归通过。
-- 本地迁移尚未应用生产、代码未推送或部署。2026-02-03/07 涉及的历史数据仍须财务对照原图确认并按修订/冲销流程处理；系统不会自动修数。财务独立登录端口和公式未改。
-
-## 审计整改进度：A01 共享客户与预约数据公开权限第二阶段（2026-09-24）
-
-- App version: v535。员工预约、员工客户档案/历史、管理端客户档案与跟进改由会话校验 API 读取或写入；共享 `bookings`、`customer_profiles` 表的 anon/authenticated Data API 权限在本地迁移中关闭，service_role 继续用于受保护 Edge API。
-- 管理端客户查看/跟进只允许管理员角色；跟进追加采用条件更新避免并发覆盖，旧格式异常备注不自动覆盖。旧员工入口重定向至当前受保护主入口。
-- PostgreSQL 17 合成权限、客户档案 API、管理员工作流、员工预约和旧登录安全测试通过。本地尚未部署迁移/函数/页面，`bookings` 与客户档案访问范围仍需业务确认；财务独立端口和财务数据未改。
-
-## 审计整改进度：A01 共享配置表公开权限第一阶段（2026-09-24）
-
-- App version: v534。本地迁移启用 `hair_types`、`perm_styles`、`barber_identities`、`perm_data` 的 RLS；关闭前三张表的 anon/authenticated 访问，`perm_data` 只保留 SELECT。
-- 设备身份同步仅在页面本地使用；没有删除历史身份数据。财务服务端角色保留现有权限。
-- PostgreSQL 17 隔离测试通过：anon/authenticated 不能读取旧配置表或写共享表；仍可读取公共烫发方案；service_role 既有访问保留。测试已接入 pre-push/Actions。
-- **A01 未关闭：** `bookings`、`customer_profiles` 仍需先迁移前端到带登录会话和门店限制的 API。门店客户档案查询范围待用户确认。没有应用迁移到生产、没有推送或部署。
-
-## 审计整改进度：B06 / B11 二级页面请求隔离与回归门禁（2026-09-24）
-
-- App version: v533。工资、工资表、备用金、财务工作台、库存的只读加载绑定门店/月/视图/请求序号；迟到旧响应和旧错误均不再修改当前状态或页面。
-- 新增 `scripts/test-zysyr-period-response-isolation.js`，浏览器模拟 1 月/旧店请求晚于 2 月/新店返回，覆盖五种 loader；通过。修复凭证浏览器测试旧选择器，桌面、手机竖屏、横屏回归通过。
-- 新两项加入本地 pre-push。受限执行环境下运行浏览器测试需提供 Codex Playwright `NODE_PATH` 并授权临时 localhost 测试服务器。GitHub Actions 尚未统一依赖/浏览器门禁，B11/C06 仍未全部关闭；未推送或部署。
-
-## 审计整改进度：B11 / C06 测试工具与 CI 可复现性第一阶段（2026-09-24）
-
-- 根目录新增 `package.json` 与锁文件，Playwright 固定为 1.62.1；财务关键浏览器回归统一使用 Playwright 自带 Chromium，不依赖开发机安装的 Chrome。
-- GitHub Actions 执行 `npm ci`、安装 Chromium，并运行月报编辑恢复、凭证预览、门店/月请求隔离浏览器回归；另加日报并发版本门禁 SQL 测试及旧登录限流单测。
-- 本地财务隔离 SQL 测试所用 PostgreSQL 镜像从 15 调整到 17，以贴近 Supabase 生产主版本；只改临时合成测试容器，不访问/修改生产数据库。
-- **C06 尚未完全关闭：** 仍需补 Edge/Supabase CLI 与迁移部署矩阵、所需环境变量“名称”清单（不记值），验证 npm clean install/Actions 实际运行及需要的独立运维配置；当前未推送，未证明 GitHub runner 已通过。
-
-## 审计整改进度：A02 旧兼容登录防护第一阶段（2026-09-24）
-
-- App version: v532。旧兼容登录先调用既有 `zysyr_begin_auth_migration` 原子限流 RPC，再做账号校验；登录尝试只以 service-key HMAC 指纹进入既有追加式审计 RPC，超限明确返回 429。新签发兼容会话 30 天，已存在的旧会话不因本地改动被撤销。
-- `node scripts/test-zysyr-legacy-login-security.js` 覆盖有效/错误/超限登录、脱敏指纹、限流先于凭据查询和新会话 TTL；并加入 pre-push。财务登录页面、独立登录端口、角色和财务数据均未变。
-- **A02 仍未全部关闭：** 为避免未迁移账号被锁定，本阶段仍兼容旧密码格式。上线前须确认认证迁移限流/审计 RPC 已部署，再部署 Edge；对真实账号统计迁移覆盖并安排密码轮换、现存长会话失效策略。未读取生产密码或撤销真实会话。
-- 本地静态版本 v532；尚未推送 GitHub、未部署迁移/Edge/Pages，也未做真实账号验收。
-
-## 审计整改进度：A03 日报并发修订门禁（2026-09-24）
-
-- App version: v531。保存草稿和最终入账均携带页面核对时的修订号；PostgreSQL 新 RPC 在事务中锁定并比较版本，再调用既有保存/入账实现。冲突时保留草稿，不覆盖对方修改；旧无版本 RPC 已撤销 service_role 直通权限。
-- 隔离 PostgreSQL 并发测试通过：两个相同旧版本仅一个可保存、陈旧版本确认被拒、当前版本可以确认；浏览器角色无新 RPC 权限。日报电脑/手机浏览器回归也断言保存和确认携带当前版本。
-- 生产迁移 `20260924010116` 已应用。旧 RPC 的 service_role 兼容权限暂留，保证 v529 页面在 Edge/Pages 切换窗口仍可工作；普通客户端无直接执行权限。待新 UI/API 充分替换旧客户端后再以单独迁移撤销兼容通道。
-- 未改金额公式、历史账或财务独立登录端口。operations-api 整包部署被安全审查拒绝，当前 Edge/Pages 仍旧版本；需先完成全量门禁和分模块发布审查。
-
-## 审计整改进度：A06 月报未保存编辑保护与恢复（2026-09-24）
-
-- 本地代码与合成浏览器回归已完成；未发布。普通刷新、接口读取失败和部分字段保存失败不会清除仍未确认的编辑；成功写入仅清除对应项目；来源金额与编辑时不一致时拒绝覆盖并提示冲突。
-- 离开月报、退出、切换门店或月份时提示处理未保存修改；关闭/刷新浏览器有原生离页提醒。刷新成功后从服务端回读并按值核销已落库编辑。
-- `scripts/test-monthly-load-browser-v499.js`、`scripts/test-monthly-summary-browser-v516.js`、`scripts/test-zysyr-monthly-audit.js`、`git diff --check` 和完整 `.githooks/pre-push` 均通过；完整门禁覆盖日报、月报、工资、备用金、权限 PostgreSQL 与浏览器回归。
-- 使用合成数据，不改计算公式、数据库、权限、历史账、财务登录端口或生产状态。A03/A04/A06 仍为本地待发布；A01 门店范围待用户确认，A02/A05/G01 与其余 P1–P3 仍待分批处理。
-
-## 审计整改进度：A04 日报入账与原图归档一致性（2026-09-24）
-
-- 本地代码与合成回归已完成，当前静态 App 版本为 v531；此项需要单独部署 `operations-api`，尚未发布线上。
-- 入账失败/回执丢失不再删除可能已被正式日报引用的原图；对象路径由草稿 ID 与原件 SHA-256 稳定生成，重试复用；错误后回读草稿，确认已提交时恢复成功结果，状态仍不明时要求财务刷新核实再操作。
-- `node scripts/test-zysyr-confirm-uncertain-result.js`、`node scripts/test-operations.js`、`git diff --check` 和完整 `.githooks/pre-push` 已通过。测试使用合成状态，不连接生产。
-- 未改财务独立登录端口、金额公式、数据库、生产存储或正式账。A03/A04/A06 代码仅在本地；A01 门店历史查询范围待用户确认，A02/A05/G01 与 P1–P3 仍待分批整改。
-- 本项发布前仍须做完整 pre-push、人工审阅、隔离集成验证，并分别核验 Edge Function 部署和线上响应；不把本地通过说成线上修复。
-
-## 状态复核：A03/A04 已部署、A06 前端已发布（2026-09-24）
-
-- 当前生产只读回读：`operations-api` v95 ACTIVE、`verify_jwt=false`（函数内维持原有自定义会话鉴权）；生产迁移列表含 `20260924010116 zysyr_daily_expected_revision_gate`。在线函数源码确认日报最终确认携带/校验 `expected_revision`，对象路径包含草稿 ID 与来源哈希，结果不明分支保留归档并回读草稿状态，不再对不确定提交做 DELETE。对应隔离 PostgreSQL 与结果不明测试此前均通过。A03/A04 的部署状态因此从本文件早期“仅本地”更新为已部署；真实财务会话的成功写入仍未端到端验收。
-- A06 的修订随 v537 前端发布记录，月报渲染层会在服务端刷新前后保存未提交编辑、按服务端值核销已落库格，并保留失败项；`scripts/test-monthly-load-browser-v499.js` 和 `scripts/test-zysyr-monthly-audit.js` 此前通过。当前网络环境无法重新解析 Pages 主机，故本轮未重新读取线上 HTML 精确字节；按既有 v537 Pages 回读记录标记为已发布、在线代码本轮未复验。
-- 本轮复核的生产 `operations-auth-migrate` 为 v6 ACTIVE；认证滚动迁移表/函数 `20260811040423 zysyr_auth_rolling_migration` 在生产迁移记录中。此项只证明端点和迁移存在，不证明真实账号迁移覆盖率、密码轮换或旧长会话处置完成。
-- 上述核验只读取部署元数据、迁移名称和函数源码标记；没有读取密码/令牌值、使用真实财务会话写入、修改财务数据或更改登录入口。
-
-## v530 月报整月日报字体微调（2026-09-24）
-
-- App version: v530。基线 github/main v529。将月报右侧整月日报金额与合计字体从 10px 调至 9px，字距稍微收紧，减少合计行的挤压感。
-- 仅改前端显示和缓存版本标记，不改变金额来源、计算、日报入账或财务数据。发布状态待确认。
-
-## v529 调整月报整月日报业绩字号（2026-09-23）
-
-- App version: v529。基线 github/main v528。按反馈将月报右侧整月日报业绩表及合计行恢复至其他金额格使用的 10px 字号，移除 v528 过小的 8px 特殊字号。
-- 只改前端显示和缓存版本标记，不改变金额来源、计算、日报入账或财务数据。提交 `e3f3e06` 已推送 GitHub main；Validate shared app `35885552540` 与 Pages `35885551703` 均成功。线上无缓存确认 `version.txt=529` 和报表页 10px 样式生效。
-
-## v528 月报数字与日报详情操作栏（2026-09-23）
-
-- App version: v528。基线 github/main v527。仅改报表前端样式：月报右侧整月日报业绩数字及合计行缩小，避免大额数字视觉重叠；单日详情隐藏月历月份／批量识别操作栏，返回月历后恢复。
-- 日报原图上传、保存草稿、财务手动入账、返回月历及月历批量识别入口均保留。不改门店隔离、金额来源、原始凭证、数据库、Edge Function 或生产财务数据。
-- 浏览器回归已覆盖 1280×900、390×844、844×390 大额数据无重叠，详情操作栏隐藏／返回月历恢复；完整 `.githooks/pre-push` 门禁已通过。GitHub Pages 线上核验待完成。
-
-## v527 月报现金口径与日报造型区小计校验（2026-09-23）
-
-- App version: v527。基线 github/main v526。月报“美发收入”只汇总当前门店已入账日报的现金业绩 `payment.cash_flow`，不含卡金；已确认日报进入月报前的旧人工调整保留审计且不叠加。财务仍可通过月报调整入口填写原因修改金额，沿用现有锁账、版本快照、权限和审计校验，不写回日报或原表。
-- 日报增加“造型区总小计 ↔ 员工明细合计”页面提示和服务端独立校验。生产只读核验：截图中的向里造型 2026-02-05 已被人工修正为 11,357 且入账；另有 2026-02-03 和 2026-02-07 两份已确认历史日报的小计与员工明细不符，本次不自动改账，需财务对原图核对。
-- 隔离 PostgreSQL 已验证差异阻断、修正通过、缺失阻断及普通账号执行拒绝；月报现金口径、旧调整去重和财务快照调整单元测试通过。完整 `.githooks/pre-push` 门禁已通过，含电脑／手机日报与月报浏览器回归。
-- 生产迁移 `20260923105746_zysyr_daily_stylist_subtotal_validation` 已应用；只读核验 2 月 5 日校验通过，2 月 3、7 日新规则准确报告小计差异。`operations-api` v94 ACTIVE，继续 `verify_jwt=false` 与函数内部会话鉴权，匿名请求返回 403 `AUTH_SESSION_INVALID`。安全／性能顾问无本次对象新增错误，原有无关 RLS 提示未改。
-- 功能提交 `20f2a76` 已推送 GitHub main；Validate shared app `35856322564` 与 Pages `35856321569` 均成功。无缓存读取线上 `version.txt=527`、`operations.html data-version=527`，新日报小计红格和月报“现金业绩（不含卡金）”脚本已生效。未用真实财务账号执行月报调整或日报入账，未代财务修改正式数据。
-
-## 2026-09-23 日报自动扩行来源格位冲突修复
-
-- App version: v526，静态页面和财务登录入口不变。向里造型 2026-01-28、2026-01-31 的草稿金额校验为 true、正式日报均为 0，但每份草稿各有 24 个重复的纸面坐标；技师扩行与产品区重叠，导致入账时报告来源格唯一约束返回 409。
-- 新迁移仅替换 `zysyr_confirm_daily_sheet`：正式来源格按 `section_code` 区分逻辑分区，并以稳定顺序一对一关联员工收入明细。财务范围校验、锁账、金额校验、来源凭证、审核、审计和人工最终确认逻辑不变；不修补或自动确认这两份生产草稿。
-- 已对生产旧函数与仓库基线逐字核对。隔离 PostgreSQL 验证新函数编译和 service_role 执行边界；静态回归验证确认逻辑无其他变化；生产只读模拟分区键下分别为 473/473、474/474 个唯一来源格位。
-- 生产迁移 `20260923091020_zysyr_daily_sheet_section_trace_coordinates` 已应用；线上函数正文与仓库新迁移逐字一致，仍为 SECURITY DEFINER、空 search_path，仅 service_role 可执行。迁移后只读回查 1 月 28、31 日仍是 validation=true 的修订 4 草稿，各自正式日报和确认版本均为 0；没有代财务入账。功能提交 `951c753` 已推送 GitHub main，完整 pre-push 门禁通过；尚未以真实财务账号重试这两天的最终入账。
-
-## v526 兼容真实 22 列月报模板（2026-09-23）
-
-- App version: v526。基线 github/main `8d83f0c` / v525。范围仅修复整月日报业绩在生产 22 列月报模板中未显示的问题；财务独立登录、股东只读、门店隔离、原始月报、凭证、人工修改、入账和美发收入去重规则不变。
-- 生产真实月报范围为 A:V，v525 错误地等待不存在的 W 列后退出。v526 仅在浏览器显示层补出虚拟 W 列，用于“抖音”，继续在 P:W 显示日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音；不修改或回写原 Excel 和月报数据。
-- 新增真实 A:V（22 列）月报回归，覆盖 31 天、合计及电脑、手机竖屏和横屏显示；完整 `.githooks/pre-push` 门禁已通过。功能提交 `33ef9e9` 已推送 github/main，Validate shared app `35821599887` 与 Pages `35821599858` 均成功。线上无缓存读取 `version.txt=526`，页面引用 `operations-monthly-daily-performance.js?v=526` 且脚本包含显示列修复。已登录财务 Safari 实测向里造型 2026 年 1 月：8 列新表头生效，1 月 1 日劳动业绩 2126、现金业绩 2126、团购 226、支付宝 1850、微信 50 分列显示。
-
-## v525 月报内嵌整月日报业绩（2026-09-23）
-
-- App version: v525。基线 github/main `bb3b527` / v524。范围仅月报右侧既有日报业绩区、已入账日报只读投影、对应样式和测试；财务独立登录、股东只读、门店隔离、原始月报文件、凭证、人工修改、正式入账和美发收入去重规则不变。
-- 原月报 P:W 区域固定显示日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音。完整保留当月自然日和合计；劳动业绩取已入账日报 `grand_total`，现金业绩取 `cash_flow`，其他支付字段逐项读取，支付宝和微信分开显示。
-- 只读取当前公司、门店、月份且状态为 `confirmed` 的电子日报；草稿和机器候选不计入。展示层替换原右侧旧外卖／合并支付区域，不修改原 Excel、电子月报金额、日报单元格或财务审计。已入账日可点回对应日报核对。
-- 无数据库迁移。完整 `.githooks/pre-push` 门禁已通过，覆盖静态/API语法、月报审计、日报月历、月报载入、整月映射与合计、原月报缩放、名称编辑、月报照片上传、多月汇总关闭，以及 1280×900、390×844、844×390 真实浏览器回归。生产 `operations-api` 已升级为 v93、状态 ACTIVE、`verify_jwt=false`；无登录只读探针仍返回 403 `AUTH_SESSION_INVALID`，未写入或修改生产财务数据。
-- 功能提交 `1155ec3` 已推送 github/main；Validate shared app `35816884249` 与 Pages `35816884377` 均成功。线上无缓存读取为 v525，并确认月报引用 `operations-monthly-daily-performance.js?v=525`，整月表的日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音映射已生效。
-
-## v524 报表文件自动识别并按月份归档（2026-09-23）
-
-- App version: v524。基线 github/main `e172e2a` / v523。范围仅月报页红色文件上传入口、服务端报表类型/期间识别和对应测试；绿色月报照片/PDF补传、财务独立登录、股东只读、门店隔离、正式入账和已有财务数据不变。
-- 红色入口不再信任浏览器传入的报表类型或日期：`operations-api` 从 XLSX 保存时的当前工作表或 DOCX 表格内容识别日报、工资表、月报及完整归属期间；门店不符、期间不完整、工作表不明确时在写入私有存储前拒绝。自动保存只登记原件和候选，响应明确标记未改变正式账。
-- 月报“美发收入 / 营业收入”仍由 `confirmedDailyRollup` 的已确认日报唯一总计覆盖；月报原数只保留为 `original_report_amount`，调整为零，且财务调整接口继续阻止重复入账。绿色照片/PDF入口的单独补传、历史附件和短时私有预载逻辑均未修改。
-- 无数据库迁移。完整 `.githooks/pre-push` 门禁已通过，包含自动识别、静态月报、日报防重复、月报工作台、真实浏览器及隔离 PostgreSQL 回归。生产 `operations-api` 已升级为 v92、状态 ACTIVE、`verify_jwt=false`；无登录调用新操作仍返回 403 `AUTH_SESSION_INVALID`，发布未修改任何生产财务数据。
-- 功能提交 `a7074d4` 已推送 github/main；Validate shared app `35758752791` 与 Pages `35758751109` 均成功。线上无缓存读取为 v524，并确认“上传文件（自动识别报表类型和所属月份）”、`report_upload_auto` 和美发收入不重复统计提示已生效。
-
-## v523 关闭月报汇总、加速照片并统一北京时间（2026-09-22）
-
-- App version: v523。基线 github/main `dceba31` / v522。范围仅关闭多月汇总入口、历史月报照片预载和报表时间显示；财务独立登录、股东只读、门店隔离、金额、入账逻辑及原始资料不变。
-- 生产只读核对确认数据库时间正确保存为 UTC：服务端 `2026-09-22 07:39:59+00` 对应北京时间 `2026-09-22 15:39:59`；近期历史附件 `2026-09-22 06:14:03+00` 对应北京时间 `2026-09-22 14:14:03`。旧页面直接截取 UTC 字符串，造成显示慢 8 小时；本版本只统一页面显示，不改写数据库时间。
-- 月报照片在渲染后预取短时私有签名链接并以低优先级预载图片，点击时复用内存缓存；缓存预留过期安全窗口，不写 localStorage，不改变私有存储权限。
-- 本次为静态页面和测试变更，不含数据库迁移或 Edge Function 部署。功能提交 `104b741` 已推送 github/main；完整 pre-push、Validate shared app `35715617354` 与 Pages `35715615883` 均成功。线上无缓存读取为 v523，并确认汇总入口关闭、私有照片预载和北京时间脚本已生效。
-
-## v522 精简历史月报附件入口（2026-09-22）
-
-- App version: v522。基线 github/main `4b72783` / v521。范围仅历史月报顶部附件入口；财务独立登录、股东只读、月报金额、入账逻辑及其他报表入口不变。
-- 生产只读核对确认向里造型 2026-01 历史月报目前有两类附件：既有整月 `voucher_bundle` Word 凭证包与后来补传的 `supporting_document` 月报照片。页面隐藏“打开原文件”和旧整月凭证包，仅保留照片并命名为“月报照片 1、2……”。
-- 本次不删除源文件、凭证、附件关系或审计，不修改数据库、Edge Function 或真实财务数据。功能提交 `3f9f82e` 已推送 github/main；完整 pre-push、Validate shared app `35696780318` 与 Pages `35696779020` 均成功。线上无缓存读取为 v522，并确认历史月报筛选与“月报照片”命名代码已生效。
-
-## v521 月报照片单独补传（2026-09-22）
-
-- App version: v521。基线 github/main `298f4da` / v520。范围仅月报上传表单、已存在月报的照片/PDF补传、历史正式月报附件关联与显示；财务独立登录、股东只读、月报金额和入账逻辑不变。
-- 左侧 Excel / Word 不再用浏览器原生 `required` 阻断提交；本月已有月报时可只选右侧 JPG/PNG/PDF，多张依次上传并反馈进度。没有月报来源时仍必须先建立 Excel/Word 原表，日报和工资表原有要求不变。
-- 历史正式月报附件使用整月 `bundle_only` 关系追加到已完成批次，不冒充单个金额凭证；RPC 仅 service_role 可执行，重复点击幂等、同一文件禁止跨月复用，且函数不更新历史账本金额或版本。
-- 发布状态：功能提交 `0fc60fb` 已推送 github/main；完整 pre-push、Validate shared app `35690554878`、Pages `35690554366` 均成功。生产迁移 `20260922051405_zysyr_completed_history_monthly_attachments` 与 `operations-api` v91 已上线，匿名请求返回 403；线上无缓存读取为 v521，并确认补传控件、历史附件路由和“不改金额”提示已生效。向里造型 2026-01 正式月报仍为 273 条、既有凭证 1 份，发布未改账。
-
-## v520 备用金整月凭证批量上传（2026-09-22）
-
-- App version: v520。基线 github/main b935ea1 / v519，同日备份已核验。范围仅备用金二级页入口精简、整月凭证批量上传、OCR 候选匹配及人工逐笔确认；财务独立登录、股东只读、金额和入账逻辑不变。
-- 红框旧入口仅在备用金页隐藏，后台能力及其他财务页面不删除；原有逐笔上传继续保留。批量上传支持最多 60 份 JPG/PNG/PDF，显示逐份进度和识别状态并阻止重复点击。
-- 原件进入现有私有凭证库；OCR 仅生成日期、金额、商户和票据号候选。日期与金额唯一一致时才允许“确认全部明确匹配”，其他项目须人工选择。确认 RPC 原子追加当前或历史逐笔关联与审计，不改金额、原始导入行或入账版本，且只允许 service_role 调用。
-- 定向与完整 pre-push 门禁均已通过，覆盖真实浏览器上传反馈、手机/电脑布局、候选匹配、当前/历史明细、幂等、防跨项复用和财务数据不变。生产迁移 `20260922042000 zysyr_petty_cash_batch_vouchers` 已应用；新 RPC 匿名／普通登录无执行权、仅 service_role 可执行，函数定义不更新当前备用金或历史账本。`operations-api` v90 ACTIVE，9 个部署源码／依赖含新匹配模块且保持 `verify_jwt=false` 和既有内部财务鉴权；无会话新接口探针为 403 `AUTH_SESSION_INVALID`。安全／性能顾问只有既有旧项，没有本次新增表或函数提示。功能提交 `711bfd6` 已推送 main，Validate `35686990636` 与 Pages `35686989878` 均成功；线上无缓存 `version.txt=520`，报表页引用 v520，批量脚本与本地 SHA-256 一致。生产批量凭证仍为 0，未上传真实凭证、未修改财务金额或执行入账。
-
-## v519 备用金逐笔消费凭证（2026-09-22）
-
-- App version: v519。基线 github/main ac61abd / v518，同日备份已核验。范围仅备用金逐笔凭证展示、补传和反馈；财务独立登录、股东只读、金额及入账逻辑不变。
-- 历史正式备用金改为逐项卡片，每一笔只打开精确关联的原图，整月 Word 包继续永久留底但不再代替单笔凭证。财务可在具体记录旁上传或补传 JPG/PNG/PDF，并在确认页核对日期、摘要、金额和文件预览。
-- 当前记录上传继续经过财务审核，待审核状态立即显示并禁用重复上传；历史正式账补传只追加证据、精确关联和审计，不更新金额、原始导入行或入账版本。门店范围由服务端重新校验，RPC 仅 service_role 可执行。
-- 手机 390px 单列、电脑 1280px 双列浏览器回归、隔离 PostgreSQL 及完整 pre-push 门禁已通过，覆盖逐笔关联、幂等、门店隔离、审计和财务数据不变。生产迁移 `20260922030332 zysyr_history_item_evidence_upload` 已应用；RPC 匿名／普通登录无执行权、仅 service_role 可执行，且函数定义不更新历史账本。`operations-api` v89 ACTIVE，8 个部署源码／依赖与本地逐字一致，继续 `verify_jwt=false` 和原有财务会话鉴权；无会话备用金请求仍为 403 `AUTH_SESSION_INVALID`。数据库顾问未发现本次函数／证据表新增提示，现有旧表 RLS 与索引建议不在本次范围。功能提交 `4f7e284` 已推送 main，Validate `35682339672` 与 Pages `35682338990` 均成功；线上无缓存核验 `version.txt=519`，`operations.html` 及 `operations-petty-cash-evidence.js` 与本地逐字一致。未修改真实财务金额或执行入账。
-
-## v518 日报误传作废与正确原图重传（2026-09-22）
-
-- App version: v518。基线 github/main aa0da78 / v517。范围仅日报原图误传处理、有效来源选择及附件显示；其他 App 只同步版本标识／缓存参数，财务独立登录入口保持不变。
-- 未入账草稿可将错误原图标记为“误传作废”并填写原因；原文件、哈希、上传记录和新作废事件永久保留，作废件不再参与预览、识别、原图计数或入账来源。若当前来源被作废，自动切换到最近一份有效已审核原图，否则要求重传。
-- 已入账或锁账日报禁止作废原图，须先走冲销。新 RPC 仅 service_role 可执行，并校验财务角色、门店、草稿状态、锁账和原因；无痕删除继续被数据库阻止。
-- 隔离 PostgreSQL、电脑／手机浏览器与完整 pre-push 回归已通过：原件保留、来源替换、重复作废拦截、正式日报拦截、审计、权限、有效预览排除及重传提示均正常。生产迁移 `20260921154502 void_mistaken_daily_attachment` 及 `20260921160358 zysyr_daily_attachment_void_indexes` 已应用；新表启用并强制 RLS，匿名／普通登录无执行权，所有新外键均已覆盖索引。`operations-api` v88 ACTIVE，继续 `verify_jwt=false` 和原有财务会话鉴权，无会话请求仍为 403 `AUTH_SESSION_INVALID`。功能提交 `77b9069` 已推送 main，Validate shared app `35624857690` 与 Pages `35624855678` 均成功；线上无缓存核验 `version.txt` / `version.json` 为 518，重传、作废、审计文案及作废件排除标记全部生效。未修改真实财务数据，未自动入账。
-
-## v517 日报原图操作反馈与员工行自动扩展（2026-09-21）
-
-- App version: v517。基线 github/main 7df594d / v516，同日备份已核验。范围仅日报原图操作状态、模板员工行生成和识别前旧草稿扩行；财务登录、股东只读、入账确认和月报口径不变。
-- 生产只读定位：现有模板固定为发型师 8 行、向里技师 6 行／自由手艺人技师 7 行；在职岗位人数已可能超过上限。新逻辑按岗位独立计数（兼任可进入两个分区），上限 20 行／分区，旧草稿在识别前补空白行。
-- 自动扩行 RPC 仅 service_role 可执行，校验财务门店范围、草稿状态、修订号与锁账；只新增 blank_template 单元格，保留所有人工值与机器原始候选，并写审计事件。
-- UI、隔离 PostgreSQL 与完整 pre-push 门禁已通过：上传／识别单通道防重复、常驻进度及结果提示、动态增行、重复调用幂等、人工修改保留、修订冲突、审计和浏览器直连拒绝。生产迁移 `20260921122454 daily_recognition_adaptive_staff_rows` 已应用，安全／性能顾问无新增提示；`operations-api` v85 已激活且继续保留原有自定义财务登录边界（`verify_jwt=false`，无会话请求仍为 403）。功能提交 `6e05d4a` 已推送 main，Validate shared app `35601031440` 与 Pages `35601029686` 均成功；线上 `version.txt`／`version.json` 为 517，页面和识别脚本的按钮、常驻状态、防重复与自动增行标记均已无缓存回读。未调用真实日报保存／识别／入账。
-
-## v516 月报多月汇总修复（2026-09-21）
-
-- App version: v516。基线 github/main 1870a7e / v515，同日备份已核验。范围仅月报汇总服务及独立显示模块，其他 App 只同步版本标识／缓存参数。
-- 生产只读证据：两门店 2026 年 1–6 月均在 posted 历史账本；旧 monthly_summary 只查新上传表，且预设范围取系统当前月，导致无数据时仍留单月表。现补历史来源并使用选定月份，不改变原有 overview／入账写入逻辑。
-- 新汇总复用有效历史公式和上传修订计算，已确认日报替代月报收入，不重复计账；行以原表单元格与项目／姓名区分，未命名格不跨月猜测。按门店批量读历史账本，限 12 个月，日报读取并发不超过 3，避免重复解析整份工作簿。
-- 定向后端及真实页面合成 API 浏览器回归已通过：来源优先级、调整、公式、日报防重复、不同姓名、固定编号、空月／错误／重试、范围、刷新、迟到响应隔离、未保存保护、手机／iPad／电脑宽度。未以合成测试冒充真实账号验收。
-- 已通过一轮完整 pre-push 门禁；收尾补充跨页面切换门店和全年 12 列布局后，定向浏览器／金额测试再次通过。发布状态：待 operations-api 部署及 GitHub Pages 发布核验；无迁移，不更改生产财务金额或授权，不恢复识别执行器。
-- 功能提交 c780f106 已推送 GitHub main，实际 push 完整门禁通过；Validate 35561415040、Pages 35561414539 均 success。线上无缓存 version.txt=516，version.json／operations.html／operations-monthly-summary.js／perm-app.html 均与本地逐字一致。
-- operations-api v84 ACTIVE，保持 verify_jwt=false 和既有内部鉴权；8 个部署源码／依赖文件 SHA-256 全部与本地一致。线上无凭证 monthly_summary 探针 403 / AUTH_SESSION_INVALID。生产只读核查两门店 1–6 月历史金额格无重复地址；未以真实账号调用成功链路，未代用户入账或调整金额。
-
-## v515 股东报表读取修复（2026-09-21）
-
-- App version: v515。基线 github/main d94cc20 / v514，同日备份已核验。只改报表嵌入与只读识别请求边界，不更改财务登录、股东服务端白名单、数据库授权或业务数据。
-- 已复现 v514：股东日报渲染后 50ms 定时读取 daily_recognition_job_read，服务端正确拒绝，前端因此隐藏整页；旧浏览器测试只检查内存数据和隐藏的按钮，遗漏 app 仍须可见的断言。现限定识别任务为有写权限的财务流程。
-- 在 head 阶段隐藏 App 股东模式的财务登录卡片，显示员工会话加载状态和失败重试；现有独立 operations.html 财务入口不受影响。iframe 加当前版本参数。
-- 浏览器回归已覆盖慢会话不闪登录、实际 iframe 月报／日报可见、延迟识别请求为零、财务会话不变、撤权隐藏和重试；新增手机竖／横屏及 iPad 月报可见性检查。完整 pre-push 门禁通过，包含隔离 PostgreSQL 授权、财务登录／保存／入账保护、月报防重复汇总及其他 App 回归。测试使用真实页面和合成接口，不宣称用户 iPhone／生产真实账号已验收。
-- 功能提交 e649fac 已推送 GitHub main；Validate 35557758572、Pages 35557758168 均 success。无缓存核验 version.txt=515，version.json、perm-app.html、operations.html、employee-reports.js、operations-staff-view.js、operations-daily-recognition.js 与本地逐字一致。后台 operations-api 保持已核对的 v83，未部署函数／迁移，未改变财务记录和授权。
-
-## v514 App 股东报表整合（2026-09-21）
-
-- App version: v514。用户明确同意员工认证／权限升级，同时要求现有财务入口保留。改动在本隔离工作树，基线 github/main v513；未合入其他工作树业务。
-- 员工编辑中独立配置股东可查看门店，可多选、取消全部撤权；职位标签不授予权限。App 入口按服务端授权出现；operations-api 员工令牌分支仅允许报表读取，每次检查在职、会话、当前授权和门店。现有 finance Auth、operations.html 登录及财务确认逻辑保留。
-- 受保护 staff-access-api 负责员工管理及权限审计；注册始终 pending/staff。迁移第一步新增私有会话、门店授权和审计／限流，第二步收紧 staff 直连（必须在兼容 API 和静态页面上线后）。staff 安全通讯录列保留，密码查询及匿名写入拒绝。
-- 隔离 PostgreSQL 和真实 Edge 代码测试已通过；真实页面合成 API 浏览器验证授权编辑、App 内打开、只读日/月报、跨门店拒绝、撤销和同设备财务会话不被清除。全量 pre-push 通过（含原有财务登录、日报保存／入账、月报防重复累计）。
-- 已发布功能提交 `6bd1bac`；GitHub Validate `35555458355`、Pages `35555458103` 成功。线上 version.txt=514，perm-app/admin/operations、3 个新增脚本与 4 个旧入口页面均无缓存逐字一致。staff-access-api v1、employee-bookings-api v3、operations-api v83 ACTIVE，全部部署源码／依赖与本地一致，沿用函数内自定义鉴权。
-- 两个迁移已按兼容顺序应用；生产迁移历史版本分别为 `20260921024806 staff_report_access` 与 `20260921025354 staff_credentials_private`（MCP 生成的时间戳，与仓库文件时间戳不同，按名称对应，勿重复应用）。生产检查 staff RLS=true，匿名及普通登录密码列不可读、任意写权限=false，安全通讯录列和 service_role 保留；新授权记录为 0。
-- 线上最小无凭证探针：财务会话／员工会话／后台会话均 403；股东写入操作 403；通讯录 limit=0 返回 200，密码列读取／密码过滤／私有门店授权读取均 401/42501。未用真实账号验证登录成功，首次真实股东授权仍需管理员选择账号后验收。
-- 不创建真实股东账号、不猜测授权对象、不改财务数值、不执行入账。新增管理员页面升级后需重新登录一次；现有财务无需切换入口。公开凭证风险收紧不等于整个旧 App 全表安全改造；历史暴露凭证建议管理员轮换。
-
-
-## v513 日报姓名与多格金额联合保存（2026-09-20）
-
-- App version: v513。生产只读审计定位到姓名先被人工核对项改正，随后同一行数字项携带的旧 row_label 又反向覆盖；金额校验通过，但 v512 的回读保护正确拦住了错名入账。
-- 本次仅修复 operations-api 保存载荷：已有数字项的姓名元数据不授权改名，显式姓名项排到金额／新增格之后；同一格金额与姓名继续合并为一条审计。旧页面保留的编辑可以直接重试，不强制刷新。
-- 隔离 PostgreSQL 已复现旧版整行姓名被覆盖；新增整行一致性、两种输入顺序、新增格及审计回归。浏览器测试调用真实服务端保存规范化逻辑，覆盖两门店、桌面／手机，姓名与多格金额保存再入账保持一致。
-- 无数据库迁移，不更改生产金额／姓名，不自动入账；权限／公司门店鉴权、回读保护和人工最终确认保留。版本标识同步不包含其他 App 业务修改。
-- 完整 pre-push 通过，功能提交 `8e78c22` 已推送 GitHub main；Validate `35512658480`、Pages `35512657966` 均成功。operations-api v82 ACTIVE，保持既有 verify_jwt=false 和函数内部鉴权；线上函数源码与本地逐字一致。无缓存核验 version.txt=513，两份主页面也与本地逐字一致；未登录探针返回 403 / AUTH_SESSION_INVALID。
-- 发布期间只读回查用户反馈的日报已成为 confirmed，正式日报只有一个版本、明细累计与核对金额一致；助手未调用生产保存或入账。完整上线前的并发编辑、恢复演练和真机验收待办仍保留，不因本次修复被视为完成。
-
-## v512 日报清空值持久化与上线前检查（2026-09-20）
-
-- App version: v512。生产只读确认用户反馈的日报草稿已保存且金额校验通过，但仍存在未覆盖的旧候选；显式清空未写 manual_override 导致回显。隔离数据库复现旧行为，修复所有显式值（含 null）的人工覆盖及 value_reviewed 审计，不修补或猜测既有财务值。
-- 页面先验证保存回读再替换编辑器；异常保留输入；导航、后台刷新不丢编辑，月历显示草稿已保存待入账。公司说明／备注不重复生成行且能回读。
-- 用户明确同意修复报表权限：3 张表启用 RLS 并撤销 public/anon/authenticated 直连；4 个 SECURITY DEFINER RPC 撤销 public/anon/authenticated EXECUTE，保留 service_role。仅更改保护策略，不动数据。
-- 完整发布门禁及隔离回归通过。迁移 20260920110534／20260920110545 已应用，生产只读回查 zysyr 表 RLS 全启用、匿名／普通登录直接可执行的 zysyr 特权函数为 0；正常 service_role 访问保留。operations-api v81 部署源码与本地一致。
-- 功能提交 92c314d 已发布，Validate 35507600921／Pages 35507600665 成功。线上无缓存核验 version.txt=512，operations.html、operations-daily-review.js、operations-daily-recognition.js 与本地逐字一致。未登录日报只读请求返回 403 / AUTH_SESSION_INVALID。生产日报状态未代改。
-- 尚不等于多人／多端并发编辑及真实 iOS 设备已验收；工程归档不等于数据库／原图灾备，全面上线仍需恢复演练，详见上线检查报告。
-
-## v511 报表完整适配屏幕（2026-09-20）
-
-- App version: v511。按用户截图隐藏 `daily-recognition-job` 整月识别进度区域，保留历史记录和原图识别能力。
-- 新增独立 `operations-report-fit.js`，统一缩放月报、日报、工资、备用金和历史原表容器。移除原先只在手机／矮横屏启用、最小缩放 .68/.7 的限制；ResizeObserver、视图显隐及内容重绘后自动重算，不阻止原生双指缩放。
-- 合成浏览器检查 390×844、844×390、1024×768、1366×1024、1920×1080 下全部表列不水平溢出；保留日报编辑／保存／确认回归。只涉及显示，不修改后台或财务数据。
-
-## v510 日报保存 409 与姓名候选复核（2026-09-20，已发布）
-
-- App version: v510。向里造型 2026-01-01 生产只读核验：页面金额可显示一致，但草稿仍是未确认状态；点击入账时保存阶段返回 409，整批单元格修改回滚，未产生正式账。
-- 根因是同一次保存中，金额与姓名分别作为同一个单元格提交，命中审计表每单元格／修订版唯一约束；姓名-only 项还会被服务端误当作清空金额。服务端合并重复单元格，并保留缺少 `value` 时“不改金额”的语义。
-- 数据库增加显式姓名已核对审计标记。财务确认与机器候选相同的姓名时，也将该行标记为人工核对，并写入一条审计；保存草稿不自动入账。隔离 PostgreSQL 测试已复现旧 409，并通过合并保存、金额保持、姓名核对、原始候选不变及门店权限回归。
-- 完整门禁通过；迁移 `20260920071049` 与 `operations-api` v81 已部署。功能提交 `1ec39f3` 已推送，Validate `35497573601`、Pages `35497572818` 成功，线上 v510 与脚本哈希核验通过。随后只读查询确认向里造型 2026-01-01 已由财务成功确认：修订6、总计2126、全部校验通过、正式日报 approved 且版本／原图关联完整；助手未代财务入账。
-
-## v509 日报双按钮与一次核对入账（2026-09-20，已发布）
-
-- App version: v509。按用户要求将电子日报顶部、底部收敛为“保存草稿”和“入账”，返回入口明确为“返回月历”。原独立采纳按钮和核对复选框合并到入账时的一次原生确认；确认显示门店、日期、金额，明确财务逐格核对原图、姓名、金额、空白及支付方式。修改说明为折叠选填。
-- 沿用现有保存／确认 API：保存不入账；入账时将已核对黄色数字与姓名沿单元格审计保存，再核验回读值、原件审核、财务权限、锁账及后台校验，最后正式确认。操作期间锁定切换及重复点击；网络结果不明时先查询，不盲目重提。不会覆盖已人工修改值，月报收入仍仅累计已确认日报。
-- 合成浏览器覆盖两门店、桌面／窄屏、表头对齐、候选姓名及数字、保存不入账、一次核对入账、取消、保存失败、后台校验失败、回读变化、重复点击、网络断开后的只读恢复和权限／锁账阻断；修复原图识别完成回调对已移除复选框的引用。
-- 本次仅前端与回归测试，无数据库迁移或 Edge Function 修改，不重启已停止的批量识别，不修改或确认生产日报。完整 pre-push 门禁及独立三尺寸原图／凭证浏览器回归通过。功能提交 `e9688f0` 已推送 GitHub main，Validate shared app `35492684507`、Pages `35492684086` 均成功。线上无缓存核验 `version.txt=509`、双按钮与 v509 脚本引用生效；核对／入账脚本与识别兼容脚本均与本地文件完全一致。
-
-## v508 日报汇总表头错位与具体差异定位（2026-09-20，已发布）
-
-- App version: v508。向里造型 2026-01-01 生产只读检查：草稿仍为修订 v4；`actual_total`、`grand_total`、`cash_flow` 候选各为 226，`treatment_card` 手工值为 2126。页面表头将技师栏、实做、总计合并列，但输入行未采用对应列宽，导致“实做”下方实际呈现疗程卡输入，用户修改看似无效。上次 v507 只修复了小计双算，本次修复汇总／支付表头和输入行使用同一合并列定义。
-- 保留单元格 ID、原始候选、手工金额及审计；不迁移或猜测财务金额。补全汇总／支付行标识。汇总区红色差异标到具体输入格，显示“实做／汇总总计／现金流／支付总计”的实际金额和比较金额；候选提示明确下一步点击采纳再确认。
-- 新增真实浏览器合成回归，检查两门店在桌面／窄屏的 26 个字段与表头像素对齐，模拟修改、保存载荷、回读、候选采纳到确认可用全流程；回归纳入 pre-push。生产数据尚未修改或入账；上线后财务需核对实做、总计、现金流及旧错位下编辑的疗程卡，再采纳候选、最终确认。
-- 完整 pre-push 门禁通过，功能提交 `240eaf2` 已推送 GitHub main。Validate shared app `35490952664`、Pages `35490951935` 均成功；线上无缓存检查 `version.txt=508`、日报版本 508、汇总／支付列跨度定义以及具体差异提示脚本均已生效。只读查询不写生产财务数据。
-
-## v507 日报错误双算与候选采纳按钮修复（2026-09-20，已发布）
-
-- App version: v507。向里造型 2026-01-01 截图显示员工明细 4252／小计 2126、项目小计 0；定位到页面将 2126 的发型师项目小计行误标为员工明细，又没有识别为项目小计，导致显示端恰好双算。数据库该行本来就是 `category_total`，未改动原金额或数据库角色。
-- 页面优先使用已有单元格的数据库 `cell_role`，空白小计行按类别生成正确角色；技师小计、产品及汇总区也避免沿用错误的员工明细默认角色。修复勾选“已逐格核对”后只执行旧监听器、导致“采纳已核对候选”仍灰色不可点的问题。
-- 在已有日报回归中加入 2126／2126／2126 可通过的重复计数测试及勾选后按钮可用测试。仅修页面校验与交互，不自动采纳候选、不确认入账。提交 `a3ca7cb` 已推送 GitHub main；Validate shared app `35489668646` 与 Pages `35489668154` 均成功。线上无缓存核验 `version.txt=507`、`operations.html data-version=507`，且引用 `operations-daily-review.js?v=507`。
-
-## v506 电子日报候选核对、保存反馈与月报收入去重（2026-09-20，已发布）
-
-- App version: v506。向里造型 2026-01-01 为定位样本；生产只读核验发现 OCR 黄色候选未被财务逐格采纳，后台不能把它当成已核对金额。该日候选员工和支付方式合计均为 2126，但实做／总计与现金流候选均为 226，需财务依原图核对，不自动改数或正式确认。
-- 电子日报显示未采纳候选数量、明确采纳按钮和持久保存结果；采纳须财务勾选已核对并再次确认，沿既有逐格审计保存，不会自动入账。新填空白格也参加页面实时合计。保存后刷新月历；未通过后台校验的草稿不显示权威营业收入。
-- 月报美发收入在有已确认日报后仅采用已确认日累计；既有月报手工调整保留审计但不再叠加，也不允许再次修改该收入格。未确认草稿不进入月报收入追溯。
-- 隔离 worktree 开发，不修改生产财务数据或启动已停止的日报识别执行器。完整 pre-push 门禁、独立数据库回归及 v506 候选／月报去重回归均通过。生产 `operations-api` v80 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权；匿名探针返回 403 `AUTH_SESSION_INVALID`。功能提交 `53094fd` 已推送 GitHub main；Validate shared app `35488110091` 与 Pages `35488109336` 均成功。线上无缓存核验 `version.txt=506`、`operations.html data-version=506`、新候选核对脚本与月报脚本 v506 标记均生效。发布后只读核验向里造型 2026-01-01 仍是草稿修订 v4、校验未通过，1 月已确认日报 0 天；未代财务改数或入账。
-
-## v505 护理手动出库与品牌独立月报（2026-09-19，已发布）
-
-- App version: v505。关闭 App 自动出库；新保存、重复保存、旧 pending 恢复与直接提交均受总开关保护，护理明细继续保存，历史批次和快照保留。
-- 后台护理月报按欧拉裴、歌薇酸性护理、歌薇上色水分别显示员工用量与月合计，各品牌独立展示产品／色号明细。其他历史品牌单独保留；按门店与月份完整分页，过时查询不覆盖新查询，空月或失败清除旧结果。
-- 本机 `com.freecraftsman.care-outbound` 已 disable + bootout；实际运行配置 `runtime_enabled=false`、自由手艺人 `enabled=false`，配置与仓库 SHA-256 一致。实际执行器使用关闭配置启动后立即退出，没有调用出库接口。独立会话保活、预约与客户同步保持原状。
-- 原开发目录两处未提交关闭改动已保留；本次从 `github/main` v504 建立独立 worktree，未混入 Salon 分支。部署仅同步关闭配置，未覆盖已有运行端 worker 差异。
-- 已通过护理关闭/历史协议测试、品牌统计与分页测试、护理月报浏览器测试及完整 pre-push 发布门禁。功能提交 `e1cb240` 已推送 GitHub main；Validate shared app `35432981107` 与 Pages `35432980977` 均成功。线上无缓存核验 `version.txt=505`、App 关闭开关、后台独立品牌明细容器和 v505 月报模块均已生效。未修改生产护理记录或库存。
-- 线上只读核验月报分页请求 HTTP 206（2026-08 自由手艺人共137条）；协议 v2 `pending/processing` 队列为0条。
-
-## v504 日报入账阻断提示与差异定位（2026-09-14，已发布）
-
-- App version: v504。财务点击日报“最终确认并入账”时，如果仍有未保存修改、缺少已审核原件、内部合计不一致或尚未勾选逐格核对，页面不再无反应；按钮会明确显示阻断原因。
-- 内部合计不一致时自动定位第一处红色差异单元格。只有员工明细、项目列、实做/总计与支付方式四组合计全部一致，才调用正式入账接口；没有放宽数据库校验，也不会强行写入错误日报。
-- 已确认日报的总计继续自动汇入当月月报“主营收入”；未确认草稿不进入月报，避免重复或错误汇总。
-- GitHub main 功能提交 `e8e8622` 已发布；Validate shared app `34808512567` 与 Pages `34808510874` 均成功。CDN 无缓存核验 `version.txt=504`、页面版本、可点击阻断提示与红色差异定位代码均已生效；本次未强行确认或写入任何生产日报金额。
-
-## v503 全量日报 Codex 识别与财务上传自动候选（2026-09-14，发布中）
-
-- App version: v503。财务账号继续使用既有 `daily_report.write` 权限上传 JPG/PNG 日报原图；上传成功后自动调用本机 Codex，识别数字、姓名和备注并填入电子日报待核对候选，财务确认前不正式入账。
-- 修复同一纸质格出现在重叠放大区时被 Codex 重复返回、进而导致整天识别失败的问题：本机可信边界按置信度保留每格最佳候选，Edge Function 继续严格拒绝未知或重复格子。
-- 增加仅本机密钥可调用的后台续跑入口与批量执行器；任务仍使用启动任务的有效财务账号和既有门店权限 RPC 写入，关闭页面不再中断全量识别，密钥不会下发浏览器。
-- 本机桥接最多同时处理 2 张日报，两条任务各自保持逐日串行；并发上限固定，既缩短全量耗时，也避免无限并发影响识别稳定性。
-- 生产发布、全量历史原图识别及逐月核对清单正在执行；任何识别失败、缺图或低置信度数据保留给财务核对，不伪装为已确认。
-
-## v502 隐藏工资报表导航入口（2026-09-14，已发布）
-
-- App version: v502。左侧导航隐藏“工资报表”，仅收起入口，不删除工资报表页面、原始附件、历史版本、审计或追溯数据。
-- 月报技术人员、后勤人员和工资金额进入工资报表的现有路径继续保留。本地浏览器回归已验证工资及三个低频导航入口均隐藏，同时备用金直达和原有月报追溯回归通过。
-- 功能提交 `f24e264c52e65fa5e258d0cf1cd0dcf25c2b080d` 已推送 GitHub main；Validate shared app `34774515386` 与 Pages `34774514853` 均成功。CDN 无缓存核验 `version.txt=502`、工资导航隐藏、月报工资跳转标记及 v502 脚本缓存均已生效；没有修改任何工资或财务数据。
-
-## v501 月报备用金直达与导航精简（2026-09-14，已发布）
-
-- App version: v501。月报左侧“备用金”汇总金额直接进入当前门店、当前月份的备用金明细；右侧备用金单项金额仍按原方式编辑、上传及查看单笔凭证。
-- 左侧导航隐藏“备用金明细”“报表档案”“历史数据导入”，只收起入口、不删除页面、业务数据或历史资料。
-- 备用金汇总格无需单独凭证，凭证继续关联到逐笔备用金记录，追溯链保持为“月报备用金 → 备用金明细 → 单笔原始凭证”。本地浏览器回归已验证汇总直达、门店/月不变、右侧单项不误跳转和三个导航入口隐藏。`operations-api` version 69 已 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码含新分类且匿名请求返回 403 `AUTH_SESSION_INVALID`。
-- 功能提交 `ec6a78105d0897714970f0a3a9601f1d48a89220` 已推送 GitHub main；Validate shared app `34771620442` 与 Pages `34771619819` 均成功。CDN 无缓存核验 `version.txt=501`、页面版本、三个隐藏入口、备用金直达函数和 v501 脚本缓存标识均已生效；发布验收没有修改任何生产财务数据。
-
-## v500 月报名与明细名称可编辑（2026-09-14，已发布）
-
-- App version: v500。按用户圈定范围，财务进入“编辑月报”后可修改或新增左侧收入/支出项目名、技术与后勤人员姓名、产品进货/零售成本/备用金/杂项明细名称；预留空白姓名和明细名称格具有可见边界。
-- 栏目与分组标题、固定编号、小计、合计及盈亏名称保持只读。金额和名称共用“保存本月修改”，名称会更新金额追溯显示标签，但不覆盖原始 Excel。
-- 新增只追加名称修订表与服务端批量保存 RPC，记录原名称、修改前后、单元格、操作人、时间和原因，并执行财务能力、公司/门店、月份、并发版本、锁账授权、RLS、service-role-only 与不可删除/覆盖检查。
-- 本地页面语法、月报金额回归、新名称浏览器回归及隔离 PostgreSQL 权限/锁账/审计/不可篡改测试已通过。生产迁移 `zysyr_monthly_editable_names` 已应用；新表启用并强制 RLS，浏览器角色不能执行写入 RPC；`operations-api` version 68 已 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名请求返回 403 `AUTH_SESSION_INVALID`，在线源码已核验名称识别、保存路由与修订表读取。
-- 功能提交 `b887b1853d21d9ce30eaff6a35d2486539d18ea9` 已推送 GitHub main；Validate shared app `34766756302` 与 Pages `34766755915` 均成功。CDN 无缓存核验 `version.txt=500`、`operations.html data-version=500`，编辑月报入口、名称输入样式、名称保存操作及 v500 脚本缓存标识均已生效。发布验收没有修改任何生产月报名称或金额。
-
-## v499 月报编辑模式与超长查询修复（2026-09-13，已发布）
-
-- App version: v499。线上 Safari 已复现向里造型 2026-09 的原始网络异常；该正式月报有 450 个单元格，旧 UUID 查询超过 16KB。改为既有外键关联的公司/门店/报表范围短查询，错误信息不再暴露内部 URL 和数据编号。
-- 真实点击回归发现 operations-daily-recognition.js 包装月报渲染时遗漏 keepEditMode，刚打开的编辑模式被立即关闭。修复为转发参数，并避免重复添加日报汇总提醒。
-- 编辑准备完成后始终重新读取；读取失败不进入编辑、不误建空月报。请求序号及门店/月范围检查阻止旧响应覆盖当前页。
-- 450 单元格生产只读结构的本地隔离浏览器回归已通过：截图所列左侧空白收入/开支金额、备用人员金额框具有边界，可填写；模拟保存回读、失败后刷新恢复、过时响应隔离通过。测试没有写入生产金额。
-- 无数据库迁移；operations-api version 67 已 ACTIVE，verify_jwt=false 保持不变，在线源码逐字符匹配本地。已登录 Safari 实测向里造型 / 2026-09 在旧 v498 页面点击刷新后恢复显示真实 450 单元格月报，原来的超长查询异常消失。
-- 完整 pre-push 门禁已通过，功能及发布标识提交已推送 GitHub main：99b1d5c2e7074ae9d131a225312ab67f19c6ca47。真实表结构测试和电脑/手机凭证回归通过，未修改正式账金额。
-- GitHub Pages 首次 build 1212197086 受官方 Pages/API 故障影响后失败；按同一 main 提交重新触发的构建已于 2026-09-13 10:12 UTC built。CDN 无缓存核验 version.txt=499、operations.html data-version=499，脚本缓存标识均为 v499。
-- 已登录 Safari 线上实测向里造型 / 2026-09：点击「编辑金额」后显示 428 个金额输入框，其中 122 个为保持空白且有灰色边界的可填金额位；「保存金额修改」出现，编号和姓名保持固定，页面无 SendRequest、REST URL 或数据库编号泄露。验收后点击「结束编辑」，没有填写或保存任何生产金额。
-
-
-## v498 月报空白金额位可见、可填、可保存（2026-09-13，已发布）
-
-- App version: v498。按用户在原表截图中圈定的范围，财务进入“编辑金额”后，原表尚未填写的金额位置也显示灰色输入边界，并可填写、预览和保存；编号、员工姓名、项目名称和备注仍保持固定。
-- 空白金额位覆盖左侧收入/支出金额列、技术与后勤人员金额区、产品进货、零售产品成本、备用金及杂项明细金额区；已有月报首次编辑时幂等补齐，新月份解析原版 XLSX 时直接登记。
-- 所有新增金额位以空白显示、以 0 作为只追加调整基数，沿用现有金额修改、锁账、公司/门店隔离、追溯节点和永久审计；浏览器角色无权直接调用补齐 RPC。
-- 本地静态、1280×900/390×844/844×390 浏览器回归和隔离 PostgreSQL 权限、锁账、幂等、审计测试已通过。生产迁移 `20260913063300` 已应用；`operations-api` version 66 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，线上源码已核验新补齐路由和结构识别函数。新 RPC 对 `anon/authenticated` 均无执行权、仅授予 `service_role`。数据库顾问未新增本次对象错误，现有 4 项旧表 RLS error 与本次迁移无关。GitHub main 功能提交 `f18ee29` 的 Validate shared app `34744821110` 与 Pages `34744820674` 均成功；CDN 无缓存核验 `version.txt=498`、`operations.html data-version=498`、编辑准备入口与空白金额边界样式均已生效。
-
-## v497 月报所有金额格可编辑（2026-09-13，已发布）
-
-- App version: v497。按用户确认范围，编号、员工姓名和所有文字标签保持固定；月报中已有的收入、支出、工资、产品进货、公式、小计、合计及盈亏等金额格全部开放给具备 `confirmed_finance.adjust` 权限的财务编辑。
-- 首页“编辑金额”模式与金额二级页使用同一套只追加调整：预览后保存，保留原始报表金额、公式、日报、工资表、明细和凭证，仅叠加人工调整并重新计算相关公式；记录修改前后、差额、原因、操作人和时间。
-- 修复两层旧限制：`operations.html` 不再只生成普通输入框，`operations-monthly-workbench.js` 不再把合计和产品进货汇总二次改回只读；已有月报的“编辑金额”按钮不再被错误隐藏。
-- 新迁移 `20260913054249_zysyr_monthly_all_amount_cells_editable.sql` 继续执行财务能力、公司/门店、月份、来源、并发快照、锁账授权及 service-role-only RPC 校验；编号/序号/员工号仍被数据库拒绝。
-- 本地静态回归、完整发布门禁、隔离 PostgreSQL 与 1280×900、390×844、844×390 浏览器回归通过；Supabase migration dry-run 显示远端已对齐。生产迁移已应用；`operations-api` version 64 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码已核验新金额规则，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；迁移后安全与性能顾问均无 error。本次开发和测试未修改任何生产财务金额。
-- GitHub main 功能提交 `b489994` 的 Validate shared app `34741274853` 与 Pages `34741274282` 均成功；CDN 无缓存核验 `version.txt=497`、`operations.html data-version=497`、统一金额调整入口及工作台 `category !== 'fixed'` 分支已经生效。
-
-## v496 日报原图方向保存与新月编辑修复（2026-09-13，已发布）
-
-- App version: v496。基于已发布 v495，为财务端日报每一张 JPG/PNG 原图增加独立的「保存方向」操作；向左转、向右转或自动摆正后保存，退出、刷新及重新打开仍保持该图片方向。同时修复财务点击「开始填写本月月报」时因重复上传 XLSX 返回 400、导致电子月报无法建立的问题。
-- 原始图片文件保持不可变；显示方向以追加版本保存，记录门店、日报、附件、修改人、时间、前后角度和原因。只允许具有 `daily_report.write` 的账号保存，股东仍为只读。
-- 新月份现在复用当前门店已经留存且不可变的原版月报模板文件，只为所选门店和月份建立独立的电子数据、公式、修改版本及追溯节点，不再把再上传一份重复 XLSX 作为开始编辑的前置条件；页面明确显示「打开来源模板」。
-- 实测发现 Supabase 当前请求只提供完整 `request.jwt.claims`，旧 RPC 仅读取 `request.jwt.claim.role`，因而错误返回 `service role required`。兼容迁移同时修复月报草稿登记与日报图片方向保存，仍只允许 service role 调用，`authenticated` 无法直接执行。
-- 三项生产迁移已应用，`operations-api` version 63 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权；匿名 overview 返回 403 `AUTH_SESSION_INVALID`。线上以财务账号实测「向里造型 / 2026-09」成功建立电子月报，并进一步发现旧模板中有些当月金额被写成“只含常数的公式”，会被新月份错误重算。现已改为只保留真正引用其他单元格的结构公式，普通数字及只含旧月份常数的公式全部清零；审计生成 v3 并保留 v1/v2 为 superseded，328 个正式数字单元格非零数为 0。普通美发产品、发型师成本、手续费、宿舍费用、杂志费及盈亏均已线上显示 0；点击金额可进入可编辑、原因留痕、先预览后保存的工作台，验收期间未改动任何业务金额。
-
-## v495 日报原图旋转始终居中（2026-09-13，已发布）
-
-- App version: v495。基于已发布 v494，只修复经营驾驶舱日报原图的向左转、向右转和自动摆正显示位置；不修改识别候选、电子日报、财务账、凭证文件或数据库。
-- 移除旧版左上角旋转中心的实际影响，脚本显式使用图片中心和旋转外框中心作为同一坐标基准；旋转后双帧等待布局稳定，再同时居中水平与垂直滚动位置。
-- 新增真实 Chrome 回归，覆盖 1280×900 电脑、390×844 手机竖屏、844×390 手机横屏，以及右转、左转、连续旋转和自动摆正。本次仅发布静态页，未部署 Edge Function，也未执行数据库迁移。
-- 完整 pre-push 门禁通过；GitHub main 功能提交 `d68f047` 的 Validate shared app `34735681564` 与 Pages `34735681133` 均成功。CDN 无缓存核验 `version.txt=495`、页面 `data-version=495`、居中旋转原点、双轴滚动居中及 `operations-daily-recognition.js?v=495` 均已生效。
-
-## v494 新月份电子月报可填写（2026-09-13，已发布）
-
-- App version: v494。基于 GitHub main v493，只修复财务端新月份尚无月报时无法建立和编辑电子月报的问题。
-- 新增 `monthly_draft_create`：仅具备报表上传及已确认财务调整权限的财务可调用；按公司、门店、月份幂等检查后，优先取当前门店最近一期普通月报，否则取最近一期历史正式月报并合并该店历月曾使用的填写格，生成金额归零但保留原版式、姓名、固定编号和公式的真实 XLSX 草稿，并通过既有 `zysyr_register_report_upload` 审计 RPC 登记。
-- 页面在无当月月报时显示“开始填写本月月报”，建立成功后立即进入金额编辑；现有月份、历史正式账、锁账、凭证规则和日报汇总逻辑不变。本次未执行数据库迁移，也未自动创建或写入任何九月月报。
-- 完整 pre-push 门禁通过；GitHub main 功能提交 `2485c0b` 的 Validate shared app `34735352077` 与 Pages `34735351834` 均成功。生产 `operations-api` version 57 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，线上源码含新月建立及历史原表兜底，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；Supabase 安全及性能顾问均无 error。CDN 无缓存核验 `version.txt=494`、页面 `data-version=494`、“开始填写本月月报”和 `monthly_draft_create` 均已生效。
-
-## v493 日报成功/失败单日重识别与原图自动摆正（2026-09-13，已发布）
-
-- App version: v493。基于 GitHub main v492，只完善日报识别进度的单日重识别与原图查看体验。
-- 所有已处理且仍处于财务草稿期的日期，不论上次识别成功或失败，都显示独立“重新识别”按钮；只重跑所选日期，旧机器候选在新候选成功保存时替换，财务手工修改不被覆盖。
-- 已最终确认、已锁账或达到十次上限的日期禁止重识别；公司、门店、任务、日期和 `daily_report.write` 权限边界不变，所有重识别操作继续留审计记录。
-- 原图加载时依据日报横向版式自动摆正并适应预览框；向左转、向右转和自动摆正共用同一套旋转、缩放、居中计算，旋转后自动复位滚动位置，避免图片跑出可视区域。
-- 生产迁移 `20260913030006_daily_recognition_rerun_completed.sql` 已应用；`operations-api` version 56 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名 overview 返回 403 `AUTH_SESSION_INVALID`。新 RPC 的 `anon/authenticated/service_role` 执行权限实测为 `false/false/true`，Supabase 安全顾问未将其列为公开漏洞。
-- 隔离 PostgreSQL 已验证成功/失败单日重识别、计数重算、草稿/锁账保护、审计和浏览器拒绝；桌面、手机竖屏及手机横屏真实浏览器均验证旋转后原图仍可见。完整 pre-push 门禁通过，GitHub main 功能提交 `98f7801`，Validate shared app `34734736059` 与 Pages `34734735438` 均成功；CDN 无缓存核验 `version.txt=493` 及重识别/自动摆正代码均已生效。
-
-## v492 日报识别按日期核对与单日重试（2026-09-13，已发布）
-
-- App version: v492。基于 GitHub main v491，只完善经营驾驶舱日报识别进度的核对入口与失败处理。
-- 绿色“待财务核对”日期整块可点击，直接进入对应日期电子日报；电子表格与原始日报图片同时展示，供财务逐格核对、修改、保存和最终确认。
-- 红色“失败”日期整块可点击，展开完整失败原因、已尝试次数和“重新识别这一天”按钮；单日重试不会重复处理本月其他日期，失败原因与重试操作永久写入审计。
-- 单日重试继续受 `daily_report.write`、公司、门店、任务和日期五重范围限制；浏览器角色不能直接执行 RPC。识别结果仍只保存为待核对候选，不自动确认或入账。
-- 生产迁移 `20260913022849_daily_recognition_single_item_retry.sql` 已应用；`operations-api` version 55 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名 overview 实测返回 403 `AUTH_SESSION_INVALID`。新 RPC 的 `anon/authenticated/service_role` 执行权限实测为 `false/false/true`。
-- 隔离 PostgreSQL 验证了精准单日重试、其他失败日期不受影响、审计记录、权限边界与浏览器直连拒绝；完整 pre-push 门禁通过。GitHub main 功能提交 `e772035`，Validate shared app `34733417548` 与 Pages `34733417022` 均成功；CDN 无缓存核验 `version.txt=492`、页面与单日跳转/重试代码均已生效。
-
-## v491 日报页面单一月份入口（2026-09-12，已发布）
-
-- App version: v491。基于 GitHub main v490，只移除日报页面重复显示的第二个月份下拉框；已发布线上。
-- 保留顶部统一月份选择器以及日报区域的“上一月 / 下一月”按钮；按钮会同步更新顶部月份、日报查询月份和上传资料月份，不修改任何日报、月报或凭证数据。
-- 日报静态回归与完整 pre-push 门禁均通过；GitHub main 提交 `c7384ec`，Validate shared app `34696432972` 与 Pages `34696432573` 均成功。CDN 无缓存核验 `version.txt=491`、重复月份下拉隐藏、顶部月份与前后月按钮同步代码均已生效。
-
-## v490 经营驾驶舱长期登录容错（2026-09-12，已发布）
-
-- App version: v490。基于 GitHub main v489，只修复经营驾驶舱账号会话恢复与自动续期；生产函数和静态页均已发布。
-- 根因是页面把首页数据加载失败、网络抖动及 Auth 服务临时错误误判成登录失效，随后调用退出并删除本地会话；既有 Supabase refresh token 和 3650 天兼容会话本身并非主要问题。
-- 普通网络错误、429 和服务端 5xx 现在保留登录并按 3 秒到 60 秒退避自动恢复；页面重新可见、网络重新上线和每 20 分钟都会主动检查续期。请求若遇到明确的 access token 失效，会单次刷新后重试原请求。
-- 只有用户主动退出、refresh token 被明确判定无效、账号停用或离职时才清除本地登录；权限不足不会被当成掉线。Supabase Auth 暂时不可用时，有效的旧过渡会话仍可继续使用，但被撤销的 JWT 不允许降级绕过。
-- 故障注入与完整 pre-push 门禁均已通过。`operations-api` version 54 为 ACTIVE，继续保持 `verify_jwt=false` 与内部会话鉴权；匿名 overview 返回 403、`AUTH_SESSION_INVALID`。GitHub main 功能提交 `29ace51` 与部署记录提交 `77922e6` 已发布，Validate shared app `34695399034` 与 Pages `34695398572` 均成功；CDN 无缓存核验 `version.txt=490`、页面与 Auth 桥接的续期、重连和错误分类代码均已生效。
-
-## v489 日报完整候选与可恢复进度（2026-09-12，已发布）
-
-- App version: v489。基于 GitHub main v488，只修复经营驾驶舱日报图片候选识别与整月任务进度；生产数据库、函数、本机桥接与静态页均已发布。
-- Codex 识别输出扩展为纸质表对应位置的数字、发型师/技师/产品行姓名、未结单号与备注；签字继续以原图留底。识别候选以黄色显示，财务手填值和已人工修改姓名均不被覆盖。
-- 整月识别改为数据库持久任务，页面显示逐日状态、完成/失败/剩余数量和当前日期；离开页面后记录不丢失，返回同一门店月份后从未完成日期继续，并支持暂停、继续和重试失败日期。
-- 隔离 PostgreSQL 已验证迁移、门店权限、候选写入、人工值保护与浏览器直连拒绝；自由手艺人 2026-01-03 真实原图本机测试返回 27 个数字候选与 11 个姓名候选，日期和门店匹配，未写数据库、未正式入账。
-- 生产迁移 `20260912120743_daily_full_fidelity_recognition_jobs.sql` 已应用；两张任务表启用并强制 RLS，匿名及 authenticated 无读取权限，四个任务 RPC 仅 service role 可执行。Supabase 顾问未发现 v489 新增的公开权限漏洞；“RLS 已开但无策略”为服务端专用表的预期配置。
-- `operations-api` version 53 为 ACTIVE，继续保持 `verify_jwt=false` 与函数内部会话鉴权；匿名 overview 实测返回 403“请重新登录”。本机桥接已先备份为 `zysyr_daily_codex_bridge.py.bak-v488-20260912-2045`，再更新为 v489 并重启，文件哈希一致且无凭据访问返回 401。
-- 完整 pre-push 门禁通过；GitHub main 功能提交 `1d53d77` 与部署记录提交 `b6334e1` 已发布，Validate shared app `34694604112` 与 Pages `34694604021` 均成功。CDN 无缓存核验 `version.txt=489`、页面 `data-version=489`、姓名/备注候选、持久进度和失败重试代码均已生效。生产识别仍只生成待财务核对候选，不自动确认或入账。
-
-## v487 发质档案顾客身份防错（2026-09-12，已发布）
-
-- App version: v487。基于 GitHub main v486，仅修改员工端发质档案保存和归档身份一致性。
-- 保存云端档案前要求完整姓名与 11 位手机号；明确写反时自动纠正，缺失时保留草稿并提示重新选择顾客或补全手机号。
-- 归档旧记录时同步 `hair_records` 顶层顾客身份、发型师、技师与完整 `record_data`，云端回读同时核对顶层身份与原表。
-- 已按唯一证据修复两条历史记录：YC 单字符手机号误录、杨抠抠姓名与手机号写反；全量复查 496 条有效档案，其中 490 条可关联顾客主档，剩余 6 条身份缺失或冲突，不猜测归属、不自动写入。
-- 完整 pre-push 门禁通过；GitHub main 功能提交 `3853b5d`，Validate shared app `34690024340` 与 Pages `34690023792` 均成功。线上无缓存核验 `version.txt=487`、员工端 `data-version=487`、身份校验与顶层姓名/手机号同步代码均已生效。
-
-## v488 本机 Codex 日报识别候选（2026-09-12，已发布）
-
-- App version: v488。基于 GitHub main v487，日报 JPG/PNG 识别改走本机已登录 Codex，不再调用 Kimi 或需要独立 OpenAI API 额度。
-- Supabase 只向带 Bearer 鉴权的本机桥接发送短期签名原图地址与当前日报单元格清单；桥接限定同一 Supabase 项目、JPG/PNG、文件大小和单并发，Codex 以只读、临时会话及结构化输出运行。
-- 识别结果仅保存为 `codex_local_candidate` 待审核候选，不覆盖财务手填值，不自动确认或入账；财务必须对照永久保留的原图逐格修改、保存并最终确认。
-- 真实自由手艺人 2026-01-03 纸质日报复测成功：返回日期、门店和 6 个待审核数字，实做/总计均为 978 且置信度 0.98，模糊支付及员工格为 0.55—0.72，明确保持 `candidate_only=true`；误选的员工自购单没有生成日报数字，未猜测写入。
-- 生产迁移 `20260912103006_codex_local_daily_recognition_candidates.sql` 已应用且迁移历史一致；`operations-api` version 52 为 ACTIVE，保持 `verify_jwt=false` 与内部会话鉴权，匿名 overview 返回 403“请重新登录”。
-- 完整 pre-push 门禁通过；GitHub main 提交 `39bc5d3`，Validate shared app `34690339052` 与 Pages `34690338762` 均成功。线上无缓存核验 `version.txt=488`、页面 `data-version=488`、本机 Codex 候选提示及 `operations-daily-recognition.js?v=488` 均已生效。
-
-## v486 客户发质历史档案数据源修复（2026-09-12，已发布）
-
-- App version: v486。基于 GitHub main v485，只修改员工端客户方案弹窗内的「查看历史档案」。
-- 根因是历史按钮仍按原始手机号和旧英文状态读取 `hair_analysis_queue`，而完整发质表已保存在 `hair_records`；因此数据存在时仍会误报「暂无历史记录」。
-- 现改为复用已有完整分页读取、手机号规范化与姓名兜底匹配，新到旧展示全部有效 `hair_records`；点击任一条可打开完整原表和服务前后照片。「本次预约」的精确匹配保持不变。
-- 修复前生产只读核对美管加客户 ID `69829744`（手机尾号 `0216`）：`hair_records` 有3条有效档案（2026-07-04、2026-07-31、2026-09-12），旧队列可见记录为0。本次未写入或修改任何生产客户数据，无数据库迁移或 Edge Function 部署。
-- 新增回归覆盖历史入口使用完整 `hair_records`、传递姓名兜底、渲染3条不同日期档案并可打开完整表。完整 pre-push 门禁通过；GitHub main 功能提交 `145ce6e`，Validate shared app `34687950205` 和 Pages `34687950044` 均成功。CDN 无缓存核验 `version.txt=486`、员工端 `data-version=486`、历史入口不含旧队列查询且包含完整原表入口。
-
-## v486 日报图片切换 OpenAI（开发记录，后续由本机 Codex 方案替代）
-
-- App version: v486。基于 GitHub main v485，开发分支 `feature/zysyr-openai-daily-v486`。
-- 用户明确要求停止 Kimi，现有历史日报和以后新上传日报均改用 Codex/OpenAI 图片能力。线上自动处理通过 Supabase Edge Function 调用 OpenAI Responses API，默认模型 `gpt-5.6-sol`；Codex 桌面任务不作为常驻生产服务。
-- 新请求只读取服务端 `OPENAI_API_KEY`，不再读取 `MOONSHOT_API_KEY` 或访问 Moonshot API；OpenAI 请求设置 `store=false`，原图使用短时私有 URL 和高细节输入。
-- 识别仍只写 `openai_vision_candidate` 待核对候选，保留财务手填值、门店和日期校验、修订号并发保护、原始凭证关系及永久审计；财务最终确认前不进入正式日报或月报。
-- 生产 secrets 只读核验已存在 `OPENAI_API_KEY`。静态边界测试、隔离 PostgreSQL 权限/门店/凭证/审计测试，以及 1280×900、390×844、844×390 浏览器回归均通过。
-- 生产迁移 `20260912084504_openai_daily_recognition_candidates.sql` 已应用且本地/远端历史一致；`operations-api` version 50 为 ACTIVE、`verify_jwt=false`，匿名 `overview` 实测返回 403“请重新登录”，内部会话鉴权仍生效。
-- 该直接 API 方案未推送 GitHub main，因生产实测额度不可用，后续由本机 Codex 候选识别方案替代。
-
-## v485 日报原图旋转、识别候选与月报汇总（2026-09-08，已发布）
-
-- App version: v485。基于已上线 v484，开发分支 feature/zysyr-daily-recognition-v485。
-- 用户授权上传日报后识别填表，并明确选择历史月份也改用已确认日报汇总、原月报金额保留核对。只映射主营美发/营业收入格，其余收入分类保持原表；人工月报调整额仍单独累加并审计。
-- 原图支持左右 90 度旋转、恢复方向，文件字节不修改。当前日报 JPG/PNG 上传后请求既有 Kimi 配置，识别候选持久化到待核对草稿并高亮；已有财务金额保留，日期/门店冲突拒绝填入。月历提供“识别本月待核对原图”和完成数量，财务逐日核对、修改并最终确认后才进入正式账。
-- 汇总按同公司同门店同月已确认日报唯一日期及 grand_total 计算，重复日期或无效总计拒绝汇总；月报保留原数、展示已确认天数与差额，可进入具体日报。未确认、未录齐月份不视为完整；无已确认日报时显示 0 和提示，不沿用旧收入冒充日报汇总。
-- 新增 daily_rollup_adjustment_snapshot 迁移，月报调整校验已确认日报版本，日报状态变动使用同一月锁；图片候选只能写当前门店当前草稿，使用修订号防并发覆盖且不覆盖财务手填值。未应用生产迁移、未部署，未改写生产账或调用真实图片识别；模型密钥名称已核实存在，实际识别精度与服务可用性待真实图验收。
-- 本地测试已通过：电脑/手机竖屏/横屏原图旋转、识别保留手填值与无自动确认；候选日期/门店/金额校验；月报依赖重算、重复读取不重复累计、重复日期拒绝；隔离 PostgreSQL 日报快照并发校验和权限审计。
-
-## v484 月报财务一站式工作台与精确项目路由（2026-09-08，已发布）
-
-- 基于 GitHub main `8c222fb`，并包含 v483 恢复分支提交 `2f1ce48`。App version: v484。
-- 用户已授权上线。主迁移已应用、operations-api 已部署；发布复核补充修正产品明细“合计”列名被误判只读的问题，页面与历史金额保存端均按真正汇总行判断，补丁迁移为 `20260908171000_zysyr_monthly_detail_column_labels.sql`。使用实际“产品进货 / 歌薇 / 合计”标签的三种屏幕回归通过。
-- 月报继续作为财务唯一操作入口：主营收入、技术人员、后勤人员及其员工金额可直接编辑、预览、确认保存，但不要求凭证；编号、小计、合计和盈亏保持只读且免凭证。
-- 普通支出及公式形式的单项支出在同一个二级页完成金额调整、原因、预览、保存、凭证上传和“此笔是否需要凭证”；调整采用只追加记录，不覆盖原月报、日报、工资表或既有凭证。
-- `产品成本 / 产品进货` 汇总格只进入原表产品进货明细，不直接要求凭证；财务点选某个产品后，在月报抽屉内编辑该产品金额并处理该产品自己的凭证。
-- 支出匹配优先采用最长的具体科目名，阻止“财务费用 / 管理费”“房租 / 物业费”等金额跳出同分区的全部记录；找不到正式明细时只保留当前月报格，不伪造整类列表。
-- 新迁移 `20260908153000_zysyr_monthly_finance_workspace_adjustments.sql` 扩展既有只追加月报调整与单笔凭证规则，保留财务权限、门店隔离、并发校验、锁账授权和永久审计。
-- 隔离 PostgreSQL 已通过原数据不变、工资/公式支出调整、产品汇总与合计拒绝修改、单笔免凭证、RLS 和审计测试；浏览器回归覆盖电脑、手机竖屏、手机横屏以及产品明细直达。
-- 两项迁移均已应用生产；错误级数据库 lint 为 0。operations-api version 46 为 ACTIVE，保留 verify_jwt=false 与内部鉴权，匿名 overview 返回 403“请重新登录”。GitHub main 功能提交 `89e8d00` 的 Validate shared app `34208725026`、Pages `34208724154` 均成功；CDN 核验 version.txt=484、页面 data-version=484、新工作台脚本及收入/工资编辑分支。本次未写入生产财务金额；浏览器写入交互使用合成数据，未冒用财务账号修改正式账。
-
-## v483 财务费用凭证入口与产品进货明细直达（2026-09-08，待发布）
-
-- 基于 GitHub main `8c222fb`。App version: v483。
-- 财务费用公式金额的二级页固定保留“上传凭证图片 / PDF”，不再因组成项选择而消失；可编辑明细仍执行“填写金额 → 预览 → 确认保存”，确认键加宽并明确命名。
-- `产品成本 / 产品进货` 识别为汇总入口，凭证规则固定为无需凭证；点击后直接展示原表汇总公式实际引用的产品进货明细，每个明细可继续进入编辑与凭证页。
-- 只读核验两店 2026 年 1—6 月：11 个账期产品进货汇总与原表引用明细一致；自由手艺人 6 月 `C31=G43=4954`，但原表另有 `G32=128` 未被 `G43=SUM(G34:G42)` 引用，页面将此项作为异常提示，不修改正式金额或原公式。
-- 静态工作台测试及 1280×900、390×844、844×390 浏览器回归通过；尚未部署 Edge Function、未推送 GitHub main、未发布 GitHub Pages，也未写入任何生产财务数据。
-
-## v482 月报项目分类与独立收入调整（2026-09-08，已发布）
-
-- 基于 GitHub main `dd25b5c`。App version: v482。用户确认按项目性质区分凭证要求，并同意收入直接编辑后单独记录月报调整、不覆盖日报原数。
-- 收入、工资、后勤、小计合计及盈亏不显示额外凭证上传与缺凭证提示；工资进入同门店同月工资表，收入进入直接编辑、原因、预览、保存。普通支出保留凭证预览上传及单笔例外开关。
-- 新增只追加的 `zysyr_monthly_income_adjustments`：原表数据加最新累计调整额形成月报显示，重新计算受影响合计；原日报、工资、月报原件和凭证不改写。修改前后、差额、原因、操作人和锁账授权留痕。
-- 后端保留原财务角色与门店权限；SQL 验证真实来源类型、收入分类、完整来源版本/调整版本快照、锁账和一次性审批。旧月报金额覆盖接口拒绝收入，要求走独立调整入口。
-- 真实 PostgreSQL 隔离测试通过收入限定、原数保持、RLS/角色、越权、版本冲突、只追加审计和一次授权消费；电脑/手机竖屏/横屏合成数据交互通过。公式计算测试覆盖截图的 C3=R28-S28、调整不重复累计和上下游原值保持。
-- 用户明确授权上线后，迁移 `20260908060844_zysyr_monthly_income_adjustments.sql` 已应用生产，dry-run 确认迁移对齐；错误级数据库 lint 为 0。新表 RLS/强制 RLS 均开启，只追加触发器存在，匿名读取、浏览器直接插入及浏览器直接调用调整 RPC 均未授权；核验时调整记录为 0，本次未写入任何生产财务金额。
-- `operations-api` version 45 为 ACTIVE，保持原有内部会话鉴权和 `verify_jwt=false`；匿名 overview 返回 403“请重新登录”。GitHub main 已发布 `b485f3a`，Validate shared app `34197942805` 与 Pages `34197942167` 均成功；CDN 确认 version.txt=482、页面 data-version=482 及收入调整、工资免额外凭证代码。
-- 已知旧安全告警：Supabase security advisors 仍有 14 项 ERROR，涉及 hair_types、perm_data、perm_styles、staff、barber_identities、bookings、customer_profiles、zysyr_cash_opening_balances、zysyr_report_acknowledgements、zysyr_shareholder_registrations 的 RLS 未启用/策略未生效。本次新增调整对象无对应告警；未擅自变更这些旧模块的权限，需单独评估修复，不能将 lint=0 描述为全库安全告警清零。
-
-## v481 月报金额二级页简化与图片确认保存（2026-09-08，已发布）
-
-- 基于 GitHub main `2314600`。App version: v481。
-- 实际截图对应向里造型 2026-06 的 C3：147199.10，原表公式 R28-S28；R28 又是 SUM(R3:R27)。补齐公式页的组成项选择、编辑、预览、保存与单笔凭证开关。
-- 新增独立浏览器模块 `operations-monthly-workbench.js`，控制区排在原图前；图片先本地预览，可取消/替换，确认后才上传，页面切换清理内存中的文件。
-- 历史公式仅对已修改输入的依赖链做读取时重算；不改写原始凭证、已入账原件或未修改的公式缓存。新增嵌套公式及未修改数据保持测试。
-- 三种屏幕回归覆盖开关、金额预览/确认、选图无上传、取消、确认绑定及公式组成项；公式页上传绑定选中的组成金额而非合计。
-- GitHub main 与恢复分支 `feature/zysyr-simple-detail-v481` 已发布功能提交 `12f7ccf`；Validate shared app `34190538629` 和 Pages `34190537590` 均成功。CDN 已核验 `version.txt=481` 及新版脚本中的单笔开关、图片确认保存和选中组成金额绑定逻辑。
-- `operations-api` version 44 为 ACTIVE，`verify_jwt=false` 保持不变，匿名 overview 返回 403“请重新登录”；本次无数据库迁移、无生产财务数据写入。交互回归使用本地合成数据，实际账号写入未测试；线上浏览器会话读取超时，发布核验通过 CDN 与部署接口完成。
-
-## v480 月报二级页单笔凭证与金额预览确认（2026-09-08，已发布）
-
-- 基于 GitHub main `d6b78ce`。App version: v480。
-- 普通非公式月报金额即使没有独立业务明细，也会作为当前这一笔显示“此笔不需要凭证”开关；历史金额使用原历史总账记录，当前报表使用经公司、门店和月报验证的 `report_cell`，不扩大为整月规则。
-- 金额编辑新增强制预览步骤：显示修改前、修改后和差额，只有预览后才能确认保存；金额或原因再次变化会使预览失效。
-- 公式、合计、固定编号和已有来源汇总仍不可直接改总数；无权限账号会看到只读原因，不再误以为功能缺失。
-- 生产迁移 `20260908034635_zysyr_report_cell_evidence_rule.sql` 已应用且本地/远端对齐；错误级数据库 lint 为 0。`operations-api` 已部署为 version 43、状态 `ACTIVE`，`verify_jwt=false` 保持不变，未登录探针返回 403“请重新登录”。
-- GitHub main 与恢复分支均已发布功能提交 `10cff36`；Validate shared app 与 Pages 均成功，CDN 已核验 `version.txt=480`、`operations.html data-version=480` 及“预览修改”“确认保存”“此笔不需要凭证（只影响这一笔）”标记。
-- 完整发布门禁及桌面 1280×900、手机竖屏 390×844、手机横屏 844×390 交互回归全部通过；本次未重导、删除或批量改写任何生产财务数据。
-
-## v479 月报金额二级页一站式处理与单笔凭证开关（2026-09-08，已发布）
-
-- 基于 GitHub main `347a79f`。App version: v479。
-- 财务从月报金额进入二级页后，可在同一位置修改可编辑金额、填写原因、保存及上传凭证；首页不再要求先进入整表编辑模式。
-- 凭证要求按“单笔业务记录”管理：可单独关闭或恢复一笔收入、开支、备用金、工资、采购、消耗、员工自购或历史正式账明细的凭证要求，不作用于整个格子或整个月。
-- 公式、合计、固定编号和已有来源汇总继续禁止直接改总数；历史月报使用仅允许替换 amount 的专用 RPC，锁账审批和一次性授权消费机制保持有效。
-- 生产迁移 `20260908023351_zysyr_monthly_cell_detail_workbench.sql` 已应用且本地/远端对齐；新表开启并强制 RLS，写入 RPC 仅授予 service role。
-- `operations-api` 已部署为 version 42、状态 `ACTIVE`，`verify_jwt=false` 保持不变；匿名请求返回 403“请重新登录”。
-- GitHub main 和恢复分支均已发布功能提交 `8c81b07`；Validate shared app 与 Pages 均成功，CDN 已核验 `version.txt=479`、`operations.html data-version=479` 及金额修改、逐笔凭证开关、历史金额修订入口。
-- 本次没有重导、删除或批量改写任何生产财务数据；迁移 dry-run、迁移对齐、错误级数据库 lint、完整发布门禁和桌面/手机浏览器交互回归均通过。
-
-## v478 财务月报简化、手机横屏与历史凭证直传（2026-09-06，已发布）
-
-- 基于 GitHub main `e9629d6`。App version: v478。
-- 财务月报首页收敛为金额编辑、保存和本月资料上传；跨月汇总移入“更多”，金额来源和组成明细默认收起。
-- 管理员可按原有公司、门店、模板和单元格范围把项目设为“不需要凭证”；仅停止缺凭证提醒，不删除任何既有数据或审计记录。
-- 历史月报金额新增直接补传原始凭证能力：只接受 JPG、PNG、PDF，服务端限定已正式入账的月报记录，按公司和门店精确关联并追加不可覆盖的上传/关联事件；历史金额和原始导入文件不改写。
-- 手机金额保持单行完整显示；横屏下月报、日报和工资表隐藏侧栏及非必要页头，使用完整可用屏幕。
-- `operations-api` 仍由内部会话认证，部署时必须保持 `verify_jwt=false`；本次不重导、不修改、不删除任何生产财务数据。
-- GitHub 校验运行时升级到 Node 22，以支持仓库现有的 TypeScript 类型剥离语法检查；不改变 App 运行代码。
-- 生产迁移 `20260906122116` 已应用并与本地迁移清单对齐；`operations-api` 已部署为 version 41、状态 `ACTIVE`，`verify_jwt=false` 保持不变，匿名请求返回 403“请重新登录”。
-- GitHub main 已发布功能提交 `4c15e79` 和校验修复 `9e805fb`；Validate shared app 与 Pages 均成功，线上已核验 `version.txt=478`、`operations.html data-version=478` 及四个关键简化入口。
-- 本地静态、桌面 1280×900、手机竖屏 390×844、手机横屏 844×390、日报、工资、Auth、财务账号、凭证及 Sprint 0—7 回归全部通过；数据库错误级 lint 为 0 项。
-
-## v476 向里造型删除入口说明（2026-09-06，待发布）
-
-- 在「前台客户中心」详情抽屉中，为仅有美管加预约来源且未生成前台当天接待记录的客户，补充了清晰引导文案，说明先点“添加当天信息”后才会出现“删除当天记录”。
-- 前端逻辑保留原边界：仅对 `frontdesk_today_customers` 进行删除，不会改写美管加 `bookings`、客户主档或历史导入。
-- 更新版本标记为 v476。
-- App version: v476。
-
-## v475 发质分析表同步前台到店客户（2026-09-06，已发布）
-
-- 基于已发布 GitHub main `fe4450a`。App version: v475。
-- 「自由手艺人」App 的「发质分析表 → 从预约选择客户」改为复用员工预约受保护合并接口，同时显示美管加预约和前台今日到店客户，并标记「美管加预约 / 前台到店」来源。
-- 继续按当前有效员工的所属门店、员工姓名和所选日期由服务端过滤；只读数据，不写入或改动 `bookings`、`frontdesk_today_customers`、客户主档及美管加数据。
-- 与「今日预约」使用同一套手机号优先去重规则；选择前台到店客户后可正常带入姓名、手机号、发型师、日期和独立记录编号。
-- 本次不改数据库、不新增或重部署 Edge Function；前端、合并接口回归、版本同步、发布完整性、前台及经营端测试已通过，待 GitHub main 发布和 Pages 在线核验。
-
-## v474 月报财务工作台与凭证要求（2026-09-06，已发布）
-
-- 基于已发布 GitHub main `266b7b3`。App version: v474。
-- 财务可在月报首页直接填写/修改金额，并从“上传本月资料”上传当前门店、当前月份的日报、工资表、月报原件及附件；点击具体金额可补传并精确绑定该单元格凭证。
-- 月报金额改为同页右侧工作台：原始凭证直接预览，组成明细默认收起；桌面与 390px 手机均保持返回、滑动、翻页和放大可用。
-- 新增门店和模板级凭证要求：管理员可把具体金额设置为“必须有凭证 / 原始报表即可 / 无需凭证”。规则按公司、门店、模板、单元格隔离，修改写入金融敏感审计；关闭强制凭证不会删除任何来源链、原件、凭证或修改历史。
-- 新增迁移 `20260905073551_zysyr_monthly_evidence_workbench.sql`；`operations-api` 保持内部会话认证，部署时必须继续使用 `verify_jwt=false`。
-- 本地验证：版本同步、发布完整性、月报工作台、月报审计、日报、工资、Auth、凭证中心、Sprint 0—7 静态测试以及 1280px/390px 浏览器凭证预览均通过；未修改或重导生产历史财务数据。
-- 生产迁移 `20260905073551` 已应用并与本地迁移清单对齐；`operations-api` 已部署为 version 40、状态 `ACTIVE`，`verify_jwt=false` 保持不变。
-- GitHub main 已发布功能提交 `ede7324`；GitHub Pages 已核验 `version.txt=474`、`operations.html data-version=474`，并确认“上传本月资料”“无需凭证”和凭证规则保存入口在线生效。
-- 生产接口匿名请求实测返回 403“请重新登录”，内部会话认证边界有效；本次上线未重导、改写或删除任何历史财务数据和原始凭证。
-
-## v472 员工今日预约只读合并前台到店客户（2026-09-06，已发布）
-
-- 基于已核对的 GitHub main `7e16ce2`。App version: v472。
-- 「自由手艺人」App 的「今日预约」改为经独立员工预约接口读取：只返回当前有效员工所属门店、本人发型师姓名和所选日期的数据。
-- 列表只读合并 `bookings`（美管加预约）与 `frontdesk_today_customers`（前台到店），不向任一来源表写数据；同手机号优先去重，无手机号时才按姓名、发型师和时间去重。
-- 预约卡片明确标记「美管加预约」或「前台到店」。新增独立 30 天员工会话，浏览器不再把密码摘要放进 Data API 查询地址；升级后员工需重新登录一次。
-- 生产验证：`employee-bookings-api` version 1 为 ACTIVE，`verify_jwt=false` 并由函数内部员工会话认证；临时员工和前台记录端到端测试显示「前台到店」，清理后员工、会话、前台测试记录及 `bookings` 测试行均为 0。GitHub main 已发布提交 `6d8b539`，Pages 已核验 `version.txt=472`、页面含受保护合并入口和来源标签。
-
-## v471 向里造型历史月报月份页签修复（2026-09-05，已发布）
-
-- 基于已发布 GitHub main `bfc8293`。App version: v471。
-- 已定位向里造型历史月报 1—4 月错误显示为东方福邸 2020 年年度表的原因：原工作表名称带尾部空格，而历史账保存的是清理后的月份名；精确查找失败后错误回退到第一张年度汇总表。
-- `operations-api` 现在按清理后的工作表名匹配真实页签，历史数据预览也使用相同规则；不修改原始工作簿、正式金额、凭证关联或审计记录。
-- 本地验证：`node scripts/test-operations.js`、`node scripts/check-version-sync.js`、`node scripts/check-release-integrity.js`、`git diff --check` 全部通过；原工作簿确认 1—4 月页签实际名称分别带 1、2、2、1 个尾部空格，规范化后均唯一匹配对应月份。
-- 生产验证：`operations-api` 已部署为 version 39，状态 ACTIVE，`verify_jwt=false` 保持不变；GitHub main 已更新到 `e6498e5`，GitHub Pages 已核验 `version.txt=471`、`operations.html data-version=471`。
-- Safari 登录态逐月核验通过：向里造型 1—4 月均显示对应的“向里造型 太合商业中心 店 X月盈亏统计”，未再显示“东方福邸店 2020 年度盈亏统计”或 `#REF!`；关键值分别为 1 月 `140332 / 144217.36 / 151714.86 / -7497.50`，2 月 `108860 / 110953.84 / 90625.18 / 20328.66`，3 月 `83770 / 86840 / 73231.38 / 13608.62`，4 月 `139528 / 139884 / 134032.08 / 5851.92`，与原始向里工作簿一致。
-
-## v470 月报原始凭证同页预览与后续补传定位（2026-09-05，已发布）
-
-- 基于已核对的 GitHub main `b10c5f6`。App version: v470。仅发布展示与交互修复，不改正式账、原始文件、既有凭证关系、认证或数据库。
-- 点击月报金额直接预览已关联原图；公式合计递归收集组成项目的原件。多图支持翻页、滑动和放大，金额来源与修改记录在本页展开，Excel 坐标收进“原表定位”。
-- 财务在该金额页面使用“上传并定位凭证”时，既有服务端链路继续校验公司、门店、月报和单元格，并生成不可覆盖的凭证关联修订；以后股东点击同一数字可直接看到该原件。
-- 通用上传页未指定月报项目的整包文件不会自动猜测归属，仍明确标为整月凭证包或待关联；精确原图位置不匹配、缺图及部分读取失败均明确提示。
-- 限定并发读取，切换门店或月份后丢弃旧请求；修复历史日报附件读取入口及手机返回按钮遮挡。
-- 手机 390px / 电脑 1280px 模拟浏览器回归及仓库完整 pre-push 检查已通过。GitHub Pages 已核验 `version.txt=470`、`operations.html data-version=470`、“上传并定位凭证”入口已生效，两个线上模块哈希与本地测试版本一致。
-- 模拟数据测试与线上代码核验不代表线上历史资料完整性验收；实际某个数字能否精确定位，仍取决于该凭证是否从该金额页绑定，或财务是否已把通用上传的凭证关联到具体业务记录/单元格。
-- 既有未跟踪的导入脚本与迁移不纳入此次提交。前台、员工端仅同步共享发布版本标记，不改业务功能。
-
-## v469 月报美发收入直达 26 天日报原图（2026-09-04，已发布）
-
-- 历史月报“美发收入/营业收入”追溯新增日报来源：按门店和月份读取人工录入的日报 `实做` 金额及其原始日报凭证，不再只检查工资、备用金和员工自购。
-- 只有“所有已取日报合计 = 月报当前金额”时才启用这条链，防止其他月份只有部分日报时误显示为完整来源；4 月实测 26 天、26 张原图、合计 ¥290,689，与月报 `4月!C3` 完全一致。
-- 点击 4 月月报美发收入后，页面直接加载 26 张原始日报照片；完整追溯页同时列出 26 个日期、每日金额和日报记录。App version: v469
-- 生产 `operations-api` 已发布为 version 38、`ACTIVE`、`verify_jwt=false`；GitHub Pages 已核验 `version.txt=469`、`operations.html data-version=469`，日报原图凭证直达代码已生效。
-- 继续逐张核对 1—6 月盈亏表支出凭证包的 98 张原图：生产迁移 `20260904150000_zysyr_profit_loss_exact_voucher_links.sql` 已写入 29 个可无歧义确认的月报金额、31 张原图，共 33 条精确关系；其余 67 张合并付款、跨月、部分截图或分类冲突资料继续保留整包待人工确认，不强行归类。
-- 核对中确认一项原始分类冲突：`3月!C40` 原表列为“美管加 150”，原图显示“微信公众平台续费 150”，暂不建立精确关系，等待财务在 App 中确认分类。
-- 本地三份既有迁移文件名已与生产真实版本 `20260831044219`、`20260831050526`、`20260831054417` 对齐；只改迁移时间戳文件名，不重复执行或改写已经正式入账的数据。
-- 含门店财务金额和待确认异常的完整核对清单仅保存在本机私有目录，不写入公开 GitHub Pages 仓库。
-
-## v468 备用金逐笔原图追溯与历史原表差异核对（2026-09-04，已发布）
-
-- 按用户提供的备用金 Excel 与 6 个月 Word 凭证包逐笔核对日期、金额和原图顺序：114 笔正式明细中，111 笔已写入 `page_confirmed` 具体图片位置；3 笔原资料没有独立原图，继续保留 `bundle_only` 并明确标记缺失，不制造虚假凭证。
-- 点击已经精确关联的备用金明细或相关月报数字时，只展示对应原截图；仅整包关联的项目继续诚实展示整包原图和“尚未精确定位”提示。
-- 生产迁移 `20260831183000_zysyr_petty_cash_exact_voucher_links.sql` 已应用并复核：1 月 23/23、2 月 18/18、3 月 18/19、4 月 17/18、5 月 17/17、6 月 18/19 笔精确关联；缺图位置为 `03!A14:H14`、`04!A15:H15`、`06!A15:H15`。
-- 4 月 26 个营业日日报的每日总额和支付方式已按原始照片补入草稿，合计 ¥290,689，与月报美发收入完全一致；员工和项目手写明细仍未全部确认，因此未把日报误标为完成。
-- 工资同口径核对发现 1–3 月工资原表“应发总计”与月报内嵌工资区存在原始表冲突，4–6 月一致；员工自购/零售与月报产品收入除 2 月差 ¥64 外其余月份一致。冲突保留原值并列入待人工确认，不强行改账。
-- 已合并 GitHub 主线 v467 的“前台删除当天接待记录”代码，保留其门店/日期边界，不覆盖主线已有功能。App version: v468
-- 生产 `operations-api` 已发布为 version 37、`ACTIVE`、`verify_jwt=false`；匿名请求实测返回 403“请重新登录”。GitHub Pages 已核验 `version.txt=468`、`operations.html data-version=468` 及精确凭证过滤代码均已生效。
-
-## v467 前台今日客户支持删除当天接待记录（已发布）
-
-- 「今日客户」客户详情抽屉新增「删除当天记录」按钮，仅删除 `frontdesk_today_customers` 中当前门店的当天接待记录；不写客户主档、不写美管加。App version: v467
-- 仅改动 `frontdesk.html`、`frontdesk-api` Edge Function 与前台测试/版本标记。
-
-## v466 月报金额直达原始凭证图片（2026-08-31，已发布）
-
-- 移除金额输入框内遮挡数字的“凭”按钮；普通查看状态下金额完整显示，点击金额直接打开原始凭证图片，不再先进入二级追溯页再打开 Word 文件。
-- 历史 Word 凭证包由服务端在门店权限校验后按原顺序提取内嵌 JPG/PNG/WEBP/GIF，并在桌面和手机端画廊中直接展示；私有图片响应禁止缓存，匿名请求仍返回 403。
-- 财务修改金额改为顶部独立“编辑金额”模式；编号、公式、小计、合计及其他既有只读保护保持不变，保存仍写入永久修订和审计记录。App version: v466
-- 2026 年 6 月盈亏表支出凭证包实测为 12 张原始图片；当前关联仍诚实标记为整月 `bundle_only`，画廊显示全部 12 张，不伪装成已精确定位的单张房租票据。
-- 生产 `operations-api` 已发布为 version 35、`ACTIVE`、`verify_jwt=false`（继续由函数内部会话认证）；本次未修改、重导或冲销任何历史账。
-
-## v465 工资姓名、月报凭证入口与金额显示修复（2026-08-31，已发布）
-
-- 历史工资表姓名列直接显示正式历史账中的员工姓名，不再把 `legacy_staff_*` 内部代码放在姓名前面；可编辑工资表的下拉选项也改为姓名优先。
-- 财务可编辑的月报金额旁增加独立“凭”按钮，单击即可进入该金额的来源与原始凭证；不再要求用户记住双击操作。
-- 历史月报追溯明确显示 `bundle_only` 的真实含义：房租等项目可打开当月盈亏表支出凭证包及其原始图片数量，但不把整月凭证包伪装成已精确定位的单张票据。
-- 月报金额列加宽，数字输入禁用换行和浏览器数字步进占位，长金额保持单行完整显示。App version: v465
-- 发布前只读核对：2026 年 6 月房租 `133,914.72` 已关联《2026年6月盈亏表支出凭证.docx》（12 张原始图片）；历史工资总账中的员工姓名字段完整，未重新导入或修改任何历史账。
-- 生产 `operations-api` 已发布为 version 34、`ACTIVE`、`verify_jwt=false`（继续由函数内部会话认证）；发布后复核历史正式账仍为 2032 条、0 冲正，6 月房租金额及其 1 条凭证关联均未变化。
-
-## v464 历史正式账接入月报、工资、备用金与员工自购（2026-08-31，已发布）
-
-- 不复制历史账、不重复计账：现有 2026 年 1–6 月正式历史总账作为唯一来源，各业务页面只建立门店和月份范围内的读取投影。
-- 月报首页在没有新式月报上传时，直接读取历史盈亏表 Excel 的对应月份工作表，保留原行列、合并单元格、固定编号和公式位置；金额修订继续写入历史正式账版本链。
-- 工资报表直接按原 21 列版式显示历史工资正式账，支持按员工查看原表位置、凭证包及修订历史；不将历史工资伪造成新工资草稿。
-- 备用金页面新增历史正式明细整表，员工自购页面新增历史自购只读表；均可追溯原表位置和原始凭证包。
-- 员工自购缺少可靠产品主数据或数量时不自动扣减当前库存，避免把历史资料映射不确定性转化为库存错误。App version: v464
-- 生产 `operations-api` 已发布为 version 33、`ACTIVE`、`verify_jwt=false`（继续由函数内部会话认证）；GitHub `main` 已发布 v464。生产历史正式账复核保持 2032 条、6 个月、4 个批次、0 冲正，发布过程未重导或改写原账。
-
-## v463 历史数据正式入账与版本修订（2026-08-30，已发布）
-
-- 新增正式历史账本：每条正式数据一对一关联导入批次、原始行、原表位置和原始凭证关系，不再以“只改状态”冒充入账。
-- 入账时保留校验状态、人工审核状态及全部待核对提示；存在无效数据时数据库强制拒绝整批写入。
-- 财务可在 App 原表位置修订正式数据；首次入账快照、每次修改前后值、原因、操作人和时间均永久留痕，并提供安全冲正能力。
-- 正式账本与修订表启用并强制 RLS；浏览器无写权限，写入只允许通过服务端财务范围 RPC。App version: v463
-- 生产迁移 `20260830070134_zysyr_history_formal_ledger.sql` 已应用；`operations-api` v32 ACTIVE，继续使用函数内部会话认证，未登录探测返回 403。
-- 生产历史批次已完成正式入账与完整性复核；具体财务数量及凭证覆盖结果仅保留在受控数据库和验收记录中，不写入公开代码仓库。
-
-## v462 历史数据按月份整张原表审核（2026-08-30，已发布）
-- 历史数据审核由逐条记录改为按月份查看整张原 Excel：保留合并单元格、行列尺寸和原有开支、成本、工资等栏目位置，只在系统提示异常或财务发现错误时进入对应单元格修正。
-- 月份卡片直接筛选“全部月份、已审核月份、待审核月份、有异常月份、正式入账月份”；右侧只列当月异常位置，不再要求财务逐条点击 1757 条预览记录。
-- 财务一次确认整个月时，服务器在同一事务内固化当月全部底层映射、审核人、审核时间、审核说明和快照；无效记录仍会阻止确认，底层单笔记录与月份凭证包继续保留用于追溯。
-- 本次同时发布原纸质格式月报、日报、工资表复核版；历史资料仍先进入待审核区，未将无法确认的内容伪装为正式账。App version: v462
-- 生产迁移 `20260830040811` 已应用，本地/远端迁移历史一致；`operations-api` 已部署为 version 31、`ACTIVE`、`verify_jwt=false`，未登录安全探针仍返回 403“请重新登录”。GitHub Pages 已返回 `version.txt=462` 和 `operations.html data-version=462`。
-- 自由手艺人 2026 年 1–6 月生产待审核区已核对为 4 个批次、2032 个底层数据点：盈亏表 1757、工资 86、备用金 101、员工自购 88；12 份月份凭证包保留 208 张原始图片，形成 1858 条月份级明细关联。所有批次仍为 0 条正式入账，等待财务按月整表修正、确认。
-
-## v461 自由手艺人历史数据导入预览与原始凭证留档（2026-08-30，已发布）
-- 财务端新增“历史数据导入”：选择资料类型及起止月份后上传多工作表 XLSX，只生成预览批次，不直接写正式支出、工资、库存或月报。
-- 预览保留原文件、SHA-256、原始行、映射结果、警告、失败原因与人工修正历史；工资按各月真实表头匹配，兼容 6 月缺少“拍摄”列的 20 列格式。
-- DOCX、PDF、JPG、PNG 原始凭证私有留档；按门店、批次、月份关联预览行，`bundle_only` 明确表示尚未人工确认到具体页/图片。
-- 新表全部带 `company_id`、`store_id`，启用并强制 RLS；敏感写入只经服务端财务权限校验，Security Definer RPC 撤销 PUBLIC/anon/authenticated 执行权，只授予 service_role。
-- 生产迁移 `20260830021731` 已应用，`operations-api` 生产函数已发布为 version 30，GitHub Pages `main` 已发布 v461。
-- 自由手艺人 2026 年 1–6 月已建立 4 个待审核批次：工资 86 行（54 通过、32 待核对）、备用金 101 行（99 通过、2 待核对）、员工自购 88 行（88 待核对）、盈亏表 1757 行（1281 通过、476 待核对），均为 0 条正式入账。
-- 12 份 Word 凭证包已按月份绑定备用金与盈亏表批次，共保留 208 张内嵌原始图片；当前为月份级 `bundle_only` 关联，后续仍需财务逐行确认具体凭证。App version: v461
-
-## v460 登录一次长期在线、自动续期与瞬时故障不强制下线（2026-08-28，待发布）
-- 前端每次调用经营接口前，若 Supabase 访问令牌临近过期会自动刷新并写回 localStorage；页面闲置期间每 45 分钟续期一次，访问令牌 1 小时到期不再造成使用中被退出。
-- Auth bridge 增加单飞刷新与跨标签页锁（`navigator.locks` 可用时），避免多标签页同时用同一 refresh token 触发单次使用判定而互相挤下线。
-- 页面加载恢复会话时，只有鉴权服务明确返回 400/401/403 等终态才清理本地登录；纯网络抖动保留登录状态，提示稍后重试而不强制退出。
-- 旧版 `zysyr_operations_sessions` 会话有效期由 30 天延长为 10 年（`SESSION_DAYS = 3650`，与前台收银持久会话口径一致）；停用/离职/主动退出仍会立即失效。
-- 需重新部署 `operations-api` 并推送 GitHub `main`；无需数据库迁移。App version: v460
-
-## v459 月报固定编号保护（2026-08-28，待发布）
-- 用户确认月报“编号”列的 `01、02、03…` 是固定员工编号，不是金额。页面端按“编号 / 序号 / 员工号”表头和单元格标签识别固定标识，只显示原文，不提供金额编辑或财务数字追溯入口。
-- 数据库 `zysyr_revise_monthly_cells` 同步拒绝编号类或带前导零的固定标识单元格，防止绕过页面修改；金额、公式、小计和业务追溯逻辑保持不变。
-- 本版本需与 v455–v458 一起执行生产迁移、部署 `operations-api` 并推送 GitHub `main`；发布前线上仍为 v454。App version: v459
-
-## v458 原纸质格式电子工资表、原始附件与工资锁定追溯（2026-08-28，recovery 候选未发布）
-- 财务端工资报表按原版 `工资报表模版.xlsx` 的 21 列、原顺序和重复表头方式电子化；财务可直接选择员工、填写金额和备注，空白员工栏位至少保留 15 行。
-- 数据库固定执行已确认公式：应发 = 基本工资 + 工龄工资 + 岗位工资 + 饭补 + 业绩提成 + 外卖办卡提成 + 加班费／活动津贴 + 补发补扣；应扣 = 成本 + 迟到／早退 + 拍摄 + 请假 + 成长 + 自购 + 社保（员工缴）；实发 = 应发 - 应扣。
-- 原始工资报表与电子数据分别保留，支持 JPG、PNG、PDF、XLSX、DOCX；上传自动绑定公司、门店、月份和工资版本，不调用 AI/OCR，也不会覆盖财务填写金额。没有原始工资表时禁止确认锁定。
-- 每次保存按员工、字段追加记录修改前值、修改后值、修改人、时间和原因；历史及附件关系不可更新或删除。确认锁定后生成正式工资与分项明细，并把工资、员工、电子工资行和原始附件写入追溯链。
-- 已锁工资只能由财务申请、公司管理员审批且禁止自批；授权后建立新版本，旧版本、旧附件和历史继续保留，已支付工资禁止直接重开。
-- 页面实测通过金额联动、未保存提示和员工下钻；生产 schema 隔离副本按 `v455 → v457 → v458` 顺序完整应用，五张新表均启用并强制 RLS。Supabase production dry-run 仅列出待迁移文件，未执行迁移。
-- 当前只推送既有 GitHub recovery 分支；未迁移生产数据库、未部署 Edge Function、未更新 GitHub main、未发布线上页面。App version: v458
-
-## v457 日报月历、纸质同版电子日报与原始日报留底（2026-08-28，recovery 候选未发布）
-- 日报一级页统一为自然月历，按日显示营业收入，并同时标出已完成、待填写、缺少原始日报、原件待审核、数据异常和已锁定状态。
-- 点击日期直接进入当天二级页；上方继续使用门店现有纸质日报的一比一电子表格，获授权门店账号或财务可人工填写、修改、保存，财务最终确认后进入正式日报及月度汇总。
-- 下方新增原始日报留底区，支持 JPG、PNG、PDF、XLSX，上传时自动绑定公司、门店、日期和电子日报；系统不调用 AI，也不会用附件内容覆盖正式单元格。
-- 新增追加式日报附件关联与单元格修改历史；显示字段、修改前后值、修改人、时间和原因。已锁账日报复用月报“财务申请、公司管理员审批、一次授权自动消费”机制，数据库再次校验并记录消费审计。
-- 财务上传的日报原件可直接审核通过；授权门店账号上传后进入财务审核，审核通过后自动成为最终确认来源。附件与电子数据始终分别保留。
-- 当前只在本地开发并推送既有 GitHub recovery 分支；未迁移生产数据库、未部署 Edge Function、未更新 GitHub main、未发布线上页面。App version: v457
-
-## v456 月报正式业务明细补传凭证与审核后自动绑定（2026-08-28，recovery 候选未发布）
-- 月报单元格追溯新增正式收入、支出、备用金、工资、采购入库、产品消耗和员工自购记录；全部按公司、门店和月份过滤，并显示正式业务明细合计差异。
-- 正式收入记录可继续关联到日报、日报行和原始凭证；技术人员与后勤工资按岗位分组，产品消耗读取真实产品主数据字段。
-- 缺少凭证的单笔业务旁可直接补传 JPG、PNG 或 PDF；系统先保存待审核绑定意图，不调用 AI 识别，财务审核通过后在同一事务中正式写入凭证链，拒绝则不绑定。
-- 新迁移 `20260828104600_zysyr_business_voucher_pending_links.sql` 使用强制 RLS、最小授权、业务记录状态复核、待处理局部索引和全程审计；浏览器不直接获得写 RPC 权限。
-- 当前仅在本地开发并准备推送既有 GitHub recovery 分支；未迁移生产数据库、未部署 Edge Function、未更新 GitHub main、未发布线上页面。App version: v456
-
-## v455 财务端月报金额修订、锁账授权与单元格凭证审计（2026-08-28，recovery 候选未发布）
-- 月报原始上传单元格继续保持不可变；财务修改金额改为追加 `zysyr_monthly_cell_revisions`，永久保存修改前/后金额、差额、原因、人员、时间、门店、月份和凭证数量。
-- 公式、小计、合计、盈亏及已有二级来源明细的汇总格禁止强改；有效修订会覆盖展示值并安全重算可解析的 SUM / 四则公式，跨月汇总同样读取有效值。
-- 锁账月份采用财务申请、公司范围管理员审批、禁止自批、一次授权消费后失效；月份本身不解除锁定。
-- 数字溯源新增修改历史、异常提示和单元格级凭证补传；凭证中心可反向显示该凭证被计入的月份、月报栏目、单元格和有效金额。
-- 新迁移 `20260828020852_zysyr_monthly_finance_audit_closure.sql`、`operations-api`、`operations.html` 和静态测试已完成；Supabase dry-run 只列出本迁移，完整 pre-push 回归通过。
-- 仅推送 GitHub recovery 分支；未迁移生产数据库、未部署 Edge Function、未更新 GitHub main、未发布线上页面。App version: v455
-
-## v454 前台收银中心横屏手机适配（2026-08-27，已发布）
-- 补充 `(max-width:900px) and (orientation:landscape) and (max-height:500px)` 断点：横屏手机使用紧凑左栏，时间表、客户档案、表单抽屉按矮屏高度重排。
-- 横屏手机客户数据表和洗发合格率也切换为卡片视图；竖屏与桌面表格逻辑保持不变。
-- 仅前端静态页与版本号，不改动前台查询/辅助接待边界、不写美管加收银数据。App version: v454。
-
-
-## v453 前台收银中心手机端适配（2026-08-27，已发布）
-- 前端 `frontdesk.html` 四个视图增加移动端断点与触屏布局；客户数据表和洗发合格率在手机端切换为卡片视图，桌面宽表保留。
-- `frontdesk-manifest.json` orientation 由 `landscape` 改为 `any`，支持手机竖屏与横屏；`scripts/test-frontdesk.js` 对应断言同步更新。
-- 仅前端静态页、PWA manifest、测试和版本号；未改动前台查询/辅助接待边界、未写美管加收银数据。App version: v453。
-
-
-## v452 月报表数字可编辑与数字级凭证上传（2026-08-27，本地候选未发布）
-
-- 前端 `renderSheet` 增加 editable 模式：财务视角下数值格渲染为 input（data-monthly-cell + data-r/c），oninput 写回 `state.monthlyEditValues`；月报表页新增“保存金额”按钮（finance-upload 可见）。
-- 保存调用 `monthly_cell_save`：无 report_id 时创建手工月报（monthly_profit_loss draft + display_data），随后按 cell_address upsert `zysyr_report_cells` 的 display_value/numeric_value。
-- 月报表数字点击进入 `view-cell-trace` 二级页；财务显示“上传凭证”，调用 `voucher_upload`（record_type=report）关联月报；股东只读溯源。
-- 仅新增接口与前端交互，不改数据库结构；需重新部署 `operations-api`。未提交、未推送、未发布。
-- App version: v452
-
-## v451 日报空白表先建后传原图（2026-08-27，本地候选未发布）
-- 月报表数字点击改为二级页面 `view-cell-trace`：openCellTrace 进入全屏溯源页（来源明细 + 原始凭证），财务显示“去录入”跳转备用金明细；其余追溯抽屉逻辑不变。
-
-- 前端“填写日报”表单的“已审核日报原图”改为可选，空提示改为“暂不选择原图，先生成空白表”，并新增“上传日报表原图”按钮（调用 voucher_upload，note=日报表原图，上传后刷新）。
-- 后端 `createDailySheetDraft` 的 voucher_id 改为可选：无原图时不校验 approved voucher，按 report_date 查重；`saveDailySheetExtraction` voucherId 类型改为可空。
-- 迁移 `20260827170000_zysyr_daily_sheet_blank_before_voucher.sql`：`zysyr_daily_sheet_drafts.source_voucher_id` drop not null，并重写 `zysyr_create_daily_sheet_draft` 支持 p_source_voucher_id 为 null。
-- 确认入账仍要求原图留底（不在本次放宽）。需 `supabase db push` 与重新部署 `operations-api`。
-- App version: v451
-
-## v450 月报表跨期汇总（2026-08-27，本地候选未发布）
-
-- 月报表页新增汇总条：按钮“开启汇总 / 关闭汇总”，预设近 3/6/12 月、全年，以及自定义起止月份。
-- 汇总逻辑：`monthly_summary` 读取范围内每月最新版本的月度盈亏表 `display_data`，以首月为模板逐格累加可解析数值，文本栏目保留；前端 `renderSheet(..., noTrace)` 渲染累计表。
-- 仅新增只读接口与前端汇总模式，不改数据库结构；需重新部署 `operations-api` 并推前端。未提交、未推送、未发布。
-- App version: v450
-
-## v449 股东自助注册与老板审核（2026-08-27，本地候选未发布）
-
-- 登录页新增“股东注册”表单（登录账号、姓名、密码、确认密码），提交调用公开接口 `shareholder_register`：用 service role 创建 Supabase Auth 用户（app_metadata zysyr_role=shareholder），并写入 `zysyr_shareholder_registrations`（status=pending）。
-- “经营账号”页新增“待审核股东注册”区：老板通过调用 `shareholder_registration_review`（approved 时复用 `zysyr_admin_complete_shareholder_account` 建号并授权，rejected 时删除 Auth 用户），列表来自 `shareholder_registration_list`。
-- 迁移 `20260827160000_zysyr_shareholder_registrations.sql`；需 `supabase db push` 与重新部署 `operations-api`。
-- 未提交、未推送、未发布。
-- App version: v449
-
-## v448 月报表股东已阅 + 股东账号创建（2026-08-27，本地候选未发布）
-
-- 月报表 `report-state` 新增“股东已阅”区块：有月报时展示已阅名单（股东姓名 + 时间），股东角色显示“确认已阅”，调用 `report_acknowledge`（仅 `operations_role=shareholder`），写入 `zysyr_report_acknowledgements`，同一股东同月唯一。
-- 恢复“经营账号”入口（`.finance-account-admin`，仅管理员显示），角色下拉新增“股东”；股东不绑定员工、权限范围可选全部门店或指定门店，前端路由到 `createShareholderAccount`。
-- 登录桥接新增 `createShareholderAccount`；`operations-auth-admin` 新增 `create_shareholder_account` action 与 `zysyr_admin_complete_shareholder_account` RPC（复用财务账号完成逻辑，role=shareholder，通过 shareholder role 继承只读能力矩阵）。
-- 迁移：`20260827130000_zysyr_report_acknowledgements.sql`、`20260827140000_zysyr_shareholder_account_complete.sql`。需 `supabase db push` 与重新部署 `operations-api`、`operations-auth-admin`。
-- 未提交、未推送、未发布。
-- App version: v448
-
-
-## v447 填写日报并入日报表（2026-08-27，本地候选未发布）
-
-- 左侧导航删除“填写日报”一级菜单；“日报表”月视图工具栏新增“填写日报”按钮（class import-entry，按 can_import_photo_reports 控制显示），点击进入二级“原图对照人工电子日报”页，页面新增“返回日报表”。
-- 仅页面导航与入口位置改动，视图 ID、填写/保存/确认逻辑不变，无接口、数据库变化；未提交、未推送、未发布。
-- App version: v447
-
-## v446 现金收支表补台账字段与股东追溯（2026-08-26，本地候选未发布）
-
-- 台账新增“凭证编号”“领款人”手工字段：新增行可填凭证编号、领款人，凭证列“＋上传”上传消费凭证；保存后记录带 voucher_number / recipient。
-- 表格左上角新增“上月结余”登记（财务可编辑），结余 = 上月结余 + 存入 - 支出；新增 `cash_opening_balance_save` 接口与 `zysyr_cash_opening_balances` 表。
-- 股东/店长只读可见：`finance-workbench-entry` 对 `can_manage_finance_workbench || can_read_petty_cash_reports` 显示；股东视图隐藏新增/上传/保存/冲销，保留金额溯源与“凭证”打开按钮。
-- 迁移 `20260826183000_zysyr_cash_ledger_fields.sql` 增加两个字段与新表，并重写 `zysyr_record_petty_cash`（新增 p_voucher_number、p_recipient）与 `zysyr_upsert_cash_opening_balance`；需 `supabase db push` 与重新部署 `operations-api`。未提交、未推送、未发布。
-- App version: v446
-
-## v445 财务简化为单张现金收支表（2026-08-26，本地候选未发布）
-
-- “财务”一级页面只保留一张“现金 / 备用金收支记录”表（图片格式），不再有表格外上传卡片与折叠面板：末行为登记行（日期、说明、借方金额=存入、贷方金额=支出、科目下拉、已审核凭证多选），保存调用现有 petty_cash_record。
-- 凭证上传放进表格凭证列：新增行凭证列“＋上传”动态选文件调用 voucher_upload，上传后进审核，审核完回表选择关联；已有行点击金额/凭证可追溯并打开原件，保留冲销。
-- 支出分类维护、报表上传、原始凭证审核、支出付款、正式月报生成与锁账统一收进二级页面，从表格右上“报表上传 / 凭证审核 / 月结”进入并可返回财务首页。
-- 仅前端改动，复用现有接口，数据库不动；未提交、未推送、未发布。
-- App version: v445
-
-
-## v444 备用金明细改为现金收支台账格式（2026-08-26，本地候选未发布）
-
-- 备用金明细表由简化列表改为“现金 / 备用金收支记录”台账格式：日期、凭证编号、说明、借方金额、贷方金额、科目、批准人（确认人），按图片样式呈现。
-- 新增“凭证编号”列体现上传凭证：后端 `petty_cash_report` 从 `zysyr_voucher_reviews.corrected_fields->>'document_number'` 取每张凭证最新一次人工审核填写的编号（无则回退文件名），前端展示为可点击按钮，点击可打开该凭证私有原件。
-- 借方金额=备用金存入（inflow 记借方），贷方金额=支出（outflow 记贷方），保留“查看来源”追溯操作。
-- 未新增“领款人”字段（数据模型无该列），如需要将在登记备用金表单补输入框并加数据库字段。仅页面/API 展示层改动，不涉及数据库表结构；未提交、未推送、未发布。
-- App version: v444
-
-## v443 备用金明细并入财务录入（2026-08-26，本地候选未发布）
-
-- 左侧导航移除“备用金明细表”独立菜单；备用金汇总与逐笔明细并入“财务录入”视图，作为工作台内“备用金明细”区块，位于登记表单之后、月结之前。备用金相关控件 ID（petty-cash-report-status/summary/table）与接口调用不变。
-- 仅页面导航与区块位置改动，不涉及接口、数据库与权限字段；未提交、未推送、未发布。
-- 权限提示：合并后“财务录入”沿用原财务可见规则，股东不再有独立的备用金明细只读入口；如需保留股东只读查看，需另行调整菜单可见性。
-- App version: v443
-
-## v442 财务上传合并与业绩报表选项隐藏（2026-08-26，本地候选未发布）
-
-- 左侧导航将“上传报表”与“凭证中心”合并为“财务上传”：凭证中心原有的独立菜单移除，凭证上传表单与审核队列并入财务上传视图，页面内以“上传报表原件”和“凭证审核”两个区块呈现；凭证相关控件 ID 与接口不变。
-- 上传报表的“报表类型”下拉隐藏“业绩报表（每日）”，右侧“财务从这里上传”说明同步去掉业绩报表条目并重新编号；报表类型仅保留日报、工资表、月度盈亏表。
-- 仅页面导航与表单选项改动，不涉及接口、数据库与权限字段；未提交、未推送、未发布。
-- App version: v442
-
-## v441 手机横屏适配（2026-08-26，本地候选未发布）
-
-- 手机横屏（`orientation:landscape` 且高度 ≤560px，即宽大于高的矮横屏）补响应式：顶部栏压缩为单行、隐藏副标题、导航按钮与内容边距收紧；月报原表（1230px）与日报电子表（1440px）在横屏下同样按容器宽度自动缩放、整表宽度完整显示，报表容器限高（`100dvh - 150px`）后可上下滚动查看，想看局部用双指捏合放大。
-- 竖屏（≤560px）逻辑、平板（≤900px）与电脑端布局均保持不变；预览页（日报表版式、月份下拉）同步横屏适配。仅页面 CSS/JS 改动，不涉及接口、数据库与权限；未提交、未推送、未发布。
-- App version: v441
-
-## v440 适配手机 / 平板 / 电脑（2026-08-26，本地候选未发布）
-
-- 针对手机补齐响应式：560px 以下缩小整体字体与标题（h1 19px / h2 17px）、导航按钮、顶部栏间距；月历由固定 `minmax(96px,1fr)`（7列最少672px）改为弹性列，日期格压缩；月报原表与日报电子表在手机上自动缩到容器宽度、整表完整显示（zoom 适配），想看局部用双指捏合放大，桌面保持原尺寸可自由滚动；月视图“上一月/下一月”按钮紧凑化。
-- 平板（900px 以下）继续沿用已有布局：侧栏转横向滚动导航、卡片单列、工具栏整行。
-- 仅页面 CSS 改动，不涉及接口、数据库与权限；未提交、未推送、未发布。预览页（日报表版式、月份下拉）同步补 viewport 与 760px 适配，方便手机查看。
-- App version: v440
-
-## v439 月份改为可选择下拉（2026-08-26，本地候选未发布）
-
-- 首页“原表月报”工具栏月份、日报表月视图月份、财务上传月报的“月报月份”三个控件由 `<input type="month">` 改为可点击的下拉选择，覆盖近 10 年历史月份与未来 1 年，解决 Safari 等浏览器不显示原生月份选择器、无法点选月份的问题；日报表月视图保留“上一月 / 下一月 / 刷新”按钮，跨出下拉范围时自动补项。
-- 下拉选择沿用同一 `#month / #daily-month / #report-month` 控件与 `YYYY-MM` 值格式，所有现有月份切换、报表读取逻辑不变；仅页面控件改动，不涉及接口、数据库与权限。
-- 未提交、未推送、未发布；静态检查（内联脚本语法、版本同步 v439）通过。
-- App version: v439
-
-## v438 4月人工日报测试导入保护（2026-08-26，生产发布）
-
-- 4月26张日报原图已人工核对日期映射，覆盖除四个星期一（6、13、20、27）外的全部营业日；生产已建立26份人工电子日报草稿。
-- `voucher_upload` 新增仅内部导入工具使用的 `skip_ocr=true`，日报原图上传后不唤醒 OCR worker，随后人工审核会取消排队任务；原图、SHA-256、审核记录和后续电子表追溯均保留。
-- 新增无密钥导入工具 `scripts/import-zysyr-april-test.mjs`；财务密码只经隐藏环境变量传入。`operations-api` 已部署为 v21、ACTIVE；生产核验为26/26日期完整、星期一0条、26张原图均已审核为日报且 OCR 状态为 `reviewed`、每份草稿459格，抽样原图私有链接可打开。金额仍为空且全部保持草稿，等待人工逐格填写后确认。
-- 4月原始业务资料附件（`02_原始业务资料附件`，44张）已按 SHA-256 去重上传为凭证并全部人工审核：3张采购单据（杭州艺尚216、杭汐美学4077、员工自购54）按原图登记日期/金额/往来单位/单号并标记 `purchase` 通过，仅用于追溯链逻辑测试、最终金额待财务复核；其余41张完整留底并退回待审（`rejected`），不进入正式账。生产复核：44张均归属自由手艺人门店，26份草稿均关联已审核日报原图、无断链、无跨店错挂；0正式日报/收入（金额为空，符合人工填写后确认的边界）。
-- App version: v438
-
-## v437 独立工资报表与备用金明细追溯（2026-08-26，生产发布）
-
-- 在 v436 本地候选上新增“工资报表 / 备用金明细表”，两个入口位于“日报表”下方；只读报表与财务“工资中心 / 财务录入”分离，股东不会获得财务写权限。
-- 工资报表复用 `payroll_center` 的现有公司/门店范围与结构化追溯，点击金额可进入工资组成、业绩、考勤/奖罚、原表单元格和凭证。
-- 新增只读 `petty_cash_report`：要求 `dashboard.store.read`，所有备用金、日报、原表、凭证查询都绑定 `company_id + store_id`，并返回逐笔来源链；员工个人账号仍被总入口限制，不可访问备用金。
-- v436/v435 两条迁移已成功应用，迁移清单本地/远端一致，生产数据库 lint 为 0；`operations-api` 已部署为 v20、ACTIVE、`verify_jwt=false`，继续由函数内部验证旧会话与 Supabase Auth，未登录新接口返回预期 403“请重新登录”。完整 pre-push 回归通过；本地 Chrome v437 财务视角已验证导航顺序、工资金额追溯、备用金日报行/原表行/凭证追溯，控制台无错误。静态页随本版本推送 GitHub `main`，并以线上 `version.txt=437` 与页面标记复核。
-- App version: v437
-
-## v436 Word 报表上传与月报/日报/工资双向追溯（2026-08-26，本地候选未发布）
-
-- 在 v434 生产基线 `b56539f` 上保留 DeepSeek 的 v435 人工日报/日报导航改动，并完成审查和补强；GitHub `main` 已重新 fetch，仍为同一提交，本地没有基线漂移。
-- 报表上传现支持 XLSX 和含可编辑表格的 DOCX；DOCX 由固定版本 JSZip 读取 `word/document.xml`，提取表格原行列及数字单元格。原件继续写私有桶、保存 SHA-256 和追加版本；旧 DOC、扫描型 Word、无数字表格会明确拒绝，扫描图片应走原始凭证上传。
-- 月报单元格来源允许 `daily / performance / salary`。工资中心已有“打开工资原表”；报表档案新增“查看关联”，通过只读 `report_lineage` 返回当前门店内该报表所关联的最新月报追溯修订与工资记录，形成月报到工资表、工资表反查月报的双向入口。
-- 修复人工日报保存完整性：明确 JSON null 为清空；已有 cell 的 section/row/column/role 只信数据库；改姓名同步整行；无变化不虚增修订。变更表新增文本与姓名 before/after，确认版本触发器固化 `manual_text` 和最终显示值。
-- 日报建表/保存使用 `daily_report.write` 范围，最终确认仍维持 finance-only；正式日报月历会汇总正式 income line 并返回原报表 ID。导航名称调整为“填写日报 / 上传报表”，电子表仍在上、纸质原图仍在下。
-- 备份：`ZYSYR_2026-08-26_131238.tar.gz` 已复制 iCloud。完整 pre-push 测试清单全部通过；本地 DOCX 样例正确读出 `6000.00 / 1306.33` 两个数字。浏览器复核确认导航为“日报表 / 填写日报 / 上传报表”，电子表 top=201.98、原图 top=1067.08，确实上下排列；报表档案显示“查看关联”，页面控制台无错误。`supabase db push --linked --dry-run --include-all` 仅列出 `20260826045929` 与 `20260826120000`，未写生产。
-- 尚未执行生产迁移、Edge Function 部署、静态页面发布、提交或推送。发布前还需运行完整 pre-push 回归并单独完成生产 Gate。
-- App version: v436
-
-## v435 纸面同版电子日报 + 原图留底（2026-08-26，实施中未发布）
-
-- 电子日报表版式改为与纸质日报表完全一致：页面上方为电子版（人工逐格填写），下方为纸质原件留底照片（不可修改、可放大核对）。布局从“左侧原图/右侧电子表”改为“上电子版/下原图留底”。
-- 按纸质版式渲染标题、日期、发型师表（姓名+17列+小计+老/新/卡类/疗程卡+签字）、公司行、发型师小计、技师表（姓名+18列+小计+签字+未结单号）、技师小计、产品/零售/实做卡类、支付表（美甲/产品/小计/签字+支付12列）与备注，均按模板「业绩报表模版.xlsx」的员工名单生成对应版式（自由手艺人/向里造型）。
-- 按用户第二轮意见：抬头改为“日报表＋门店名”（自由手艺人日报表/向里造型日报表）；所有纸面空格均可修改填写（金额、计数、签字、未结单号、公司行、备注），员工姓名可直接改名；空白新格保存时按 (draft, section, row_key, column_code) 位置 upsert，新增 manual_text 文本列与签名/未结单号/备注角色。
-- 改动范围：前端静态页与版本号（operations.html、perm-app.html、frontdesk.html、version.txt、version.json）、Edge Function（saveDailySheetDraft 透传新格元数据与文本值、dailySheetData 返回 manual_text）、新迁移 20260826120000_zysyr_daily_sheet_editable_upsert.sql（扩展 cell_role 校验、manual_text 列、保存 RPC 改为位置 upsert 并支持改姓名）。人工填写、原图留底、不用 AI/OCR 结果直接入账的边界不变。
-- 本机副本已完成补丁与回归（全网格渲染断言、test-operations、版本同步检查）；待用户批准后应用到工作仓库并提交。生产发布还需应用新迁移并重新部署 operations-api，随 GitHub main 推送后核验 Pages 传播。
-- 第三轮（返回自动保存）：离开日报表视图（切换菜单/返回列表）时自动保存未提交修改；刷新或关闭页面若仍有未提交修改会弹窗提醒，并尽力在页面离开时用 keepalive 请求再保存一次；手动“保存人工填写”按钮保留，按钮旁新增“离开本页时自动保存未提交的修改”提示。保存失败不切换视图并提示。
-- 第四轮（保存按键+未保存提示）：日报表工作区顶部新增「保存」按键，与底部「保存人工填写」共用同一保存路径；填写任意空格后，页头实时出现红色「有 N 个单元格未保存」提示，保存后消失；刷新/关闭仍弹窗提醒并尽力自动保存。
-- 第五轮（导航 → 月度总览 → 单日明细）：左侧导航新增「日报表」入口，股东/财务/店长可见；点入为二级月视图（整月日历，每日显示日合计与“已确认/待确认/未录入”状态，含已确认月合计与待确认天数）；点击任一日期进入三级单日日报表只读明细（同版电子表逐格只读 + 纸质原件留底照片）。月份可自由切换（含 1–7 月等历史月份），为后续补录历史报表预留入口；只读查看不产生任何写入。
-- 第五轮实现：`operations-api` 新增只读操作 `daily_sheet_month`（月历：正式日报+电子草稿按日合并，取人工确认后的总计）与 `daily_sheet_read`（单日明细，复用人工填写/原图数据但标记只读），权限放宽为 `voucher.read` 或 `daily_report.write`（股东仅可查看，无法修改或确认）；前端 `session` 新增 `can_read_daily_reports`，导航显隐与 `showView` 守卫同步；不改数据库、不改权限种子、不发布。
-- App version: v435
-
-## v434 原图对照人工电子日报（2026-08-26，生产数据库与函数已部署）
-
-- 按用户最新决定停用日报 AI 识别：选择已审核原图后只生成同版空白电子表格；员工姓名可从门店员工档案带入，所有金额、项目、小计、支付方式和总计由财务逐格人工填写。
-- 数据库只把 `manual_override=true` 的人工值视为有效金额。既有 AI/OCR 候选继续作为历史证据保留，但全部从控制合计、正式日报、收入和月报计算中排除；AI 候选导入接口返回明确停用提示。
-- 页面保留左侧原图、右侧电子表格，增加原图缩放、人工格标色、勾稽差异标红和“已逐格检查”确认框。未保存、四组控制数不平或未逐格检查时，页面与服务端同时禁止最终确认。
-- 生产迁移 `20260825161033_zysyr_daily_manual_entry_only.sql` 已成功应用，`operations-api` 已重新部署；同时保留并合并最新前台新客/洗发合格率更新。静态页面为 v434，随本发布推送 GitHub `main`，再核验 Pages 传播。
-- App version: v434
-
-## v432 前台客户中心增强：日期筛选 + 新客标记 + 洗发合格率（2026-08-25，生产部署）
-
-- 客户数据表（`frontdesk.html` 的“客户数据表”视图）新增“日期”筛选框，可按 `visit_date`（历史导入）和 `business_date`（当日接待）精确按日期查找客户；可与姓名/手机号后4位、来源筛选叠加，前后端都做格式校验，不改动来源标签和可编辑字段。
-- 今日预约页点击客户卡打开“客户接待信息”抽屉后，新增红色“新客”按钮；点击即标记该客户为首次到店并保存到 `frontdesk_today_customers.is_new_customer`，再次点击取消。未登记过接待的客户会自动建立一条“已经到店”的独立接待记录；只写前台独立数据，不修改 `customer_profiles` 或美管加收银。
-- 新增迁移 `20260825150000_frontdesk_new_customer_flag.sql`（`is_new_customer boolean not null default false`，读写仍仅 `service_role`）。
-- `frontdesk-api` Edge Function：`dashboard`/`ledger_records` 返回 `is_new_customer`，`ledger_records` 支持 `business_date` 日期过滤，新增 `today_mark_new_customer` 操作（PATCH 已有记录或新建最小接待记录）。
-- `scripts/test-frontdesk.js` 已同步新增断言并通过；`check-version-sync`、`check-release-integrity`、`check-agent-sync-status` 均通过。
-- 已执行：Git 提交并推送至 `github/main`，前端 `frontdesk.html` 已上线；`frontdesk-api` Edge Function 已部署（`ACTIVE`，version 16），线上实测 `today_mark_new_customer`、`ledger_records`（带 `business_date`）已由“不支持的操作”变为“请重新登录”（新代码已生效）。`is_new_customer` 列已由用户在生产 SQL Editor 手动应用。功能现已端到端可用。
-- 新增「洗发合格」快捷按钮（抽屉内绿色按钮）与「洗发合格率」统计页（按月一键统计各助理合格率百分比）：`today_mark_shampoo_qualified` / `shampoo_qualification_stats` 操作已部署，迁移 `20260825170000_frontdesk_shampoo_qualified.sql`（`shampoo_qualified boolean`）已由用户在生产 SQL Editor 手动应用。
-- App version: v432
-
-## v432 原图同版电子日报与最终确认 Gate（2026-08-24，生产发布）
-
-- 财务上传并审核日报照片后，在“真实资料导入”打开原图与同版电子表格；OpenAI 只预填候选，财务可直接改格，原图不覆盖。
-- 数据库独立核对员工行、项目列、实做/总计、支付方式；任一不一致禁止最终确认。旧版手工文本图片导入已停用。
-- 最终确认只从非零发型师原子项目格建立正式收入，并固化单元格、修改审计、确认版本、导入批次、日报、凭证和对账；技师/支付/总计不重复计入。
-- 发布前备份 `ZYSYR_2026-08-24_175705.tar.gz` 已复制到 iCloud。生产迁移 `20260824174500` 已应用，错误级数据库 lint 为 0；`operations-api` v9 已部署并为 `ACTIVE`。桌面端、手机端、人工改错阻断、版本同步与静态回归均通过。
-- 4 月 1 日真实原图试跑已到达 OpenAI，但账号返回 429“无可用余额”；系统没有创建草稿、正式日报或收入。PaddleOCR 与 Qwen3-VL-8B 实测会为该空白表格编造重复数字，已明确拒绝作为静默降级。自动预填恢复条件是为 OpenAI API 账号充值；之后继续逐张人工审核 26 张日报。
-- App version: v432
-
-## v431 三项 P0 修复与 4 月验收前置稳定（2026-08-24，生产函数已部署）
-
-- `import_center` 与 `analysis_center` 已改为共用严格月份解析器，消除线上 `parseMonth is not defined`，并拒绝非 `YYYY-MM` 输入。
-- 凭证上传/重试会立即后台唤醒 `voucher-ocr-worker`，worker 有界续跑覆盖延迟重试；财务另有 `voucher_ocr_wake` 恢复排队任务。密钥仅在 Edge 环境使用。
-- OCR 解析不再从 PaddleOCR 坐标文本猜金额或日期。只有合法结构化 JSON 才产生候选字段；非结构化结果保留清洗后的全文，但日期和金额置空，等待财务对照原图人工确认。
-- `ZYSYR_P0_RUNTIME_OK`、Sprint 6/7、经营页、前台页、认证桥、版本同步、发布完整性和 diff 检查均通过；发布前备份为 `ZYSYR_2026-08-24_160018.tar.gz`。
-- `voucher-ocr-worker` v3、`operations-api` v8 已部署并为 `ACTIVE`。生产小样验证：`import_center(2026-04)` 与 `analysis_center(2026-04)` 均通过且 `meiguanjia_used=false`；遗留队列消费 1 条成功，凭证继续 pending 人工审核，非结构化 OCR 日期/金额为 null，全文无 LOC 标记。
-- 当前下一 Gate：推送 v431 静态页面并核验线上版本，然后分批导入 26 张日报及其余真实资料；不自动审核、不修改原图、不为通过测试隐藏问题。
-- App version: v431
-
-## v429 ZYSYR V2 OCR、AI、真实图片导入与对账（2026-08-22，本地候选，未部署）
-
-- v428：OCR 任务支持租约、重试、死信和人工重发；PaddleOCR worker 只生成候选及置信度。AI 只读正式月报快照，输出引用在数据库按月报行 ID 与金额精确核验；问题/回复保存证据快照且消息不可修改。
-- v429：财务从“真实资料导入”选择已人工审核日报照片，逐行确认后建立不可变导入批次；已有日报、字段错误或跨店请求先形成冲突/拒绝，不覆盖现有记录。
-- 图片日报归档到私有报表存储并生成可追溯人工复核单元格；正式日报生成后自动核对来源/业务行数与金额。通过审核后，日报原图继续关联到日报、日报行和正式收入。
-- 页面仍以“原表月报”为默认首页；新增入口不会读取或回写美管加。财务负责上传、复核、导入，股东维持只读原表和下钻习惯。
-- 以 v425 只读结构为基线顺序重放 v426、v427、v428、v429 成功；回滚式事务结果为 `ZYSYR_V427_RUNTIME_OK`、`ZYSYR_V428_RUNTIME_OK`、`ZYSYR_V429_RUNTIME_OK`，静态页面/API/权限测试全部通过。
-- 当前只完成本地 v429 候选。未提交、未推送、未迁移生产、未部署 Edge Functions、未发布页面；生产发布仍须单独 Gate，并配置 OCR/AI 密钥与安全 worker 触发。
-- App version: v429
-
-## v427 ZYSYR V2 Sprint 5 采购、库存、消耗与员工自购（2026-08-22，本地候选，未部署）
-
-- 新增采购单/明细、分批到货/明细、库存结存、不可变库存流水、消耗/报损、员工自购及自购收款九类正式表；公司和门店复合外键、精确数量/金额类型、RLS、索引和状态约束完整。
-- 入库用采购单价计算移动平均；出库仅使用当时库存成本快照。库存流水保存 `quantity_before/after`、`average_cost_before/after` 和全局过账序号，结存可由流水重建；冲销必须从产品最新一笔开始，避免改写后续成本历史。
-- 采购审批、到货、采购付款互相独立；支持分批入库并阻止累计超收、付款超额。消耗、报损、员工自购和收付款都要求已审核原始凭证并写审计；锁账月份拒绝新增或冲销。
-- `operations-api` 和驾驶舱新增采购库存中心；股东只读，财务/店长依 `inventory.write` 和门店范围维护，采购付款另需财务 `payment.confirm`。原表月报仍为默认首页，页面和迁移均未接入美管加。
-- 月报生成包装器把员工自购收入、产品消耗成本、员工自购产品成本纳入收入/支出/盈亏，并添加到消耗、自购、库存成本快照和凭证的追溯边。
-- 以 v425 只读结构为基线，在 PostgreSQL 15 隔离库依次回放 v426/v427；回滚式端到端事务得到移动平均 150、最终结存 14、消耗成本 600、自购成本 300、自购收入 500、月报盈亏 -400，且超收、越权门店、已收款冲销按预期阻断。静态回归及页面脚本解析通过。
-- 当前只完成本地 v427 候选：未执行生产迁移、Edge Function 部署、页面发布、生产数据写入、Git 提交或推送。生产发布须另行执行 Gate。
-- App version: v427
-
-## v426 ZYSYR V2 Sprint 4 考勤、奖罚、工资与工资追溯（2026-08-22，本地候选，未部署）
-
-- 新增考勤、奖罚扣款、发型师业绩、提成规则、工资头和不可变工资明细六类正式业务表；金额统一使用精确 `numeric`。工资公式固定为“底薪 + 提成 + 奖励 - 扣款 - 社保 + 其他调整”，每一项保存独立来源明细。
-- 严格验收补入正式形象/卫生/服务纪律检查记录；检查原件必须是已审核凭证，奖罚可引用同员工同门店的检查记录，检查被奖罚引用时不能先冲销。底薪、社保和非零其他调整必须逐项选择同月工资原表的精确单元格，数据库复核报表、门店和金额一致，错误单元格直接拒绝生成。
-- 业绩只允许岗位包含“发型师”的员工，并必须绑定财务上传业绩原表的精确单元格；提成比例必须来自按日期生效的正式规则，缺少或同等规则冲突都会拒绝生成，不猜测比例。
-- 所有写入仍仅经 `service_role` RPC；数据库再次核验 Supabase Auth 财务角色、公司/门店、`salary.write_approve`、锁账月份、已审核凭证和状态流转。已审核/已支付工资只能冲销，不能覆盖；普通浏览器没有写表或写 RPC 权限。
-- 页面新增“工资中心”，工资列沿用原表阅读顺序：姓名、底薪、提成、饭补/奖励、小计、成长/迟到/扣款、社保、其他、合计。点击任一数字可查看业绩日期、提成规则、考勤、奖罚、原表行/单元格、上传人和凭证；员工 Supabase Auth 账号只能查看本人数据。
-- 管理员安全入口扩展为“经营账号”：财务账号继续支持公司/门店范围，店长和员工账号强制单店并绑定该店在职员工。新增独立高风险 `workforce_account.create` 能力，只授予此前已明确授权的公司级管理员；Auth 元数据、经营账号、角色范围和审计在服务端原子核对，浏览器不持有 `service_role`。
-- 正式月报新增可追溯“人工成本”：仅汇总已审核/已支付工资并进入支出合计；当月存在工资草稿时拒绝生成月报。首页继续显示财务上传的原月报网格，不增加营业额 KPI、趋势、排名或美管加同步。
-- 以只读导出的 v425 生产结构在隔离 PostgreSQL 15 完整重放 v426 迁移。回滚式端到端测试验证正式检查→扣款、业绩 10,000、提成 35%、底薪 6,000、社保 500、其他调整 100，实发工资 8,900；三个原表工资单元格、付款凭证、追溯边及月报人工成本 8,900 全部通过，错误底薪单元格被数据库阻断。另一组回滚事务验证管理员创建单店员工账号、在职员工绑定、角色授权和审计事件。完整 pre-push 及浏览器首页/工资/经营账号验收通过，控制台无错误；测试数据和一次性容器均已清理。
-- 当前只完成本地 v426 候选：未执行生产迁移、Edge Function 部署、页面发布、生产数据写入、Git 提交或推送。生产发布须另行执行 Gate，不能把本状态理解为线上已更新。
-- App version: v426
-
-## v425 向里客户历史导入数据维护（2026-08-20）
-
-- 新迁移 `20260820125932_frontdesk_import_store_scoped_dedupe.sql` 将历史导入唯一键从全局 `row_hash` 改为门店内 `store + row_hash`；两个门店相同业务字段不再互相吞掉，原门店内重复仍原子跳过。
-- `import_frontdesk_records` 继续保留单批 250 行、批次审计和 `service_role` 专用边界，并新增空门店拒绝；不改变已有历史记录、原始 `raw_row`、客户主档、美管加数据或 v425 业务功能。
-- App version: v425
-
-## v425 ZYSYR V2 Sprint 3 财务业务闭环（2026-08-20，生产发布）
-
-- `20260820114519_zysyr_sprint3_finance_workflows.sql` 已补齐支出分类、支出提交/审核、备用金、支出付款、正式记录冲销、月报生成/复核/锁账/冲销解锁。所有公开写 RPC 仅授权 `service_role`，数据库重新核验 Auth 财务账号、公司、门店、能力、锁账和记录状态。
-- 每笔支出、备用金和付款必须选择至少一份同公司同门店、已人工审核通过的凭证；保存时同步建立 `voucher_links`、trace node/edge、workflow event 和 financial audit。旧 `expense_save` 已收口到正式 RPC，无凭证历史批量导入不再写库。
-- `operations-api` 新增 `finance_workbench` 及九个安全操作入口；页面新增财务专属“财务录入”，覆盖支出分类、支出、审核、备用金、付款、月报生成/复核/锁账/冲销。原表月报继续作为默认首页，首页仍读取财务上传原件，不读取美管加。
-- 正式月报按收入分类、支出分类和备用金方向生成不可变明细；备用金支出按原月报口径进入支出合计，备用金流入只保留资金记录、不虚增经营收入。系统建立 `盈亏 → 收支合计 → 分类明细 → 收入/支出/备用金记录 → 凭证` 追溯；付款是结算证明，不重复计入支出。
-- PostgreSQL 15 空库最终重放返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`、`SPRINT3_WORKFLOWS_RUNTIME_OK`。验证了星期一休息、凭证强制、财务允许/股东拒绝、部分/全额付款、超付拒绝、收入 1000/支出 120（含备用金 20）/盈亏 880、公式追溯、锁账拒写、月报冲销解锁及付款冲销恢复支出审核态；浏览器角色无这些写 RPC 权限。
-- 生产部署前生成 `ZYSYR_2026-08-20_202053.tar.gz` 并复制到 iCloud；Supabase 当日物理备份状态为 `COMPLETED`。没有修改远端迁移历史：10 个既有本地文件以 100% 相同 SHA-256 对齐生产登记时间戳，dry-run 只剩 v418–v425 七个新迁移。
-- 七个新迁移已成功应用，`migration list` 本地/远端完全一致，生产 `db lint --schema public --level error` 为 0。`operations-api` 已部署为 v4、`ACTIVE`、`verify_jwt=false`，继续由函数内部校验旧会话与 Supabase Auth；未登录探针返回预期 403“请重新登录”。页面随本版本推送 GitHub `main`，以线上 `version.txt=425` 和 `operations.html data-version=425` 传播核验为准。
-- 未创建测试账号、未写入生产财务业务记录，也未导入 2026 年 4 月真实资料；因此不宣称真实数据端到端验收通过。实际 OCR provider 仍未配置，凭证可人工录入候选并审核，但不能宣称自动 OCR 已上线。
-- App version: v425
-
-## v424 ZYSYR V2 Sprint 3 财务数据底座（2026-08-20，本地候选，未部署）
-
-- 继续按 V2.0 Sprint 顺序补 GAP：原有 XLSX/单元格层保留为不可变原始资料；新增 `zysyr_daily_reports / zysyr_daily_report_lines / zysyr_income_records / zysyr_expense_categories / zysyr_petty_cash_records / zysyr_payment_records / zysyr_metric_definitions / zysyr_monthly_reports / zysyr_monthly_report_lines` 正式业务层。旧 `zysyr_expense_records` 原地补分类、经办人、日报/单元格来源和付款操作者字段，未创建重复支出表。
-- 正式日报提交/审核及凭证关联全部经仅 `service_role` 可执行的 RPC，数据库同时复核财务角色、账号状态、公司、门店和能力；每个非备注金额必须指向同一门店、同一日报原件的具体单元格。股东、店长、旧用户名会话、跨店和跨公司均不能写。
-- 星期一默认 `is_business_day=false`，人工覆盖会单独标记来源；日报审核通过后从已核对收入行生成正式收入，不查询或同步美管加。已审核日报禁止覆盖，锁账月份禁止修改，日报/月报明细通过触发器保持不可变。
-- `zysyr_link_finance_voucher` 只接受已人工审核通过的凭证和当前范围内真实存在的正式记录，支持同一凭证多业务关联并写审计原因。v424 同时把 Sprint 0 审计 `sensitivity` 约束扩展为允许 `financial`，避免 Sprint 2/3 写审计时回滚。
-- `operations-api` 已接入 `daily_report_save / daily_report_review / finance_voucher_link` 并在 Edge 层再次要求 Auth 财务角色和能力。页面入口留到 v425；原表月报仍为默认首页，经营页不读取美管加，也没有营业额 KPI、趋势或排名。
-- 最终一次性 PostgreSQL 15 空库重放依次通过 v423 和 v424，返回 `SPRINT2_RUNTIME_OK`、`SPRINT3_FOUNDATION_RUNTIME_OK`。断言覆盖复合外键、星期一规则、财务允许、股东/跨店拒绝、原表单元格来源、审核生成正式收入、已审核凭证关联、明细不可变、跨公司 RLS、浏览器无直接写权限和 RPC 最小授权；容器已自动删除。
-- 本轮未执行生产迁移、迁移 repair、Edge Function 部署、页面发布、生产数据写入或 GitHub 推送。v425 仍需完成支出、备用金、付款录入工作流、月报计算/锁账和不改变原表习惯的财务操作入口；当前不宣称 Sprint 3 完成。
-- App version: v424
-
-## v423 ZYSYR V2 Sprint 2 凭证中心（2026-08-20，本地候选，未部署）
-
-- V2.0 原文确认 Sprint 2 是“凭证中心”，因此本轮没有提前开发 Sprint 3 日报/收入/支出模块。原表月报继续作为默认首页，经营驾驶舱仍不读取美管加。
-- 新迁移 `20260820102856_zysyr_sprint2_voucher_center.sql` 将凭证改为可独立存在的一等对象，补齐 `ocr_status / audit_status / document_type / reviewer`；新增 provider-neutral OCR 任务和不可变人工审核版本，保存 raw JSON、候选字段、字段置信度、人工修正、审核人、原因和时间。
-- 财务上传通过仅 `service_role` 可执行的 `zysyr_register_voucher`：数据库再次核验 finance 角色、公司/门店范围和 `voucher.upload`，使用事务 advisory lock 阻断同公司相同 SHA-256，并在同事务建立 OCR 队列、可选报表 link 和审计。普通股东、店长、旧会话及跨店/跨公司写入均不获准。
-- 财务人工审核通过 `zysyr_review_voucher`：原图、OCR候选、置信度和人工修正同屏；每次审核追加新版本，同一凭证可多选关联当前门店多张已上传报表，修改前后、原因与关联写入审计。OCR provider 回调只能写候选，`audit_status` 在人工审核前保持 pending；Sprint 3 才生成正式财务业务记录。
-- `operations.html` 新增“凭证中心”，普通股东可按授权只读原件和审核结果，财务可独立上传和审核；原件仍使用私有桶与 5 分钟签名链接。相同文件前端预查、数据库事务再校验，不允许无声覆盖。
-- 最终多关联迁移已在一次性 PostgreSQL 15 完整重放并返回 `SPRINT2_RUNTIME_OK`：财务允许、普通股东/跨店拒绝、重复阻断、审核状态、不可变审核历史、同一凭证同时关联两张报表、审计快照、OCR候选不转正式、RLS 和浏览器无写 RPC 权限全部通过；测试容器已删除。完整 pre-push 已通过；浏览器已验证两张报表同时勾选、财务上传/审核、股东只读、原图与候选并排和零控制台错误。
-- 本轮未执行生产迁移、迁移 repair、函数部署、页面发布、生产业务写入或 GitHub 推送。生产既有迁移时间戳差异仍未处理；实际 OCR provider 尚未配置，当前队列允许财务人工录入审核，不能宣称自动识别已上线。
-- App version: v423
-
-## v422 ZYSYR V2 Sprint 1 基础资料与组织维护（2026-08-20，本地候选，未部署）
-
-- 继续按 V2.0 Sprint 1 补 GAP：原表月报仍为默认首页，新增独立“基础资料”入口；没有营业额卡片、趋势、排名或美管加读取。公司创建继续不扩展，财务账号继续使用既有 Gate C3 安全入口。
-- 新迁移 `20260820095920_zysyr_sprint1_employee_store_management.sql` 为员工和门店补齐创建/修改/软删除操作者 UUID、复合外键和覆盖索引；新增 `employee.write` 与公司范围 `org.store.write`。门店维护能力只自动授予现有 Gate C3 `finance_account.create` 精确管理员并记录授权审计，不授予普通股东；所有基础资料写入都会拒绝停用公司、停用门店、停用账号和无效授权。
-- 员工 RPC 要求当前门店 `employee.write`，跨店调动还必须同时具有原门店权限；门店 RPC 只接受公司范围 `org.store.write`。两者修改均需原因并将 before/after/actor/reason 与业务记录同事务写入 append-only 审计，浏览器角色无 RPC 执行权限。
-- `operations-api` 的目录读取增加当前门店员工和公司门店；新增 `employee_save / store_save`，旧 `store_create` 已收口到同一审计 RPC。Supabase Auth 店长仅接受门店范围，旧用户名会话不会获得任何目录写权限。
-- `operations.html` 新增员工、服务项目、产品、供应商、门店五个页签和统一新增/编辑表单。Gate C3 管理员股东可维护门店，普通股东仍只读；财务可维护当前门店员工和项目/产品/供应商。停用/离职保留历史，编辑原因进入审计；页面保存仍必须使用 Supabase Auth 用户名和现有密码会话。
-- 临时 PostgreSQL 15 已实际重放 v421/v422，并通过允许写入、跨公司拒绝、跨店移动双向校验、门店公司范围、停用公司拒绝、修改原因、审计快照与 RPC 最小授权测试；容器已停止并自动删除。本地浏览器验证股东/财务权限差异、原表月报默认首页、390px 手机滚动和零控制台错误。
-- 完整 pre-push 与版本/发布/模块边界回归全部通过，生产只读 `db lint --linked --schema public --level error` 无错误。本轮未执行生产迁移、迁移 repair、函数部署、页面发布、生产业务写入或 GitHub 推送；既有生产迁移历史差异没有处理，仍是后续生产 Gate 的阻断条件。
-- App version: v422
-
-## v421 ZYSYR V2 Sprint 1 基础数据第一阶段（2026-08-20，本地候选，未部署）
-
-- 按 V2.0 原文 Sprint 顺序开始补 GAP；本阶段复用已部署 Sprint 0 的公司、门店、账号、角色和员工表，仅新增仍缺失的 `zysyr_service_items / zysyr_products / zysyr_suppliers`，没有重做页面或改变纸质月报口径。
-- 新表均为公司级目录，包含精确数值类型、自然键去重、创建/修改/软删除溯源、完整外键索引、强制 RLS 和最小授权。授权股东/财务/店长可读；浏览器无直接写权限。
-- 新增仅 `service_role` 可执行的三个原子 RPC；数据库重新核验账号、公司、门店和能力范围，服务项目写要求 `daily_report.write`，产品/供应商写要求 `inventory.write`，写入与 `zysyr_audit_events` 的 before/after/reason 同事务完成。
-- `operations-api` 新增 `catalog / service_item_save / product_save / supplier_save`，旧经营会话不得写基础资料；现阶段没有新增页面入口，原表月报、财务上传、Gate D 和不读取美管加边界保持不变。
-- 新增 `scripts/test-zysyr-sprint1.js` 并接入 CI/pre-push。完整 pre-push、Node 语法、经营驾驶舱专项测试和静态安全断言已通过；本机临时 PostgreSQL 15 已实际执行迁移，并验证允许写入、跨公司越权拒绝、修改必须说明原因、审计快照、授权读取和跨公司 RLS 隔离，测试容器已停止并自动删除。生产只读 `db lint --linked --schema public --level error` 无错误。
-- 当前仍未执行生产迁移、迁移历史 repair、函数部署、页面发布、财务账号创建或生产业务数据写入；未重试此前被安全审查拦截的 GitHub 功能分支推送。线上仍为站点 v418 / 经营页 v417，既有 10 组迁移时间戳差异及 v418/v419 本地迁移继续是生产 Gate 前置阻断。
-- App version: v421
-
-## v420 ZYSYR Gate D P0 安全修复（2026-08-20，本地候选，未部署）
-
-- 开工前已获取最新 GitHub `main`；发现其在共同基线后新增 `6680d75`（v418 员工档案竞态、文本清理和上传类型校验），已审查并合并到 `feature/zysyr-operations`，保留 v419 原表月报/Gate D 全部内容。未跟踪 `aesthetic-coach-edge.ts` 保持未修改。
-- 修改前已生成并复制 iCloud 完整备份 `ZYSYR_2026-08-20_172211.tar.gz`；v419 恢复点仍为远端功能分支提交 `b33169b`。
-- Gate D 审计写入 `channel='web'` 已改为数据库约束允许的 `channel='api'`；凭证登记从不存在的 `version` 改为已部署的 `immutable_version=1`。
-- 费用写边界已收紧：旧经营会话（包括旧股东）全部只读；只有有 V2 账号 UUID 且具有 `expense.create_submit` 的 Supabase Auth 会话可写。新增、更新和历史导入全部绑定 `company_id/store_id`，更新过滤同时包含公司/门店，操作者写入 `created_by_user_id/updated_by_user_id`，新记录状态为 `draft`。
-- 生产只读核对：GitHub Pages `version.txt=418`，但线上 `operations.html data-version=417`，经营驾驶舱仍未切换原表月报/Gate D；线上 `operations-api` 仍为 v3，其他三个经营 Auth 函数仍为 Gate C3 版本，未部署本地函数。`supabase migration list --linked` 仍有 10 组同源码不同时间戳：`05031104→05032115`、`05032248→05032309`、`05034830→05040356`、`05045233→05050029`、`11024016→11031221`、`11031403→11032136`、`11033042→11033600`、`11035138→11040423`、`11040207→11040458`、`11053600→13091814`；`13094949/13103623` 只在本地。
-- 专项测试已覆盖旧股东拒绝、无 Auth 账号拒绝、Auth+费用能力允许、Auth 缺能力拒绝；经营驾驶舱回归、Deno 2.5.6 类型检查、版本/发布完整性和生产 `db lint --linked` 均通过。尝试启动本机 Supabase 真实迁移预演时需下载数百 MB 镜像且网络极慢，已主动取消并停止容器；因此数据库事务实跑仍是生产 Gate 前硬性未完成项。
-- 当前未执行生产迁移、`migration repair`、函数部署、页面发布、财务账号创建或业务数据写入。线上站点标记 v418，经营驾驶舱页面保持 v417。
-- App version: v420
-
-## v419 ZYSYR Gate D 月报单元格级追溯（2026-08-13，本地候选，未部署）
-
-- v418 恢复点已提交为 `e0a4047` 并推送到 GitHub 功能分支 `feature/zysyr-operations`；GitHub `main` 与线上 v417 未变化。当天完整归档已存在，备份脚本未重复创建。
-- 已用 artifact-tool 读取并渲染用户原始《业绩报表模版.xlsx》和《盈亏表模板空白模版（自由手艺人）xlsx.xlsx》；确认业绩表为两张 25 列工作表，月报首页使用“模版”工作表，保留原网格与原公式坐标。
-- 新增 Gate D 迁移 `20260813103623_zysyr_report_cell_traceability.sql`：不可变报表单元格、追加式追溯修订、来源单元格、凭证证据四表；全部按公司/门店 RLS 隔离，并通过仅 service role 可执行、同时复核 `report.upload` 范围的 RPC 写入。
+Y��x-���jם��i��+��j[h��ܢ���my�赩h��n�X�z�OKKHX�Y[^K\�]�Y]�YZ[�]Ι��YXؙ��X�ؘ�XXM���ؙ�L��X�X��ٍXYY�Y���L���L�͌���M�KO�������LLKLH0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ���H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�XL�YM�LM�LM����X̎NNM��LX��NM�˂�H]\Έ���LLKLK�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLKLH0��[Y]�XY�]�X�ݙ\�HY\�]X��\�H
+\�\��[ێ���H[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��MX�X��M�ٙN�NL�YYNLLLL�N��Y�LYN��X[����\�Y�۝[��Y\�]X�L���LLKLX��[���\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[���[YKY^HX�Y[^HX�X�][ۈ[�[\�K]��X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKLX�\�H�\\�]\��\�X�H�\��[�X[H��ܝ[ۜ����H�X�[ۘ[�ۘ[Z\���\�Y\��\��Y\�X�ۙ�\�YY�Y�\�[��H��[[Y]��[]]Kݙ\�YX\�XY�]�\��\�K��[Z[�]H��][�H[��^]�YZY�]�YZ�XZ[�[�[��K��ۙ][ۘ[KЈ��\\�H��Y�\���ܙX[��[[���]H�X�ݙ\�X�H��X�\�[�\�N��^[���\��[��]�H[���ܙY�[�X�X���[��YH�]\�[ٛܛX[�[Y]�XY�]�]\��\���\�\��YZ�[�ZY��YZ��]�][��[�[��\�\���\][ۋ��HܚY�[�[�M̰��̍RH�X�����ۛHۙH�X�[ۘ[Y[X[����\��[���۝����YH�ٚ[\�ؘX��ܛ�ۋ[�]YY][K\�ܝZ\��][�ܙ[�\�H[��܈�[��H[�\�^YY�Y�\�[��K����Y�]�[[���\�[\]Z\Y[�\�\��\�H�[][][ۈ܈�]\�H�]K����X[�\��Y\�YX\�\�Y[�]�^K�[��]K�X[Y]\��\�Y�YY���\][ۋ�\��ۘ[]K�\��\�H�X�ݙ\�K��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�K�\�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLKL0��[ZY]K\�]HY\�]X��\�H
+\�\��[ێ���H[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�L�X�͌��M�XLX�M�LLYY���Y�NM��L���X[����\�Y�۝[��Y\�]X�L���LLKL��[���\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[����H�^^�ۙH�[X\�H[�[\�K[ۙHX\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKL�\�H�\\�]\��\�X�H[��܈�\��[��[���H�X�[ۘ[�ۘ[Z\���\�Y\�[��\��Y\�\�\ܝY[ZY]H�\�ۜ�K��ۙ][ۘ[KЈ��\\�H��Y�\���[�Y]�X���ZY��\���][ZY]K\�\�[Y[���X�\�N��^[���\��[��]�H[���ܙY�[�X�X���[��YH�YK[Z[�]H�[[���۝��YZXܛ�Y[\�[][][ۋ�X[��[]]K�\���\���\��YZ�[�ZY��YZ��]�][��[�[��\�\���\][ۋ��HܚY�[�[M��0���RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX����[\�Yܘ^�[��؈[�ܙ[�\�H[��܈Z\�Y�YY�ۙ][ۋ��[ZY]�X]\�Y�ܛX][ۋH����Y�؋��ZY�[�[��\�KXZ�[ݙ\�܈�\�Y�YY�]\�H�\�[����X[�\��Y\�YX\�\�Y[�]�^K�[��]K�X[Y]\��ܛ��]K�\�Y�YY[XY�K�[X]H\��ܛX[��K���\][ۋ\��ۘ[]K��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�K�\�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLKL0���^^�ۙH^X�][ۈ�[�Y]H
+\�\��[ێ���JB��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�N��L�L���Y�MLXMM��L�Mٍ��X�XM�
+��
+K��\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���\��Y�Z[H�X�ݙ\�H\��]�H�ۙ�\�YY�Y�ܙHY]˂�HZY�\�Yۈ[[Y[���]Z[��\�[[�K��[Z^�YܙX\�ۜ��Y]]�H^X�][ۋ����\��ܙ]�Y]�ۘ\���[\[Y[�H\�\�X�ۙ�\�YY�^�ۙ\��[ۘ[[�\���\���Y�\�[��H[���\][ۈ�]�Y]ˈ����]�K^�ۙH�[X\[��܈[��[�Y�\��Y\��X�˂�HZ\�[�[\�\��[��H�[YH^X�]\�[�Y[�X�X��Y\�Yۈ\��]�H�]Y[�]K�]H�X����H[��]�YXYۛ��\��ܛH�^\�[�X�K�X[�X[�Y��[��H[���X�Y�]�[\ܝ��\�HH�۝�X���H[[]]X�H\�ܞK�]�]HܚY�[�[������H�X\���T�[��\]Y\��\^H�[XZ[��\]Z\�Y���Y[��X^H���[[�H�Z]^\�[���ܚٛ���Y[��^X�][\Hؚ�X���[��X\�ۛHH�]�ۘ\����H���\�Y��[�[�^�Y[�]K�[\ܝ�X���[�^X�ZXY��X�Y�H\�H�\]Z\�Y�Y�ܙHX�X�][ێ��X[�����\����ܙT�S�X����[�[�H^\�[����\]H�]X�X�X�][ۈ�]K����\��Y\�ۘ\��܈ܚY�[�[X�]H]]][ۈ\�\�و\��[X\�K���KKHX�Y[^K\�]�Y]�YZ[�]΍Y�X�YL�͙�XLNMؙ�X���؍�L�MY�����M�L�X��M�Y�LX��وKO�������LLKL0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�L���Y�XL��LٍM�XL���L��Lٌ��H]\Έ���LLKL�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Θ�X�̍��LY�M��Y���M�L������̍M���LNXؘ��M���NLM�KO�������LLKL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�X�̙����N��L�LYMؘM�L��X�̘��M˂�H]\Έ���LLKLˈܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLKL�0��Y�X�[�\�[H��]�[��Y\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��Y�NLNNYM�ٌ�ٌY���LXL�͘�NL�N��X[����\�Y�۝[��Y\�]X�L���LLKL���[���\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[�Z[H�X��\\��Y�Y�ܙHY]ˈ^\�[�����LLKL�X�X�][ۈ[�[\�HX\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKL��\�H�\\�]\��\�X�H�\��[���ܝ[ۜ����H�X�[ۘ[�Y�[ۘ[Z\���\�Y\�[��\��Y\�X�ۙ�\�YY�ٙ\��[ۘ[��YZ�[���[ˈ�ۙ][ۘ[KЈ��\\�H�^Y��Y]^[�]�[�Yۘ[��]H�ٙ\��[ۘ[��X�\�[�\�H\��]�\��X�H�ٝ[�[����^[���\��[��]�H[���ܙY�[�X�X���[��YH�ܚ��YZ�[���]YK�\��]�\���\�]�YZ�[�ZY�]�YZ��[Y][ۈ�]�][��[�[��\�\���\][ۋ��HܚY�[�[�M̰��̍RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX����\��ۙH؋��H����Y�]\�KXZ�[ݙ\��YH�\�[܈�]\�H�]K����X[�\��Y\�YX\�\�Y[�]�^K�[��]K�X[Y]\��\�Y�YY[XY�K���\][ۋ\��ۘ[]KY�HY��X���Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�K�\�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLKL�0���Y�Y�Y�\�[��KXY\][ۈY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�L�L�N�L��ٌ�YX�������M���͘��N��X[����\�Y�۝[��Y\�]X�L���LLKL���[���\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[�����LLKL�X�Y[^HX�X�][ۈ[�[�[�K[�[�HX\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKL��\�H�\\�]\��\�X�H�\��[��][�H���H�X�[ۘ[Z^Yܛ��]K�[܈Y�[�[���\�H\�ܞK��\۞]Z[�\]Z\�[Y[�Y�X��\���\�[ۈ[��YK[Z[�]H��][�K��ۙ][ۘ[KЈ��\\�HۙK\�\��[ۈ��X]�[���]H�]�\��X�H�Y�Y[���^[���\��[��]�H[���ܙY�[�X�X���[��YH\���[����\��X[]\�H�]\��\���\���\��YZ��^]�YZY�]�YZ��]�Y]���[���]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[M��0���RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX����[\�[[��؋��H[�\�^YY�Y�\�[��K����Y�]�\�K�YH�\�[܈]\�\�Y�H�]��YK����X[�\��Y\�YX\�\�Yܛ��]K�\�Y�YY�[ZX�[\�ܞK��XZ�Y�HܘYK��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�K�\�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]ΎNL���YX���̙MY�X����NM�M���N����X�MM؍��L�KO�������LLKL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��MYXY�M�X��،M�M�M��YX�����YY�͋��H]\Έ���LLKL��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLKLH0��\�[[Y]�K]�]�\�X[X�[[��HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[����L،����YY��������Y�L�MY����X[�\��]Y�۝[��Y\�]X�L���LLKLH�ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈH�X�ݙ\�Y���LLKLY\�]X��\�K^\�[�����LLKLHX�Y[^HX�X�][ۈ[�[�[�K\�]�[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKLH�\�H�\\�]\��\�X�H�\��[�Y�ܚY��[���H�X�[ۘ[�ۘ[�ݙ\�Y�KZ\�Y���\�X�[ۋ���\][�\ܝ�\H\�X�[ۋ��[\�X�Y���\�H[�X\�]X����][�K��ۙ][ۘ[KЈ��\\�H\�[Y]\��[[Y]�H�]��X�\�KX�\�Y�\�X[�[[��N��^[���\��[��]�H[���ܙY�[�X�X���[��YH�]]�[XY��][ۋ�]\�[�[�YK[Z[�]H�[[��X\�X���\���\���\��ZY��YZ���[���]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[�M̰��̍RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX��ܛ�ۋ[�]�ܝ�؋��H[�\�^YY�Y�\�[��K����Y�]�ܜ�X�Y��\�K�YH�\�[܈ZY�]�YZ��]K����X[�\��Y\�YX\�\�Y[�]�^K�X\���][ۋ�[��]K�X[Y]\��\�Y�YYZ\��]�\�[��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�K�\�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLKL0���^^�ۙH�\�Y�[��[ۈY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�L��MMLY����͘�L�N�LLَX��L��͍���]X��X�ݙ\�H��[���X��\��KXY\�]X�L���LLKLYL��MMHܙX]Y�Y�ܙHH���\�Y�۝[���[���^\�[�����LLKLX�Y[^HX�X�][ۈ[�[�[�K\�]�[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLKL�\�H�\\�]\��\�X�H�\��[��][�H���H�X�[ۘ[�^^�ۙH[��]K�X[Y]\��\H\�X�[ۋ[�\�^YY�][����]�]�H�Y�\�[��H[���\�[Z[�]H��][�K��ۙ][ۘ[KЈ��\\�H[�Y�ܛH�\�X�H�]�]�\��]�[��[ۋY\��X�]Y�Y�[ۘ[�\���^[���\��[��]�H[���ܙY�[�X�X���[��YH�\���\���\��ZY��YZ���[���]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[RH������ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX��ܛ�ۋ[�]�ܝ�؋��H[�\�^YY�Y�\�[��K\���[�����Y\�K�YH�\�[܈ZY�]�YZ��]K����X[�\��Y\�YX\�\�Y[�]�^K�[��]K�X[Y]\��\�Y�YY[XY�HܘYK�[ZX�[�ܛ][K��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[^X�]܈�\�[�]�Z[X�K������[��[X[�؜����\�\��\��Z[YY�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]Ό�L����L�M���X�͘NY�L̙M���XLMM�X͎YNY���X�L̍��L�L�YM،KO�������LLKLH0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�L��MMLY����͘�L�N�LLَX��L��͍���H]\Έ���LLKLK�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]ΘYYNMMNM��XL�NL�Y�MYٌ��L��L�Y�XYM�N�L�NXؘ�NXYL����Y�KO�������LLKL0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�X�Y�YY����Y�L�X�YXX��M����L�X��Y���H]\Έ���LLKL�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ι����L�N��L����M�XM����NY�������M��LXYX͘�Y�M��KO�������LLKL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�XML��L��L���Y�X�YYLX��M��̎��˂�H]\Έ���LLKLˈܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]ΌY���͘��̙��L�XY�NM̌̍�M��M�XL���̍�L��NMML��X�HKO�������LLKL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�Y�NM̙L�X�NYY��X�NXML�͘��LN͘�K��H]\Έ���LLKL��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ι�����NMY���YNLL͎Y̘L��L��،MNL�M�����LYMMM�LYL�MKO�������LLKLH0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�X�LYLL�X�ML�M��MLL͎����MNYY���H]\Έ���LLKLK�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ό�̌MMMMMX�X�MXM�L��M��X�LNLMM�MMNX��M���L�N�N���L���KO�������LLL�H0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[����YLLM��YYYMYM��L�X�X���X���͙K��H]\Έ���LLL�K�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ι����M�N��N�M�͙���L�M�َX�LNX��X����X�L�XN����Y�͌��KO�������LLL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[���Y���Xٙ��L���M����XM�٘X���NMK��H]\Έ���LLL��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ό��MLL�ؙXY��XXY�NY�YX���M�MY��M��MM����M�Y���Y��KO�������LLL�0��[Y]\�X�ݙ\�Hܛ�ۋX�[[��HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[����L��̌�YMX�L��͍̎LYX�M��͍ML���X[�\��]Y�۝[��Y\�]X�L���LLL��ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ[�[�K]��X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL��\�H�\\�]\��\�X�H�\��[��][�H���H�X�[ۘ[���[��ܛ�ۈ�ܛ�YY][KX��\��H�\ܝ[Y]��][�K��[���۝^[��X�ݙ\�H[YK��ۙ][ۘ[KЈ��\\�HY�ܙ\��]�H�ܝܛ�ۈZY��]H�X�ݙ\�KY�\��\�X�[ۘ[��X�\�N��^[���\��[��]�H[���ܙY�[�X�X���[��YHܛ�ۋ�X�H�[�[��X^[][H�Y���\][ۘ\H�[[��K[Y]�Y�]K��[Z[�]H�X�ݙ\�K��[���]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[NM���HRH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX��ܛ�ۋ[�]�ܝZ\��]�]H[Y]��H[�\�^YY�Y�\�[��K����YZ\��][Y]\��X�ݙ\�H�\�[܈ZY�]�YZ��]K����X[�\��Y\�YX\�\�Y[�]�^K�[��]K�X[Y]\��\�Y�YY[Y]\��ܛX[��K��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLL�H0���Y�\�[��K\�\�[�X\�X�[]HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��M�LL���MN���XٙN�NL؍�N���X[�\��]Y�۝[��Y\�]X�L���LLL�H�ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ�]�Y]�Y���LLL�HX�Y[^HX�X�][ۈ[�[�[�K[ۙHX\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL�H�\�H�\\�]\��\�X�H�\��[��[���H�X�[ۘ[�ۘ[�\�\�[��K�X�K[Y�[�Y[���[\�X�]H�[�[���[�\�^YYZ\�K]�]�H�Y�\�[��H[��]\�[Y�H��][�K��ۙ][ۘ[KЈ��\\�H�[ZXY�\�X�H�\��]H��X�\�[Y�\����[�]\�Y�]Y��]N��^[���\��[��]�H[���ܙY�[�X�X���[��YH�Y�\�[��HX��\��][ۋ��]YH�[��[ۋ�YK[Z[�]H�[[��\��Z[\�H[������]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[NLM����HRH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX��YY][K[ۙ�Z\���H[�\�^YY�Y�\�[��K����YZ\��]\���[��[ZX�[�\��X�K�YH�\�[܈[�]�]�[�K]�YZ��]K����X[�\��Y\��\�Y�YYX[Y]\��ܛ��]K�[XY�HܘYK�[ZX�[�Y�]H\�ݘ[��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂�������LLL�H0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�Y�M�Y�YYY��������L�L̍N،�ٍ��H]\Έ���LLL�K�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL�0��XYY�X�K[�X��\��[\���ܝ[ۈY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�LNLM�����M�����LMYYNX���LL���X[�\��]Y�۝[��Y\�]X�L���LLL��ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ�]�Y]�Y���LLL�X�Y[^HX�X�][ۈ[�[�[�HX\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL��\�H�\\�]\��\�X�H�\��[��][�H���H�X�[ۘ[Z\���\�Y\��[�Y\�ܚX�Y��ܝ[ۈ�ۘ�\����\��ؙH[���][�K��ۙ][ۘ[KЈ��\\�H���Y\\�\�YH��[YH�]�۝��Y\\��Y[�H��\���[\�[�X���[��][ێ��^[���\��[��]�H[���ܙY�[�X�X���[��YH�X�H�[�[����[��K٘X�H��[YK���\][��[YK��[����[\��Y�X\�X��[������]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[L�L���LNNHRH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����ٚ[\�ؘX����[\�[[��؋��H[�\�^YY�Y�\�[��K����YZ\��]�YH�\�[܈ZY�]�][�]�YZ��]K����X[�\��Y\�YX\�\�Y[�]�^K���ܝ[ۋ�\�Y�YY[��]K�X[Y]\�[XY�HܘYK\��ۘ[]K����\][ۋ��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]ΎM��Y��LY����LMXNLMNYL������YL�M�Y��YM�YM�M�KO�������LLL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��MXML��NXٙM��Y��L�L�YYMK��H]\Έ���LLL��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL��0��Z^Y�Y�[ۘ[Y[��]HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�����͍�M�X����Y�M�L����YNX�N��X[�\��]Y�۝[��Y\�]X�L���LLL���ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[�����LLL��X�Y[^HX�X�][ۈ[�[�[�]Y[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL���\�H�\\�]\�H�\�X�H\\�]�\��\�[��\��ZY�]\�����H�X�[ۘ[�Y�[ۘ[[��]K�X[Y]\��]\�[�[�[���][�K��ۙ][ۘ[KЈ��\\�H[�Y�ܛHY�[^Y\���ؘ[[��[���]�Y�[ۘ[�ݙ\�Y�KX[�]�ZY�X[�Y�[Y[���^[���\��[��]�H[���ܙY�[�X�X���[��YH���Y�YK��\�[��[ۈ[������]��Yۘ[��]�][��[�[��\�\���\][ۋ��HܚY�[�[M0��L�RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX��YY][K[ۙ��[�Y]K��H[�\�^YY�Y�\�[��K����Y^Y\��[��[���\�[�\���\���\��YZ�܈[�]�YZ��]K����X[�\��Y\�YYX�[Z\�[����Z[KYX\�\�Y[��]K�X[Y]\�[XY�HܘYK��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]ΎMM�M�Y���L�M؍؍XL��YYMMLMYMَ͌Xؘ�M�ؘ���L��YKO�������LLL��0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�LNYLMM��XMYNY�L�XN���L�N���X��˂�H]\Έ���LLL�ˈܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL��0���[�Y]�X�\�Y�\�[��HY\][ۈY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�XXX��M���LYMLYXL�͌������LM�L�L���N��X[�\��]Y�۝[��Y\�]X�L���LLL���ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[�����LLL��X�Y[^HX�X�][ۈ[�[ZY�Y[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL���\�H�\\�]\�H�\�X�H�\��[���\��ۙH�][�H���H�X�[ۘ[[��]K�^\�K[�[�\�^YY�]�[[����X�؈�Y�\�[��H[�]�HXY�]�X\�]X��]�Y[��K��ۙ][ۘ[KЈ��\\�H\�X��[�Y]�X���Z[���]H�]�\��X�H��X�\�[�\�N��^[���\��[��]�H[���ܙY�[�X�X���\�[��Z\�\�X[�[���X�\�H���H[\ܘ\�H�[[���]�][��[�[��\�\���\][ۋ��HܚY�[�[MLͰ��L�RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����YH�ٚ[\�ؘX����\��ۙH؋��H[�\�^YY�Y�\�[��K����Y�]�\���\���\��YZ�܈[�]�YZ��\�[����X[�\��Y\�YX\�\�Y��[٘X�H�][��\�Y�YY[��]KZ\�X[Y]\�[XY�HܘYK�Y�\�[��HX]���Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]Ό�����̍NَM��M��̎��NYYX�X�͎YLM�͙MX���MX��YYYLL��HKO�������LLL��0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�M�MY����͙����͍�MَN�L��N��͎̋��H]\Έ���LLL���ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL�H0���\Hܛ��[�][�XZ[�[�[��KX�X�HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�NX�͍�XL�NNL���͌��N�L�X��NL�̌�N��X[�\��]Y��^�Y\�]X�L���LLL�H�ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[�����LLL�HX�Y[^HX�X�][ۈ[�[�]�[�Y[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL�H�\�H�\\�]\��\�X�H�\H�\�����H�X�[ۘ[��Z\�[�K�\�\����[�]�H�]��H]�Y[��K��ۙ][ۘ[KЈ��\\�HY�\�^��Y�X��[�H�]H��Y�K[[��ܛ��[�][���^[���\��[��]�H[���ܙY�[�X�X���[��YH�\��Y^H��Y�[�]�YZ�[Y\�[���]�][��[�[��\�\���\][ۋ��HܚY�[�[MLͰ��L�RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����ٚ[\�ؘX��ܛ�ۋ[�]�ܝ�؋��H[�\�^YY�Y�\�[��K�]��]�\���\�܈�]\�H�\�[����X[�\��Y\�YX\�\�YZ\�[�K�\�Y�YY��X�H\�X�[ۋܛ���]K[XY�HܘYK��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]Θ�،L�L�N��Y��M�LXX�Y�M�Y�N�LMNM�L�XX�Y�X���L�L�L�X�KO�������LLL�H0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�LNL�؍��MLYL�N��YL���LLL��XX�YX��L���H]\Έ���LLL�K�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL�0��ܛ�ۋ[�]\�H�[��][ۈY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�X��LY��L�YXٙNXٌL���LX�N��X[�\��]Y��^�Y\�]X�L���LLL��ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[��X�Y[^HX�X�][ۈ[�[�^Y[�X\�Y\�Y\�]X��\�\��[XZ[��\�\��Y��HۙH�X�HY\�]X�L���LLL��\�H�\\�]\��\�X�H���]�Y[��[���H�X�[ۘ[�\\�H\�ܞH[�]�H[\�X�]H]�Y[��K��ۙ][ۘ[KЈ��\\�H�\�\��[���ܝ[]�Y�\�YX[�\��]H�]\�K\�X�H��ZY�Yܛ���\�N��^[���\��[��]�H[���ܙY�[�X�X���[��YH[YHܚ^�ۋ��[\��۝X���[���]��ۙ][ۜ��]�][��[�[��\�\���\][ۋ��HܚY�[�[MLͰ��L�RH�X�����ۛHۙH�X�[ۘ[Y[	���\��[���۝����ٚ[\�ؘX����H[�\�^YY�Y�\�[��K�]�\���\��\\�H܈�^[[۝�\�[����X[�\��Y\�YX\�\�Yܛ���\�Y�YY�[ZX�[\�ܞK[XY�HܘYK��Y[�Y�X��[Y][ۈ܈[�\[�[�^\��\�Y�X�][ۈ\�[\YY��H���H\��YY[XY�K�[��\�[��\\�\�]Y][�X�X��[��K�[�ٙ��X�ܙ�ۛK�\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ\�H[��X�Y���[�۝[�؜����\���\�Y�]\�^X�ZXY��X�Y�K�ܛX[Y\��KY�\��X��\��[�^X�]�H�YY�[XY�H�XY�X���[XZ[�X�X�][ۈ�\]Z\�[Y[�˂��KKHX�Y[^K\�]�Y]�YZ[�]ΙY���L�X���M����̎Lٍ�MXY�X�X�L�NLMMML��NNMMY���̈KO�������LLL�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��Lؘ٘L�X�L�Y��L�MM����Y̘�NX���H]\Έ���LLL��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL�H0��]H�XY�[�Y]H
+\�\��[ێ������[ۛJB��H�\�H�]X��XZ[�X�ٙ��
+X�\�Y����N�\��]Y\���]K[�YL���L�K���\�Y\��K\�[Y[��X��[�܈��X�[ۈ�\�[�\��]H�[��\˂�H�[ۘ[Y[[ܞK[ۛH�ۘ�\��[��XY��[\��[���܈�YH[��Y\��[�[���XY�^\�H���HH��[��[���Y�\��]�H�X�ۙ�]]][ۜ�[��[Y]H�Y���]Y�\�[�\�H�]�\��X�Y���۝\��^[�Y]Z[��Y��\�ۘ�H[�\�[[�]\���\��]]����K�]\�\�\�ۜ�H�X\��[���\]H^[�Y��[XZ[�[�X���H�[YH�[�]X��[\H�ݙ\��]�\�\X�]H�[�Ҕ�ӈ�]\�����X�[ۈ][��H�Z[�ˈ��[X[���ݙ\�Y�H[�]�Y[��H[Z]][ۜΈ����]K[�Y[��\\��ܛX[��KL���LLL�K�Y�ܚY�[�[�[][]]�H��[�]H\��Y
+L��[�[��H�\�\��[XZ[�[��ܚY�[�[�X���N����\�Y�X��]�X�ݙ\�K��[\��Y�\����X��]�\����\X�HTۙHX��\[��K��������LLL�H0���X��]\]HXYۛ��\�
+\�\��[ێ�������[ۛJB��H�ۙ�\�YYH\�[\�[��ܜ�X�H�X]Y\�[���YX�]\�\���\]Y�^X�]]�Z]Y�[������]Z[��H\��\�X�ۙXY[�K[ܚY�[�[��[�\�[��[�\��\�[ۜˈ�X��]����Z][H�[Y�X�X�H\��\�[��Y[���[�[YK[ۛH�Y�\��\��H\]\˂�H�X\��\X]Y�]ۋ�ۛ[�H\]H�\]Y\���[HH�ܚ�\�\�[��[[��܈�Z][�ˈ�X[X�����\��[�]X��Yܙ\��[ۈ�\�\��\�[��]�Y[�][��X��\]Y[��]\�[X�]�][ۋ�\]H�Z[\�H�X�ݙ\�K���]]؝\�[�\����X�K\���H�[��\ˈ^X��\�[�[�ܚY�[�[�Z[\�H]�Y[��H\�H�]Z[�Y[���ݘ[Y][ۋ\�]�Y]���]X�\�[\�\�[˛Y�\����X��]\���TۙHX��\[��K���\��͍Y]Y\��H܈\�[Y[���������LLL�H0���\�\�X\�����]\
+\�\��[ێ�������[ۛJB��HܚY�[�[�[�]H�]Y�^\��[Y�\��Y�[�ܚ\�Y�ܙHH[�[�H�\�\�X\��[ݙY�Y[��ܚ\Y�\�^\�[��Y�H�۝[���X\���ܚY�[�[�[H�Yܙ\��[ۈ\��Y�]�]�[^[��]�\��\�[ۜˈ�����\��X�KY[][ۈ\��\�[ۈ����Z]���[�YH�܈X�X[�X[�\�\�X�[]K��[�[��ޙ[��[�]H[��X��]�]��YH\�H[���ݘ[Y][ۋ\�]�Y]���]X�\�[\�\�[˛Y��������LLL�H0���]X��[\�H�
+\�\��[ێ�������[ۛK�͍[��X�Y
+B��H\��]Y���H�X�XM��XZ[��LX�X�N�X�Y[^H�\�\��Y�X�X�^X�]��Y�[H�[\�]�\�Y�YY]�ZX�[��[�]\�[X�]�][ۈۛK��TK��]�]H]K�ܚ]H]Y]YK�[�\[�[��]�Y]��^\��ݙ\��ۙܘYKܝ[�[YK��[YKX�X�H�Z[��[YZ[��\��\��H�ۙ\��\]Y\�H�\��[ۈ�\\��[�\]H�]�K��H�]��Z[؜����\��Yܙ\��[ۜ�[�[�Yܚ]H�[�\�][ۈ�X���\�\��HܚY�[�[�]\ˈ���Z][H�[�]X�Y�X�X�H�X���\��Y\�[��]�[�Y[���X��]ٙ�[�H[][][ۈ]H�����\�[�\��[\��܋�\��\�Y��[\��]]�H[��[�[�[�]H�\�[�\�H�X�ܙY[���ݘ[Y][ۋ\�]�Y]���]X�\�[\�\�[˛Y���TۙH�Z[K��H��[[\[Y[�][ۋ�\�[��ۛN���\�L�\��\]KY\��K\�[Y[��X��[�܈�\�[�\��]H�[��K��YH�����]X�\�[[��[L���LLL�K�Y�܈[Z]][ۜ�[�]�X�K]\�\�ݘ[�\��������LLL�H0���\�\�Y���\\�][ۈ
+��͋��\�YY
+B��\�\�]]ܚ^�Y\�[��ۛHH\��]Y�\�\��[��[��[�[��H�Y���]�[[�H�X������Y\��K]]�[Y\��H܈��X�[ۈ\�[Y[��[�Yܘ]YXZ[��LX�X�H
+X�Y[^H�͌�K�\�\��[��[X�Y[^H�]\�[���[�ٙ�\�ܚY\ˈ�[][]]�HܚY�[�[�K\\��]H�[�[�Y�Z[��\�XZ[��\�[[�H�Y�ܙH��[��X�X�][ێ�^X�ZXY�[[�H�H�[XZ[���\]Z\�Y�TۙHX��\[��H�[X���[�\�ݙY�\ܝY\���]N���ܝ�[��[�܈ܙY[�X[�YY��������LLL�H0��[�\[�[��\�\�]�Y]�����]\
+��[��͋��X�\�Y
+B��H[�\[�[��]�Y]�\��\��X�Y�[X]\�H�]�YZ\��[�\�[���Y�ܙHY[�]H�[Y][ۋ�[H����[���\�ۜ�H�X�\�[�ܛ���]X�Y[�]HZ\�X]�[��N����^Y�\�Y�YY[ۛH�]�]H�Y]��\�ܘ][ۋ��[���ܙK�]K��[�\�][ۈ�X���ܛ���]X��]�]H�Y]����Y��\�[�[�ۙ\��Y����[��\]YK�[�\��^X��\�\�Y�HY[�]H�]H�[H�]Z[�[���[YKXX���[�[�]�K��HYYX�X[Z\��[YK�ۙH�\�\��][ۈ[�X���X�]H�����\�\��\�[^YY�[�X�����H\���HܚY�[�[�\�YX[�Y�\�����Z][K��X��]�[�]X����\�Y\��\��Y��[ܚY�[�[�K\\�\��Z[���[��][��Y\��]Y\[�[��Y\��^X���[X[�ܙ\�[���\�H[���ݘ[Y][ۋ\�]�Y]ˈ�\���[���Y]Z\��[��^�[����^Y�XH\��]Y�H�HKZYۛܙK\�ܚ\����H��\[��\�˂�H��\��Y\��K�\�[Y[��X��[�\�Z\��[ۈ�[��H܈��X�[ۈܚ]\ˈ���\ܝYTۙH��]H\�X�\�Y���^\��[ܝ[��[܈ܙY[�X[�ܙX]Y��[�[�]H�]��Y\�[���H��[Z]�X�ܙY[��[Y][ۋ\�]�Y]�ܙ\�[˛Y�]Z[Έ�����\�\Z[�\[�[�\�]�Y]�L���LLL�K�Y��������LLL�H0����[�\�\\��][ۈ�[�Y]H
+\�\��[ێ���͋��X�\�Y
+B��H�ۙ\����^��\�H�]X��XZ[���L�̌LM�ٍ���MYM��XM�ٙYMM�NNN�\��]Y�^��\�\Z\��][ۋL���L�H�ۙK�X[��\�ܚY�[�[����[�Z[H��\��H�X��\�\�\��Y���\��Y\��K�\�H]]ܚ^�Y\���[���H�\�][ۜ��[��ۙ�\��Z]��܈[۝H�XY�Y�\��\�Y�YYX��\���^\�[��Y]܋����H�X\���\�\��Y���۝\���[��Y[��Z[\�\��]Z[�ܙY[�X[��\��[ۋ�\���\��XY���[�Y[\ܝ�]�\�Y�\��Y�XZ[�\�\�Y�Y\��X�YY[�]H�Y�ܙH\Z[��]\���[�Y�]�KܙX�ݙ\�K[��\ܝX��\��������\�Y�YYY[�]K�ܙ[�\�H\�Z\��[ۈ�Z[\�\�\�H���\��[ۈ^\�K��H���Z][H[��X��]�[�]X��\�\�X�ݙ\�N�M��[�\�[��XX�\��Y�^\�[����\�\��[��K��[H[�[۝HY]܋�\�[�Z\��][ۈ�Yܙ\��[ۜ�\��Y����X[]Hܚ]\�܈TۙH]�X�H�Z[K������Y[�X�H܈�]��[��]]�H\��\�[��K��[�K\\���S��H[�]�X�HX��\[��H�[XZ[��[X\�H�]\���X�X��XZ[�ݙ\��[ۈ�Y�ܙH[�HX�X�][ۋ��H���K�\��X�X�H\���[XZ[�[����[�\�Y��\�[Z]][ۋTۙH�X��\�[��^\�Y�H�]X��[�X�[��\�Yێ������\�\\�]�Y]�L���LLL�K�Y���KKHX�Y[^K\�]�Y]�YZ[�]΍̍�LXYY��L��M�Y��YY�Y��͌MLL�X�YLYNY�LM�M�NYXL�ٍ�KO�������LLL�H0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[���L�̌LM�ٍ���MYM��XM�ٙYMM�NNK��H]\Έ���LLL�K�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLL�0��ܚY�[�[�\�X[X�[[��HY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�MX�MMYXM���M��MM�NX��͎Y����X[�\��]Y�۝[��Y\�]X�L���LLL��ܚ��YK�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X��\\��Y�Y�ܙHY]ˈ^\�[���[�HX�Y[^H��\��\���][��[��[��Y��HۙH�X�HY\�]X�L���LLL��\�K�X�[ۘ[�\��[���۝����YH�Y]��ؘX�ˈ��\\�HX�X[[���[��[�\\�[��Y�Y�ܙH\��Z[��Z\��܈�[[Y]�N��ۙ][ۘ[KЈ����[��[��H�ۙ][ۜ��^[���\��[��]�H[���ܙY�[�X�X��ˈ��[��\��Y\��ۘ[]K�X�]�[�]�ZX�[XYۛ��\�܈[��[�Y�Z[�[����\][ۋ��H[�[�HX\�Y\�\��Y�YYؚ�X��[��[��Y�ܚY�[�[�]][��[�[ܚY�[�[\�^�LL�L�LNNU�X�X�X[H�Y]�Y���\[��\�KٙYY�[XY�H\�\�[��[��\�[��\\�\�]Y]����X[�Y[�YX\�\�Y\]X[[����\�Y�YY����]\�KKЈZ\��]�\�[��Y[�Y�X��[�\[�[�^\��\�Y�X�][ۋ�\[��X�\�Y��و܈�YK�[Y^H�X\�[�YK��HۛH�YY[XY�K]Y][�X�X�[�ٙ���[��H�X�ܙ��[��K�\ܝ[�[YKݙ\��[ۋX�Y[^K��YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۋ�\�[�\���[��[�]]�X][ۈ[��X�Y��۝[��۝�X�[��Y�H�\�[����[�]X��Yܙ\��[ۜ�\�ˈZ[H�����\�[��[���^X�]Y�]��Y]X��[���[���Z][N�[��[��Y�\�Y��H]\��\HY[�X�[Z[H�����\�[�[�\�Y�]\ˈ^X�ZXY�X��\��ܙ[�\�H��X�YY\��KY�\�[�]�HQ�]K�]KٙYY�[XY�H�XY�X���\]Z\�Y�Y�ܙH�Z[Z[���[���ۚ^�][ۋ��������LLLNH0��ܚY�[�[�\�X[[[��XY�HY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�؍��YNNL�L�X�L����Y��MM̘��L�YN���X[�\��]Y�۝[��Y\�]X�L���LLLNK��\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���[���\]HZ[H�X�ݙ\�H\��]�H\��Y�Y�ܙHY]���\\�]H��NHX�Y[^H\��ۋ��][���]Z[�Y��H^X�HۙH�X�HY\�]X�L���LLLNH�\�N��X�[ۘ[Y[�\��[���۝ܚY�\�ٚ[KؘX���ܝ�؋�\�[��Z\���H�[�Y]KY�H�[��][ۈ[��\��X�H^\�N��ۙ][ۘ[KЈ�[�Y�]���[���]��ۙ][ۋ��^��\]H[���\��[��]�H[���ܙY�[�X�X������[��\��Y\��ۘ[]H܈[��[�Y\�\���\][ۋ��H[[]�[��]�[�\�\��Yؚ�X��[��[��Y�ܚY�[�[��[Z[���]�\�[ۈ[��[�[�M̞̍�X�X�X[H�Y]�Y���\]H��\�][�^X��\�KٙYY�[XY�H\�\�[��[��\�[��\\�\�]Y]����X[X�Y[���KЈ�\�[[�\[�[�^\����Y[�Y�X�\�ݘ[�\[��X�\�Y��و܈��X�]��YH�X\�[�YK��H���H[Z]Y��YYܚY�[�[[XY�K]Y][�X�X��[��K�[�ٙ��X�ܙˈ\ܝ[�[YKݙ\��[ۋX�Y[^K�]\�Y�YY�[�[]܋�\��Y\��[�[��K]X�\�KؘX��[���[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ[��[��Y���[�۝[��۝�X�\��\�����Z][H^X�]X�HX��[��[��[��Y��X�Y�H[����\�Y[�X�[Z[K؜����\��X���[��[�\�Y�]\��^X�ZXY�X��\��ܙ[�\�HY\��KY�\�\�[Y[�[�ۛ[�HQ�]K�]K�[XY�K�\��XY�X��\�HX[�]ܞH�Y�ܙH�Z[Z[��\�[���ۚ^�][ۋ���KKHX�Y[^K\�]�Y]�YZ[�]΍���YM�NL��M�M�L�L�NM�̙X�؍���ML�M�����YX�KO�������LLLNH0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��ؘ�Y����LNNL��LXX�M����X�NK��H]\Έ���LLLNK�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]΍�L�YX�XX�Y��XMY���،����L���YYL��LMX��M���Y�NX��Y��KO�������LLLNH0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��ؘ�Y����LNNL��LXX�M����X�NK��H]\Έ���LLLNK�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ι��ٍY��ؘ�͍NYX���MLML�LN���YL��ٌ�ٌ̎N�̌��KO�������LLLN0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�،�XL��NMM����͘���LM��LM�����H]\Έ���LLLN�ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]ΌNX�M�ٙM�XNؙL�X���M�YM�MLXX�LN�Lٍ�NLML��X�YMNY�L�KO�������LLLM�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�ؙ��NY�M�̘N�Y��٘��Y�Y��X�M���H]\Έ���LLLMˈܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY���KKHX�Y[^K\�]�Y]�YZ[�]Ό�Y�N�X���YNNMY��Y��Lؙ���NM�N��M��M���N�Y����MHKO�������LLLM�0���]�Y]�YX�Y[^HX�X�][ۈ�[�Y]H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\���]��۝[�X�\�\��\��[���ۚ^�Y�\�H�X��Y��]X��XZ[���M�̌M��،�NNLNX�YX�N،�XM�͍؍��H]\Έ���LLLMK���LLLM��ܚY�[�[�]�Y]�Y�Y��[���[�Y�\�\�\�H�\�\��Y����]���Y[�Y�X�\�ݘ[\��[�\�]Y��H]YS��\]H\��[�[���][��[�ۛ�ۋX��\��H�[�X��\�H�[�\�Y�]H�\�YXZ[�X�\�\��^\�[��\��ۜ�[�[�\�[�\����H�^H[��[��Y��H��Y�\�[[�H�X��\\�H�\�\]Z\�]K��[�K\\�^X�ZXY��X�Y�[Y]H�\�Y\�ܛX[Y\��H[�XZ[��Y�\��XY�X��\�H�[�\]Z\�Y��\\�][ۈ\���X�X�][ۋ��HH�UP����S��\\�][ۈ��[Z][ۙH�\����Y��\�H��X�Y��X����H�ۛ�X�YX�\�\�]\�XZ�HH�[�[�]\���[Z][��\�Y�H]�^X�XY��������LLLM0��[۝H\�Y�\�]H
+\�\��[ێ����H�[�Y]K��X�\�Y
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[���K�[X\�Y�����X[��X��Y�\�^\�[����MZ[H\��]�H�]Z[�Y����\�YZK�[۝K]\�YX�\�]H��[���[[��[]Y[��X��Y�X��\��\�Y�X���\�\��Y��H\�\�\�ݙY�ۘ�\�H[۝K\�X�Y�X��[Y\Έ9�"9��y�l9�k��9�"9��ya�z+�K���[YۙY�\��Y[�Y�H^�[��ܙ������\���KX��\Y�ܛX]�[�[Z]��H�[��H^X�]�]�HX�[ۈ�Y\���X�[�Y܈��[ۛH�[X[�X�ˈ\�����[[���[ؚ[H�X���]Z[Y^\�[��X���[�[��^[�][ۈ�]Z[�Y[�\�\����\�K��HX\��\����ۛN�ܚY�[�[�X�Z][�\�TH^[�Y�]]���][��[[�[��]�Y[��K\�Z\��[ۜ�[�[۝H�ۙ�\�X][ۈ�Z]�[܈�[XZ[�[��[��Y�����X�[ۈ�[��[�[��X[ܚ]\�ZYܘ][ۜ�܈Y�H\�[Y[��YYY��H�[�]X�̌��L�͎��L͍������\��X���^\�[��\�Y�\�X[�Z[\�K�\X�]H�X\�]]�]\�Y�۝�X�[۝H�ܚؙ[��[�[۝H�]�Y]������\��X���\�ˈX�X[\����[ؚ[H\�Y�ܙY[����[��X�Y�H��\]H��[�K\\��]H\��Y[��Y[��[LM�[�[��H��[X[���[[�[�H�[�[YH�ܚ\�X]����^�\�X�HT�ˈ\�\�^X�]H]]ܚ^�Y\�RK[ۛH�[X\�HY�\�\���ܙ[�\�H��X�Y���K�Y�\��\�Y�X�][ۈ�[�\]Z\�Y���\\��܈�ܘ�H�Y��\���������LLLM0��[۝H�]�Y]�[�Yܘ]Y�[X\�H�[�Y]H
+\�\��[ێ����
+B��H�[�[�X��[��XY�X�Έ�\��X�H�[Y\�X�HZYܘ][ۈ\YY��]]ܚ^�Y�ܙ\��[�����]\����\��K]��[��XY��X��YY\�H�X[�\��X�H��N���]�]H�[�[��H[\���[[�H\�X��\��X�H^X�][ۋ�[��\��]�X�\�]�H�ܘ�Y��[�[�H�Y[��XY��\�X��\��X�Hܚ]\�[�]����[�H[�ۋ�]][�X�]Y����]��X�\�]HY�\�ܚY\ˈ[�۞[[�\�]�H[۝H�]\��[����ݙ\��Y]��]\��ˈHY[�]H
+�MH�\��[ۈ�[�]X��X�������\��X�HH��X�[ۈP��\�[[�H[�\�ˈ���X[[۝X�\�Y܈�ۙ�\�YY��[�[�[���[���X�Y��Y�\�\�H�[H��۝[�X�X�][ۈ�]K��H��X�[ۈ�L�^X�MY�[HY�HX��Y�H[���Y]]�H�]�Y]�ZYܘ][ۜ�\�H���[��[Y�\�\�X�ۙ�\�YY�ۙ\�[X\�[���Yۘ�K���[�[��X[X�X�][ۜ�ܙX�Z\�܈ܘ[��[��\ˈ]�H�\��X�K\��H�XY�X��^��YZ\��[���]�]K\��[XHT�Q�H
+�[�]X��^\�\�Y�KYܘ[�Y]
+K�YH�\\�]HT�Q�K[ۛH�\��X�HZYܘ][ۈ[���X�[ۋ\�\Y�Yܙ\��[ێ�X]�H]�\�H^\�[��[\�VP�UK�X�Kԓ���Y[���ܙHܘ[�[��[��Y��Y\��۝[�ٙ�XZ[�[�[�\��X�H�XY�X��[���X�Y�]\�\�˂�H��\]HLL�X��[X[��[�[��K��\�Y�K\\��]H\��Y[�[�Yܘ][ۈ�X���[�X��M�\�ۈH�X]\�H��[����[�[���Y�Yܙ\��[ۈY�[۝H�]\��[�]�Y�][ۈ�X�ݙ\�H[��XY[ۛHXY[�H�\��Y�X�][ێ�ܚ]K��ۙ�\�X][ۈ�\]Y\���]�\�]]�\�]�K���X�[ۈ�[XZ[��[��[��Y[�[ZYܘ][ۜ�ؘX��[����X�Y��Y�\��\�Y�X�][ۈ�[����\]\˂�H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y�]X��XZ[�XX��X���X�ݙ\�HYYM�؈\�Y��Y�H��\]H������MZ[H\��]�H[��\�][ۜ�X\H�L�H�]�][H�X��Y\���\�ܚX�[[[�[���X[[۝HX�X�][ۜ�ܙX�Z\�ܘ[��܈��Y[\�[�Y�YY\�[��[\[Y[�][ۋ��H���YY�HY\\��Z[�H�][\�Y]\�Z[�\�X�ۘ\�����H^\�[��ݙ\��Y]��]�Y[�X]�[����\��H��[����\��\�[ۛHX�܋��ܙHQ��]�Y]�X�۝[�\�^X�]�[�[��HX�X�][ۋ�[�]�YX[��[ؚ�X�[ۈ�ۜ�[���Y��[��\�Y�ۛH�]\��[�����ۙ�\�X][ێ����[�[��Hܚ]\ˈX[�X[�X��[�ܘ[���[XZ[�]]ܚ]]]�N�Y[�]H[���Y\X�]HۛH[��]�\�[�\�]\�Z\��[ۜ˂�H�]��\�X�H[۝H�\�[��^Y]�\��[ۈX[�����XYX�ۛ��Y�[Y[���[XZ[�X�[Y\�ܞK��ۙ�\�Z\�Z�[��܈��[ؚ�X�[ۈ�ۙ�\�X][ۋ�\�Y��[�[��[[��[X�Y[۝Y��[YK�\��[�ܘ[��Y��\����]ܙ]���][ۈ�X\�[��\�KYY]�X\���]]�X]X�X�X�][ۈ܈�]�HY�\�[��\�Z[�ܚ]\ˈRH�\����[�YX�]�H�ܛ\˂�H�HY[�]H
+�M��\��[ۈ�[�]X���ܙT�S�X����X[Y\\�\��[����ޙ[��X��[��L�L͍�RK�\�[Z[�\�\��\��Y�\���ۛ�X�[ۈ\�\����[�][ۛH[\ܘ\�H[�^�\��\��[����]\�H�Z�H�\�\���\]H�K\\�[���X�Y�[Y]K�Y�\��X����[XZ[��\]Z\�Y�Y�ܙH�Z[Z[��ۛ[�H��\][ۋ��H��X�[ۈ\[�[��H�Y�]X�Y��\�][ۜ�X\H�L�H�[�\�[��\��[ۋ\�\ܝX�][�˛Z��[�XZ[��\�[۝K\�]�Y]�\�[Y[�]\��T�T��H]^X�]�H�][�����[[�HZ^�\��Y�X�][ۈ�[��\�[��H�[X\�K�[�\�]�HX��Y�H�[\�X]�XZ[���]�Y\\��[�^��Y��[��\�\�HHۛH�[�[YH�[��\ˈ^X�\�[Y[�X[�Y�\�[����X���[������[�˂�H\�[Y[�ܙ\��Y]]�HY[�]Kݙ\��[ۜ�ZYܘ][ۜ��\\�][H�\�Y�YY�ۙ\�[X\�[���Y[�
+��ܘ[��K^X��X��Y]\�L�HX��Y�H\��YH�]�Y]��[\���X�Y���H�XZ[�Y�\��XY�X�ˈ��]�H[۝X�X�][ۋ��ۙ�\�X][ۈ\�H\����X�[ۈY[�]HX]�\��\�H�XY[ۛH�]�\�Y�YY��X\�Y[���Y[���Y]\��ܛYY]\��X���[���������LLLL�0��[۝H�]�Y]�[[]]X�H�\��[ۋܙX�Z\�ܚٛ��
+\�\��[ێ�����[��[��Y���\�YY
+B��H�ۙ\����^�X]\�K�[۝K\�\�Z�\�X�ۙ�\�X][ێ��\��[�XZ[�XX��X�[��YY�X�ݙ\�H�X���[�XM�ML��[�^\�[��Z[H\��]�H�\�\��Y���X�[ۈ[��X�[ۈ�\���[XK[ۛKܙXY[ۛH[��ۙ�\�YY��[۝K\�]�Y]�X�\�\�H\�YY����X[�[�[��X[�X�ܙ�Y[�]H[���X�X�][ۋ�ۙ�\�X][ۜ��[Z[�\��ܘ[��܈��Y[\��[��Y��HY]]�H�\��X�K[ۛH�[�Y]N�[[]]X�HX�X�][ۜ��X�\Y[�\��YۛY[��[�ۘ�K\\�\\��ۋݙ\��[ۈ��[ؚ�X�[ۈ�X�Z\��HۛH]]][ۈ�]]�^\�\�H�]�]H���Y�[��[ۜˈX�X�ܘ\\��\�H�X�\�]H[����\��[�ۋ�]][�X�]Y]�H��X��\��[��\��X�H\���\�X�X�Hܚ]\ˈ�]\�H^\�[���[�[��H�\ܝ�\�Y]]ܚ^�][ێ�����[^[�H�[\�P���[ۙ^H�[H܈��XYX�ۛ��Y�[Y[���H��Y^�HH�\��\�[۝H\�^H]^X�]�[�[��H�X�Z\��[ۋ�H��\��H��[��ݙ\��[۝H\�Y���[�ܙ]�\�[ۜ�[���YHY�\�Y[��\�ܚX�[[۝H[��Y\�ؘ]�\�[��ۙ�\�YYZ[H�[���[��[ˈ]�\����[�[]H�]�[ۙ^H܈�]\���]���\��H]K��[YKX�۝[��]�H\�Y[\�[��^X�]�K\�X�Z]X^H\��Yۈ�]�H]]ܚ^�Y�XY\���]�]�\�][���X�Z\ˈ�X�Z\�X�����\����HY�Z[�Y�\�Z�[��H[۝����\��[�X�X�][ۋ^X�]��[ؚ�X�[ۈ�][Y[�[��\��[��\��\�Y�[�\�]Y\�^K���\��H��[���]�[[�[���]�]H�]��[�[��HX�X�][ۈ�Z�X��ۙ�\�X][ۋ���\�\�ۜ�H�XY�X���]\���HܚY�[�[�X�Z\�[YK�]�\��ۙ�\�\�H�]�\��\��[ۋ��HM��[�]X���ܙT�S�X���\��Y�\X�]K��ۘ�\��[���Y[��[��H�X���X�X�][ۈ�ۘ�\��[��K�]��\��[ۈ�[H�Z][���]���][ۈ�[H�Z][���[YKX�۝[��]�K��\��H�[��\��\[�[��Y\�\�Z\��[ۜ����\[�K��ܙK�]K�]��X�\Y[��[[]]X�H�X�Z\��[��X�[ۈ���X��[�[��[��YܚY�[�[�\ܝ��X�ۛ��Y�[Y[��^\�\ˈ^\�[���HY[�]H�X���[��\��Y��][��P�ԓ��X�X�YY�[�\��X���\��Y��[N���X�[ۈ��[XH\[�[��Y\�X]����\]H��[�K\\��]H\��Y[��Y[��[LLH�[�[��H��[X[��[�[��[��Y\؜����\��TK����[���Yܙ\��[ۜˈH�U�[۝K\�]�Y]��X]\�H�[X���[�]�Y[�]]�Y�K؜����\�[��X[�[�[��X[X��\[��K��H�]X�]�[�Y[�X��[��\��\�����Y�HH�Y�]H�]�Y]��Y�ܙH^X�][ێ����\\��][\Y�\�\��\�\��Y�܈^X�]\�Z\��[ۈ�\�ۛH�X]\�K�[۝K\�\�Z�\�X�ۙ�\�X][ۈ[�H^\�[��[�[�[Z[���]ZK��]X��[��\��]ܞK�\�[�[H\���[Z]Y��[HۛH[�[]]]ܚ^�][ۈ\��]�\������Z[H]\��[[�KY\��Y܈\�YY���X�Y�H�[XZ[��H]\��[X\�H�]K��H[�Yܘ][ۈ�۝�X��[[�[�Έ]][�X�]YY�HUT�\�]�HX�܈Q�[��Z[HZ[�[X[]\�Z[�\�X�ۘ\�����HHVT�S��[۝H�ڙX�[ۈ�]�Y[�X]�[���Y�ܙK�Y�\���\��K]��[��XYˈ�]�\��ܝ�\������\�ۘ\��X�܈Q��H܈��\��H��[�\��\�Y[�]��\X]�\]Y\��X^H�XYZ\���X�Z\�]]\��[\�^H[�H�]�\�[�[��X�X�][ۋ��Y\\�[��[��ܙH���H[�\[�[������\�HRK�\�H[�[\��۝�X�[�\�Z\��[ۋ��ۘ�\��[��K؜����\�\��\�˂�H�[XZ[�[���X]\�H�ܚΈY�HY\\���Z[�[��[�[��H�X�Z][��\�Z�\���[ؚ�X�[ۈ�]ۜ�\]�\�X�H[�[��\�ܙY�[�^X�]�ۙ\�Y[�]H[���Y[�[��[�[X\�H�\�Y�X�][ۋ����X���Y�ܙH\�[Y[�\�H�]�Y�]�X���[��Y�\�]�[�X[\�[Y[�\�X�HH�]�RK�TH�ܝ�\�[ۛK�]Z[�X�\�Yۘ\���ܙX�Z\�[��]�\�[]H]�Y[��K��\�]Y]�^\��[XZ[�[�[�ˈ���Z[H]H�X]\�H\�[�XYH]�K��������LLLL�0��[۝H�\�Z�\��ۙ�\�X][ۈY[�]H��[�][ۈ
+\�\��[ێ�����[��[��Y���\�YY
+B��H�ۙ\����^�X]\�K�[۝K\�\�Z�\�X�ۙ�\�X][ۋ]\�XZ[�XX��X��ܚY�[�[[��X��Y\�Y�X��ؘX��\��\�\��Y�^\�[��Z[H�X�ݙ\�H\��]�H�]Z[�Y�����X�[ۈ�S�[�[��H�ۙ�\�X][ۋ��\��H��X�[ۈ܈��Y[H�[��K��H\�\��ۙ�\�YYH�Y��\��[�9��9d#H[��[�[��X[]]��[�YZ[�\�HH�SQH�ۙ\���ۙ�\�X][ۈYX[���]�Y]�Yۛ�ؚ�X�[ۜ�ۘ�H\�\��ۈ\�X�\�Y[۝H�\��[ێ���XYX�ۛ��Y�[Y[��\�H��\ܘYY[��\���ۙ�\�\��\�[ۋ��]�[ۙ]\�H�\��[ۈ�YY�H�]��[�[��HX�X�][ۈ[�H�]��\�Z�\��ۙ�\�X][ێ���X�ܙ��[XZ[�[[]]X�K��[Z[�\��\�H\[���ܙYY�ۛK��\��[H���Y��H\��\��\��]YZYܘ][ۈY�[�[\H^X�]Y[�]K[[��X�K�\��X�K[ۛH�[��\[�\���\�[��]�]HY\X�]Y�X�\Y[�[\��]�\���[��[�H�X[X���[��Y]�[��[���]�\�[�\�]�\�Z\��[ێ�]�\�H��[�]\��]Z[�]��ۈ]�HX���[��[\�[Y[�ܛ�K�]K��ܙHܘ[��\]X[�[Y\����Y[�Y�HH�[YH\��ۋ�����YY�XH\�\��[Y\�܈ܘ[�^�H�Y���XZ�H\��\�˂�H�H�[�]X���ܙT�SY[�]K�\X�]K[�[YK�[�X[ܙ]���][ۋ�^\�K�ܛ���\�ܙK�ܛ���X��\[�K�[[]]X�KPP��X���\��Y��[K�\�\���]�HX��\[��H܈��\][ۈوH�ۙ�\�X][ۈ�X]\�K��H[�[�Έ[[]]X�HX�\�Yۘ\���\�]�\��[ۈۘ�K[ۛH�X�Z\��[�[��H�X�Z\��[ۋ�\�X�H�\�Z�\�X�[ۋ[�[��[���ܙY��TK؜����\���ۘ�\��[��K�\�Z\��[ۈ�Yܙ\��[ۈ[�^X�]�ۙ\�[��[���Y[�����^��HH�ܚ�[���ۙ�\�X][ۈ�]ۈ܈�Z[H�[Z[�\��[]�\�Y�Y�ܙH][�]�Y[����^\�ˈ�\�]]ܚ^�Y�]�Y]��^\�
+�X��\ܙ\�ܙK[ۚ]܈[]�\�H�X�Z\ܘ\��Y��X�ݙ\�KYX\�\�Y][��H[��^^YX\��\ܝ
+H�[XZ[�[���\]Y��������LLLL�0���ܜ�X�[ۈ��X�[\��]�[�\Z\�
+\�\��[ێ�����B��H�ۙ\����^�[YH\��]Y�ܚ��YK�^�Z[KX�ܜ�X�[ۋ[��X�[X\��]�H���H]\�XZ[�̍ٙYMˈ^\�[����\]HZ[H�X��\[��[܈�[X\�H\�Y�X���]Z[�Y�^�\�]�H����X�X�][ۈ���X�]Z\�Y��HX�X[�XY[ۛH�Z[\�N��]�Y]�Y�ܜ�X�[ۈ���XX�Y�\��]�H�Y�\��][ۈ[��Z\�Y�S�UL��LHۈ\X�]H�[\�����[��X�[ۈ��Y�X���Y��[�ۙ�\�YY�]�\�[ۍH�]���X��\�ٝ[�ܜ�X�[ۈ]Y]��]Z[\�[�XYH�Y��ݘ[YK��T��P�WԑURS���\��H�ܙY[����]�][HX]\�X[^�YݚY]�Y�����X�[ۈ]H܈[XY�H[�\��H�\��]ܞK��H���N�Y�[�][ۋ[ۛHYZ[���ܜ�X�[ۗ��ۙ�\�W�Z[W��Y]�\Z\��]\�\�^\�[��Z[W��Y]�\��]�W���ܙ[�]\��܈\��]�Y������[[��Y�\��[�]�ZX�[���YH��\��H[��Y�K���[ۙ]\�H[�H�[\���̈��ًܛ��X���X\����K��\X�[]Kٝ[��[ۈP��X�H����X�ܙ�܈ܚY�[�[�Y]��ܙ[�]\��[��Y���Y�H��\��H�[��H�YYY��L�H�[XZ[���[�ۚX�[��H�[�]X��Yܙ\��[ۈ�Y\�^X�M���X�[��\�X�[��ܙ[�]\�[��Y[��\X�]H��[��\�Y�Y\��]Z[L��\]\��][��[��Y�\��۝���[M�\��]�Y�[��]Z[�Y[�\]YH^X�[���YK���\��H[��Y�K�]Y]���ً�ۘ\���\X�]H�X�ݙ\�H[�]�\�H[�X[ܛ��X����[�\�K��[�K\\�[���X�Y�K�Y�\��\�YYY�[�][ۈ�XY�X���\]Z\�Y�Y�ܙH��\][ۋ�\�\�Y�H[��X�Y����\^H܈�X[�ܜ�X�[ۈ�X�Z\��[ۋ��������LLLL�0���ۙ\��ܜ�X�[ۈ��\��H�]�Y]��[X\�H
+\�\��[ێ���̊B��H�\��[��ۙ\����^\��]Y�^�Z[KX�ܜ�X�[ۋX�\�\�]�Y]����H]\�XZ[�ٙM�L�H
+��Kݍ��H
+��
+K��X[��\�[���[��\]H�X��\�\�Y�YY���\��H�ܙY[���X�X[HX]\�X[^�YݚY]�Y�]�][N��X[�����XY[ۛK�]�\�[��\��]ܞH܈\�\�Y�X�ˈ\�\���[�[��Y�H[��X�Y�����\��H��X�[ۋ��X�[ۈ�[��X�[ۋܙY[�X[܈��HܙX][ۋ��HX�X[�X�ܙ[��[�]X�����\�X�\�H]]X[H^�\�]�H\�K��\��[�\��\��H�X\�[��\�]�\�[ۈ�X�Z\�Z�X�[ۋ��[�Y]H�\�\��\�[�[Y\�X��[�ۛ�ۈ�X\���Y��\�\���و�۝^�]�]Y�[���[�[���X�[�\�ܚY�[�[��[��[���\�\�[\�[�ۙH^X�][��[X�Y�ۙ�\�X][ۋ�X�܋�]]�[XZ[��\��\���[���]��ۙ\��]�Y]�\�\[�[ۛK\�ܙ]�\�[ۋܙ\]Y\��]Y]��[��][�^\�[��]�ZX��ܜ�X�[ۋ��H\�ݙY���N����]�]H��و�[��[ۜ�[�ۙH�]��\��X�K[ۛH�]�Y]�Y�ܜ�X�[ۈ�����\�\��\X�[]Y\�X�HP�ԓ��[�[��H�]�Y]�\�܈[ۙ]\�H�[��[ۜ��[��Y�^\�[���[�[��H��[���\�\��Y��\�[ۛH�[�]X��X��\���ܘ�Y[�Y[�]Y\����\��Kܙ]�\�[ۋ������[�ۛ�ۜ����X��[[]]X�H\�ܞH[�\X�]H�X�ݙ\�H�ݙ\�Y��HY][ۘ[�Y�]H�[�[�Έ��ޙ[�Y�X�H��[���[��[�\�]H�Y��[���YHY��\�[����H�\���ˈ�]���]\��Z�X�[����X��[�H�[�[�\�[Y�\�Z\�X]�����[\�H��[�[��X[�ܛ][H[�\���\��K\�]�Y]�]]ܚ]K����Y\���\]X�[]H�[XZ[���\\�][H�\ܝX�K�����Z[H[��\ܝY�\���\��\�\��^Y��H�\]Z\�Y�[X\�H�]\Έ��\]H�K\\�ܙ\]Z\�Y�[Y]K�\��[�XZ[��]�Y]�Y[ۙ]\�H�X\����K�[��[ۋ�P�ҕ����\��H�XY�X��[�^X�Y�\ˈ��\]H��[�K\\��]H\��Y
+LH�[�[��H�\�\�N��ܛX[��X�Y�[����Y�X��[�\�[Y[�[���ܙ\�ˈ�\��[����HY�H\���\�X�H�ܜ�X�[ۈY]�X�ݙ\�N�����Y��\��[��X�[��]܈��Z\�H�]X�ZYܘ][ۈ�]�][�^X�]H\�Z]Y�Y�H[�ٙ���������LLLL�0��Y�X�H[X��ۚX���][��[���[�Y��[��XY[�H
+\�\��[ێ����JB��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y�]X��XZ[��،XN�\��]Y�^�Z[KY[X��ۚX�\��][�ˈZ[H�X�ݙ\�H\��]�H[�]�H�\�][ۜ�X\H�L������ۙ�Y��Y�[�][ۈ�]�][H�X��Y\����X[��[��܈[[�[��\�ܞHܚ]\˂�H���\\�]H�]\�\Έ�XYHY�X�H[X��ۚX�]�Y[��HY���[�\�]H�ۜ�[��[��\��[�Y]H�\�[�]�Z[X�N�[��\�][\�XX�Y��ܙT�S\��]�H[��\�[ۈ�]]�S�UHM�M�[�\�]Y�THXY[�K��X��\�ٝ[��Y�ܙY�]HYX[������X^ˎ��\ܝ��\����H��[�Y���Y�]��[�[Z]Y[Y[�]܈�ؘ[��H�[��K��HRH]�Y[��H��]H[�\[�[�و�\��[�[][ۈ�X�K�TH�Z�X��[\H]�Y[��H]�X\�N��S[Y[�]X\Yۙ\�K��[��[ۋ[ۛHZYܘ][ۈ�\�\��\���K�P�[�\����[Z]��\�]�][��
+��[�Y��[XH���]�X�ˈ�\�\��H[����ۙ\�Z\�ܞKX[�X[�[Y\�[�ۛ�ۜ�\�]Y]X��Y�\��[���[���X]]�\��ۛ�X]]�\�]�H�X\�[�Y\˂�H\��]Y�[�]X������\��TKٝ[�\[[�H\��Y���[��ԑT�M�\��X�Y����X��[��\�Y�YY���X��\��[��[��Y��K�P�����[�[��[]Y�[��[��[��\�ܙY[Y[�]��[�����X�Y�[Y]H�\�Y\���X�[ۈY]Y]KܙXY�X��[�Y�\��\�Y�X�][ۈ�[XZ[��[X\�H�]\������X�[ۈ�[��X�[ۈ\�Yۈ�Z[�و\�\���������LLLL�0��X�Y[^H�]X��][���XY�X���\Z\�
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^��\�H�]X��XZ[�̍̙�K\��]Y�^�X�Y[^K\�]X�X�][���X[��\�[��X�ݙ\�H\��]�K��\����HY�\����\��K؛�Kܙ]�Y]���Z[XY�H\�\�\���]X�X[�L�L�\�X�ܞH�XY��Z[��]�X[�^H�XH[�۞[[�\��]X�TN��]�\��Z[YY�[�[[��H�[�ˈ�[YH\�ݙY\���YY�\��X�\��\�H�XY\]�^���]���\��K���Y[��H܈�Y�˂�H�[YK\�]H�]X��][���\��Y\�X�X[]\��]\���[�Y]H[��Y\�]�\]Z\�Y�[Y]H�[��]��\�Y�YY��\��H�[\ˈ^\�[��Y�H�[Kۘ]�Y�][ۈ[���ۛ�ۈ[����]Z[�Y�[�]�Z[X�K�[��Y�HY]Y]H�[��X�ˈ��[�۞[[�\�TH\[�[��K�]��\��X�K\�Z\��[ۜ���Y[H܈\ٚ[�[��Kݙ\��[ۈ�[��K�^\�[��L�LH[�[�]�Y]�YL�L���K���\��KٚY�\�H�]\�[��[��Y���X\�ݘ[܈�Y�[�\�]Y\��ۋ��HNH�[�]X�X�\�\��X\��[�\�X�ܞH�L�L�[�]�Z[X�K�[��Y�K�[���]Kۛ�Y^\��[\�\]Y\�\��\���ܙ[�\�H�[������Y�\�[�X�X[\�X�ܞK���\��K�\��XY�X���[XZ[��\]Z\�Y��\�Y����[X\�YY�\��\��\�[Y[�[�[Y�Z[�ۛH�܈�^Y\��K�Y�\���ۈ^H����]�[��\X�]H�۝[���������LLLL�0���]�Y]�YX�Y[^H[�ٙ�[�Z[H��\��H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^�]\��[���ۚ^�Y�\�H�X��Y�]X��XZ[�LX��H����X[�\��]Y�^�X�Y[^K\�]�Y]�YZ[�ٙ�[��X�ݙ\�H\��]�K�\�\�^X�]H]]ܚ^�YH��X�Yܙ[�\�KT��\Z\�[��]�Y]�YܚY�[�[Z[H\��ێ����]��ܚٛ���Y�����[�����Y[\ˈ^\�[����\��HL�LK��\�Y\�]X��\�\�[\�YYKٚ[�[��Kܝ[�[YKݙ\��[ۈ�[\�[��[��Y��HX�\�\�����Y�\�ۛH\�X��[��]�Y]�Y�[�Y]\ΈX�X[��K�[YK�\�ݘ[�Y�\�[��K��\��KܚY���]�X�H�X����[�ۚX�[��K���\��K�Y]Y]H\�[��]�[XY�H\�\ˈ[�ۛ�ۈ]]܋�]H�[XZ[��[�[�[���Z\��[���[��[Y�]\�\�H��X�X�][ۋ��H�\�Y�Y\�X�X[�]�SY�Z[���]�Y]�Y�[�\�[��[��Z�X��\��]؛�H[\\�[�ˈY�X�HL�LH\��]Z[�Y�]KZY[�X�[K����ٝ�\�KY�[�\�]Y��Y[�Y�X�\�ݘ[܈�Z[Hو[X[�^\��\�Y�X�][ۋ��HܚY�[�[[�\[�[���^���\��H]Y]���\�MH\��Y\��[\ܝY[��\\��[��[��Y��YHܚY�[�[Ց���\�H�]�\�Y�]�[��X�X[H�[�\�Y�[��X�Y[�X\Y���[�]�^K[^Y\�[��\�[��K��YX\�\�Y[XY�H]K���[ZX�[�X][���X�X�K�X\�]\�KX�[ZX�[ܙX\��\��[�[��[��۝�[�[ۋ�X�[ۘ[KЈ\��\��[ۈۛK�X�X��X�ܙ�]�[H�[Y\�RH��\��K\�]�Y]���\�[�\���^�\�X[�[�Yܘ][ۈ��N��]�]H��\��HX��Y�\�[�Y[�Y�Y\���[XZ[�[�[��X��Y\�Y�X�˂�H^\�[���MH�[��ZH�ܚٛ����ۘ�\��[��K�\�Z\��[ۈ�����[��[��Y��[[ݙH\�X�XZ[��]\�[��]Z[��[�Y]H\�Y�X��܈^\�[��]]ܚ^�Yܙ[�\�H�X�܋��ܚٛ���\����[�\�]H\��ۜ�\�ݙKܙX]H��܈�\�Y�Hۛ[�H\�[Y[���[]YN�[�]X��X\���X[��\��H�L�L�[��Y�\�HX��[��\��\����[���ܙ\]Z\�Y�[Y]K�Y�\�[�ۛ[�H]K�\��]��\��X����[XZ[�X[�]ܞK����[�[��K؝\�[�\��]H܈\�Z\��[ۈܚ]\���[�\�][ۋ]�\�]�Y]��]\�H]]�X][ۈ�[�YY�]�^\�[����X�\��X�܈[�ٙ���H�]���Y[K��������LLLLH0���ۙ\�[ۛH��\�YZ[H]Y]\�ܞH
+\�\��[ێ����
+B��H�ۙ\���۝[�X][ۈوZ[KX]Y]X��\�K]������H�������N�ܚY�[�[^�\�]�HX�X�][ۈ����\�\��Y��X�ݙ\�H�X���[�̘�X��[��[YKY^H��\]H\��]�H�\�\��Y�X��\�H�Y�\�[��H�ۛ�Y�Z[Y[��Y[��ۙH^X�]��[�]�N��]�]HܚY�[�[��[XZ[��]�YH�\��]ܞK�ۛH�[�]X��ܙY[���˂�H�\��\��ۙ\�Y[�]N�^X�^\�[��X���[��]]���\[�HURQX\[���\�Y�YY�XY[ۛHY�Z[��X�]�H��\[�H�\�Z�\�[�]�\�X�]�HZ[Wܙ\ܝ��ܜ�X���ۙ�\�YYܘ[��^\�[����MZYܘ][ۈ[��[�����Y[�Y�H]X���[�\��ۙ\����\�^H�[YK�Y[���K�[�\�X��[�[��K�YZ[�ܘ[�܈�]�]]ܚ]K��HY�][X���Y��\X�\�ܞK�^X��\��T�PK��X���\�]ۈ�ܙK�[۝ݚY]��X���[��[��][ۜ��]�][�Y�Z[��\�HY]ˈ�ۛ�ۙ\���]�\�]Y\�KܙX�Z]�H�[X�[��H\�ܞN��Y[��SP�و�[��\���ۘ\����]���Y�\��X�]�HZ[KX]Y]Y]�[��X�H�\�\��\�[�\�]Y]�\�X�[]H[��\��X�H�XY�ܚ]K����\�[�\���[[�[����[����ܙK\���H�[��\˂�H�\�Y�YY��[�]X�\�X��ۙ\�ۛۛ�ۙ\����ًܙ]���Y����H[�X[��ܙT�S\�ܞH[�X[��\��X�H\[�[��\�X]Y]�\�\��][ۋ\����[ؚ[H�^X��\��\�K����]�]K\�\�ۜ�H�Z]�[܋��ޙ[�[�ˈ�[�K\\����H���ˈX�X�][ۈ����Y��\��X�XZ[���X�[ۈ�]\���[�Y��X�]�H��[���[\�\�H[\N�RW���P�ԐUSӗԕST��\]Z\�\��[Y]H�\�Y\\�H��X�Y�\]Z\�Y�X�ˈ���\��]ܞK\\�Z\��[ۈ�[��H]]ܚ^�Y����Y\��H܈\�H�X��[�[�[YZ[�\��]܈�\�ܙ\�]�]K���X�[ۈ�[XZ[�����K��\�][ۜ�X\H�L����[�]X�X��\�H�]�Y]�X��[Wٍ�X�YX�MM�NLX�L������Y��MK��������LLLLH0��Z[H�\ܝ[ܘ[�H�\��X�\�
+\�\��[ێ����JB��H�ۙ\��ܚY�[�[�\�X[\��\��XLL�Y��M��KM���XM���LX��L����K�^\�[��^�\�]�HZ[K\�\ܝ[[ܘ[�K]���H���\��]Y�[K�Z[K\�\ܝ[[ܘ[�K]���H���H�L��Y��Z[H\��]�H[��]�]H�Y�\�[��H�\�\��Y��H\�\��Y�\��[ܘ[�H��ܜ��܈�]\�H\�ܚ��\��[X\�HۛH�[\�HZ[H�\ܝ��\�Hܘ^K��]KZ\��YHXY\���Y�H�[�[��X���XYK]�\���۝��ˈ�[�[��X[�Y�[X�\��ܙY[�[�\�X�Yٛ��\��[X[�X���]Z[��[ܚ]K��H���[��\��[ۋ��X�HY]Y]HۛN����Y[�ܙ\���[�Y]�K�[[�[��Y�][ݘ[Y][ۋ�TKؘX��[��\�Z\��[ۋ���[���[��\ˈ�\�\��H����[�[��H[��̈�۝[���[�]X�\����[ؚ[H�����\���\\�\�ۜ�\��Y�]�[�Y]�H[KY[�X�[�[Y\��\�Z\��[ۜ�؝]ۜ�[��]Z[�Y�Y�[X�\��ܙY[��]\��^\�[���\��X�H[��\�\�]�Y]������\��Yܙ\��[ۜ�\��Y��[\�Y]\�\��ۘ����[���Y[����\�\��H�\�\�X�ݙ\�K��[������K�Y�\�^X��XY�X���[XZ[��[X\�H�]\ˈ\�X�[S��X��\[��H�[XZ[���]H\�\���������LLLLH0��ܚY�[�[Z[HY\�]X��\�H
+\�\��[ێ����[��[��Y
+B��H�\��[��ۙ\����^��X[�\��]Y�۝[��Y\�]X�L���LLLLH���H]\��]X��XZ[�L��MX�H����Z[H�X�ݙ\�H\��]�H�X��Y��[YKY^H�\��]ܞK�ۛ[�H�X����[��YH�\�Y\�]X��\�\�[�H�\\�]H^\�[��X�Y[^H\��ۋ�X�\��\�\��Y����[���\][���܈Z[H�����ۈ^�\�]�H�]����X�]Z\�Y��[܈��\��H�۝�\��][ۈ���\[�]�Z[X�K���^I���۝[�\�^X�]HܚY�[�[��H�Z[YY�]\�K��HۙH�X�H�[��ZKY]HܚY�[�[�X�[ۘ[�ܝZZ\��\�N��YH��[YK�۝�\��[��][ۋ��[�^��\�K�]\�[����\��\�XZ[�[�[��K��]���۝��ٚ[H[XY�K�\�[���]HۛN����X[�\��Y\�܈Y��X�X�H�Z[K��^�ۙ][ۘ[�X\�ۚ[���X�[ۜ��]�H�[�\�]�Y]���\����YHؚ�X��Y[�X�[�]Y]�X�ܙ��ݙ[�[��K��XZ�\�Yۈ]�Y[��H[��\]Z\�Yۋ\�]H�[Y][ۋ��HۛH�YYܚY�[�[[XY�KY]ܚX[]Y][�[�ٙ���[��[�ˈ[����[�[YK�[�[��H�^\���ܙY[��Y\��]�X�Y[^H]��\��ۋ�X��[��\�[�\��]K\�Z\��[ۜ�[�]]�X][ۜ�[��[��Y��۝[�Z[��\�\�]]ܚ^�][ۈ\�Z]��ܛX[\�YX�X�][ێ�^�\�]�HY\��K�Y�\�����]��[�Y�Z][�����ܘ�H\�ܙY��\���[]Y�����\�ٝ[�]H[�X�X[]Y�YY�[XY�K�\��\�Y�X�][ۈ�\]Z\�Y�����X�[ۈ[\�YYH]][�X�][ۈ܈�\�[�\��ܚ]\�[��]�Y]�˂�������LLLLH0��^X�]Y�X�H�ڙX��]�Y]�
+\�\��[ێ����
+B��H�\��[��ۙ\����^�\�\�^X�]H]]ܚ^�Y�X��\�\�ܙ[X\�Hو\���[���[K�]��\�ܚX�[�[[�[��[��\�[���]]�X]X���[�ˈ�\�H�]X��XZ[��Lؘ����������[���^�Z[K\�ڙX�\�]�Y]ˈZ[H\��]�H�X��Y�]�H�\�][ۜ�X\H�L�HX��Y�H�]�][H�X��Y\�^\�[��[��[]Y�[\��]Z[�Y��H�[�X\�H����]\�N��[H��\��K][�ۛ�ۈ�ڙX�X\��\�������[[��YX[�X[�Y]ˈ�\��[���\��H�\��Y�X�][ۈ\�H�XY[ۛH�Y�\�[��K�]�\�[�]]ٚ[�Y��\��\�X�[�[��ۛ�X�\�[�\��܈�Y\Y�[�[��K]�[YHX�ۛ��Y�Y[��\�H�\]Z\�Y�܈X�X[��\��HY��\�[��\���[Y\�X�[Z\�X]�\��[XZ[��Y\�����ˈ��\��H�S\���[��\��Y\��\�ˈܙ[�\�H\\�ۛۋ\��\��H]��]Z[�Z\��]�[�\��X��˂�HY]]�HZYܘ][ۈ���LLL�MY��\��X�K[ۛH���Y�Y�\�[��H[��[��X�[ۘ[�ڙX�\�]�Y]�ܘ\\�����ܙHX�\��ܛ][\�����\��H��Y[\�܈^\�[���[��[ۈY�[�][ۜ�\�H�[��Y�ܘ\\��[���\�YX�܋�]]�ܙK�]�\�[ۋ�\��[��ڙX�[ۋ���\��H��[�[�^X�X�ۛ��Y�Y�[Y\�[��[�H^\�[��ܚY�[�[�[X��ۚX���[��\[[�K���ً�Y�\��Z[\�\����X����]\�����X[��[��܈�Y��ܜ�X�[ۈ�H��^��H\��]Y�Yܙ\��[ۈ[�[�L���S�ڙX��[�\�ۙH��]]�H�]Y�ܞH�ۙ�X��\�Y�Y\�^X�]��X�\���[��[][ۋ�Y\�]Y]X���\��H[�\�Z\��[ۈ�X�\��\�\��YX[�X[[[�[��ӕS�Y�X�H��ؙ\���\]X�[]H[�X�X[Y�HO�Y�HO���ܙT�S��[�ˈ�[�\�Y���[��Y[��[LH�[�[��Hܛ�\�\��Y��[�[\��\�[��][���K�Y�\��XY�X���[XZ[�X[�]ܞH�[X\�H�]\ˈ[ؚ[K�\���X[���[��X�Y��ޙ[�[��\H�X��\��Y�^X�]�ڙX����\��K��ۙ�X��Z[\�HY\��Y�\�\�Y�\�X�[�Y�\�H[�X�X[�[�[��H�ۙ�\�X][ۈ�[XZ[�\�\�X��\[��K��H���X���ܝ�\���\�ܙH�L�HY�H��H[�����RH�Z]�[܈]HY�\���۝[��\��[ێ�X]�HY]]�HY�[�][ۜ�[�]Y]]�Y[��H[�X�����[]H��ً�\�ܞK�[��H[[�[��]]�\���X\������\��Y��܈�ܘ�HH�Y��\���X��[��\�HX�\�Y[��\�Y�YY�Y�ܙHH�]�RN�[��\��[���\��KY�Y��Y[��X�Z]�\�H�]�Kܙ[�[�Y\��Y�H[��XYو�\\��[��\�Z][H�]�Y]˂�������LLLLH0��Y�X�HZ[H�[Y][ۈ�YY�X��
+\�\��[ێ�����B��H�\��[��ۙ\����^��\�H�]X��XZ[�Y�������\��]Y�^�Z[K]�[Y][ۋY�YY�X��^\�[��Z[H\��]�H�\�Y�YY[��[]Y�]�]H�X��\���ܙY[�����\�\��Y�\�\�H��۝[���\]X�[]KٙYY�X���\Z\���H�]�X���[�[���[H܈��\��H�X�ٚ[��H�XY[ۛHXYۛ��\���\\�YY�X�H�[�X\�H[��\��[���ؙ\�Y]Y]K��[[��Y�[�Y���\���H��Y�X�H[�ۛ�ۈ�ڙX��Y[ˈH�[܈RH�\�\��Y������[[�Z\�X]�\��[�[�ۛ�ۈ�Y[�^\�Y�]Z[�Y�[H[�[���]HY�\�^X�]�[Y\�X�Y]�[�]�[�Y]K^Y[�����ݙ\��YH\��܋\�Y�X��ܛ�[�˂�H\�]�H[�[���]H���H]�H[�]�]Z[�[�\[�[��[Y\�X�Z\�X]�\�X\\��ܜ��X�X[�Y[�[�\�HH�[YH�ۙ]��X�H�X����܈H�[[X\�H�\��[���[��^[�][ۋ��\�\��Hܙ[�\�H�[���\��\���\��K][�ۛ�ۋ^X�]�\���\��[���\��K�]]ܚ]Kܙ]�\�[ۈ�X\��[�\�ܚX�[�X[�X[[[�[�ˈ����X�[ۈܚ]H܈��[��\��ܛYY��H�Yܙ\��[ۈ�ݙ\��[ؚ[K�\���X�X[�[\�[�ۛ�ۋ\\�Y\��܈��^\�[��K]�H�ܜ�X�[ۜ�Y�X�H�]�KܙXY�X������]��\��X\��YX�\��\���[��[Y�ۙ�\�X][ۋ��\��H�X�\�[����\Y\ˈ\��]Y�[�X\�K\�\Y��ܙT�S��[������X��Y�\��\�Y�X�][ۋ��[�\�Y�]K��H[�Y�\��XY�X���[XZ[��[X\�H�]\��X�X[\�\��ۙ�\�X][ۈ\����[][]Y��������LLLLH0���[[ݙH�Y[�[��X�Z\�\�
+\�\��[ێ�����B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�NL�Y���K���\�Y�^�Z[K\�X�Z\Z[���X��Y�YH�X[��Y�ܙHY]�[�^\�[��Z[H\��]�H�\�Y�YY�[��[]Y[��X��Y�X��\�[��ܙY[�����\�\��Y��H\�\��\]Y\�Y�[[ݘ[وH^�H�X�\��K��\�\�[H�X�Z\�]\��\���H�[�[��X[�ܛ][H�[��K��[[ݙHۛH]��[�\�[�ˈ�\�\��HHܚY�[�[�Y[^X�]�[��ۛ�\�X�Z\�[�[��X�K�[��[][ۋ�[Y\�X����\��Kܙ]�\�[ۋ�\�Z\��[ۈ�X\��[��[�[��X[[[�[�ˈ��Y�H܈��[XH�[��K��H�[�]X�\����[ؚ[H�����\�[��X[Y�K�Y�K�\��]Y��ܙT�S�\]Y[��H�Yܙ\��[ۜ��ݙH�\�X��[��H�]�]�\\��[���ۙ�\�X][ۈ܈��\��H�Z[\�\ˈ�[�\�Y�]H[��Y[��[LH�[�[��H�X���\��Y��H[�Y�\��XY�X���[XZ[�X�X�][ۈ�]\ˈRH�[[ݘ[[ۙH�\����\Z\�Z\��[��[X��ۚX�]�Y[��K��H\�\��\\�][H]]ܚ^�YH��[�YۙK\�ܙK�^H]�Y[��H�\[Y[�[�Y�\�\����\�HوH^\�[���Y��\��Y��\�و[���Y]]�X]X��[�Y]\��[H�\�\��[���]�YX[�X[�[Y\ˈ^\�[����X�܈X��\YH��\]Hۘ\�����X�[ۈ[X��ۚX��۝^����XYK�Y��[XZ[��[���Y[��Y�ܙK�Y�\�X[�X[]�[YH[��ܛX[Z[���YH�[��\��[��\�H[��[��Y�����[����Y[\��[��H܈\�ܚX�[[[�[��\Z\�\��ܛYY���\��H�Y��\�[�ܙ[Y[��H�Y��]�\�[ێ��\�\��H[��]�Y�����\�Y]�[��K\�XY�Y�ܙH�[�[\�\��ۙ�\�X][ۋ��������LLLLH0��[X��ۚX�\��\��HZ[H��[��
+\�\��[ێ����JB��H\�\�^X�]H]]ܚ^�Y�X��\�[�]X�\��[�\�[Y[���]�\��[��H\�ܚX�[�X�ܙ�܈[[�[��[��]�\���H�X[^HۈZ\��Z[���\�H�]X��XZ[���M�������X�ݙ\�H��[���X�ݙ\�K��KY[X��ۚX�\��L���LLN�Z[H\��]�H[���X�[ۈ�\�][ۜ�X\H�L�X��Y�H�]�Y�]�YH��[Z]˂�HY]]�H���[��ۛH�[�[��K\�]�Y]�Y�\��[��[YK\�ܙK�]H[X��ۚX�]Z[�\�]�Y[��H�[�\�H^\�[����[��\[[�K���^\�[��]X�\�H�[��[ۋ�X�Kԓ�܈�[�[��X[�ܛ][H\��\X�Y���\��H\��[\��]�\�[ۋ\�[�]]ܚ]H[�^X�]�ۜ�[�\�H�X��Y[�\�������[�\�]Y�\�X�[Y[X��ۚX�]�Y[��K��H\\����ܚY�[�[�]X�Y[�[[]]X�H��\��H]Y]�\�]\�][ۈ[��[�[Y�\��[��X�[ۈ���X����]\���ܘY�Hؚ�X��\�H�]Z[�Yۈ[��\�Z[��]��Y\����]]�X]X���[��܈\�ܚX�[�X�ٚ[��H^\�[��ܚY�[�[\��]�[XZ[�ˈ��\��XY�\��Y\�[X��ۚX��XY[�\��\�HY][��\��]�\��ܘ�K\�Y��\�Y���\��H�XY[�\�����\�X�\]\�[��XY[ۛH�\��[ۈ�X��ˈ�[�\�Y�]H
+LH�[�[��H�\�K�[�]X�\����[ؚ[KX�X[Y�K�����ܙT�S[�^X�\�[Y[��[�H\H�X���\�ˈY]]�HZYܘ][ۈ\YY��\��X�K[ۛHP��\�Y�YY���X�[ۈ�\�][ۜ�X\H�L�HP�U�K[L��[\��XY�X��X]�^\�[��]�H�][���\�\��Y��Y���[�[���YH�[��\��[��[��[��Y��]X��K�Y�\�[��X[\�\�X��\[��H�[XZ[��[X\�H�X�������X[��[��\��ܛYY��YH����[X��ۚX�YZ[K\��\�[X\�K�Y��������LLLL0���[��\�X�Z\�[�[��X�H
+\�\��[ێ�����B��H�[�[��[�����[��Y\�ۙH^X�]��X�H�܈[��\��\�H�[[��Y�Y]�]�[���]�X�\��X�Z\Έ�ۙ�\�H���X��X�Z\�[���܈�[��[�[�\�H�X[[[�[��\��]�\�\�]�\��[�[��X[�]���H\]X[]K�ܙ[�\�H[\H]Z[�[�[X�\�]HX[�X[�[����[XZ[�[��[��Y�H�\�X�H[�[���X�Z\�]\�^Z[��HZ\��[���X�[ۙ��YHH�[����\]H�Y]��]Z[�H�ܛX[�X����[���]ۋ��H�XY[ۛH[��Y[�����]\\�[��Z\�YH�X��\�ٝ[H��Y^H���HHY��\�[�[���Y�[��\�X�Z\^K����X[��[��ܙ]�Y]����X�܈�\�][ۈ�\��\^YY���\]X�[]H�\]Z\�\���ZYܘ][ۈ܈Y�H�[��N��\�\��H]\��\�Y[XZ[�X\��[���۝[���Yܙ\��[ۈ]\��\��X�HH����Y�[������Y�ܙH\�[��X�X[Y�K�Y�K����[���[��[][ۋܙ[�\�H�[���Z\�X]�\�[��X�\ˈ\�X�[[ؚ[H[��X[�[�[��HX��\[��H�[XZ[��[���������LLLL0���[\\��[�[Z[H�ۙ�\�X][ۈ[�\��]�[��ܙ[�]\�
+\�\��[ێ�����B��H�\X]Y\�X�[��ܙ[�]\��[��[�]H�\ܝX�[[�\]Y[�\��\�[���[�[Z[H��[�ˈH�[��X�[ۈ����X��ۈ�ۙ�X����X�[\��]�[��ܙ[�]\��[[ݙHH��\�[ۈ�[H�\�\��[��ܚY�[�[�[�[��[�[��X[�X\�˂�HY�[�][ۋ[ۛH��X�[\��]�[��ܙ[�]\��\�\��H]�\�HܚY�[�[�[[�[XY�N��Y�\��][ۈ[�]�ZX�[���YH[�XY�H\�HH�[YHX\[�ˈ��[[�[����\��K���X�܈�]ܚ]K�ۙH^X�]�[�[X[��]\��ܚY�[�[��[��[���\�\�[H�X�Z\�[�����[��X�[ۘ[N����\X]Y�X�؛�\�܈�\]Z\�Y��YK]^�X\�ۋ�[�ۛ�ۋ�Y��\�[��K����Kܙ]�\�[ۋ���\��K�]]ܚ]H�X\��[���\�\�ۜ�H�XY�X���[XZ[���H�[�]X�\X�]Y\�����[��[��ܙT�S�\��X�Y�N�X�X[Y�x���Y�H�]�KܙXY�\��]�x����[��X�[ۘ[��ً���8����M�Y�\�\��Y�]ۙHX[���]�\�[ۈ[�ܙ[Y[�[�X[�X[�[ؚ[K�\����[��[][ۋ[�ۛ�ۋ�Y��\�[��K���\��K\�X�K���\�\H�X���\��Y��\�Y���[���H�[XZ[��[X\�H�]\���X��[�ZYܘ][ۋ�Y�H�X�YHY�\ˈ�ܝ�\����X���\�\��\�[��ٜ��\�ܞK�\�X�[S���Y�\�H[��X[�[�[��H�ۙ�\�X][ۈ�[XZ[�\�\�X��\[��K����Y�[��[���]\������LLL��0��9�f�e�9k�y+�y���a�yk�y`&z`"{�"\�\��[ێ����;�"B��H�ۙ\���^;�&�g�.��� 9���]X��XZ[��M،��N�MYLLYY������X�X9�9��9����۝[��Y\�]X�L���LLL��9b!��+��#9/빥.ybcy�b9�+8� yk�9�m9�)�.#�.�9��y��9��z`&�/��nm�n����od���y��9� yi!�.�x� ��H9.�yd$H����Y\�]X�]�Z[�[��ٙYY��K���ۘ:/�yb�9�,�k��QY\�]X�L���LLL��;�#9��9h��c��b&�&f���9�$9.��f��)�f�d�:`#��#�k�y�.:+�9oe{�&����My.*�)����9k�z,hz`$9�hy.#yc�;�#9.#z)��9���X�Y[^H�YY8� y�蹧"XX�Y[^x� z!��,y�h���� yk���-�� z-(�b�x� y�l9�k�n��� y�n�oey�`�fd8� y.&�b�yd#9�iy�%�!�b�9c%�� ��H9..�h�9..��o�cm�c�  �f�.#��'9c�bj�.#y���� y��9��ym�yam�� yl$y.��d�x� y.)9b!�d���m9�!�� yc�9/��b*� ,��'y�hy.���9c�"#{�&�l!�g!�n��� yc�y�g�b!���.#����y�'��$9��yo#�b!�o ;�#9..���y�b9�"y`g9�b��hy.��� yi!�`"y��y�b9�"yca����hy.���#9.#yd*�f�k��l`��(x� yc��a��� z#k�b`�� ycm��h9�%��*yn��c๥l;�#9.g�.#z&f���9.*�.��ki�.h9�$9��x� ��H\9�b9�+9/�y� ]���8� �od�bcy..�c�yn �`&z`"{�&�o�zhn�k�9�$9k�9�m:e�9�x� yc��/�y���� y쯹�k�XY9��9��x� y�h�n.9d"9nm�� TY�\��$9b��d�9��."��YY�f��a�쯹�k�f�+��d#��#9�cyc��h�9��9m�d#9�ix� ��������LLL��0��9�f�e�9k�y+�y���a�yk�y`&z`"{�"\�\��[ێ����;�"B��H�ۙ\���^;�&�g�.��� 9���]X��XZ[��L��X��X��X��N��YM��،�͙XNM͎MNM��9�9��9����۝[��Y\�]X�L���LLL��9b!��+��#9/빥.ybcy�b9�+8� yk�9�m9�)�.#�.�9��y��9��z`&�/��nm�n����od���y��9� yi!�.�x� ��H9.�yd$H����Y\�]X�]�Z[�[��ٙYY��K���ۘ:/�yb�9�,�k��QY\�]X�L���LLL��;�#9��9h��c��b&�&f���9�$9.��f��)�f�d�:`#��#�k�y�.:+�9oe{�&����M9.*�)����9k�z,hz`$9�hy.#yc�;�#9.#z)��9���X�Y[^H�YY8� y�蹧"XX�Y[^x� z!��,y�h���� yk���-�� z-(�b�x� y�l9�k�n��� y�n�oey�`�fd8� y.&�b�yd#9�iy�%�!�b�9c%�� ��H9..�h�9..�/n�%�9b&9�m��빨!�.#�j�:h�z/�9b�9ae�� ybcyc.�k�n��� y."yb!�d���h�i#yd�9i-: �y�m9/d�al�����9i&�/�yc��c�"#{�&�f��a�.#yod�/g:!,yc�z+⹥�y�%�/�9b�9d#�+�y�#��#9�e9�b9.#yd*�f�k��eo�n��� yc��a��� z#k�b`��%��*yn��c๥l;�#9.g�.#z&f���9.*�.��ki�.h9�$9��x� ��H\9�b9�+9/�y� ]���8� �od�bcy..�c�yn �`&z`"{�&�o�zhn�k�9�$9k�9�m:e�9�x� yc��/�y���� y쯹�k�XY9��9��x� y�h�n.9d"9nm�� TY�\��$9b��d�9��."��YY�f��a�쯹�k�f�+��d#��#9�cyc��h�9��9m�d#9�ix� ��������LLL�H0��9�f�e�9k�y+�y���a�yk�y`&z`"{�"\�\��[ێ����;�"B��H�ۙ\���^;�&�g�.��� 9���]X��XZ[�M�X�MN͌X����YYMM͌�MXXLX��َ9�9��9����۝[��Y\�]X�L���LLL�X9b!��+��#9/빥.ybcy�b9�+8� yk�9�m9�)�.#�.�9��y��9��z`&�/��nm�n����od���y��9� yi!�.�x� ��H9.�yd$H����Y\�]X�]�Z[�[��ٙYY��K���ۘ:/�yb�9�,�k��QY\�]X�L���LLL�X;�#9��9h��c��b&�&f���9�$9.��f���/9od�bcy⭹� yf�d�:`#��#�k�y�.:+�9oe{�&����L�.*�)����9k�z,hz`$9�hy.#yc�;�#9.#z)��9���X�Y[^H�YY8� yod���ym�c�yn �X�Y[^x� z!��,y�h���� yk���-�� z-(�b�x� y�l9�k�n��� y�n�oey�`�fd8� y.&�b�yd#9�iy�%�!�b�9c%�� ��H9..�h�9..�j�9l`��(yc�  ��빨!�.#�m�y/g9/c��c�� y���d"9o+�n��d�9f��b!�d���m9�!�h�9���9i&��빨!�c�"#{�&�f��a�/c��c��/9.#yod�/g9bj�d#��%�akyl#�����,�k��+�y�#��#9�e9�b9.#yd*�f�k��eo�n��� yc��a��� z#k�b`��%��*yn��c๥l;�#9.g�.#z&f���9.*�.��ki�.h9�$9��x� ��H\9�b9�+9/�y� ]���8� �od�bcy..�c�yn �`&z`"{�&�o�zhn�k�9�$9k�9�m:e�9�x� yc��/�y���� y쯹�k�XY9��9��x� y�h�n.9d"9nm�� TY�\��$9b��d�9��."��YY�f��a�쯹�k�f�+��d#��#9�cyc��h�9��9m�d#9�ix� ��������LLLN0��ܚY�[�[��[���\�[ۈY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�ۙ\����^��X[�\��]Y�۝[��Y\�]X�L���LLLN���H]\��]X��XZ[�LXؘ�̎��\]Z\�Y�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���\��Y[���\]HZ[H�X�ݙ\�H\��]�HܙX]Y�Y�ܙHY]ˈ�\\�]H��NX�Y[^H\��ۈ[�ZY�X��\��H�][���[XZ[�[��X�Y��H^X�HۙH�X�H�[��ZKY]HY\�]X�L���LLLN�\�N��X�[ۘ[Y[�\��[���۝ܚY�\�ٚ[KؘX��Z\��]N��\�YZ[H�][�H�\��\�ۙK[ٙ�]�[��]�\�[�\�X[�\�[�[�ˈ�^[���\��\�[��Z\�\�X�H��X�\�K[\ܘ\�H�[[��[�[��\�Y�YY�ۙ][ۜ���]�H�X�\��]�\���ܙH[�[�[���\�Y\�\����KЈ]�H^X�]����[�H�[��H�ۙ][ۋ��H�[܈[�\��Y�YYؚ�X��[��[��Y�ܚY�[�[[XY�H[��[�[ܚY�[�[\�^�H�X�X�X[H�Y]�Y��[��\[�[XY�KٙYY��\�H\�\�[��[��\�[��\\�\�]Y]����X[�\��Y\��Y�ܙK�Y�\�[�\[�[�^\����Y[�Y�X��\�Y�X�][ۋ[[ۜ��]Y�\�[�[��܈[Y]�[�[���][�[ۈ�Z[K�[\ܘ\�H�\[����X[�[[���[XZ[��[\��]]�K����وو��X�]܈�YK�]�[��]��Y\˂�HۛH�YYܚY�[�[[XY�K]Y][��X�\��\�HX�X�[�ٙ���[��H�X�ܙ��[��K�\ܝ[�[YKݙ\��[ۋ��YY�[�[]܋�\��Y\��[�[��K�X��[��]X�\�K��[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ[��[��Y�Z[H�۝�X�\��\����[���Z][HX��[��^\�[����X�Y�H[����\�Y[�X�[Z[K؜����\��X�����Y�\�\\�KXX�Y[^H[��Y\����\]H^X�ZXY�[Y]H�\�Y\ܙ[�\�HY\��KY�\��X��\��[�ۛ[�HQ�]K�]KٙYY�[XY�H\�\��[XZ[�X[�]ܞH�Y�ܙH�Z[Z[��\�[���ۚ^�][ۋ��������LLLM�0��ܚY�[�[�[[��YY��ܝY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�ۙ\����^��X[�\��]Y�۝[��Y\�]X�L���LLLM����H]\��]X��XZ[�NY�X��N��\]Z\�Y�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���\��Y�X�ݙ\�H\��]�HܙX]Y�Y�ܙHY]ˈ��M�X�Y[^HX�X�][ۋ�]�[�X��\��H�][��[�[^\�[��\��ۜ��[XZ[�[��[��Y��H^X�HۙH�X�H�[��ZKY]HY\�]X�L���LLLM��\�N��X�[ۘ[Y[X[H�\��[���۝ܚY�\�ٚ[KؘX��^KZ�[��H�[܈�[ۈ�YKX�X���[�[���]X�[�[���\X]Y����[[�ˈ�^�X�[ۜ���\\�H\�YXZ[�[�[��H�\��\�H�YKY�ܝ�\�\��]��]�H�X�\��]�\���ܙH[�[�[���\�Y\�\����^�H�[[��Z[�]\�����\X�H�X�\��\�H�Z[�˂�H�[܈�[�H\��Y�YYؚ�X��[��[��Y�ܚY�[�[�]][��[�[ܚY�[�[\�^�H�X��Y]�Y�^X�[XY�KٙYY��\�H\�\�[���\[��[��\�[��\\�\�]Y]���[�\[�[�^\����Y[�Y�X�\�ݘ[�X[�\��Y\��YX�Y��X�]�\�[܈[[ۜ��]Y���Y\�X�[ۈ�Z[K���[���[��[[�ۙ\���[XZ[��\\�]N�ۙH�X��\�ٝ[�ZX\��[\���[Y^H܈�YH��ً��HۛH�YYܚY�[�[[XY�K]Y][��X�\��\�HX�X��[��K�[�ٙ��X�ܙ��[��K�\ܝ[�[YKݙ\��[ۋ��YY�[�[]܋�\��Y\��[�[��K�X��[��]X�\�K��[��\�Z\��[ۜ��\�[�\���[��[�]]�X][ۈ[��X�Y�Z[H�۝�X�\��\����[�����\�^X�]X�HX��[�^\�[����X�Y�H[����\�HY[�X�[Z[H�����\��ܚ\��Y�\�\\�KXX�Y[^KX�����\���ˈ��\]H^X�ZXY�[Y]H�\�Y\�ܛX[��X�YY\��KY�\��X��\��[�ۛ[�HQ�]K�]KٙYY�[XY�H\��XY�X���[XZ[�X[�]ܞH�Y�ܙH�Z[Z[��\�[���ۚ^�][ۋ��������LLLM�0��ܚY�[�[�Y�\�[��KXY\][ۈY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\����^��X[�\��]Y�۝[��Y\�]X�L���LLLM����H]\��]X��XZ[��LX؍����\]Z\�Y�\�[���\��[ۋ�[�Yܚ]K�[�ٙ��X���\��Y[���\]HZ[H�X�ݙ\�H\��]�HܙX]Y�Y�ܙHY]ˈ�\\�]H��MK�M�X�Y[^H��\��\�[�Z\��][���[XZ[�[��X�Y��HۙH�X�H�[��ZKY]HY\�]X�L���LLLM��\�HY�H�X�[ۘ[�\��[�\�]H��۝ܚY�\�ٚ[KؘX���X�[��ۙ][ۘ[�ܝZZ\��Y�\�[��HY\][ۋ��^[���\���ݙ\�\��ۋ�[K�۝�\�^\�KZ[H�X\�X�[]H[��\��Y\��ܙ[����]�H�X�\�^X�]H���]�[X]H[�[�[���\�Y\�\���H�]�[�\�ZY�\��Y�YYؚ�X��\�H[��[��Y�[XY�H�\�X�X[H�Y]�Y�۝�\�Y]ܚY�[�[[Y[��[ۜ�[�\�X��[�[��\\�\�]Y]���[�\[�[���Y[�Y�X��^\�\�ݘ[\��X��X�]Y��Y�\�[��H\��ۉ���[\�Z\�ۙX�����[\��ۙ][ۜ�\�H^X�]H^\��[\[ۜ���H�Z[YY\�^YY�ˈ[\ܘ\�H�\[��\�����وو�YH��X�]��[YH܈X\�]X��[�˂�HۛH�]��YY][K[XY�K�[��\�[�]Y][��X�\��\�HX�X��X�ܙ��[��K���\��Kݙ\��[ۋ��YY�[�[]܋�\��Y\��[�[��K�X��[�]X�\�K��[�\�Z\��[ۋ�\�[�\���[��܈]]�X][ۈ�[��\ˈ�۝[��۝�X�\��\����[���Z][HX��[�[�ܙ[�\�H�����\��ۛ�Y�Z[�\�[��[Y\��]�K�^\�[����X�Y�H[����\�H^X�Z[H�����\���Y�\�\\�KXX�Y[^KX�����\�����[�\]Z\�Y�X���]\��X��YY�Y�ܙH�ܛX[Y\��K��[�[Y�\�[�^X��YY�]K�]K�[XY�H�XY�X���[XZ[�X[�]ܞN��[�Y]H\���Y]�[���ۚ^�][ۋ��������LLLMH0��ܚY�[�[Z^Y]^\�HY\�]X��\�H
+\�\��[ێ����H[��[��Y
+B��H�\��[��ۙ\����^��X[�\��]Y�۝[��Y\�]X�L���LLLMX�ܚ��YH���H�]X��XZ[����X�X[�]ܞH�\��[ۋ�[X\�KZ[�Yܚ]H[�Y�[�\�[���X���\��Y[�HZ[H�X�ݙ\�H\��]�H�\�ܙX]Y�Y�ܙHY]˂�H^X�HۙH�X�H�[��ZKY]H�\�H\�YY�H�X�[ۘ[Y[�]H��\\�]]�[H�[���\��X�H[���ۙ�\�[��\��]�]�K��\\�[��H��Y\�[Y]\��]H�ٝ\�^\�K\�[X\�[��\�X�[ۈ[�\�H�YK[Z[�]Kۛ�YZ[KY�]Z\�ۈ�ۜ��Z[����۝ܚY�\�ٚ[KؘX��[XY�H�����\��[��]HۛK��H�X[�\��Y\��Y�ܙK�Y�\�܈�\�Y�YY�]��YK��H�^�ۙ][ۘ[�X\�ۚ[���X�[ۜ�[��]�H�[�X�X����\�\�[��Z\�[XY�K]�\�X�H�X����[�\�[��][���[�ۋ\�]H[�ۛ�ۜˈH�\�H�\���[��\�\��ۘ[]H܈���\][ۋXYۛ��H[XY�H���H\X\�[��K�\�ܚX�H�^Y[��[����[ZX�[\�[Y]\����Z\�H�Y�\�[��K\���\X�][ۋ܈[��[�\�\�\��ܛX[��K��H���H\�[Z]Y�H�]��YY][K]�ܚY�[�[�X��[��\�[��\\�\�]Y][�X�X�[�ٙ��X�ܙˈ�[�[YKݙ\��[ۋ�X�Y[^H�YY�[�[]܋�\��Y\��[�[��K]X�\�K��[�\�Z\��[ۋ�\�[�\���[��[�]]�X][ۈ\�H[��[��Y����\�Y�۝[�؜����\��X�����\]H�\]Z\�Y�]K��X�Y�Y�\�\�[Y[�[�^X�ۛ[�H�YY�[XY�H�XY�X���[XZ[��\]Z\�Y�Y�ܙH�Z[Z[��\�[���ۚ^�][ۋ��������LLLL0��ܚY�[�[Z[HY\�]X��\�H
+\�\��[ێ�����[��[��Y
+B��H�\��[��ۙ\����^�\��]Y�۝[��Y\�]X�L���LLLL�\�Y���H�X[��]X��XZ[����H�]�X�ݙ\�H\��]�N��[�[��X[�\Z\���HZ�\�X�X�][ۈ�[ܚ]K��\�Y�ܝ�\�Y�]\��]X��XZ[��LXٌ�����Y�\�]�\Z\�Y\��Y�\�\��[��[]���\��Kݙ\��[ۈ�[��\ˈ�۝[�Z[��\�\�]]ܚ^�][ۈ�ݙ\���^I��ۙHܚY�[�[[\��]Y�\�N����]���Y[H܈Y�X�H��Y[�Y�X��]���H^X�HۙH�X�H\�XK��[��ZH��L�\�N��]\�[H�]�HZ\�]�\�Y^H��۞]Z[�ܙZXY�ݙ\�Y�H�\��\��X�KY��[Z[���^X�[]H[�XZ[�[�[��K��]�ܚY�[�[�X�[ۘ[���K���]YY[XY�K�\�[���]\�ۛN���H�X[�\��Y\�܈�Y�ܙK�Y�\���^�ۙ][ۘ[�X\�ۚ[���X�[ۜ��]�H�[�\�]�Y]���\���]�[�\����Hؚ�X��[��[��Y�Y]ܚX[]Y][�[XY�H\�[�����Y\�]X�]�Z[�[��ܙ]�Y]��̌��LLLL���ێ�\�Yۈ\�\�\��\]Z\�Hۋ\�]K��\��Y\��[Y][ۋ����Y[�Y�X���ً��HۛH�YYܚY�[�[[XY�KY]ܚX[]Y][��X�\��\�H�[��[���[�ٙ��\ܝ[�[YKݙ\��[ۋܙ]\�Y�YYؘX��[�ٚ[�[��K؝\�[�\�����[XK�\�Z\��[ۜ����Y[\�[��[��Y�\�Y^H����]�[��\X�][ێ��\�YX�X�][ۈ�[���\�X�]Z\�YۛHY�\�H\��[��\Z\���Y�\�\�[Y[���[]Y�L�L��۝[�Y�X�H�[�[]܋X\��[���YZ[�[�[\K�\��܈�Yܙ\��[ۜ�\����[�\�Y�]H[��[�[���K�Y�\��\��X����[XZ[�X[�]ܞK���[\�YYH]][�X�][ۈ܈��X�[ۈܚ]\�[��]�Y]�˂��������LLLL0��]Y]YZ[H�\�\��\��H�]�Y]�
+\�\��[ێ����JB��H]\��\�H�]X��XZ[�L�����\��]Y�^�Z[KX�\�Z[X[�\�]�Y]�Z[H\��]�H�]Z[�Y�\�\�\�ݙY��\]X�H��۝[�ؘX��[����[XH�[X\�H]M��H[��\�Y�YY���HY�Z[�]M���K�\�ܚX�[��X�[ۈ[�����Y[[���[XZ[�[��X�Y����X[�[�KҘ[���[Y\��]�Y]��܈��[��\�H\��ܛYY��H�[�[��H^X�]H�]�Y]��\�ݙYܚY�[�[]�\�H�\��[��[[��X�\��K��\�\�[H�X�Z\��]�\�H�\]Z\�Y�X\�ۋ[��]�\�H�\\�]H\[�[ۛH]\�][ۋ�^\�[���\]Y\�ܛ�H[�\���[�\����ӈ[�Y�X�H���Z[\ˈ�\��\�\�[X�YX�܋�]]��ܙK�]�\�[ۋܚY�[�[��\�ZXY�]Z[ZXY�\�\��\��H�[��\��[�[�^X��[�[��\��[��[�H��َ�Y]���\��H�Y��\�܈]]ܚ]H�]���][ۈ[��[Y]H]�ܚY�[�[�\���[��[����\]OY�[�H�^\��[�K�ۛHH��\��KX��\][�\���X\�X��\��\��[���َ�[^\�[��[�ۛ�ۋ]�[YKX]\�[�[���[���X����[XZ[���H�\\�]H�[�[��[���ۙ�\�X][ۈ�^\�X[�]ܞK�^\�[���ۙ[\K�ۛ�ۈ�[Y\�X�^�\���[�Y]\�X^H�HY�YۛHY�\�^X�]�]�Y]����X��[���\��H܈\�\�X�X\�Y�[��\�[��\��Y\��\�ˈ�ܝ��\��K�Y[�]H����[��[�[��[��X��[�\�H�[Y][ۈ�]�[�\�X[��[��ۈ�ۘ�\��[�\]\���ۙ�X���Z[���Y�]HK\�X�ۙ���[Y[�]��H�[�]X�X�X[Y�K�TK���ܙT�S\���ݙ\�^X�]�\���\��\�[�ۛ�ۋY��\�[��K���\��H�X�\��\�Y]]Y[�]K[[]]X�H]Y]Y[\�[��K�]���Y\�Z\��[ۈ[�ܙ[�\�H��[���]^X�[���YK���ޙ[�[���X����\�\��H[L�]�HY�H\[�[��Y\�[��\X�HۛH[�^�ˈ�\�Y�����H[�Y�\�ܙXY�X���\�Y�X�][ۈ�\]Z\�Y�\�X�[S���Y�\�H[��X[\�\�]\�][ۈ\�H���[][]Y��H���X���ܝ�\��YHH[��Kܙ]�\�Y�H��]K�\�ܙHH^X���\��H�X\�[�H�]�Y]�Y�ܝ�\�ZYܘ][ۈ[��[[ݙHH��[���X\��Y��\�Y��\]Z\�Y��\�\��HZ[W��\�ܙ]�Y]��[�]Y]ˈ�]�\�[]H�]�Y]�\�ܞK�[��H[[�[��܈[\���X�܈��Y[\ˈZYܘ][ۈ[�Y�H\�H�X�YHRHX�X�][ۋ��������LLLL0��Z[H�\�\�[\�Z\��[��]�Y[��H�YY�X��
+\�\��[ێ����
+B��H\�\�X]]ܚ^�Y�\Z\����H�]X��XZ[�MY�L���NN�\��]Y�X���][�Z[H\��]�H�]Z[�Y�Z\��[���\���X��[\����Y[�Y�YY\�[��\�Y�YY�X�\��K��\�\�[H^\��[�X�Z\���ۈ[X�\��]\�[�H�[�H�[Y\�X��[Z\�X]��ۛ�ۈ�[Y\�X��۝�YX�[ۜ��[XZ[��Y���[���[Y][ۈ\�[��[��Y��H^\�[��^X�]��\��H�\���܈�\���X��[����[�\��\�[��[XZ[��H�]�Y]��[�Y]H[��XYو�Z[��Y[����\Y\��[�ˈX[�X[�\���^\��X[�X[�[��ݘ[YH[��ۙ�\�YY�X�ܙ�\�H�]�\��]ܚ][����[��\�[��H���H\]X[�[��]��\��ۜ�[\[ۋZ\��[������܈�Z[Y�\]Y\�ˈ�\��[�\��\��Z�X��[\H�[[X\�H����\�[�]�Z[X�N�\�H\����\�Y��\�X�ܙ���\�H��۝�\�]]�X]X�[K��H�[�]X��Yܙ\��[ۈ�ݙ\���\���[�ۛ�ۋ�Z\�X]�X[�ܛYY��ۛ�\�����\��H�Z�X�[ۋX[�X[��ۙ�\�YY��X�[ۈ[��\��ۜ�[\[ۈ�\\�][ۋ��[�\�Y�����K�Y�\��\]Z\�Y��[�KҘ[���[XZ[�[���Y[��YY�[K���\��H�\�Y�X�][ۈ[��[�Y]H�ۙ�\�X][ێ�\��[X\�Hܚ]\����X[]K\�\����X��[��ZYܘ][ۈ[��[��\���\�Z\��[ۜˈ���X���ܝ�\�����ܘ�Y�Y��\����������LLLH0���X\��]]�HY\�]X��\�HX��\�
+\�\��[ێ���NH�]�Y]�ۛJB��H�\��[��ۙ\����^�]\��\�H�]X��XZ[��YNM��N[�\��]YZK�Y\�]X�X�\�K\�[X�܎��X[��\�[��X�ݙ\�H\��]�H�\�Y�YY�\�\�\��Y�܈H[ܙH؝�[�\��\�HX��\��Y][ۘ[RHX�X�][ۈ\���Y]]]ܚ^�Y����Y\��H܈\�H\���[����HۛH���Y�[X�܈�\�[�][ێ�[H[�[\�[���Y[�ܙ\��۝�\�\����L��X�\��]M�^�\�X�H�^X��\����\ˈ�]]�H�[X��\�HQ�]\�]K�[�\�[��[��\�[�\���]]��X�[��[��Y��\��[ۋ��X�H�Y�\�[��\��\\�Y�ۜ�\�[�H]��NH\�\X��H�[\�[��Y[��ۛH�\]Z\�Y��۝\����\�][ۜ��\��[ۈ[��X�HX\��\��
+�]KZY[�X�[Y�\�X\��\��ܛX[^�][ۊN�Z\��[��[ۜ�[��[�[��H�Y[�\�H[��X�Y��HX��\�H�ܙY[���X]\�X[^�][ۈ�]\��Y�����\\��܈�\X]��\��[�X�X�Y�H[�X�X[�[\��ݚYHH�\�[[�K�̌��L�L���[�]�Y]��\��ۙ�]]H�]�]]�H�X����[��K�\�ܞKL�\��]�X����\�[��[�]X����Y�KX\�XH^[�]��۝[��[\K�\��܋��[�[]܋����Yܙ\��[ۜ�\�ˈ�]]�H�\�[K\�\\�����[X�[ۈ�[XZ[��[��\�Y�YY�XY\��XX���[���Z[�ۈHZ[�[X[[��[��Y�[X�[�\�X�[S���Y�\�H\�[�]�Z[X�K��[�\�Y�]H\��\]Z\�Y�Y�ܙH��[��\���ܙY[����\�H\��]Y��[�]�Y]��]��[�ݙ\�^HY[�����Y��]][�X�][ۈ܈�X��[�ܚ]\˂�������LLLH0��9od���yc�yg��k�y+�y���a�yk�{�"\�\��[ێ���N[��[��Y;�"B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[����H��N\��]Y�۝[��Y\�]X�L���LLLK��X[��\�[�Z[H�X�ݙ\�H\��]�H�\�Y�YYܚY�[�[�\�[[�Y\�[��X�Y�\�\�^X�]H]]ܚ^�Y�^x�&\�ܚY�[�[[\��]YY\�]X��\�HX�X�][ۋ��H^X�HۙH�]�\�XK��[��ZH��H�\�N��[�Kٛ]Z\��][�H�X�[]K�\�X[[��]K��[XZ[�[�[��H[�^\��\�H�\�[�[���YK[ٙ�ˈ�]�ܚY�[�[�X�[ۘ[RH��۝��ٚ[H[XY�K�\�[���]HۛN����\��Y\�[XY�K�Y�ܙK�Y�\�Y��X�X�K�X�H�ܛ][KXYۛ��\�܈�[ZX�[\�[Y]\�ˈ�^Y\�ۙ][ۘ[�Y�\�[��H�X�[ۜ�[��]�H�[�\�]�Y]���\�����ؚ�X��[��[��Y�]Y][�[XY�H\�[�����Y\�]X�]�Z[�[��ܙ]�Y]��̌��LLLK���ۋ��H�\��[��YYۛN��]\�Y��Y[�Y�X��YY�[�[YK�\ݙ\��[ۜ��\�[�\��ؘX��[����[XK�\�Z\��[ۜ�ZY^\��[�\��X�\�[���Y[\�[��X�Y��\�Y]H���[\�[��X�X�][ێ���[�Y�[��Y[�[ۛH�\�Y�X�][ۈ�]�Y\˂�H^\�[�������\��^\�\��]�[�\�H\��[YYۙH�\�K�[XY�K�Y�\�ۛH\��^\�\���\��H[[XY�\��]�\�Y�\��[�\�ܞH�[X�[ۋ[���\�YYZ[��]�Y]�������X��[��\ˈ�\]Z\�Y�۝[��\��]��[ؚ[K�\���\��[�\�Y�]H[����K�Y�\��XY�X���[XZ[�X�X�][ۈ�X��˂��������LLLH0���Y�\�HZ[H�[YHܚ][���Y��\�[ۜ�
+\�\��[ێ���N
+B��H\�\��ۙ�\�YY�Y�\�H[�\�ݙY\�����]\Y�\���M�Y���[[ݙHH�[�Y]K��\�H�]X��XZ[��Y�͌��M��\��]Y�X���][�Z[H\��]�H�]Z[�Y�YۛHܚ][���Y��\�[ۜ�Y�[�H�H�[YH�ۋ]�[�[\��X��X�X[��[YH[�]��]Z[�[��H��\�^\�[���Y�Y�X\�ˈ�\�[�]�[�\���\�X[^�][ۋT\�[��\�[�\��]H[��[��Y��H�X��]��[Y[��\�[�\[�[�[�[�H�YX�[ۈ�۝���[��H�Y�\�HN�΋���X��]�ܙ�؛���MN�K��X��]Y�X]\�\�Z[�\�Y�\�KLNLˈ���Y�[�]X���\��][ۋۘ[YH�\�X[^�][ۈ[�^\�[���]�H�۝�X��\��[�\�Y��H�[X\�H�]\��\]Z\�Y��X�Y�X��\�[H�[�Y]H�[XZ[��[�؜�\��Y�\�\��\�Y�X�][ۈ�\]Z\�Y����ؘ[�][���܈�ܘ�Y�Y��\�����X���]H�]�\��ܝ�\��[X\�K���������LLLH0��Z[H[\�YYH�[YH[�]�Y�Y�X\��
+\�\��[ێ���M�B��H\�\�X\�ݙYZ[�[X[��۝[��[��H���H�]X��XZ[��L�M���M�\��]Y�X���][�Z[H\��]�H�]Z[�Y�ۛH�ۋ]�[�[\��X��X�X[��[YH[�]��\]Y\�]]���\]K�]]��ܜ�X���[�X���]]��\][^�Hٙ���[Y\�X��Yۘ]\�K��K��[�]�[�[�\���\�X[^�][ۋT\�[��\�[�\��]H[��[��Y��H�[�]X��[�\�H��\��][ۋۘ[YH�\�X[^�][ۈ[�^\�[���]�KܙXY�X���۝�X��\�Y�XX����[�Y]H�[\�H\���\�X�H�\��X�Y[��YY�\�\��\�Y�X�][ۋ��[�\�Y�����K�Y�\��\]Z\�Y����ܘ�Y�Y��\�����X����Y�H�]�\��ܝ�\��[X\�K���������LLLH0���ܜ�X�YZ[H�[[�\��ڙX�[ۈ
+\�\��[ێ���M�B��H�\��[��ۙ\����^��[���ۚ^�Y�]X��XZ[��X�����MN��X�ݙ\�H��[���X�ݙ\�K�Z[KX�[[�\�X�ܜ�X�[ۋ]��MKL���LH[�^\�[��Z[H\��]�H�\�Y�YY����N��[[�\��XY�ڙX�[ۈ[���X�ܜ�X�[ۈ�Y��\�ۛN����[�[��X[ܚ]\�ZYܘ][ۋ\�Z\��[ۈ܈�ܛ][H�[��\˂�H�XY[ۛH]�Y[��H�ۙ�\�YYH�[�Z[�H\�\��ܜ�X�[ۈ��[Z]Y�]\�ݙY�\X�[Y[�[��]�\��Y�YX�\��܋�Z[T�Y][۝]\�]Y�]�\�Y�\���]�\X]YHݙ\�ܛ�H[�[X��ۚX�^H�]�\��\��[ۜˈ��\�]�\��Y����[��\�\��HH�\��Y��X�]�H\�ݙY����Y�[X�[ۈ�܈�ۙ�\�YY^\ˈ�[��HY�X�H�ܛX[�\ܝ��[XZ[��\ܝY��HY�\��ۙ�\�YY�XY�X��[��[Y]H�[H�[[�\��\]Y\����X�K��H[��Y��\���Y�H^\�[�����Y�Y\���Z[\�\��]Z[��ܜ�X�[ۈ�X��\���[[ݙH�[H[[�[��[��]�HۛHH�[[�\��XYۈ�]\���^\�[���ܙK�[۝ܙ\]Y\�Y�[�\�][ۈ�X\���]Z[�Y����]�Hو�[�[��X[ܚ]\˂�H�[�]X�TH�Yܙ\��[ۈ�Z[Y�Y�ܙH�^
+��[YHݙ\�ܛ�H�\X�[Y[�
+N��^Y\�[��L�L������\��\�\�\��[��Y[��ٙ�[�H�[[�\��X�ݙ\�H�]^X�HۙH�ܜ�X�[ۈܚ]K�[����ޙ[��X��\��Y���X�[ۈ�L�HL�Y�[HX��Y�H�X��Y\�]�][N�����Y[��H^X�HX]�\�\�Y��[��H[��\�\��\�H�\�L���X�[ۈ\[�[��Y\�[��\��KX]]�\�Y�Wڝ�Y�[�K��[X\�H�]KY�H\�[Y[�[�Y�\��XY�X���[XZ[��\]Z\�Y��H���X���XHH�]�\��ܝ�\��[X\�H[��]�YY�HX��Y�HۛK��]�\�[���[�Z[�H�ܜ�X�[ۜ�܈�[[ݙHZ\��ۙ]�]Y]\�ܞK����ܘ�Y�Y��\�وX�]�H�ܛ\˂�������LLLH0���ۙ�\�YYZ[H�ܜ�X�[ۈ�YY�X��
+\�\��[ێ���MJB��H�\��[��ۙ\����^��[���ۚ^�Y�\�H�]X��XZ[���L�H��M��X�ݙ\�H��[���X�ݙ\�K�Z[KX�ܜ�X�[ۋY�YY�X��]��ML���LK^\�[��Z[H\��]�H�[Y]Y����Y�۝[�X][ۈوHYZ[��ܜ�X�[ۈ�X]\�N��\��[\���X���]��\�\��Y��H�ۙ�\�YYRHY�X�ΈX[�]ܞH�X\�ۈ[�[����[���YY�X��]�Y�[��Hۙ�ܚY��]�\�H\�X�Y�۝����]�]\][��H�X�Z]�\[ۋ�[ݙHHܚY�[�[�X\�ۈ]Z[�[��H��ܜ�X�[ۈ[�[ۛH�[HY][���\�ܙHܙ[�\�HX�[Y[�Y�\��\���\�X�H�]\���\�ٛ��\�^X�]�[��[YX�ۙ�\�X][ۈ�YY�X��[��]Y��Y�Y�^�\[ۜˈ�[Y][ۋ\�Z\��[ۜ��\]Y\��X�Z\�Y[\�[��H[�[[]]X�HX���[�[���[XZ[�[��[��Y��H�]��Yܙ\��[ۈ�Z[�ۈ��M��ܜ�X�Y�L�L��[�]X�����ݙ\��X�X[[��[Y�[�[][ۈ
+���X��Y
+K�\�X�H�]\��X\�ۈ���\��[��[][ۋ[�[��\�X�Y�\[ۋ�Y�Y��Z[\�K[���\�\�ۜ�H�XY[ۛH�X�ݙ\�K���X�[ۈ�XY[ۛHY�ܙY�]H��[��\���X��\�ٝ[YZ[��ܜ�X�[ۜ�][��X�[ێ�\��\����ݙHH\�\����X�Y�X�����[���ۙ][ۋ����X[�ܜ�X�[ۋ�[[�[�ܚ]K�X��[�\�H܈ZYܘ][ۈ\��ܛYY��\�Y�]K�H[�Y�\��XY�X���\]Z\�Y�Y�ܙH��\][ۋ��H���X���ܝ�\��H��M[�\�X�[ۈ[�\�H�]�\��\��[ۈY��X�\��\�N���Y�\�܈��\��H���X�ˈ���ܘ�Y�Y��\�وX�]�H�ܛ\��\�\�]\��]Z[�[��]�Y�[Y\��Y�ܙHX��\[��[�\]K��������LLLH0��YZ[�[ۛH�ۙ�\�YYZ[H�ܜ�X�[ۈ
+\�\��[ێ���M
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��YNML�H��Lˈ�X�ݙ\�H��[���X�ݙ\�K�YZ[�YZ[KX�ܜ�X�[ۋ]��L�L���LH[�Z[H��\��H\��]�HܙX]Y�^X�]\�\�]]ܚ^�][ێ�ۛH��[�YZ[�X^H�ܜ�X�[�XYK\��YZ[H�\ܝˈ�\�\�H�X���]�[�[��[]Y�[\��\�\��Y��HYX�]YX���[��\X�[]K���[�[��H��Hܘ[�܈���X�H�[��\ˈ�X��[�[��\��X�K[ۛH����[��ܘ�HX�]�H]]X��[�YZ[��]^\�[����\[�H�\�Z�\����N����Y[۝��[H�]�\�[ۜ�[�Z\�X]�Y�[��Z[���Y��]�]H��ޙ[���Y\��]\�H�\�Y�YY��[���[��[ۜ��]ۛHYX�]Y�X\����]�]H�[���ۙ�\�YY�ڙX�[ۋ�[�ܙX\�[��[[]]X�H�\��[ۜˈ�]\�H��[���^\�]\��]�Y]�\�H��Y\��X�X�ܙ[�\�H�[��[ۜ�\�H[��X�Y��HۙH�ܜ�X�[ۈ�[��X�[ۈ�]�\��\�H�[܈Y��X�]�H[���YKܙ\ܝ[����H�\X�[Y[��]^\�[���[Y][ۋܙX�ۘ�[X][ێ��ۘ\�����\��H��X�\�[���X�܋ܙX\�ۈ[��[�[��\��]Z[�Y��]�\��]�H\�H�\��\�\�YH[[]]X�H��H�X�]\�H�\ܝؚ�X�]�\�H[�\]YK��Z[Y][\�X^HX]�H[�[��Y�\�[��Y�ܜ�X�[ۈ��N��]�\�[]H�[\�ۈ[��\�Z[��]��Y\ˈ���X[Z[H�\ܝ\��ܜ�X�Y�H\�[Y[���H�[�]X�]X�\�H�ݙ\�����K��Y[��[\�[�X[���Y[۝��[Y][ۋ��ۜ��X[H���X���[][[�[�\��]�\�[ۈ�ۙ�X��[[]]X�H\�ܞK��X�\���\�\\�YX\��YX�\��X�H[�Y[\�[��K�TH�ݙ\��X�܈��ٚ[���[[]]X�H��H�Z[\�K�\X�]H�]H�\�Y�X�][ێ��L�L������\��ݙ\��Y[�[��K�X��YY]��]�Y�][ۋ�]]��]�H����[���X\�ۋ��[��[[���\�\�ۜ�H�]\��X�ݙ\�K��[�\�Y�K\\�
+LH�[�[��H��[X[��H[�[�̋�K����ޙ[��X��\��Y�[�]X[Y�][]ۈX��Yܞ\�ܘ\N��\�[�\�Y^\�[����]�]K�\�X�Y[^KX�X��]�[���]���X�����\Y܈�]�\[�[��Y\�[��[Y��H��X�[ۈY]]�HZYܘ][ۈ�X��YYY�^X�HۙH��\[�Hܘ[��[ۙ���YZ[�����K]�YHܘ[�[��\���\�X���[��\X�[]HX]�\ˈ�����[�H[�ۋ�]][�X�]Y�[�]�]H[\��[�H�Y[���\��X�H\�X�^X�][ۋ�ܙ[�\�H�[��[ۈ\�\�^\�[��Y�\��]\�\����[��[�[[]]X�H�\��[ۈ��[�\�H[��[��Y��\�][ۜ�X\H�L�HP�U�K�\��KX]]�\�Y�Wڝ�Y�[�H�\�\��Y[L��XY�X���[\�^X�HX]�H\�YYX��Y�N��ۋY[��H\[�[��Y\��\�\��Y���H��X�[۝�L��[�۞[[�\��]���]H�]\�����UU��T��Sӗ�S��SQ���H��[Z]��XY\�YXZ[���H[�Y�\�[�[��]\�[�ٙ�\]K����[�Z[�H]][�X�]YYZ[��ܜ�X�[ۈ�\��X�Z]Y�\�\�]\��]�Y]�[��ܜ�X�Z\��ۈ�\ܝ[�H]]X��[��\ܝ\��H�\\�]H[\�YYH�XY[ۛHY��[YK��H���X�Έ�]���HۛHHYX�]Y�\X�[]H[��ܝ�\�\]�]�^HH�ܜ�X�[ۈ[��Kܛ�]\ˈ����]�\�X�X[�[�[��X[�ܜ�X�[ۜ�܈[]H�ۙ]�\�ܞK��\�ܙH[�[��ܜ�X�[[�[�\�[��[��\��]�Y]�YYZ[��ܜ�X�[ۋ�ܚY�[�[�[��[ۈY�[�][ۜ�[���\��H\��]�H�]Z[�Y[��]�]H�X��\���X��\\���H�Z[Hو�[��X�[ۈ]X�\�H\�\�\�\�X�ݙ\�H�[Y][ۋ��������LLLH0�����\�ܚ\[�]X[^�][ۈ�X�H
+\�\��[ێ���L�B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��M���L��Z[H�X�ݙ\�H\��]�H�]\�Y�\��X���]�[��[�\�]Y\�\�Y�X���\�\��Y��۝[�Y\�H�[YH]]ܚ^�Y[ؚ[K\�\�\�\Z\��]���ܘ�Y�Y��\�܈]H�[��\˂�H��L�Y�\�����M[��[Y]H������X��YYY�^X��YKY[��Kݙ\��[ۈ\�\�X]�Y�]�H��[�Y�\�Y�X�][ۈ[��]Y�H�X�ۙ[\�YYK[ۛHY�X���YH�\X]Y�Y��Z\�Y�TP�T�W�T�\���Y�[�Y�[��\��[�Y\��Y�^\�[��ML\�����\�H[Y\��[��\�[��\��[���Y�ܙHH�������[��\[�[��H]�HXZ[��ܚ\[�]X[^�H]��ۜ�[�ˈH�ؘ[�\�\�X\��ܜ�X�H�[XZ[���Z[Yۈ][��]Y�^�\[ۋ��H[ݙHۛH[�]X[����\�H��Y[[��[��[�]\Y�\�HXZ[��ۙ�Y�\�][ۈ^\���ܚY�[�[ML\�[^KܙXY[��[�ݚ\�X�K]X��[���^H[��[��Y�H�]���\��ܚ\\�[�\�H�Z[Y�Y�ܙH\��^�]H^X�]�H\��܋[�\��Y�]�\��X\�H����\�H�XY�[�^X�HۙH��Z[�]�[�]X��XY����[^K٘Z[\�KܙX�ݙ\�H[�^\�[��[��H�\�\�[��\�ˈ���\X�\�H��[XK\�Z\��[ۜ��^\��\��[ۜ�܈TH�[��\���XY[ۛHTH�۝�X��]�Y]�Y[�\��\X�\�H��[��H��L����ۋX����[���[KܙXY[�\���^[�[]�YH�X\�[ܙ\��]H�[XZ[����۝\����\�][ۜ��[��\�\�H�\��[ۋ��X�HX\��\��ۛK��\��[�ۙH�X�ݙ\�Y�Y�ܙHZ]\�X�X�][ێ�H[]�YH��[[ۈ�Z[\�H�[X���ۙK\�YH]�Y[��K��[��L���[�]K�KY�\�\�ܙXY[�\���X����[XZ[��\]Z\�Y�Y�ܙH[]�\�N����X[TۙH�\�Y�X�][ۋ��������LLLH0��[ؚ[H�\�\�[\�Y]�X�ݙ\�H
+\�\��[ێ���L�B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��َ�H
+��LJK�X[�����[��\�[���X���]�\�Y�ܝ�\�Y�Y�ܙHY]ˈ�X�ݙ\�H��[���X�ݙ\�K�[ؚ[KX�[��]��LKL���LH[�Z[H��\��H\��]�HܙX]Y��\��X���]�[��X�Y��H\�\��\ܝ�[�YH[ؚ[H[��Y\��[��[��۝[�[�\��X�ݙ\�H�Y�ܙH[�HX�X�][ۋ�XX�]�H��LH[��Y\��[�\�Y�]�]��\��ܜ��\��\���Y[�Y�HHۙI����[[ۈ�Z[\�K�TۙHZ\��ܚ[��[�]�Z[X�HYH�P��Y�[����\��[�ۙHT��ۙ]�ܚ��Z]�[܈[��X[TۙH�Z[\�H�[XZ[�[��\�Y�YY��]�\�]�X�]H�۝[�[�\��X�ݙ\�H�\�[�X�\�Y]���H�\��X�Y[\�YYK[ۛH�Yܙ\��[ێ��[��\�KXX�Y[^K����]��LHZY[���Z[�[����\�\��\�\\�]H��H^\�[�ˈ���YYYH�[�\�X����[���[\�Y]ZXYوH����X\���Y]�ۋX����[���]Z[�H�XY[�\���\��Y\�[�[�HX\�K�]H�Z[\�N��ܛX[\\X\��ۛHY�\��[[��[��H�XYK���۝\����\�][ۜ��[��[ۘ[��H[��[��Y�\]Z\�Y�\��[ۋ��X�HX\��\��ۛK��HYY�\�YY�]H�X\�[ܙ\��X���܈[�YH[��Y\�[���\��[\�Y]�����\��\�\�
+Z[����]�K�]H�X�ݙ\�K�X\�H[�]HۛܛX[
+K�\�H\�^\�[��L���\�\��\�\�\��[�\��]Y���YK����Z][K���]]TK]X�\�K��\��H�[���ܘY�H�X\�[��]]�X]X��[�Y܈�\�[�\��ܚ]\ˈ�[�K\\���K�Y�\��\�Y�X�][ۈ�[XZ[��HX�X�][ۈ�]N�X�X[TۙH�X�\��[��H\��[�[���������LLLH0��9ki��%9�m�fh�ki�.h9�y�!��"\�\��[ێ���L{�"B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��L����L�X[�\��]Y�X]\�K�Y\�]X�[X[�Y�[Y[�]��LK�Z[H��\��H\��]�HܙX]Y�Y�ܙHY]��ܚY�[�[\�K�\�[[�Y\�[��X�Y�\�\�^X�]H\�ݙY]�[�Y[��\��X�Y�X��[����[XK�]�\��X�H[�[��\��]�K\�[��[�X�X�][ۋ��H[�\[�[�Y\�]X�\�YH[��[��[Y]\�^\�[���]�]H[\�YYK�YZ[��\��[ۜ�[��\��[��Y���]\���]�\��\���\YY\�\��[YK��ܙK���ܙY[�X[�܈���Y\�YZ[���\ˈ�]�H�]�]H�X]\�HX�\��\��X�K[ۛH[��\�[ۋܙ\�ܙN�^\�[���[��[ۜ�[��\�[�\��X�\��\�\��Y��H[\�YYH�\�H�\�]�Y��X�]�H�ܙYܛ�[�][YH\�[X]\�[���\�\�Y�[ۈ^��\�H[��[�X��\][ۈ\�H\�[������X�Z]Y[���\���X\�\�H[��\�[��K�]�YKP\�X��[��܈\�ܚX�[�����\�]�X�][ۋ�[�^Y�]�ZX�\�Y[\�YYH]Y]YN�L�\�[�\��[���[�X�]�]KM�]�[��]�\��Y^Hٙ�[�H�[�����\��\�[\�YYH���[���[�\��[[�[ۈ�]�[��ݙ\�\[��\X]ˈ]Z[Y]�[���[�HY�\�^\�\ۈ�X��\]Y[�X�]�]N�Y�ܙY�]H��ܙ\���[XZ[�˂�H�ܜ�X�XZ[��ܚؙ[��\�9ki��%9�m�fh��\\�YZ[�ۛK�\�ܚX�[ۛ��Y�K���\��\��]Z[�Y[���\�Y�X�[ێ��]��\�H�Y]������X�X��YY[��Y�\�\���۝[�\�\��\��\�\�YK��^\�[��Z[H�۝[�X�X�][ۈ�YY����]���Y[\�ؘX��[�ܙY[�X[˂�H��[������Y�HY[�]H�X\����ܙT�SM�ZYܘ][ۋ�ݙ\�\��ۘ�\��[��K��]�]Hܘ[��ܙ\�ܙH[��[�]X��L�L�[\�YYK�YZ[�[�\�X�[ۜ�\��Y��[�\�Y�K\\�\��Y[�\]Z\�Y�X���[��Y[��M��[�[��H�\���[�[���\�Y\���\�\��]��L�Y�HX[��[���[�[]܌ΌOM�Y�̍Yˈ��X�[ۈY]]�HZYܘ][ۈ\YYY\�]X�\�YH�HP�U�H�]���[\��]KZY[�X�[ۈ�XY�X���[�۞[[�\�٘Z�HY[�]K٘Z�HYZ[�]�H�\]Y\��XX�ˈ�]�H�]�X�\�]�H��[���[�ۈ�XY�]][�X�]Y[��\��^X�L��XY]�\�Y�YY[�[��ܙ]�Y]��H�[�Y]\�\��]�Y[�[�Q��]\�ݙ\��[ۋ���K\���Z\��[��X�[ۈ�]��]�]H]Y]��Y�\�Z[XY�\�Y��\�ۛ\�]\�ݙ\��[ۋ�\]Y�]X�\�Y���\��Kܙ]�Y]��]�Y[��H\�\�[��]�H��\��[ۜ�[��[��Y��]���X�[ۈX\��[��]�[���[XZ[����X��X�]Y�Y��\�Y�K��]�]H]�Y[��H�]�\���[Z]Y���۝[����K�Y�\��\�Y�X�][ۈ[�[����[�Z[�H�\���Y���YZ[�]][�X�]Y[�]�Y[�\�H\����Y[�^\��\�Y���������LLLH�[�[]܈���HX�[Y[�8�%]]ܚ^�YX�X�][ۈ
+\�\��[ێ���L
+B��H\��]Y�ܚ��YH���KX�]ۋY�^��[���^��[�[]܋X���K\�Y�KX\�XK�\�H�]X��XZ[��ؘNMˈ\�\��\]Y\��[ݚ[��H؜��X�Y��YX[�����H�۝���X�X�][ۈ\�ݙY�H\�\�ۈ���LLLK�ۛH�\]Z\�Y�\��[ۋ��X�HX\��\��[ݙH���L��[�K\\���H[�Y�\��\�Y�X�][ۈ�[XZ[��[X\�H�]\˂�H���Y�����][ۜ�H�]]�H��X[���[����Y�H\�XK�]�\��[�[ۙHܝ�Z]HZ[�[][H�]\�X�\�[��[��K�Y\����\��]�YHH�ܛ�X�H���۝[�X���[���܈���K�[���\H�YH[��]�[��]�\����HHZ[�[][HZY����[�\��[ݙYܚY�[�[����\��[�[][ۈ�[Y\��[Z\��H]H[��ܛH�ܘY�H[��[��Y��H\�[��\�X[H�\�Y�YYܚY�[�[M��̌�ܙY[����]K����Hݙ\�\TۙH�]\��\���[X��\�H�ۛ�Y�]\��Y����\�\�X��\��][\Y��]�Y]��[Y\�ۈ\�[�X\�ݙY�\�X[\�ܚ\[ۈ[�\��]Y�\��X�[ۋ��H�[�]X���[XX����YH�\�\Ό�L0����NK̌0��M���0���L��YMNKL�0��L\��[�[ۙK\ܝ�Z]�\��Z[��]�[�X��[��L0��̌�YX�YZZY��\�K����[��[�]�[��[�[ۙH�[H�[][]Y^X�]H�X�]\�H�����YHX����]]�H�Y�KX\�XH[][][ێ���H�X[TۙK��H�\�Y�X�][ۋ����H]\��]��\�ܛ���][ۋ�[�[][ۋ��]�ܙ\X]�\��\Kٛ��\��\�^�Kܛ�][ۈ[�[��[��Y�ܛH[\�ˈ^\�[���Z[�[���X�Y[^H�����\�[�]H\���H�Y�]H\��\�[ۜ��\��[ۋ�[�Yܚ]K�[�ٙ���[��K��]\�X�H�X���\�ˈ�[�K\\���H�[�[�[�\�H]]ܚ^�YX�X�][ۈ��˂�H�ܙY[����[�\�\�Y�X����[�[]܋X���N����\�[�\��\Y�H�]�Y�][ۈ܈��X�[ۈܚ]\˂�������LLL0��9c�yg��k�y+�y���`&z`"{�"\�\��[ێ���{�"B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��L��M����\��]Y�X[�\]�ܚ��Z[H��\��H�X��\ܙX]Y�Y�ܙHY]ˈ\�\�^X�]H�\]Y\�Y\�[�[H�\X�[Y[�[��^I��[\��]Y�\�HX�X�][ۋ��H�\X�YHX�Y[^H[��Kܝ[�[YH�]Z[H[\��]YY\�]X��\�\�[���\]H�^\�\[���\��ٚ]�K\�[��[�\�]�Y]ˈ���X�[ۘ[RHܝ�Z]ۛN����Y[��H�YY�[XZ[��[��Y�\�[��Y\�ܚX�[X]\�X[����\��Y\�[XY�\�܈�\�[�\��]HYY��H��YH�[�[]܈[��HYY�HZ\��ܛN�ܚY�[�[�[�[]܋����H[�\�[�\��[ݙH[��H�]]�H[�[�]�]�XܙX][��H�ܛH܈Y][���[�[][ۈ��Xˈ��][]H�]Z[�Y��\��[ۋ��X�HX\��\��ۛH[���۝\����\�][ۜ˂�H[�]X[�]\���[��\���HZ\�\�]H�\�\�\��]�K�YZ[�؛���[��Y�X�HX\��\\��H[��\�[ۈ\��\�[ۜ�[��]��YY�\��]��۝�X�\��Y�H�\�Y�K\\�\��Y�\��[ۋ�[��K\]KRH��]K�\�K�X[�X[�]��[��\�H[۝KLH]ۈ�\�H\��Z\�\�]K������]�KY\�X�[]H[�\��]�H�X���[�[Y]�\��Y\�\�ٚ[H�����\�][���[��Y���Z][H�ۛ�Y��]\��Y[��[Y\��]�\��[�\[�[�H[��[Y����H���YHMMH^]Y�]�Q��QՈ�Y�ܙH\�ˈ��[�����\��[Y][ۈ�[XZ[��[�]�Z[X�K��]�\��]Y�L�L������\��Yܙ\��[ۈ\��\�Y[��^\�[��X�Y[^H�H[��N�H�[�Y]H�[�H�[Y]YۈH[�\[�[��]X���[��\��Y�ܙHY\��[�ˈ��Y]X�\�Y��H[XY�H\�Y�[��ܝ�X�ݙ\�Y\�[��H�L��LX�]H�Q�]HܚY�[�[M���[Y[��[ۜ��H�[YH\�ݙY�X�[ۘ[�\�H\��]Z[�Y���H[�[XY�H�؈\�Y��X��YYY��Y�H�]X��ۛ�X�܋���ܚY�[�[�\��Y\�܈�\�[�\��[XY�H\�[����Y��HZ[H�]��۝[�\��^\���\\�[��[���X�[ۜ�]\��H\]YۛHY�\��X��\�ٝ[�\��X�X�][ۋܙXY�X�ˈ���]���Y[\��X��[�\�Z\��[ۈ܈�\�[�\���[���[��\ˈ]\��]\�]\��H�ۙ�\�YY�Y�ܙHY\��[�˂�������LLLZ[H^�]�H�XY�X��
+\�\��[ێ���
+B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�YM�M�H
+���K\��]Y�X[��^�Z[K]^\�]�K\�XY�X���ܚY�[�[\�[[�X���][��X�Y��X��\ܙX]Y�Y�ܙHY]˂�H�\�Y�H�Yۘ]\�K��H[�[����Y�ܙ\�\�[��X[�X[�^��[Y\�X��[��]Z[��ܜ�X�Y۝[Y\�X��\�Y�X�][ۋ��ۙ�\�YY�]�H�]�\�[ۜ�\�HY�Y�]�]�XZ�[�[���X[�ۙ�X��܈���K�\�Z\��[ۈ�X\�ˈ���[�[��X[�[Y\�TKؘX��[�\�Z\��[ۜ�܈�[���[��\˂�HLH�[�]X�^۝[Y\�X��Z^Y؛[�����\�\K��ۙ�X�ܙ\X]ܙY[��H�\�\�[�^\�[�����[X�[\��\�[ۜ�\�����]�H��[�ˈ\�\�X\�ݙYX�X�][ێ��X�H�����ܘ�Y�Y��\���������LLL�0��9k�9aiyk�yaj9�+9g,9`&z`"{�"\�\��[ێ����[��[��Y;�"B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�����\��]Y�X]\�K�\�KZ[��\�[ۋ\�Y�]K�Z[H��\��H�X��\�]\�Y[��[Y]Y�H�\�\�]\ˈ\�\�]]ܚ^�Y��[�Y�]H[\[Y[�][ۋ����Y[\�X�]�][ۈ܈��X�[ۈX�X�][ۋ��H�Z[\�����]Z[���]KZY[�X�[��[��YY�\]Y]\�]�\��[��ZH[��[�H�]�\��[��\��[���[X[�X��۝[��\�\��\��Q�\�\�^�\�]�H�]]�����[�Y�[��Y[��]�Y\�]�ZX��Y�[��\�Y�X\�Y��[�X�ݙ\�K�[�[���Y�Y��]�\�\�ݙ\�܈ܚ]\�H�YY����]�ܚ��RK��]��[X[��[��Z[\���H�[ۘ[��\��HX�X�][ۋ�\]Kݙ\�Y�X�][ۈY]Y]K]�Y[��H\��[��]��[[X\�K��X�X�H�\�\��H��\��K]��[ܚY�[�[Y^[\H��[�\�Y\ˈ^\�[��\��^\����[XH[������\�X\��[���^\�[��[��Y��ܛX[�YY[�[Sݙ\��[ۜ�[��X�Y��H�H[��\�[ۈ�Y�]H\��\�[ۜ�\�Y�X�K�]H�X���\��\�[��ۛH[\ܘ\�H�^\�\ˈ�]�H�X[�����\��K]�\�Y�YY��[�][ۘ[\�XY[���[�Y]\�\�H[��X��Y[�\�\�Y�X���X�Y[^K��[�Y]\��[XZ[�[�[����Y�Y�\��YX�X[[\ܝ�\��ܜ�X�H�Z�X�Y�]��Y�Y�YY�]KZY[�X�[����^\�K��[�Y]HX�\�Y��H\�\��\ܝ��Z[H\��]\�Y����]�ۈ��[�\[�[�H�\�Y�YY����]�^H�؋ܙY[�X[�ZY[�[�[��\��X�H[��[][ۈ܈X�[ۜ�\�Z\��[ۜˈX�X[�ٙ\��[ۘ[\�ݘ[[�ۙH�\ܝY�]\�H\��]�[��[Y�[K��]�\X�[]H�ؙH�[XZ[��\]Z\�Y��\��[��[Y]܈\���X�\�[��H�]�ܚ���\��H�\�Y�Y\���H���\�Y��[�]�Y]�ۛN���\����Y\��H܈��X�[ۈ�[��\ˈ�[�[X\�H�]\��[XZ[��X�\��\�HY�]\�]]ܚ^�Y�X�\�\��ܚ\�[��K�[�Yܘ][ۈ]Z[Έ����\�K�[��\�[ۋ\�Y�]K�Y���������LLL�0��9���c�y�%9.h:fh��"\�\��[ێ�����"B��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[��LYH
+���K\��]Y�X[��ۙH�X]\�K�\�KXX�Y[^N�ܚY�[�[\�H�X���][��X�Y��X��\\��]�HܙX]Y�Y�ܙHY]˂�H^\�[��[��[��H�[�[YY\�X�N�ZY�X\��[���]Y�ܚY\��X\���]Z[���[�]�ܚ]\����\][ۋ�]�Y]�Y�]X��YY[�^X�][\K�\��܋ܙ]�H�]\ˈܚY�[�[�[�[]܋���X\��\[�\��[�\�W�]W�ٙ�[�H�]Z[�Y����\�[�\��]K�TK���[XK�]]܈�ܘ�Y�Y��\��[��\˂�HۙH��\��K]�\�Y�YY�H�ۜ�[][ۈ�XY[������X��X�]Y��Y[�Y�X�\\��X[�\�H܈�^Y\�H�X�\K���\��H]H[�ۛ�ۈ�[XZ[���[��[��Z[Hx�$�\��]\�\����Y��HZ[H[��\�[ۈ���ۛ�X�Y��\�X�H]]�X][ۜ��۝Z[�ۛHX\�H���\ܝ��]�[�[��\�K[X\��[��\�ˈ^\�[�����Y\�]X���X�܈[��X�Y��]�Y]�Y]�ZX��Y\X�]Y�YY�Z[\�[�^X�[�Yܘ][ۈ����\����[Y[�Y[�����\�K�X�Y[^K\X�\�[�˛Y���\X�]Hܛۋ�ܙY[�X[�\�Z\��[ۈ^[��[ۋ��HX�Y[^H]H�Y�]K�Y[\�[��K�Y�X�K[X\��\�X���[�\��]Y�L�L������\��X\���]Z[�٘]�ܚ]\����ܙ\���[\K�\��܋ܙ]�K���]X��X���\��Y��[�\�Y���[Y]\�Y��۝\�˚�Έ��۝\���\��[ۈ]\�X]��\��[��[X\�K�[�]X[]]�\�]�Y]�����Y�\�P\�\��[ۋ��X�HX\��\�ˈ\�\��X��\]Y[�H^X�]H\�ݙYۛH��۝\�˚[��\�][ۜ˚[�\��[ۋ��X�H�[���ۚ^�][ێ�Z\��[��[ۘ[��H�[XZ[��[��[��Y��[��[�\�Y�K\\��Z]H\��Y[��Y[��MH�[�[��HX[�Y�\��\���[�[�H[�Y�\��X����[XZ[��[X\�H�]\ˈX�X�][ۈ\�]]ܚ^�Y�ܚY�[�[Z[H\���ۛ�X�[ۈ�[XZ[������Y���H^\�[����[�[��[Y�]X��ۛ�X�܈[���X��\���\�Y�YY��\]Z\�Y��\��K�[�[K�Y\�]X��Y�X�H�Y�]H�]\�\����^\�[������[����Y\[]�K��\��Y\�\��\��Y[�[\ܘ\�H[��Yܞ\�ܘ\H��[��\�ۛY[�
+�\�[H]ۈX���]\[�[��JK���������LLL���\�\��\�[��H
+\�\��[ێ����B��H�\��[��ۙ\����^��\�H�]X��XZ[����LLH
+��JK\��]Y�]�Y]����\�\�[��[�\�\�^X�]H\�ݙYX�X�][ۈوۛH\�H�YH[��Y\ˈܚY�[�[\�H�X���][��]��[ۋ�K�����ܚ�[��X�Y��H�\�X�H�\�\�X\��Y�ܙH����[��\[�[��Y\��\�\��Y�[���ۛ�\�ܙ\���۝\������XY[�\���\��Y\�^X�]�K\�XYH�[�YۛK�^\�[��]]�\�Z\��[ۜ��\�[�\��ܚ]\�X�]�HY]�[��X�H�]H�]Z[�Y���]]�X]X��Y��\�TH�]�Y\���[XK�]K�Y�H�[��\˂�HL��\]Y[�X[\��]Y���Z][H�[�]X��\�\�\��Y\���۝\����\�][ۜ��TK\�XY][Y[�]ݙ\��[ۈ�X�����]�[�\��\�][ۜ��\��X�H\����[ؚ[H\��Y��\]Z\�Y�����H[�^X�Y�\��\��\��H\���]HX�X�][ۋ�ZY��X�ۙ�\�H�\�X�H�Z][���\�����\]Y\��[��[][ێ�X�X[TۙH�]\�H[�X�ۈT���[XZ[�[��\�Y�YY��H�ܝ�\��X�ݙ\�N��\�ܙH�YH[��H�Z]�[܈���H���LLH[�HY�\��\��[ۈ[��]Z[��ܛX[\]H��\[�ˈ��]H���X�˂�������LLL��\ܝ�\��X�H�\�
+\�\��[ێ���JB��H�\��[��ۙ\����^�\��[���ۚ^�Y�\�H�X��Y��]X��XZ[�̎̍�ٌ�M��͍�NNLٙ��NXL
+��
+K�\��]Y�ܚ��YN�ܚY�[�[]�[�\��X���][�[[�[���ܚ�[��X�Y��H\�\�\�ݙYH�Z]�[�\�[��\��Z[�YX�H[]�][ۋ[�^X�]H\�ݙYX�X�][ۋ��\�\��H��\�[�Y[�ݙ\��Y]ˈۛH�ܙY[����\��\]Z\�Y�\�Y�X�Kݙ\��[ۈX\��\���Yܙ\��[ۈ\�[�[�ٙ��X�ܙ˂�H���[�[��X[�[�[][ۜ�X\��\^[�]TK��[XK]K\�Z\��[ۜ�܈�]�K���[����X��[��Y����ܘ�Y�Y��\���[�]X������\��X���[��\]Z\�Y�\�Y�[Y][ۋ��H�]HH�[X\�N���X�[ۈ�[�[��X[X�[ۜ�\�H��^\��\�Y��H��[�[Y][ێ�^\�[���]�K]�Y]�ܝ�\�][ۜ��\�[�][ۈ�Yܙ\��[ۈ[�H�]�L͍���L�\��X�H�Yܙ\��[ۈ\��Y�ݙ\�[��[۝H�XY[���Y][��Z[H�[[�\��]Z[^X��[��[��]�Y�]K��[����]�K�\�Y�۝���[�[��[��Y�[�[��X[�]\���ܜˈ�\��[ۋܙ[X\�KZ[�Yܚ]K��[��K�[�ٙ�[��]\�X�H�]\�\��Y��[�K\\���\�Y�H[�^X�Y�\��\�Y�X�][ۈ�[XZ[��[X\�H�]\˂�H��\��H�X�ݙ\�H\��]�HܙX]Y[��[Y]Y[�\��ܚ��YH�Y�ܙHY][�ˈ�]�Y]�Y�ܙY[�����[XZ[��[�]XˈX�X[\Y�H�X����\�\��H�]]�H]K\X��\�[��\����X�[[�\��[Y\�X��Y��]\�[�[\��[��X�[\�Y�]��\�H^H�[��H]]�X]X��^�[�˂�������LLL���۝\��\�[�Y[�ݙ\��Y]�
+\�\��[ێ���
+B��H\�\�\�ݙYH�]�Y]�YۙK\�ܙY[�ݙ\��Y]��܈�[X\�N�\��]Y]\�XZ[��L�����ܚY�[�[]�[�\��X���][�[[�[���[ۋ�H�ܚ��\�\��Y��H[Y^H��ܝ[ۘ[�Z[�[���ۛ���X�[�\��Y\��\���]Z[�]�\�H\�[�Y[��ݙ\�\X�[�]Z[�ܙX]H�۝����^X��\����\�ۈ�[��[�]Z[Y[Y[[�H���H�[XZ[��[��K�[ؚ[HY�[�\�^[��]\�[K��H�[�]X���Y���M��\��Y\���]L͍�͎L�[�NL�L��LHݙ\�\�[\H�Y��[�[�\�X�[ۜ��\�Y�YY��\]Z\�Y�\�Y�X���[��[[�H�H�]H�[X\�K��HۛH��۝\��RK�\]Z\�Y�\��[ۋ��X�HX\��\��[�\�����TK��[XK]K\�Z\��[ۜ��[�[YH[��[܈�ܘ�Y�Y��\���������LLL���۝\��\����\�H���H\�\�\�ݙY\�ۙH�\�X[\]H�܈�[X\�K����[ۛH\����\�H�[[��\��\]Z\�Y�\��[ۋ��X�H�Y�\�[��\�����[ۈ]�[�Y[�TKZYܘ][ۋ]K�[��܈\�Z\��[ۈ�[��\˂�H�]]�H]Z[�[�\�X�[ۈ�\�Y�YYۈ\��]Y���Z][H]̌��L�L�[��Y[���[�\�[�\���X�K���\�[���ݙ\������[�]X��]�Y]�ۛK��\�Y�X���[��H�]H�[X\�K��H\��]Y�X[�XZ[��ܚ��YN�ܚY�[�[]�[�\��X���][�[[�[���ܚ��\�\��Y����ܘ�Y�Y��\���ܛX[\]H��\[���[XZ[�˂��������LLL�0��9��y��y.��m�yi��d#y/�ykf9idy�"\�\��[ێ�����"B��H�\��[��ۙ\����^8� �g����]X��XZ[��͌ػ�"��{�"{�#:f�9��ab�f���^�Z[K[X[�X[[X�[X�۝�X�]����&��*9�-��#��k��nyaṧ 9l#�bcy���/�i#yc�yn ��#9c��o 9c�y��oeyc��*9�-����hmzgh�/�y� x� ��H9.�yl!�(c9d#yf�+���(zj�X[�X[�[��H9�.y..�d#�c�:)�:# �X[�X[;�&�d#�c�9m칧"y�$9b��.��m�y/�ykf9cm9bcy���+������y�9idym�o �m�c�+���.9k��� �/�y�fy�`9�"ya�yk�x� y/�+��� y�`�fd9d�:e z-)�/�y��8� ��H9�蹧"y�c�)�9fj9�(y���/�ykf9.g��.y�*9�'�k��d#�c�X[�X[9�!�+�;�#9��z* 9/�y� {�&�bcyc�9aiyc��d#9�iyo�z)�]����$�kf9�!�+�8� �i��/k��y�b9�+:`e��#�.#��(z/k�����(y����!�+�9i,z-)yga�/�y�fz+�9oex� ��H:hnyd"9�$9f�od�`&�/���#9���g���d#9. 9�b�+�yi,z-){�&��h�n.�.(�f�c!x� za�yi#y/�ykf�aiz-)�bcy�.:j�9d�9�'�k��a���yga�)�����#9�(y����h�o#�aiz-)�, ��*9..�8� ��b�+�z)�:# �`/9.#��9�"T�S9/�ykf:/�y����.9k�x� ��H9od���zf�9����9� yod��h�m�k�9�$8� �-a9���\��[��."��+9g,:hn�n���i�(c:/n�a��e�9�{�#9k�9�m9aly.��ie�.���,z/�9���o�zg �[Y]H�\�Y\9�i�(c;�#�z`&�/��d#��cyd"9nm�� ��*��.y�l9�k�n��� y�`�fd8� yd#9�iy.��b�y�%��'�.����y��x� ��H9�*9�-����hmy�*�/�ykf:/��aiy.�yg*9a�ykf;�&�.#yb-���8� y.#yal�e�x� y.#y�o�++9g,9� y.ayi!�.�x� �c�yn �d#�c�o 9��:hmy�.:j�9d#�c�:#by�/��#9.#����hmz`$:hny��:/���#9a�y�,y�*9�-��.9k�y/�ykf9d�9a��k���h�o#�aiz-)�� ��������LLL�0��9��y��y/�ykf9�����9�h�i#{�"\�\��[ێ���{�"B��H�\��[��ۙ\����^8� �g����]X��XZ[���NM�X;�#9��9���nl�a�9m�y/g9�$H�\�\�YZ[K\�]�K\�X�ݙ\�X;�&�/�y�fynm�(c:hny��b!��n���x� �d+�b�9�b9�+�c�yn �k�9�m9�)��.�9��z`&�/���#L̈9��9� yod��h�m침(zj�8� ��H:)�h�y.+yd$za���M�9��y��yc�yi#y��9�.��b9�+9��9��;�&�c�+��+⹥�y�/��.�#by�/�m칧"y.��m�y/�ykf9/�+��/a��*�aiz-)�� �m��*9d"9�$TH9i#y�9����b9/�ykf9�$9b��/a�d�yn�9.(�i,yd#�chy/c��#9/�i#ybcy��9h��f�od�k��fayi,z-)x� �.#z �y�k��i9h�9��9m��k�k���'�.��� 9b'yf�c!y.(�i,y�9�dy��9c��f�8� ��H9.�y/빥.H�\�][ۜ�YZ[K\�]�Y]��&�a�yi,z-)y. 9�(yc�+��f繧�{�#9.)y�/:j�:+�yd#9/g9�*9g��� y/�+��h��b�8� yaj:(j9�/��.�`/8� y.��m�y� y.ayc%�`/�i��d#x� y�`�fd�e z-)��c��.��d#���y��{�&�."�. 9�(y�/�o#���y/g9d#9�-�c���h�i#ym�/�ykf9���hmx� �.#y�칥.H^X�Yܙ]�\�[۸� y.#z!�b�:a�ya�{�#9.#y��9�.y�'�k��a���y/�y��8� ��H���YH9.#��X��]9�9.)9n����c:gh���b��.�d"9�$9f�od�`&�/���#9c!y��9.(�/�ykf9f�c!x� yf�+��i,z-)yd#�a�z+�x� y.�y/�ykf9.#yaiz-)�� z)�b!�.#�i��d#x� yc��.���`�fd�e z-)��.��m�y�*�$/yg,9����x� yk��faza�zh�ya���x� z/��b,9d�yn�9c�a�yi#y�k�+�8� ��H9o�y�+:/k��.:j�;�&��'�k��k�9�m�K\\�8� z/�9����[Y]K�Y�\�9.#���."���9�$�kf9d�9n#8� ��'�k��-(�b�z-)�c��� 9��9aiz-)��fy��y�*9�-��.9k�y��y/g;�&��+:/k��*�a�y�'�.��-(�b�y�l9�k��#9.#z`�9�l�Y�x� y.#yn�9�*:/�y���� y.#y�.z!�b�9c%�� ��H9f繮��&�.�y��:j�\9�b9�+9�h�i#H��NM�X9��\�][ۜ�YZ[K\�]�Y]˚��9nm�d#9�iy�$�kf9�!�+�;�&�.#yf繮�-)�b�x� �..�o 9c�y��oey�9am�.幧*���9.�9m�y/g9k�9aj9�*�b�8� �������[�\��Y�X�][ۋ[ۛH�[�Y]H
+���LLL����[��[��Y
+B��H�\�H�]X��XZ[�����N���[���]�Y]��YڋY^X�X�][��]�L[��[��HZY�^X��][��Y][ۜ���ޙ[��H�[�\�]܋�Lܚ]\��]�Y]��Y�X�H�X\�˂�H���H\�ݙY�܈��\��HX�X�][ۋ�]�Y]�Y�LZYܘ][ۈ[���[�YY��X�Y�[��ۙ�\�YY�Y��Y��\�Y�\��X�������[�[YK�RK���Y[H�[��\�܈�ܛX[��[�˂�H�[�[��[�[�K\\�ٚ[�[��NLH\�ٙ�[�NL�[���ܙT�SM��LNܛ�\�\��Y��H�[�]X�\��ۛN�����YڋX�\��Y�X�][ۋ[ۛK[��[\�]�Y]˛Y�X�ܙ��]H]�Y[��B�[��ܝ�\��X�ݙ\�K��]]�H�]\��X�YH�[[�H�H[���X�[ۈ�\�Y�X�][ۋ��������LLLH0��9.)9n��od���y��y��yk������.9k�{�"\�\��[ێ���;�"B��H9g����]X��XZ[�M�M�X;�#9nl�a�9m�y/g9�${�&�d+�b�:e�9�yc�od�i*y��9� yod��h�m�k�9�$8� ��\��[��ۙ\����^8� ��H9�*9�-�)�y�`������z!�b�9��9��y��y��x� �.�y��9h��c�+��!&��+��S8� LMzhny�b�+�x� z/�:(c:+�9�#�d�:-(�b�y�b�+�y�!yce{�#9.#y/빥.zhmzgh�� z-(�b�yak9o#�� y�l9�k�n����`�fd8� yc��c�-)��%��9�"yd#9�iz, �n���&���9��9�(yge���:g 9��9ca�\9�b9�+8� ��H9/o��*9`&z`"K�.��m�y/&9ab9�/��.�`/9��9����.9k�{�#9.#y����h�o#�aiz-)�a�y�l9�9.��m�K[ۛy�n�`/:+��b)9..�#by�/��l9�k�.(�i,x� ���9b%�(j�+鹠�yo���i�� y�iy��:`$9df9m�zh�9�'��/8� yb!��n�`e��#�� z(c9b%�d":+�x� y�+�.�9���b-�d�9�*���yke���yb!�l`���9�.�� ��HL�H�N��y�'�.��c�+��+�z/�:(c;�&�.)9n��od�bcy�iy��9df9m�zhny�빥�9m�o ��#9/a��-��/����b-��"y�*���yke���{�#9�h��k�/�9f�][�[ۻ�&��+:/k��*�a�y.��/ey�'�k����y��x� �k������i�(c:a���*�Ό�\�XK��[��Z{�#9�,�k��bk��+9��oeX�\�\���LK���[Y[�����^̌��L�L�ޞ\�\�YZ[K[[ۚ]ܘ;�#9.#y/�z-e�.-9���X���]8� ��H9d#���y�.:j�;�&�k�9�m�K\\�9.#�/�9����x� y�,�k��bk��+9d�9n#8� ZX\��X]9��9�.��&�/�z-e��+9�.�o 9�.����^:/�:(c��\X�\�yc���*;�#9.#yk����9��9.��`/9k�9.�y����x� �f繮�c�g 9���`g9�iX\��X];�#9��9�l9�k�n��/�y����%��l9�k��h�i#x� ��������LLLH0��9��y��zhny��od��n�k�9�m9�)��"\�\��[ێ���;�"B��H9g����]X��XZ[�؍��Y��NN{�#9nl�a�9m�y/g9�${�&ٙ]���b9�+�c�yn �k�9�m9�)��.�9��yc�od�i*y��9� yod��h�k�9�$8� ��\��[��ۙ\����^8� ��H9�*9�-��k�+�9�c:%��an9��;�"9d*����oyc�{�"yod���9�!��#9nm��#��k���9�`�b!��n�)�9b&y."���� z(izod9.�i*y.)9n���*�aiz-)�#by�/�� �m침.9k�����c�K����c�zhny�빥�9h��쯹�k�n����%�c���d#y��:)�9b&{�&��c:%��m��k�+�9�#yb�yk������+�� y.���/9c�9/d��#9.#y���f��e+�ea�d�y�%��*���y���d"9ie�i$9�'9�$9��9�!�� ��H�H9cey��:/�y�������*�ܚ]\�� ychza�K��:a�yak9o#�� ze z-)�� y.��m�y/빥.y/�y��9d�9.#yc��c�9bcyd#�k�z+�{�&�/�yb�9��y�"y��a�y�l9�'��$9�*�b!��n��nl�c�9.#y�#���.�a�zh�z`$9�%:+�9�#�� ����. ����S:hny����oe{�&��*���zgg�f��.�y�fyo�y�.9k�{�#9.#yf�9�.�h�y�h��k�l,ya��aay�#���k�9�m8� ��H�\�][ۜ�X\H9.�z`#�/(9od�bcz#by�/��"y�b9df9m�z(c9�9�oyd#ycez+�9�#��#9.#y��:g,�k���-��c��cez/oz#m��&���y��y��9�.�df9m�x� zhny��� za�zh�x� yceyc���#9��:a��m�+�yaiyl#�+�y.#yc��a�yi#yh��b�8� �m��k�+�:(j9.#yb�9��9��9�.�� ���۝\��X\H9d#9�iyaly.��b!��n���oe{�#9am�.�`.�/�y.#y�.x� ��H9�+9g,L9��:f�9���S8� L�L�L�9k�yk��fay�:(j9d�9k��faH�XY\�9f�od�`&�/���#[��9.)9.*�TH9�n�g����9��z`&�/���&�k�9�m�K\\���K�Y�\���'�.��/�y���c�#by�/�f�+��.�y�,y�+:/k�`�9�l��izj�9�.:j�8� ��H9f繮�g���؍��Y�;�&��'�.��c��a�y�l9c�����i!�.�H��]�]K�\ޞ\�\�\�ڙX�]�KY�[��[ۜ�X�Y�ܙKL���LK���ۘ8� �o�z)�y���.�ybcyd$z/�y����h�i#y���b!��n��ܚ]\��#9.#yb(:fi9k�z+�{�&�#by�/�c깣"yk�yn�9.��.��bcy`��� y.��m�y/�+���.9k�yd#�ceyo(9�h�i#{�#9.#y�.y�h�o#�-)�� ���y�"z!�b�9aiz-)�� y.#za�y��:a��f��yb�8� y.#y�.z, �n��� ��H9k��fayc�yn ��&�XNL��X9m�����'�k���K\\�9aj:e�9�{�":-(�b�NL�L;�"y��:` HXZ[��&՘[Y]H�͎�M̎M̈9d�Y�\��͎�M�LM�X��\��� ���."��\��[ۏM�;�#�\�][ۜ�ٜ�۝\��S9��9�$�kf:`$9ke�c.zacx� ��H�\�][ۜ�X\HP�U�H�L����۝\��X\HP�U�H��;�#L��9.*�`�9�l����.��`$9ke�f�+��c.zac{�&�/�y�fyc���\��KX]]8� ���۝\��:i���(z`�9�l�k�y�.9�y//9���c!z #9����{�#9m��*9�#��k�����[Z]9d�9�'�.��`$9���.��m�o �+�y�#�.�yb!��n����.��c�9c%�d#�#��a��#9��9��z/��c�yn ��(:`d�� ��H�H[��Y�K\�[�9f��X���]9���ڙX�\�Y�9`g9�h��&�/�9���cey��:/�y������LLL�M��\�\��Z[W��ڙX����\][�\��ݎX9�$9b��� �c��a�y�l�ۙ\��P���X�\�]KYY�[�\�.#yc�;�&���9��a�y�l9.�\��ܙ\�c���i�(c;�#9k�yajY�\�ܹ��9��9h��hnx� ��HL�yd$za�:#by�/�/�+���;�&�!��,y���c���"y�h�n.9d#9�iz!��-���:/��!��/�+���{�#9ga�..��x� y�*�aiz-)�� X�\��Y�X�][ۗ�\��Y\�V�x� �`$9df9m�zhny��d":+�y�by.��l#�+�{�&�d$za�9d#9��:-(�b�y�.�h�K�.�9�/��df9m�yl#�+�y�*�c�8� �!��,y��9h���iy��9/o�df9m�y.&���z!��-�h��eo��#9c��.�9�/��a��.��*�f���i9b!��n�/�i#y�.ya�{�&���9�-��/��ny�(y���.#yd#9�iy.�zg 9�.9k�{�#9.#ya��aayk�9�m9��y��yc��aiz-)�� ��H9�b�b�9/�i#y.��b�yg*9�iy��9c�9��9�%�a�zh�y/�y��9.#y�)����k�9�m9f繮��&��.9k��am�.+yc�9c%�.�y..���9n":hny�빫(y�l:(izod9d#��#9l!�a�zh�y/�y��:fd9.��df9m�za�zh�K��a��.���+�.�;�#9�*�)��fi9.��/ey.��m�y�%��h�o#�-)�/�y��8� �!��,y�,y�蹧"y�h�n.9d#9�iz)�c�{�#9.#yo.�b-�����iy��:)����� �Myo(9�k�+�9��y��x� L�M�y�k�+�9�/8� L�9.��m�y�/8� y�h�o#���y��K��-�aiyc��L:fa9.���f:)�yga�.#�c�yn �bcy. :!�8� ��������LLLH0��9��y��yk�yaj:gfzn�9d#9�i{�"\�\��[ێ��NN{�"B��H9g����]X��XZ[�LNX�M��NN;�&�m�y/g9�$ynl�a�;�#�]���b9�+�c�yn �k�9�m9�)��.�9��y��9��yk�9�$;�#9i#y�*L�H9��9� yod��h�� ��\��[��ۙ\����^8� ��H9�*9�-��k�+�9�"x�'9k�yaj:gfzn�9d#9�ix�'y��y�b9�i�(c;�&�.�H�\�][ۜ�YZ[K\�]�Y]˚��9�:+鹠�yd#�c�9��9��yd�9a�ybczh�9��;�#9.�yc��\�][ۜ˚[:gfzn�9�,����.#y��f�hm�`�;�&�am�.�.)9.*�aiyc��c�d#9�iy�b9�+��$�kf9�!�+�8� ��H9bcyc�:+鹠�y��͌9��c����\��Y�\����ۛ[�Kݚ\�X�[]H9e):a��+��c幥蹧"zbm9�`�Z[W��Y]ܙXY;�#�9��d"9nm�c��[��KY�Y�;�&�f�:%���������h�g*9a�yaiy�%�c��.��i!9�!�.+z-��/��� �+���`�bcyd#��(zj�9."�."����d��Y]9k�z,h{�#9/�y��:a�zh�K�i��d#K�i!�������.��`"y��K�leyo 9�.9k�{�&���9c�9c%�.#za�yn��x� ��H9�*��%�/�z!�b�:+��c幧 9��9��y��{�&��"y/빥.yc깣�9�.��#9.#y��9�h�^X�Yܙ]�\�[ۈ9o.�(c9/�ykf8� �/�ykf9d�9aiz-)�ab9�.9k�y�b9�+��`�fd�e z-)��&�.#y�.H�NN9�l9�k�n��a���y/�y��8� yak9o#�� yc��c칥l9�k�� T���%��n�oey��y�'�� ���y�"z!�b�9�k�+�9.��/ey�'�k����y��{�#9��:g Y�H9�%�/�y���`�9�l�� ��H: f��)����YH9.#��X��]:f�9���c�)�9fj9�*9/��`&�/���#:)����/��aiK�/��b,9d�yn��a�yi#ye):a�������f�:%����`�fd9c�9c%��a�ybcya���K�aiz-)������9�h�i#x� �k�9�m�K\\�9.#�Y�\���K���."�d�9n#9g*9�+:/k�c�yn �����.:j�;�&��'�k��-(�b�zeo����e�9� �hmy.�zg 9k��fay/o��*:j�9�-�� ��H9f�` ;�&�.�LNX�M�9�h�i#z+�ybcy����(yge�c�gfzn�9�,�����hy.���#9.�y��:j�9�b9�+9c�yn ��&�.#yf繮湥l9�k�� y.#y�h�i#y���ze&z+��� x� ��������LLLH0��9��y��y�b9�+9a���zgg�a�z+�y/�i#{�"\�\��[ێ��NN;�"B��H9g����]X��XZ[��X���L��NM��#9nl�a�9m�y/g9�${�&ٙ]���b9�+�k�9�m9�)��.�9��y��9��yc�L�H9��9� yod��h�k�9�$8� ��\��[��ۙ\����^8� ��H9�'�.��+�y�k��&�L���8�$�LΌ9��c���l9�k�n��i)�a��RSW��QUԑU�T�Sӗ��ӑ�P��{�&�.)9�(HZ[W��Y]��]�H: %����L���9��� �k�9��ym��k�+���ԑT�9k�y�i:!�k��.byc��a�z+�y⭹� y�:a�yi#y.��b�ze�h�8� ��H9�*9�-��#��k��nyaṧ 9l#��l9�k�n��/�i#x� �.�y.)9.*�n)�^X�Yܙ]�\�[ۈ9��]�K��ۙ�\�H��9l!�+�ze&z+��� y�.H{�&�/�y� ze x� y/g9�*9g��� y�`�fd8� yi�9�f9���k���9d�:a�zh�z)�9b&x� ��'�.��/�y������LLMX9m칢$9b��n�9�*;�#9�+9g,�H9���.�����e����LLLL��;�&�bcyd#�a�y�l:`$9ke���:/���k�+�9c깧"ze&z+��� yc�9c%��#��X���ۙ\���X�\�]W�Y�[�\�9��9d#8� ��H9c���'�.��a�y�l9�h�i#ybk��+;�&���]�]K�\ޞ\�\�YZ[K\�]�\�[ۋY�[��[ۜ�X�Y�ܙKL���LK���ۘ;�"�;�"{�&����k��.byd#9���c���,yg���/�y���a�yn�� �f�` 9c깠h�i#ya�y�l:e&z+��i!9�!��#9.#yf繮�-)�b�{�&�/&9ab9bcyd$y/�i#{�#9.#y�h�i#y/&���:fd:a�z+�y�x� ��H:f�9����ܙT�S9nm�c�K�e&z+��� K��h��k��k�+������z-���`�c�c��kd9/�ykf8� yaiz-)�.#y�k�k�������9/�y��9ga�`&�/��� ��H[��Y�K\�[�9f�9�+9m�y/g9�$y���ڙX�\�Y�9.#yc���*;�&��*�/*�`(9��yk���%��m9n����:` {�#9�.y�,ym칣�9�`�cez/�y���P�9n�9�*8� ��H9c�+���k�+�9d$za����L�L:a�zh�M�8� \�]�\�[ی�.�y..�#by�/��&��*�����*9�-�aiz-)�� ���y�"HY�H9.��� z`�9�l��#9."y.*�aiyc��c깧"yc�yn ��b9�+9�!�+�9��9��8� ��'�k���K\\�8� PX�[ۜ��Y�\�9d�:/�y���d#���yo���k�yaj9��9��yl!�g*9�+:/k��-�l/��.:j�;�&��h�o#�aiz-)�.�y�,z-(�b�za�y��9�d�o 9�.9k�yd#���y/g8� ��H9�'�.��/�y���d#�a�y�l�P�:`$9ke��.:j�:`&�/���&�k�yajY�\�ܹ��9��9h��� �i���(H�K\\�:-(�b�NL�L9i!9�9d#9�iz, �n���*9/��+��c幧+9�.��'�k��a��cm9⭹� z #9i,z-){�&�cey��9�b�+�y/�i#y..���9aiy�n��X��ٙ�ܙXY\��#9.#�d#9�n�d"9�$9�*9/��. :!�;�#9.#y�.yk��fayd#9�iy�%�a��cm9���.���#:f��d#�a�y��:-�yk�9�m:e�9�x� ��������LKL�0��9��y��za�zh�y�!y�l9�/��.��"\�\��[ێ��NM��"B��H\��[���ۚ^�Y�\�H�X��Y��]X�XZ[��N�L;�"�NM��"{�&��\��[��ۙ\����^8� �-m�i��m�y/g9�$ynl�a�;�#9� 9��9g���� y�b9�+�k�9�m9�)��.�9��y��9��yc�od�i*y��9� yi!�.�y��9��yk�9�$8� ��H�Y�\�K��X��]9�+9g,9d"9�$9�:(j9i#y�9�l9ke��*�/cz(��c���'��[X�\�9�iz/���yi-9��/c��&�c��/��aiyd�9�m9�l:)����l`�ke�c��ga�..�L8� ����fi9��y��y�l9ke��iz/���yi-;�#9�l9ke��.y..�L�\�X[�X�[\�[�[\�� z(j9�/9� 9l#�k�yn��M�;�&�����*9�9�"y�m:(j�];�#9�*9.#��"9��y. :!�9��[�ٛܛH9�*y�/�`o�acH�Y�\�H9ke�c��!�: �8� ��H9c�, ��m9��z(j9�/��.��&ݍNM�9�m9�l9ley�.�� y�ya��d#�c��i��)�b!�� y/�ykf:/oz#m�� z!�b�9�iy��8� z-(�b�z+�y��� y�`�fd9d�9�l9�k�n��.#yc�8� �df9m�K��-�d�����c깧"yaj9l`9�b9�+9c�-a9��9�$�kf9�!�+�9d#9�ix� ��H: f��)�j�:+�{�&����YH9d��X��]9aj���yl.�k�����/k9�:a�zh�z/�y�c;�"9d*�L��M���9�%�/�y`/;�"x� y�ya���%�/�H���9/�y�fz)�b!�`&�/���&�.)9n���c:gh���b��.���y��y/�ykf9.#�aiz-)�/�y��9f�od�`&�/��� �k�9�m9�'�k���K\\�8� TY�\���H9.#���9�$�kf9f�+��g*9c�yn �����.:j�;�&�.#y���d"9�$9�b�+�y��9..��'�k��-(�b�z-)�c��j�9�-�� ��H9f�` ;�&�.�y��:j�9�b9�+9�h�i#y�+9�(y��y��H���9.#��]9b!��+��#9.#zg 9�l9�k�f繮�� ��������LKL�0��9��y��za�zh�y�m9�l9ley�.��"\�\��[ێ��NM��"B��H9g�.���]X��XZ[���L�ؘ;�"�NM{�"{�&�m�y/g9�$ynl�a�8� y�b9�+�k�9�m9�)��.�9��y��9��z`&�/���#K��9k�9�m9��9� yod��h�i#y�*8� ��\��[��ۙ\����^8� ��H9.)9n����y��y�:(j9�:a�zh�y�/9d�9��y��y�"9c��c깦/��.���9��y�*�c��l#��l9d#��9�m9�l;�#9/��i�����9�/��.��;�&���9n"9.*��l8� yam�.�+�y�l9.#yc�8� ��yaiy�/9kd9c���.9k�y.#��%�/�yk�9�m:a�zh�{�#9/�ykf:/oz#m�� y�.9k�z)�9b&x� z-(�b�yk�z+�yc⹧"9��yc��`/9.#y�*���x� ��H9.)9n���c:gh���b��.�d"9�$9�c�)�9fj9f�od�h��b����9�/��.��8� y�%�/�yd�9/�ykf9.�H���9�9��z* ;�&�c�yn �d#�/�:g 9�.:j�Y�\�9�b9�+9d�9��."����.��� ���9�l9�k�n��� y��yc��� yd#9�iy.��b�yc��'�.��-(�b�y�l9�k��.yb�8� ��H:i���(y�'�k���K\\�9g*:n�:+��YX��]�]ۈˌM9�.�l$Hܞ\�ܘ\H9���`g9.��d#9�iy�b�+�{�&��+9.�9�(yg*:-(�b�HX[�Y�\�9�]ۈ9�izj�9f�9d#9. 9�.�/�z-e�`g9/c��#9ga��*���:` x� �d�ykd9.#�-(�b�H�[��\�9aly�*9c��`"H�T�T������UӘ;�#:n�:+�9.�y..�]ی��&��+9�.��*9m�j�:+�y�9������]ۈˎ{�"ܞ\�ܘ\H��;�"yk�9�$9aj:e�9�x� ��������LKL�0��9k���-�o.y��al�e�y�"zd��c��)�y�)��"\�\��[ێ��NM{�#9m�c�yn ��"B��H9g�.���]X��XZ[�MLY�X9d�K��9��9� yod��h��#9/�y�fynm�(c�NM9��y��ychza�y��9��8� ��*9�-��*�f﹦/��.�df9m�y���k���-�+鹠�x�'9��:-.z+�9oex�'y."���yal�e�y/cy�k��n��o{�&�.��� y.�y�'��$9al�e�y�"zd���#�NH9���"l����9l!� �9�k�c�9�az #9���ke�/�y� y�oz"l��#9d"9�$9�b��.��c�)�9fj9k���b�k�y��9n��K��x� ��H9df9m�y���.�y���fi:/�y.)9.*��"zd���9�ayn�z)�����#:+�y�蹧"y��yn�y�oyke��-�o#��'��b;�&�al�e�yf�, �c�ie�i$8� y��:-.x� yc�z-*9�h��b9�l9�k�`.�/�y.#yc�8� ��-�d��d�9��z(j9c�d#9�iyaj9l`9�b9�+9c�gfy� z-a9��9�!�+�8� ��H: f��)��c�)�9fj9f�od�)����̌��L�͎9k�yn��� y."y��yk���-��h��b9b!��+��#9k�y��9n��!��l$H�N�{�#9�ya��al�e�yd#�o.y����9i,x� ��'�k���K\\�9aj9ie�`&�/���":-(�b�HL�L;�"{�&�b�� �y��9.���L٘9m칣��]X��XZ[��#�[Y]H�͍��ML��H9.#�Y�\��͍��ML��̈9ga��X��\��� ���."���9�$�kf9f�+���\��[ۋ�MNM{�#9df9m�H\�KL�M�9.#�c�yn ����.��. :!�;�&��'�k���b��.��ya��j�9�-�.�yo�y�*9�-��k�+�8� ��������LKL�0��9��y��ychza�y.&���y.#��"9��y�:a�yb!����"\�\��[ێ��NM;�"B��H9�*9�-�� 9��9c��o�;�&���y��yk��`f�.#�.)9i!9�.�+�yc!yd*�k��faz#��o��chza�y.&���{�#9.#y�*9c��i��b$�chzh�{�&��:a�y�`y.#yb�9chza�{�#9�"9��yc�y�-�aiy�����yc�+��c�m��k�+�9��y��y�:a�y�`x� �aay`/9e+�chy��:d�y.�y.#z+�yk��`f�� ��H9g���LM�͍��&ٙ]���b9�+�k�9�m9�)��od���yi!�.�z`&�/��� ��9h��a��/�y���� y��y�"ychza�y��yolx� y쯹�k�!��,MLL���9�!�b!��n��&���ݍ��'��$9fj9f�k����oex� �/�y�fym��k�+�:(j8� yc��i��o���i�� y.��m�y�/9.#�k�z+�{�#9.#z!�b�9aiz-)��#9.#y�.y�yb�9�%�, �n��� ��HRK�Ty.�y�oyd#ycez`#�/(9��9c��o�;�#9����k�+�:(j9.�y�"yc���/��e��(zj�;�&�f�od����:f�9���S:`&�/���#9�*�fL�
+����L�͌���9c⹧"9��y�:a�y��9���c幥l:`&�/��� ��'�.��/�y����`�9�l��.�i*z#by�/�f�+��.�y�+:/k�d#���zj�9�-�..�a��#9.#z �y����+9g,:`&�/��)�..�."���� ��������LKL�0��9c��c�(iza���oyi*ze&yl�9.#�i,z-)z+�z-���"\�\��[ێ��NL��#9d#�c�9.��b�y.$�hn{�"B��H9g���LXL��;�#9m�y/g9�$ynl�a�;�&ٙ]���b9�+�k�9�m9�)��.�9��y��9��z`&�/���#9od���yod��h�i#y�*;�#9��9��9n�i%�/(9i!�.�x� �hmzgh��TK��l9�k�n�������9��9/빥.{�#9.#yc�yn �am�.�\9b�� �x� ��H9�*9�-��nya�b�:`'�aj9nm9c��c��&�/�y� yod�i*y.)9n��d!Myb!�d��.#yc�;�#9h��b�9cey. 9�oyi*yc��c�L�̍����M�b!�aj9l`:/k��h��&�i':e�9.�Myb!�d��� �L9�乮�:h�9��� yaly.��e x� M�K�bm9�`�a��cm8� y��:-.yd#9�iy/&9ab9.#yc�8� �c��c�i,z-)y�%�-�zh�9���"y��y�'�n���'͹l#�����#9am�.幥�y�'������{�#9.#y�!y�n���9��y�x� ��H9m�k�9�$9�#���c�(iy�m9��9�:a�y�iy��;�"9/�y�fy."y��9�a��.��:a��f�. :!�9�)��"{�#9��9h��c�+��K\�]\�b!�n�����+�{�#9�#��k��iy��9k�9�$9.#y�by.����y��yk�9�$8� �:hny��9al�]۹f�od�`&�/���&�c�����c�+��k���b�d�9k�z(�yd�9n#�c��ܛ۹i!�.�y�,y�+:/k��.:j�8� ��H9m�l!�9o(9����(9l!9�*�aiz-)�#by�/��*9�蹧"y.�y����iy��9ca��ݍ��#9�.�i,y��y��.�y�*���{�#9/�y�fy.��m�y�/8� y.#z!�b�9aiz-)�� ��`9�"LLyo(9�"z!�b�9hj�(j:+�9oey�9��y��ym칦+ݍ��#9.#y.��(j9aj9nm9k�9�$8� ��h�o#�-)�b�K�fa9.��.��m�y�/9�f:)�zg 9bcyd#��.:j�8� ��H9.#y��9h����9�c9o�����#9.#y�.zh�9�k���-�d#9�i{�#9.#ya�y�yb�;�&�XX�hn�o 9�.� e9�dx� �."�. 9�iy�"y��9h��k�9�m9n����x� ybjy/fy��y�'�d�9i,z-)yc��f�9�a���{�#9.#z �y�*9�"z(j�a��f�`&�/��a��aaz-(�b�y�.9k�yk�9�$8� ��������LKL�0��9d#9�iy��y��y/�y��9.#���9�!�od��n��"\�\��[ێ��NL��"B��H9g�����NYN{�&�/�y�fynm�d"9nm�nm�(c9c�yn �M��NL���"�NL�:e�9n�����n���"{�#9�+9�(zhn�n��NL�� ��\��[��ۙ\����^8� ��*9�-��k�+�8�'9�c:%��an9��;�"9���oyc�{�"N8�'y..���9�!��#9nm��nya�."�/(9�.9k�y.#z)���幥�y�b8� ��H9쯹�k�fd9k��!��,ze�9n���L���k�9�m:hny��d#{�&��#��k�f��.&���zfa9n)�hny��.#zf.���ym���za�zh�yb%��#9�*���zgg�f���%��S9.�yo�y�.9k�x� �c��c��H9�'��$9fj9f�k��c����oe{�#9���/�y����*�a�ya�x� ��H��9.�y���/�y���m�n�9�*;�&�!��,NK̎y�*�aiz-)�#by�/�/�+��;�#9��9�!���9d#L��8� yj!9.�M�8� yl#�+�L�L�8� �.��m�My�/:`$9ke���y�*�c�;�&��o(9�k�+�9��y��x� LM���9�/8� y�h�o#���y��K��-�aiK��b9�+̎:fa9.���l:a��c⹤f:)�y.#�/�i#ybcy. :!�8� �.#z!�b�9aiz-)�� ��H9d#9�iy��y��y�i��a�.�zfa9.���fyn�{�&��b�b�:+�b*�c�/�9f�m�o �nm��fyk�z+�{�#9.#y�.za�zh�x� yi��d#x� z(c9�l9�%�/�+��� ��l9�k�n��l`�f.���y���k���-����)������jz(c8� �.�yd#�!�b�9d#9�iy/�y�fy.��m�za�zh�y.#�b.��#��fy�n��#9m�o ���9�.�o�y�.9k�x� ��H�\�][ۜ�X\H�LN���۝\��X\H���P�U�{�#:`�9�l�bcyaj�[�y.#�g����.9k�{�&�bm9�`�c��acy�k�.#yc�8� �y��:f�9���S8� yk��fa\�XY\��,����c⹨c:gh���b��.��iy��9��y/g9�b�+�z`&�/���#[����ޙ[���9��z`&�/��� ��H[��Y�K\�[��.��ڙX�\�Y��#9�*�/*�`(9��yk���#9/o��*9cey. 9��9�`�P�:/�y���� ��H9d#���y�.:j�;�&��'�k���K\\�8� PX�[ۜ�d�9��."�f�+��� ��*���y��9n":hny��.*��l9.�yo�y�.9k�{�#9aj9nm:(iza��.#yk����9k�9�$;�&��+9�(y.#y�.yd#9�iy.��b�y�%��yb�8� �f�` 9/o��*9bcyd$y/�i#{�#9.#za�y�k�-)�b�x� yo���i��%�k�z+�x� ��������LKL�0��9��z(j:e�9n��n�:+�:hn�n���"\�\��[ێ��NL��"B��H\��[���ۚ^�Y�\�H�X��Y��]X�XZ[���NYNX;�"�NL{�"{�&�-m�i��m�y/g9�$ynl�a�;�#�]�8� y�b9�+�k�9�m9�)��.�9��y��9��z`&�/���#9od���y��9� yi!�.�ym�kf9g*8� ��\��[��ۙ\����^8� ��H9.�yg*9��z(j:hmyk�H�\��[ۋ�\�\���ܙ\�9�9�+9g,9bk��+9���n���&�#����9�`�i&�n��-)�c��n�:+�8�':!��,y�b�"n�.���'{�#9ceyn��-)�c����9� yc��e�9n��� ���y�"y��9h��c��+��e�e�9n���#9.g�.#y/빥.y�#yb�y���bm9�`�� T��� y�l9�k�n���%�.��/ez-(�b�y�l9�k�� ��H9h��b�9�c�)�9fj9f�od��#9b!�b*���9��yc�9n��n�:+�:hn�n��d�9.�yd$za�:`(9g����9�`�-)�c��.#ya��:!��,y�b�"n�.���&�.�9��z)�c��� z �y.'9c�+��.#�hmzgh��l9�k��*�c�9�9�+9g,���Z][H9f�od�`&�/��� ��b9�+�k�9�m9�)��.�9��y��9��y.#�\�[�\�][ۜ˚��:`&�/��� �c�yn �d#�g 9�.:j�Y�\�9�b9�+9.#���."����.���&��'�k��e�9n��-)�c���9� 9��9�/��.�.��^x��$z{-���jם��按公司/门店 RLS 隔离，并通过仅 service role 可执行、同时复核 `report.upload` 范围的 RPC 写入。
 - 报表上传改为原件登记、版本递增、单元格解析、公式依赖和追溯节点同事务完成；财务可把月报输入金额关联到当月日报/业绩表具体单元格及具体凭证，差额大于 0.01 元、缺凭证和未关联分别标记。
 - 股东首页金额单元格可点击打开追溯抽屉；公式显示组成单元格，输入数字显示来源日期、原表行列、上传人、原 Excel 和凭证；财务可在同一抽屉追加新修订，旧链路不覆盖。
 - PostgreSQL 解析器已完整解析 40 条语句，Deno 2.5.6 类型检查、经营驾驶舱专项回归、版本/发布完整性检查均通过；本机浏览器已验证股东只读追溯、公式追溯、财务维护区和 390px 手机布局，控制台无错误。
@@ -3841,3 +1329,9 @@ Independent AI content/visual review binds exact case/image/feed hashes; not hum
 - Added mobile/tablet integration coverage for empty completion, three completion views and same-visit fallback. Full protected exact-head validation, normal merge and live Pages readback remain required for v640. Do not report preparation as publication.
 - Release runner recovery: GitHub's Deno release ZIP returned HTTP 504 on two attempts. The validation workflow installs the same exact official `deno@2.9.6` npm package in runner temp space and asserts the runtime version before all existing type checks. No test or protection is skipped.
 - Final v640 scope also shows one current confirmed/completed/followup design per visit (latest draft if none), retaining all immutable revisions in the API, and moves the photo close control below the phone status area with sticky 44px access. Synthetic tests retain history/CAS invariants while checking the single-result view and safe viewer position. Supabase setup's GitHub release download also returned HTTP 504; it now uses the exact official `supabase@2.109.1` npm platform package with a version assertion. Existing type/CLI/full publication checks remain intact.
+## 2026-11-10 · Natural-curl shrinkage aesthetic case (App version: v641 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main a2edb2b6d577c7958cf7b25c4fcbffcf3395e339; clean focused `content/aesthetic-2026-11-10` branch, starting version/integrity/handoff checks passed and the daily backup script confirmed the current archive before edits. All thirty-three earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-10` case separates visible current dry curl distribution from fictional zonal curl type, measured wet-to-dry return, customer-confirmed French jaw-bob goal, three-minute air-dry routine and eight-to-ten-week maintenance. Conditional A/B compare one-pass wet-line geometry with a dry-target, regionally buffered cut; six answers and five unscored self-checks include full-dry, first wash, third week and eighth week without inventing user completion.
+- Original 2172×724 AI WebP shows only one fictional adult's current dry front/two true profiles/back shoulder-length natural-curl lob, not the undisplayed reference, wet comparison, proposed cut, first wash or eight-week result. No real customer, measured anatomy/density/diameter/porosity/damage, verified curl class or shrinkage, personality/occupation, scientific validation or independent human expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/shared gates, exact-head protected CI including browser regression, normal merge, Pages success and exact live feed/image readback remain publication requirements.

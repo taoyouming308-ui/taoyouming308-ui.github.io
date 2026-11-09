@@ -2377,3 +2377,8 @@ Verified shell/monthly loading separation; bounded frontdesk/main identity recov
 - Add one original fictional four-view current-state case about three undisplayed AI “same-style” references whose front, profile and back views demand incompatible lightness, height and density. Six conditional answers compare combining every view's strongest feature with a coherence-first three-dimensional translation; five self-checks remain unscored without a user answer.
 - Original same-person 2172×724 AI WebP shows one current chin-to-upper-neck grown-out bob only, not the customer's AI references, proposed cut, styling result, first wash or eight-week state. No real customer, measured density/diameter/anatomy, verified reference consistency, personality, occupation, scientific validation or independent human expert certification is implied.
 - Preserve the reviewed 2026-11-03 academy publication and all twenty-six earlier aesthetic feed objects. App/runtime/version, retired feed, calculator, customer, finance, database, login, permissions, business sync and automation remain unchanged; exact-head protected CI, ordinary merge, Pages success and exact live feed/image readback are required before claiming App synchronization.
+## 2026-11-10 · 发型审美训练：自然卷干湿回缩与短鲍伯落点（v641 不变）
+
+- 新增 `aesthetic-2026-11-10`：训练法式下颌卷鲍伯在前区、侧区与后颈回缩量不同且只愿自然干时，如何在湿发统一底线与干发人物落点之间取舍。
+- 新增同一虚构成年人物当前干发四视角 AI WebP；不展示湿发对照、参考图或改造结果，不把图片当作发径、密度、卷型、损伤与厘米回缩量的证据。
+- 六步答案覆盖人物、风格、轮廓层次、发质质感、时间尺度验收与门店话术；五项复盘保持未作答自查，不虚构完成或成绩。仅更新 feed、图片、透明审核及交接记录，不改 App 代码、版本、旧研习院 feed、业务数据、权限、同步或自动化。
