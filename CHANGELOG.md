@@ -7,6 +7,11 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-11-09 · 发型审美训练：头盔与耳机后的短发恢复力案例（v641 不变）
+
+- 新增 `aesthetic-2026-11-09`：训练男性韩式参考图的露额、贴侧与后区饱满，遇到长脸比例、太阳穴覆盖、头盔通勤、包耳耳机、两分钟整理及八周修剪周期时，如何在照片完成度与真实恢复力之间取舍。
+- 同步原创AI虚构男性四视图、六段资深基准答案、自然/正式/头盔后/耳机后四状态验证及首次洗后/第三周/第八周验收、五项未评分复盘；未改 App 代码、版本、旧研习院、自由换算或业务数据。
+
 ## 2026-11-08 · 发型审美训练：潮湿环境双状态案例（v641 不变）
 
 - 新增 `aesthetic-2026-11-08`：训练门店干燥镜前状态与潮湿通勤后的真实落态冲突时，如何把吸湿反应、混合自然弯和三分钟整理纳入同一结构。

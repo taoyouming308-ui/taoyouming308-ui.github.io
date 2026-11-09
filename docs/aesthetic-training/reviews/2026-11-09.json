@@ -1,0 +1,44 @@
+{
+  "batch": "aesthetic-2026-11-09",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "fa5c5b3a63fe8fa8139ed8a91113586069f91e8d",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, density, hair diameter, device-pressure response or that the proposed recoverable haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional male reference-versus-device-use design case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-two earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current outline is separated from fictional zonal hair properties, customer-stated reference goal, helmet/headset use and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; recoverable B is a conditional first test, not the only valid answer",
+      "Two-minute self-styling, controlled device-pressure simulation, real commute, first wash, third week and eighth week are included",
+      "No fixed chemical formula, perm claim, personality inference, real-client data, device-performance guarantee or invented user completion"
+    ],
+    "limits": [
+      "Fictional AI current-state image, not a verified real customer or calibrated multi-camera capture",
+      "Regional diameter, density, whorl strength, temple coverage needs, helmet/headset response, proposed cut and future results are case conditions or future checks, not image-proven outcomes",
+      "Controlled pressure simulation does not prove performance during a real commute or full workday and is explicitly followed by real-use review",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-09-helmet-headset-recovery.webp",
+    "sha256": "51de9c8085da8c487008af7aadf6334217609ffb5a36349517a0bee1d1d5faed",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "prompt": "Photorealistic-natural four-panel contact sheet of the same fictional adult East Asian man in his current grown-out medium-short haircut: true front, exact left profile, exact right profile and back; complete head, baseline, neck and shoulders; loose off-center part, longer top and fringe, bulky coverage around ears and grown nape; identical charcoal crew-neck shirt and neutral studio wall; current state only, no reference style, fade, perm or makeover."
+  },
+  "feedSha256": "a31e68e91924568a1262de6e8d08879d2a086a1269846c4136a53672985837e4",
+  "caseCanonicalSha256": "4bf266a990834aa8e81d533785ac715a55c2f44c59b5d1733e8e8997fb744de2",
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-09 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v641 before editing; complete daily backup created",
+    "contentContract": "passed locally: thirty-three cases; all thirty-two previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally; the matching Playwright browser download was truncated by the network proxy and the available system Chromium cannot create its process singleton socket in the managed sandbox, so no local browser pass is claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "version, release integrity, smoke, academy content verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, Meiguanjia sync, aesthetic system/study/coach, agent handoff and other non-browser/non-Docker checks passed locally. Docker/PostgreSQL, browser, finance-browser and pinned-Node manifest gates remain for exact-head protected CI"
+  }
+}
