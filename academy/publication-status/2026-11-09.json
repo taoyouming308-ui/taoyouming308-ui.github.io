@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "state": "preflight_requested",
+  "published": false,
+  "date": "2026-11-09",
+  "baseSha": "5a31e6090a78a16338305c2999782e1cc0994287",
+  "purpose": "Request immutable clean main backup verification before any reviewed course inputs are submitted; no approval, rendering or deployment implied.",
+  "requestedBy": "ChatGPT connected academy publisher",
+  "remaining": [
+    "Baseline backup-main success with SHA-bound archive report",
+    "Verified lesson draft/review/assets atomic commit",
+    "Trusted cloud preparation and artifact verification",
+    "Exact-final-head protected CI and expected-head merge",
+    "Actual Pages SHA256 readback"
+  ]
+}
