@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:f69ecbf680ec3bc8aaa6c37bf130781ceb7dcf5aedb1f6690b47753c633dc417 -->
+## 2026-11-09 · Reviewed academy publication candidate (App version: v641 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 5a31e6090a78a16338305c2999782e1cc0994287.
+- Dates: 2026-11-09. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-08 · Humidity-state aesthetic case (App version: v641 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 53ac7628b56ea09b8964a10eed230faf196bd8a2; clean focused `content/aesthetic-2026-11-08` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing v641 six-zone release and all thirty-one earlier aesthetic cases remain preserved.

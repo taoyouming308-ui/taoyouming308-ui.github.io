@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:f69ecbf680ec3bc8aaa6c37bf130781ceb7dcf5aedb1f6690b47753c633dc417 -->
+## 2026-11-09 · Reviewed academy publication candidate (App version: v641 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 5a31e6090a78a16338305c2999782e1cc0994287.
+- Dates: 2026-11-09. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-08 · 发型审美训练：潮湿环境双状态案例（v641 不变）
 
 - 新增 `aesthetic-2026-11-08`：训练门店干燥镜前状态与潮湿通勤后的真实落态冲突时，如何把吸湿反应、混合自然弯和三分钟整理纳入同一结构。
