@@ -7,6 +7,13 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-11-09 · Helmet/headset recovery aesthetic case (App version: v641 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main fa5c5b3a63fe8fa8139ed8a91113586069f91e8d; clean focused `content/aesthetic-2026-11-09` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing same-day academy publication and all thirty-two earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-09` case separates visible current male proportions from fictional zonal hair properties, customer-confirmed reference goal, helmet commute, over-ear headset pressure, two-minute routine and six-to-eight-week maintenance. Conditional A/B compare photo-first Korean styling with a recoverable structural base; six answers and five unscored self-checks include natural/formal/helmet/headset states, first wash, third week and eighth week without inventing user completion.
+- Original 2172×724 AI WebP shows only one fictional adult man's current front/two true profiles/back grown-out medium-short haircut in ordinary indoor fall, not the undisplayed reference, proposed cut, styling result, equipment-pressure simulation or future state. No real customer, measured anatomy/density/diameter, verified occupation/personality, pressure recovery, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-08 · Humidity-state aesthetic case (App version: v641 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main 53ac7628b56ea09b8964a10eed230faf196bd8a2; clean focused `content/aesthetic-2026-11-08` branch, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing v641 six-zone release and all thirty-one earlier aesthetic cases remain preserved.
