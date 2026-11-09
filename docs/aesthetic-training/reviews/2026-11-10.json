@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-10",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "a2edb2b6d577c7958cf7b25c4fcbffcf3395e339",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, density, hair diameter, curl classification, shrinkage behavior or that the proposed dry-target haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional natural-curl wet-versus-dry length-design case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-three earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current dry outline is separated from fictional zonal curl properties, measured wet-to-dry strand return, customer-stated reference goal, home routine and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; dry-target B is a conditional first test, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current dry state, complete head, baseline, neck and shoulders without depicting the undisplayed reference or a result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "2B/2C labels, centimetre shrinkage, hair diameter, density, elasticity and chemical history are fictional case settings from an imagined live assessment, not visible-image findings",
+      "A small section wet-to-dry check does not guarantee whole-head behavior across weather, product amount, wash method or future growth",
+      "Preparer audit is not independent scientific, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-10-dry-shrinkage-curly-bob.webp",
+    "sha256": "a15a149d6c58686395e6292ce08e519765cba508ebf3ea49bf3ca09294a107d9",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation; original 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; shoulder-length mixed natural curls, complete head, baseline, neck and shoulders, natural light, no proposed cut or wet-hair comparison"
+  },
+  "hashes": {
+    "feedRawSha256": "f9e446a9c0094eb17aa95956b184c610832949c8f987b62091664c8ff0c73f81",
+    "caseCanonicalSha256": "aec78b8ef803cdfa7116c6d78a669d15f041c74e397ab4f54a8bc4151f12a83d"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-10 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v641 before editing; daily backup script confirmed the current daily archive",
+    "contentContract": "passed locally: thirty-four cases; all thirty-three previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally; Chromium cannot create its process singleton socket in the managed sandbox (Operation not permitted), so no local browser pass is claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "content contract, version, release integrity, smoke, academy verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, aesthetic system/study/coach, agent handoff and other available non-browser/non-Docker checks passed locally. Docker/PostgreSQL, browser, finance-browser and exact pinned Node 22.22.1 manifest gates remain for exact-head protected CI"
+  }
+}
