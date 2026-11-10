@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "state": "preflight_requested",
+  "published": false,
+  "baselineMainSha": "427131b5a299b21c5b89a00a7543af08fc741ae9",
+  "requestedAt": "2026-11-10T00:26:12Z",
+  "purpose": "SHA-bound clean-main backup preflight only; no lesson content, rights review or approval committed at this stage",
+  "remaining": [
+    "Academy publication preflight backup-main exact baseline SHA and archive verified",
+    "Review source, rights and privacy and commit bound draft/review/original SVGs",
+    "Cloud preparation and artifact verification",
+    "Exact-final-head protected validate and backup-main",
+    "expected_head_sha ordinary merge",
+    "GitHub Pages bytewise verified readback"
+  ]
+}
