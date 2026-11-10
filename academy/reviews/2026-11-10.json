@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-10本轮AI编辑；来源/版权/隐私核查，非独立人类同行评审）",
+  "reviewedAt": "2026-11-10T00:33:00Z",
+  "approvalReference": "本轮已核对J-STAGE原刊2015-02-10 DOI 10.2115/fiber.71.112、2013-01-10 DOI 10.2115/fiber.69.8及2010-11-10 DOI 10.2115/fiber.66.272的作者、发表日期、摘要和特定实验边界；未使用营销宣传；三张本轮原创纯静态SVG无第三方图、无私人信息或可执行资源。本审核不代表真人安全操作许可。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-10本轮核对原始学术出版物2015-02-10，DOI https://doi.org/10.2115/fiber.71.112，已区分特定离体实验与真人产品指南。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-10本轮核对原始学术出版物2013-01-10，DOI https://doi.org/10.2115/fiber.69.8，已区分特定离体实验与真人产品指南。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-10本轮核对原始学术出版物2010-11-10，DOI https://doi.org/10.2115/fiber.66.272，已区分特定离体实验与真人产品指南。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮从零编写静态SVG，仅允许svg/rect/ellipse/path/text/polygon绘图，未用第三方照片、无私人信息/外部资源/脚本，且图文相符。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮从零编写静态SVG，仅允许svg/rect/ellipse/path/text/polygon绘图，未用第三方照片、无私人信息/外部资源/脚本，且图文相符。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮从零编写静态SVG，仅允许svg/rect/ellipse/path/text/polygon绘图，未用第三方照片、无私人信息/外部资源/脚本，且图文相符。"
+    }
+  ],
+  "contentSha256": "ac911bccd66eb5e956c17dc6588e50544966ebc6abe40f07e1c72b5de1259666",
+  "assetSha256": {
+    "assets/2026-11-10/figure1.svg": "8d8128620f58e54873edb0315ad15e5803b81f75fdea51681d429fe5221730ff",
+    "assets/2026-11-10/figure2.svg": "3a8922854eaa6efc5c2856fcf5ff14b5cc8a666eba4696c70e8abed68b60a184",
+    "assets/2026-11-10/figure3.svg": "52d3e719e1514c732c02671e82ad391fbe5b175a6aea27c0202a75bc53139b12"
+  }
+}
