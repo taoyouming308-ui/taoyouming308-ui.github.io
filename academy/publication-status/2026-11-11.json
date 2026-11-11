@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-11",
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-11"
+  ],
+  "baseSha": "3e3a91de5c663a3e5615b70dc92b42bd5aab73e2",
+  "inputHeadSha": "6c6f41a1644977e0f0c8500568d84420838faef4",
+  "preparedHeadSha": "095a48d98d743b1a879fbc386e301804a614f6ab",
+  "preparationRun": 42931476571,
+  "preparationArtifact": 13817275731,
+  "preparationArtifactSha256": "fcf37938d8fbcdf0489c5b966bd8446081c490c90032399e074a5df13cf2bf0e",
+  "backupArtifact": 13816561972,
+  "preparationBackupZipSha256": "0d60ac8fdcc6b13d932ce9cff82deaefad122376921db44e821b282918982e7d",
+  "preparationBackupArchiveSha256": "d111ca026dedac374c4e46799009e2a1bbc71e030fa02a55064053a18c8fce33",
+  "baselinePreflightRun": 42930465079,
+  "baselineBackupArtifact": 13815682637,
+  "baselineBackupZipSha256": "def68a40f35b9dcd833e319abaa130a4c7c8ba6bf4cd43efff629a7d85731863",
+  "baselineBackupArchiveSha256": "d75cad840ff047f7aa7198a69cbacd258eebfb5d66948fde8422b6451306c8fe",
+  "contentBindingSha256": "b46324872ab727ebad1d1950a1a76816e3a854c3258f03dc0bdedfb0978e28ab",
+  "reviewedAt": "2026-11-11T00:25:54.506Z",
+  "verifiedAt": "2026-11-11T00:41:20.385Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success",
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 29,
+    "allTwentyEightPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "实际通过连接器读取 PR #109 不可变 prepared head 095a48... 的 HTML、全部倒序目录、静态回退、审核输入及3张SVG和两份交接，并逐个计算SHA256；实际下载 baseline preflight run 42930465079 和 prepare run 42931476571 的三份ZIP、验证不可变main SHA、归档及摘要；已证实云端完整 pre-push 成功。本记录不是已上线声明。"
+  },
+  "fileSha256": {
+    "academy/2026-11-11.html": "44d349578e3823052681c5b8c20193ae5b4d9b2811da0977f9b04522e61490fa",
+    "academy/catalog.json": "6255f69208c2587651f0009d242013ee3a5b8fc325729d4efa07091cfa3bc6de",
+    "academy/index.html": "290753bfc7a0b35fc8c85f05f8f74035c074fe605c10d584e40b32a623a09508",
+    "academy/drafts/2026-11-11.json": "cd375d878441a7d370aa9ce75dad5ba17a551e877db120f86432ea4a69b1e20e",
+    "academy/reviews/2026-11-11.json": "f9f7a19c6a867a9b7b120f5b0851d48dedd8e011d04c62d212ce3e98361d03fe",
+    "academy/assets/2026-11-11/figure1.svg": "f367ec711e068f18f7165130fb5d5dbb304b627be737bc4cf3a4259c5db5b874",
+    "academy/assets/2026-11-11/figure2.svg": "072f82a2a225b05d62c98db30ebd64b604692650f1e41d0ea8ee386ee7050d34",
+    "academy/assets/2026-11-11/figure3.svg": "7b838756ac400904c4a44db3d2150a6a3cf2394ee5be94254fb2446f7e603dc2",
+    "AGENT_SYNC_STATUS.md": "5053b0b61cdb035cc20094f0ddccee2f9a5b0cc5861f6e24f1dbac04a2e4b2b5",
+    "CHANGELOG.md": "7b3b7d0763cefc1a9f27a63de1ac7c043a19219738a5e924f426ab520e89d792"
+  },
+  "remaining": [
+    "Exact final head Validate shared app / validate success",
+    "Exact final head Academy publication preflight / backup-main success",
+    "Review any other required checks; recheck main/head",
+    "Mark PR ready and merge normally with expected_head_sha",
+    "Deploy Pages and verify catalog/index/all lessons and reviewed figures exact SHA256"
+  ]
+}
