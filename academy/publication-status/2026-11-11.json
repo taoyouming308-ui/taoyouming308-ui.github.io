@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-11",
+  "state": "preflight_requested",
+  "preflight_requested": true,
+  "published": false,
+  "baseSha": "3e3a91de5c663a3e5615b70dc92b42bd5aab73e2",
+  "message": "Preflight only. No lesson draft or figures committed. Await exact-main immutable baseline backup and sha256 evidence before inputs. Not an editorial approval or an online publication."
+}
