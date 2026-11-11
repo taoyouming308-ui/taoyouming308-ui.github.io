@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-11",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "ccd173085eea60787f5669c8e75fa63a75507172",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, hair density, hair diameter, posture effects, camera perspective or that the proposed neutral-structure haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional reference-posture versus neutral-structure case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-four earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible neutral current outline is separated from the undisplayed fictional reference photo, posture and lens hypotheses, fictional zonal hair settings, customer priorities and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; neutral-structure B is a conditional first test, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current neutral state, complete head, baseline, neck and shoulders without depicting the undisplayed reference, posture comparison or a result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Hair diameter, density, elasticity, chemical history, movement response and maintenance outcomes are fictional case settings from an imagined live assessment, not visible-image findings",
+      "Low-head, raised-head and turn tests can reveal instability but do not guarantee every daily movement, camera distance, garment or future grow-out state",
+      "Preparer audit is not independent scientific, ergonomic, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-11-reference-posture-baseline.webp",
+    "sha256": "9458318cab158b16f20a1f25e116062bfcef874fa10eb5507b1f3c6e3ba4e1aa",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation followed by an identity-preserving eyeglass removal edit; final 2172x724 PNG converted at unchanged dimensions to WebP quality 88 without further content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; collarbone lob in neutral ordinary fall, complete head, baseline, neck and shoulders, natural light, no reference photo, posture comparison or proposed cut"
+  },
+  "hashes": {
+    "feedRawSha256": "e5c412cb54dba0dd5853c64d0401e72009294c40670d98f017138a20ef772030",
+    "caseCanonicalSha256": "9ab7293fcbb6bba90afb1565c5c56e5ff1aa91dfe7d3e85e04e9e3c504f123b9"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-11 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v641 before editing; daily backup script created the current daily archive",
+    "contentContract": "passed locally: thirty-five cases; all thirty-four previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally with the installed system Chromium; the managed sandbox denies the browser process singleton socket (Operation not permitted), so no local browser pass is claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "content contract, version, release integrity, smoke, academy verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, aesthetic system/study/coach, Meiguanjia sync, agent handoff and other available non-browser/non-Docker checks passed locally. Docker/PostgreSQL, browser, finance-browser and exact pinned Node 22.22.1 manifest gates remain for exact-head protected CI"
+  }
+}
