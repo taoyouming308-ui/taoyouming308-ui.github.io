@@ -1,3 +1,10 @@
+## 2026-11-11 · Reference-posture versus neutral-structure aesthetic case (App version: v641 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main ccd173085eea60787f5669c8e75fa63a75507172; clean focused `content/aesthetic-2026-11-11` worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing same-day academy publication and all thirty-four earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-11` case separates the visible neutral current outline from a fictional low-head/side-turn close reference photo, zonal hair settings, customer priorities and movement states. Conditional A/B compare copying one photographed posture with a neutral-structure base plus reversible reference translation; six answers and five unscored self-checks include neutral, low-head, raised-head, left/right turn, ear-tuck, first-wash, fourth-week and eighth-week checks without inventing user completion.
+- Original 2172×724 AI WebP shows only one fictional adult woman's current front/two true profiles/back collarbone lob in neutral ordinary indoor fall, not the undisplayed reference, posture comparison, proposed cut, styling result or future state. No real customer, measured anatomy/density/diameter, verified posture effect, personality, occupation, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 <!-- academy-reviewed-inputs:b46324872ab727ebad1d1950a1a76816e3a854c3258f03dc0bdedfb0978e28ab -->
 ## 2026-11-11 · Reviewed academy publication candidate (App version: v641 unchanged)
 
