@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-11",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-11本轮AI编辑及来源、版权、隐私核查；非独立人类同行评审）",
+  "reviewedAt": "2026-11-11T00:25:54.506Z",
+  "approvalReference": "本轮查验arXiv 2407.19451 (2024-07-28)、IEEE TVCG DOI 10.1109/TVCG.2024.3521003 (2024-12-20在线)、Cosmetics DOI 10.3390/cosmetics6020024 (2019-04-01) 的作者/日期/类型及可外推边界；全部案例为模拟且无顾客私人信息；三张SVG本轮原创、无版权素材、无可执行元素；不构成真人热烫安全审批。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-11本轮核对公开出版物 https://arxiv.org/abs/2407.19451 的题目/作者/日期/研究类型，已标明计算模型和毛发实验不代表真人烫发工艺。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-11本轮核对公开出版物 https://doi.org/10.1109/TVCG.2024.3521003 的题目/作者/日期/研究类型，已标明计算模型和毛发实验不代表真人烫发工艺。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-11本轮核对公开出版物 https://doi.org/10.3390/cosmetics6020024 的题目/作者/日期/研究类型，已标明计算模型和毛发实验不代表真人烫发工艺。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "已检查 assets/2026-11-11/figure1.svg 为本轮原创静态SVG，仅标准几何形状、文字，无第三方图、无脚本、无外部资源与真实顾客隐私。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "已检查 assets/2026-11-11/figure2.svg 为本轮原创静态SVG，仅标准几何形状、文字，无第三方图、无脚本、无外部资源与真实顾客隐私。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "已检查 assets/2026-11-11/figure3.svg 为本轮原创静态SVG，仅标准几何形状、文字，无第三方图、无脚本、无外部资源与真实顾客隐私。"
+    }
+  ],
+  "contentSha256": "15f7ac0112a8e6ea69ee070bc57074f93219a19500530f69021e1535ab4db746",
+  "assetSha256": {
+    "assets/2026-11-11/figure1.svg": "0d5cf8870c67e58760e0eb6644bd8cad897684e2f5c0acd524d2be22058fc541",
+    "assets/2026-11-11/figure2.svg": "0112769d27936e72aeb7b3fca03ecdc72970e7cdcd375a114376e4d5835f4a0d",
+    "assets/2026-11-11/figure3.svg": "6178bac5a348f75cf33afa91b1b1b7e81d0b9cd7653d8529ee1e0dbb1ab1e225"
+  }
+}
