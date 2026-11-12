@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   var MAX_BYTES = 10 * 1024 * 1024;
+  var ARCHIVE_UPLOAD_WAIT_MS = 300000;
   function validDate(date, month) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date.slice(0, 7) !== month) return false;
     var parsed = new Date(date + 'T00:00:00Z');
@@ -199,7 +200,7 @@
                   if (!window.confirm('确认恢复 '+ctx.store+' '+savedRow.date+' 的原图存档？使用原请求编号，不修改财务数据。')) return;
                   var encoded = await bounded(fileBase64(file),45000);
                   if (!current()) return;
-                  var result = await bounded(api('daily_original_archive_resume',{store:ctx.store,request_id:savedRow.requestId,report_date:savedRow.date,filename:file.name,mime_type:file.type,base64:encoded,note:savedRow.note || '人工逐张核对日期后批量留存原图；不识别、不建表、不入账'},true),90000);
+                  var result = await bounded(api('daily_original_archive_resume',{store:ctx.store,request_id:savedRow.requestId,report_date:savedRow.date,filename:file.name,mime_type:file.type,base64:encoded,note:savedRow.note || '人工逐张核对日期后批量留存原图；不识别、不建表、不入账'},true),ARCHIVE_UPLOAD_WAIT_MS);
                   if (!current()) return;
                   status.textContent = archiveMatches(result,savedRow) ? '恢复请求已确认存档，请刷新列表' : '恢复结果待核对，请刷新请求状态，勿新建请求重传';
                 } catch (error) { if (current()) status.textContent = '恢复尚未确认：'+error.message+'。保留原请求编号，请刷新状态核对。'; }
@@ -267,7 +268,7 @@
         hash:async function (file) { var bytes = await file.arrayBuffer(); return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(function (n) { return n.toString(16).padStart(2,'0'); }).join(''); },
         encode:function (file) { return bounded(fileBase64(file),45000); },
         // retried=true disables even auth-refresh replay for this non-idempotent upload.
-        upload:function (payload) { return bounded(api('daily_original_archive_upload',payload,true),90000); }
+        upload:function (payload) { return bounded(api('daily_original_archive_upload',payload,true),ARCHIVE_UPLOAD_WAIT_MS); }
       });
       status.textContent = '已确认上传 '+outcome.sent+' / '+rows.length+' 张。'+(outcome.stopped?'批次已停止，未发送的照片没有上传。请核对每张结果。':'请刷新下方存档列表查看原件。');
       if (outcome.uncertain) status.textContent += '存在结果待核对的上传，未自动重试；请刷新存档状态，勿重传。';
