@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="644">
+<html lang="zh-CN" data-version="645">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=644" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=645" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -747,13 +747,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=644"></script>
-<script src="operations-staff-view.js?v=644"></script>
-<script src="operations-monthly-daily-performance.js?v=644"></script>
-  <script src="operations-report-fit.js?v=644"></script>
-  <script src="operations-auth-bridge.js?v=644"></script>
-  <script src="operations-voucher-preview.js?v=644"></script>
-  <script src="operations-voucher-view.js?v=644"></script>
+<script src="operations-time.js?v=645"></script>
+<script src="operations-staff-view.js?v=645"></script>
+<script src="operations-monthly-daily-performance.js?v=645"></script>
+  <script src="operations-report-fit.js?v=645"></script>
+  <script src="operations-auth-bridge.js?v=645"></script>
+  <script src="operations-voucher-preview.js?v=645"></script>
+  <script src="operations-voucher-view.js?v=645"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -925,7 +925,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=644';
+      script.src='operations-petty-cash-evidence.js?v=645';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1589,17 +1589,17 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=644"></script>
-  <script src="operations-daily-correction.js?v=644"></script>
-  <script src="operations-daily-electronic.js?v=644"></script>
-  <script src="operations-monthly-workbench.js?v=644"></script>
-  <script src="operations-daily-recognition.js?v=644"></script>
-  <script src="operations-daily-batch-upload.js?v=644"></script>
-<script src="operations-daily-history.js?v=644"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=644">
-<script src="operations-monthly-review.js?v=644"></script>
+  <script src="operations-daily-review.js?v=645"></script>
+  <script src="operations-daily-correction.js?v=645"></script>
+  <script src="operations-daily-electronic.js?v=645"></script>
+  <script src="operations-monthly-workbench.js?v=645"></script>
+  <script src="operations-daily-recognition.js?v=645"></script>
+  <script src="operations-daily-batch-upload.js?v=645"></script>
+<script src="operations-daily-history.js?v=645"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=645">
+<script src="operations-monthly-review.js?v=645"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=644"></script>
-<script defer src="app-shell-client.js?v=644"></script>
+<script defer src="data-read-client.js?v=645"></script>
+<script defer src="app-shell-client.js?v=645"></script>
 </body>
 </html>

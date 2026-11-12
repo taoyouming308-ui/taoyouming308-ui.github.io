@@ -1,3 +1,10 @@
+## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
+
+- Original-photo archive uploads and explicit same-request resumes now wait up to 300 seconds for the server response. Large originals could otherwise outlive the previous 90-second client wait and appear uncertain after the server completed them.
+- Only these two upload waits changed. Read/encoding deadlines, original bytes, request identities, uncertainty handling, manual recovery and cancellation remain intact; no automatic resend or financial-data changes.
+- Current owner: Codex. Last synchronized base checked: github/main cc8a0c4c6c5618f648fd4fc498b3f79d9f95a2be; clean isolated branch and complete local backup verified before edits. The separate unpublished historical-import candidate labelled v645 must advance beyond the published version before any later release.
+- Focused batch runner, archive API mocks, offline Chromium batch browser and version/integrity/handoff checks passed. Complete pre-push and exact-head protected CI remain required. This client change needs no schema or backend deployment; no live upload or financial posting was performed during validation.
+
 ## 2026-11-12 · Resume independent original archive (App version: v644)
 
 - Fresh github/main 46e7219c is included. Isolated resume worktree preserves all other dirty candidates; complete local backup verified before edits.
