@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165 -->
+## 2026-11-12 · Reviewed academy publication candidate (App version: v641 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8639a3d0845aa2f63ddbe4084900cf5d4584a23d.
+- Dates: 2026-11-12. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-11 · Reference-posture versus neutral-structure aesthetic case (App version: v641 unchanged)
 
 - Current owner: Codex. Last synchronized base checked: github/main ccd173085eea60787f5669c8e75fa63a75507172; clean focused `content/aesthetic-2026-11-11` worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. Existing same-day academy publication and all thirty-four earlier aesthetic cases remain preserved.
