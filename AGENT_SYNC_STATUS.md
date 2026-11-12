@@ -1,3 +1,11 @@
+## 2026-11-12 · Resume independent original archive (App version: v644)
+
+- Fresh github/main 46e7219c is included. Isolated resume worktree preserves all other dirty candidates; complete local backup verified before edits.
+- Align archive migration filename with existing production history 20261112055108; SQL bytes are unchanged. Register archive regression tests in the shared finance gate.
+- 77 original handwritten dates independently reviewed: July 26, August 26, September 25, no duplicate dates. Missing supplied dates remain unknown, never zero or assumed rest days.
+- Latest user-specified monthly workbook is preserved separately; this release does not modify monthly values, financial drafts or posting rules. Preserve exact live catalog dependency bytes in API deployment.
+- Production API/frontend publication, real authorized upload and per-file hash/date readback remain pending. No financial posting.
+
 <!-- academy-reviewed-inputs:0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165 -->
 ## 2026-11-12 · Reviewed academy publication candidate (App version: v642 unchanged by academy)
 
