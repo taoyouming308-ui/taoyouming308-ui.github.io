@@ -7123,7 +7123,7 @@ async function handleOperationsApiRequest(
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
     }
-    if (MONTHLY_SOURCE_OPERATIONS.has(operation)) return json(await monthlySourceArchive(operation,payload,session,{
+    if (operation.startsWith("monthly_source_archive_") && MONTHLY_SOURCE_OPERATIONS.has(operation)) return json(await monthlySourceArchive(operation,payload,session,{
       selectedStore:selectedStoreInfo,hasCapability:hasAuthCapability,
       requireFinance:(actor:JsonRecord) => requireFinanceCapability(actor,"report.upload","只有已授权财务可以登记月报核对原件"),
       rpc:async(args:JsonRecord) => {
