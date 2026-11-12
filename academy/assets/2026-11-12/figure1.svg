@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650">
+<rect width="1200" height="650" fill="#f5f1e9"/><text x="55" y="72" fill="#333a3b" font-size="33" font-weight="700">重复烫发：外观弯度与内部交联不能混为一谈</text>
+<text x="55" y="109" fill="#6d7470" font-size="18">原理示意｜非显微实验数据，线条数量不代表二硫键实测数量</text>
+<rect x="60" y="155" width="330" height="385" rx="24" fill="#dae5e8"/><rect x="435" y="155" width="330" height="385" rx="24" fill="#dce4db"/><rect x="810" y="155" width="330" height="385" rx="24" fill="#f1dcd5"/>
+<text x="225" y="202" fill="#34454b" font-size="26" text-anchor="middle">初次处理前</text><text x="600" y="202" fill="#34454b" font-size="26" text-anchor="middle">完成一次烫发</text><text x="975" y="202" fill="#34454b" font-size="26" text-anchor="middle">有重复处理历史</text>
+<path d="M150 250 C130 315 180 380 150 470 M220 250 C200 315 250 380 220 470 M290 250 C270 315 320 380 290 470" stroke="#485e6a" stroke-width="9" fill="none" stroke-linecap="round"/>
+<line x1="155" y1="280" x2="215" y2="280" stroke="#bf7862" stroke-width="6"/><line x1="158" y1="350" x2="232" y2="350" stroke="#bf7862" stroke-width="6"/><line x1="164" y1="418" x2="236" y2="418" stroke="#bf7862" stroke-width="6"/>
+<path d="M525 250 C505 315 555 380 525 470 M595 250 C575 315 625 380 595 470 M665 250 C645 315 695 380 665 470" stroke="#526d62" stroke-width="9" fill="none" stroke-linecap="round"/>
+<line x1="530" y1="280" x2="590" y2="280" stroke="#bf7862" stroke-width="6"/><line x1="539" y1="392" x2="611" y2="392" stroke="#bf7862" stroke-width="6"/><text x="600" y="502" fill="#4b635a" font-size="17" text-anchor="middle">还原、卷绕与氧化后的状态</text>
+<path d="M900 250 C880 315 930 380 900 470 M970 250 C950 315 1000 380 970 470 M1040 250 C1020 315 1070 380 1040 470" stroke="#826a6b" stroke-width="9" fill="none" stroke-linecap="round"/>
+<line x1="906" y1="306" x2="965" y2="306" stroke="#bf7862" stroke-width="6"/><path d="M908 400 L936 400 M963 400 L995 400" stroke="#bf7862" stroke-width="6"/><text x="975" y="502" fill="#936957" font-size="17" text-anchor="middle">仅表示可能有累积结构变化</text>
+<text x="60" y="604" fill="#34454b" font-size="23">阅读重点：颜色、手感和一次回弹都不能单独证明交联恢复完整。</text>
+</svg>
