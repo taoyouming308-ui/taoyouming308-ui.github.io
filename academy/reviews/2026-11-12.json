@@ -3,8 +3,8 @@
   "date": "2026-11-12",
   "status": "approved",
   "reviewedBy": "ChatGPT（本轮AI课程编辑、科研事实、版权与隐私审核；非独立人类同行评审）",
-  "reviewedAt": "2026-11-12T00:54:08.308Z",
-  "approvalReference": "2026-11-12本轮实际核验ACS Omega DOI 10.1021/acsomega.6c05682（2026-09-15）、PubMed PMID 23193691（2012-05/06）、Wiley DOI 10.1111/j.1467-2494.1989.tb00511.x（1989-10）的作者、日期、实验类型和外推边界。案例纯模拟且未含私人顾客数据；三张SVG本轮原创、静态、不含外部资源/脚本，已逐图审查；非真人化学烫发安全批准。",
+  "reviewedAt": "2026-11-12T00:56:24.778Z",
+  "approvalReference": "2026-11-12本轮实际核验ACS Omega DOI 10.1021/acsomega.6c05682（2026-09-15）、PubMed PMID 23193691（2012-05/06）、Wiley DOI 10.1111/j.1467-2494.1989.tb00511.x（1989-10）的作者、日期、实验类型和外推边界。案例纯模拟且未含私人顾客数据；三张SVG本轮原创、静态、不含外部资源/脚本，已逐图审查；非真人化学烫发安全批准。 复核勘误：文献只核实到1989年10月，出版元数据publishedAt按schema使用1989年，不虚构具体日。",
   "privacyVerified": true,
   "sourceChecks": [
     {
@@ -40,7 +40,7 @@
       "basis": "本轮原创静态基础SVG图3，抽象人物三视角非实拍，无任何可识别客户数据。"
     }
   ],
-  "contentSha256": "9e1b517110d8adb78a5414ec126ab20b7dbd0a20544697386be82615caa5a68d",
+  "contentSha256": "9515e39756b9dfb7a208b4d4daf6e0332f910f87935346fb76d37877da0b8cb3",
   "assetSha256": {
     "assets/2026-11-12/figure1.svg": "1fefb772d63464ce3fbc8e523d34a7cdbc2713b1c9b7a983d74d4b01163f0983",
     "assets/2026-11-12/figure2.svg": "52bcda1fc796570fef1e5d95aed8594a7d327f10975466f5d3e46fc747512970",
