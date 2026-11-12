@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程编辑、科研事实、版权与隐私审核；非独立人类同行评审）",
+  "reviewedAt": "2026-11-12T00:56:24.778Z",
+  "approvalReference": "2026-11-12本轮实际核验ACS Omega DOI 10.1021/acsomega.6c05682（2026-09-15）、PubMed PMID 23193691（2012-05/06）、Wiley DOI 10.1111/j.1467-2494.1989.tb00511.x（1989-10）的作者、日期、实验类型和外推边界。案例纯模拟且未含私人顾客数据；三张SVG本轮原创、静态、不含外部资源/脚本，已逐图审查；非真人化学烫发安全批准。 复核勘误：文献只核实到1989年10月，出版元数据publishedAt按schema使用1989年，不虚构具体日。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2026-11-12查核 https://pmc.ncbi.nlm.nih.gov/articles/PMC13629021/ 的标题、作者、期刊日期、材料实验与头皮安全证据缺失；已明确研究新试剂未用于真人建议。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2026-11-12核对 https://pubmed.ncbi.nlm.nih.gov/23193691/ 的题目、作者、2012-05/06及实验限度。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-12核对 https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-2494.1989.tb00511.x 的题目、作者、1989-10和旧实验局限。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮原创静态基础SVG图1，只有可见几何及文字，无外部链接、无脚本、无真人/客户资料。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮原创静态基础SVG图2，六区为抽象示意，不复制外部图库或门店未授权真实资料。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮原创静态基础SVG图3，抽象人物三视角非实拍，无任何可识别客户数据。"
+    }
+  ],
+  "contentSha256": "9515e39756b9dfb7a208b4d4daf6e0332f910f87935346fb76d37877da0b8cb3",
+  "assetSha256": {
+    "assets/2026-11-12/figure1.svg": "1fefb772d63464ce3fbc8e523d34a7cdbc2713b1c9b7a983d74d4b01163f0983",
+    "assets/2026-11-12/figure2.svg": "52bcda1fc796570fef1e5d95aed8594a7d327f10975466f5d3e46fc747512970",
+    "assets/2026-11-12/figure3.svg": "3a935a001109053e95d573ad233b1bed72a1f2dcf569c2e8e25fa7aa3178c7f8"
+  }
+}

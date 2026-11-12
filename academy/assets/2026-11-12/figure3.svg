@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650">
+<rect width="1200" height="650" fill="#f5f1e9"/><text x="55" y="70" fill="#333a3b" font-size="32" font-weight="700">人物三视角：先定第一弯，再评估是否值得重复烫</text><text x="55" y="107" fill="#7b7772" font-size="18">抽象人物轮廓｜非真实顾客及效果保证</text>
+<rect x="65" y="151" width="333" height="400" rx="24" fill="#efdfe1"/><rect x="432" y="151" width="333" height="400" rx="24" fill="#efdfe1"/><rect x="800" y="151" width="333" height="400" rx="24" fill="#efdfe1"/>
+<text x="231" y="197" text-anchor="middle" font-size="27" fill="#5e5055">正面</text><text x="598" y="197" text-anchor="middle" font-size="27" fill="#5e5055">45度</text><text x="966" y="197" text-anchor="middle" font-size="27" fill="#5e5055">侧面</text>
+<ellipse cx="231" cy="315" rx="75" ry="105" fill="#e6c9b8" stroke="#735f60" stroke-width="3"/><path d="M145 265 Q130 342 135 435 Q168 478 182 513 M317 265 Q332 348 322 435 Q292 481 280 512" fill="none" stroke="#5f646a" stroke-width="15" stroke-linecap="round"/>
+<path d="M135 435 Q161 396 179 433 Q202 472 184 505 M322 435 Q296 396 283 435 Q261 472 279 505" fill="none" stroke="#9d797b" stroke-width="7"/>
+<ellipse cx="588" cy="309" rx="65" ry="102" fill="#e6c9b8" stroke="#735f60" stroke-width="3"/><path d="M518 236 Q485 302 512 385 Q475 455 505 515 M659 239 Q708 305 688 380 Q712 453 671 518" fill="none" stroke="#5f646a" stroke-width="16"/><path d="M683 378 Q643 413 669 455" fill="none" stroke="#b47f78" stroke-width="8"/>
+<path d="M947 221 Q1023 207 1039 276 Q1060 323 1032 358 Q1015 389 986 402 Q950 373 947 333 Z" fill="#e6c9b8" stroke="#735f60" stroke-width="3"/><path d="M946 226 Q904 277 931 365 Q896 441 919 514 M1014 219 Q1095 295 1059 375 Q1079 455 1066 518" fill="none" stroke="#5f646a" stroke-width="17"/><path d="M1048 418 Q1027 447 1052 465" stroke="#b47f78" stroke-width="8" fill="none"/>
+<line x1="86" y1="436" x2="356" y2="436" stroke="#bd7968" stroke-width="2" stroke-dasharray="8 8"/><line x1="447" y1="395" x2="746" y2="395" stroke="#bd7968" stroke-width="2" stroke-dasharray="8 8"/><line x1="825" y1="434" x2="1118" y2="434" stroke="#bd7968" stroke-width="2" stroke-dasharray="8 8"/>
+<text x="231" y="539" text-anchor="middle" font-size="18" fill="#805a54">脸周第一弯与颧骨宽度</text><text x="598" y="539" text-anchor="middle" font-size="18" fill="#805a54">耳后卷度和枕骨连接</text><text x="966" y="539" text-anchor="middle" font-size="18" fill="#805a54">后颈空间与肩线</text>
+<text x="57" y="604" font-size="22" fill="#465956">新判断：既往处理使可用长度变化时，先重画三视角，不靠补药维持旧设计。</text>
+</svg>

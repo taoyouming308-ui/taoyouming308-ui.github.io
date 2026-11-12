@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-12"
+  ],
+  "baseSha": "e76e44331c9a5dfa5e58cf108a28de0521d566e1",
+  "inputHeadSha": "841a6fc20e194a6212cb0fc6c842397caaa87df1",
+  "preparedHeadSha": "841a6fc20e194a6212cb0fc6c842397caaa87df1",
+  "preparationRun": 43133754216,
+  "preparationArtifact": 13905634671,
+  "preparationArtifactSha256": "5eaebd61bb70306b2cc1096b12f18a9564e101b6926d929305c1ff407de8ff69",
+  "backupArtifact": 13906143271,
+  "preparationBackupZipSha256": "05d7a07be986adfd4d365afce08c6266b42c9a50e0d6bd9c8f39c3ae579d6b4a",
+  "preparationBackupArchiveSha256": "b44f19a2072e88c89cb66d9d04af9d24dd7d0f7eabfdf5748762505af2c938da",
+  "baselinePreflightRun": 43133765447,
+  "baselineBackupArtifact": 13905588885,
+  "baselineBackupZipSha256": "dea3cc6e9330f967f19638dbfd7d088014a6627f358c0e254ace9b98cd405fe1",
+  "baselineBackupArchiveSha256": "6a905a187e06ae3da07215b757d30c181400e5b4883ba08ff84dbac7338db7c2",
+  "originalPreparationRun": 43130972679,
+  "originalPreparedHeadSha": "eb94dc0044ce860eab3ade16de19a87c9176927b",
+  "originalPreparationArtifactSha256": "c818397d3ffbc90d8ed07bb80f197e819d5730d360256cff76efcc1d1dc317b0",
+  "contentBindingSha256": "0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165",
+  "reviewedAt": "2026-11-12T00:56:24.778Z",
+  "verifiedAt": "2026-11-12T01:27:58.678Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "Original content-generation prepare run 43130972679 succeeded including full pre-push; post-v642-main merge run 43133754216 was idempotent, no generated file changes, skipped pre-push; final connected status commit still needs new protected checks.",
+    "renderIdempotent": true,
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 30,
+    "allTwentyNinePreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Read actual ten relevant files from branch head 841a6fc, verified draft canonical sha256, local 3 SVG sha256, 30-lesson catalog and static fallback. Downloaded and inspected three artifact ZIPs: immutable baseline preflight run 43133765447, preparation backup and preparation report run 43133754216; verified baseline e76e443... and source archives sha256, preservation of unrelated main v642 updates. This is only preparation verification, not Pages publication."
+  },
+  "fileSha256": {
+    "academy/2026-11-12.html": "fb6e5f20ff8cfa9d5446a858dff8f415d25d4698d01784da316b959c097a18bf",
+    "academy/catalog.json": "db1dd590b53ff312d4f97403b405c806ce0a1ea6a66eae234b02b3230e6227a7",
+    "academy/index.html": "c31ca818cf91fcef65a44e9d14a29acc298b4e60f7d66b95aeb45efd56049619",
+    "academy/drafts/2026-11-12.json": "b40a58a2966846e52b12c91118b0fd3b6d1fb40608e5e8027ae3b818b8eadefe",
+    "academy/reviews/2026-11-12.json": "ca470d387dd10d29073e69e24dae119c79da3fc2f77797778eb54a6467774deb",
+    "academy/assets/2026-11-12/figure1.svg": "1fefb772d63464ce3fbc8e523d34a7cdbc2713b1c9b7a983d74d4b01163f0983",
+    "academy/assets/2026-11-12/figure2.svg": "52bcda1fc796570fef1e5d95aed8594a7d327f10975466f5d3e46fc747512970",
+    "academy/assets/2026-11-12/figure3.svg": "3a935a001109053e95d573ad233b1bed72a1f2dcf569c2e8e25fa7aa3178c7f8"
+  },
+  "remaining": [
+    "Wait for exact final PR head Validate shared app/validate",
+    "Wait for exact final PR head Academy publication preflight/backup-main",
+    "Recheck all required protections and unchanged main/head",
+    "Mark PR ready and merge normally with expected_head_sha",
+    "Verify real Pages main catalog/index/30 courses and all figures by SHA256"
+  ]
+}
