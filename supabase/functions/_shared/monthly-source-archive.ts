@@ -122,7 +122,7 @@ export async function monthlySourceArchive(operation: string, payload: Row, sess
   const bytes = deps.decode(payload.base64); if (!bytes.length || bytes.length > MAX_BYTES) throw Error('原件须大于0且不超过10MB');
   const metadata = { original_filename: filename, mime_type: MIME, size_bytes: bytes.length, sha256: await deps.hash(bytes), worksheet_names: await monthlySourceWorksheetNames(bytes, deps.loadZip), bucket_id: 'zysyr-reports' };
   const reserved = await rpc('reserve', requestId, metadata);
-  if (!reserved.newly_reserved) {
+  if (!reserved.newly_reserved || action === 'resume') {
     const state = await reconcile(reserved);
     if (state.status === 'archived' || action !== 'resume') return safe(state);
     // Resume only the exact original reservation, never an unknown/different file.
