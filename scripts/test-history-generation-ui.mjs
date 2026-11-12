@@ -93,3 +93,11 @@ const amended=ctx.historyGenerationLedgerPayload(unknownSalary,'salary',[inp('ba
 assert.equal(amended.base_salary,1100);assert.equal(amended.shooting_deduction,null);assert.equal(amended.leave_deduction,null);assert.equal(amended.notes,'保留未知');assert.equal(Object.hasOwn(amended,'social_security'),false);assert.equal(unknownSalary.current_payload.base_salary,1000);
 assert.throws(()=>ctx.historyGenerationLedgerPayload(unknownSalary,'salary',[inp('base_salary','')]),/空白/);
 console.log('salary unknown values: unchanged null preserved, absent keys stay absent, known amount clearing rejected, other edits allowed passed');
+const rs=html.indexOf('  var historyReparseUi='),re=html.indexOf('  var renderHistoryBeforeReparse=',rs);vm.runInContext(html.slice(rs,re),ctx);
+ctx.state.historyImport={selectedBatchId:'reparse',data:{batches:[{id:'reparse',status:'needs_review',import_type:'salary'}]}};ctx.renderHistoryImport=()=>{};store='a';
+const previewTask=ctx.historyReparseAction('preview');const previewCall=writes.at(-1);store='b';resolveWrite({batch_id:'reparse',formal_ledger_written:false,financial_acceptance_performed:false,source_sha256:'sha',state_fingerprint:'fp',parser_digest:'parser',proposal_digest:'proposal'});await previewTask;store='a';assert.equal(vm.runInContext("historyReparseUi.get('a|reparse').preview",ctx),undefined);
+const goodPreview=ctx.historyReparseAction('preview');resolveWrite({batch_id:'reparse',formal_ledger_written:false,financial_acceptance_performed:false,source_sha256:'sha',state_fingerprint:'fp',parser_digest:'parser',proposal_digest:'proposal'});await goodPreview;
+ctx.state.historyImport.data={...ctx.state.historyImport.data};const oldSnapshotCount=writes.length;await ctx.historyReparseAction('apply');assert.equal(writes.length,oldSnapshotCount);
+assert.equal(ctx.historyReparseReceipt({status:'applied',request_id:'r',source_sha256:'s',proposal_digest:'p',generation_id:'g',version:1,formal_ledger_written:false,financial_acceptance_performed:false,formal_ledger_count:0},{request_id:'r',expected_source_sha256:'s',proposal_digest:'p'}),true);
+assert.equal(ctx.historyReparseReceipt({status:'applied',request_id:'wrong'},{request_id:'r'}),false);
+console.log('reparse isolation: cross-store preview discarded, replaced snapshot rejected, non-posting receipt bound passed');

@@ -1,3 +1,11 @@
+## 2026-11-12 · History candidate on published v644 (App version: v645; unpublished)
+
+- Integrated protected main cc8a0c4c after PR 113 passed its exact-head gate; Pages version 644 was read back. Archive migration 20261112055108 is already applied and must not be repeated.
+- Added explicit source-reparse preview/apply/status UI with immutable-source, no-posting consent, reason, request binding and uncertain-outcome recovery. No automatic financial review, acceptance or posting.
+- Current production dependency catalog recheck matched the isolated baseline; all four history migrations and synthetic permission/concurrency/correction tests passed. Frozen Deno 2.9.6 operations-api type check passed. Final full publication gate remains required after this UI change.
+- Prepared API package preserves twelve unrelated live dependency files byte-for-byte, including the existing live salon-report-catalog rather than changing financial classification. Only the API entrypoint, historical parser and new protected plan are candidate changes.
+- Added an opt-in local Docker context for the isolated customer-design SQL test; CI default and application behavior are unchanged. No new credentials, user grants, financial posting or real original-file upload.
+
 ## 2026-11-12 · Protected history generation candidate (not published)
 
 - Added source-verified parser repair, immutable effective generations, separate review/financial acceptance/posting, and version-bound later correction/reversal. Source rows, initial ledger snapshots, evidence and all prior revisions remain preserved. Missing source amounts remain unknown; partial dated cash details do not imply a complete cash account.
