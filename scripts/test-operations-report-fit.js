@@ -4,12 +4,42 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium, webkit } = require('playwright');
+const dailyAmountFixtures = ['3560', '16759.24', '123456.78', '828.24', '0.01', '0'];
+
+async function assertFocusedAmount(input, expected, viewport) {
+  await input.focus();
+  const metrics = await input.evaluate(input => {
+    const style = getComputedStyle(input), box = input.getBoundingClientRect();
+    const cell = input.closest('td').getBoundingClientRect();
+    const canvas = document.createElement('canvas').getContext('2d');
+    canvas.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
+    return {
+      active: document.activeElement === input,
+      value: input.value,
+      font: style.fontSize,
+      overlayHidden: getComputedStyle(input.nextElementSibling).display === 'none',
+      needed: canvas.measureText(input.value).width,
+      available: input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      contained: box.left >= cell.left - .2 && box.right <= cell.right + .2,
+    };
+  });
+  assert.equal(metrics.active, true, 'amount input must receive focus at ' + viewport);
+  assert.equal(metrics.value, expected, 'focusing must not round or truncate the amount at ' + viewport);
+  assert.equal(metrics.font, '12px', 'focused daily numbers must retain their readable source size');
+  assert.equal(metrics.overlayHidden, true, 'editing must show the raw amount, not the whole-yuan overlay');
+  assert.equal(metrics.contained, true, 'focused amount input must stay inside its cell at ' + viewport);
+  assert(metrics.needed <= metrics.available + .5,
+    'focused amount ' + expected + ' must fit at ' + viewport + ': ' + JSON.stringify(metrics));
+  await input.blur();
+  assert.equal(await input.inputValue(), expected, 'blurring must preserve every digit and cent at ' + viewport);
+}
+
 const root = path.resolve(__dirname, '..');
 const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
   if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
   fs.readFile(file, (err, data) => { if (err) return res.writeHead(404).end();
-    res.setHeader('Content-Type', file.endsWith('.js') ? 'application/javascript' : file.endsWith('.html') ? 'text/html' : 'application/octet-stream'); res.end(data); });
+    res.setHeader('Content-Type', file.endsWith('.js') ? 'application/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'application/octet-stream'); res.end(data); });
 });
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -19,9 +49,10 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage({ isMobile: true, hasTouch: true });
     await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
     await page.goto(origin + '/operations.html?preview=1&role=finance');
+    await page.waitForFunction(() => document.querySelector('#app-startup')?.dataset.phase === 'ready');
     const views = process.env.REPORT_FIT_WEBKIT ? ['monthly', 'daily-report', 'salary-report'] : ['monthly', 'daily-report', 'salary-report', 'finance-workbench'];
     for (const view of views) {
-      await page.evaluate(async view => {
+      await page.evaluate(async ({ view, dailyAmountFixtures }) => {
         await showView(view);
         if (view === 'monthly') {
           // Realistic long daily amounts and monthly totals; DOM-only fixtures.
@@ -32,13 +63,16 @@ const server = http.createServer((req, res) => {
         if (view === 'daily-report') {
           state.imports.sheet = previewDailySheetData(); renderDailySheetDetail();
           document.querySelectorAll('#daily-detail-grid .daily-money-wrap input').forEach((input, index) => {
-            input.value = ['3560', '16759.24', '123456.78'][index % 3];
+            input.value = dailyAmountFixtures[index % dailyAmountFixtures.length];
             syncDailyAmountDisplay(input);
           });
           // Restored job rendering must never make the hidden batch panel visible again.
           document.getElementById('daily-recognition-job').classList.remove('hidden');
         }
-      }, view);
+      }, { view, dailyAmountFixtures });
+      const expectedDailyValues = view === 'daily-report'
+        ? await page.locator('#daily-detail-grid .daily-money-wrap input').evaluateAll(inputs => inputs.map(input => input.value))
+        : null;
       for (const [width, height] of [[390,844],[844,390],[932,430],[1280,589],[1024,768],[1366,1024],[1920,1080],[390,844]]) {
         await page.setViewportSize({ width, height });
         await page.waitForTimeout(100);
@@ -112,6 +146,13 @@ const server = http.createServer((req, res) => {
           assert.equal(amounts.font, '12px', 'daily numbers keep a readable source size');
           assert.equal(amounts.zoom, '1', 'daily input text must avoid WebKit CSS zoom inflation');
           assert.match(amounts.transform, /^scale\(/);
+          for (const [index, value] of dailyAmountFixtures.entries()) {
+            await assertFocusedAmount(page.locator('#daily-detail-grid .daily-money-wrap input').nth(index), value, width + 'x' + height);
+          }
+          assert.deepEqual(
+            await page.locator('#daily-detail-grid .daily-money-wrap input').evaluateAll(inputs => inputs.map(input => input.value)),
+            expectedDailyValues,
+            'rotation, fitting and focusing must not change any fixture amount at ' + width + 'x' + height);
           if (width === 1920) await page.locator('#daily-detail-grid').screenshot({path:'/tmp/zysyr-daily-readable-' + (process.env.REPORT_FIT_WEBKIT ? 'webkit' : 'chromium') + '.png'});
         }
         assert(result.hiddenProgress);
@@ -125,6 +166,19 @@ const server = http.createServer((req, res) => {
       }
       if (view === 'daily-report') {
         const input = page.locator('#daily-detail-grid .daily-money-wrap input').first();
+        for (const [width, height] of [[390,844],[1920,1080]]) {
+          await page.setViewportSize({ width, height });
+          await page.waitForTimeout(100);
+          for (const value of ['123456.78', '828.24', '0.01', '0']) {
+            await input.click();
+            await input.fill(value);
+            await assertFocusedAmount(input, value, width + 'x' + height);
+            assert.equal(await input.evaluate(el => el.nextElementSibling.textContent), String(Math.trunc(Number(value))),
+              'whole-yuan presentation must not alter the full editing value');
+          }
+        }
+        await page.setViewportSize({ width:390, height:844 });
+        await page.waitForTimeout(100);
         await input.click();
         assert.equal(await input.evaluate(el => document.activeElement === el), true, 'scaled daily input stays editable');
         await input.fill('828.24');
