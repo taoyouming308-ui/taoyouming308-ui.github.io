@@ -2,7 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
-import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
+import { parseHistoricalWorkbook, historicalCellSnapshot, historicalSourceProvenance } from "../_shared/zysyr-history-import.mjs";
+import { buildHistoryReparsePlan, stableHistoryJson, historyEffectiveRows, historyGenerationLedgerBindings, HISTORY_REPARSE_PARSER } from "../_shared/history-reparse-plan.mjs";
 import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-recognition.mjs";
 import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
@@ -6445,6 +6446,147 @@ function historyImportFinance(session: JsonRecord): void {
   requireFinanceCapability(session, "expense.create_submit", "只有财务账号可以预览和确认历史数据导入");
 }
 
+const HISTORY_REPARSE_CODE_DIGEST = "088e3d262e46f739cd666e94d2e5b9c4aeeece3d7b644ab755e9cfc6bc61a035";
+
+async function historyReparseScope(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const store = await selectedStoreInfo(session, payload);
+  return { p_actor_user_id: uuidValue(session.auth_account_id, "财务身份无效"),
+    p_company_id: uuidValue(store.company_id, "公司范围无效"),
+    p_store_id: uuidValue(store.id, "门店范围无效"),
+    p_batch_id: uuidValue(payload.import_batch_id, "历史导入批次编号无效") };
+}
+
+function historyReparseDigest(value: unknown): string {
+  const digest = String(value ?? "").trim();
+  if (!/^[0-9a-f]{64}$/.test(digest)) throw new Error("历史重解析指纹无效，请重新预览");
+  return digest;
+}
+
+async function historyReparsePrepared(scope: JsonRecord): Promise<JsonRecord> {
+  const state = await rpcSaved("rpc/zysyr_history_reparse_state", scope);
+  const batch = state.batch as JsonRecord;
+  if (!batch || !Array.isArray(state.rows)) throw new Error("历史重解析状态缺失");
+  const expectedHash = historyReparseDigest(batch.source_sha256);
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(cleanText(batch.source_bucket_id, 100))}/${storagePath(cleanText(batch.source_object_path, 500))}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+  });
+  if (!response.ok) throw new Error(`历史 Excel 原件读取失败 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (!bytes.length || bytes.length > MAX_REPORT_BYTES || bytes.length !== Number(batch.source_size_bytes)
+      || await sha256Bytes(bytes) !== expectedHash) throw new Error("历史原件校验失败，停止重解析");
+  const workbook = new ExcelJS.Workbook();
+  try { await workbook.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("历史 Excel 原件无法读取"); }
+  const plan = buildHistoryReparsePlan(workbook, batch, state.rows) as JsonRecord;
+  return { state, plan, source_sha256: expectedHash,
+    state_fingerprint: historyReparseDigest(state.state_fingerprint),
+    parser_digest: HISTORY_REPARSE_CODE_DIGEST,
+    proposal_digest: await sha256(stableHistoryJson(plan.decisions)) };
+}
+
+async function historyImportReparsePreview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const prepared = await historyReparsePrepared(await historyReparseScope(payload, session));
+  const plan = prepared.plan as JsonRecord;
+  return { batch_id: payload.import_batch_id, source_sha256: prepared.source_sha256,
+    state_fingerprint: prepared.state_fingerprint, parser_digest: prepared.parser_digest,
+    parser_version: HISTORY_REPARSE_PARSER, proposal_digest: prepared.proposal_digest,
+    counts: plan.counts, decisions: plan.decisions, formal_ledger_written: false,
+    financial_acceptance_performed: false, source_immutable: true };
+}
+
+async function historyImportReparseStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const scope = await historyReparseScope(payload, session);
+  return await rpcSaved("rpc/zysyr_history_reparse_status", { ...scope,
+    p_request_id: uuidValue(payload.request_id, "重解析请求编号无效") });
+}
+
+async function historyImportReparseApply(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const scope = await historyReparseScope(payload, session);
+  const requestId = uuidValue(payload.request_id, "重解析请求编号无效");
+  const reason = cleanText(payload.reason, 500);
+  if (!reason) throw new Error("请填写重解析原因");
+  const binding = { expected_state_fingerprint: historyReparseDigest(payload.expected_state_fingerprint),
+    expected_source_sha256: historyReparseDigest(payload.expected_source_sha256),
+    parser_digest: historyReparseDigest(payload.parser_digest),
+    proposal_digest: historyReparseDigest(payload.proposal_digest), reason };
+  const prior = await rpcSaved("rpc/zysyr_history_reparse_status", { ...scope, p_request_id: requestId });
+  if (prior.status === "committed") {
+    if (stableHistoryJson(prior.request_binding) !== stableHistoryJson(binding)) throw new Error("HISTORY_REPARSE_REQUEST_REUSED");
+    return prior.receipt as JsonRecord;
+  }
+  if (prior.status !== "not_found") throw new Error("重解析请求状态不确定，请先查询原请求");
+  const prepared = await historyReparsePrepared(scope);
+  if (prepared.state_fingerprint !== binding.expected_state_fingerprint
+      || prepared.source_sha256 !== binding.expected_source_sha256
+      || prepared.parser_digest !== binding.parser_digest
+      || prepared.proposal_digest !== binding.proposal_digest) throw new Error("历史重解析预览已变化，请重新核对");
+  // The client supplies only fingerprints, never trusted replacement rows.
+  return await rpcSaved("rpc/zysyr_history_reparse_apply", { ...scope, p_request_id: requestId,
+    p_expected_state_fingerprint: binding.expected_state_fingerprint,
+    p_expected_source_sha256: binding.expected_source_sha256,
+    p_parser_digest: binding.parser_digest, p_proposal_digest: binding.proposal_digest,
+    p_reason: reason, p_decisions: (prepared.plan as JsonRecord).decisions });
+}
+
+async function historyImportGenerationStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  return await rpcSaved("rpc/zysyr_history_generation_finance_state", await historyReparseScope(payload, session));
+}
+
+async function historyImportGenerationRequestStatus(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  return await rpcSaved("rpc/zysyr_history_generation_finance_status", {
+    ...await historyReparseScope(payload, session),
+    p_request_id: uuidValue(payload.request_id, "财务请求编号无效"),
+  });
+}
+
+async function historyImportGenerationAction(payload: JsonRecord, session: JsonRecord, action: string): Promise<JsonRecord> {
+  if (!["review", "confirm", "post"].includes(action)) throw new Error("版本财务操作无效");
+  const scope = await historyReparseScope(payload, session);
+  const version = Number(payload.generation_version);
+  const reason = cleanText(payload.reason, 500);
+  if (!Number.isSafeInteger(version) || version < 1 || !reason) throw new Error("请提供当前解析版本和财务操作说明");
+  const body: JsonRecord = { ...scope,
+    p_expected_generation_id: uuidValue(payload.generation_id, "解析版本编号无效"),
+    p_expected_generation_version: version,
+    p_expected_state_fingerprint: historyReparseDigest(payload.expected_state_fingerprint),
+    p_request_id: uuidValue(payload.request_id, "财务请求编号无效"), p_reason: reason };
+  if (action === "review") body.p_acknowledged_issue_digest = historyReparseDigest(payload.acknowledged_issue_digest);
+  if (action === "confirm" || action === "post") body.p_expected_review_fingerprint = historyReparseDigest(payload.expected_review_fingerprint);
+  if (action === "confirm") {
+    if (payload.financial_acceptance !== true) throw new Error("需要明确确认本版本财务复核结果");
+    body.p_financial_acceptance = true;
+  }
+  if (action === "post") {
+    if (payload.confirm_formal_post !== true) throw new Error("需要明确确认正式入账");
+    body.p_expected_confirmation_id = uuidValue(payload.expected_confirmation_id, "财务确认编号无效");
+    body.p_confirm_formal_post = true;
+  }
+  // DB rechecks scope, exact generation/state/review, and request replay while
+  // holding the common batch boundary. No client amounts or auto-next-step.
+  return await rpcSaved(`rpc/zysyr_history_generation_${action}`, body);
+}
+
+async function historyImportGenerationAmend(payload: JsonRecord, session: JsonRecord, action: string): Promise<JsonRecord> {
+  if (!["revise", "reverse"].includes(action)) throw new Error("版本更正操作无效");
+  const scope = await historyReparseScope(payload, session);
+  const version = Number(payload.generation_version), ledgerVersion = Number(payload.expected_ledger_version);
+  const reason = cleanText(payload.reason, 500);
+  if (!Number.isSafeInteger(version) || version < 1 || !Number.isSafeInteger(ledgerVersion) || ledgerVersion < 1 || !reason) throw new Error("请提供当前解析和账条目版本及原因");
+  const body: JsonRecord = { ...scope,
+    p_expected_generation_id: uuidValue(payload.generation_id, "解析版本编号无效"), p_expected_generation_version: version,
+    p_expected_state_fingerprint: historyReparseDigest(payload.expected_state_fingerprint),
+    p_request_id: uuidValue(payload.request_id, "更正请求编号无效"),
+    p_ledger_entry_id: uuidValue(payload.ledger_entry_id, "账条目编号无效"), p_expected_ledger_version: ledgerVersion, p_reason: reason };
+  if (action === "revise") {
+    if (!payload.current_payload || typeof payload.current_payload !== "object" || Array.isArray(payload.current_payload)) throw new Error("请提供明确的更正后业务内容");
+    body.p_current_payload = payload.current_payload;
+  } else {
+    if (payload.confirm_reverse !== true) throw new Error("请明确确认撤销此条入账记录");
+    body.p_confirm_reverse = true;
+  }
+  return await rpcSaved(`rpc/zysyr_history_generation_${action}`, body);
+}
+
 async function historyImportPreview(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   historyImportFinance(session);
   const store = await selectedStoreInfo(session, payload);
@@ -6513,6 +6655,26 @@ async function historyImportPreview(payload: JsonRecord, session: JsonRecord): P
   }
 }
 
+async function historyReadSourceProvenance(batch: JsonRecord, rows: JsonRecord[]): Promise<JsonRecord> {
+  if (!["salary", "petty_cash"].includes(String(batch.import_type))) return { status: "not_applicable", fields: [], scope: null };
+  try {
+    const expectedHash = historyReparseDigest(batch.source_sha256);
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${storagePath(cleanText(batch.source_bucket_id, 100))}/${storagePath(cleanText(batch.source_object_path, 500))}`, {
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    });
+    if (!response.ok) throw new Error("source unavailable");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_REPORT_BYTES || bytes.length !== Number(batch.source_size_bytes)
+      || await sha256Bytes(bytes) !== expectedHash) throw new Error("source mismatch");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(exactArrayBuffer(bytes));
+    return historicalSourceProvenance(workbook, batch, rows) as JsonRecord;
+  } catch {
+    return { status: "unavailable", fields: [], scope: { kind: batch.import_type === "petty_cash" ? "dated_details_only" : "salary_source_fields", complete: false },
+      message: "原件来源完整性暂未核实；不得将空白或缺列视为核定零值" };
+  }
+}
+
 async function historyImportRead(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   historyImportFinance(session);
   const store = await selectedStoreInfo(session, payload);
@@ -6531,9 +6693,28 @@ async function historyImportRead(payload: JsonRecord, session: JsonRecord): Prom
     restRowsAll(`zysyr_history_ledger_entries?select=id,import_batch_id,import_row_id,entry_type,period_month,source_sheet,source_locator,posted_payload,current_payload,posted_validation_status,posted_validation_issues,posted_review_status,posted_with_warning,status,version,posted_by_user_id,posted_at,last_modified_by_user_id,last_modified_at,reversed_at,reversal_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=source_sheet.asc,source_locator.asc&limit=5000`, 5000),
     restRowsAll(`zysyr_history_ledger_revisions?select=id,ledger_entry_id,import_batch_id,import_row_id,version,action,before_payload,after_payload,reason,actor_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&import_batch_id=eq.${batchId}&order=created_at.desc&limit=10000`, 10000),
   ]);
+  let parseState = await rpcSaved("rpc/zysyr_history_reparse_state", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_batch_id: batchId,
+  });
+  if (parseState.active_generation) parseState = await rpcSaved("rpc/zysyr_history_generation_finance_state", {
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+    p_store_id: storeId, p_batch_id: batchId,
+  });
+  const generation = parseState.active_generation || null;
+  if (!Array.isArray(parseState.rows)) throw new Error("历史解析状态不完整");
+  const snapshotRows = parseState.rows as JsonRecord[];
+  const effectiveRows = historyEffectiveRows(snapshotRows, generation);
+  const sourceProvenance = await historyReadSourceProvenance(parseState.batch as JsonRecord, snapshotRows);
+  const boundLedger = historyGenerationLedgerBindings(ledgerEntries, generation);
   return {
-    batches, selected_batch_id: batchId, rows, evidence, links, events,
-    ledger_entries: ledgerEntries, ledger_revisions: ledgerRevisions,
+    batches, selected_batch_id: batchId, rows: effectiveRows, original_rows: snapshotRows, evidence, links, events,
+    reparse_generation: generation, reparse_state_fingerprint: parseState.state_fingerprint,
+    generation_finance: parseState.finance || null,
+    source_provenance: sourceProvenance,
+    original_row_count: snapshotRows.length, effective_row_count: effectiveRows.length,
+    generation_write_blocked: Boolean(generation),
+    ledger_entries: boundLedger, ledger_revisions: ledgerRevisions,
     formal_ledger_written: ledgerEntries.length > 0,
   };
 }
@@ -6565,8 +6746,10 @@ async function historyImportSheetPreview(payload: JsonRecord, session: JsonRecor
   for (let row = 1; row <= rowCount; row += 1) {
     for (let column = 1; column <= columnCount; column += 1) {
       const cell = sheet.getCell(row, column);
-      const value = excelCellText(cell.value);
-      const formula = formulaCellText(cell.value);
+      const source = historicalCellSnapshot(cell);
+      if (source.merged_slave) continue;
+      const value = excelCellText(source.value);
+      const formula = source.formula;
       if ((value === null || value === "") && !formula) continue;
       const font = cell.font || {};
       const alignment = cell.alignment || {};
@@ -7063,7 +7246,7 @@ monthly_review_status monthly_review_inbox monthly_review_preview monthly_review
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
-ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url history_import_reparse_preview history_import_reparse_apply history_import_reparse_status history_import_generation_status history_import_generation_request_status history_import_generation_review history_import_generation_confirm history_import_generation_post history_import_generation_revise history_import_generation_reverse
 `.trim().split(/\s+/));
 
 function safeOperationsApiLogOperation(value: unknown): string {
@@ -7234,6 +7417,16 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
+    if (operation === "history_import_reparse_preview") return json(await historyImportReparsePreview(payload, session));
+    if (operation === "history_import_reparse_apply") return json(await historyImportReparseApply(payload, session));
+    if (operation === "history_import_reparse_status") return json(await historyImportReparseStatus(payload, session));
+    if (operation === "history_import_generation_status") return json(await historyImportGenerationStatus(payload, session));
+    if (operation === "history_import_generation_request_status") return json(await historyImportGenerationRequestStatus(payload, session));
+    if (operation === "history_import_generation_review") return json(await historyImportGenerationAction(payload, session, "review"));
+    if (operation === "history_import_generation_confirm") return json(await historyImportGenerationAction(payload, session, "confirm"));
+    if (operation === "history_import_generation_post") return json(await historyImportGenerationAction(payload, session, "post"));
+    if (operation === "history_import_generation_revise") return json(await historyImportGenerationAmend(payload, session, "revise"));
+    if (operation === "history_import_generation_reverse") return json(await historyImportGenerationAmend(payload, session, "reverse"));
     if (operation === "history_import_read") return json(await historyImportRead(payload, session));
     if (operation === "history_import_sheet_preview") return json(await historyImportSheetPreview(payload, session));
     if (operation === "history_import_review") return json(await historyImportReview(payload, session));

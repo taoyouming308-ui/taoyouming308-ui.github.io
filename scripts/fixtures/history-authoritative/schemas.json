@@ -1,0 +1,146 @@
+[
+  {
+    "schema_name": "auth",
+    "owner": "supabase_admin",
+    "grants": [
+      {
+        "grantee": "supabase_admin",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "supabase_admin",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "supabase_auth_admin",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "supabase_auth_admin",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "dashboard_user",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "dashboard_user",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "USAGE"
+      }
+    ]
+  },
+  {
+    "schema_name": "customer_design_private",
+    "owner": "postgres",
+    "grants": [
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "USAGE"
+      }
+    ]
+  },
+  {
+    "schema_name": "public",
+    "owner": "pg_database_owner",
+    "grants": [
+      {
+        "grantee": "pg_database_owner",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "pg_database_owner",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "PUBLIC",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "anon",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "USAGE"
+      }
+    ]
+  },
+  {
+    "schema_name": "zysyr_private",
+    "owner": "postgres",
+    "grants": [
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "postgres",
+        "grantable": false,
+        "privilege": "CREATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantable": false,
+        "privilege": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "grantable": false,
+        "privilege": "USAGE"
+      }
+    ]
+  }
+]

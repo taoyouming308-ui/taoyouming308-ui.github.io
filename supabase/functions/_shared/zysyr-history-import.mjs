@@ -23,6 +23,9 @@ function rounded(value) {
 
 function resolvedCellValue(cell) {
   const value = cell?.value;
+  // ExcelJS omits cached zero from cell.value, but not from this getter.
+  // Undefined means no cache; do not coerce missing data to zero.
+  if (cell?.result !== undefined) return cell.result;
   if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "result")) {
     return value.result;
   }
@@ -32,7 +35,18 @@ function resolvedCellValue(cell) {
 
 function formulaText(cell) {
   const value = cell?.value;
-  return value && typeof value === "object" ? text(value.formula ?? value.sharedFormula, 4000) : "";
+  // cell.formula expands a shared formula; sharedFormula is only its anchor.
+  return value && typeof value === "object" ? text(cell?.formula ?? value.formula ?? value.sharedFormula, 4000) : "";
+}
+
+// Shared with the read-only workbook preview so display and import agree on
+// cached zero, expanded formulas and merged-cell ownership.
+export function historicalCellSnapshot(cell) {
+  return {
+    value: resolvedCellValue(cell),
+    formula: formulaText(cell) || null,
+    merged_slave: Boolean(cell?.isMerged && cell.master?.address && cell.master.address !== cell.address),
+  };
 }
 
 function displayValue(cell) {
@@ -186,9 +200,9 @@ function salaryColumns(sheet, rowNumber) {
       if (field && !columns.has(field)) columns.set(field, column);
     }
     if (columns.has("position") && columns.has("employee_name") && columns.has("gross_pay")
-        && columns.has("total_deduction") && columns.has("net_pay")) return { columns, columnCount };
+        && columns.has("total_deduction") && columns.has("net_pay")) return { columns, columnCount, header_verified: true };
   }
-  return { columns: new Map(SALARY_FIELDS.map((field, index) => [field, index + 1])), columnCount };
+  return { columns: new Map(SALARY_FIELDS.map((field, index) => [field, index + 1])), columnCount, header_verified: false };
 }
 
 function parseSalary(workbook, context) {
@@ -338,6 +352,8 @@ function parseMonthlyProfitLoss(workbook, context) {
     for (let rowNumber = 1; rowNumber <= rowCount; rowNumber += 1) {
       for (let column = 1; column <= columnCount; column += 1) {
         const cell = sheet.getCell(rowNumber, column);
+        // ExcelJS merged slaves repeat the master; keep one source amount.
+        if (cell.isMerged && cell.master?.address && cell.master.address !== cell.address) continue;
         const amount = numericValue(cell);
         const formula = formulaText(cell);
         if (amount === null && !formula) continue;
@@ -432,4 +448,64 @@ export function parseHistoricalWorkbook(workbook, context) {
       source_sheet_titles: sourceTitles,
     },
   };
+}
+
+// Read-only provenance overlay. Never changes legacy mapped values or claims
+// a blank/missing source is a verified zero. The caller verifies source bytes.
+export function historicalSourceProvenance(workbook, batch, rows) {
+  const fields = [], excluded = [];
+  const type = batch.import_type;
+  const findSheet = (name) => workbook.worksheets.find((sheet) => text(sheet.name, 120) === text(name, 120));
+  if (type === "salary") {
+    for (const row of rows) {
+      const sheet = findSheet(row.source_sheet);
+      const layout = sheet ? salaryColumns(sheet, Number(row.source_row_number)) : null;
+      for (const field of MONEY_FIELDS) {
+        const column = layout?.columns.get(field);
+        const cell = sheet && column ? sheet.getCell(Number(row.source_row_number), column) : null;
+        const source = cell ? historicalCellSnapshot(cell) : null;
+        const value = source?.value;
+        let status;
+        if (!layout?.header_verified) status = "unavailable";
+        else if (!column) status = "missing_column";
+        else if (source.formula && (value == null || typeof value === "object")) status = "missing_formula_cache";
+        else if (value == null || value === "") status = "blank";
+        else if (typeof value !== "number" || !Number.isFinite(value)) status = "source_non_numeric";
+        else status = value === 0 ? "source_zero" : "source_value";
+        fields.push({ import_row_id: row.id, field, status,
+          source_locator: cell ? `${text(sheet.name, 120)}!${cell.address}` : null,
+          legacy_value: row.mapped_json?.[field] ?? null,
+          source_value: typeof value === "number" && Number.isFinite(value) ? value : null,
+          source_formula: source?.formula || null });
+      }
+    }
+    return { status: fields.some((item) => item.status === "unavailable") ? "unavailable" : "verified",
+      source_sha256: batch.source_sha256, fields, scope: { kind: "salary_source_fields", complete: !fields.some((item) => !["source_value", "source_zero"].includes(item.status)) } };
+  }
+  if (type === "petty_cash") {
+    const year = Number(String(batch.period_start).slice(0, 4));
+    const included = new Set(rows.map((row) => `${text(row.source_sheet, 120)}!${row.source_row_number}`));
+    for (const sheet of workbook.worksheets) {
+      const month = monthFromSheet(sheet.name, year);
+      if (!month || month < batch.period_start || month > batch.period_end) continue;
+      const max = Math.min(Math.max(sheet.actualRowCount || 0, sheet.rowCount || 0), 500);
+      for (let r = 2; r <= max; r += 1) {
+        if (included.has(`${text(sheet.name, 120)}!${r}`)) continue;
+        const summary = text(displayValue(sheet.getCell(r, 3)), 500);
+        const date = excelDate(sheet.getCell(r, 1), month);
+        const opening = /上月结余|期初余额|期初结余/.test(summary);
+        if (!summary || date || (!opening && /合计|小计|总计|共计|本月结余/.test(summary))) continue;
+        const inflow = numericValue(sheet.getCell(r, 4));
+        const outflow = numericValue(sheet.getCell(r, 5));
+        if (!opening && !/报销/.test(summary) && inflow === null && outflow === null) continue;
+        excluded.push({ period_month: month, kind: opening ? "opening_balance" : /报销/.test(summary) ? "undated_reimbursement" : "undated_movement",
+          amount: inflow !== null && outflow === null ? inflow : outflow !== null && inflow === null ? outflow : null,
+          inflow, outflow, transaction_date: null, summary,
+          source_locator: `${text(sheet.name, 120)}!A${r}:H${r}` });
+      }
+    }
+    return { status: "verified", source_sha256: batch.source_sha256, fields,
+      scope: { kind: "dated_details_only", complete: false, excluded_items: excluded } };
+  }
+  return { status: "not_applicable", fields, scope: null };
 }

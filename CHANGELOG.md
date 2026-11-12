@@ -1,3 +1,12 @@
+## 2026-11-12 · Protected history generation candidate (not published)
+
+- Added source-verified parser repair, immutable effective generations, separate review/financial acceptance/posting, and version-bound later correction/reversal. Source rows, initial ledger snapshots, evidence and all prior revisions remain preserved. Missing source amounts remain unknown; partial dated cash details do not imply a complete cash account.
+- Four candidate migrations passed isolated upgrade tests against a catalog-only authoritative dependency baseline, with actual owners, RLS, triggers, ACL/default ACL and 14 historical RPC signatures. Synthetic financial test data only; no production writes.
+- Ten focused parser/API/UI/source tests passed. Offline fresh Chromium component tests exercised independent actions, replay/mismatch handling, unknown amounts and a narrow viewport with zero network requests. Full API syntax, version/static-shell/integrity/handoff checks passed. This is not full deployed-App end-to-end verification.
+- New public RPCs remain service-role-only. Review/post reuses finance scope and expense.create_submit; correction/reversal additionally requires existing confirmed_finance.adjust. No roles or credentials are created for users. Private audit/context tables are not client-writable.
+- No commit/push/deploy or financial posting in the completed local validation checkpoint. Latest checked main was 46e7219c. Coordinate the separate upload candidate and its already-applied archive migration; reconcile current head/schema drift and publish a forward version only after all release gates.
+- Scope limits: authoritative dependency closure is not a complete historical fresh-install migration replay; the legacy staff baseline is absent from that chain. Metadata was read in several requests, so deployment requires a fresh drift check. Global history serialization has not been high-load tested.
+
 # Unreleased v644 independent original archive
 
 - Store month/date original photos without changing, creating or replacing financial daily records. Posted, locked and missing dates are archive-only, not automatic ledger links.

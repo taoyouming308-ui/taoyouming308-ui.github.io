@@ -1,0 +1,95 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const html=fs.readFileSync('operations.html','utf8');
+const start=html.indexOf('  function historyGenerationSummary('),end=html.indexOf('  var renderHistoryBeforeGeneration',start);
+const ctx={esc:v=>String(v).replaceAll('<','&lt;')};vm.createContext(ctx);vm.runInContext(html.slice(start,end),ctx);
+const data={reparse_generation:{id:'g',version:2},original_rows:Array.from({length:865},(_,i)=>({source_locator:i===0?'<script>':String(i),mapped_json:{amount:i}})),rows:Array.from({length:815},()=>({validation_status:'warning',review_status:'pending'}))};
+const before=JSON.stringify(data),rendered=ctx.historyGenerationSummary(data);
+assert.match(rendered,/865 条/);assert.match(rendered,/815 条/);assert.match(rendered,/排除合并格 50 条/);assert.match(rendered,/工资差异/);assert.match(rendered,/&lt;script>/);assert.equal(JSON.stringify(data),before);assert.equal(ctx.historyGenerationSummary({}), '');
+// Execute actual read boundary with deliberately reversed responses and store switches.
+const a=html.indexOf('  var historyImportReadSequence='),b=html.indexOf('\n  function ',a);
+const nodes={};let store='a',pending=[],renders=0;
+Object.assign(ctx,{state:{view:'history-import',historyImport:{selectedBatchId:'one'}},currentStore:()=>store,$:id=>nodes[id]??=( {} ),isLocalPreview:()=>false,api:()=>new Promise(resolve=>pending.push(resolve)),renderHistoryImport:()=>renders++});
+vm.runInContext(html.slice(a,b),ctx);
+const first=ctx.loadHistoryImport('one'),second=ctx.loadHistoryImport('two');pending[1]({selected_batch_id:'two'});await second;pending[0]({selected_batch_id:'one'});await first;assert.equal(ctx.state.historyImport.selectedBatchId,'two');assert.equal(renders,1);
+const third=ctx.loadHistoryImport('three');store='b';pending[2]({selected_batch_id:'three'});await third;assert.equal(renders,1);assert.equal(ctx.state.historyImport.data,null);
+console.log('generation UI: raw/effective rendering, escaping, no review mutation, stale and cross-store isolation passed');
+// Actual submission functions: isolated DOM state, no browser/session/network.
+const c=html.indexOf('  var historyGenerationRequests='),d=html.indexOf('  var renderHistoryBeforeGeneration=',c);
+let writes=[],resolveWrite,rejectWrite,confirms=0;
+store='a';ctx.state.historyImport={selectedBatchId:'b',data:{...data,rows:[{source_locator:'B2',validation_status:'warning',validation_issues:[{message:'保留警告'}]}],generationFinance:{active_generation:{id:'g',version:2},state_fingerprint:'s1',finance:{issue_digest:'issues',reviewed_count:0}}}};
+Object.assign(ctx,{crypto:{randomUUID:()=> 'stable-request'},window:{confirm:()=>{confirms++;return true}},toast:()=>{},renderHistoryImport:()=>{},api:(op,payload)=>{writes.push({op,payload});return new Promise((resolve,reject)=>{resolveWrite=resolve;rejectWrite=reject})}});
+nodes['history-generation-scope']={checked:false};nodes['history-generation-reason']={value:'逐行核对'};
+vm.runInContext(html.slice(c,d),ctx);
+await ctx.historyGenerationSubmit('review');assert.equal(writes.length,0);
+nodes['history-generation-scope'].checked=true;
+const review=ctx.historyGenerationSubmit('review');await ctx.historyGenerationSubmit('review');assert.equal(writes.length,1);assert.equal(writes[0].payload.acknowledged_issue_digest,'issues');assert.equal(writes[0].payload.expected_state_fingerprint,'s1');assert.equal(confirms,1);
+rejectWrite(Error('network uncertain'));await review;await ctx.historyGenerationSubmit('post');await ctx.historyGenerationSubmit('review');assert.equal(writes.length,1);
+const query=ctx.historyGenerationRequestStatus();assert.equal(writes[1].op,'history_import_generation_request_status');assert.equal(writes[1].payload.request_id,'stable-request');store='other';resolveWrite({found:true});await query;assert.equal(nodes['history-generation-result'],undefined);
+// A changed snapshot during the explicit confirmation cannot submit.
+store='a';ctx.state.historyImport.selectedBatchId='new';ctx.window.confirm=()=>{ctx.state.historyImport.data.generationFinance.state_fingerprint='s2';return true};await ctx.historyGenerationSubmit('review');assert.equal(writes.length,2);
+console.log('generation submissions: unchecked scope, double click, explicit warning binding, stale snapshot and uncertain request query isolation passed');
+// Run actual generation renderer against a tiny synthetic DOM adapter.
+const renderStart=html.indexOf('  var renderHistoryBeforeGeneration='),renderEnd=html.indexOf('  var openHistoryCorrectionBeforeFormalLedger=',renderStart);
+let renderedHtml='';const controls=[];
+ctx.document={querySelectorAll:()=>controls};ctx.$=id=>nodes[id]??={insertAdjacentHTML:(_position,text)=>{renderedHtml+=text}};
+nodes['history-import-summary']={insertAdjacentHTML:(_position,text)=>{renderedHtml+=text}};
+ctx.state.historyImport.data.batches=[{id:'new',reason:'租金期未核清',source_warnings:[{message:'工资差异未解决'}]}];
+ctx.state.historyImport.data.generationFinance.finance={issue_digest:'issues',reviewed_count:0};
+const unchanged=JSON.stringify(ctx.state.historyImport.data);
+vm.runInContext(html.slice(renderStart,renderEnd),ctx);ctx.renderHistoryImport();
+assert.match(renderedHtml,/工资差异未解决/);assert.match(renderedHtml,/租金期未核清/);assert.match(renderedHtml,/保留警告/);assert.match(renderedHtml,/id="history-generation-confirm" disabled/);assert.match(renderedHtml,/id="history-generation-post" disabled/);assert.doesNotMatch(renderedHtml,/type="checkbox"[^>]*checked/);assert.equal(JSON.stringify(ctx.state.historyImport.data),unchanged);
+console.log('generation full renderer: reason/source warnings/row issues, independent disabled gates, no implicit selection or mutation passed');
+// Not-found or a mismatched receipt must not release the uncertain write.
+ctx.renderHistoryImport=()=>{};ctx.state.historyImport.selectedBatchId='b';store='a';ctx.$=id=>nodes[id]??={};ctx.window.confirm=()=>true;
+let refreshes=0;ctx.loadHistoryImport=async()=>{refreshes++};
+for(const result of [{status:'not_found'},{status:'committed',request_binding:{},receipt:{}}]){
+  const lookup=ctx.historyGenerationRequestStatus();resolveWrite(result);await lookup;const count=writes.length;await ctx.historyGenerationSubmit('review');assert.equal(writes.length,count);assert.equal(refreshes,0);
+}
+const lookup=ctx.historyGenerationRequestStatus();resolveWrite({status:'committed',request_binding:{action:'review',expected_generation_id:'g',expected_generation_version:2,expected_state_fingerprint:'s1',acknowledged_issue_digest:'issues',expected_review_fingerprint:null,expected_confirmation_id:null,financial_acceptance:false,confirm_formal_post:false,reason:'逐行核对'},receipt:{status:'committed',action:'review',request_id:'stable-request',generation_id:'g',generation_version:2}});await lookup;assert.equal(refreshes,1);
+console.log('generation receipt resolution: not-found and mismatch keep lock, exact committed binding refreshes once passed');
+const provenanceStart=html.indexOf('  function historySourceProvenanceHtml('),provenanceEnd=html.indexOf('  var renderHistoryBeforeSourceProvenance=',provenanceStart);
+ctx.historyFieldLabel=x=>x;vm.runInContext(html.slice(provenanceStart,provenanceEnd),ctx);
+const origin={rows:[{id:'row1',source_locator:'7月!A25:S25',mapped_json:{leave_deduction:0}}],source_provenance:{status:'verified',fields:[{import_row_id:'row1',field:'shooting_deduction',status:'missing_column',legacy_value:0},{import_row_id:'row1',field:'leave_deduction',status:'blank',source_locator:'7月!N25',legacy_value:0},{import_row_id:'row1',field:'total_deduction',status:'source_zero',legacy_value:0},{import_row_id:'foreign',field:'private',status:'blank',legacy_value:9}]}};
+const originBefore=JSON.stringify(origin),originHtml=ctx.historySourceProvenanceHtml(origin,{import_type:'salary'});
+assert.match(originHtml,/原表未提供此列/);assert.match(originHtml,/原表单元格空白/);assert.match(originHtml,/原表提供零值/);assert.match(originHtml,/7月!N25/);assert.match(originHtml,/旧解析值 0/);assert.doesNotMatch(originHtml,/private/);assert.equal(JSON.stringify(origin),originBefore);
+assert.match(ctx.historySourceProvenanceHtml({},{import_type:'salary'}),/来源完整性尚未核实/);
+const cashHtml=ctx.historySourceProvenanceHtml({source_provenance:{status:'verified',scope:{complete:false,excluded_items:[{period_month:'2026-08',kind:'undated_reimbursement',amount:2000,source_locator:'8月!D4'},{period_month:'2026-07',kind:'opening_balance',amount:-366.69,source_locator:'7月!E2'}]}}},{import_type:'petty_cash'});
+assert.match(cashHtml,/不代表完整现金账/);assert.match(cashHtml,/无日期报销 · 2000/);assert.match(cashHtml,/期初余额 · -366.69/);assert.equal(ctx.historySourceProvenanceHtml(origin,{import_type:'monthly_profit_loss'}),'');
+console.log('source provenance UI: absent column versus blank versus source zero, exact omissions, row scope and immutable amounts passed');
+assert.match(originHtml,/<details><summary>原表已提供数值 1 项（含零值 1 项/);assert.doesNotMatch(originHtml,/<details open/);
+assert.ok(originHtml.indexOf('原表未提供此列')<originHtml.indexOf('<details>'));assert.ok(originHtml.indexOf('原表单元格空白')<originHtml.indexOf('<details>'));
+const unknownHtml=ctx.historySourceProvenanceHtml({rows:origin.rows,source_provenance:{status:'verified',fields:[{import_row_id:'row1',field:'gross_pay',status:'source_non_numeric'},{import_row_id:'row1',field:'net_pay',status:'unavailable'}]}},{import_type:'salary'});
+assert.match(unknownHtml,/原表不是有效数值/);assert.match(unknownHtml,/来源状态未核实/);assert.doesNotMatch(unknownHtml,/<details>/);
+console.log('source provenance presentation: supplied values collapsed, all missing and unknown values remain visible passed');
+const ledger={id:'ledger1',generation_id:'g',generation_version:2,version:3,status:'posted',posted_payload:{period_month:'2026-07-01',amount:10,_source_provenance:{immutable:true}},current_payload:{period_month:'2026-07-01',amount:12,_source_provenance:{immutable:true}}};
+const inp=(field,value)=>({dataset:{generationField:field},value});
+const originalLedger=JSON.stringify(ledger);
+assert.equal(ctx.historyGenerationLedgerPayload(ledger,'monthly_profit_loss',[inp('amount','0')]).amount,0);
+assert.throws(()=>ctx.historyGenerationLedgerPayload(ledger,'monthly_profit_loss',[inp('amount','')]),/空白/);
+assert.throws(()=>ctx.historyGenerationLedgerPayload(ledger,'monthly_profit_loss',[inp('period_month','2026-08-01')]),/禁止/);
+assert.throws(()=>ctx.historyGenerationLedgerPayload(ledger,'salary',[inp('employee_name','another')]),/禁止/);
+assert.throws(()=>ctx.historyGenerationLedgerPayload(ledger,'petty_cash',[inp('transaction_date','2026-08-01')]),/原始月份/);
+assert.equal(JSON.stringify(ledger),originalLedger);
+const ld=ctx.state.historyImport.data;ld.ledger_entries=[ledger,{...ledger,id:'foreign',generation_id:'old'},{...ledger,id:'reversed',status:'reversed'}];ld.batches=[{id:'b',import_type:'monthly_profit_loss'}];
+const lh=ctx.historyGenerationLedgerHtml(ld,ld.batches[0]);assert.match(lh,/首次入账快照（不可修改）/);assert.match(lh,/当前 v3/);assert.doesNotMatch(lh,/foreign|reversed| checked/);assert.match(lh,/reason-ledger1" value=""/);
+ctx.document.querySelectorAll=()=>[inp('amount','14')];nodes['generation-ledger-reason-ledger1']={value:'更正原因'};nodes['generation-ledger-reverse-check-ledger1']={checked:false};
+const n=writes.length;await ctx.historyGenerationLedgerSubmit('reverse','ledger1');assert.equal(writes.length,n);
+const rev=ctx.historyGenerationLedgerSubmit('revise','ledger1');await ctx.historyGenerationLedgerSubmit('revise','ledger1');assert.equal(writes.length,n+1);assert.equal(writes[n].payload.expected_ledger_version,3);assert.equal(writes[n].payload.current_payload.amount,14);assert.equal(JSON.stringify(writes[n].payload.current_payload._source_provenance),JSON.stringify({immutable:true}));rejectWrite(Error('uncertain'));await rev;
+const rp=writes[n].payload,rb={action:'revise',expected_generation_id:'g',expected_generation_version:2,expected_state_fingerprint:rp.expected_state_fingerprint,acknowledged_issue_digest:null,expected_review_fingerprint:null,expected_confirmation_id:null,financial_acceptance:false,confirm_formal_post:false,reason:rp.reason,ledger_entry_id:'ledger1',expected_ledger_version:3,current_payload:rp.current_payload,confirm_reverse:false},rr={status:'committed',action:'revise',request_id:rp.request_id,generation_id:'g',generation_version:2,ledger_entry_id:'ledger1',previous_ledger_version:3,ledger_version:4,formal_ledger_changed:true};
+let lookupLedger=ctx.historyGenerationRequestStatus();resolveWrite({status:'committed',request_binding:rb,receipt:{...rr,previous_ledger_version:2}});await lookupLedger;const lockedCount=writes.length;await ctx.historyGenerationLedgerSubmit('revise','ledger1');assert.equal(writes.length,lockedCount);
+lookupLedger=ctx.historyGenerationRequestStatus();resolveWrite({status:'committed',request_binding:rb,receipt:rr});await lookupLedger;assert.equal(refreshes,2);
+assert.equal(JSON.stringify(ledger),originalLedger);
+console.log('generation ledger UI: allowlist, blank versus zero, immutable posted/provenance, month bounds, explicit reverse consent, duplicate submit and exact version receipt passed');
+ctx.state.user={can_adjust_confirmed_finance:false};const permissionCount=writes.length;await ctx.historyGenerationLedgerSubmit('revise','ledger1');assert.equal(writes.length,permissionCount);ctx.state.user.can_adjust_confirmed_finance=true;
+nodes['generation-ledger-reverse-check-ledger1'].checked=true;
+const reverse=ctx.historyGenerationLedgerSubmit('reverse','ledger1');const reversePayload=writes.at(-1).payload;assert.equal(reversePayload.confirm_reverse,true);assert.equal(reversePayload.current_payload,undefined);resolveWrite({...rr,action:'reverse',request_id:reversePayload.request_id});await reverse;assert.equal(refreshes,3);assert.equal(JSON.stringify(ledger),originalLedger);
+// A response arriving after a store change cannot update the new store's rendered state.
+const late=ctx.historyGenerationLedgerSubmit('reverse','ledger1');const latePayload=writes.at(-1).payload;store='elsewhere';resolveWrite({...rr,action:'reverse',request_id:latePayload.request_id});await late;assert.equal(refreshes,3);store='a';
+console.log('generation ledger UI: permission denial, explicit reverse payload and cross-store late response isolation passed');
+const unknownSalary={current_payload:{base_salary:1000,gross_pay:1000,shooting_deduction:null,leave_deduction:null,notes:null,period_month:'2026-07-01',employee_id:'employee'}};
+const amended=ctx.historyGenerationLedgerPayload(unknownSalary,'salary',[inp('base_salary','1100'),inp('shooting_deduction',''),inp('leave_deduction',''),inp('social_security',''),inp('notes','保留未知')]);
+assert.equal(amended.base_salary,1100);assert.equal(amended.shooting_deduction,null);assert.equal(amended.leave_deduction,null);assert.equal(amended.notes,'保留未知');assert.equal(Object.hasOwn(amended,'social_security'),false);assert.equal(unknownSalary.current_payload.base_salary,1000);
+assert.throws(()=>ctx.historyGenerationLedgerPayload(unknownSalary,'salary',[inp('base_salary','')]),/空白/);
+console.log('salary unknown values: unchanged null preserved, absent keys stay absent, known amount clearing rejected, other edits allowed passed');

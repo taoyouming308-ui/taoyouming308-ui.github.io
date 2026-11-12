@@ -1,0 +1,65 @@
+[
+  {
+    "granted_role": "anon",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "authenticated",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "authenticator",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "pg_create_subscription",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "pg_monitor",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "pg_read_all_data",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "pg_signal_backend",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "service_role",
+    "member_role": "postgres",
+    "admin_option": true,
+    "inherit_option": true,
+    "set_option": true
+  },
+  {
+    "granted_role": "supabase_privileged_role",
+    "member_role": "postgres",
+    "admin_option": false,
+    "inherit_option": true,
+    "set_option": true
+  }
+]

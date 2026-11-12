@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {stripTypeScriptTypes} from 'node:module';
+import {historicalSourceProvenance} from '../supabase/functions/_shared/zysyr-history-import.mjs';
+const cells={A1:'职位',B1:'姓名',C1:'应发',D1:'应扣',E1:'实发',F1:'请假',A2:'岗位',B2:'员工',C2:100,D2:0,E2:100,F2:null};
+const sheet={name:'07',actualRowCount:2,actualColumnCount:6,getCell(r,c){const address=String.fromCharCode(64+c)+r;const v=cells[address];return {address,value:v&&typeof v==='object'?v.value:v??null,...(v&&typeof v==='object'?v:{})}}};
+const row={id:'r1',source_sheet:'07',source_row_number:2,mapped_json:{gross_pay:100,total_deduction:0,net_pay:100,shooting_deduction:0,leave_deduction:0}};
+const batch={import_type:'salary',source_sha256:'a'.repeat(64),period_start:'2026-07-01',period_end:'2026-09-01'};
+const before=JSON.stringify(row);let p=historicalSourceProvenance({worksheets:[sheet]},batch,[row]);
+const field=(p,f)=>p.fields.find(x=>x.field===f);
+assert.equal(field(p,'shooting_deduction').status,'missing_column');assert.equal(field(p,'shooting_deduction').source_locator,null);
+assert.equal(field(p,'leave_deduction').status,'blank');assert.equal(field(p,'total_deduction').status,'source_zero');
+cells.D2={value:{formula:'1-1'},formula:'1-1',result:0};p=historicalSourceProvenance({worksheets:[sheet]},batch,[row]);assert.equal(field(p,'total_deduction').status,'source_zero');
+delete cells.D2.result;p=historicalSourceProvenance({worksheets:[sheet]},batch,[row]);assert.equal(field(p,'total_deduction').status,'missing_formula_cache');
+cells.A1='unknown';p=historicalSourceProvenance({worksheets:[sheet]},batch,[row]);assert.equal(p.status,'unavailable');assert.ok(p.fields.every(x=>x.status==='unavailable'));assert.equal(JSON.stringify(row),before);
+const petty={...sheet,actualRowCount:6,actualColumnCount:8};Object.keys(cells).forEach(k=>delete cells[k]);Object.assign(cells,{C2:'上月结余',D2:-20,C3:'财务处报销',D3:2000,A4:'2026-07-04',C4:'支出',E4:50,C5:'共计',D5:2000,C6:'财务处报销'});
+p=historicalSourceProvenance({worksheets:[petty]},{...batch,import_type:'petty_cash'},[{id:'r2',source_sheet:'07',source_row_number:4}]);assert.equal(p.scope.complete,false);assert.equal(p.scope.excluded_items.length,3);assert.deepEqual(p.scope.excluded_items.map(x=>[x.kind,x.amount,x.transaction_date]),[['opening_balance',-20,null],['undated_reimbursement',2000,null],['undated_reimbursement',null,null]]);
+// Execute actual endpoint helper; corrupted/unavailable sources never claim verified.
+const api=fs.readFileSync('supabase/functions/operations-api/index.ts','utf8');const source=api.slice(api.indexOf('async function historyReadSourceProvenance('),api.indexOf('async function historyImportRead('));let digest='a'.repeat(64),fetchOk=true,loads=0;
+const sandbox={historyReparseDigest:x=>x,fetch:async()=>({ok:fetchOk,arrayBuffer:async()=>new Uint8Array([1,2]).buffer}),SUPABASE_URL:'https://example.invalid',SERVICE_KEY:'synthetic',storagePath:x=>x,cleanText:x=>String(x??''),MAX_REPORT_BYTES:10,sha256Bytes:async()=>digest,exactArrayBuffer:x=>x,ExcelJS:{Workbook:class{worksheets=[sheet];xlsx={load:async()=>{loads++;}}}},historicalSourceProvenance,Uint8Array};vm.createContext(sandbox);vm.runInContext(stripTypeScriptTypes(source)+'\nthis.run=historyReadSourceProvenance;',sandbox);
+const b={...batch,source_size_bytes:2,source_bucket_id:'synthetic',source_object_path:'file.xlsx'};
+await sandbox.run(b,[row]);assert.equal(loads,1);assert.equal((await sandbox.run({...b,source_size_bytes:3},[row])).status,'unavailable');assert.equal(loads,1);digest='b'.repeat(64);assert.equal((await sandbox.run(b,[row])).status,'unavailable');assert.equal(loads,1);fetchOk=false;assert.equal((await sandbox.run(b,[row])).status,'unavailable');
+console.log('source provenance passed: missing/blank/cache/zero distinction, unrecognized layout fail closed, undated movements retained without dates, immutable input and source byte verification');

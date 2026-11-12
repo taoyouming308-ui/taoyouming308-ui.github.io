@@ -1,0 +1,45 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');
+module.exports=async function({sql,json,fail,q,id,C,S,A,B,R,args,concurrent}){
+ sql(fs.readFileSync('supabase/migrations/20261112070457_zysyr_history_generation_adjustments.sql','utf8'));
+ const state=()=>json(`set role service_role;select public.zysyr_history_generation_finance_state(${args});`);
+ const entry=f=>f.ledger.find(e=>e.import_row_id===R);
+ const prefix=(f,request,version=entry(f).version)=>[A,C,S,B,f.active_generation.id].map(q).join(',')+','+f.active_generation.version+','+q(f.state_fingerprint)+','+q(request)+','+q(entry(f).id)+','+version;
+ const revise=(f,request,payload,version)=>`set role service_role;select public.zysyr_history_generation_revise(${prefix(f,request,version)},${q(JSON.stringify(payload))}::jsonb,'Synthetic explicit correction');`;
+ const reverse=(f,request,confirm=true)=>`set role service_role;select public.zysyr_history_generation_reverse(${prefix(f,request)},${confirm},'Synthetic explicit reversal');`;
+ let f=state();const original=entry(f).posted_payload,rows=f.rows,payload={...entry(f).current_payload,amount:7,notes:'Synthetic correction'};
+ fail(revise(f,id(501),payload),/FINANCE_SCOPE_FORBIDDEN/);
+ sql(`insert into zysyr_capabilities(id,code,name) values('${id(500)}','confirmed_finance.adjust','Synthetic explicit adjustment permission');insert into zysyr_role_capabilities(role_id,capability_id) values('${id(101)}','${id(500)}');`);
+ fail(revise(f,id(501),{...payload,period_month:'2026-10-01'}),/IMMUTABLE_FIELD/);
+ fail(revise(f,id(501),{...payload,_source_provenance:{fake:true}}),/IMMUTABLE_FIELD/);
+ fail(revise(f,id(501),{...payload,amount:null}),/AMOUNT_INVALID/);
+ fail(revise(f,id(501),payload,99),/STATE_CHANGED/);
+ fail(reverse(f,id(505),false),/REVERSAL_CONFIRMATION_REQUIRED/);
+ fail(`begin;insert into zysyr_period_locks(company_id,scope_type,store_id,period_month) values('${C}','store','${S}','2026-09-01');`+revise(f,id(501),payload),/FINANCE_PERIOD_LOCKED/);
+ fail(`begin;update zysyr_user_role_grants set revoked_at=now(),revoke_reason='Synthetic revoke';`+revise(f,id(501),payload),/FINANCE_SCOPE_FORBIDDEN/);
+ fail('set role anon;'+revise(f,id(501),payload).replace('set role service_role;',''),/permission denied/);
+ sql("create function public.synthetic_adjust_fail() returns trigger language plpgsql as $$begin raise exception 'SYNTHETIC_ADJUST_ROLLBACK';end$$;create trigger synthetic_adjust_fail after update on zysyr_history_ledger_entries for each row execute function public.synthetic_adjust_fail();");
+ fail(revise(f,id(501),payload),/SYNTHETIC_ADJUST_ROLLBACK/);assert.deepEqual(state(),f);assert.equal(sql('select count(*) from zysyr_private.history_generation_adjustment_context'),'0');
+ sql('drop trigger synthetic_adjust_fail on zysyr_history_ledger_entries;drop function public.synthetic_adjust_fail();');
+ const revised=json(revise(f,id(501),payload));assert.equal(revised.ledger_version,2);assert.deepEqual(json(revise(f,id(501),payload)),revised);
+ fail(revise(f,id(501),{...payload,amount:8}),/REQUEST_REUSED/);fail(revise(f,id(502),{...payload,amount:8}),/STATE_CHANGED/);
+ f=state();assert.deepEqual(entry(f).posted_payload,original);assert.equal(entry(f).current_payload.amount,7);assert.deepEqual(f.rows,rows);
+ const races=await Promise.all([concurrent(revise(f,id(502),{...payload,amount:8})),concurrent(revise(f,id(503),{...payload,amount:9}))]);
+ assert.equal(races.filter(x=>x.code===0).length,1);assert.match(races.find(x=>x.code!==0).err,/STATE_CHANGED/);
+ f=state();assert.equal(entry(f).version,3);const beforeReverse=entry(f).current_payload;
+ const reversed=json(reverse(f,id(505)));assert.equal(reversed.ledger_version,4);assert.deepEqual(json(reverse(f,id(505))),reversed);
+ const after=state();assert.equal(entry(after).status,'reversed');assert.deepEqual(entry(after).posted_payload,original);assert.deepEqual(entry(after).current_payload,beforeReverse);assert.deepEqual(after.rows,rows);
+ assert.equal(after.finance.reversed_count,1);assert.equal(after.finance.current_posted_count,1);
+ fail(revise(after,id(506),payload),/NOT_ADJUSTABLE/);fail(reverse(after,id(507)),/NOT_ADJUSTABLE/);
+ fail(revise(after,id(203),payload),/REQUEST_REUSED/);
+ for(const batch of [B,id(300)]){
+  const other=json(`set role service_role;select public.zysyr_history_generation_finance_state(${[A,C,S,batch].map(q).join(',')});`);
+  fail(`set role service_role;select public.zysyr_history_generation_review(${[A,C,S,batch,other.active_generation.id].map(q).join(',')},${other.active_generation.version},${q(other.state_fingerprint)},${q(id(505))},${q(other.finance.issue_digest)},'Do not reuse amendment request');`,/REQUEST_REUSED/);
+ }
+ const status=json(`set role service_role;select public.zysyr_history_generation_finance_status(${args},${q(id(505))});`);assert.deepEqual(status.receipt,reversed);assert.equal(status.request_binding.confirm_reverse,true);
+ assert.equal(sql(`select count(*) from zysyr_history_ledger_revisions where ledger_entry_id='${entry(after).id}'`),'4');
+ fail('update zysyr_private.history_generation_ledger_actions set reason=reason;',/IMMUTABLE|append/i);
+ fail('set role service_role;select * from zysyr_private.history_generation_adjustment_context;',/permission denied/);
+ fail(`set role service_role;select public.zysyr_revise_history_ledger_entry(${[A,C,S,entry(after).id].map(q).join(',')},'{}','legacy forbidden');`,/VERSION_REQUIRED/);
+ assert.equal(sql('select count(*) from zysyr_private.history_generation_adjustment_context'),'0');
+ console.log('PASS: stronger explicit adjustment capability, immutable source/posted snapshots, version-bound revise/reverse, period lock, fault rollback, replay/status, racing corrections, append-only revisions and original rows retained.');
+};
