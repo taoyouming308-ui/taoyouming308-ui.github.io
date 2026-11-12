@@ -62,12 +62,13 @@
     try {
       var data=await call('list',{month:ctx.month,offset:append?offset:0});if(!same(ctx)||token!==epoch)return;
       sources=append?sources.concat(data.sources||[]):data.sources||[];offset=Number(data.next_offset)||0;
+      el('refresh').textContent='刷新原件';
       el('more').classList.toggle('hidden',!data.has_more);
       el('list').innerHTML=sources.map(function(a){return a.status==='archived'?sourceCard(a,false):'<div class="finance-record"><strong>'+escape(a.original_filename)+'</strong><p class="help">原件登记待确认，请查询结果；需要恢复时重新选择同一份原件。</p><button type="button" class="ghost" data-ms-pending="'+escape(a.request_id)+'">查询这份原件</button></div>';}).join('')||'<div class="empty">当前没有已登记的核对原件。原月报文件仍可从上方原文件入口查看。</div>';
       var selected=data.current_selection,original=selected && sources.find(function(a){return a.request_id===selected.source_request_id;});
       el('current').innerHTML=selected?(original?sourceCard(original,true):sourceCard({request_id:selected.source_request_id,original_filename:'本月新版核对原件'},true)):'<p class="help">本月尚未单独指定新版核对原件。</p>';
       bindCards();host.querySelectorAll('[data-ms-pending]').forEach(function(button){button.onclick=function(){if(busy)return;var a=sources.find(function(s){return s.request_id===button.dataset.msPending;});job={request_id:a.request_id,status:'pending',sha256:a.sha256,size_bytes:Number(a.size_bytes),filename:a.original_filename};chosen=null;saveJob();el('form').open=true;query();};});
-    } catch(e){if(same(ctx)&&token===epoch)message('核对原件暂未加载：'+e.message);}finally{reading=false;controls();var queued=listQueued;listQueued=false;if(scope&&(queued||!same(ctx)||token!==epoch))listing(false);}
+    } catch(e){if(same(ctx)&&token===epoch)message('核对原件暂未加载：'+e.message);}finally{reading=false;controls();var queued=listQueued;listQueued=false;if(scope&&queued)listing(false);}
   }
   async function prepareBindings() {
     var bindingToken=++bindingEpoch;bindingState=null;el('bindings').textContent='';controls();
@@ -128,14 +129,17 @@
   el('query').onclick=query;el('refresh').onclick=function(){if(!busy)listing(false);};el('more').onclick=function(){listing(true);};
   el('new').onclick=function(){if(busy || job&&(job.status!=='archived'||job.selection))return;job=null;chosen=null;bindingState=null;saveJob();el('file').value='';el('bindings').textContent='';message('');controls();};
   function sync() {
-    var next=context();if(scope && same(scope)){controls();if(!busy)listing(false);return;}
-    epoch++;bindingEpoch++;scope=next;job=null;chosen=null;bindingState=null;sources=[];offset=0;
+    var next=context();if(scope && same(scope)){controls();return;}
+    epoch++;bindingEpoch++;scope=next;job=null;chosen=null;bindingState=null;sources=[];offset=0;listQueued=false;
     el('current').textContent='';el('list').textContent='';el('bindings').textContent='';el('file').value='';el('form').open=false;message('');
     if(!scope){host.classList.add('hidden');return;}host.classList.remove('hidden');
+    el('refresh').textContent='查看核对原件';el('more').classList.add('hidden');
+    el('current').textContent='核对原件尚未读取，点击“查看核对原件”可查看本月新版及已留存原件。';
+    el('list').textContent='点击“查看核对原件”后加载。原月报文件仍可从上方原文件入口查看。';
     el('start').value=el('end').value=scope.month;
     try{job=JSON.parse(localStorage.getItem(storageKey())||'null');}catch(_){}
     if(job){el('form').open=true;message('上次原件登记已保留，请先查询登记结果。');}
-    controls();listing(false);
+    controls();
   }
   ['store-select','month'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){setTimeout(sync,0);});});
   var originalRender=root.renderAll;if(typeof originalRender==='function')root.renderAll=function(){var result=originalRender.apply(this,arguments);sync();return result;};
