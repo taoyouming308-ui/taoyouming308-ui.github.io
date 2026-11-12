@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-report-upload-guidance.js" },
+    { "runtime": "node", "script": "test-daily-original-archive-api.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-batch-upload.js" },
+    { "runtime": "node", "script": "test-zysyr-daily-batch-browser.js" },
     { "runtime": "node", "script": "test-data-read-performance.js" },
     { "runtime": "node", "script": "test-monthly-review-api.mjs" },
     { "runtime": "node", "script": "test-monthly-review-browser.js" },

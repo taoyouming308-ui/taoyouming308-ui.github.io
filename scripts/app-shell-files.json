@@ -19,6 +19,7 @@
   "hair-vision-training.v1.js",
   "manifest.json",
   "operations-auth-bridge.js",
+  "operations-daily-batch-upload.js",
   "operations-daily-correction.js",
   "operations-daily-electronic.js",
   "operations-daily-history.js",

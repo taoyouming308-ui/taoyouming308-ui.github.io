@@ -1,3 +1,27 @@
+## 2026-11-12 · Resume independent original archive (App version: v644)
+
+- Fresh github/main 46e7219c is included. Isolated resume worktree preserves all other dirty candidates; complete local backup verified before edits.
+- Align archive migration filename with existing production history 20261112055108; SQL bytes are unchanged. Register archive regression tests in the shared finance gate.
+- 77 original handwritten dates independently reviewed: July 26, August 26, September 25, no duplicate dates. Missing supplied dates remain unknown, never zero or assumed rest days.
+- Latest user-specified monthly workbook is preserved separately; this release does not modify monthly values, financial drafts or posting rules. Preserve exact live catalog dependency bytes in API deployment.
+- Production API/frontend publication, real authorized upload and per-file hash/date readback remain pending. No financial posting.
+
+# Unreleased v644 independent original archive
+
+- Store month/date original photos without changing, creating or replacing financial daily records. Posted, locked and missing dates are archive-only, not automatic ledger links.
+- Narrow existing service-role RPC; append-only reservations/completions; private signed views and current per-store capability enforcement.
+- Exact request/hash binding, create-only writes, explicit same-file recovery only after definitive missing-object status, owner pending visibility after reopening. No uncertain-object cleanup.
+- Frontend date previews, daily-detail entry with unsaved guard, cancellation and account/store/month scope controls. No automatic OCR or extra model call.
+- Final v644 validation passed: API synthetic mocks; batch runner; isolated PostgreSQL reservation/concurrency/post-lock capability-revocation tests; four isolated browser suites (archive privacy/recovery, per-item vouchers, batch vouchers, monthly photos); repository version/integrity/handoff/smoke; existing monthly scope/matching, care/hair/customer regressions and 42 Python cases. Targeted safety re-review passed.
+- SQL authority and financial sentinel fixtures are synthetic, not deployed-schema evidence. Actual storage/production acceptance remains pending. Candidate remains local; no production action performed.
+
+# Unreleased v643 upload candidate
+
+- Explain the photo-only Word bundle error with the correct existing archive and per-expense paths; no automatic resubmission.
+- Add date-confirmed batch originals for existing editable daily drafts only. No amount or financial record changes.
+- Verified existing expense-binding and batch-matching static tests, store/report scope, isolated per-item and batch-voucher/monthly-photo browser regressions, and 42 sync/keepalive/customer synthetic cases. New batch: 61 synthetic assertions plus an isolated 390px browser pass covering date previews, two uploads, confirmed-date refusal, lost-response freeze, cancellation and store change.
+- Not deployed. Actual production files and classification remain untested; confirmed/absent daily reports are explicitly unsupported.
+
 <!-- academy-reviewed-inputs:0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165 -->
 ## 2026-11-12 · Reviewed academy publication candidate (App version: v642 unchanged by academy)
 

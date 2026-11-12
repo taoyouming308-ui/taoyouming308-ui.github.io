@@ -1,3 +1,11 @@
+## 2026-11-12 · Resume independent original archive (App version: v644)
+
+- Fresh github/main 46e7219c is included. Isolated resume worktree preserves all other dirty candidates; complete local backup verified before edits.
+- Align archive migration filename with existing production history 20261112055108; SQL bytes are unchanged. Register archive regression tests in the shared finance gate.
+- 77 original handwritten dates independently reviewed: July 26, August 26, September 25, no duplicate dates. Missing supplied dates remain unknown, never zero or assumed rest days.
+- Latest user-specified monthly workbook is preserved separately; this release does not modify monthly values, financial drafts or posting rules. Preserve exact live catalog dependency bytes in API deployment.
+- Production API/frontend publication, real authorized upload and per-file hash/date readback remain pending. No financial posting.
+
 <!-- academy-reviewed-inputs:0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165 -->
 ## 2026-11-12 · Reviewed academy publication candidate (App version: v642 unchanged by academy)
 
@@ -521,6 +529,22 @@ User authorized pushing only the isolated startup branch and opening a draft PR 
 - Synthetic duplicated-row/channel PostgreSQL reproduced old409; actual page→Edge save/read/archive→transactional proof/post→PG17 ledger passed with one dialog, revision increment and manual0. Mobile/desktop cancellation, unknown/difference/source-race/lost-reply checks passed; shared hook and PR CI remain release gates; backend migration/Edge precede Pages. Forward rollback preserves all proofs/history. Physical iOS Safari and real finance confirmation remain user acceptance.
 
 # Agent Sync Status
+
+## 2026-11-12 · Independent full-month original archive candidate (App version: v644)
+
+- Current owner: dot upload repair. Last synchronized base checked: github/main 46e7219c; continuing isolated fix/report-manual-uploads-20261112 after v643 candidate. Baseline gates and today’s complete backup confirmed; other worktrees unchanged.
+- Independent append-only reservation/completion archive supports chosen dates without creating or changing financial reports, including posted, locked and missing dates. Current actor/store capability checks, exact metadata/hash request binding, private view links, explicit missing-object resume and durable own-pending discovery. No automatic OCR or financial linkage.
+- SQL, API and browser fixture validation is isolated/synthetic; no production migration, upload, data import, deployment, merge or push. Database authority helpers are fixtures, not a full deployed-schema acceptance. Final v644 local gates, four isolated browser suites, API/runner tests, isolated SQL concurrency/revocation cases and targeted safety re-review passed. Production checks remain required.
+- Production release requires separately authorized migration/API/frontend rollout in that order; existing app storage and ledger must remain untouched. See docs/report-original-archive-followup.md for exact invariants and limits.
+
+
+## 2026-11-12 · Manual report upload candidate (App version: v643)
+
+- Current owner: dot upload repair. Last synchronized base checked: github/main 46e7219c. New isolated fix/report-manual-uploads-20261112; required baseline checks and daily backup passed. Other dirty worktrees untouched.
+- Clarifies photo-only DOCX versus tabular monthly data and exact expense voucher entry. Adds manual monthly JPG/PNG batching only for existing unlocked draft daily reports, with per-photo date confirmation, scope and permission rereads, serial uploads and uncertain-result stop. No report creation, recognition, financial posting or historical data import.
+- Known remaining scope: confirmed/locked or absent daily reports cannot receive originals through the existing API. This candidate does not claim unrestricted full-month support. Production upload/classification accuracy remains unverified. No deployment or merge authorized by this work.
+- Focused synthetic and isolated browser checks are recorded in CHANGELOG.md; final aggregate and publication gates still required before release.
+
 
 ## 2026-10-23 · 晚间审美训练内容候选（App version: v638）
 
