@@ -1,0 +1,66 @@
+[
+  {
+    "schema_name": "auth",
+    "proname": "uid",
+    "identity_arguments": "",
+    "acl": "{=X/supabase_auth_admin,supabase_auth_admin=X/supabase_auth_admin,dashboard_user=X/supabase_auth_admin}",
+    "owner": "supabase_auth_admin",
+    "definition": "CREATE OR REPLACE FUNCTION auth.uid()\n RETURNS uuid\n LANGUAGE sql\n STABLE\nAS $function$\n  select \n  coalesce(\n    nullif(current_setting('request.jwt.claim.sub', true), ''),\n    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')\n  )::uuid\n$function$\n"
+  },
+  {
+    "schema_name": "customer_design_private",
+    "proname": "immutable_record",
+    "identity_arguments": "",
+    "acl": "{postgres=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION customer_design_private.immutable_record()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog'\nAS $function$\nbegin\n  raise exception 'CUSTOMER_DESIGN_IMMUTABLE' using errcode='55000';\nend;\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "current_user_account_id",
+    "identity_arguments": "",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.current_user_account_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select ua.id\n  from public.zysyr_user_accounts ua\n  where (select auth.uid()) is not null\n    and ua.auth_user_id = (select auth.uid())\n    and ua.status = 'active'\n  limit 1\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "has_company_membership",
+    "identity_arguments": "target_company_id uuid",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.has_company_membership(target_company_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select (select auth.uid()) is not null and exists (\n    select 1\n    from public.zysyr_user_accounts ua\n    join public.zysyr_user_role_grants urg on urg.user_account_id = ua.id\n    where ua.auth_user_id = (select auth.uid())\n      and ua.status = 'active'\n      and ua.company_id = target_company_id\n      and urg.company_id = target_company_id\n      and urg.revoked_at is null\n      and urg.valid_from <= current_date\n      and (urg.valid_to is null or urg.valid_to >= current_date)\n  )\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "has_store_scope",
+    "identity_arguments": "target_company_id uuid, target_store_id uuid",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.has_store_scope(target_company_id uuid, target_store_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select (select auth.uid()) is not null\n    and target_store_id is not null\n    and exists (\n      select 1\n      from public.zysyr_user_accounts ua\n      join public.zysyr_user_role_grants urg on urg.user_account_id = ua.id\n      where ua.auth_user_id = (select auth.uid())\n        and ua.status = 'active'\n        and ua.company_id = target_company_id\n        and urg.company_id = target_company_id\n        and urg.revoked_at is null\n        and urg.valid_from <= current_date\n        and (urg.valid_to is null or urg.valid_to >= current_date)\n        and (\n          urg.scope_type = 'company'\n          or (urg.scope_type = 'store' and urg.store_id = target_store_id)\n        )\n    )\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "is_self_employee",
+    "identity_arguments": "target_employee_id uuid",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.is_self_employee(target_employee_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select (select auth.uid()) is not null and exists (\n    select 1\n    from public.zysyr_user_accounts ua\n    where ua.auth_user_id = (select auth.uid())\n      and ua.status = 'active'\n      and ua.employee_id = target_employee_id\n  )\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "prevent_event_mutation",
+    "identity_arguments": "",
+    "acl": "{postgres=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.prevent_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  raise exception 'ZYSYR event tables are append-only';\nend\n$function$\n"
+  },
+  {
+    "schema_name": "zysyr_private",
+    "proname": "protect_report_trace_history",
+    "identity_arguments": "",
+    "acl": "{postgres=X/postgres}",
+    "owner": "postgres",
+    "definition": "CREATE OR REPLACE FUNCTION zysyr_private.protect_report_trace_history()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  raise exception 'report cell trace history is append-only';\nend;\n$function$\n"
+  }
+]

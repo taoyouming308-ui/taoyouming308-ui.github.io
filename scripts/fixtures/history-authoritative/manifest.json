@@ -1,0 +1,47 @@
+{
+  "captured_at_utc": "2026-11-12T07:04:04.210837+00:00",
+  "project_id": "pdssrmpeiuwvxzsgschm",
+  "source": "Read-only PostgreSQL catalog metadata through Supabase execute_sql; no business row reads or production writes.",
+  "scope": {
+    "tables": 25,
+    "functions": 32,
+    "public_history_rpcs": 14,
+    "latest_archive_migration_verified": {
+      "version": "20261112055108",
+      "name": "daily_original_independent_archive"
+    },
+    "includes": [
+      "columns/defaults/generated identity",
+      "constraints/indexes",
+      "triggers and trigger functions",
+      "RLS policies",
+      "table/schema/function ACLs and owners",
+      "postgres default ACLs",
+      "selected role memberships"
+    ]
+  },
+  "replay_command": "HISTORY_AUTHORITATIVE_BASELINE=1 node scripts/test-history-reparse-db.cjs",
+  "isolation": "Fresh template0 database in temporary official Supabase PostgreSQL 17.6.1.143 container, network none, tmpfs data, automatically removed.",
+  "limitations": [
+    "Dependency closure, not full database or full historical migration chain.",
+    "Catalog collected in multiple read-only requests, not one atomic snapshot; recheck drift before release.",
+    "Unrelated views, event triggers, extensions and complete role settings are outside this dependency fixture.",
+    "No production data copied. Financial operations use generated synthetic records only."
+  ],
+  "sha256": {
+    "tables.json": "2117d519bc138f5676572d89e13587597101f5e218f101fe9cd9eaf357378d39",
+    "schemas.json": "fbe4b65de2fff94cbcbf575cd56f7093a9b1d14e1f873863a2c0a4c1d256e9c8",
+    "default-acls.json": "73d4475988d640b7fcae2fcc3e765da95b98d59b3d886191b203d667a3253b6a",
+    "functions.json": "e00ae6365e4835093c150d5ef402118e2a26a70ba60e658b7b3084ae346fd87e",
+    "extra-functions.json": "bea959340e0f55147eeaf7fbd280f2395cabd17bc39f930b8b279d1d0a41e074",
+    "role-memberships.json": "8e9f7fb77f23469b0c44a9142219a4ec8e1bbd9c7365b52fd1bdecc0bad4a55a"
+  },
+  "validated_at_utc": "2026-11-12T07:18:16.303322+00:00",
+  "validated_candidate_migrations": [
+    "20261112062603_zysyr_history_reparse_fail_closed.sql",
+    "20261112064136_zysyr_history_generation_finance.sql",
+    "20261112070457_zysyr_history_generation_adjustments.sql",
+    "20261112071102_zysyr_history_source_provenance.sql"
+  ],
+  "validation_result": "PASS: authoritative dependency-schema reconstruction with function body checking ON; all four candidate migrations and synthetic reparse/review/confirm/post/revise/reverse/source-provenance regression suite."
+}

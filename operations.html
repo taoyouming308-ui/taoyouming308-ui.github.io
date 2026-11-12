@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="644">
+<html lang="zh-CN" data-version="645">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=644" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=645" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -747,13 +747,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=644"></script>
-<script src="operations-staff-view.js?v=644"></script>
-<script src="operations-monthly-daily-performance.js?v=644"></script>
-  <script src="operations-report-fit.js?v=644"></script>
-  <script src="operations-auth-bridge.js?v=644"></script>
-  <script src="operations-voucher-preview.js?v=644"></script>
-  <script src="operations-voucher-view.js?v=644"></script>
+<script src="operations-time.js?v=645"></script>
+<script src="operations-staff-view.js?v=645"></script>
+<script src="operations-monthly-daily-performance.js?v=645"></script>
+  <script src="operations-report-fit.js?v=645"></script>
+  <script src="operations-auth-bridge.js?v=645"></script>
+  <script src="operations-voucher-preview.js?v=645"></script>
+  <script src="operations-voucher-view.js?v=645"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -770,12 +770,13 @@
   function authAccessToken(){var session=state.auth&&state.auth.session;if(!session||!session.access_token)return'';return session.expires_at&&Number(session.expires_at)<=Math.floor(Date.now()/1000)+10?'':session.access_token}
   function apiError(data,status){var message=String(data&&data.error||'请求失败');if(message.length>400||/https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message))message='财务数据暂时加载失败，请点击刷新重试';var error=new Error(message);error.status=status;error.code=data&&data.code||'';return error}
   function isSessionInvalidError(error){return !!(error&&(error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED'||/^(Supabase Auth 登录已失效|请重新登录|登录已过期|账号已停用|账号.*离职)/.test(error.message||'')))}
-  var API_READ_ONLY_OPERATIONS=new Set(['daily_original_archive_list','daily_original_archive_url','session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
+  var API_READ_ONLY_OPERATIONS=new Set(['daily_original_archive_list','daily_original_archive_url','session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_reparse_preview','history_import_reparse_status','history_import_generation_status','history_import_generation_request_status','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
   API_READ_ONLY_OPERATIONS.add('daily_electronic_sources');
   API_READ_ONLY_OPERATIONS.add('daily_sheet_correction_status');
   function apiOutcomeUnconfirmedError(){var error=new Error('未收到服务器对本次请求的有效确认。若这是保存、上传或入账，请先刷新并核对是否已完成，不要直接重复提交；若只是查看，请刷新后重试。');error.code='API_OUTCOME_UNCONFIRMED';return error}
   async function requestApiResponse(operation,options,timeoutMs){var safeRead=API_READ_ONLY_OPERATIONS.has(operation)&&typeof AbortController==='function',controller=safeRead?new AbortController():null,timer=safeRead?setTimeout(function(){controller.abort()},Math.max(1,Number(timeoutMs)||45000)):null;try{var response=await fetch(API,Object.assign({},options,controller?{signal:controller.signal}:{})),data;try{data=await response.json()}catch(parseError){if(controller&&controller.signal.aborted)throw parseError;if(!safeRead)throw apiOutcomeUnconfirmedError();var invalidResponse=new Error('服务响应无效，请点击刷新重试');invalidResponse.code='API_RESPONSE_INVALID';throw invalidResponse}return{response:response,data:data}}catch(error){if(controller&&controller.signal.aborted){var timeoutError=new Error('读取超时，未提交任何修改；请点击刷新重试');timeoutError.code='API_READ_TIMEOUT';throw timeoutError}if(!safeRead&&!error.code)throw apiOutcomeUnconfirmedError();throw error}finally{if(timer)clearTimeout(timer)}}
   async function api(operation,payload,retried){
+    if(state.historyImport&&state.historyImport.data&&state.historyImport.data.reparse_generation&&/^history_import_(review|correct|confirm|confirm_month|month_confirm|post)$/.test(operation))throw new Error('当前解析版本必须使用版本绑定的财务复核，旧操作已停用');
     var send=function(){return apiRequest(operation,payload,retried);};
     if(StaffReportView.enabled||!window.ZysyrReadFlights)return send();
     return window.ZysyrReadFlights.request('operations',operation==='overview',JSON.stringify([operation,payload,state.session,authAccessToken()]),send);
@@ -925,7 +926,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=644';
+      script.src='operations-petty-cash-evidence.js?v=645';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1117,7 +1118,21 @@
   async function loadImportCenter(){if(state.view!=='import')return;$('import-status').textContent='正在读取电子日报、导入批次和独立对账…';try{state.imports.data=isLocalPreview()?previewImportData():await api('import_center',{store:currentStore(),month:$('month').value});renderImportCenter();$('import-status').textContent='已更新 '+beijingTimeNow()}catch(error){$('import-status').textContent=error.message;$('import-records').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
   function historyTypeLabel(type){return{monthly_profit_loss:'月度盈亏表',salary:'工资报表',petty_cash:'备用金明细',employee_purchase:'外卖 / 员工自购'}[type]||type}
   function previewHistoryImportData(){var batch={id:'preview-history-batch',import_type:'monthly_profit_loss',source_filename:'盈亏表模板2026（自由手艺人）xlsx.xlsx',source_sha256:'preview',source_store_label:'自由手艺人',target_store_label:'自由手艺人',period_start:'2026-01-01',period_end:'2026-06-01',status:'needs_review',raw_row_count:8,valid_row_count:5,warning_row_count:3,invalid_row_count:0,source_warnings:[],created_at:new Date().toISOString()};var samples=[['R3','现金业绩',5414,'valid','confirmed'],['U3','支付宝/微信',3829,'valid','pending'],['H3','技术人员 / 无名 / 提成',106215.5,'valid','pending'],['K3','无名 / 小计',106215.5,'valid','pending'],['I3','技术人员 / 无名 / 外卖/奖金',0,'valid','pending'],['P3','历史标题',1,'warning','pending'],['G2','劳动业绩',5414,'warning','pending'],['P4','历史标题',2,'warning','pending']];var rows=samples.map(function(item,index){return{id:'preview-history-row-'+(index+1),source_sheet:'1月',source_row_number:Number(item[0].match(/\d+/)[0]),source_locator:'1月!'+item[0],raw_json:{sheet_name:'1月',sheet_title:'自由手艺人门店月盈亏统计',cell_address:item[0],value:item[2],formula:null},mapped_json:{period_month:'2026-01-01',sheet_name:'1月',cell_address:item[0],label:item[1],amount:item[2],formula:null,cell_kind:'input'},validation_status:item[3],review_status:item[4],review_note:item[4]==='confirmed'?'已对照原表确认正确':null,validation_issues:item[3]==='warning'?[{code:'label_unresolved',message:'栏目名称需要财务人工确认'}]:[],import_status:'pending'}});return{batches:[batch],selected_batch_id:batch.id,rows:rows,evidence:[{id:'preview-evidence',period_month:'2026-01-01',original_filename:'2026年1月盈亏表支出凭证.docx',embedded_asset_count:40,uploaded_at:new Date().toISOString()}],links:rows.map(function(row){return{import_row_id:row.id,evidence_id:'preview-evidence',link_level:'bundle_only'}}),events:[],formal_ledger_written:false}}
-  async function loadHistoryImport(batchId){if(state.view!=='history-import')return;$('history-import-status').textContent='正在读取历史导入预览…';try{state.historyImport.data=isLocalPreview()?previewHistoryImportData():await api('history_import_read',{store:currentStore(),import_batch_id:batchId||state.historyImport.selectedBatchId||''});state.historyImport.selectedBatchId=state.historyImport.data.selected_batch_id||batchId||'';renderHistoryImport();$('history-import-status').textContent='仅预览区 · 未写正式账'}catch(error){$('history-import-status').textContent=error.message;$('history-import-records').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
+  var historyImportReadSequence=0;
+  async function loadHistoryImport(batchId){
+    if(state.view!=='history-import')return;
+    var sequence=++historyImportReadSequence,store=currentStore(),requested=batchId||state.historyImport.selectedBatchId||'';
+    state.historyImport.data=null;
+    $('history-import-summary').innerHTML='';$('history-import-records').innerHTML='';
+    $('history-import-status').textContent='正在读取历史导入预览…';
+    function current(){return sequence===historyImportReadSequence&&store===currentStore()&&state.view==='history-import'}
+    try{var data=isLocalPreview()?previewHistoryImportData():await api('history_import_read',{store:store,import_batch_id:requested});
+      if(!current())return;
+      if(requested&&data.selected_batch_id!==requested)throw new Error('返回批次不匹配，请重新读取');
+      if(data.reparse_generation){data.generationFinance=await api('history_import_generation_status',{store:store,import_batch_id:data.selected_batch_id});if(!current())return;var active=data.generationFinance.active_generation;if(!active||active.id!==data.reparse_generation.id||Number(active.version)!==Number(data.reparse_generation.version))throw new Error('解析版本已变化，请重新读取');}
+      state.historyImport.data=data;state.historyImport.selectedBatchId=data.selected_batch_id||requested;renderHistoryImport();
+    }catch(error){if(!current())return;$('history-import-status').textContent=error.message;$('history-import-records').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}
+  }
   function historyRowTitle(mapped){return mapped.employee_name||mapped.product_name||mapped.summary||mapped.label||mapped.category||'历史明细'}
   function historyRowAmount(mapped){var keys=['net_pay','amount','employee_purchase_price','retail_price','gross_pay'];for(var i=0;i<keys.length;i++)if(mapped[keys[i]]!=null&&mapped[keys[i]]!=='')return formatAmount(mapped[keys[i]]);return'—'}
   function renderHistoryImport(){var data=state.historyImport.data||{},batches=data.batches||[],batch=batches.find(function(item){return item.id===state.historyImport.selectedBatchId})||batches[0];if(batch)state.historyImport.selectedBatchId=batch.id;var select=$('history-batch-select');select.innerHTML=batches.map(function(item){return'<option value="'+esc(item.id)+'"'+(batch&&item.id===batch.id?' selected':'')+'>'+esc(historyTypeLabel(item.import_type)+' · '+item.period_start.slice(0,7)+' 至 '+item.period_end.slice(0,7)+' · '+item.source_filename)+'</option>'}).join('')||'<option value="">请先生成预览</option>';select.onchange=function(){state.historyImport.selectedBatchId=this.value;loadHistoryImport(this.value)};if(!batch){$('history-import-summary').innerHTML='';$('history-import-records').innerHTML='<div class="empty">还没有历史导入预览。请先选择 Excel 文件生成预览。</div>';return}var warnings=batch.source_warnings||[],summary='<div class="panel"><div class="finance-record-head"><div><h3>'+esc(historyTypeLabel(batch.import_type))+' · '+esc(batch.period_start.slice(0,7))+' 至 '+esc(batch.period_end.slice(0,7))+'</h3><div class="help">目标门店：'+esc(batch.target_store_label)+' · 原文件标题：'+esc(batch.source_store_label||'未识别')+' · 状态：'+esc(batch.status)+'</div></div><div class="compact-actions"><button class="ghost" data-history-file="source" data-file-id="'+esc(batch.id)+'">打开 Excel 原件</button>'+(batch.status==='needs_review'&&Number(batch.invalid_row_count||0)===0?'<button class="primary" id="history-confirm-batch" type="button">确认映射（仍不入正式账）</button>':'')+'</div></div>'+warnings.map(function(item){return'<div class="history-source-warning">'+esc(item.message||item.code)+'</div>'}).join('')+'<div class="history-summary"><div><span>原始明细</span><strong>'+esc(batch.raw_row_count||0)+'</strong></div><div><span>可继续</span><strong>'+esc(batch.valid_row_count||0)+'</strong></div><div><span>需核对</span><strong>'+esc(batch.warning_row_count||0)+'</strong></div><div><span>无效</span><strong>'+esc(batch.invalid_row_count||0)+'</strong></div><div><span>正式入账</span><strong>0</strong></div></div></div>';$('history-import-summary').innerHTML=summary;var links=data.links||[],evidence=data.evidence||[],rows=data.rows||[],table='<div class="panel"><div class="finance-record-head"><h3>逐行预览与修正</h3><span class="help">'+rows.length+' 条 · 显示当前批次全部明细</span></div><div class="archive-wrap"><table class="archive-table"><thead><tr><th>原表位置</th><th>月份</th><th>内容</th><th>金额</th><th>校验</th><th>凭证</th><th>操作</th></tr></thead><tbody>'+rows.map(function(row){var mapped=row.corrected_json||row.mapped_json||{},issues=row.validation_issues||[],linkCount=links.filter(function(link){return link.import_row_id===row.id}).length,klass=row.validation_status==='invalid'?' class="history-row-invalid"':row.validation_status==='warning'?' class="history-row-warning"':'';return'<tr'+klass+'><td>'+esc(row.source_locator)+'</td><td>'+esc(String(mapped.period_month||'').slice(0,7))+'</td><td><strong>'+esc(historyRowTitle(mapped))+'</strong><div class="help">'+esc(issues.map(function(item){return item.message||item.code}).join('；')||'自动校验通过')+'</div></td><td>'+historyRowAmount(mapped)+'</td><td><span class="voucher-status '+esc(row.validation_status)+'">'+esc(row.validation_status)+'</span></td><td>'+(linkCount?'<span class="voucher-status reviewed">已关联 '+linkCount+'</span>':'<span class="voucher-status failed">缺少</span>')+'</td><td><button class="ghost" data-history-correct="'+esc(row.id)+'">查看 / 修正</button></td></tr>'}).join('')+'</tbody></table></div></div>';var evidenceHtml='<div class="panel"><div class="finance-record-head"><h3>已留档原始凭证包</h3><span class="help">'+evidence.length+' 份</span></div>'+(evidence.length?evidence.map(function(item){return'<div class="trace-row"><div><strong>'+esc(item.period_month.slice(0,7))+' · '+esc(item.original_filename)+'</strong><small>内含图片 '+esc(item.embedded_asset_count||0)+' 张 · 当前为月份凭证包关联，精确图片位置待人工标注</small></div><button class="ghost" data-history-file="evidence" data-file-id="'+esc(item.id)+'">打开原件</button></div>'}).join(''):'<div class="empty">尚未上传 Word / PDF / 图片凭证包。</div>')+'</div>';$('history-import-records').innerHTML=table+evidenceHtml;document.querySelectorAll('[data-history-file]').forEach(function(button){button.onclick=function(){openHistoryImportFile(button.dataset.historyFile,button.dataset.fileId)}});document.querySelectorAll('[data-history-correct]').forEach(function(button){button.onclick=function(){openHistoryCorrection(button.dataset.historyCorrect)}});var confirm=$('history-confirm-batch');if(confirm)confirm.onclick=confirmHistoryBatch;applyReportFit()}
@@ -1178,9 +1193,129 @@
   };
   var loadHistoryAcceptanceBefore=loadHistoryImport;
   loadHistoryImport=async function(batchId){await loadHistoryAcceptanceBefore(batchId);var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId})||(data.batches||[])[0];if(!batch)return;var counts=historyFinancialAcceptanceSummary(data.rows,data.events,data.ledger_entries);$('history-import-status').textContent=batch.status==='completed'&&Number(batch.imported_row_count||0)>0?'已入正式账 '+counts.postedRows+' 条 · 财务验收 '+counts.reviewedMonths+'/'+counts.totalMonths+' 月 · 入账不等于核清':'预览中 · 月份验收 '+counts.reviewedMonths+'/'+counts.totalMonths+' 月'};
+  // Generation review boundary: rendering never changes review or warning state.
+  function historyGenerationSummary(data){
+    var generation=data.reparse_generation;if(!generation)return '';
+    var raw=(data.original_rows||[]).length,effective=(data.rows||[]).length;
+    return '<div class="panel" id="history-generation-summary"><h3>解析版本 '+esc(generation.version)+' · 有效视图</h3><div class="help">原始明细 '+raw+' 条；当前有效 '+effective+' 条；排除合并格 '+(raw-effective)+' 条。原始记录与凭证仍完整保留。</div><div class="history-source-warning">解析修复不等于财务验收。工资差异、租金覆盖期、凭证核验及备用金流入待核对提示均保留。</div><div class="help">复核、财务验收、正式入账必须分别确认；旧映射入口停用。</div><details><summary>查看原始解析明细（审计，只读）</summary>'+ (data.original_rows||[]).map(function(row){return '<div>'+esc(row.source_locator)+' · '+esc(JSON.stringify(row.mapped_json||{}))+'</div>'}).join('')+'</details></div>';
+  }
+  var historyGenerationRequests=new Map();
+  function historyGenerationKey(){return currentStore()+'|'+state.historyImport.selectedBatchId}
+  function historyGenerationBinding(data){var snapshot=data.generationFinance||{},generation=snapshot.active_generation||{};return {generation_id:generation.id,generation_version:generation.version,expected_state_fingerprint:snapshot.state_fingerprint}}
+  function historyGenerationValid(data){var bound=historyGenerationBinding(data),generation=data.reparse_generation||{};return !!(bound.expected_state_fingerprint&&bound.generation_id===generation.id&&Number(bound.generation_version)===Number(generation.version))}
+  function historyGenerationCurrent(key,data,binding){return state.view==='history-import'&&key===historyGenerationKey()&&data===state.historyImport.data&&JSON.stringify(binding)===JSON.stringify(historyGenerationBinding(data))}
+  async function historyGenerationSubmit(action){
+    var data=state.historyImport.data||{},key=historyGenerationKey(),binding=historyGenerationBinding(data),snapshot=data.generationFinance||{},finance=snapshot.finance||{},rows=data.rows||[];
+    if(!['review','confirm','post'].includes(action)||!historyGenerationValid(data)||historyGenerationRequests.has(key)||!rows.length||rows.some(function(row){return row.validation_status==='invalid'}))return;
+    if(action!=='review'&&(!finance.review_fingerprint||Number(finance.reviewed_count)!==rows.length))return;
+    if(action==='post'&&!finance.confirmation_id)return;
+    var consent=$('history-generation-scope');if(!consent||!consent.checked){toast('请先逐项核对当前版本、月份及保留提示，并勾选范围确认');return}
+    var reason=$('history-generation-reason').value.trim();if(!reason){toast('请填写本次操作原因');return}
+    var text=action==='review'?'记录全范围财务复核':action==='confirm'?'确认财务验收（仍不入账）':'正式入账';
+    if(!window.confirm(text+'？当前版本 '+binding.generation_version+'，有效 '+rows.length+' 条，排除 '+((data.original_rows||[]).length-rows.length)+' 条合并格。所有提示永久保留。'))return;
+    if(!historyGenerationCurrent(key,data,binding))return;
+    var payload=Object.assign({store:currentStore(),import_batch_id:state.historyImport.selectedBatchId,request_id:crypto.randomUUID(),reason:reason},binding);
+    if(action==='review')payload.acknowledged_issue_digest=finance.issue_digest;
+    else payload.expected_review_fingerprint=finance.review_fingerprint;
+    if(action==='confirm')payload.financial_acceptance=true;
+    if(action==='post'){payload.expected_confirmation_id=finance.confirmation_id;payload.confirm_formal_post=true}
+    historyGenerationRequests.set(key,{payload:payload,action:action,pending:true});renderHistoryImport();
+    try{await api('history_import_generation_'+action,payload);historyGenerationRequests.delete(key);if(historyGenerationCurrent(key,data,binding))await loadHistoryImport(payload.import_batch_id)}
+    catch(error){var request=historyGenerationRequests.get(key);if(request){request.pending=false;request.error=error.message}if(historyGenerationCurrent(key,data,binding)){renderHistoryImport();toast('结果尚未确定，请查询原请求；不会自动重试或继续下一步')}}
+  }
+  function historyGenerationSameValue(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object')return false;var keys=Object.keys(a).sort(),other=Object.keys(b).sort();return JSON.stringify(keys)===JSON.stringify(other)&&keys.every(function(key){return historyGenerationSameValue(a[key],b[key])})}
+  async function historyGenerationRequestStatus(){
+    var key=historyGenerationKey(),request=historyGenerationRequests.get(key),data=state.historyImport.data,binding=historyGenerationBinding(data||{});if(!request||request.pending)return;request.pending=true;
+    try{var result=await api('history_import_generation_request_status',{store:request.payload.store,import_batch_id:request.payload.import_batch_id,request_id:request.payload.request_id});
+      if(historyGenerationCurrent(key,data,binding)){$('history-generation-result').textContent=JSON.stringify(result);
+        var returned=result.request_binding||{},p=request.payload,receipt=result.receipt||{},expected={action:request.action,expected_generation_id:p.generation_id,expected_generation_version:p.generation_version,expected_state_fingerprint:p.expected_state_fingerprint,acknowledged_issue_digest:p.acknowledged_issue_digest||null,expected_review_fingerprint:p.expected_review_fingerprint||null,expected_confirmation_id:p.expected_confirmation_id||null,financial_acceptance:p.financial_acceptance===true,confirm_formal_post:p.confirm_formal_post===true,reason:p.reason},matches=Object.keys(expected).every(function(field){return returned[field]===expected[field]})&&receipt.status==='committed'&&receipt.action===request.action&&receipt.request_id===p.request_id&&receipt.generation_id===p.generation_id&&receipt.generation_version===p.generation_version;
+        if(['revise','reverse'].includes(request.action)){
+          var ledgerExpected={ledger_entry_id:p.ledger_entry_id,expected_ledger_version:p.expected_ledger_version,current_payload:p.current_payload||null,confirm_reverse:p.confirm_reverse===true};
+          matches=matches&&Object.keys(ledgerExpected).every(function(field){return historyGenerationSameValue(returned[field],ledgerExpected[field])})&&receipt.ledger_entry_id===p.ledger_entry_id&&receipt.previous_ledger_version===p.expected_ledger_version&&receipt.ledger_version===p.expected_ledger_version+1&&receipt.formal_ledger_changed===true;
+        }
+        if(result.status==='committed'&&result.receipt&&matches){historyGenerationRequests.delete(key);await loadHistoryImport(request.payload.import_batch_id);toast('原请求已提交，已刷新当前版本；未自动执行下一步')}
+        else toast(result.status==='not_found'?'暂未找到原请求，可能仍在处理；保留原请求锁':'回执绑定尚未验证，保留原请求锁')
+      }
+    }catch(error){if(historyGenerationCurrent(key,data,binding))$('history-generation-result').textContent=error.message}finally{request.pending=false}
+  }
+  function historyGenerationLedgerFields(type){
+    var money=['base_salary','seniority_salary','position_salary','meal_allowance','performance_commission','delivery_card_commission','overtime_activity_allowance','supplemental_adjustment','gross_pay','product_cost','late_early_deduction','shooting_deduction','leave_deduction','growth_deduction','employee_purchase_deduction','social_security','total_deduction','net_pay'];
+    return type==='monthly_profit_loss'?['amount','notes']:type==='salary'?money.concat(['position','notes']):type==='petty_cash'?['amount','transaction_date','summary','direction','category','handled_by_name','notes']:[];
+  }
+  function historyGenerationLedgerEligible(entry,data){var generation=data.reparse_generation||{};return entry.status==='posted'&&entry.generation_id===generation.id&&Number(entry.generation_version)===Number(generation.version)&&Number.isInteger(entry.version)&&entry.version>0}
+  function historyGenerationLedgerPayload(entry,type,inputs){
+    var result=JSON.parse(JSON.stringify(entry.current_payload||{})),allowed=historyGenerationLedgerFields(type),textFields=['position','notes','transaction_date','summary','direction','category','handled_by_name'];
+    inputs.forEach(function(input){var field=input.dataset.generationField;if(!allowed.includes(field))throw new Error('禁止修改来源、身份或期间字段');var value=input.value.trim();if(value===''&&!Object.prototype.hasOwnProperty.call(entry.current_payload||{},field))return;if(value===''&&(entry.current_payload||{})[field]===null){result[field]=null;return}if(!textFields.includes(field)){if(value===''||!Number.isFinite(Number(value)))throw new Error('金额必须为明确数值，空白不能按零提交');result[field]=Number(value)}else result[field]=value||null});
+    if(type==='petty_cash'){var date=result.transaction_date,period=String((entry.posted_payload||{}).period_month||'').slice(0,7);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||'')||!period||date.slice(0,7)!==period)throw new Error('日期必须在原始月份内');}
+    return result;
+  }
+  async function historyGenerationLedgerSubmit(action,id){
+    var data=state.historyImport.data||{},key=historyGenerationKey(),binding=historyGenerationBinding(data),entry=(data.ledger_entries||[]).find(function(item){return item.id===id}),batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});
+    if(!['revise','reverse'].includes(action)||!entry||!batch||!historyGenerationValid(data)||!historyGenerationLedgerEligible(entry,data)||historyGenerationRequests.has(key))return;
+    if(state.user&&state.user.can_adjust_confirmed_finance===false){toast('权限不足：需要已确认财务调整权限');return}
+    var version=entry.version,reason=$('generation-ledger-reason-'+id).value.trim();if(!reason){toast('请填写更正或撤销原因');return}
+    if(action==='reverse'&&!$('generation-ledger-reverse-check-'+id).checked){toast('请明确勾选撤销此账条目');return}
+    var payload=Object.assign({store:currentStore(),import_batch_id:batch.id,ledger_entry_id:id,expected_ledger_version:version,reason:reason},binding);
+    try{if(action==='revise')payload.current_payload=historyGenerationLedgerPayload(entry,batch.import_type,Array.from(document.querySelectorAll('#generation-ledger-'+id+' [data-generation-field]')));else payload.confirm_reverse=true}catch(error){toast(error.message);return}
+    if(!window.confirm((action==='revise'?'新增更正版本':'撤销账条目')+'？账条目 '+id+' 当前 v'+version+'。首次入账快照及原件永久保留。'))return;
+    if(!historyGenerationCurrent(key,data,binding)||entry.version!==version||!historyGenerationLedgerEligible(entry,data))return;
+    payload.request_id=crypto.randomUUID();historyGenerationRequests.set(key,{payload:payload,action:action,pending:true});renderHistoryImport();
+    try{var receipt=await api('history_import_generation_'+action,payload);if(!receipt||receipt.status!=='committed'||receipt.action!==action||receipt.request_id!==payload.request_id||receipt.generation_id!==payload.generation_id||receipt.generation_version!==payload.generation_version||receipt.ledger_entry_id!==id||receipt.previous_ledger_version!==version||receipt.ledger_version!==version+1||receipt.formal_ledger_changed!==true)throw new Error('返回回执不匹配，请查询原请求');historyGenerationRequests.delete(key);if(historyGenerationCurrent(key,data,binding))await loadHistoryImport(batch.id)}catch(error){var request=historyGenerationRequests.get(key);if(request){request.pending=false;request.error=error.message}if(historyGenerationCurrent(key,data,binding)){renderHistoryImport();toast('结果未确定，请查询原请求；不会自动重试')}}
+  }
+  function historyGenerationLedgerHtml(data,batch){
+    return '<div class="panel"><h3>版本绑定账本更正与撤销</h3><div class="help">需要已确认财务调整权限；权限不足请联系管理员，不会自动授予。</div>'+ (data.ledger_entries||[]).filter(function(entry){return historyGenerationLedgerEligible(entry,data)}).map(function(entry){var disabled=!historyGenerationValid(data)||historyGenerationRequests.has(historyGenerationKey())||(state.user&&state.user.can_adjust_confirmed_finance===false);return '<details id="generation-ledger-'+esc(entry.id)+'"><summary>账条目 '+esc(entry.id)+' · 当前 v'+entry.version+'</summary><div style="overflow-wrap:anywhere">首次入账快照（不可修改）：'+esc(JSON.stringify(entry.posted_payload||{}))+'</div><div style="overflow-wrap:anywhere">当前版本：'+esc(JSON.stringify(entry.current_payload||{}))+'</div>'+historyGenerationLedgerFields(batch.import_type).map(function(field){var value=(entry.current_payload||{})[field];return '<label style="display:block;margin:10px 0">'+esc(historyFieldLabel(field))+'<input style="display:block;width:100%;box-sizing:border-box" data-generation-field="'+esc(field)+'" value="'+esc(value==null?'':value)+'" '+(disabled?'disabled':'')+'></label>'}).join('')+'<label style="display:block;margin:10px 0">原因<input style="display:block;width:100%;box-sizing:border-box" id="generation-ledger-reason-'+esc(entry.id)+'" value=""></label><button data-generation-revise="'+esc(entry.id)+'" '+(disabled?'disabled':'')+'>确认更正（新增版本）</button><label><input type="checkbox" id="generation-ledger-reverse-check-'+esc(entry.id)+'">我明确要求撤销此账条目，保留审计记录</label><button data-generation-reverse="'+esc(entry.id)+'" '+(disabled?'disabled':'')+'>确认撤销</button></details>'}).join('')+'</div>';
+  }
+  var renderHistoryBeforeGeneration=renderHistoryImport;
+  renderHistoryImport=function(){renderHistoryBeforeGeneration();var data=state.historyImport.data||{};if(!data.reparse_generation)return;
+    $('history-import-summary').insertAdjacentHTML('afterbegin',historyGenerationSummary(data));
+    document.querySelectorAll('#history-confirm-month, #history-confirm-batch, #history-post-batch, [data-history-correct]').forEach(function(button){button.disabled=true;button.onclick=null;button.title='必须使用版本绑定复核'});
+    var snapshot=data.generationFinance||{},finance=snapshot.finance||{},rows=data.rows||[],batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId})||{},request=historyGenerationRequests.get(historyGenerationKey()),blocked=!historyGenerationValid(data)||!!request||!rows.length||rows.some(function(row){return row.validation_status==='invalid'}),reviewed=Number(finance.reviewed_count)===rows.length&&!!finance.review_fingerprint;if(Number(finance.posted_count)>0)blocked=true;
+    var months=Array.from(new Set(rows.map(function(row){var mapped=row.corrected_json||row.mapped_json||{};return String(mapped.period_month||'未知月份').slice(0,7)}))).sort();
+    $('history-generation-summary').insertAdjacentHTML('beforeend','<div class="history-source-warning">批次说明：'+esc(batch.reason||'无')+'</div><div>复核月份：'+esc(months.join('、'))+'；有效 '+rows.length+' 条；已复核 '+Number(finance.reviewed_count||0)+' 条；本版本已入账 '+Number(finance.posted_count||0)+' 条。原始行状态为留档快照，本版本财务状态以此处为准。</div><div>'+ (batch.source_warnings||[]).map(function(issue){return esc(issue.message||issue.code)}).join('；')+'</div><details open><summary>逐行保留提示</summary>'+rows.map(function(row){return '<div>'+esc(row.source_locator)+'：'+esc((row.validation_issues||[]).map(function(issue){return issue.message||issue.code}).join('；')||'无自动提示')+'</div>'}).join('')+'</details><label><input type="checkbox" id="history-generation-scope">我已核对上述版本的全部有效明细、覆盖月份和所有保留提示</label><input id="history-generation-reason" placeholder="本次操作原因" aria-label="本次操作原因"><div class="compact-actions"><button id="history-generation-review" '+(blocked?'disabled':'')+'>记录复核</button><button id="history-generation-confirm" '+(blocked||!reviewed?'disabled':'')+'>确认财务验收</button><button id="history-generation-post" '+(blocked||!reviewed||!finance.confirmation_id?'disabled':'')+'>正式入账</button>'+(request?'<button id="history-generation-query" '+(request.pending?'disabled':'')+'>查询原请求结果</button>':'')+'</div><div id="history-generation-result">'+esc(request?(request.pending?'请求处理中，请勿重复提交':'结果未确定：'+request.error):'每一步均独立确认，不会自动继续')+'</div>');
+    ['review','confirm','post'].forEach(function(action){$('history-generation-'+action).onclick=function(){historyGenerationSubmit(action)}});if($('history-generation-query'))$('history-generation-query').onclick=historyGenerationRequestStatus;
+    $('history-generation-summary').insertAdjacentHTML('beforeend',historyGenerationLedgerHtml(data,batch));
+    ['revise','reverse'].forEach(function(action){document.querySelectorAll('[data-generation-'+action+']').forEach(function(button){button.onclick=function(){historyGenerationLedgerSubmit(action,button.getAttribute('data-generation-'+action))}})});
+    $('history-import-status').textContent='解析版本 '+data.reparse_generation.version+' · 版本绑定财务复核 · 提示始终保留';
+  };
+  function historySourceProvenanceHtml(data,batch){
+    if(!batch||!['salary','petty_cash'].includes(batch.import_type))return '';
+    var provenance=data.source_provenance||{},scope=provenance.scope||{},fields=provenance.fields||[],labels={missing_column:'原表未提供此列',blank:'原表单元格空白',missing_formula_cache:'原公式缺少缓存结果',source_zero:'原表提供零值（不代表已人工核实）',source_value:'原表提供数值',source_non_numeric:'原表不是有效数值',unavailable:'来源状态未核实'};
+    var visible=fields.filter(function(item){return (data.rows||[]).some(function(row){return row.id===item.import_row_id})}),provided=visible.filter(function(item){return ['source_zero','source_value'].includes(item.status)}),issues=visible.filter(function(item){return !['source_zero','source_value'].includes(item.status)});
+    function fieldHtml(items){return items.map(function(item){var row=(data.rows||[]).find(function(row){return row.id===item.import_row_id});if(!row)return '';return '<div class="history-source-warning">'+esc(item.source_locator||row.source_locator||'原表无对应单元格')+' · '+esc(historyFieldLabel(item.field))+'：'+esc(labels[item.status]||'来源状态未核实')+'；旧解析值 '+esc(item.legacy_value==null?'未提供':item.legacy_value)+'（仅展示，不是账目修正）'+(item.source_formula?'；原公式 '+esc(item.source_formula):'')+'</div>'}).join('')}
+    var message=batch.import_type==='salary'?'工资来源标识只解释原表与旧解析值，不修改账目，也不代表财务核实。':'当前仅为已识别的带日期备用金明细，不代表完整现金账；期初余额及无日期收支可能未涵盖，不能据此确认结余。';
+    return '<div class="panel" id="history-source-provenance"><h3>来源完整性与范围</h3><div class="history-source-warning">'+esc(message)+'</div>'+(provenance.status!=='verified'?'<div class="history-source-warning">来源完整性尚未核实；旧解析显示 0 不足以证明原表填了零。请对照原件。</div>':'')+fieldHtml(issues)+(provided.length?'<details><summary>原表已提供数值 '+provided.length+' 项（含零值 '+provided.filter(function(item){return item.status==='source_zero'}).length+' 项，点击展开）</summary>'+fieldHtml(provided)+'</details>':'')+(scope.excluded_items||[]).map(function(item){return '<div class="history-source-warning">未涵盖：'+esc(item.period_month||'月份未标识')+' · '+esc(item.kind==='opening_balance'?'期初余额':item.kind==='undated_reimbursement'?'无日期报销':item.kind)+' · '+esc(item.amount==null?'金额未知':item.amount)+' · '+esc(item.source_locator||'来源位置待核实')+'</div>'}).join('')+'</div>';
+  }
+  var renderHistoryBeforeSourceProvenance=renderHistoryImport;
+  renderHistoryImport=function(){renderHistoryBeforeSourceProvenance();var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});if(batch)$('history-import-summary').insertAdjacentHTML('afterbegin',historySourceProvenanceHtml(data,batch))};
+  var historyReparseUi=new Map();
+  function historyReparseContext(){var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(b){return b.id===state.historyImport.selectedBatchId});return {data:data,batch:batch,store:currentStore(),key:currentStore()+'|'+state.historyImport.selectedBatchId}}
+  function historyReparseCurrent(c){return state.view==='history-import'&&c.store===currentStore()&&c.data===state.historyImport.data&&c.batch&&c.batch.id===state.historyImport.selectedBatchId}
+  function historyReparseReceipt(r,p){return r&&r.status==='applied'&&r.request_id===p.request_id&&r.source_sha256===p.expected_source_sha256&&r.proposal_digest===p.proposal_digest&&!!r.generation_id&&Number.isInteger(r.version)&&r.version>0&&r.formal_ledger_written===false&&r.financial_acceptance_performed===false&&r.formal_ledger_count===0}
+  async function historyReparseAction(action){
+    var c=historyReparseContext();if(!c.batch)return;var item=historyReparseUi.get(c.key)||{};if(item.busy)return;
+    if(action==='preview'){
+      if(item.request)return;item={busy:true};historyReparseUi.set(c.key,item);renderHistoryImport();
+      try{var preview=await api('history_import_reparse_preview',{store:c.store,import_batch_id:c.batch.id});if(!historyReparseCurrent(c))return;if(preview.batch_id!==c.batch.id||preview.formal_ledger_written!==false||preview.financial_acceptance_performed!==false||!preview.source_sha256||!preview.state_fingerprint||!preview.parser_digest||!preview.proposal_digest)throw new Error('预览绑定不完整');item.preview=preview;item.data=c.data}catch(error){item.error=error.message}finally{item.busy=false;if(historyReparseCurrent(c))renderHistoryImport()}return;
+    }
+    if(action==='apply'){
+      if(item.request||!item.preview||item.data!==c.data)return;var reason=$('history-reparse-reason').value.trim();if(!reason){toast('请填写重解析原因');return}if(!$('history-reparse-consent').checked){toast('请确认只更新有效预览、不财务验收、不入账');return}
+      if(!window.confirm('应用当前受保护重解析？原件不变，只更新有效预览；不会财务验收或写入正式账。'))return;if(!historyReparseCurrent(c))return;
+      var v=item.preview;item.request={store:c.store,import_batch_id:c.batch.id,request_id:crypto.randomUUID(),expected_state_fingerprint:v.state_fingerprint,expected_source_sha256:v.source_sha256,parser_digest:v.parser_digest,proposal_digest:v.proposal_digest,reason:reason};
+    }else if(action!=='status'||!item.request)return;
+    item.busy=true;renderHistoryImport();var p=item.request;
+    try{var result=await api(action==='apply'?'history_import_reparse_apply':'history_import_reparse_status',action==='apply'?p:{store:p.store,import_batch_id:p.import_batch_id,request_id:p.request_id}),receipt=result;
+      if(action==='status'){var b=result.request_binding||{};if(result.status!=='committed'||!['expected_state_fingerprint','expected_source_sha256','parser_digest','proposal_digest','reason'].every(function(k){return b[k]===p[k]}))throw new Error('原请求尚未确认或回执绑定不匹配；保留原请求，禁止盲重试');receipt=result.receipt}
+      if(!historyReparseReceipt(receipt,p))throw new Error('回执未通过绑定验证；请查询原请求');historyReparseUi.delete(c.key);if(historyReparseCurrent(c)){await loadHistoryImport(c.batch.id);toast('受保护重解析已完成，未财务验收、未入账')}
+    }catch(error){item.error=error.message}finally{item.busy=false;if(historyReparseCurrent(c))renderHistoryImport()}
+  }
+  var renderHistoryBeforeReparse=renderHistoryImport;
+  renderHistoryImport=function(){renderHistoryBeforeReparse();var c=historyReparseContext();if(!c.batch||!['salary','petty_cash','monthly_profit_loss'].includes(c.batch.import_type))return;var item=historyReparseUi.get(c.key)||{},v=item.preview,eligible=c.batch.status==='needs_review'&&!c.data.reparse_generation;
+    $('history-import-summary').insertAdjacentHTML('beforeend','<div class="panel" id="history-reparse-panel"><h3>受保护原件重解析</h3><div class="history-source-warning">仅修复有效预览，原件及原始记录不变。不代表财务验收，不写正式账；业务差异提示保留。</div><button id="history-reparse-preview" '+(!eligible||item.busy||item.request?'disabled':'')+'>预览重解析方案</button>'+(v?'<div style="overflow-wrap:anywhere">源 SHA-256：'+esc(v.source_sha256)+'<br>解析版本：'+esc(v.parser_version)+'<br>变更计数：'+esc(JSON.stringify(v.counts))+'</div><details><summary>逐行变更方案</summary><div style="overflow-wrap:anywhere">'+esc(JSON.stringify(v.decisions||[]))+'</div></details><label style="display:block">应用原因<input id="history-reparse-reason" value=""></label><label><input type="checkbox" id="history-reparse-consent">我确认只更新有效预览，不验收、不入账</label><button id="history-reparse-apply" '+(!eligible||item.busy||item.request||item.data!==c.data?'disabled':'')+'>应用本次方案</button>':'')+(item.request?'<div>原请求：'+esc(item.request.request_id)+'</div><button id="history-reparse-status" '+(item.busy?'disabled':'')+'>查询原请求结果</button>':'')+'<div>'+esc(item.busy?'处理中，请勿重复提交':item.error||'不会自动应用或继续入账')+'</div></div>');
+    ['preview','apply','status'].forEach(function(action){var button=$('history-reparse-'+action);if(button)button.onclick=function(){historyReparseAction(action)}});
+  };
   var openHistoryCorrectionBeforeFormalLedger=openHistoryCorrection;
-  openHistoryCorrection=function(rowId){var data=state.historyImport.data||{},row=(data.rows||[]).find(function(item){return item.id===rowId}),entry=(data.ledger_entries||[]).find(function(item){return item.import_row_id===rowId&&item.status==='posted'});if(!row)return;var original=row.corrected_json;if(entry)row.corrected_json=entry.current_payload;openHistoryCorrectionBeforeFormalLedger(rowId);row.corrected_json=original;state.historyImport.editLedger=entry||null;if(entry){$('history-correct-source').textContent='正式账 v'+entry.version+' · 原始 Excel 与首次入账快照永久保留';$('history-correct-status').value='confirmed';$('history-correct-status').disabled=true;var revisions=(data.ledger_revisions||[]).filter(function(item){return item.ledger_entry_id===entry.id});$('history-correct-result').textContent='当前正式账版本 v'+entry.version+'；历史版本 '+revisions.length+' 条。保存后将新增版本，不覆盖原数据。'}else{$('history-correct-status').disabled=false}};
-  async function postHistoryBatch(){var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});if(!batch)return;var warning=Number(batch.warning_row_count||0),pending=(data.rows||[]).filter(function(row){return historyReviewStatus(row)!=='confirmed'}).length;if(!window.confirm('确认把当前批次 '+batch.raw_row_count+' 条正式入账？其中 '+warning+' 条有系统提示、'+pending+' 条尚未人工确认；提示会保留，后续可在 App 逐项修改并留痕。'))return;var reason=window.prompt('请输入正式入账原因：','已获负责人授权，先按原始资料正式入账；发现问题后通过版本修订');if(!reason)return;var button=$('history-post-batch');if(button)button.disabled=true;try{if(isLocalPreview()){(data.rows||[]).forEach(function(row){row.import_status='imported'});batch.status='completed';batch.imported_row_count=batch.raw_row_count;toast('本地预览：已模拟正式入账');renderHistoryImport();return}var result=await api('history_import_post',{store:currentStore(),import_batch_id:batch.id,allow_unreviewed:true,reason:reason});await loadHistoryImport(batch.id);toast('正式入账完成：'+esc(result.saved&&result.saved.imported_count||batch.raw_row_count)+' 条')}catch(error){toast(error.message)}finally{if(button)button.disabled=false}}
+  openHistoryCorrection=function(rowId){if(state.historyImport.data&&state.historyImport.data.reparse_generation){toast('当前解析版本仅供只读复核，旧修正入口已停用');return}var data=state.historyImport.data||{},row=(data.rows||[]).find(function(item){return item.id===rowId}),entry=(data.ledger_entries||[]).find(function(item){return item.import_row_id===rowId&&item.status==='posted'});if(!row)return;var original=row.corrected_json;if(entry)row.corrected_json=entry.current_payload;openHistoryCorrectionBeforeFormalLedger(rowId);row.corrected_json=original;state.historyImport.editLedger=entry||null;if(entry){$('history-correct-source').textContent='正式账 v'+entry.version+' · 原始 Excel 与首次入账快照永久保留';$('history-correct-status').value='confirmed';$('history-correct-status').disabled=true;var revisions=(data.ledger_revisions||[]).filter(function(item){return item.ledger_entry_id===entry.id});$('history-correct-result').textContent='当前正式账版本 v'+entry.version+'；历史版本 '+revisions.length+' 条。保存后将新增版本，不覆盖原数据。'}else{$('history-correct-status').disabled=false}};
+  async function postHistoryBatch(){if(state.historyImport.data&&state.historyImport.data.reparse_generation){toast('当前解析版本仅供只读复核，禁止旧入口入账');return}var data=state.historyImport.data||{},batch=(data.batches||[]).find(function(item){return item.id===state.historyImport.selectedBatchId});if(!batch)return;var warning=Number(batch.warning_row_count||0),pending=(data.rows||[]).filter(function(row){return historyReviewStatus(row)!=='confirmed'}).length;if(!window.confirm('确认把当前批次 '+batch.raw_row_count+' 条正式入账？其中 '+warning+' 条有系统提示、'+pending+' 条尚未人工确认；提示会保留，后续可在 App 逐项修改并留痕。'))return;var reason=window.prompt('请输入正式入账原因：','已获负责人授权，先按原始资料正式入账；发现问题后通过版本修订');if(!reason)return;var button=$('history-post-batch');if(button)button.disabled=true;try{if(isLocalPreview()){(data.rows||[]).forEach(function(row){row.import_status='imported'});batch.status='completed';batch.imported_row_count=batch.raw_row_count;toast('本地预览：已模拟正式入账');renderHistoryImport();return}var result=await api('history_import_post',{store:currentStore(),import_batch_id:batch.id,allow_unreviewed:true,reason:reason});await loadHistoryImport(batch.id);toast('正式入账完成：'+esc(result.saved&&result.saved.imported_count||batch.raw_row_count)+' 条')}catch(error){toast(error.message)}finally{if(button)button.disabled=false}}
   $('history-correct-form').addEventListener('submit',async function(event){var entry=state.historyImport.editLedger;if(!entry)return;event.preventDefault();event.stopImmediatePropagation();var corrected={};document.querySelectorAll('[data-history-field]').forEach(function(input){var raw=input.value;corrected[input.dataset.historyField]=input.dataset.kind==='number'?(raw===''?null:Number(raw)):raw||null});var reason=$('history-correct-reason').value.trim(),button=event.submitter;if(!reason){$('history-correct-result').textContent='修改正式账必须填写原因';return}button.disabled=true;try{if(isLocalPreview()){entry.current_payload=corrected;entry.version=Number(entry.version||1)+1;$('history-correct-modal').classList.add('hidden');renderHistoryImport();toast('本地预览：已新增正式账修订版本');return}await api('history_ledger_revise',{store:currentStore(),ledger_entry_id:entry.id,current_payload:corrected,reason:reason});$('history-correct-modal').classList.add('hidden');state.historyImport.editLedger=null;await loadHistoryImport(state.historyImport.selectedBatchId);toast('正式账已修改，原值和新版本均已永久留痕')}catch(error){$('history-correct-result').textContent=error.message}finally{button.disabled=false}},true);
   function currentMonthInput(){var now=new Date();return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')}
   var reportFitScheduled=false;
@@ -1589,17 +1724,17 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=644"></script>
-  <script src="operations-daily-correction.js?v=644"></script>
-  <script src="operations-daily-electronic.js?v=644"></script>
-  <script src="operations-monthly-workbench.js?v=644"></script>
-  <script src="operations-daily-recognition.js?v=644"></script>
-  <script src="operations-daily-batch-upload.js?v=644"></script>
-<script src="operations-daily-history.js?v=644"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=644">
-<script src="operations-monthly-review.js?v=644"></script>
+  <script src="operations-daily-review.js?v=645"></script>
+  <script src="operations-daily-correction.js?v=645"></script>
+  <script src="operations-daily-electronic.js?v=645"></script>
+  <script src="operations-monthly-workbench.js?v=645"></script>
+  <script src="operations-daily-recognition.js?v=645"></script>
+  <script src="operations-daily-batch-upload.js?v=645"></script>
+<script src="operations-daily-history.js?v=645"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=645">
+<script src="operations-monthly-review.js?v=645"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=644"></script>
-<script defer src="app-shell-client.js?v=644"></script>
+<script defer src="data-read-client.js?v=645"></script>
+<script defer src="app-shell-client.js?v=645"></script>
 </body>
 </html>

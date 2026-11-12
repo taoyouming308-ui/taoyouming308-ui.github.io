@@ -164,8 +164,10 @@ const historySheetPreviewStart = edge.indexOf('async function historyImportSheet
 const historySheetPreviewEnd = edge.indexOf('async function historyImportReview', historySheetPreviewStart);
 const historySheetPreviewSource = edge.slice(historySheetPreviewStart, historySheetPreviewEnd);
 expect(historySheetPreviewStart >= 0 && historySheetPreviewEnd > historySheetPreviewStart
-  && historySheetPreviewSource.includes('excelCellText(cell.value)')
-  && historySheetPreviewSource.includes('formulaCellText(cell.value)')
+  && historySheetPreviewSource.includes('historicalCellSnapshot(cell)')
+  && historySheetPreviewSource.includes('source.merged_slave')
+  && historySheetPreviewSource.includes('excelCellText(source.value)')
+  && historySheetPreviewSource.includes('source.formula')
   && !historySheetPreviewSource.includes('displayValue(cell)')
   && !historySheetPreviewSource.includes('formulaText(cell)'),
   'history original-sheet preview must use defined Excel cell value and formula helpers');
