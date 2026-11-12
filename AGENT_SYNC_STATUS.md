@@ -522,6 +522,14 @@ User authorized pushing only the isolated startup branch and opening a draft PR 
 
 # Agent Sync Status
 
+## 2026-11-12 · Independent full-month original archive candidate (App version: v644)
+
+- Current owner: dot upload repair. Last synchronized base checked: github/main 46e7219c; continuing isolated fix/report-manual-uploads-20261112 after v643 candidate. Baseline gates and today’s complete backup confirmed; other worktrees unchanged.
+- Independent append-only reservation/completion archive supports chosen dates without creating or changing financial reports, including posted, locked and missing dates. Current actor/store capability checks, exact metadata/hash request binding, private view links, explicit missing-object resume and durable own-pending discovery. No automatic OCR or financial linkage.
+- SQL, API and browser fixture validation is isolated/synthetic; no production migration, upload, data import, deployment, merge or push. Database authority helpers are fixtures, not a full deployed-schema acceptance. Final v644 local gates, four isolated browser suites, API/runner tests, isolated SQL concurrency/revocation cases and targeted safety re-review passed. Production checks remain required.
+- Production release requires separately authorized migration/API/frontend rollout in that order; existing app storage and ledger must remain untouched. See docs/report-original-archive-followup.md for exact invariants and limits.
+
+
 ## 2026-11-12 · Manual report upload candidate (App version: v643)
 
 - Current owner: dot upload repair. Last synchronized base checked: github/main 46e7219c. New isolated fix/report-manual-uploads-20261112; required baseline checks and daily backup passed. Other dirty worktrees untouched.

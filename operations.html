@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="643">
+<html lang="zh-CN" data-version="644">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=643" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=644" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -412,7 +412,7 @@
           <div id="daily-report-calendar"></div>
           <div id="daily-report-detail" class="hidden">
             <section class="daily-electronic"><div class="finance-record-head"><div><h3 style="margin:0" id="daily-detail-title"></h3><div id="daily-detail-meta" class="help"></div></div><div class="compact-actions"><span id="daily-detail-state" class="voucher-status draft">待填写</span><span id="daily-detail-unsaved" class="voucher-status unsaved hidden">有未保存修改</span><button id="daily-detail-unlock" class="secondary hidden" type="button">申请修改锁账月份</button><button id="daily-detail-save-top" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm-top" class="primary" type="button" disabled>入账</button><button id="daily-readonly-back" class="ghost" type="button">← 返回月历</button></div></div><div id="daily-detail-historical-validation" class="candidate-warning hidden" role="alert" aria-live="polite"></div><div id="daily-detail-grid"></div><div id="daily-detail-controls" class="daily-control-grid"></div><div id="daily-detail-candidates" class="help"></div><details class="daily-more-options"><summary>备注 / 修改说明（选填）</summary><div class="field"><label for="daily-detail-reason">说明会随本次操作保存</label><input id="daily-detail-reason" maxlength="500" placeholder="例如：对照原图修正金额"></div></details><div id="daily-detail-note" class="daily-readonly-note hidden" role="status" aria-live="polite"></div><div class="daily-confirm-bar"><div id="daily-detail-confirm-help" class="help">保存草稿可继续编辑；入账后计入当天和月报。</div><div class="actions"><button id="daily-detail-save" class="secondary" type="button" disabled title="仅保存修改，稍后可继续编辑">保存草稿</button><button id="daily-detail-confirm" class="primary" type="button" disabled>入账</button></div></div></section>
-            <section class="daily-original" style="margin-top:16px"><div class="finance-record-head"><div><strong>原始日报表 / 原始凭证（永久留底）</strong><div class="help">自动绑定当前门店、当前日期和本张电子日报；误传文件只作废、不删除，同步日报上传仅留存凭证，可手动核对差异；未同步日报照片可自动识别为空白格候选。</div></div><div class="daily-source-actions"><button id="daily-detail-upload" class="daily-source-action upload" type="button"><span class="action-label">上传 / 重传正确日报</span><span class="action-help">支持 JPG、PNG、PDF、Excel</span></button></div></div><div id="daily-source-action-status" class="daily-source-status" role="status" aria-live="polite">同步日报上传原图不会覆盖表格；未同步日报 JPG / PNG 上传后自动识别。</div><div id="daily-detail-original-alert" class="candidate-warning"></div><div id="daily-detail-attachments" class="finance-list"></div><div id="daily-detail-preview" class="daily-original-stage hidden"><img id="daily-detail-image" alt="原始日报预览"></div></section>
+            <section class="daily-original" style="margin-top:16px"><div class="finance-record-head"><div><strong>原始日报表 / 原始凭证（永久留底）</strong><div class="help">自动绑定当前门店、当前日期和本张电子日报；误传文件只作废、不删除，同步日报上传仅留存凭证，可手动核对差异；未同步日报照片可自动识别为空白格候选。</div></div><div class="daily-source-actions"><button id="daily-detail-upload" class="daily-source-action upload" type="button"><span class="action-label">上传 / 重传正确日报</span><span class="action-help">支持 JPG、PNG、PDF、Excel</span></button><button id="daily-detail-archive" class="ghost" type="button">本日原图存档 / 按月批量上传</button></div></div><div id="daily-source-action-status" class="daily-source-status" role="status" aria-live="polite">同步日报上传原图不会覆盖表格；未同步日报 JPG / PNG 上传后自动识别。</div><div id="daily-detail-original-alert" class="candidate-warning"></div><div id="daily-detail-attachments" class="finance-list"></div><div id="daily-detail-preview" class="daily-original-stage hidden"><img id="daily-detail-image" alt="原始日报预览"></div></section>
             <section id="daily-history-panel" hidden class="form-card" style="margin-top:16px"><div class="daily-history-head"><h3>日报修改记录</h3><button type="button" id="daily-history-toggle" class="ghost" aria-expanded="false" aria-controls="daily-history-body">查看修改记录</button></div><div id="daily-history-body" hidden><div class="help">每次修改的前值、后值、修改人、时间和原因永久保留。</div><div id="daily-detail-history" class="finance-list"></div></div></section>
           </div>
         </section>
@@ -747,13 +747,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=643"></script>
-<script src="operations-staff-view.js?v=643"></script>
-<script src="operations-monthly-daily-performance.js?v=643"></script>
-  <script src="operations-report-fit.js?v=643"></script>
-  <script src="operations-auth-bridge.js?v=643"></script>
-  <script src="operations-voucher-preview.js?v=643"></script>
-  <script src="operations-voucher-view.js?v=643"></script>
+<script src="operations-time.js?v=644"></script>
+<script src="operations-staff-view.js?v=644"></script>
+<script src="operations-monthly-daily-performance.js?v=644"></script>
+  <script src="operations-report-fit.js?v=644"></script>
+  <script src="operations-auth-bridge.js?v=644"></script>
+  <script src="operations-voucher-preview.js?v=644"></script>
+  <script src="operations-voucher-view.js?v=644"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -770,7 +770,7 @@
   function authAccessToken(){var session=state.auth&&state.auth.session;if(!session||!session.access_token)return'';return session.expires_at&&Number(session.expires_at)<=Math.floor(Date.now()/1000)+10?'':session.access_token}
   function apiError(data,status){var message=String(data&&data.error||'请求失败');if(message.length>400||/https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message))message='财务数据暂时加载失败，请点击刷新重试';var error=new Error(message);error.status=status;error.code=data&&data.code||'';return error}
   function isSessionInvalidError(error){return !!(error&&(error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED'||/^(Supabase Auth 登录已失效|请重新登录|登录已过期|账号已停用|账号.*离职)/.test(error.message||'')))}
-  var API_READ_ONLY_OPERATIONS=new Set(['session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
+  var API_READ_ONLY_OPERATIONS=new Set(['daily_original_archive_list','daily_original_archive_url','session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
   API_READ_ONLY_OPERATIONS.add('daily_electronic_sources');
   API_READ_ONLY_OPERATIONS.add('daily_sheet_correction_status');
   function apiOutcomeUnconfirmedError(){var error=new Error('未收到服务器对本次请求的有效确认。若这是保存、上传或入账，请先刷新并核对是否已完成，不要直接重复提交；若只是查看，请刷新后重试。');error.code='API_OUTCOME_UNCONFIRMED';return error}
@@ -925,7 +925,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=643';
+      script.src='operations-petty-cash-evidence.js?v=644';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1587,18 +1587,19 @@ function calculateDailyControls(root,cardSalesCheck){
   renderCellTrace=function(data){renderCellTraceBase(data);if(!data||!data.historical)return;var files=data.evidence||[],buttons=document.querySelectorAll('#cell-trace-body [data-open-history-file]'),hasBundle=false;buttons.forEach(function(button,index){var file=files.find(function(item){return item.id===button.dataset.openHistoryFile})||files[index];if(!file)return;var bundle=file.trace_link_level==='bundle_only',count=Number(file.trace_asset_count||file.embedded_asset_count||0);hasBundle=hasBundle||bundle;button.textContent=(bundle?'本月支出凭证包':'原始凭证')+' · '+(file.original_filename||('凭证 '+(index+1)))+(count?'（含 '+count+' 张原始图片）':'')});if(hasBundle){var actions=$('cell-trace-body').querySelector('.trace-card .trace-actions');if(actions){var note=document.createElement('div');note.className='help';note.style.marginBottom='9px';note.textContent='该金额已关联本月支出凭证包。点击下方文件可查看原始单据；当前资料是整月凭证包，未伪装成单张凭证的精确页码。';actions.parentNode.insertBefore(note,actions)}}};
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
+  $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=643"></script>
-  <script src="operations-daily-correction.js?v=643"></script>
-  <script src="operations-daily-electronic.js?v=643"></script>
-  <script src="operations-monthly-workbench.js?v=643"></script>
-  <script src="operations-daily-recognition.js?v=643"></script>
-  <script src="operations-daily-batch-upload.js?v=643"></script>
-<script src="operations-daily-history.js?v=643"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=643">
-<script src="operations-monthly-review.js?v=643"></script>
+  <script src="operations-daily-review.js?v=644"></script>
+  <script src="operations-daily-correction.js?v=644"></script>
+  <script src="operations-daily-electronic.js?v=644"></script>
+  <script src="operations-monthly-workbench.js?v=644"></script>
+  <script src="operations-daily-recognition.js?v=644"></script>
+  <script src="operations-daily-batch-upload.js?v=644"></script>
+<script src="operations-daily-history.js?v=644"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=644">
+<script src="operations-monthly-review.js?v=644"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=643"></script>
-<script defer src="app-shell-client.js?v=643"></script>
+<script defer src="data-read-client.js?v=644"></script>
+<script defer src="app-shell-client.js?v=644"></script>
 </body>
 </html>

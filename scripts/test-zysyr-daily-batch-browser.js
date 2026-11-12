@@ -23,39 +23,70 @@ let browser;
   await page.evaluate(async()=>{await showView('daily-report');window.batchMonth=$('month').value;window.batchCalls=[];window.batchMode='ok';isLocalPreview=()=>false;
     api=async function(op,p){batchCalls.push({op,...p});const d=p.draft_id||'d1',day=d==='d1'?'01':'02';
       if(op==='daily_sheet_month')return {month:batchMonth,permissions:{write:true},days:[{report_date:batchMonth+'-01',draft_id:'d1',status:'draft'},{report_date:batchMonth+'-02',draft_id:'d2',status:'draft'},{report_date:batchMonth+'-03',draft_id:'d3',status:'confirmed'}]};
+      if(op==='daily_original_archive_list')return {archives:[{request_id:'synthetic-list',report_date:batchMonth+'-05',original_filename:'archived.png',created_at:'2026-11-12'}],has_more:false,next_offset:0};
+      if(op==='daily_original_archive_url')return {url:'https://example.invalid/synthetic',expires_in:300};
+      if(op==='daily_original_archive_status')return {status:'not_found',request_id:p.request_id};
       if(op==='daily_sheet_read')return {draft:{id:d,report_date:batchMonth+'-'+day,status:'draft'},permissions:{upload_original:true}};
-      if(op==='daily_sheet_attachment_upload'){if(batchMode==='fail')throw Error('synthetic lost response');if(batchMode==='pending')await new Promise(r=>window.finishUpload=r);return {attachment_uploaded:true,draft:{id:d,report_date:batchMonth+'-'+day}};}
+      if(op==='daily_original_archive_upload'||op==='daily_original_archive_resume'){if(batchMode==='fail')throw Error('synthetic lost response');if(batchMode==='pending')await new Promise(r=>window.finishUpload=r);const bytes=Uint8Array.from(atob(p.base64),c=>c.charCodeAt(0));const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');return {status:'archived',request_id:p.request_id,archive:{request_id:p.request_id,report_date:p.report_date,sha256:hash,size_bytes:bytes.length,mime_type:p.mime_type,original_filename:p.filename}};}
       throw Error('Unexpected mocked operation '+op);
     };
   });
   const month=await page.evaluate(()=>batchMonth),png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVioAAAAASUVORK5CYII=','base64');
   const photo=day=>({name:month+'-'+day+'.png',mimeType:'image/png',buffer:png});
   const panel=page.locator('#daily-batch-panel');
-  async function open(files){await page.locator('#daily-batch-upload').click();await panel.locator('input[type=file]').setInputFiles(files);}
-  async function reset(){await panel.locator('[data-close]').click();}
+  async function open(files){await page.locator('#daily-batch-upload').click();await panel.locator('input[type=file]').first().setInputFiles(files);}
+  async function reset(){if(await panel.isVisible())await panel.locator('[data-close]').click();}
   await open([photo('01'),photo('02')]);
   assert.equal(await panel.locator('img').count(),2);
+  await panel.locator('[data-archives] button').click();
+  assert.equal(await panel.locator('[data-archives] a').getAttribute('href'),'https://example.invalid/synthetic');
+  assert.match(await panel.locator('[data-archives]').innerText(),/仅存档，尚无日报/);
   assert.equal(await panel.locator('[data-start]').isDisabled(),true);
   for(const cb of await panel.locator('input[type=checkbox]').all())await cb.check();
   await panel.locator('[data-start]').click();await page.waitForFunction(()=>document.querySelector('#daily-batch-panel [data-status]').textContent.includes('已确认上传 2 / 2'));
-  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_sheet_attachment_upload').length),2);
+  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_original_archive_upload').length),2);
   assert.equal(await panel.locator('[data-start]').isDisabled(),true);
   await reset();await open([photo('03')]);await panel.locator('input[type=checkbox]').click();
-  assert.match(await panel.innerText(),/已入账或不可编辑/);assert.equal(await panel.locator('[data-start]').isDisabled(),true);
+  assert.equal(await panel.locator('[data-start]').isDisabled(),false);
   await reset();await page.evaluate(()=>batchMode='fail');await open([photo('01'),photo('02')]);
   for(const cb of await panel.locator('input[type=checkbox]').all())await cb.check();
   await panel.locator('[data-start]').click();await page.waitForFunction(()=>document.querySelector('#daily-batch-panel [data-status]').textContent.includes('结果待核对'));
-  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_sheet_attachment_upload').length),3);
+  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_original_archive_upload').length),3);
   assert.equal(await panel.locator('[data-start]').isDisabled(),true);
   await reset();await page.evaluate(()=>batchMode='pending');await open([photo('01'),photo('02')]);
   for(const cb of await panel.locator('input[type=checkbox]').all())await cb.check();
   await panel.locator('[data-start]').click();await page.waitForFunction(()=>typeof finishUpload==='function');
   await panel.locator('[data-close]').click();await page.evaluate(()=>finishUpload());
   await page.waitForFunction(()=>document.querySelector('#daily-batch-panel [data-status]').textContent.includes('已确认上传 1 / 2'));
-  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_sheet_attachment_upload').length),4);
+  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_original_archive_upload').length),4);
   await reset();await page.evaluate(()=>batchMode='ok');await open([photo('01')]);await panel.locator('input[type=checkbox]').check();
   await page.evaluate(()=>{document.getElementById('store-select').dispatchEvent(new Event('change',{bubbles:true}));});
   assert.equal(await panel.locator('[data-start]').isDisabled(),true);
   assert.equal(await page.evaluate(()=>batchCalls.some(x=>['daily_sheet_create','daily_sheet_confirm','daily_sheet_recognize','daily_sheet_save'].includes(x.op))),false);
-  assert.deepEqual(errors,[]);console.log('Daily batch browser: mobile preview/date confirmation, two originals, confirmed-date blocking, uncertain result, in-flight cancel and scope switch passed. No live upload.');
+  await reset();
+  await page.evaluate(()=>{window.savedDirtyCount=dailySheetDirtyCount;dailySheetDirtyCount=()=>1;ZysyrDailyBatchUpload.openArchive(batchMonth+'-03');});
+  assert.equal(await panel.isVisible(),false);
+  await page.evaluate(()=>{dailySheetDirtyCount=()=>0;ZysyrDailyBatchUpload.openArchive(batchMonth+'-03');});
+  await panel.waitFor({state:'visible'});
+  assert.equal(await panel.locator('[data-filter]').inputValue(),month+'-03');
+  await page.evaluate(()=>dailySheetDirtyCount=savedDirtyCount);
+  await reset();
+  await page.evaluate(async ({base64})=>{
+    const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0)),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');
+    const original=api;api=async (op,p)=>op==='daily_original_archive_list'?{archives:[{status:'pending',request_id:'recover-same-id',report_date:batchMonth+'-03',original_filename:batchMonth+'-03.png',size_bytes:bytes.length,mime_type:'image/png',sha256:hash,note:'original note'}],has_more:false,next_offset:0}:original(op,p);
+  },{base64:png.toString('base64')});
+  await page.locator('#daily-batch-upload').click();
+  const recovery=panel.locator('[data-archives] input[type=file]');await recovery.setInputFiles(photo('03'));
+  await panel.locator('[data-archives] button').click();
+  await page.waitForFunction(()=>document.querySelector('#daily-batch-panel [data-status]').textContent.includes('恢复请求已确认存档'));
+  assert.equal(await page.evaluate(()=>batchCalls.filter(x=>x.op==='daily_original_archive_resume').length),1);
+  assert.equal(await page.evaluate(()=>batchCalls.find(x=>x.op==='daily_original_archive_resume').request_id),'recover-same-id');
+  assert.equal(await page.evaluate(()=>batchCalls.find(x=>x.op==='daily_original_archive_resume').note),'original note');
+  await page.evaluate(()=>{state.user={...state.user};$('app').classList.add('hidden');});
+  await page.waitForFunction(()=>document.querySelector('#daily-batch-panel').classList.contains('hidden'));
+  assert.equal(await panel.locator('[data-archives]').innerText(),'');
+  assert.equal(await panel.locator('img').count(),0);
+  await page.evaluate(()=>$('app').classList.remove('hidden'));
+  assert.equal(await panel.isVisible(),false);
+  assert.deepEqual(errors,[]);console.log('Daily batch browser: mobile preview/date confirmation, two originals, posted-date eligibility, uncertain result, in-flight cancel and scope switch passed. No live upload.');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.close();});

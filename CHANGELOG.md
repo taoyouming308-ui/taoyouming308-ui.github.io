@@ -1,3 +1,12 @@
+# Unreleased v644 independent original archive
+
+- Store month/date original photos without changing, creating or replacing financial daily records. Posted, locked and missing dates are archive-only, not automatic ledger links.
+- Narrow existing service-role RPC; append-only reservations/completions; private signed views and current per-store capability enforcement.
+- Exact request/hash binding, create-only writes, explicit same-file recovery only after definitive missing-object status, owner pending visibility after reopening. No uncertain-object cleanup.
+- Frontend date previews, daily-detail entry with unsaved guard, cancellation and account/store/month scope controls. No automatic OCR or extra model call.
+- Final v644 validation passed: API synthetic mocks; batch runner; isolated PostgreSQL reservation/concurrency/post-lock capability-revocation tests; four isolated browser suites (archive privacy/recovery, per-item vouchers, batch vouchers, monthly photos); repository version/integrity/handoff/smoke; existing monthly scope/matching, care/hair/customer regressions and 42 Python cases. Targeted safety re-review passed.
+- SQL authority and financial sentinel fixtures are synthetic, not deployed-schema evidence. Actual storage/production acceptance remains pending. Candidate remains local; no production action performed.
+
 # Unreleased v643 upload candidate
 
 - Explain the photo-only Word bundle error with the correct existing archive and per-expense paths; no automatic resubmission.

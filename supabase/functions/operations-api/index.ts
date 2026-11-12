@@ -5350,6 +5350,89 @@ async function voucherSourceBytes(voucher: JsonRecord): Promise<Uint8Array> {
   return bytes;
 }
 
+// Archive-only evidence is independent of financial daily records. Never use the
+// legacy attachment registration/cleanup path here.
+async function dailyOriginalArchive(operation: string, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有日报原图归档权限");
+  const store = await selectedStoreInfo(session, payload);
+  const requestId = operation === "daily_original_archive_list" ? null : uuidValue(payload.request_id, "归档请求编号无效");
+  const rpc = async (action: string, metadata: JsonRecord = {}): Promise<JsonRecord> => {
+    const response = await rest("rpc/zysyr_daily_original_archive", { method: "POST", body: JSON.stringify({
+      p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+      p_store_id: cleanText(store.id, 40), p_action: action, p_request_id: requestId, p_metadata: metadata,
+    }) });
+    const data = await response.json() as JsonRecord;
+    if (!response.ok) throw new Error(`日报原图归档请求未完成：${cleanText(data.message, 160) || response.status}`);
+    return data;
+  };
+  const metadataOf = (archive: JsonRecord): JsonRecord => ({report_date: archive.report_date,
+    original_filename: archive.original_filename, mime_type: archive.mime_type, size_bytes: archive.size_bytes,
+    sha256: archive.sha256, note: archive.note});
+  // Status is also a safe reconciliation: read the already reserved object, verify
+  // its bytes, then append completion. Never upload again or remove uncertain data.
+  const reconcile = async (state: JsonRecord): Promise<JsonRecord> => {
+    if (state.status !== "pending" || !state.archive) return state;
+    const archive = state.archive as JsonRecord;
+    try {
+      const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(String(archive.object_path))}`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+      if (!response.ok) return state;
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.length !== Number(archive.size_bytes) || await sha256Bytes(bytes) !== archive.sha256) {
+        return { ...state, integrity_error: true };
+      }
+      return await rpc("complete", metadataOf(archive));
+    } catch { return state; }
+  };
+  if (operation === "daily_original_archive_list") {
+    const month = cleanText(payload.month, 7);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error("归档月份无效");
+    const offset = Number(payload.offset ?? 0);
+    if (!Number.isSafeInteger(offset) || offset < 0) throw new Error("归档分页无效");
+    return await rpc("list", { month, offset, limit: 201 });
+  }
+  if (operation === "daily_original_archive_url") {
+    const state = await rpc("view"), archive = state.archive as JsonRecord;
+    if (state.status !== "archived" || !archive) throw new Error("归档尚未完成或无权查看");
+    return { url: await signedStorageUrl(VOUCHER_BUCKET, String(archive.object_path)), expires_in: 300,
+      filename: archive.original_filename };
+  }
+  if (operation === "daily_original_archive_status") return { ...await reconcile(await rpc("status")), financial_records_unchanged: true };
+  const date = cleanText(payload.report_date, 10), filename = cleanText(payload.filename, 200), mime = cleanText(payload.mime_type, 120);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) throw new Error("请确认有效归档日期");
+  if (!filename || !["image/jpeg", "image/png"].includes(mime)) throw new Error("原图支持 JPG 或 PNG");
+  let bytes: Uint8Array;
+  try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("归档文件内容无效"); }
+  if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("归档文件必须小于 10MB");
+  const metadata = { report_date: date, original_filename: filename, mime_type: mime, size_bytes: bytes.length,
+    sha256: await sha256Bytes(bytes), note: cleanText(payload.note, 500) };
+  const reserved = await rpc("reserve", metadata);
+  if (!reserved.newly_reserved) {
+    const resolved = await reconcile(reserved);
+    if (resolved.status === "archived" || operation !== "daily_original_archive_resume") return { ...resolved, financial_records_unchanged: true };
+    // Explicit user recovery only: prove absence before a create-only upload.
+    try {
+      const archive = reserved.archive as JsonRecord;
+      const existing = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(String(archive.object_path))}`, {
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+      });
+      if (existing.status !== 404) return { ...resolved, financial_records_unchanged: true };
+    } catch { return { ...resolved, financial_records_unchanged: true }; }
+  }
+  // A lost upload reply is uncertain. Keep the request and the object; status can
+  // resolve it without another POST. Only the winning reservation sends bytes.
+  try {
+    const archive = reserved.archive as JsonRecord;
+    const uploaded = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(String(archive.object_path))}`, {
+      method: "POST", headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": mime, "x-upsert": "false" },
+      body: exactArrayBuffer(bytes),
+    });
+    if (uploaded.ok || uploaded.status === 409) return { ...await reconcile(reserved), financial_records_unchanged: true };
+  } catch { /* Preserve reservation and object for explicit status reconciliation. */ }
+  return { ...reserved, newly_reserved: false, status: "pending", financial_records_unchanged: true };
+}
+
 async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "daily_report.write")) throw new Error("当前账号没有上传日报原件权限");
   const store = await selectedStoreInfo(session, payload);
@@ -6980,7 +7063,7 @@ monthly_review_status monthly_review_inbox monthly_review_preview monthly_review
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
-ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
 function safeOperationsApiLogOperation(value: unknown): string {
@@ -7141,6 +7224,7 @@ async function handleOperationsApiRequest(
     if (operation === "daily_recognition_job_next") return json(await dailyRecognitionJobNext(payload, session));
     if (operation === "daily_recognition_job_control") return json(await dailyRecognitionJobControl(payload, session));
     if (operation === "daily_recognition_item_retry") return json(await dailyRecognitionItemRetry(payload, session));
+    if (["daily_original_archive_upload", "daily_original_archive_resume", "daily_original_archive_status", "daily_original_archive_list", "daily_original_archive_url"].includes(operation)) return json(await dailyOriginalArchive(operation, payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
     if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));

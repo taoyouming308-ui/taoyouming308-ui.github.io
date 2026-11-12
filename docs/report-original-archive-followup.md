@@ -1,23 +1,26 @@
-# Full-month original archive: remaining scope
+# Full-month daily original archive candidate
 
-The v643 candidate batches original photos only onto existing, unlocked draft daily reports. It does not complete full-month archival for posted, locked or missing daily reports. No production files or financial records were changed during development.
+The independent archive accepts JPG/PNG originals for a chosen store and date, including posted, locked and missing daily-report dates. It does not create financial reports, change amounts, replace original evidence, change source pointers, or perform OCR/classification/posting.
 
-## Existing constraints
+## Storage and authority
 
-- `uploadDailySheetAttachment` rejects `original_report` when the daily status is not `draft`.
-- Sending `supporting_document` is not a safe shortcut: `zysyr_register_daily_sheet_attachment` may populate `source_voucher_id` and `source_sha256` on the financial daily record.
-- A missing day has no draft ID. Creating a financial draft merely to store a photo is outside this archival task.
-- Photo-only expense DOCX bundles belong to evidence archival, not the tabular monthly data parser. Archiving a whole bundle does not prove precise image-to-expense attribution.
+- New reservation and completion tables are append-only. Their request key and immutable metadata bind actor, company, store, date, filename, MIME, size, content hash and note.
+- The existing service identity gets only EXECUTE on the new scoped RPC. Direct table access is revoked from public, anon, authenticated and service_role; RLS remains enabled. No new credentials, public storage grants or role memberships are introduced.
+- The API checks daily_report.write and the selected store; the RPC rechecks current account and store capability. Completed archives are viewable within the same authorized store, while pending requests and mutation/recovery remain owner-scoped.
+- Objects remain in the existing private zysyr-vouchers bucket under company/store/date/request paths. Viewing uses short-lived authorized signed URLs. Originals are never overwritten or deleted by this workflow.
 
-## Proposed additive contract, not implemented
+## Idempotency and recovery
 
-1. Store originals under company, authorized store, month and explicitly confirmed date, independently of financial report existence. Use the existing private voucher bucket, unique object IDs and no overwrite.
-2. Add an append-only archive operation and optional link to an existing daily report. Never change amounts, source pointers, financial status, revisions or confirmation records. Posted/locked reports retain all prior originals; new evidence is clearly labeled supplemental and time-stamped.
-3. Apply current capability and store-scope checks in the API and transaction, not client-supplied identity. Do not expose new public reads or broader storage rights. Verify current authority immediately before archive registration.
-4. Bind each request ID to actor/store/date/hash/size/type, make retries idempotent and provide a status lookup. Preserve uncertain outcomes; do not blindly retry or delete evidence.
-5. Missing report dates remain unassociated archive items. Later linking is an explicit audited operation with date/store equality checks, not automatic creation or posting.
-6. Keep OCR/classification as suggestions. Date or expense matches that are ambiguous require human selection; a bundle association must not be presented as a precise receipt association.
+Only a winning reservation uploads initially. The stored object's size and hash are verified before completion. Unknown network or registration outcomes remain pending; status reconciliation verifies stored bytes and can append completion without sending the file again.
 
-## Required verification before release
+Explicit resume requires the same original file and exact original metadata. It can create the same object only after a definitive missing-object result, using create-only storage semantics. Other failures are not treated as absence. Completed records and own pending requests appear in the server-side monthly list, so closing a browser tab does not lose recovery visibility.
 
-Use synthetic files and an isolated database. Cover posted/locked/missing dates, cross-store access, revoked capabilities, duplicate bytes, repeated request IDs with changed parameters, concurrent uploads, lost replies/status lookup, file/database partial failures, and mobile/desktop date confirmation. Assert complete financial-table and source-pointer digests remain unchanged. Verify private-link scope and expiry. Production schema/API deployment and real-file acceptance remain separate steps requiring authorization.
+The UI previews each original and asks the user to confirm its date, maintains scope/cancellation guards, and never infers a financial linkage. Missing dates are archive-only. Opening the archive from a daily report refuses to hide unsaved edits.
+
+## Publication boundary
+
+This is local candidate code, not a deployed service. Production migration, API deployment and frontend publication remain separate authorized steps. Do not publish the frontend before the additive API/migration are available. Do not import July–September financial data as part of rollout.
+
+## Verification limits
+
+Run new API mocks, browser fixtures and isolated PostgreSQL concurrency tests plus the repository gates on the final tree. Database fixtures isolate the new schema and use authority stubs and financial sentinel rows; they are not proof against the entire deployed schema. Real account permissions, storage configuration and end-to-end production availability require a separate authorized deployment/acceptance step with no automatic business-data import.
