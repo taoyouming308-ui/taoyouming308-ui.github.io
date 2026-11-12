@@ -15,9 +15,13 @@ for (const marker of ['monthlyCellRoutesToPettyCash', 'openMonthlyPettyCashDetai
 for (const marker of ['return "petty_cash_summary"', '"purchase_summary", "petty_cash_summary"']) {
   assert.ok(api.includes(marker), 'missing API petty summary marker ' + marker);
 }
-for (const view of ['salary-report', 'finance-workbench', 'archive', 'history-import']) {
+for (const view of ['salary-report', 'finance-workbench', 'archive']) {
   assert.match(html, new RegExp('data-view="' + view + '"[^>]*style="display:none"'), view + ' must stay hidden in navigation');
 }
+const historyEntry = html.match(/<button\b[^>]*data-view="history-import"[^>]*>/)?.[0];
+assert.ok(historyEntry, 'history import navigation must exist');
+assert.match(historyEntry, /class="[^"]*\bhidden\b/, 'history import must start hidden until permissions are loaded');
+assert.doesNotMatch(historyEntry, /style="[^"]*display\s*:\s*none/, 'authorized finance history import must not be permanently hidden');
 
 const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
@@ -42,9 +46,69 @@ let browser;
   await page.goto(origin + '/operations.html?preview=1&role=finance');
   await page.waitForFunction(() => state.user && state.user.role === 'finance' && state.data.monthly_report);
 
-  for (const view of ['salary-report', 'finance-workbench', 'archive', 'history-import']) {
+  for (const view of ['salary-report', 'finance-workbench', 'archive']) {
     assert.equal(await page.locator(`.nav [data-view="${view}"]`).evaluate(node => getComputedStyle(node).display), 'none');
   }
+
+  const historyNav = page.locator('.nav [data-view="history-import"]');
+  await page.evaluate(() => {
+    window.historyEntryTest = {
+      user: { ...state.user },
+      load: loadHistoryImport,
+      calls: 0,
+      store: currentStore(),
+      month: document.getElementById('month').value,
+    };
+    loadHistoryImport = function () { window.historyEntryTest.calls += 1; };
+  });
+  assert.equal(await historyNav.isVisible(), true, 'authorized finance must see the restored history entry');
+  await historyNav.click();
+  await page.waitForFunction(() => state.view === 'history-import');
+  assert.deepEqual(await page.evaluate(() => ({
+    visible: !document.getElementById('view-history-import').classList.contains('hidden'),
+    calls: window.historyEntryTest.calls,
+    storePreserved: currentStore() === window.historyEntryTest.store,
+    monthPreserved: document.getElementById('month').value === window.historyEntryTest.month,
+  })), { visible: true, calls: 1, storePreserved: true, monthPreserved: true });
+
+  // Use capability-positive non-finance fixtures too: the role restriction must
+  // remain independent of the visibility flag, including direct navigation.
+  for (const fixture of [
+    { name: 'finance without capability', role: 'finance', can_manage_finance_workbench: false },
+    { name: 'shareholder', role: 'shareholder', can_manage_finance_workbench: true },
+    { name: 'shareholder administrator', role: 'shareholder', can_manage_finance_workbench: true, can_manage_stores: true },
+    { name: 'store manager', role: 'store_manager', can_manage_finance_workbench: true },
+    { name: 'personal employee scope', role: 'employee', can_manage_finance_workbench: true, personal_scope: true },
+  ]) {
+    const result = await page.evaluate(async fixture => {
+      await showView('monthly');
+      state.user = { ...window.historyEntryTest.user, ...fixture };
+      refreshRoleEntries();
+      const callsBefore = window.historyEntryTest.calls;
+      await showView('history-import');
+      return {
+        navHidden: getComputedStyle(document.querySelector('.nav [data-view="history-import"]')).display === 'none',
+        view: state.view,
+        contentHidden: document.getElementById('view-history-import').classList.contains('hidden'),
+        loadCalls: window.historyEntryTest.calls - callsBefore,
+      };
+    }, fixture);
+    assert.deepEqual(result, { navHidden: true, view: 'monthly', contentHidden: true, loadCalls: 0 }, fixture.name + ' must remain blocked');
+  }
+
+  await page.evaluate(() => {
+    state.user = { ...window.historyEntryTest.user };
+    refreshRoleEntries();
+  });
+  assert.equal(await historyNav.isVisible(), true, 'restoring finance permissions must restore the entry');
+  await historyNav.click();
+  await page.waitForFunction(() => state.view === 'history-import');
+  assert.equal(await page.evaluate(() => window.historyEntryTest.calls), 2, 'restored finance navigation loads once');
+  await page.evaluate(async () => {
+    await showView('monthly');
+    loadHistoryImport = window.historyEntryTest.load;
+    delete window.historyEntryTest;
+  });
 
   const result = await page.evaluate(async () => {
     const cells = state.data.monthly_report.display_data.cells || [];
@@ -78,7 +142,7 @@ let browser;
   assert.equal(result.financeVisible, true);
   assert.equal(result.traceHidden, true);
   assert.deepEqual(errors, []);
-  console.log('v502 browser: petty summary direct navigation, scoped month/store, hidden salary/low-frequency nav and detail-cell guard passed');
+  console.log('Browser: finance-only history navigation, denied-role/direct-route guards, permission refresh, petty summary scope and retained hidden entries passed');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;

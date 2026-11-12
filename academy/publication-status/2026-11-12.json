@@ -4,6 +4,6 @@
   "state": "preflight_requested",
   "preflight_requested": true,
   "published": false,
-  "baseSha": "8639a3d0845aa2f63ddbe4084900cf5d4584a23d",
-  "message": "Preflight only. No lesson draft or figures committed. Await exact-main immutable baseline backup and sha256 evidence before inputs. Not an editorial approval or an online publication."
+  "baseSha": "e76e44331c9a5dfa5e58cf108a28de0521d566e1",
+  "message": "After main advanced to v642 (PR #112), existing reviewed lesson inputs retained and candidate merge-reconciled without modifying business code. Await new exact-main preflight backup and cloud re-preparation. Old SHA 8639a3d... backup and preparation are historical only, not final-head evidence."
 }
