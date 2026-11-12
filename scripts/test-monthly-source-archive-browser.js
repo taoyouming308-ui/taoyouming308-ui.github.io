@@ -37,10 +37,11 @@ let browser;
        if(mode==='upload-hold')await new Promise(resolve=>window.finishUpload=resolve);
        return {status:'archived',request_id:p.request_id,archive,financial_records_unchanged:true};
      }
-     if(op.endsWith('_selection_status'))return lastSelection?{...lastSelection}:{status:'not_found',selection_request_id:p.selection_request_id};
+     if(op.endsWith('_selection_status')){if(mode==='status-unavailable')throw Error('fixture transport unavailable');if(mode==='status-wrong-id')return {status:'not_found',selection_request_id:'wrong-request'};return lastSelection?{...lastSelection}:{status:'not_found',selection_request_id:p.selection_request_id};}
      if(op.endsWith('_status')){const archive=sources.find(s=>s.request_id===p.request_id);return archive?{status:'archived',request_id:p.request_id,archive}:{status:'not_found',request_id:p.request_id};}
      if(op.endsWith('_select')){
        if(mode==='select-not-found')throw Error('fixture before selection');
+       if(mode==='select-conflict'){selections=selections.map(s=>({...s,id:'concurrent-'+s.period_month,selection_version:s.selection_version+1}));throw Error('月报原件请求未完成：MONTHLY_SOURCE_SELECTION_CONFLICT');}
        const rows=p.bindings.map((b,i)=>({...b,id:'selection-'+i,selection_version:1,source_request_id:p.source_request_id,is_current:true}));
        selections=rows;lastSelection={status:'selected',selection_request_id:p.selection_request_id,source_request_id:p.source_request_id,source_sha256:p.expected_source_sha256,selections:rows,financial_records_unchanged:true};
        if(mode==='select-lost')throw Error('fixture lost select reply');return lastSelection;
@@ -86,6 +87,7 @@ let browser;
  await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('月份关联结果待核对'));
  const retryId=await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_select')).at(-1).selection_request_id);
  await host.locator('[data-ms-query]').click();await page.waitForFunction(()=>!document.querySelector('[data-ms-retry-selection]').disabled);
+ assert.equal(await host.locator('[data-ms-reselect]').isVisible(),false,'unknown result plus not_found must keep original request');
  await host.locator('[data-ms-retry-selection]').click();
  await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('月份关联结果待核对'));
  assert.equal(await host.locator('[data-ms-retry-selection]').isVisible(),false,'each uncertain retry requires another readback');
@@ -97,6 +99,33 @@ let browser;
  await host.locator('[data-ms-current] [data-ms-open]').click();
  assert.equal(await host.locator('[data-ms-current] a').getAttribute('href'),'https://example.invalid/private-original');
  assert.equal(await host.locator('[data-ms-current] a').getAttribute('target'),'_blank');
+ // A definite DB conflict can be re-planned only after this exact request is confirmed absent.
+ await host.locator('[data-ms-current] [data-ms-use]').click();
+ await page.waitForFunction(()=>!document.querySelector('[data-ms-select]').disabled);
+ await page.evaluate(()=>{lastSelection=null;mode='select-conflict';});await host.locator('[data-ms-select]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('MONTHLY_SOURCE_SELECTION_CONFLICT'));
+ const conflicted=await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_select')).at(-1));
+ assert.equal(await host.locator('[data-ms-reselect]').isVisible(),false,'conflict alone must not release original request');
+ await page.evaluate(()=>mode='status-wrong-id');await host.locator('[data-ms-query]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('查询结果尚未匹配'));
+ assert.equal(await host.locator('[data-ms-reselect]').isVisible(),false,'mismatched status must not release request');
+ await page.evaluate(()=>mode='status-unavailable');await host.locator('[data-ms-query]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('transport unavailable'));
+ assert.equal(await host.locator('[data-ms-reselect]').isVisible(),false,'transport failure must not release request');
+ await page.evaluate(()=>mode='ok');await host.locator('[data-ms-query]').click();
+ await page.waitForFunction(()=>!document.querySelector('[data-ms-reselect]').disabled);
+ assert.equal(await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_selection_status')).at(-1).selection_request_id),conflicted.selection_request_id);
+ const selectsBeforeReplan=await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_select')).length),uploadsBeforeReplan=await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_upload')).length);
+ await host.locator('[data-ms-reselect]').click();await page.waitForFunction(()=>!document.querySelector('[data-ms-select]').disabled);
+ assert.equal(await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_select')).length),selectsBeforeReplan,'replan must not write until explicit confirmation');
+ assert.equal(await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_upload')).length),uploadsBeforeReplan,'replan reuses the completed original');
+ await host.locator('[data-ms-select]').click();await page.waitForFunction(()=>document.querySelector('[data-ms-status]').textContent.includes('原件已更新，金额未调整'));
+ const replanned=await page.evaluate(()=>calls.filter(c=>c.op.endsWith('_select')).at(-1));
+ assert.notEqual(replanned.selection_request_id,conflicted.selection_request_id);
+ assert.equal(replanned.source_request_id,conflicted.source_request_id);
+ assert.equal(replanned.expected_source_sha256,conflicted.expected_source_sha256);
+ assert.deepEqual(replanned.expected_previous_selection_ids,Object.fromEntries(conflicted.bindings.map(b=>[b.period_month,'concurrent-'+b.period_month])));
+ assert.equal(replanned.bindings[1].worksheet_name,'8月 ');
  await host.locator('[data-ms-new]').click();await page.evaluate(()=>mode='upload-hold');
  await host.locator('[data-ms-file]').setInputFiles({...file,name:'late-original.xlsx'});await host.locator('[data-ms-upload]').click();
  await page.waitForFunction(()=>typeof finishUpload==='function');
@@ -112,5 +141,5 @@ let browser;
  await page.waitForFunction(()=>document.getElementById('monthly-source-archive').classList.contains('hidden'));
  assert.equal(await host.locator('[data-ms-list]').innerText(),'');
  assert.deepEqual(errors,[]);
- console.log('Monthly source browser passed: one original/three exact sheets, immutable old originals, lost upload/selection readback, same-request retry, cross-store late reply, read-only/logout privacy. Synthetic only.');
+ console.log('Monthly source browser passed: one original/three exact sheets, immutable old originals, unknown outcomes retain same requests, explicit conflict+exact not_found replan without reupload, stale range/store replies, read-only/logout privacy. Synthetic only.');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.close();});

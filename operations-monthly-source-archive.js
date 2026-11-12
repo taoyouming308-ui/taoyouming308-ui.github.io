@@ -23,8 +23,12 @@
     el('query').disabled=busy || !writable() || !job;
     el('resume').disabled=busy || !writable() || !job || Boolean(job.selection) || !chosen;
     el('resume').classList.toggle('hidden',!job || job.status==='archived' || Boolean(job.selection));
-    el('retry-selection').disabled=busy || !writable() || !job || !job.selection || !job.selection.notFound;
-    el('retry-selection').classList.toggle('hidden',!job || !job.selection || !job.selection.notFound);
+    var retryable=Boolean(job && job.selection && job.selection.notFound && !job.selection.definiteConflict);
+    var reselectable=Boolean(job && job.selection && job.selection.notFound && job.selection.definiteConflict);
+    el('retry-selection').disabled=busy || !writable() || !retryable;
+    el('retry-selection').classList.toggle('hidden',!retryable);
+    el('reselect').disabled=busy || !writable() || !reselectable;
+    el('reselect').classList.toggle('hidden',!reselectable);
     el('new').disabled=busy || Boolean(job && (job.status!=='archived' || job.selection));
   }
   function months(start,end) {
@@ -41,7 +45,7 @@
     if(!data || data.status!=='selected' || data.selection_request_id!==payload.selection_request_id || data.source_request_id!==payload.source_request_id || data.source_sha256!==payload.expected_source_sha256 || !Array.isArray(data.selections) || data.selections.length!==payload.bindings.length)return false;
     return payload.bindings.every(function(b){var rows=data.selections.filter(function(s){return s.period_month===b.period_month && s.worksheet_name===b.worksheet_name && s.id && Number.isSafeInteger(s.selection_version);});return rows.length===1;});
   }
-  host.innerHTML='<div class="finance-record-head"><div><h3>月报核对原件</h3><p class="help">保留完整 Excel，可供多个月份核对；登记原件不调整月报金额。</p></div><button type="button" class="ghost" data-ms-refresh>刷新原件</button></div><div data-ms-current></div><details><summary>已留存的核对原件</summary><div data-ms-list></div><button type="button" class="ghost hidden" data-ms-more>加载更多</button></details><details data-ms-form class="hidden"><summary>登记新版核对原件</summary><div class="form-grid"><div class="field wide"><label>月报 Excel 原件<input data-ms-file type="file" accept=".xlsx,'+MIME+'"></label><small>原件只留存一次，可关联多个工作表月份。旧原件继续保留。</small></div><div class="field"><label>起始月份<input data-ms-start type="month"></label></div><div class="field"><label>截止月份<input data-ms-end type="month"></label></div></div><div class="actions"><button type="button" class="secondary" data-ms-upload>留存原件</button><button type="button" class="ghost" data-ms-query>查询登记结果</button><button type="button" class="ghost hidden" data-ms-resume>恢复原件登记</button><button type="button" class="ghost" data-ms-new>登记另一份原件</button></div><div data-ms-bindings></div><div class="actions"><button type="button" class="primary" data-ms-select disabled>作为所选月份的核对原件</button><button type="button" class="ghost hidden" data-ms-retry-selection>继续原月份关联</button></div></details><p data-ms-status class="help" role="status" aria-live="polite"></p>';
+  host.innerHTML='<div class="finance-record-head"><div><h3>月报核对原件</h3><p class="help">保留完整 Excel，可供多个月份核对；登记原件不调整月报金额。</p></div><button type="button" class="ghost" data-ms-refresh>刷新原件</button></div><div data-ms-current></div><details><summary>已留存的核对原件</summary><div data-ms-list></div><button type="button" class="ghost hidden" data-ms-more>加载更多</button></details><details data-ms-form class="hidden"><summary>登记新版核对原件</summary><div class="form-grid"><div class="field wide"><label>月报 Excel 原件<input data-ms-file type="file" accept=".xlsx,'+MIME+'"></label><small>原件只留存一次，可关联多个工作表月份。旧原件继续保留。</small></div><div class="field"><label>起始月份<input data-ms-start type="month"></label></div><div class="field"><label>截止月份<input data-ms-end type="month"></label></div></div><div class="actions"><button type="button" class="secondary" data-ms-upload>留存原件</button><button type="button" class="ghost" data-ms-query>查询登记结果</button><button type="button" class="ghost hidden" data-ms-resume>恢复原件登记</button><button type="button" class="ghost" data-ms-new>登记另一份原件</button></div><div data-ms-bindings></div><div class="actions"><button type="button" class="primary" data-ms-select disabled>作为所选月份的核对原件</button><button type="button" class="ghost hidden" data-ms-retry-selection>继续原月份关联</button><button type="button" class="ghost hidden" data-ms-reselect>重新选择核对月份</button></div></details><p data-ms-status class="help" role="status" aria-live="polite"></p>';
   var sources=[], offset=0;
   function sourceCard(a,current) {
     return '<div class="finance-record"><strong>'+(current?'新版核对原件：':'')+escape(a.original_filename||'Excel 原件')+'</strong>'+(current?'<p class="help">原件已更新，金额未调整</p>':'')+'<div class="compact-actions"><button type="button" class="ghost" data-ms-open="'+escape(a.request_id)+'">查看原件</button>'+(writable()?'<button type="button" class="ghost" data-ms-use="'+escape(a.request_id)+'">选择核对月份</button>':'')+'</div></div>';
@@ -83,13 +87,13 @@
   async function query() {
     if(busy || !writable() || !job)return;busy=true;controls();var ctx=scope,payload=job.selection && job.selection.payload;
     try {
-      if(payload){var result=await call('selection_status',{selection_request_id:payload.selection_request_id});if(!same(ctx))return;if(result.status==='not_found'){job.selection.notFound=true;saveJob();message('月份关联尚未完成，原件已保留。可继续原月份关联。');}else await selectionResult(result,payload,ctx);}
+      if(payload){var result=await call('selection_status',{selection_request_id:payload.selection_request_id});if(!same(ctx))return;if(result.selection_request_id!==payload.selection_request_id)throw Error('原月份关联的查询结果尚未匹配');if(result.status==='not_found'){job.selection.notFound=true;saveJob();message(job.selection.definiteConflict?'核对月份的原件已变化，本次关联未保存。可重新选择核对月份，已留存原件保持不变。':'月份关联尚未完成，原件已保留。可继续原月份关联。');}else await selectionResult(result,payload,ctx);}
       else {var data=await call('status',{request_id:job.request_id});if(!same(ctx))return;if(exactArchive(data,job)){job.request_id=data.request_id;job.archive=data.archive;job.status='archived';saveJob();message('原件已留存，请选择核对月份。');await prepareBindings();}else message('原件登记尚未确认。请保留原请求，需要恢复时选择同一份原件。');}
     } catch(e){if(same(ctx))message('登记结果暂未核实：'+e.message);}finally{busy=false;controls();}
   }
   async function sendSelection(payload) {
     if(busy || !writable())return;if(job&&job.selection){job.selection.notFound=false;saveJob();}busy=true;controls();var ctx=scope;
-    try{await selectionResult(await call('select',payload,true),payload,ctx);}catch(e){if(same(ctx))message('月份关联结果待核对，请查询登记结果。'+e.message);}finally{busy=false;controls();}
+    try{await selectionResult(await call('select',payload,true),payload,ctx);}catch(e){if(same(ctx)){if(/(?:^|[^A-Z_])MONTHLY_SOURCE_SELECTION_CONFLICT(?:$|[^A-Z_])/.test(String(e.message)) && job && job.selection && job.selection.payload.selection_request_id===payload.selection_request_id){job.selection.definiteConflict=true;saveJob();}message('月份关联结果待核对，请查询登记结果。'+e.message);}}finally{busy=false;controls();}
   }
   el('file').onchange=function(){chosen=this.files&&this.files[0]||null;controls();};
   el('start').onchange=el('end').onchange=prepareBindings;
@@ -117,7 +121,8 @@
     var payload={selection_request_id:crypto.randomUUID(),source_request_id:job.request_id,expected_source_sha256:job.sha256,bindings:bindings,expected_previous_selection_ids:previous,reason:'用户指定新版月报核对原件；保留旧原件，金额未调整'};
     job.selection={payload:payload,notFound:false};saveJob();sendSelection(payload);
   };
-  el('retry-selection').onclick=function(){if(job&&job.selection&&job.selection.notFound)sendSelection(job.selection.payload);};
+  el('retry-selection').onclick=function(){if(job&&job.selection&&job.selection.notFound&&!job.selection.definiteConflict)sendSelection(job.selection.payload);};
+  el('reselect').onclick=async function(){if(busy||!writable()||!job||!job.selection||!job.selection.definiteConflict||!job.selection.notFound)return;job.last_selection_conflict=job.selection.payload;job.selection=null;saveJob();message('请重新核对月份和工作表，再确认关联。原件保持不变。');await prepareBindings();};
   el('query').onclick=query;el('refresh').onclick=function(){if(!busy)listing(false);};el('more').onclick=function(){listing(true);};
   el('new').onclick=function(){if(busy || job&&(job.status!=='archived'||job.selection))return;job=null;chosen=null;bindingState=null;saveJob();el('file').value='';el('bindings').textContent='';message('');controls();};
   function sync() {

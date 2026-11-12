@@ -3,6 +3,8 @@
 - Register one intact XLSX as the verification original for several explicit month/worksheet mappings, preserving worksheet-name whitespace and all older originals.
 - Show “新版核对原件” and “原件已更新，金额未调整” separately from monthly amounts. No parser, financial save, source-pointer replacement, acceptance or posting runs through this path.
 - Keep upload/selection requests for readback and explicit same-request recovery; suppress late results after store/account changes. Publication and real authorized registration require separate root verification.
+- Add private immutable source/completion/selection sidecars with existing scope/capabilities, exact-byte verification, canonical hash reuse, 404-only recovery and atomic 1–12 month selection receipts. Focused real-ZIP API, isolated PG17, frontend and frozen-lock API type checks passed; full publication gates and live acceptance remain pending.
+- Permit explicit fresh month bindings after a confirmed selection conflict and exact-request not_found readback, reusing the completed original. Unknown responses retain their original request; no reupload or selection write occurs while refreshing bindings.
 
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 
