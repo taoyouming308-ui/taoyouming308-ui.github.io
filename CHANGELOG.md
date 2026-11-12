@@ -5,6 +5,7 @@
 - Keep upload/selection requests for readback and explicit same-request recovery; suppress late results after store/account changes. Publication and real authorized registration require separate root verification.
 - Add private immutable source/completion/selection sidecars with existing scope/capabilities, exact-byte verification, canonical hash reuse, 404-only recovery and atomic 1–12 month selection receipts. Focused real-ZIP API, isolated PG17, frontend and frozen-lock API type checks passed; full publication gates and live acceptance remain pending.
 - Permit explicit fresh month bindings after a confirmed selection conflict and exact-request not_found readback, reusing the completed original. Unknown responses retain their original request; no reupload or selection write occurs while refreshing bindings.
+- Keep the new source-only panel inactive in the employee shareholder iframe, preserving the existing authorized report views and staff API boundary. The original staff visibility/privacy regression passes without modified assertions.
 
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 

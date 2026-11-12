@@ -3,6 +3,8 @@
   'use strict';
   var host = document.getElementById('monthly-source-archive');
   if (!host) return;
+  // The employee iframe has a separate, deliberately restricted read contract.
+  if (root.StaffReportView && root.StaffReportView.enabled) { host.classList.add('hidden'); return; }
   var MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   var scope = null, epoch = 0, bindingEpoch = 0, busy = false, reading = false, listQueued = false, job = null, chosen = null, bindingState = null;
   function el(name) { return host.querySelector('[data-ms-' + name + ']'); }
