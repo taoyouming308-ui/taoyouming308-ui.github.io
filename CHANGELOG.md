@@ -1,3 +1,13 @@
+# Unreleased v646 · Monthly verification originals
+
+- Register one intact XLSX as the verification original for several explicit month/worksheet mappings, preserving worksheet-name whitespace and all older originals.
+- Show “新版核对原件” and “原件已更新，金额未调整” separately from monthly amounts. No parser, financial save, source-pointer replacement, acceptance or posting runs through this path.
+- Keep upload/selection requests for readback and explicit same-request recovery; suppress late results after store/account changes. Publication and real authorized registration require separate root verification.
+- Add private immutable source/completion/selection sidecars with existing scope/capabilities, exact-byte verification, canonical hash reuse, 404-only recovery and atomic 1–12 month selection receipts. Focused real-ZIP API, isolated PG17, frontend and frozen-lock API type checks passed; full publication gates and live acceptance remain pending.
+- Permit explicit fresh month bindings after a confirmed selection conflict and exact-request not_found readback, reusing the completed original. Unknown responses retain their original request; no reupload or selection write occurs while refreshing bindings.
+- Keep the new source-only panel inactive in the employee shareholder iframe, preserving the existing authorized report views and staff API boundary. The original staff visibility/privacy regression passes without modified assertions.
+- Load auxiliary originals only after an explicit view/refresh or source registration action, with the primary monthly overview ready. Startup, rendering and scope changes retain an honest unread placeholder without extra requests. The unchanged original monthly-summary/startup/session/shareholder tests and new on-demand coverage passed in a 13-test targeted batch.
+
 ## 2026-11-12 · 发型审美训练：深色发重新翻译浅色参考图（v645 不变）
 
 - 新增 `aesthetic-2026-11-12`：训练浅米棕逆光参考图的通透感遇到自然深色、中粗发、后区较密、不染不烫与三分钟整理时，如何区分颜色、光线、结构和造型贡献。

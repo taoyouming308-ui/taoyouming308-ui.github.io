@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="645">
+<html lang="zh-CN" data-version="646">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=645" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=646" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -235,6 +235,7 @@
               <div id="monthly-material-result" class="help" role="status" aria-live="polite"></div>
             </form>
           </div>
+          <section id="monthly-source-archive" class="panel hidden" aria-label="月报核对原件"></section>
           <div id="monthly-sheet" class="sheet-scroll"></div>
           <div id="monthly-daily-completeness" class="sheet-caption" role="status"></div>
           <div id="monthly-summary-output" class="hidden" aria-live="polite"></div>
@@ -747,13 +748,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=645"></script>
-<script src="operations-staff-view.js?v=645"></script>
-<script src="operations-monthly-daily-performance.js?v=645"></script>
-  <script src="operations-report-fit.js?v=645"></script>
-  <script src="operations-auth-bridge.js?v=645"></script>
-  <script src="operations-voucher-preview.js?v=645"></script>
-  <script src="operations-voucher-view.js?v=645"></script>
+<script src="operations-time.js?v=646"></script>
+<script src="operations-staff-view.js?v=646"></script>
+<script src="operations-monthly-daily-performance.js?v=646"></script>
+  <script src="operations-report-fit.js?v=646"></script>
+  <script src="operations-auth-bridge.js?v=646"></script>
+  <script src="operations-voucher-preview.js?v=646"></script>
+  <script src="operations-voucher-view.js?v=646"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -770,7 +771,7 @@
   function authAccessToken(){var session=state.auth&&state.auth.session;if(!session||!session.access_token)return'';return session.expires_at&&Number(session.expires_at)<=Math.floor(Date.now()/1000)+10?'':session.access_token}
   function apiError(data,status){var message=String(data&&data.error||'请求失败');if(message.length>400||/https?:\/\/|\/rest\/v1\/|SendRequest|http2 error|fetch failed|Failed to fetch/i.test(message))message='财务数据暂时加载失败，请点击刷新重试';var error=new Error(message);error.status=status;error.code=data&&data.code||'';return error}
   function isSessionInvalidError(error){return !!(error&&(error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED'||/^(Supabase Auth 登录已失效|请重新登录|登录已过期|账号已停用|账号.*离职)/.test(error.message||'')))}
-  var API_READ_ONLY_OPERATIONS=new Set(['daily_original_archive_list','daily_original_archive_url','session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
+  var API_READ_ONLY_OPERATIONS=new Set(['monthly_source_archive_list','monthly_source_archive_url','monthly_source_archive_selection_status','daily_original_archive_list','daily_original_archive_url','session','overview','monthly_summary','catalog','report_cells','report_lineage','cell_trace','cell_trace_batch','report_url','finance_workbench','petty_cash_report','petty_cash_batch_status','voucher_center','voucher_url','payroll_center','salary_sheet_read','inventory_center','analysis_center','import_center','daily_sheet_get','daily_sheet_month','daily_sheet_read','daily_recognition_job_read','history_import_read','history_import_sheet_preview','history_import_file_url','history_evidence_images']);
   API_READ_ONLY_OPERATIONS.add('daily_electronic_sources');
   API_READ_ONLY_OPERATIONS.add('daily_sheet_correction_status');
   function apiOutcomeUnconfirmedError(){var error=new Error('未收到服务器对本次请求的有效确认。若这是保存、上传或入账，请先刷新并核对是否已完成，不要直接重复提交；若只是查看，请刷新后重试。');error.code='API_OUTCOME_UNCONFIRMED';return error}
@@ -925,7 +926,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=645';
+      script.src='operations-petty-cash-evidence.js?v=646';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1589,17 +1590,18 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=645"></script>
-  <script src="operations-daily-correction.js?v=645"></script>
-  <script src="operations-daily-electronic.js?v=645"></script>
-  <script src="operations-monthly-workbench.js?v=645"></script>
-  <script src="operations-daily-recognition.js?v=645"></script>
-  <script src="operations-daily-batch-upload.js?v=645"></script>
-<script src="operations-daily-history.js?v=645"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=645">
-<script src="operations-monthly-review.js?v=645"></script>
+  <script src="operations-daily-review.js?v=646"></script>
+  <script src="operations-daily-correction.js?v=646"></script>
+  <script src="operations-daily-electronic.js?v=646"></script>
+  <script src="operations-monthly-workbench.js?v=646"></script>
+  <script src="operations-daily-recognition.js?v=646"></script>
+  <script src="operations-daily-batch-upload.js?v=646"></script>
+<script src="operations-daily-history.js?v=646"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=646">
+<script src="operations-monthly-review.js?v=646"></script>
+<script src="operations-monthly-source-archive.js?v=646"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=645"></script>
-<script defer src="app-shell-client.js?v=645"></script>
+<script defer src="data-read-client.js?v=646"></script>
+<script defer src="app-shell-client.js?v=646"></script>
 </body>
 </html>
