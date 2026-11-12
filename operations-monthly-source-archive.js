@@ -9,7 +9,7 @@
   var scope = null, epoch = 0, bindingEpoch = 0, busy = false, reading = false, listQueued = false, job = null, chosen = null, bindingState = null;
   function el(name) { return host.querySelector('[data-ms-' + name + ']'); }
   function escape(value) { return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-  function context() { return state.user && !document.getElementById('app').classList.contains('hidden') ? {store:currentStore(),month:document.getElementById('month').value,actor:state.user,key:String(state.user.auth_account_id || state.user.id || state.user.username || '')} : null; }
+  function context() { return state.user && state.monthlyOverviewReady===true && !document.getElementById('app').classList.contains('hidden') ? {store:currentStore(),month:document.getElementById('month').value,actor:state.user,key:String(state.user.auth_account_id || state.user.id || state.user.username || '')} : null; }
   function same(ctx) { var now=context();return Boolean(ctx && now && ctx.actor===now.actor && ctx.store===now.store && ctx.month===now.month && ctx.key===now.key); }
   function writable() { return Boolean(scope && same(scope) && state.user.can_upload_reports); }
   function storageKey() { return 'zysyr-monthly-source-v1:'+encodeURIComponent(scope.key)+':'+encodeURIComponent(scope.store); }

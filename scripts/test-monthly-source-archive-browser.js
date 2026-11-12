@@ -20,7 +20,7 @@ let browser;
  await page.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
  await page.goto(origin);
  await page.evaluate(()=>{
-   window.state={user:{id:'actor-a',username:'fixture',can_upload_reports:true}};
+   window.state={user:{id:'actor-a',username:'fixture',can_upload_reports:true},monthlyOverviewReady:false};
    window.currentStore=()=>document.getElementById('store-select').value;
    window.renderAll=()=>{};window.isLocalPreview=()=>false;
    window.fileBase64=file=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(file);});
@@ -51,6 +51,10 @@ let browser;
    };
  });
  await page.addScriptTag({url:origin+'/module.js'});
+ assert.equal(await page.evaluate(()=>calls.length),0,'pending or failed monthly overview must not start source requests');
+ assert.equal(await page.locator('#monthly-source-archive').isVisible(),false);
+ await page.evaluate(()=>{state.monthlyOverviewReady=true;renderAll();});
+ await page.waitForFunction(()=>calls.some(c=>c.op==='monthly_source_archive_list'));
  const host=page.locator('#monthly-source-archive'),form=host.locator('[data-ms-form]');
  const file={name:'monthly-latest.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from('synthetic original workbook bytes, not parsed by browser')};
  async function choose(){await form.locator('summary').click();await host.locator('[data-ms-file]').setInputFiles(file);await host.locator('[data-ms-start]').fill('2026-07');await host.locator('[data-ms-end]').fill('2026-09');await host.locator('[data-ms-upload]').click();}
@@ -141,7 +145,7 @@ let browser;
  await page.waitForFunction(()=>document.getElementById('monthly-source-archive').classList.contains('hidden'));
  assert.equal(await host.locator('[data-ms-list]').innerText(),'');
  await page.reload();
- await page.evaluate(()=>{window.StaffReportView={enabled:true};window.state={user:{username:'staff-shareholder',role:'shareholder'}};window.sourceCalls=0;window.api=async()=>{sourceCalls++;throw Error('Employee iframe must not request monthly-source operations');};});
+ await page.evaluate(()=>{window.StaffReportView={enabled:true};window.state={user:{username:'staff-shareholder',role:'shareholder'},monthlyOverviewReady:true};window.sourceCalls=0;window.api=async()=>{sourceCalls++;throw Error('Employee iframe must not request monthly-source operations');};});
  await page.addScriptTag({url:origin+'/module.js'});
  assert.equal(await page.evaluate(()=>sourceCalls),0,'restricted staff iframe must not call source APIs');
  assert.equal(await page.locator('#monthly-source-archive').isVisible(),false,'restricted staff iframe hides independent source controls');
