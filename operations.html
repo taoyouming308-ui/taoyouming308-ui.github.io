@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="642">
+<html lang="zh-CN" data-version="643">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=642" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=643" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -221,7 +221,7 @@
                 <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 9v12"/></svg><label for="monthly-material-file">月报数据</label><span class="monthly-upload-format">Excel · Word</span></div>
                 <p id="monthly-table-purpose">读取月报表内的数据，自动识别所属月份。</p>
                 <input id="monthly-material-file" type="file" aria-describedby="monthly-table-purpose monthly-table-formats" accept=".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-                <small id="monthly-table-formats">XLSX / 含表格的 DOCX · 单个不超过 10MB</small>
+                <small id="monthly-table-formats">XLSX / 含表格的 DOCX · 单个不超过 10MB。只有照片的 Word 凭证包不是月报数据，请勿放在这里。</small>
               </div>
               <div class="field monthly-upload-card">
                 <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 6-6 4 4 3-3 5 5"/></svg><label for="monthly-material-vouchers">月报凭证</label><span class="monthly-upload-format">照片 · PDF</span></div>
@@ -231,6 +231,7 @@
               </div>
               <div class="monthly-upload-footer"><p id="monthly-photo-help">已有本月月报，可单独补照片；首次上传请同时选择数据表格。</p><button class="primary" type="submit">上传并保存</button></div>
               <details class="monthly-upload-details"><summary>识别与保存说明</summary><p>系统读取文件内容和当前工作表，识别日报、工资表或月报；无法明确识别时不会保存。照片 / PDF 随表格上传时，关联到识别出的月报；单独补传时，关联当前门店和月份的月报。原件只作留底，不会自动入账。</p><p>月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计。</p></details>
+              <div class="help" id="monthly-expense-upload-help">上传某笔开支的凭证：先点击下方月报对应开支的金额，再选择“上传凭证图片 / PDF”，确认后关联当前开支。整月 Word 支出凭证包请到“历史数据导入”的“上传凭证包并关联”，选择已有批次及正确月份；原包留底不代表每张照片已精确对应。</div>
               <div id="monthly-material-result" class="help" role="status" aria-live="polite"></div>
             </form>
           </div>
@@ -746,13 +747,13 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=642"></script>
-<script src="operations-staff-view.js?v=642"></script>
-<script src="operations-monthly-daily-performance.js?v=642"></script>
-  <script src="operations-report-fit.js?v=642"></script>
-  <script src="operations-auth-bridge.js?v=642"></script>
-  <script src="operations-voucher-preview.js?v=642"></script>
-  <script src="operations-voucher-view.js?v=642"></script>
+<script src="operations-time.js?v=643"></script>
+<script src="operations-staff-view.js?v=643"></script>
+<script src="operations-monthly-daily-performance.js?v=643"></script>
+  <script src="operations-report-fit.js?v=643"></script>
+  <script src="operations-auth-bridge.js?v=643"></script>
+  <script src="operations-voucher-preview.js?v=643"></script>
+  <script src="operations-voucher-view.js?v=643"></script>
   <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -924,7 +925,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=642';
+      script.src='operations-petty-cash-evidence.js?v=643';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1517,7 +1518,7 @@ function calculateDailyControls(root,cardSalesCheck){
       resultBox.textContent=fileSummary+voucherSummary+(attachmentStates.length?'\n'+attachmentStates.map(function(item){return item.name+'：'+item.status}).join('\n'):'')+(failedAttachments.length?'\n未确认的附件请先刷新月报并检查“凭证”列表；确认未出现后，再只选择这些文件补传。':'')+incomeRule+' 正式财务账未自动改变。';
       if(!failedAttachments.length)event.target.reset();else{$('monthly-material-file').value='';$('monthly-material-vouchers').value=''}
       await loadOverview();if(failedAttachments.length)toast('部分附件结果需核验；已保存的原表不会重复提交');else toast(file?'文件已自动识别并保存到 '+targetMonth:'月报照片已补充，不会重算或覆盖金额');
-    }catch(error){resultBox.textContent='上传未完成：'+error.message;toast(error.message)}finally{button.disabled=false}
+    }catch(error){var uploadMessage=error.message;if(isDocx&&String(uploadMessage).indexOf('Word 文档中没有表格')>=0){uploadMessage='这份 Word 没有可编辑表格，不能作为月报数据读取。若是支出凭证照片包，请到“历史数据导入”选择已有批次和正确月份，再用“上传凭证包并关联”留底；单笔 JPG / PNG / PDF 可点击月报对应开支金额后上传。不要反复提交到本入口。';}resultBox.textContent='上传未完成：'+uploadMessage;toast(uploadMessage)}finally{button.disabled=false}
   });
 
   async function loadShareholderRegistrations(){if(state.view!=='finance-account')return;try{var data=isLocalPreview()?{registrations:[]}:await api('shareholder_registration_list',{});renderShareholderRegistrations(data)}catch(error){$('shareholder-reg-list').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}}
@@ -1587,16 +1588,17 @@ function calculateDailyControls(root,cardSalesCheck){
   var salaryInputCellBase=salaryInputCell;
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   </script>
-  <script src="operations-daily-review.js?v=642"></script>
-  <script src="operations-daily-correction.js?v=642"></script>
-  <script src="operations-daily-electronic.js?v=642"></script>
-  <script src="operations-monthly-workbench.js?v=642"></script>
-  <script src="operations-daily-recognition.js?v=642"></script>
-<script src="operations-daily-history.js?v=642"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=642">
-<script src="operations-monthly-review.js?v=642"></script>
+  <script src="operations-daily-review.js?v=643"></script>
+  <script src="operations-daily-correction.js?v=643"></script>
+  <script src="operations-daily-electronic.js?v=643"></script>
+  <script src="operations-monthly-workbench.js?v=643"></script>
+  <script src="operations-daily-recognition.js?v=643"></script>
+  <script src="operations-daily-batch-upload.js?v=643"></script>
+<script src="operations-daily-history.js?v=643"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=643">
+<script src="operations-monthly-review.js?v=643"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=642"></script>
-<script defer src="app-shell-client.js?v=642"></script>
+<script defer src="data-read-client.js?v=643"></script>
+<script defer src="app-shell-client.js?v=643"></script>
 </body>
 </html>

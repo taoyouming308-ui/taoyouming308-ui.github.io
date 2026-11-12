@@ -1,3 +1,10 @@
+# Unreleased v643 upload candidate
+
+- Explain the photo-only Word bundle error with the correct existing archive and per-expense paths; no automatic resubmission.
+- Add date-confirmed batch originals for existing editable daily drafts only. No amount or financial record changes.
+- Verified existing expense-binding and batch-matching static tests, store/report scope, isolated per-item and batch-voucher/monthly-photo browser regressions, and 42 sync/keepalive/customer synthetic cases. New batch: 61 synthetic assertions plus an isolated 390px browser pass covering date previews, two uploads, confirmed-date refusal, lost-response freeze, cancellation and store change.
+- Not deployed. Actual production files and classification remain untested; confirmed/absent daily reports are explicitly unsupported.
+
 <!-- academy-reviewed-inputs:0f5b273f04cdf17553b65f400ac12814521df9c60c5608840bd4a95922475165 -->
 ## 2026-11-12 · Reviewed academy publication candidate (App version: v642 unchanged by academy)
 

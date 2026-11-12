@@ -522,6 +522,14 @@ User authorized pushing only the isolated startup branch and opening a draft PR 
 
 # Agent Sync Status
 
+## 2026-11-12 · Manual report upload candidate (App version: v643)
+
+- Current owner: dot upload repair. Last synchronized base checked: github/main 46e7219c. New isolated fix/report-manual-uploads-20261112; required baseline checks and daily backup passed. Other dirty worktrees untouched.
+- Clarifies photo-only DOCX versus tabular monthly data and exact expense voucher entry. Adds manual monthly JPG/PNG batching only for existing unlocked draft daily reports, with per-photo date confirmation, scope and permission rereads, serial uploads and uncertain-result stop. No report creation, recognition, financial posting or historical data import.
+- Known remaining scope: confirmed/locked or absent daily reports cannot receive originals through the existing API. This candidate does not claim unrestricted full-month support. Production upload/classification accuracy remains unverified. No deployment or merge authorized by this work.
+- Focused synthetic and isolated browser checks are recorded in CHANGELOG.md; final aggregate and publication gates still required before release.
+
+
 ## 2026-10-23 · 晚间审美训练内容候选（App version: v638）
 
 - Owner Codex；基于最新 `github/main` `bd54d07b2f8858b855e11ded44b20bbf0b0041ce` 的独立 `content/aesthetic-2026-10-23` 分支，修改前版本、完整性与交接检查通过并建立当日源码备份。
