@@ -7,6 +7,14 @@
 - No commit/push/deploy or financial posting in the completed local validation checkpoint. Latest checked main was 46e7219c. Coordinate the separate upload candidate and its already-applied archive migration; reconcile current head/schema drift and publish a forward version only after all release gates.
 - Scope limits: authoritative dependency closure is not a complete historical fresh-install migration replay; the legacy staff baseline is absent from that chain. Metadata was read in several requests, so deployment requires a fresh drift check. Global history serialization has not been high-load tested.
 
+## 2026-11-12 · Resume independent original archive (App version: v644)
+
+- Fresh github/main 46e7219c is included. Isolated resume worktree preserves all other dirty candidates; complete local backup verified before edits.
+- Align archive migration filename with existing production history 20261112055108; SQL bytes are unchanged. Register archive regression tests in the shared finance gate.
+- 77 original handwritten dates independently reviewed: July 26, August 26, September 25, no duplicate dates. Missing supplied dates remain unknown, never zero or assumed rest days.
+- Latest user-specified monthly workbook is preserved separately; this release does not modify monthly values, financial drafts or posting rules. Preserve exact live catalog dependency bytes in API deployment.
+- Production API/frontend publication, real authorized upload and per-file hash/date readback remain pending. No financial posting.
+
 # Unreleased v644 independent original archive
 
 - Store month/date original photos without changing, creating or replacing financial daily records. Posted, locked and missing dates are archive-only, not automatic ledger links.
