@@ -1,3 +1,9 @@
+# Unreleased v646 · Monthly verification originals
+
+- Register one intact XLSX as the verification original for several explicit month/worksheet mappings, preserving worksheet-name whitespace and all older originals.
+- Show “新版核对原件” and “原件已更新，金额未调整” separately from monthly amounts. No parser, financial save, source-pointer replacement, acceptance or posting runs through this path.
+- Keep upload/selection requests for readback and explicit same-request recovery; suppress late results after store/account changes. Publication and real authorized registration require separate root verification.
+
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 
 - Original-photo archive uploads and explicit same-request resumes now wait up to 300 seconds for the server response. Large originals could otherwise outlive the previous 90-second client wait and appear uncertain after the server completed them.

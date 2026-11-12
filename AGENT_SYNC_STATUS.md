@@ -1,3 +1,11 @@
+## 2026-11-12 · Independent monthly verification originals (App version: v646; not published)
+
+- Current owner: Codex. Isolated monthly-source worktree starts at reviewed v645 f5fea47e, with complete backup verified; fresh protected main integration is required before publication. Existing daily archive, historical candidates and all business data remain preserved.
+- New standalone monthly original registration stores an XLSX once and selects exact source worksheet names for multiple months. The UI says “新版核对原件” and “原件已更新，金额未调整”; old originals stay visible. This does not run historical parsing, replace financial source pointers, adjust amounts, confirm finance or post.
+- Upload and source selection use separate scoped request identities, preserved across uncertain replies. Unknown outcomes require same-request status checks; restoration verifies the same original bytes. Store/account changes suppress stale results and private previews.
+- Frontend validation passed: offline Chromium covers one workbook/three exact worksheets, old-original visibility, unknown upload/selection readback, same-request retry, stale range/store responses, authorized download link and read-only/logout privacy. Existing operations Chromium passed five viewports and unchanged report/shareholder controls; version, integrity, handoff, smoke, shell-build and module-boundary checks passed. Backend/API/database results and protected full release gates remain the root review responsibility.
+- Local candidate only; no production migration, deployment or original registration is claimed by this checkpoint.
+
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 
 - Original-photo archive uploads and explicit same-request resumes now wait up to 300 seconds for the server response. Large originals could otherwise outlive the previous 90-second client wait and appear uncertain after the server completed them.
