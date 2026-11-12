@@ -1,3 +1,10 @@
+## 2026-11-12 · Dark-hair reference-lightness aesthetic case (App version: v645 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main ac98cb30ff2ed574561550d7f70805f261627126; clean focused `content/aesthetic-2026-11-12` worktree, starting version/integrity/handoff checks and complete daily backup passed before edits. The published 2026-11-11 case and all thirty-four earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-12` case separates the visible current deep-hair outline from a fictional light beige-brown backlit reference, regional hair settings, no-color/no-perm limits and three-minute routine. Conditional A/B compare directly copying high layers/thinning with redesigning negative space, weight and reflection for dark hair; six answers and five unscored self-checks include ordinary light, side backlight, dark/light garment backgrounds, ear tuck, first wash, fourth week and eighth week without inventing user completion.
+- Original 2172×724 AI WebP shows only one fictional adult woman's current front/two true profiles/back deep near-black collarbone lob in ordinary indoor fall, not the undisplayed light reference, proposed cut, dye, perm, makeover or future state. No real customer, measured anatomy/color level/density/diameter, verified styling response, occupation/personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local content/browser/shared gates, exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 
 - Original-photo archive uploads and explicit same-request resumes now wait up to 300 seconds for the server response. Large originals could otherwise outlive the previous 90-second client wait and appear uncertain after the server completed them.

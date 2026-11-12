@@ -1,3 +1,8 @@
+## 2026-11-12 · 发型审美训练：深色发重新翻译浅色参考图（v645 不变）
+
+- 新增 `aesthetic-2026-11-12`：训练浅米棕逆光参考图的通透感遇到自然深色、中粗发、后区较密、不染不烫与三分钟整理时，如何区分颜色、光线、结构和造型贡献。
+- 同步原创AI虚构女性四视图、六段资深基准答案、普通光/侧逆光/深浅衣着背景验证及首次洗后/第四周/第八周验收、五项未评分复盘；未改 App 代码、版本、旧研习院、自由换算或业务数据。
+
 ## 2026-11-12 · Allow longer original-photo uploads (App version: v645)
 
 - Original-photo archive uploads and explicit same-request resumes now wait up to 300 seconds for the server response. Large originals could otherwise outlive the previous 90-second client wait and appear uncertain after the server completed them.

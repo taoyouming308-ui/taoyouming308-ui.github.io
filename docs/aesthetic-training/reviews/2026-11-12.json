@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-12",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "ac98cb30ff2ed574561550d7f70805f261627126",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, natural color level, hair density, hair diameter, lighting contribution or that the proposed dark-hair structure has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional light-reference versus deep-hair translation case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-five earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current deep-hair outline is separated from the undisplayed fictional light reference, lighting/styling hypotheses, fictional zonal hair settings, customer priorities and live checks",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; dark-hair structural B is a conditional first test, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current neutral state, complete head, baseline, neck and shoulders without depicting the light reference, dye or a result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Hair diameter, density, elasticity, chemical history and dry-cut response are fictional case settings from an imagined live assessment, not visible-image findings",
+      "Ordinary light, side backlight and garment-background comparisons can expose visual dependence but do not guarantee every camera, environment, product or future grow-out state",
+      "Preparer audit is not independent scientific, colorimetric, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-12-dark-hair-reference-lightness.webp",
+    "sha256": "1e061d5d843b7efeb2092e8f8b410ebe46cdee8cb130170c721620c75b953ba8",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2172x724 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; deep near-black dense collarbone lob in neutral ordinary indoor fall, complete head, baseline, neck and shoulders, no light-colored reference, dye or proposed cut"
+  },
+  "hashes": {
+    "feedRawSha256": "06f6c81494d1e31092ff2ac2b1a0c74c00693bb9945fc9d423e5e01857923880",
+    "caseCanonicalSha256": "e4c2bfc87aa449c2e1dd93626568f637c6f9203df5edb1ec0f3ce36ef45049bd"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-12 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v645 before editing; daily backup script created the current daily archive",
+    "contentContract": "passed locally: thirty-six cases; all thirty-five previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally with the installed system Chromium; the managed sandbox denies the browser process singleton socket (Operation not permitted), so no local browser pass is claimed. Protected PR CI must execute the browser gate before merge",
+    "sharedChecks": "content contract, version, release integrity, smoke, academy verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, app UI, aesthetic system/study/coach, Meiguanjia sync and agent handoff checks passed locally. Docker/PostgreSQL and browser-dependent gates remain for exact-head protected CI"
+  }
+}
