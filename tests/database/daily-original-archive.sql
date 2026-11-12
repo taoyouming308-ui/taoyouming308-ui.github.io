@@ -9,7 +9,7 @@ create function zysyr_private.protect_report_trace_history() returns trigger lan
 create table public.synthetic_financial(id int,status text,locked boolean,amount numeric,source_id uuid,revision int);
 insert into public.synthetic_financial values(1,'posted',true,123,null,7),(2,'draft',false,456,null,2);
 create temp table digest_before as select md5(jsonb_agg(to_jsonb(f))::text) digest from public.synthetic_financial f;
-\ir ../../supabase/migrations/20261112053748_daily_original_independent_archive.sql
+\ir ../../supabase/migrations/20261112055108_daily_original_independent_archive.sql
 create function public.test_archive(action text, req uuid default '00000000-0000-0000-0000-000000000004', meta jsonb default '{"report_date":"2026-10-01","original_filename":"test.png","mime_type":"image/png","size_bytes":123,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","note":""}') returns jsonb language sql as $$ select public.zysyr_daily_original_archive('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003',action,req,meta) $$;
 do $$declare r jsonb; begin
  r:=public.test_archive('reserve'); assert (r->>'newly_reserved')::boolean;
