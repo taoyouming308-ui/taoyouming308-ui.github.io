@@ -1,3 +1,10 @@
+## v652 · 月报上传后核对原件（2026-11-13）
+
+- XLSX 上传后将原件数值、缓存公式和月份与保存结果逐格核对，差异列出单元格及原件/保存值；核对状态随月报再次打开显示。
+- 核对失败、缺少公式结果或不支持完整核对的格式标为待核对。草稿保存成功后的核对/刷新失败保留成功回执，避免重复上传。
+- 上传仅保存草稿和私有原件，保留旧版；自动核对不修改金额、不自动审批或入账。现有手工修改与上传原始一致性检查分开。
+- 增加独立 XML、完整 API 和浏览器回归，并验证 7–9 月原件 815 个数值与 295 个公式。
+
 ## v651 candidate · Preserve zero-valued Excel formula caches
 
 - Preserve explicit cached zero results when importing original monthly workbooks. ExcelJS's copied value can omit zero; the result accessor retains it.
