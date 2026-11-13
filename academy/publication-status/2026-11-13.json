@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-13",
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-13"
+  ],
+  "baseSha": "fcef3cebbe2ff8d7eea9227d5d23c08fa0867704",
+  "inputHeadSha": "9b1638e1f5ca933ba21500dc26c44f5cf2dcfc41",
+  "preparedHeadSha": "fa92f5ce3524617825aa6fd0b4f624491542e188",
+  "preparationRun": 43341748303,
+  "preparationArtifact": 14000397121,
+  "preparationArtifactSha256": "311bb42d7070dfc6540e7458be1e29e2695aa063344321d895669c1e1894e443",
+  "backupArtifact": 14000720059,
+  "preparationBackupZipSha256": "dde0641423883afcb83ecc702d551ce431d3e1c72f5f579de60e8e8717ec7657",
+  "preparationBackupArchiveSha256": "43f48d8064e9019b853087bb47684e7168e847a3eb9cd974b60e75835f8fc7af",
+  "baselinePreflightRun": 43338824391,
+  "baselineBackupArtifact": 13998093568,
+  "baselineBackupZipSha256": "fb6c7fafb6b487b7f82b0a362941fa62990c9fa6da6986f9821df73b5afe1793",
+  "baselineBackupArchiveSha256": "976365cd4a845a5c9cf48489979bd0b0c1b54f5e94c24e0fb65ee2d07f0c5480",
+  "contentBindingSha256": "29ae0f9f00a3696b4e53165743aa8c0dde227361ad4ff446d66980b4fa6cd43c",
+  "reviewedAt": "2026-11-13T01:01:50.256Z",
+  "verifiedAt": "2026-11-13T01:15:27.496Z",
+  "verification": {
+    "cloudPrepJob": "success",
+    "fullPrePush": "success: actual push workflow 43341748303 completed including original .githooks pre-push gate on 2026-11-13",
+    "renderIdempotent": true,
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 31,
+    "allThirtyPreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Read eight actual immutable prepared-head files on fa92f5ce; computed SHA256 over original Unicode content, compared canonical review draft hash and three asset hashes, checked catalog 31 descending entries, static fallback and render links, scoped PR changed files. Downloaded and SHA256-verified immutable preflight baseline artifact 13998093568 and archived source 976365... bound to main fcef3ce; downloaded preparation backup 14000720059 and source archive 43f48... bound to same main, downloaded prepared report 14000397121 with contentBinding 29ae... and new HTML 3cae...; all actual verified, no publication claim."
+  },
+  "fileSha256": {
+    "academy/2026-11-13.html": "3cae68f679b8cf5666d0533a83305bed27794687525617ac3687a9b518fbc179",
+    "academy/catalog.json": "f0ba88b151adb517d94acc560fb5fd813c3e3e3953ef2c57b7de2d1d8c531f9c",
+    "academy/index.html": "22619d7d4a0b1a38e4865cb197f12b48d8b1e42a472e44f65752f2fc6675c858",
+    "academy/drafts/2026-11-13.json": "27c6873169cdfa656975c6359a63e552dc6572c2107b0051e48860ecdbf1778a",
+    "academy/reviews/2026-11-13.json": "ebf84315f0ac477a1a4a21977636d3e7f476d1e376d8123cb197d39f1414d601",
+    "academy/assets/2026-11-13/figure1.svg": "93d62e7787fd3a98e724a044226e41ac4887b88c57b908422a21932298607bf7",
+    "academy/assets/2026-11-13/figure2.svg": "b21fe2234d2ac59afc05ea53ddc6e8be409679e7ccf04f01e27e8b873f4b0788",
+    "academy/assets/2026-11-13/figure3.svg": "a039c42deebea8e38ab56e7bec79a4633d051d2c49f9a283d48291bad674e451"
+  },
+  "remaining": [
+    "Wait for exact final PR head Validate shared app/validate",
+    "Wait for exact final PR head Academy publication preflight/backup-main",
+    "Recheck main/head and every required protection",
+    "Mark draft PR ready and merge normally with expected_head_sha",
+    "Verify 31 lessons, index, catalog and all local SVGs against actual GitHub Pages by SHA256"
+  ]
+}
