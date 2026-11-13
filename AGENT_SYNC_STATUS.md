@@ -1,3 +1,10 @@
+## 2026-11-13 · Hide monthly bulk voucher upload (App version: v652; publication pending)
+
+- Current owner: Codex. Fresh protected main 323394a4/v651 is the base; the complete daily backup and starting checks passed. Unrelated untracked artifacts remain untouched.
+- User clarified that the erroneous attachments are monthly expense vouchers, not daily originals; all 29 displayed attachments were explicitly confirmed wrong. Using the existing finance review transaction, the exact preflighted batch was rejected and unlinked from the selected monthly report. Independent readback found 29 rejected/unassigned records, zero active links, 29 retained immutable originals and 29 review trails; the report and cell hashes were unchanged. The private before/readback records stay outside this public repository.
+- User requested hiding only the monthly bulk voucher upload entry, not adding a void UI. The entry is hidden and disabled, the data workbook card remains available, and copy routes expense evidence through the selected expense amount. Per-expense uploads, existing valid attachments, daily originals, APIs and permissions stay unchanged. Legacy attachment handlers remain for compatibility, not as a visible batch entry.
+- Focused isolated browser checks passed at five viewport sizes, including keyboard exclusion, reopen persistence, existing attachment viewing and upload compatibility. Normal full pre-push, protected exact-head CI, merge, Pages and exact live readback remain required before claiming the hidden entry is online. No backend deployment or migration is part of this frontend patch.
+
 ## 2026-11-13 · Preserve cached zero formula results (App version: v651; not deployed)
 
 - Based on protected main 3d667bb3/v650. The v650 formula translation and merge-alias fix is deployed as operations-api v135. Live append-only verification found four zero-result formula cells in July/August became null because ExcelJS value copying drops falsy cached results. Reimport acceptance paused at this exact mismatch; no posting occurred and all old versions remain.

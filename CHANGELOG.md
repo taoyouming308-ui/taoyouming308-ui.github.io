@@ -1,3 +1,8 @@
+## v652 · Hide monthly bulk voucher upload
+
+- Hide and disable the monthly report's bulk photo/PDF upload card at the user's request. Keep workbook uploads, existing voucher viewing and each expense's own evidence upload available.
+- Clarify the upload copy and verify keyboard/phone/desktop behavior. This frontend change does not alter financial amounts, API permissions or daily-original management.
+
 ## v651 candidate · Preserve zero-valued Excel formula caches
 
 - Preserve explicit cached zero results when importing original monthly workbooks. ExcelJS's copied value can omit zero; the result accessor retains it.

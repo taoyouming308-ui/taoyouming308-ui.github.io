@@ -76,6 +76,10 @@ const extraPhotos = ['凭证甲.jpg', '凭证乙.jpg', '凭证丙.jpg'].map(name
       renderMonthlyAuditControls();
     });
     await page.locator('#monthly-material-toggle').click();
+    // v652 hides the bulk-upload entry at the user's request. Explicit synthetic
+    // file injection below only verifies the retained legacy upload compatibility.
+    assert.equal(await page.locator('#monthly-material-vouchers').isVisible(), false);
+    assert.equal(await page.locator('#monthly-material-vouchers').isDisabled(), true);
     await page.setInputFiles('#monthly-material-vouchers', photo);
     assert.equal(await page.locator('#monthly-material-file').getAttribute('required'), null);
     await page.locator('#monthly-material-form button[type="submit"]').click();
