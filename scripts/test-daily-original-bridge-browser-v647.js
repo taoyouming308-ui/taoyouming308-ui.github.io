@@ -16,11 +16,13 @@ let browser;
   let user, overview, template, role = 'finance', mode = 'archive', blockDisplay = false;
   let blockSourceReview = false;
   let saved = null, signedVersion = 0, holdNextRead = false, releaseRead, readStarted;
+  const savedAngles = new Map();
   const calls = [], errors = [], downloads = [];
   function archive(date) {
     return { request_id: 'archive-' + date, report_date: date, original_filename: date + '-original.png',
       mime_type: 'image/png', size_bytes: png.length, sha256: 'a'.repeat(64), review_status: 'unreviewed',
-      private_url: 'https://synthetic-private.invalid/original/' + date + '/archive-' + date + '.png' + (signedVersion ? '?signature=' + signedVersion : ''), url_expires_in: 300 };
+      private_url: 'https://synthetic-private.invalid/original/' + date + '/archive-' + date + '.png' + (signedVersion ? '?signature=' + signedVersion : ''), url_expires_in: 300,
+      display_rotation_degrees: savedAngles.has(date) ? savedAngles.get(date) : null };
   }
   function day(date) {
     return { report_date: date, draft_id: 'draft-' + date, status: 'draft', grand_total: null,
@@ -87,6 +89,13 @@ let browser;
         delete saved.original_archive; delete saved.archived_originals;
         return route.fulfill({ json: saved });
       }
+      if (payload.operation === 'daily_original_archive_orientation_save') {
+        assert.equal(role, 'finance');
+        assert.match(payload.request_id, /^archive-2026-/);
+        assert([0, 90, 180, 270].includes(payload.degrees));
+        savedAngles.set(payload.request_id.slice(8), payload.degrees);
+        return route.fulfill({ json: { changed: 1, financial_records_unchanged: true } });
+      }
       if (payload.operation === 'daily_recognition_job_read') return route.fulfill({ json: { job: null } });
       throw Error('Unexpected API operation ' + payload.operation);
     }
@@ -137,6 +146,18 @@ let browser;
         assert(!calls.some(c => /daily_sheet_(confirm|save)/.test(c.operation)), 'blocked confirmation sends no financial mutation');
       }
       if (i === 1) {
+        if (month === '2026-07') {
+          const tools = page.locator('[data-archive-rotation-tools]');
+          await tools.locator('[data-right]').click();
+          assert.match(await inline.evaluate(image => image.style.transform), /rotate\(90deg\)/);
+          await tools.locator('[data-save]').click();
+          await page.waitForFunction(() => document.querySelector('[data-archive-rotation-tools] [data-status]').textContent.includes('方向已保存'));
+          assert.equal(savedAngles.get(date), 90);
+          await page.locator('#daily-readonly-back').click();
+          await page.locator('[data-daily-day="2026-07-01"]').click();
+          await page.waitForFunction(() => !document.getElementById('daily-report-detail').classList.contains('hidden'));
+          assert.match(await page.locator('[data-daily-archived-zoom] img').evaluate(image => image.style.transform), /rotate\(90deg\)/);
+        }
         await page.locator('[data-daily-archived-zoom]').click();
         const viewer = page.locator('dialog[aria-label="日报原图放大查看"]');
         assert.equal(await viewer.isVisible(), true);
