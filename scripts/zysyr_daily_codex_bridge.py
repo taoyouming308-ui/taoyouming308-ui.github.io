@@ -21,6 +21,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
+from zysyr_voucher_codex_bridge import recognize_voucher
 
 
 MAX_REQUEST_BYTES = 512 * 1024
@@ -457,6 +458,13 @@ def handle_daily_codex_recognition(handler: Any) -> None:
     try:
         payload = _read_payload(handler)
         image_url = str(payload.get("image_url", "")).strip()
+        if payload.get("task_type") == "expense_voucher":
+            with tempfile.TemporaryDirectory(prefix="zysyr-voucher-image-") as work:
+                base = Path(work) / "original"
+                suffix = _download_image(image_url, base)
+                result = recognize_voucher(base.with_suffix(suffix), str(payload.get("month", "")), _CODEX_PROCESS_SLOT)
+            _send(handler, result)
+            return
         store = str(payload.get("store", "")).strip()[:120]
         report_date = str(payload.get("report_date", "")).strip()[:10]
         cells = _clean_cells(payload.get("cells"))

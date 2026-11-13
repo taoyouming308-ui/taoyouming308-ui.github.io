@@ -1,3 +1,14 @@
+## v653 · Codex recognition for petty-cash batch vouchers
+
+- Route pending batch images through the authenticated Codex bridge, with structured date/actual-paid candidates and original-text evidence. Ambiguous, summary or multiple-payment images stay manual; no automatic approval, association or posting.
+- Keep unknown dates and amounts blank, display Codex review warnings, refresh untouched form fields and preserve manual edits. PDFs remain manual-review originals.
+- Preserve existing daily recognition and non-batch OCR paths, with a separate supported voucher-model default and bounded background worker tasks.
+
+## v652 · Hide monthly bulk voucher upload
+
+- Hide and disable the monthly report's bulk photo/PDF upload card at the user's request. Keep workbook uploads, existing voucher viewing and each expense's own evidence upload available.
+- Clarify the upload copy and verify keyboard/phone/desktop behavior. This frontend change does not alter financial amounts, API permissions or daily-original management.
+
 ## v652 · 月报上传后核对原件（2026-11-13）
 
 - XLSX 上传后将原件数值、缓存公式和月份与保存结果逐格核对，差异列出单元格及原件/保存值；核对状态随月报再次打开显示。

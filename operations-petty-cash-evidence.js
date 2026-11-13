@@ -10,6 +10,7 @@
   var batchStatusData = null;
   var batchStatusKey = '';
   var batchDrafts = {};
+  var batchDirtyFields = {};
   var batchPollTimer = 0;
   var batchLastWakeAt = 0;
   var batchLoadGeneration = 0;
@@ -342,13 +343,20 @@
       var fields = item.confirmed_target_id ? (item.corrected_fields || item.candidate_fields || {}) : (item.candidate_fields || {});
       var suggested = item.match && item.match.target_id ? batchTargetValue(item.match.target_kind, item.match.target_id) : '';
       var confirmed = item.confirmed_target_id ? batchTargetValue(item.confirmed_target_kind, item.confirmed_target_id) : '';
-      var draft = batchDrafts[item.id] || { document_date: fields.document_date || '', amount: fields.amount == null ? '' : fields.amount,
+      var latestDraft = { document_date: fields.document_date || '', amount: fields.amount == null ? '' : fields.amount,
         counterparty: fields.counterparty || '', document_number: fields.document_number || '', target: confirmed || suggested };
+      var draft = batchDrafts[item.id] || latestDraft;
+      Object.keys(latestDraft).forEach(function (key) {
+        if (item.confirmed_target_id || !(batchDirtyFields[item.id] || {})[key]) draft[key] = latestDraft[key];
+      });
       batchDrafts[item.id] = draft;
       var status = batchStatusText(item), disabled = item.confirmed_target_id ? 'disabled' : '';
       var recognizing = item.task_status === 'queued' || item.task_status === 'processing';
       var error = item.latest_ocr_task && item.latest_ocr_task.error_message;
       var reason = item.match && item.match.reason ? item.match.reason : '等待识别结果';
+      if (fields.recognition_provider === 'codex-local') reason = 'Codex 已识别（待核对）：' + reason;
+      if (Array.isArray(fields.parse_warnings) && fields.parse_warnings.length) reason += '；' + fields.parse_warnings.join('；');
+      if (error && error.indexOf('CODEX_') === 0) reason = 'Codex 识别暂未完成，原图已保存，请稍后重试或人工核对';
       if (error === 'PDF_REQUIRES_MANUAL_REVIEW') reason = 'PDF 原件已保存，请人工填写日期、金额并选择对应明细';
       return '<article class="petty-batch-item' + (item.confirmed_target_id ? ' confirmed' : '') + '" data-petty-batch-item="' + esc(item.id) + '" data-batch-id="' + esc(item.batch_id) + '">'
         + '<div class="petty-batch-file"><div><strong>' + esc(item.original_filename) + '</strong><div class="help">上传 ' + esc(window.ZysyrTime.dateTime(item.uploaded_at)) + '</div></div>'
@@ -576,8 +584,15 @@
       };
     });
     document.querySelectorAll('[data-petty-batch-item] input,[data-petty-batch-item] select').forEach(function (field) {
-      field.onchange = rememberBatchDrafts;
-      field.oninput = rememberBatchDrafts;
+      function changed() {
+        var id = field.closest('[data-petty-batch-item]').dataset.pettyBatchItem;
+        var key = field.hasAttribute('data-batch-date') ? 'document_date' : field.hasAttribute('data-batch-amount') ? 'amount'
+          : field.hasAttribute('data-batch-counterparty') ? 'counterparty' : field.hasAttribute('data-batch-number') ? 'document_number' : 'target';
+        (batchDirtyFields[id] || (batchDirtyFields[id] = {}))[key] = true;
+        rememberBatchDrafts();
+      }
+      field.onchange = changed;
+      field.oninput = changed;
     });
   }
 
