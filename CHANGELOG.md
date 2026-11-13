@@ -1,3 +1,9 @@
+## v651 candidate · Preserve zero-valued Excel formula caches
+
+- Preserve explicit cached zero results when importing original monthly workbooks. ExcelJS's copied value can omit zero; the result accessor retains it.
+- Display numeric zero correctly and keep genuinely missing formula caches unknown. Add reproducing shared/non-shared zero tests and optional independent full-source numeric/formula verification.
+- Follow-up to v650 live acceptance; old report versions and original bytes remain retained. No automatic review, confirmation or posting.
+
 ## v650 candidate · Correct monthly workbook formula display
 
 - Translate Excel shared formulas per cell when importing monthly workbooks; skip merged aliases that duplicate a financial value.

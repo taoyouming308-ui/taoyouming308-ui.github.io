@@ -2522,7 +2522,10 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
   const values = Array.from({ length: rowCount }, () => Array(columnCount).fill(""));
   for (let row = 1; row <= rowCount; row += 1) {
     for (let column = 1; column <= columnCount; column += 1) {
-      values[row - 1][column - 1] = excelCellText(sheet.getCell(row, column).value);
+      const cell = sheet.getCell(row, column);
+      // ExcelJS's value copy omits falsy formula results; the result getter
+      // preserves a cached zero and distinguishes it from an absent cache.
+      values[row - 1][column - 1] = excelCellText(cell.result !== undefined ? cell.result : cell.value);
     }
   }
   const cells: JsonRecord[] = [];
@@ -2536,7 +2539,7 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
       // A shared-formula slave stores its master's address in value, while
       // cell.formula returns the formula translated to this row/column.
       const formula = cleanText(cell.formula, 2000) || formulaCellText(source);
-      const numericValue = numericCellValue(source);
+      const numericValue = numericCellValue(cell.result !== undefined ? cell.result : source);
       if (numericValue === null && !formula) continue;
       const address = `${columnLetters(column)}${row}`;
       const label = reportCellLabel(values, row, column);
