@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-report-source-review-route.js" },
+    { "runtime": "node", "script": "test-report-source-review.js" },
+    { "runtime": "node", "script": "test-report-source-review-browser.js" },
+    { "runtime": "node", "script": "test-daily-original-read-bridge-api.js" },
+    { "runtime": "node", "script": "test-daily-original-read-bridge-db.js" },
+    { "runtime": "node", "script": "test-daily-original-bridge-browser-v647.js" },
     { "runtime": "node", "script": "test-monthly-source-archive-api.js" },
     { "runtime": "node", "script": "test-monthly-source-archive-db.js" },
     { "runtime": "node", "script": "test-monthly-source-archive-browser.js" },
