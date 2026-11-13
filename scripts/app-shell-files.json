@@ -23,6 +23,7 @@
   "operations-daily-correction.js",
   "operations-daily-electronic.js",
   "operations-daily-history.js",
+  "operations-daily-original-display.js",
   "operations-daily-recognition.js",
   "operations-daily-review.js",
   "operations-monthly-daily-performance.js",

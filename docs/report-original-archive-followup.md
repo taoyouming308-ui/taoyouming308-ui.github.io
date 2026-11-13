@@ -24,3 +24,11 @@ This is local candidate code, not a deployed service. Production migration, API 
 ## Verification limits
 
 Run new API mocks, browser fixtures and isolated PostgreSQL concurrency tests plus the repository gates on the final tree. Database fixtures isolate the new schema and use authority stubs and financial sentinel rows; they are not proof against the entire deployed schema. Real account permissions, storage configuration and end-to-end production availability require a separate authorized deployment/acceptance step with no automatic business-data import.
+
+## Daily read bridge (v647 candidate)
+
+Existing daily month/detail read responses may project independent completed archives without changing financial evidence. Calendar `original_archive` distinguishes `archived` (positive count), `none` (zero), and `unavailable` (unknown). Legacy responses keep their existing behavior. Detail renders `archived_originals` separately, only for the opened draft date, with an authorized five-minute link or an honest unavailable-link message.
+
+The display does not place these originals in financial `attachments`, replace `source_voucher_id`/`original_image_url`, or change reviewed-original counts, recognition eligibility or posting gates. Existing financial originals stay visible. There are no new frontend operations or eager archive reads; the existing scoped daily month/detail reads also support authorized employee viewers.
+
+Local whole-page synthetic coverage verifies 26/26/25 presence counts and all 77 date-specific links, plus one actual private image opening per month. Production acceptance must independently read back the real 77 archive/date/object matches and open representative correct originals through the normal deployed App. This bridge does not establish amount correctness or approved accounting.

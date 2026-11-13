@@ -13,6 +13,7 @@ import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
 import { dailyAutofillView, isSyncedDailySheet } from "../_shared/daily-autofill-view.mjs";
 import { MONTHLY_REVIEW_OPERATIONS, monthlyReviewRequest, monthlyReviewError } from "../_shared/monthly-review.mjs";
 import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive } from "../_shared/monthly-source-archive.ts";
+import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -6252,6 +6253,26 @@ async function currentDailyValidations(companyId: string, storeId: string, draft
   }
 }
 
+async function dailyOriginalReadPresentation(mode: "month" | "detail", data: JsonRecord, payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  try {
+    return await dailyOriginalReadBridge(mode, payload, session, data, {
+      selectedStore: selectedStoreInfo, hasCapability: hasAuthCapability,
+      rpc: async (args: JsonRecord) => {
+        const response = await rest("rpc/zysyr_daily_original_references", { method: "POST", body: JSON.stringify(args) });
+        if (!response.ok) throw new Error("日报原图存档暂不可读");
+        return await response.json();
+      },
+      sign: (path: string) => signedStorageUrl(VOUCHER_BUCKET, path),
+    });
+  } catch {
+    // Presentation enrichment must never hide a successfully read financial report.
+    const unknown = { state: "unavailable", count: null };
+    return mode === "month"
+      ? { ...data, days: ((data.days || []) as JsonRecord[]).map((day) => ({ ...day, original_archive: unknown })) }
+      : { ...data, original_archive: unknown, archived_originals: [] };
+  }
+}
+
 async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "voucher.read") && !hasAuthCapability(session, "daily_report.write")) {
     throw new Error("当前账号没有查看日报权限");
@@ -7245,10 +7266,10 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
     if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
     if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
-    if (operation === "daily_sheet_month") return json(await dailySheetMonth(payload, session));
+    if (operation === "daily_sheet_month") return json(await dailyOriginalReadPresentation("month", await dailySheetMonth(payload, session), payload, session));
     if (operation === "daily_electronic_sources") return json(await dailyElectronicSources(payload, session));
     if (operation === "daily_business_details") return json(await dailyBusinessDetails(payload, session));
-    if (operation === "daily_sheet_read") return json(await dailySheetRead(payload, session));
+    if (operation === "daily_sheet_read") return json(await dailyOriginalReadPresentation("detail", await dailySheetRead(payload, session), payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
     if (operation === "history_import_read") return json(await historyImportRead(payload, session));

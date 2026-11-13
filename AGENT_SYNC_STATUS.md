@@ -1,3 +1,10 @@
+## 2026-11-13 · Daily archived-original read bridge (App version: v647; not published)
+
+- Current owner: Codex. Last synchronized base checked: github/main 301f738a402cb8765fc356febae553c1b1163211 (v646); isolated clean worktree, three starting checks and complete daily recovery backup verified before edits. Other dirty candidates remain untouched.
+- Daily calendar/detail display independently completed originals from their existing read responses. Archive presence is “原图已存档 · 待核对”, never financial approval; missing originals and unavailable archive checks remain distinct. Detail keeps the original date/name and directly opens the authorized short-lived source link.
+- No new frontend API reads or staff permissions. Independent archive metadata stays separate from financial attachments, source pointers and original-image fields; amounts, recognition/review, confirmation and posting gates are unchanged.
+- Whole-page browser regression covers three month counts (26/26/25), 77 correct-date links, three actual synthetic image opens, financial evidence blocking, unavailable/legacy/unsigned/wrong-date responses, preserved financial attachments and employee read-only sessions. Focused gates, protected exact-head CI, coordinated deployment and live production readback remain separate requirements.
+
 <!-- academy-reviewed-inputs:29ae0f9f00a3696b4e53165743aa8c0dde227361ad4ff446d66980b4fa6cd43c -->
 ## 2026-11-13 · Reviewed academy publication candidate (App version: v646 unchanged)
 
