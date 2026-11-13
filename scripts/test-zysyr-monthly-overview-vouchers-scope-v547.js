@@ -18,6 +18,7 @@ vm.createContext(sandbox);
 vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploadVouchers;`), sandbox);
 
 (async () => {
+  const { verifyMonthlyUpload } = await import('../supabase/functions/_shared/monthly-upload-verification.mjs');
   const ids = Array.from({ length: 205 }, (_, index) => `${String(index).padStart(8, '0')}-0000-4000-8000-000000000000`);
   const reports = ids.map(id => ({ id })).concat([{ id: ids[0] }, { id: 'not-a-uuid' }]);
   const rows = await sandbox.readVouchers('company-id', 'store-id', reports);
@@ -64,7 +65,7 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
     template_code: 'synthetic', display_data: { original: 'preserved' },
   };
   const timingSandbox = {
-    performance,
+    performance, verifyMonthlyUpload,
     console: { log: value => timingEvents.push(JSON.parse(value)) },
     cleanText: (value, max = 500) => String(value ?? '').trim().slice(0, max),
     validDate: value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
@@ -97,6 +98,7 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
   const syntheticResponse = await timingSandbox.runOverview({ month: '2026-01' }, { operations_role: 'shareholder' });
   assert.deepEqual(JSON.parse(JSON.stringify(syntheticResponse.monthly_report.display_data)), { original: 'preserved' },
     'adding timing telemetry must not alter the monthly report payload');
+  assert.equal(syntheticResponse.monthly_report.upload_verification.status, 'needs_review', 'legacy report must not be falsely marked verified');
   assert.equal(timingEvents.length, 1, 'one request must emit exactly one aggregate timing event');
   assert.equal(timingEvents[0].event, 'zysyr_overview_timing_v1');
   assert.ok(Number.isFinite(timingEvents[0].total_ms) && timingEvents[0].total_ms >= 0);
