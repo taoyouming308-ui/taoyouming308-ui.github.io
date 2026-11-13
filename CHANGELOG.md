@@ -1,3 +1,10 @@
+## v649 local candidate · Correct monthly workbook formula display
+
+- Translate Excel shared formulas per cell when importing monthly workbooks; skip merged aliases that duplicate a financial value.
+- Preserve the original cached formula result in an unchanged monthly report. Recalculate dependent formulas only after an input changes, so existing July–September previews recover without a financial write.
+- Verify the importer against the exact July, August and September source workbooks and add a regression for cached legacy reports. Existing reports should be reimported append-only after publication before financial edits, because their stored formula references remain legacy data.
+- Local candidate only. No production upload, accounting revision, posting or deployment in this change.
+
 ## v648 candidate · Show archived daily photos inside electronic reports
 
 - Embed each completed, authorized original image directly in its matching electronic daily report, with an in-page zoom viewer and a return-to-report action after batch upload.

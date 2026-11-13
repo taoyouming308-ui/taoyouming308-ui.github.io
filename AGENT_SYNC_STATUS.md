@@ -1,3 +1,10 @@
+## 2026-11-13 · Monthly shared-formula repair candidate (App version: v649; not deployed)
+
+- Current owner: Codex. Based on protected github/main 8607769d, isolated from the active project checkout. Local backup completed before editing.
+- July, August and September 2026 source workbook hashes match active report uploads. All original numeric cells match the archived import; formula display differs in 40, 29 and 25 cells respectively because Excel shared-formula slaves were stored as master references and merged aliases were imported as separate financial cells.
+- API import now stores translated formulas and excludes merged aliases. Unchanged archived reports retain workbook cached amounts on read; dependent formulas recalculate only after a source change. The exact three workbooks passed import regression. Existing archived formula references remain legacy data until append-only reimport after publication.
+- No production financial write, deployment, merge or Pages readback. Protected checks and an approved source reimport are still required.
+
 ## 2026-11-13 · Inline daily original image candidate (App version: v648; not deployed)
 
 - Current owner: Codex. Based on protected main v647 at 06fc84cc. Only report-page display, batch-return affordance, cache/version markers and focused browser regression changed; unrelated untracked work remains untouched.
