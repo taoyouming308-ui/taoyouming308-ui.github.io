@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-13",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI编辑实际核对来源、原创版权与隐私；非独立人类学术同行评审）",
+  "reviewedAt": "2026-11-13T01:01:50.256Z",
+  "approvalReference": "2026-11-13本轮实际核查J-STAGE DOI 10.5107/sccj.60.141、Wiley DOI 10.1111/ics.13039、Wiley DOI 10.1002/jsde.12499的题目、作者、发表日期、实验结论及外推边界；原创三张静态SVG无外部图片脚本与顾客隐私，案例均为模拟；仅AI编辑内容审核，非真人化学烫发安全批准。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "本轮核对 https://doi.org/10.5107/sccj.60.141；2026-11-13已核对日本化粧品技術者会誌J-STAGE原始文章、作者、发表日、DOI和表面吸附结论；企业研发、特定配方与样本；明确不能支持：不能证明所有护发产品恢复皮质强度，也不能代替真人化学烫发安全评估"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "本轮核对 https://doi.org/10.1111/ics.13039；2026-11-13核对Wiley论文作者、2025-01-06在线日期，HPDSC、拉伸、疲劳与微XRD研究；特定柠檬酸配方与毛发历史，作者属于企业研发；明确不能支持：不能证明任何酸性护理都修复全部旧损伤，也不能保证护理后可以再次热烫"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "本轮核对 https://doi.org/10.1002/jsde.12499；2026-11-13核对Wiley原文、作者与2021-03-24日期，湿态发丝摩擦实验；企业研发背景且不是永久卷度测量；明确不能支持：不代表发芯交联恢复、抗断增强、所有产品一致或真人热烫安全"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-13本轮自主绘制图1，已审查仅安全SVG原生图元及原创中文，非外部照片、无可识别顾客、无链接脚本与外部资源"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-13本轮自主绘制图2，已审查仅安全SVG原生图元及原创中文，非外部照片、无可识别顾客、无链接脚本与外部资源"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-13本轮自主绘制图3，已审查仅安全SVG原生图元及原创中文，非外部照片、无可识别顾客、无链接脚本与外部资源"
+    }
+  ],
+  "contentSha256": "03374ead72c7970dd2039f38d7cd4d6313d56e2839aa63e31e5283565a9ff613",
+  "assetSha256": {
+    "assets/2026-11-13/figure1.svg": "93d62e7787fd3a98e724a044226e41ac4887b88c57b908422a21932298607bf7",
+    "assets/2026-11-13/figure2.svg": "b21fe2234d2ac59afc05ea53ddc6e8be409679e7ccf04f01e27e8b873f4b0788",
+    "assets/2026-11-13/figure3.svg": "a039c42deebea8e38ab56e7bec79a4633d051d2c49f9a283d48291bad674e451"
+  }
+}
