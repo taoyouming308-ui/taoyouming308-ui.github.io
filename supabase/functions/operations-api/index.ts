@@ -1581,6 +1581,7 @@ function effectiveMonthlyDisplay(
   const latest = latestMonthlyCellRevisionMap(revisions);
   const numericByAddress = new Map<string, number>();
   const cellByAddress = new Map<string, JsonRecord>();
+  const changedAddresses = new Set<string>();
   for (const cell of cells) {
     const address = cleanText(cell.cell_address, 20).toUpperCase();
     if (!address) continue;
@@ -1592,7 +1593,11 @@ function effectiveMonthlyDisplay(
     const adjustment = dailyIncome
       ? monthlyAdjustmentForSource(cell.id, adjustments, daily).applied_delta
       : adjustmentMap.get(String(cell.id)) || 0;
-    if (Number.isFinite(effective)) numericByAddress.set(address, Number((effective + adjustment).toFixed(4)));
+    if (Number.isFinite(effective)) {
+      const value = Number((effective + adjustment).toFixed(4));
+      numericByAddress.set(address, value);
+      if (value !== original) changedAddresses.add(address);
+    }
   }
   for (let pass = 0; pass < 8; pass += 1) {
     let changed = false;
@@ -1600,10 +1605,15 @@ function effectiveMonthlyDisplay(
       if (cleanText(cell.cell_kind, 20) !== "formula") continue;
       if (Number(daily?.confirmed_days || 0) > 0 && isDailyIncomeCell(cell)) continue;
       const address = cleanText(cell.cell_address, 20).toUpperCase();
-      const base = safeFormulaValue(cleanText(cell.formula, 2000), cell.precedent_addresses as unknown[], numericByAddress);
+      const precedents = Array.isArray(cell.precedent_addresses) ? cell.precedent_addresses as unknown[] : [];
+      // Keep the workbook's cached result until an input it uses changes.
+      // Recalculating every formula on read can reinterpret legacy shared
+      // formulas and merged cells, corrupting an otherwise intact preview.
+      if (!precedents.some((item) => changedAddresses.has(cleanText(item, 20).toUpperCase()))) continue;
+      const base = safeFormulaValue(cleanText(cell.formula, 2000), precedents, numericByAddress);
       const calculated = base === null ? null : Number((base + (adjustmentMap.get(String(cell.id)) || 0)).toFixed(4));
       if (calculated !== null && numericByAddress.get(address) !== calculated) {
-        numericByAddress.set(address, calculated); changed = true;
+        numericByAddress.set(address, calculated); changedAddresses.add(address); changed = true;
       }
     }
     if (!changed) break;
@@ -2518,13 +2528,19 @@ async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName 
   const cells: JsonRecord[] = [];
   for (let row = 1; row <= rowCount; row += 1) {
     for (let column = 1; column <= columnCount; column += 1) {
-      const source = sheet.getCell(row, column).value;
-      const formula = formulaCellText(source);
+      const cell = sheet.getCell(row, column);
+      // ExcelJS exposes the master value on a merged slave. It is a display
+      // alias, not another financial cell.
+      if (cell.type === ExcelJS.ValueType.Merge) continue;
+      const source = cell.value;
+      // A shared-formula slave stores its master's address in value, while
+      // cell.formula returns the formula translated to this row/column.
+      const formula = cleanText(cell.formula, 2000) || formulaCellText(source);
       const numericValue = numericCellValue(source);
       if (numericValue === null && !formula) continue;
       const address = `${columnLetters(column)}${row}`;
       const label = reportCellLabel(values, row, column);
-      const numberFormat = cleanText(sheet.getCell(row, column).numFmt, 80).toLowerCase();
+      const numberFormat = cleanText(cell.numFmt, 80).toLowerCase();
       if (!formula && (/(编号|序号|员工号|日期)/.test(label) || /(^|[^a-z])[ymdhis]+([^a-z]|$)/.test(numberFormat))) continue;
       cells.push({
         sheet_name: sheetName,

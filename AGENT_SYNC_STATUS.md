@@ -1,3 +1,9 @@
+## 2026-11-13 · Monthly shared-formula repair candidate (App version: v650; not deployed)
+
+- Current owner: Codex. Based on protected github/main 8607769d, isolated from the active project checkout. Local backup completed before editing.
+- July, August and September 2026 source workbook hashes match active report uploads. All original numeric cells match the archived import; formula display differs in 40, 29 and 25 cells respectively because Excel shared-formula slaves were stored as master references and merged aliases were imported as separate financial cells.
+- API import now stores translated formulas and excludes merged aliases. Unchanged archived reports retain workbook cached amounts on read; dependent formulas recalculate only after a source change. The exact three workbooks passed import regression. Existing archived formula references remain legacy data until append-only reimport after publication.
+- User authorized push, publication and append-only reimport for the three exact workbooks, preserving old versions and without posting. Integrated e38db789, whose operations-api index exactly matches live v134, to retain already-deployed original void/orientation functionality. Release advanced to v650; publication gates remain required.
 ## 2026-11-13 · Daily original correction candidate (App version: v649; not deployed)
 
 - Current owner: Codex. Based on protected main 8607769d/v648. User requested an upload-before-enlarge view, restored persistent image orientation, and a batch "作废" option for excess originals. The scope is display and independent archive management; unrelated files, financial attachments, amounts, approvals and postings remain unchanged.

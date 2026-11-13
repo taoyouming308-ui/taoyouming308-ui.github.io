@@ -42,6 +42,14 @@ const cells = sourceRows.map(row => ({ ...row.current_payload, id: row.id, numer
 const effective = sandbox.effectiveMonthlyDisplay({ cells, values: [] }, cells, [], adjustments);
 assert.equal(effective.cells[4].numeric_value, 147399.1);
 assert.equal(effective.cells[6].numeric_value, 147835);
+const untouchedLegacy = [
+  { id: 'formula-master', cell_address: 'K3', row_number: 3, column_number: 11, cell_kind: 'formula', numeric_value: 100, display_value: '100', formula: 'SUM(F3:J3)', precedent_addresses: ['F3', 'G3', 'H3', 'I3', 'J3'] },
+  { id: 'formula-shared', cell_address: 'K4', row_number: 4, column_number: 11, cell_kind: 'formula', numeric_value: 200, display_value: '200', formula: 'K3', precedent_addresses: ['K3'] },
+  { id: 'profit', cell_address: 'C55', row_number: 55, column_number: 3, cell_kind: 'formula', numeric_value: 48905.41, display_value: '48905.41', formula: 'C9-C54', precedent_addresses: ['C9', 'C54'] },
+];
+const legacyDisplay = sandbox.effectiveMonthlyDisplay({ cells: untouchedLegacy, values: [] }, untouchedLegacy, []);
+assert.equal(legacyDisplay.cells[1].numeric_value, 200, 'untouched shared formula keeps its original cached result');
+assert.equal(legacyDisplay.cells[2].numeric_value, 48905.41, 'untouched profit formula keeps its original cached result');
 for (const [label, kind, category, policy] of [
   ['主营 / 美发收入 / Nov.', 'formula', 'income', 'none'],
   ['主营 / 普通美发产品 / Nov.', 'formula', 'income', 'none'],
