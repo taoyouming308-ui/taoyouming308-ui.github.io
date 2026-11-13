@@ -1,0 +1,15 @@
+# Monthly upload original verification
+
+Monthly XLSX uploads through `report_upload` and `report_upload_auto` are registered as immutable source versions, with no ledger posting or shareholder approval. The existing registration RPC remains the only business write. An active source version is not an approved or posted accounting report.
+
+`monthly-upload-verification.mjs` reads the selected worksheet from the uploaded ZIP/XML independently of ExcelJS. It preserves numeric formula caches (including zero), expands shared formula references, excludes merged aliases, and records the bounded source snapshot in `display_data.upload_source_snapshot` before registration. Source formats or XML features that cannot be fully compared return `needs_review`, never a success default. Empty formula caches are unknown, not zero; formulas are not recalculated.
+
+After registration the API reads the exact report and up to 5,000 immutable cells through company/store/report filters. It compares numeric amounts at the existing four-decimal storage precision, original display strings, translated formulas, cell positions/types/sheet, merged ranges, source hash and month. Explicit identifier columns remain display-checked even when excluded from the financial cell set. Zero-valued editable blank slots remain allowed. Formula-special types, unavailable month indicators and overlong text require review. At most 40 issues are displayed with a full issue count.
+
+The upload response always preserves `saved` after successful registration, including when subsequent verification is unavailable. An overview recomputes `monthly_report.upload_verification` from the immutable snapshot and original cells before applying separately tracked manual revisions. No extra overview query or update is needed. Old reports without a snapshot say that no automatic verification record exists; they are not silently passed or changed.
+
+The frontend distinguishes `matched`, `mismatch`, and `needs_review`, retains a visible per-cell warning after reopening the same month, and guards duplicate submission and stale account/store completions. It never calls approval, posting or correction endpoints as a result of verification. If a user changes a draft later, that change follows the existing revision flow; the badge explicitly describes upload-time original consistency, not approval of the current edited values.
+
+Word, attached images and PDF originals remain supported by their existing archive flows but do not receive a claim of complete automatic numerical verification. Their source must still be reviewed. A verified import only means it matches the original, not that the original accounting is correct.
+
+Tests: `test-monthly-upload-verification.js`, `test-monthly-upload-verification-api.js`, `test-monthly-upload-verification-browser.js` are in the finance manifest. Optional `MONTHLY_REAL_WORKBOOK_DIR` checks private July/August/September originals locally without adding originals or amounts to the repository.

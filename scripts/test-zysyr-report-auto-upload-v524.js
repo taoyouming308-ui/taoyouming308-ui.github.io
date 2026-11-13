@@ -12,7 +12,8 @@ assert.match(page, /读取月报表内的数据，自动识别所属月份/);
 assert.match(page, /label for="monthly-material-vouchers">月报凭证<\/label>/);
 assert.match(page, /id="monthly-material-vouchers"[^>]*multiple[^>]*accept="image\/jpeg,image\/png,application\/pdf"/);
 assert.doesNotMatch(page, /id="monthly-material-type"|id="monthly-material-date"/);
-assert.match(page, /api\('report_upload_auto',\{store:currentStore\(\),filename:file\.name,mime_type:mime,base64:await fileBase64\(file\),require_monthly:vouchers\.length>0\}\)/);
+assert.match(page, /api\('report_upload_auto',\{store:uploadStore,filename:file\.name,mime_type:mime,base64:encoded,require_monthly:vouchers\.length>0\}\)/);
+assert.match(page, /var encoded=await fileBase64\(file\);if\(!uploadScopeCurrent\(\)\)return;/, 'account and store must still match after file reading');
 assert.match(page, /正式财务账未自动改变/);
 assert.match(page, /月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计/);
 

@@ -1,0 +1,76 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { stripTypeScriptTypes } = require('node:module');
+const ExcelJS = require('exceljs');
+const JSZip = require('jszip');
+const crypto = require('node:crypto');
+const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
+const names = ['cleanText', 'excelCellText', 'numericCellValue', 'formulaCellText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'reportCellLabel', 'monthlyEditableBlankCells', 'worksheetByCleanName', 'workbookDisplay'];
+const snippets = names.map(name => { const start = source.indexOf(`${name === 'workbookDisplay' ? 'async ' : ''}function ${name}(`); assert.ok(start >= 0); return source.slice(start, source.indexOf('\n}', start) + 2); }).join('\n');
+const sandbox = { ExcelJS, exactArrayBuffer: b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) };
+vm.createContext(sandbox); vm.runInContext(stripTypeScriptTypes(snippets), sandbox);
+const clone = x => JSON.parse(JSON.stringify(x));
+(async () => {
+  const { captureMonthlySource, verifyMonthlyUpload, translateSharedFormula, verifySavedMonthlyUpload } = await import('../supabase/functions/_shared/monthly-upload-verification.mjs');
+  const deps = { loadZip: b => JSZip.loadAsync(b) };
+  const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  async function check(bytes, filename, report_date) {
+    const display = await sandbox.workbookDisplay(new Uint8Array(bytes), 'monthly_profit_loss');
+    const hash = sha256(bytes);
+    const original = await captureMonthlySource(bytes, { filename, report_date, sha256: hash, sheet_name: display.sheet_name }, deps);
+    const report = { report_date, sha256: hash, display_data: display };
+    return { original, report, cells: clone(display.cells), result: verifyMonthlyUpload(original, report, display.cells) };
+  }
+  const wb = new ExcelJS.Workbook(), sheet = wb.addWorksheet('7月');
+  sheet.getCell('A1').value = '2026年7月盈亏报表';
+  sheet.getCell('A2').value = '收入'; sheet.getCell('B2').value = 100;
+  sheet.getCell('A3').value = '成本'; sheet.getCell('B3').value = 0;
+  sheet.getCell('C2').value = { formula: 'SUM(B2:B2)', result: 100, ref: 'C2:C3', shareType: 'shared' };
+  sheet.getCell('C3').value = { sharedFormula: 'C2', result: 0 };
+  sheet.mergeCells('D4:E4'); sheet.getCell('D4').value = 30;
+  const bytes = Buffer.from(await wb.xlsx.writeBuffer());
+  const a = await check(bytes, '2026年7月盈亏报表.xlsx', '2026-07-01');
+  assert.equal(a.result.status, 'matched', JSON.stringify(a.result));
+  assert.equal(a.result.checked_formulas, 2);
+  const code = (cells, report = a.report) => verifyMonthlyUpload(a.original, report, cells);
+  let changed = clone(a.cells); changed.find(c => c.cell_address === 'C3').formula = 'C2';
+  assert.ok(code(changed).issues.some(i => i.code === 'formula' && i.address === 'C3'));
+  changed = clone(a.cells); changed.find(c => c.cell_address === 'C3').numeric_value = null;
+  assert.ok(code(changed).issues.some(i => i.code === 'amount' && i.expected === 0));
+  changed = a.cells.filter(c => c.cell_address !== 'B2'); assert.ok(code(changed).issues.some(i => i.code === 'missing_cell'));
+  changed = [...a.cells, {cell_address:'E4',numeric_value:30}]; assert.ok(code(changed).issues.some(i => i.code === 'merged_alias'));
+  changed = [...a.cells, a.cells[0]]; assert.ok(code(changed).issues.some(i => i.code === 'duplicate'));
+  assert.equal(verifyMonthlyUpload({...a.original,cells:[]},a.report,a.cells).status,'needs_review');
+  changed = [...a.cells, {cell_address:'F4',numeric_value:0}]; assert.ok(code(changed).issues.some(i => i.code === 'extra_amount'), 'spurious zero must not be mistaken for an editable blank slot');
+  changed = [...a.cells, {cell_address:'F4',numeric_value:90}]; assert.ok(code(changed).issues.some(i => i.code === 'extra_amount'));
+  const report = clone(a.report); report.display_data.values[1][1] = '101';
+  assert.ok(code(a.cells, report).issues.some(i => i.code === 'display'));
+  assert.ok(code(a.cells, {...a.report, report_date:'2026-08-01'}).issues.some(i => i.code === 'month'));
+  const wrongMonth = await check(bytes, '2026年8月盈亏报表.xlsx', '2026-08-01'); assert.equal(wrongMonth.result.status, 'mismatch');
+  assert.ok(wrongMonth.result.issues.some(i => i.code === 'period_mismatch'));
+  assert.equal(translateSharedFormula('IF(B2="B2",$B2+B$2+$B$2,\'第1表\'!B2)', 'C2', 'D3'), 'IF(C3="B2",$B3+C$2+$B$2,\'第1表\'!C3)');
+  assert.throws(() => translateSharedFormula('SUM(A:A)', 'C2', 'C3'));
+  const docx = await captureMonthlySource(bytes, {filename:'月报.docx'}, deps); assert.equal(verifyMonthlyUpload(docx, {}, []).status, 'needs_review');
+  const invalid = await captureMonthlySource(Buffer.from('broken'), {filename:'2026年7月.xlsx'}, deps); assert.equal(invalid.available,false);
+  sheet.getCell('C5').value = {formula:'SUM(B5:B5)'};
+  const missing = await check(Buffer.from(await wb.xlsx.writeBuffer()), '2026年7月.xlsx', '2026-07-01');
+  assert.equal(missing.result.status, 'needs_review'); assert.ok(missing.result.issues.some(i => i.code === 'missing_formula_cache'));
+  const scope = {company_id:'11111111-1111-4111-8111-111111111111',store_id:'22222222-2222-4222-8222-222222222222'}, saved = {id:'33333333-3333-4333-8333-333333333333'};
+  const calls = [], reader = { rows: async p => {calls.push(p);return [{...a.report,id:saved.id}]}, rowsAll: async (p,cap) => {calls.push(p);assert.equal(cap,5000);return a.cells} };
+  assert.equal((await verifySavedMonthlyUpload(saved,scope,a.original,reader)).status,'matched');
+  assert.ok(calls.every(p=>p.includes('company_id=eq.'+scope.company_id)&&p.includes('store_id=eq.'+scope.store_id)));
+  assert.equal((await verifySavedMonthlyUpload(saved,scope,a.original,{...reader, rows:async()=>{throw Error('timeout')}})).status,'needs_review');
+  assert.equal((await verifySavedMonthlyUpload(saved,scope,a.original,{...reader, rows:async()=>[]})).status,'needs_review');
+  assert.equal(code(a.cells).formal_ledger_changed,false);
+  assert.ok(source.indexOf('upload_verification: verifyMonthlyUpload') < source.indexOf('display_data: effectiveMonthlyDisplay(monthlyReport'));
+  // Optional private originals remain local, never committed to fixtures or sent to CI.
+  if (process.env.MONTHLY_REAL_WORKBOOK_DIR) for (const month of [7,8,9]) {
+    const filename = `自由手艺人_2026年${month}月盈亏报表.xlsx`;
+    const actual = await check(fs.readFileSync(path.join(process.env.MONTHLY_REAL_WORKBOOK_DIR,filename)),filename,`2026-0${month}-01`);
+    assert.equal(actual.result.status,'matched',`${month}月: ${JSON.stringify(actual.result)}`);
+    console.log(`${month}月: ${actual.result.checked_cells} numeric/formula cells, ${actual.result.checked_formulas} formulas independently matched`);
+  }
+  console.log('Monthly upload audit: independent XML, cached zero, shared formula, duplicate merges, missing cells, wrong month, incomplete source, readback failure and scoped reads passed');
+})().catch(e=>{console.error(e);process.exitCode=1});

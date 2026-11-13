@@ -15,6 +15,7 @@ import { MONTHLY_REVIEW_OPERATIONS, monthlyReviewRequest, monthlyReviewError } f
 import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive, monthlySourceWorksheetNames } from "../_shared/monthly-source-archive.ts";
 import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.ts";
 import { reportSourceReview } from "../_shared/report-source-review.mjs";
+import { captureMonthlySource, verifyMonthlyUpload, verifySavedMonthlyUpload } from "../_shared/monthly-upload-verification.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -1320,6 +1321,7 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
       || cleanText(lock.store_id, 40) === storeId);
     monthlyReport = {
       ...monthlyReport,
+      upload_verification: verifyMonthlyUpload((monthlyReport.display_data as JsonRecord)?.upload_source_snapshot, monthlyReport, cells),
       display_data: effectiveMonthlyDisplay(monthlyReport.display_data, cells, amountRevisions,
         incomeAdjustments, monthlyDailyRollup, textRevisions),
     };
@@ -2746,6 +2748,12 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
   const storeId = cleanText(store.id, 40);
   const accountId = cleanText(session.auth_account_id, 40);
   if (!companyId || !storeId || !accountId) throw new Error("财务账号公司、门店或身份范围无效");
+  const sourceHash = await sha256Bytes(bytes);
+  const uploadSource = reportType === "monthly_profit_loss" ? await captureMonthlySource(bytes, {
+    filename, sha256: sourceHash, sheet_name: cleanText(displayData.sheet_name, 120), report_date: reportDate,
+  }, { loadZip: (input: Uint8Array) => JSZip.loadAsync(input) }) : null;
+  // Stored inside the immutable upload. It is derived from original XML, never client input.
+  if (uploadSource) displayData = { ...displayData, upload_source_snapshot: uploadSource };
   const extension = mime === docxMime ? "docx" : "xlsx";
   const objectPath = `${companyId}/${storeId}/${reportType}/${reportDate}/${crypto.randomUUID()}.${extension}`;
   const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`, {
@@ -2761,7 +2769,7 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
         company_id: companyId, store_id: storeId, report_type: reportType, report_date: reportDate,
         template_code: reportType === "monthly_profit_loss" ? "zysyr_monthly_profit_loss_original" : `zysyr_${reportType}_original`,
         template_version: 1, original_filename: filename || `report.${extension}`, mime_type: mime,
-        size_bytes: bytes.length, sha256: await sha256Bytes(bytes), bucket_id: REPORT_BUCKET,
+        size_bytes: bytes.length, sha256: sourceHash, bucket_id: REPORT_BUCKET,
         object_path: objectPath, display_data: displayData, uploaded_by_user_id: accountId,
       },
       p_cells: Array.isArray(displayData.cells) ? displayData.cells : [],
@@ -2774,7 +2782,9 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
     throw new Error(`报表登记失败 (${metadata.status})`);
   }
   const saved = await metadata.json() as JsonRecord;
-  return { saved, detection, source_boundary: "finance_uploads_only", original_private: true, formal_ledger_changed: false };
+  const verification = uploadSource ? await verifySavedMonthlyUpload(saved, { company_id: companyId, store_id: storeId }, uploadSource,
+    { rows: restRows, rowsAll: restRowsAll }) : null;
+  return { saved, detection, verification, source_boundary: "finance_uploads_only", original_private: true, formal_ledger_changed: false };
 }
 
 async function monthlyDraftWorkbook(
