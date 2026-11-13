@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-13",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "b8354bf2517ec09b89f8d7fb79230340def13f76",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, garment dimensions, hair density, hair diameter, nape response or that either proposed safe-length option has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional low-neckline reference versus winter-collar use case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-six earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current hair, neck and shoulder outline is separated from the undisplayed fictional reference, fictional zonal hair settings, customer priorities and required garment tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; garment-tested B is a conditional decision process, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current neutral state, complete head, baseline, neck and shoulders without depicting a high collar, reference or result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Neck length, shoulder width, hair diameter, density, elasticity, chemical history and nape response are not established by the image; case-only settings require live verification",
+      "Testing three garments and movements can identify common collision zones but cannot represent every fabric, static condition, posture, weather or future grow-out state",
+      "Preparer audit is not independent scientific, trichological, biomechanical or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-13-collar-neckline-length.webp",
+    "sha256": "29fa731dc4f4fa9e63081864931cdc82b61e70585a6272cf63a7d3f5fbe17c72",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2172x724 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; deep dark shoulder-grazing lob, moderately short visible neck, narrow gently sloping shoulders and low crewneck in neutral ordinary indoor fall"
+  },
+  "hashes": {
+    "feedRawSha256": "36f58d70b487fcada16248cd155dad15cfbb33a900a168f1a4c853b23e4f2c84",
+    "caseCanonicalSha256": "2334521a85d01142e6bc1897bfb97789497f237a379b5c841aba1c2e9ffdbf32"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-13 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v652 before editing; daily backup script created the current daily archive",
+    "contentContract": "passed locally: thirty-seven cases; all thirty-six previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally; the expected pinned Playwright Chromium is not installed in this clean worktree, so no local browser pass is claimed. Protected PR CI must install the pinned browser tooling and execute the browser gate before merge",
+    "sharedChecks": "content contract, version, release integrity, smoke, academy verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, app UI, aesthetic system/study/coach, Meiguanjia sync and agent handoff checks passed locally. Docker/PostgreSQL gates cannot run because Docker is absent; browser and database gates remain mandatory in exact-head protected CI"
+  }
+}
