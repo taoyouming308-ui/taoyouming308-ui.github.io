@@ -25,7 +25,8 @@ for (const marker of [
 
 expect(page.includes("record_type:'report',record_id:report.id,monthly_cell_id:target.id")
   && api.includes('p_source_cell_id: monthlyCellId'), 'voucher upload must bind to the selected monthly cell');
-expect(page.includes("month=$('month').value,existing=state.data&&state.data.monthly_report")
+expect(page.includes("month=$('month').value,uploadStore=currentStore()")
+  && page.includes("existing=state.data&&state.data.monthly_report")
   && page.includes("api('report_upload_auto',{store:uploadStore,filename:file.name")
   && page.includes('require_monthly:vouchers.length>0')
   && page.includes('selectDetectedReportMonth(targetMonth)'),
