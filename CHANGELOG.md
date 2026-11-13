@@ -1,3 +1,8 @@
+## v648 candidate · Show archived daily photos inside electronic reports
+
+- Embed each completed, authorized original image directly in its matching electronic daily report, with an in-page zoom viewer and a return-to-report action after batch upload.
+- Preserve private short-lived URLs, store/date isolation, independent unreviewed status and all existing financial gates. No reupload or accounting mutation.
+
 ## v647 local candidate · Complete daily originals and monthly expense source views
 
 - Keep archived-original status and refreshed links visible after saving a daily draft, with honest read-failure messages and preserved unsaved edits.

@@ -124,6 +124,8 @@ let browser;
       assert.doesNotMatch(await page.locator('#daily-report-detail').innerText(), /缺少有效原始日报表|尚未上传当天原始日报/);
       const link = page.locator('[data-daily-archived-link]');
       assert.equal(await link.getAttribute('href'), archive(date).private_url);
+      const inline = page.locator('[data-daily-archived-zoom] img');
+      assert.equal(await inline.getAttribute('src'), archive(date).private_url, 'original is embedded in the electronic daily page');
       assert.match(await page.locator('#daily-detail-archived-originals').innerText(), new RegExp(date));
       assert.match(await page.locator('#daily-detail-confirm').getAttribute('data-block-reason'), /上传当天原始日报.*原件审核/, 'archive alone cannot satisfy the existing financial evidence gate');
       const finance = await page.evaluate(() => ({ draft: state.imports.sheet.draft, cells: state.imports.sheet.cells, attachments: state.imports.sheet.attachments, original_image_url: state.imports.sheet.original_image_url }));
@@ -135,6 +137,15 @@ let browser;
         assert(!calls.some(c => /daily_sheet_(confirm|save)/.test(c.operation)), 'blocked confirmation sends no financial mutation');
       }
       if (i === 1) {
+        await page.locator('[data-daily-archived-zoom]').click();
+        const viewer = page.locator('dialog[aria-label="日报原图放大查看"]');
+        assert.equal(await viewer.isVisible(), true);
+        const beforeZoom = await viewer.locator('[data-image]').evaluate(image => image.style.width);
+        await viewer.locator('[data-zoom-in]').click();
+        assert.notEqual(await viewer.locator('[data-image]').evaluate(image => image.style.width), beforeZoom);
+        await viewer.locator('[data-zoom-reset]').click();
+        assert.equal(await viewer.locator('[data-image]').evaluate(image => image.style.width), beforeZoom);
+        await viewer.locator('[data-close]').click();
         const opened = page.waitForEvent('popup'); await link.click(); const popup = await opened;
         await popup.waitForLoadState('domcontentloaded'); assert.equal(popup.url(), archive(date).private_url);
         assert.equal(await popup.locator('img').evaluate(image => image.complete && image.naturalWidth > 0), true);
@@ -143,7 +154,7 @@ let browser;
       checked++; await page.locator('#daily-readonly-back').click();
     }
   }
-  assert.equal(checked, 77); assert.equal(downloads.length, 3, 'a real image opens directly for each month');
+  assert.equal(checked, 77); assert(downloads.length >= 3, 'inline originals and direct image links load privately');
   assert.equal(await page.evaluate(() => state.dailyReportMonth.recognition.eligible_days), 0);
   async function openMode(value) {
     mode = value; await page.selectOption('#month', '2026-07'); await page.locator('#daily-report-refresh').click();

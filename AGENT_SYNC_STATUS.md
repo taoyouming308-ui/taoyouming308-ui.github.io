@@ -1,3 +1,9 @@
+## 2026-11-13 · Inline daily original image candidate (App version: v648; not deployed)
+
+- Current owner: Codex. Based on protected main v647 at 06fc84cc. Only report-page display, batch-return affordance, cache/version markers and focused browser regression changed; unrelated untracked work remains untouched.
+- Completed archive photos now render directly inside the matching electronic daily report. Clicking the image opens an in-page viewer with zoom in/out, fit-to-screen and scrolling. A completed batch row links back to that day's electronic report when it exists.
+- Archived originals remain independent, unreviewed evidence. No financial attachment, amount, source pointer, recognition, posting or permission changes. Synthetic browser checks for 77 store/date views, image viewer and batch workflow and all 133 finance commands passed using system Python. Protected exact-head CI, merge, Pages and authenticated live readback are still required.
+
 ## 2026-11-13 · Local report source display completion (App version: v647; not deployed)
 
 - Source continuation was verified stopped (latest turn interrupted) before edits. Fresh github/main 301f738a is included; existing candidate preserved in local checkpoint 586edf1d, daily backup and start checks passed. User explicitly requested local repair/verification only; no push, merge, deployment or production business write.
