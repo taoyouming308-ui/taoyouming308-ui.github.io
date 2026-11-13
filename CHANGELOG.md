@@ -1,3 +1,14 @@
+## v653 · Codex recognition for petty-cash batch vouchers
+
+- Route pending batch images through the authenticated Codex bridge, with structured date/actual-paid candidates and original-text evidence. Ambiguous, summary or multiple-payment images stay manual; no automatic approval, association or posting.
+- Keep unknown dates and amounts blank, display Codex review warnings, refresh untouched form fields and preserve manual edits. PDFs remain manual-review originals.
+- Preserve existing daily recognition and non-batch OCR paths, with a separate supported voucher-model default and bounded background worker tasks.
+
+## v652 · Hide monthly bulk voucher upload
+
+- Hide and disable the monthly report's bulk photo/PDF upload card at the user's request. Keep workbook uploads, existing voucher viewing and each expense's own evidence upload available.
+- Clarify the upload copy and verify keyboard/phone/desktop behavior. This frontend change does not alter financial amounts, API permissions or daily-original management.
+
 ## 2026-11-13 · 发型审美训练：衣领与肩颈比例的长度取舍
 
 - 追加稳定案例 `aesthetic-2026-11-13`，区分低领参考图的露颈效果与本人高领、帽领、后颈粗密及八至十周维护之间的冲突。

@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { candidates } from "../_shared/zysyr-ocr-candidates.mjs";
+import { voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
+import { parsePettyCashBatchNote } from "../_shared/petty-cash-batch.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -10,8 +12,13 @@ const OCR_MODEL = Deno.env.get("ZYSYR_OCR_MODEL") || "PaddlePaddle/PaddleOCR-VL-
 const OCR_PROVIDER = "siliconflow-paddleocr";
 const PROMPT_VERSION = "zysyr-voucher-v2-safe-structured";
 const VOUCHER_BUCKET = "zysyr-vouchers";
+const CODEX_URL = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_URL") || "";
+const CODEX_TOKEN = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN") || "";
+const CODEX_MODEL = Deno.env.get("ZYSYR_VOUCHER_CODEX_MODEL") || "gpt-5.6-sol";
+const CODEX_PROMPT_VERSION = "zysyr-voucher-codex-v1";
 
 type Json = Record<string, unknown>;
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
 function response(body: Json, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
@@ -49,6 +56,40 @@ async function processTask(task: Json): Promise<void> {
     const mime = String(task.mime_type || "");
     if (!mime.startsWith("image/")) throw Object.assign(new Error("PDF_REQUIRES_MANUAL_REVIEW"), { retryable: false });
     const objectPath = String(task.object_path || "");
+    const headers = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" };
+    const metadataResponse = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_attachments?select=note,audit_status&id=eq.${task.voucher_id}&company_id=eq.${task.company_id}&store_id=eq.${task.store_id}`, { headers });
+    if (!metadataResponse.ok) throw Object.assign(new Error("VOUCHER_SCOPE_READ_FAILED"), { retryable: true });
+    const metadata = (await metadataResponse.json())[0];
+    if (!metadata || metadata.audit_status !== "pending") throw new Error("VOUCHER_ALREADY_REVIEWED");
+    const batch = parsePettyCashBatchNote(metadata.note);
+    if (batch) {
+      if (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
+      const marked = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ocr_tasks?id=eq.${taskId}&lease_token=eq.${leaseToken}&status=eq.processing`, {
+        method: "PATCH", headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ provider: "codex-local", model: CODEX_MODEL, prompt_version: CODEX_PROMPT_VERSION }),
+      });
+      if (!marked.ok || (await marked.json()).length !== 1) throw new Error("OCR_TASK_LEASE_INVALID");
+      const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
+        method: "POST", headers, body: JSON.stringify({ expiresIn: 300 }),
+      });
+      if (!signed.ok) throw Object.assign(new Error("CODEX_SOURCE_SIGN_FAILED"), { retryable: true });
+      const signedData = await signed.json();
+      const signedPath = String(signedData.signedURL || signedData.signedUrl || "");
+      if (!signedPath.startsWith("/object/sign/")) throw new Error("CODEX_SOURCE_SIGN_INVALID");
+      const ai = await fetch(CODEX_URL, { method: "POST", signal: AbortSignal.timeout(125000),
+        headers: { Authorization: `Bearer ${CODEX_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ task_type: "expense_voucher", month: batch.month,
+          image_url: `${SUPABASE_URL}/storage/v1${signedPath}` }),
+      });
+      if (!ai.ok) throw Object.assign(new Error(`CODEX_VOUCHER_${ai.status}`), { retryable: ai.status === 429 || ai.status >= 500 });
+      const raw = await ai.json();
+      const parsed = voucherCodexCandidates(raw, batch.month);
+      await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: true,
+        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: CODEX_PROMPT_VERSION },
+        p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
+      return;
+    }
+    if (!SILICONFLOW_KEY) throw new Error("OCR_PROVIDER_NOT_CONFIGURED");
     const file = await fetch(`${SUPABASE_URL}/storage/v1/object/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
       headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
     });
@@ -71,7 +112,7 @@ async function processTask(task: Json): Promise<void> {
       p_retryable: false, p_raw_result: { provider_response: raw, parsed: parsed.structured, prompt_version: PROMPT_VERSION },
       p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
   } catch (error) {
-    const retryable = Boolean((error as { retryable?: boolean }).retryable);
+    const retryable = Boolean((error as { retryable?: boolean }).retryable) || (error as Error).name === "TimeoutError";
     await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: false,
       p_retryable: retryable, p_raw_result: { error_type: (error as Error).name }, p_candidate_fields: {}, p_field_confidences: {},
       p_error_message: String((error as Error).message || "OCR_FAILED").slice(0, 1000) });
@@ -80,21 +121,25 @@ async function processTask(task: Json): Promise<void> {
 
 Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return response({ error: "POST required" }, 405);
-  if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET || !SILICONFLOW_KEY) return response({ error: "worker not configured" }, 503);
+  if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET) return response({ error: "worker not configured" }, 503);
   if (request.headers.get("x-worker-secret") !== WORKER_SECRET) return response({ error: "forbidden" }, 403);
   const body = await request.json().catch(() => ({})) as Json;
   const rawRequested = Number(body.limit || 1), rawFollowUpDepth = Number(body.follow_up_depth ?? 2);
   const requested = Number.isFinite(rawRequested) ? Math.max(1, Math.min(5, Math.trunc(rawRequested))) : 1;
   const followUpDepth = Number.isFinite(rawFollowUpDepth) ? Math.max(0, Math.min(2, Math.trunc(rawFollowUpDepth))) : 2;
+  // Each invocation processes one bounded task; polling and the existing
+  // follow-up chain drain the queue. A slow image cannot exhaust a five-image
+  // request or hold the upload UI open. Claims remain lease protected.
+  EdgeRuntime.waitUntil((async () => {
   let processed = 0;
-  for (let index = 0; index < requested; index += 1) {
+  for (let index = 0; index < Math.min(1, requested); index += 1) {
     const claimed = await rpc("zysyr_claim_voucher_ocr_task", { p_provider: OCR_PROVIDER, p_model: OCR_MODEL,
       p_prompt_version: PROMPT_VERSION, p_lease_seconds: 180 }) as Json[];
     const task = Array.isArray(claimed) ? claimed[0] : null; if (!task) break;
     await processTask(task); processed += 1;
   }
   if (processed > 0 && followUpDepth > 0) {
-    EdgeRuntime.waitUntil((async () => {
+    await (async () => {
       await new Promise((resolve) => setTimeout(resolve, 35000));
       const followUp = await fetch(`${SUPABASE_URL}/functions/v1/voucher-ocr-worker`, {
         method: "POST",
@@ -102,7 +147,8 @@ Deno.serve(async (request: Request) => {
         body: JSON.stringify({ limit: requested, follow_up_depth: followUpDepth - 1 }),
       });
       if (!followUp.ok) console.error("voucher-ocr-worker follow-up failed", followUp.status);
-    })());
+    })();
   }
-  return response({ processed, provider: OCR_PROVIDER, model: OCR_MODEL, candidate_only: true, human_review_required: true });
+  })().catch(error => console.error("voucher-ocr-worker task failed", (error as Error).name)));
+  return response({ accepted: true, candidate_only: true, human_review_required: true });
 });

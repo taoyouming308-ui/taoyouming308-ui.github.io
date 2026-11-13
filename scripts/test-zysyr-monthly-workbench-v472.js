@@ -16,7 +16,7 @@ const releaseVersion = fs.readFileSync(path.join(root, 'version.txt'), 'utf8').t
 function expect(value, message) { if (!value) throw new Error(message); }
 
 for (const marker of [
-  '上传原表 / 凭证', 'monthly-material-form', '金额处理',
+  '上传原表', 'monthly-material-form', '金额处理',
   '上传这个数字的凭证', '编辑金额', 'monthly-inline-amount', '预览修改', '确认保存', '上传凭证图片 / PDF',
   '确认保存这次修改',
   '逐笔收入 / 开支与凭证', '此笔不需要凭证（只影响这一笔）', 'business_evidence_rule_save',

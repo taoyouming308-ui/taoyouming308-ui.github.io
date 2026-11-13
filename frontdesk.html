@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="652">
+<html lang="zh-CN" data-version="653">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -177,7 +177,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=652" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=653" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -325,7 +325,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=652"></script>
+  <script src="frontdesk-business-details.js?v=653"></script>
   <script>
   (function(){
     'use strict';
@@ -644,7 +644,7 @@
     Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
-<script defer src="data-read-client.js?v=652"></script>
-<script defer src="app-shell-client.js?v=652"></script>
+<script defer src="data-read-client.js?v=653"></script>
+<script defer src="app-shell-client.js?v=653"></script>
 </body>
 </html>

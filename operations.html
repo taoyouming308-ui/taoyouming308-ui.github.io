@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="652">
+<html lang="zh-CN" data-version="653">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=652" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=653" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -220,26 +220,26 @@
       <main class="content">
         <section id="view-monthly" class="view">
           <div class="page-head"><div><h2 id="monthly-title">月度盈亏表</h2><p>查看本月月报和已入账日报业绩；未显示的日期不会按零收入处理。</p></div><span id="sync-status" class="status"></span></div>
-          <div id="monthly-summary-bar" class="monthly-action-bar"><button id="monthly-edit-toggle" class="finance-upload secondary hidden" type="button">编辑月报</button><button id="monthly-save-cells" class="finance-upload primary hidden" type="button">保存本月修改</button><button id="monthly-material-toggle" class="finance-upload primary hidden" type="button">上传原表 / 凭证</button><button id="monthly-unlock-request" class="secondary hidden" type="button">申请修改锁账月份</button><span class="monthly-action-help">财务可直接修改金额和名称、补充空白名称；栏目标题、编号和汇总名称保持固定。</span><span id="monthly-lock-status" class="status"></span><details id="monthly-more" class="monthly-more hidden" hidden aria-hidden="true" data-feature-enabled="false"><summary>更多</summary><div class="monthly-more-panel"><button id="monthly-summary-toggle" class="ghost" type="button" disabled>开启多月汇总</button><span id="monthly-summary-range" class="hidden" style="display:grid;gap:8px"><select id="monthly-summary-preset"><option value="3">近 3 个月</option><option value="6">近 6 个月</option><option value="12">近 12 个月</option><option value="year">全年</option><option value="custom">自定义</option></select><span id="monthly-summary-custom" class="hidden" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="monthly-summary-start" type="month"><span>至</span><input id="monthly-summary-end" type="month"><button id="monthly-summary-apply" class="secondary" type="button">汇总</button></span><span id="monthly-summary-status" class="status"></span></span></div></details></div>
+          <div id="monthly-summary-bar" class="monthly-action-bar"><button id="monthly-edit-toggle" class="finance-upload secondary hidden" type="button">编辑月报</button><button id="monthly-save-cells" class="finance-upload primary hidden" type="button">保存本月修改</button><button id="monthly-material-toggle" class="finance-upload primary hidden" type="button">上传原表</button><button id="monthly-unlock-request" class="secondary hidden" type="button">申请修改锁账月份</button><span class="monthly-action-help">财务可直接修改金额和名称、补充空白名称；栏目标题、编号和汇总名称保持固定。</span><span id="monthly-lock-status" class="status"></span><details id="monthly-more" class="monthly-more hidden" hidden aria-hidden="true" data-feature-enabled="false"><summary>更多</summary><div class="monthly-more-panel"><button id="monthly-summary-toggle" class="ghost" type="button" disabled>开启多月汇总</button><span id="monthly-summary-range" class="hidden" style="display:grid;gap:8px"><select id="monthly-summary-preset"><option value="3">近 3 个月</option><option value="6">近 6 个月</option><option value="12">近 12 个月</option><option value="year">全年</option><option value="custom">自定义</option></select><span id="monthly-summary-custom" class="hidden" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input id="monthly-summary-start" type="month"><span>至</span><input id="monthly-summary-end" type="month"><button id="monthly-summary-apply" class="secondary" type="button">汇总</button></span><span id="monthly-summary-status" class="status"></span></span></div></details></div>
           <div id="report-state" class="report-state"></div>
           <div id="monthly-upload-verification" class="monthly-upload-verification" hidden aria-live="polite"></div>
           <div id="monthly-materials" class="monthly-materials hidden">
             <form id="monthly-material-form">
-              <div class="monthly-upload-intro"><h3>上传月报表</h3><p>按文件类型选择，可只选一种，也可一起上传。</p></div>
+              <div class="monthly-upload-intro"><h3>上传月报表</h3><p>选择 Excel 或含表格的 Word 原件；开支凭证请从对应开支金额进入上传。</p></div>
               <div class="field monthly-upload-card">
                 <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 9v12"/></svg><label for="monthly-material-file">月报数据</label><span class="monthly-upload-format">Excel · Word</span></div>
                 <p id="monthly-table-purpose">读取月报表内的数据，自动识别所属月份；XLSX 保存后自动核对原件，发现差异会提醒，先保存草稿，不自动入账。</p>
                 <input id="monthly-material-file" type="file" aria-describedby="monthly-table-purpose monthly-table-formats" accept=".xlsx,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                 <small id="monthly-table-formats">XLSX / 含表格的 DOCX · 单个不超过 10MB。只有照片的 Word 凭证包不是月报数据，请勿放在这里。</small>
               </div>
-              <div class="field monthly-upload-card">
+              <div class="field monthly-upload-card hidden" id="monthly-bulk-voucher-entry" hidden aria-hidden="true">
                 <div class="monthly-upload-heading"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 6-6 4 4 3-3 5 5"/></svg><label for="monthly-material-vouchers">月报凭证</label><span class="monthly-upload-format">照片 · PDF</span></div>
                 <p id="monthly-photo-purpose">留存月报表照片或 PDF 原件，不修改金额。</p>
-                <input id="monthly-material-vouchers" type="file" aria-describedby="monthly-photo-purpose monthly-photo-formats monthly-photo-help" multiple accept="image/jpeg,image/png,application/pdf">
+                <input id="monthly-material-vouchers" type="file" disabled tabindex="-1" aria-describedby="monthly-photo-purpose monthly-photo-formats monthly-photo-help" multiple accept="image/jpeg,image/png,application/pdf">
                 <small id="monthly-photo-formats">JPG / PNG / PDF · 可多选 · 每份不超过 10MB</small>
               </div>
-              <div class="monthly-upload-footer"><p id="monthly-photo-help">已有本月月报，可单独补照片；首次上传请同时选择数据表格。</p><button class="primary" type="submit">上传并保存</button></div>
-              <details class="monthly-upload-details"><summary>识别与保存说明</summary><p>系统读取文件内容和当前工作表，识别日报、工资表或月报；无法明确识别时不会保存。照片 / PDF 随表格上传时，关联到识别出的月报；单独补传时，关联当前门店和月份的月报。原件只作留底，不会自动入账。</p><p>月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计。</p></details>
+              <div class="monthly-upload-footer"><p id="monthly-photo-help">仅上传数据原表，不批量上传月报凭证。</p><button class="primary" type="submit">上传并保存</button></div>
+              <details class="monthly-upload-details"><summary>识别与保存说明</summary><p>系统读取文件内容和当前工作表，识别日报、工资表或月报；无法明确识别时不会保存。开支凭证请点击对应开支金额后上传，避免误关联到整月报表。原件只作留底，不会自动入账。</p><p>月报“美发收入”取已入账日报的现金业绩，不含卡金；财务调整另行留痕，不重复统计。</p></details>
               <div class="help" id="monthly-expense-upload-help">上传某笔开支的凭证：先点击下方月报对应开支的金额，再选择“上传凭证图片 / PDF”，确认后关联当前开支。整月 Word 支出凭证包请到“历史数据导入”的“上传凭证包并关联”，选择已有批次及正确月份；原包留底不代表每张照片已精确对应。</div>
               <div id="monthly-material-result" class="help" role="status" aria-live="polite"></div>
             </form>
@@ -564,7 +564,7 @@
     .sheet-scroll { box-shadow:none; }
     .monthly-materials { padding:16px; margin:0 0 16px; border-radius:var(--report-radius); background:var(--card); }
     #monthly-materials:before { content:none; }
-    #monthly-material-form { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:stretch; }
+    #monthly-material-form { grid-template-columns:minmax(0,1fr); gap:16px; align-items:stretch; }
     .monthly-upload-intro,.monthly-upload-footer,.monthly-upload-details { grid-column:1/-1; }
     .monthly-upload-intro h3 { margin:0; font-size:18px; font-weight:650; }
     .monthly-upload-intro p { margin:5px 0 0; color:var(--muted); font-size:13px; line-height:1.6; }
@@ -761,15 +761,15 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=652"></script>
-<script src="operations-staff-view.js?v=652"></script>
-<script src="operations-monthly-daily-performance.js?v=652"></script>
-  <script src="operations-report-fit.js?v=652"></script>
-  <script src="operations-auth-bridge.js?v=652"></script>
-  <script src="operations-voucher-preview.js?v=652"></script>
-  <script src="operations-voucher-view.js?v=652"></script>
-<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=652"></script>
-  <script src="operations-monthly-verification.js?v=652"></script>
+<script src="operations-time.js?v=653"></script>
+<script src="operations-staff-view.js?v=653"></script>
+<script src="operations-monthly-daily-performance.js?v=653"></script>
+  <script src="operations-report-fit.js?v=653"></script>
+  <script src="operations-auth-bridge.js?v=653"></script>
+  <script src="operations-voucher-preview.js?v=653"></script>
+  <script src="operations-voucher-view.js?v=653"></script>
+<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=653"></script>
+  <script src="operations-monthly-verification.js?v=653"></script>
 <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -942,7 +942,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=652';
+      script.src='operations-petty-cash-evidence.js?v=653';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1543,7 +1543,7 @@ function calculateDailyControls(root,cardSalesCheck){
     finally{state.monthlyUploadBusy=false;button.disabled=false}
   });
   function selectDetectedReportMonth(target){if(!/^\d{4}-\d{2}$/.test(target))return;var select=$('month'),year=Number(target.slice(0,4)),month=Number(target.slice(5,7));if(!select.querySelector('option[value="'+target+'"]'))select.insertAdjacentHTML('beforeend','<option value="'+target+'">'+year+'年'+month+'月</option>');select.value=target;$('report-month').value=target}
-  $('monthly-material-toggle').addEventListener('click',function(){$('monthly-materials').classList.toggle('hidden');this.textContent=$('monthly-materials').classList.contains('hidden')?'上传原表 / 凭证':'收起上传'});
+  $('monthly-material-toggle').addEventListener('click',function(){$('monthly-materials').classList.toggle('hidden');this.textContent=$('monthly-materials').classList.contains('hidden')?'上传原表':'收起上传'});
   $('monthly-material-form').addEventListener('submit',async function(event){
     event.preventDefault();
     if(state.monthlyUploadBusy)return;
@@ -1655,19 +1655,19 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=652"></script>
-  <script src="operations-daily-correction.js?v=652"></script>
-  <script src="operations-daily-electronic.js?v=652"></script>
-  <script src="operations-monthly-workbench.js?v=652"></script>
-  <script src="operations-daily-recognition.js?v=652"></script>
-  <script src="operations-daily-batch-upload.js?v=652"></script>
-<script src="operations-daily-history.js?v=652"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=652">
-<script src="operations-monthly-review.js?v=652"></script>
-<script src="operations-monthly-source-archive.js?v=652"></script>
-<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=652"></script>
+  <script src="operations-daily-review.js?v=653"></script>
+  <script src="operations-daily-correction.js?v=653"></script>
+  <script src="operations-daily-electronic.js?v=653"></script>
+  <script src="operations-monthly-workbench.js?v=653"></script>
+  <script src="operations-daily-recognition.js?v=653"></script>
+  <script src="operations-daily-batch-upload.js?v=653"></script>
+<script src="operations-daily-history.js?v=653"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=653">
+<script src="operations-monthly-review.js?v=653"></script>
+<script src="operations-monthly-source-archive.js?v=653"></script>
+<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=653"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=652"></script>
-<script defer src="app-shell-client.js?v=652"></script>
+<script defer src="data-read-client.js?v=653"></script>
+<script defer src="app-shell-client.js?v=653"></script>
 </body>
 </html>

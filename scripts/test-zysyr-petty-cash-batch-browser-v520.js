@@ -109,6 +109,19 @@ let browser;
   await page.waitForFunction(() => document.querySelectorAll('[data-petty-batch-item]').length === 2);
   assert.equal(await page.locator('#petty-batch-confirm-exact').isEnabled(), true);
   assert.match(await page.locator('#petty-batch-summary').innerText(), /已上传 2[\s\S]*明确匹配 2/);
+  // Polling must update untouched inputs, but must not replace a finance edit.
+  const firstCard = page.locator('[data-petty-batch-item]').first();
+  await firstCard.locator('[data-batch-counterparty]').fill('人工备注保留');
+  await page.evaluate(() => {
+    window.batchItems[0].candidate_fields.document_number = 'CODEX-TEST-01';
+    window.batchItems[0].candidate_fields.counterparty = '新的AI商户';
+    window.batchItems[0].candidate_fields.recognition_provider = 'codex-local';
+    window.batchItems[0].candidate_fields.parse_warnings = ['原图日期不属于所选月份，请核对门店和月份'];
+  });
+  await page.locator('#petty-batch-refresh').click();
+  await page.waitForFunction(() => document.querySelector('[data-batch-number]').value === 'CODEX-TEST-01');
+  assert.equal(await firstCard.locator('[data-batch-counterparty]').inputValue(), '人工备注保留');
+  assert.match(await firstCard.innerText(), /Codex 已识别[\s\S]*不属于所选月份/);
   await page.locator('#petty-batch-confirm-exact').click();
   await page.waitForFunction(() => window.calls.filter(call => call.operation === 'petty_cash_batch_confirm').length === 2);
   await page.waitForFunction(() => document.querySelectorAll('.petty-batch-item.confirmed').length === 2);
