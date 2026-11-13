@@ -82,9 +82,30 @@
   anchor.parentNode.after(panel);
   var picker = panel.querySelector('input[type=file]'), list = panel.querySelector('[data-rows]'), start = panel.querySelector('[data-start]'), close = panel.querySelector('[data-close]'), status = panel.querySelector('[data-status]');
   var rows = [], urls = [], scope = null, busy = false, cancelled = false, used = false, generation = 0;
+  var previewViewer;
+  function openPreview(url, filename) {
+    if (!previewViewer) {
+      previewViewer = document.createElement('dialog');
+      previewViewer.setAttribute('aria-label','上传前核对日报原图');
+      previewViewer.style.cssText = 'width:96vw;max-width:96vw;height:94vh;max-height:94vh;padding:12px;border:1px solid #aaa;border-radius:12px;background:#f5f3ef;color:#222';
+      previewViewer.innerHTML = '<div style="display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#f5f3ef;padding:4px;z-index:1"><strong data-label style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></strong><button type="button" data-turn-left>向左转</button><button type="button" data-zoom-out>缩小</button><button type="button" data-zoom-reset>适合屏幕</button><button type="button" data-zoom-in>放大</button><button type="button" data-turn-right>向右转</button><button type="button" data-close>关闭</button></div><div data-stage style="height:calc(100% - 48px);overflow:auto;text-align:center"><img data-image alt="上传前核对原图" style="height:auto;max-width:none;transform-origin:center"></div>';
+      document.body.appendChild(previewViewer);
+      previewViewer.querySelector('[data-close]').onclick = function () { previewViewer.close(); };
+      previewViewer.addEventListener('click',function(event){if(event.target===previewViewer)previewViewer.close();});
+    }
+    var image=previewViewer.querySelector('[data-image]'), zoom=1,angle=0;
+    function fit(){image.style.width=Math.round(88*zoom)+'vw';image.style.transform='rotate('+angle+'deg)';}
+    previewViewer.querySelector('[data-label]').textContent=filename;
+    previewViewer.querySelector('[data-zoom-in]').onclick=function(){zoom=Math.min(4,zoom*1.5);fit();};
+    previewViewer.querySelector('[data-zoom-out]').onclick=function(){zoom=Math.max(.4,zoom/1.5);fit();};
+    previewViewer.querySelector('[data-zoom-reset]').onclick=function(){zoom=1;fit();};
+    previewViewer.querySelector('[data-turn-left]').onclick=function(){angle=(angle+270)%360;fit();};
+    previewViewer.querySelector('[data-turn-right]').onclick=function(){angle=(angle+90)%360;fit();};
+    image.src=url;fit();previewViewer.showModal();
+  }
   function permitted() { return state.user && !state.user.personal_scope && state.user.can_import_photo_reports; }
   function sameScope() { return !cancelled && permitted() && scope && scope.generation === generation && scope.store === currentStore() && scope.month === $('month').value && state.view === 'daily-report' && scope.actor === state.user; }
-  function revoke() { urls.forEach(function (url) { URL.revokeObjectURL(url); }); urls = []; }
+  function revoke() { if(previewViewer&&previewViewer.open)previewViewer.close();urls.forEach(function (url) { URL.revokeObjectURL(url); }); urls = []; }
   function renderStatus() {
     rows.forEach(function (row) {
       var labels = {pending:'待确认',checking:'正在核对日报权限',reading:'正在读取原图',uploading:'正在上传，请勿重复提交',done:'已上传',stopped:'已停止',uncertain:'结果待核对'};
@@ -150,6 +171,23 @@
     } catch (error) { toast(error.message); } finally { entry.disabled = false; }
   };
   var archiveList = panel.querySelector('[data-archives]'), more = panel.querySelector('[data-more]'), offset = 0, listing = false, dateFilter = '';
+  var selectedArchives = new Set(), voidButton = document.createElement('button');
+  voidButton.type='button';voidButton.className='ghost';voidButton.textContent='作废选中原图';voidButton.disabled=true;
+  archiveList.after(voidButton);
+  voidButton.onclick=async function(){
+    if(!sameScope()||busy||!selectedArchives.size)return;
+    var ctx=scope,ids=Array.from(selectedArchives),reason=window.prompt('填写作废原因（至少 4 字；原图文件和上传记录保留）','误传到错误门店');
+    if(reason===null)return;
+    reason=reason.trim();if(reason.length<4||reason.length>500){status.textContent='作废原因需 4–500 字';return;}
+    if(!window.confirm('确认在 '+ctx.store+' '+ctx.month+' 作废选中的 '+ids.length+' 张原图？\n作废后不再显示在电子日报，原文件和操作记录保留；不修改金额或入账。'))return;
+    busy=true;voidButton.disabled=true;renderStatus();
+    try{
+      var result=await bounded(api('daily_original_archive_void',{store:ctx.store,request_ids:ids,reason:reason},true),50000);
+      if(!sameScope()||scope!==ctx)return;
+      status.textContent='已作废 '+result.changed+' / '+ids.length+' 张；原文件和操作记录保留。';selectedArchives.clear();
+    }catch(error){if(sameScope())status.textContent='作废结果待核对：'+error.message+'。请刷新列表，不要重复操作。';}
+    finally{busy=false;renderStatus();if(sameScope()&&scope===ctx)await refreshArchives(false);}
+  };
   function dateLabel(date) {
     var days = scope.days.filter(function (day) { return day.report_date === date; });
     if (!days.length || !days[0].draft_id) return '仅存档，尚无日报';
@@ -161,14 +199,18 @@
     listing = true; more.disabled = true;
     function current() { return scope === ctx && token === generation && sameScope(); }
     try {
-      if (!append) { offset = 0; archiveList.textContent = ''; }
+      if (!append) { offset = 0; archiveList.textContent = ''; selectedArchives.clear(); voidButton.disabled=true; }
       var data = await bounded(api('daily_original_archive_list',{store:ctx.store,month:ctx.month,offset:offset}),50000);
       if (!current()) return;
       if (!Array.isArray(data.archives)) throw Error('存档列表响应无效');
       data.archives.forEach(function (item) {
         if (item.status === 'pending' || !validDate(item.report_date,ctx.month) || (dateFilter && item.report_date !== dateFilter)) return;
         var line = document.createElement('p');
-        line.textContent = item.report_date+' · '+item.original_filename+' · 已存档 · 日期上下文（非财务绑定）：'+dateLabel(item.report_date)+' · '+(item.created_at || '');
+        line.textContent = item.report_date+' · '+item.original_filename+' · '+(item.status==='voided'?'已作废（保留审计）':'已存档')+' · 日期上下文（非财务绑定）：'+dateLabel(item.report_date)+' · '+(item.created_at || '');
+        if(item.status==='voided'){archiveList.appendChild(line);return;}
+        var choice=document.createElement('input');choice.type='checkbox';choice.setAttribute('aria-label','选择作废 '+item.report_date+' '+item.original_filename);
+        choice.onchange=function(){if(!current())return;if(choice.checked)selectedArchives.add(item.request_id);else selectedArchives.delete(item.request_id);voidButton.disabled=!selectedArchives.size||busy;};
+        line.prepend(choice);
         var view = document.createElement('button'); view.type = 'button'; view.textContent = '查看原图（有效期 5 分钟）';
         view.onclick = async function () {
           if (!current()) return;
@@ -251,7 +293,7 @@
       var title = document.createElement('strong'); title.textContent = file.name; title.style.overflowWrap = 'anywhere'; box.appendChild(title);
       var invalid = fileError(file), key = [file.name,file.size,file.lastModified].join('|');
       if (seen.has(key)) invalid = '本批次重复选择，请重新选择文件'; seen.add(key);
-      if (!invalid) { var img = document.createElement('img'), url = URL.createObjectURL(file); urls.push(url); img.src = url; img.alt = '请核对这张日报的日期'; img.style.cssText = 'display:block;max-width:100%;max-height:240px;margin:8px 0'; box.appendChild(img); }
+      if (!invalid) { var img = document.createElement('img'), url = URL.createObjectURL(file), enlarge=document.createElement('button'); urls.push(url); img.src = url; img.alt = '请核对这张日报的日期'; img.style.cssText = 'display:block;max-width:100%;max-height:240px;margin:8px 0'; enlarge.type='button';enlarge.className='ghost';enlarge.setAttribute('aria-label','放大核对 '+file.name);enlarge.appendChild(img);enlarge.appendChild(document.createTextNode('点击放大核对日期'));enlarge.onclick=function(){openPreview(url,file.name);};box.appendChild(enlarge); }
       var date = document.createElement('input'); date.type = 'date'; date.value = suggestedDate(file.name,scope.month); date.setAttribute('aria-label',file.name+' 对应日报日期');
       date.min = scope.month+'-01'; date.max = scope.month+'-'+new Date(Number(scope.month.slice(0,4)),Number(scope.month.slice(5,7)),0).getDate(); box.appendChild(date);
       var label = document.createElement('label'), check = document.createElement('input'); check.type = 'checkbox'; label.appendChild(check); label.appendChild(document.createTextNode('我已看图确认门店和日期')); box.appendChild(label);

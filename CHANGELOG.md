@@ -1,3 +1,9 @@
+## v649 candidate · Preview, straighten and void daily originals
+
+- Enlarge and rotate each photo before confirming its upload date; preview rotation does not alter original bytes.
+- Restore left/automatic/right rotation and persist the chosen display direction for each archived original inside its electronic daily report.
+- Let authorized report editors select multiple excess originals and void them with a reason. Voided photos disappear from normal report reads and new signed-link requests, while original bytes, upload trace and void audit remain. Financial cells, posting and account status are untouched.
+
 ## v648 candidate · Show archived daily photos inside electronic reports
 
 - Embed each completed, authorized original image directly in its matching electronic daily report, with an in-page zoom viewer and a return-to-report action after batch upload.

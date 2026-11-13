@@ -22,14 +22,19 @@ function harness(options = {}) {
     exactArrayBuffer: b => b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),
     signedStorageUrl: async (bucket,path) => {signed.push({bucket,path});return 'https://synthetic.invalid/signed';},
     rest: async (path,init) => {
-      assert.equal(path,'rpc/zysyr_daily_original_archive'); const b=JSON.parse(init.body); calls.push(b);
+      assert(['rpc/zysyr_daily_original_archive','rpc/zysyr_daily_original_manage'].includes(path)); const b=JSON.parse(init.body); calls.push(b);
       assert.equal(b.p_actor_user_id,'server-actor'); assert.equal(b.p_store_id,'store'); assert.equal(b.p_company_id,'company');
       const response = (data,ok=true) => ({ok,status:ok?200:403,json:async()=>structuredClone(data)});
       if(options.denyDb) return response({message:'revoked'},false);
+      if(path==='rpc/zysyr_daily_original_manage') {
+        if(b.p_action==='status')return response({states:b.p_request_ids.map(request_id=>({request_id,voided:!!options.voided,display_rotation_degrees:options.degrees||0}))});
+        if(b.p_action==='void'){options.voided=true;return response({action:'void',requested:b.p_request_ids.length,changed:b.p_request_ids.length,financial_records_unchanged:true});}
+        if(b.p_action==='rotate'){options.degrees=b.p_degrees;return response({action:'rotate',requested:1,changed:1,financial_records_unchanged:true});}
+      }
       if(b.p_action==='list') return response({archives:receipt?[receipt.archive]:[]});
       if(b.p_action==='reserve') {
         if(receipt) { if(JSON.stringify(b.p_metadata)!==JSON.stringify(receipt.metadata)) return response({message:'replay mismatch'},false); return response({...receipt,newly_reserved:false}); }
-        receipt={status:'pending',newly_reserved:false,metadata:b.p_metadata,archive:{...b.p_metadata,object_path:'company/store/immutable-original'}};
+        receipt={status:'pending',newly_reserved:false,request_id:payload.request_id,metadata:b.p_metadata,archive:{...b.p_metadata,request_id:payload.request_id,status:'archived',object_path:'company/store/immutable-original'}};
         return response({...receipt,newly_reserved:true});
       }
       if(b.p_action==='complete') {
@@ -52,7 +57,8 @@ function harness(options = {}) {
     }
   };
   vm.createContext(scope); vm.runInContext(stripTypeScriptTypes(source.slice(start,end)),scope);
-  return {call:(op='upload',p=payload,s=session)=>scope.dailyOriginalArchive('daily_original_archive_'+op,p,s),calls,network,signed,options};
+  return {call:(op='upload',p=payload,s=session)=>scope.dailyOriginalArchive('daily_original_archive_'+op,p,s),
+    manage:(op,p,s=session)=>scope.dailyOriginalManage('daily_original_archive_'+op,p,s),calls,network,signed,options};
 }
 async function main() {
   let h=harness();
@@ -64,11 +70,18 @@ async function main() {
   await h.call(); assert.equal(h.network.filter(c=>c.init.method==='POST').length,1);
   await assert.rejects(h.call('upload',{...payload,base64:'BAUG'})); assert.equal(h.network.length,2);
   await h.call('list',{store:'Synthetic',month:'2026-11',offset:0});
-  assert.equal(h.calls.at(-1).p_metadata.limit,201); assert.equal(h.calls.at(-1).p_request_id,null);
+  assert.equal(h.calls.findLast(c=>c.p_action==='list').p_metadata.limit,201); assert.equal(h.calls.findLast(c=>c.p_action==='list').p_request_id,null);
   await assert.rejects(h.call('list',{store:'Synthetic',month:'2026-13'}));
   await assert.rejects(h.call('list',{store:'Synthetic',month:'2026-11',offset:-1}));
   await h.call('url'); assert.deepEqual(h.signed,[{bucket:'private-vouchers',path:'company/store/immutable-original'}]);
   assert.equal(h.network.length,2,'list/url cannot read or write storage objects');
+  assert.equal((await h.manage('orientation_save',{store:'Synthetic',request_id:payload.request_id,degrees:90,reason:'synthetic rotation'})).changed,1);
+  assert.equal((await h.call('list',{store:'Synthetic',month:'2026-11'})).archives[0].display_rotation_degrees,90);
+  assert.equal((await h.manage('void',{store:'Synthetic',request_ids:[payload.request_id],reason:'synthetic mistaken upload'})).changed,1);
+  assert.equal((await h.call('list',{store:'Synthetic',month:'2026-11'})).archives[0].status,'voided');
+  await assert.rejects(h.call('url'));
+  assert.equal((await h.call('upload')).status,'voided','reusing a voided request cannot report an active archive');
+  assert.equal(h.network.length,2,'voided replay never reuploads');
   h=harness({denyDb:true}); await assert.rejects(h.call()); assert.equal(h.network.length,0);
   for(const mode of ['uploadLost','uploadFail','completeFail','completeReplyLost']) {
     h=harness({[mode]:true}); assert.equal((await h.call()).status,'pending');

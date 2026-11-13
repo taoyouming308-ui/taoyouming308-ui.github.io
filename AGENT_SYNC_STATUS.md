@@ -1,3 +1,9 @@
+## 2026-11-13 · Daily original correction candidate (App version: v649; not deployed)
+
+- Current owner: Codex. Based on protected main 8607769d/v648. User requested an upload-before-enlarge view, restored persistent image orientation, and a batch "作废" option for excess originals. The scope is display and independent archive management; unrelated files, financial attachments, amounts, approvals and postings remain unchanged.
+- New service-only, store-scoped append-only void and orientation tables/RPC preserve original Storage bytes and upload history. Normal daily-report reads exclude voids; archive management lists retain an audited "已作废" row. New private links cannot be issued for voided originals. The two identified 向里造型 2026-07-01 wrong-store copies must be rechecked and voided by exact request IDs only after backend deployment; the matching 自由手艺人 original must stay active.
+- Local isolated PostgreSQL17, Edge API mocks, 77-date browser read/rotation and batch preview/void tests passed; the original complete pre-push gate (including 133 finance commands) passed with system Python. The additive schema is installed and read back in production; operations-api v134 was deployed with the exact live dependency bundle and changed index, then read back. The two exact wrong-store 向里 2026-07-01 copies were voided with an immutable reason and verified absent from normal report reads; the matching 自由手艺人 original remains active. Original bytes and all financial/account rows remain unchanged. Frontend protected exact-head CI, merge, Pages and live browser readback are still required; the v649 button is not yet online at this checkpoint.
+
 ## 2026-11-13 · Inline daily original image candidate (App version: v648; not deployed)
 
 - Current owner: Codex. Based on protected main v647 at 06fc84cc. Only report-page display, batch-return affordance, cache/version markers and focused browser regression changed; unrelated untracked work remains untouched.
