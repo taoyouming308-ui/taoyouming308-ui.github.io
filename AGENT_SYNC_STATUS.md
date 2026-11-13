@@ -1,3 +1,9 @@
+## 2026-11-13 · Preserve cached zero formula results (App version: v651; not deployed)
+
+- Based on protected main 3d667bb3/v650. The v650 formula translation and merge-alias fix is deployed as operations-api v135. Live append-only verification found four zero-result formula cells in July/August became null because ExcelJS value copying drops falsy cached results. Reimport acceptance paused at this exact mismatch; no posting occurred and all old versions remain.
+- Read the public cell.result getter for display and numeric import, preserving explicit zero while leaving an absent cache unknown. Regression reproduces the old failure for shared and ordinary formula zeros, and protects uncached formulas. Independent source comparison now checks every numeric cell and formula in all three original workbooks, not only the library's copied value.
+- User authorization covers publication and append-only July-September reimport, preserving all original/version history and without accounting submission. Full release checks, deployment readback and final live reimport verification remain required.
+
 ## 2026-11-13 · Monthly shared-formula repair candidate (App version: v650; not deployed)
 
 - Current owner: Codex. Based on protected github/main 8607769d, isolated from the active project checkout. Local backup completed before editing.
