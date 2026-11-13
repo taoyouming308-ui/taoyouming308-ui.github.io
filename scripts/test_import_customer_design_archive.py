@@ -348,7 +348,8 @@ class ImportSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.ArchiveError, "Another import"):
                 with MODULE.config_lock(self.path):
                     pass
-        self.assertEqual(MODULE.private_path(str(self.path)), self.path)
+        # macOS may expose the same temporary directory through /var and /private/var.
+        self.assertEqual(MODULE.private_path(str(self.path)).resolve(), self.path.resolve())
 
     def test_optional_archive_link_is_restricted_and_retained_in_each_version(self):
         config = json.loads(self.path.read_text())

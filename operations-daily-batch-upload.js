@@ -89,6 +89,19 @@
     rows.forEach(function (row) {
       var labels = {pending:'待确认',checking:'正在核对日报权限',reading:'正在读取原图',uploading:'正在上传，请勿重复提交',done:'已上传',stopped:'已停止',uncertain:'结果待核对'};
       row.label.textContent = row.message || labels[row.status];
+      if (row.status === 'done' && scope && sameScope()) {
+        var day = scope.days.find(function (item) { return item.report_date === row.date; });
+        if (day && day.draft_id) {
+          var view = document.createElement('button'); view.type = 'button'; view.className = 'ghost';
+          view.textContent = '在电子日报中查看图片';
+          view.onclick = function () {
+            if (!sameScope()) return;
+            panel.classList.add('hidden');
+            openDailyReportDay(row.date,day.draft_id);
+          };
+          row.label.appendChild(view);
+        }
+      }
       row.dateInput.disabled = busy || used; row.check.disabled = busy || used;
     });
     picker.disabled = busy || used; start.disabled = busy || used || !rows.length || !sameScope() || rows.some(function (r) { return !r.confirmed || r.status !== 'pending'; });
