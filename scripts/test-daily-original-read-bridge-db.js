@@ -86,6 +86,7 @@ let started = false;
   const migration = fs.readdirSync('supabase/migrations').filter(name => name.endsWith('_daily_original_read_bridge.sql'));
   assert.equal(migration.length,1,'exactly one reviewed read-bridge migration is required');
   sql(fs.readFileSync('supabase/migrations/'+migration[0],'utf8'));
+  sql(fs.readFileSync('supabase/migrations/20261113070455_daily_original_void_orientation.sql','utf8'));
 
   // A new read interface must not relax the old writer or the tables themselves.
   assert.equal(sql(`select pg_get_functiondef(${q(oldSignature)}::regprocedure)`),oldDefinition);
@@ -122,7 +123,7 @@ let started = false;
   assert.equal(detail.archives.length,2);
   assert.deepEqual(new Set(detail.archives.map(a=>a.request_id)),new Set([first.id,second.id]));
   for (const item of detail.archives) {
-    assert.deepEqual(Object.keys(item).sort(),['completed_at','mime_type','object_path','original_filename','report_date','request_id','sha256','size_bytes'].sort());
+    assert.deepEqual(Object.keys(item).sort(),['completed_at','display_rotation_degrees','mime_type','object_path','original_filename','report_date','request_id','sha256','size_bytes'].sort());
     assert.equal(item.report_date,'2026-08-01'); assert.equal(item.size_bytes,123); assert.equal(item.sha256,'a'.repeat(64));
     assert.equal(item.mime_type,'image/jpeg'); assert.match(item.object_path,new RegExp('^'+C+'/'+S+'/daily-originals/2026-08/2026-08-01/'+item.request_id+'$'));
     assert.equal(Number.isNaN(Date.parse(item.completed_at)),false);
@@ -167,5 +168,24 @@ let started = false;
     reject(`delete from public.${table}`,/IMMUTABLE/);
   }
   for (const table of [...tables,'synthetic_financial']) assert.equal(snapshot(table),before[table],table+' must be unchanged by all reference reads');
-  console.log('Daily original read PG17: completed-only month/detail, exact account/staff scope and revocation, bounded dates, closed ACL/RLS, immutable archives, unchanged writer and financial sentinel passed. Synthetic only.');
+  const manage=(action,ids,degrees=null,reason='synthetic correction',actor=Finance,company=C,store=S)=>
+    `select public.zysyr_daily_original_manage(${q(actor)},${q(company)},${q(store)},${q(action)},array[${ids.map(q).join(',')}]::uuid[],${degrees==null?'null':degrees},${q(reason)});`;
+  reject('set role anon; '+manage('void',[first.id]),/permission denied/);
+  reject('set role authenticated; '+manage('void',[first.id]),/permission denied/);
+  reject('set role service_role; '+manage('void',[first.id],null,'wrong scope',Finance,C,OtherS),/SCOPE|FORBIDDEN/);
+  reject('set role service_role; '+manage('void',[pending.id]),/SCOPE|FORBIDDEN/);
+  reject('set role service_role; '+manage('void',[first.id],null,'no access',Reader),/FORBIDDEN/);
+  assert.equal(result('set role service_role; '+manage('rotate',[first.id],90)).changed,1);
+  assert.equal(read({start:'2026-08-01',end:'2026-08-02',detail:true}).archives.find(a=>a.request_id===first.id).display_rotation_degrees,90);
+  assert.equal(result('set role service_role; '+manage('void',[first.id])).changed,1);
+  assert.equal(result('set role service_role; '+manage('void',[first.id])).changed,0,'void replay is idempotent');
+  const afterVoid=read({start:'2026-08-01',end:'2026-08-02',detail:true});
+  assert.equal(afterVoid.days[0].count,1);assert.deepEqual(afterVoid.archives.map(a=>a.request_id),[second.id]);
+  assert.equal(sql(`select count(*) from public.zysyr_daily_original_reservations where request_id=${q(first.id)}`),'1','original reservation preserved');
+  assert.equal(sql(`select count(*) from public.zysyr_daily_original_completions where request_id=${q(first.id)}`),'1','completion audit preserved');
+  reject('set role service_role; '+manage('rotate',[first.id],180),/VOIDED/);
+  reject(`update public.zysyr_daily_original_voids set reason='changed'`,/IMMUTABLE/);
+  reject(`delete from public.zysyr_daily_original_orientation_revisions`,/IMMUTABLE/);
+  assert.equal(snapshot('synthetic_financial'),before.synthetic_financial);
+  console.log('Daily original read PG17: exact scope, immutable audit, void/read exclusion, saved orientation, ACL/RLS and unchanged financial sentinel passed. Synthetic only.');
 } finally { if (started) checked(docker(['rm','-f',container])); } })().catch(error => { console.error(error); process.exitCode=1; });

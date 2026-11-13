@@ -1,9 +1,14 @@
-## 2026-11-13 · Monthly shared-formula repair candidate (App version: v649; not deployed)
+## 2026-11-13 · Monthly shared-formula repair candidate (App version: v650; not deployed)
 
 - Current owner: Codex. Based on protected github/main 8607769d, isolated from the active project checkout. Local backup completed before editing.
 - July, August and September 2026 source workbook hashes match active report uploads. All original numeric cells match the archived import; formula display differs in 40, 29 and 25 cells respectively because Excel shared-formula slaves were stored as master references and merged aliases were imported as separate financial cells.
 - API import now stores translated formulas and excludes merged aliases. Unchanged archived reports retain workbook cached amounts on read; dependent formulas recalculate only after a source change. The exact three workbooks passed import regression. Existing archived formula references remain legacy data until append-only reimport after publication.
-- No production financial write, deployment, merge or Pages readback. Protected checks and an approved source reimport are still required.
+- User authorized push, publication and append-only reimport for the three exact workbooks, preserving old versions and without posting. Integrated e38db789, whose operations-api index exactly matches live v134, to retain already-deployed original void/orientation functionality. Release advanced to v650; publication gates remain required.
+## 2026-11-13 · Daily original correction candidate (App version: v649; not deployed)
+
+- Current owner: Codex. Based on protected main 8607769d/v648. User requested an upload-before-enlarge view, restored persistent image orientation, and a batch "作废" option for excess originals. The scope is display and independent archive management; unrelated files, financial attachments, amounts, approvals and postings remain unchanged.
+- New service-only, store-scoped append-only void and orientation tables/RPC preserve original Storage bytes and upload history. Normal daily-report reads exclude voids; archive management lists retain an audited "已作废" row. New private links cannot be issued for voided originals. The two identified 向里造型 2026-07-01 wrong-store copies must be rechecked and voided by exact request IDs only after backend deployment; the matching 自由手艺人 original must stay active.
+- Local isolated PostgreSQL17, Edge API mocks, 77-date browser read/rotation and batch preview/void tests passed; the original complete pre-push gate (including 133 finance commands) passed with system Python. The additive schema is installed and read back in production; operations-api v134 was deployed with the exact live dependency bundle and changed index, then read back. The two exact wrong-store 向里 2026-07-01 copies were voided with an immutable reason and verified absent from normal report reads; the matching 自由手艺人 original remains active. Original bytes and all financial/account rows remain unchanged. Frontend protected exact-head CI, merge, Pages and live browser readback are still required; the v649 button is not yet online at this checkpoint.
 
 ## 2026-11-13 · Inline daily original image candidate (App version: v648; not deployed)
 
