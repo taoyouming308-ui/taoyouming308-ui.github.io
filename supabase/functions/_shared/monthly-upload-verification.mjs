@@ -132,7 +132,8 @@ export function unavailableMonthlyVerification(reason = '原件核对未完成�
 }
 // Called both after registration and on overview, before any user amount revisions.
 export function verifyMonthlyUpload(snapshot, report, savedCells) {
-  if (!snapshot || snapshot.schema_version !== 1 || !snapshot.available)
+  if (!snapshot || snapshot.schema_version !== 1 || !snapshot.available || !Array.isArray(snapshot.cells) || !snapshot.cells.length
+    || snapshot.cells.some(c => !c || !/^[A-Z]{1,2}[1-9]\d{0,2}$/.test(c.address || '') || !Number.isInteger(c.row) || !Number.isInteger(c.column)))
     return unavailableMonthlyVerification(snapshot?.reason || '此版本没有自动核对记录，请人工核对原件');
   const display = report?.display_data || {}, values = list(display.values), issues = [...list(snapshot.issues)];
   const add = (code, address, message, expected, actual) => issues.push({ code, address, message, expected, actual, severity: 'error' });
@@ -173,10 +174,12 @@ export function verifyMonthlyUpload(snapshot, report, savedCells) {
     const address = letters(c + 1) + (r + 1);
     if (text(value) && !sources.has(address) && !aliases.has(address)) add('extra_display', address, '原件空白位置出现内容', '', text(value));
   }));
+  const blankSlots = new Set(list(display.cells).filter(c => c?.editable_blank === true).map(c => c.cell_address));
   for (const [address, cell] of saved) {
     const source = sources.get(address);
+    const allowedBlank = blankSlots.has(address) && (!source || (!text(source.value) && !source.formula)) && !cell.formula && Number(cell.numeric_value) === 0;
     if (aliases.has(address)) add('merged_alias', address, '合并单元格被重复保存为金额', '仅保存主格', cell.numeric_value);
-    else if ((!source || (source.numeric === null && !source.formula)) && (cell.formula || Number(cell.numeric_value || 0) !== 0))
+    else if ((!source || (source.numeric === null && !source.formula)) && !allowedBlank)
       add('extra_amount', address, '原件中没有这笔金额或公式', null, cell.numeric_value);
   }
   return { status: issues.some(i => i.severity === 'error') ? 'mismatch' : issues.length ? 'needs_review' : 'matched',

@@ -42,6 +42,8 @@ const clone = x => JSON.parse(JSON.stringify(x));
   changed = a.cells.filter(c => c.cell_address !== 'B2'); assert.ok(code(changed).issues.some(i => i.code === 'missing_cell'));
   changed = [...a.cells, {cell_address:'E4',numeric_value:30}]; assert.ok(code(changed).issues.some(i => i.code === 'merged_alias'));
   changed = [...a.cells, a.cells[0]]; assert.ok(code(changed).issues.some(i => i.code === 'duplicate'));
+  assert.equal(verifyMonthlyUpload({...a.original,cells:[]},a.report,a.cells).status,'needs_review');
+  changed = [...a.cells, {cell_address:'F4',numeric_value:0}]; assert.ok(code(changed).issues.some(i => i.code === 'extra_amount'), 'spurious zero must not be mistaken for an editable blank slot');
   changed = [...a.cells, {cell_address:'F4',numeric_value:90}]; assert.ok(code(changed).issues.some(i => i.code === 'extra_amount'));
   const report = clone(a.report); report.display_data.values[1][1] = '101';
   assert.ok(code(a.cells, report).issues.some(i => i.code === 'display'));

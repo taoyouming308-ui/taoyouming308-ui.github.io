@@ -6,11 +6,11 @@ assert.match(page, /只有照片的 Word 凭证包不是月报数据/);
 assert.match(page, /先点击下方月报对应开支的金额/);
 assert.match(page, /原包留底不代表每张照片已精确对应/);
 const start = page.indexOf("var uploadMessage=error.message;");
-const end = page.indexOf("}finally{button.disabled=false}", start);
+const end = page.indexOf("}finally{state.monthlyUploadBusy=false;button.disabled=false}", start);
 assert.ok(start >= 0 && end > start);
 const code = page.slice(start, end);
 function message(isDocx, text) {
-  const context = { isDocx, error: { message: text }, resultBox: {}, toast: () => {} };
+  const context = { isDocx, error: { message: text }, resultBox: {}, toast: () => {}, reportSaved: false, uploadScopeCurrent: () => true };
   vm.runInNewContext(code, context);
   return context.resultBox.textContent;
 }
