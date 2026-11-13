@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-13",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "fcef3cebbe2ff8d7eea9227d5d23c08fa0867704",
+  "note": "Request only: run immutable-main academy backup and preflight before any lesson draft, review or asset inputs. Not approved; not prepared; not online."
+}
