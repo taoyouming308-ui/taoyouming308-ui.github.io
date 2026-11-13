@@ -1,3 +1,9 @@
+## v647 local candidate · Complete daily originals and monthly expense source views
+
+- Keep archived-original status and refreshed links visible after saving a daily draft, with honest read-failure messages and preserved unsaved edits.
+- Add finance-only, on-demand source views for monthly originals and expense details, preserving raw values, formulas, provenance and unreviewed evidence boundaries.
+- Local candidate only. No deployment, financial changes, automatic posting or repeated original upload.
+
 # Unreleased v647 · Daily archived original read bridge
 
 - Show independently archived daily originals in the existing daily calendar and detail, with a direct short-lived original link and a clear “原图已存档 · 待核对” status. Missing and unavailable originals remain distinct.

@@ -18,6 +18,30 @@
     } catch (_) { return ''; }
   }
 
+  function sameDraft(left, right) {
+    return !!(left && right && left.draft && right.draft && left.draft.id
+      && String(left.draft.id) === String(right.draft.id)
+      && left.draft.report_date === right.draft.report_date);
+  }
+
+  // Called only after the owner verifies the current store/request scope. Older
+  // mutation responses omit display references; that omission is not absence.
+  function preserve(previous, next) {
+    if (sameDraft(previous, next) && !Object.prototype.hasOwnProperty.call(next, 'original_archive')
+      && Object.prototype.hasOwnProperty.call(previous, 'original_archive')) {
+      next.original_archive = previous.original_archive;
+      next.archived_originals = previous.archived_originals || [];
+    }
+    return next;
+  }
+
+  function refresh(current, fresh) {
+    if (!sameDraft(current, fresh) || !Object.prototype.hasOwnProperty.call(fresh, 'original_archive')) return false;
+    current.original_archive = fresh.original_archive;
+    current.archived_originals = fresh.archived_originals || [];
+    return true;
+  }
+
   function render(sheet, host, esc) {
     var state = presence(sheet.original_archive), date = sheet.draft && sheet.draft.report_date;
     // Never display an original under a different day's financial detail.
@@ -40,5 +64,5 @@
     return state;
   }
 
-  global.ZysyrDailyOriginalDisplay = Object.freeze({ presence: presence, render: render });
+  global.ZysyrDailyOriginalDisplay = Object.freeze({ presence: presence, render: render, preserve: preserve, refresh: refresh });
 })(window);

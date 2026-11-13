@@ -33,6 +33,7 @@
     if (!isCurrent(ctx) || !sheet || String(sheet.draft.id) !== ctx.id || String(sheet.draft.report_date) !== ctx.date) {
       throw new Error('当前门店或日报已变化，请重新打开核对');
     }
+    if (window.ZysyrDailyOriginalDisplay) window.ZysyrDailyOriginalDisplay.preserve(state.imports.sheet, sheet);
     state.imports.sheet = sheet;
     ctx.revision = Number(sheet.draft.edit_revision);
     state.imports.dirty = {};
@@ -113,6 +114,10 @@
       // Check again after the request: the user may have started typing or navigated.
       if (!detailOpen() || document.hidden || active || sourceBusy() || !isCurrent(ctx) || state.imports.sheet !== previous) return;
       if (String(fresh.draft.id) !== ctx.id || String(fresh.draft.report_date) !== ctx.date) throw new Error('日报范围不一致');
+      // References and expiring private links are display data, not a financial
+      // revision. Refresh just this panel even while the user is editing cells.
+      if (window.ZysyrDailyOriginalDisplay && window.ZysyrDailyOriginalDisplay.refresh(previous, fresh)
+        && typeof renderDailyDetailOriginalStatus === 'function') renderDailyDetailOriginalStatus();
       if (sheetVersion(fresh) !== sheetVersion(previous) || uncertainPosts.has(key)) {
         if (protectedInput || localInputActive()) {
           syncStatus('后台日报已有更新；本页填写内容已保留，请保留修改内容并核对最新版本后再保存或入账。');

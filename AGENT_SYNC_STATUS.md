@@ -1,3 +1,10 @@
+## 2026-11-13 · Local report source display completion (App version: v647; not deployed)
+
+- Source continuation was verified stopped (latest turn interrupted) before edits. Fresh github/main 301f738a is included; existing candidate preserved in local checkpoint 586edf1d, daily backup and start checks passed. User explicitly requested local repair/verification only; no push, merge, deployment or production business write.
+- Daily original display now survives same-scope draft-save replies that omit presentation fields. Existing read refresh updates archive status/private links independently of financial revisions and preserves dirty inputs. Cross-date/store responses are discarded; unavailable archive reads remain visible beside financial attachments. Both optional display resources have precise same-origin failure fallbacks.
+- New on-demand monthly/expense source views use the selected original workbook and existing history sources. Source hashes, exact worksheet names, raw formula caches, original expense values and month-level evidence boundaries are preserved. No changed financial values, original re-upload, approval or posting. New server operation is finance-read-only; staff grants unchanged.
+- Local verification includes HTTP permission/route tests, isolated PostgreSQL17, frozen Deno type checking, three-month source browser tests and private real-file comparison. Full local finance gate results are recorded outside this public repo in zysyr-local-report-validation-20261113. Real source files and projections are excluded from Git. Online acceptance remains pending because deployment is not authorized.
+
 ## 2026-11-13 · Daily archived-original read bridge (App version: v647; not published)
 
 - Current owner: Codex. Last synchronized base checked: github/main 301f738a402cb8765fc356febae553c1b1163211 (v646); isolated clean worktree, three starting checks and complete daily recovery backup verified before edits. Other dirty candidates remain untouched.

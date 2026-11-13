@@ -12,8 +12,9 @@ import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
 import { dailyAutofillView, isSyncedDailySheet } from "../_shared/daily-autofill-view.mjs";
 import { MONTHLY_REVIEW_OPERATIONS, monthlyReviewRequest, monthlyReviewError } from "../_shared/monthly-review.mjs";
-import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive } from "../_shared/monthly-source-archive.ts";
+import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive, monthlySourceWorksheetNames } from "../_shared/monthly-source-archive.ts";
 import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.ts";
+import { reportSourceReview } from "../_shared/report-source-review.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -7085,7 +7086,7 @@ monthly_review_status monthly_review_inbox monthly_review_preview monthly_review
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
-monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+report_source_review monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
 function safeOperationsApiLogOperation(value: unknown): string {
@@ -7144,6 +7145,32 @@ async function handleOperationsApiRequest(
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
     }
+    if (operation === "report_source_review") return json(await reportSourceReview(payload,session,{
+      requireFinance:historyImportFinance,selectedStore:selectedStoreInfo,
+      archiveRpc:async(args:JsonRecord) => {
+        if (!["list","view"].includes(String(args.p_action))) throw new Error("仅可读取报表原件");
+        const response=await rest("rpc/zysyr_monthly_source_archive",{method:"POST",body:JSON.stringify(args)});
+        if (!response.ok) throw new Error("月报核对原件暂不可读");
+        return await response.json();
+      },
+      object:async(path:string) => {
+        const response=await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(path)}`,{
+          headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`},
+        });
+        if (!response.ok) throw new Error("月报原件暂不可读");
+        const reader=response.body?.getReader();if(!reader) throw new Error("月报原件内容为空");
+        const chunks:Uint8Array[]=[];let length=0;
+        try { for (;;) { const part=await reader.read();if(part.done)break;length+=part.value.length;
+          if(length>MAX_REPORT_BYTES)throw new Error("月报原件超过读取上限");chunks.push(part.value); }
+        } finally { await reader.cancel(); }
+        const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;
+      },
+      hash:sha256Bytes,
+      loadZip:async(bytes:Uint8Array) => await JSZip.loadAsync(exactArrayBuffer(bytes)),
+      validateWorkbook:(bytes:Uint8Array) => monthlySourceWorksheetNames(bytes,async(b:Uint8Array)=>await JSZip.loadAsync(exactArrayBuffer(b))),
+      loadWorkbook:async(bytes:Uint8Array) => { const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(exactArrayBuffer(bytes));return workbook; },
+      historyRead:historyImportRead,
+    }));
     if (operation.startsWith("monthly_source_archive_") && MONTHLY_SOURCE_OPERATIONS.has(operation)) return json(await monthlySourceArchive(operation,payload,session,{
       selectedStore:selectedStoreInfo,hasCapability:hasAuthCapability,
       requireFinance:(actor:JsonRecord) => requireFinanceCapability(actor,"report.upload","只有已授权财务可以登记月报核对原件"),

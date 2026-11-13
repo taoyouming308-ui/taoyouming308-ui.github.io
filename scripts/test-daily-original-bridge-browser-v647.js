@@ -11,13 +11,16 @@ const months = { '2026-07': 26, '2026-08': 26, '2026-09': 25 };
 let browser;
 (async function () {
   browser = await chromium.launch({ channel: 'chrome', headless: true });
+  console.log('archive bridge browser started');
   const context = await browser.newContext();
   let user, overview, template, role = 'finance', mode = 'archive', blockDisplay = false;
+  let blockSourceReview = false;
+  let saved = null, signedVersion = 0, holdNextRead = false, releaseRead, readStarted;
   const calls = [], errors = [], downloads = [];
   function archive(date) {
     return { request_id: 'archive-' + date, report_date: date, original_filename: date + '-original.png',
       mime_type: 'image/png', size_bytes: png.length, sha256: 'a'.repeat(64), review_status: 'unreviewed',
-      private_url: 'https://synthetic-private.invalid/original/' + date + '/archive-' + date + '.png', url_expires_in: 300 };
+      private_url: 'https://synthetic-private.invalid/original/' + date + '/archive-' + date + '.png' + (signedVersion ? '?signature=' + signedVersion : ''), url_expires_in: 300 };
   }
   function day(date) {
     return { report_date: date, draft_id: 'draft-' + date, status: 'draft', grand_total: null,
@@ -35,7 +38,7 @@ let browser;
       recognition: { eligible_days: 0, recognized_days: 0, pending_days: 0 } };
   }
   function sheet(date) {
-    const data = clone(template);
+    const data = clone(saved && saved.draft.report_date === date ? saved : template);
     data.draft.id = 'draft-' + date; data.draft.report_date = date;
     data.draft.source_voucher_id = null; data.draft.status = 'draft';
     data.attachments = []; data.original_image_url = null; data.original_filename = null;
@@ -46,13 +49,15 @@ let browser;
     if (mode === 'legacy') { delete data.original_archive; delete data.archived_originals; }
     if (mode === 'unsigned') { data.archived_originals[0].private_url = null; data.archived_originals[0].url_unavailable = true; }
     if (mode === 'wrong-date') { data.archived_originals[0].report_date = '2026-01-01'; }
-    if (mode === 'financial') { data.attachments = clone(template.attachments); data.original_image_url = template.original_image_url; }
+    if (mode === 'financial' || mode === 'financial-unknown') { data.attachments = clone(template.attachments); data.original_image_url = template.original_image_url; }
+    if (mode === 'financial-unknown') { data.original_archive = { state: 'unavailable', count: null }; data.archived_originals = []; }
     return data;
   }
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin === origin) {
       if (blockDisplay && url.pathname.endsWith('/operations-daily-original-display.js')) return route.abort();
+      if (blockSourceReview && url.pathname.endsWith('/operations-report-source-review.js')) return route.abort();
       const file = path.resolve(root, '.' + url.pathname);
       if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
       return route.fulfill({ body: fs.readFileSync(file), contentType: file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'application/javascript; charset=utf-8' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream' });
@@ -65,7 +70,23 @@ let browser;
       if (payload.operation === 'monthly_review_status') return route.fulfill({ json: { publication: null, receipt: null, history: [], finance: role === 'finance' } });
       if (payload.operation === 'monthly_review_inbox') return route.fulfill({ json: { pending: [], count: 0 } });
       if (payload.operation === 'daily_sheet_month') return route.fulfill({ json: monthData(payload.month) });
-      if (payload.operation === 'daily_sheet_read') return route.fulfill({ json: sheet(payload.draft_id.slice(6)) });
+      if (payload.operation === 'daily_sheet_read') {
+        const response = sheet(payload.draft_id.slice(6));
+        if (holdNextRead) { holdNextRead = false; readStarted(); await new Promise(resolve => { releaseRead = resolve; }); }
+        return route.fulfill({ json: response });
+      }
+      if (payload.operation === 'daily_sheet_save') {
+        saved = sheet(payload.draft_id.slice(6)); saved.draft.edit_revision++;
+        for (const edit of payload.cells) {
+          const cell = saved.cells.find(item => item.id === edit.id || item.section_code === edit.section_code && item.row_key === edit.row_key && item.column_code === edit.column_code);
+          assert(cell, 'synthetic save uses an existing cell');
+          cell.manual_override = true;
+          if (['signature', 'unclosed_order', 'note'].includes(cell.cell_role)) cell.manual_text = edit.value;
+          else cell.corrected_numeric = edit.value;
+        }
+        delete saved.original_archive; delete saved.archived_originals;
+        return route.fulfill({ json: saved });
+      }
       if (payload.operation === 'daily_recognition_job_read') return route.fulfill({ json: { job: null } });
       throw Error('Unexpected API operation ' + payload.operation);
     }
@@ -82,6 +103,7 @@ let browser;
   assert(!calls.some(c => /original_archive|monthly_source_archive/.test(c.operation)), 'startup adds no auxiliary archive API reads');
   let checked = 0;
   for (const [month, count] of Object.entries(months)) {
+    console.log('archive bridge month ' + month);
     await page.selectOption('#month', month);
     await page.locator('.nav [data-view="daily-report"]').click();
     await page.waitForFunction(month => state.dailyReportMonth?.month === month, month);
@@ -137,7 +159,52 @@ let browser;
   await openMode('wrong-date'); assert.equal(await page.locator('[data-daily-archived-link]').count(), 0); assert.doesNotMatch(await page.locator('#daily-detail-archived-originals').innerText(), /2026-01-01/);
   await openMode('financial'); assert.equal(await page.locator('[data-daily-attachment]').count(), 1); assert.equal(await page.locator('[data-daily-archived-link]').count(), 1);
   assert.deepEqual(await page.evaluate(() => state.imports.sheet.attachments), template.attachments, 'existing financial attachments stay intact');
+  console.log('archive bridge save/sync cases');
+  await openMode('financial-unknown');
+  assert.equal(await page.locator('[data-daily-attachment]').count(), 1);
+  assert.match(await page.locator('#daily-detail-original-alert').innerText(), /当前有效原始资料.*原图存档状态暂不可用/s);
+  // The normal save route returns a newer financial sheet without archive fields.
+  await openMode('archive');
+  const editable = page.locator('#daily-detail-grid input[data-daily-cell][data-role="staff_value"]').first();
+  await editable.fill('42.25');
+  await page.locator('#daily-detail-save-top').click();
+  await page.waitForFunction(() => document.getElementById('daily-detail-note').textContent.includes('保存成功'));
+  assert.equal(await page.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-01').private_url);
+  assert.match(await page.locator('#daily-detail-original-alert').innerText(), /原图已存档/);
+  assert.equal(calls.filter(c => c.operation === 'daily_sheet_save').length, 1);
+  // Advancing only the test clock exercises the existing 30-second sync guard.
+  await page.evaluate(() => { const now = Date.now; window.__archiveTestClock = 0; Date.now = () => now() + window.__archiveTestClock; });
+  const sync = () => page.evaluate(async () => { window.__archiveTestClock += 31000; await window.ZysyrDailyReview.sync(); });
+  await editable.fill('43.75');
+  const dirtyBefore = await page.evaluate(() => ({ dirty: state.imports.dirty, labels: state.imports.dirtyLabels, cells: state.imports.sheet.cells, draft: state.imports.sheet.draft }));
+  signedVersion++; await sync();
+  assert.equal(await page.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-01').private_url);
+  assert.equal(await editable.inputValue(), '43.75');
+  assert.deepEqual(await page.evaluate(() => ({ dirty: state.imports.dirty, labels: state.imports.dirtyLabels, cells: state.imports.sheet.cells, draft: state.imports.sheet.draft })), dirtyBefore);
+  assert.doesNotMatch(await page.locator('#daily-detail-sync-status').innerText(), /后台日报已有更新/);
+  mode = 'unknown'; await sync(); assert.match(await page.locator('#daily-detail-original-alert').innerText(), /暂不可用/);
+  assert.equal(await page.locator('[data-daily-archived-link]').count(), 0);
+  mode = 'archive'; signedVersion++; await sync(); assert.equal(await page.locator('[data-daily-archived-link]').count(), 1);
+  assert.equal(await editable.inputValue(), '43.75');
+  assert.equal(calls.filter(c => c.operation === 'daily_sheet_save').length, 1, 'background archive updates never save dirty amounts');
+  // Stale responses after a day/store switch cannot overwrite the new display.
+  await page.evaluate(() => { state.imports.dirty = {}; state.imports.dirtyLabels = {}; document.getElementById('daily-detail-reason').value = ''; renderDailySheetDetail(); });
+  let started = new Promise(resolve => { readStarted = resolve; }); holdNextRead = true;
+  let pending = sync(); await started;
+  await page.evaluate(() => openDailyReportDay('2026-07-02', 'draft-2026-07-02'));
+  releaseRead(); await pending;
+  assert.equal(await page.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-02').private_url);
+  started = new Promise(resolve => { readStarted = resolve; }); holdNextRead = true; signedVersion++;
+  pending = sync(); await started;
+  const beforeSwitch = await page.locator('[data-daily-archived-link]').getAttribute('href');
+  const storeBefore = await page.evaluate(() => { const input = document.getElementById('store-select'); const old = input.value; input.value = '向里造型'; return old; });
+  releaseRead(); await pending;
+  assert.equal(await page.locator('[data-daily-archived-link]').getAttribute('href'), beforeSwitch);
+  await page.evaluate(value => { document.getElementById('store-select').value = value; }, storeBefore);
+  assert(!calls.some(c => c.operation === 'daily_sheet_confirm'), 'no test flow posts a report');
+  saved = null; signedVersion = 0;
   // The actual employee iframe path uses only its existing read operations and opens the same original.
+  console.log('archive bridge staff cases');
   role = 'staff'; mode = 'archive'; calls.length = 0;
   await page.evaluate(() => localStorage.setItem('booking-session', JSON.stringify({ session_token: 'synthetic-employee-session', expires_at: '2099-01-01T00:00:00Z' })));
   await page.goto(origin + '/operations.html?entry=staff-shareholder'); await page.waitForFunction(() => state.monthlyOverviewReady === true);
@@ -156,6 +223,10 @@ let browser;
   await page.locator('#daily-detail-original-alert').waitFor();
   assert.match(await page.locator('#daily-detail-original-alert').innerText(), /暂不可用/);
   assert.equal(await page.locator('#app').isVisible(), true, 'failed optional display resource does not break existing financial reads');
+  blockSourceReview = true; await page.reload();
+  await page.waitForFunction(() => document.getElementById('app-startup').dataset.phase === 'ready');
+  assert.match(await page.locator('#view-monthly [data-source-display-unavailable]').innerText(), /本月来源暂不可用/);
+  assert.match(await page.locator('#view-finance-workbench [data-source-display-unavailable]').innerText(), /本月来源暂不可用/);
   assert.deepEqual(errors, []);
   console.log('daily original bridge: whole-page 26/26/25 presence and 77 correct date links, 3 direct image opens, financial gates, unknown/legacy and employee read boundaries passed');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => { if (browser) await browser.close(); });
