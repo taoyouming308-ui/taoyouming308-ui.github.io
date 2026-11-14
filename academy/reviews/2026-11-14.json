@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-14",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI编辑实际核对论文来源、SVG原创版权及模拟案例隐私；非独立人类学术同行评审）",
+  "reviewedAt": "2026-11-14T00:54:23.341Z",
+  "approvalReference": "2026-11-14本轮核对三篇原始/理论研究的真实题名、作者、日期、DOI和外推限制；本轮三张静态SVG由AI原创绘制，已审核无脚本、外链、受版权保护外部照片或真实顾客数据；所有案例标记模拟。本记录只是内容、来源、版权和隐私审核，不是提供真人化学处理安全保证。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "核验 https://doi.org/10.3390/cosmetics6020024：本轮2026-11-14核对MDPI原文：Ezawa等、2019-04-01、156名日本女性发丝弯曲模量与皮质细胞类型的关系，企业研发与样本限制；不能从论文直接确定真人杠径或烫发工艺"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "核验 https://doi.org/10.1016/j.jmbbm.2022.105346：本轮2026-11-14核对PubMed PMID 35780570：Tohmyoh、Futada、2022-06-28在线刊发，单纤维弯曲与拉伸和纳米压痕；不把实验层间载荷比例推广至所有顾客"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "核验 https://doi.org/10.1111/j.1467-2494.1995.tb00129.x：本轮2026-11-14核对PubMed PMID 19245472：J. A. Swift、1995年12月、理论结构模型；不把理想圆杆d四次方当真人实际测量或安全参数"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "2026-11-14本轮原创第1张纯静态SVG，只使用允许的路径、矩形、圆、椭圆、文字及线条，已审查无外部图片、链接、脚本、真人照片或顾客个人信息。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "2026-11-14本轮原创第2张纯静态SVG，只使用允许的路径、矩形、圆、椭圆、文字及线条，已审查无外部图片、链接、脚本、真人照片或顾客个人信息。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "2026-11-14本轮原创第3张纯静态SVG，只使用允许的路径、矩形、圆、椭圆、文字及线条，已审查无外部图片、链接、脚本、真人照片或顾客个人信息。"
+    }
+  ],
+  "contentSha256": "0ba775fcb9d54f3df8fba872a614cf2841dfdbc03bef14584d42ed93fea33580",
+  "assetSha256": {
+    "assets/2026-11-14/figure1.svg": "bcba1e7d8643c4bba78d66c6ba949832f906d174d84d71b5a9438ef4b7a7a1d0",
+    "assets/2026-11-14/figure2.svg": "1d6e304a2b6ef12387d2e387c8477070baa76fc68925006048509aa6e28ae063",
+    "assets/2026-11-14/figure3.svg": "818fa1194b47accb88ea80e15eb7b18612f4a7f855c67b634e36086cf5258499"
+  }
+}
