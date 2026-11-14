@@ -1,3 +1,9 @@
+## v657 · All-expense voucher matching
+
+- Extend the existing voucher panel to all monthly expense categories and source petty details. Show linked originals in existing monthly cells and source review; verify labels and current amounts when projecting across different source files.
+- Recognize document type, expense category and independent payments; preserve explicit month-only payroll/advertising totals as summary evidence. Automatically associate only reliable unique matches, with manual handling for exceptions and audited reversible corrections. Financial amounts, approval and posting remain unchanged.
+- Separate failed recognition from manual exceptions and add failed-only recovery. Process up to three lease-protected images concurrently while preserving previous successful/manual results and original files. Add scoped API, isolated database and mobile browser regression coverage.
+
 ## 2026-11-14 · 发型审美训练：半干侧睡与次晨恢复
 
 - 追加稳定案例 `aesthetic-2026-11-14`，把晚洗半干侧睡、分区发质和两分钟晨间整理纳入松卷短鲍伯的结构与卷度取舍。

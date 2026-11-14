@@ -69,7 +69,7 @@ async function processTask(task: Json): Promise<void> {
       if (!OPENAI_KEY && (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN)) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
       const marked = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ocr_tasks?id=eq.${taskId}&lease_token=eq.${leaseToken}&status=eq.processing`, {
         method: "PATCH", headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ provider: OPENAI_KEY ? "openai-api" : "codex-local", model: OPENAI_KEY ? OPENAI_MODEL : CODEX_MODEL, prompt_version: OPENAI_KEY ? "petty-voucher-openai-v1" : CODEX_PROMPT_VERSION }),
+        body: JSON.stringify({ provider: OPENAI_KEY ? "openai-api" : "codex-local", model: OPENAI_KEY ? OPENAI_MODEL : CODEX_MODEL, prompt_version: OPENAI_KEY ? "expense-voucher-v2" : CODEX_PROMPT_VERSION }),
       });
       if (!marked.ok || (await marked.json()).length !== 1) throw new Error("OCR_TASK_LEASE_INVALID");
       const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
@@ -92,7 +92,7 @@ async function processTask(task: Json): Promise<void> {
       }
       const parsed = voucherCodexCandidates(raw, batch.month);
       await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: true,
-        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: OPENAI_KEY ? "petty-voucher-openai-v1" : CODEX_PROMPT_VERSION },
+        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: OPENAI_KEY ? "expense-voucher-v2" : CODEX_PROMPT_VERSION },
         p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
       return;
     }
@@ -119,7 +119,7 @@ async function processTask(task: Json): Promise<void> {
       p_retryable: false, p_raw_result: { provider_response: raw, parsed: parsed.structured, prompt_version: PROMPT_VERSION },
       p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
   } catch (error) {
-    const retryable = Boolean((error as { retryable?: boolean }).retryable) || (error as Error).name === "TimeoutError";
+    const retryable = Boolean((error as { retryable?: boolean }).retryable) || ["TimeoutError","AbortError","TypeError"].includes((error as Error).name);
     await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: false,
       p_retryable: retryable, p_raw_result: { error_type: (error as Error).name }, p_candidate_fields: {}, p_field_confidences: {},
       p_error_message: String((error as Error).message || "OCR_FAILED").slice(0, 1000) });
@@ -134,20 +134,18 @@ Deno.serve(async (request: Request) => {
   const rawRequested = Number(body.limit || 1), rawFollowUpDepth = Number(body.follow_up_depth ?? 2);
   const requested = Number.isFinite(rawRequested) ? Math.max(1, Math.min(5, Math.trunc(rawRequested))) : 1;
   const followUpDepth = Number.isFinite(rawFollowUpDepth) ? Math.max(0, Math.min(2, Math.trunc(rawFollowUpDepth))) : 2;
-  // Each invocation processes one bounded task; polling and the existing
-  // follow-up chain drain the queue. A slow image cannot exhaust a five-image
-  // request or hold the upload UI open. Claims remain lease protected.
+  // Bounded parallel images; no artificial per-image waiting or UI blocking.
   EdgeRuntime.waitUntil((async () => {
   let processed = 0;
-  for (let index = 0; index < Math.min(1, requested); index += 1) {
+  await Promise.all(Array.from({length:Math.min(3,requested)},async()=>{
     const claimed = await rpc("zysyr_claim_voucher_ocr_task", { p_provider: OCR_PROVIDER, p_model: OCR_MODEL,
       p_prompt_version: PROMPT_VERSION, p_lease_seconds: 180 }) as Json[];
-    const task = Array.isArray(claimed) ? claimed[0] : null; if (!task) break;
-    await processTask(task); processed += 1;
-  }
+    const task=Array.isArray(claimed)?claimed[0]:null;if(!task)return;
+    await processTask(task);processed+=1;
+  }));
   if (processed > 0 && followUpDepth > 0) {
     await (async () => {
-      await new Promise((resolve) => setTimeout(resolve, 35000));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const followUp = await fetch(`${SUPABASE_URL}/functions/v1/voucher-ocr-worker`, {
         method: "POST",
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json", "x-worker-secret": WORKER_SECRET },

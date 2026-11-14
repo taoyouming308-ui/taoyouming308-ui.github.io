@@ -27,7 +27,19 @@
     return '<span title="' + escape(details) + '">' + escape(valueText(cell.value)) + '</span>'
       + (cell.formula && cell.value == null ? '<small>（公式无缓存值）</small>' : '');
   }
-  function grid(monthly) {
+  function voucherCell(data,address,rowId) {
+    if(!data||!Array.isArray(data.expense_voucher_targets))return '';
+    var source=data.source||{},targets=data.expense_voucher_targets||[];
+    var target=targets.find(function(t){return t.target_kind==='monthly_source'&&t.source_locator===address&&t.source_selection_id===source.selection_id;});
+    var pettyRollup=target&&/备用金/.test(target.summary||'');
+    var matches=(data.expense_voucher_matches||[]).filter(function(link){var t=link.target||{};return rowId?(t.target_kind==='source_petty'&&t.id===rowId||t.source_row_id===rowId):
+      target&&(t.target_kind==='monthly_source'&&t.id===target.id||pettyRollup&&['formal','history','draft','source_petty'].includes(t.target_kind));});
+    var files=[];matches.forEach(function(link){if(!files.some(function(f){return f.voucher_id===link.voucher_id;}))files.push(link);});
+    if(!files.length)return target||rowId?'<small class="help">待匹配凭证</small>':'';
+    var buttons=files.map(function(file){return '<button type="button" class="ghost" data-source-matched-voucher="'+escape(file.voucher_id)+'">'+escape(file.filename||'查看凭证')+(file.mode==='auto'?' · AI匹配':' · 人工匹配')+'</button>';}).join('');
+    return '<details><summary>查看凭证（'+files.length+'份）</summary>'+buttons+'<small class="help">凭证对应不代表财务审批或入账。</small></details>';
+  }
+  function grid(monthly,data) {
     var n = monthly.column_count || 0, headers = ['原行'], merged = {}, covered = {};
     function point(address) { var m = /^([A-Z]+)(\d+)$/.exec(address); if (!m) return null; return [Number(m[2]), m[1].split('').reduce(function (v, c) { return v * 26 + c.charCodeAt(0) - 64; }, 0)]; }
     (monthly.merges || []).forEach(function (range) {
@@ -41,7 +53,7 @@
     return '<div style="overflow:auto;max-height:65vh"><table class="archive-table" style="table-layout:fixed;width:' + (48 + widths.reduce(function (a, b) { return a + b; }, 0)) + 'px"><colgroup><col style="width:48px">' + widths.map(function (w) { return '<col style="width:' + w + 'px">'; }).join('') + '</colgroup><thead><tr>' + headers.map(function (h) { return '<th>' + escape(h) + '</th>'; }).join('') + '</tr></thead><tbody>'
       + (monthly.rows || []).map(function (row) {
         var cells = '<th>' + escape(row.row) + '</th>';
-        for (var c = 1; c <= n; c++) if (!covered[row.row + ':' + c]) cells += '<td' + (merged[row.row + ':' + c] || '') + '>' + cellText(row.cells.find(function (cell) { return cell.column === c; })) + '</td>';
+        for (var c = 1; c <= n; c++) if (!covered[row.row + ':' + c]) {var cell=row.cells.find(function (cell) { return cell.column === c; });cells += '<td' + (merged[row.row + ':' + c] || '') + '>' + cellText(cell) + (c===3&&cell?voucherCell(data,cell.address):'') + '</td>';}
         return '<tr>' + cells + '</tr>';
       }).join('') + '</tbody></table></div>';
   }
@@ -52,7 +64,7 @@
     var source = data.source || {}, monthly = data.monthly || {};
     var out = '<p class="help">' + escape(data.month) + ' · ' + escape(source.filename || '') + ' · 工作表「' + escape(source.worksheet_name || '')
       + '」</p><p class="help">以下为原件保存内容，待人工核对；公式未重新计算，空白不计为零。正式报表金额与入账状态保持原样。</p>';
-    if (panel.kind === 'monthly') out += grid(monthly);
+    if (panel.kind === 'monthly') out += grid(monthly,data);
     else {
       out += '<h4>月报开支栏目 · 原件保存值</h4>';
       var expenseRows = monthly.expense_rows || [];
@@ -60,7 +72,7 @@
         var label = (row.cells || []).find(function (cell) { return cell.column === 2; });
         if (!label || label.value == null || label.value === '') label = (row.cells || []).find(function (cell) { return cell.column === 1; });
         var amount = (row.cells || []).find(function (cell) { return cell.column === 3; });
-        return [escape(amount ? amount.address : row.row), escape(label ? label.value : row.label || ''), cellText(amount || row)];
+        return [escape(amount ? amount.address : row.row), escape(label ? label.value : row.label || ''), cellText(amount || row)+voucherCell(data,amount&&amount.address)];
       })) : '<p class="help">原件未提供可确定的开支栏目，请展开完整月报核对。</p>';
       out += '<h4>备用金来源明细' + (data.petty_cash_status === 'missing' ? ' · 尚无来源' : ' · ' + (data.expenses || []).length + ' 笔') + '</h4>';
       out += '<p class="help">备用金明细用于核对月报中的对应栏目，不与上方开支重复相加。</p>';
@@ -69,9 +81,10 @@
         var posted = { pending: '未入账', staged: '未入账', imported: '已导入', posted: '已入账', failed: '导入失败' }[row.import_status] || '入账状态待核实';
         var locator = row.source_locator || '';
         if (locator && locator.indexOf('!') < 0) locator = (row.source_sheet || '') + '!' + locator;
-        return [row.date, row.voucher_number, row.summary, row.category, valueText(row.inflow), valueText(row.outflow), locator, review, posted].map(escape);
+        var values=[row.date, row.voucher_number, row.summary, row.category, valueText(row.inflow), valueText(row.outflow), locator, review, posted].map(escape);
+        values[2]+=voucherCell(data,null,row.id);return values;
       }));
-      out += '<details style="margin-top:12px"><summary>展开完整月报原件内容</summary>' + grid(monthly) + '</details>';
+      out += '<details style="margin-top:12px"><summary>展开完整月报原件内容</summary>' + grid(monthly,data) + '</details>';
     }
     if ((data.evidence || []).length) {
       out += '<h4>本月凭证原件包</h4><p class="help">整月留存，尚不代表每笔开支已匹配或审核通过。</p>'
@@ -81,6 +94,7 @@
     out += '<details style="margin-top:12px"><summary>来源记录</summary><p class="help">原件 SHA256：' + escape(source.sha256 || '未提供') + '</p>'
       + (data.batches || []).map(function (batch) { return '<p class="help">' + escape(batch.filename) + ' · ' + escape(batch.id) + '</p>'; }).join('') + '</details>';
     panel.body.innerHTML = out;
+    panel.body.querySelectorAll('[data-source-matched-voucher]').forEach(function(button){button.onclick=function(){if(same(scope,context()))openPrivate('voucher_url',{voucher_id:button.dataset.sourceMatchedVoucher});};});
     panel.body.querySelectorAll('[data-source-evidence]').forEach(function (button) {
       button.onclick = function () { if (same(scope, context())) openPrivate('history_import_file_url', { file_kind: 'evidence', id: button.dataset.sourceEvidence }); };
     });
@@ -91,7 +105,7 @@
     panel.button.disabled = true; panel.body.textContent = '正在读取本月已留存来源…';
     try {
       if (typeof isLocalPreview === 'function' && isLocalPreview()) throw Error('演示模式不读取真实原件');
-      var data = await api('report_source_review', { store: ctx.store, month: ctx.month, kind: panel.kind });
+      var data = await api('report_source_review', { store: ctx.store, month: ctx.month, kind: panel.kind,include_expense_matches:true });
       if (!same(ctx, context()) || token !== generation || request !== panel.request) return;
       if (!data || data.kind !== panel.kind || data.month !== ctx.month || data.financial_records_unchanged !== true) throw Error('来源范围未核实，请重新读取');
       render(panel, data);
