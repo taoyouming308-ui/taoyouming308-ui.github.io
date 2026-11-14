@@ -1,7 +1,7 @@
 import { normalizedDate, normalizedAmount } from './zysyr-ocr-candidates.mjs';
 
 export function voucherCodexCandidates(result, month) {
-  if (result?.provider !== 'codex-local' || result?.candidate_only !== true || result?.human_review_required !== true
+  if (!['codex-local','openai-api'].includes(result?.provider) || result?.candidate_only !== true || result?.human_review_required !== true
       || !['receipt', 'bank_summary', 'multiple_transactions', 'unknown'].includes(result?.document_kind)) {
     throw new Error('CODEX_INVALID_CANDIDATE');
   }
@@ -22,6 +22,6 @@ export function voucherCodexCandidates(result, month) {
   }
   const warnings = (Array.isArray(result.warnings) ? result.warnings : []).map(w => String(w).slice(0, 200)).slice(0, 25);
   if (fields.document_date && fields.document_date.slice(0, 7) !== month) warnings.push('原图日期不属于所选月份，请核对门店和月份');
-  return { fields: { ...fields, recognition_provider: 'codex-local', parse_mode: 'codex_structured_candidate',
+  return { fields: { ...fields, recognition_provider: result.provider, parse_mode: result.provider === 'openai-api' ? 'openai_structured_candidate' : 'codex_structured_candidate',
     document_kind: result.document_kind, evidence, parse_warnings: [...new Set(warnings)] }, confidences };
 }

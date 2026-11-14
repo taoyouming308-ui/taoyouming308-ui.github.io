@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-petty-detail-import.mjs" },
+    { "runtime": "node", "script": "test-petty-detail-import-db.js" },
+    { "runtime": "node", "script": "test-petty-detail-import-browser.js" },
+    { "runtime": "node", "script": "test-petty-voucher-openai.mjs" },
     { "runtime": "node", "script": "test-report-source-review-route.js" },
     { "runtime": "node", "script": "test-report-source-review.js" },
     { "runtime": "node", "script": "test-report-source-review-browser.js" },

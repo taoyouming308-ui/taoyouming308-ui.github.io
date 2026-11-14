@@ -34,6 +34,7 @@
   "operations-report-source-review.js",
   "operations-monthly-workbench.js",
   "operations-petty-cash-evidence.js",
+  "operations-petty-detail-import.js",
   "operations-report-fit.js",
   "operations-report-morandi.css",
   "operations-staff-view.js",

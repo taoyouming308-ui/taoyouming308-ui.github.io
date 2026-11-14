@@ -1,3 +1,10 @@
+## v655 · Petty-cash matching detail import
+
+- Add current-store/month XLSX and UTF-8 CSV preview, sheet/header/column mapping, invalid/duplicate exclusion and explicit selected-row confirmation. Preserve private originals and append matching-only drafts; no financial posting or manual record overwrite.
+- Recommend matching drafts/current/history items by amount, date and summary. Ambiguous choices remain manual, and summary/multiple-payment candidates cannot be forced into one expense.
+- Use the existing server-only OpenAI key for bounded structured image candidates, preserving Codex when no key is configured and legacy non-batch OCR. Require original text/confidence, keep unknown fields empty and expose provider provenance.
+- Preserve status/forms on transient read failures, isolate late responses by store/month/session and resume pending polling. Screenshot-window server logs were successful; the client network failure itself is not conclusively diagnosed.
+
 ## v654 · 已入账日报原图留档状态
 
 - 成功入账的日报原图显示“原图已存档”，不再重复提示核对，并从月历待核对天数中排除；未入账日报继续提醒。
