@@ -4,6 +4,11 @@
 - Recognize document type, expense category and independent payments; preserve explicit month-only payroll/advertising totals as summary evidence. Automatically associate only reliable unique matches, with manual handling for exceptions and audited reversible corrections. Financial amounts, approval and posting remain unchanged.
 - Separate failed recognition from manual exceptions and add failed-only recovery. Process up to three lease-protected images concurrently while preserving previous successful/manual results and original files. Add scoped API, isolated database and mobile browser regression coverage.
 
+## 2026-11-14 · 发型审美训练：半干侧睡与次晨恢复
+
+- 追加稳定案例 `aesthetic-2026-11-14`，把晚洗半干侧睡、分区发质和两分钟晨间整理纳入松卷短鲍伯的结构与卷度取舍。
+- 同提交加入原创 AI 虚构教学四视图、六段条件式参考答案、五项无作答自查复盘和透明审查记录；只修改训练内容、图片与交接记录，应用版本保持 v656。
+
 ## v656 · Excel detail compatibility
 
 - Read valid prefixed SpreadsheetML and absolute internal worksheet/table relationships through an in-memory compatibility copy. Preserve original upload bytes and SHA-256; distinguish invalid archives from unsupported structures.
