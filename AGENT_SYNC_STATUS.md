@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:d37210852eb8a78fcf7ba98eb8ad8acafc8dec4c15de7a5cc3e89964fcd3a99e -->
+## 2026-11-14 · Reviewed academy publication candidate (App version: v653 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 6ddb33279836fd4cf81db6a7253c4659c8d385ca.
+- Dates: 2026-11-14. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-13 · Petty cash Codex recognition (App version: v653; publication pending)
 
 - Current owner: Codex. Last synchronized base checked: protected main 11359adb/v652 after concurrent PR 126 merged. Its training feed, image, review and monthly source verification are preserved. PR 127 passed the full protected gate at b2c9b76e, then main advanced; only the two appended documentation sections conflicted, and both sides are retained. The merged head must pass its own protected gate before normal merge and Pages readback. PR 125 is closed as superseded. Preserve unrelated local artifacts.
