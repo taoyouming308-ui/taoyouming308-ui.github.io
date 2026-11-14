@@ -2,6 +2,7 @@
 const text = value => String(value ?? '').trim();
 const cents = value => value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value)) || Math.abs(Number(value)*100-Math.round(Number(value)*100))>1e-6 ? null : Math.round(Number(value) * 100);
 const compact = value => text(value).replace(/[\s·，,。:：()（）-]/g, '').toLowerCase();
+const categoryLabel=value=>compact(value).replace(/费用$|成本$|费$/,'');
 const categories = [
   ['property','物业费',/物业|property/], ['rent','房租',/房租|租金|rent/],
   ['water','水费',/水费|供水|water bill/], ['electricity','电费',/电费|供电|electric/],
@@ -58,7 +59,9 @@ export function matchExpenseComponent(candidate, targets, month) {
   const usable=targets.filter(t=>t.period_month===month);
   const scored=usable.map(t=>{
     const sameAmount=amount>0 && amount===cents(t.amount), sameDate=!!date && date===t.transaction_date;
-    const sameCategory=category.code!=='unknown' && expenseCategory(t.category || t.summary).code===category.code;
+    const printedCategory=categoryLabel(candidate.expense_category),targetCategory=categoryLabel(t.category||t.summary);
+    const sameCategory=category.code!=='unknown' && expenseCategory(t.category || t.summary).code===category.code
+      || !!printedCategory&&!/^(unknown|待分类|不明|其他|其它)$/.test(printedCategory)&&printedCategory===targetCategory;
     const sameNumber=!!text(candidate.document_number) && text(candidate.document_number)===text(t.voucher_number);
     return {target:t,sameAmount,sameDate,sameCategory,sameNumber,
       score:(sameAmount?60:0)+(sameDate?30:0)+(sameCategory?15:0)+(sameNumber?40:0)};

@@ -36,6 +36,12 @@ assert.equal(matchExpenseComponent({...candidate,document_date:'2026-07-32'},tar
 assert.equal(matchExpenseComponent({...candidate,amount:6468.561},targets,'2026-07').auto_eligible,false);
 assert.equal(matchExpenseComponent({...candidate,confidence:{...confidence,expense_category:.8}},targets,'2026-07').auto_eligible,false);
 assert.equal(matchExpenseComponent({...candidate,evidence:{...proof,amount:''}},targets,'2026-07').auto_eligible,false);
+for(const label of ['服务器','鲜花费','空调费','保洁服务费']){
+  const ownTarget={...targets.find(t=>t.target_kind==='monthly_source'),id:'custom-'+label,summary:label,category:label,amount:245};
+  const rawCategory=label.replace(/费$/,'')+'费用';
+  assert.equal(matchExpenseComponent({...candidate,amount:245,expense_category:rawCategory,evidence:{...proof,amount:'245.00',expense_category:rawCategory}},[ownTarget],'2026-07').auto_eligible,true,'explicit source category is supported: '+label);
+}
+assert.equal(matchExpenseComponent({...candidate,amount:245,expense_category:'待分类'},[{...targets[1],summary:'待分类',category:'待分类',amount:245}],'2026-07').auto_eligible,false,'an unknown category is not a matching category');
 assert.equal(matchExpenseComponent({...candidate,document_date:'2026-07-01',amount:236.8},[...targets,{...legacy[0],id:id(10),period_month:'2026-07'}],'2026-07').state,'ambiguous');
 const link={id:id(11),voucher_id:id(6),component_index:0,status:'active',mode:'auto',target_kind:request.target_kind,target_id:request.target_id,corrected_fields:plan[0].corrected_fields};
 workspace=buildExpenseVoucherWorkspace(base,source,[link]);assert.equal(workspace.summary.auto_matched,1);assert.equal(workspace.items[0].match.auto_eligible,false);
