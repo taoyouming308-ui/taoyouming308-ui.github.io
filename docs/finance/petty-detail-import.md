@@ -10,6 +10,6 @@
 
 服务端存在 `OPENAI_API_KEY` 时，新的批量图片任务使用 Responses API（`store:false`，结构化 schema，45 秒超时）。`ZYSYR_VOUCHER_OPENAI_MODEL` 可指定模型，默认 `gpt-4.1-mini`。没有该密钥时保留既有 Codex 桥接；其他凭证维持既有 OCR 路径，PDF 仍人工审核。密钥、签名和私有原件不进入前端配置。识别输出必须有原文证据和足够置信度；未知日期/金额为空，最终关联仍由人确认。
 
-发布顺序：正常受保护 PR 检查通过后，先应用增量迁移，再部署兼容的 operations-api 与 voucher-ocr-worker，最后发布 v654 页面及静态缓存。迁移和 worker 部署本身不代表真实上传验收；只验证新的用户上传，不重复识别、作废或上传既有六张凭证。现有门店数据、正式金额、历史修订和排程均保持原边界。
+发布顺序：正常受保护 PR 检查通过后，先应用增量迁移，再部署兼容的 operations-api 与 voucher-ocr-worker，最后发布 v655 页面及静态缓存。迁移和 worker 部署本身不代表真实上传验收；只验证新的用户上传，不重复识别、作废或上传既有六张凭证。现有门店数据、正式金额、历史修订和排程均保持原边界。
 
 专项检查：`test-petty-detail-import.mjs`、`test-petty-detail-import-db.js`、`test-petty-detail-import-browser.js`、`test-petty-voucher-openai.mjs` 及既有批量凭证/识别回归。新测试纳入统一财务门禁；数据库测试仅连接本地隔离容器。

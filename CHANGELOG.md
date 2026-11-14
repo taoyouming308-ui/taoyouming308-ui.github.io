@@ -1,9 +1,15 @@
-## v654 · Petty-cash matching detail import
+## v655 · Petty-cash matching detail import
 
 - Add current-store/month XLSX and UTF-8 CSV preview, sheet/header/column mapping, invalid/duplicate exclusion and explicit selected-row confirmation. Preserve private originals and append matching-only drafts; no financial posting or manual record overwrite.
 - Recommend matching drafts/current/history items by amount, date and summary. Ambiguous choices remain manual, and summary/multiple-payment candidates cannot be forced into one expense.
 - Use the existing server-only OpenAI key for bounded structured image candidates, preserving Codex when no key is configured and legacy non-batch OCR. Require original text/confidence, keep unknown fields empty and expose provider provenance.
 - Preserve status/forms on transient read failures, isolate late responses by store/month/session and resume pending polling. Screenshot-window server logs were successful; the client network failure itself is not conclusively diagnosed.
+
+## v654 · 已入账日报原图留档状态
+
+- 成功入账的日报原图显示“原图已存档”，不再重复提示核对，并从月历待核对天数中排除；未入账日报继续提醒。
+- 原图详情保留查看入口；入账后的未审核附件只展示留档，不伪造审核通过。缺少原件、读取失败和金额异常仍如实显示。
+- 仅更新显示规则，保留金额、原件、财务审核及修改历史。浏览器回归覆盖已入账/草稿切换、待核对计数与无业务写入。
 
 ## v653 · Codex recognition for petty-cash batch vouchers
 

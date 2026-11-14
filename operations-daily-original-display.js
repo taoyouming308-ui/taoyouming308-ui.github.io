@@ -18,6 +18,11 @@
     } catch (_) { return ''; }
   }
 
+  // Posting removes the repeat-review reminder, not the original's audit history.
+  function archiveLabel(status) {
+    return status === 'confirmed' ? '原图已存档' : '原图已存档 · 待核对';
+  }
+
   function sameDraft(left, right) {
     return !!(left && right && left.draft && right.draft && left.draft.id
       && String(left.draft.id) === String(right.draft.id)
@@ -70,18 +75,20 @@
   function render(sheet, host, esc) {
     if (viewer && viewer.open) viewer.close();
     var state = presence(sheet.original_archive), date = sheet.draft && sheet.draft.report_date;
+    var posted = sheet.draft && sheet.draft.status === 'confirmed';
     // Never display an original under a different day's financial detail.
     var originals = state.state === 'archived' && Array.isArray(sheet.archived_originals)
       ? sheet.archived_originals.filter(function (item) { return item.report_date === date; }) : [];
     host.classList.toggle('hidden', state.state !== 'archived');
     host.innerHTML = state.state === 'archived'
-      ? '<h4>当日原始日报照片 · 待核对</h4><div class="help">照片在本张电子日报内直接展示。存档不代表财务绑定或审核通过，金额与入账状态未调整。</div>'
+      ? '<h4>当日原始日报照片' + (posted ? ' · 已留档' : ' · 待核对') + '</h4><div class="help">'
+        + (posted ? '日报已入账，原图保留备查，无需再次核对。' : '照片在本张电子日报内直接展示。存档不代表财务绑定或审核通过，金额与入账状态未调整。') + '</div>'
         + originals.map(function (item) {
           var url = privateLink(item.private_url);
           var image = url && (item.mime_type === 'image/jpeg' || item.mime_type === 'image/png');
           return '<div class="finance-record" data-daily-archived-original="' + esc(item.request_id) + '"><div class="finance-record-head"><div><strong>'
             + esc(item.original_filename) + '</strong><div class="help">' + esc(item.report_date)
-            + ' · 原图已存档 · 待核对</div></div><div class="compact-actions">'
+            + ' · ' + archiveLabel(sheet.draft && sheet.draft.status) + '</div></div><div class="compact-actions">'
             + (url ? '<a class="ghost" data-daily-archived-link href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">另开原图</a>'
               : '<span class="help">原图链接暂不可用，请刷新日报后重试。</span>')
             + '</div></div>' + (image ? '<button type="button" data-daily-archived-zoom="' + esc(item.request_id) + '" aria-label="放大查看 ' + esc(item.original_filename) + '" style="display:block;width:100%;padding:8px;border:0;background:transparent;cursor:zoom-in"><span data-rotation-frame style="display:block;position:relative;width:100%;height:420px;overflow:hidden"><img src="' + esc(url) + '" alt="' + esc(item.report_date + ' 日报原图 ' + item.original_filename) + '" loading="lazy" style="position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;border-radius:8px"></span></button><div class="compact-actions" data-archive-rotation-tools="' + esc(item.request_id) + '"><button type="button" data-left>向左转</button><button type="button" data-auto>自动摆正</button><button type="button" data-right>向右转</button><button type="button" data-save hidden>保存方向</button><span class="help" data-status>点击图片放大检查细节。</span></div>' : '') + '</div>';
@@ -116,5 +123,5 @@
     return state;
   }
 
-  global.ZysyrDailyOriginalDisplay = Object.freeze({ presence: presence, render: render, preserve: preserve, refresh: refresh });
+  global.ZysyrDailyOriginalDisplay = Object.freeze({ presence: presence, archiveLabel: archiveLabel, render: render, preserve: preserve, refresh: refresh });
 })(window);
