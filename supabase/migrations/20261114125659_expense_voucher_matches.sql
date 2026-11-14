@@ -13,6 +13,8 @@ create table public.zysyr_expense_voucher_matches (
 );
 create unique index zysyr_expense_voucher_match_active on public.zysyr_expense_voucher_matches(company_id,store_id,voucher_id,component_index) where status='active';
 create index zysyr_expense_voucher_match_month on public.zysyr_expense_voucher_matches(company_id,store_id,period_month,status);
+create index zysyr_expense_voucher_match_voucher on public.zysyr_expense_voucher_matches(company_id,voucher_id);
+create index zysyr_expense_voucher_match_actor on public.zysyr_expense_voucher_matches(company_id,actor_user_id);
 alter table public.zysyr_expense_voucher_matches enable row level security;
 revoke all on public.zysyr_expense_voucher_matches from public,anon,authenticated,service_role;
 grant select on public.zysyr_expense_voucher_matches to service_role;

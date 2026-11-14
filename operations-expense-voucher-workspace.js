@@ -29,7 +29,7 @@
     read:async function(payload){var key=scopeKey(),data=await api('expense_voucher_workspace',payload);if(data&&data.month===payload.month&&key===scopeKey())monthlyCache={key:key,data:monthlyData(data)};return data;},
     decorateMonthly:async function(cells){
       await Promise.resolve();
-      if(isLocalPreview()||!state.user||state.user.role!=='finance'||state.user.can_manage_finance_workbench!==true||!state.data||!state.data.monthly_report)return;
+      if(isLocalPreview()||!state.user||state.user.can_match_expense_vouchers!==true||state.user.role!=='finance'||state.user.can_manage_finance_workbench!==true||!state.data||!state.data.monthly_report)return;
       var key=scopeKey();try{
         if(monthlyCache&&monthlyCache.key===key){decorate(cells,monthlyCache.data,key);return;}
         var data=await api('report_source_review',{store:currentStore(),month:document.getElementById('month').value,kind:'expenses',include_expense_matches:true});

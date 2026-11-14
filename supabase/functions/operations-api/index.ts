@@ -490,6 +490,8 @@ async function sessionUser(session: JsonRecord): Promise<JsonRecord> {
     can_write_expense: canWriteExpense(session),
     can_manage_finance_workbench: cleanText(session.operations_role, 40) === "finance"
       && hasAuthCapability(session, "expense.create_submit"),
+    can_match_expense_vouchers: cleanText(session.operations_role, 40) === "finance"
+      && hasAuthCapability(session, "expense.create_submit"),
     can_review_expenses: hasAuthCapability(session, "expense.approve"),
     can_confirm_payments: hasAuthCapability(session, "payment.confirm"),
     can_lock_reports: hasAuthCapability(session, "report.lock"),

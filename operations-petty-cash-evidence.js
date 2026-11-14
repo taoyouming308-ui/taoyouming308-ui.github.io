@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   if (typeof renderPettyCashReport !== 'function') return;
+  function expenseWorkspace(){return window.ZysyrExpenseVoucherWorkspace&&state.user&&state.user.can_match_expense_vouchers===true?window.ZysyrExpenseVoucherWorkspace:null;}
 
   var originalRender = renderPettyCashReport;
   var uploadGeneration = 0;
@@ -330,7 +331,7 @@
       }).join('');
     }
     return '<option value="">请选择对应明细</option>'
-      + (window.ZysyrExpenseVoucherWorkspace?window.ZysyrExpenseVoucherWorkspace.options(targets,selected,suggestions):'')
+      + (expenseWorkspace()?window.ZysyrExpenseVoucherWorkspace.options(targets,selected,suggestions):'')
       + (formal.length ? '<optgroup label="当前电子备用金明细">' + options(formal) + '</optgroup>' : '')
       + (drafts.length ? '<optgroup label="已导入待核对明细（未入账）">'+options(drafts)+'</optgroup>' : '')
       + (history.length ? '<optgroup label="历史正式备用金明细">' + options(history) + '</optgroup>' : '');
@@ -371,7 +372,7 @@
       return '<article class="petty-batch-item' + (item.confirmed_target_id ? ' confirmed' : '') + '" data-expense-evidence-kind="'+esc(draft.evidence_kind)+'" data-petty-batch-item="' + esc(item.id) + '" data-batch-id="' + esc(item.batch_id) + '">'
         + '<div class="petty-batch-file"><div><strong>' + esc(item.original_filename) + '</strong><div class="help">上传 ' + esc(window.ZysyrTime.dateTime(item.uploaded_at)) + '</div></div>'
         + '<span class="petty-batch-chip ' + status.className + '">' + esc(status.label) + '</span></div>'
-        + (window.ZysyrExpenseVoucherWorkspace?'<div class="petty-batch-match"><strong>'+esc(window.ZysyrExpenseVoucherWorkspace.label(item))+'</strong></div>':'')
+        + (expenseWorkspace()?'<div class="petty-batch-match"><strong>'+esc(window.ZysyrExpenseVoucherWorkspace.label(item))+'</strong></div>':'')
         + '<div class="petty-batch-match">' + esc(reason) + '</div>'
         + '<div class="petty-batch-fields">'+(draft.evidence_kind==='monthly_summary'?'<label>汇总所属月份<input data-batch-period type="month" value="'+esc(draft.period_month)+'" '+disabled+'><input data-batch-date type="hidden" value=""></label>':'<label>凭证日期'+(!draft.document_date?'（未识别完整日期）':'')+'<input data-batch-date type="date" value="' + esc(draft.document_date) + '" ' + disabled + '></label>')
         + '<label>凭证金额<input data-batch-amount type="number" min="0.01" step="0.01" value="' + esc(draft.amount) + '" ' + disabled + '></label>'
@@ -394,14 +395,14 @@
     if(window.ZysyrPettyDetailImport)window.ZysyrPettyDetailImport.renderSaved(data.targets||[]);
     var stats = data.summary || {};
     status.textContent = stats.total
-      ? (window.ZysyrExpenseVoucherWorkspace?'原件已保存。可靠且唯一的识别结果自动对应开支，仅异常需人工处理；匹配不改变金额或入账状态。':'已读取本月批量凭证。识别结果只是候选，请核对原图后确认对应关系。')
+      ? (expenseWorkspace()?'原件已保存。可靠且唯一的识别结果自动对应开支，仅异常需人工处理；匹配不改变金额或入账状态。':'已读取本月批量凭证。识别结果只是候选，请核对原图后确认对应关系。')
       : '可一次选择整月凭证；上传后自动识别日期和金额，并建议对应到本月明细。';
     if (batchUploadSummaryText && batchUploadSummaryKey === currentBatchKey()) status.textContent += '\n' + batchUploadSummaryText;
     summary.innerHTML = '<span>已上传 ' + Number(stats.total || 0) + '</span><span>识别中 ' + Number(stats.recognizing || 0)
       + '</span><span>明确匹配 ' + Number(stats.ready || 0) + '</span><span>待人工核对 ' + Number(stats.needs_review || 0)
-      + '</span><span>已对应 ' + Number(stats.confirmed || 0) + '</span>'+(window.ZysyrExpenseVoucherWorkspace?'<span>AI已匹配 '+Number(stats.auto_matched||0)+'</span><span>识别失败 '+Number(stats.failed||0)+'</span>':'');
+      + '</span><span>已对应 ' + Number(stats.confirmed || 0) + '</span>'+(expenseWorkspace()?'<span>AI已匹配 '+Number(stats.auto_matched||0)+'</span><span>识别失败 '+Number(stats.failed||0)+'</span>':'');
     var confirmExact = document.getElementById('petty-batch-confirm-exact');
-    if (confirmExact) {confirmExact.disabled = !Number(stats.ready || 0) || batchUploadBusy;if(window.ZysyrExpenseVoucherWorkspace)confirmExact.textContent='匹配已有明确项';}
+    if (confirmExact) {confirmExact.disabled = !Number(stats.ready || 0) || batchUploadBusy;if(expenseWorkspace())confirmExact.textContent='匹配已有明确项';}
     renderBatchItems(data);
     var recover=document.getElementById('expense-voucher-retry-failed');
     if(recover){recover.disabled=!Number(stats.failed||0)||batchUploadBusy;recover.textContent='恢复失败识别（'+Number(stats.failed||0)+' 张）';recover.onclick=async function(){if(batchUploadBusy)return;batchUploadBusy=true;recover.disabled=true;try{var key=currentBatchKey(),result=await window.ZysyrExpenseVoucherWorkspace.retryFailures(data,{store:currentStore(),month:document.getElementById('month').value});if(key!==currentBatchKey())return;status.textContent='已恢复 '+result.queued+' 张未成功的识别，已确认的凭证保持原样';await loadBatchStatus();}catch(e){status.textContent='恢复未确认：'+e.message+'，请先刷新核验';}finally{batchUploadBusy=false;}};}
@@ -436,13 +437,13 @@
     }
     try {
       var readPayload={store:currentStore(),month:month,batch_id:batchId||null};
-      var data = await (window.ZysyrExpenseVoucherWorkspace?window.ZysyrExpenseVoucherWorkspace.read(readPayload):api('petty_cash_batch_status',readPayload));
+      var data = await (expenseWorkspace()?window.ZysyrExpenseVoucherWorkspace.read(readPayload):api('petty_cash_batch_status',readPayload));
       if (generation !== batchLoadGeneration || scopeKey !== currentBatchKey() || sessionKey !== (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username])) || !document.getElementById('petty-batch-panel')) return;
       batchStatusData = data;
       batchStatusKey = currentBatchKey();
       renderBatchStatus(data);
       scheduleBatchPoll(data);
-      if(window.ZysyrExpenseVoucherWorkspace){
+      if(expenseWorkspace()){
         var stillCurrent=function(){return generation===batchLoadGeneration&&scopeKey===currentBatchKey();};
         try{var matched=await window.ZysyrExpenseVoucherWorkspace.autoMatch(data,readPayload,stillCurrent,function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},false);
           if(matched&&stillCurrent())loadBatchStatus(batchId);
@@ -464,7 +465,7 @@
     panel.innerHTML = '<div class="petty-batch-head"><div><h3>本月全部开支凭证</h3><div class="help">适合月底一次上传。支持多选 JPG、PNG、PDF；原件留存后自动识别类型、费用及逐笔付款，可靠且唯一的结果自动对应月报或备用金；异常才需人工处理，不改金额、不自动入账。</div></div>'
       + '<div class="petty-batch-actions"><button id="petty-batch-select" type="button" class="petty-batch-primary">＋ 批量上传本月凭证</button>'
       + '<button id="petty-batch-refresh" type="button" class="secondary">刷新识别状态</button>'
-      + (window.ZysyrExpenseVoucherWorkspace?'<button id="expense-voucher-retry-failed" type="button" class="secondary">恢复失败识别</button>':'')
+      + (expenseWorkspace()?'<button id="expense-voucher-retry-failed" type="button" class="secondary">恢复失败识别</button>':'')
       + '<button id="petty-batch-confirm-exact" type="button" class="secondary" disabled>确认全部明确匹配</button></div></div>'
       + '<input id="petty-batch-files" type="file" accept="image/jpeg,image/png,application/pdf" multiple hidden>'
       + '<div id="petty-batch-status" class="petty-batch-status" role="status">正在准备批量凭证区…</div>'
@@ -561,7 +562,7 @@
     var button = draft.card.querySelector('[data-petty-batch-confirm]');
     if (button) { button.disabled = true; button.textContent = '正在确认…'; }
     try {
-      if(window.ZysyrExpenseVoucherWorkspace)await window.ZysyrExpenseVoucherWorkspace.confirm(item,draft,target,{store:currentStore(),month:document.getElementById('month').value});
+      if(expenseWorkspace())await window.ZysyrExpenseVoucherWorkspace.confirm(item,draft,target,{store:currentStore(),month:document.getElementById('month').value});
       else await api('petty_cash_batch_confirm', { store: currentStore(), month: document.getElementById('month').value,
         batch_id: item.batch_id, voucher_id: item.id, target_kind: draft.target_kind, target_id: draft.target_id,
         corrected_fields: draft.corrected_fields, field_confidences: item.field_confidences || {},
@@ -579,7 +580,7 @@
   async function confirmAllExactBatchItems() {
     if (!batchStatusData || batchUploadBusy) return;
     rememberBatchDrafts();
-    if(window.ZysyrExpenseVoucherWorkspace){
+    if(expenseWorkspace()){
       var key=currentBatchKey();batchUploadBusy=true;
       try{var count=await window.ZysyrExpenseVoucherWorkspace.autoMatch(batchStatusData,{store:currentStore(),month:document.getElementById('month').value},function(){return key===currentBatchKey();},function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},true);
         if(key===currentBatchKey()){toast('已匹配 '+count+' 项开支凭证，未入账');await loadBatchStatus();}

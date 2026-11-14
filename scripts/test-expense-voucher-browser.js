@@ -20,7 +20,7 @@ await page.exposeFunction('backend',async(operation,payload)=>{calls.push({opera
  throw Error('Unexpected '+operation);
 });
 await page.goto('http://127.0.0.1:'+server.address().port);
-await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true},data:{monthly_report:{sha256:'a'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
+await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true,can_match_expense_vouchers:true},data:{monthly_report:{sha256:'a'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
 window.ZysyrPettyScopeIdentity=()=>state.session;window.ZysyrTime={dateTime:()=>''};window.esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');window.formatAmount=v=>Number(v).toFixed(2);window.isLocalPreview=()=>false;window.api=(o,p)=>window.backend(o,p);window.toast=()=>{};window.openPrivate=(o,p)=>window.backend(o,p);window.renderPettyCashReport=()=>{};window.loadPettyCashReport=async()=>{};window.prompt=()=> 'Synthetic correction';});
 for(const file of ['operations-expense-voucher-workspace.js','operations-petty-cash-evidence.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
 await page.evaluate(()=>renderPettyCashReport());
