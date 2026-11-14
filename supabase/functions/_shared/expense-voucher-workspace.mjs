@@ -54,12 +54,12 @@ export function expenseMatchPlan(workspace,requests,mode) {
   for(const request of requests){
     const item=workspace.items.find(i=>(i.source_voucher_id||i.id)===request.voucher_id && (i.component_index||0)===request.component_index);
     if(!item || item.latest_ocr_task?.id!==request.task_id || item.confirmed_target_id || item.expense_association)continue;
-    if(['bank_summary','multiple_transactions'].includes(item.candidate_fields?.document_kind))throw Error('请先逐笔识别多笔凭证，不能把整张汇总强行对应一笔');
     const target=workspace.targets.find(t=>t.id===request.target_id&&t.target_kind===request.target_kind);
     if(!target)throw Error('对应明细或原件已变化，请刷新');
     if(mode==='auto'&&(!item.match?.auto_eligible||item.match.target_id!==target.id||item.match.target_kind!==target.target_kind))continue;
     const fields=mode==='auto'?item.candidate_fields:request.corrected_fields;
-    const monthlySummary=item.candidate_fields?.evidence_kind==='monthly_summary';
+    const monthlySummary=item.candidate_fields?.evidence_kind==='monthly_summary'||mode==='manual'&&fields?.evidence_kind==='monthly_summary';
+    if(!monthlySummary&&['bank_summary','multiple_transactions'].includes(item.candidate_fields?.document_kind))throw Error('请先逐笔识别多笔凭证，不能把整张汇总强行对应一笔');
     if(!fields||!Number.isFinite(Number(fields.amount))||!(Number(fields.amount)>0)||Math.abs(Number(fields.amount)*100-Math.round(Number(fields.amount)*100))>1e-6)throw Error('请核对凭证金额和所属月份');
     if(monthlySummary){
       if(target.target_kind!=='monthly_source'||fields.period_month!==workspace.month)throw Error('月度汇总佐证只能对应同月份的月报开支栏目');

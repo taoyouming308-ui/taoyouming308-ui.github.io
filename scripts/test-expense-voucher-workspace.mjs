@@ -62,6 +62,8 @@ const priorPart={...link,voucher_id:id(6),component_index:0,target_kind:'draft',
 const partialCollision=buildExpenseVoucherWorkspace(collisionBase,source,[priorPart]);assert.equal(partialCollision.items[0].confirmed_target_id,id(5));assert.equal(partialCollision.items[1].match.auto_eligible,false);
 const summary=buildExpenseVoucherWorkspace({...base,items:[{...parent,candidate_fields:{document_kind:'bank_summary',amount:null}}]},source);
 assert.throws(()=>expenseMatchPlan(summary,[{...request,corrected_fields:candidate}],'manual'),/整张汇总/);
+const manualMonthSummary=expenseMatchPlan(summary,[{...request,corrected_fields:{...candidate,evidence_kind:'monthly_summary',document_date:null,period_month:'2026-07'}}],'manual');
+assert.equal(manualMonthSummary[0].corrected_fields.document_date,null,'manual summary evidence needs a confirmed month, never an invented day');
 workspace=buildExpenseVoucherWorkspace({...base,items:[{...parent,task_status:'dead_letter'}]},source);assert.equal(workspace.summary.failed,1);assert(!workspace.items[0].match.auto_eligible);
 
 const monthlyInput={provider:'openai-api',schema_version:'expense-voucher-v2',candidate_only:true,human_review_required:true,document_kind:'bank_summary',document_type:'payroll',fields:{},evidence:{},confidences:{},

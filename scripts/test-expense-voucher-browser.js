@@ -6,9 +6,10 @@ const {buildExpenseVoucherWorkspace,expenseMatchPlan}=await import('../supabase/
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),confidence={document_date:.99,amount:.99,expense_category:.99};
 const source={status:'ready',monthly_status:'ready',source:{selection_id:id(1),source_request_id:id(2),sha256:'a'.repeat(64)},monthly:{expense_rows:[['物业费',6468.56,12],['水费',4357.14,17],['工资',120627.33,22]].map(([label,amount,row])=>({row,cells:[{column:2,value:label},{column:3,address:'C'+row,value:amount}]}))},expenses:[]};
 const fields={document_kind:'receipt',document_type:'invoice',document_date:'2026-07-05',amount:6468.56,expense_category:'物业费',evidence:{document_date:'2026-07-05',amount:'6468.56',expense_category:'物业费'},recognition_schema_version:'expense-voucher-v2'};
-const base={month:'2026-07',summary:{total:3},targets:[],items:[{id:id(3),original_filename:'物业凭证.png',batch_id:id(4),latest_ocr_task:{id:id(5)},field_confidences:confidence,candidate_fields:fields,task_status:'succeeded',audit_status:'pending'},
+const base={month:'2026-07',summary:{total:4},targets:[],items:[{id:id(3),original_filename:'物业凭证.png',batch_id:id(4),latest_ocr_task:{id:id(5)},field_confidences:confidence,candidate_fields:fields,task_status:'succeeded',audit_status:'pending'},
 {id:id(6),original_filename:'跨月.png',batch_id:id(4),latest_ocr_task:{id:id(7)},field_confidences:confidence,candidate_fields:{...fields,document_date:'2026-08-05'},task_status:'succeeded',audit_status:'pending'},
-{id:id(8),original_filename:'失败.png',batch_id:id(4),latest_ocr_task:{id:id(9),error_message:'Legacy transport failed'},candidate_fields:{},task_status:'dead_letter',audit_status:'pending'}]};
+{id:id(8),original_filename:'失败.png',batch_id:id(4),latest_ocr_task:{id:id(9),error_message:'Legacy transport failed'},candidate_fields:{},task_status:'dead_letter',audit_status:'pending'},
+{id:id(30),original_filename:'旧版月度汇总.png',batch_id:id(4),latest_ocr_task:{id:id(31)},candidate_fields:{document_kind:'bank_summary',document_type:'advertising_report'},task_status:'succeeded',audit_status:'pending'}]};
 let links=[],calls=[],late=false,release;
 browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.exposeFunction('backend',async(operation,payload)=>{calls.push({operation,payload});
@@ -37,6 +38,15 @@ await page.locator('[data-expense-match-change]').click();await page.waitForFunc
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,1,'a human correction suppresses immediate auto-rematching');
 await page.locator('#expense-voucher-retry-failed').click();await page.waitForFunction(()=>document.getElementById('petty-batch-list').innerText.includes('正在识别'));
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_failures_retry').length,1);
+const monthlyCard=page.locator('[data-petty-batch-item=\"'+id(30)+'\"]');
+await monthlyCard.locator('[data-batch-target]').selectOption('monthly_source:'+id(1)+'~C17');
+await monthlyCard.locator('[data-batch-period]').waitFor();assert.equal(await monthlyCard.locator('[data-batch-period]').inputValue(),'','a missing year is not filled from current scope');
+await monthlyCard.locator('[data-batch-period]').fill('2026-07');await monthlyCard.locator('[data-batch-amount]').fill('4357.14');
+const beforeSummary=calls.filter(c=>c.operation==='expense_voucher_match_apply').length;
+page.once('dialog',dialog=>dialog.dismiss());await monthlyCard.locator('[data-petty-batch-confirm]').click();
+assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,beforeSummary,'declining the human month attestation cannot write');
+page.once('dialog',dialog=>dialog.accept());await monthlyCard.locator('[data-petty-batch-confirm]').click();await monthlyCard.locator('[data-expense-match-change]').waitFor();
+assert.equal(links.at(-1).mode,'manual');assert.equal(links.at(-1).corrected_fields.document_date,null);assert.equal(links.at(-1).corrected_fields.period_month,'2026-07');
 late=true;await page.locator('#petty-batch-refresh').click();await page.waitForTimeout(50);const before=calls.filter(c=>c.operation==='expense_voucher_match_apply').length;
 await page.evaluate(()=>{store='二店';document.getElementById('petty-cash-report-table').innerHTML='';});release();await page.waitForTimeout(100);
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,before,'stale store response cannot associate evidence');
