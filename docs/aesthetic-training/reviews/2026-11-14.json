@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-14",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "077b46f84c36b31fd6c4b681f18c1bf1029cbdbc",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, hair density, hair diameter, overnight compression response or that either proposed perm strategy has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional late-wash and side-sleeping loose-curl bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-seven earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current hair shape is separated from the undisplayed fictional reference, fictional zonal hair settings, customer-confirmed routine and required live tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; function-distributed B is a conditional design process, not a claimed completed perm",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting sleep, wet hair, reference or result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Hair diameter, density, elasticity, chemical history and compression/recovery behavior are not established by the image; case-only settings require live verification",
+      "Controlled light-pressure comparison cannot reproduce every sleeping posture, pillow, humidity, wash state, overnight duration or future grow-out state",
+      "Preparer audit is not independent scientific, trichological, biomechanical or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-14-sleep-compression-recovery.webp",
+    "sha256": "b62c5b752b44196110421cd5e280cf478b26900b607750cc8d3e598bd4d19b2e",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2076x757 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; current deep dark chin-to-upper-neck bob, quiet crown, denser side-back and shallow irregular bends in neutral salon documentation"
+  },
+  "hashes": {
+    "feedRawSha256": "1ad7d824343dea819e30f9bb82af3932341f2052d3f34e9c2f43375fed60a80f",
+    "caseCanonicalSha256": "111a83e8bad256fbfbab9309724a2534f6f07c2c2f5fd7cd13a063a2029519fe"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-14 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v656 before editing; daily backup script created the current daily archive",
+    "contentContract": "passed locally: thirty-eight cases; all thirty-seven previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally; the expected pinned Playwright Chromium is not installed in this clean worktree, so no local browser pass is claimed. Protected PR CI must install the pinned browser tooling and execute the browser gate before merge",
+    "sharedChecks": "content contract, version, release integrity, smoke, academy verification, AI route, care, hair task/design/photo/save, customer archive/API/scope/import, admin, booking, frontdesk core, app UI, aesthetic system/study/coach, Meiguanjia sync and agent handoff checks require the normal protected exact-head gate before merge; Docker/PostgreSQL and browser gates are not claimed locally"
+  }
+}
