@@ -1,3 +1,9 @@
+## v657 · All-expense voucher matching
+
+- Extend the existing voucher panel to all monthly expense categories and source petty details. Show linked originals in existing monthly cells and source review; verify labels and current amounts when projecting across different source files.
+- Recognize document type, expense category and independent payments; preserve explicit month-only payroll/advertising totals as summary evidence. Automatically associate only reliable unique matches, with manual handling for exceptions and audited reversible corrections. Financial amounts, approval and posting remain unchanged.
+- Separate failed recognition from manual exceptions and add failed-only recovery. Process up to three lease-protected images concurrently while preserving previous successful/manual results and original files. Add scoped API, isolated database and mobile browser regression coverage.
+
 ## v656 · Excel detail compatibility
 
 - Read valid prefixed SpreadsheetML and absolute internal worksheet/table relationships through an in-memory compatibility copy. Preserve original upload bytes and SHA-256; distinguish invalid archives from unsupported structures.
