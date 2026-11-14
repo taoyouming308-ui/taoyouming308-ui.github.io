@@ -4,6 +4,15 @@
   var pending = null, busy = false, sequence = 0;
   var fields = {transaction_date:'日期（完整年月日）',amount:'支出金额',summary:'摘要 / 说明',category:'科目',recipient:'领款人',voucher_number:'凭证编号'};
   var aliases = {transaction_date:/日期|date/i,amount:/支出|贷方|金额|amount/i,summary:/摘要|说明|用途|summary/i,category:/科目|分类|category/i,recipient:/领款|经办|recipient/i,voucher_number:/凭证|编号|number/i};
+  function defaultColumn(headers, field) {
+    var matches=headers.map(function(h,i){return {text:String(h).trim(),index:i};});
+    if(field==='amount') {
+      matches=matches.filter(function(h){return !/收入|借方|余额|合计|总计|income|balance|debit/i.test(h.text);});
+      var explicit=matches.filter(function(h){return /支出|贷方|expense|credit/i.test(h.text);});
+      matches=explicit.length?explicit:matches.filter(function(h){return /^(金额|amount)$/i.test(h.text);});
+    } else matches=matches.filter(function(h){return aliases[field].test(h.text);});
+    return matches.length===1?matches[0].index:-1;
+  }
   window.ZysyrPettyScopeIdentity = function () {
     var claims={};try{claims=JSON.parse(atob(authAccessToken().split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));}catch(_){}
     return JSON.stringify([state.session||'',claims.sub||(state.auth&&state.auth.user&&state.auth.user.id)||(state.user&&state.user.username)||'',claims.session_id||'']);
@@ -18,7 +27,7 @@
     var body=document.getElementById('petty-detail-import-body'), headers=p.matrix[p.header||0]||[];
     body.innerHTML='<label>工作表<select id="petty-detail-sheet">'+(p.sheets.length?p.sheets:['CSV']).map(function(s){return '<option>'+esc(s)+'</option>';}).join('')+'</select></label> '
       +'<label>表头行<input id="petty-detail-header" type="number" min="1" max="50" value="'+((p.header||0)+1)+'"></label>'
-      +'<div class="petty-batch-fields">'+Object.keys(fields).map(function(f){var used=false;return '<label>'+fields[f]+'<select data-detail-map="'+f+'"><option value="-1">不导入此列</option>'+headers.map(function(h,i){var selected=!used&&aliases[f].test(String(h));if(selected)used=true;return '<option value="'+i+'" '+(selected?'selected':'')+'>'+esc(String(i+1)+' · '+String(h||'空表头'))+'</option>';}).join('')+'</select></label>';}).join('')+'</div>'
+      +'<div class="petty-batch-fields">'+Object.keys(fields).map(function(f){var column=defaultColumn(headers,f);return '<label>'+fields[f]+'<select data-detail-map="'+f+'"><option value="-1">不导入此列</option>'+headers.map(function(h,i){return '<option value="'+i+'" '+(i===column?'selected':'')+'>'+esc(String(i+1)+' · '+String(h||'空表头'))+'</option>';}).join('')+'</select></label>';}).join('')+'</div>'
       +'<button id="petty-detail-preview" type="button" class="secondary">检查映射并预览</button> <button id="petty-detail-cancel" type="button" class="ghost">取消</button><div id="petty-detail-preview-body"></div>';
     document.getElementById('petty-detail-sheet').value=p.sheet||p.sheets[0]||'CSV';
     document.getElementById('petty-detail-sheet').onchange=async function(){if(busy)return;var sheet=this.value;busy=true;try{p.sheet=sheet;var data=await request(p);if(!current(p))return;p.matrix=data.matrix;p.header=0;controls(p);}catch(e){if(current(p))status(e.message);}finally{busy=false;}};

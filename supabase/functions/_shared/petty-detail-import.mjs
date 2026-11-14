@@ -18,7 +18,11 @@ export function parseDetailCSV(text) {
 }
 export function detailDate(value) {
   if (value instanceof Date && Number.isFinite(+value)) return value.toISOString().slice(0,10);
-  const m = String(value ?? '').trim().match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?$/);
+  let text = String(value ?? '').trim();
+  // Explicit XLSX ISO dates are not Excel serials. Accept midnight UTC only;
+  // other timestamps need a human date decision rather than a timezone guess.
+  if (/^\d{4}-\d{2}-\d{2}T00:00:00(?:\.0{1,3})?Z$/.test(text)) text = text.slice(0,10);
+  const m = text.match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?$/);
   if (!m) return '';
   const iso = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
   const d = new Date(`${iso}T00:00:00Z`);

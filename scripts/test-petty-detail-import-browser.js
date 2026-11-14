@@ -14,6 +14,12 @@ await page.locator('#petty-detail-preview').click();await page.waitForSelector('
 assert.equal(await page.locator('[data-detail-row]:checked').count(),1);assert.equal(await page.locator('[data-detail-row]:disabled').count(),3);assert.equal(calls.filter(c=>c.op.endsWith('confirm')).length,0);
 await page.locator('#petty-detail-confirm').click();await page.waitForFunction(()=>document.getElementById('petty-detail-import-status').textContent.includes('已保存 1 笔'));
 assert.deepEqual(calls.find(c=>c.op.endsWith('confirm')).p.selected_rows,[2]);assert.equal(calls.find(c=>c.op.endsWith('confirm')).p.store,'一店');
+// Debit must never win over a later credit column; ambiguous expenses stay unmapped.
+for(const [headers,expected] of [['日期,借方金额,贷方金额,说明','2'],['日期,余额,金额,说明','2'],['日期,支出金额,贷方金额,说明','-1'],['日期,借方金额,收入金额,说明','-1']]) {
+await page.locator('#petty-detail-file').setInputFiles({name:'columns.csv',mimeType:'text/csv',buffer:Buffer.from(headers+'\n2026-07-05,99,12.34,茶')});
+await page.waitForFunction(expected=>document.querySelector('[data-detail-map="amount"]')?.value===expected,expected);
+assert.equal(await page.locator('[data-detail-map="amount"]').inputValue(),expected);
+}
 // Token refresh within the same account/session preserves an in-flight import.
 await page.evaluate(()=>{window.authAccessToken=()=>window.token;window.token='e30.'+btoa(JSON.stringify({sub:'user',session_id:'login',exp:1}))+'.signature';});
 delay=true;await page.locator('#petty-detail-file').setInputFiles({name:'refresh.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});await page.waitForTimeout(80);
