@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-14",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "6ddb33279836fd4cf81db6a7253c4659c8d385ca",
+  "note": "Preparation request only; no reviewed draft, asset, approval, course or production publication. Await SHA-bound immutable main backup preflight before content input."
+}
