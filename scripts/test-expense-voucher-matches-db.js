@@ -1,7 +1,8 @@
 const {execFileSync}=require('node:child_process'),fs=require('node:fs'),assert=require('node:assert/strict');
 const container='expense-matches-'+process.pid,id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const docker=args=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe']});
-const sql=input=>execFileSync('docker',['exec','-i',container,'psql','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
+// Bootstrap's temporary Unix-socket server is not the final database process.
+const sql=input=>execFileSync('docker',['exec','-i',container,'psql','-h','127.0.0.1','-U','postgres','-v','ON_ERROR_STOP=1','-At'],{input,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const q=value=>"'"+JSON.stringify(value).replaceAll("'","''")+"'::jsonb";
 (async()=>{docker(['run','--rm','-d','--network','none','--name',container,'-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);try{
 for(let i=0;i<80;i++){try{sql('select 1');break;}catch{await new Promise(r=>setTimeout(r,250));}}
