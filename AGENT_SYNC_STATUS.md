@@ -1,3 +1,9 @@
+## 2026-11-14 · Posted daily originals remain archived (App version: v654; publication pending)
+
+- Current owner: Codex. Last synchronized base checked: github/main 6ddb3327/v653. Dedicated worktree zysyr-daily-posted-original, branch fix/daily-posted-original-display; preserve the separate in-progress petty-detail import worktree. Clean baseline and complete daily backup verified before edits.
+- User confirmed that successfully posted daily reports no longer require repeated image review. Calendar archive badges, pending-day counts and detail labels now derive the reminder from confirmed status only; original evidence and accounting state are unchanged. Drafts keep reminders; missing originals, unavailable reads and actual financial anomalies remain visible.
+- Preserve original private links, audit/review metadata and manual amounts. No production data updates, API changes or migrations. The existing full-page archive test now covers posted/draft transitions, pending counts and absence of writes. Normal protected publication and live readback are required before calling this online.
+
 ## 2026-11-13 · Petty cash Codex recognition (App version: v653; publication pending)
 
 - Current owner: Codex. Last synchronized base checked: protected main 11359adb/v652 after concurrent PR 126 merged. Its training feed, image, review and monthly source verification are preserved. PR 127 passed the full protected gate at b2c9b76e, then main advanced; only the two appended documentation sections conflicted, and both sides are retained. The merged head must pass its own protected gate before normal merge and Pages readback. PR 125 is closed as superseded. Preserve unrelated local artifacts.

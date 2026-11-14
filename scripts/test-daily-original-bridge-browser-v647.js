@@ -17,6 +17,7 @@ let browser;
   let blockSourceReview = false;
   let saved = null, signedVersion = 0, holdNextRead = false, releaseRead, readStarted;
   const savedAngles = new Map();
+  const postedDates = new Set();
   const calls = [], errors = [], downloads = [];
   function archive(date) {
     return { request_id: 'archive-' + date, report_date: date, original_filename: date + '-original.png',
@@ -25,7 +26,7 @@ let browser;
       display_rotation_degrees: savedAngles.has(date) ? savedAngles.get(date) : null };
   }
   function day(date) {
-    return { report_date: date, draft_id: 'draft-' + date, status: 'draft', grand_total: null,
+    return { report_date: date, draft_id: 'draft-' + date, status: postedDates.has(date) ? 'confirmed' : 'draft', grand_total: null,
       edit_revision: 0, source: 'electronic', original_count: 0, approved_original_count: 0,
       missing_original: true, has_anomaly: false, locked: false, original_archive: { state: 'archived', count: 1 } };
   }
@@ -42,7 +43,7 @@ let browser;
   function sheet(date) {
     const data = clone(saved && saved.draft.report_date === date ? saved : template);
     data.draft.id = 'draft-' + date; data.draft.report_date = date;
-    data.draft.source_voucher_id = null; data.draft.status = 'draft';
+    data.draft.source_voucher_id = null; data.draft.status = postedDates.has(date) ? 'confirmed' : 'draft';
     data.attachments = []; data.original_image_url = null; data.original_filename = null;
     data.original_archive = { state: 'archived', count: 1 }; data.archived_originals = [archive(date)];
     data.readonly = role !== 'finance'; data.permissions = { write: role === 'finance', upload_original: role === 'finance', void_original: role === 'finance' };
@@ -183,6 +184,35 @@ let browser;
     await page.locator('[data-daily-day="2026-07-01"]').click();
     await page.waitForFunction(() => !document.getElementById('daily-report-detail').classList.contains('hidden'));
   }
+  // Posted originals remain accessible without repeated review reminders. No
+  // accounting status, attachment audit or source review is changed by rendering.
+  const beforePostedCalls = calls.length;
+  postedDates.add('2026-07-01');
+  await openMode('archive');
+  await page.waitForFunction(() => state.dailyReportMonth?.days[0].status === 'confirmed');
+  const postedCard = await page.locator('[data-daily-day="2026-07-01"]').innerText();
+  assert.match(postedCard, /原图已存档/);
+  assert.doesNotMatch(postedCard, /待核对|原件待审核/);
+  assert.match(await page.locator('[data-daily-day="2026-07-02"]').innerText(), /原图已存档 · 待核对/);
+  assert.match(await page.locator('.daily-month-summary').innerText(), /原图已存档 · 待核对\s+25\s+天/);
+  assert.match(await page.locator('#daily-detail-original-alert').innerText(), /原图已存档.*已入账.*无需再次核对/s);
+  const postedOriginals = page.locator('#daily-detail-archived-originals');
+  assert.doesNotMatch(await postedOriginals.innerText(), /待核对|审核通过/);
+  assert.equal(await postedOriginals.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-01').private_url);
+  assert.deepEqual(await page.evaluate(() => ({ draft: state.imports.sheet.draft, cells: state.imports.sheet.cells,
+    originals: state.imports.sheet.archived_originals })), {
+    draft: sheet('2026-07-01').draft, cells: sheet('2026-07-01').cells, originals: sheet('2026-07-01').archived_originals
+  });
+  assert(!calls.slice(beforePostedCalls).some(c => /save|confirm|upload|approve|review_submit/.test(c.operation)));
+  await openMode('financial');
+  assert.deepEqual(await page.evaluate(() => state.imports.sheet.attachments), template.attachments);
+  assert.doesNotMatch(await page.locator('#daily-detail-attachments').innerText(), /待财务审核/);
+  postedDates.clear();
+  await openMode('archive');
+  await page.waitForFunction(() => state.dailyReportMonth?.days[0].status === 'draft');
+  assert.match(await page.locator('#daily-detail-original-alert').innerText(), /原图已存档 · 待核对/);
+  assert.match(await page.locator('.daily-month-summary').innerText(), /原图已存档 · 待核对\s+26\s+天/);
+  console.log('posted original archive: reminders excluded, draft transition restored, original and audit data unchanged');
   await openMode('unknown'); assert.match(await page.locator('#daily-detail-original-alert').innerText(), /暂不可用/);
   assert.doesNotMatch(await page.locator('#daily-report-detail').innerText(), /缺少有效原始日报表|尚未上传当天原始日报/);
   await openMode('none'); assert.match(await page.locator('#daily-detail-original-alert').innerText(), /缺少有效原始日报表/);

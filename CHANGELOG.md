@@ -1,3 +1,9 @@
+## v654 · 已入账日报原图留档状态
+
+- 成功入账的日报原图显示“原图已存档”，不再重复提示核对，并从月历待核对天数中排除；未入账日报继续提醒。
+- 原图详情保留查看入口；入账后的未审核附件只展示留档，不伪造审核通过。缺少原件、读取失败和金额异常仍如实显示。
+- 仅更新显示规则，保留金额、原件、财务审核及修改历史。浏览器回归覆盖已入账/草稿切换、待核对计数与无业务写入。
+
 ## v653 · Codex recognition for petty-cash batch vouchers
 
 - Route pending batch images through the authenticated Codex bridge, with structured date/actual-paid candidates and original-text evidence. Ambiguous, summary or multiple-payment images stay manual; no automatic approval, association or posting.
