@@ -49,7 +49,7 @@ export function expenseSourceTargets(source, legacy = []) {
 }
 export function expenseComponents(candidate) {
   if(candidate.monthly_summary && (['payroll','advertising_report'].includes(candidate.document_type)||!candidate.transactions?.length))return [{...candidate.monthly_summary,component_index:0}];
-  if (Array.isArray(candidate.transactions) && candidate.transactions.length) return candidate.transactions.slice(0,30).map((row,i)=>({...row,component_index:i}));
+  if (Array.isArray(candidate.transactions) && candidate.transactions.length) return candidate.transactions.slice(0,12).map((row,i)=>({...row,component_index:i}));
   return [{...candidate,component_index:0}];
 }
 export function matchExpenseComponent(candidate, targets, month) {
@@ -81,8 +81,9 @@ export function matchExpenseComponent(candidate, targets, month) {
   const sameAmount=scored.filter(x=>!x.target.aggregate && x.sameAmount);
   const proof=candidate.evidence||{}, confidence=candidate.confidence||candidate.confidences||{};
   const reliable=Number(confidence.document_date)>=.95 && Number(confidence.amount)>=.98 && !!proof.document_date && !!proof.amount;
-  if (exact.length===1 && (sameAmount.length===1 || exact[0].sameNumber)) return result('exact','日期、实付金额与明细唯一一致',exact[0].target,reliable);
-  if (sameAmount.length>1) return result('ambiguous','多笔金额相同，需要凭证号等进一步证据');
+  const numbered=exact.filter(x=>x.sameNumber);
+  if (exact.length===1 || numbered.length===1) return result('exact','日期、实付金额与明细唯一一致',(exact.length===1?exact[0]:numbered[0]).target,reliable);
+  if (sameAmount.length>1) return result('ambiguous','日期和金额尚不能唯一定位，需要凭证号等进一步证据');
   const monthly=scored.filter(x=>x.target.aggregate && x.sameCategory && x.sameAmount);
   if (monthly.length===1) return result('exact','所属月份、费用类别及金额与月报唯一一致',monthly[0].target,reliable && Number(confidence.expense_category)>=.95 && !!proof.expense_category);
   if (recommendations.length) return result('suggested','已按金额、日期和费用类别列出候选；尚不足以自动建立关系');

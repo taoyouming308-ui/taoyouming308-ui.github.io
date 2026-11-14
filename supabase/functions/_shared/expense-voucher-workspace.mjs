@@ -27,6 +27,16 @@ export function buildExpenseVoucherWorkspace(base,source,links=[]) {
         corrected_fields:linked?.corrected_fields||{}};
     });
   });
+  // Independent payments in one image must not silently consume the same row.
+  const sameImageTargets=new Map();
+  for(const item of items){
+    const kind=item.confirmed_target_kind||item.match?.target_kind,id=item.confirmed_target_id||item.match?.target_id;
+    if(!kind||!id)continue;
+    const key=(item.source_voucher_id||item.id)+'|'+kind+':'+id,group=sameImageTargets.get(key)||[];
+    group.push(item);sameImageTargets.set(key,group);
+  }
+  for(const group of sameImageTargets.values())if(group.length>1)for(const item of group)if(!item.confirmed_target_id&&item.match?.auto_eligible)
+    item.match={...item.match,state:'ambiguous',auto_eligible:false,unique_exact:false,reason:'同图多笔指向同一明细，需核对各笔对应关系'};
   const associated=items.filter(i=>i.confirmed_target_id), needs=items.filter(i=>!i.confirmed_target_id&&!['queued','processing','failed','dead_letter'].includes(i.task_status)&&!i.match?.auto_eligible);
   return {...base,items,targets,source_status:source.status,source_message:source.message||null,
     source_selection:source.source||null,expense_links:links,
