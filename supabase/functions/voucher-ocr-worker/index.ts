@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { recognizePettyVoucherOpenAI } from "../_shared/petty-voucher-openai.mjs";
 import { candidates } from "../_shared/zysyr-ocr-candidates.mjs";
 import { voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import { parsePettyCashBatchNote } from "../_shared/petty-cash-batch.mjs";
@@ -15,6 +16,8 @@ const VOUCHER_BUCKET = "zysyr-vouchers";
 const CODEX_URL = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_URL") || "";
 const CODEX_TOKEN = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN") || "";
 const CODEX_MODEL = Deno.env.get("ZYSYR_VOUCHER_CODEX_MODEL") || "gpt-5.6-sol";
+const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+const OPENAI_MODEL = Deno.env.get("ZYSYR_VOUCHER_OPENAI_MODEL") || "gpt-4.1-mini";
 const CODEX_PROMPT_VERSION = "zysyr-voucher-codex-v1";
 
 type Json = Record<string, unknown>;
@@ -63,10 +66,10 @@ async function processTask(task: Json): Promise<void> {
     if (!metadata || metadata.audit_status !== "pending") throw new Error("VOUCHER_ALREADY_REVIEWED");
     const batch = parsePettyCashBatchNote(metadata.note);
     if (batch) {
-      if (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
+      if (!OPENAI_KEY && (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN)) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
       const marked = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ocr_tasks?id=eq.${taskId}&lease_token=eq.${leaseToken}&status=eq.processing`, {
         method: "PATCH", headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ provider: "codex-local", model: CODEX_MODEL, prompt_version: CODEX_PROMPT_VERSION }),
+        body: JSON.stringify({ provider: OPENAI_KEY ? "openai-api" : "codex-local", model: OPENAI_KEY ? OPENAI_MODEL : CODEX_MODEL, prompt_version: OPENAI_KEY ? "petty-voucher-openai-v1" : CODEX_PROMPT_VERSION }),
       });
       if (!marked.ok || (await marked.json()).length !== 1) throw new Error("OCR_TASK_LEASE_INVALID");
       const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
@@ -76,16 +79,20 @@ async function processTask(task: Json): Promise<void> {
       const signedData = await signed.json();
       const signedPath = String(signedData.signedURL || signedData.signedUrl || "");
       if (!signedPath.startsWith("/object/sign/")) throw new Error("CODEX_SOURCE_SIGN_INVALID");
+      let raw: Json;
+      if (OPENAI_KEY) raw = await recognizePettyVoucherOpenAI({key:OPENAI_KEY,model:OPENAI_MODEL,imageURL:`${SUPABASE_URL}/storage/v1${signedPath}`,month:batch.month});
+      else {
       const ai = await fetch(CODEX_URL, { method: "POST", signal: AbortSignal.timeout(125000),
         headers: { Authorization: `Bearer ${CODEX_TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({ task_type: "expense_voucher", month: batch.month,
           image_url: `${SUPABASE_URL}/storage/v1${signedPath}` }),
       });
       if (!ai.ok) throw Object.assign(new Error(`CODEX_VOUCHER_${ai.status}`), { retryable: ai.status === 429 || ai.status >= 500 });
-      const raw = await ai.json();
+      raw = await ai.json();
+      }
       const parsed = voucherCodexCandidates(raw, batch.month);
       await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: true,
-        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: CODEX_PROMPT_VERSION },
+        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: OPENAI_KEY ? "petty-voucher-openai-v1" : CODEX_PROMPT_VERSION },
         p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
       return;
     }

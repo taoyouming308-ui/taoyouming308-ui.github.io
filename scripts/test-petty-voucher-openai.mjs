@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {recognizePettyVoucherOpenAI} from '../supabase/functions/_shared/petty-voucher-openai.mjs';
+import {voucherCodexCandidates} from '../supabase/functions/_shared/zysyr-voucher-codex.mjs';
+const values={document_date:'2026-07-01',amount:236.8,counterparty:'咖啡',document_number:null,document_kind:'receipt',evidence:{document_date:'2026-07-01',amount:'实付236.80',counterparty:'咖啡',document_number:''},confidence:{document_date:.99,amount:.99,counterparty:.8,document_number:0},warnings:[]};
+let calls=0;
+const raw=await recognizePettyVoucherOpenAI({key:'synthetic',model:'test-model',imageURL:'https://private.invalid/signed',month:'2026-07',fetcher:async(url,options)=>{calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.headers.Authorization,'Bearer synthetic');const b=JSON.parse(options.body);assert.equal(b.store,false);assert.equal(b.text.format.strict,true);assert.equal(b.input[0].content[1].type,'input_image');assert(!b.tools);return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(values)}]}]});}});
+assert.equal(calls,1);assert.equal(voucherCodexCandidates(raw,'2026-07').fields.recognition_provider,'openai-api');
+raw.document_kind='multiple_transactions';assert.equal(voucherCodexCandidates(raw,'2026-07').fields.amount,null);
+raw.document_kind='receipt';raw.confidences.amount=.5;assert.equal(voucherCodexCandidates(raw,'2026-07').fields.amount,null);
+await assert.rejects(recognizePettyVoucherOpenAI({key:'test',model:'test',month:'2026-07',imageURL:'x',fetcher:async()=>new Response('',{status:429})}),e=>e.retryable===true&&e.message==='OPENAI_VOUCHER_429');
+await assert.rejects(recognizePettyVoucherOpenAI({key:'test',model:'test',month:'2026-07',imageURL:'x',fetcher:async()=>Response.json({status:'incomplete',output:[]})}));
+console.log('OpenAI voucher: server authorization, Responses image/schema/store:false, provenance, confidence, summary protection and bounded provider errors passed.');

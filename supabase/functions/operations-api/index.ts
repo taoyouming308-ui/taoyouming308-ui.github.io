@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
+import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
@@ -7,7 +8,7 @@ import { dailyRecognitionPrompt } from "../../../packages/prompts/daily-sheet-re
 import { validateDailyCandidates } from "../_shared/daily-recognition.mjs";
 import { staffReportSession, STAFF_REPORT_CAPABILITIES } from "../_shared/staff-report-access.ts";
 import { monthlySummaryMonths, buildMonthlySummary } from "../_shared/monthly-summary.mjs";
-import { matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
+import { rankPettyCashCandidates, matchPettyCashCandidate, parsePettyCashBatchNote, pettyCashTargetKey } from "../_shared/petty-cash-batch.mjs";
 import { detectReportMetadata } from "../_shared/report-auto-detection.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
 import { dailyAutofillView, isSyncedDailySheet } from "../_shared/daily-autofill-view.mjs";
@@ -4203,6 +4204,70 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
     business_link_request: businessLinkRequest };
 }
 
+async function pettyDetailDrafts(company: string, store: string, month: string): Promise<JsonRecord[]> {
+  return await restRowsAll(`zysyr_petty_detail_drafts?select=id,transaction_date,amount,summary,category,recipient,voucher_number,source_row,import_id,source:zysyr_petty_detail_imports(source_filename)&company_id=eq.${company}&store_id=eq.${store}&transaction_date=gte.${month}-01&transaction_date=lt.${nextDetailMonth(month)}&order=transaction_date.asc,source_row.asc&limit=5000`, 5000);
+}
+function nextDetailMonth(month: string): string {
+  const d = new Date(`${month}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth()+1); return d.toISOString().slice(0,10);
+}
+async function pettyDetailImport(payload: JsonRecord, session: JsonRecord, confirm: boolean): Promise<JsonRecord> {
+  historyImportFinance(session);
+  if (!canReviewVouchers(session) || cleanText(session.operations_role,40) !== "finance") throw new Error("只有财务账号可以导入备用金明细");
+  const store = await selectedStoreInfo(session,payload);
+  const company = cleanText(store.company_id,40), storeId = cleanText(store.id,40);
+  const month = cleanText(payload.month,7), filename = cleanText(payload.filename,200);
+  if (!validDate(`${month}-01`)) throw new Error("月份无效");
+  if (!/\.(xlsx|csv)$/i.test(filename)) throw new Error("请上传 XLSX 或 CSV；旧版 XLS 请先另存为 XLSX");
+  const bytes = decodeBase64(cleanText(payload.base64,15000000));
+  if (!bytes.length || bytes.length > 10*1024*1024) throw new Error("文件必须小于 10MB");
+  let matrix: unknown[][] = [], sheets: string[] = [];
+  if (/\.csv$/i.test(filename)) {
+    let text: string; try { text = new TextDecoder("utf-8",{fatal:true}).decode(bytes); }
+    catch { throw new Error("CSV 请另存为 UTF-8 编码后上传"); }
+    matrix = parseDetailCSV(text);
+  } else {
+    const book = new ExcelJS.Workbook();
+    try { await book.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("Excel 文件损坏或格式不支持"); }
+    sheets = book.worksheets.map(sheet=>sheet.name);
+    const requested = cleanText(payload.sheet,120);
+    const sheet = requested ? book.getWorksheet(requested) : book.worksheets[0];
+    if (!sheet || sheet.rowCount > 5001 || sheet.columnCount > 60) throw new Error("请选择最多 5000 行、60 列的工作表");
+    for (let i=1;i<=sheet.rowCount;i++) {
+      const row: unknown[] = [];
+      for (let c=1;c<=sheet.columnCount;c++) {
+        const cell = sheet.getCell(i,c);
+        // Formula caches are not independent transaction evidence.
+        row.push(cell.formula ? "" : cell.value instanceof Date ? cell.value.toISOString().slice(0,10) : cell.text);
+      }
+      matrix.push(row);
+    }
+  }
+  const mapping = pettyCashBatchFields(payload.mapping), headerRow = Number(payload.header_row || 0);
+  const existing = await pettyDetailDrafts(company,storeId,month);
+  const formal = await restRowsAll(`zysyr_petty_cash_records?select=transaction_date,amount,summary&company_id=eq.${company}&store_id=eq.${storeId}&transaction_date=gte.${month}-01&transaction_date=lt.${nextDetailMonth(month)}&direction=eq.outflow&status=eq.confirmed&limit=5000`,5000);
+  const historical = await historyMonthEntries(company,storeId,month,"petty_cash");
+  const duplicates = [...existing,...formal,...historical.map(row=>pettyCashBatchFields(row.current_payload))];
+  const sourceHash = await sha256Bytes(bytes);
+  if (!Object.keys(mapping).length) return { sheets, matrix: matrix.slice(0,51), row_count: matrix.length, source_sha256: sourceHash, preview_only: true };
+  const rows = previewDetailRows(matrix,mapping,month,headerRow,duplicates) as JsonRecord[];
+  const accepted = rows.filter(row=>row.valid);
+  const result = { sheets, rows, source_sha256: sourceHash, accepted: accepted.length, invalid: rows.filter(row=>!row.valid&&!row.duplicate).length, duplicates: rows.filter(row=>row.duplicate).length, formal_ledger_written: false };
+  if (!confirm) return result;
+  if (payload.preview_sha256 !== sourceHash || !Array.isArray(payload.selected_rows)) throw new Error("请先预览并勾选要导入的明细");
+  const selected = new Set((payload.selected_rows as unknown[]).map(Number));
+  const chosen = accepted.filter(row=>selected.has(Number(row.source_row)));
+  if (!chosen.length || chosen.length!==selected.size) throw new Error("所选明细已重复、无效或发生变化，请重新预览");
+  for (const row of chosen) row.row_key = await sha256(detailKey(row));
+  const objectPath = `${company}/${storeId}/petty-detail/${month}/${sourceHash}/${crypto.randomUUID()}.${/\.csv$/i.test(filename)?'csv':'xlsx'}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${REPORT_BUCKET}/${storagePath(objectPath)}`,{
+    method:"POST",headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`,"Content-Type":/\.csv$/i.test(filename)?"text/csv":XLSX_MIME,"x-upsert":"false"},body:exactArrayBuffer(bytes)
+  });
+  if (!upload.ok) throw new Error(`原文件保存失败 (${upload.status})`);
+  // On uncertain results retain the original. The RPC deduplicates atomically.
+  const saved = await financeRpcSaved("rpc/zysyr_save_petty_detail_import",{p_actor:session.auth_account_id,p_company:company,p_store:storeId,p_month:`${month}-01`,p_source:{sha256:sourceHash,filename,object_path:objectPath,selection_hash:await sha256(JSON.stringify([sourceHash,mapping,payload.sheet||sheets[0]||null,headerRow,chosen.map(row=>row.source_row)]))},p_mapping:{columns:mapping,header_row:headerRow,sheet:payload.sheet||sheets[0]||null},p_rows:chosen});
+  return {...result,saved};
+}
+
 function pettyCashBatchNote(month: string, batchId: string, filename: string): string {
   return `petty_cash_batch|${month}|${batchId}|${cleanText(filename, 200).replace(/[|\r\n]/g, " ")}`;
 }
@@ -4239,7 +4304,7 @@ function pettyCashBatchTargetRows(records: JsonRecord[], historyEntries: JsonRec
     amount: Number(record.amount || 0), category: cleanText(record.category, 120), summary: cleanText(record.summary, 300),
     recipient: cleanText(record.recipient, 120), voucher_number: cleanText(record.voucher_number, 120), historical: false,
   }));
-  const history = historyEntries.map((entry) => {
+  const history = historyEntries.filter(entry => pettyCashBatchFields(entry.current_payload).direction !== "inflow").map((entry) => {
     const current = pettyCashBatchFields(entry.current_payload);
     return {
       id: cleanText(entry.id, 40), target_kind: "history",
@@ -4276,7 +4341,9 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
     voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=voucher_id,business_id&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&business_type=eq.petty_cash_record&unlinked_at=is.null&limit=3000`, 3000),
     historyMonthEntries(companyId, storeId, month, "petty_cash"),
   ]);
-  const targets = pettyCashBatchTargetRows(formalRecords, historyEntries);
+  const drafts = await pettyDetailDrafts(companyId,storeId,month);
+  const draftLinks = !drafts.length ? [] : await restRowsAll(`zysyr_petty_detail_links?select=draft_id,voucher_id,draft:zysyr_petty_detail_drafts!inner(transaction_date)&company_id=eq.${companyId}&store_id=eq.${storeId}&draft.transaction_date=gte.${start}&draft.transaction_date=lt.${end}&limit=5000`,5000);
+  const targets = [...pettyCashBatchTargetRows(formalRecords, historyEntries),...drafts.map(row=>({...row,target_kind:"draft"}))];
   const latestTask = new Map<string, JsonRecord>(), latestReview = new Map<string, JsonRecord>();
   for (const task of tasks) if (!latestTask.has(cleanText(task.voucher_id, 40))) latestTask.set(cleanText(task.voucher_id, 40), task);
   for (const review of reviews) if (!latestReview.has(cleanText(review.voucher_id, 40))) latestReview.set(cleanText(review.voucher_id, 40), review);
@@ -4299,12 +4366,13 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
     const formalTarget = formalLinkMap.get(cleanText(voucher.id, 40));
     const evidenceId = historyEvidenceByHash.get(cleanText(voucher.sha256, 80));
     const historyTarget = evidenceId ? historyTargetByEvidence.get(evidenceId) : "";
-    const confirmedKind = formalTarget ? "formal" : historyTarget ? "history" : null;
-    const confirmedId = formalTarget || historyTarget || null;
+    const draftTarget = draftLinks.find(link=>link.voucher_id===voucher.id)?.draft_id;
+    const confirmedKind = formalTarget ? "formal" : historyTarget ? "history" : draftTarget ? "draft" : null;
+    const confirmedId = formalTarget || historyTarget || draftTarget || null;
     const taskStatus = cleanText(task?.status, 30) || (cleanText(voucher.mime_type, 80) === "application/pdf" ? "failed" : "queued");
     const match = confirmedId ? { state: "confirmed", unique_exact: false, score: 100,
       target_kind: confirmedKind, target_id: confirmedId, reason: "财务已确认并建立逐笔凭证关系" }
-      : matchPettyCashCandidate(candidate, targets);
+      : {...matchPettyCashCandidate(candidate, targets), candidates:rankPettyCashCandidates(candidate, targets)};
     return {
       ...voucher, batch_id: note.batch_id, target_month: note.month,
       latest_ocr_task: task, latest_review: review, candidate_fields: candidate,
@@ -4337,9 +4405,11 @@ async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRe
   const voucherId = uuidValue(payload.voucher_id, "凭证编号无效") as string;
   const targetId = uuidValue(payload.target_id, "请选择对应的备用金明细") as string;
   const targetKind = cleanText(payload.target_kind, 20);
-  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !["formal", "history"].includes(targetKind)) {
+  if (!/^\d{4}-\d{2}$/.test(month) || !validDate(`${month}-01`) || !["formal", "history", "draft"].includes(targetKind)) {
     throw new Error("批量凭证对应信息无效");
   }
+  const latest = await restRows(`zysyr_voucher_ocr_tasks?select=candidate_fields&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=eq.${voucherId}&order=attempt.desc&limit=1`);
+  if (["bank_summary","multiple_transactions"].includes(cleanText(pettyCashBatchFields(latest[0]?.candidate_fields).document_kind,40))) throw new Error("汇总或多笔交易凭证不能关联为单笔支出，请提供逐笔凭证");
   const corrected = pettyCashBatchFields(payload.corrected_fields);
   const documentDate = cleanText(corrected.document_date, 10), amount = Number(corrected.amount);
   if (!validDate(documentDate) || !Number.isFinite(amount) || amount <= 0) {
@@ -4353,6 +4423,10 @@ async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRe
   const rows = await restRows(`zysyr_voucher_attachments?select=id,note,audit_status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${voucherId}&limit=1`);
   if (!rows[0] || !cleanText(rows[0].note, 500).startsWith(expectedNote)) throw new Error("该凭证不属于当前月份的批量上传");
   const reason = cleanText(payload.reason, 500) || `备用金月度批量凭证人工核对：${month}`;
+  if (targetKind === "draft") {
+    const saved = await financeRpcSaved("rpc/zysyr_link_petty_detail_draft",{p_actor:session.auth_account_id,p_company:companyId,p_store:storeId,p_month:`${month}-01`,p_draft:targetId,p_voucher:voucherId,p_fields:corrected,p_reason:reason});
+    return {saved,human_confirmed:true,amount_changed:false,formal_ledger_written:false};
+  }
   const saved = await financeRpcSaved("rpc/zysyr_review_and_link_petty_cash_voucher", {
     p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId, p_store_id: storeId,
     p_voucher_id: voucherId, p_target_kind: targetKind, p_target_id: targetId,
@@ -7161,7 +7235,7 @@ monthly_review_status monthly_review_inbox monthly_review_preview monthly_review
 daily_electronic_sources
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
-report_source_review monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_original_archive_void daily_original_archive_orientation_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
+report_source_review monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_original_archive_void daily_original_archive_orientation_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record petty_detail_import_preview petty_detail_import_confirm petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
 `.trim().split(/\s+/));
 
 function safeOperationsApiLogOperation(value: unknown): string {
@@ -7309,6 +7383,8 @@ async function handleOperationsApiRequest(
     if (operation === "monthly_transition") return json(await transitionMonthlyReport(payload, session));
     if (operation === "voucher_upload") return json(await uploadVoucher(payload, session));
     if (operation === "petty_cash_batch_upload") return json(await uploadPettyCashBatchVoucher(payload, session));
+    if (operation === "petty_detail_import_preview") return json(await pettyDetailImport(payload,session,false));
+    if (operation === "petty_detail_import_confirm") return json(await pettyDetailImport(payload,session,true));
     if (operation === "petty_cash_batch_status") return json(await pettyCashBatchStatus(payload, session));
     if (operation === "petty_cash_batch_confirm") return json(await confirmPettyCashBatchVoucher(payload, session));
     if (operation === "voucher_center") return json(await voucherCenter(payload, session));
