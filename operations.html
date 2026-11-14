@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="653">
+<html lang="zh-CN" data-version="654">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=653" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=654" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -761,15 +761,15 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-time.js?v=653"></script>
-<script src="operations-staff-view.js?v=653"></script>
-<script src="operations-monthly-daily-performance.js?v=653"></script>
-  <script src="operations-report-fit.js?v=653"></script>
-  <script src="operations-auth-bridge.js?v=653"></script>
-  <script src="operations-voucher-preview.js?v=653"></script>
-  <script src="operations-voucher-view.js?v=653"></script>
-<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=653"></script>
-  <script src="operations-monthly-verification.js?v=653"></script>
+<script src="operations-time.js?v=654"></script>
+<script src="operations-staff-view.js?v=654"></script>
+<script src="operations-monthly-daily-performance.js?v=654"></script>
+  <script src="operations-report-fit.js?v=654"></script>
+  <script src="operations-auth-bridge.js?v=654"></script>
+  <script src="operations-voucher-preview.js?v=654"></script>
+  <script src="operations-voucher-view.js?v=654"></script>
+<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=654"></script>
+  <script src="operations-monthly-verification.js?v=654"></script>
 <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -942,7 +942,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=653';
+      script.src='operations-petty-cash-evidence.js?v=654';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1230,13 +1230,14 @@
     }catch(error){if(generation===dailyOverviewRequest&&currentStore()===store&&$('month').value===mainMonth&&state.view==='daily-report'){$('daily-report-status').textContent=error.message;if(!background||!state.dailyReportMonth)$('daily-report-calendar').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}return false}
   }
   function dailyArchivePresence(value){return window.ZysyrDailyOriginalDisplay?window.ZysyrDailyOriginalDisplay.presence(value):{state:value?'unavailable':'legacy',count:null}}
+  function dailyArchiveLabel(status){return status==='confirmed'?'原图已存档':'原图已存档 · 待核对'}
   function renderDailyReportCalendar(data){
     var month=data.month||'',byDate={},confirmed=0,draftCount=0,missing=0,archived=0,archiveUnavailable=0,anomalies=0,reviewUnavailable=0,monthTotal=0;
     (data.days||[]).forEach(function(day){
       byDate[day.report_date]=day;
       if(day.status==='confirmed'){confirmed++;if(day.grand_total!=null)monthTotal+=Number(day.grand_total)}else if(day.status==='draft')draftCount++;
       var archive=dailyArchivePresence(day.original_archive);
-      if(archive.state==='archived')archived++;
+      if(archive.state==='archived'){if(day.status!=='confirmed')archived++}
       else if(archive.state==='unavailable')archiveUnavailable++;
       else if(day.missing_original)missing++
       if(day.has_anomaly)anomalies++;
@@ -1252,10 +1253,10 @@
       var badges='';
       badges+=entry.status==='confirmed'?'<span class="voucher-status confirmed">已完成</span>':'<span class="voucher-status draft">待填写</span>';
       var archive=dailyArchivePresence(entry.original_archive);
-      if(archive.state==='archived')badges+='<span class="voucher-status draft">原图已存档 · 待核对</span>';
+      if(archive.state==='archived')badges+='<span class="voucher-status '+(entry.status==='confirmed'?'confirmed':'draft')+'">'+dailyArchiveLabel(entry.status)+'</span>';
       else if(archive.state==='unavailable')badges+='<span class="voucher-status draft">原图状态暂不可用</span>';
       else if(entry.missing_original)badges+='<span class="voucher-status rejected">缺少原始日报</span>';
-      else if(Number(entry.approved_original_count||0)===0)badges+='<span class="voucher-status draft">原件待审核</span>';
+      else if(Number(entry.approved_original_count||0)===0&&entry.status!=='confirmed')badges+='<span class="voucher-status draft">原件待审核</span>';
       if(entry.historical_validation_status==='changed'||entry.historical_validation_status==='current_mismatch')badges+='<span class="voucher-status rejected" role="alert" title="打开当天日报可查看差额和原始明细">'+esc(dailyHistoricalValidationWarning(entry))+'</span>';
       else if(entry.historical_validation_status==='unavailable')badges+='<span class="voucher-status draft">历史复核暂不可用</span>';
       else if(entry.has_anomaly)badges+='<span class="voucher-status rejected">数据异常</span>';
@@ -1288,8 +1289,8 @@
     $('daily-detail-save').disabled=!writable||dirty===0;
     $('daily-detail-save-top').disabled=!writable||dirty===0;
   }
-  function renderDailyDetailOriginalStatus(){var sheet=state.imports.sheet,archive=dailyArchivePresence(sheet.original_archive),items=sheet.attachments||[],active=items.filter(function(item){return !item.voided}),voided=items.filter(function(item){return item.voided});if(window.ZysyrDailyOriginalDisplay)window.ZysyrDailyOriginalDisplay.render(sheet,$('daily-detail-archived-originals'),esc);else{$('daily-detail-archived-originals').textContent='';$('daily-detail-archived-originals').classList.add('hidden')}$('daily-detail-original-alert').innerHTML=active.length?'<strong>当前有效原始资料 '+active.length+' 份。</strong> '+(voided.length?'另有 '+voided.length+' 份误传原图已作废并保留审计。':'电子日报与原件分别保存，可双向核对。'):archive.state==='archived'?'<strong>原图已存档 · 待核对 '+archive.count+' 份。</strong> 尚未完成财务绑定或审核；金额与入账状态未调整。':archive.state==='unavailable'?'<strong>原图存档状态暂不可用。</strong> 请刷新日报重试，暂不判断是否缺少原图。':'<strong>⚠ 缺少有效原始日报表</strong> '+(voided.length?'误传原图已保留，请上传正确日报后再识别、入账。':'请在本页直接上传当天照片、PDF或XLSX原件。');if(active.length&&archive.state==='unavailable')$('daily-detail-original-alert').innerHTML+='<div class="help">原图存档状态暂不可用，请刷新日报重试；已绑定财务附件仍可查看。</div>';$('daily-detail-original-alert').classList.toggle('hidden',false);if(!items.length)$('daily-detail-attachments').innerHTML=archive.state==='archived'||archive.state==='unavailable'?'<div class="help">本日暂无财务绑定附件。</div>':'<div class="empty">尚未上传当天原始日报。</div>';return archive;}
-  function renderDailyDetailAttachments(){var sheet=state.imports.sheet,archive=renderDailyDetailOriginalStatus(),items=sheet.attachments||[],active=items.filter(function(item){return !item.voided}),voided=items.filter(function(item){return item.voided}),canVoid=Boolean(sheet.permissions&&sheet.permissions.void_original&&sheet.draft.status==='draft'&&!sheet.locked);$('daily-detail-attachments').innerHTML=items.map(function(item,index){var status=item.voided?'已作废（误传）':item.audit_status==='approved'?'已审核':item.audit_status==='rejected'?'已退回':'待财务审核',kind=item.attachment_kind==='supporting_document'?'辅助凭证':'原始日报',voidHelp=item.voided?'<div class="help">作废原因：'+esc(item.void_reason||'误传原图')+' · 原文件仍永久留底</div>':'';return'<div class="finance-record '+(item.voided?'daily-attachment-voided':'')+'"><div class="finance-record-head"><div><strong>'+esc(item.original_filename)+'</strong><div class="help">'+esc(kind)+' · '+esc(status)+' · '+esc(formatDateTime(item.linked_at||item.uploaded_at))+'</div>'+voidHelp+'</div><div class="compact-actions"><button class="ghost" type="button" data-daily-attachment="'+index+'">查看原件</button>'+(!item.voided&&canVoid&&item.attachment_kind==='original_report'&&item.voucher_id&&item.id!==item.voucher_id?'<button class="danger" type="button" data-daily-attachment-void="'+index+'">误传作废</button>':'')+'</div></div></div>'}).join('')||(archive.state==='archived'||archive.state==='unavailable'?'<div class="help">本日暂无财务绑定附件。</div>':'<div class="empty">尚未上传当天原始日报。</div>');document.querySelectorAll('[data-daily-attachment]').forEach(function(button){button.onclick=function(){var item=items[Number(button.dataset.dailyAttachment)];if(!item)return;if(['image/jpeg','image/png'].indexOf(item.mime_type)>=0){$('daily-detail-image').src=item.private_url;$('daily-detail-preview').classList.remove('hidden');$('daily-detail-preview').scrollIntoView({behavior:'smooth',block:'nearest'})}else window.open(item.private_url,'_blank','noopener')}});document.querySelectorAll('[data-daily-attachment-void]').forEach(function(button){button.onclick=async function(){var item=items[Number(button.dataset.dailyAttachmentVoid)];if(!item||item.voided)return;if(dailySheetDirtyCount()&&!await saveDailyReportDetail())return;if(!window.confirm('确认这份原图上传错误吗？\n\n原文件不会删除，会标记为“误传作废”并永久保留审计；作废后请上传正确日报。'))return;var reason=window.prompt('请填写误传原因：','上传了错误日期或错误门店的日报');if(!reason||!reason.trim()){if(reason!==null)toast('必须填写误传原因');return}var actions=window.ZysyrDailySourceActions;if(actions&&!actions.begin('void','正在标记误传原图，请勿重复点击…'))return;button.disabled=true;try{if(isLocalPreview())throw Error('本地预览不修改真实附件');state.imports.sheet=await api('daily_sheet_attachment_void',{store:currentStore(),draft_id:sheet.draft.id,attachment_id:item.id,reason:reason.trim()});renderDailySheetDetail();if(actions)actions.finish('误传原图已作废并保留审计；请点击“上传 / 重传正确日报”继续。','success');toast('误传原图已作废，请上传正确日报')}catch(error){if(actions)actions.fail('作废失败：'+error.message);toast(error.message)}finally{button.disabled=false}}});var image=active.find(function(item){return ['image/jpeg','image/png'].indexOf(item.mime_type)>=0});if(image){$('daily-detail-image').src=image.private_url;$('daily-detail-preview').classList.remove('hidden')}else{$('daily-detail-image').removeAttribute('src');$('daily-detail-preview').classList.add('hidden')}}
+  function renderDailyDetailOriginalStatus(){var sheet=state.imports.sheet,archive=dailyArchivePresence(sheet.original_archive),items=sheet.attachments||[],active=items.filter(function(item){return !item.voided}),voided=items.filter(function(item){return item.voided});if(window.ZysyrDailyOriginalDisplay)window.ZysyrDailyOriginalDisplay.render(sheet,$('daily-detail-archived-originals'),esc);else{$('daily-detail-archived-originals').textContent='';$('daily-detail-archived-originals').classList.add('hidden')}$('daily-detail-original-alert').innerHTML=active.length?'<strong>当前有效原始资料 '+active.length+' 份。</strong> '+(voided.length?'另有 '+voided.length+' 份误传原图已作废并保留审计。':'电子日报与原件分别保存，可双向核对。'):archive.state==='archived'?'<strong>'+dailyArchiveLabel(sheet.draft.status)+' '+archive.count+' 份。</strong> '+(sheet.draft.status==='confirmed'?'日报已入账，原图保留备查，无需再次核对。':'尚未完成财务绑定或审核；金额与入账状态未调整。'):archive.state==='unavailable'?'<strong>原图存档状态暂不可用。</strong> 请刷新日报重试，暂不判断是否缺少原图。':'<strong>⚠ 缺少有效原始日报表</strong> '+(voided.length?'误传原图已保留，请上传正确日报后再识别、入账。':'请在本页直接上传当天照片、PDF或XLSX原件。');if(active.length&&archive.state==='unavailable')$('daily-detail-original-alert').innerHTML+='<div class="help">原图存档状态暂不可用，请刷新日报重试；已绑定财务附件仍可查看。</div>';$('daily-detail-original-alert').classList.toggle('hidden',false);if(!items.length)$('daily-detail-attachments').innerHTML=archive.state==='archived'||archive.state==='unavailable'?'<div class="help">本日暂无财务绑定附件。</div>':'<div class="empty">尚未上传当天原始日报。</div>';return archive;}
+  function renderDailyDetailAttachments(){var sheet=state.imports.sheet,archive=renderDailyDetailOriginalStatus(),items=sheet.attachments||[],active=items.filter(function(item){return !item.voided}),voided=items.filter(function(item){return item.voided}),canVoid=Boolean(sheet.permissions&&sheet.permissions.void_original&&sheet.draft.status==='draft'&&!sheet.locked);$('daily-detail-attachments').innerHTML=items.map(function(item,index){var status=item.voided?'已作废（误传）':item.audit_status==='approved'?'已审核':item.audit_status==='rejected'?'已退回':sheet.draft.status==='confirmed'?'原件留档':'待财务审核',kind=item.attachment_kind==='supporting_document'?'辅助凭证':'原始日报',voidHelp=item.voided?'<div class="help">作废原因：'+esc(item.void_reason||'误传原图')+' · 原文件仍永久留底</div>':'';return'<div class="finance-record '+(item.voided?'daily-attachment-voided':'')+'"><div class="finance-record-head"><div><strong>'+esc(item.original_filename)+'</strong><div class="help">'+esc(kind)+' · '+esc(status)+' · '+esc(formatDateTime(item.linked_at||item.uploaded_at))+'</div>'+voidHelp+'</div><div class="compact-actions"><button class="ghost" type="button" data-daily-attachment="'+index+'">查看原件</button>'+(!item.voided&&canVoid&&item.attachment_kind==='original_report'&&item.voucher_id&&item.id!==item.voucher_id?'<button class="danger" type="button" data-daily-attachment-void="'+index+'">误传作废</button>':'')+'</div></div></div>'}).join('')||(archive.state==='archived'||archive.state==='unavailable'?'<div class="help">本日暂无财务绑定附件。</div>':'<div class="empty">尚未上传当天原始日报。</div>');document.querySelectorAll('[data-daily-attachment]').forEach(function(button){button.onclick=function(){var item=items[Number(button.dataset.dailyAttachment)];if(!item)return;if(['image/jpeg','image/png'].indexOf(item.mime_type)>=0){$('daily-detail-image').src=item.private_url;$('daily-detail-preview').classList.remove('hidden');$('daily-detail-preview').scrollIntoView({behavior:'smooth',block:'nearest'})}else window.open(item.private_url,'_blank','noopener')}});document.querySelectorAll('[data-daily-attachment-void]').forEach(function(button){button.onclick=async function(){var item=items[Number(button.dataset.dailyAttachmentVoid)];if(!item||item.voided)return;if(dailySheetDirtyCount()&&!await saveDailyReportDetail())return;if(!window.confirm('确认这份原图上传错误吗？\n\n原文件不会删除，会标记为“误传作废”并永久保留审计；作废后请上传正确日报。'))return;var reason=window.prompt('请填写误传原因：','上传了错误日期或错误门店的日报');if(!reason||!reason.trim()){if(reason!==null)toast('必须填写误传原因');return}var actions=window.ZysyrDailySourceActions;if(actions&&!actions.begin('void','正在标记误传原图，请勿重复点击…'))return;button.disabled=true;try{if(isLocalPreview())throw Error('本地预览不修改真实附件');state.imports.sheet=await api('daily_sheet_attachment_void',{store:currentStore(),draft_id:sheet.draft.id,attachment_id:item.id,reason:reason.trim()});renderDailySheetDetail();if(actions)actions.finish('误传原图已作废并保留审计；请点击“上传 / 重传正确日报”继续。','success');toast('误传原图已作废，请上传正确日报')}catch(error){if(actions)actions.fail('作废失败：'+error.message);toast(error.message)}finally{button.disabled=false}}});var image=active.find(function(item){return ['image/jpeg','image/png'].indexOf(item.mime_type)>=0});if(image){$('daily-detail-image').src=image.private_url;$('daily-detail-preview').classList.remove('hidden')}else{$('daily-detail-image').removeAttribute('src');$('daily-detail-preview').classList.add('hidden')}}
   function renderDailyDetailHistory(){var sheet=state.imports.sheet,allowed=Boolean(state.user&&state.user.can_read_daily_history===true&&sheet.permissions&&sheet.permissions.read_history===true);$('daily-history-panel').hidden=!allowed;if(!allowed){delete sheet.history;$('daily-detail-history').textContent='';return;}var rows=sheet.history||[];$('daily-detail-history').innerHTML=rows.map(function(row){var before=row.before_text!=null?row.before_text:row.before_value,beforeLabel=row.before_label,after=row.after_text!=null?row.after_text:row.after_value,afterLabel=row.after_label,labelChanged=beforeLabel!==afterLabel&&afterLabel!=null,field=[row.row_label,row.column_label].filter(Boolean).join(' / ')||'电子日报单元格';return'<div class="trace-row"><strong>'+esc(formatDateTime(row.changed_at))+' · '+esc(row.changed_by_name||'已授权账号')+'</strong><span>'+esc(field+'：'+(labelChanged?'名称 '+(beforeLabel||'空')+' → '+afterLabel:'数值 '+(before==null?'空':before)+' → '+(after==null?'空':after))+'；原因：'+(row.reason||'—'))+'</span></div>'}).join('')||'<div class="empty">尚无修改记录。</div>'}
   function bindDailyDetailInputs(){var root=$('daily-detail-grid'),writable=Boolean(state.imports.sheet.permissions&&state.imports.sheet.permissions.write)||Boolean(window.ZysyrDailyCorrection&&window.ZysyrDailyCorrection.editing());root.querySelectorAll('[data-daily-cell],[data-new-cell]').forEach(function(input){input.readOnly=!writable;if(writable)input.oninput=function(){var key=input.dataset.dailyCell||('new:'+input.dataset.section+':'+input.dataset.rowKey+':'+input.dataset.columnCode);state.imports.dirty[key]=input.value;input.classList.add('manual-edit');syncDailyAmountDisplay(input);renderDailyDetailControls()}});root.querySelectorAll('[data-row-label-input]').forEach(function(input){input.readOnly=!writable;if(writable)input.oninput=function(){state.imports.dirtyLabels[input.dataset.rowLabelInput]=input.value;input.classList.add('manual-edit');renderDailyDetailControls()}})}
   function renderHistoricalValidationReview(sheet){var box=$('daily-detail-historical-validation'),review=sheet.current_validation_review;if(!review||review.status==='current_valid'){box.classList.add('hidden');box.textContent='';return}var message='';if(review.status==='unavailable'){message='暂时无法按当前校验规则复核这张已入账日报。系统没有改动任何金额；请稍后刷新，或先对照原图复核。'}else{var result=review.current_validation||{},details=[];if(result.stylist_subtotal_mismatch){var subtotal=Number(result.stylist_subtotal||0),staff=Number(result.staff_atomic_total||0);details.push('造型区总小计 ¥'+subtotal.toFixed(2)+'，员工明细合计 ¥'+staff.toFixed(2)+'，相差 ¥'+Math.abs(subtotal-staff).toFixed(2))}if(Number(result.staff_row_mismatches||0)>0)details.push('有 '+result.staff_row_mismatches+' 个员工行小计不一致');if(Number(result.category_mismatches||0)>0)details.push('有 '+result.category_mismatches+' 个项目列小计不一致');if(Array.isArray(result.missing_controls)&&result.missing_controls.length)details.push('缺少控制项：'+result.missing_controls.join('、'));message='历史已入账日报按当前规则复核发现异常'+(details.length?'：'+details.join('；'):'，请对照原图核对')+'。系统没有修改历史金额，请财务对照原始日报后按修订/冲销流程处理。'}box.textContent=message;box.classList.remove('hidden')}
@@ -1655,19 +1656,19 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-daily-review.js?v=653"></script>
-  <script src="operations-daily-correction.js?v=653"></script>
-  <script src="operations-daily-electronic.js?v=653"></script>
-  <script src="operations-monthly-workbench.js?v=653"></script>
-  <script src="operations-daily-recognition.js?v=653"></script>
-  <script src="operations-daily-batch-upload.js?v=653"></script>
-<script src="operations-daily-history.js?v=653"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=653">
-<script src="operations-monthly-review.js?v=653"></script>
-<script src="operations-monthly-source-archive.js?v=653"></script>
-<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=653"></script>
+  <script src="operations-daily-review.js?v=654"></script>
+  <script src="operations-daily-correction.js?v=654"></script>
+  <script src="operations-daily-electronic.js?v=654"></script>
+  <script src="operations-monthly-workbench.js?v=654"></script>
+  <script src="operations-daily-recognition.js?v=654"></script>
+  <script src="operations-daily-batch-upload.js?v=654"></script>
+<script src="operations-daily-history.js?v=654"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=654">
+<script src="operations-monthly-review.js?v=654"></script>
+<script src="operations-monthly-source-archive.js?v=654"></script>
+<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=654"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=653"></script>
-<script defer src="app-shell-client.js?v=653"></script>
+<script defer src="data-read-client.js?v=654"></script>
+<script defer src="app-shell-client.js?v=654"></script>
 </body>
 </html>
