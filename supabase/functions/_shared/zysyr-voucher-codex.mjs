@@ -1,5 +1,11 @@
 import { normalizedDate, normalizedAmount } from './zysyr-ocr-candidates.mjs';
 
+// Keep the printed calendar day; never convert time zones or supply a year.
+export function normalizedVoucherDate(value) {
+  const match=String(value??'').trim().match(/^(20\d{2}-\d{2}-\d{2})(?:[ T](?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)?)?$/);
+  return match?normalizedDate(match[1]):null;
+}
+
 export function voucherCodexCandidates(result, month) {
   if (!['codex-local','openai-api'].includes(result?.provider) || result?.candidate_only !== true || result?.human_review_required !== true
       || !['receipt', 'bank_summary', 'multiple_transactions', 'unknown'].includes(result?.document_kind)) {
@@ -11,7 +17,7 @@ export function voucherCodexCandidates(result, month) {
     const score = result.confidences?.[key];
     let value = result.fields?.[key];
     if (!proof || typeof score !== 'number' || !Number.isFinite(score) || score > 1 || score < (['document_date', 'amount'].includes(key) ? .85 : .7)) value = null;
-    if (key === 'document_date') value = normalizedDate(value);
+    if (key === 'document_date') value = normalizedVoucherDate(value);
     else if (key === 'amount') value = typeof value === 'boolean' ? null : normalizedAmount(value);
     else value = value == null ? null : String(value).trim().slice(0, 200) || null;
     if (key === 'amount' && Number(value) <= 0) value = null;
@@ -42,4 +48,15 @@ export function voucherCodexCandidates(result, month) {
   }
   return { fields: { ...fields, recognition_provider: result.provider, parse_mode: result.provider === 'openai-api' ? 'openai_structured_candidate' : 'codex_structured_candidate',
     document_kind: result.document_kind,recognition_schema_version:result.schema_version==='expense-voucher-v2'?'expense-voucher-v2':'legacy',document_type:String(result.document_type||'unknown').slice(0,40),transactions,monthly_summary:monthlySummary, evidence, parse_warnings: [...new Set(warnings)] }, confidences };
+}
+
+export function recoverVoucherDateCandidate(fields,confidences,raw,month) {
+  if(fields?.document_date||fields?.document_kind!=='receipt'||fields?.recognition_schema_version!=='expense-voucher-v2'||raw?.schema_version!=='expense-voucher-v2')return null;
+  try{
+    const parsed=voucherCodexCandidates(raw,month);
+    if(!parsed.fields.document_date||normalizedDate(raw.fields?.document_date))return null;
+    return {fields:{...fields,document_date:parsed.fields.document_date,date_format_recovered:true,
+      parse_warnings:[...new Set([...(fields.parse_warnings||[]),...parsed.fields.parse_warnings])]},
+      confidences:{...confidences,document_date:parsed.confidences.document_date}};
+  }catch{return null;}
 }

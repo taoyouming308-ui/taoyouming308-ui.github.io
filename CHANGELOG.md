@@ -1,3 +1,9 @@
+## v658 · Voucher date and monthly display corrections
+
+- Keep the exact printed calendar day when OCR returns a complete date and time. Recover affected unassociated candidates from their existing recognition result, without rewriting or replaying stored evidence; partial years and invalid dates remain unknown.
+- Read the latest monthly report with a bounded query instead of the complete-pagination helper. Refresh original-image buttons in the existing monthly cells after associations change, retaining report/source label and effective-amount checks across different files.
+- Add focused API, PostgreSQL and browser regressions using synthetic values, including immutable raw recognition, service-only timestamp validation and updates without rerendering the monthly sheet. Financial amounts, approvals and posting remain unchanged.
+
 ## v657 · All-expense voucher matching
 
 - Extend the existing voucher panel to all monthly expense categories and source petty details. Show linked originals in existing monthly cells and source review; verify labels and current amounts when projecting across different source files.

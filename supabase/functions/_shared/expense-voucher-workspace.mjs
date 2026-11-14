@@ -71,6 +71,7 @@ export function expenseMatchPlan(workspace,requests,mode) {
     result.push({voucher_id:request.voucher_id,component_index:request.component_index,task_id:request.task_id,
       target_kind:target.target_kind,target_id:target.id,target_snapshot:target,
       corrected_fields:{evidence_kind:monthlySummary?'monthly_summary':'transaction',period_month:monthlySummary?fields.period_month:fields.document_date.slice(0,7),document_date:monthlySummary?null:fields.document_date,amount:Number(fields.amount),counterparty:String(fields.counterparty||'').slice(0,200),
+        ...(fields.date_format_recovered?{date_basis:'stored_ocr_timestamp'}:{}),
         document_number:String(fields.document_number||'').slice(0,120),summary:String(fields.summary||'').slice(0,300),expense_category:String(fields.expense_category||'').slice(0,120)},
       reason:mode==='auto'?item.match.reason:String(request.reason||'人工核对对应开支凭证').slice(0,500)});
   }
