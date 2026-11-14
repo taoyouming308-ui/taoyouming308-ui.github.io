@@ -1,7 +1,7 @@
 /* All expense evidence shares the existing upload panel and current store/month. */
 (function(root){
   'use strict';
-  var attempted=new Map(),monthlyCache=null;
+  var attempted=new Map(),monthlyCache=null,lastMonthlyCells=null,lastMonthlyScope=null;
   function scopeKey(){return JSON.stringify([currentStore(),document.getElementById('month').value,root.ZysyrPettyScopeIdentity?root.ZysyrPettyScopeIdentity():state.session]);}
   function monthlyData(data){return {source:data.source_selection,expense_voucher_targets:data.targets||[],expense_voucher_matches:(data.items||[]).filter(function(i){return i.confirmed_target_id;}).map(function(i){return {voucher_id:i.source_voucher_id||i.id,filename:i.original_filename,mode:i.expense_association&&i.expense_association.mode||'manual',target:(data.targets||[]).find(function(t){return t.id===i.confirmed_target_id&&t.target_kind===i.confirmed_target_kind;})};})};}
   function decorate(cells,data,key){
@@ -26,11 +26,14 @@
     task_id:item.latest_ocr_task&&item.latest_ocr_task.id,target_kind:target.target_kind,target_id:target.id,
     corrected_fields:fields,reason:'人工核对开支凭证：'+item.original_filename+' → '+target.summary};}
   root.ZysyrExpenseVoucherWorkspace={
-    read:async function(payload){var key=scopeKey(),data=await api('expense_voucher_workspace',payload);if(data&&data.month===payload.month&&key===scopeKey())monthlyCache={key:key,data:monthlyData(data)};return data;},
+    read:async function(payload){var key=scopeKey(),data=await api('expense_voucher_workspace',payload);if(data&&data.month===payload.month&&key===scopeKey()){
+      monthlyCache={key:key,data:monthlyData(data)};
+      if(lastMonthlyCells&&lastMonthlyScope===key)decorate(lastMonthlyCells,monthlyCache.data,key);
+    }return data;},
     decorateMonthly:async function(cells){
       await Promise.resolve();
       if(isLocalPreview()||!state.user||state.user.can_match_expense_vouchers!==true||state.user.role!=='finance'||state.user.can_manage_finance_workbench!==true||!state.data||!state.data.monthly_report)return;
-      var key=scopeKey();try{
+      var key=scopeKey();lastMonthlyCells=cells;lastMonthlyScope=key;try{
         if(monthlyCache&&monthlyCache.key===key){decorate(cells,monthlyCache.data,key);return;}
         var data=await api('report_source_review',{store:currentStore(),month:document.getElementById('month').value,kind:'expenses',include_expense_matches:true});
         if(key!==scopeKey())return;monthlyCache={key:key,data:data};decorate(cells,data,key);

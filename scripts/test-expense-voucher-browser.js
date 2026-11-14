@@ -1,11 +1,11 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http');
 const {chromium}=require('playwright');
-const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width"><select id="month"><option>2026-07</option></select><div id="finance-workbench-status"></div><div id="petty-cash-report-table"></div><table><tr><td id="cell"><input value="6468.56"></td></tr></table><div id="trace-backdrop" class="hidden"><div id="trace-content"></div></div>');});
+const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width"><select id="month"><option>2026-07</option></select><div id="finance-workbench-status"></div><div id="petty-cash-report-table"></div><table><tr><td id="cell"><input value="1648.27"></td><td id="cell-water"><input value="318.42"></td></tr></table><div id="trace-backdrop" class="hidden"><div id="trace-content"></div></div>');});
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;try{
 const {buildExpenseVoucherWorkspace,expenseMatchPlan}=await import('../supabase/functions/_shared/expense-voucher-workspace.mjs');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),confidence={document_date:.99,amount:.99,expense_category:.99};
-const source={status:'ready',monthly_status:'ready',source:{selection_id:id(1),source_request_id:id(2),sha256:'a'.repeat(64)},monthly:{expense_rows:[['物业费',6468.56,12],['水费',4357.14,17],['工资',120627.33,22]].map(([label,amount,row])=>({row,cells:[{column:2,value:label},{column:3,address:'C'+row,value:amount}]}))},expenses:[]};
-const fields={document_kind:'receipt',document_type:'invoice',document_date:'2026-07-05',amount:6468.56,expense_category:'物业费',evidence:{document_date:'2026-07-05',amount:'6468.56',expense_category:'物业费'},recognition_schema_version:'expense-voucher-v2'};
+const source={status:'ready',monthly_status:'ready',source:{selection_id:id(1),source_request_id:id(2),sha256:'a'.repeat(64)},monthly:{expense_rows:[['物业费',1648.27,12],['水费',318.42,17],['工资',28654.19,22]].map(([label,amount,row])=>({row,cells:[{column:2,value:label},{column:3,address:'C'+row,value:amount}]}))},expenses:[],electronic_report:{id:id(25),cells:[{id:id(26),cell_address:'C12',label:'房租 / 物业费 / Nov.',amount:1648.27},{id:id(27),cell_address:'C17',label:'水电煤 / 水费 / Nov.',amount:318.42}]}};
+const fields={document_kind:'receipt',document_type:'invoice',document_date:'2026-07-05',amount:1648.27,expense_category:'物业费',evidence:{document_date:'2026-07-05',amount:'1648.27',expense_category:'物业费'},recognition_schema_version:'expense-voucher-v2'};
 const base={month:'2026-07',summary:{total:4},targets:[],items:[{id:id(3),original_filename:'物业凭证.png',batch_id:id(4),latest_ocr_task:{id:id(5)},field_confidences:confidence,candidate_fields:fields,task_status:'succeeded',audit_status:'pending'},
 {id:id(6),original_filename:'跨月.png',batch_id:id(4),latest_ocr_task:{id:id(7)},field_confidences:confidence,candidate_fields:{...fields,document_date:'2026-08-05'},task_status:'succeeded',audit_status:'pending'},
 {id:id(8),original_filename:'失败.png',batch_id:id(4),latest_ocr_task:{id:id(9),error_message:'Legacy transport failed'},candidate_fields:{},task_status:'dead_letter',audit_status:'pending'},
@@ -21,7 +21,7 @@ await page.exposeFunction('backend',async(operation,payload)=>{calls.push({opera
  throw Error('Unexpected '+operation);
 });
 await page.goto('http://127.0.0.1:'+server.address().port);
-await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true,can_match_expense_vouchers:true},data:{monthly_report:{sha256:'a'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
+await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true,can_match_expense_vouchers:true},data:{monthly_report:{id:'00000000-0000-4000-8000-000000000025',sha256:'b'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
 window.ZysyrPettyScopeIdentity=()=>state.session;window.ZysyrTime={dateTime:()=>''};window.esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');window.formatAmount=v=>Number(v).toFixed(2);window.isLocalPreview=()=>false;window.api=(o,p)=>window.backend(o,p);window.toast=()=>{};window.openPrivate=(o,p)=>window.backend(o,p);window.renderPettyCashReport=()=>{};window.loadPettyCashReport=async()=>{};window.prompt=()=> 'Synthetic correction';});
 for(const file of ['operations-expense-voucher-workspace.js','operations-petty-cash-evidence.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
 await page.evaluate(()=>renderPettyCashReport());
@@ -30,8 +30,8 @@ assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length
 assert.equal(links.length,1);assert.equal(links[0].target_kind,'monthly_source');
 assert.match(await page.locator('#petty-batch-list').innerText(),/跨月|其他月份/);
 const options=await page.locator('[data-batch-target]').nth(1).innerText();assert.equal(await page.locator('[data-batch-target]').nth(1).locator('optgroup').first().getAttribute('label'),'月报全部开支栏目');assert.match(options,/水费/);assert.match(options,/工资/);
-await page.evaluate(()=>ZysyrExpenseVoucherWorkspace.decorateMonthly({C12:document.getElementById('cell')}));
-await page.waitForSelector('[data-expense-cell-vouchers]');assert.equal(await page.locator('#cell input').inputValue(),'6468.56');
+await page.evaluate(()=>ZysyrExpenseVoucherWorkspace.decorateMonthly({C12:document.getElementById('cell'),C17:document.getElementById('cell-water')}));
+await page.waitForSelector('[data-expense-cell-vouchers]');assert.equal(await page.locator('#cell input').inputValue(),'1648.27');
 await page.locator('[data-expense-cell-vouchers]').click();await page.locator('[data-expense-open]').click();
 assert.equal(calls.find(c=>c.operation==='voucher_url').payload.voucher_id,id(3),'monthly cell opens the matching original');
 await page.locator('[data-expense-match-change]').click();await page.waitForFunction(()=>!document.querySelector('[data-expense-match-change]'));
@@ -41,11 +41,13 @@ assert.equal(calls.filter(c=>c.operation==='expense_voucher_failures_retry').len
 const monthlyCard=page.locator('[data-petty-batch-item=\"'+id(30)+'\"]');
 await monthlyCard.locator('[data-batch-target]').selectOption('monthly_source:'+id(1)+'~C17');
 await monthlyCard.locator('[data-batch-period]').waitFor();assert.equal(await monthlyCard.locator('[data-batch-period]').inputValue(),'','a missing year is not filled from current scope');
-await monthlyCard.locator('[data-batch-period]').fill('2026-07');await monthlyCard.locator('[data-batch-amount]').fill('4357.14');
+await monthlyCard.locator('[data-batch-period]').fill('2026-07');await monthlyCard.locator('[data-batch-amount]').fill('318.42');
 const beforeSummary=calls.filter(c=>c.operation==='expense_voucher_match_apply').length;
 page.once('dialog',dialog=>dialog.dismiss());await monthlyCard.locator('[data-petty-batch-confirm]').click();
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,beforeSummary,'declining the human month attestation cannot write');
 page.once('dialog',dialog=>dialog.accept());await monthlyCard.locator('[data-petty-batch-confirm]').click();await monthlyCard.locator('[data-expense-match-change]').waitFor();
+await page.locator('#cell-water [data-expense-cell-vouchers]').waitFor();
+assert.equal(await page.locator('#cell-water input').inputValue(),'318.42');assert.doesNotMatch(await monthlyCard.innerText(),/当前人工填写已保留/);
 assert.equal(links.at(-1).mode,'manual');assert.equal(links.at(-1).corrected_fields.document_date,null);assert.equal(links.at(-1).corrected_fields.period_month,'2026-07');
 late=true;await page.locator('#petty-batch-refresh').click();await page.waitForTimeout(50);const before=calls.filter(c=>c.operation==='expense_voucher_match_apply').length;
 await page.evaluate(()=>{store='二店';document.getElementById('petty-cash-report-table').innerHTML='';});release();await page.waitForTimeout(100);

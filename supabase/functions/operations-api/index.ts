@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
 import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
+import { recoverVoucherDateCandidate } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
@@ -4474,7 +4475,7 @@ async function expenseVoucherWorkspace(payload: JsonRecord, session: JsonRecord,
   if(!sourceOverride){try{source=await readReportSourceReview({...payload,kind:"expenses"},session);}catch{source={status:"unavailable",message:"月报开支来源暂不可读，未自动匹配，请稍后刷新"};}}
   if(source.status==="ready"){
     try{
-      const reports=await restRowsAll(`zysyr_report_uploads?select=id,sha256&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&order=version.desc&limit=1`,1);
+      const reports=await restRows(`zysyr_report_uploads?select=id,sha256&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&order=version.desc&limit=1`);
       if(reports[0]){
         const report=reports[0];
         const [cells,revisions]=await Promise.all([
@@ -4485,6 +4486,19 @@ async function expenseVoucherWorkspace(payload: JsonRecord, session: JsonRecord,
     }catch{source.electronic_projection_status="unavailable";}
   }
   const links=await restRowsAll(`zysyr_expense_voucher_matches?select=id,voucher_id,component_index,source_task_id,target_kind,target_id,target_snapshot,corrected_fields,mode,status,created_at&company_id=eq.${store.company_id}&store_id=eq.${store.id}&period_month=eq.${month}-01&order=created_at.desc&limit=5000`,5000);
+  const recoverable=(base.items as JsonRecord[]).filter(item=>{const fields=(item.candidate_fields||{}) as JsonRecord;
+    return !item.confirmed_target_id&&item.audit_status==="pending"&&item.task_status==="succeeded"
+      &&fields.recognition_schema_version==="expense-voucher-v2"&&fields.document_kind==="receipt"&&!fields.document_date
+      &&!links.some(link=>link.status==="active"&&link.voucher_id===item.id);});
+  if(recoverable.length){
+    const ids=uuidIn(recoverable.map(item=>(item.latest_ocr_task as JsonRecord)?.id));
+    const rawTasks=ids==="()"?[]:await restRows(`zysyr_voucher_ocr_tasks?select=id,raw_result&company_id=eq.${store.company_id}&store_id=eq.${store.id}&id=in.${ids}&limit=${recoverable.length}`);
+    for(const item of recoverable){
+      const raw=((rawTasks.find(task=>task.id===(item.latest_ocr_task as JsonRecord)?.id)?.raw_result||{}) as JsonRecord).provider_response;
+      const recovered=recoverVoucherDateCandidate(item.candidate_fields,item.field_confidences,raw,month);
+      if(recovered){item.candidate_fields=recovered.fields;item.field_confidences=recovered.confidences;}
+    }
+  }
   return buildExpenseVoucherWorkspace(base,source,links);
 }
 

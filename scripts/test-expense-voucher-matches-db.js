@@ -11,7 +11,7 @@ create function zysyr_private.assert_finance_scope(uuid,uuid,uuid,text) returns 
 create table zysyr_stores(company_id uuid,id uuid,unique(company_id,id));insert into zysyr_stores values('${id(1)}','${id(2)}');
 create table zysyr_user_accounts(company_id uuid,id uuid,unique(company_id,id));insert into zysyr_user_accounts values('${id(1)}','${id(3)}');
 create table zysyr_voucher_attachments(company_id uuid,store_id uuid,id uuid primary key,note text,audit_status text,unique(company_id,id));
-create table zysyr_voucher_ocr_tasks(id uuid primary key,company_id uuid,store_id uuid,voucher_id uuid,attempt int,status text,candidate_fields jsonb,field_confidences jsonb);
+create table zysyr_voucher_ocr_tasks(id uuid primary key,company_id uuid,store_id uuid,voucher_id uuid,attempt int,status text,candidate_fields jsonb,field_confidences jsonb,raw_result jsonb default '{}'::jsonb);
 create table zysyr_monthly_source_selections(id uuid primary key,company_id uuid,store_id uuid,period_month date,source_request_id uuid,selection_version int);
 create table zysyr_history_import_batches(id uuid,company_id uuid,store_id uuid);
 create table zysyr_history_import_rows(id uuid,import_batch_id uuid,mapped_json jsonb);
@@ -20,11 +20,12 @@ create table zysyr_petty_cash_records(id uuid,company_id uuid,store_id uuid,tran
 create table zysyr_history_ledger_entries(id uuid,company_id uuid,store_id uuid,current_payload jsonb);
 create table zysyr_audit_events(company_id uuid,store_id uuid,actor_type text,actor_user_id uuid,channel text,entity_type text,entity_id uuid,action text,after_json jsonb,reason text,sensitivity text);`);
 sql(fs.readFileSync('supabase/migrations/20261114125659_expense_voucher_matches.sql','utf8'));
-const fields={document_date:'2026-07-05',amount:6468.56,document_kind:'receipt',expense_category:'物业费',evidence:{document_date:'2026-07-05',amount:'6468.56',expense_category:'物业费'}};
+sql(fs.readFileSync('supabase/migrations/20261114200933_expense_voucher_date_format_guard.sql','utf8'));
+const fields={document_date:'2026-07-05',amount:1648.27,document_kind:'receipt',expense_category:'物业费',evidence:{document_date:'2026-07-05',amount:'1648.27',expense_category:'物业费'}};
 sql(`insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(4)}','petty_cash_batch|2026-07|${id(40)}|test.png','pending');
-insert into zysyr_voucher_ocr_tasks values('${id(5)}','${id(1)}','${id(2)}','${id(4)}',1,'succeeded',${q(fields)},' {"document_date":0.99,"amount":0.99,"expense_category":0.99}');
+insert into zysyr_voucher_ocr_tasks(id,company_id,store_id,voucher_id,attempt,status,candidate_fields,field_confidences) values('${id(5)}','${id(1)}','${id(2)}','${id(4)}',1,'succeeded',${q(fields)},' {"document_date":0.99,"amount":0.99,"expense_category":0.99}');
 insert into zysyr_monthly_source_selections values('${id(6)}','${id(1)}','${id(2)}','2026-07-01','${id(7)}',1);`);
-const row={voucher_id:id(4),component_index:0,task_id:id(5),target_kind:'monthly_source',target_id:id(6)+'~C12',target_snapshot:{source_request_id:id(7),source_locator:'C12',amount:6468.56},corrected_fields:fields,reason:'Synthetic source/category/date/amount match'};
+const row={voucher_id:id(4),component_index:0,task_id:id(5),target_kind:'monthly_source',target_id:id(6)+'~C12',target_snapshot:{source_request_id:id(7),source_locator:'C12',amount:1648.27},corrected_fields:fields,reason:'Synthetic source/category/date/amount match'};
 const save=(rows=[row],mode='auto',actor=id(3),store=id(2))=>`select zysyr_save_expense_voucher_matches('${actor}','${id(1)}','${store}','2026-07-01','${mode}',${q(rows)});`;
 assert.throws(()=>sql(save([row],'auto',id(99))),/./);assert.throws(()=>sql(save([row],'auto',id(3),id(99))));
 assert.throws(()=>sql(save([{...row,target_id:id(99)+'~C12'}])));
@@ -43,12 +44,28 @@ assert.throws(()=>sql('set role service_role;delete from zysyr_expense_voucher_m
 assert.throws(()=>sql('set role anon;'+save()));
 assert.equal(sql("select relrowsecurity from pg_class where relname='zysyr_expense_voucher_matches'"),'t');
 assert.equal(sql('select count(*) from zysyr_audit_events'),'3');
-const summary={evidence_kind:'monthly_summary',period_month:'2026-07',document_date:null,amount:6468.56,expense_category:'物业费',evidence:{period_month:'2026年7月',amount:'6468.56',expense_category:'物业费'},confidence:{period_month:.99,amount:.99,expense_category:.99}};
+const summary={evidence_kind:'monthly_summary',period_month:'2026-07',document_date:null,amount:1648.27,expense_category:'物业费',evidence:{period_month:'2026年7月',amount:'1648.27',expense_category:'物业费'},confidence:{period_month:.99,amount:.99,expense_category:.99}};
 sql(`insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(14)}','petty_cash_batch|2026-07|${id(40)}|summary.png','pending');
-insert into zysyr_voucher_ocr_tasks values('${id(15)}','${id(1)}','${id(2)}','${id(14)}',1,'succeeded',${q({monthly_summary:summary})},'{}');`);
+insert into zysyr_voucher_ocr_tasks(id,company_id,store_id,voucher_id,attempt,status,candidate_fields,field_confidences) values('${id(15)}','${id(1)}','${id(2)}','${id(14)}',1,'succeeded',${q({monthly_summary:summary})},'{}');`);
 const summaryRow={...row,voucher_id:id(14),task_id:id(15),corrected_fields:summary};
 assert.throws(()=>sql(save([{...summaryRow,corrected_fields:{...summary,document_date:'2026-07-01'}}])),'do not invent a payment day');
 assert.throws(()=>sql(save([{...summaryRow,corrected_fields:{...summary,period_month:'2026-08'}}])));
 assert.equal(JSON.parse(sql(save([summaryRow]))).inserted,1);assert.equal(sql(`select corrected_fields->>'document_date' is null from zysyr_expense_voucher_matches where voucher_id='${id(14)}'`),'t');
+const timestampFields={...fields,document_date:null,recognition_schema_version:'expense-voucher-v2',recognition_provider:'openai-api'};
+const rawTimestamp={provider_response:{provider:'openai-api',schema_version:'expense-voucher-v2',document_kind:'receipt',fields:{document_date:'2026-07-05 12:34:56'},confidences:{document_date:.99}}};
+const dateConfidence={document_date:0,amount:.99,expense_category:.99};
+function timestampFixture(n,raw=rawTimestamp){
+ sql(`insert into zysyr_voucher_attachments values('${id(1)}','${id(2)}','${id(n)}','petty_cash_batch|2026-07|${id(40)}|timestamp.png','pending');
+ insert into zysyr_voucher_ocr_tasks(id,company_id,store_id,voucher_id,attempt,status,candidate_fields,field_confidences,raw_result) values('${id(n+1)}','${id(1)}','${id(2)}','${id(n)}',1,'succeeded',${q(timestampFields)},${q(dateConfidence)},${q(raw)});`);
+ return {...row,voucher_id:id(n),task_id:id(n+1),corrected_fields:{...fields,date_basis:'stored_ocr_timestamp'}};
+}
+const timestampRow=timestampFixture(24),storedBefore=sql(`select candidate_fields::text||raw_result::text from zysyr_voucher_ocr_tasks where id='${id(25)}'`);
+assert.throws(()=>sql(save([{...timestampRow,corrected_fields:{...timestampRow.corrected_fields,document_date:'2026-07-06'}}])));
+assert.equal(JSON.parse(sql(save([timestampRow]))).inserted,1);
+assert.equal(sql(`select candidate_fields::text||raw_result::text from zysyr_voucher_ocr_tasks where id='${id(25)}'`),storedBefore,'do not mutate OCR or raw evidence');
+const missingYear=timestampFixture(34,{provider_response:{...rawTimestamp.provider_response,fields:{document_date:'7月5日'}}});assert.throws(()=>sql(save([missingYear])));
+const invalidTime=timestampFixture(44,{provider_response:{...rawTimestamp.provider_response,fields:{document_date:'2026-07-05 29:00:00'}}});assert.throws(()=>sql(save([invalidTime])));
+const lowScore=timestampFixture(54,{provider_response:{...rawTimestamp.provider_response,confidences:{document_date:.8}}});assert.throws(()=>sql(save([lowScore])));
+assert.equal(sql('select count(*) from zysyr_petty_cash_records'),'0');assert.equal(sql("select count(*) from zysyr_voucher_attachments where audit_status<>'pending'"),'0');
 console.log('Expense evidence DB: RLS/grants, source/month/task/evidence guards, atomic rollback, idempotent association, reversible audited correction and no financial approval/posting passed.');
 }finally{docker(['rm','-f',container]);}})().catch(error=>{console.error(error.stderr?.toString()||error);process.exitCode=1;});

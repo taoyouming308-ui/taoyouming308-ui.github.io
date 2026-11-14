@@ -362,7 +362,7 @@
       var summaryOnly = ['bank_summary','multiple_transactions'].includes(fields.document_kind)&&draft.evidence_kind!=='monthly_summary';
       var error = item.latest_ocr_task && item.latest_ocr_task.error_message;
       var reason = item.match && item.match.reason ? item.match.reason : '等待识别结果';
-      if(item.expense_association&&Object.keys(batchDirtyFields[item.id]||{}).length)reason+='；当前人工填写已保留，尚未改动对应关系，需要应用时请点更改对应';
+      if(item.expense_association&&item.expense_association.mode==='auto'&&Object.keys(batchDirtyFields[item.id]||{}).length)reason+='；当前人工填写已保留，尚未改动对应关系，需要应用时请点更改对应';
       if(fields.recognition_provider === 'openai-api') reason='OpenAI 已识别（待核对）：'+reason;
       if (fields.recognition_provider === 'codex-local') reason = 'Codex 已识别（待核对）：' + reason;
       if (Array.isArray(fields.parse_warnings) && fields.parse_warnings.length) reason += '；' + fields.parse_warnings.join('；');
