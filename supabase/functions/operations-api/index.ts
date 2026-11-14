@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
+import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
@@ -4226,8 +4227,7 @@ async function pettyDetailImport(payload: JsonRecord, session: JsonRecord, confi
     catch { throw new Error("CSV 请另存为 UTF-8 编码后上传"); }
     matrix = parseDetailCSV(text);
   } else {
-    const book = new ExcelJS.Workbook();
-    try { await book.xlsx.load(exactArrayBuffer(bytes)); } catch { throw new Error("Excel 文件损坏或格式不支持"); }
+    const book: ExcelJS.Workbook = await loadPettyDetailWorkbook(bytes, ExcelJS, JSZip);
     sheets = book.worksheets.map(sheet=>sheet.name);
     const requested = cleanText(payload.sheet,120);
     const sheet = requested ? book.getWorksheet(requested) : book.worksheets[0];

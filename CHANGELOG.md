@@ -1,3 +1,9 @@
+## v656 · Excel detail compatibility
+
+- Read valid prefixed SpreadsheetML and absolute internal worksheet/table relationships through an in-memory compatibility copy. Preserve original upload bytes and SHA-256; distinguish invalid archives from unsupported structures.
+- Preserve explicit ISO date cells as text before strict date validation, avoiding ExcelJS serial-date misinterpretation. Prioritize an unambiguous expense/credit column; leave multiple choices and debit/income/balance columns unmapped.
+- Regression covers prefixed/default XML, nested table paths, ISO dates, unchanged zero/text/formula handling and mobile mapping. Independent read-only comparison of three source workbooks checked 864 cells without differences; originals are not committed or imported by this change.
+
 ## v655 · Petty-cash matching detail import
 
 - Add current-store/month XLSX and UTF-8 CSV preview, sheet/header/column mapping, invalid/duplicate exclusion and explicit selected-row confirmation. Preserve private originals and append matching-only drafts; no financial posting or manual record overwrite.
