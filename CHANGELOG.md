@@ -1,3 +1,9 @@
+## v662 · Petty total, detail sheet and individual receipts
+
+- Monthly petty-cash totals and voucher badges open the detail sheet first, including templates with a trailing month label. Each detail then opens only its own receipt or the upload-library selector; recommendations use that detail amount. Other monthly expenses retain direct original viewing.
+- Exclude the petty monthly aggregate from new manual options and automatic association. Keep existing aggregate links as month-level history, separately flagged rather than redistributed or counted as per-detail evidence.
+- Keep source/draft/formal/history rows distinct, amounts and posting unchanged. Single-detail selection requires transaction evidence and explicit attestation; original links remain protected. Synthetic phone/desktop regression covers the complete hierarchy and exact one-row association. No backend/schema or production-data changes.
+
 ## v661 · Monthly originals and existing voucher library
 
 - Open associated originals directly from monthly amount cells and voucher badges, with images before amount editing controls. Keep all existing evidence and history.
