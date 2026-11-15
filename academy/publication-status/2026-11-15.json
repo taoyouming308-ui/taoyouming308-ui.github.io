@@ -1,9 +1,20 @@
 {
   "schemaVersion": 1,
   "date": "2026-11-15",
-  "state": "preflight_requested",
+  "state": "reviewed_inputs_submitted_awaiting_cloud_preparation",
   "published": false,
   "baseSha": "808996843764691d848edc0a182dc9f6c784914a",
   "preflightRequestedBy": "ChatGPT connected daily academy publisher",
-  "note": "2026-11-15 is a new future-scoped reviewed candidate. This is only a request for original Academy publication preflight / backup-main bound to immutable main; no draft, review, figures, publication or business change in this preparatory commit. Await actual source backup evidence before submitting lesson inputs."
+  "note": "Actual immutable clean-main backup 43661095385 bound to 80899684 and PR preflight request succeeded. Reviewed 2026-11-15 draft, 3 original SVGs and exact matching content/source/privacy/rights review in same atomic branch commit. Request trusted main publisher prepare-content-branch. This status is NOT publication; GitHub Pages remains unchanged.",
+  "baselinePreflightRun": 43661095385,
+  "baselineBackupArtifact": 14140495318,
+  "baselineBackupZipSha256": "0ad3d4b15a548cca1211cc37f75eda4254a272b960284d421ad978cf62a0d309",
+  "baselineBackupArchiveSha256": "df991d486585c7deac291bd28e85e5129c4eb5032495c108445c37a6cf4b1d77",
+  "reviewedInputHeadSha": "0fb33175051506a159115f3ce1daa606b5763c28",
+  "contentSha256": "d651eb9f7def9e70a2565bb026594136fae761e02fa176216179193e7376d077",
+  "assetSha256": {
+    "assets/2026-11-15/figure1.svg": "1a8f109ac41a38f117141ad4ed3470a309778863a0d5c8363c55cd1b670ab005",
+    "assets/2026-11-15/figure2.svg": "d7638a6d92f7e1b69a8c3ba16471fe6dad49be0ee3006111d410aaa3eb0772ef",
+    "assets/2026-11-15/figure3.svg": "d7044c4ee59cee0f33e9f5bb21eda8e79b645c1404a42d24612eb3e0bc349467"
+  }
 }
