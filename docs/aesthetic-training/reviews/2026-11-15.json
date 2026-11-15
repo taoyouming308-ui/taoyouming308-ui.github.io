@@ -1,0 +1,45 @@
+{
+  "batch": "aesthetic-2026-11-15",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "12a797bfb7cc71c5279c224d6c154bb1843fd6fd",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, hair density, hair diameter, product response or that either proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional dry-structure versus wet-reference short-hair case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-eight earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current dry hairstyle is separated from the undisplayed fictional wet-look reference, fictional zonal hair settings, customer-confirmed no-product routine and required live tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; dry-structure B is a conditional design process, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting wet styling, reference or result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face/head proportions, hair diameter, density, elasticity, chemical history and product response are not established by the image; case-only settings require live verification",
+      "A no-product three-minute in-salon test cannot reproduce every wash state, humidity, home dryer, grow-out or future styling behavior",
+      "Preparer audit is not independent scientific, trichological, biomechanical or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-15-dry-structure-wet-reference.webp",
+    "sha256": "3e626bf6d03c5cab06622f1575c6cf9733b093925b4c2d49fb560e91a14db45e",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 1774x887 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; current deep dark ear-to-upper-nape bixie-bob, quiet crown, rounded ear-back volume and natural dry finish in neutral salon documentation"
+  },
+  "hashes": {
+    "feedRawSha256": "5108853f1de073acad342fb204c5a5792391a159326a46ab6505358cb1bd965f",
+    "caseCanonicalSha256": "e923374c385a1a89f84e87cfb214e0cd0d5e9700ab2fcb398d0caf0aa6f438fa"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-15 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v663 before editing; daily backup script created the current daily archive",
+    "contentContract": "passed locally: thirty-nine cases; all thirty-eight previous parsed objects preserved; exactly one same-day ID; six answers and five exact recap titles",
+    "browserGate": "attempted locally; the expected pinned Playwright Chromium is not installed in this clean worktree, so no local browser pass is claimed. Protected PR CI must install the pinned browser tooling and execute the browser gate before merge",
+    "sharedChecks": "version, release integrity, smoke, academy publication verification, version flow, aesthetic system/study/Edge, coach endpoint and agent handoff checks passed locally. Docker/PostgreSQL and browser gates are unavailable locally and must pass in the normal protected exact-head CI before merge"
+  }
+}
