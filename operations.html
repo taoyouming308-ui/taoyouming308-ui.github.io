@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="660">
+<html lang="zh-CN" data-version="661">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -79,7 +79,7 @@
   @media(max-width:900px){.shell:has(#view-cell-trace:not(.hidden))>.sidebar{position:static}#view-cell-trace .page-head .compact-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}}
   @media(max-width:560px){.voucher-gallery-drawer{width:100vw}.voucher-gallery-item{padding:6px}.voucher-gallery-item img{border-radius:4px}}
   .sheet-table input.daily-rollup-readonly{background:#e6efe8;color:#185b37;cursor:not-allowed;font-weight:800}
-    .monthly-simple-workbench{order:0}.monthly-simple-workbench select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:8px}.monthly-simple-workbench [data-rules]{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.simple-voucher-rule{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;font-size:12px}.simple-voucher-rule>span:last-child{white-space:nowrap}.simple-voucher-rule input{width:18px;height:18px;vertical-align:middle;accent-color:#253832}.monthly-simple-workbench .help{line-height:1.6}.monthly-simple-workbench .field{margin-bottom:10px}#monthly-photo-pending{margin-top:12px}#monthly-photo-pending img{display:block;max-width:100%;max-height:48vh;object-fit:contain;margin:10px auto}#monthly-photo-pending iframe{width:100%;height:45vh;border:0;margin-top:10px}#cell-trace-upload-voucher{display:none}.monthly-simple-workbench~.monthly-voucher-preview .voucher-gallery-summary small{display:none}@media(max-width:560px){.simple-voucher-rule{align-items:flex-start;flex-direction:column}.monthly-simple-workbench{padding:12px}.monthly-simple-workbench input[type=number]{font-size:16px}}
+    .monthly-voucher-preview{order:-1}.monthly-library{margin:12px 0}.monthly-library [data-library-panel]{margin-top:12px}.monthly-library [data-library-list]{max-height:240px;overflow:auto}.monthly-library-item{display:block;width:100%;text-align:left;white-space:normal}.monthly-library input,.monthly-library select{max-width:100%;box-sizing:border-box}.monthly-simple-workbench{order:0}.monthly-simple-workbench select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:8px}.monthly-simple-workbench [data-rules]{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.simple-voucher-rule{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;font-size:12px}.simple-voucher-rule>span:last-child{white-space:nowrap}.simple-voucher-rule input{width:18px;height:18px;vertical-align:middle;accent-color:#253832}.monthly-simple-workbench .help{line-height:1.6}.monthly-simple-workbench .field{margin-bottom:10px}#monthly-photo-pending{margin-top:12px}#monthly-photo-pending img{display:block;max-width:100%;max-height:48vh;object-fit:contain;margin:10px auto}#monthly-photo-pending iframe{width:100%;height:45vh;border:0;margin-top:10px}#cell-trace-upload-voucher{display:none}.monthly-simple-workbench~.monthly-voucher-preview .voucher-gallery-summary small{display:none}@media(max-width:560px){.simple-voucher-rule{align-items:flex-start;flex-direction:column}.monthly-simple-workbench{padding:12px}.monthly-simple-workbench input[type=number]{font-size:16px}}
   </style>
 <style>
 .salary-paper-scroll{overflow:auto;border:1px solid #555;background:#fff}.salary-paper{width:100%;min-width:2050px;border-collapse:collapse;table-layout:fixed}.salary-paper th,.salary-paper td{height:29px;padding:2px 3px;border:1px solid #555;text-align:center;font-size:10px}.salary-paper .salary-paper-title td{height:38px;background:#f4f3ef;font-size:16px;font-weight:850;letter-spacing:2px}.salary-paper .salary-paper-label th{background:#dededb;font-weight:800}.salary-paper .salary-paper-value td{background:#fff}.salary-paper input,.salary-paper select{width:100%;min-width:0;border:0;background:transparent;padding:5px 2px;text-align:center;font-size:10px}.salary-paper input:focus,.salary-paper select:focus{outline:2px solid #3475a9;background:#fff}.salary-paper input.salary-dirty,.salary-paper select.salary-dirty{background:#fff0c6}.salary-paper .salary-computed{font-weight:850;background:#e7e6e1}.salary-paper .salary-computed button{width:100%;border:0;background:transparent;font-size:10px;font-weight:850;text-decoration:underline dotted;text-underline-offset:2px}.salary-paper .salary-total td{background:#dededb;font-weight:850}.salary-original-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.salary-attachment{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}.salary-attachment img{width:92px;height:72px;object-fit:cover;border:1px solid var(--line);background:#f3f2ed}.salary-sheet-bar{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px;border:1px solid var(--line);background:rgba(251,250,246,.97);box-shadow:0 -5px 16px rgba(31,44,41,.08)}
@@ -132,7 +132,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=660" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=661" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -761,18 +761,18 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-expense-voucher-workspace.js?v=660"></script>
-<script src="operations-petty-detail-import.js?v=660"></script>
+<script src="operations-expense-voucher-workspace.js?v=661"></script>
+<script src="operations-petty-detail-import.js?v=661"></script>
 
-<script src="operations-time.js?v=660"></script>
-<script src="operations-staff-view.js?v=660"></script>
-<script src="operations-monthly-daily-performance.js?v=660"></script>
-  <script src="operations-report-fit.js?v=660"></script>
-  <script src="operations-auth-bridge.js?v=660"></script>
-  <script src="operations-voucher-preview.js?v=660"></script>
-  <script src="operations-voucher-view.js?v=660"></script>
-<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=660"></script>
-  <script src="operations-monthly-verification.js?v=660"></script>
+<script src="operations-time.js?v=661"></script>
+<script src="operations-staff-view.js?v=661"></script>
+<script src="operations-monthly-daily-performance.js?v=661"></script>
+  <script src="operations-report-fit.js?v=661"></script>
+  <script src="operations-auth-bridge.js?v=661"></script>
+  <script src="operations-voucher-preview.js?v=661"></script>
+  <script src="operations-voucher-view.js?v=661"></script>
+<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=661"></script>
+  <script src="operations-monthly-verification.js?v=661"></script>
 <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -945,7 +945,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=660';
+      script.src='operations-petty-cash-evidence.js?v=661';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1008,7 +1008,7 @@
   function closeVoucherGallery(){$('voucher-gallery-backdrop').classList.add('hidden');$('voucher-gallery-backdrop').setAttribute('aria-hidden','true');$('voucher-gallery-content').innerHTML=''}
   function monthlyCellRoutesToPettyCash(address){var report=state.data.monthly_report||{},display=report.display_data||{},cell=(display.cells||[]).find(function(item){return item.cell_address===address}),label=String(cell&&cell.label||'').replace(/\s/g,'').replace(/[／·]/g,'/');return/(^|\/)备用金$/.test(label)}
   function openMonthlyPettyCashDetails(){if(!(state.user.can_manage_finance_workbench||state.user.can_read_petty_cash_reports)){toast('当前账号没有备用金明细查看权限');return}closeMonthlyWorkbench();return showView('finance-workbench')}
-  function openMonthlyVoucher(address){return monthlyCellRoutesToPettyCash(address)?openMonthlyPettyCashDetails():openCellTrace(address)}
+  function openMonthlyVoucher(address){return monthlyCellRoutesToPettyCash(address)&&isLocalPreview()?openMonthlyPettyCashDetails():openCellTrace(address)}
   function closeTrace(){$('trace-backdrop').classList.add('hidden');$('trace-backdrop').setAttribute('aria-hidden','true');state.trace.address='';state.trace.data=null}
   $('cell-trace-upload-voucher').addEventListener('click',function(){var report=state.data.monthly_report,data=state.trace.data||{},target=data.target;if(!report||!target||!target.id){toast('请先打开一个月报金额');return}var reason=window.prompt('请输入补传凭证原因：','补充 '+(target.label||state.trace.address)+' 的原始凭证');if(!reason)return;var picker=document.createElement('input');picker.type='file';picker.accept='image/jpeg,image/png,application/pdf';picker.onchange=async function(){var file=picker.files[0];if(!file)return;if(file.size>10*1024*1024){toast('凭证不能超过 10MB');return}toast('正在上传并绑定这个数字…');try{if(isLocalPreview()){toast('本地预览不写入数据库');return}var payload={store:currentStore(),filename:file.name,mime_type:file.type,base64:await fileBase64(file),reason:reason},result;if(report.historical){payload.ledger_entry_id=target.historical_ledger_entry_id||target.id;result=await api('history_ledger_evidence_upload',payload)}else{result=await api('voucher_upload',Object.assign(payload,{record_type:'report',record_id:report.id,monthly_cell_id:target.id,monthly_cell_reason:reason,note:reason}))}if(result.cell_link_error)toast(result.cell_link_error);else toast('凭证已保存并直接绑定这个数字');await openCellTrace(state.trace.address)}catch(error){toast(error.message)}};picker.click()});
   function closeMonthlyWorkbench(){monthlyVoucherView.cancel();$('view-cell-trace').classList.add('hidden');$('view-cell-trace').setAttribute('aria-hidden','true');state.trace.address='';state.trace.data=null}
@@ -1042,11 +1042,11 @@
     $('view-cell-trace').classList.remove('hidden');$('view-cell-trace').setAttribute('aria-hidden','false');if(!voucherContextCurrent(context)||request!==monthlyVoucherRequest)return;
     state.trace.address=address;$('cell-trace-page-title').textContent='金额与原始凭证';$('cell-trace-body').innerHTML='<div class="trace-card">正在读取原始凭证…</div>';
     $('cell-trace-edit-entry').classList.add('hidden');$('cell-trace-upload-voucher').classList.toggle('hidden',true);
-    try{var data=await collectMonthlyVoucherTrace(address,context);if(!voucherContextCurrent(context)||request!==monthlyVoucherRequest)return;if(data.item_category==='petty_cash_summary'){openMonthlyPettyCashDetails();return}
+    try{var data=await collectMonthlyVoucherTrace(address,context);if(!voucherContextCurrent(context)||request!==monthlyVoucherRequest)return;if(window.ZysyrExpenseVoucherWorkspace&&window.ZysyrExpenseVoucherWorkspace.forCell){try{data=await window.ZysyrExpenseVoucherWorkspace.forCell(data,address,context)}catch(error){data.expense_library_error=error.message}if(!voucherContextCurrent(context)||request!==monthlyVoucherRequest)return}if(data.item_category==='petty_cash_summary'){openMonthlyPettyCashDetails();return}
       $('cell-trace-page-title').textContent=(data.target&&data.target.label||'月报金额')+' · 原始凭证';state.trace.data=data;state.trace.selectedSources={};
       (data.sources||[]).forEach(function(cell){state.trace.selectedSources[cell.id]=cell});state.trace.selectedVouchers={};(data.evidence||[]).forEach(function(voucher){state.trace.selectedVouchers[voucher.id]=voucher});
       $('cell-trace-upload-voucher').textContent='上传这个数字的凭证';$('cell-trace-upload-voucher').classList.toggle('hidden',!data.can_upload_vouchers);
-      renderCellTrace(data);await monthlyVoucherView.mount(data,address,context,$('cell-trace-body'));
+      renderCellTrace(data);await monthlyVoucherView.mount(data,address,context,$('cell-trace-body'));if(voucherContextCurrent(context)&&request===monthlyVoucherRequest)$('view-cell-trace').querySelector('.monthly-workbench').scrollTop=0;
     }catch(error){if(voucherContextCurrent(context)&&request===monthlyVoucherRequest)$('cell-trace-body').innerHTML='<div class="trace-card" style="color:#8d2f25">'+esc(error.message)+'</div>'}
   }
   function traceTargetHeader(data,status){var target=data.target||{},report=data.report||{};return'<div class="trace-card"><div class="trace-row"><div><strong>'+esc(target.label||'月报金额')+'</strong><small>月报金额来源与凭证</small></div><span class="trace-status '+esc(status)+'">'+esc(traceStatusLabel(status))+'</span></div><div class="trace-row"><div><strong>'+formatAmount(target.numeric_value==null?target.display_value:target.numeric_value)+'</strong><small>上传人：'+esc(userLabel(report.uploaded_by))+' · '+esc(formatDateTime(report.uploaded_at))+'</small></div><button class="ghost" data-open-report="'+esc(report.id)+'">打开月报原件</button></div><details class="trace-source-details"><summary>查看原表定位</summary><div>单元格 '+esc(target.cell_address||'—')+' · 第 '+esc(target.row_number||'—')+' 行、第 '+esc(target.column_number||'—')+' 列 · '+esc(report.original_filename)+'。这是 Excel 定位，不是凭证编号。</div></details></div>'}
@@ -1659,20 +1659,20 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-voucher-ai-settings.js?v=660"></script>
-  <script src="operations-daily-review.js?v=660"></script>
-  <script src="operations-daily-correction.js?v=660"></script>
-  <script src="operations-daily-electronic.js?v=660"></script>
-  <script src="operations-monthly-workbench.js?v=660"></script>
-  <script src="operations-daily-recognition.js?v=660"></script>
-  <script src="operations-daily-batch-upload.js?v=660"></script>
-<script src="operations-daily-history.js?v=660"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=660">
-<script src="operations-monthly-review.js?v=660"></script>
-<script src="operations-monthly-source-archive.js?v=660"></script>
-<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=660"></script>
+  <script src="operations-voucher-ai-settings.js?v=661"></script>
+  <script src="operations-daily-review.js?v=661"></script>
+  <script src="operations-daily-correction.js?v=661"></script>
+  <script src="operations-daily-electronic.js?v=661"></script>
+  <script src="operations-monthly-workbench.js?v=661"></script>
+  <script src="operations-daily-recognition.js?v=661"></script>
+  <script src="operations-daily-batch-upload.js?v=661"></script>
+<script src="operations-daily-history.js?v=661"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=661">
+<script src="operations-monthly-review.js?v=661"></script>
+<script src="operations-monthly-source-archive.js?v=661"></script>
+<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=661"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=660"></script>
-<script defer src="app-shell-client.js?v=660"></script>
+<script defer src="data-read-client.js?v=661"></script>
+<script defer src="app-shell-client.js?v=661"></script>
 </body>
 </html>

@@ -25,7 +25,7 @@ await page.exposeFunction('backend',async(operation,payload)=>{calls.push({opera
 });
 await page.goto('http://127.0.0.1:'+server.address().port);
 await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true,can_match_expense_vouchers:true},data:{monthly_report:{id:'00000000-0000-4000-8000-000000000025',sha256:'b'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
-window.ZysyrPettyScopeIdentity=()=>state.session;window.ZysyrTime={dateTime:()=>''};window.esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');window.formatAmount=v=>Number(v).toFixed(2);window.isLocalPreview=()=>false;window.api=(o,p)=>window.backend(o,p);window.toast=()=>{};window.openPrivate=(o,p)=>window.backend(o,p);window.renderPettyCashReport=()=>{};window.loadPettyCashReport=async()=>{};window.prompt=()=> 'Synthetic correction';});
+window.ZysyrPettyScopeIdentity=()=>state.session;window.ZysyrTime={dateTime:()=>''};window.esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');window.formatAmount=v=>Number(v).toFixed(2);window.isLocalPreview=()=>false;window.api=(o,p)=>window.backend(o,p);window.toast=()=>{};window.openPrivate=(o,p)=>window.backend(o,p);window.openCellTrace=address=>{window.openedCell=address;};window.renderPettyCashReport=()=>{};window.loadPettyCashReport=async()=>{};window.prompt=()=> 'Synthetic correction';});
 for(const file of ['operations-expense-voucher-workspace.js','operations-voucher-ai-settings.js','operations-petty-cash-evidence.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
 await page.evaluate(()=>renderPettyCashReport());
 await page.waitForFunction(()=>document.querySelector('[data-petty-batch-item]')?.innerText.includes('AI 已匹配'));
@@ -35,8 +35,8 @@ assert.match(await page.locator('#petty-batch-list').innerText(),/跨月|其他�
 const options=await page.locator('[data-batch-target]').nth(1).innerText();assert.equal(await page.locator('[data-batch-target]').nth(1).locator('optgroup').first().getAttribute('label'),'月报全部开支栏目');assert.match(options,/水费/);assert.match(options,/工资/);
 await page.evaluate(()=>ZysyrExpenseVoucherWorkspace.decorateMonthly({C12:document.getElementById('cell'),C17:document.getElementById('cell-water')}));
 await page.waitForSelector('[data-expense-cell-vouchers]');assert.equal(await page.locator('#cell input').inputValue(),'1648.27');
-await page.locator('[data-expense-cell-vouchers]').click();await page.locator('[data-expense-open]').click();
-assert.equal(calls.find(c=>c.operation==='voucher_url').payload.voucher_id,id(3),'monthly cell opens the matching original');
+await page.locator('[data-expense-cell-vouchers]').click();
+assert.equal(await page.evaluate(()=>openedCell),'C12','monthly cell opens its original-image drawer directly');
 assert.equal(await page.locator('[data-voucher-reanalyze]').count(),4,'every image, including associated and failed images, has a reanalysis action');
 await page.locator('[data-voucher-reanalyze]').first().click();
 await page.waitForFunction(()=>document.getElementById('petty-batch-list').innerText.includes('重新识别（原确认保持原样）'));

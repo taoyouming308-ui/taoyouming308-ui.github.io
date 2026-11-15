@@ -179,7 +179,7 @@ async function run() {
     await page.evaluate(() => { window.fixtureLocatorCandidates = null; });
     assert.equal(await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'monthly_income_adjustment_save').length), 0, 'evidence mapping must not modify financial amounts');
     assert.equal(await page.locator('.monthly-simple-workbench [data-rules]').isVisible(), true, 'single records must stay visible outside the advanced trace disclosure');
-    assert.equal(await page.locator('.monthly-simple-workbench').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-voucher-preview')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'controls precede gallery');
+    assert.equal(await page.locator('.monthly-voucher-preview').evaluate(node => node.compareDocumentPosition(document.querySelector('.monthly-simple-workbench')) & Node.DOCUMENT_POSITION_FOLLOWING), 4, 'original images precede editing controls');
     await page.evaluate(() => openCellTrace('C3'));
     await first.locator('img').waitFor();
     assert.doesNotMatch(await first.innerText(), /本月整包凭证|无法全部找到/, 'formula merge must retain its confirmed image despite a bundle sibling');

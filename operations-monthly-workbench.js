@@ -187,7 +187,7 @@
     var reportOnly = ['income', 'salary', 'total', 'fixed', 'purchase_summary'].includes(data.item_category);
     var description = document.getElementById('cell-trace-page-title').nextElementSibling;
     if (description) description.textContent = data.item_category === 'purchase_summary' ? '直接查看原表产品进货明细；凭证绑定在明细上。'
-      : reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '修改金额、预览保存，或上传这笔开支的凭证。';
+      : reportOnly ? '以原始报表为依据，无需额外上传凭证。' : '直接查看原图，或从凭证上传库选择、补传凭证。';
     if (reportOnly) body.innerHTML = '';
     body.querySelectorAll('.monthly-inline-editor,.business-detail-card').forEach(function (node) { node.remove(); });
     var box = document.createElement('section'); box.className = 'trace-card monthly-simple-workbench';
