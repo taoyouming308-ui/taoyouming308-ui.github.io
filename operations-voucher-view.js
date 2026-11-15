@@ -36,7 +36,7 @@
         var displayedItem = exactPage ? (selected.images[0] || {}).filename : (manifest.length ? manifest[pageIndex] : (selected.images[0] || {}).filename);
         var locator = String(displayedItem || '').split('/').pop();
         var linkButton = !exactPage && linkImage && locator ? '<button type="button" class="secondary" data-link-history-page="' + esc(locator) + '">人工确认这张对应当前明细</button>' : '';
-        html += '<div class="voucher-gallery-controls"><button type="button" class="ghost" data-step="-1"' + (pageIndex <= 0 ? ' disabled' : '') + '>上一张</button><span data-count aria-live="polite">' + (pageIndex + 1) + ' / ' + pageCount + '</span><button type="button" class="ghost" data-step="1"' + (pageIndex >= pageCount - 1 ? ' disabled' : '') + '>下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
+        html += '<div class="voucher-gallery-controls"'+(pageCount<=1?' style="display:none"':'')+'><button type="button" class="ghost" data-step="-1"' + (pageIndex <= 0 ? ' disabled' : '') + '>上一张</button><span data-count aria-live="polite">' + (pageIndex + 1) + ' / ' + pageCount + '</span><button type="button" class="ghost" data-step="1"' + (pageIndex >= pageCount - 1 ? ' disabled' : '') + '>下一张</button></div><div class="voucher-gallery-list" tabindex="0" aria-label="原始凭证图片，可左右滑动">';
         html += '<figure class="voucher-gallery-item"><button type="button" class="voucher-image-open" data-zoom="0" aria-label="放大第 ' + (pageIndex + 1) + ' 张原始凭证"><img src="' + esc(images[displayPage] || images[0]) + '" alt="原始凭证第 ' + (pageIndex + 1) + ' 张" loading="eager"></button><figcaption>原图 ' + (pageIndex + 1) + ' / ' + pageCount + '</figcaption>' + linkButton + '</figure></div>';
       } else if (url && core.kind(file) === 'pdf') html += '<iframe class="voucher-pdf-preview" title="' + esc(name) + ' PDF 原件预览" src="' + esc(url) + '"></iframe><div class="help">若浏览器不支持 PDF 内嵌预览，可使用下方备用原文件入口。</div>';
       else if (!file.preview_error && !selected.missing) html += '<div class="help">这份附件没有可直接显示的图片或 PDF；保留原文件供核对，不将其冒充消费凭证截图。</div>';
@@ -116,7 +116,7 @@
       var gallery = document.createElement('section'); gallery.className = 'monthly-voucher-preview';
       var target = data.target || {}, header = '<div class="voucher-gallery-summary"><strong>' + esc(target.label || '月报金额') + ' · ' + options.amount(target.numeric_value == null ? target.display_value : target.numeric_value) + '</strong><small>已关联原件直接显示在下方。多张图片可左右滑动查看，点击图片可放大。原件不等于已核对，缺口会单独提示。</small><details class="trace-source-details"><summary>查看原表定位</summary><div>月报原表单元格 ' + esc(address) + '。这是 Excel 定位，不是凭证编号。</div></details></div>';
       gallery.innerHTML = header + '<div class="voucher-gallery-loading">正在收集组成项目的原始凭证…</div>';
-      workbenchCards.forEach(function (card) { body.appendChild(card); }); body.appendChild(gallery); body.appendChild(details);
+      body.appendChild(gallery); workbenchCards.forEach(function (card) { body.appendChild(card); }); body.appendChild(details);
       function active() { return request === generation && gallery.isConnected && options.isCurrent(context); }
       try {
         var collected = await core.collect(data, address, function (cell) { return options.trace(cell, context); }, {
@@ -132,10 +132,12 @@
         if (collected.truncated) warnings.push('组成项目较多，本次尚未读取全部，不能标记凭证齐全');
         if (collected.unresolved) warnings.push(collected.unresolved + ' 个公式缺少可解析的组成项目');
         if (collected.missing_leaves) warnings.push(collected.missing_leaves + ' 个非零组成项目尚未关联凭证');
-        gallery.innerHTML = header + (warnings.length ? '<div class="candidate-warning">' + esc(warnings.join('；')) + '。<button class="ghost" data-retry-trace>重新读取</button></div>' : '') + '<div class="help">已读取 ' + collected.leaf_count + ' 个组成项目，关联本笔凭证 ' + voucherEvidence.length + ' 份。月报原图请从月报表入口查看。</div>';
+        gallery.innerHTML = (voucherEvidence.length ? '<div class="voucher-gallery-summary"><strong>' + esc(target.label || '月报金额') + ' · ' + options.amount(target.numeric_value == null ? target.display_value : target.numeric_value) + '</strong></div>' : header) + (warnings.length ? '<div class="candidate-warning">' + esc(warnings.join('；')) + '。<button class="ghost" data-retry-trace>重新读取</button></div>' : '') + (voucherEvidence.length ? '' : '<div class="help">已读取 ' + collected.leaf_count + ' 个组成项目，关联本笔凭证 ' + voucherEvidence.length + ' 份。月报原图请从月报表入口查看。</div>');
         var retryTrace = gallery.querySelector('[data-retry-trace]'); if (retryTrace) retryTrace.onclick = function () { options.reopen(address); };
+        if (data.expense_library_error) gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">凭证库读取失败：' + esc(data.expense_library_error) + '。请关闭后重试。</div>');
+        if (!voucherEvidence.length && root.ZysyrExpenseVoucherWorkspace) root.ZysyrExpenseVoucherWorkspace.mountLibrary(gallery, data, address, context, fileView);
         if (!voucherEvidence.length) {
-          gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。可以直接上传凭证，或将该项目设置为“不需要凭证”；组成明细仍保留在下方，按需展开。</div>');
+          gallery.insertAdjacentHTML('beforeend', '<div class="candidate-warning">当前金额没有关联可预览的原始凭证。可以从凭证上传库选择已有凭证，或直接上传凭证；组成明细仍保留在下方，按需展开。</div>');
           return;
         }
         var target = data.target || {};
@@ -149,6 +151,7 @@
           host.innerHTML = '<h4>' + esc(file.original_filename || '原始凭证') + '</h4>' + scope + '<div class="voucher-gallery-loading">滚动到此处后自动加载原件</div>';
           gallery.appendChild(host); return host;
         });
+        if (root.ZysyrExpenseVoucherWorkspace) root.ZysyrExpenseVoucherWorkspace.mountLibrary(gallery, data, address, context, fileView);
         function show(file, index) { fileView(file, hosts[index], async function () {
           hosts[index].innerHTML = '<div class="voucher-gallery-loading">正在重新读取…</div>';
           try { var result = await options.load(voucherEvidence[index], context, data.historical); if (active()) show(result, index); }
