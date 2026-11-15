@@ -109,7 +109,7 @@
       };
     },
     renderPettyDetails:function(data,key){
-      var container=document.getElementById('petty-cash-report-table');if(!container||key!==scopeKey())return;
+      key=key||scopeKey();var container=document.getElementById('petty-cash-report-table');if(!container||key!==scopeKey()||state.view!=='finance-workbench'||data.month!==document.getElementById('month').value)return;
       var old=document.getElementById('petty-detail-sheet');if(old)old.remove();
       var rows=(data.targets||[]).filter(function(t){return ['source_petty','draft','formal','history'].includes(t.target_kind)&&!t.aggregate;});
       var panel=document.createElement('section');panel.id='petty-detail-sheet';panel.className='panel';

@@ -16,10 +16,12 @@ for(const width of [390,1280]){
   const item=(id,amount,date,kind,target)=>({id,source_voucher_id:id,original_filename:id+'.png',mime_type:'image/png',latest_ocr_task:{id:'task-'+id},component_index:0,
     candidate_fields:{amount,document_date:date},confirmed_target_kind:kind,confirmed_target_id:target});
   const canvas=document.createElement('canvas');canvas.width=350;canvas.height=400;canvas.getContext('2d').fillRect(10,10,300,350);window.pettyImage=canvas.toDataURL('image/png');
-  isLocalPreview=()=>false;loadFinanceWorkbench=async()=>{};loadPettyCashReport=async()=>{await ZysyrExpenseVoucherWorkspace.read({store:currentStore(),month:document.getElementById('month').value});};
+  isLocalPreview=()=>false;
   api=async(op,p)=>{pettyCalls.push({op,p});
+   if(op==='finance_workbench')return {categories:[],approved_vouchers:[],permissions:{}};
+   if(op==='petty_cash_report')return {records:[],history_records:[],permissions:{batch_voucher:true}};
    if(op==='cell_trace')return {report,item_category:'expense',mode:'formula',target:{id:'cell-total',cell_address:'C46',numeric_value:101,label:'备用金'},evidence:[]};
-   if(op==='expense_voucher_workspace')return {month:'2026-07',source_selection:{sha256:'a'.repeat(64)},targets,items:[item('receipt-a',50,'2026-07-05','source_petty','row-a'),item('near',50.99,'2026-07-06',null,null),item('receipt-b',51,'2026-07-06',linkedB?'draft':null,linkedB?'row-b':null),item('month-bundle',101,null,'monthly_source','total')]};
+   if(op==='expense_voucher_workspace')return {month:'2026-07',summary:{total:4,recognizing:0},source_selection:{sha256:'a'.repeat(64)},targets,items:[item('receipt-a',50,'2026-07-05','source_petty','row-a'),item('near',50.99,'2026-07-06',null,null),item('receipt-b',51,'2026-07-06',linkedB?'draft':null,linkedB?'row-b':null),item('month-bundle',101,null,'monthly_source','total')]};
    if(op==='voucher_url')return {url:pettyImage,filename:p.voucher_id+'.png'};
    if(op==='expense_voucher_match_apply'){assertPayload(p);linkedB=true;return {saved:{inserted:1}};}
    throw Error('Unexpected production operation '+op);
@@ -28,7 +30,9 @@ for(const width of [390,1280]){
  });
  await page.evaluate(()=>openMonthlyVoucher('C46'));await page.locator('#petty-detail-sheet tbody tr').first().waitFor();
  assert.equal(await page.evaluate(()=>state.view),'finance-workbench');assert.equal(await page.locator('#view-cell-trace').getAttribute('aria-hidden'),'true');
- assert.equal(await page.locator('#petty-detail-sheet tbody tr').count(),2,'total is not a detail');assert.match(await page.locator('#petty-detail-sheet').innerText(),/整月.*汇总/);
+ await page.waitForFunction(()=>ZysyrPettyCashEvidenceReady===true);await page.evaluate(()=>renderFinanceWorkbench());
+ await page.locator('#petty-detail-sheet tbody tr').first().waitFor();
+ assert.equal(await page.locator('#petty-detail-sheet tbody tr').count(),2,'cached finance redraw preserves the detail sheet; total is not a detail');assert.match(await page.locator('#petty-detail-sheet').innerText(),/整月.*汇总/);
  assert.equal(await page.evaluate(()=>pettyCalls.some(c=>c.op==='voucher_url')),false,'clicking total opens the sheet, not images');
  await page.locator('[data-petty-detail-open="0"]').click();await page.locator('.voucher-file-preview img').waitFor();
  assert.equal(await page.evaluate(()=>pettyCalls.filter(c=>c.op==='voucher_url').at(-1).p.voucher_id),'receipt-a','only the selected detail receipt opens');
