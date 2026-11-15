@@ -24,6 +24,19 @@
     task_id:item.latest_ocr_task&&item.latest_ocr_task.id,target_kind:target.target_kind,target_id:target.id,
     corrected_fields:fields,reason:'人工核对开支凭证：'+item.original_filename+' → '+target.summary};}
   function pettySummary(target){return target&&target.target_kind==='monthly_source'&&/(^|\/)备用金$/.test(String(target.summary||'').replace(/\s/g,'').replace(/[／·]/g,'/'));}
+  function pettyFiles(data,target){
+    var files=(data.items||[]).filter(function(i){return i.confirmed_target_kind===target.target_kind&&i.confirmed_target_id===target.id;}).map(function(i){return Object.assign({},i,{id:i.source_voucher_id||i.id,evidence_source:'voucher_attachment'});});
+    var legacy=state.pettyCash&&state.pettyCash.data||{},history=target.target_kind==='history';
+    var row=(history?legacy.history_records||[]:target.target_kind==='formal'?legacy.records||[]:[]).find(function(r){return r.id===target.id&&r.transaction_date===target.transaction_date&&Number(r.amount)===Number(target.amount);});
+    if(row&&history&&row.import_row_id){
+      var links=(legacy.history_evidence_links||[]).filter(function(l){return l.import_row_id===row.import_row_id&&l.link_level!=='bundle_only';});
+      (legacy.history_evidence||[]).forEach(function(file){var exact=links.filter(function(l){return l.evidence_id===file.id;});if(exact.length)files.push(Object.assign({},file,{evidence_source:'history_evidence',trace_link_level:'page_confirmed',trace_source_locator:exact[0].source_locator,trace_source_locators:exact.map(function(l){return l.source_locator;}).filter(Boolean)}));});
+    }else if(row&&!history){
+      var ids=new Set((legacy.voucher_links||[]).filter(function(l){return l.business_type==='petty_cash_record'&&l.business_id===row.id;}).map(function(l){return l.voucher_id;}));
+      (legacy.vouchers||[]).forEach(function(file){if(ids.has(file.id))files.push(Object.assign({},file,{evidence_source:'voucher_attachment'}));});
+    }
+    var seen=new Set();return files.filter(function(file){var key=file.evidence_source+':'+file.id;if(seen.has(key))return false;seen.add(key);return true;});
+  }
   root.ZysyrExpenseVoucherWorkspace={
     forCell:async function(data,address,context){
       if(isLocalPreview()||!state.user||state.user.role!=='finance'||!state.user.can_match_expense_vouchers||!state.user.can_manage_finance_workbench)return data;
@@ -117,7 +130,7 @@
       panel.innerHTML='<h3>'+esc(data.month)+' 备用金明细单</h3><p class="help">先核对每笔明细，再为该笔查看或选择凭证；金额保持原样，未入账明细仍为待核对。</p>'
         +(whole.length?'<p class="candidate-warning">另有 '+whole.length+' 份凭证保留在整月备用金汇总下，尚未对应到某一笔；不计入下方逐笔凭证。</p>':'')
         +'<div class="archive-wrap"><table class="archive-table"><thead><tr><th>日期</th><th>摘要</th><th>金额</th><th>来源</th><th>本笔凭证</th></tr></thead><tbody>'
-        +rows.map(function(t,index){var count=new Set((data.items||[]).filter(function(i){return i.confirmed_target_kind===t.target_kind&&i.confirmed_target_id===t.id;}).map(function(i){return i.source_voucher_id||i.id;})).size;
+        +rows.map(function(t,index){var count=pettyFiles(data,t).length;
           return '<tr><td>'+esc(t.transaction_date||'日期待核对')+'</td><td>'+esc(t.summary)+'</td><td>'+esc(formatAmount(t.amount))+'</td><td>'+esc({draft:'待核对明细（未入账）',source_petty:'原件明细',formal:'正式记录',history:'历史记录'}[t.target_kind])+'</td><td><button type="button" class="'+(count?'primary':'secondary')+'" data-petty-detail-open="'+index+'">'+(count?'查看本笔凭证（'+count+'）':'从凭证库匹配本笔')+'</button></td></tr>';
         }).join('')+'</tbody></table></div>'+(rows.length?'':'<p class="help">本月尚未读到逐笔备用金明细，请先核对明细原件；不会把整月汇总金额当成一笔支出。</p>');
       container.prepend(panel);
@@ -136,14 +149,14 @@
       try{
         var data=await root.ZysyrExpenseVoucherWorkspace.read({store:context.store,month:context.month});if(!active())return;if(data.month!==context.month)throw Error('月份已变化，请重新打开明细单');
         var target=(data.targets||[]).find(function(t){return t.target_kind===kind&&t.id===id&&!t.aggregate;});if(!target)throw Error('这笔明细已变化，请返回明细单重新选择');
-        var items=(data.items||[]).filter(function(i){return i.confirmed_target_kind===kind&&i.confirmed_target_id===id;}),seen=new Set();
-        items=items.filter(function(i){var id=i.source_voucher_id||i.id;if(seen.has(id))return false;seen.add(id);return true;});
+        if(['formal','history'].includes(kind)){var legacy=await api('petty_cash_report',{store:context.store,month:context.month});if(!active())return;state.pettyCash.data=legacy;root.ZysyrExpenseVoucherWorkspace.renderPettyDetails(data,key);}
+        var items=pettyFiles(data,target);
         body.innerHTML='<section class="trace-card"><h4>'+esc((target.transaction_date||'日期待核对')+' · '+target.summary)+'</h4><strong>'+esc(formatAmount(target.amount))+'</strong><p class="help">'+(items.length?'以下只展示已对应当前这一笔的凭证。':'这笔明细尚未对应凭证，可从上传库选择。')+'</p></section><div data-petty-detail-images></div>';
         var library={workspace:data,target:target,key:key,reopen:function(){return root.ZysyrExpenseVoucherWorkspace.openPettyDetail(kind,id);}};
         root.ZysyrExpenseVoucherWorkspace.mountLibrary(body,{expense_library:library,can_upload_vouchers:true},address,context,monthlyVoucherView.fileView);
         var images=body.querySelector('[data-petty-detail-images]');
         items.forEach(function(item){var host=document.createElement('section');host.className='trace-card voucher-file-preview';images.appendChild(host);
-          async function load(){host.textContent='正在读取本笔原图…';try{var file=await api('voucher_url',{store:context.store,voucher_id:item.source_voucher_id||item.id});if(active())monthlyVoucherView.fileView(Object.assign({},item,{file_url:file.url,filename:file.filename}),host,load);}
+          async function load(){host.textContent='正在读取本笔原图…';try{var historical=item.evidence_source==='history_evidence';var file=historical?await loadHistoricalEvidenceImages(item,context):await api('voucher_url',{store:context.store,voucher_id:item.id});if(active())monthlyVoucherView.fileView(historical?file:Object.assign({},item,{file_url:file.url,filename:file.filename}),host,load,null,historical?function(source,imageFilename){return loadHistoricalEvidenceImages(item,context,imageFilename);}:undefined);}
             catch(error){if(active()){host.textContent='原图读取失败：'+error.message;var retry=document.createElement('button');retry.textContent='重新读取原图';retry.onclick=load;host.appendChild(retry);}}}load();
         });
         drawer.querySelector('.monthly-workbench').scrollTop=0;
