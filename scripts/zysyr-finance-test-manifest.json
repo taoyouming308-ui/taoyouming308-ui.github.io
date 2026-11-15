@@ -2,6 +2,8 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    {"runtime":"node", "script":"test-monthly-voucher-supplement-api.js"},
+    {"runtime":"node", "script":"test-monthly-voucher-supplement-browser.js"},
     {"runtime":"node", "script":"test-petty-detail-hierarchy-browser.js"},
     {"runtime":"node", "script":"test-monthly-voucher-library-browser.js"},
     {"runtime": "node", "script": "test-voucher-printed-date.mjs"},

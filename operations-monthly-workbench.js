@@ -253,7 +253,7 @@
       panel.innerHTML = '<h4>待保存凭证</h4><div class="help">' + esc(context.store + ' · ' + context.month + ' · ' + (target.label || target.cell_address))
         + '</div>' + (file.type === 'application/pdf' ? '<iframe title="待保存 PDF" src="' + pendingURL + '"></iframe>'
           : '<a href="' + pendingURL + '" target="_blank" rel="noopener"><img alt="待保存凭证，点击放大" src="' + pendingURL + '"></a>')
-        + '<div class="help">' + esc(file.name) + ' · 尚未上传</div><div class="field"><label>说明</label><input data-reason maxlength="500" value="补充当前金额凭证"></div>'
+        + '<div class="help">' + esc(file.name) + ' · 待确认保存。只补充凭证，月报金额保持不变；已上传的同一原图会直接复用。</div><div class="field"><label>凭证说明（不修改金额）</label><input data-reason maxlength="500" value="补充当前金额凭证"></div>'
         + '<div class="trace-actions"><button type="button" class="primary" data-save-photo>确认保存图片</button><button type="button" class="ghost" data-cancel-photo>取消</button><button type="button" class="secondary" data-replace-photo>重新选择</button></div><div data-photo-status class="help" role="status"></div>';
       var controls = document.querySelector('.monthly-simple-workbench');
       (controls || document.getElementById('cell-trace-body')).appendChild(panel);
@@ -275,7 +275,7 @@
           else if (businessId && businessType !== 'report_cell') result = await api('voucher_upload', Object.assign(common, { record_type: 'unassigned', business_type: businessType, business_id: businessId, business_link_reason: reason, skip_ocr: true, note: reason }));
           else result = await api('voucher_upload', Object.assign(common, { record_type: 'report', record_id: context.report_id, monthly_cell_id: target.id, monthly_cell_reason: reason, skip_ocr: true, note: reason }));
           if (result.cell_link_error) { status.textContent = '文件已上传，但关联失败：' + result.cell_link_error + '。请核对已上传文件，勿重复上传。'; return; }
-          toast('凭证已保存');
+          toast('凭证已保存，原金额未修改');
           if (voucherContextCurrent(context) && generation === pendingGeneration) { disposePhoto(); await openCellTrace(rootAddress); }
         } catch (error) { if (panel.isConnected) status.textContent = '保存未确认：' + error.message; }
         finally { if (panel.isConnected) panel.querySelectorAll('button,input').forEach(function (node) { node.disabled = false; }); }
