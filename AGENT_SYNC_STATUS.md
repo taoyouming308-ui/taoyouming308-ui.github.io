@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:ab94e634096af752c954aa8075bdfd916f3b67fd3a48324c3549578a1896cdbe -->
+## 2026-11-15 · Reviewed academy publication candidate (App version: v658 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 808996843764691d848edc0a182dc9f6c784914a.
+- Dates: 2026-11-15. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-15 · Voucher acceptance corrections (App version: v658; local candidate)
 
 - Current owner: Codex. Last synchronized base checked: protected github/main a0da2ea3 (v657, PR133), reusing zysyr-petty-import-v654 on fix/expense-voucher-acceptance-v658. Starting version/integrity/baton checks passed; complete local daily recovery archive for November 15 was created and verified without pruning or cloud copying.
