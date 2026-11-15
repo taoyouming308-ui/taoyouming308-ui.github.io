@@ -25,7 +25,7 @@ for(const width of [390,1280]){
     if(libraryLate)await new Promise(r=>window.libraryRelease=r);
     if(libraryFail)throw Error('synthetic read failure');
     const second=item('unmatched',318.42,null,false);if(libraryLinked){second.confirmed_target_id='selection~C17';second.confirmed_target_kind='monthly_source';}
-    return {month:'2026-07',source_selection:{sha256:'a'.repeat(64)},targets:[target('C12'),target('C17')],items:[item('existing',1648.27,'2026-07-05',true),second,item('other',50,'2026-08-05',false)]};
+    return {month:'2026-07',source_selection:{sha256:'a'.repeat(64)},targets:[target('C12'),target('C17')],items:[item('existing',1648.27,'2026-07-05',true),item('unknown',null,null,false),item('far',200,null,false),item('near-high',318.43,null,false),second,item('near-low',318.40,null,false),item('corrected',10,null,false),item('other',50,'2026-08-05',false)].map(row=>row.id==='corrected'?{...row,corrected_fields:{amount:318.42},confirmed_target_id:'selection~other'}:row)};
    }
    if(op==='voucher_url')return {url:libraryImage,filename:p.voucher_id+'.png'};
    if(op==='expense_voucher_match_apply'){if(librarySaved)libraryLinked=true;return {saved:{inserted:librarySaved?1:0}};}
@@ -42,7 +42,12 @@ for(const width of [390,1280]){
  await page.locator('[data-library-open]').click();await page.locator('[data-library-search]').fill('existing');await page.locator('.monthly-library-item').click();
  assert.equal(await page.locator('[data-library-confirm]').count(),0,'existing associations are read-only');
  await page.evaluate(()=>openCellTrace('C17'));
- await page.locator('[data-library-open]').click();await page.locator('[data-library-search]').fill('unmatched');await page.locator('.monthly-library-item').click();
+ await page.locator('[data-library-open]').click();
+ const recommendations=await page.locator('.monthly-library-item').allTextContents();
+ assert.match(recommendations[0],/^unmatched.*金额一致/);assert.match(recommendations[1],/^corrected.*金额一致.*已关联/,'manual corrected amount is used for recommendation without changing association');
+ assert.match(recommendations[2],/^near-high.*相差 0.01/);assert.match(recommendations[3],/^near-low.*相差 0.02/);assert.match(recommendations.at(-1),/^unknown/,'unknown is never treated as zero');
+ await page.locator('[data-library-search]').fill('near');assert.deepEqual((await page.locator('.monthly-library-item').allTextContents()).map(t=>t.split('.')[0]),['near-high','near-low'],'search preserves amount-distance order');
+ await page.locator('[data-library-search]').fill('unmatched');await page.locator('.monthly-library-item').click();
  await page.locator('[data-library-preview] img').waitFor();
  assert.equal(await page.locator('[data-library-date]').inputValue(),'');assert.equal(await page.locator('[data-library-month]').inputValue(),'','unknown dates/months remain blank');
  await page.locator('[data-library-confirm]').click();assert.equal(await page.evaluate(()=>libraryCalls.filter(c=>c.op==='expense_voucher_match_apply').length),0,'opening and selecting are read-only; confirmation attestation required');
@@ -57,5 +62,5 @@ for(const width of [390,1280]){
  assert.equal(await page.evaluate(()=>libraryCalls.some(c=>/voucher_review|reanalyze|monthly_cell_save|petty_cash_record|batch_confirm/.test(c.op))),false);
  assert.deepEqual(errors,[]);await page.close();
 }
-console.log('Monthly vouchers: click-to-image, gallery first, searchable library, explicit monthly evidence, no-op saves, preserved associations/amounts and stale-month isolation passed (390/1280).');
+console.log('Monthly vouchers: click-to-image, gallery first, exact/near-amount recommendations, searchable library, explicit monthly evidence, no-op saves, preserved associations/amounts and stale-month isolation passed (390/1280).');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.close();});

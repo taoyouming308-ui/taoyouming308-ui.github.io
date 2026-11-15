@@ -52,11 +52,17 @@
         panel.innerHTML='<h4>选择已上传凭证</h4><div class="help">'+esc(context.month+' · '+target.summary)+'。先核对原图，再确认关联。</div>'
           +'<input type="search" data-library-search aria-label="搜索凭证" placeholder="搜索文件名、商户、金额"><div data-library-list></div><div data-library-selected></div>';
         var search=panel.querySelector('[data-library-search]'),list=panel.querySelector('[data-library-list]'),selected=panel.querySelector('[data-library-selected]');
+        function amountCents(value){return value!=null&&String(value).trim()!==''&&Number.isFinite(Number(value))&&Number(value)>0?Math.round(Number(value)*100):null;}
+        var targetCents=amountCents(target.amount);
+        var ranked=(workspace.items||[]).map(function(item,index){
+          var fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),cents=amountCents(fields.amount);
+          return {item:item,index:index,difference:targetCents===null||cents===null?Infinity:Math.abs(cents-targetCents)};
+        }).sort(function(a,b){return a.difference-b.difference||Number(Boolean(a.item.confirmed_target_id||a.item.expense_association))-Number(Boolean(b.item.confirmed_target_id||b.item.expense_association))||a.index-b.index;});
         function renderList(){var query=search.value.trim().toLowerCase();list.innerHTML='';
-          (workspace.items||[]).filter(function(item){var fields=item.candidate_fields||{};return [item.original_filename,fields.counterparty,fields.amount,fields.expense_category,fields.document_date,fields.period_month,fields.summary].join(' ').toLowerCase().includes(query);}).forEach(function(item){
-            var fields=item.candidate_fields||{},linked=Boolean(item.confirmed_target_id||item.expense_association),button=document.createElement('button');
+          ranked.filter(function(row){var item=row.item,fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{});return [item.original_filename,fields.counterparty,fields.amount,fields.expense_category,fields.document_date,fields.period_month,fields.summary].join(' ').toLowerCase().includes(query);}).forEach(function(row){
+            var item=row.item,fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),linked=Boolean(item.confirmed_target_id||item.expense_association),button=document.createElement('button');
             button.type='button';button.className='ghost monthly-library-item';button.textContent=(item.original_filename||'凭证')+(item.component_count>1?' · 第 '+(item.component_index+1)+' 笔':'')
-              +' · '+(fields.amount==null?'金额待核对':formatAmount(fields.amount))+(linked?' · 已关联':'');
+              +' · '+(fields.amount==null?'金额待核对':formatAmount(fields.amount))+(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(linked?' · 已关联':'');
             button.onclick=function(){if(active())choose(item,linked);};list.appendChild(button);
           });if(!list.children.length)list.textContent='没有找到相符的凭证。';
         }

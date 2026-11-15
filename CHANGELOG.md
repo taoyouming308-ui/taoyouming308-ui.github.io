@@ -2,6 +2,7 @@
 
 - Open associated originals directly from monthly amount cells and voucher badges, with images before amount editing controls. Keep all existing evidence and history.
 - Add searchable, current-store/month uploaded-voucher selection inside the same amount drawer. Preview the original and explicitly confirm a single association through the established audited endpoint; unknown dates/months remain blank and financial amounts do not change.
+- Recommend exact amounts first, then the smallest absolute amount differences; keep unknown amounts last and show exact/difference labels. Respect manually corrected amounts and retain this order during search. Ranking never confirms an association.
 - Preserve existing linked vouchers, scope/source guards, no-op save detection and no forced refresh. Synthetic phone/desktop regression covers the complete flow. No backend/schema or production financial data changes.
 
 ## v660 · Evidence-bound voucher acceptance corrections
