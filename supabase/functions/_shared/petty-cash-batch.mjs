@@ -26,19 +26,26 @@ export function pettyCashTargetKey(target) {
 }
 
 export function matchPettyCashCandidate(candidate, targets) {
+  if (candidate && ['bank_summary','multiple_transactions'].includes(candidate.document_kind)) return {
+    state: 'summary_review', unique_exact: false, score: 0, target_kind: null, target_id: null,
+    reason: '汇总或多笔交易凭证不能对应为单笔支出，请逐笔提供凭证并人工核对',
+  };
   const documentDate = normalizedDate(candidate && candidate.document_date);
   const amount = normalizedAmount(candidate && candidate.amount);
-  const counterparty = normalizedText(candidate && candidate.counterparty);
+  const counterparty = normalizedText(candidate && (candidate.summary || candidate.counterparty));
   const usable = Array.isArray(targets) ? targets.filter((target) => target && target.id) : [];
   const ranked = usable.map((target) => {
     const targetDate = normalizedDate(target.transaction_date);
     const targetAmount = normalizedAmount(target.amount);
     const dateMatch = Boolean(documentDate && targetDate === documentDate);
-    const amountMatch = amount !== null && targetAmount !== null && Math.abs(targetAmount - amount) <= 0.01;
+    const amountMatch = amount !== null && targetAmount !== null && targetAmount === amount;
     const haystack = normalizedText(`${target.summary || ""}${target.category || ""}${target.recipient || ""}`);
     const textMatch = Boolean(counterparty && haystack && (haystack.includes(counterparty) || counterparty.includes(haystack)));
     return { target, dateMatch, amountMatch, textMatch, score: (amountMatch ? 60 : 0) + (dateMatch ? 30 : 0) + (textMatch ? 10 : 0) };
   }).sort((left, right) => right.score - left.score || pettyCashTargetKey(left.target).localeCompare(pettyCashTargetKey(right.target)));
+  const sameAmount = ranked.filter(item => item.amountMatch);
+  if (sameAmount.length > 1) return { state:'ambiguous', unique_exact:false, score:sameAmount[0].score,
+    target_kind:null, target_id:null, reason:`有 ${sameAmount.length} 笔明细金额相同，日期和摘要只作推荐，请人工选择` };
   const exact = ranked.filter((item) => item.dateMatch && item.amountMatch);
   if (exact.length === 1) return {
     state: "exact", unique_exact: true, score: exact[0].score,
@@ -71,4 +78,20 @@ export function parsePettyCashBatchNote(value) {
   if (parts.length < 4 || parts[0] !== "petty_cash_batch" || !/^\d{4}-\d{2}$/.test(parts[1])
       || !/^[0-9a-f-]{36}$/i.test(parts[2])) return null;
   return { month: parts[1], batch_id: parts[2], original_filename: parts.slice(3).join("|") };
+}
+
+export function rankPettyCashCandidates(candidate, targets) {
+  const result = matchPettyCashCandidate(candidate, targets);
+  if (result.state === 'summary_review') return [];
+  const date = normalizedDate(candidate?.document_date), amount = normalizedAmount(candidate?.amount);
+  const text = normalizedText(`${candidate?.summary || ''}${candidate?.counterparty || ''}`);
+  const candidates = (targets || []).map(target=>{
+    const dateMatch = Boolean(date && normalizedDate(target.transaction_date)===date);
+    const amountMatch = amount!==null && normalizedAmount(target.amount)===amount;
+    const words = normalizedText(`${target.summary || ''}${target.category || ''}${target.recipient || ''}`);
+    const textMatch = Boolean(text && words && (words.includes(text)||text.includes(words)));
+    return {target_kind:target.target_kind,target_id:target.id,score:(amountMatch?60:0)+(dateMatch?30:0)+(textMatch?10:0),
+      reason:[amountMatch?'金额一致':'',dateMatch?'日期一致':'',textMatch?'摘要相近':''].filter(Boolean).join('、')};
+  }).filter(row=>row.score>0).sort((a,b)=>b.score-a.score).slice(0,5);
+  return candidates;
 }

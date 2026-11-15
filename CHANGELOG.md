@@ -7,6 +7,42 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## v658 · Voucher date and monthly display corrections
+
+- Keep the exact printed calendar day when OCR returns a complete date and time. Recover affected unassociated candidates from their existing recognition result, without rewriting or replaying stored evidence; partial years and invalid dates remain unknown.
+- Read the latest monthly report with a bounded query instead of the complete-pagination helper. Refresh original-image buttons in the existing monthly cells after associations change, retaining report/source label and effective-amount checks across different files.
+- Add focused API, PostgreSQL and browser regressions using synthetic values, including immutable raw recognition, service-only timestamp validation and updates without rerendering the monthly sheet. Financial amounts, approvals and posting remain unchanged.
+
+## v657 · All-expense voucher matching
+
+- Extend the existing voucher panel to all monthly expense categories and source petty details. Show linked originals in existing monthly cells and source review; verify labels and current amounts when projecting across different source files.
+- Recognize document type, expense category and independent payments; preserve explicit month-only payroll/advertising totals as summary evidence. Automatically associate only reliable unique matches, with manual handling for exceptions and audited reversible corrections. Financial amounts, approval and posting remain unchanged.
+- Separate failed recognition from manual exceptions and add failed-only recovery. Process up to three lease-protected images concurrently while preserving previous successful/manual results and original files. Add scoped API, isolated database and mobile browser regression coverage.
+
+## 2026-11-14 · 发型审美训练：半干侧睡与次晨恢复
+
+- 追加稳定案例 `aesthetic-2026-11-14`，把晚洗半干侧睡、分区发质和两分钟晨间整理纳入松卷短鲍伯的结构与卷度取舍。
+- 同提交加入原创 AI 虚构教学四视图、六段条件式参考答案、五项无作答自查复盘和透明审查记录；只修改训练内容、图片与交接记录，应用版本保持 v656。
+
+## v656 · Excel detail compatibility
+
+- Read valid prefixed SpreadsheetML and absolute internal worksheet/table relationships through an in-memory compatibility copy. Preserve original upload bytes and SHA-256; distinguish invalid archives from unsupported structures.
+- Preserve explicit ISO date cells as text before strict date validation, avoiding ExcelJS serial-date misinterpretation. Prioritize an unambiguous expense/credit column; leave multiple choices and debit/income/balance columns unmapped.
+- Regression covers prefixed/default XML, nested table paths, ISO dates, unchanged zero/text/formula handling and mobile mapping. Independent read-only comparison of three source workbooks checked 864 cells without differences; originals are not committed or imported by this change.
+
+## v655 · Petty-cash matching detail import
+
+- Add current-store/month XLSX and UTF-8 CSV preview, sheet/header/column mapping, invalid/duplicate exclusion and explicit selected-row confirmation. Preserve private originals and append matching-only drafts; no financial posting or manual record overwrite.
+- Recommend matching drafts/current/history items by amount, date and summary. Ambiguous choices remain manual, and summary/multiple-payment candidates cannot be forced into one expense.
+- Use the existing server-only OpenAI key for bounded structured image candidates, preserving Codex when no key is configured and legacy non-batch OCR. Require original text/confidence, keep unknown fields empty and expose provider provenance.
+- Preserve status/forms on transient read failures, isolate late responses by store/month/session and resume pending polling. Screenshot-window server logs were successful; the client network failure itself is not conclusively diagnosed.
+
+## v654 · 已入账日报原图留档状态
+
+- 成功入账的日报原图显示“原图已存档”，不再重复提示核对，并从月历待核对天数中排除；未入账日报继续提醒。
+- 原图详情保留查看入口；入账后的未审核附件只展示留档，不伪造审核通过。缺少原件、读取失败和金额异常仍如实显示。
+- 仅更新显示规则，保留金额、原件、财务审核及修改历史。浏览器回归覆盖已入账/草稿切换、待核对计数与无业务写入。
+
 ## v653 · Codex recognition for petty-cash batch vouchers
 
 - Route pending batch images through the authenticated Codex bridge, with structured date/actual-paid candidates and original-text evidence. Ambiguous, summary or multiple-payment images stay manual; no automatic approval, association or posting.

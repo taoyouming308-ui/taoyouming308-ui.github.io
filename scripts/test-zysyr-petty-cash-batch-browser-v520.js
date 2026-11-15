@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const moduleSource = fs.readFileSync(path.join(root, 'operations-petty-cash-evidence.js'), 'utf8');
 const apiSource = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
-for (const marker of ['本月消费凭证批量上传', '确认全部明确匹配', 'petty_cash_batch_upload', 'petty_cash_batch_status', 'petty_cash_batch_confirm']) {
+for (const marker of ['本月全部开支凭证', '确认全部明确匹配', 'petty_cash_batch_upload', 'petty_cash_batch_status', 'petty_cash_batch_confirm']) {
   assert.ok(moduleSource.includes(marker) || apiSource.includes(marker), 'missing batch marker: ' + marker);
 }
 assert.match(moduleSource, /hideLegacyPettyActions[\s\S]*?finance-open-upload[\s\S]*?finance-ledger-refresh/);
@@ -42,6 +42,7 @@ let browser;
     const history = { id: '22222222-2222-4222-8222-222222222222', import_row_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', transaction_date: '2026-01-06', direction: 'outflow', category: '装饰', summary: '鲜花', amount: 20.5, source_locator: '01!A10:H10', version: 1, historical: true };
     window.fixture = { records: [formal], history_records: [history], voucher_links: [], pending_voucher_requests: [], vouchers: [], users: [], daily_reports: [], daily_lines: [], source_cells: [], source_reports: [], history_evidence: [], history_evidence_links: [], opening_balance: 0,
       permissions: { read: true, upload_voucher: true, upload_history_evidence: true, batch_voucher: true } };
+    window.ZysyrExpenseVoucherWorkspace=null; // This suite preserves the legacy client/API contract.
     window.batchItems = [];
     window.calls = [];
     window.activeBatchUploads = 0;
