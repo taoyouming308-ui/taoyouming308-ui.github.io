@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-15",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "808996843764691d848edc0a182dc9f6c784914a",
+  "preflightRequestedBy": "ChatGPT connected daily academy publisher",
+  "note": "2026-11-15 is a new future-scoped reviewed candidate. This is only a request for original Academy publication preflight / backup-main bound to immutable main; no draft, review, figures, publication or business change in this preparatory commit. Await actual source backup evidence before submitting lesson inputs."
+}
