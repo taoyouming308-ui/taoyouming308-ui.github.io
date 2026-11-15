@@ -37,6 +37,10 @@ export function buildExpenseVoucherWorkspace(base,source,links=[]) {
   }
   for(const group of sameImageTargets.values())if(group.length>1)for(const item of group)if(!item.confirmed_target_id&&item.match?.auto_eligible)
     item.match={...item.match,state:'ambiguous',auto_eligible:false,unique_exact:false,reason:'同图多笔指向同一明细，需核对各笔对应关系'};
+  // Two images must not silently claim one expense. Existing human links remain intact.
+  const targetGroups=new Map();
+  for(const item of items){const kind=item.confirmed_target_kind||item.match?.target_kind,id=item.confirmed_target_id||item.match?.target_id;if(!kind||!id)continue;const key=kind+':'+id,group=targetGroups.get(key)||[];group.push(item);targetGroups.set(key,group);}
+  for(const group of targetGroups.values())if(new Set(group.map(i=>i.source_voucher_id||i.id)).size>1)for(const item of group)if(!item.confirmed_target_id&&item.match?.auto_eligible)item.match={...item.match,state:'ambiguous',auto_eligible:false,unique_exact:false,reason:'该明细已有或同时出现另一张凭证，请核对是否重复或补充证据'};
   const associated=items.filter(i=>i.confirmed_target_id), needs=items.filter(i=>!i.confirmed_target_id&&!['queued','processing','failed','dead_letter'].includes(i.task_status)&&!i.match?.auto_eligible);
   return {...base,items,targets,source_status:source.status,source_message:source.message||null,
     source_selection:source.source||null,expense_links:links,
@@ -72,7 +76,7 @@ export function expenseMatchPlan(workspace,requests,mode) {
       target_kind:target.target_kind,target_id:target.id,target_snapshot:target,
       corrected_fields:{evidence_kind:monthlySummary?'monthly_summary':'transaction',period_month:monthlySummary?fields.period_month:fields.document_date.slice(0,7),document_date:monthlySummary?null:fields.document_date,amount:Number(fields.amount),counterparty:String(fields.counterparty||'').slice(0,200),
         ...(fields.date_format_recovered?{date_basis:'stored_ocr_timestamp'}:{}),
-        document_number:String(fields.document_number||'').slice(0,120),summary:String(fields.summary||'').slice(0,300),expense_category:String(fields.expense_category||'').slice(0,120)},
+        printed_date_role:fields.date_role||'unknown',document_number:String(fields.document_number||'').slice(0,120),summary:String(fields.summary||'').slice(0,300),expense_category:String(fields.expense_category||'').slice(0,120)},
       reason:mode==='auto'?item.match.reason:String(request.reason||'人工核对对应开支凭证').slice(0,500)});
   }
   return result;

@@ -116,3 +116,17 @@ apiLinks=[{...link,mode:'manual',corrected_fields:{...candidate,document_date:'2
 const existingManual=await methods.expenseVoucherWorkspace({month:'2026-07'},{operations_role:'finance'});
 assert.equal(rawReads,readsBeforeManual,'do not reparse an associated image');assert.equal(existingManual.items[0].corrected_fields.document_date,'2026-07-06','preserve human-confirmed fields');
 console.log('Expense workspace: all monthly/petty targets, blank/summary handling, duplicate-source dedup, evidence/confidence, multi-image components, stale/manual protections, exception recovery and scoped read/apply API passed.');
+// Known false classifications and collision cases must stay out of automatic writes.
+const telecomTarget={...targets.find(t=>t.target_kind==='monthly_source'),id:'telecom-target',summary:'电话/宽带',category:'电话/宽带',amount:79.25};
+const telecom={...candidate,amount:79.25,expense_category:'固定电话宽带费',evidence:{...proof,amount:'79.25',expense_category:'固话/宽带费'},confidence:{...confidence,expense_category:.9}};
+assert.equal(matchExpenseComponent(telecom,[telecomTarget],'2026-07').auto_eligible,true,'literal telecom charge, exact amount and period provide independent category evidence');
+assert.equal(matchExpenseComponent({...telecom,evidence:{...telecom.evidence,expense_category:'依据商户判断宽带费用'}},[telecomTarget],'2026-07').auto_eligible,false);
+assert.equal(matchExpenseComponent({...telecom,confidence:{...telecom.confidence,expense_category:.89}},[telecomTarget],'2026-07').auto_eligible,false);
+assert.equal(matchExpenseComponent({...candidate,expense_category:'采购',summary:'花店鲜花',amount:79.25},[{...telecomTarget,category:'产品进货',summary:'产品进货'}],'2026-07').auto_eligible,false);
+assert.equal(matchExpenseComponent({...candidate,document_date:'2026-07-01',amount:12.34},[{...legacy[0],period_month:'2026-07'}],'2026-07').auto_eligible,false,'same date and amount cannot override a category conflict');
+const twinBase={...base,items:[parent,{...parent,id:id(66),latest_ocr_task:{id:id(68)}}]};
+assert(buildExpenseVoucherWorkspace(twinBase,source).items.every(item=>!item.match.auto_eligible),'different images cannot simultaneously claim one expense');
+const linkedTwin=buildExpenseVoucherWorkspace(twinBase,source,[link]);assert.equal(linkedTwin.items[0].confirmed_target_id,link.target_id);assert.equal(linkedTwin.items[1].match.auto_eligible,false);
+const dated=voucherCodexCandidates({...rawReceipt,date_role:'payment',date_candidates:[{date:'2026-07-05',role:'payment',evidence:'付款日2026-07-05',confidence:.99},{date:null,role:'order',evidence:'下单日7月3日',confidence:.99}]},'2026-07');
+assert.equal(dated.fields.date_role,'payment');assert.equal(dated.fields.date_candidates[1].date,null);assert.equal(dated.fields.date_candidates[1].evidence,'下单日7月3日');
+console.log('Expense zero-error regressions: literal category corroboration, date roles, missing year, broad-category contradiction and competing-image automatic claims passed.');

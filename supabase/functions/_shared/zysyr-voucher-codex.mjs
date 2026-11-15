@@ -7,7 +7,7 @@ export function normalizedVoucherDate(value) {
 }
 
 export function voucherCodexCandidates(result, month) {
-  if (!['codex-local','openai-api'].includes(result?.provider) || result?.candidate_only !== true || result?.human_review_required !== true
+  if (!['codex-local','openai-api','openai-compatible'].includes(result?.provider) || result?.candidate_only !== true || result?.human_review_required !== true
       || !['receipt', 'bank_summary', 'multiple_transactions', 'unknown'].includes(result?.document_kind)) {
     throw new Error('CODEX_INVALID_CANDIDATE');
   }
@@ -31,7 +31,7 @@ export function voucherCodexCandidates(result, month) {
   const transactions = [];
   if (['bank_summary','multiple_transactions'].includes(result.document_kind) && Array.isArray(result.transactions)) {
     for (const item of result.transactions.slice(0,12)) {
-      const parsed=voucherCodexCandidates({provider:result.provider,candidate_only:true,human_review_required:true,document_kind:'receipt',
+      const parsed=voucherCodexCandidates({provider:result.provider,candidate_only:true,human_review_required:true,document_kind:'receipt',date_role:item.date_role,date_candidates:item.date_candidates,
         fields:item,evidence:item.evidence,confidences:item.confidence,warnings:[]},month);
       transactions.push({...parsed.fields,confidence:parsed.confidences});
     }
@@ -46,8 +46,10 @@ export function voucherCodexCandidates(result, month) {
       summary:'月度费用汇总佐证',evidence:{period_month:String(summary.evidence.period_month).slice(0,500),amount:String(summary.evidence.expense_total).slice(0,500),expense_category:String(summary.evidence.expense_category||'').slice(0,500)},
       confidence:{period_month:summary.confidence.period_month,amount:summary.confidence.expense_total,expense_category:summary.confidence.expense_category}};
   }
-  return { fields: { ...fields, recognition_provider: result.provider, parse_mode: result.provider === 'openai-api' ? 'openai_structured_candidate' : 'codex_structured_candidate',
-    document_kind: result.document_kind,recognition_schema_version:result.schema_version==='expense-voucher-v2'?'expense-voucher-v2':'legacy',document_type:String(result.document_type||'unknown').slice(0,40),transactions,monthly_summary:monthlySummary, evidence, parse_warnings: [...new Set(warnings)] }, confidences };
+  return { fields: { ...fields, recognition_provider: result.provider, parse_mode: result.provider === 'openai-api' ? 'openai_structured_candidate' : result.provider==='openai-compatible'?'openai_compatible_structured_candidate':'codex_structured_candidate',
+    date_role:['payment','order','completion','invoice','receipt'].includes(result.date_role)?result.date_role:'unknown',
+    date_candidates:(Array.isArray(result.date_candidates)?result.date_candidates:[]).slice(0,8).filter(d=>d&&d.evidence&&typeof d.confidence==='number'&&d.confidence>=0&&d.confidence<=1).map(d=>({date:normalizedVoucherDate(d.date),role:['payment','order','completion','invoice','receipt'].includes(d.role)?d.role:'unknown',evidence:String(d.evidence).slice(0,500),confidence:d.confidence})),
+    recognition_model:String(result.model||'').slice(0,100),document_kind: result.document_kind,recognition_schema_version:result.schema_version==='expense-voucher-v2'?'expense-voucher-v2':'legacy',document_type:String(result.document_type||'unknown').slice(0,40),transactions,monthly_summary:monthlySummary, evidence, parse_warnings: [...new Set(warnings)] }, confidences };
 }
 
 export function recoverVoucherDateCandidate(fields,confidences,raw,month) {

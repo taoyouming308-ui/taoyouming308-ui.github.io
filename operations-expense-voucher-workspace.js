@@ -63,6 +63,8 @@
       monthlyCache=null;
       return Number(result.saved&&result.saved.inserted||0);
     },
+    reanalyze:async function(data,scope){var ids=Array.from(new Set((data.items||[]).filter(function(item){return !item.confirmed_target_id&&!item.expense_association&&!item.latest_review&&!['queued','processing'].includes(item.task_status)&&!(data.expense_links||[]).some(function(link){return link.voucher_id===(item.source_voucher_id||item.id);});}).map(function(item){return item.source_voucher_id||item.id;}))).slice(0,30);
+      if(!ids.length)return {queued:0};return api('expense_voucher_reanalyze',Object.assign({},scope,{voucher_ids:ids}));},
     retryFailures:async function(data,scope){var ids=Array.from(new Set((data.items||[]).filter(function(item){return !item.confirmed_target_id&&['failed','dead_letter'].includes(item.task_status);}).map(function(item){return item.source_voucher_id||item.id;}))).slice(0,30);
       if(!ids.length)return {queued:0};return api('expense_voucher_failures_retry',Object.assign({},scope,{voucher_ids:ids}));}
   };

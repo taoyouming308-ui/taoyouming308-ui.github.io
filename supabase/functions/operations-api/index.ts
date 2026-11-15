@@ -1,9 +1,12 @@
+import {VOUCHER_AI_TEST_IMAGE} from '../_shared/voucher-ai-test-image.mjs';
+import {resolveVoucherAI,publicVoucherAI,sealVoucherKey,validateVoucherAIInput,voucherAPIURL,voucherAPIProtocol,checkVoucherModelAccess,DEFAULT_VOUCHER_API_URL} from '../_shared/voucher-ai-settings.mjs';
+import { recognizePettyVoucherOpenAI, PETTY_VOUCHER_OPENAI_MODEL } from '../_shared/petty-voucher-openai.mjs';
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
 import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
-import { recoverVoucherDateCandidate } from "../_shared/zysyr-voucher-codex.mjs";
+import { recoverVoucherDateCandidate,voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
 import { parseHistoricalWorkbook } from "../_shared/zysyr-history-import.mjs";
@@ -89,7 +92,7 @@ function uuidIn(values: unknown[]): string {
 }
 
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: cors });
+  return new Response(JSON.stringify(data,(key,value)=>["ai_settings_snapshot","encrypted_key","api_key"].includes(key)?undefined:value), { status, headers: cors });
 }
 
 async function sha256(value: string): Promise<string> {
@@ -4368,7 +4371,7 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
   endDate.setUTCMonth(endDate.getUTCMonth() + 1);
   const end = endDate.toISOString().slice(0, 10);
   const [tasks, reviews, formalRecords, formalLinks, historyEntries] = await Promise.all([
-    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,status,attempt,candidate_fields,field_confidences,error_message,queued_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=3000`, 3000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,provider,model,review_only,status,attempt,candidate_fields,field_confidences,error_message,queued_at,completed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=3000`, 3000),
     voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_reviews?select=voucher_id,review_version,decision,corrected_fields,field_confidences,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&order=review_version.desc&limit=3000`, 3000),
     restRowsAll(`zysyr_petty_cash_records?select=id,transaction_date,direction,category,summary,amount,voucher_number,recipient,status&company_id=eq.${companyId}&store_id=eq.${storeId}&transaction_date=gte.${start}&transaction_date=lt.${end}&direction=eq.outflow&status=eq.confirmed&order=transaction_date.asc,created_at.asc&limit=5000`, 5000),
     voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=voucher_id,business_id&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&business_type=eq.petty_cash_record&unlinked_at=is.null&limit=3000`, 3000),
@@ -4377,8 +4380,8 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
   const drafts = await pettyDetailDrafts(companyId,storeId,month);
   const draftLinks = !drafts.length ? [] : await restRowsAll(`zysyr_petty_detail_links?select=draft_id,voucher_id,draft:zysyr_petty_detail_drafts!inner(transaction_date)&company_id=eq.${companyId}&store_id=eq.${storeId}&draft.transaction_date=gte.${start}&draft.transaction_date=lt.${end}&limit=5000`,5000);
   const targets = [...pettyCashBatchTargetRows(formalRecords, historyEntries),...drafts.map(row=>({...row,target_kind:"draft"}))];
-  const latestTask = new Map<string, JsonRecord>(), latestReview = new Map<string, JsonRecord>();
-  for (const task of tasks) if (!latestTask.has(cleanText(task.voucher_id, 40))) latestTask.set(cleanText(task.voucher_id, 40), task);
+  const latestTask = new Map<string, JsonRecord>(), latestReviewTask = new Map<string, JsonRecord>(), latestReview = new Map<string, JsonRecord>();
+  for (const task of tasks) {const map=task.review_only?latestReviewTask:latestTask;if(!map.has(cleanText(task.voucher_id,40)))map.set(cleanText(task.voucher_id,40),task);}
   for (const review of reviews) if (!latestReview.has(cleanText(review.voucher_id, 40))) latestReview.set(cleanText(review.voucher_id, 40), review);
   const formalLinkMap = new Map(formalLinks.map((link) => [cleanText(link.voucher_id, 40), cleanText(link.business_id, 40)]));
   const historyEvidence = await historyEvidenceForEntries(companyId, storeId, historyEntries);
@@ -4408,7 +4411,7 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
       : {...matchPettyCashCandidate(candidate, targets), candidates:rankPettyCashCandidates(candidate, targets)};
     return {
       ...voucher, batch_id: note.batch_id, target_month: note.month,
-      latest_ocr_task: task, latest_review: review, candidate_fields: candidate,
+      latest_ocr_task: task, reanalysis_task:latestReviewTask.get(cleanText(voucher.id,40))||null,latest_review: review, candidate_fields: candidate,
       corrected_fields: corrected, field_confidences: pettyCashBatchFields(task?.field_confidences),
       task_status: taskStatus, match, confirmed_target_kind: confirmedKind,
       confirmed_target_id: confirmedId,
@@ -4418,7 +4421,7 @@ async function pettyCashBatchStatus(payload: JsonRecord, session: JsonRecord): P
     month, items, targets,
     summary: {
       total: items.length,
-      recognizing: items.filter((item) => ["queued", "processing"].includes(cleanText(item.task_status, 30))).length,
+      recognizing: items.filter((item) => ["queued", "processing"].includes(cleanText(item.task_status, 30))||["queued","processing"].includes(cleanText((item.reanalysis_task as JsonRecord)?.status,30))).length,
       ready: items.filter((item) => cleanText((item.match as JsonRecord).state, 30) === "exact").length,
       needs_review: items.filter((item) => !item.confirmed_target_id && !["queued", "processing"].includes(cleanText(item.task_status, 30))
         && cleanText((item.match as JsonRecord).state, 30) !== "exact").length,
@@ -4526,6 +4529,47 @@ async function recoverExpenseVoucherFailures(payload: JsonRecord, session: JsonR
   return {queued,only_failed_unreviewed:true,posted:false};
 }
 
+async function voucherAISettingsRow(store: JsonRecord): Promise<JsonRecord|null> {
+  return (await restRows(`zysyr_voucher_ai_settings?select=model,base_url,protocol,encrypted_key,revision&company_id=eq.${store.company_id}&store_id=eq.${store.id}&limit=1`))[0]||null;
+}
+async function resolvedVoucherAI(store: JsonRecord,row: JsonRecord|null) {
+  return await resolveVoucherAI({row,company:store.company_id,store:store.id,secret:Deno.env.get("ZYSYR_VOUCHER_SETTINGS_KEY")||"",serverKey:Deno.env.get("OPENAI_API_KEY")||"",serverModel:Deno.env.get("ZYSYR_VOUCHER_OPENAI_MODEL")||PETTY_VOUCHER_OPENAI_MODEL});
+}
+async function voucherAISettings(operation: string,payload: JsonRecord,session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);const store=await selectedStoreInfo(session,payload),row=await voucherAISettingsRow(store);
+  if(operation==="voucher_ai_settings_read")return {provider:row?.base_url&&row.base_url!==DEFAULT_VOUCHER_API_URL?"openai_compatible":"openai",base_url:row?.base_url||DEFAULT_VOUCHER_API_URL,protocol:row?.protocol||"responses",model:row?.model||Deno.env.get("ZYSYR_VOUCHER_OPENAI_MODEL")||PETTY_VOUCHER_OPENAI_MODEL,key_configured:Boolean(row?.encrypted_key||(row?.base_url||DEFAULT_VOUCHER_API_URL)===DEFAULT_VOUCHER_API_URL&&Deno.env.get("OPENAI_API_KEY")),key_source:row?.encrypted_key?"store":"server",revision:Number(row?.revision||0)};
+  const model=cleanText(payload.model,100),newKey=cleanText(payload.api_key,500),baseURL=voucherAPIURL(cleanText(payload.base_url,250)),protocol=voucherAPIProtocol(cleanText(payload.protocol,30));
+  validateVoucherAIInput(model,newKey);
+  let encrypted=row?.encrypted_key||null;
+  if(newKey)encrypted=await sealVoucherKey(newKey,Deno.env.get("ZYSYR_VOUCHER_SETTINGS_KEY")||"",store.company_id,store.id);
+  else if(new URL(baseURL).origin!==new URL(String(row?.base_url||DEFAULT_VOUCHER_API_URL)).origin)encrypted=null;
+  const settings=await resolvedVoucherAI(store,{model,base_url:baseURL,protocol,encrypted_key:encrypted,revision:Number(row?.revision||0)});
+  await checkVoucherModelAccess(settings);
+  // A synthetic receipt checks image input and known values without financial records.
+  const test=await recognizePettyVoucherOpenAI({...settings,key:String(settings.key),model:String(settings.model),baseURL:String(settings.baseURL),protocol:String(settings.protocol),month:'2000-01',imageURL:VOUCHER_AI_TEST_IMAGE});
+  const checked=voucherCodexCandidates(test,'2000-01');if(checked.fields.document_date!=='2000-01-01'||Number(checked.fields.amount)!==12.34)throw new Error('模型未能正确读取合成测试凭证的日期和金额，配置未保存');
+  const saved=await financeRpcSaved("rpc/zysyr_save_voucher_ai_settings",{p_actor:session.auth_account_id,p_company:store.company_id,p_store:store.id,p_model:model,p_base_url:baseURL,p_protocol:protocol,p_encrypted_key:encrypted,p_expected:Number(payload.revision)});
+  return {...publicVoucherAI({...settings,revision:saved.revision}),saved:true,connection_tested:true};
+}
+
+async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord): Promise<JsonRecord> {
+  historyImportFinance(session);
+  const workspace=await expenseVoucherWorkspace(payload,session),store=await selectedStoreInfo(session,payload);
+  const selected=Array.isArray(payload.voucher_ids)?new Set(payload.voucher_ids.map(String)):null;
+  if(!selected||!selected.size||selected.size>30)throw new Error("请选择最多30张未对应的凭证");
+  const single=payload.mode==="single";
+  if(single&&selected.size!==1)throw new Error("逐张重新识别只能选择一张图片");
+  const eligible=(workspace.items as JsonRecord[]).filter(item=>selected.has(String(item.source_voucher_id||item.id))&&(!item.mime_type||String(item.mime_type).startsWith('image/'))&&!['queued','processing'].includes(String(item.task_status))&&!['queued','processing'].includes(String((item.reanalysis_task as JsonRecord)?.status))&&(single||!item.confirmed_target_id&&!item.expense_association&&!item.latest_review&&item.audit_status==="pending"&&!(workspace.expense_links as JsonRecord[]).some(link=>link.voucher_id===(item.source_voucher_id||item.id))));
+  const settings=await resolvedVoucherAI(store,await voucherAISettingsRow(store)),model=String(settings.model);
+  const ids=[...new Set(eligible.filter(item=>single||(item.latest_ocr_task as JsonRecord)?.model!==model).map(item=>String(item.source_voucher_id||item.id)))];
+  if(!ids.length)return {queued:0,posted:false,originals_unchanged:true};
+  await checkVoucherModelAccess(settings);
+  const saved=await financeRpcSaved("rpc/zysyr_reanalyze_expense_vouchers",{p_actor:session.auth_account_id,p_company:store.company_id,p_store:store.id,p_month:cleanText(payload.month,7)+"-01",p_items:ids.map(id=>({voucher_id:id,task_id:(()=>{const item=eligible.find(item=>(item.source_voucher_id||item.id)===id)!;const a=item.latest_ocr_task as JsonRecord,b=item.reanalysis_task as JsonRecord;return b&&Number(b.attempt)>Number(a?.attempt||0)?b.id:a?.id;})()})),p_model:model,p_mode:single?"single":"upgrade",p_settings_revision:Number(settings.revision||0),p_reason:"按用户要求重新识别：保留原图、历史识别和人工核对结果"});
+  const queued=Number(saved.queued||0);
+  if(queued)wakeVoucherOcrInBackground(3);
+  return {queued,model,posted:false,originals_unchanged:true,previous_attempts_preserved:true};
+}
+
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "voucher.read")) throw new Error("当前账号没有凭证查看权限");
   const store = await selectedStoreInfo(session, payload);
@@ -4540,7 +4584,7 @@ async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<
   const vouchers = await restRowsAll(`zysyr_voucher_attachments?select=id,record_type,record_id,original_filename,mime_type,size_bytes,note,sha256,ocr_status,audit_status,document_type,uploaded_by_user_id,uploaded_at,reviewed_by_user_id,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&uploaded_at=gte.${start}T00:00:00Z&uploaded_at=lt.${end}T00:00:00Z&order=uploaded_at.desc&limit=2000`, 2000);
   const voucherFilter = uuidIn(vouchers.map((voucher) => voucher.id));
   const [tasks, reviews, links, reports] = await Promise.all([
-    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,provider,status,attempt,candidate_fields,field_confidences,error_message,queued_at,started_at,completed_at&company_id=eq.${companyId}&voucher_id=in.${voucherFilter}&order=attempt.desc&limit=4000`, 4000),
+    voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_ocr_tasks?select=id,voucher_id,provider,status,attempt,candidate_fields,field_confidences,error_message,queued_at,started_at,completed_at&company_id=eq.${companyId}&voucher_id=in.${voucherFilter}&review_only=eq.false&order=attempt.desc&limit=4000`, 4000),
     voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_reviews?select=id,voucher_id,review_version,decision,document_type,candidate_fields,corrected_fields,field_confidences,reason,reviewer_user_id,reviewed_at&company_id=eq.${companyId}&voucher_id=in.${voucherFilter}&order=review_version.desc&limit=4000`, 4000),
     voucherFilter === "()" ? [] : restRowsAll(`zysyr_voucher_links?select=id,voucher_id,business_type,business_id,relation_type,linked_by_user_id,linked_at&company_id=eq.${companyId}&store_id=eq.${storeId}&voucher_id=in.${voucherFilter}&unlinked_at=is.null&limit=4000`, 4000),
     restRowsAll(`zysyr_report_uploads?select=id,report_type,report_date,version,original_filename&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=1000`, 1000),
@@ -7322,6 +7366,7 @@ async function monthlyReviewRpc(name: string, body: JsonRecord): Promise<unknown
 }
 
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
+expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
 monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
 daily_business_details
@@ -7385,6 +7430,8 @@ async function handleOperationsApiRequest(
     if (cleanText(session.operations_role, 40) === "employee" && operation !== "payroll_center") {
       throw new Error("员工账号只能查看本人的工资、考勤、奖罚和业绩");
     }
+    if (["voucher_ai_settings_read","voucher_ai_settings_save"].includes(operation)) return json(await voucherAISettings(operation,payload,session));
+    if (operation === "expense_voucher_reanalyze") return json(await reanalyzeExpenseVouchers(payload,session));
     if (operation === "expense_voucher_workspace") return json(await expenseVoucherWorkspace(payload,session));
     if (operation === "expense_voucher_match_apply") return json(await applyExpenseVoucherMatches(payload,session));
     if (operation === "expense_voucher_match_void") {

@@ -33,6 +33,7 @@
   "operations-monthly-source-archive.js",
   "operations-monthly-verification.js",
   "operations-monthly-workbench.js",
+  "operations-voucher-ai-settings.js",
   "operations-petty-cash-evidence.js",
   "operations-petty-detail-import.js",
   "operations-report-fit.js",
