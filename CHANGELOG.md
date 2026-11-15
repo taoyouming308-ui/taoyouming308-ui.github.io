@@ -1,3 +1,8 @@
+## v663 · 2026-11-15
+
+- 修复月报从桌面选择已上传原图后无法保存补充凭证：同店同哈希原图直接追加当前单元格凭证关联，已关联时安全返回，不重复上传、登记或识别。保留原金额、原图、审核状态和其他关联；继续执行既有财务权限、报表及单元格归属校验。
+- 补凭证预览明确说明金额保持不变；补充 API 和 390/1280 实际文件选择器回归，覆盖失败重试、原图复用与金额不变。
+
 ## v662 · Petty total, detail sheet and individual receipts
 
 - Monthly petty-cash totals and voucher badges open the detail sheet first, including templates with a trailing month label. Each detail then opens only its own receipt or the upload-library selector; recommendations use that detail amount. Other monthly expenses retain direct original viewing.

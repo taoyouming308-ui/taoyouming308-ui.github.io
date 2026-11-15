@@ -4143,8 +4143,28 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("凭证文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("凭证文件必须小于 10MB");
   const digest = await sha256Bytes(bytes);
-  const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
-  if (duplicates.length) throw new Error(`该文件已上传：${cleanText(duplicates[0].original_filename, 200) || "同一凭证"}`);
+  const duplicates = await restRows(`zysyr_voucher_attachments?select=id,store_id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
+  if (duplicates.length) {
+    const existing = duplicates[0];
+    // Explicit cell supplements reuse the exact original; they never re-register,
+    // re-recognize, approve, move old links or change an amount.
+    if (!monthlyCellId || cleanText(existing.store_id, 40) !== storeId) {
+      throw new Error(`该文件已上传：${cleanText(existing.original_filename, 200) || "同一凭证"}`);
+    }
+    const existingId = cleanText(existing.id, 40);
+    const revisions = await restRows(`zysyr_monthly_cell_revisions?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&source_cell_id=eq.${monthlyCellId}&order=revision.desc&limit=1`);
+    const links = revisions[0] ? await restRows(`zysyr_monthly_cell_revision_vouchers?select=voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&revision_id=eq.${cleanText(revisions[0].id, 40)}&voucher_id=eq.${existingId}&limit=1`) : [];
+    if (!links.length) {
+      await financeRpcSaved("rpc/zysyr_attach_monthly_cell_voucher", {
+        p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: companyId,
+        p_store_id: storeId, p_source_cell_id: monthlyCellId,
+        p_voucher_id: existingId, p_reason: monthlyCellReason,
+      });
+    }
+    return { saved: { id: existingId }, reused: true, already_linked: Boolean(links.length),
+      private: true, cell_linked: true, cell_link_error: null,
+      ocr_worker_wake_requested: false, formal_ledger_amount_changed: false };
+  }
   const extension = mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png" : "jpg";
   const voucherId = crypto.randomUUID();
   const objectPath = `${companyId}/${storeId}/voucher-center/${new Date().toISOString().slice(0, 10)}/${voucherId}.${extension}`;

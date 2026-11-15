@@ -1,3 +1,10 @@
+## 2026-11-15 · Desktop monthly voucher supplement save (App version: v663; local candidate)
+
+- Current owner: Codex. Last synchronized base checked: github/main f19c634d, published v662 (PR138, Pages43711943306, 51 public files matched). Existing physical worktree reused on fix/monthly-voucher-supplement-v663; November15 daily backup confirmed before edits; unrelated untracked files and Safari work forms preserved.
+- User reports selecting a desktop image in a monthly amount drawer and failing to save without changing amount. Read-only production inspection confirmed that exact filename already exists in the same store as an unassigned pending original. Existing uploadVoucher rejected its hash before the cell evidence RPC.
+- Explicit monthly cell supplements now reuse the exact same-store hash and append through the established audited cell-voucher RPC; an existing latest-revision link returns success without another write. Normal generic duplicate rejection, trusted actor, company/store/report/cell validation and new-file upload remain. No schema, amount, original, review status, old association or OCR changes. No production business writes during acceptance. Historical upload path is unchanged.
+- Actual-handler synthetic API and 390/1280 actual desktop file-picker regressions cover reuse, failure/retry, readback, no amount change and no re-recognition. Complete normal local/protected gates, exact backend deployment/readback and Pages/hash verification remain required before claiming published.
+
 ## 2026-11-15 · Petty detail-first hierarchy (App version: v662; local candidate)
 
 - Current owner: Codex. Last synchronized base checked: github/main 44c658e6, published v661, PR137, protected CI43696590127 and Pages43699147565 succeeded; all51 public files matched. Reuse existing zysyr-petty-import-v654 on fix/petty-detail-voucher-routing-v662; November15 daily backup confirmed before edits, all unrelated files preserved.
