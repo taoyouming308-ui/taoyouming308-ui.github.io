@@ -24,3 +24,10 @@ Settings belong to the selected company/store and require its finance scope. The
 Keys remain server-only: AES-GCM envelopes use ZYSYR_VOUCHER_SETTINGS_KEY with company/store additional authenticated data; never rotate or overwrite an existing encryption secret blindly. No raw/cipher credentials appear in settings responses, audit summaries, browser storage or logs. Leaving the key blank retains the same provider's credential; changing provider requires its own key. Newly queued expense images retain a server-only settings snapshot; later configuration edits apply to later attempts. A stale settings preflight cannot enqueue a new job. Other recognition workloads and server credentials remain separate.
 
 Acceptance distinguishes request completion, field accuracy and matching accuracy. Known date, amount, category, duplicate and source cases must have zero incorrect automatic associations; missing years, conflicting date roles and combined bills without allocation evidence remain explicit exceptions. No automatic financial import, voucher approval or posting is authorized.
+
+
+## Evidence validation corrections (v660)
+
+Printed date candidates are selected by their quoted labels: explicit payment, invoice/receipt, order, then completion. A creation or completion timestamp is not a debit timestamp. Missing years, shipping dates and conflicting equally preferred dates cannot become an automatic expense date. Raw model responses stay immutable.
+
+Drinking-water delivery remains distinct from utility water; merchant names alone cannot establish a specific property or beauty-product category. Bank fee summaries retain their explicit month without a fabricated payment day. Contradictory store splits, direction-unverified chat receipts and product matches without quoted item evidence stay for review. These guards apply to new candidate processing and do not rewrite historical/manual results, import details or accounting records.

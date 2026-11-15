@@ -151,4 +151,3 @@ begin
     coalesce(nullif(btrim(p_error_message),''),'OCR候选已生成，等待财务对照原图复核。'),'financial');
   return v_task;
 end $function$
-

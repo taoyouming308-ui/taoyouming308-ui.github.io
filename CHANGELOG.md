@@ -1,3 +1,9 @@
+## v660 · Evidence-bound voucher acceptance corrections
+
+- Select full printed dates by their original labels, preserving payment, order, creation and completion roles; reject missing years, shipping dates and equal-priority conflicts.
+- Distinguish drinking water from utility water, keep merchant-only categories uncertain, and retain bank fee summaries as month-only evidence. Reject contradictory store-split arithmetic and product matches without quoted item evidence.
+- Clarify already-paid order recognition without a fabricated payment date. Preserve raw model responses, historical/manual results and all financial records. Real acceptance results remain private; publication gates and deployment are separate.
+
 ## v659 · GPT-5.6 voucher recognition and configurable APIs
 
 - Use GPT-5.6 Sol for new expense recognition, supply store expense categories, preserve printed date roles, and fix broad category contradictions, literal telecom matching and concurrent duplicate associations.
