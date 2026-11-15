@@ -17,13 +17,16 @@ await page.exposeFunction('backend',async(operation,payload)=>{calls.push({opera
  if(operation==='expense_voucher_match_apply'){const plan=expenseMatchPlan(buildExpenseVoucherWorkspace(base,source,links),payload.items,payload.mode);links.push(...plan.map((p,i)=>({...p,id:id(20+i),status:'active',mode:payload.mode,corrected_fields:p.corrected_fields})));return {saved:{inserted:plan.length}};}
  if(operation==='expense_voucher_failures_retry'){assert.deepEqual(payload.voucher_ids,[id(8)]);base.items[2].task_status='queued';return {queued:1};}
  if(operation==='expense_voucher_match_void'){links[0].status='void';return {status:'void'};}
+ if(operation==='expense_voucher_reanalyze'){assert.equal(payload.mode,'single');assert.deepEqual(payload.voucher_ids,[id(3)]);base.items[0].reanalysis_task={id:id(90),attempt:2,status:'succeeded',model:'gpt-5.6-sol',candidate_fields:{expense_category:'物业费',document_date:'2026-07-05',amount:1648.27}};return {queued:1};}
+ if(operation==='voucher_ai_settings_read')return {model:'gpt-5.6-sol',base_url:'https://api.openai.com/v1',protocol:'responses',key_configured:true,key_source:'server',revision:0};
+ if(operation==='voucher_ai_settings_save'){assert.equal(payload.api_key,'synthetic-key-not-real');return {saved:true,connection_tested:true,revision:1,key_configured:true,model:payload.model};}
  if(operation==='voucher_url')return {url:'synthetic'};
  throw Error('Unexpected '+operation);
 });
 await page.goto('http://127.0.0.1:'+server.address().port);
 await page.evaluate(()=>{window.store='一店';window.currentStore=()=>window.store;window.state={session:'synthetic',user:{role:'finance',can_manage_finance_workbench:true,can_match_expense_vouchers:true},data:{monthly_report:{id:'00000000-0000-4000-8000-000000000025',sha256:'b'.repeat(64)}},pettyCash:{data:{records:[],history_records:[],permissions:{batch_voucher:true}}}};
 window.ZysyrPettyScopeIdentity=()=>state.session;window.ZysyrTime={dateTime:()=>''};window.esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');window.formatAmount=v=>Number(v).toFixed(2);window.isLocalPreview=()=>false;window.api=(o,p)=>window.backend(o,p);window.toast=()=>{};window.openPrivate=(o,p)=>window.backend(o,p);window.renderPettyCashReport=()=>{};window.loadPettyCashReport=async()=>{};window.prompt=()=> 'Synthetic correction';});
-for(const file of ['operations-expense-voucher-workspace.js','operations-petty-cash-evidence.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
+for(const file of ['operations-expense-voucher-workspace.js','operations-voucher-ai-settings.js','operations-petty-cash-evidence.js'])await page.addScriptTag({content:fs.readFileSync(file,'utf8')});
 await page.evaluate(()=>renderPettyCashReport());
 await page.waitForFunction(()=>document.querySelector('[data-petty-batch-item]')?.innerText.includes('AI 已匹配'));
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,1,'normal unique evidence associates without a human click');
@@ -34,6 +37,15 @@ await page.evaluate(()=>ZysyrExpenseVoucherWorkspace.decorateMonthly({C12:docume
 await page.waitForSelector('[data-expense-cell-vouchers]');assert.equal(await page.locator('#cell input').inputValue(),'1648.27');
 await page.locator('[data-expense-cell-vouchers]').click();await page.locator('[data-expense-open]').click();
 assert.equal(calls.find(c=>c.operation==='voucher_url').payload.voucher_id,id(3),'monthly cell opens the matching original');
+assert.equal(await page.locator('[data-voucher-reanalyze]').count(),4,'every image, including associated and failed images, has a reanalysis action');
+await page.locator('[data-voucher-reanalyze]').first().click();
+await page.waitForFunction(()=>document.getElementById('petty-batch-list').innerText.includes('重新识别（原确认保持原样）'));
+assert.equal(links.length,1);assert.equal(links[0].corrected_fields.amount,1648.27);
+await page.locator('#voucher-ai-settings-open').click();await page.locator('#voucher-ai-model').waitFor();
+assert.equal(await page.locator('#voucher-ai-key').inputValue(),'');assert.equal(await page.locator('#voucher-ai-model').inputValue(),'gpt-5.6-sol');
+await page.locator('#voucher-ai-url').fill('https://openrouter.ai/api/v1');await page.locator('#voucher-ai-protocol').selectOption('chat_completions');await page.locator('#voucher-ai-model').fill('vendor/synthetic-vision');await page.locator('#voucher-ai-key').fill('synthetic-key-not-real');await page.locator('#voucher-ai-save').click();
+await page.waitForFunction(()=>document.getElementById('voucher-ai-settings-status').innerText.includes('连接测试通过'));
+assert.equal(await page.locator('#voucher-ai-key').inputValue(),'');assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('synthetic-key-not-real')),false,'key is never persisted in browser storage');
 await page.locator('[data-expense-match-change]').click();await page.waitForFunction(()=>!document.querySelector('[data-expense-match-change]'));
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,1,'a human correction suppresses immediate auto-rematching');
 await page.locator('#expense-voucher-retry-failed').click();await page.waitForFunction(()=>document.getElementById('petty-batch-list').innerText.includes('正在识别'));

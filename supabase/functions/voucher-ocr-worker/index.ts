@@ -1,5 +1,6 @@
+import {resolveVoucherAI} from '../_shared/voucher-ai-settings.mjs';
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { recognizePettyVoucherOpenAI } from "../_shared/petty-voucher-openai.mjs";
+import { recognizePettyVoucherOpenAI, PETTY_VOUCHER_OPENAI_MODEL, PETTY_VOUCHER_PROMPT_VERSION } from "../_shared/petty-voucher-openai.mjs";
 import { candidates } from "../_shared/zysyr-ocr-candidates.mjs";
 import { voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import { parsePettyCashBatchNote } from "../_shared/petty-cash-batch.mjs";
@@ -17,7 +18,7 @@ const CODEX_URL = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_URL") || "";
 const CODEX_TOKEN = Deno.env.get("ZYSYR_DAILY_CODEX_BRIDGE_TOKEN") || "";
 const CODEX_MODEL = Deno.env.get("ZYSYR_VOUCHER_CODEX_MODEL") || "gpt-5.6-sol";
 const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-const OPENAI_MODEL = Deno.env.get("ZYSYR_VOUCHER_OPENAI_MODEL") || "gpt-4.1-mini";
+const OPENAI_MODEL = Deno.env.get("ZYSYR_VOUCHER_OPENAI_MODEL") || PETTY_VOUCHER_OPENAI_MODEL;
 const CODEX_PROMPT_VERSION = "zysyr-voucher-codex-v1";
 
 type Json = Record<string, unknown>;
@@ -53,6 +54,26 @@ function contentText(raw: unknown): string {
   return String(message.content || "").slice(0, 120000);
 }
 
+async function workerVoucherAISettings(task: Json) {
+  if(task.ai_settings_snapshot)return await resolveVoucherAI({row:task.ai_settings_snapshot,company:task.company_id,store:task.store_id,secret:Deno.env.get("ZYSYR_VOUCHER_SETTINGS_KEY")||"",serverKey:OPENAI_KEY,serverModel:OPENAI_MODEL});
+  const response=await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ai_settings?select=model,base_url,protocol,encrypted_key,revision&company_id=eq.${task.company_id}&store_id=eq.${task.store_id}&limit=1`,{headers:{apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`},signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw new Error("VOUCHER_AI_SETTINGS_READ_FAILED");
+  return await resolveVoucherAI({row:(await response.json())[0]||null,company:task.company_id,store:task.store_id,secret:Deno.env.get("ZYSYR_VOUCHER_SETTINGS_KEY")||"",serverKey:OPENAI_KEY,serverModel:OPENAI_MODEL});
+}
+
+async function voucherCategoryContext(task: Json,month: string): Promise<string[]> {
+  const headers={apikey:SERVICE_KEY,Authorization:`Bearer ${SERVICE_KEY}`};
+  const scope=`company_id=eq.${task.company_id}&store_id=eq.${task.store_id}`;
+  try {
+    const reports=await fetch(`${SUPABASE_URL}/rest/v1/zysyr_report_uploads?select=id&${scope}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&order=version.desc&limit=1`,{headers,signal:AbortSignal.timeout(8000)});
+    if(!reports.ok)return [];
+    const report=(await reports.json())[0];if(!report?.id)return [];
+    const response=await fetch(`${SUPABASE_URL}/rest/v1/zysyr_report_cells?select=label&${scope}&report_id=eq.${report.id}&column_number=eq.3&row_number=gte.11&row_number=lte.60&limit=80`,{headers,signal:AbortSignal.timeout(8000)});
+    if(!response.ok)return [];
+    return (await response.json()).map((c:Json)=>String(c.label||'').split('/').map(x=>x.trim()).filter(x=>x&&!/^(?:[A-Za-z]{3,9}\.?|[0-9]+月)$/.test(x)).at(-1)||'').filter((x:string)=>x&&!/小计|合计|总计/.test(x)).slice(0,80);
+  }catch{return [];}
+}
+
 async function processTask(task: Json): Promise<void> {
   const taskId = String(task.task_id || ""), leaseToken = String(task.lease_token || "");
   try {
@@ -63,13 +84,19 @@ async function processTask(task: Json): Promise<void> {
     const metadataResponse = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_attachments?select=note,audit_status&id=eq.${task.voucher_id}&company_id=eq.${task.company_id}&store_id=eq.${task.store_id}`, { headers });
     if (!metadataResponse.ok) throw Object.assign(new Error("VOUCHER_SCOPE_READ_FAILED"), { retryable: true });
     const metadata = (await metadataResponse.json())[0];
-    if (!metadata || metadata.audit_status !== "pending") throw new Error("VOUCHER_ALREADY_REVIEWED");
+    const leaseRead=await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ocr_tasks?select=review_only,ai_settings_snapshot&id=eq.${taskId}&lease_token=eq.${leaseToken}&status=eq.processing`,{headers});
+    if(!leaseRead.ok)throw new Error("OCR_TASK_LEASE_READ_FAILED");
+    const leased=(await leaseRead.json())[0];
+    if(!leased)throw new Error("OCR_TASK_LEASE_INVALID");
+    const reviewOnly=leased.review_only===true;task.ai_settings_snapshot=leased.ai_settings_snapshot;
+    if (!metadata || metadata.audit_status !== "pending"&&!reviewOnly) throw new Error("VOUCHER_ALREADY_REVIEWED");
     const batch = parsePettyCashBatchNote(metadata.note);
     if (batch) {
-      if (!OPENAI_KEY && (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN)) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
+      const settings=await workerVoucherAISettings(task),useAPI=Boolean(settings.key),provider=settings.baseURL==='https://api.openai.com/v1'?'openai-api':'openai-compatible';
+      if (!useAPI && (!CODEX_URL.startsWith("https://") || !CODEX_TOKEN)) throw new Error("CODEX_VOUCHER_NOT_CONFIGURED");
       const marked = await fetch(`${SUPABASE_URL}/rest/v1/zysyr_voucher_ocr_tasks?id=eq.${taskId}&lease_token=eq.${leaseToken}&status=eq.processing`, {
         method: "PATCH", headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ provider: OPENAI_KEY ? "openai-api" : "codex-local", model: OPENAI_KEY ? OPENAI_MODEL : CODEX_MODEL, prompt_version: OPENAI_KEY ? "expense-voucher-v2" : CODEX_PROMPT_VERSION }),
+        body: JSON.stringify({ provider: useAPI ? provider : "codex-local", model: useAPI ? settings.model : CODEX_MODEL, prompt_version: useAPI ? PETTY_VOUCHER_PROMPT_VERSION : CODEX_PROMPT_VERSION }),
       });
       if (!marked.ok || (await marked.json()).length !== 1) throw new Error("OCR_TASK_LEASE_INVALID");
       const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${VOUCHER_BUCKET}/${storagePath(objectPath)}`, {
@@ -80,7 +107,7 @@ async function processTask(task: Json): Promise<void> {
       const signedPath = String(signedData.signedURL || signedData.signedUrl || "");
       if (!signedPath.startsWith("/object/sign/")) throw new Error("CODEX_SOURCE_SIGN_INVALID");
       let raw: Json;
-      if (OPENAI_KEY) raw = await recognizePettyVoucherOpenAI({key:OPENAI_KEY,model:OPENAI_MODEL,imageURL:`${SUPABASE_URL}/storage/v1${signedPath}`,month:batch.month});
+      if (useAPI) raw = await recognizePettyVoucherOpenAI({key:settings.key,model:settings.model,baseURL:settings.baseURL,protocol:settings.protocol,categories:await voucherCategoryContext(task,batch.month),imageURL:`${SUPABASE_URL}/storage/v1${signedPath}`,month:batch.month});
       else {
       const ai = await fetch(CODEX_URL, { method: "POST", signal: AbortSignal.timeout(125000),
         headers: { Authorization: `Bearer ${CODEX_TOKEN}`, "Content-Type": "application/json" },
@@ -92,7 +119,7 @@ async function processTask(task: Json): Promise<void> {
       }
       const parsed = voucherCodexCandidates(raw, batch.month);
       await rpc("zysyr_complete_voucher_ocr_task", { p_task_id: taskId, p_lease_token: leaseToken, p_succeeded: true,
-        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: OPENAI_KEY ? "expense-voucher-v2" : CODEX_PROMPT_VERSION },
+        p_retryable: false, p_raw_result: { provider_response: raw, prompt_version: useAPI ? PETTY_VOUCHER_PROMPT_VERSION : CODEX_PROMPT_VERSION },
         p_candidate_fields: parsed.fields, p_field_confidences: parsed.confidences, p_error_message: null });
       return;
     }

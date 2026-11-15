@@ -10,8 +10,9 @@ const categories = [
   ['social_insurance','社保',/社保|社会保险/], ['salary','工资',/工资|薪酬|薪资|技术人员|后勤人员|payroll|salary/],
   ['training','培训费',/培训|training/], ['advertising','市场营销',/广告|营销|推广|投放|advertis/],
   ['fees','手续费',/手续费|佣金|交易费/], ['tax','税费',/税费|税款|税金/],
+  ['flowers','鲜花费',/鲜花|花店|花卉/], ['server','服务器',/服务器|网站托管|域名|云主机/],
   ['purchase','产品进货',/进货|采购|供应商|产品货款/], ['supplies','消耗用品',/消耗|日用|清洁|纸巾|垃圾袋|洗洁精/],
-  ['office','办公用品',/办公|文具|打印|stationery/], ['food','食品',/食品|咖啡|零食|点心|茶叶|coffee/],
+  ['office','办公用品',/办公|文具|打印|stationery/], ['food','食品',/食品|咖啡|零食|点心|茶叶|饮用水|桶装水|coffee/],
   ['repair','维修费',/维修|修理|repair/], ['transport','车费',/车费|交通|打车|taxi/],
   ['meals','聚餐费',/聚餐|餐饮|团建/], ['petty_cash','备用金',/备用金/],
 ];
@@ -19,7 +20,22 @@ export function expenseCategory(value) {
   const found = categories.find(([, , pattern]) => pattern.test(text(value)));
   return found ? {code:found[0],label:found[1]} : {code:'unknown',label:'待分类'};
 }
+export function categoryEvidenceReliable(candidate) {
+  const score=Number((candidate.confidence||candidate.confidences||{}).expense_category),proof=text(candidate.evidence?.expense_category);
+  if(!(score<=1)||!proof)return false;
+  if(score>=.95)return true;
+  return score>=.9 && expenseCategory(candidate.expense_category).code==='telecom' && /固话|宽带|电话费/.test(proof) && !/依据|判断|归类|推测/.test(proof);
+}
 export function expenseTargetKey(target) { return `${target.target_kind}:${target.id}`; }
+export function expenseItemEvidenceReliable(candidate,target) {
+  if(!/^expense-voucher-v[34]$/.test(candidate.recognition_prompt_version||'')||!['food','supplies','purchase','office'].includes(expenseCategory(target.category||target.summary).code))return true;
+  const item=compact(text(target.summary).replace(/（[^）]*）|\([^)]*\)/g,'')).replace(/食品成本|食品|日用消耗品|消耗用品|办公用品|产品进货|采购|日用品|用品/g,'');
+  const tokens=[...(item.match(/[a-z]{3,}/g)||[])];
+  for(const run of item.match(/[\u4e00-\u9fff]+/g)||[])for(let i=0;i<run.length-1;i++)tokens.push(run.slice(i,i+2));
+  if(!tokens.length)return true;
+  const proof=compact([candidate.evidence?.summary,candidate.evidence?.expense_category,candidate.evidence?.counterparty].join(' '));
+  return tokens.some(token=>proof.includes(token));
+}
 export function expenseSourceTargets(source, legacy = []) {
   const targets = legacy.map(row => ({...row, period_month:source.month, aggregate:false}));
   for (const row of source.expenses || []) {
@@ -70,6 +86,7 @@ export function matchExpenseComponent(candidate, targets, month) {
     reason:[x.sameAmount?'金额一致':'',x.sameDate?'日期一致':'',x.sameCategory?'费用类别一致':'',x.sameNumber?'凭证号一致':''].filter(Boolean).join('、')}));
   const result=(state,reason,target=null,eligible=false)=>({state,reason,target_kind:target?.target_kind||null,target_id:target?.id||null,
     unique_exact:eligible,auto_eligible:eligible,candidates:recommendations,expense_category:category});
+  if(candidate.arithmetic_conflict)return result('needs_review','原文分店金额与总计不一致，需核对分摊，未自动对应');
   if(candidate.evidence_kind==='monthly_summary'){
     if(candidate.period_month!==month)return result('cross_month','汇总所属期间不是当前月份，未自动对应');
     const matches=scored.filter(x=>x.target.aggregate&&x.sameAmount&&x.sameCategory),proof=candidate.evidence||{},confidence=candidate.confidence||{};
@@ -80,15 +97,16 @@ export function matchExpenseComponent(candidate, targets, month) {
   const parsed=new Date(date+'T00:00:00Z');
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(+parsed) || parsed.toISOString().slice(0,10)!==date || !(amount>0)) return result('needs_review','日期或实付金额缺少可靠证据，费用分类与候选仍保留');
   if (date.slice(0,7)!==month) return result('cross_month','原图交易日期属于其他月份，不能自动对应到当前月');
+  if(category.code==='purchase'&&['flowers','server','telecom'].includes(expenseCategory(text(candidate.summary)+' '+text(candidate.counterparty)).code))return result('needs_review','商品或商户用途与采购分类不一致，需要重新分类');
   const exact=scored.filter(x=>!x.target.aggregate && x.sameAmount && x.sameDate);
   const sameAmount=scored.filter(x=>!x.target.aggregate && x.sameAmount);
   const proof=candidate.evidence||{}, confidence=candidate.confidence||candidate.confidences||{};
-  const reliable=Number(confidence.document_date)>=.95 && Number(confidence.amount)>=.98 && !!proof.document_date && !!proof.amount;
+  const reliable=Number(confidence.document_date)>=.95 && Number(confidence.document_date)<=1 && Number(confidence.amount)>=.98 && Number(confidence.amount)<=1 && !!proof.document_date && !!proof.amount;
   const numbered=exact.filter(x=>x.sameNumber);
-  if (exact.length===1 || numbered.length===1) return result('exact','日期、实付金额与明细唯一一致',(exact.length===1?exact[0]:numbered[0]).target,reliable);
+  if (exact.length===1 || numbered.length===1) {const hit=(exact.length===1?exact[0]:numbered[0]);if(category.code!=='unknown'&&expenseCategory(hit.target.category||hit.target.summary).code!=='unknown'&&!hit.sameCategory)return result('needs_review','金额和日期相同，但费用类别冲突，需要核对');if(!expenseItemEvidenceReliable(candidate,hit.target))return result('needs_review','日期金额一致，但原图未能佐证明细所列商品，需要核对');return result('exact','日期、实付金额与明细唯一一致',hit.target,reliable);}
   if (sameAmount.length>1) return result('ambiguous','日期和金额尚不能唯一定位，需要凭证号等进一步证据');
   const monthly=scored.filter(x=>x.target.aggregate && x.sameCategory && x.sameAmount);
-  if (monthly.length===1) return result('exact','所属月份、费用类别及金额与月报唯一一致',monthly[0].target,reliable && Number(confidence.expense_category)>=.95 && !!proof.expense_category);
+  if (monthly.length===1) return result('exact','所属月份、费用类别及金额与月报唯一一致',monthly[0].target,reliable && categoryEvidenceReliable(candidate));
   if (recommendations.length) return result('suggested','已按金额、日期和费用类别列出候选；尚不足以自动建立关系');
   return result('unmatched','当前月份没有对应开支，请检查月份或缺少的明细');
 }

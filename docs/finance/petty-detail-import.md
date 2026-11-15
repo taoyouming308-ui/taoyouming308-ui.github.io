@@ -13,3 +13,21 @@
 发布顺序：正常受保护 PR 检查通过后，先应用增量迁移，再部署兼容的 operations-api 与 voucher-ocr-worker，最后发布 v655 页面及静态缓存。迁移和 worker 部署本身不代表真实上传验收；只验证新的用户上传，不重复识别、作废或上传既有六张凭证。现有门店数据、正式金额、历史修订和排程均保持原边界。
 
 专项检查：`test-petty-detail-import.mjs`、`test-petty-detail-import-db.js`、`test-petty-detail-import-browser.js`、`test-petty-voucher-openai.mjs` 及既有批量凭证/识别回归。新测试纳入统一财务门禁；数据库测试仅连接本地隔离容器。
+
+
+## Expense recognition and API settings (v659)
+
+The existing all-expense voucher panel provides a re-recognition action on each image and an API/model settings dialog. Bulk model upgrade skips human-reviewed, associated or voided images. Explicit per-image re-recognition of a protected image creates a separate candidate for comparison; it cannot replace human confirmation or write a ledger. Originals and prior attempts remain available.
+
+Settings belong to the selected company/store and require its finance scope. The default is OpenAI Responses with gpt-5.6-sol. Users can edit model ID, supported public provider API base URL, protocol and key. Supported hosts are api.openai.com, openrouter.ai, api.siliconflow.cn/com, api.deepseek.com, api.groq.com, dashscope.aliyuncs.com, dashscope-intl.aliyuncs.com and ark.cn-beijing.volces.com; private/arbitrary hosts and redirects are rejected. Compatible services must accept images and JSON Schema output. A synthetic receipt with a known date and amount verifies the connection before saving. Provider compatibility beyond these checks and recognition quality require real-sample acceptance.
+
+Keys remain server-only: AES-GCM envelopes use ZYSYR_VOUCHER_SETTINGS_KEY with company/store additional authenticated data; never rotate or overwrite an existing encryption secret blindly. No raw/cipher credentials appear in settings responses, audit summaries, browser storage or logs. Leaving the key blank retains the same provider's credential; changing provider requires its own key. Newly queued expense images retain a server-only settings snapshot; later configuration edits apply to later attempts. A stale settings preflight cannot enqueue a new job. Other recognition workloads and server credentials remain separate.
+
+Acceptance distinguishes request completion, field accuracy and matching accuracy. Known date, amount, category, duplicate and source cases must have zero incorrect automatic associations; missing years, conflicting date roles and combined bills without allocation evidence remain explicit exceptions. No automatic financial import, voucher approval or posting is authorized.
+
+
+## Evidence validation corrections (v660)
+
+Printed date candidates are selected by their quoted labels: explicit payment, invoice/receipt, order, then completion. A creation or completion timestamp is not a debit timestamp. Missing years, shipping dates and conflicting equally preferred dates cannot become an automatic expense date. Raw model responses stay immutable.
+
+Drinking-water delivery remains distinct from utility water; merchant names alone cannot establish a specific property or beauty-product category. Bank fee summaries retain their explicit month without a fabricated payment day. Contradictory store splits, direction-unverified chat receipts and product matches without quoted item evidence stay for review. These guards apply to new candidate processing and do not rewrite historical/manual results, import details or accounting records.
