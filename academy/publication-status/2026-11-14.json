@@ -1,12 +1,26 @@
 {
   "schemaVersion": 1,
   "date": "2026-11-14",
-  "state": "reviewed_inputs_submitted_awaiting_cloud_preparation",
+  "state": "reviewed_inputs_main_reconciled_awaiting_fresh_cloud_preparation",
   "published": false,
   "baseSha": "6ddb33279836fd4cf81db6a7253c4659c8d385ca",
   "preflightRun": 43535755239,
   "preflightArtifact": 14089004010,
   "preflightBackupArchiveSha256": "5dc64c294aae29dfc19304d1a7deb4dcc902cb056627572dcf270965f40b20d7",
   "reviewedDraftSha256": "0ba775fcb9d54f3df8fba872a614cf2841dfdbc03bef14584d42ed93fea33580",
-  "note": "Actual reviewed draft/review and 3 original SVG blobs committed atomically at 38c911db; this records submission only, does not claim cloud preparation, protected checks, merge or Pages publication. Next real gate: Publish reviewed academy lessons / prepare-content-branch."
+  "note": "Reviewed inputs already bound by original draft/review digests. Merged latest main v658 normally into candidate, preserving concurrent work. Previous cloud-prepared artifact and protected checks were for older head/main, not publication evidence. Fresh branch push must rerun trusted prepare-content-branch and backup before any verified final status or merge.",
+  "mainReconciliation": {
+    "originalMainSha": "6ddb33279836fd4cf81db6a7253c4659c8d385ca",
+    "latestMainSha": "808996843764691d848edc0a182dc9f6c784914a",
+    "mergedBranchHeadSha": "66addb2ea2adbe827e06c9f26d6ad0beb1e0964b",
+    "method": "normal two-parent merge commit with reviewed academy inputs and concurrent main content preserved",
+    "freshPreflightRun": 43660247358,
+    "freshPreflightConclusion": "success",
+    "preparedArtifactFromOldBase": {
+      "run": 43538022281,
+      "artifact": 14090933927,
+      "head": "3fd2062fcf78776920973734aeea83418e527047",
+      "validForNewMain": false
+    }
+  }
 }
