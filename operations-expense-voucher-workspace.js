@@ -1,7 +1,7 @@
 /* All expense evidence shares the existing upload panel and current store/month. */
 (function(root){
   'use strict';
-  var attempted=new Map(),monthlyCache=null,lastMonthlyCells=null,lastMonthlyScope=null;
+  var attempted=new Map(),monthlyCache=null,lastMonthlyCells=null,lastMonthlyScope=null,pettyViewGeneration=0;
   function scopeKey(){return JSON.stringify([currentStore(),document.getElementById('month').value,root.ZysyrPettyScopeIdentity?root.ZysyrPettyScopeIdentity():state.session]);}
   function monthlyData(data){return {source:data.source_selection,expense_voucher_targets:data.targets||[],expense_voucher_matches:(data.items||[]).filter(function(i){return i.confirmed_target_id;}).map(function(i){return {voucher_id:i.source_voucher_id||i.id,filename:i.original_filename,mode:i.expense_association&&i.expense_association.mode||'manual',target:(data.targets||[]).find(function(t){return t.id===i.confirmed_target_id&&t.target_kind===i.confirmed_target_kind;})};})};}
   function decorate(cells,data,key){
@@ -139,13 +139,13 @@
     },
     openPettyDetail:async function(kind,id){
       if(!state.user||state.user.role!=='finance'||!state.user.can_match_expense_vouchers||!state.user.can_manage_finance_workbench)return;
-      var key=scopeKey(),context=voucherContext(),address='petty:'+kind+':'+id,drawer=document.getElementById('view-cell-trace'),body=document.getElementById('cell-trace-body');
-      monthlyVoucherView.cancel();drawer.classList.remove('hidden');drawer.setAttribute('aria-hidden','false');state.trace.address=address;
+      var generation=++pettyViewGeneration,key=scopeKey(),context=voucherContext(),address='petty:'+kind+':'+id,drawer=document.getElementById('view-cell-trace'),body=document.getElementById('cell-trace-body');
+      closeMonthlyWorkbench();drawer.classList.remove('hidden');drawer.setAttribute('aria-hidden','false');state.trace.address=address;
       document.getElementById('cell-trace-page-title').textContent='备用金明细 · 本笔凭证';
       document.getElementById('cell-trace-page-title').nextElementSibling.textContent='逐笔核对原图并确认关联，原金额和入账状态保持不变。';
       document.getElementById('cell-trace-upload-voucher').classList.add('hidden');document.getElementById('cell-trace-edit-entry').classList.add('hidden');
       body.innerHTML='<p class="help">正在读取这一笔明细与凭证…</p>';
-      function active(){return key===scopeKey()&&voucherContextCurrent(context)&&state.trace.address===address&&state.view==='finance-workbench';}
+      function active(){return generation===pettyViewGeneration&&key===scopeKey()&&voucherContextCurrent(context)&&state.trace.address===address&&state.view==='finance-workbench';}
       try{
         var data=await root.ZysyrExpenseVoucherWorkspace.read({store:context.store,month:context.month});if(!active())return;if(data.month!==context.month)throw Error('月份已变化，请重新打开明细单');
         var target=(data.targets||[]).find(function(t){return t.target_kind===kind&&t.id===id&&!t.aggregate;});if(!target)throw Error('这笔明细已变化，请返回明细单重新选择');

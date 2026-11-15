@@ -4,6 +4,7 @@
 - Exclude the petty monthly aggregate from new manual options and automatic association. Keep existing aggregate links as month-level history, separately flagged rather than redistributed or counted as per-detail evidence.
 - Rebuild the detail sheet on both fresh reads and cached finance-page redraws, so refreshes cannot remove the per-row evidence actions.
 - Include legacy formal voucher links and exact historical pages outside the batch library, after a fresh scoped read and matching record id/date/amount; whole-month bundles stay excluded from per-row originals.
+- Cancel closed monthly reads and superseded detail requests so late replies cannot replace the currently selected detail.
 - Keep source/draft/formal/history rows distinct, amounts and posting unchanged. Single-detail selection requires transaction evidence and explicit attestation; original links remain protected. Synthetic phone/desktop regression covers the complete hierarchy and exact one-row association. No backend/schema or production-data changes.
 
 ## v661 · Monthly originals and existing voucher library
