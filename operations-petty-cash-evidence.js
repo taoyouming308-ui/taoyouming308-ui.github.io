@@ -406,6 +406,7 @@
     var confirmExact = document.getElementById('petty-batch-confirm-exact');
     if (confirmExact) {confirmExact.disabled = !Number(stats.ready || 0) || batchUploadBusy;if(expenseWorkspace())confirmExact.textContent='匹配已有明确项';}
     renderBatchItems(data);
+    if(expenseWorkspace()&&typeof window.ZysyrExpenseVoucherWorkspace.renderPettyDetails==='function')window.ZysyrExpenseVoucherWorkspace.renderPettyDetails(data);
     var recover=document.getElementById('expense-voucher-retry-failed');
     var reanalyze=document.getElementById('expense-voucher-reanalyze');
     if(reanalyze){reanalyze.disabled=batchUploadBusy||!(data.items||[]).some(function(i){return !i.confirmed_target_id&&!i.expense_association&&!i.latest_review&&!['queued','processing'].includes(i.task_status);});reanalyze.onclick=async function(){if(batchUploadBusy)return;if(Object.keys(batchDirtyFields).some(function(id){return Object.keys(batchDirtyFields[id]||{}).length;})){status.textContent='请先处理当前人工填写，避免重新识别覆盖正在核对的内容';return;}if(!window.confirm('使用当前 API 设置重新识别本月尚未对应的图片？保留原图和全部旧识别记录，已对应或人工核对的凭证保持原样。不确认导入、不入账。'))return;var key=currentBatchKey();batchUploadBusy=true;reanalyze.disabled=true;try{var result=await window.ZysyrExpenseVoucherWorkspace.reanalyze(data,{store:currentStore(),month:document.getElementById('month').value});if(key!==currentBatchKey())return;status.textContent=result.queued?'已提交重新识别 '+result.queued+' 张，旧记录保留':'未对应图片已使用当前模型；需要再试时可点单张重新识别';await loadBatchStatus();}catch(e){status.textContent='重新识别未确认：'+e.message+'；请刷新核验，不要重复点击';}finally{batchUploadBusy=false;}};}
