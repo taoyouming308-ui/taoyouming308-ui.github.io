@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-11-16",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "a17bc45dd323ee32ff2fba32f949c596221d3a3e",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, hair density, hair diameter, frame pressure, home reproducibility or that either proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional exposed-ear reference versus glasses-and-ear-tuck short-bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All thirty-nine earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current dry hairstyle and glasses are separated from the undisplayed fictional reference, fictional zonal hair/head settings, customer-confirmed routine and required live action tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; bridge-preserving B is a conditional design process, not a claimed completed haircut",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting the reference, proposed cut or result",
+      "No user answer is invented; all five recap fields explicitly state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face/head/ear proportions, hair diameter, density, elasticity, chemical history and frame pressure are not established by the image; case-only settings require live verification",
+      "A reversible clip simulation and two-frame in-salon test cannot reproduce every home dryer, frame, humidity, removal path or grow-out state",
+      "Preparer audit is not independent scientific, trichological, ergonomic or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-16-glasses-ear-tuck-reference.webp",
+    "sha256": "d0fe6a2dacb1fb42e41658cd136a261c73b5bcf46dcd511e64647196c6dc87f7",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 1774x887 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; current deep dark chin bob, everyday black rectangular glasses, quiet crown, ear-back weight and natural dry finish in neutral salon documentation"
+  },
+  "hashes": {
+    "feedRawSha256": "6c4167529abde58887c7b301bc6a170c93643d3efd393b5fe307fb2a5dab8c23",
+    "caseCanonicalSha256": "88dc6c19f90a172845cab865d9e44098431e391ffb5bbfc01530369c34cd01cb"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-16 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v663 before editing; daily backup script created the current daily archive",
+    "contentChecks": "test-aesthetic-daily and test-perm-academy passed with 40 cases; prior 39 parsed objects are byte-equivalent under JSON serialization and all IDs are unique",
+    "nonBrowserChecks": "version, release integrity, smoke, academy data safety, version update flow, module boundaries, aesthetic system/study/Edge, coach endpoint and agent status passed",
+    "browserCheck": "Local pinned Playwright Chromium executable is unavailable; test-aesthetic-daily-browser failed before page launch only. The exact same browser regression is required in protected CI through test-perm-academy-browser",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed yet"
+  }
+}
