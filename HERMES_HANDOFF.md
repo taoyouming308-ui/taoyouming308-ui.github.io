@@ -288,3 +288,11 @@ After publishing:
 curl -fsSL 'https://taoyouming308-ui.github.io/version.txt?_v=NEW_VERSION&t='$(date +%s)
 curl -fsSL 'https://taoyouming308-ui.github.io/perm-app.html?_v=NEW_VERSION&t='$(date +%s) | sed -n '2p'
 ```
+
+## 2026-11-16 source-only transport repair
+
+Use `scripts/install_mgj_business_detail_2026.py --install --source-transport-only` for the owner-approved exact MGJ HTTPS direct route. It locks the existing source lock, requires the known unchanged preimages or exact desired hashes, backs up and installs only consumption/audit transport files. It does not replace the independent runner, change cron, proxy settings, credentials, Supabase routing or financial records. Source branch: fix/mgj-source-transport-20261116.
+
+Merge preparation: transport and isolated installer regressions now run in both pre-push and Validate shared app. Installer fixtures use temporary source/runtime/lock paths and synthetic bytes only; checks cover backup hashes, file modes, independent runner/cron preservation, unknown preimages, busy locks, safe repeats and dry-run. Deployment and prior-day source/detail readback completed on 2026-11-16; this does not certify cash receipts or post drafts.
+
+The repair remains on its isolated branch, not main. A later full runtime deployment from older main can undo it; verify source/runtime hashes before any deployment and preserve independent runner changes. Do not merge or create a public PR without owner authorization. Main merge may trigger the existing Pages pipeline even though no App assets/version change.

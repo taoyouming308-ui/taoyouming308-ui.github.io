@@ -11,6 +11,7 @@ import fcntl
 import json
 import os
 import re
+import ssl
 import tempfile
 import time
 import urllib.error
@@ -35,6 +36,23 @@ ENDPOINT = 'https://vip12.meiguanjia.net/shair/bill!bill.action?set=null'
 INTERVAL = 300
 MAX_ROWS = 1000
 PAGE_SIZE = 100
+
+
+class NoSourceRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError('source_redirect_rejected')
+
+
+def source_urlopen(request, timeout):
+    """Owner-approved direct route for the exact MGJ source only; TLS stays verified."""
+    parsed = urllib.parse.urlsplit(request.full_url)
+    if (parsed.scheme != 'https' or parsed.hostname != 'vip12.meiguanjia.net'
+            or parsed.port not in (None, 443) or parsed.username or parsed.password):
+        raise ValueError('invalid_source_destination')
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoSourceRedirect(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+    return opener.open(request, timeout=timeout)
 
 
 class Node:
@@ -179,7 +197,7 @@ def fetch_period(shop, day, end_day, deadline, fetch=None):
         req = urllib.request.Request(ENDPOINT, data=urllib.parse.urlencode(params).encode(),
                 headers={'Cookie': cfg['cookies'], 'Request-From': 'MGJ_SHAIR',
                          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'})
-        with urllib.request.urlopen(req, timeout=min(15, remaining)) as response:
+        with source_urlopen(req, timeout=min(15, remaining)) as response:
             if response.status != 200 or urllib.parse.urlsplit(response.url).hostname != 'vip12.meiguanjia.net':
                 raise ValueError('invalid_source_response')
             body = response.read(12_000_001)

@@ -2613,3 +2613,7 @@ Verified shell/monthly loading separation; bounded frontdesk/main identity recov
 - 恢复有既有历史导入权限的财务导航入口；保留角色、能力、个人范围及门店权限校验，其他收起入口不变。
 - 补充权限和导航回归，不修改上传规则、金额、历史数据或日报入账行为。发布与原件入档分别核验。
 - 经单独授权，修复日报长金额输入被单元格重复内边距挤压的问题：保留字号与表格宽度，补充手机横竖屏、电脑端的聚焦编辑、小数和零值回归；不改变金额、计算或入账规则。
+
+## 2026-11-16 MGJ source transport repair
+
+Owner approved direct HTTPS only for vip12.meiguanjia.net after the system proxy produced TLS EOF. Consumer source requests and audit curl now route only that validated host directly, retain TLS certificate/hostname verification and reject redirects/other destinations. Supabase routing, global proxies, schedules, credentials and confirmed ledgers stay unchanged. Isolated branch fix/mgj-source-transport-20261116; source tests cover host restrictions and TLS. Source-only runtime deployment and the authorized prior-day two-store readback completed on 2026-11-16; bill sets and source amounts matched. Drafts remain unposted, and cash scope/channel gaps remain explicitly unresolved. No customer data or business amounts are included here. No UI release/version change.
