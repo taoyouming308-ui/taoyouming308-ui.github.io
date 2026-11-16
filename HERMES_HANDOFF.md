@@ -288,3 +288,7 @@ After publishing:
 curl -fsSL 'https://taoyouming308-ui.github.io/version.txt?_v=NEW_VERSION&t='$(date +%s)
 curl -fsSL 'https://taoyouming308-ui.github.io/perm-app.html?_v=NEW_VERSION&t='$(date +%s) | sed -n '2p'
 ```
+
+## 2026-11-16 source-only transport repair
+
+Use `scripts/install_mgj_business_detail_2026.py --install --source-transport-only` for the owner-approved exact MGJ HTTPS direct route. It locks the existing source lock, requires the known unchanged preimages or exact desired hashes, backs up and installs only consumption/audit transport files. It does not replace the independent runner, change cron, proxy settings, credentials, Supabase routing or financial records. Source branch: fix/mgj-source-transport-20261116.

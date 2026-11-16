@@ -5,6 +5,7 @@ Existing cron lines and normal booking/customer/consumption runtime files are
 not modified. Default mode is read-only; --install is explicit.
 """
 import argparse
+import fcntl
 import hashlib
 import os
 import shutil
@@ -104,15 +105,41 @@ def install():
             'runtime_verified_files': len(FILES)}
 
 
+EXPECTED_TRANSPORT_BASE = {'sync_mgj_daily_consumption.py': '3b253d42d6afd4be8104e30b894110feb8e991ed9c94501692c5047623a8a689', 'audit_mgj_daily_report_source.py': '82878c386311c24927d57938862ef231b87e87766b598d8cd949e4acacc92733'}
+
+
+def install_source_transport():
+    """Install only approved source transport; preserve other workers and all cron."""
+    expected = EXPECTED_TRANSPORT_BASE
+    with open('/tmp/mgj_daily_consumption.lock', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        for name, baseline in expected.items():
+            if sha256(RUNTIME / name) not in (baseline, sha256(ROOT / name)):
+                raise RuntimeError('source_transport_concurrent_change:' + name)
+        backup = Path(tempfile.mkdtemp(prefix='mgj-source-transport-backup-', dir=RUNTIME.parent))
+        os.chmod(backup, 0o700)
+        for name in expected:
+            target = RUNTIME / name
+            shutil.copy2(target, backup / name)
+            pending = RUNTIME / (name + '.pending.' + str(os.getpid()))
+            shutil.copy2(ROOT / name, pending)
+            os.chmod(pending, 0o700)
+            if sha256(pending) != sha256(ROOT / name):
+                raise RuntimeError('runtime_hash_mismatch')
+            os.replace(pending, target)
+        return {'status': 'installed', 'backup': str(backup), 'cron_changed': False,
+                'runtime_verified_files': list(expected)}
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--install', action='store_true')
+    parser.add_argument("--source-transport-only", action="store_true")
     args = parser.parse_args(argv)
     if not args.install:
         print('dry_run: would verify six runtime files and replace only the known business-detail block with live 15-minute/history 5-minute slots; no changes')
         return 0
     try:
-        result = install()
+        result = install_source_transport() if args.source_transport_only else install()
     except Exception as exc:
         print('install_failed: ' + type(exc).__name__ + ': ' + str(exc))
         return 2
