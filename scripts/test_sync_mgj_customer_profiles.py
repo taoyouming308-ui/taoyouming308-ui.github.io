@@ -439,6 +439,21 @@ class MultipartSourceTransportTests(unittest.TestCase):
             self.assertEqual(cmd[cmd.index('--noproxy')+1],'vip12.meiguanjia.net')
             self.assertEqual(cmd[cmd.index('--proto')+1],'=https')
 
+    def test_body_uses_stdin_without_temporary_file(self):
+        with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":0}') as call, mock.patch.object(SYNC.tempfile, 'NamedTemporaryFile') as temporary:
+            SYNC.multipart_post('memberDetail!detail.action', {'fixture': 1}, 'fixture', retries=0)
+            self.assertEqual(call.call_args.args[0][-1], '@-')
+            self.assertIn(b'"fixture": 1', call.call_args.kwargs['input'])
+            temporary.assert_not_called()
+
+    def test_source_rate_limit_yields_batch_without_retry(self):
+        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":429}') as call, mock.patch.object(SYNC.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(RuntimeError, '429'):
+                SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
+            self.assertFalse(SYNC.run_budget_available())
+            self.assertEqual(call.call_count, 1)
+            sleep.assert_not_called()
+
     def test_write_destination_rejected(self):
         with mock.patch.object(SYNC.subprocess,'check_output') as call:
             with self.assertRaises(ValueError): SYNC.multipart_post('member!delete.action',{},'fixture')

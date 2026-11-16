@@ -526,10 +526,6 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
         f"--{boundary}--\r\n"
     )
     
-    tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt")
-    tmp.write(body)
-    tmp.close()
-    
     cookies = load_cookies(config_path)
     
     cmd = [
@@ -545,45 +541,47 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
         "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
         "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
         "-H", "X-Requested-With: XMLHttpRequest",
-        "--data-binary", f"@{tmp.name}"
+        "--data-binary", "@-"
     ]
     
-    try:
-        last_error = None
-        for attempt in range(retries + 1):
-            remaining = remaining_run_seconds()
-            if remaining is not None and remaining < 1:
-                raise TimeoutError("同步运行时间已到105秒上限")
+    last_error = None
+    for attempt in range(retries + 1):
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("同步运行时间已到105秒上限")
+        try:
+            command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
+            out = subprocess.check_output(cmd, input=body.encode("utf-8"), timeout=command_timeout, stderr=subprocess.STDOUT)
+            decoded = out.decode("utf-8", errors="replace")
             try:
-                command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
-                out = subprocess.check_output(cmd, timeout=command_timeout, stderr=subprocess.STDOUT)
-                decoded = out.decode("utf-8", errors="replace")
-                try:
-                    result = json.loads(decoded)
-                except json.JSONDecodeError as exc:
-                    if decoded.lstrip().startswith("<"):
-                        raise RuntimeError(f"{path}返回HTML拦截页") from exc
-                    raise
-                if result.get("code") == 0:
-                    return result
-                if int_number(result.get("code"), -1) == 403:
-                    raise RuntimeError(f"{path} code=403 请求被拒绝")
-                last_error = RuntimeError(
-                    f"{path} code={result.get('code')} "
-                    f"{result.get('message') or result.get('msg') or ''}".strip()
-                )
-            except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
-                # Never serialize curl command arguments containing the source cookie.
-                last_error = RuntimeError(f"{type(exc).__name__}: customer source read failed")
-            if attempt < retries:
-                delay = 0.8 * (attempt + 1)
-                remaining = remaining_run_seconds()
-                if remaining is not None and remaining <= delay + 1:
-                    break
-                time.sleep(delay)
-        raise RuntimeError(f"{path}请求失败: {last_error}")
-    finally:
-        os.unlink(tmp.name)
+                result = json.loads(decoded)
+            except json.JSONDecodeError as exc:
+                if decoded.lstrip().startswith("<"):
+                    raise RuntimeError(f"{path}返回HTML拦截页") from exc
+                raise
+            if result.get("code") == 0:
+                return result
+            if int_number(result.get("code"), -1) == 429:
+                # Yield this bounded batch rather than hammering a throttled source.
+                global RUN_DEADLINE
+                RUN_DEADLINE = time.monotonic()
+                raise RuntimeError("customer source code=429; batch yielded for next scheduled run")
+            if int_number(result.get("code"), -1) == 403:
+                raise RuntimeError(f"{path} code=403 请求被拒绝")
+            last_error = RuntimeError(
+                f"{path} code={result.get('code')} "
+                f"{result.get('message') or result.get('msg') or ''}".strip()
+            )
+        except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
+            # Never serialize curl command arguments containing the source cookie.
+            last_error = RuntimeError(f"{type(exc).__name__}: customer source read failed")
+        if attempt < retries:
+            delay = 0.8 * (attempt + 1)
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining <= delay + 1:
+                break
+            time.sleep(delay)
+    raise RuntimeError(f"{path}请求失败: {last_error}")
 
 
 def search_customer(phone):

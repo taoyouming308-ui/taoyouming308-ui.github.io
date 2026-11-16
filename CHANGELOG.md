@@ -2,6 +2,7 @@
 
 - Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
 - Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- Eliminate temporary multipart-body cleanup failures; yield a rate-limited batch instead of immediate retries.
 - No frontend version change, source business edits, financial posting or scheduler change.
 
 ## 2026-11-16 · 发型审美训练：眼镜、露耳参考与耳前桥接
