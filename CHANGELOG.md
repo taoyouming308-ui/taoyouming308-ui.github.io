@@ -4,6 +4,9 @@
 - Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
 - Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
 - No frontend version change, source business edits, financial posting or scheduler change.
+# Booking transport recovery · 2026-11-16
+
+Restore the existing exact Meiguanjia appointment read endpoints with verified TLS and source-only direct routing; preserve cloud signatures, original appointments, cadence, and failure cleanup protection. Runtime recovery verified for November17; UI acceptance and protected merge remain pending.
 
 ## 2026-11-16 · 发型审美训练：眼镜、露耳参考与耳前桥接
 

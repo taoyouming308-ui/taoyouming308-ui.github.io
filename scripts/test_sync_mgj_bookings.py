@@ -133,3 +133,41 @@ class CadenceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BookingSourceTransportTests(unittest.TestCase):
+    def test_exact_read_source_uses_direct_verified_tls_and_no_redirects(self):
+        for path in ("/shair/metedata!reservationMetadata.action", "/shair/reservation!list.action"):
+            req = SYNC.urllib.request.Request("https://vip12.meiguanjia.net" + path)
+            with mock.patch.object(SYNC.urllib.request, "build_opener") as build:
+                SYNC.source_urlopen(req, 9)
+                handlers = build.call_args.args
+                self.assertEqual(handlers[0].proxies, {})
+                self.assertIsInstance(handlers[1], SYNC.NoSourceRedirect)
+                self.assertTrue(handlers[2]._context.check_hostname)
+                self.assertEqual(handlers[2]._context.verify_mode, SYNC.ssl.CERT_REQUIRED)
+                build.return_value.open.assert_called_once_with(req, timeout=9)
+
+    def test_rejects_non_source_and_write_destinations_before_network(self):
+        urls = ["http://vip12.meiguanjia.net/shair/reservation!list.action",
+                "https://evil.invalid/shair/reservation!list.action",
+                "https://vip12.meiguanjia.net/shair/reservation!save.action",
+                "https://vip12.meiguanjia.net:444/shair/reservation!list.action",
+                "https://user@vip12.meiguanjia.net/shair/reservation!list.action",
+                "https://vip12.meiguanjia.net/shair/reservation!list.action?redirect=1",
+                SYNC.SYNC_FUNCTION]
+        with mock.patch.object(SYNC.urllib.request, "build_opener") as build:
+            for url in urls:
+                with self.assertRaisesRegex(ValueError, "invalid_booking_source_destination"):
+                    SYNC.source_urlopen(SYNC.urllib.request.Request(url), 9)
+            build.assert_not_called()
+
+    def test_rejects_redirect(self):
+        with self.assertRaisesRegex(ValueError, "source_redirect_rejected"):
+            SYNC.NoSourceRedirect().redirect_request(None, None, 302, "moved", {}, "https://evil.invalid")
+
+    def test_json_read_uses_source_route(self):
+        with mock.patch.object(SYNC, "source_urlopen") as open_source:
+            open_source.return_value.__enter__.return_value.read.return_value = b'{"code":0}'
+            self.assertEqual(SYNC.request_json("https://vip12.meiguanjia.net/shair/metedata!reservationMetadata.action"), {"code":0})
+            self.assertEqual(open_source.call_count, 1)
