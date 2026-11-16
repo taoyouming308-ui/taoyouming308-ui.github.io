@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520"><rect width="960" height="520" fill="#F7F4ED"/><text x="56" y="61" font-size="30" font-weight="bold" fill="#343C40">原理图｜发片宽度、杠面长度与横向偏移</text>
+<rect x="45" y="104" width="422" height="333" rx="22" fill="#DDE9E9"/><rect x="494" y="104" width="422" height="333" rx="22" fill="#E8E6DB"/>
+<text x="77" y="144" font-size="24" fill="#425860">A｜均匀落在有效杠面内</text><text x="526" y="144" font-size="24" fill="#5B584B">B｜发片超过有效杠面</text>
+<rect x="103" y="297" width="292" height="70" rx="32" fill="#76999F"/><rect x="563" y="297" width="292" height="70" rx="32" fill="#76999F"/>
+<g stroke="#394E52" stroke-width="5" fill="none"><path d="M120 194L120 285M160 194L160 285M200 194L200 285M240 194L240 285M280 194L280 285M320 194L320 285M360 194L360 285"/></g>
+<g stroke="#A66F60" stroke-width="5" fill="none"><path d="M526 194Q526 263 563 321M565 194Q556 268 599 321M604 194L628 290M643 194L657 291M682 194L687 291M721 194L727 291M760 194L763 291M799 194Q818 262 854 315M838 194Q872 249 892 329"/></g>
+<path d="M90 388H404" stroke="#658A8A" stroke-width="3"/><path d="M100 376L90 388L100 400M394 376L404 388L394 400" stroke="#658A8A" stroke-width="3" fill="none"/>
+<text x="248" y="425" font-size="18" text-anchor="middle" fill="#425860">有效杠面宽度</text><text x="710" y="425" font-size="18" text-anchor="middle" fill="#8E6054">两端易出现越界、斜拉或叠片</text>
+<text x="75" y="235" font-size="17" fill="#43575D">近似平行的入杠方向</text><text x="540" y="239" font-size="17" fill="#A36757">边缘发丝的横向路径变化</text><text x="54" y="490" font-size="17" fill="#696C6A">ZY SYR · 原创教学示意图｜非实测、非真人烫发工艺参数</text></svg>

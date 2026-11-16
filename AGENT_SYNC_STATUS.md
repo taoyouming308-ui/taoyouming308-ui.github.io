@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:6b50415b2081c16dcf0ae3d1625e0237197409c3d7547e4443967dccee2436e5 -->
+## 2026-11-16 · Reviewed academy publication candidate (App version: v663 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main c1d36db810133f7f27ab823cf17e12b660213be5.
+- Dates: 2026-11-16. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-16 · Glasses, ear-tuck and reference-length conflict (App version: v663 unchanged)
 
 - Current owner: Codex content publisher. Based on protected github/main a17bc45dd323ee32ff2fba32f949c596221d3a3e in an isolated clean `content/aesthetic-2026-11-16` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v663 release and all thirty-nine earlier aesthetic cases remain preserved.
