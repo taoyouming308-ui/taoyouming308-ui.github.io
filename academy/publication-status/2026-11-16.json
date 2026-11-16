@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-16",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "c1d36db810133f7f27ab823cf17e12b660213be5",
+  "preflightRequestedBy": "ChatGPT connected daily academy publisher",
+  "note": "2026-11-16 Shanghai daily lesson. Initial content-branch file requests real immutable-main Academy publication preflight backup only. No draft, approval, lesson HTML, images or production changes yet. Do not advance until successful SHA-bound backup artifact and source archive verified; preserve independent pending PR #128 and #135 and all current main content. Existing exact-head protected CI, ordinary expected-head merge and actual Pages SHA256 readback remain mandatory."
+}
