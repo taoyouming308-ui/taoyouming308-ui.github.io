@@ -1,3 +1,9 @@
+## 2026-11-17 Customer coordination candidate (not deployed)
+
+- Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.
+- Track deferred work separately from failures, deduplicate compensation, emit age/persistent-source alerts, and finish all modes with released locks.
+- Add offline integration coverage to mandatory existing gate; no frontend, production scheduler or financial changes.
+
 ## 2026-11-17 Customer source transport and bounded history recovery
 
 - Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.

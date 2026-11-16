@@ -1,3 +1,10 @@
+## 2026-11-17 · Customer coordination candidate (not deployed)
+
+- Integrated reviewed source pacing and nonblocking shared-source coordination onto main 1cb33fd7, preserving appointment repair and existing shared session-lock behavior. No production schedule/runtime changes or public push.
+- Verified TLS and exact read endpoints remain; subprocess wall time capped at10s per read, existing batch budget105s applied to all modes. Daily due/booking active yields, waits happen outside source lock; advisory priority still permits one already-started bounded request.
+- Persist deferred customers separately with0600 atomic files, retain old failure queue, deduplicate compensation, preserve first-deferred age and alert persistent transport deferral. All modes write terminal state and release outer shared lock. No claimed absolute starvation or zero-interference guarantee.
+-73 customer/coordination unit tests pass. Independent final formal-diff review passed. Full unchanged pre-push gate plus new coordination tests passed on 2026-11-17 01:28 +08:00 (finance152/152 and final100 Python tests). No push or production deployment; no real-source acceptance yet; runtime remains prior a6c58df candidate.
+
 ## 2026-11-17 · Customer source reads and bounded history recovery (v663 unchanged)
 
 - Isolated owner branch `fix/customer-source-transport-20261117`, base protected main c80358ad. Original developer tree and appointment repair preserved; daily recovery archive and version/integrity/handoff gates passed.

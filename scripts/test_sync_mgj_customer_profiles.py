@@ -14,6 +14,23 @@ SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
 
 
+# These isolated unit tests must never touch runtime coordination state or network.
+def setUpModule():
+    import contextlib
+    global _isolation_directory, _isolation_patches
+    _isolation_directory = tempfile.TemporaryDirectory()
+    _isolation_patches = [
+        mock.patch.object(SYNC, 'DEFERRED_PATH', _isolation_directory.name+'/deferred.json'),
+        mock.patch.object(SYNC, 'source_slot', side_effect=contextlib.nullcontext),
+        mock.patch.object(SYNC.subprocess, 'check_output', side_effect=AssertionError('unmocked source command forbidden')),
+    ]
+    for patch in _isolation_patches: patch.start()
+
+def tearDownModule():
+    for patch in reversed(_isolation_patches): patch.stop()
+    _isolation_directory.cleanup()
+
+
 class MergeProfileTests(unittest.TestCase):
     def setUp(self):
         self.existing = {
@@ -406,11 +423,12 @@ class CustomerSourceTransportTests(unittest.TestCase):
             SYNC.NoSourceRedirect().redirect_request(None,None,302,'',{},'https://other.test')
 
     def test_form_uses_browser_header_and_source_route(self):
-        response = mock.MagicMock()
-        response.__enter__.return_value.read.return_value = b'ok'
-        with mock.patch.object(SYNC,'load_cookies',return_value='fixture'), mock.patch.object(SYNC,'source_urlopen',return_value=response) as call:
-            self.assertEqual(SYNC.form_post('consumerHelp!find.action',{'keyword':'fixture'}),'ok')
-            self.assertEqual(call.call_args.args[0].get_header('User-agent'),SYNC.SOURCE_USER_AGENT)
+        with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'ok\n__MGJ_HTTP_STATUS__:200') as call:
+            self.assertEqual(SYNC.form_post('consumerHelp!find.action', {'keyword':'fixture'}), 'ok')
+            cmd = call.call_args.args[0]
+            self.assertIn('User-agent: '+SYNC.SOURCE_USER_AGENT, cmd)
+            self.assertIn('https://vip12.meiguanjia.net/shair/consumerHelp!find.action', cmd)
+            self.assertLessEqual(call.call_args.kwargs['timeout'],10)
 
     def test_network_failure_not_not_found(self):
         with mock.patch.object(SYNC,'form_post',side_effect=TimeoutError('fixture')):
@@ -467,11 +485,9 @@ class MultipartSourceTransportTests(unittest.TestCase):
                 SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
 
     def test_search_http429_stops_without_second_shop_or_retry(self):
-        import urllib.error
-        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.urllib.request, 'build_opener') as build, mock.patch.object(SYNC.time, 'sleep') as sleep:
-            build.return_value.open.side_effect = urllib.error.HTTPError('https://vip12.meiguanjia.net',429,'limited',{},None)
+        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'limited\n__MGJ_HTTP_STATUS__:429') as call, mock.patch.object(SYNC.time, 'sleep') as sleep:
             with self.assertRaises(SYNC.SourceRateLimitError): SYNC.search_customer('fixture')
-            self.assertEqual(build.return_value.open.call_count, 1)
+            self.assertEqual(call.call_count,1)
             sleep.assert_not_called()
             self.assertFalse(SYNC.run_budget_available())
 
