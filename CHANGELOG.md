@@ -1,3 +1,9 @@
+## 2026-11-17 Customer source transport and bounded history recovery
+
+- Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
+- Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- No frontend version change, source business edits, financial posting or scheduler change.
+
 ## 2026-11-16 · 发型审美训练：眼镜、露耳参考与耳前桥接
 
 - 追加稳定案例 `aesthetic-2026-11-16`，训练把露耳超短鲍伯参考图拆成边界、临时别耳、镜腿接触、后枕支撑与维护成本，避免为静态照片直接剪掉太阳穴和耳前安全长度。

@@ -1,3 +1,7 @@
+## 2026-11-17 customer recovery candidate
+
+Canonical customer source now uses exact read-only source endpoints and verified TLS. History is retrieved in bounded <=365-day windows because the source rejects multi-year requests. Keep the existing 8-profile, 105-second budget and shared lock. Do not reset old needs-review queue. Partial history/packages and failed service projection must remain incomplete/retry, not healthy. Deployment is only the canonical customer script to `sync_mgj_all.py`; preserve the separate appointment repair and all shared helpers. Runtime and final release status must be verified from receipts before claiming recovery.
+
 # Hermes Handoff
 
 ## 2026-10-08 daily text save readback (App version: v608)

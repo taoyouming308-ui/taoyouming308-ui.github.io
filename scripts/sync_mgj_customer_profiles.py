@@ -86,9 +86,29 @@ SHOP_NAMES = {
 DEFAULT_SESSION_SHOP_ID = "1009951"
 RUN_DEADLINE = None
 
-SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
+SOURCE_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 Chrome/148.0.0.0 Safari/537.36"
+)
+
+
+class NoSourceRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("customer_source_redirect_rejected")
+
+
+def source_urlopen(request, timeout):
+    """Exact read-only customer source route, verified TLS, no redirects."""
+    parsed = urllib.parse.urlsplit(request.full_url)
+    if (parsed.scheme != "https" or parsed.hostname != SERVER
+            or parsed.port not in (None, 443) or parsed.username or parsed.password
+            or parsed.path != "/shair/consumerHelp!find.action"
+            or parsed.query or parsed.fragment):
+        raise ValueError("invalid_customer_source_destination")
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoSourceRedirect(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+    return opener.open(request, timeout=timeout)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -473,10 +493,11 @@ def form_post(path, data):
     req = urllib.request.Request(url, data=body, headers={
         "Cookie": load_cookies(),
         "Request-From": "MGJ_SHAIR",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": SOURCE_USER_AGENT
     })
     def request(effective_timeout):
-        with urllib.request.urlopen(req, timeout=effective_timeout, context=SSL_CTX) as response:
+        with source_urlopen(req, timeout=effective_timeout) as response:
             return response.read().decode("utf-8", errors="replace")
     return with_network_retries(request, 15)
 
@@ -487,6 +508,11 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     通过curl发送，带完整浏览器头+http2以绕过WAF。
     参考plan_server的mp_call实现。
     """
+    if SERVER != "vip12.meiguanjia.net" or path not in {
+        "memberDetail!detail.action", "bill!detail.action",
+        "member!queryMemberBillListnew.action",
+    }:
+        raise ValueError("invalid_customer_multipart_destination")
     url = f"https://{SERVER}/shair/{path}"
     boundary = "----MGJSyncBoundary"
     
@@ -507,7 +533,8 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     cookies = load_cookies(config_path)
     
     cmd = [
-        "curl", "-s", "-k", "--connect-timeout", "10", "--max-time", "20",
+        "curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https",
+        "--connect-timeout", "10", "--max-time", "20",
         "--http2", "-X", "POST", url,
         "-H", f"Cookie: {cookies}",
         "-H", "Request-From: MGJ_SHAIR",
@@ -546,7 +573,8 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
                     f"{result.get('message') or result.get('msg') or ''}".strip()
                 )
             except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
-                last_error = exc
+                # Never serialize curl command arguments containing the source cookie.
+                last_error = RuntimeError(f"{type(exc).__name__}: customer source read failed")
             if attempt < retries:
                 delay = 0.8 * (attempt + 1)
                 remaining = remaining_run_seconds()
@@ -563,7 +591,7 @@ def search_customer(phone):
     在两家店中搜索客户，返回(cust_id, mem_id, shop_id)或None。
     搜索时带isYY=1参数。
     """
-    cookies = load_cookies()
+    errors = []
     for sid in SHOP_IDS:
         try:
             html = form_post("consumerHelp!find.action", {
@@ -574,7 +602,10 @@ def search_customer(phone):
             if m:
                 return m.group(3), m.group(1), sid  # cust_id, mem_id, shop_id
         except Exception as e:
-            log(f"  ⚠️ 搜索shop={sid}失败: {e}")
+            errors.append(e)
+            log(f"  ⚠️ 搜索shop={sid}失败: {type(e).__name__}")
+    if errors:
+        raise RuntimeError("客户源搜索不完整：连接或读取失败，不能判定客户不存在") from errors[0]
     return None
 
 
@@ -738,24 +769,41 @@ def fetch_service_history(
     """Fetch bills through the read-only history session and enrich recent rows."""
     if not member_card_id:
         raise RuntimeError("缺少会员卡ID，无法查询消费记录")
-    bills = multipart_post("member!queryMemberBillListnew.action", {
-        "pageNum": 1,
-        "pageSize": 99999,
-        "memberid": cust_id,
-        "shopid": billing_shop_id,
-        "billstatus": -1,
-        "billtype": -1,
-        "timeUnLimit": 1,
-        "memberCardId": int(member_card_id),
-        "startDate": HISTORY_START_DATE,
-        "endDate": datetime.now().strftime("%Y-%m-%d"),
-        "isFromOpenCard": 0,
-    }, session_shop_id(config_path), config_path=config_path)
-    rows = bills.get("content")
-    if not isinstance(rows, list):
-        raise RuntimeError("消费记录接口返回格式异常")
-    history = [map_bill_summary(row) for row in rows]
-    history = [row for row in history if row.get("id") and row.get("date")]
+    # The source now rejects ranges longer than one year. Read finite,
+    # non-overlapping <=365-day windows; any failed window keeps old history.
+    first_day = datetime.strptime(HISTORY_START_DATE, "%Y-%m-%d").date()
+    last_day = datetime.now().date()
+    source_shop = session_shop_id(config_path)
+    history_by_id = {}
+    while last_day >= first_day:
+        if not run_budget_available():
+            raise TimeoutError("消费历史分段未完成，保留原历史")
+        window_start = max(first_day, last_day - timedelta(days=364))
+        bills = multipart_post("member!queryMemberBillListnew.action", {
+            "pageNum": 1, "pageSize": 99999,
+            "memberid": cust_id, "shopid": billing_shop_id,
+            "billstatus": -1, "billtype": -1, "timeUnLimit": 0,
+            "memberCardId": int(member_card_id),
+            "startDate": window_start.isoformat(), "endDate": last_day.isoformat(),
+            "isFromOpenCard": 0,
+        }, source_shop, config_path=config_path)
+        rows = bills.get("content")
+        if (not isinstance(rows, list) or len(rows) >= 99999
+                or type(bills.get("count")) is not int or bills["count"] != len(rows)
+                or bills.get("pageIndex") != 1):
+            raise RuntimeError("消费记录分段格式异常或分页数量不完整")
+        for row in rows:
+            mapped = map_bill_summary(row)
+            if not mapped.get("id") or not mapped.get("date"):
+                raise RuntimeError("消费记录缺少编号或日期，不能判定历史完整")
+            if not window_start.isoformat() <= mapped["date"] <= last_day.isoformat():
+                raise RuntimeError("消费记录超出请求分段，不能判定历史完整")
+            key = str(mapped["id"])
+            if key in history_by_id and history_by_id[key] != mapped:
+                raise RuntimeError("消费记录重复编号内容冲突")
+            history_by_id[key] = mapped
+        last_day = window_start - timedelta(days=1)
+    history = list(history_by_id.values())
     history.sort(
         key=lambda row: (row.get("date", ""), row.get("time", ""), row.get("id", "")),
         reverse=True,
@@ -1219,6 +1267,9 @@ def upsert_customer(data, fill_missing_only=False):
         except Exception as service_exc:
             # Customer archives must keep syncing during a staged schema rollout.
             log(f"  ⚠️ 烫染护对账明细写入失败，客户档案已保留: {service_exc}")
+            return False, "客户档案已保存，但服务历史投影未完成，保留重试"
+        if data.get("_history_complete") is False or data.get("_packages_complete") is False:
+            return False, "客户档案已保存，但套餐或消费历史读取不完整，保留重试"
         return True, action
     except Exception as e:
         return False, str(e)
@@ -1316,9 +1367,15 @@ def sync_phones(phones, label="同步"):
                 v = data["total_visits"]
                 c = data["total_consumption"]
                 s = data.get("source", "?")
-                log(f"  ✅ ({action}) {v}次 ¥{c:.0f} [{s}]")
-                ok += 1
-                outcomes.append({"phone": phone, "success": True})
+                if not data.get("_history_complete") or not data.get("_packages_complete"):
+                    log("  ⚠️ 资料已保存，历史或套餐尚未完整")
+                    fail += 1
+                    outcomes.append({"phone": phone, "success": False, "profile_updated": True,
+                                     "error": "客户档案已保存，但套餐或消费历史读取不完整，保留重试"})
+                else:
+                    log(f"  ✅ ({action}) {v}次 ¥{c:.0f} [{s}]")
+                    ok += 1
+                    outcomes.append({"phone": phone, "success": True})
             else:
                 log(f"  ❌ 写入失败: {action}")
                 fail += 1

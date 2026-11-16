@@ -1,3 +1,10 @@
+## 2026-11-17 · Customer source reads and bounded history recovery (v663 unchanged)
+
+- Isolated owner branch `fix/customer-source-transport-20261117`, base protected main c80358ad. Original developer tree and appointment repair preserved; daily recovery archive and version/integrity/handoff gates passed.
+- Customer search requires the existing browser user-agent; source reads use exact host/path allowlists, verified TLS, no redirects. Multipart reads remove legacy insecure TLS and use only the three existing read endpoints. Curl exceptions no longer serialize cookie-bearing command arguments.
+- Source history now rejects ranges exceeding one year. Read non-overlapping windows of at most 365 days, require all windows before complete status, check dates and duplicate IDs, preserve old history on failure/budget exhaustion. Partial history/packages or failed service projection retain retry instead of reporting success.
+- 51 isolated unit tests pass. Two-transport source probes, two complete nine-window history samples and existing limited runtime recovery are documented privately without customer identifiers. Runtime connection-only recovery updated 6 profiles; one not-found and one deferred by budget remain; old needs-review queue is not reset. History runtime candidate deployed with matching hash; finite readback and full publish gates remain pending until verified. No source-business writes, appointment edits, credentials, security settings, scheduling, frontend or financial changes.
+
 ## 2026-11-16 · Glasses, ear-tuck and reference-length conflict (App version: v663 unchanged)
 
 - Current owner: Codex content publisher. Based on protected github/main a17bc45dd323ee32ff2fba32f949c596221d3a3e in an isolated clean `content/aesthetic-2026-11-16` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v663 release and all thirty-nine earlier aesthetic cases remain preserved.

@@ -146,7 +146,7 @@ class HistorySessionRoutingTests(unittest.TestCase):
     @mock.patch.object(SYNC, "multipart_post")
     @mock.patch.object(SYNC, "session_shop_id", return_value="1009951")
     def test_bill_history_uses_isolated_read_only_session(self, session_shop_id, post):
-        post.return_value = {"code": 0, "content": []}
+        post.return_value = {"code": 0, "content": [], "count": 0, "pageIndex": 1}
         config_path = "/tmp/read-only-history-session.json"
 
         self.assertEqual(
@@ -374,5 +374,149 @@ class ServiceReconciliationTests(unittest.TestCase):
         self.assertEqual(rows[0]["customer_phone"], "18626895050")
 
 
-if __name__ == "__main__":
+
+class CustomerSourceTransportTests(unittest.TestCase):
+    def test_exact_destination_and_tls(self):
+        import ssl
+        import urllib.request
+        req = urllib.request.Request('https://vip12.meiguanjia.net/shair/consumerHelp!find.action', data=b'x=1')
+        with mock.patch.object(SYNC.urllib.request, 'build_opener') as build:
+            SYNC.source_urlopen(req, 9)
+            handlers = build.call_args.args
+            self.assertEqual(handlers[0].proxies, {})
+            self.assertIsInstance(handlers[1], SYNC.NoSourceRedirect)
+            self.assertEqual(handlers[2]._context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(handlers[2]._context.check_hostname)
+            build.return_value.open.assert_called_once_with(req, timeout=9)
+
+    def test_reject_other_destinations_before_network(self):
+        import urllib.request
+        for url in ['http://vip12.meiguanjia.net/shair/consumerHelp!find.action',
+                    'https://other.test/shair/consumerHelp!find.action',
+                    'https://vip12.meiguanjia.net/shair/member!delete.action',
+                    'https://vip12.meiguanjia.net/shair/consumerHelp!find.action?x=1',
+                    'https://u:p@vip12.meiguanjia.net/shair/consumerHelp!find.action',
+                    'https://vip12.meiguanjia.net:444/shair/consumerHelp!find.action']:
+            with self.subTest(url=url), mock.patch.object(SYNC.urllib.request, 'build_opener') as build:
+                with self.assertRaises(ValueError): SYNC.source_urlopen(urllib.request.Request(url), 2)
+                build.assert_not_called()
+
+    def test_redirect_denied(self):
+        with self.assertRaises(ValueError):
+            SYNC.NoSourceRedirect().redirect_request(None,None,302,'',{},'https://other.test')
+
+    def test_form_uses_browser_header_and_source_route(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b'ok'
+        with mock.patch.object(SYNC,'load_cookies',return_value='fixture'), mock.patch.object(SYNC,'source_urlopen',return_value=response) as call:
+            self.assertEqual(SYNC.form_post('consumerHelp!find.action',{'keyword':'fixture'}),'ok')
+            self.assertEqual(call.call_args.args[0].get_header('User-agent'),SYNC.SOURCE_USER_AGENT)
+
+    def test_network_failure_not_not_found(self):
+        with mock.patch.object(SYNC,'form_post',side_effect=TimeoutError('fixture')):
+            with self.assertRaisesRegex(RuntimeError,'不能判定客户不存在'): SYNC.search_customer('fixture')
+
+    def test_partial_failure_not_not_found(self):
+        with mock.patch.object(SYNC,'form_post',side_effect=[TimeoutError('fixture'),'<html></html>']):
+            with self.assertRaises(RuntimeError): SYNC.search_customer('fixture')
+
+    def test_completed_empty_is_not_found(self):
+        with mock.patch.object(SYNC,'form_post',return_value='<html></html>'):
+            self.assertIsNone(SYNC.search_customer('fixture'))
+
+    def test_match_preserves_identity(self):
+        with mock.patch.object(SYNC,'form_post',return_value="checkAllow('1','2','3',"):
+            self.assertEqual(SYNC.search_customer('fixture'),('3','1','1009951'))
+
+class MultipartSourceTransportTests(unittest.TestCase):
+    def test_verified_tls_exact_bypass_and_no_redirects(self):
+        with mock.patch.object(SYNC,'load_cookies',return_value='fixture-secret'), mock.patch.object(SYNC.subprocess,'check_output',return_value=b'{"code":0}') as call:
+            SYNC.multipart_post('memberDetail!detail.action',{},'fixture',retries=0)
+            cmd=call.call_args.args[0]
+            self.assertEqual(cmd[1],'--disable')
+            self.assertNotIn('-k',cmd)
+            self.assertNotIn('-L',cmd)
+            self.assertEqual(cmd[cmd.index('--noproxy')+1],'vip12.meiguanjia.net')
+            self.assertEqual(cmd[cmd.index('--proto')+1],'=https')
+
+    def test_write_destination_rejected(self):
+        with mock.patch.object(SYNC.subprocess,'check_output') as call:
+            with self.assertRaises(ValueError): SYNC.multipart_post('member!delete.action',{},'fixture')
+            call.assert_not_called()
+
+    def test_subprocess_error_does_not_leak_cookie(self):
+        import subprocess
+        with mock.patch.object(SYNC,'load_cookies',return_value='fixture-secret'), mock.patch.object(SYNC.subprocess,'check_output',side_effect=subprocess.CalledProcessError(1,['curl','Cookie: fixture-secret'])):
+            with self.assertRaises(RuntimeError) as caught: SYNC.multipart_post('bill!detail.action',{},'fixture',retries=0)
+            self.assertNotIn('fixture-secret',str(caught.exception))
+
+class BoundedHistoryWindowsTests(unittest.TestCase):
+    def test_windows_cover_all_days_once_and_keep_read_session(self):
+        calls=[]
+        def read(path,data,shop,**kw):
+            calls.append(data)
+            self.assertEqual(path,'member!queryMemberBillListnew.action')
+            self.assertEqual(kw['config_path'],'fixture-session')
+            self.assertEqual(data['timeUnLimit'],0)
+            return {'content':[], 'count':0, 'pageIndex':1}
+        with mock.patch.object(SYNC,'multipart_post',side_effect=read), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'), mock.patch.object(SYNC,'HISTORY_START_DATE','2020-02-28'):
+            self.assertEqual(SYNC.fetch_service_history('fixture',1,'fixture',0,'fixture-session'),[])
+        self.assertEqual(calls[0]['endDate'],datetime.now().strftime('%Y-%m-%d'))
+        self.assertEqual(calls[-1]['startDate'],'2020-02-28')
+        for i,row in enumerate(calls):
+            start=datetime.strptime(row['startDate'],'%Y-%m-%d').date();end=datetime.strptime(row['endDate'],'%Y-%m-%d').date()
+            self.assertLessEqual((end-start).days,364)
+            if i:self.assertEqual(end+timedelta(days=1),datetime.strptime(calls[i-1]['startDate'],'%Y-%m-%d').date())
+
+    def test_failed_window_never_returns_partial_history(self):
+        with mock.patch.object(SYNC,'multipart_post',side_effect=[{'content':[], 'count':0, 'pageIndex':1},TimeoutError('fixture')]), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'):
+            with self.assertRaises(TimeoutError):SYNC.fetch_service_history('fixture',1,'fixture',0)
+
+    def test_expired_budget_stops_before_next_request(self):
+        with mock.patch.object(SYNC,'multipart_post') as call, mock.patch.object(SYNC,'session_shop_id',return_value='fixture'), mock.patch.object(SYNC,'run_budget_available',return_value=False):
+            with self.assertRaises(TimeoutError):SYNC.fetch_service_history('fixture',1,'fixture',0)
+            call.assert_not_called()
+
+    def test_out_of_window_rejected(self):
+        with mock.patch.object(SYNC,'multipart_post',return_value={'content':[{}], 'count':1, 'pageIndex':1}), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'), mock.patch.object(SYNC,'map_bill_summary',return_value={'id':'fixture','date':'1900-01-01'}):
+            with self.assertRaisesRegex(RuntimeError,'超出'):SYNC.fetch_service_history('fixture',1,'fixture',0)
+
+    def test_duplicate_identical_rows_are_not_repeated(self):
+        day=datetime.now().strftime('%Y-%m-%d')
+        with mock.patch.object(SYNC,'multipart_post',return_value={'content':[{},{}], 'count':2, 'pageIndex':1}), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'), mock.patch.object(SYNC,'HISTORY_START_DATE',day), mock.patch.object(SYNC,'map_bill_summary',return_value={'id':'fixture','date':day}):
+            rows=SYNC.fetch_service_history('fixture',1,'fixture',0)
+            self.assertEqual(len(rows),1)
+
+    def test_conflicting_duplicate_rejected(self):
+        day=datetime.now().strftime('%Y-%m-%d')
+        with mock.patch.object(SYNC,'multipart_post',return_value={'content':[{},{}], 'count':2, 'pageIndex':1}), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'), mock.patch.object(SYNC,'HISTORY_START_DATE',day), mock.patch.object(SYNC,'map_bill_summary',side_effect=[{'id':'fixture','date':day,'amount':1},{'id':'fixture','date':day,'amount':2}]):
+            with self.assertRaisesRegex(RuntimeError,'冲突'):SYNC.fetch_service_history('fixture',1,'fixture',0)
+
+class PartialCompletionTests(unittest.TestCase):
+    def test_incomplete_history_stays_in_retry_queue(self):
+        profile={'found':True,'total_visits':1,'total_consumption':10,'_history_complete':False,'_packages_complete':True}
+        with mock.patch.object(SYNC,'get_customer_full',return_value=profile), mock.patch.object(SYNC,'upsert_customer',return_value=(True,'updated')):
+            ok,failed,skipped,outcomes=SYNC.sync_phones(['fixture'])
+        self.assertEqual((ok,failed,skipped),(0,1,0))
+        self.assertFalse(outcomes[0]['success'])
+        queue=SYNC.update_retry_queue({'version':1,'items':[]},outcomes)
+        self.assertEqual(queue['items'][0]['phone'],'fixture')
+
+    def test_projection_error_not_reported_success(self):
+        with mock.patch.object(SYNC,'supabase_get',return_value=[]), mock.patch.object(SYNC,'supabase_post',return_value=204), mock.patch.object(SYNC,'upsert_service_records',side_effect=TimeoutError('fixture')):
+            ok,msg=SYNC.upsert_customer({'phone':'fixture','found':True,'_history_complete':True,'_packages_complete':True})
+        self.assertFalse(ok)
+        self.assertIn('保留重试',msg)
+
+
+class HistoryPageCountTests(unittest.TestCase):
+    def test_total_mismatch_rejected(self):
+        with mock.patch.object(SYNC,'multipart_post',return_value={'content':[], 'count':1, 'pageIndex':1}), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'):
+            with self.assertRaisesRegex(RuntimeError,'分页'):SYNC.fetch_service_history('fixture',1,'fixture',0)
+
+    def test_missing_total_not_assumed_complete(self):
+        with mock.patch.object(SYNC,'multipart_post',return_value={'content':[]}), mock.patch.object(SYNC,'session_shop_id',return_value='fixture'):
+            with self.assertRaises(RuntimeError):SYNC.fetch_service_history('fixture',1,'fixture',0)
+
+if __name__ == '__main__':
     unittest.main()
