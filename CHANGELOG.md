@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:6b50415b2081c16dcf0ae3d1625e0237197409c3d7547e4443967dccee2436e5 -->
+## 2026-11-16 · Reviewed academy publication candidate (App version: v663 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main c1d36db810133f7f27ab823cf17e12b660213be5.
+- Dates: 2026-11-16. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-16 · 发型审美训练：眼镜、露耳参考与耳前桥接
 
 - 追加稳定案例 `aesthetic-2026-11-16`，训练把露耳超短鲍伯参考图拆成边界、临时别耳、镜腿接触、后枕支撑与维护成本，避免为静态照片直接剪掉太阳穴和耳前安全长度。
