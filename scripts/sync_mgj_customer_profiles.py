@@ -92,6 +92,16 @@ SOURCE_USER_AGENT = (
 )
 
 
+class SourceRateLimitError(RuntimeError):
+    pass
+
+
+def stop_rate_limited_batch():
+    global RUN_DEADLINE
+    RUN_DEADLINE = time.monotonic()
+    raise SourceRateLimitError("customer source 429; batch yielded for next scheduled run")
+
+
 class NoSourceRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("customer_source_redirect_rejected")
@@ -108,7 +118,12 @@ def source_urlopen(request, timeout):
     opener = urllib.request.build_opener(
         urllib.request.ProxyHandler({}), NoSourceRedirect(),
         urllib.request.HTTPSHandler(context=ssl.create_default_context()))
-    return opener.open(request, timeout=timeout)
+    try:
+        return opener.open(request, timeout=timeout)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            stop_rate_limited_batch()
+        raise
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -541,6 +556,7 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
         "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
         "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
         "-H", "X-Requested-With: XMLHttpRequest",
+        "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}",
         "--data-binary", "@-"
     ]
     
@@ -553,6 +569,14 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
             command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
             out = subprocess.check_output(cmd, input=body.encode("utf-8"), timeout=command_timeout, stderr=subprocess.STDOUT)
             decoded = out.decode("utf-8", errors="replace")
+            payload, marker, http_status = decoded.rpartition("\n__MGJ_HTTP_STATUS__:")
+            if not marker or not re.fullmatch(r"[0-9]{3}", http_status):
+                raise RuntimeError("customer source missing HTTP status; response rejected")
+            if http_status == "429":
+                stop_rate_limited_batch()
+            if not http_status.startswith("2"):
+                raise RuntimeError(f"customer source HTTP {http_status}; response rejected")
+            decoded = payload
             try:
                 result = json.loads(decoded)
             except json.JSONDecodeError as exc:
@@ -562,10 +586,7 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
             if result.get("code") == 0:
                 return result
             if int_number(result.get("code"), -1) == 429:
-                # Yield this bounded batch rather than hammering a throttled source.
-                global RUN_DEADLINE
-                RUN_DEADLINE = time.monotonic()
-                raise RuntimeError("customer source code=429; batch yielded for next scheduled run")
+                stop_rate_limited_batch()
             if int_number(result.get("code"), -1) == 403:
                 raise RuntimeError(f"{path} code=403 请求被拒绝")
             last_error = RuntimeError(
@@ -599,6 +620,8 @@ def search_customer(phone):
             m = re.search(r"checkAllow\('(\d+)',\s*'?(\d+)'?,\s*'?(\d+)'?,", html)
             if m:
                 return m.group(3), m.group(1), sid  # cust_id, mem_id, shop_id
+        except SourceRateLimitError:
+            raise
         except Exception as e:
             errors.append(e)
             log(f"  ⚠️ 搜索shop={sid}失败: {type(e).__name__}")

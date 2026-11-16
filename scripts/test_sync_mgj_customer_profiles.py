@@ -430,7 +430,7 @@ class CustomerSourceTransportTests(unittest.TestCase):
 
 class MultipartSourceTransportTests(unittest.TestCase):
     def test_verified_tls_exact_bypass_and_no_redirects(self):
-        with mock.patch.object(SYNC,'load_cookies',return_value='fixture-secret'), mock.patch.object(SYNC.subprocess,'check_output',return_value=b'{"code":0}') as call:
+        with mock.patch.object(SYNC,'load_cookies',return_value='fixture-secret'), mock.patch.object(SYNC.subprocess,'check_output',return_value=b'{"code":0}\n__MGJ_HTTP_STATUS__:200') as call:
             SYNC.multipart_post('memberDetail!detail.action',{},'fixture',retries=0)
             cmd=call.call_args.args[0]
             self.assertEqual(cmd[1],'--disable')
@@ -440,19 +440,40 @@ class MultipartSourceTransportTests(unittest.TestCase):
             self.assertEqual(cmd[cmd.index('--proto')+1],'=https')
 
     def test_body_uses_stdin_without_temporary_file(self):
-        with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":0}') as call, mock.patch.object(SYNC.tempfile, 'NamedTemporaryFile') as temporary:
+        with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":0}\n__MGJ_HTTP_STATUS__:200') as call, mock.patch.object(SYNC.tempfile, 'NamedTemporaryFile') as temporary:
             SYNC.multipart_post('memberDetail!detail.action', {'fixture': 1}, 'fixture', retries=0)
             self.assertEqual(call.call_args.args[0][-1], '@-')
             self.assertIn(b'"fixture": 1', call.call_args.kwargs['input'])
             temporary.assert_not_called()
 
     def test_source_rate_limit_yields_batch_without_retry(self):
-        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":429}') as call, mock.patch.object(SYNC.time, 'sleep') as sleep:
+        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":429}\n__MGJ_HTTP_STATUS__:200') as call, mock.patch.object(SYNC.time, 'sleep') as sleep:
             with self.assertRaisesRegex(RuntimeError, '429'):
                 SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
             self.assertFalse(SYNC.run_budget_available())
             self.assertEqual(call.call_count, 1)
             sleep.assert_not_called()
+
+    def test_http_429_non_json_stops_once(self):
+        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'too many requests\n__MGJ_HTTP_STATUS__:429') as call:
+            with self.assertRaises(SYNC.SourceRateLimitError):
+                SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
+            self.assertEqual(call.call_count, 1)
+            self.assertFalse(SYNC.run_budget_available())
+
+    def test_missing_http_metadata_rejected(self):
+        with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":0}'):
+            with self.assertRaisesRegex(RuntimeError, 'missing HTTP status'):
+                SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
+
+    def test_search_http429_stops_without_second_shop_or_retry(self):
+        import urllib.error
+        with mock.patch.object(SYNC, 'RUN_DEADLINE', None), mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.urllib.request, 'build_opener') as build, mock.patch.object(SYNC.time, 'sleep') as sleep:
+            build.return_value.open.side_effect = urllib.error.HTTPError('https://vip12.meiguanjia.net',429,'limited',{},None)
+            with self.assertRaises(SYNC.SourceRateLimitError): SYNC.search_customer('fixture')
+            self.assertEqual(build.return_value.open.call_count, 1)
+            sleep.assert_not_called()
+            self.assertFalse(SYNC.run_budget_available())
 
     def test_write_destination_rejected(self):
         with mock.patch.object(SYNC.subprocess,'check_output') as call:
