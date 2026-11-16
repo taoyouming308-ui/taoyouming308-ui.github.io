@@ -1,9 +1,60 @@
 {
   "schemaVersion": 1,
   "date": "2026-11-16",
-  "state": "preflight_requested",
+  "state": "preparation_verified_pending_protected_checks",
   "published": false,
+  "dates": [
+    "2026-11-16"
+  ],
   "baseSha": "c1d36db810133f7f27ab823cf17e12b660213be5",
-  "preflightRequestedBy": "ChatGPT connected daily academy publisher",
-  "note": "2026-11-16 Shanghai daily lesson. Initial content-branch file requests real immutable-main Academy publication preflight backup only. No draft, approval, lesson HTML, images or production changes yet. Do not advance until successful SHA-bound backup artifact and source archive verified; preserve independent pending PR #128 and #135 and all current main content. Existing exact-head protected CI, ordinary expected-head merge and actual Pages SHA256 readback remain mandatory."
+  "inputHeadSha": "93c2f47efb3b00a6c4fcbadee9d43b7533c8c10d",
+  "preparedHeadSha": "fffb5d313f7f1d9663ee8298ce48f52eab927a21",
+  "preparationRun": 43782478428,
+  "preparationArtifact": 14188713948,
+  "preparationArtifactSha256": "78cc6b3c8199931d32e55d8bf4b1c61c86db1770d69f9e6b8acf23c12819e5f1",
+  "backupArtifact": 14188298613,
+  "preparationBackupZipSha256": "cac8efa92da7d83429303af39ba630514756784748025907c15301733df17f09",
+  "preparationBackupArchiveSha256": "216552a90cdb8e35c4566356a149d92cf0544be9786e9fb868c86ae16ca1f548",
+  "baselinePreflightRun": 43781892600,
+  "baselineBackupArtifact": 14188084938,
+  "baselineBackupZipSha256": "bc089e932577411733aab94836ee8f95c7d5394293e0586fd0d3630c43353cd6",
+  "baselineBackupArchiveSha256": "f17504f1cd6a93c1e27e660edc4131381cf5f992a821d7c21d86adef11cf4d3b",
+  "contentBindingSha256": "6b50415b2081c16dcf0ae3d1625e0237197409c3d7547e4443967dccee2436e5",
+  "reviewedAt": "2026-11-16T00:47:35.235Z",
+  "verifiedAt": "2026-11-16T01:01:36.093Z",
+  "verification": {
+    "cloudPrepJob": "success: run 43782478428 prepare-content-branch",
+    "fullPrePush": "success: actual original .githooks pre-push executed by cloud preparation run 43782478428, all required steps passed",
+    "renderIdempotent": true,
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 32,
+    "allThirtyOnePreviouslyPublishedCatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Read and SHA256 hashed eight actual UTF-8 files from immutable prepared head fffb5d313f, checked the review canonical JSON content digest and three original SVG raw file hashes; checked all 31 prior catalog objects are identical, current date sole new descending item and fallback links. Downloaded and SHA256 verified preflight baseline ZIP/archive bound to immutable main c1d36db; downloaded preparation backup ZIP/archive bound to same main and input head; downloaded prepared artifact report 14188713948 with contentBinding 6b504... and date HTML digest 44cb9.... Verified cloud prepare job and real pre-push success; no Pages claim."
+  },
+  "fileSha256": {
+    "academy/2026-11-16.html": "44cb9bb2e928c1b49c66cfd0a7430a78ead7c8f81883c0e46e7b8986b9c222ed",
+    "academy/catalog.json": "e8129f695d00c5aebb247e35e439e09cd2340e26ed2c8d7aa7bcffd1e0669cb1",
+    "academy/index.html": "1fbeb3b934686d272face55822a81ff178b71865b676339ec211f4b9ea11e792",
+    "academy/drafts/2026-11-16.json": "148d7160e3a049af1d7e280a147a516c608b59a620205b70bc374c6d6280d04d",
+    "academy/reviews/2026-11-16.json": "6c4c57f1bb0e432b261e93690c0772b58f029eddb70664b34f4327c169b65393",
+    "academy/assets/2026-11-16/figure1.svg": "37baabe1815ba24c427888e1fa83cc516ba921040e1f5e6082bcf7528af2b07e",
+    "academy/assets/2026-11-16/figure2.svg": "e943489e9adfbb15329714baefde2cccc8dec850d5ec607a58a9582bc57df8dc",
+    "academy/assets/2026-11-16/figure3.svg": "f789d20c3ef02df0fc191ca204c7898001021edd0786fdafcfcdc327103deb98"
+  },
+  "remaining": [
+    "Require complete Validate shared app / validate success on final connected status commit head",
+    "Require Academy publication preflight / backup-main success on same final head",
+    "Confirm latest main and PR head unchanged and every other required condition",
+    "Mark PR ready then normal merge with expected_head_sha",
+    "Verify Pages deployment and actual 32 lessons, catalog, fallback and approved SVG SHA256 online readback"
+  ]
 }
