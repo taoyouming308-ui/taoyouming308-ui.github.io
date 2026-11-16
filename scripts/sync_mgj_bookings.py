@@ -156,6 +156,28 @@ def with_network_retries(operation, delays=NETWORK_RETRY_DELAYS):
             time.sleep(delay)
 
 
+class NoSourceRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("source_redirect_rejected")
+
+
+def source_urlopen(request, timeout):
+    """Exact source-only direct read route; verified TLS and no redirects."""
+    parsed = urllib.parse.urlsplit(request.full_url)
+    allowed_paths = {
+        "/shair/metedata!reservationMetadata.action",
+        "/shair/reservation!list.action",
+    }
+    if (parsed.scheme != "https" or parsed.hostname != DEFAULT_SERVER
+            or parsed.port not in (None, 443) or parsed.username or parsed.password
+            or parsed.path not in allowed_paths or parsed.query or parsed.fragment):
+        raise ValueError("invalid_booking_source_destination")
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoSourceRedirect(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+    return opener.open(request, timeout=timeout)
+
+
 def request_json(url, cookie="", data=None, timeout=20):
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -172,11 +194,7 @@ def request_json(url, cookie="", data=None, timeout=20):
         if remaining is not None and remaining < 1:
             raise TimeoutError("预约同步运行时间已到105秒上限")
         effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
-        with urllib.request.urlopen(
-            request,
-            timeout=effective_timeout,
-            context=ssl.create_default_context(),
-        ) as response:
+        with source_urlopen(request, timeout=effective_timeout) as response:
             return json.loads(response.read().decode("utf-8", errors="replace"))
     return with_network_retries(perform)
 

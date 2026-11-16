@@ -1,3 +1,11 @@
+## 2026-11-16 · Booking source transport recovery (App version: v663 unchanged)
+
+- Owner: booking recovery task, isolated `fix/booking-source-transport-20261116` from protected main c80358ad. Baseline version/integrity/handoff and daily backup passed; no browser shell, schema, appointment mapping or source write API changes.
+- Default urllib source session check reproduced verified-TLS EOF after 33 seconds. Same exact existing session and source read endpoint with source-only direct routing returned code 0 in 0.3 seconds. Only the two existing read endpoints at vip12.meiguanjia.net may use direct transport; TLS verification and redirect rejection remain. Supabase signature destination, login path, locks, cadence, normalization and successful-pair cleanup unchanged.
+- 46 Python booking/keepalive/customer tests and booking UI, employee scope and signed customer tests pass. Runtime canonical file deployed atomically after recoverable backup `~/.hermes/mgj-booking-transport-backup-t3gttg2e`; source/runtime SHA-256 62827e359b693cb9c605b779574e97577a7c6aba231a4abece1d503558c359ce.
+- 23:50 Beijing bounded scheduled recovery: 4/4 store-days, 99 upserts, zero deletes, healthy/failure count 0. November17 source and cache match 66/33 rows, IDs and all 13 business fields. No source booking creation, cancellation or modification. Broader window and both UI surfaces still under acceptance; do not call the entire chain finished from this recovery alone.
+- Normal protected PR/checks still needed to retain this source fix on main. No forced refresh, no new scheduler, no global network changes, no secret values committed.
+
 ## 2026-11-16 · Glasses, ear-tuck and reference-length conflict (App version: v663 unchanged)
 
 - Current owner: Codex content publisher. Based on protected github/main a17bc45dd323ee32ff2fba32f949c596221d3a3e in an isolated clean `content/aesthetic-2026-11-16` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v663 release and all thirty-nine earlier aesthetic cases remain preserved.
