@@ -22,6 +22,8 @@ def setUpModule():
     _isolation_patches = [
         mock.patch.object(SYNC, 'DEFERRED_PATH', _isolation_directory.name+'/deferred.json'),
         mock.patch.object(SYNC, 'source_slot', side_effect=contextlib.nullcontext),
+        mock.patch.object(SYNC, 'request_budget_ready', return_value=True),
+        mock.patch.object(SYNC, 'locked_session', return_value={'cookies':'fixture-secret','shop':'fixture','employee':'123'}),
         mock.patch.object(SYNC.subprocess, 'check_output', side_effect=AssertionError('unmocked source command forbidden')),
     ]
     for patch in _isolation_patches: patch.start()
@@ -176,7 +178,7 @@ class HistorySessionRoutingTests(unittest.TestCase):
             ),
             [],
         )
-        session_shop_id.assert_called_once_with(config_path)
+        session_shop_id.assert_not_called()
         self.assertEqual(post.call_args.kwargs["config_path"], config_path)
 
     def test_recent_bill_rotation_does_not_waste_calls_on_old_history(self):
@@ -426,7 +428,7 @@ class CustomerSourceTransportTests(unittest.TestCase):
         with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'ok\n__MGJ_HTTP_STATUS__:200') as call:
             self.assertEqual(SYNC.form_post('consumerHelp!find.action', {'keyword':'fixture'}), 'ok')
             cmd = call.call_args.args[0]
-            self.assertIn('User-agent: '+SYNC.SOURCE_USER_AGENT, cmd)
+            self.assertIn('User-Agent: '+SYNC.SOURCE_USER_AGENT, cmd)
             self.assertIn('https://vip12.meiguanjia.net/shair/consumerHelp!find.action', cmd)
             self.assertLessEqual(call.call_args.kwargs['timeout'],10)
 
@@ -481,7 +483,7 @@ class MultipartSourceTransportTests(unittest.TestCase):
 
     def test_missing_http_metadata_rejected(self):
         with mock.patch.object(SYNC, 'load_cookies', return_value='fixture'), mock.patch.object(SYNC.subprocess, 'check_output', return_value=b'{"code":0}'):
-            with self.assertRaisesRegex(RuntimeError, 'missing HTTP status'):
+            with self.assertRaisesRegex(SYNC.SourceDeferred, 'source_http_incomplete'):
                 SYNC.multipart_post('memberDetail!detail.action', {}, 'fixture')
 
     def test_search_http429_stops_without_second_shop_or_retry(self):

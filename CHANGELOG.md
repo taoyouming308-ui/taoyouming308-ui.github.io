@@ -1,3 +1,9 @@
+## 2026-11-17 Customer fairness candidate (not deployed)
+
+- Preserve same-batch history progress across bounded readiness waits while releasing shared session/source locks.
+- Build requests from a single locked session snapshot; stop uncertain responses without replay.
+- Add fairness/transition safety tests and quiescent cutover/trigger restoration plan; no production cadence or frontend change.
+
 ## 2026-11-17 Customer coordination candidate (not deployed)
 
 - Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.

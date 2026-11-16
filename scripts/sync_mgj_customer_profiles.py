@@ -31,6 +31,8 @@ API调用：
 """
 
 from contextlib import contextmanager
+import copy
+import hashlib
 import fcntl
 import json
 import os
@@ -141,7 +143,7 @@ def record_deferred(phones, reason):
     value = load_deferred()
     items = {item["phone"]: dict(item) for item in value["items"]}
     now = datetime.now().astimezone().isoformat(timespec="seconds")
-    allowed = {"daily_due_or_cooling", "booking_active", "priority_state_unavailable", "source_budget", "source_busy", "source_transport_incomplete", "source_http_incomplete"}
+    allowed = {"daily_due_or_cooling", "booking_active", "priority_state_unavailable", "source_budget", "source_busy", "source_transport_incomplete", "source_http_incomplete", "session_scope_changed", "session_scope_unverified", "source_response_incomplete"}
     code = reason if reason in allowed else "source_rate_limited" if "429" in reason else "source_deferred"
     for phone in phones:
         item = items.setdefault(phone, {"phone": phone, "deferred_since": now, "deferrals": 0})
@@ -160,7 +162,7 @@ def deferred_metrics(now=None):
     oldest = int(max(ages, default=0))
     return {"deferred_pending": len(items), "deferred_oldest_seconds": oldest,
             "deferred_age_alert": oldest >= 3600,
-            "persistent_source_alert": any(item.get("reason", "").startswith("source_") and
+            "persistent_source_alert": any(item.get("reason", "").startswith(("source_", "session_")) and
               (item.get("deferrals", 0) >= 3 or age >= 1800) for item, age in zip(items, ages))}
 
 def compensation_phones(queue, limit=INCREMENTAL_RETRY_LIMIT):
@@ -189,33 +191,92 @@ def source_priority_reason():
         return "priority_state_unavailable"
     return ""
 
+COORDINATOR_LOCK = "/tmp/mgj_customer_coordinator.lock"
+SESSION_LOCK = LOCK_PATH
+CACHE_RESERVE_SECONDS = 20
+WAIT_STEP_SECONDS = 2
+WAIT_TOTAL_SECONDS = 20
+WAIT_MAX_EPISODES = 2
+WAIT_USED = 0
+WAIT_EPISODES = 0
+SESSION_SCOPES = {}
+
+
+def locked_session(config_path=None):
+    path = config_path or CONFIG_PATH
+    cfg = load_config(path)
+    cookies = cfg.get("cookies", "")
+    if not isinstance(cookies, str): cookies = "".join(cookies)
+    user = cookie_value(cookies, "userId") or str(cfg.get("user_id") or "")
+    shop = str(cfg.get("shop_id") or (cfg.get("shop") or {}).get("id") or "")
+    server = cfg.get("server") or SERVER
+    if not user or not shop or server != SERVER:
+        raise SourceDeferred("session_scope_unverified")
+    employee = str(cfg.get("emp_id") or cfg.get("employee_id") or user)
+    identity = (server, shop, user, employee)
+    previous = SESSION_SCOPES.setdefault(path, identity)
+    if previous != identity:
+        raise SourceDeferred("session_scope_changed")
+    return {"cookies": cookies, "shop": shop, "employee": employee}
+
+
+def request_budget_ready(extra_wait=0):
+    remaining = remaining_run_seconds()
+    return remaining is not None and remaining >= extra_wait + SOURCE_REQUEST_MAX_SECONDS + CACHE_RESERVE_SECONDS
+
+
 @contextmanager
 def source_slot():
-    global SOURCE_LAST_END
-    reason = source_priority_reason()
-    if reason: raise SourceDeferred(reason)
-    remaining = remaining_run_seconds()
-    wait = max(0, SOURCE_LAST_END + SOURCE_MIN_GAP_SECONDS - time.monotonic()) if SOURCE_LAST_END is not None else 0
-    if remaining is not None and remaining < wait + SOURCE_REQUEST_MAX_SECONDS:
-        raise SourceDeferred("source_budget")
-    if wait: time.sleep(wait)
-    with open(SOURCE_LOCK, "a") as lock:
-        try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError: raise SourceDeferred("source_busy") from None
+    global SOURCE_LAST_END, WAIT_USED, WAIT_EPISODES
+    waiting = False
+    while True:
+        if not request_budget_ready(): raise SourceDeferred("source_budget")
+        reason = source_priority_reason()
+        if reason and reason not in ("booking_active",):
+            # Daily stale/cooling/unavailable is not a short-readiness assumption.
+            raise SourceDeferred(reason)
+        handles = []
         try:
-            reason = source_priority_reason()
-            if reason: raise SourceDeferred(reason)
-            yield
+            if not reason:
+                for path in (SESSION_LOCK, SOURCE_LOCK):
+                    handle = open(path, "a"); handles.append(handle)
+                    try: fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        reason = "source_busy"; break
+                if not reason: reason = source_priority_reason()
+            if not reason:
+                gap = max(0, SOURCE_LAST_END + SOURCE_MIN_GAP_SECONDS-time.monotonic()) if SOURCE_LAST_END is not None else 0
+                if not gap:
+                    if not request_budget_ready(): raise SourceDeferred("source_budget")
+                    try: yield
+                    finally: SOURCE_LAST_END = time.monotonic()
+                    return
+            else: gap = 0
         finally:
-            SOURCE_LAST_END = time.monotonic()
-            fcntl.flock(lock, fcntl.LOCK_UN)
+            for handle in reversed(handles): handle.close()
+        # Never retain legacy session/source locks during any sleep.
+        if gap:
+            if not request_budget_ready(gap): raise SourceDeferred("source_budget")
+            time.sleep(gap)
+            continue
+        if reason not in ("booking_active", "source_busy"): raise SourceDeferred(reason)
+        if not waiting:
+            if WAIT_EPISODES >= WAIT_MAX_EPISODES: raise SourceDeferred(reason)
+            WAIT_EPISODES += 1; waiting = True
+        if WAIT_USED + WAIT_STEP_SECONDS > WAIT_TOTAL_SECONDS or not request_budget_ready(WAIT_STEP_SECONDS):
+            raise SourceDeferred(reason)
+        WAIT_USED += WAIT_STEP_SECONDS
+        time.sleep(WAIT_STEP_SECONDS)
 
-def bounded_source_curl(command, body):
+
+def bounded_source_curl(factory):
     with source_slot():
-        remaining = remaining_run_seconds()
-        timeout = SOURCE_REQUEST_MAX_SECONDS if remaining is None else min(SOURCE_REQUEST_MAX_SECONDS, remaining)
-        if timeout < 1: raise SourceDeferred("source_budget")
-        return subprocess.check_output(command, input=body, timeout=timeout, stderr=subprocess.STDOUT)
+        # Factory rereads approved session and constructs frozen-target request
+        # only after current session/source locks and priority have been checked.
+        command, body = factory()
+        if not request_budget_ready(): raise SourceDeferred("source_budget")
+        return subprocess.check_output(command, input=body, timeout=SOURCE_REQUEST_MAX_SECONDS, stderr=subprocess.STDOUT)
+
 
 def queue_age_alert(queue, now=None):
     now = now or datetime.now().astimezone()
@@ -337,7 +398,7 @@ def session_shop_id(config_path=None):
 
 def acquire_run_lock():
     """Prevent overlapping cron runs from writing the same profiles."""
-    lock_file = open(LOCK_PATH, "w", encoding="utf-8")
+    lock_file = open(COORDINATOR_LOCK, "w", encoding="utf-8")
     try:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
@@ -633,29 +694,18 @@ def select_sync_window(phones, limit=20, slot=None):
 def form_post(path, data):
     if SERVER != "vip12.meiguanjia.net" or path != "consumerHelp!find.action":
         raise ValueError("invalid_customer_source_destination")
-    """普通的form POST请求"""
-    url = f"https://{SERVER}/shair/{path}"
-    body = urllib.parse.urlencode(data).encode()
-    req = urllib.request.Request(url, data=body, headers={
-        "Cookie": load_cookies(),
-        "Request-From": "MGJ_SHAIR",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "User-Agent": SOURCE_USER_AGENT
-    })
-    def request(effective_timeout):
-        # Explicit subprocess wall-time bound, unlike socket inactivity timeout.
-        cmd = ["curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https",
-               "--connect-timeout", "3", "--max-time", "8", "-X", "POST", url,
-               "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}", "--data-binary", "@-"]
-        for key, value in req.header_items(): cmd.extend(["-H", f"{key}: {value}"])
-        try: out = bounded_source_curl(cmd, body).decode("utf-8", errors="replace")
-        except subprocess.SubprocessError as exc: raise SourceDeferred("source_transport_incomplete") from None
-        payload, marker, status = out.rpartition("\n__MGJ_HTTP_STATUS__:")
-        if status == "429": stop_rate_limited_batch()
-        if not marker or not re.fullmatch(r"2[0-9]{2}", status):
-            raise SourceDeferred("source_http_incomplete")
-        return payload
-    return with_network_retries(request, 15)
+    frozen = copy.deepcopy(data)
+    def factory():
+        cookies = locked_session()["cookies"]
+        body = urllib.parse.urlencode(frozen).encode()
+        cmd = ["curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https", "--connect-timeout", "3", "--max-time", "8", "-X", "POST", f"https://{SERVER}/shair/{path}", "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}", "--data-binary", "@-", "-H", f"Cookie: {cookies}", "-H", "Request-From: MGJ_SHAIR", "-H", "Content-Type: application/x-www-form-urlencoded; charset=UTF-8", "-H", f"User-Agent: {SOURCE_USER_AGENT}"]
+        return cmd, body
+    try: out = bounded_source_curl(factory).decode("utf-8", errors="replace")
+    except subprocess.SubprocessError: raise SourceDeferred("source_transport_incomplete") from None
+    payload, marker, status = out.rpartition("\n__MGJ_HTTP_STATUS__:")
+    if status == "429": stop_rate_limited_batch()
+    if not marker or not re.fullmatch(r"2[0-9]{2}", status): raise SourceDeferred("source_http_incomplete")
+    return payload
 
 
 def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
@@ -672,34 +722,48 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     url = f"https://{SERVER}/shair/{path}"
     boundary = "----MGJSyncBoundary"
 
-    body = (
-        f"--{boundary}\r\n"
-        f"Content-Disposition: form-data; name=\"jsonObj\"\r\n\r\n"
-        f"{json.dumps(json_data)}\r\n"
-        f"--{boundary}\r\n"
-        f"Content-Disposition: form-data; name=\"shopid\"\r\n\r\n"
-        f"{shop_id}\r\n"
-        f"--{boundary}--\r\n"
-    )
+    frozen_data = copy.deepcopy(json_data)
+    def factory():
+        session = locked_session(config_path)
+        scoped_data = copy.deepcopy(frozen_data)
+        scoped_shop = str(shop_id) if shop_id is not None else session["shop"]
+        if path == "memberDetail!detail.action":
+            employee = int_number(session["employee"])
+            if employee <= 0: raise SourceDeferred("session_scope_unverified")
+            scoped_data["empId"] = employee
+        elif path in ("bill!detail.action", "member!queryMemberBillListnew.action"):
+            if shop_id is not None and str(shop_id) != session["shop"]:
+                raise SourceDeferred("session_scope_changed")
+            scoped_shop = session["shop"]
+        body = (
+            f"--{boundary}\r\n"
+            f"Content-Disposition: form-data; name=\"jsonObj\"\r\n\r\n"
+            f"{json.dumps(scoped_data)}\r\n"
+            f"--{boundary}\r\n"
+            f"Content-Disposition: form-data; name=\"shopid\"\r\n\r\n"
+            f"{scoped_shop}\r\n"
+            f"--{boundary}--\r\n"
+        )
 
-    cookies = load_cookies(config_path)
+        cookies = session["cookies"]
 
-    cmd = [
-        "curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https",
-        "--connect-timeout", "3", "--max-time", "8",
-        "--http2", "-X", "POST", url,
-        "-H", f"Cookie: {cookies}",
-        "-H", "Request-From: MGJ_SHAIR",
-        "-H", f"Content-Type: multipart/form-data; boundary={boundary}",
-        "-H", "Accept: application/json, text/plain, */*",
-        "-H", "Accept-Language: zh-CN,zh;q=0.9",
-        "-H", f"Origin: https://{SERVER}",
-        "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
-        "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-        "-H", "X-Requested-With: XMLHttpRequest",
-        "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}",
-        "--data-binary", "@-"
-    ]
+        cmd = [
+            "curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https",
+            "--connect-timeout", "3", "--max-time", "8",
+            "--http2", "-X", "POST", url,
+            "-H", f"Cookie: {cookies}",
+            "-H", "Request-From: MGJ_SHAIR",
+            "-H", f"Content-Type: multipart/form-data; boundary={boundary}",
+            "-H", "Accept: application/json, text/plain, */*",
+            "-H", "Accept-Language: zh-CN,zh;q=0.9",
+            "-H", f"Origin: https://{SERVER}",
+            "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
+            "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "-H", "X-Requested-With: XMLHttpRequest",
+            "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}",
+            "--data-binary", "@-"
+        ]
+        return cmd, body.encode("utf-8")
 
     last_error = None
     for attempt in range(retries + 1):
@@ -708,35 +772,34 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
             raise TimeoutError("同步运行时间已到105秒上限")
         try:
             command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
-            out = bounded_source_curl(cmd, body.encode("utf-8"))
+            out = bounded_source_curl(factory)
             decoded = out.decode("utf-8", errors="replace")
             payload, marker, http_status = decoded.rpartition("\n__MGJ_HTTP_STATUS__:")
             if not marker or not re.fullmatch(r"[0-9]{3}", http_status):
-                raise RuntimeError("customer source missing HTTP status; response rejected")
+                raise SourceDeferred("source_http_incomplete")
             if http_status == "429":
                 stop_rate_limited_batch()
             if not http_status.startswith("2"):
-                raise RuntimeError(f"customer source HTTP {http_status}; response rejected")
+                raise SourceDeferred("source_http_incomplete")
             decoded = payload
             try:
                 result = json.loads(decoded)
             except json.JSONDecodeError as exc:
                 if decoded.lstrip().startswith("<"):
-                    raise RuntimeError(f"{path}返回HTML拦截页") from exc
+                    raise SourceDeferred("source_http_incomplete") from None
                 raise
+            if not isinstance(result, dict) or type(result.get("code")) is not int:
+                raise SourceDeferred("source_response_incomplete")
             if result.get("code") == 0:
                 return result
             if int_number(result.get("code"), -1) == 429:
                 stop_rate_limited_batch()
             if int_number(result.get("code"), -1) == 403:
-                raise RuntimeError(f"{path} code=403 请求被拒绝")
-            last_error = RuntimeError(
-                f"{path} code={result.get('code')} "
-                f"{result.get('message') or result.get('msg') or ''}".strip()
-            )
+                raise SourceDeferred("source_http_incomplete")
+            raise SourceDeferred("source_response_incomplete")
         except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
             # Never serialize curl command arguments containing the source cookie.
-            last_error = RuntimeError(f"{type(exc).__name__}: customer source read failed")
+            raise SourceDeferred("source_transport_incomplete") from None
         if attempt < retries:
             delay = 0.8 * (attempt + 1)
             remaining = remaining_run_seconds()
@@ -782,7 +845,6 @@ def fetch_customer_detail(cust_id, shop_id):
         result = multipart_post("memberDetail!detail.action", {
             "memberid": cust_id,
             "freezeType": 0,
-            "empId": int_number(session_employee_id()),
             "parentShopId": PARENT_SHOP_ID,
             "shopId": PARENT_SHOP_ID
         }, PARENT_SHOP_ID)
@@ -891,7 +953,7 @@ def enrich_bill_history(history_item, shop_id, config_path=HISTORY_CONFIG_PATH):
         "parentShopId": int(PARENT_SHOP_ID),
         "id": int(bill_id),
         "fromHis": 0,
-    }, session_shop_id(config_path), retries=1, config_path=config_path)
+    }, None, retries=1, config_path=config_path)
     content = detail.get("content") or {}
     item_rows = []
     for item in content.get("details") or []:
@@ -939,7 +1001,7 @@ def fetch_service_history(
     # non-overlapping <=365-day windows; any failed window keeps old history.
     first_day = datetime.strptime(HISTORY_START_DATE, "%Y-%m-%d").date()
     last_day = datetime.now().date()
-    source_shop = session_shop_id(config_path)
+    source_shop = None  # Derived from the same locked session snapshot as cookies.
     history_by_id = {}
     while last_day >= first_day:
         if not run_budget_available():
@@ -1811,6 +1873,9 @@ if __name__ == "__main__":
         previous_status = load_status()
         previous_consecutive_failures = int_number(previous_status.get("consecutive_failures"), 0)
         RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
+        WAIT_USED = 0
+        WAIT_EPISODES = 0
+        SESSION_SCOPES = {}
         run_lock = acquire_run_lock()
         if run_lock is None:
             log("⏭ 已有同步任务运行，本次跳过")

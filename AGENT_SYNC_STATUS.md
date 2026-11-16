@@ -1,3 +1,9 @@
+## 2026-11-17 · Bounded customer fairness candidate (not deployed)
+
+- Formal isolated candidate adds all-mode customer coordinator, per-request legacy session/source locks, two readiness waits totaling20s inside105s. Preserve booking/daily priority and current customer1/31/service16 schedules. No production changes or public push.
+- Request factory re-reads one locked session snapshot and derives employee/shop with credential identity checks. Ambiguous sent requests, HTML/non-JSON/malformed replies and429 stop without fallback/replay. Partial history remains protected.
+-99 focused tests pass; isolated and formal independent reviews passed. Full pre-push gate passed locally2026-11-17 04:03 +08:00, including152/152 finance tests and126 final Python tests. No production deployment or public push. Four-lock guard is only a primitive: actual launcher pause receipts, empty old-process inventory, atomic install and exact trigger restoration are required by docs/operations/customer-fairness-cutover.md.
+
 ## 2026-11-17 · Customer coordination candidate (not deployed)
 
 - Integrated reviewed source pacing and nonblocking shared-source coordination onto main 1cb33fd7, preserving appointment repair and existing shared session-lock behavior. No production schedule/runtime changes or public push.
