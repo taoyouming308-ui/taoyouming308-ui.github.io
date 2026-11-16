@@ -1,3 +1,7 @@
+# Booking transport recovery · 2026-11-16
+
+Restore the existing exact Meiguanjia appointment read endpoints with verified TLS and source-only direct routing; preserve cloud signatures, original appointments, cadence, and failure cleanup protection. Runtime recovery verified for November17; UI acceptance and protected merge remain pending.
+
 ## 2026-11-16 · 发型审美训练：眼镜、露耳参考与耳前桥接
 
 - 追加稳定案例 `aesthetic-2026-11-16`，训练把露耳超短鲍伯参考图拆成边界、临时别耳、镜腿接触、后枕支撑与维护成本，避免为静态照片直接剪掉太阳穴和耳前安全长度。
