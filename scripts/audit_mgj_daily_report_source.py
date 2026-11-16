@@ -134,7 +134,12 @@ def curl_request(url, headers, data=None, deadline=None, runner=subprocess.run):
     if remaining <= 0:
         raise AuditError("budget_exhausted")
     # No secret or request body is placed in argv. TLS verification is curl's default.
-    command = ["curl", "--disable", "--config", "-", "--write-out", "\\n%{http_code}", url]
+    destination = urllib.parse.urlsplit(url)
+    if (destination.scheme != "https" or destination.hostname != SERVER
+            or destination.port not in (None, 443) or destination.username or destination.password):
+        raise AuditError("invalid_source_destination")
+    # Only this source bypasses the owner's proxy; no redirect following or insecure TLS.
+    command = ["curl", "--disable", "--noproxy", SERVER, "--config", "-", "--write-out", "\\n%{http_code}", url]
     try:
         result = runner(command, input=curl_config(headers, data), text=True,
                         capture_output=True, timeout=min(15, remaining), check=False)

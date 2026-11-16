@@ -126,7 +126,7 @@ class AuditSourceTests(unittest.TestCase):
 
         cookie = "sid=TOP_SECRET"
         body = "PRIVATE_PAYLOAD"
-        result = audit.curl_request("https://example.invalid/read-only", [("Cookie", cookie)], body,
+        result = audit.curl_request(audit.DETAIL_URL, [("Cookie", cookie)], body,
                                     runner=fake_runner)
         self.assertEqual(result, '{"code":0}')
         self.assertNotIn(cookie, " ".join(seen["command"]))
