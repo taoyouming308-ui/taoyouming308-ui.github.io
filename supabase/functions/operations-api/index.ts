@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
 import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
+import { monthlyCellVoucherLibrary } from "../_shared/monthly-cell-voucher-library.mjs";
 import { recoverVoucherDateCandidate,voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
@@ -4590,6 +4591,11 @@ async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord)
   return {queued,model,posted:false,originals_unchanged:true,previous_attempts_preserved:true};
 }
 
+async function monthlyVoucherLibrary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers, canRead: (actor: JsonRecord) => hasAuthCapability(actor, "voucher.read"),
+    store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory });
+}
+
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   if (!hasAuthCapability(session, "voucher.read")) throw new Error("当前账号没有凭证查看权限");
   const store = await selectedStoreInfo(session, payload);
@@ -7386,7 +7392,7 @@ async function monthlyReviewRpc(name: string, body: JsonRecord): Promise<unknown
 }
 
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
-expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
+monthly_voucher_library expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
 monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
 daily_business_details
@@ -7518,6 +7524,7 @@ async function handleOperationsApiRequest(
     if (operation === "monthly_income_adjustment_save") return json(await monthlyIncomeAdjustmentSave(payload, session));
     if (operation === "cell_trace_save") return json(await saveCellTrace(payload, session));
     if (operation === "monthly_evidence_rule_save") return json(await saveMonthlyEvidenceRule(payload, session));
+    if (operation === "monthly_voucher_library") return json(await monthlyVoucherLibrary(payload, session));
     if (operation === "business_evidence_rule_save") return json(await saveBusinessEvidenceRule(payload, session));
     if (operation === "report_url") return json(await reportUrl(payload, session));
     if (operation === "finance_workbench") return json(await financeWorkbench(payload, session));
