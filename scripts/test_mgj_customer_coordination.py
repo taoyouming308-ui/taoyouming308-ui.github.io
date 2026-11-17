@@ -19,6 +19,21 @@ class Tests(unittest.TestCase):
  def unlocked(self):
   with open(self.path,'a') as f:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
  def queue(self):return {'version':1,'items':[{'phone':'fixture','attempts':5,'status':'needs_review','first_failed_at':(datetime.now().astimezone()-timedelta(days=2)).isoformat()}]}
+ def test_service_deferred_keeps_completed_counts_without_identifiers(self):
+  exc=s.SourceDeferred('source_budget')
+  with mock.patch.object(s,'get_recent_hair_record_phones',return_value=[]),mock.patch.object(s,'get_booking_phones',return_value=[]),mock.patch.object(s,'select_service_refresh_phones',return_value=['fixture-a','fixture-b','fixture-c']),mock.patch.object(s,'get_customer_full',side_effect=[{'found':True},{'found':True},exc]),mock.patch.object(s,'upsert_customer',return_value=(True,'updated')),mock.patch.object(s,'build_service_records',return_value=[{}]),mock.patch.object(s.time,'sleep'):
+   with self.assertRaises(s.SourceDeferred) as caught:s.run_service_refresh()
+  with mock.patch.object(s,'write_status') as write:
+   s.finish_deferred('services',caught.exception)
+   kw=write.call_args.kwargs
+   self.assertEqual((kw['success'],kw['failed'],kw['skipped'],kw['service_records_seen']),(2,0,1,2))
+   self.assertNotIn('fixture',str(kw))
+ def test_progress_rejects_identifiers_bad_types_and_other_modes(self):
+  exc=s.SourceDeferred('booking_active');exc.service_progress={'phone':'fixture','success':True,'failed':-1,'skipped':'3','service_records_seen':2}
+  with mock.patch.object(s,'write_status') as write:
+   s.finish_deferred('services',exc);kw=write.call_args.kwargs
+   self.assertNotIn('phone',kw);self.assertNotIn('success',kw);self.assertNotIn('failed',kw);self.assertNotIn('skipped',kw)
+   s.finish_deferred('sync',exc);self.assertNotIn('service_records_seen',write.call_args.kwargs)
  def test_daily_wait_adapter_real_state_shapes(self):
   import types
   from datetime import timezone

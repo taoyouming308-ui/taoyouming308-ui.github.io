@@ -186,8 +186,10 @@ def compensation_phones(queue, limit=INCREMENTAL_RETRY_LIMIT):
     return list(dict.fromkeys(values))[:limit]
 
 def finish_deferred(mode, reason):
+    progress = getattr(reason, "service_progress", {}) if mode == "services" else {}
+    progress = {k: v for k, v in progress.items() if k in ("success", "failed", "skipped", "service_records_seen") and type(v) is int and v >= 0} if isinstance(progress, dict) else {}
     write_status("deferred", mode=mode, reason="source_rate_limited" if "429" in str(reason) else str(reason),
-                 **deferred_metrics(), consecutive_failures=0)
+                 **deferred_metrics(), **progress, consecutive_failures=0)
 
 def source_priority_reason():
     try:
@@ -1875,7 +1877,10 @@ def run_service_refresh(limit=SERVICE_REFRESH_LIMIT):
             else:
                 fail += 1
                 log(f"  ❌ {action}")
-        except SourceDeferred:
+        except SourceDeferred as exc:
+            exc.service_progress = {"success": ok, "failed": fail,
+                                    "skipped": len(selected) - index,
+                                    "service_records_seen": service_rows}
             raise
         except Exception as exc:
             fail += 1
