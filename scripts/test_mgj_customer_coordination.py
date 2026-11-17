@@ -19,6 +19,80 @@ class Tests(unittest.TestCase):
  def unlocked(self):
   with open(self.path,'a') as f:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
  def queue(self):return {'version':1,'items':[{'phone':'fixture','attempts':5,'status':'needs_review','first_failed_at':(datetime.now().astimezone()-timedelta(days=2)).isoformat()}]}
+ def test_daily_wait_adapter_real_state_shapes(self):
+  import types
+  from datetime import timezone
+  today=datetime.now(timezone.utc).date().isoformat()
+  state={'status':'healthy','pairs':{'fixture-shop:'+today:{'success_at':1}}}
+  module=types.SimpleNamespace(TZ=timezone.utc,SHOPS=['fixture-shop'],read_daily_sync_state=lambda:state)
+  with mock.patch.dict(sys.modules,{'sync_mgj_daily_electronic_sources':module}):
+   self.assertTrue(s.daily_wait_is_safe())
+   state['cooldown_until']=s.time.time()+100;self.assertFalse(s.daily_wait_is_safe());state.pop('cooldown_until')
+   state['pairs']['fixture-shop:'+today]['retry_after']=s.time.time()+100;self.assertFalse(s.daily_wait_is_safe())
+   state['pairs']['fixture-shop:'+today]['retry_after']=1;self.assertTrue(s.daily_wait_is_safe())
+   state['status']='degraded';self.assertFalse(s.daily_wait_is_safe());state['status']='healthy'
+   state['pairs']={};self.assertFalse(s.daily_wait_is_safe())
+   state['pairs']=[];self.assertFalse(s.daily_wait_is_safe())
+   state=None;self.assertFalse(s.daily_wait_is_safe())
+ def test_initial_wait_local_only_then_booking_priority(self):
+  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=['daily_due_or_cooling','booking_active','booking_active']),mock.patch.object(s.time,'sleep') as sleep,mock.patch.object(s.subprocess,'check_output') as send:
+   with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
+   self.assertEqual(sleep.call_count,1);send.assert_not_called()
+ def test_initial_wait_bounded_and_once(self):
+  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.time,'sleep') as sleep:
+   with self.assertRaises(s.SourceDeferred):s.wait_initial_daily_readiness()
+   self.assertEqual(sum(x.args[0] for x in sleep.call_args_list),60)
+   s.wait_initial_daily_readiness();self.assertEqual(sleep.call_count,30)
+ def test_initial_wait_failed_daily_no_sleep(self):
+  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=False),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.time,'sleep') as sleep:
+   with self.assertRaises(s.SourceDeferred):s.wait_initial_daily_readiness()
+   sleep.assert_not_called()
+ def test_initial_wait_reserves_request_and_persistence_budget(self):
+  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s,'remaining_run_seconds',return_value=31),mock.patch.object(s.time,'sleep') as sleep:
+   with self.assertRaisesRegex(s.SourceDeferred,'source_budget'):s.wait_initial_daily_readiness()
+   sleep.assert_not_called()
+ def test_initial_wait_releases_all_priority_locks(self):
+  def check_unheld(_):
+   for path in [s.SOURCE_LOCK,s.SESSION_LOCK]:
+    with open(path,'a') as f:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
+  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=['daily_due_or_cooling','']),mock.patch.object(s.time,'sleep',side_effect=check_unheld):s.wait_initial_daily_readiness()
+ def test_attempt_timestamp_validation_and_absolute_order(self):
+  s.record_deferred(['fixture-a','fixture-b'],'source_budget')
+  s.mark_deferred_attempt('fixture-a','2026-11-17T08:00:00+08:00')
+  s.mark_deferred_attempt('fixture-b','2026-11-17T01:00:00+00:00')
+  self.assertEqual(s.compensation_phones({'items':[]},limit=1),['fixture-a'])
+  data=s.load_deferred();data['items'][0]['last_attempted_at']='invalid';s.save_deferred(data)
+  before=Path(s.DEFERRED_PATH).read_bytes()
+  with self.assertRaises(RuntimeError):s.record_deferred(['fixture-c'],'source_budget')
+  self.assertEqual(Path(s.DEFERRED_PATH).read_bytes(),before)
+ def test_tail_deferral_cannot_postpone_oldest_priority(self):
+  s.save_deferred({'version':1,'items':[{'phone':p,'deferred_since':f'2026-01-01T00:00:0{i}+00:00','deferrals':1,'last_deferred_at':'2026-11-01T00:00:00+00:00'} for i,p in enumerate(['old','next','last'])]})
+  q={'items':[]}
+  for _ in range(10):s.record_deferred(['old'],'source_budget')
+  self.assertEqual(s.compensation_phones(q,limit=1),['old'])
+  s.mark_deferred_attempt('old','2026-11-17T00:00:00+00:00')
+  self.assertEqual(s.compensation_phones(q,limit=1),['next'])
+ def test_attempted_rotation_is_bounded_even_when_all_defer(self):
+  phones=['fixture-a','fixture-b','fixture-c'];s.record_deferred(phones,'source_budget')
+  seen=[]
+  with mock.patch.object(s,'_get_customer_full',side_effect=s.SourceDeferred('booking_active')):
+   for _ in phones:
+    p=s.compensation_phones({'items':[]},limit=1)[0];seen.append(p)
+    with self.assertRaises(s.SourceDeferred):s.get_customer_full(p)
+    s.record_deferred([x for x in phones if x!=p],'source_budget')
+  self.assertEqual(set(seen),set(phones))
+  self.assertTrue(all('last_attempted_at' in x for x in s.load_deferred()['items']))
+ def test_attempt_marker_preserves_private_file_and_retry_queue(self):
+  import stat
+  q=self.queue();before=copy.deepcopy(q)
+  s.record_deferred(['fixture'],'source_budget');s.mark_deferred_attempt('fixture','2026-11-17T00:00:00+00:00')
+  self.assertEqual(stat.S_IMODE(os.stat(s.DEFERRED_PATH).st_mode),0o600)
+  self.assertNotIn('fixture',str(s.deferred_metrics()));self.assertEqual(q,before)
+ def test_no_marker_for_unattempted_tail(self):
+  with mock.patch.object(s,'_get_customer_full',side_effect=s.SourceDeferred('booking_active')):
+   s.sync_phones(['fixture-head','fixture-tail'])
+  by={x['phone']:x for x in s.load_deferred()['items']}
+  self.assertIn('last_attempted_at',by['fixture-head']);self.assertNotIn('last_attempted_at',by['fixture-tail'])
  def test_busy_actual_flow_preserves_queue(self):
   q=self.queue()
   with open(self.path,'a') as f:

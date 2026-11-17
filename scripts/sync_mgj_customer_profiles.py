@@ -126,6 +126,8 @@ def load_deferred():
     for item in value["items"]:
         if not isinstance(item, dict) or not item.get("phone") or parse_iso_datetime(item.get("deferred_since")) is None:
             raise RuntimeError("deferred_state_invalid")
+        if "last_attempted_at" in item and parse_iso_datetime(item["last_attempted_at"]) is None:
+            raise RuntimeError("deferred_attempt_state_invalid")
     return value
 
 def save_deferred(value):
@@ -139,7 +141,7 @@ def save_deferred(value):
     finally:
         if os.path.exists(temporary): os.unlink(temporary)
 
-def record_deferred(phones, reason):
+def record_deferred(phones, reason, attempted_at=None):
     value = load_deferred()
     items = {item["phone"]: dict(item) for item in value["items"]}
     now = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -148,7 +150,18 @@ def record_deferred(phones, reason):
     for phone in phones:
         item = items.setdefault(phone, {"phone": phone, "deferred_since": now, "deferrals": 0})
         item.update(last_deferred_at=now, reason=code, deferrals=item["deferrals"]+1)
+        if attempted_at is not None:
+            item["last_attempted_at"] = attempted_at
     save_deferred({"version": 1, "items": list(items.values())})
+
+def mark_deferred_attempt(phone, attempted_at):
+    # Called only under the customer coordinator; tail deferrals never touch this clock.
+    value = load_deferred()
+    for item in value["items"]:
+        if item["phone"] == phone:
+            item["last_attempted_at"] = attempted_at
+            save_deferred(value)
+            return
 
 def clear_completed_deferred(phone):
     value = load_deferred()
@@ -167,7 +180,7 @@ def deferred_metrics(now=None):
 
 def compensation_phones(queue, limit=INCREMENTAL_RETRY_LIMIT):
     # Oldest deferred items remain visible even after rotating booking cursor advances.
-    deferred = sorted(load_deferred()["items"], key=lambda item: (item.get("last_deferred_at", item["deferred_since"]), item["deferred_since"]))
+    deferred = sorted(load_deferred()["items"], key=lambda item: (parse_iso_datetime(item.get("last_attempted_at", item["deferred_since"])).timestamp(), parse_iso_datetime(item["deferred_since"]).timestamp()))
     retry = eligible_retry_phones(queue, limit=limit)
     values = ([deferred[0]["phone"]] if deferred else []) + retry + [item["phone"] for item in deferred[1:]]
     return list(dict.fromkeys(values))[:limit]
@@ -200,6 +213,8 @@ WAIT_MAX_EPISODES = 2
 WAIT_USED = 0
 WAIT_EPISODES = 0
 SESSION_SCOPES = {}
+INITIAL_READY_CHECKED = True  # CLI opts in once per batch.
+INITIAL_READY_WAIT_SECONDS = 60
 
 
 def locked_session(config_path=None):
@@ -269,7 +284,38 @@ def source_slot():
         time.sleep(WAIT_STEP_SECONDS)
 
 
+def daily_wait_is_safe():
+    # Read local state only. A failed/cooling daily task is not transient readiness.
+    try:
+        import sync_mgj_daily_electronic_sources as daily
+        state = daily.read_daily_sync_state()
+        if not isinstance(state, dict) or state.get("status") != "healthy": return False
+        now = time.time()
+        if float(state.get("cooldown_until") or 0) > now: return False
+        today = datetime.now(daily.TZ).date().isoformat()
+        for shop in daily.SHOPS:
+            pair = state.get("pairs", {}).get(shop + ":" + today)
+            if not isinstance(pair, dict) or float(pair.get("retry_after") or 0) > now: return False
+        return True
+    except (OSError, ValueError, TypeError, ImportError, AttributeError):
+        return False
+
+def wait_initial_daily_readiness():
+    global INITIAL_READY_CHECKED
+    if INITIAL_READY_CHECKED: return
+    INITIAL_READY_CHECKED = True
+    waited = 0
+    while source_priority_reason() == "daily_due_or_cooling":
+        if not daily_wait_is_safe(): raise SourceDeferred("daily_due_or_cooling")
+        if waited + WAIT_STEP_SECONDS > INITIAL_READY_WAIT_SECONDS:
+            raise SourceDeferred("daily_due_or_cooling")
+        if not request_budget_ready(WAIT_STEP_SECONDS): raise SourceDeferred("source_budget")
+        # Coordinator only: no source/session/booking/daily lock is held here.
+        time.sleep(WAIT_STEP_SECONDS)
+        waited += WAIT_STEP_SECONDS
+
 def bounded_source_curl(factory):
+    wait_initial_daily_readiness()
     with source_slot():
         # Factory rereads approved session and constructs frozen-target request
         # only after current session/source locks and priority have been checked.
@@ -1125,10 +1171,12 @@ def parse_cashier_html(html):
 
 def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
     load_deferred()  # Corrupt state must not be overwritten or ignored.
+    attempted_at = datetime.now().astimezone().isoformat(timespec="microseconds")
+    mark_deferred_attempt(phone, attempted_at)
     try:
         return _get_customer_full(phone, history_detail_calls)
     except SourceDeferred as exc:
-        record_deferred([phone], str(exc))
+        record_deferred([phone], str(exc), attempted_at=attempted_at)
         raise
 
 
@@ -1875,6 +1923,7 @@ if __name__ == "__main__":
         RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
         WAIT_USED = 0
         WAIT_EPISODES = 0
+        INITIAL_READY_CHECKED = False
         SESSION_SCOPES = {}
         run_lock = acquire_run_lock()
         if run_lock is None:
