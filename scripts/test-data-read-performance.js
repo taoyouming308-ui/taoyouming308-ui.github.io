@@ -6,7 +6,7 @@ const read=p=>baseline?cp.execFileSync('git',['show','ac0cfd26:'+p],{encoding:'u
 const take=(s,a,b)=>{const x=s.indexOf(a),y=s.indexOf(b,x);assert.ok(x>=0&&y>x,a);return s.slice(x,y);};
 const fixture={rows:Array.from({length:80},(_,i)=>({id:'test-'+i,store:'TEST-A',date:'2026-10-01',amount_cents:i===0?null:12345+i,order:'TEST-ORDER-'+i,staff:[{id:'TEST',share_cents:12345+i}]})),complete:true};
 const wire=JSON.stringify(fixture),specs=[
- ['perm-app.html','  function employeeBookingsApi(','  EmployeeReports.init','employeeBookingsApi','today_bookings',{session_token:'TEST-a',date:'2026-10-01'}],
+ ['perm-app.html',baseline?'  function employeeBookingsApi(':'  function employeeReadJson(','  EmployeeReports.init','employeeBookingsApi','today_bookings',{session_token:'TEST-a',date:'2026-10-01'}],
  ['frontdesk.html','    async function api(','    businessUI.init','api','dashboard',{store:'TEST-A',date:'2026-10-01'}],
  ['operations.html','  async function api(','  function currentStore','api','overview',{store:'TEST-A',month:'2026-10'}]
 ];

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="666">
+<html lang="zh-CN" data-version="667">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,8 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=666" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=666" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=667" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=667" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -2323,6 +2323,10 @@ body {
       line-height:1.6;
       text-align:center;
     }
+    #identity-recovery p { margin:14px 0 20px; color:#575752; font-size:14px; line-height:1.65; overflow-wrap:anywhere; }
+    #identity-recovery button { display:block; width:100%; min-height:48px; padding:12px 16px; border:0; border-radius:12px; background:#171716; color:#fff; font:600 14px/1.4 var(--font); cursor:pointer; }
+    #identity-recovery button:disabled { opacity:.55; cursor:wait; }
+    #identity-recovery button:focus-visible { outline:3px solid #88877e; outline-offset:3px; }
     .identity-modal .reg-form input:not([type=checkbox]):not([type=radio]),
     .identity-modal #reg-store {
       width:100% !important;
@@ -3164,14 +3168,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=666"></script>
-<script src="customer-design-archive.js?v=666"></script>
-<script defer src="aesthetic-study.js?v=666"></script>
-<script defer src="aesthetic-daily.js?v=666"></script>
-<script defer src="hair-calculator-dialog.js?v=666"></script>
-<script src="aesthetic-knowledge.v1.js?v=666"></script>
-<script src="hair-vision-training.v1.js?v=666"></script>
-<script src="aesthetic-growth.v2.js?v=666"></script>
+<script src="employee-reports.js?v=667"></script>
+<script src="customer-design-archive.js?v=667"></script>
+<script defer src="aesthetic-study.js?v=667"></script>
+<script defer src="aesthetic-daily.js?v=667"></script>
+<script defer src="hair-calculator-dialog.js?v=667"></script>
+<script src="aesthetic-knowledge.v1.js?v=667"></script>
+<script src="hair-vision-training.v1.js?v=667"></script>
+<script src="aesthetic-growth.v2.js?v=667"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6463,20 +6467,53 @@ function initApp() {
   var APP_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
   function isEmployeeSessionInvalid(error) { return !!(error && (error.status === 401 || error.status === 403) && /^(请重新登录|登录已过期|账号已停用)/.test(error.message || '')); }
+  // Read-only helper: the deadline covers fetch AND response.json(), even if
+  // a suspended/failed transport ignores AbortSignal. Never use for writes.
+  function employeeReadJson(url, options, timeoutMs) {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer, externalSignal = options && options.signal;
+    var abortExternal = function(){ if (controller) controller.abort(); };
+    var requestOptions = Object.assign({}, options || {}, controller ? {signal:controller.signal} : {});
+    if (controller && externalSignal) {
+      if (externalSignal.aborted) controller.abort();
+      else externalSignal.addEventListener('abort', abortExternal, {once:true});
+    }
+    var deadline = new Promise(function(_, reject){
+      timer = setTimeout(function(){
+        var error = new Error('网络读取超时，请重试');
+        error.code = 'READ_TIMEOUT'; error.status = 0;
+        reject(error);
+        if (controller) controller.abort();
+      }, Number(timeoutMs) > 0 ? Number(timeoutMs) : 15000);
+    });
+    var read = Promise.resolve().then(function(){ return fetch(url, requestOptions); }).then(function(response){
+      return response.json().then(function(data){
+        if (!response.ok || (data && data.error)) {
+          var error = new Error((data && data.error) || ('请求失败 (' + response.status + ')'));
+          error.status = response.status; error.code = data && data.code || '';
+          throw error;
+        }
+        return data;
+      });
+    });
+    return Promise.race([read, deadline]).finally(function(){
+      clearTimeout(timer);
+      if (controller && externalSignal) externalSignal.removeEventListener('abort', abortExternal);
+    });
+  }
   function employeeBookingsApi(operation, payload) {
     var send=function(){return employeeBookingsRequest(operation,payload);};
     return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('employee',operation==='today_bookings',JSON.stringify([operation,payload]),send) : send();
   }
   function employeeBookingsRequest(operation, payload) {
     var body = Object.assign({}, payload || {}, { operation: operation });
-    var controller = operation === 'session' ? new AbortController() : null;
-    var timer = controller ? setTimeout(function(){ controller.abort(); }, 15000) : null;
-    return fetch(EMPLOYEE_BOOKINGS_ENDPOINT, {
-      signal: controller ? controller.signal : undefined,
+    var options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
       body: JSON.stringify(body)
-    }).then(function(response) {
+    };
+    if (operation === 'session' || operation === 'today_bookings') return employeeReadJson(EMPLOYEE_BOOKINGS_ENDPOINT, options, 15000);
+    return fetch(EMPLOYEE_BOOKINGS_ENDPOINT, options).then(function(response) {
       return response.json().catch(function(){ return {}; }).then(function(data) {
         if (!response.ok || data.error) {
           var error = new Error(data.error || ('请求失败 (' + response.status + ')'));
@@ -6486,7 +6523,7 @@ function initApp() {
         }
         return data;
       });
-    }).finally(function(){ if (timer) clearTimeout(timer); });
+    });
   }
 
   EmployeeReports.init({url:SUPABASE_URL,key:SUPABASE_KEY,session:verifiedEmployeeSession});
@@ -6512,7 +6549,7 @@ function initApp() {
     return AUTHENTICATED_STAFF && stored && stored.session_token === AUTHENTICATED_STAFF.session_token ? AUTHENTICATED_STAFF : null;
   }
   var bookingReadGeneration = 0, hairPickerReadGeneration = 0;
-  var identityPending = null, identityChangedElsewhere = false, hairViewOwner = null;
+  var identityPending = null, identityPendingKey = '', identityReadGeneration = 0, identityChangedElsewhere = false, hairViewOwner = null;
   var identityLockedRoots = new Map();
   function lockPrivateViews() {
     ['home-page','app-content','hair-analysis-modal','home-drawer'].forEach(function(id){
@@ -6527,18 +6564,36 @@ function initApp() {
     identityLockedRoots.forEach(function(before,el){el.style.visibility=before.visibility;el.inert=before.inert;});
     identityLockedRoots.clear();
   }
+  function employeeIdentityKey(session) {
+    return session && session.session_token && session.username && session.store
+      ? JSON.stringify([session.session_token, session.username, session.store]) : '';
+  }
+  function storedEmployeeIdentityKey() {
+    var session = null;
+    try { session = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch (_) {}
+    return employeeIdentityKey(session);
+  }
   function checkIdentity() {
     if (identityChangedElsewhere) return Promise.resolve(false);
-    if (identityPending) return identityPending;
     var stored = localStorage.getItem('booking-session'), session = null;
     try { session = JSON.parse(stored || 'null'); } catch(e) {}
+    var identityKey = employeeIdentityKey(session);
+    if (identityPending && identityPendingKey === identityKey) return identityPending;
     if (!session || !session.username || !session.store || !session.session_token || !session.loggedAt ||
         Date.now() - Number(session.loggedAt) > APP_SESSION_MAX_AGE) {
       clearBookingSession(); showIdentityModal(); return Promise.resolve(false);
     }
+    var readGeneration = ++identityReadGeneration;
+    identityPendingKey = identityKey;
+    function currentIdentityRead() {
+      if (identityChangedElsewhere || readGeneration !== identityReadGeneration) return false;
+      if (storedEmployeeIdentityKey() === identityKey) return true;
+      if (!AUTHENTICATED_STAFF) showIdentityRecovery('登录状态已变化，请重新验证当前账号。', true);
+      return false;
+    }
     if (!AUTHENTICATED_STAFF) showIdentityRecovery('正在验证登录状态…', false);
-    identityPending = employeeBookingsApi('session', { session_token: session.session_token }).then(function(data) {
-      if (localStorage.getItem('booking-session') !== stored) return false;
+    var pending = employeeBookingsApi('session', { session_token: session.session_token }).then(function(data) {
+      if (!currentIdentityRead()) return false;
       var user = data.user || {};
       if (!user.username || !user.store) throw new Error('会话响应无效');
       var applied = applyAuthenticatedIdentity({username:user.username, store:user.store, position:user.position || '',
@@ -6547,11 +6602,12 @@ function initApp() {
       var recovery = document.getElementById('identity-recovery'); if (recovery) recovery.remove();
       return true;
     }).catch(function(error) {
-      if (localStorage.getItem('booking-session') !== stored) return false;
+      if (!currentIdentityRead()) return false;
       if (isEmployeeSessionInvalid(error)) { clearBookingSession(); showIdentityModal(); }
-      else if (!AUTHENTICATED_STAFF) showIdentityRecovery('网络暂不可用，登录凭据已保留。', true);
+      else if (!AUTHENTICATED_STAFF) showIdentityRecovery(error && error.code === 'READ_TIMEOUT' ? '登录验证超时，凭据和未保存内容已保留，请重试。' : '网络暂不可用，登录凭据已保留。', true);
       return false;
-    }).finally(function(){ identityPending = null; });
+    }).finally(function(){ if (identityPending === pending) { identityPending = null; identityPendingKey = ''; } });
+    identityPending = pending;
     return identityPending;
   }
   function showIdentityRecovery(message, retry) {
@@ -6568,6 +6624,7 @@ function initApp() {
 
   function lockChangedIdentity() {
     identityChangedElsewhere = true;
+    identityReadGeneration++; identityPending = null; identityPendingKey = '';
     AUTHENTICATED_STAFF = null; BOOKING_BARBER = ''; BOOKINGS_CACHE = [];
     bookingReadGeneration++; hairPickerReadGeneration++;
     window.dispatchEvent(new Event('staff-identity-changed'));
@@ -6577,7 +6634,12 @@ function initApp() {
     button.onclick = function(){ if (confirm('重新载入将放弃本页未保存输入，是否继续？')) location.reload(); };
   }
   window.addEventListener('storage', function(event){
-    if (event.key === 'booking-session' && AUTHENTICATED_STAFF && !verifiedEmployeeSession()) lockChangedIdentity();
+    if (event.key !== 'booking-session' && event.key !== null) return;
+    if (AUTHENTICATED_STAFF && !verifiedEmployeeSession()) lockChangedIdentity();
+    else if (!AUTHENTICATED_STAFF && identityPending && storedEmployeeIdentityKey() !== identityPendingKey) {
+      identityReadGeneration++; identityPending = null; identityPendingKey = '';
+      showIdentityRecovery('登录状态已变化，请重新验证当前账号。', true);
+    }
   });
 
   function applyAuthenticatedIdentity(staff, persist) {
@@ -9104,94 +9166,188 @@ function initApp() {
     return (el && el.value) || fields['hair-form-barber'] || fields.barber || ((_cloudRecordData && _cloudRecordData.barber) || localStorage.getItem('booking-barber') || BOOKING_BARBER || '');
   }
 
+  // A short, memory-only directory shared by the two hair-form selectors. Identity is
+  // verified elsewhere; this cache is display data, never proof of permission.
+  var hairStaffDirectoryCache = null, hairStaffDirectoryPending = null;
+  var hairBarberReadGeneration = 0, hairAssistantReadGeneration = 0;
+  var hairStaffFormGeneration = 0;
+  var hairStaffIdentityKey = '';
+  function hairStaffScopeKey(identity) {
+    return identity ? JSON.stringify([identity.session_token, identity.username, identity.store]) : '';
+  }
+  function hairStaffScopeCurrent(key) {
+    return !!key && hairStaffScopeKey(verifiedEmployeeSession()) === key;
+  }
+  window.addEventListener('staff-identity-changed', function() {
+    var key = hairStaffScopeKey(verifiedEmployeeSession());
+    if (key === hairStaffIdentityKey) return;
+    hairStaffIdentityKey = key;
+    hairStaffDirectoryCache = null; hairStaffDirectoryPending = null;
+    hairBarberReadGeneration++; hairAssistantReadGeneration++;
+  });
+  function loadHairStaffDirectory(identity) {
+    var key = hairStaffScopeKey(identity);
+    if (!identity || !identity.session_token || !identity.username || !identity.store || !hairStaffScopeCurrent(key)) {
+      return Promise.reject(new Error('请先恢复登录后重试'));
+    }
+    hairStaffIdentityKey = key;
+    if (hairStaffDirectoryCache && hairStaffDirectoryCache.key === key && Date.now() - hairStaffDirectoryCache.at < 60000) {
+      return Promise.resolve(hairStaffDirectoryCache.rows);
+    }
+    if (hairStaffDirectoryPending && hairStaffDirectoryPending.key === key) return hairStaffDirectoryPending.promise;
+    var entry = { key: key, promise: null };
+    var url = SUPABASE_URL + '/rest/v1/staff?select=username,store,position,active,employment_status&active=eq.true&employment_status=eq.active&store=eq.' + encodeURIComponent(identity.store) + '&order=username.asc';
+    entry.promise = employeeReadJson(url, { headers: { 'apikey': SUPABASE_KEY } }).then(function(rows) {
+      if (!Array.isArray(rows) || rows.some(function(row) {
+        return !row || typeof row.username !== 'string' || !row.username.trim() || row.store !== identity.store ||
+          (row.position != null && typeof row.position !== 'string') || row.active !== true || row.employment_status !== 'active';
+      })) throw new Error('员工目录返回格式异常，请重试');
+      if (hairStaffScopeCurrent(key) && hairStaffDirectoryPending === entry) hairStaffDirectoryCache = { key: key, at: Date.now(), rows: rows };
+      return rows;
+    }).finally(function() { if (hairStaffDirectoryPending === entry) hairStaffDirectoryPending = null; });
+    hairStaffDirectoryPending = entry;
+    return entry.promise;
+  }
+  function hairStaffStatus(container, kind, message, retry) {
+    if (!container) return;
+    var status = container.querySelector('[data-hair-staff-status="' + kind + '"]');
+    if (!status) {
+      status = document.createElement('span'); status.setAttribute('data-hair-staff-status', kind);
+      status.setAttribute('role', 'status');
+      status.style.cssText = 'font-size:11px;color:var(--text-secondary);grid-column:1 / -1;min-width:0;max-width:100%;flex-basis:100%;padding:4px 0;overflow-wrap:anywhere;';
+      container.appendChild(status);
+    }
+    status.textContent = message;
+    if (retry) {
+      var button = document.createElement('button'); button.type = 'button'; button.textContent = '重试';
+      button.style.cssText = 'font:inherit;min-height:44px;padding:6px 12px;margin-left:6px;border:1px solid var(--border);border-radius:6px;background:var(--surface-light);color:var(--text);';
+      button.onclick = retry; status.appendChild(button);
+    }
+  }
+  function hairStaffNames(value) {
+    return String(value || '').split(',').map(function(name) { return name.trim(); }).filter(function(name, index, all) { return name && all.indexOf(name) === index; });
+  }
+  function renderHairAssistantChips(container, techs, selectedNames) {
+    container.innerHTML = '';
+    var names = techs.map(function(row) { return row.username; });
+    selectedNames.forEach(function(name) { if (names.indexOf(name) === -1) names.push(name); });
+    names.forEach(function(name) {
+      var chip = document.createElement('span'); chip.className = 'chip';
+      chip.setAttribute('data-value', name); chip.textContent = name;
+      if (selectedNames.indexOf(name) !== -1) chip.classList.add('active');
+      if (!techs.some(function(row) { return row.username === name; })) chip.title = '保留的原档案值，未在本店在职目录确认';
+      chip.onclick = function() { this.classList.toggle('active'); };
+      container.appendChild(chip);
+    });
+  }
+  function retryHairStaffSelectors() {
+    var identity = verifiedEmployeeSession();
+    if (!identity) return;
+    // Both controls shared the failed directory. Refresh both from one new read,
+    // using current manual values rather than the failed request's snapshots.
+    hairStaffDirectoryCache = null;
+    var barber = document.getElementById('hair-form-barber');
+    if (barber) window.populateHairBarberSelect(barber.value);
+    if (document.getElementById('hair-form-tech-container')) window.loadHairAssistantOptionsForBarber(barber ? barber.value : '', true);
+  }
+
   window.populateHairBarberSelect = function(selectedName) {
     var sel = document.getElementById('hair-form-barber');
     if (!sel) return;
-    selectedName = selectedName || sel.value || localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
-    var fallback = selectedName || localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
-    sel.innerHTML = fallback ? '<option value="' + escAttr(fallback) + '">' + esc(fallback) + '</option>' : '<option value="">选择发型师</option>';
-    sel.value = fallback;
-    fetch(SUPABASE_URL + '/rest/v1/staff?select=username,position,store&active=eq.true&order=username.asc', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); }).then(function(rows){
-      rows = Array.isArray(rows) ? rows : [];
-      var currentUser = localStorage.getItem('booking-barber') || BOOKING_BARBER || fallback || '';
-      var currentStore = localStorage.getItem('booking-store') || BOOKING_SHOP || '';
-      var currentPosition = (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.position) || '';
-      for (var sr = 0; sr < rows.length; sr++) {
-        if (rows[sr] && rows[sr].username === currentUser) {
-          if (rows[sr].store) currentStore = rows[sr].store;
-          if (rows[sr].position) currentPosition = rows[sr].position;
-          break;
-        }
-      }
-      var fallbackFree = ['无名','娄云','陈鹏','董小强','木子','大雄','杨帆'];
-      var fallbackXiangli = ['向里造型','十一','哈维','晓伟','郭小康','陈浩'];
-      var inferredStore = currentStore || (fallbackXiangli.indexOf(currentUser) !== -1 ? '向里造型' : '自由手艺人');
-      var seen = {};
-      var names = rows.filter(function(row) {
-        if (!row || !row.username) return false;
-        if (row.position && row.position.indexOf('发型师') === -1) return false;
-        return currentStore ? row.store === currentStore : row.username === currentUser;
-      }).map(function(row){ return row.username; });
-      if (!names.length && rows.length && currentUser) names = [currentUser];
-      if (!names.length) names = inferredStore === '向里造型' ? fallbackXiangli : fallbackFree;
+    var identity = verifiedEmployeeSession(), key = hairStaffScopeKey(identity);
+    var selected = arguments.length ? String(selectedName || '') : sel.value || '';
+    var readGeneration = ++hairBarberReadGeneration, editingId = _editingHairId, cloudId = _cloudEditingId, formGeneration = hairStaffFormGeneration;
+    if (selected && !Array.from(sel.options).some(function(option) { return option.value === selected; })) {
+      var savedOption = document.createElement('option'); savedOption.value = selected; savedOption.textContent = selected;
+      sel.appendChild(savedOption);
+    }
+    sel.value = selected;
+    var parent = sel.parentElement;
+    if (parent) parent.style.flexWrap = 'wrap';
+    function currentRead() {
+      return hairStaffScopeCurrent(key) && document.getElementById('hair-form-barber') === sel &&
+        hairBarberReadGeneration === readGeneration && hairStaffFormGeneration === formGeneration && sel.value === selected;
+    }
+    function retry() {
+      if (hairStaffScopeCurrent(key) && document.getElementById('hair-form-barber') === sel &&
+          hairBarberReadGeneration === readGeneration && hairStaffFormGeneration === formGeneration) retryHairStaffSelectors();
+    }
+    hairStaffStatus(parent, 'barber', '正在核对本店发型师，已填内容保留…');
+    if (!identity) {
+      hairStaffStatus(parent, 'barber', '请先恢复登录后重试', function() {
+        checkIdentity().then(function(valid) { if (valid && document.getElementById('hair-form-barber') === sel) window.populateHairBarberSelect(sel.value); });
+      });
+      return;
+    }
+    loadHairStaffDirectory(identity).then(function(rows) {
+      if (!currentRead()) return;
+      var names = rows.filter(function(row) { return /发型师/.test(row.position || ''); }).map(function(row) { return row.username; });
+      var value = selected || (/发型师/.test(identity.position || '') && names.indexOf(identity.username) !== -1 ? identity.username : '');
+      // A new assistant form must not silently assign its assistant login as barber.
+      if (!editingId && !cloudId && value === identity.username && !/发型师/.test(identity.position || '')) value = '';
       sel.innerHTML = '<option value="">选择发型师</option>';
-      var group = document.createElement('optgroup');
-      group.label = inferredStore;
-      for (var i = 0; i < names.length; i++) {
-        var name = names[i] || '';
-        if (!name || seen[name]) continue;
-        seen[name] = true;
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        group.appendChild(opt);
-      }
+      var group = document.createElement('optgroup'); group.label = identity.store;
+      names.forEach(function(name) { var option = document.createElement('option'); option.value = name; option.textContent = name; group.appendChild(option); });
       if (group.children.length) sel.appendChild(group);
-      sel.value = selectedName || fallback || '';
-      if (!sel.value || !seen[sel.value]) {
-        sel.value = /发型师/.test(currentPosition) && seen[currentUser] ? currentUser : '';
+      if (value && names.indexOf(value) === -1) {
+        var preserved = document.createElement('option'); preserved.value = value; preserved.textContent = value + '（原填写值）'; sel.appendChild(preserved);
       }
-    }).catch(function(){});
+      sel.value = value;
+      hairStaffStatus(parent, 'barber', value && names.indexOf(value) === -1 ? '原填写值已保留，未在本店在职目录确认' : names.length ? '' : '本店暂无在职发型师');
+      if (value !== selected && window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(value, true);
+    }).catch(function() {
+      if (!currentRead()) return;
+      hairStaffStatus(parent, 'barber', '发型师目录暂不可用，已填内容保留', retry);
+    });
   };
 
   window.loadHairAssistantOptionsForBarber = function(barberName, keepSelection) {
     var container = document.getElementById('hair-form-tech-container');
     if (!container) return;
     barberName = barberName || recordBarberValueFromFields({}) || '';
-    var selectedTech = keepSelection ? (window._pendingTechRestore || recordTechValueFromFields({})) : '';
-    container.innerHTML = '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">加载中...</span>';
-    fetch(SUPABASE_URL + '/rest/v1/staff?select=store&username=eq.' + encodeURIComponent(barberName) + '&limit=1', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.json(); }).then(function(me){
-      var myStore = (me && me[0] && me[0].store) || '';
-      var url = SUPABASE_URL + '/rest/v1/staff?select=username,store,position&active=eq.true&order=username.asc';
-      if (myStore) url += '&store=eq.' + encodeURIComponent(myStore);
-      return fetch(url, { headers: { 'apikey': SUPABASE_KEY } });
-    }).then(function(r){ return r.json(); }).then(function(rows){
-      rows = Array.isArray(rows) ? rows : [];
-      var techs = rows.filter(function(row){ return row.position && (row.position.indexOf('助理') !== -1 || row.position.indexOf('技师') !== -1); });
-      container.innerHTML = '';
-      for (var i = 0; i < techs.length; i++) {
-        (function(name){
-          var chip = document.createElement('span');
-          chip.className = 'chip';
-          chip.setAttribute('data-value', name);
-          chip.textContent = name;
-          chip.onclick = function(){ this.classList.toggle('active'); };
-          container.appendChild(chip);
-        })(techs[i].username);
-      }
-      if (selectedTech) {
-        window._pendingTechRestore = selectedTech;
-        if (window.restoreTechChips) window.restoreTechChips(selectedTech);
-      } else {
-        window._pendingTechRestore = null;
-      }
-      if (!techs.length) container.innerHTML = '<span style="font-size:11px;color:var(--text-secondary);padding:6px 0;">暂无助理</span>';
-    }).catch(function(){
-      container.innerHTML = '<span style="font-size:11px;color:var(--danger);padding:6px 0;">助理加载失败</span>';
+    var identity = verifiedEmployeeSession(), key = hairStaffScopeKey(identity);
+    var editingId = _editingHairId, cloudId = _cloudEditingId, readGeneration = ++hairAssistantReadGeneration, formGeneration = hairStaffFormGeneration;
+    var barberSelect = document.getElementById('hair-form-barber');
+    var selectedBarberValue = barberSelect ? barberSelect.value : barberName;
+    var selectedTech = recordTechValueFromFields({});
+    // The pending restore belongs only to an opened record, never a later blank form.
+    var restoring = keepSelection && (editingId || cloudId) && window._pendingTechRestore;
+    if (restoring) selectedTech = window._pendingTechRestore;
+    window._pendingTechRestore = null;
+    var selectedNames = hairStaffNames(selectedTech);
+    if (restoring || (!container.querySelector('.chip') && selectedNames.length)) {
+      var existingTechs = Array.from(container.querySelectorAll('.chip')).map(function(chip) { return { username: chip.getAttribute('data-value') || chip.textContent || '' }; });
+      renderHairAssistantChips(container, existingTechs, selectedNames);
+    }
+    function currentRead() {
+      return hairStaffScopeCurrent(key) && document.getElementById('hair-form-tech-container') === container &&
+        hairAssistantReadGeneration === readGeneration && hairStaffFormGeneration === formGeneration &&
+        (!barberSelect || document.getElementById('hair-form-barber') === barberSelect) &&
+        (barberSelect ? barberSelect.value === selectedBarberValue : recordBarberValueFromFields({}) === barberName);
+    }
+    function retry() {
+      if (hairStaffScopeCurrent(key) && document.getElementById('hair-form-tech-container') === container &&
+          hairAssistantReadGeneration === readGeneration && hairStaffFormGeneration === formGeneration) retryHairStaffSelectors();
+    }
+    hairStaffStatus(container, 'assistant', '正在核对本店助理，已选内容保留…');
+    if (!identity) {
+      hairStaffStatus(container, 'assistant', '请先恢复登录后重试', function() {
+        checkIdentity().then(function(valid) { if (valid && document.getElementById('hair-form-tech-container') === container) window.loadHairAssistantOptionsForBarber(barberName, true); });
+      });
+      return;
+    }
+    loadHairStaffDirectory(identity).then(function(rows) {
+      if (!currentRead()) return;
+      var techs = rows.filter(function(row) { return /助理|技师/.test(row.position || ''); });
+      // Preserve edits made while the directory request was in flight.
+      var liveNames = hairStaffNames(recordTechValueFromFields({}));
+      renderHairAssistantChips(container, techs, liveNames);
+      window._pendingTechRestore = null;
+      var historical = liveNames.some(function(name) { return !techs.some(function(row) { return row.username === name; }); });
+      hairStaffStatus(container, 'assistant', historical ? '原档案助理已保留，未在本店在职目录确认' : techs.length ? '' : '本店暂无在职助理／技师');
+    }).catch(function() {
+      if (!currentRead()) return;
+      hairStaffStatus(container, 'assistant', '助理目录暂不可用，已选内容保留', retry);
     });
   };
 
@@ -10008,6 +10164,9 @@ function initApp() {
 
   // ===== 我的任务（技师端：看云端指派给自己的记录） =====
   window.renderMyTasks = function() {
+    // 新建分析时不预读隐藏任务及补开单；切到“我的任务”再读取最新内容。
+    // 这也避免保存后的后台刷新与正在填写的员工/客户选择抢占弱网连接。
+    if (window._hairViewMode === 'form') return;
     var container = document.getElementById('hair-tasks-list');
     if (!container) return;
     var barber = localStorage.getItem('booking-barber') || BOOKING_BARBER || '';
@@ -10532,6 +10691,9 @@ function initApp() {
 
   window.loadHairRecordData = function(data) {
     if (!data) return;
+    // Persisting this form may allocate an ID without changing its content.
+    // Only an explicit record/form load invalidates pending selector callbacks.
+    hairStaffFormGeneration++;
     var openingBookingContext = window._activeHairBookingContext || {};
     window._activeHairBookingContext = hairBookingContext(
       data.bookingId || data.booking_id || openingBookingContext.bookingId,
@@ -10568,8 +10730,8 @@ function initApp() {
     }
     setVal('hair-form-name', data.customerName);
     setVal('hair-form-phone', data.customerPhone);
-    setVal('hair-form-barber', data.barber || localStorage.getItem('booking-barber') || BOOKING_BARBER || '');
-    if (window.populateHairBarberSelect) window.populateHairBarberSelect(data.barber || '');
+    setVal('hair-form-barber', data.barber || (data.formFields && data.formFields['hair-form-barber']) || '');
+    if (window.populateHairBarberSelect) window.populateHairBarberSelect(data.barber || (data.formFields && data.formFields['hair-form-barber']) || '');
     if (data.technician) window._pendingTechRestore = data.technician;
     if (window.loadHairAssistantOptionsForBarber) window.loadHairAssistantOptionsForBarber(data.barber || '', true);
     else if (window.restoreTechChips) window.restoreTechChips(data.technician);
@@ -11178,7 +11340,8 @@ function initApp() {
     function currentRead() { var current = verifiedEmployeeSession(); return current && current.session_token === sessionToken && current.store === requestedStore && readGeneration === hairPickerReadGeneration && localStorage.getItem('hair-booking-picker-date') === dateKey && document.getElementById('hair-booking-picker-list') === list; }
     employeeBookingsApi('today_bookings', { session_token: sessionToken, date: dateKey }).then(function(data) {
       if (!currentRead()) return;
-      var rows = Array.isArray(data.rows) ? data.rows : [];
+      if (!data || !Array.isArray(data.rows)) throw new Error('预约数据返回格式异常');
+      var rows = data.rows;
       if (barberName) rows = rows.filter(function(r){ return r.barber_name === barberName; });
       var seen = {};
       var unique = [];
@@ -11215,8 +11378,15 @@ function initApp() {
       if (isEmployeeSessionInvalid(e)) {
         clearBookingSession();
         showIdentityModal();
+        list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">请重新登录后选择客户</div>';
+        return;
       }
-      list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">加载预约和前台到店客户失败</div>';
+      list.innerHTML = '<div role="status" style="text-align:center;padding:18px;color:var(--danger);font-size:12px;">' +
+        (e && e.code === 'READ_TIMEOUT' ? '读取预约和前台到店客户超时，已填内容保留' : '加载预约和前台到店客户失败，已填内容保留') + '</div>';
+      var retryButton = document.createElement('button'); retryButton.type = 'button'; retryButton.textContent = '重试';
+      retryButton.style.cssText = 'display:block;min-height:44px;padding:8px 20px;margin:0 auto 12px;font:inherit;border:1px solid var(--border);border-radius:6px;background:var(--surface-light);color:var(--text);';
+      retryButton.onclick = function() { if (currentRead()) window.loadHairBookingPickerDate(dateKey); };
+      list.appendChild(retryButton);
     });
   };
 
@@ -11402,6 +11572,7 @@ function initApp() {
 
   // ===== 发质拍照分析 =====
   window.renderHairAnalysis = function(phone, name, existingRec) {
+    hairStaffFormGeneration++;
     // 重置云端编辑状态（新建表单时）
     _editingHairId = null;
     _cloudEditingId = null;
@@ -13239,7 +13410,7 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=666"></script>
-<script defer src="app-shell-client.js?v=666"></script>
+<script defer src="data-read-client.js?v=667"></script>
+<script defer src="app-shell-client.js?v=667"></script>
 </body>
 </html>
