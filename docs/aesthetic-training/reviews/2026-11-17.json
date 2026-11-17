@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-11-17",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "c1b7b4bbe6415b3902fcd95c5c28ec9af5cb1b43",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, zonal density, hair diameter, gray percentage, chemical compatibility, home reproducibility or that either proposed color-and-cut plan has been performed and maintained for twelve weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional front-concentrated silver versus dark dense back and maintenance-conflict short-bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current silver distribution and bob are separated from the undisplayed fictional light reference, fictional zonal hair/color settings, customer-confirmed routine and required live light/strand tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; lower-contrast B is a conditional design process, not a claimed completed color or cut",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting the reference, proposed service or result",
+      "No user answer is invented; all five recap fields explicitly state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face/head/shoulder proportions, gray percentage, hair diameter, density, porosity, elasticity, chemical history and pool response are not established by the image; case-only settings require live verification",
+      "Lighting, backing cloths and a hidden strand test cannot reproduce every home dryer, pool chemistry, product, regrowth or twelve-week state",
+      "Preparer audit is not independent scientific, trichological, chemical-service or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-17-silver-front-dark-back-maintenance.webp",
+    "sha256": "eb6b2786656fe3bd3bec9738c18a91d8836b93d8db5f45503057391a32618471",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2172x724 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; compact jaw-to-upper-neck bob, natural silver concentrated at the front hairline and temples while the back remains substantially dark, neutral dry finish and consistent documentary light"
+  },
+  "hashes": {
+    "feedRawSha256": "ce9c619969ffa2344704ed3a1b4e8e2051885685c4643b1ad1e1bb72a078fd36",
+    "caseCanonicalSha256": "07f73f90f153dce4a2004bd99c13ede77c53982fff28d1e391d813d6cf59debd"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-17 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v667 before editing; daily backup script created the current daily archive",
+    "contentChecks": "test-aesthetic-daily and test-perm-academy passed with 41 cases; prior 40 parsed objects are byte-equivalent under JSON serialization, all IDs are unique and all five recaps remain explicitly unscored",
+    "nonBrowserChecks": "version, release integrity, smoke, academy publication/data safety, version update flow, module boundaries, aesthetic system/study/Edge, coach endpoint and agent status passed; the local aesthetic SQL container gate could not start because Docker is unavailable and remains mandatory in protected CI",
+    "browserCheck": "Local pinned Playwright Chromium executable is unavailable; test-aesthetic-daily-browser failed before page launch only. The exact browser regression remains mandatory in protected CI through test-perm-academy-browser",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed yet"
+  }
+}
