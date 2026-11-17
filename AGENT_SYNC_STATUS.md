@@ -1,5 +1,12 @@
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
+## 2026-11-17 · Silver distribution, apparent density and maintenance conflict (App version: v667 unchanged)
+
+- Current owner: Codex content publisher. Based on protected `github/main` `c1b7b4bbe6415b3902fcd95c5c28ec9af5cb1b43` in an isolated clean `content/aesthetic-2026-11-17` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v667 release and all forty earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-17` case separates visible front-concentrated silver and dark back shape from a fictional undisplayed light reference, zonal hair/color settings, a customer-confirmed three-minute routine and required light/backing/hidden-strand tests. Conditional A/B reasoning compares uniform deep full coverage with a lower-contrast gray transition plus zonal weight redistribution; six answers and five explicitly unscored self-checks include first-wash, first-swim, fourth-week, tenth/twelfth-week, stop and switch signals without inventing user completion.
+- Original 2172x724 AI WebP shows only one fictional adult woman's current front/two true profiles/back compact bob with natural silver concentrated at the front and temples while the back remains mostly dark, not the undisplayed reference, proposed color/cut, makeover or future state. No real customer, measured anatomy, verified gray percentage/density/diameter/porosity, chemical compatibility, pool response, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local and protected gates, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-17 · Mobile login and hair-form loading recovery (App version: v667; publication authorized, pending gates)
 
 - Current owner: Codex. Publication authorized by owner on November17. Last synchronized base checked: github/main 4ba98709 (v666); preserve PR148 recommendation updates and PR149 private diagnostics. Isolated fix/perm-mobile-loading-20261117; initial gates and daily recovery archive passed. Dirty canonical checkout and independent design prototype untouched.
