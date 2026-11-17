@@ -4592,7 +4592,7 @@ async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord)
 }
 
 async function monthlyVoucherLibrary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
-  return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers,
+  return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers, canRead: (actor: JsonRecord) => hasAuthCapability(actor, "voucher.read"),
     store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory });
 }
 

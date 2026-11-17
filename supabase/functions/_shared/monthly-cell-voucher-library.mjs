@@ -4,6 +4,7 @@ const text = value => String(value ?? '').trim();
 const uuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text(value));
 export async function monthlyCellVoucherLibrary(payload, session, deps) {
   if (!deps.canUpload(session)) throw Error('只有财务账号可以补充凭证');
+  if (!deps.canRead(session)) throw Error('当前账号没有凭证查看权限');
   const store = await deps.store(session, payload), company = text(store.company_id), storeId = text(store.id);
   const reportId = text(payload.report_id), cellId = text(payload.cell_id), month = text(payload.month);
   if (!uuid(reportId) || !uuid(cellId) || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)) throw Error('月报或单元格信息无效');
