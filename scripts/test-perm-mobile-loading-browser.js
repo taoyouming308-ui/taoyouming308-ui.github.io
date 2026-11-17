@@ -40,7 +40,7 @@ const engine = process.env.STARTUP_BROWSER || 'chromium';
       if (url.pathname === '/blank') return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>synthetic tab</title>' });
       const file = path.resolve(root, url.pathname.slice(1));
       if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
-      return route.fulfill({ body: fs.readFileSync(file), contentType: file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'application/javascript' : file.endsWith('.css') ? 'text/css' : 'application/json' }).catch(() => {});
+      return route.fulfill({ body: fs.readFileSync(file), contentType: file.endsWith('.html') ? 'text/html' : (file.endsWith('.js') || file.endsWith('.mjs')) ? 'application/javascript' : file.endsWith('.css') ? 'text/css' : 'application/json' }).catch(() => {});
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));

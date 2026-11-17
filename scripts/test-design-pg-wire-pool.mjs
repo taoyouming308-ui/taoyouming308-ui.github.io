@@ -1,0 +1,10 @@
+/** Pure shutdown tests: real pg Pool construction never connects to any server. */
+import assert from 'node:assert/strict';
+import {createFixturePgWirePool} from './fixtures/design-pg-wire-pool.mjs';
+const fixture={container:'design-workflow-synthetic-1-abcdef12',db:'design_executor_synthetic',runtimeRole:'design_identity_runtime'};
+let n=0;const test=async(label,work)=>{await work();console.log(`ok ${++n} - ${label}`);};
+await test('concurrent close shares completion and invokes pool end once',async()=>{const wire=createFixturePgWirePool(fixture),p=wire.pool;let release,calls=0;p.end=()=>{calls++;return new Promise(r=>{release=r;});};const first=wire.close(),second=wire.close();assert.strictEqual(first,second);assert.equal(calls,1);let settled=false;second.then(()=>{settled=true;});await Promise.resolve();assert.equal(settled,false);release();await first;assert.strictEqual(wire.close(),first);assert.equal(wire.stats().activeRelayChildren,0);});
+await test('failed cleanup remains failed on repeat, never a false success',async()=>{const wire=createFixturePgWirePool(fixture);let calls=0;wire.pool.end=async()=>{calls++;throw Error('SYNTHETIC_CLOSE_FAILED');};const first=wire.close();await assert.rejects(first,/SYNTHETIC_CLOSE_FAILED/);assert.strictEqual(wire.close(),first);await assert.rejects(wire.close(),/SYNTHETIC_CLOSE_FAILED/);assert.equal(calls,1);});
+await test('synchronous pool end failure is retained as one rejected close promise',async()=>{const wire=createFixturePgWirePool(fixture);wire.pool.end=()=>{throw Error('SYNTHETIC_END_THROW');};const first=wire.close();await assert.rejects(first,/SYNTHETIC_END_THROW/);await assert.rejects(wire.close(),/SYNTHETIC_END_THROW/);});
+await test('fixture cannot target a different database, role or arbitrary container',async()=>{for(const patch of [{container:'other'},{db:'real'},{runtimeRole:'postgres'}])assert.throws(()=>createFixturePgWirePool({...fixture,...patch}));});
+console.log(`PASS ${n} wire Pool shutdown safeguards; no connections or Docker.`);

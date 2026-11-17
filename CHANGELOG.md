@@ -1,3 +1,7 @@
+## 2026-11-18 — Unpublished isolated phone-design candidate
+
+Add direct native HEIC/HEIF processing, mTLS image broker, encrypted local private originals and original employee workflow, retaining manual review/confirmation and immutable archives. Add non-model staging lifecycle and read-only host/image preflight. Preserve current main business fixes; production authorization, host/TLS/SQL/backup/device acceptance remain pending. No production/booking-sync/API activation.
+
 ## 2026-11-17 · 发型审美训练：银白分布、视觉发量与维护周期
 
 - 追加稳定案例 `aesthetic-2026-11-17`，训练把前区银白造成的视觉轻薄、真实分区密度、后区深色重量和顾客愿意承担的盖白周期分开判断，避免用统一深染或全头打薄掩盖比例冲突。

@@ -1,0 +1,12 @@
+/** Explicit synthetic HTTP/runtime fixture. No production issuer auto-approval.
+ * Call approveHttp only from the test's chosen action, never from runtime itself. */
+import assert from 'node:assert/strict';
+import {createManagedViewProviderFixture} from './managed-view-provider.mjs';
+import {createImmutableGenerationRuntime} from '../../packages/design-production-adapter/immutable-generation-runtime.mjs';
+import {MANAGED_IMAGE_MODEL_ENDPOINT as endpoint} from '../../packages/design-production-adapter/managed-image-model-request.mjs';
+export async function createManagedViewRuntimeFixture({api='https://synthetic-api.invalid',app='https://synthetic-app.invalid'}={}){
+ const f=await createManagedViewProviderFixture();let sends=0,reply={observations:[{field:'visible_outline',value:'轮廓偏圆'}]},throwTransport=false;
+ const make=(on=true)=>createImmutableGenerationRuntime({enabled:true,acquireClient:f.acquire,publicOrigin:api,allowedRequestOrigins:[app],managedImages:{enabled:true},managedViews:{enabled:on,storage:f.storage,sealer:f.sealer,modelConfig:{model:f.modelConfig.model,maxOutputTokens:f.modelConfig.maxTokens},approvedModels:[f.modelConfig.model],transport:async request=>{sends++;assert.equal(request.url,endpoint);assert.equal(request.redirect,'error');assert(Buffer.byteLength(request.body)<=1048576);if(throwTransport)throw Error('SYNTHETIC_REPLY_LOST_AFTER_SEND');return {url:request.url,status:200,redirected:false,body:f.viewResponse(reply)};}}});
+ async function approveHttp(method,body){const kinds={describe:'managed_before_view',compare:'managed_completion_comparison',synthesize:'managed_completion_synthesis'};if(!Object.hasOwn(kinds,method))throw Error('FIXTURE_ACTION_NOT_APPROVED');assert.deepEqual(body.scope,f.scope);const selectors=method==='describe'?{taskId:body.taskId}:method==='compare'?{beforeTaskId:body.beforeTaskId,afterTaskId:body.afterTaskId}:{side:body.side};const p=await f.viewPlan({requestId:body.requestId,candidateKind:kinds[method],selectors});assert.equal(body.expectedWorkflowRevision,p.request.expectedWorkflowRevision);if(p.intent.kind==='external')await f.viewApprove(p);if(method==='synthesize')reply={reviewFocus:p.context.allowedReviewFocus.at(-1)??null};return p;}
+ return {...f,api,app,makeRuntime:make,approveHttp,setModelReply:value=>{reply=structuredClone(value);},setLostReply:value=>{throwTransport=value===true;},modelSends:()=>sends};
+}

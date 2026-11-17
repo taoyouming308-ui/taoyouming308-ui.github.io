@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "design-phone-worker-lock-v1",
+  "base": "public.ecr.aws/supabase/storage-api@sha256:1dbe962d9862ef12e20357f9d7ba5431989c1daf4a556d6cb20ee4efd1c57320",
+  "architecture": "arm64",
+  "python": "3.12.13",
+  "pillow": "13.0.0",
+  "wheel": "pillow-13.0.0-cp312-cp312-musllinux_1_2_aarch64.whl",
+  "url": "https://files.pythonhosted.org/packages/26/9b/f38b7c4d8f599537e2d1a6d546cec9beef7536ff8f5c49a3f9c78179d8ac/pillow-13.0.0-cp312-cp312-musllinux_1_2_aarch64.whl",
+  "sha256": "4bd024d567eca931b668978d672dba914d4b8e2628e2c3073a2ad178de8a2620",
+  "protocol": "design-phone-native-v2",
+  "sourceBytes": 8388608,
+  "sourcePixels": 40000000,
+  "normalizedEdge": 1024,
+  "normalizedBytes": 524288,
+  "compatibilityDerivativeEdge": 108,
+  "productionHostAcceptance": false,
+  "pillowHeif": "1.8.1",
+  "heifWheel": "pillow_heif-1.8.1-cp312-cp312-musllinux_1_2_aarch64.whl",
+  "heifUrl": "https://files.pythonhosted.org/packages/7b/e2/16fa61109f48848e18da28cecc70647af992c7d9acebd265c4fffc5f7e06/pillow_heif-1.8.1-cp312-cp312-musllinux_1_2_aarch64.whl",
+  "heifSha256": "7a719a475c761fe2834346a1e9f127b322bd14ed88f347360e82fd9766ff06a2",
+  "strictJpeg": {
+    "api": "libjpeg ABI 62",
+    "library": "libjpeg-e5567ec5.so.62.4.0",
+    "allWarningsFatal": true,
+    "headers": "libjpeg-turbo 3.1.3",
+    "headerSources": {
+      "jpeglib.h": {
+        "url": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.3/src/jpeglib.h",
+        "sha256": "dc3e8220f34b7e9f9e48620f5cb8dc070834feb3214bb12bbad78478ebb29e60"
+      },
+      "jmorecfg.h": {
+        "url": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.3/src/jmorecfg.h",
+        "sha256": "80a97f45ecb28d83310247eecec2a3865b5fd39ba0ecc490b48a36fac6318e26"
+      },
+      "LICENSE.md": {
+        "url": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.3/LICENSE.md",
+        "sha256": "2189dc45a8fe96204069f8124caa53a148dfdc193f50f584c6ca7849a6072872"
+      },
+      "README.ijg": {
+        "url": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/3.1.3/README.ijg",
+        "sha256": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6"
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@ await context.route('**/*',async route=>{const u=new URL(route.request().url());
  assert.equal(route.request().method(),'GET','no real writes');if(/hair_records|mgj_service_records|\/staff/.test(u.pathname))privateReads++;return route.fulfill({json:[]});
  }
  if(u.pathname==='/blank')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>synthetic second tab</title>'});if(u.pathname==='/perm-app.html')nav++;
- const f=path.resolve(root,u.pathname.slice(1));if(!f.startsWith(root+path.sep)||!fs.existsSync(f))return route.fulfill({status:404,body:''});return route.fulfill({body:fs.readFileSync(f),contentType:f.endsWith('.html')?'text/html':f.endsWith('.js')?'application/javascript':f.endsWith('.css')?'text/css':'application/json'}).catch(()=>{});
+ const f=path.resolve(root,u.pathname.slice(1));if(!f.startsWith(root+path.sep)||!fs.existsSync(f))return route.fulfill({status:404,body:''});return route.fulfill({body:fs.readFileSync(f),contentType:f.endsWith('.html')?'text/html':(f.endsWith('.js')||f.endsWith('.mjs'))?'application/javascript':f.endsWith('.css')?'text/css':'application/json'}).catch(()=>{});
 });
 await page.goto(origin+'/perm-app.html',{waitUntil:'commit'});await page.locator('#identity-recovery').waitFor();await page.waitForTimeout(350);assert.equal(await page.locator('#hair-analysis-modal').count(),0);assert.equal(privateReads,0,'saved private page cannot read before verification');
 phase='ready';release();await page.locator('#hair-form-name').waitFor();await page.locator('#hair-form-name').fill('合成未保存客户');await page.locator('#hair-form-phone').fill('13000000000');

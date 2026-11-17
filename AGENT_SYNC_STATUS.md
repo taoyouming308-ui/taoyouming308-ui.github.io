@@ -1,3 +1,12 @@
+## 2026-11-18 · Isolated phone-design staging candidate (App version: v668; unpublished reservation)
+
+- Current owner: Codex. Last synchronized base checked: github/main 82eca14922bc79a4f26ae59c612ba95c8188a579 (v667). Fresh isolated candidate/stage43-integration; baseline gates and daily backup passed. No push/deploy, production SQL, booking sync or real keys/photos/API calls authorized or performed.
+- Import additive design modules from the separately hash-verified Stage42 handoff. Preserve all upstream phone-login/hair-picker and business changes; do not replace the v667 homepage with the snapshot's unrelated v691 page. Only reviewed design entry/session bridge/legacy read-only lane are added; no booking runtime is installed or invoked.
+- Non-model staging lifecycle checks readiness before loopback listen, closes owned dependencies on failure, reports uncertain shutdown and fixes models off. Read-only Linux/arm64/rootless/image preflight is shared by the production worker. Mac remains unsupported for deployment. STAGING-OPERATIONS.md documents trusted bootstrap and outstanding real authority/host/SQL/TLS/backup/device gates.
+- Homepage design modules now load only on explicit entry click; three intercepted-browser checks cover no startup graph/identity read, failed optional loading with preserved input, and a single default-closed bridge. The original full startup recovery test is rerun without weakening its assertions.
+- Final local evidence: 191 pure scripts, 11 staging lifecycle/CLI cases, 12 integrated actual phone/backend/browser checks and 57 synthetic booking/customer/keepalive unit tests passed. Chromium and WebKit 390x844 preserve same-token recovery, directory retry and unsaved inputs; private-view and static-shell browser checks passed. Initial missing test dependency and .mjs fixture MIME failures are retained separately; no assertions or production security controls were relaxed. Protected full CI, real server/device acceptance and publication remain unperformed.
+- Local candidate version 668 is not a release and must be rebased/reversioned against then-current main before any protected publication. Finite synthetic receipts and fixture SQL are test-only. Physical iPhone and operational deployment acceptance remain pending. Existing handoff and publication requirements below are preserved.
+
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
 ## 2026-11-17 · Silver distribution, apparent density and maintenance conflict (App version: v667 unchanged)

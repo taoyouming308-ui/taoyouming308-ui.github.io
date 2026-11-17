@@ -1,0 +1,30 @@
+/** Independent fixed issuers only. Never supplied to dispatcher/runtime. */
+import {types} from 'node:util';
+import {validateManagedDerivedObjectReceipt,validateManagedImageVerificationReport} from './managed-image-verification.mjs';
+import {policyCopy as copy,policyExact as exact,policyEqual as equal,policyFreeze as freeze} from './approval-attempt-contracts.mjs';
+import {validateImmutableDesignAuthority} from './immutable-authority.mjs';
+import {validateProductionDesignScope} from './employee-adapter.mjs';
+import {validateManagedImageSourceRecord,validateManagedImagePreflight,validateManagedImageResponse,managedImageDigest} from './managed-image-contracts.mjs';
+import {validateManagedModelProviderIntent} from './managed-model-provider-contracts.mjs';
+
+export class ManagedModelIssuerError extends Error{constructor(code='MANAGED_MODEL_ISSUER_DENIED'){super(['MANAGED_MODEL_ISSUER_DISABLED','MANAGED_MODEL_ISSUER_INVALID','MANAGED_MODEL_ISSUER_DENIED','MANAGED_MODEL_ISSUER_UNCERTAIN'].includes(code)?code:'MANAGED_MODEL_ISSUER_DENIED');this.code=this.message;this.retryable=false;this.outcome=this.code==='MANAGED_MODEL_ISSUER_UNCERTAIN'?'uncertain':'not_sent';}}
+const fail=c=>{throw new ManagedModelIssuerError(c);},held=new WeakSet(),quarantined=new WeakSet();
+const id=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(v);
+function input(v,keys){try{const r=copy(v);exact(r,keys);if(typeof r.credential!=='string'||r.credential.length<32||r.credential.length>200||/[\s\x00-\x1f\x7f]/.test(r.credential))fail('MANAGED_MODEL_ISSUER_INVALID');if(r.scope)r.scope=validateProductionDesignScope(r.scope);return r;}catch{fail('MANAGED_MODEL_ISSUER_INVALID');}}
+const scalar=r=>{if(r?.command!=='SELECT'||r.rowCount!==1||r.rows?.length!==1)fail();const row=copy(r.rows[0]);exact(row,['value']);return row.value;};
+function executor(enabled,acquire){return async({credential,scope,sql,params=[],validate=x=>x,finalSql,finalParams=params,issuer=false})=>{
+ if(enabled!==true||typeof acquire!=='function')fail('MANAGED_MODEL_ISSUER_DISABLED');let c,q,release,started=false,committing=false,committed=false,owned=false;
+ try{c=await acquire();if(!c||types.isProxy(c)||held.has(c)||quarantined.has(c))fail();const method=k=>{const d=Object.getOwnPropertyDescriptor(c,k);if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function'||types.isProxy(d.value))fail();return (...a)=>Reflect.apply(d.value,c,a);};q=method('query');release=method('release');held.add(c);owned=true;started=true;if((await q('BEGIN ISOLATION LEVEL READ COMMITTED',[])).command!=='BEGIN')fail();for(const s of ["SET LOCAL statement_timeout='5000ms'","SET LOCAL lock_timeout='2000ms'","SET LOCAL idle_in_transaction_session_timeout='10000ms'",'SET LOCAL search_path=pg_catalog'])await q(s,[]);
+ let authority=null;if(!issuer)authority=validateImmutableDesignAuthority(scalar(await q('SELECT design_identity.authorize($1::text,$2::jsonb) AS value',[credential,scope])));
+ const value=validate(scalar(await q(sql,params)),authority);
+ if(!issuer){const current=validateImmutableDesignAuthority(scalar(await q('SELECT design_identity.recheck_authority() AS value',[])));if(!equal(current,authority))fail();if(finalSql){const checked=scalar(await q(finalSql,finalParams));if(finalSql===sql){if(!equal(validate(checked,current),value))fail();}else if(checked!==true)fail();}if(scalar(await q('SELECT design_identity.clear_context() AS value',[]))!=='')fail();}
+ committing=true;if((await q('COMMIT',[])).command!=='COMMIT')fail();committed=true;return freeze(value);
+ }catch(e){let unknown=false;if(owned&&started&&!committed)try{if((await q('ROLLBACK',[])).command!=='ROLLBACK')unknown=true;}catch{unknown=true;}if(committing||unknown){if(owned)quarantined.add(c);fail('MANAGED_MODEL_ISSUER_UNCERTAIN');}if(!types.isProxy(e)&&e instanceof ManagedModelIssuerError){const code=Object.getOwnPropertyDescriptor(e,'code');throw new ManagedModelIssuerError(code&&Object.hasOwn(code,'value')?code.value:undefined);}fail();}
+ finally{if(owned){try{await release(committed?undefined:Error('Discard managed lease'));}catch{quarantined.add(c);fail('MANAGED_MODEL_ISSUER_UNCERTAIN');}finally{held.delete(c);}}}
+};}
+export function createManagedModelProviderIssuers({enabled=false,acquireProcessingIssuerClient,acquireCostIssuerClient,acquireApprovalIssuerClient}={}){
+ const runs={processing:executor(enabled,acquireProcessingIssuerClient),cost:executor(enabled,acquireCostIssuerClient),approval:executor(enabled,acquireApprovalIssuerClient)};
+ function issue(kind,value){if(enabled!==true)fail('MANAGED_MODEL_ISSUER_DISABLED');const r=input(value,['credential','scope','receiptId','intent','ttlMs']);if(!id(r.receiptId)||!Number.isSafeInteger(r.ttlMs)||r.ttlMs<1||r.ttlMs>900000)fail();const intent=validateManagedModelProviderIntent(r.intent);return runs[kind]({issuer:true,sql:`SELECT design_managed_provider_binding.issue_${kind}($1::text,$2::jsonb,$3::text,$4::jsonb,$5::bigint) AS value`,params:[r.credential,r.scope,r.receiptId,intent,r.ttlMs],validate:v=>{exact(v,['receiptId',...(kind==='approval'?[]:['kind']),'authority','intent','issuedAt','expiresAt']);if(v.receiptId!==r.receiptId||kind!=='approval'&&v.kind!==kind||!equal(v.intent,intent)||!equal(v.authority,intent.managedBinding.images[0].authority)||!Number.isSafeInteger(v.issuedAt)||!Number.isSafeInteger(v.expiresAt)||v.expiresAt<=v.issuedAt||v.expiresAt-v.issuedAt>r.ttlMs)fail();return v;}});}
+ function revoke(kind,value){if(enabled!==true)fail('MANAGED_MODEL_ISSUER_DISABLED');const r=copy(value);exact(r,['receiptId']);if(!id(r.receiptId))fail();return runs[kind]({issuer:true,sql:`SELECT design_managed_provider_binding.revoke_${kind}($1::text) AS value`,params:[r.receiptId],validate:v=>{if(typeof v!=='boolean')fail();return v;}});}
+ return Object.freeze({issueProcessing:v=>issue('processing',v),issueCost:v=>issue('cost',v),issueApproval:v=>issue('approval',v),revokeProcessing:v=>revoke('processing',v),revokeCost:v=>revoke('cost',v),revokeApproval:v=>revoke('approval',v)});
+}

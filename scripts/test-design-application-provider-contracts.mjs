@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {managedApplicationImageFixture} from './fixtures/managed-application-image.mjs';
+import {buildDesignImagePrompt} from '../packages/prompts/design-image.mjs';
+import {managedImageDigest} from '../packages/design-production-adapter/managed-image-contracts.mjs';
+import {createHash} from 'node:crypto';
+import {buildManagedApplicationProviderIntent,validateManagedApplicationProviderIntent} from '../packages/design-production-adapter/managed-application-provider-contracts.mjs';
+import {validatePolicyIntent} from '../packages/design-production-adapter/approval-attempt-contracts.mjs';
+const f=managedApplicationImageFixture(),model='synthetic-vision',prompt=buildDesignImagePrompt(),hash=x=>createHash('sha256').update(x).digest('hex');
+const body=JSON.stringify({model,messages:[{role:'system',content:prompt.system},{role:'user',content:[{type:'text',text:'剪前单图；方向：'+f.input.angle+'。未知不得补猜，结果仅待员工复核。'},{type:'image_url',image_url:{url:'data:image/png;base64,'+Buffer.from(f.normalizedBytes).toString('base64')}}]}],max_tokens:512,response_format:{type:'json_object'},stream:false});
+const keyBinding={owner:Object.fromEntries(['subjectId','employmentId','membershipId','storeId'].map(k=>[k,f.authority[k]])),securityEpoch:f.authority.securityEpoch,membershipRevision:f.authority.membershipRevision,purpose:'chat',revision:1,keyDigest:Buffer.alloc(32).toString('base64'),destination:'https://api.deepseek.com/chat/completions',model};
+const prepared={schemaVersion:'design-application-model-prepared-v1',state:'prepared_not_dispatched',requestId:'application-provider-one',input:f.input,model,maxOutputTokens:512,promptVersion:prompt.promptVersion,transportRequest:{schemaVersion:'design-managed-image-model-transport-v1',url:keyBinding.destination,method:'POST',redirect:'error',credentials:'omit',body,byteLength:Buffer.byteLength(body),payloadSha256:hash(body),dispatchAuthorized:false},keyAccessAuthorized:false,requestLedgerAuthorized:false,submissionAuthorized:false,adoptionAuthorized:false,publicEligible:false};
+const q={prepared,keyBinding,workflowBinding:{recordRevision:0,recordDigest:'a'.repeat(64),sessionId:'session',sessionRevision:0,sessionDigest:'b'.repeat(64)},cost:{currency:'CNY',maximumMinorUnits:1,maximumDispatches:1,commitment:'one_time'}};
+const i=buildManagedApplicationProviderIntent(q);assert.equal(i.schemaVersion,'design-provider-intent-v7');assert.deepEqual(validatePolicyIntent(i),i);assert.deepEqual(validateManagedApplicationProviderIntent(i),i);assert.throws(()=>validateManagedApplicationProviderIntent({...i,schemaVersion:'design-provider-intent-v6'}));assert.throws(()=>validateManagedApplicationProviderIntent({...i,normalizedBinding:i.applicationBinding}));assert.throws(()=>buildManagedApplicationProviderIntent({...q,prepared:{...prepared,submissionAuthorized:true}}));
+console.log('PASS application provider-v7 shared policy contract; synthetic bytes, no send');

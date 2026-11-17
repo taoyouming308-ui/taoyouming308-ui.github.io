@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>合成会话接口验收</title><link rel="stylesheet" href="ai-design-pilot-service-test.css"></head>
+<body><main class="pilot-shell"><h1>本机合成会话验收</h1><p>这是开发验收页，不是正式员工登录。不接收顾客文字、照片、录音或密钥，不调用模型。固定示例写入启动时指定的本机测试目录，可重启读取；不是云档案。</p>
+<p><label>模拟服务身份 <select id="actor"><option value="demo-stylist-a">模拟设计师 A</option><option value="demo-stylist-b">模拟设计师 B</option></select></label></p>
+<p><button id="open">创建 / 重新读取固定测试会话</button> <button id="source" disabled>追加固定合成原话</button> <button id="groups" disabled>追加固定左右多组示例</button> <button id="phase" disabled>前进一个服务阶段</button> <button id="archive" disabled>保存合成归档</button> <button id="revision" disabled>基于归档追加修订</button> <button id="reload" disabled>重新读取会话及历史</button></p>
+<p id="status" role="status" aria-live="polite">正在检查本机服务…</p><h2>会话及不可覆盖归档</h2><pre id="result"></pre></main><script src="ai-design-pilot-service-test.js"></script></body></html>
