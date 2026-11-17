@@ -1,10 +1,17 @@
-## v666 · 2026-11-17 · 本地候选，未上线
+## v667 · 2026-11-17 · 加载修复，已获发布授权
 
 - 修复登录验证期间其他页面更新同一凭据的时间信息时，当前页面一直等待的问题；真实身份切换仍须重新验证，保留未保存表单和登录凭据。
 - 登录验证及预约客户只读请求增加覆盖响应体的15秒截止；失败可原地重试，不自动重放登录、保存或其他写操作。
 - 发型师和助理共用本店在职目录的一次请求及60秒内存缓存；增加错误状态、重试和旧回包隔离，保留原档案人员值，不把失败当作“暂无助理”。
 - 新建分析不再预读隐藏的任务和补开单；切到“我的任务”仍读取最新内容。恢复登录文字和按钮提高对比度及点击尺寸。
 - 合成 Chromium/WebKit 手机尺寸、超时/乱序/跨页身份与原有业务回归通过；尚未真机验收、推送、合并或发布。首次静态资源网络等待仍需后续按需加载专项评估。
+
+## v666 · 2026-11-17
+
+- 修复原图金额已识别但因付款状态不明而未参与推荐：严格区分原文订单/转账金额与付款金额，前者作为只读推荐线索，显示“付款待核对”。金额相符、商品名称和原文日期共同参与排序；单选与多选顺序、搜索保持一致。原付款金额、日期、自动匹配规则和账目不变。
+- 月报电子费用格统一从本店已上传原图选择，保留既有原图关联。关联失败、识别不完整及汇总/聊天材料继续可见；月报仅补凭证支持多选这些材料，仍要求人工核对、合计一致及来源快照保护。单笔交易要求继续执行。
+- 兼容Safari月份文本输入“8月”，使用明确的当前账期年份规范为2026-08；空值保持空值、跨月仍拒绝，未猜填原图付款日期。
+- 新增59.90真实元数据只读复现、纯排序与390/1280实际页面回归，覆盖多选搜索、完整上传库、失败保留、汇总材料、8月提交及不把订单金额当已付。原单张、整组、月报、备用金与桌面补图回归通过。无生产业务数据写入或数据库迁移。
 
 ## v665 · 2026-11-17
 
@@ -2652,3 +2659,13 @@ Verified shell/monthly loading separation; bounded frontdesk/main identity recov
 ## 2026-11-16 MGJ source transport repair
 
 Owner approved direct HTTPS only for vip12.meiguanjia.net after the system proxy produced TLS EOF. Consumer source requests and audit curl now route only that validated host directly, retain TLS certificate/hostname verification and reject redirects/other destinations. Supabase routing, global proxies, schedules, credentials and confirmed ledgers stay unchanged. Isolated branch fix/mgj-source-transport-20261116; source tests cover host restrictions and TLS. Source-only runtime deployment and the authorized prior-day two-store readback completed on 2026-11-16; bill sets and source amounts matched. Drafts remain unposted, and cash scope/channel gaps remain explicitly unresolved. No customer data or business amounts are included here. No UI release/version change.
+
+## 2026-11-17 · Bounded business-detail diagnostics (App version: v666 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main bd5cb9d9; starting gates and daily backup passed. Owner authorized publication of program/tests/docs only and deployment; no private source payload or customer records are committed.
+- Preserve the installed runner's existing history-kind fairness, June priority, safe-code handling and cash-empty backoff exactly. This reconciles runtime drift into canonical source; it does not introduce those scheduling changes.
+- On existing failed batches report fixed phase and numeric HTTP status only. On cloud HTTP 400, optional fixed contract hints inspect the already-read in-memory payload without saving values, extra requests, retries or weakened validation. Unknown remains unknown; this is diagnostic, not proof of repaired sync.
+- Install only the three tracked detail files with scripts/install_mgj_business_diagnostics.py --install. It requires exact known preimages or already-installed hashes, obtains both existing locks, retains a private recovery copy, and verifies hashes. No full six-file reinstall, scheduler, credentials, source records or formal-ledger change.
+- Focused synthetic diagnostics/installer tests pass. Existing runtime scheduling tests are reconciled with separate preservation coverage. Full publication gates and natural-batch readback remain required before completion.
+
+- Included proven gap-code correction: absent optional employee/config lists retain explicit missing evidence under `emp_list_missing` / `pay_configs_missing`, satisfying the unchanged lower-case server schema. No business amounts, source records or ledger semantics change. This reproducible defect is not yet established as the only live cause.

@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from datetime import datetime
 from pathlib import Path
 
@@ -87,7 +88,8 @@ class ScheduleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             installer.cron_candidate(candidate.replace('2,17,32,47', '3,18,33,48'), runner, '/private/log')
 
-    def test_history_round_robin_is_global_and_preserves_completed_dates(self):
+    @patch.object(task, 'june_priority_target', return_value=None)
+    def test_history_round_robin_is_global_and_preserves_completed_dates(self, _priority):
         now=datetime(2026,9,28,6,0,tzinfo=task.TZ)
         def run(epoch):
             return task.run_slot(mode='history',now=now,epoch=epoch,state_path=self.state,lock_path=self.lock,
@@ -131,6 +133,7 @@ class ScheduleTests(unittest.TestCase):
     def test_legacy_finalized_detail_gets_cash_without_requerying_bills(self):
         state=task.empty_state()
         state['pairs']['1009951:2026-09-27']={'finalized':True,'source_count':26}
+        state['last_history_kind']={'1009951':'detail'}
         task.save_state(state,self.state)
         result=self.run_at('1009951',6,100000)
         self.assertEqual(result['date'],'2026-09-27')
@@ -159,7 +162,8 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(self.cash_calls,[])
         self.assertFalse(task.read_state(self.state)['pairs']['1009951:2026-09-28']['cash_finalized'])
 
-    def test_day_history_is_separate_global_15_minute_slot(self):
+    @patch.object(task, 'june_priority_target', return_value=None)
+    def test_day_history_is_separate_global_15_minute_slot(self, _priority):
         now=datetime(2026,9,28,12,12,tzinfo=task.TZ)
         def run(epoch):
             return task.run_slot(mode='history',now=now,epoch=epoch,state_path=self.state,lock_path=self.lock,
@@ -187,5 +191,20 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(new.count('12,27,42,57'),1)
 
 
-if __name__ == '__main__':
+
+
+class ExistingPriorityPreservationTests(unittest.TestCase):
+    def test_june_priority_is_preserved_and_read_only(self):
+        state=task.empty_state()
+        before=json.dumps(state, sort_keys=True)
+        now=datetime(2026,11,17,12,0,tzinfo=task.TZ)
+        self.assertEqual(task.june_priority_target(state,now),('2026-06-01',True))
+        self.assertEqual(json.dumps(state,sort_keys=True),before)
+
+    def test_error_code_whitelist_preserves_timeout(self):
+        self.assertEqual(task.safe_error_code(task.sync.audit.AuditError('curl_timeout')),'curl_timeout')
+        self.assertEqual(task.safe_error_code(RuntimeError('private message')),'RuntimeError')
+
+
+if __name__ == "__main__":
     unittest.main()

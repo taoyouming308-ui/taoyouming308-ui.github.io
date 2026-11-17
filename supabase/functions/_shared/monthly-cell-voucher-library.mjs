@@ -21,13 +21,7 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
     if (payload.items.some(item => !uuid(item.voucher_id))) throw Error('组合凭证编号无效');
     const selected = payload.items.map(item => ({ id: item.voucher_id, candidate_fields: { amount: item.amount } }));
     const total = combinationTotal(selected);if(total===null)throw Error('请选择金额明确的独立凭证，不能重复计入同一原图');
-    const ids='('+payload.items.map(item=>item.voucher_id).join(',')+')';
-    const [tasks,reviews]=await Promise.all([
-      deps.all(`zysyr_voucher_ocr_tasks?select=voucher_id,candidate_fields,attempt&${scope}&voucher_id=in.${ids}&review_only=eq.false&order=attempt.desc&limit=1000`,1000),
-      deps.all(`zysyr_voucher_reviews?select=voucher_id,corrected_fields,review_version&${scope}&voucher_id=in.${ids}&order=review_version.desc&limit=1000`,1000),
-    ]);
-    for(const item of payload.items){const fields={...tasks.find(row=>row.voucher_id===item.voucher_id)?.candidate_fields,...reviews.find(row=>row.voucher_id===item.voucher_id)?.corrected_fields};
-      if(fields.evidence_kind==='monthly_summary'||['monthly_summary','bank_summary','multiple_transactions'].includes(fields.document_kind))throw Error('月度汇总或未拆分流水不能作为组合中的单笔凭证');}
+    // Monthly evidence can include orders, summaries and chat originals; this does not confirm a payment.
     const context = await deps.effective(store, month, reportId);
     const target = context.cells.find(cell => cell.id === cellId);
     if (total === null || !target || total !== voucherCents(target.numeric_value)) throw Error('组合金额合计必须与当前月报金额一致');

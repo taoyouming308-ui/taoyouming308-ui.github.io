@@ -296,3 +296,13 @@ Use `scripts/install_mgj_business_detail_2026.py --install --source-transport-on
 Merge preparation: transport and isolated installer regressions now run in both pre-push and Validate shared app. Installer fixtures use temporary source/runtime/lock paths and synthetic bytes only; checks cover backup hashes, file modes, independent runner/cron preservation, unknown preimages, busy locks, safe repeats and dry-run. Deployment and prior-day source/detail readback completed on 2026-11-16; this does not certify cash receipts or post drafts.
 
 The repair remains on its isolated branch, not main. A later full runtime deployment from older main can undo it; verify source/runtime hashes before any deployment and preserve independent runner changes. Do not merge or create a public PR without owner authorization. Main merge may trigger the existing Pages pipeline even though no App assets/version change.
+
+## 2026-11-17 · Bounded business-detail diagnostics (App version: v666 unchanged)
+
+- Current owner: Codex. Last synchronized base checked: github/main bd5cb9d9; starting gates and daily backup passed. Owner authorized publication of program/tests/docs only and deployment; no private source payload or customer records are committed.
+- Preserve the installed runner's existing history-kind fairness, June priority, safe-code handling and cash-empty backoff exactly. This reconciles runtime drift into canonical source; it does not introduce those scheduling changes.
+- On existing failed batches report fixed phase and numeric HTTP status only. On cloud HTTP 400, optional fixed contract hints inspect the already-read in-memory payload without saving values, extra requests, retries or weakened validation. Unknown remains unknown; this is diagnostic, not proof of repaired sync.
+- Install only the three tracked detail files with scripts/install_mgj_business_diagnostics.py --install. It requires exact known preimages or already-installed hashes, obtains both existing locks, retains a private recovery copy, and verifies hashes. No full six-file reinstall, scheduler, credentials, source records or formal-ledger change.
+- Focused synthetic diagnostics/installer tests pass. Existing runtime scheduling tests are reconciled with separate preservation coverage. Full publication gates and natural-batch readback remain required before completion.
+
+- Included proven gap-code correction: absent optional employee/config lists retain explicit missing evidence under `emp_list_missing` / `pay_configs_missing`, satisfying the unchanged lower-case server schema. No business amounts, source records or ledger semantics change. This reproducible defect is not yet established as the only live cause.
