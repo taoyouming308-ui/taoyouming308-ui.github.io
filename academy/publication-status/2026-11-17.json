@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-17",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "1cb33fd7b75dd0923b699fe33785ff278d85dd10",
+  "requestedAt": "2026-11-17T00:45:25Z",
+  "purpose": "Prepare immutable clean main backup before any lesson draft/review/assets input; no content approval and no production modification.",
+  "scope": [
+    "academy/2026-11-17.html",
+    "academy/drafts/2026-11-17.json",
+    "academy/reviews/2026-11-17.json",
+    "academy/assets/2026-11-17/",
+    "academy/catalog.json",
+    "academy/index.html",
+    "academy/publication-status/2026-11-17.json",
+    "CHANGELOG.md",
+    "AGENT_SYNC_STATUS.md"
+  ],
+  "note": "Main currently contains 31 published academy entries through 2026-11-13. Older independent draft academy PRs #128,#135,#142 remain unresolved; do not claim their content has been merged or overwrite their candidate work. All protected checks and full SHA-bound Pages readback required."
+}
