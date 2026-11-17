@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "description": "Single source of truth for finance regression tests used by pre-push and GitHub Actions.",
   "steps": [
+    { "runtime": "node", "script": "test-perm-identity-read-deadline.js" },
+    { "runtime": "node", "script": "test-hair-form-loading-recovery.js" },
+    { "runtime": "node", "script": "test-hair-task-lazy-load.js" },
+    { "runtime": "node", "script": "test-perm-mobile-loading-browser.js" },
     { "runtime": "node", "script": "test-voucher-combinations.mjs" },
     { "runtime": "node", "script": "test-voucher-combinations-db.js" },
     { "runtime": "node", "script": "test-voucher-combinations-browser.js" },
