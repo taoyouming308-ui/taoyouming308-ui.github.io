@@ -24,6 +24,61 @@
     task_id:item.latest_ocr_task&&item.latest_ocr_task.id,target_kind:target.target_kind,target_id:target.id,
     corrected_fields:fields,reason:'人工核对开支凭证：'+item.original_filename+' → '+target.summary};}
   function pettySummary(target){return target&&target.target_kind==='monthly_source'&&/(^|\/)备用金$/.test(String(target.summary||'').replace(/\s/g,'').replace(/[／·]/g,'/'));}
+  function cellLibrary(data,key){
+    if(data.historical||data.item_category!=='expense'||!data.can_upload_vouchers||!data.target||!data.target.id)return data;
+    return Object.assign({},data,{expense_library:{direct:true,key:key,target:{summary:data.target.label,amount:data.target.numeric_value}}});
+  }
+  function mountCellLibrary(host,data,address,context,preview){
+    var library=data.expense_library,section=document.createElement('section');section.className='monthly-library';
+    section.innerHTML='<button type="button" class="secondary" data-library-open>从凭证上传库选择</button><div data-library-panel hidden></div>';host.appendChild(section);
+    var payload={store:context.store,month:context.month,report_id:data.report.id,cell_id:data.target.id},loading=false;
+    function active(){return section.isConnected&&library.key===scopeKey()&&voucherContextCurrent(context)&&state.trace.address===address;}
+    section.querySelector('[data-library-open]').onclick=async function(){
+      if(loading||!active())return;var panel=section.querySelector('[data-library-panel]');panel.hidden=!panel.hidden;if(panel.hidden)return;
+      loading=true;panel.textContent='正在读取已上传凭证…';
+      try{
+        var result=await api('monthly_voucher_library',Object.assign({},payload,{action:'list'}));if(!active())return;
+        panel.innerHTML='<h4>选择已上传凭证</h4><div class="help">'+esc(context.month+' · '+library.target.summary)+'。核对原图后补充凭证，金额保持不变。</div>'
+          +'<input type="search" data-library-search aria-label="搜索凭证" placeholder="搜索文件名、商户、金额"><div data-library-list></div><div data-library-selected></div>'
+          +(result.truncated?'<div class="candidate-warning">当前显示最近 2000 份凭证；更早原件请到凭证库核对。</div>':'');
+        var search=panel.querySelector('[data-library-search]'),list=panel.querySelector('[data-library-list]'),selected=panel.querySelector('[data-library-selected]'),generation=0;
+        function cents(value){return value!=null&&String(value).trim()!==''&&Number.isFinite(Number(value))&&Number(value)>0?Math.round(Number(value)*100):null;}
+        var target=cents(library.target.amount),ranked=(result.items||[]).map(function(item,index){
+          var amounts=(item.recognized_amounts||[(item.candidate_fields||{}).amount]).map(cents).filter(function(value){return value!==null;});
+          amounts.sort(function(a,b){return target===null?0:Math.abs(target-a)-Math.abs(target-b);});
+          var amount=amounts.length?amounts[0]:null;return {item:item,index:index,amount:amount,difference:target===null||amount===null?Infinity:Math.abs(target-amount)};
+        })
+          .sort(function(a,b){return a.difference-b.difference||a.index-b.index;});
+        function render(){list.innerHTML='';var query=search.value.trim().toLowerCase();ranked.filter(function(row){var item=row.item,f=item.candidate_fields||{};return [item.original_filename,f.counterparty,f.summary,f.amount,(item.recognized_amounts||[]).join(' '),f.document_date,f.period_month].join(' ').toLowerCase().includes(query);}).forEach(function(row){
+          var item=row.item,f=item.candidate_fields||{},button=document.createElement('button');button.type='button';button.className='ghost monthly-library-item';
+          button.textContent=(item.original_filename||'凭证')+' · '+(row.amount===null?'金额待核对':formatAmount(row.amount/100))
+            +(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(item.already_linked?' · 已关联当前金额':'');
+          button.onclick=function(){if(active())choose(item);};list.appendChild(button);
+        });if(!list.children.length)list.textContent='没有找到相符的凭证。';}
+        async function choose(item){
+          var request=++generation;selected.innerHTML='<div data-library-preview>正在读取原图…</div><div data-library-fields></div>';
+          var picture=selected.querySelector('[data-library-preview]'),form=selected.querySelector('[data-library-fields]');
+          form.innerHTML=item.already_linked?'<div class="help">这份原图已关联当前金额。</div>':'<label class="simple-voucher-rule"><input type="checkbox" data-library-attest> 已核对原图，确认对应当前月报明细</label><button type="button" class="primary" data-library-confirm>确认关联这份凭证</button><div role="status" data-library-status></div>';
+          if(!item.already_linked)form.querySelector('[data-library-confirm]').onclick=async function(){
+            if(!active()||request!==generation)return;var status=form.querySelector('[data-library-status]'),button=form.querySelector('[data-library-confirm]');
+            var image=picture.querySelector('img'),readable=image&&image.complete&&image.naturalWidth>0||picture.querySelector('iframe');
+            if(!readable||!form.querySelector('[data-library-attest]').checked){status.textContent='请先读取并核对原图，再勾选确认。';return;}
+            button.disabled=true;
+            try{
+              var saved=await api('monthly_voucher_library',Object.assign({},payload,{action:'attach',voucher_id:item.id,confirmed:true,reason:'人工核对并补充月报凭证：'+library.target.summary+' · '+item.original_filename}));
+              if(!active()||request!==generation)return;if(!saved.cell_linked){status.textContent='关联未确认，请重新读取后核对。';return;}
+              toast('凭证已关联，原金额未修改');await openCellTrace(address);
+            }catch(error){if(active()&&request===generation)status.textContent='关联未确认：'+error.message;}
+            finally{if(button.isConnected)button.disabled=false;}
+          };
+          try{var file=await api('voucher_url',{store:context.store,voucher_id:item.id});if(active()&&request===generation)preview(Object.assign({},item,{file_url:file.url,filename:file.filename}),picture,function(){choose(item);});}
+          catch(error){if(active()&&request===generation)picture.textContent='原图读取失败：'+error.message;}
+        }
+        search.oninput=render;render();
+      }catch(error){if(active())panel.textContent='凭证库读取失败：'+error.message+'。请收起后重新打开重试。';}
+      finally{loading=false;}
+    };
+  }
   function pettyFiles(data,target){
     var files=(data.items||[]).filter(function(i){return i.confirmed_target_kind===target.target_kind&&i.confirmed_target_id===target.id;}).map(function(i){return Object.assign({},i,{id:i.source_voucher_id||i.id,evidence_source:'voucher_attachment'});});
     var legacy=state.pettyCash&&state.pettyCash.data||{},history=target.target_kind==='history';
@@ -39,14 +94,16 @@
   }
   root.ZysyrExpenseVoucherWorkspace={
     forCell:async function(data,address,context){
-      if(isLocalPreview()||!state.user||state.user.role!=='finance'||!state.user.can_match_expense_vouchers||!state.user.can_manage_finance_workbench)return data;
+      if(isLocalPreview()||!state.user||state.user.role!=='finance')return data;
       if(['income','salary','total','fixed','purchase_summary','petty_cash_summary'].includes(data.item_category))return data;
-      var key=scopeKey(),workspace=await root.ZysyrExpenseVoucherWorkspace.read({store:context.store,month:context.month});
+      var key=scopeKey();if(!state.user.can_match_expense_vouchers||!state.user.can_manage_finance_workbench)return cellLibrary(data,key);
+      var workspace;try{workspace=await root.ZysyrExpenseVoucherWorkspace.read({store:context.store,month:context.month});}
+      catch(error){var fallback=cellLibrary(data,key);if(fallback.expense_library)return fallback;throw error;}
       if(key!==scopeKey()||!voucherContextCurrent(context))return data;
       var report=state.data.monthly_report,source=workspace.source_selection||{};
       var target=(workspace.targets||[]).find(function(t){return t.target_kind==='monthly_source'&&t.source_locator===address
         &&(report.sha256&&report.sha256===source.sha256||t.electronic_cell&&t.electronic_cell.report_id===report.id);});
-      if(!target)return data;if(pettySummary(target))return Object.assign({},data,{item_category:'petty_cash_summary'});
+      if(!target)return cellLibrary(data,key);if(pettySummary(target))return Object.assign({},data,{item_category:'petty_cash_summary'});
       var items=(workspace.items||[]).filter(function(item){return item.confirmed_target_id&&(item.confirmed_target_kind==='monthly_source'&&item.confirmed_target_id===target.id
         ||/备用金/.test(target.summary)&&['formal','history','draft','source_petty'].includes(item.confirmed_target_kind));});
       var files=items.map(function(item){return {id:item.source_voucher_id||item.id,original_filename:item.original_filename,mime_type:item.mime_type,
@@ -55,6 +112,7 @@
     },
     mountLibrary:function(host,data,address,context,preview){
       if(!data.expense_library||!data.can_upload_vouchers)return;
+      if(data.expense_library.direct){mountCellLibrary(host,data,address,context,preview);return;}
       var library=data.expense_library,target=library.target,workspace=library.workspace;
       var section=document.createElement('section');section.className='monthly-library';
       section.innerHTML='<button type="button" class="secondary" data-library-open>从凭证上传库选择</button><div data-library-panel hidden></div>';

@@ -1,4 +1,12 @@
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
+
+## 2026-11-17 · Monthly detail voucher library (App version: v664; local candidate)
+
+- Current owner: Codex. Last synchronized base checked: github/main fed92b2bf7fcb4e417b08773373f7e62cf73fba9 (published v663). Daily recovery archive ZYSYR_2026-11-17_104026.tar.gz completed before edits; existing untracked work and Safari forms preserved.
+- Existing source targets only cover the left C expense column. Add an electronic expense-cell library fallback for product purchase, retail cost, petty category and miscellaneous details, including when source matching is unavailable. Existing mapped evidence and petty summary routing remain.
+- Read same-store originals independently of upload month or OCR completion; corrected recognition amounts drive exact/near recommendations. Require preview and explicit human attestation. Attach through the established audited evidence-only RPC, with scoped report/month/cell/original validation and safe repeats. No schema, financial amount, review status, original, old-link or recognition changes; no production business writes in acceptance.
+- The new library requires both the existing voucher upload and voucher read capabilities; a finance role alone cannot list originals. The pinned Deno 2.9.6 frozen-lockfile check passed on the final backend source.
+- New API and actual 390/1280 drawer regressions cover all four classifications, generic/unrecognized originals, original previews, retry, readback and stale-month guards. Normal local/protected gates, exact backend readback, protected merge and Pages/hash readback remain release requirements.
 ## 2026-11-17 · Reviewed academy publication candidate (App version: v663 unchanged)
 
 - Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 1cb33fd7b75dd0923b699fe33785ff278d85dd10.
