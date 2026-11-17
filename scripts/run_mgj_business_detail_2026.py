@@ -19,6 +19,49 @@ try:
 except ModuleNotFoundError:
     import sync_mgj_business_details as sync
 
+SAFE_AUDIT_ERROR_CODES = frozenset({
+    'budget_exhausted', 'curl_timeout', 'curl_unavailable',
+    'http_status:400', 'http_status:401', 'http_status:403',
+    'http_status:404', 'http_status:408', 'http_status:429',
+    'http_status:500', 'http_status:502', 'http_status:503', 'http_status:504',
+    'invalid_json_response', 'source_response_rejected', 'source_detail_missing',
+    'invalid_source_datetime', 'bill_id_mismatch', 'bill_shop_mismatch',
+    'bill_date_mismatch', 'source_lock_busy', 'session_config_unavailable',
+})
+
+
+def safe_error_code(exc):
+    # Only fixed literal codes survive; never retain arbitrary exception text.
+    if type(exc).__name__ == 'AuditError' and str(exc) in SAFE_AUDIT_ERROR_CODES:
+        return str(exc)
+    if str(exc) in ('invalid_money', 'posted_amount_mismatch', 'employee_id_alias_conflict'):
+        return str(exc)
+    return type(exc).__name__
+
+
+def diagnostic_fields(exc):
+    # Export fixed labels/numeric status only. Never URL, headers or body.
+    stage = vars(exc).get('business_sync_stage')
+    result = {}
+    if stage in {'source_list', 'source_detail', 'normalize', 'source_recheck', 'signing_key', 'cloud_submit'}:
+        result['failure_stage'] = stage
+    if isinstance(exc, sync.urllib.error.HTTPError) and type(exc.code) is int and 100 <= exc.code <= 599:
+        result['http_status'] = exc.code
+    hint = vars(exc).get('business_contract_hint')
+    allowed_hints = {'gaps_format'}
+    for collection, fields, suffix in (
+        ('items', ('source_item_id',), 'format'),
+        ('employee_allocations', ('source_allocation_id', 'employee_id', 'source_item_id'), 'format'),
+        ('items', ('item_code', 'item_name', 'source_category_code', 'source_category_name'), 'length'),
+        ('employee_allocations', ('employee_name', 'source_role'), 'length'),
+        ('payments', ('source_label',), 'length'),
+    ):
+        allowed_hints.update(collection + '_' + field + '_' + suffix for field in fields)
+    if hint in allowed_hints:
+        result['contract_hint'] = hint
+    return result
+
+
 TZ = ZoneInfo('Asia/Shanghai')
 START = date(2026, 1, 1)
 END = date(2026, 12, 31)
@@ -56,7 +99,40 @@ def read_state(path=STATE):
         raise ValueError('invalid_checkpoint_attempt')
     if value.get('last_history_shop') not in (None, *allowed) or type(value.get('last_history_attempt', 0)) not in (int, float):
         raise ValueError('invalid_history_checkpoint')
+    kinds = value.get("last_history_kind", {})
+    if (not isinstance(kinds, dict) or not set(kinds).issubset(allowed)
+            or any(kind not in ("detail", "cash") for kind in kinds.values())):
+        raise ValueError("invalid_history_kind")
     return value
+
+
+def cash_empty_backoff(day, now, scopes, expected, previous):
+    """Only exact safe no-row evidence counts, separately per store/day/scope."""
+    previous = previous if isinstance(previous, dict) else {}
+    streaks = {}
+    by_scope = {}
+    for row in scopes:
+        scope = row.get('scope')
+        if scope not in expected or scope in by_scope:
+            return {}, False
+        by_scope[scope] = row
+    for scope in expected:
+        old = previous.get(scope, 0)
+        old = old if type(old) is int and 0 <= old <= 2 else 0
+        row = by_scope.get(scope)
+        if row and row.get('status') == 'missing_source' and row.get('reason') == 'summary_no_rows':
+            streaks[scope] = min(2, old + 1)
+        elif row and row.get('status') in ('yielded_daily_sync_due', 'yielded_source_cooldown'):
+            streaks[scope] = old  # No observation, no extra consecutive evidence.
+        else:
+            streaks[scope] = 0  # Success, other failure or missing evidence resets.
+    unresolved = [scope for scope in expected if by_scope.get(scope, {}).get('status') != 'accepted']
+    eligible = (len(by_scope) == len(expected) and bool(unresolved)
+                and (now.date() - date.fromisoformat(day)).days > 7
+                and all(by_scope[scope].get('status') == 'missing_source'
+                        and by_scope[scope].get('reason') == 'summary_no_rows'
+                        and streaks[scope] >= 2 for scope in unresolved))
+    return streaks, eligible
 
 
 def save_state(state, path=STATE):
@@ -70,6 +146,26 @@ def save_state(state, path=STATE):
     os.replace(name, path)
 
 
+def june_priority_target(state, now):
+    """Temporary existing-slot priority; no I/O or changes to retry state."""
+    yesterday = min(now.date() - timedelta(days=1), END)
+    if yesterday < date(2026, 6, 1):
+        return None
+    eligible_cash = None
+    for offset in range(30):
+        day = date(2026, 6, 1) + timedelta(days=offset)
+        if day > yesterday:
+            break
+        row = state['pairs'].get('1837032:' + day.isoformat(), {})
+        if not row.get('finalized'):
+            if now.timestamp() >= row.get('detail_retry_after', 0):
+                return day.isoformat(), True
+        elif (not row.get('cash_finalized') and eligible_cash is None
+              and now.timestamp() >= row.get('cash_retry_after', 0)):
+            eligible_cash = day.isoformat(), True
+    return eligible_cash
+
+
 def target_date(shop, state, now, mode='auto'):
     today = now.date()
     if today < START:
@@ -77,18 +173,26 @@ def target_date(shop, state, now, mode='auto'):
     if mode == 'live' or (mode == 'auto' and 9 <= now.hour < 22):
         return today.isoformat(), False
     yesterday = min(today - timedelta(days=1), END)
-    def pending(day):
+    candidates = {'detail': None, 'cash': None}
+    # Yesterday remains first within each queue, never ahead of the other queue.
+    days = ([yesterday] if yesterday >= START else [])
+    days += [START + timedelta(days=n) for n in range(max(0, (yesterday-START).days))]
+    if shop == '1837032' and mode == 'history':
+        priority = june_priority_target(state, now)
+        if priority is not None:
+            return priority
+    for day in days:
         row = state['pairs'].get(shop + ':' + day.isoformat(), {})
-        return ((not row.get('finalized') and now.timestamp() >= row.get('detail_retry_after', 0)) or (row.get('finalized') and not row.get('cash_finalized')
-                and now.timestamp() >= row.get('cash_retry_after', 0)))
-    if yesterday >= START and pending(yesterday):
-        return yesterday.isoformat(), True
-    day = START
-    while day <= yesterday:
-        if pending(day):
-            return day.isoformat(), True
-        day += timedelta(days=1)
-    return None
+        kind = 'cash' if row.get('finalized') else 'detail'
+        retry = 'cash_retry_after' if kind == 'cash' else 'detail_retry_after'
+        if (candidates[kind] is None and (kind == 'detail' or not row.get('cash_finalized'))
+                and now.timestamp() >= row.get(retry, 0)):
+            candidates[kind] = (day.isoformat(), True)
+        if all(candidates.values()):
+            break
+    previous = state.get('last_history_kind', {}).get(shop)
+    preferred = 'cash' if previous == 'detail' else 'detail'
+    return candidates[preferred] or candidates['detail' if preferred == 'cash' else 'cash']
 
 
 def progress(state, today):
@@ -151,8 +255,11 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
                 return {'status': 'yielded_cadence_limit', 'mode': mode, **progress(state, now.date())}
             stores = list(sync.audit.daily.SHOPS)
             if shop is None:
-                previous = state.get('last_history_shop')
-                shop = stores[(stores.index(previous) + 1) % len(stores)] if previous in stores else stores[0]
+                if june_priority_target(state, now) is not None:
+                    shop = '1837032'
+                else:
+                    previous = state.get('last_history_shop')
+                    shop = stores[(stores.index(previous) + 1) % len(stores)] if previous in stores else stores[0]
             target = target_date(shop, state, now, mode)
             if target is None:
                 shop = next(value for value in stores if value != shop)
@@ -180,8 +287,22 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
         # Persist the attempt before source access; retries cannot double the
         # request rate after an interrupted job or a restarted Mac.
         previous_history = (state.get('last_history_attempt'), state.get('last_history_shop'))
+        previous_kinds = dict(state.get('last_history_kind', {}))
+        had_kinds = 'last_history_kind' in state
+        previous_pair = dict(state['pairs'].get(shop + ':' + day, {}))
+        def restore_history():
+            for key, value in zip(('last_history_attempt', 'last_history_shop'), previous_history):
+                if value is None:
+                    state.pop(key, None)
+                else:
+                    state[key] = value
+            if had_kinds:
+                state['last_history_kind'] = previous_kinds
+            else:
+                state.pop('last_history_kind', None)
         if mode == 'history':
             state.update(last_history_attempt=epoch, last_history_shop=shop)
+            state.setdefault('last_history_kind', {})[shop] = ('cash' if previous_pair.get('finalized') else 'detail')
         else:
             state['last_attempts'][shop] = epoch
         save_state(state, state_path)
@@ -196,19 +317,15 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
             else:
                 result = (runner or sync.run)(shop, day, write=True, budget=90, max_bills=100)
         except Exception as exc:
-            code = str(exc) if str(exc) in ('invalid_money', 'posted_amount_mismatch', 'employee_id_alias_conflict') else type(exc).__name__
+            code = safe_error_code(exc)
             if mode == 'history':
                 defer_detail(state, shop, day, now, code)
                 save_state(state, state_path)
-            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': code,
+            return {'status': 'failed_or_unconfirmed', 'shop': shop, 'date': day, 'error_code': code, **diagnostic_fields(exc),
                     'elapsed_seconds': round(monotonic()-started, 2), **progress(state, now.date())}
         if result.get('status') in ('yielded_daily_sync_due', 'yielded_source_cooldown'):
             if mode == 'history':
-                for key, value in zip(('last_history_attempt', 'last_history_shop'), previous_history):
-                    if value is None:
-                        state.pop(key, None)
-                    else:
-                        state[key] = value
+                restore_history()
             else:
                 state['last_attempts'].pop(shop, None)
             save_state(state, state_path)
@@ -235,7 +352,24 @@ def run_slot(shop=None, *, mode='auto', now=None, state_path=STATE, lock_path=LO
                              and all(row.get('status') == 'accepted' for row in scopes))
             pair.update(cash_finalized=finalized and cash_complete, cash_status=cash.get('status', 'unconfirmed'),
                         cash_scopes=[{'scope':row.get('scope'), 'status':row.get('status')} for row in scopes])
-            pair['cash_retry_after'] = 0 if cash_complete else now.timestamp() + CASH_RETRY_SECONDS
+            # A cash-only task that yielded before any accepted scope has not
+            # consumed a queue turn; restore its additive checkpoint exactly.
+            cash_yielded = (detail_reused and cash.get('status') in
+                            ('yielded_daily_sync_due', 'yielded_source_cooldown')
+                            and not any(row.get('status') == 'accepted' for row in scopes))
+            if cash_yielded:
+                restore_history()
+                state['pairs'][shop + ':' + day] = previous_pair
+                save_state(state, state_path)
+                return {'status': cash['status'], 'shop': shop, 'date': day,
+                        'detail_reused': True, 'elapsed_seconds': round(monotonic()-started, 2),
+                        **progress(state, now.date())}
+            streaks, empty_deferred = cash_empty_backoff(
+                day, now, scopes, expected, pair.get('cash_empty_streaks'))
+            pair['cash_empty_streaks'] = streaks
+            # Today/recent days and all other failures retain six-hour retry.
+            retry_seconds = 86400 if mode == 'history' and empty_deferred else CASH_RETRY_SECONDS
+            pair['cash_retry_after'] = 0 if cash_complete else now.timestamp() + retry_seconds
             save_state(state, state_path)
             result['cash_status'] = pair['cash_status']
         return {'status': result.get('status', 'invalid_result'), 'shop': shop, 'date': day,

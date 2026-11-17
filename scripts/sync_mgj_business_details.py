@@ -6,6 +6,7 @@ Queries observed read-only list/detail APIs. No financial or MGJ write API.
 """
 import argparse
 import base64
+import re
 import json
 import os
 import ssl
@@ -89,6 +90,31 @@ def submit(payload, key, timeout):
             "source_count": receipt["source_count"], "deduplicated": receipt.get("deduplicated")}
 
 
+# Narrow diagnostic hints only: never relax or replace the server contract.
+def contract_hint(payload):
+    for bill in payload['source']['bills']:
+        if any(not isinstance(gap, str) or not re.fullmatch(r'[a-z_]{1,100}', gap) for gap in bill['gaps']):
+            return 'gaps_format'
+        for collection, ids, texts in (
+            ('items', ('source_item_id',), ('item_code', 'item_name', 'source_category_code', 'source_category_name')),
+            ('employee_allocations', ('source_allocation_id', 'employee_id', 'source_item_id'), ('employee_name', 'source_role')),
+            ('payments', (), ('source_label',)),
+        ):
+            for row in bill[collection]:
+                for field in ids:
+                    value = row[field]
+                    nullable = collection == 'employee_allocations' and field != 'source_allocation_id'
+                    if value is None and nullable:
+                        continue
+                    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,30}', value) or value == '0':
+                        return collection + '_' + field + '_format'
+                for field in texts:
+                    value = row[field]
+                    if not isinstance(value, str) or len(value.encode('utf-16-le', errors='surrogatepass')) // 2 > 200:
+                        return collection + '_' + field + '_length'
+    return None
+
+
 def run(shop, day, *, write=False, budget=60, max_bills=100,
         period_reader=None, detail_reader=None, submitter=None, lock_factory=None,
         config_loader=None, due_checker=None, key_loader=None,
@@ -103,6 +129,7 @@ def run(shop, day, *, write=False, budget=60, max_bills=100,
         return {"status": "yielded_daily_sync_due", "shop": shop, "date": day}
     deadline = time.monotonic() + budget
     lock = (lock_factory or audit.acquire_shared_lock)()
+    stage = "source_list"
     try:
         if (due_checker or (lambda: signed.daily_sync_due(signed.read_daily_sync_state())))():
             return {"status": "yielded_daily_sync_due", "shop": shop, "date": day}
@@ -119,13 +146,16 @@ def run(shop, day, *, write=False, budget=60, max_bills=100,
                 (request_pause or time.sleep)(1)
             if time.monotonic() >= deadline - (8 if write else 2):
                 return {"status": "budget_exhausted", "loaded_count": len(bills), "source_count": first["source_count"]}
+            stage = "source_detail"
             raw = detail(row["source_id"], config, deadline)
+            stage = "normalize"
             bill = normalize_bill(raw, bill_id=row["source_id"], shop=shop, day=day)
             if bill["source_posted_amount_cents"] != money_cents(row.get("amount")):
                 raise ValueError("posted_amount_mismatch")
             bills.append(bill)
         if time.monotonic() >= deadline - (5 if write else 1):
             return {"status": "budget_exhausted", "loaded_count": len(bills)}
+        stage = "source_recheck"
         if signature != list_signature(reader(shop, day, day, deadline)):
             return {"status": "source_changed", "source_count": first["source_count"]}
         source = {"contract_version": "mgj-business-day-v1", "shop_id": shop, "business_date": day,
@@ -137,16 +167,28 @@ def run(shop, day, *, write=False, budget=60, max_bills=100,
             return {"status": "dry_run", **summary}
         payload = {"operation": "business_details_append", "shop": audit.daily.SHOPS[shop], "date": day,
                    "fetched_at": datetime.now(timezone.utc).isoformat(), "source": source}
+        stage = "signing_key"
         key = (key_loader or signed.load_signing_key)()
+        stage = "cloud_submit"
         result = (submitter or submit)(payload, key, deadline-time.monotonic())
         return {**summary, **result}
     except audit.AuditError as exc:
+        exc.business_sync_stage = stage
         if str(exc) in ('http_status:401', 'http_status:403', 'http_status:429'):
             (backoff_recorder or record_backoff)(str(exc))
         raise
     except urllib.error.HTTPError as exc:
+        exc.business_sync_stage = stage
+        if stage == 'cloud_submit' and exc.code == 400:
+            try:
+                exc.business_contract_hint = contract_hint(payload)
+            except Exception:
+                pass  # Diagnostics must never mask the original failure.
         if exc.code in (401, 403, 429):
             (backoff_recorder or record_backoff)('http_status:'+str(exc.code))
+        raise
+    except Exception as exc:
+        exc.business_sync_stage = stage
         raise
     finally:
         lock.close()
