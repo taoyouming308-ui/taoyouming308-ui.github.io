@@ -48,6 +48,6 @@ function monthly(options={}){
  return {writes,run:patch=>monthlyCellVoucherLibrary({...p,...patch},{auth_account_id:id(22)},deps)};
 }
 const monthlyGood=monthly();assert.equal((await monthlyGood.run({})).combination_saved,true);assert.equal(monthlyGood.writes[0].route,'rpc/zysyr_attach_monthly_voucher_combination');assert.equal(monthlyGood.writes[0].body.p_expected_amount,170.3);assert.deepEqual(monthlyGood.writes[0].body.p_expected_adjustments,[]);
-await assert.rejects(monthly({changed:true}).run({}),/合计必须/);await assert.rejects(monthly({summary:true}).run({}),/月度汇总/);await assert.rejects(monthly().run({confirmed:false}),/逐张核对/);
+await assert.rejects(monthly({changed:true}).run({}),/合计必须/);assert.equal((await monthly({summary:true}).run({})).combination_saved,true,'monthly evidence-only group can include summaries without confirming payment');await assert.rejects(monthly().run({confirmed:false}),/逐张核对/);
 await assert.rejects(monthly().run({items:[{voucher_id:id(2),amount:80},{voucher_id:id(2),amount:90.3}]}),/重复计入/);
 console.log('Voucher combinations: 170.30 pair/triple, exact cents, corrected/unknown/cross-month/duplicate/claimed guards, bounded search, explicit fresh-target API batch, existing links/retry and monthly evidence-only snapshot checks passed. Synthetic only.');

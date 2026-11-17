@@ -24,6 +24,12 @@
     task_id:item.latest_ocr_task&&item.latest_ocr_task.id,target_kind:target.target_kind,target_id:target.id,
     corrected_fields:fields,reason:'人工核对开支凭证：'+item.original_filename+' → '+target.summary};}
   function pettySummary(target){return target&&target.target_kind==='monthly_source'&&/(^|\/)备用金$/.test(String(target.summary||'').replace(/\s/g,'').replace(/[／·]/g,'/'));}
+  async function rankLibrary(items,target,month){
+    if(root.ZysyrVoucherCombinationUI&&root.ZysyrVoucherCombinationUI.rank)return root.ZysyrVoucherCombinationUI.rank(items,target,month);
+    return items.map(function(item,index){var fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),n=fields.amount==null?NaN:Number(fields.amount),amount=Number.isFinite(n)&&n>0?Math.round(n*100):null;
+      return {item:item,index:index,recommendation:{amount_cents:amount},difference:amount===null?Infinity:Math.abs(amount-Math.round(Number(target.amount)*100))};}).sort(function(a,b){return a.difference-b.difference||a.index-b.index;});
+  }
+  function recommendationLabel(row){var hint=row.recommendation;return hint.amount_cents===null?'金额待核对':(hint.document_only?hint.amount_label+' ':'')+formatAmount(hint.amount_cents/100)+(hint.payment_unconfirmed?' · 付款待核对':'');}
   function cellLibrary(data,key){
     if(data.historical||data.item_category!=='expense'||!data.can_upload_vouchers||!data.target||!data.target.id)return data;
     return Object.assign({},data,{expense_library:{direct:true,key:key,target:{summary:data.target.label,amount:data.target.numeric_value}}});
@@ -38,20 +44,14 @@
       loading=true;panel.textContent='正在读取已上传凭证…';
       try{
         var result=await api('monthly_voucher_library',Object.assign({},payload,{action:'list'}));if(!active())return;
+        var ranked=await rankLibrary(result.items||[],library.target,context.month);if(!active())return;
         panel.innerHTML='<h4>选择已上传凭证</h4><div class="help">'+esc(context.month+' · '+library.target.summary)+'。核对原图后补充凭证，金额保持不变。</div>'
           +'<input type="search" data-library-search aria-label="搜索凭证" placeholder="搜索文件名、商户、金额"><div data-library-list></div><div data-library-selected></div>'
           +(result.truncated?'<div class="candidate-warning">当前显示最近 2000 份凭证；更早原件请到凭证库核对。</div>':'');
         var search=panel.querySelector('[data-library-search]'),list=panel.querySelector('[data-library-list]'),selected=panel.querySelector('[data-library-selected]'),generation=0;
-        function cents(value){return value!=null&&String(value).trim()!==''&&Number.isFinite(Number(value))&&Number(value)>0?Math.round(Number(value)*100):null;}
-        var target=cents(library.target.amount),ranked=(result.items||[]).map(function(item,index){
-          var amounts=(item.recognized_amounts||[(item.candidate_fields||{}).amount]).map(cents).filter(function(value){return value!==null;});
-          amounts.sort(function(a,b){return target===null?0:Math.abs(target-a)-Math.abs(target-b);});
-          var amount=amounts.length?amounts[0]:null;return {item:item,index:index,amount:amount,difference:target===null||amount===null?Infinity:Math.abs(target-amount)};
-        })
-          .sort(function(a,b){return a.difference-b.difference||a.index-b.index;});
-        function render(){list.innerHTML='';var query=search.value.trim().toLowerCase();ranked.filter(function(row){var item=row.item,f=item.candidate_fields||{};return [item.original_filename,f.counterparty,f.summary,f.amount,(item.recognized_amounts||[]).join(' '),f.document_date,f.period_month].join(' ').toLowerCase().includes(query);}).forEach(function(row){
+        function render(){list.innerHTML='';var query=search.value.trim().toLowerCase();ranked.filter(function(row){var item=row.item,f=item.candidate_fields||{};return [item.original_filename,f.counterparty,f.summary,f.amount,recommendationLabel(row),(row.recommendation.dates||[]).map(function(d){return d.date;}).join(' '),(item.recognized_amounts||[]).join(' '),f.document_date,f.period_month].join(' ').toLowerCase().includes(query);}).forEach(function(row){
           var item=row.item,f=item.candidate_fields||{},button=document.createElement('button');button.type='button';button.className='ghost monthly-library-item';
-          button.textContent=(item.original_filename||'凭证')+' · '+(row.amount===null?'金额待核对':formatAmount(row.amount/100))
+          button.textContent=(item.original_filename||'凭证')+' · '+recommendationLabel(row)
             +(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(item.already_linked?' · 已关联当前金额':'');
           button.onclick=function(){if(active())choose(item);};list.appendChild(button);
         });if(!list.children.length)list.textContent='没有找到相符的凭证。';}
@@ -112,7 +112,8 @@
         ||/备用金/.test(target.summary)&&['formal','history','draft','source_petty'].includes(item.confirmed_target_kind));});
       var files=items.map(function(item){return {id:item.source_voucher_id||item.id,original_filename:item.original_filename,mime_type:item.mime_type,
         evidence_source:'voucher_attachment',trace_link_level:'page_confirmed',trace_source_locator:'manual-upload:expense-association'};});
-      return Object.assign({},data,{expense_library:{workspace:workspace,target:target,key:key},evidence:(data.evidence||[]).concat(files)});
+      var enriched=Object.assign({},data,{expense_library:{workspace:workspace,target:target,key:key},evidence:(data.evidence||[]).concat(files)});
+      return data.voucher_library_source==='store_uploads'?cellLibrary(enriched,key):enriched;
     },
     mountLibrary:function(host,data,address,context,preview){
       if(!data.expense_library||!data.can_upload_vouchers)return;
@@ -122,22 +123,19 @@
       section.innerHTML='<button type="button" class="secondary" data-library-open>从凭证上传库选择</button><div data-library-panel hidden></div>';
       host.appendChild(section);
       function active(){return section.isConnected&&library.key===scopeKey()&&voucherContextCurrent(context)&&state.trace.address===address;}
-      section.querySelector('[data-library-open]').onclick=function(){
+      var libraryGeneration=0;
+      section.querySelector('[data-library-open]').onclick=async function(){
+        var request=++libraryGeneration;
         var panel=section.querySelector('[data-library-panel]');panel.hidden=!panel.hidden;if(panel.hidden)return;
+        panel.textContent='正在整理凭证推荐…';var ranked=await rankLibrary(workspace.items||[],target,context.month);if(!active()||request!==libraryGeneration||panel.hidden)return;
         panel.innerHTML='<h4>选择已上传凭证</h4><div class="help">'+esc(context.month+' · '+target.summary)+'。先核对原图，再确认关联。</div>'
           +'<input type="search" data-library-search aria-label="搜索凭证" placeholder="搜索文件名、商户、金额"><div data-library-list></div><div data-library-selected></div>';
         var search=panel.querySelector('[data-library-search]'),list=panel.querySelector('[data-library-list]'),selected=panel.querySelector('[data-library-selected]');
-        function amountCents(value){return value!=null&&String(value).trim()!==''&&Number.isFinite(Number(value))&&Number(value)>0?Math.round(Number(value)*100):null;}
-        var targetCents=amountCents(target.amount);
-        var ranked=(workspace.items||[]).map(function(item,index){
-          var fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),cents=amountCents(fields.amount);
-          return {item:item,index:index,difference:targetCents===null||cents===null?Infinity:Math.abs(cents-targetCents)};
-        }).sort(function(a,b){return a.difference-b.difference||Number(Boolean(a.item.confirmed_target_id||a.item.expense_association))-Number(Boolean(b.item.confirmed_target_id||b.item.expense_association))||a.index-b.index;});
         function renderList(){var query=search.value.trim().toLowerCase();list.innerHTML='';
-          ranked.filter(function(row){var item=row.item,fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{});return [item.original_filename,fields.counterparty,fields.amount,fields.expense_category,fields.document_date,fields.period_month,fields.summary].join(' ').toLowerCase().includes(query);}).forEach(function(row){
+          ranked.filter(function(row){var item=row.item,fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{});return [item.original_filename,fields.counterparty,fields.amount,recommendationLabel(row),(row.recommendation.dates||[]).map(function(d){return d.date;}).join(' '),fields.expense_category,fields.document_date,fields.period_month,fields.summary].join(' ').toLowerCase().includes(query);}).forEach(function(row){
             var item=row.item,fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),linked=Boolean(item.confirmed_target_id||item.expense_association),button=document.createElement('button');
             button.type='button';button.className='ghost monthly-library-item';button.textContent=(item.original_filename||'凭证')+(item.component_count>1?' · 第 '+(item.component_index+1)+' 笔':'')
-              +' · '+(fields.amount==null?'金额待核对':formatAmount(fields.amount))+(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(linked?' · 已关联':'');
+              +' · '+recommendationLabel(row)+(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(linked?' · 已关联':'');
             button.onclick=function(){if(active())choose(item,linked);};list.appendChild(button);
           });if(!list.children.length)list.textContent='没有找到相符的凭证。';
         }
@@ -163,7 +161,7 @@
               if(!active())return;var status=form.querySelector('[data-library-status]'),button=form.querySelector('[data-library-confirm]');
               if(!picture.querySelector('img,iframe')){status.textContent='请先读取并核对原图，再确认关联。';return;}
               if(!form.querySelector('[data-library-attest]').checked){status.textContent='请先核对原图并勾选确认。';return;}
-              var summary=kind.value==='monthly_summary',period=summary?month.value:date.value.slice(0,7);
+              var summary=kind.value==='monthly_summary',period=summary&&root.ZysyrVoucherCombinationUI?await root.ZysyrVoucherCombinationUI.period(month.value,context.month):summary?month.value:date.value.slice(0,7);
               if(period!==context.month||!(Number(amount.value)>0)||!summary&&!date.value){status.textContent='请核对凭证日期或所属月份、金额。缺少的日期不可猜填。';return;}
               if((Math.abs(Number(amount.value)-Number(target.amount))>.01||!target.aggregate&&target.transaction_date!==date.value)&&!window.confirm('凭证日期或金额与所选明细不同。已核对原图，确认仍对应当前这一笔吗？'))return;
               button.disabled=true;
@@ -255,7 +253,7 @@
       var fields=item.candidate_fields||{},category=item.match&&item.match.expense_category;
       return (names[fields.document_type]||'类型待识别')+' · '+(fields.expense_category||(category&&category.label)||'费用待分类')
         +(fields.evidence_kind==='monthly_summary'?' · 月度汇总佐证':item.component_count>1?' · 第 '+(item.component_index+1)+' / '+item.component_count+' 笔':'');},
-    confirm:async function(item,draft,target,scope){var result=await api('expense_voucher_match_apply',Object.assign({},scope,{mode:'manual',items:[request(item,target,draft.corrected_fields)]}));monthlyCache=null;return result;},
+    confirm:async function(item,draft,target,scope){var fields=Object.assign({},draft.corrected_fields);if(fields.evidence_kind==='monthly_summary'&&root.ZysyrVoucherCombinationUI)fields.period_month=await root.ZysyrVoucherCombinationUI.period(fields.period_month,scope.month);var result=await api('expense_voucher_match_apply',Object.assign({},scope,{mode:'manual',items:[request(item,target,fields)]}));monthlyCache=null;return result;},
     confirmCombination:async function(rows,target,scope){var result=await api('expense_voucher_combination_apply',Object.assign({},scope,{mode:'manual',combination:true,confirmed:true,items:rows.map(function(row){return request(row.item,target,row.fields);})}));monthlyCache=null;return result;},
     autoMatch:async function(data,scope,isCurrent,isDirty,includeExisting){
       var items=(data.items||[]).filter(function(item){return !item.confirmed_target_id&&item.match&&item.match.auto_eligible&&!pettySummary((data.targets||[]).find(function(t){return t.target_kind===item.match.target_kind&&t.id===item.match.target_id;}))
