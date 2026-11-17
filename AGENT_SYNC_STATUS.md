@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 186287)
-Total output lines: 4195
-
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
 ## 2026-11-17 · Silver distribution, apparent density and maintenance conflict (App version: v667 unchanged)
@@ -1210,7 +1207,1280 @@ User authorized pushing only the isolated startup branch and opening a draft PR 
 - Owner: Codex；起始HEAD/github/main `6b9c993`，工作树干净，源码日归档存在。用户报告向里9/27旧空表行与按源编号自动行同时显示；真实云行核实旧行未在active_staff_row_keys内、原金额已清空，员工有效行不存在金额重复累加。
 - 根因是operations-api的dailySheetData遗漏选择autofill元数据，纸表已有隐藏规则但真实返回没有有效行清单；原浏览器测试仅手工添加元数据，未覆盖API→纸表链。修正只读reader并加入真实reader→手机/桌面纸表回归，保留旧行/ID/原图/审计，不删除或合并金额。
 - 只投影ocr_raw_result.autofill并向页面白名单返回active_staff_row_keys，不泄露原始OCR/单据或前像。缺标记时从已验证格式的源行推导，不按姓名去重、不把不同员工编号合并。用户明确确认郭小康=小康：仅向里该源员工ID的自动行用小康显示；自定姓名、其他编号/门店和已确认表不变，不重命名美管加或云员工。
-- 图二缺项不冒充已补齐：真实单日只读项目/全业务/零售汇总显示有额外零售收款，卡类等分组仍缺值且响应不回显门店。没有把发型师小计复制到实做/总计或把卡金补零。旧41张已确认表只读对照实做/支付总计均与现金流+卡金一致；完整零售/售卡/卡金明细及凭证确认桥…66287 tokens truncated…预览上传及单笔例外开关。
+- 图二缺项不冒充已补齐：真实单日只读项目/全业务/零售汇总显示有额外零售收款，卡类等分组仍缺值且响应不回显门店。没有把发型师小计复制到实做/总计或把卡金补零。旧41张已确认表只读对照实做/支付总计均与现金流+卡金一致；完整零售/售卡/卡金明细及凭证确认桥接仍待接通。
+- 新模块、真实reader→合成手机/桌面纸表测试和Deno冻结锁类型检查已通过；真实pre-push全套通过、财务88/88。operations-api ACTIVE v115，13个在线文件与候选逐字一致，既有自定义会话鉴权不变、匿名请求403。41张已确认表/16164格及正式日报/收入/业绩/确认版本/附件整体摘要与部署前一致；页面/CI仍待发布核验，真实财务账号点击尚未验收。本轮无数据库迁移、无业务数据写入、无调度或源频率变化。回退仅前向恢复旧reader/页面，旧记录仍完整保留。
+- 正常推送运行提交 `6b0c0005b7bca672875ea7c2dcde045c5aa93c1c`，Validate #36411365382 / Pages #36411363911均success；五入口/版本文件无缓存回读逐字一致v587。上述页面/CI待验项已完成；真实财务账号点击尚待用户验收。本次不宣称缺失汇总或全年日报完成，下一模块须补齐完整零售/售卡/卡金来源与门店日证据，独立核对支付和营业总额，不复制员工业绩或按NULL补零。
+
+## 2026-09-28 · 支付缺项下的明确现金业绩归栏（App version: v586，云端和页面已发布）
+
+- Owner: Codex；起始 github/main / HEAD `6474f3c`，工作树干净，当日源码归档存在。只修正原私有项目归栏和已授权未入账 writer，不写美管加、不新增客户端权限、不改已确认账务。
+- 原单回读确认七个非现金支付字段真实缺失，不是解析器漏值。只有一个实际项目、一种已知平台支付，项目/已知支付/原单金额精确闭合；每条员工分配现金业绩明确等于总业绩，卡类/其他分量明确零，才允许归平台业绩栏。缺失支付仍 NULL，不据此填完整财务总额或标为已核对。
+- v3 审计版本区分本次映射；保留兼容 v2 纸表标记、稳定格子 ID、精确前后像、幂等/锁账/确认保护。24组隔离SQL回归通过，包括12项现金证据缺项/混合/退款/项目变异拒绝矩阵。线上迁移、草稿及账务摘要复核待记录。
+- 用户已确认向里旧表“祥骏/祥云”为美管加“十一”。仅只读身份对照，不重命名源员工、不改已确认表；向里1月1—3日对应378格无差额（不是整月或全业务验证）。
+- 历史完整项目明细检查点6/540店日；白天采集历史的许可已询问，答复前保留夜间每5分钟、当天每店15分钟的已安装计划。未宣称2026全部日报完成，完整业务/电子凭证确认桥接和真实财务页面验收仍待完成。
+- 回退：用新的迁移恢复v2函数、保留v3审计约束；不删除来源、审计或草稿。需要单张草稿恢复时核对当前revision及后续人工修改，再按精确before_snapshot审阅，不盲目覆盖。源码备份不是云数据库异地灾备。
+- 线上单一MCP迁移 `20260928095904 zysyr_daily_autofill_cash_evidence_v3` 成功；向里9/27草稿revision 3、170源格差异0，原1位员工3个未解格归栏后计数0。原7个支付NULL仍在，validation.valid=false、automatic_posting_enabled=false；同源重试already_applied、仅1条v3审计。已确认41张/16164格、正式日报/收入/业绩、确认版本及两类附件整体SHA-256与本轮前完全一致。
+- 最小权限复核：私有helper不授予anon/authenticated/service_role直接execute，writer仍仅service execute；Advisor数量/级别/对象不变，无新增WARN/ERROR。Edge接口未改无需再部署。真实pre-push全部通过、财务87/87；系统Python与运行签名库一致，未修改环境或绕测试。真实财务账号页面点击尚待验收。
+- 正常推送运行提交 `2ba2ba0408c0b0e5a939ca1dcd62078e0d871f1d`，Pages #36407363624 / Validate #36407365446均success；五入口/版本文件无缓存回读逐字一致v586。18:02真实定时任务自然推进自由手艺人当日head，草稿自动升级v3/revision 3，未伪造时间或额外抓取；来源为0单仍是待核对项目草稿，不据此认定全天无营业。六个运行文件哈希与源码一致。
+- 18:01检查点仍6/540历史店日，云端8个详细head（含2个今天）；既有项目消费两店各270日已在，不能与详细源覆盖混淆。只读检查历史列表最多每日55/42单，未超过现有100单上限；这不是90秒预算必然成功或全年完成的保证。历史白天提速许可待用户答复，未修改夜间计划、进度或冷却。后续还须完整业务汇总、电子凭证人工确认桥接及全部历史采集，不冒充完整自动财务日报。
+
+## 2026-09-28 · 精确分栏与技师去重（App version: v585，页面与云端已发布）
+
+- Owner: Codex；latest github/main 已只读核对至 a9df89a，起始工作树干净，工程归档存在。仅日报映射、共享技师统计和已授权未入账草稿；不写美管加、不改已确认账务。
+- 新私有分类/平台整项目唯一匹配函数、v2审计版本约束和原自动草稿 writer 升级；权限不扩张。相同快照的v1草稿只升级一次，留修改前后完整审计；原服务写入、已确认/锁账保护继续生效。
+- 21组隔离SQL及手机/桌面纸表回归通过，Deno两函数类型检查通过。向里1月1—3日114个可匹配格/日无金额差异；员工未核实别名及未接通的完整财务汇总明确排除，不是完整日报验收。
+- 来源只完整取得8个店日，其中向里1月1—3日已确认必须跳过；其余5个草稿可升级。2026全年详细源尚未补齐，不宣称全年完成。公私四栏不自动填，零售/充值/售卡等完整业务总额不猜。
+- 回滚：保留v1源码和旧审计，用新迁移恢复原函数；草稿修改前像按事件追溯，不删除审计、不修改确认表。线上迁移、API、Pages及确认表/正式账整体哈希核验待本节后续记录。
+- 云端阶段已成功：MCP只应用本次单一迁移（CLI linked dry-run 缺项目链接，未伪造基线或整库push），frontdesk-api ACTIVE v25 / operations-api ACTIVE v114，JWT与既有自定义鉴权不变。5张可用源草稿已升级v2，3张向里1月确认表准确跳过；41张确认表、其格子、正式收入/日报/业绩、确认版本和两类附件整体SHA-256与本次操作前一致。实际pre-push全套及财务87/87通过；Pages仍待发布核验。
+- 已正常推送运行提交 `48ce2b0`；Pages #36403202565 success，五个入口/版本文件无缓存回读逐字一致 v585。线上两函数共享模块/目录文件与本次修复逐字一致，匿名探针均403，三个新/更新私有辅助函数不给 anon/authenticated/service_role 直接执行权限。5张草稿490格持久化与来源投影差异0；重复调用均already_applied，审计各保留5条v1/v2版本。
+- 已知未完成：向里9/27只有1位在用员工行仍因原源7个支付字段缺项待核对；自由手艺人9/27项目分栏已无未解行。读取那笔美管加原单主动让位正常日常同步，未绕锁/冷却、未硬填零。向里历史“祥骏/祥云”与“十一”的身份未确认；全业务总额/全年明细及真实财务账号点击仍待验收，不宣称整份/全年日报完成。运行提交对应 Validate #36403202956 success，Pages #36403202565 success。
+
+## 2026-09-28 · 收银明细自动填写草稿（App version: v584，云端已接通）
+
+- Last synchronized base checked: github/main `16655226621d5d45ba05dbfc399ec6b53005f559`，Current owner: Codex。页面 v584、operations-api ACTIVE v113 和已审阅单一云端迁移均已发布。没有全库 push、强推或绕门禁；真实 pre-push 财务 87/87 通过，Validate #36367228288 与 Pages #36367227684 success。
+- 用户在明确说明具体三项影响后回复“允许以上三项”：三个系统作者字段允许 NULL、新增两张私有审计/状态表、同门店同日期 head 更新自动修改两店 2026 未入账草稿。再次提交 MCP apply_migration 成功，远端 history `20260928015608 zysyr_frontdesk_daily_autofill`；前一轮拦截没有通过其他通道绕过。
+- 9/27 自由手艺人 129 个自动源格（69 个数值）、向里造型 169 个自动源格（71 个数值）已真实持久化，均 draft/revision 1，源投影差异 0。向里原 472 格 ID 全保留，完整 before/after 留在不可改审计；两店重试 already_applied，不重复生成/加版本。真实财务金额、原文、业务 ID 不发布进公开文档。
+- 已具备详细来源的自由手艺人 1/1 未入账草稿已按最新授权更新；两店 9/28 建立无已核实数值的待核对草稿，空源不猜零。向里 1/1 已确认入口实测 confirmed_preserved。全年详细源仍只覆盖少量店日，原定夜间采集继续逐日补齐；不能宣称完整全年财务报表已完成。
+- 技师仅烫/染/护整数个数；线上非整数次数和其他技师自动金额字段计数均 0。发型师采用源分配业绩、可核实平台/项目分类；全业务总額、现金流、卡金、新老客及歧义分类仍空，validation.valid=false/needs_finance_review=true，不自动入账。电子凭证替代纸图的最终确认桥接仍是独立未完成模块。
+- Security/transaction evidence: 新表 RLS/force RLS true，anon/authenticated/service 直接 CRUD 均 false；新入口仅 service execute，固定公司/两店/2026 范围、search_path 空。trigger enabled=O，头推进后数据库内同步，无新美管加请求/轮询；草稿失败独立状态，不回滚合法源。Advisor 只有这两张故意无客户端策略的 INFO 新提示，无新增 WARN/ERROR；原密码保护 WARN 未擅改。
+- Online evidence: v584 日报 HTML/脚本/版本文件和 v113 全部在线文件已逐字核对，匿名接口 403；41 张旧确认表及 16164 格、正式收入/日报、确认版本/附件整体摘要在写入后与基线完全一致。浏览器连接超时，未伪造授权账号或宣称真实登录点击验收。
+- Open Work For Next Agent: 核验下一次自然收银 head 更新的自动触发状态（不要伪造 fresh timestamp）；真实财务页面点击验收；逐日历史详细源覆盖和缺字段口径补证。不得把项目消费草稿或工程备份称作完整财务报表/异地 DB 灾备，不据岗位业绩编造收入。详见 `docs/frontdesk-daily-autofill-release.md`。
+
+## 2026-09-28 · 已授权明细同步提速（App version: v583，页面/接口不变）
+
+- 用户明确同意当天每店 15 分钟、夜间两店合计每 5 分钟一个店日。仅调整 canonical Python 调度和安装器，不修改云表/Edge/页面/既有正式账务；每次最多源采集 90 秒、等待日常消费刷新 90 秒，保留共享锁、逐单/完整列表核对和 401/403/429 的 15 分钟全局冷却。
+- 定时器精确替换已识别的旧业务明细块，其他 crontab 行逐字保留；白天 9–21 时自由手艺人 :02/:17/:32/:47、向里 :07/:22/:37/:52，夜间 22–08 时一个 */5 history 作业两店交替，全局限速/单调度锁不并发。进度保留，日期硬限定 2026；每个任务有界，无新增无限循环。电脑睡眠/关机会暂停，错过时隙不追发突发请求。
+- 已安装并核验六文件哈希，备份 `~/.hermes/mgj-business-backup-a749oqdv`；补充范围终止保护后运行器副本备份 `~/.hermes/mgj-business-backup-t0tbzx_2`（cron 无再次变化）。08:26 首轮自由手艺人 2026-01-01 16 单 accepted，约 22 秒，云端回读 16 单一致；检查点从 3/540 到 4/540 过去店日。08:27:51 预约状态 healthy/连续失败 0，消费状态 healthy；尚不能凭一轮保证 4–6 晚完成，全年仍在补录。
+- 聚焦 Python 37 项及共用投影通过；发布基线和 v583 完整性核对通过。代码提交/远程回归状态待本轮发布核验；无需部署新 Edge 或刷新用户页面。
+
+## 2026-09-28 · 两店 2026 项目明细自动补录与技师次数（App version: v583，页面已发布）
+
+- 用户授权两店 2026 年明细同步安装；原始美管加接口只读、签名私有快照追加，旧正式日报/原图/账务及原有同步任务不改。先用 Supabase 私有快照按岗位/项目聚合核对：已观测 A/C 级技师的源分类均为“美发部”，无法据该字段直接识别烫染护；项目名“烫/染/护”可明确归类，“洗发”不计，“褪色”等歧义项待分类。
+- 运行器每店每滚动小时最多一次真实来源尝试，白天优先今天、夜间先固定昨天再从 2026-01-01 逐日补历史；共享消费源锁，等原日常同步刷新最多 90 秒，401/403/429 冷却沿用采集器保护。进度检查点不含客户、金额、凭据。:17 自由手艺人 / :47 向里造型 cron 已安装并核对，原 crontab 保持，原件备份在 `~/.hermes/mgj-business-backup-8pc3lf2d`；运行器修正备份 `~/.hermes/mgj-business-backup-gnvz8fs1`。
+- 向里造型 2026-09-27 首轮 31 张完整项目单获签名回执，夜间终态进度 1/540 过去店日；自由手艺人首轮仅因原同步待刷新让出，未发来源请求，等待下一有效时隙。先前手动核对的 5 个店日云端快照仍在；任务安装不等于 2026 全年或完整财务日报已完成。
+- v583 前台和财务来源展示已改为发型师金额、技师烫染护个数；私有原始员工分配保留作审计但不将技师金额作为统计值，日报仍需财务确认。共用 Edge 投影 frontdesk-api ACTIVE v24、operations-api ACTIVE v112，逐个对照在线依赖均仅更改同一共享投影；两个无会话探针均为 403。功能提交 `81cdc39` 已正常推送 `github/main`，完整 pre-push 及财务 85/85 命令（含新增调度测试）通过；GitHub Validate #36356707734 与 Pages #36356707231 成功。无缓存回读 version.txt=583、两端 HTML `data-version=583`/脚本引用 v583，两个脚本 SHA-256 均与本地候选一致。真实门店登录页面点击验收尚未做。
+
+## 2026-09-28 · 收银共用营业明细接入（App version: v582，页面已发布）
+
+- 功能提交 `7f36b6b` 已留存。用户针对具体仓库 main/Pages 的发布问题明确回复“允许”后，正常快进发布 `4ad8fe9` 至 `github/main`，本轮真实 pre-push 全通过，没有强推或绕过审核。先前发布授权阻挡已解除。
+- Pages #36353464591 成功；无缓存回读 version.txt/version.json、frontdesk.html、operations.html、perm-app.html、frontdesk-business-details.js、operations-daily-electronic.js 和 frontdesk-minimal.css，八个文件与候选逐字一致，线上 v582。Validate #36353465186 在记录时正在执行完整财务套件，类型检查及此前步骤已通过；最终状态以该精确提交工作流为准。真实门店登录点击验收仍待用户确认。
+- 在用户“立即执行”授权下，新增两张隔离快照/水位表、签名同步函数、前台 business_details 与财务 daily_business_details 读取入口，两个 App 使用同一源。迁移已应用生产，writer ACTIVE v1、frontdesk-api ACTIVE v23、operations-api ACTIVE v111；在线源码与本地候选一致。
+- 新表强制 RLS、无匿名/普通认证/服务角色直接表权限；只有命名 RPC 能读写。完整单据集合及入账金额与既有私有消费快照核对，缺单/错店/分币/迟到写拒绝，旧账不变；源单据新增或改金额会显待同步。
+- 前台新增可展开员工业绩/付款区域，按源员工编号显示岗位、项目、次数、业绩分量。财务日报旁可读同一天同门店来源。页面范围请求隔离、退出清空、缺项不填零；不生成正式日报或自动确认。
+- 新增有界默认 dry-run 全店日明细采集器，共享消费源锁、正常同步优先、前后列表及逐单金额一致检查。原先完整 dry-run 不含新增金额检查，不能作为当前完整核验；两店 6 张原先样本解析通过。真实重验遇源 429 已停止，未上传部分结果；没有新定时器、全年补录或运行副本。新采集器含每单 1 秒间隔和限流独立 15 分钟冷却。
+- 验证：完整真实 pre-push 通过，财务 85/85 命令通过；新 Python 27 项通过。新数据库/RLS/完整性、签名/读取权限、共用投影、手机/桌面和迟到门店响应通过，三函数 Deno 检查通过。无签名/会话探针 401/403/403。上轮云端核验明细快照 0，旧 41 张已确认、279 附件和 542 店日消费均保持；本轮仅发布静态页面与记录，不再次采集源数据或写入账务。
+- 仍需核对日报按列映射、点评团/抖音与项目业绩口径、技师基础/技术次数、零售/充值售卡/退款范围。已向用户提出渠道列口径问题，待答复；全年日报仍未完成。
+
+## 2026-09-28 · 收银与日报共用营业明细（本地数据模块，App version: v581 页面仍待发布）
+
+- 用户修正方向：先补齐收银 App 的员工分配业绩与付款来源，再由日报读取共用数据；格式参照向里造型 2026 年 1 月。架构与当前边界见 docs/frontdesk-business-detail-contract.md。
+- 最新 github/main 已 fetch，HEAD 包含其提交；专用 checkout 开始干净，当日源码备份存在。只改本任务诊断/数据模块，不触碰其他 Salon checkout。
+- 新增纯函数 normalize_bill/build_day，保留项目、30 个付款原字段、员工分配及源编号；整数分、缺项 null、完整账单集合核对、分岗位业绩与门店入账分别输出。没有把员工分配加为营业额。
+- 实测修复：empList 的 id/employeeId 是重复占位值，empfees.empid 应关联 empList.empId；旧诊断混合命名空间导致 employee_id_alias_conflict。新代码不再把占位值当有效员工编号，真实主键冲突仍拒绝。
+- 两店 2026-01-01 各 3 张只读样本均通过新解析，共 6 张/12 条员工分配正确关联，每张 30 个支付字段有值。脱敏输出不含金额、姓名或手机号；没有保存真实个人资料到仓库。
+- 新模块及现有来源测试共 42 项通过。本轮是可复用数据整理/核验代码，未新增云端表/接口、接入前台展示、部署运行副本、安装调度或生成全年日报。既有 v581 后端/页面状态延续下节。
+- 剩余：项目/支付/状态与 1 月表格映射；零售/充值/售卡/退款完整来源；私有快照及限定门店读取接口；前台展示与日报候选联动；全年有界补齐。共用数据模块仍 report_ready=false，不能当作完整财务候选。
+
+## 2026-09-28 · 电子日报第一阶段后端已部署（App version: v581，页面待发布）
+
+- Last synchronized base checked: GitHub main `326a138`；当前本地提交 `9b6a04c`，等待获准推送。Astra high 完成独立数据库实现及安全回归，Luna 完成采集器，主线程完成签名接口、财务只读 API/UI 和集成检查。
+- 用户已确认公-刷卡、公-支微、私-刷卡、私-支微不需要填写：新来源候选为 null/not_applicable/nonblocking，不清空旧已确认值。
+- Last Completed Work: 新增独立快照/候选/水位/审计，幂等和迟到保护、两店隔离、财务只读对照入口、默认 dry-run 有界采集。完整财务套件 79/79 命令通过，含新库 43 项和来源 Python 25 项；operations-api 冻结依赖 Deno 类型检查通过。
+- 当前仅 source_only，不会生成完整日报或登记电子凭证，不改变旧草稿、41 张已确认日报、原图、正式账、月报和美管加。迁移与两个 Edge 接口已部署；页面尚未发布，未运行全年补录，未安装定时器。
+- Cloud: migration 已追加四张隔离来源表及服务端读写 RPC；核对旧数据仍为 41 份已确认、311 份日报和 279 个附件，匿名/普通登录无新 RPC 权限。签名 source writer ACTIVE v1；operations-api ACTIVE v110，保留更高版本线上报表逻辑，仅新增财务只读来源读取。无签名 writer 探针 401。未采集/写入任何来源。
+- Release blockers: `supabase db push --dry-run --linked --include-all` 因 checkout 未关联项目不可用；改由目标项目 migration history 只读核对后逐项应用。数据库/Storage 备份与恢复点状态未能从可用连接器核验，只有源码归档。单日采集试跑为日常同步让路，未取得新真实源。页面 v581 尚未推送。
+- Open Work For Next Agent: 先完成 v581 页面发布授权；然后还需员工及项目等可靠映射、电子凭证/采用/人工确认路径、全年有界补录与逐日核对，不能把来源参考当全年完整日报。数据库/Storage 备份恢复点仍待有权限者核验。
+
+## 2026-09-28 · 两店电子日报来源诊断（App version: v580，财务功能未部署）
+
+- Last synchronized base checked: GitHub main `cd849b1`；Current owner: Codex。复用 perm-pages-hair-picker-sync，开始时干净；9/28 源码归档已完成，不冒充数据库/Storage 备份。
+- 用户批准两店 2026 年至今自动日报及电子明细凭证，仍需财务人工确认；已有照片、人工草稿和 41 张已确认日报保持不变。Astra high 审查架构，Luna 实现有界只读诊断，主线程核验真实样本。
+- Last Completed Work: 只读核实 bill detail 的支付/项目/岗位结构与日汇总查询合同；两店差异样本、向里首周 6 份已确认日报现金业绩及非空支付分项匹配。员工分类汇总请求出现门店回显不匹配，结果作废，不用于导入。13 项脱敏/请求/金额/范围合成回归通过，单日日汇总真实解析通过。
+- 新诊断工具不是生产同步器，不含客户原始数据、秘密、财务写入或定时器；单次最多 3 张单据或一个店日汇总，60 秒预算，共享消费锁。没有部署数据库/Edge/页面改动，App 保持 v580。
+- Open Work For Next Agent: 先读 docs/daily-electronic-evidence-plan.md；完成业务映射、完整来源与电子证据/候选/审核确认链路。对公对私规则已由上节用户答复更新。发布财务迁移前按 finance-release-runbook 取得具体影响/备份/回退确认；不能把政策批准当部署完成。
+- Handoff Rule: 前台项目消费 540 店日已补齐，不等于财务日报完整。当前截至 9/28 的目标为 542 店日，分别统计既有已确认、完整候选、缺口与今天草稿；未知不填零，岗位业绩不重复计收入，不自动入账。
+
+## 2026-09-27 · 两店 2026 历史消费补齐完成（App version: v580，云端已核验）
+
+- Last synchronized base checked: GitHub main `8014ce4`（v580），专用干净 checkout；未改动其他工作区。功能提交 `969f9f3` / `8014ce4` 已发布，完整本地 pre-push 通过；v580 GitHub Validate #36328991865 / Pages #36328991474 均成功，线上 version.txt / frontdesk.html 无缓存回读与候选逐字一致。
+- Last Completed Work: 23:52:09 有限补录进程退出 0，检查点 complete，1/1–9/25 的 536/536 店日全部成功。逐日云端回读单数、金额分、排序账单 ID 摘要，536/536 一致；加上日常维护的 9/26–27，两店各 270 天、共 540 店日，缺失日期 0。两店各 45 个源明确的零消费日期也已保存。
+- 完整范围复核：相同门店跨日期重复账单 ID 为 0，账单日期/门店与快照不一致为 0。23:52 日常消费和预约状态 healthy；当天源快照 23:49:43/46 正常更新。未改美管加账单、客户主档、历史预约、回访表或财务表。
+- 线上 mgj-customer-sync v3 / frontdesk-api v22 ACTIVE，部署源与候选逐字一致；内部签名/会话认证保留，无签名 writer 401、无会话 reader 403。核心运行文件已由跟踪源码安装，备份 ~/.hermes/mgj-core-backup.araOX6，哈希与发布版本一致。未新增定时器。
+- 两次有界停止均保留成功进度：91 店日的调度等待由 v580 修复；252 店日时瞬时 URLError 经只读源检查和云端核对后续传成功。最终检查点权限 0600，仅含汇总和 ID 摘要，保留用于审计，不删除重跑。
+- Open Work For Next Agent: 无剩余历史消费补录；用户可在前台“今日客户”选择历史日期查看。真实门店登录设备点击验收仍由用户确认，未冒充实机测试。历史预约未回填，不能把预约匹配数当作已补齐的历史预约统计；既有人工核对队列及护理 worker 差异不在本轮范围。
+- Handoff Rule: 本轮是项目消费入账统计，不等于现金收入或全部客户档案历史补齐；日常同步继续沿用现有有限频率和私有权限。
+
+## 2026-09-27 · 历史补录等待窗口兼容实际调度（App version: v580，阶段记录，已由上节完成）
+
+- 基于已发布 `969f9f3` v579；GitHub Validate #36328465499 / Pages #36328464613 全通过，线上 v579 文件逐字一致；核心运行副本备份到 ~/.hermes/mgj-core-backup.araOX6 后安装并核验哈希。
+- 历史已成功 91/536 店日，首周逐日单数/金额分/账单 ID 摘要与云端完全一致；1 月两店各 31 日已覆盖。23:13:31 为当天让路等待 100 秒到期而安全停止；现有当天任务 23:13:41/44 正常完成，说明是分钟调度与 5 分钟成功间隔错位，不是源失效。
+- 将等待上限由 100 秒改为 180 秒，仍受总预算限制，不提前重拉美管加，不改变定时器；保留检查点，从未完成日期继续。新增超过 100 秒仍可等到正常任务的回归。Open Work For Next Agent: 继续补齐其余日期，最终逐日全量回读核验；不能把 v579 发布成功视为历史全部完成。
+
+## 2026-09-27 · 两店 2026 历史消费补齐（App version: v579，执行中）
+
+- Last synchronized base checked: GitHub main `1ddec3f`（v578）。干净专用 checkout；当日备份已存在。v578 GitHub Validate #36326534924 / Pages #36326534842 已成功，用户确认当天数字正确。
+- 用户授权从 2026 年 1 月 1 日补到今天；按上一轮明确范围包含自由手艺人和向里造型。只补项目消费快照，不改美管加账单、客户主档、预约、回访导入或财务表。
+- 新增有界签名操作，仅接受 1/1–9/25 两店历史，9/26–27 保留日常维护；日常 31 天上限不放宽。历史脚本按最多一周读取，完整分页校验后分日写入，明确空营业日记录 0。限定时间/组数，断点续传、共享消费锁、当天优先、限速、错误停机，无新定时器。
+- Last Completed Work: 两店年初逐日与首周分页只读核对一致；13 个解析/补录 Python 测试、签名安全 Node、PostgreSQL RLS/原子快照和 Deno 两函数检查通过。历史页面不再误套当天 15 分钟新鲜度提示。
+- 云端：mgj-customer-sync v3 / frontdesk-api v22 ACTIVE，线上源码与候选逐字一致，内部签名/会话认证与 verify_jwt=false 保留。首周有限真实补录启动，自由手艺人 1/1–1/7 回读已成功（包含 1/5 明确零消费日），尚未宣称全年完成。
+- Open Work For Next Agent: 完整发布门禁和运行副本安装、536 历史店日有限补齐、总共 540 店日云端单数/金额/ID 摘要核对，以及当天同步健康检查。完成前不能报全年已补齐。
+- Handoff Rule: `docs/frontdesk-daily-consumption.md` 记录固定范围/检查点/停止条件；消费统计不等于现金收入或历史预约补齐。保留其他工作区和旧人工核对队列。
+
+## 2026-09-27 · 前台完整项目消费数据源修复（App version: v578，页面及自动同步已上线）
+
+- Last synchronized base checked: GitHub main `e3ff217`（v576），保留本线程未发布 v577 横屏保存修复。Current owner: Codex。干净专用 checkout，修改前当日源码备份完成。
+- 根因已实证：dashboard 读 `mgj_service_records`，但该表只收烫/染/护理核对明细且客户轮换同步不全。自由手艺人该日旧表 2 笔、2428，不是全店总数。v575 只是改统计标签和手机号去重，未修复这个缺口；此前“真实统计”的描述在此更正。
+- 新建私有店日快照：美管加项目消费页面实际表单只读读取，全部普通/套餐/年卡消费按稳定单号分页核对，金额按入账列，不含充值售卡和卖品。只读实测自由手艺人 24 笔/24 手机号/6500，向里造型 31 笔/29 手机号/1 笔无手机/9628；无手机号不猜人数。
+- 私有签名 writer 固定操作 + 原子店日快照 + 旧快照拒绝。保留现有核对、客户主档、预约及财务表。复用每分钟预约调度，独立消费 5 分钟间隔与 45 秒预算，昨日每日补读，失败保留旧数据并退避；前台 30 秒自有云端刷新，缺数据显待同步，超时显旧数据。
+- Last Completed Work: 新源两店/空营业日只读验证、Python 分页/失败保留/间隔测试、签名与范围拒绝、PostgreSQL 17 隔离迁移/RLS/旧快照防覆盖、前台统计口径测试通过；Deno 两函数检查通过；原横屏回归已在正式提升权限的独立 Chromium 五尺寸通过，并修正延迟 focus 的滚动干扰。
+- 云端进度：私有快照迁移已成功；mgj-customer-sync v2 / frontdesk-api v21 ACTIVE，两函数线上源码逐字回读一致，内部签名/会话认证保留。真实签名同步及数据库回读当天自由手艺人 24 笔/24 手机号/6500、向里造型 31 笔/29 手机号/1 笔无手机/9628；RLS 与匿名/普通认证角色无读取权限已核验；无会话 reader 403、无签名 writer 401。
+- 发布：7467f6a 已推送 main，完整 pre-push 通过（财务 74/74、同步 53 项、新消费源及安全回归）。Pages #36326012129 成功，无缓存回读 version.txt/version.json/frontdesk.html/frontdesk-minimal.css 与本地 v578 逐字一致。GitHub Validate #36326012543 的 Chromium 五尺寸均通过（旧横屏故障已消除），但新增 SQL 测试把 Docker 初始化临时 Unix socket 误认就绪；测试改用仅最终服务器监听的 TCP，未放宽业务断言，定向重跑通过，后续 Validate 以该测试修复提交为准。
+- 运行：六个核心运行文件已备份到 ~/.hermes/mgj-core-backup.zLF0Ts 后按顺序原子安装，哈希一致。唯一现有任务 9ef3f10b20d9 在 22:32 自动执行消费模块，两店今日及昨日均成功；今日云端 fetched_at 由手动首轮 22:23 更新到 22:32:29/32，状态 healthy。未新增定时器或手动触发冒充自动轮。
+- Open Work For Next Agent: 测试修复提交的 GitHub Validate 最终状态须检查；真实门店设备登录后的点击验收未完成（连接现有浏览器超时），不能冒充用户实机验收。既有 50 个历史客户需人工核对、旧护理 worker 漂移不在本次范围内，没有重置或覆盖。
+- Handoff Rule: `docs/frontdesk-daily-consumption.md` 是数据口径与运行说明；全店项目消费不等于全店现金收入。历史无快照日期不猜值，不额外启动另一套定时器。
+
+## 2026-09-27 · 横屏接待表单固定保存区（App version: v577，待发布）
+
+- Last synchronized base checked: GitHub main `e3ff217`（v576）；本任务隔离 checkout；当日源码归档已存在。
+- v576 Pages 已部署，但 GitHub Validate 两次在 Linux 844×390 前台浏览器断言失败：接待表单保存按钮滚动后底部仍在视口外；macOS 本机各尺寸通过。仅调 KPI 列数未消除。
+- 横屏下将当天接待表单操作区固定在抽屉可视区底部，解决保存入口可达性；保留 v575 的手机号去重消费人数、无手机号消费单提示、匹配来源拆分及 v576 五卡单行布局。
+- Last Completed Work: v577 代码已修改；版本/发布完整性/交接检查通过，定向 Playwright 在 Chrome 启动时 SIGABRT，未能完成；按本机已知环境处理停止浏览器重试。v577 未发布，线上仍为 Pages 已部署的 v576。
+- Open Work For Next Agent: 在安全可用的浏览器测试环境完成 844×390 回归及完整 pre-push，再推送 v577 并检查 Pages；不能跳过 pre-push。
+- Handoff Rule: 手机号缺失人数不猜测；历史消费源同步完整度不因新增统计而改变。
+
+## 2026-09-27 · 横屏统计卡片适配（App version: v576，已发布但远端回归失败）
+
+- Last synchronized base checked: GitHub main `02dd441`（v575）；本任务隔离 checkout；当日源码归档已存在。
+- v575 已发布到 Pages，GitHub Validate 在 Linux 844×390 横屏步骤发现添加第 5 张统计卡后的保存按钮露出断言失败；同机多尺寸浏览器断言通过。重跑也在该步骤失败。
+- 调整横屏平板 KPI 为 5 列单行，以保留指标同时避免增加一行页面高度。消费人数继续只按手机号去重，无手机号消费单显式列出；预约匹配继续区分手机号与姓名兜底。
+- Last Completed Work: v576 已推送，Pages build/deploy 成功，无缓存回读确认线上 v576。完整本地 pre-push 通过；GitHub Validate 仍在 844×390 横屏表单保存按钮断言失败。未改 Supabase、预约/收银源数据或权限。
+- Open Work For Next Agent: 由 v577 的横屏固定保存区修复该失败；完成安全浏览器回归与发布门禁。
+- Handoff Rule: 区分 GitHub Pages 部署和 Validate 状态；页面已提供 v575 暂行统计，等 v576 通过回归后再报本轮完成。
+
+## 2026-09-27 · 前台今日统计增加手机号去重人数（App version: v575，已发布）
+
+- Last synchronized base checked: GitHub main `89338ad`（v574），由本任务隔离分支快进同步；当日 ZYSYR 源码归档已存在。
+- 用户确认统计口径：消费单数按当天门店同步到的 Meiguanjia 服务单条数；消费人数按非空手机号去重，无手机号服务单数作为提示且不计入人数；消费总额仍按服务单金额合计。
+- 预约已匹配继续保留总数，副标题拆出手机号匹配与姓名兜底匹配数量，避免把姓名兜底误认成手机号精确匹配。只改前台展示逻辑和缓存版本，不改 Supabase、源业务记录或收银流程。
+- Last Completed Work: v575 Pages build/deploy 成功并无缓存回读确认线上统计实现；Validate 的横屏保存按钮断言失败，后由 v576/v577 跟进。
+- Open Work For Next Agent: 查看当前 v577 横屏可用性修复和发布状态。
+- Handoff Rule: 手机号缺失时人数不猜测；手机号匹配人数不等于无手机号顾客数，也不宣称消费源数据覆盖完整。
+
+## 2026-09-27 · 员工与前台客户跨店只读共享（App version: v574，已发布）
+
+- Last synchronized base checked: github/main cf5725d（v573）；Current owner: Codex；复用 perm-pages-booking-sync 干净隔离 checkout，保留财务 v573 和用户其他工作区。修改前检查与当日源码备份完成。
+- 用户批准自由手艺人员工 App 与前台客户中心同步共享客户资料。两端默认“全部门店”、可切“本店”；共享范围固定为自由手艺人/向里造型，旧客户端不传范围仍按本店。登录与在职/岗位校验保留，未公开 customer_profiles 或前台表权限。
+- 套餐、消费、备注按来源门店展示；同手机号不同姓名、无完整手机号不静默合并；历史单号与套餐去重包含门店。前台新增发质分析和服务前后照片只读展示；前台今日接待、编辑、删除、导入、台账和收银边界不变。没有跨店核销、生产数据合并/改写或自动出入库变更。
+- 现有 605 份非删除 hair_records 均未记录门店，不按当前员工归属猜测历史门店；全部门店保留并标注待确认，本店只显示有明确门店的档案。新建档案记录当前登录门店，编辑旧档案不补猜门店。发现 4 份手机号只在 record_data 中，新增兼容读取，避免漏档。
+- Last Completed Work: 两个 Edge 线上源与修改前 HEAD 逐字一致（employee v5/frontdesk v19）；Deno 类型检查、真实 handler 的合成身份/范围/权限/只读回归、保存与照片回归通过。员工三尺寸、前台 Chromium/WebKit 各五尺寸验证范围切换、来源、过期套餐、只读照片和可编辑接待入口；浏览器不使用生产账号。
+- 真实只读样本经新投影核对：全部门店 358 笔消费、本店 356 笔；5 项余额中 4 项未过期、1 项过期，原主档归属未变。生产 REST 零数据请求确认新筛选可解析，私有客户/前台表匿名请求仍 401。
+- 发布进度：完整 pre-push 通过（财务 74/74、同步 Python 53 项和双端客户回归）；employee-bookings-api v6 / frontdesk-api v20 已 ACTIVE，全部部署源文件逐字回读一致，内部会话认证和 verify_jwt=false 保持既有契约。前台与员工三个查档操作未登录实测均 403。
+- 发布完成：功能提交 c71c1c5 已推送 main；GitHub Validate #36317951723 和 Pages #36317951231 均成功。无缓存回读 version.txt/version.json/perm-app.html/frontdesk.html/operations.html 全部逐字匹配本地 v574；operations 仅全局缓存版本联动，无财务功能改动。
+- Open Work For Next Agent: 真实门店手机点击验收尚未完成。历史未同步缺口仍走已有补档流程，本次共享不等于全部历史自动补齐。
+- Handoff Rule: 区分代码测试、生产数据只读核对、后端/页面发布与真实账号验收；不要把“全部门店”读取范围传给接待或财务写入逻辑。
+
+## 2026-09-27 · 月报美发收入恢复财务编辑（App version: v573，待发布）
+
+- Last synchronized base checked: GitHub main `cd5f52a`（v572），已快进同步并保留客户消费/套餐修复；本日源码备份已存在。
+- 根因：线上 operations-daily-review.js 在月报渲染后把 daily_rollup 金额格强制设为 readonly。只删除该覆盖，让财务编辑模式继续走现有 monthly_income_adjustment_save 审计通道。
+- 日报现金业绩、不含卡金、月报调整和原表留存逻辑不变；未修改 API、数据库、权限或生产金额。
+- 定向日报校验、现金收入、月报公式/调整、审计测试及合成浏览器编辑/保存/读回通过；已将已入账日报来源输入框纳入浏览器回归。Open Work For Next Agent: 完成发布门禁、推送并核验 Pages；真实一月账不写入测试金额。
+- Handoff Rule: 线上新资源验证与合成数据回归不等于真实账金额保存验收。
+
+## 2026-09-27 · 套餐余额有效期核对（App version: v572，已发布）
+
+- Last synchronized base checked: github/main 593a0dd（本轮 v571）。Current owner: Codex。v571 完整 pre-push 通过，含统一财务 74/74 和同步 Python 53 项；employee-bookings-api v5 ACTIVE，线上源码逐字匹配，未登录请求 403。真实样本已回读并运行相同门店裁剪，得到 5 项有余额套餐、356 笔本店消费且其他门店记录/备注不外泄。
+- 最后核对有效期发现 5 项余额中一项护理季卡已于 2024-05-11 过期，源 status 仍是 active。前端改为按北京时间判断并清楚标注过期，保留档案，但不计入可用推荐；实际未过期 4 项。前文“有效 5 项”在此更正为“有余额 5 项”。
+- Last Completed Work: v572 完整 pre-push（含财务 74/74、同步 Python 53 项）通过，61d398a 已推送；Pages #36315157869 成功，线上 version.txt/perm-app.html 无缓存回读与本地逐字一致。真实云端数据经同一前端归档函数验证为可用 4 项、过期余额 1 项（2024-05-11）。
+- 云端首次新增浏览器测试失败于 macOS 专属 /private/tmp 截图路径（不是业务断言失败）；已改用 os.tmpdir() 并通过本机重跑，保持 Linux 使用固定 Playwright Chromium。后续云端测试结果以 GitHub Validate 运行记录为准，不绕过检查。
+- Open Work For Next Agent: 真实门店设备点击验收；其他旧档案历史缺口继续由既有后台补档流程处理。本次无登录真实页面控制工具超时，不能宣称用户手机实测通过。
+
+## 2026-09-27 · 员工客户套餐与消费明细修复（App version: v571，已发布并由 v572 补充有效期）
+
+- Last synchronized base checked: github/main e8c6cf8（v570 的发布核验文档已快进保留）。Current owner: Codex；复用干净 perm-pages-booking-sync checkout，未修改用户 Salon 工作区；修改前备份 ZYSYR_2026-09-27_184944.tar.gz。
+- 根因已用真实数据核对：截图客户主档 shop_name=向里造型，但套餐和多数消费属于自由手艺人；旧 employee-bookings-api 按主档门店过滤，导致降级为 34 条预约。生产聚合显示向里主档内有自由明细的客户 482 位，反向 242 位。
+- 新 customer-profile-scope.mjs 按登录员工门店做 JSON 子项匹配和返回裁剪；跨店主档备注、偏好、全局金额、全局次数不外泄。手机号历史查档用精确匹配。无数据库迁移，无客户主档归属改写，无公开权限恢复，无护理自动出入库改动。
+- Last Completed Work: 源站与云端样本刷新核验通过（33 个套餐项目中本店有效 5 项，358 笔消费中本店 356 笔，最新 2026-09-27）；Deno 类型检查、门店隔离/认证/只读回归、消费渲染回归通过；Chromium 三尺寸 x 本地API/云档案/无档案分支通过。线上 PostgREST 新筛选解析成功且匿名读取仍 401/42501，错误语法对照返回 400/PGRST100。
+- 发布范围：employee-bookings-api + 员工 perm-app.html；operations/frontdesk 仅同步全局缓存版本。需部署 Edge、完整 pre-push、GitHub Validate/Pages 和线上无缓存回读。Open Work For Next Agent: 真实门店设备点击验收；旧客户历史明细缺口继续走已有后台补档，不能声称所有客户历史均完整。
+- Handoff Rule: 不把合成浏览器验证冒充真实账号验收；不把已同步笔数称为完整历史消费次数。
+
+
+## 2026-09-27 · 月报照片与单笔凭证隔离（App version: v570，已发布）
+
+- Last synchronized base checked: GitHub main `dbfda7c`，保留客户私有同步与预约刷新发布。源码备份已存在。
+- 凭证追溯按显式 `monthly-report:` 来源排除月报整月附件；精确逐笔关联、人工上传的单笔凭证仍保留。月报照片仍由月报入口访问。
+- 凭证浏览器回归桌面、手机竖屏和横屏通过；完整 pre-push 财务 74/74、同步/健康 Python 53 项及 GitHub Validate #36313666708 成功。Pages #36313666438 成功；无缓存回读 v570 页面与脚本含修复。提交 `e07add7` 已发布。
+- 仅前端展示过滤、版本和交接记录；未修改数据库、API、Storage、财务数据、凭证关系、权限或登录入口。Open Work For Next Agent: 等用户用原问题中的月份/凭证实机复测；若单笔凭证文件本身仍有问题，继续按该凭证 ID 独立排查。
+- Handoff Rule: 发布回读与合成凭证回归通过不等于真实账号实机验收；没有生产财务写操作。
+
+## 2026-09-27 · 客户私有同步恢复与当天预约提速（App version: v569，已发布）
+
+- Last synchronized base checked: github/main e32b4cf（包含最新财务极简界面，已保留）；本线程干净隔离 checkout 开始，备份已核验。Current owner: Codex。用户同意先修复消费/套餐授权，再实施当天预约 1 分钟、未来日期约 15 分钟轮换及前台云端 30 秒刷新。
+- 根因：bookings 与 customer_profiles 已无 anon 读写权限，但旧客户脚本仍直连公开 REST。新增 mgj-customer-sync 签名通道，复用本机 mode-0600 Ed25519 私钥但使用独立签名域；仅允许固定预约手机号读取、客户单条读取/扫描和按精确手机号写入，拒绝未知表/字段/门店/操作，不含删除。未放开数据库权限、未分发 service-role key，也不写美管加。
+- 生产 mgj-customer-sync v1 已部署，ACTIVE、verify_jwt=false（函数内部验证签名/时戳）；线上源码与候选一致。匿名请求 401，签名读取成功。客户同步首批 8/8 成功；独立 services 1 成功。只读聚合确认最近更新 9 份档案（自由手艺人 6、向里造型 3），均含消费历史，其中 5 份有套餐。未清空失败来源数组。
+- 预约脚本 --scheduled 每轮优先当天两店，最多增加一个到期未来日期；未来日期仅在两店写入成功后推进 15 分钟计时，失败退避、不删失败范围；55 秒预算、单实例锁，源站 429 冷却 5 分钟，网络超时不再误判为会话失效而重登。现有唯一 Hermes 任务 9ef3f10b20d9 已改每分钟 cron；18:22 受控首轮、18:24 自动轮均 healthy。后台四个文件已备份到 ~/.hermes/mgj-core-backup.p0bn2p 后部署，哈希与仓库一致。
+- 前台仅将可见“今日客户”云端轮询从 60 秒改为 30 秒，已有请求未结束时跳过自动轮询；不直接请求美管加。同步健康检查对本轮三个同步模块使用本地 github/main 发布对象，避免开发工作区的未发布代码造成假漂移告警。
+- Last Completed Work: 提交 588b4ae 已发布；完整 pre-push（财务 74/74、Python 同步/健康 53 项及签名通道 Node 回归）通过；GitHub Validate #36312882843、Pages #36312882633 均成功。线上无缓存 version.txt 与 frontdesk.html 逐字匹配 v569，页面包含 30 秒前台轮询。首次门禁发现 Git hook 环境变量干扰巡检仓库定位，已过滤 GIT_* 后完整重跑，无绕过。
+- 真实自动验证：18:25:59、18:26:59、18:27:59 连续预约轮成功，18:31 前当天+未来七天均已完成首轮；18:33/18:35 自动轮只刷新当天两店，证明未来未到期时不重查整周。18:30 的正常客户定时任务自动完成 8/8，18:31 状态 healthy。健康脚本已备份后部署，三个核心同步文件相对 github/main 哈希一致；既有护理 worker 差异仍独立保留。
+- Open Work For Next Agent: 真实门店持续使用验收及下列 50 个查无历史客户待核对；保留原消费/套餐任务每 30 分钟的小批量轮换，近期明细每小时 :15，不宣称全部历史已补齐。
+- 已知独立遗留：50 个历史客户 needs_review 原因为“未搜索到该客户”，不是 401；未重置/删除/自动无限重试。护理 worker 的既有源码/运行差异未修改。Handoff Rule: 有限批次成功不等于所有历史客户已补齐，也不证明美管加零限流风险；不改变出库、收银或门店登录权限。
+## 2026-09-27 · 月报照片不再混入单笔凭证（App version: v570，待发布）
+
+- 基于 GitHub main `588b4ae`（v569），先同步并保留客户私有同步与预约刷新改动；本日源码备份已存在。该修复单独升为 v570。
+- 单笔凭证预览现在排除明确标为 `monthly-report:` 的月报整月附件；若同一附件另有精确逐笔关联，则仍展示。单笔凭证及人工确认的凭证不受影响。月报照片仍留在月报入口。
+- 仅前端展示过滤及版本/交接记录，不修改 API、数据库、Storage、财务数据、凭证关联、权限或财务登录入口。
+- Open Work For Next Agent: 完成本地发布门禁、推送 GitHub main 并核验 Pages 上 v570；真实门店账号/设备回归仍由用户复测。
+- Handoff Rule: 代码展示过滤不删除原附件关系；未运行生产写操作。
+
+## 2026-09-27 · 报表 App 极简界面统一（App version: v568，待发布）
+
+- Last synchronized base checked: github/main 68b9459；复用干净隔离 checkout，修改前完成每日源码备份，保留 v567 收银中心改动及用户原工作区。
+- Current owner: Codex。按自由手艺人 App 业务页面的浅色极简体系统一报表登录、导航、月报操作区、日报月历、工资/库存表单及凭证追溯抽屉。主要操作黑色，次要操作轻边框；风险/缺凭证/待入账颜色保留。
+- Last Completed Work: 仅新增集中呈现层样式；保留一张完整月报、右侧整月日报及原字号/缩放，不改任何金额、公式、业务 API、数据库、门店权限或财务独立登录入口。修正表单内在宽度撑开页面，以及横屏上传面板遮住收起按钮的布局问题。
+- 新增 test-operations-minimal.js 并接入统一财务回归清单，使用全部拦截外网的虚构预览数据验证五种尺寸、登录/注册、主要财务页面、上传入口、凭证追溯与股东只读控件；样式开关前后报表文本和源数据保持一致。Chromium/WebKit 各五种尺寸及原月报/整表缩放回归通过；最终完整门禁待运行。
+- Open Work For Next Agent: 发布前完成完整 pre-push、GitHub Actions / Pages 和线上资源回读；真实门店账号、实际手机和平板的视觉验收仍由用户确认。此次不恢复此前暂停的全面重构，不部署 Supabase，不修改生产数据。
+- Handoff Rule: 本地合成测试不等于真实业务或实机验收；发布状态以 SHA、CI/Pages、线上资源为准。
+
+## 2026-09-27 · 收银中心浅色极简界面（App version: v567，已发布）
+
+- Last synchronized base checked: github/main d3af07c；复用本线程隔离 checkout，修改前完成源码备份。保留最新财务页面改动，不修改其他工作区。
+- Current owner: Codex。按用户要求参考自由手艺人员工 App 的极简风格，统一收银登录、今日客户排班、客户档案、客户数据表、洗发统计及编辑弹窗；采用浅色背景、细线图标、轻量卡片与柔和状态色。历史导入及较长说明可展开，保留原功能。
+- 修复手机文档滚动裁切并让切换页面回到顶部；排班保留横向滑动，当前时间线跟随真实列宽；长姓名、金额与编辑按钮保持可读。新增独立 frontdesk-minimal.css 和合成浏览器回归。仅修改呈现层及页面导航滚动，不改 API、数据库、客户数据、门店权限或美管加同步/预约去重逻辑。
+- Last Completed Work: frontdesk 定向测试及 Chromium/WebKit 各 5 种尺寸（桌面、平板、手机竖横屏）通过；验证登录/注册、四个页面、排班客户数量及状态、横向滑动、时间线、档案/表格编辑、金额说明与导入展开。全部使用虚构预览数据且拦截外网，未执行真实保存或删除。
+- 发布证据：提交 14807d8 已推送 github/main；完整 pre-push 通过（含统一财务 73/73、美管加同步 47 项），GitHub Validate #36309950498 的 validate job 和 Pages #36309950010 成功。无缓存回读 version.txt、frontdesk.html、frontdesk-minimal.css 与本地逐字一致；新建无登录 Chrome 打开线上页面，确认 data-version=567、浅色登录背景和新版样式加载。首次门禁因未提供既有 Playwright 依赖路径停止，补齐环境后完整重跑通过，未绕过检查。
+- Open Work For Next Agent: 真实门店账号及实际设备视觉体验仍需用户验收；本轮没有使用真实账号进行保存/删除验证。
+- Handoff Rule: 合成测试与线上资源存在不等于真实业务验收；此次不包含此前预约重复问题的处理。
+
+## 2026-09-27 · 单表月报布局恢复（App version: v566，待发布）
+
+- Last synchronized base checked: github/main d577c3c；复用干净隔离 checkout，修改前已运行 scripts/backup-zysyr.sh。用户原工作区未修改。
+- Current owner: Codex。用户要求撤回上下双表；恢复右侧 P:W 的整月日报展示、31 个自然日槽位和合计，并保留当前整表缩放/字号。财务数据来源与现金收入口径不变。
+- Last Completed Work: 本地 Chromium/WebKit 多尺寸单表/金额不重叠、精确日期跳转回归及统一财务 73/73 通过；发布门禁首次在未安装 cryptography 的系统 Python 处失败，改用既有隔离依赖环境继续，不修改同步业务代码。日期点击使用绑定参数避免旧闭包跳错日期。
+- Open Work For Next Agent: 验证 v566 CI/Pages 与真实设备显示；原目标仅保留备份可恢复及股东门店权限两项，不恢复全面重构，不新建付费恢复项目。生产数据/历史凭证未修改。
+- Handoff Rule: 本地合成测试不等于真实账号验收；发布状态以远端 SHA、CI/Pages、线上资源回读为准。
+
+## 2026-09-27 · 历史凭证多定位回退修复（App version: v565，已发布）
+
+- 根据凭证追溯实现确认：服务端追加式保存人工确认的页码关系；前端此前只请求最早页码。若该位置在当前 DOCX 包中不存在，读取立即失败，即使后续已补充正确位置也看不到凭证。
+- 前端现在仅在收到精确的“请求的原图页不属于当前凭证包”错误时，继续尝试同一凭证其他人工确认页码；不会按金额/文件名猜测。原图成功显示时，仍对失效旧位置提示关联未完全核实。没有改写/删除数据库关系或财务数据。
+- 凭证预览单测通过；浏览器回归在桌面 1280×900、手机 390×844、横屏 844×390 通过，含旧无效 locator 后接正确 locator 的合成场景。统一财务测试 73/73、完整仓库 pre-push（含 47 项 Meiguanjia 同步测试）通过；GitHub Validate #36277796758 与 Pages #36277795787 成功。无缓存线上读取确认 `version.txt=565`、`operations.html data-version=565` 且部署代码含多定位回退。真实财务用户对截图中那笔凭证的复测仍待完成。
+- 已从 GitHub main `ffc38ba` 同步；源码恢复包已生成于本 worktree 的 `backups/daily/`。提交 `552420b` 已发布。仅改前端读取和版本标记，没有生产 API/数据库部署、没有改财务数据、凭证关系或财务登录入口。
+- Current owner: Codex; Last Completed Work: v565 凭证定位回退发布并完成 CI/Pages 无缓存核验；Open Work For Next Agent: 请财务用户复测原问题凭证；继续处理 A02/Auth、B01 历史账签认、G01 隔离恢复、受限队列权限、真实财务/股东设备验收及性能稳定性遗留；Required Checks Before Editing: `git fetch github main`、版本/release/agent-sync 检查和每日备份；Required Checks Before Publishing: 完整财务测试、pre-push、GitHub Actions、Pages 无缓存回读；Handoff Rule: 合成凭证包及代码线上存在不等于真实账目追溯已验收；上线审计目标继续 active。
+
+## 2026-09-27 · overview阶段计时诊断（operations-api v108 已部署）
+
+- 为解释生产 `overview` 请求约 4.6 秒的延迟，在 `overview` 的各个读取批次记录单次阶段耗时；只输出一个 JSON 日志事件，包含总耗时与固定阶段名，不记录公司/门店/月/账号/报表 ID/金额/凭证信息，也不改变返回数据或计算口径。
+- 生产只读复核：当前 `operations-api` 为 ACTIVE v107。UTC 2026-09-26 00:00 至 2026-09-27 00:00 的 Edge 请求日志中，v107 全函数 43 次 HTTP 200 的 p50 为 1,643 ms、p95 为 4,535.8 ms、最大值 5,199 ms；另有 2 次 400、1 次 403。该遥测按整支函数聚合，不区分 overview 与其他操作，因此只能确认延迟问题仍值得拆阶段调查，不能作为 overview 单独的线上性能结论。
+- overview 并发与凭证范围、日报去重、450 单元月报读取、公式重算、现金业绩口径等定向测试及统一财务回归 73/73 通过（最终退出码 0）；项目 CI 原命令 `deno check --config=supabase/functions/operations-api/deno.json --node-modules-dir=none --frozen ...` 使用 SHA-256 验证的官方 Deno 2.9.6 二进制通过。`check-agent-sync-status.js` 与 `git diff --check` 通过。
+- 已将完整 `operations-api` 包部署为生产 v108；线上回读确认 ACTIVE、`verify_jwt=false`（保留自定义 session 鉴权）、import map、时序事件与全部阶段标记均存在。一次无凭据只读 `overview` 请求返回 403 `AUTH_SESSION_INVALID`，确认匿名请求仍被拦截；未读取或修改财务业务数据。首次打包尝试因分块输出截断被 Supabase 拒绝，回读确认仍为 v107 后，改用字节分块并核验文件长度才部署成功。
+- 部署后短时日志窗口尚无授权 `overview` 请求，因此没有 `zysyr_overview_timing_v1` 真实计时样本，不能宣称性能问题已修复；后续要等真实财务用户自然打开页面，再只汇总各阶段时长。之前 24h v107 全函数 p95 4,535.8ms 为整支 API 聚合基线，不单独代表 overview。
+- 日志保持每次成功 `overview` 一条聚合事件，不逐查询/逐单元记录；候选基于与 GitHub `main` 同步的 `e12ee7c`，仅包含 API 时序诊断、回归和交接记录。生产 v108 已部署，完整 pre-push 通过，源码提交 `ce6f50d` 已推送至 GitHub `main`；后续仍需等待真实财务会话产生脱敏阶段计时样本，才能定位具体慢阶段并决定是否需要数据查询优化。
+
+## 2026-09-27 · 月报字体可读性微调（App version: v564；已发布）
+
+- 原月报表标签从 13px 调至 14px、金额/输入从 12px 调至 13px；整月日报桌面表格调至 14px，手机端汇总金额与逐日卡片数值调至 15px、卡片标签调至 14px。保留手机端卡片布局、原表整表适配和双指放大；不改变计算、数据源、表格内容或凭证追溯。
+- 更新 `operations.html`、`perm-app.html`、`frontdesk.html`、`version.txt`、`version.json` 至 v564，并同步静态/浏览器回归断言。提交 `b630f291849ee0903a05c6b031597d9510bab991` 已推送 GitHub main；Validate shared app #36260935609 与 Pages build/deployment #36260935463 均成功。线上无缓存回读 `version.txt=564`、`operations.html data-version=564`。真实桌面/平板/手机视觉验收仍待用户确认，不声称实机问题已解决。
+- 仅改前端样式、版本标记、测试断言和交接记录；未改数据库、API、财务公式/历史金额、权限、认证或登录入口。
+- 本轮只读回查生产项目为 `ACTIVE_HEALTHY`；`operations-api` 为 ACTIVE v107、`verify_jwt=false`（函数内部仍做鉴权）。生产 `care_outbound_queue` 的 anon `SELECT/INSERT/UPDATE` 策略仍存在；公开权限清单还含 `hair_records`、`care_records`、`hair_analysis_queue`、`mgj_service_records`、`showcase_images`。没有运行生产写操作或读取业务行。`CARE_OUTBOUND_AUTOMATIC_ENABLED=false`；worker 继续以 publishable key 直接请求 Data API，不能先应用现有 ACL 迁移再补认证。
+- A02 最新生产匿名化聚合（仅计数）：active legacy staff 26、active V2 employees 24、存在 legacy-id 映射的 active 旧员工 23，其中门店与目标员工档案一致 22、跨门店不一致 1；active V2 Auth accounts 2、有效迁移白名单 2、其中已关联 active V2 account 1；近 24h Auth migration success 2、failure 2、blocked 0。仍有 3 个在职旧员工没有映射，且 1 个 V2 在职员工没有旧员工映射；不读姓名/账号/哈希，不自动绑定、停用或重置。
+- A02 按门店匿名化复核：向里造型 active legacy 14，其中 12 个映射门店一致、1 个映射到自由手艺人、另 1 个未映射；自由手艺人 active legacy 11 / 一致映射 10 / 未映射 1；另有 store 字段为空的 active legacy 1 / 未映射。跨店映射员工目前没有有效 Auth 迁移白名单、关联账户或有效角色授权（均为 0），尚无证据表明权限已沿错误门店映射发放；但仍是 P0 身份/数据边界异常，管理员必须在受控员工管理页面确认正确目标档案及门店后才能修正。未查个人标识，不做自动修复。
+- A02 查询口径复核：26 个旧员工中 23 个有指向 active V2 employee 的映射；按映射目标门店一致性再过滤后为 22，差异是上列 1 个跨店映射，不是单纯统计噪声。全局 2 个 active V2 Auth accounts 均未删除/封禁，但只有 1 个关联 active employee；两条已批准迁移白名单中，1 个已有 active Auth 关联。近 24h 迁移事件 success 2 / failure 2 / blocked 0。全部为无标识聚合；跨店错配未被 allowlist/account/role grant 使用。
+- 2026-09-27 生产性能只读样本：从 `function_logs` 的 `operations_api_timing` 结构化事件按当前 ACTIVE v107 聚合；overview 成功 10 次，p50 3,093ms / p95 4,583ms / max 4,583ms；overview 无权请求 1 次，403 用时 3ms。另有 cell_trace 2 次 p95 3,525ms、daily_sheet_month 2 次 p95 3,010ms。样本来自最近 24 小时且量仍偏少；overview 目前仍约 4.6 秒 p95，不能宣布性能达标；应继续观察授权自然流量或在获准环境补压测，避免对财务生产造负载。
+- 2026-09-27 G01 本机 LaunchAgent 只读核对：`gui/501/com.zysyr.daily-backup` 存在但 `active count=0`、`state=not running`、`runs=4`、`last exit code=126`；program 指向仓库 `scripts/backup-zysyr.sh`，日志路径在 `~/Library/Logs/ZYSYR`。没有 kickstart/修改 plist/重跑生产备份；既有诊断为 launchd 因 macOS `Operation not permitted` 无法访问 Documents 工程目录。解决需用户侧 TCC/Full Disk Access 或经批准迁移脚本及源到可访问位置，之后还需明确 DB/Storage 异地恢复目的地和费用。
+- 本轮 `node scripts/test-operations-auth-migration.js`、`test-zysyr-legacy-login-security.js`、`test-operations-auth-bridge.js`、`test-operations-finance-account-admin.js`、`test-care-outbound.js` 与 worker Python 11 项测试均通过；它们是本地静态/模拟证据，不代表真实财务账号验收、生产权限已收紧或后台 worker 已认证。另从 Supabase `function_logs` 结构化事件取得 operations-api v107 近 24 小时按操作分组计时，overview 有 10 次 200 成功 (p95 4583ms)；日志数值及样本限制已记录于上方，不代表全量负载/真实设备性能验收。
+- 本轮财务口径回归 `test-monthly-formula-recalculation.js`、`test-zysyr-monthly-cash-income-v527.js`、`test-zysyr-monthly-overview-daily-dedupe-v546.js`、`test-zysyr-monthly-overview-vouchers-scope-v547.js` 与 `test-zysyr-daily-validation-warning-v557.js` 通过；`test-zysyr-report-cell-request-scope.js` 属浏览器用例，受当前 loopback `listen EPERM` 限制，未启动浏览器，仍待在允许的 QA 环境验证。
+- 2026-09-27 生产只读复核：`zysyr_cash_opening_balances`、`zysyr_report_acknowledgements`、`zysyr_shareholder_registrations` 均启用 RLS；`anon` 与 `authenticated` 均无 SELECT/INSERT 权限，`service_role` 保留 SELECT。仅核对 ACL 元数据，没有读取业务行或修改授权；股东跨门店隔离仍须用真实门店身份会话验证。
+- Storage 进一步核实：生产 migration ledger 已记录 `20260924051925 zysyr_storage_remove_global_public_policy`；`storage.objects` 启用 RLS 且当前策略数为 0（`anon_all` 不存在），底层表级 SELECT/INSERT grants 仍在；财务私有桶 `zysyr-reports`、`zysyr-vouchers` 均 `public=false`。线上 ACTIVE v107 的 operations-api 文件上传/读取使用服务端 SERVICE_KEY，凭证签名链接 300 秒；源码读取确认，不等于真实财务端到端上传/展示验收。匿名 HTTP 探针受当前代理 `127.0.0.1:7890` 不可达阻断（HTTP 000），没有绕过代理；因此 Storage 仍需在授权联网/真实财务会话中做匿名拒绝及上传、查看回归。
+- Storage 本地 `test-zysyr-storage-anon-policy.js`、凭证预览静态/视口约束测试及备用金批量匹配测试通过；备用金凭证浏览器测试在本地服务器 `listen EPERM 127.0.0.1` 处未启动浏览器。没有对生产运行删除操作，本轮只读确认既有迁移已登记。
+- 2026-09-27 Supabase Advisor 复核（Advisor findings 的 observed_at 为 2026-09-26 17:37Z）：Security 有 42 条 RLS-enabled/no-policy INFO 与 1 条 Auth 泄露密码保护关闭 WARN；Performance 有 135 条未覆盖外键 INFO、145 条未使用索引 INFO、4 条重复 permissive policy WARN、Auth 固定连接数 INFO。它们覆盖全库多个 App；未批量建/删索引、改 Auth 或改策略。定向只读核对确认 `perm_data` 与 `staff` 的重复策略都为 `USING (true)`；`perm_data` 的公开配方读取是现有契约。`staff` 对 anon 有非敏感目录列的列级 SELECT（含 username/role/store/position/active/employment_status），`password_hash` 不可读；代码中旧预约/员工目录入口仍使用显式列查询，故不能据 advisor 警告直接撤销目录访问。注意 `has_table_privilege(...,'SELECT')=false` 只表示没有整表 SELECT，并不否定列级 SELECT；目前只核对授权元数据和代码，未发匿名 HTTP 请求读取目录数据。后续如要收紧目录暴露，需先替换这些公开客户端查询并经兼容验证，再单独批准生产权限调整。
+- B01 历史账签认最新生产聚合：正式账本仍有 3,739 笔 `posted_review_status=pending`（向里造型 1,694、自由手艺人 2,045）；其中 1,115 笔 `posted_validation_status=warning`（向里造型 516、自由手艺人 599）。本次只按门店/entry_type/状态汇总，没有读取金额或逐笔内容，没有代财务签认/修账；剩余逐笔签认须由财务人员依据原件决定。
+- 本轮新跑 `test-zysyr-monthly-daily-performance-v525.js` 与 5 项财务公式/分类/现金收入/日报来源/凭证范围/异常提示回归均通过；`check-version-sync.js`、`check-release-integrity.js`、`check-agent-sync-status.js` 和 `git diff --check` 通过（v564）。在获准监听本机临时端口后，`test-operations-report-fit.js` 的 Chromium 与 WebKit 两套浏览器回归均通过：覆盖手机竖屏/横屏、iPad 与桌面视口，确认大额数字完整、不重叠、表格适配且保留缩放；浏览器仅加载本地合成数据。截图 `/tmp/zysyr-monthly-fit-chromium.png`、`/tmp/zysyr-monthly-fit-webkit.png` 已生成供视觉检查。自动化不等于真实设备验收；v564 已发布，实机复核待完成。
+- Current owner: Codex; Last Completed Work: v564 月报字号样式已推送并由 GitHub CI/Pages 无缓存回读验证；Storage 全局 anon 策略迁移确认已上线、财务桶 private；A02 新发现 1 条跨店 employee mapping mismatch（尚无 Auth/授权绑定）；取得 operations-api v107 按操作的线上延迟样本。Open Work For Next Agent: 管理员确认错配员工的正确身份/门店；取得实际设备视觉验收；完成 A02/Auth、B01 历史账签认、G01 隔离恢复、护理队列权限方案、真实财务/股东会话隔离及性能稳定性验收；Handoff Rule: 静态回归不能替代真实浏览器、真实账号或灾备恢复证据，审计目标继续 active。
+
+## 2026-09-27 · operations-api v107 历史月报独立读取并发化（已部署）
+
+- 历史月报 fallback 中 3 个独立数据源请求以及原始工作簿、凭证关联、证据规则、上传人读取原为串行等待；改为两阶段 `Promise.all`，只改变只读请求调度，`effectiveHistoryMonthlyEntries`、金额投影、门店范围、凭证关联状态与响应内容保持不变。
+- `node scripts/test-monthly-load-recovery-v499.js`、统一财务测试 73/73 和完整 pre-push 通过；GitHub Validate #36253525110（含 Deno frozen type check）及 Pages #36253524876 成功。生产 `operations-api` v107 ACTIVE，10 文件包已部署，`verify_jwt=false` 保持；匿名 overview 探针仍为预期 403 `AUTH_SESSION_INVALID`。无授权财务会话自然样本，线上性能对照仍开放，不声称已证实提速。
+- App 前端版本保持 v563；无数据库、权限、财务登录端口、历史财务数据或对象变更。
+- Current owner: Codex; Last Completed Work: operations-api v107 历史月报独立读取并发化部署；Open Work For Next Agent: v107 生产授权会话自然延迟证据；A02/Auth 身份核验、B01 历史账签认、G01 隔离恢复和获批配置仍未完成；Required Checks Before Publishing: 全仓 pre-push、GitHub main 同步、Edge frozen type check；Handoff Rule: 73/73 合成回归不代表生产延迟验收。
+
+## 2026-09-26 · 上线遗留项最新只读复核（目标继续未完成）
+
+- 本轮没有改动生产或本地业务代码。`operations-api` ACTIVE v106（部署时间 2026-09-26 10:08:22 UTC）之后的新结构化日志中，授权 `overview` 成功样本仅 2 次，p95 4,959ms / 最大 5,096ms；另 1 次无权请求 403（2ms）不计入。样本太少，只能作为初步信号，性能验收仍开放；不得据此宣称达标。
+- A02 最新生产聚合仍为 active legacy staff 26、有效 V2 employee 映射 23、有效审批白名单 2、白名单中已有 active V2 Auth 账号 1、active V2 Auth 账号共 2；最近 24 小时 Auth 迁移事件 2 次（成功 1、失败 1、阻断 0）。所有值均为汇总计数，未读取个人身份或凭据，也未绑定、停用、重置任何账号；真实员工身份/门店/角色核验及财务账号登录验收仍开放。
+- A02 按门店代码脱敏复核：向里造型 12 名在职旧员工 / 12 名 active V2 员工映射 / 1 个有效迁移白名单 / 0 个已关联 active Auth；自由手艺人 11 / 11 / 1 / 1。另 3 名在职旧员工没有 V2 员工映射，不能自动推断其归属门店。当前 active Auth 的有效角色范围只有公司级 finance 1 个、公司级 shareholder 1 个，门店级授权为 0；这不足以证明各门店股东数据隔离已实测通过。仍需管理员核对 3 名身份/门店并为真实门店股东完成获批授权和登录验收；不自动补映射或改变现有授权。
+- 为准备人工核对，对 3 个未映射的在职旧账号仅用其旧门店/岗位和账号显示名查询候选计数；结果在可识别门店内均为 0 个同名 active V2 员工候选。未读取联系方式/密码哈希，未在公开交接中记录账号标识；姓名或门店不一致时不能自动建映射，现等待管理员指定目标员工档案或确认保留/停用决策。
+- Supabase Advisor 最新聚合：security 有 42 条 RLS-enabled/no-policy INFO（其中 11 条 `zysyr_*`）和 1 条 leaked-password protection WARN；performance 有 135 条未索引外键 INFO（其中 128 条 `zysyr_*`）、145 条 unused-index INFO（其中 127 条 `zysyr_*`）、4 条 multiple-permissive-policy WARN（无 `zysyr_*` 命中）。对所有 `zysyr_*` 且 RLS 开启但无策略的对象，另以 `has_table_privilege` 检查 anon/authenticated 的 SELECT/INSERT/UPDATE/DELETE，有效授权结果为 0 行；没有根据 Advisor 批量改 RLS、Auth 或索引。
+- G01 仍未完成。现有生产组织 `taoyouming308-ui's Org`、区域 `us-east-1`；隔离项目成本查询为约 USD 10/月。数据库约 276.7 MB，私有财务 Storage 约 1.40 GiB。已向用户单独询问是否同意创建隔离项目并复制恢复样本，以及是否启用泄露密码防护；等待明确答复前，不创建项目、不复制数据、不改 Auth 策略。
+- 仍待外部业务人员处理：B01 3,739 条历史已入账待财务签认（其中 1,115 条 warning），不得自动确认；care outbound 队列 ACL 生产变更继续等待安全 worker 认证方案/用户选择；真实财务设备、真实股东门店隔离、签名凭证查看、备份恢复抽验均未完成。本轮没有改历史数据、权限、登录端口或 LaunchAgent/TCC。
+- 上述实时证据仅用于审计状态，不代表全部修复完成。上线审计目标保持 active；本轮没有可发布的 App 代码变化。
+
+## G01 源码归档保留顺序加固（本地回归通过，DB/Storage 灾备仍未完成）
+
+- 复现并修复源码备份脚本的清理顺序缺陷：过去先删超 30 天本地归档，再尝试云端复制；若云端目标失败，会丢失本地旧恢复点。现在先检查本地 tar，再复制至云端临时文件并逐字节 `cmp`，原子落盘后才清理过期云端/本地归档；云端失败时本地旧归档保持不动。
+- `node scripts/test-zysyr-backup-retention.js` 先在旧逻辑上按预期失败（明确证实旧归档会在云端失败时被删除），修复后通过；同时 `bash -n scripts/backup-zysyr.sh` 与 `git diff --check` 通过。测试只使用隔离临时目录和合成文件。
+- 当前 App version 仍为 v563，本次仅为备份脚本/测试/交接文档维护，不部署网页或 Supabase。未运行真实备份脚本、未访问/复制生产 DB 或 Storage 对象。G01 仍等待获批的隔离目的地与费用，以及数据库和对象真实恢复抽验；LaunchAgent/TCC 仍未改动。
+- Current owner: Codex; Last Completed Work: G01 源码归档失败保护及隔离回归；Open Work For Next Agent: A02 身份/真实账号验收、B01 历史账签认、G01 DB/Storage 隔离恢复、共享权限决策、真实设备/性能验收仍开放；Required Checks Before Publishing: 本地脚本测试、版本/发布/同步检查及仓库门禁；Handoff Rule: 源码归档和合成测试不等于生产 DB/Storage 灾备恢复。
+
+## v563 月报整月日报可读布局（已发布）
+
+- App version: v563。将已入账日报的整月业绩从原月报 22 列表格右侧移出，放到月报区域前部独立展示：宽屏为 8 列整月表，手机窄屏为逐日卡片和月合计。原始月报表不被覆盖，仍完整保留在下方；空缺日期显示“—”，只汇总已入账的当前门店日报，日期入口保留日报追溯。
+- 本地 Chromium 回归通过：桌面、手机竖屏/横屏、平板尺寸下检查表格/卡片切换、数字边界、无横向页面溢出；工资表和原始月报适配回归未退化。财务 73/73、全仓 pre-push 门禁及 47 项同步测试通过。提交 `61ebe742c34a1477b65735f672e6c34940f189f2` 已推送 main；GitHub Validate `36243451181` 与 Pages `36243450907` 成功；无缓存确认 `version.txt=563`、`operations.html data-version=563`，模块 SHA-256 `23e5e170187d2a4ff5b137085d1f5ac8db591c13e4a26f2b48f0e5e48785d964` 与提交源码一致。真实 iPhone/iPad 和财务账号仍需验收。
+- 仅改 HTML/显示模块/回归测试/版本标记；未改 Supabase、财务 API、数据库、权限、历史账务/公式、原始凭证或财务独立登录入口。
+- Current owner: Codex; Last Completed Work: v563 月报可读布局已通过线上回读；Open Work For Next Agent: 上线审计其余 A02、B01、G01、共享权限及真实账号/设备验收持续未完成；Required Checks Before Next Publishing: fetch/版本/release/agent sync 检查、财务测试清单、pre-push、GitHub Actions 与 Pages 无缓存核验；Handoff Rule: 合成回归与 Pages 部署不等于真实财务账号和设备验收。
+
+## 共享业务数据权限：护理出库队列客户端封闭（迁移已测，生产待审批）
+
+- 2026-09-26 生产只读目录复核：`public.care_outbound_queue` 仍有 3 条授予 `anon` 的无条件 SELECT/INSERT/UPDATE RLS 策略；`anon` 与 `authenticated` 对该表有效享有 SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER，`service_role` 也有完整权限。只查询了 ACL/RLS 元数据，没有读取队列业务行。
+- App 的 `CARE_OUTBOUND_AUTOMATIC_ENABLED` 当前固定为 `false`；新增、重试、恢复和状态刷新都短路跳过浏览器队列请求。更正：仓库与 `~/.hermes/scripts/` 安装副本的 `care_outbound_worker.py` 都将 `sb_publishable_...` 用作 Data API `apikey` 和 Bearer token，并关闭 TLS 证书校验；它不是 `service_role` worker。故撤销 `anon`/`authenticated` 权限后，worker 若重新启用将无法访问队列表，TLS 设置也有中间人风险。当前 LaunchAgent label 在 gui/501 中未加载、tracked store config `runtime_enabled=false`；生产队列状态聚合为 completed 275、failed 1、legacy_review 11、needs_review 14，无 pending/processing。macOS 拒绝本会话读取进程列表，因此不宣称其他方式启动的进程不存在。
+- `20260926103914_care_outbound_queue_private_acl.sql` 在隔离 PostgreSQL 17 的 ACL 回归已通过，且保留 `service_role` 与行数据；但该测试没有覆盖真实后台 worker 的 publishable-key 身份，**不足以作为生产部署依据**。应用前需要先为后台 worker 设计/部署受限的服务端认证并恢复 TLS 校验，或由用户明确接受 worker 继续停用；没有删除或改动任何队列数据。
+- `node scripts/test-care-outbound.js`、隔离 ACL PostgreSQL 回归及完整 `.githooks/pre-push` 均已通过（含 73 项财务测试、浏览器视口测试、共享权限回归和应用测试）。生产迁移尚未应用。此前“worker 通过 service_role”的依据已被本轮实际源码/安装副本证据推翻，因此旧审批提问作废；现等待用户选择“先设计兼容的安全后台认证，再收紧 ACL”或“立即收紧 ACL 并继续停用 worker”。只有收到明确选择后才可实施；随后需回读 grants/policies 并验证后台访问。此变更不涉及财务表、金额、历史账、财务公式或财务登录端口。
+- Current owner: Codex; Last Completed Work: 生产权限元数据复核、隔离迁移回归及完整发布门禁；Open Work For Next Agent: 等待用户批准后应用并回读生产权限；Required Checks Before Publishing: 发布门禁通过；生产核验及对应 CI 状态待确认；Handoff Rule: 合成数据库通过不等于生产权限已经收紧。
+
+## operations-api v106 月报总览独立读取并行化（已部署，性能观测待样本）
+
+- 基于生产日志中的 v105 `overview` 慢请求样本（3 次成功调用，约 14.4–14.7 秒），将月报列表/日报来源/股东签认读取、凭证与上传人读取、月报单元格与证据规则读取、各类修订/锁/收入调整读取改为并行等待；仅并行彼此独立的只读请求，不改筛选条件、金额计算、财务公式、数据库、权限或登录端口。
+- 定向回归与完整 `npm run test:finance` 73/73 通过。完整仓库 pre-push 门禁（财务 73 项、应用/权限/前台及美管加同步测试）通过；GitHub Validate #36234632685 与 Pages build #36234632382 成功，Validate 包含 Deno 2.9.6 冻结依赖类型检查。
+- 提交 `298de94` 已推送 `github/main`；生产 `operations-api` 已为 v106 ACTIVE，整包 10 文件与 main 本地版本逐文件完全一致，`verify_jwt=false` 与 import map 均保持。无会话 overview 生产探针返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。没有部署迁移、改账、改权限或改财务独立登录入口。
+- App 前端版本仍为 v562；本次是独立 Edge Function 更新，Pages 内容未变。v105 基线只有 3 个 `overview` 慢请求；v106 部署后的已发请求尚无有效登录业务样本，匿名 403 不作为性能样本，需取得自然产生的授权 overview 请求后再比较耗时。上线审计目标仍保持 active。
+- 本机浏览器验收规则：优先使用已连接浏览器工具或应用内浏览器；不得在受限 shell 直接启动 Chrome/Chromium/Playwright/Puppeteer。若出现 `SIGABRT`、`_RegisterApplication` 或 `TransformProcessType`，停止原样重试并区分测试浏览器启动故障与业务会话问题；不得退出日常浏览器、批量结束进程或清理用户配置。
+- Last synchronized base checked: `298de94`; Current owner: Codex; Last Completed Work: v106 API bundle deployed and source/auth rejection verified; Open Work For Next Agent: A02, B01, G01, shared app permission remediation, real-account/device acceptance, and representative post-v106 performance evidence remain open; Required Checks Before Next Publishing: fetch main, release/sync hooks, complete pre-push suite, GitHub Actions and production readback; Handoff Rule: local tests and anonymous auth probes do not equal real finance account acceptance or post-deployment performance proof.
+
+## v562 工资表 Safari 窄屏适配（已发布）
+
+- App version: v562。继续上线审计整改中的已知 UI 缺陷：WebKit 下原工资表 `CSS zoom` 被最小字号限制，手机竖屏表格仍溢出（复现值：wrapper 376px、scrollWidth 635px）。`operations-report-fit.js` 现对工资表改用整表几何缩放；保留 21 列/金额和原生手势放大，输入框仍可交互。不改财务公式、数据、数据库、权限、凭证或独立财务登录入口。
+- `scripts/test-operations-report-fit.js` 新增 WebKit 工资表覆盖，断言适配边界、缩放路径和输入交互；WebKit、Chromium phone portrait/landscape、iPad、desktop 以及定向重测和 `git diff --check` 已通过。截图仅为本地 synthetic preview；生产设备未验收。
+- 修改前 `git fetch github main` 与版本/release/agent-sync 检查通过；当天源码恢复归档已存在。完整 `npm run test:finance` 73/73、完整预推送门禁、WebKit/Chromium报表适配及交互检查通过。提交 `635fe0596258e7308d3f7e2229e196af62f0ab3d` 已推送 GitHub main；Validate `36232501432` 和 Pages `36232501018` 均成功。线上无缓存 `version.txt=562`、`operations.html data-version=562`，`operations-report-fit.js` SHA-256 与提交文件一致。未改数据库、财务金额/公式、权限或独立财务登录入口。真实 iPhone/iPad 与财务账号体验仍待用户验收。
+- Last synchronized base checked: `635fe0596258e7308d3f7e2229e196af62f0ab3d` (`github/main`); Current owner: Codex; Last Completed Work: v562 工资表 WebKit overflow 修复已发布且线上文件/版本回读一致；Open Work For Next Agent: 独立上线审计仍有 A02、B01、G01、共享表权限及真实账号设备验收未完成；Required Checks Before Next Publishing: 完整财务/仓库测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 本地合成测试不等于真实设备/生产账号验收。
+
+## 继续推进状态（2026-09-26）
+
+- 上线审计目标保持未完成 / active。本轮重跑 A02 本地回归：`test-zysyr-legacy-login-security.js` 与 `test-operations-auth-migration.js` 均通过；仅验证本地兼容登录门禁和滚动迁移，不代表生产门禁已部署或真实员工已迁移。
+- 2026-09-26 生产 Auth 最新聚合只读复核：在职员工 26、有效 Auth 账号 2、获批迁移白名单 2；仅 1 条白名单可与在职员工及有效 Auth 账号匹配。Security Advisor 仍报告 leaked-password protection disabled。未读取账号标识/密码、未创建或绑定用户；仍需管理员核对身份、门店与角色并确认密码策略变更影响。
+- 2026-09-26 后续生产源回读确认 `operations-api` 当前为 ACTIVE v106（`verify_jwt=false`，符合该端点既有自定义会话认证配置）：代码包含旧兼容会话签发时拒绝已有 Auth 迁移状态的身份、失败关闭的迁移状态检查，以及读取时同时验证未过期和创建时间不超过 30 天。此为生产函数源/版本证据，不等于真实员工逐一登录验收；26 名在职旧员工的身份/门店/角色映射仍未完成，财务独立登录入口保持不变。
+- 2026-09-26 13:25 UTC 刷新生产性能日志（最近 24 小时，按 `operations-api` function id 聚合）：v106 成功 POST 11 次，p50 2,671ms / p95 4,696.5ms / max 5,638ms，另有 1 次 403；v105 成功 POST 10 次，p50 2,341ms / p95 13,965.7ms / max 15,484ms；v104 成功 POST 26 次，另有 1 次 400。v106 `function_logs` shutdown 样本 CPU p50 237ms / p95 368ms、最大内存约 21MB，但运行时样本与请求样本不保证一一对应，且未记录业务动作标签，故只能提示等待型 I/O 值得调查，不能定位到具体 SQL/RPC 或据此宣称性能达标。需要真实财务账号下按具体操作补充可关联的性能测量；未为测性能调用写接口或读取用户身份数据。
+- A02 的生产旧登录保护已由 v106 源回读确认；仍等待管理员逐一确认身份/门店/角色，以及真实员工账号登录验收。不自动绑定或停用账号，财务独立登录入口不变。G01 已查到完成的物理备份点，但仍等待获批隔离目的地/实际费用及数据库与 Storage 恢复抽验；B01 仍等待财务签认历史 warning；真实财务设备及股东门店隔离验收仍待相关人员配合。
+- 2026-09-26 再次对生产历史导入行做脱敏聚合：2026-01 至 2026-06 共 3,739 条，`review_status=pending` 全部未签认，其中 2,624 条 valid、1,115 条 warning；各月 warning 数仍为 224、122、195、190、206、178。检查了签认路径：Edge API 与数据库 RPC 都要求 `expense.create_submit` 财务能力、说明理由并拒绝无效行；整月原表签认只写审核状态/审计事件，不会写正式历史账；之后的批次确认另行要求全部明细已确认。未查询金额/人员/原文，也未执行签认、正式入账或历史更改。
+- 本轮工资表适配是本地前端显示修复；没有生产写入、部署、数据库/Storage/Auth/权限/历史财务数据变更。只有取得对应外部授权并回读到生产/真实用户证据后，才关闭相应上线门槛。
+- 继续只读复核 `care_outbound_queue`：RLS 已启用，但生产仍有面向 `anon` 的无条件 SELECT/INSERT/UPDATE 策略；`anon` 与 `authenticated` 均保留该表所有权级 DML/TRUNCATE 等 grant，`service_role` 也有全权限。表无门店列。前端 `CARE_OUTBOUND_AUTOMATIC_ENABLED=false`，专项测试确认当前新增/重试均跳过队列；后台 worker 实际使用 publishable key（更正前述误判），因此直接撤销 anon 权限会破坏后续 worker 运行。生产权限变更仍待设计兼容的受限后台认证并取得确认；没有读取业务行、改策略或 grants。
+- 2026-09-26 最新 24 小时 `operations-api` Edge 聚合仍是 v104 175 个 POST 200（p50 1,927ms / p95 5,408ms / max 10,582ms）、6 个 POST 400、3 个 POST 403、125 个 OPTIONS；v105 只有 1 个 OPTIONS，没有业务 POST，函数日志仍只有该版本的一条 Log。当前性能结论为新版本缺代表性样本、整体旧版 POST 有较长延迟；未把延迟归因到单个 RPC/SQL 或宣称优化见效。
+- G01 复核：生产 DB `pg_database_size` 为 276,688,019 bytes；Storage 元数据汇总为 `zysyr-reports` 74 对象 / 274,875,340 bytes、`zysyr-vouchers` 349 / 1,228,759,809 bytes、公开 `showcase` 2 / 5 bytes。仅查数量与 size，没有读取对象内容。当天源码归档 `ZYSYR_2026-09-26_111333.tar.gz` 可由 `tar -tzf` 完整读取，但 LaunchAgent 仍 `not running`、runs=4、last exit=126；都不构成 DB/Storage 备份或恢复演练。
+- G01 2026-09-26 增补：生产项目当前物理备份列表返回 8 个连续日期的 `COMPLETED` 点（2026-09-19 至 2026-09-26，最近点 06:36 UTC），WALG 开启、PITR 关闭。当前 Supabase CLI `backups restore --help` 仅提供带时间戳的 PITR 恢复参数，故不可用来对当前生产项目做隔离物理备份演练；须在明确审批目标后按官方“恢复到另一个项目”流程验证。恢复目标及费用确认前未创建项目、导出数据库或复制 Storage 对象。
+- 终端普通沙箱下 GitHub SSH fetch 曾被拒绝；在获准网络执行环境完成 `git fetch github main`，基线为 `578a2cee3a1cc501ba455ceeee98dba9f94cff8e`。修改前版本同步、release integrity、agent sync 三项均通过 v561，今日源码归档存在。该同步结果不等于发布或生产修复已完成。
+
+## P0 权限复核：共享 Supabase 中遗留的公开业务表（2026-09-26，只读，待授权整改）
+
+- 对 15 张非财务 public 表只查了 `information_schema`、`pg_policies` 和有效权限，没有读取业务行或执行写入。anon 与 authenticated 均获这些表的 INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER 表级授权。
+- 7 张表存在 `TO public USING (true) WITH CHECK (true) FOR ALL`：`care_products`、`care_records`、`coach_messages`、`coach_scores`、`coach_sessions`、`hair_records`、`showcase_images`。另 `hair_analysis_queue` 与 `care_outbound_queue` 允许 anon 全表 SELECT/INSERT/UPDATE；`mgj_service_records` 允许 anon/authenticated 全表 SELECT，并可对 `source='meiguanjia'` 的记录 INSERT/UPDATE。活跃 `perm-app.html` 直接用 publishable key 访问其中多张表，查询字段含顾客姓名/电话、头发记录及分析；这是可由 Data API 触达的跨用户读写边界，不是 Advisor 告警本身。
+- `content_articles/settings/titles`、`hair_analysis`、`shooting_methods` 当前 RLS 无策略，虽有表级授权，当前 RLS 会挡常规 REST 行访问；但表级 TRUNCATE 不受 RLS 保护，PostgREST 本身没有直接 SQL TRUNCATE 端点，未发现/测试可利用的公开 RPC。不能把该风险表述成已证明可由普通 HTTP 用户直接 TRUNCATE。
+- 财务 `zysyr_*` 表单独复核：anon 无表级权限；authenticated 仅有 88 张表的 SELECT，没有 INSERT/UPDATE/DELETE/TRUNCATE。日报/月报/收入/付款/历史账/凭证关键读策略调用 `zysyr_private.has_capability(company_id, store_id, ...)`，工资读取另校验 `salary.read` 或本人；函数把 `auth.uid()` 绑定到 active 账号并校验公司、门店授权。筛查未发现这些财务表 `USING/WITH CHECK true` 的策略。真实股东双门店/跨公司 token 验收仍未完成，不能仅凭 SQL 定义宣称验收通过。
+- 2026-09-26 追加只读核对 public 下 112 个 `zysyr_* SECURITY DEFINER` 函数：`anon` 可执行 0、`authenticated` 可执行 0、缺少函数级固定 `search_path` 为 0；按财务命名筛查且可被上述角色调用的 definer 函数为 0。该结论只覆盖函数权限/配置，不替代真实会话下的股东门店隔离验收。
+- 2026-09-26 本地 `npm run test:finance` 完整跑完 73/73：需本机 listener 与 OrbStack 的隔离 PostgreSQL 用例在普通沙箱首次执行时因环境权限无法启动；在批准的本机测试环境中重跑后，浏览器、Auth、财务、数据库隔离测试全部通过。仅为本地合成/隔离测试，不构成真实财务账号、生产 API、跨门店 token 或线上凭证验收。
+- 2026-09-26 另行重跑股东报表权限专项：`test-staff-report-browser-v514.js` 通过（股东月/日报显示、无财务登录闪屏、只读、无识别任务、财务会话隔离、权限撤销、横屏适配）；`test-staff-report-access-v514.js` 的 Edge 合成会话/操作白名单/门店范围拒绝全部通过，断网 PostgreSQL 17 子测也通过（ACL、管理员角色、门店 grant、离职会话撤销、原子回滚、审计记录和财务 fixture 不变）。普通沙箱首次被 loopback/Docker 权限挡住，批准的本机测试运行通过；这仍不是线上真实股东账号/双门店 token 验收。
+- 2026-09-26 继续运行 `test-zysyr-report-permissions-v512.js`：隔离 PostgreSQL 17 权限回归通过，3 张报表表保留数据/`service_role` 访问，anon/authenticated 的直接读写被阻断，4 个 RPC 不可被客户端角色直接执行；测试容器断网，仅合成数据，不访问/修改生产数据库。
+- 2026-09-26 后续生产有效权限复核（Supabase 只读 SQL）：`zysyr_cash_opening_balances`、`zysyr_report_acknowledgements`、`zysyr_shareholder_registrations` 均启用 RLS；anon 的 SELECT/INSERT 与 authenticated 的 SELECT/INSERT/UPDATE 均为 false，service_role SELECT 为 true。`zysyr_acknowledge_report`、`zysyr_admin_complete_shareholder_account`、`zysyr_record_petty_cash`、`zysyr_upsert_cash_opening_balance` 对 anon/authenticated 的 EXECUTE 均为 false、service_role 为 true。没有读取行数据或更改权限。本轮重跑隔离专项脚本被本机 OrbStack Docker socket `permission denied` 阻止，因此本轮没有新的本地容器测试结果；不得将生产 ACL 回读误作真实股东会话/跨门店 token 验收。
+- 不能直接撤销全部 anon/authenticated grants：活跃浏览器页面仍有上述表的直接读写调用，立刻撤权会中断功能。需先获得用户确认把客户/员工数据权限整改纳入本轮，再将调用迁到经过认证及门店范围校验的 API、补兼容回归，最后单独批准生产 RLS/GRANT 切换；当前未做任何权限变更。
+- 2026-09-26 静态扫描当前 `perm-app.html` 的 `/rest/v1/...` URL，直接涉及 8 张表：`hair_records`、`care_records`、`hair_analysis_queue`、`care_outbound_queue`、`mgj_service_records`、`showcase_images`、`perm_data`、`staff`。其中前 6 张包含顾客/发质/服务记录或展示图工作流；若要纳入整改，需要逐类替换其浏览器读写调用并为页面保持既有行为，不能仅移除 grants。此项仅为静态调用清单，不据此假设各表所有路径都由 anon 权限成功放行。
+- 2026-09-26 继续检查调用点：`perm-app.html` 对上述 8 张表有 42 处 `/rest/v1/` 引用；这些调用使用公开 publishable `apikey`，没有随请求携带员工身份 bearer token。现有 `employee-bookings-api` 通过哈希后的 `employee_booking_sessions` token 校验员工 active 状态和当前门店，但仅支持预约、客户资料/历史；`staff-access-api` 的会话限定 admin/store_admin 并服务员工管理，不能直接复用为全员敏感数据代理。若要收紧，需先设计按业务角色/门店过滤的专用操作，再分模块迁移并回归，最后单独批准生产策略/GRANT 切换；未执行任何生产写操作。
+- 2026-09-26 继续只读梳理实现边界：`employee-bookings-api` 的会话解析会重新读取当前 `staff` 状态并校验当前门店，现有可用操作仅为 `session`、`today_bookings`、`customer_profiles`、`customer_history`；它没有发质档案、护理记录、分析队列或美管加服务记录代理。不能只把浏览器 URL 改成该 API 就认为风险关闭。已有元数据显示 `hair_records` 缺独立门店列，不能安全地按当前登录门店过滤历史档案；应先逐模块确定可信门店关联和完整 CRUD 业务路径，再实现/测试专用代理，最后单独批准生产 grants/RLS 收紧。此轮仅检查源码与既有列级元数据，没有改代码或生产状态。
+- 2026-09-26 只读重查上述表的生产 RLS/GRANT 元数据：`hair_records`、`care_records`、`showcase_images` 对 `public` 有 `ALL USING true WITH CHECK true`；`hair_analysis_queue`、`care_outbound_queue` 对 `anon` 的 SELECT/INSERT/UPDATE policy 条件为 true；`mgj_service_records` 对 anon/authenticated 可全表 SELECT，且可对 `source='meiguanjia'` 写入/更新；`perm_data` 仅公开 SELECT；`staff` 虽有 SELECT policy，但 anon/authenticated 当前无表级权限。多个表同时授予 anon/authenticated 多项表级 DML 与 TRUNCATE 权限。此为权限与策略元数据检查，未查询业务行；不要把 TRUNCATE 表级授权误说成已验证存在普通 REST 调用路径。
+- 2026-09-26 只读检查数据模型列：`hair_records` 没有专用门店列，仅有 barber/technician 和 `record_data` JSON；`care_records`、`hair_analysis_queue`、`mgj_service_records` 则有 `shop_name`。因此先迁移有明确门店列的门店队列/护理/美管加读写相对可控；发质档案需先确认历史行门店归属能否由可信数据确定，不能按当前员工门店或前端传值臆测，更不能给旧档案错分店。
+- 生产 Supabase Advisor 于 2026-09-26 06:27Z 刷新：security 仍为 42 条 `rls_enabled_no_policy` INFO 和 1 条 leaked-password protection disabled WARN；performance 仍有 135 条 unindexed-FK INFO、4 条 multiple-permissive-policy WARN，以及 unused-index/Auth-connection INFO。结果覆盖共享项目全部业务模块，不能将汇总告警全归属财务 App，也没有据告警批量改权限、Auth 或索引。
+- Auth 警告只读复核了 Supabase 当前官方[密码安全文档](https://supabase.com/docs/guides/auth/password-security)：泄露密码保护通过 Auth 设置启用，Pro 及以上计划可用；文档说明更新密码要求可能使不符合强度规则的既有账号在登录时出现 `WeakPasswordError`。这与“仅阻止新设/改密”不同，故在真实财务账号及现行长度/复杂度设置未核验前，不直接切生产开关；现有 MCP 不提供读取/更新该 Auth 设置的专用接口，本轮未改生产 Auth 配置。
+
+## G01 生产备份范围核验（2026-09-26，只读文档与项目元数据）
+
+- Supabase 官方[数据库备份文档](https://supabase.com/docs/guides/platform/backups)说明 Pro 项目按日自动备份、可访问最近 7 天；当前已从实时列表核实生产有 8 个连续日 `COMPLETED` 物理备份，PITR 未启用。数据库备份不包含 Storage 对象；恢复到另一项目也需单独迁移 Storage 对象和重建桶/函数/Auth 设置。生产项目恢复会造成不可访问，不能拿生产 restore 当演练。
+- 2026-09-26 重新核实官方备份文档：可通过 Management API `GET /v1/projects/{ref}/database/backups` 列出恢复点，但当时的 MCP 未提供备份列表方法、shell 没有 `SUPABASE_ACCESS_TOKEN`；Dashboard 浏览器初始化超时。
+- 2026-09-26 后续只读补证：Supabase CLI v2.109.1 的 `supabase backups list --project-ref pdssrmpeiuwvxzsgschm` 成功返回生产备份元数据：`walg_enabled=true`、`pitr_enabled=false`，最近一次物理备份 `COMPLETED` 于 2026-09-26 06:36:41 UTC，并列出 8 个连续日完成点（2026-09-19 至 2026-09-26）。这证明平台有完成的备份点，不证明可恢复；没有下载、复制或执行恢复。
+- Supabase 当前官方指引提供 “Restore to another project” 的物理备份恢复流程；数据库恢复与 Storage 对象恢复仍是分离步骤。当前项目属于 `taoyouming308-ui's Org`；已向用户询问是否在该组织查价并准备隔离环境，尚未创建项目、恢复数据库或复制约 1.40 GiB 对象。
+- 生产 `storage.objects` 策略只读查询返回空集（已授权删除的 `anon_all` 不存在）；Storage 当前为 2 个私有桶、1 个公开桶。空策略意味着对象 API 访问不应依赖匿名直连；签名链接/公开展示桶的实际读取验收仍待完成。
+- 2026-09-26 只读容量估算（仅 `storage.objects` 元数据 size 聚合，未读对象内容）：`zysyr-reports` 74 个对象 / 274,875,340 bytes，`zysyr-vouchers` 349 个 / 1,228,759,809 bytes，`showcase` 2 个 / 5 bytes；数据库 `pg_database_size` 为 276,679,827 bytes（约 264 MiB）。Storage 对象合计约 1.40 GiB，连同数据库约 1.66 GiB 原始数据；恢复空间还需覆盖临时文件、索引/数据库恢复开销及版本/桶配置，不能据原始大小直接当作磁盘下限。该清单可用于备份容量规划，不等于已经备份或完成恢复。
+- 权限边界复核：关键财务 3 表对 `anon` 和 `authenticated` 的表级 SELECT/INSERT/UPDATE/DELETE 均无权限，`service_role` 仍有服务访问；`storage.objects` 表级 CRUD grants 对 anon/authenticated 仍存在，但 RLS 已启用、无策略，使用 `SET ROLE anon` 的只读查询返回 0 个对象。该结果证明当前匿名读被 RLS 拦截，不代表表级授权已被撤销；未做 Storage 写探针或修改 grants/policy。
+- 2026-09-26 当前 Supabase 账号下只列出生产项目 `pdssrmpeiuwvxzsgschm`，`list_branches` 返回空；本地 `scripts/backup-zysyr.sh` 仅打包源码并排除 `.git`、`node_modules`、`backup.env` 等，不包含数据库 dump、Storage 对象复制或 restore 命令，不能充当 DB/Storage 灾备。创建隔离 Supabase 项目的当前成本查询为每月 USD 10；等待用户确认费用后才可创建，未创建任何资源。
+- 当前完整审计仍要求隔离恢复练习：已核实有最新 completed physical backup，但没有生产 DB/Storage 恢复点进入隔离目标的证据。新项目/分支需另行确认组织和当前价格；复制约 1.40 GiB 私有财务 Storage 对象也涉及获批目标与数据复制授权。恢复范围仅限隔离目标，禁止对生产执行 restore。
+- 安全演练应先经用户批准备份目的地与费用，再分别验证数据库恢复到隔离项目、Storage 对象校验和权限/函数配置重建；不对生产执行 restore、不复制财务对象、不启用 PITR、不更改 LaunchAgent/TCC。2026-09-26 再读 `launchctl print gui/501/com.zysyr.daily-backup` 仍为 `state=not running`、last exit code 126；未尝试加载或修改 LaunchAgent/TCC。
+
+## B01 历史正式账待签认行脱敏分桶（2026-09-26，只读）
+
+- 对生产 `zysyr_history_ledger_entries` 仅执行聚合 SELECT，按月、账类、已存储校验状态分组，未返回姓名、金额、源定位、payload、原表行或凭证内容。当前 posted 状态待签认 3,739 行：valid 2,624、warning 1,115；查询分桶覆盖 2026-01 至 2026-06，reversed 为 0。
+- warning 问题代码的非互斥受影响行数：monthly `label_unresolved` 953；employee_purchase `product_unmatched` 88、`employee_unmatched` 19、`retail_sale_preserved` 12、`possible_duplicate` 8；salary `employee_unmatched` 66、`net_formula_mismatch` 1；petty_cash `sequence_unusual` 7。单行可能同时带多个代码，因此代码行数不可相加替代 1,115 个 warning 行。
+- 按 `period_month × entry_type` 重新脱敏交叉核对：warning 行在 2026-01 至 06 分别为 224、122、195、190、206、178，合计 1,115；账类合计 monthly_profit_loss 953、employee_purchase 88、salary 67、petty_cash 7。2026-05 的 206 行中有 4 行 petty_cash warning；此前简略分桶摘要未单列，这次用月度总数及 5 月分类聚合复核，未读取明细。
+- 结果支持财务按月/账类/问题代码安排逐笔核对，但不能替代源凭证审核或财务签认。没有更新 review_status、修正金额、导入历史账或改变任何生产行。项目当日恢复备份脚本确认源码归档已存在，未新增归档。
+- Last Completed Work: 只读完成 warning 分桶；Open Work For Next Agent: 由财务按正式原件逐批核验并通过受审计工作流签认/更正；不得批量确认或按代码自动修复。
+
+## A02 旧兼容登录收口第一步（v106 已部署，真实账号验收待完成）
+
+- `operations-api` 本地改动仅作用于 Auth 身份映射后的旧登录旁路：先用旧 staff 主键精确查 `zysyr_legacy_id_map`，再按 company + employee 读取 V2 account 状态。唯一映射且账号为 active/suspended/disabled 时拒绝签发旧兼容会话；已发出的旧会话在恢复时应用同一门禁。邀请中/未绑定账号保持原过渡通道；身份读取失败、映射不唯一或格式异常时 fail closed。
+- 2026-09-26 随 `operations-api` v106 整包部署，生产 bundle 已确认包含 `legacyStaffHasManagedV2Account` / `supabase_auth_required` 门禁；10 个 bundle 文件与 main 逐文件一致，`verify_jwt=false` 与函数内 Auth 校验保持。`operations-auth-migrate` v6、`operations-auth` v6 ACTIVE。
+- 生产脱敏聚合：旧 active staff 26；映射到 active V2 员工 23，其中 22 名尚无 V2 account、1 名已有 active account；legacy→employee 映射总数 27；active approved allowlist 2。当前 active V2 Auth account 总数 2：1 个关联有效旧员工迁移白名单，另 1 个未关联该白名单（不据此推断角色或权限）。本次只查 counts，没有查看姓名、账号标识、哈希或业务凭证。
+- 本轮本地重新运行 `node scripts/test-zysyr-legacy-login-security.js` 与 `node scripts/test-operations-auth-migration.js` 均通过。门禁仅阻止已精确映射且 V2 账号已管理的员工继续获得旧兼容会话；旧登录入口仍保留给过渡账号。不得据聚合数批量建号、停用账号或改变财务登录端口。生产真实账号登录/恢复验收仍未完成。
+- 前端财务登录入口、用户名/密码界面、旧登录接口及 Supabase Auth 回退均未移除；Auth 成功后清除浏览器里的旧兼容 token。财务数据、公式、DB/RLS/GRANT、真实账号/历史记录均未更改。
+- 定向 `node scripts/test-zysyr-legacy-login-security.js`、`node scripts/test-operations-auth-bridge.js`、`node scripts/test-operations-auth.js` 与 `git diff --check` 已通过；Auth bridge 回归新增断言，确保旧登录被拒绝时仍执行 Supabase Auth 并清除旧 token。提交 `60affb7` 已推送 `github/main`，推送钩子完整通过（73/73 财务测试、其余 App 回归、47 项美管加同步测试）；GitHub Validate run `36218103714` 成功，Deno frozen `operations-api` 类型检查成功，Pages run `36218103325` 成功。真实财务账号验收未完成。
+- 修改带来旧兼容登录/恢复最多增加两次窄范围 service-role 查询；DB 暂时不可用时未迁移账号也可能暂时无法通过旧通道登录，需纳入真实验收。没有更改账号、密码、会话、登录端口或财务数据。
+- A02 仍未关闭：管理员需逐账号确认身份/门店/角色，并在真实财务端分别验收已迁移和未迁移账号；不得自动建号、改密码、撤销会话或停用财务登录。
+- Current owner: Codex; Last Completed Work: `operations-api` v106 已生产部署且 Auth 精确映射门禁已回读；Open Work For Next Agent: 管理员确认后做真实迁移账号/未迁移账号登录验收；Required Checks Before Next Publishing: fetch、版本/发布/同步门禁、完整财务与仓库 pre-push、GitHub Actions；Handoff Rule: 代码与 bundle 回读不等于真实财务账号端到端验收。
+
+## 上线审计：operations-api 操作级耗时诊断（v106 已部署，性能根因待观测）
+
+- 2026-09-26 11:16 UTC 再查近 24 小时结构化计时日志：v106 仅 1 个 `overview` HTTP 403（2ms，未授权探测，不是有效财务操作样本）；v105 有 3 个成功 `overview`（p50 11,489ms / p95 14,412ms / max 14,737ms）、1 个成功 `cell_trace` 4,540ms、1 个成功 `daily_sheet_month` 1,828ms、2 个 `history_evidence_images` 成功（p50 1,298ms / max 1,318ms）、1 个 `history_import_file_url` 1,471ms、1 个 `daily_recognition_job_read` 1,054ms、1 个 `session` 890ms，另有 8 个 unknown/200（预检）。这些有效成功样本仍来自 v105；v106 尚无授权业务请求，不能证明并行读取优化效果。
+
+- 2026-09-26 早前生产日志聚合仅有 1 条 v105 `operation=unknown`、HTTP 200、1ms 的预检事件；该历史窗口不含有效业务路由样本，后续 11:16 UTC 刷新结果见下。
+- 2026-09-25 07:34:47Z 至 2026-09-26 07:34:47Z 重新查生产 `function_logs`，在线 v105 仍仅有上述 1 条 `operations_api_timing`：OPTIONS 预检、operation unknown、200、1ms；该窗口没有可用的真实 POST/财务操作样本。计时日志管线有运行证据，业务端到端性能和是否改善仍不可判断。
+- 按函数版本重新切分同一窗口：v104 有 OPTIONS 125、POST 200 共 175、POST 400 共 6、POST 403 共 3；v105 仅 OPTIONS 1、无 POST。所有 11 个 ≥5 秒的 POST 200 和最长 10,582ms 样本都来自 v104。v105 的 `operations_api_timing` 结构化日志也仍只有 1 条，无法形成业务操作分布；不能把旧版慢请求归因于 v105，也不能据没有新样本声称性能已改善。
+- 2026-09-25 07:53:51 至 2026-09-26 07:53:51 UTC 再次只读刷新近 24 小时 Edge 网关统计：`operations-api` 共 310 次，v104 OPTIONS 125、POST 200 175（p50 1,927ms / p95 5,408ms / max 10,582ms）、POST 400 6、POST 403 3；v105 仅 OPTIONS 1（1,540ms），没有业务 POST。v104 的 175 个成功 POST 中仍有 11 个达到或超过 5 秒；这是函数总耗时，不是单个 SQL 或前端端到端时间。v105 尚无可用业务延迟样本，不能声称性能改善或把旧版慢请求归因于新版本。
+- 2026-09-26 当前生产 `pg_stat_statements_info.stats_reset=2026-06-09 23:21:03Z`。自重置以来财务 RPC 累计：日报确认 `zysyr_confirm_daily_sheet` 41 次，均值 1,486.68ms、最大 4,048.65ms；保存日报格子 75 次，均值 828.44ms、最大 1,824.97ms；应用识别候选 299 次，均值 799.73ms、最大 1,731.84ms；创建日报草稿 315 次，均值 274.15ms、最大 4,133.75ms。它们是跨三月累计的数据库语句数据，不代表当前版本或单次用户端到端延迟。统计中最慢的 2.53s 查询实际是 Supabase 元数据/表结构 introspection，不是财务交易。
+- 再查生产 `current_setting('track_functions')` 返回 `none`，因此没有 `pg_stat_user_functions` 子函数耗时可用于拆解日报确认内部阶段；未修改数据库参数。当前数据库证据不足以定位可安全优化的具体子查询，避免仅凭 1.49s 整体均值重写入账事务。
+- 2026-09-25 07:16 至 2026-09-26 07:15 UTC Postgres 日志安全聚合另见 195 个 PostgREST `authenticator` BIND / SQLSTATE `42501` 权限拒绝，另有 4 个 `mgmt-api` SELECT 错误。聚合日志没有可用的请求路径/财务操作标签；这些是拒绝结果，不能据此认定为数据泄露、财务用户错误或授权问题，也不据此改变 grants/RLS。PostgREST 聚合字段未提供可关联具体财务 API 的请求耗时，性能瓶颈仍未定位。
+- 复核本地日志钩子：`handleOperationsApiRequest` 在 OPTIONS 分支立即返回；业务 `operation` 只在 POST JSON 解析后提取并传给日志回调。因此唯一 v105 事件显示 `unknown` 符合预检路径，不表示操作名解析故障。当前没有足够 v105 业务请求样本来定位或验证性能修复。
+- 2026-09-26 最新 Advisor：Security 为 42 条 RLS-no-policy INFO、Auth leaked-password protection disabled WARN；Performance 为 135 条未索引 FK INFO、4 条重复 permissive policy WARN 和 Auth 固定连接数 INFO。范围包含非财务表；没有基于 Advisor 批量建索引、改 Auth 或改 RLS。
+- 06:01Z Advisor 的 4 条重复策略已只读核实：`perm_data` 的两条 `SELECT USING (true)` 与匿名/登录用户可读授权是配方查询的既有公开契约（字段为烫发配方/步骤，不含员工或财务记录）；不得为清告警撤销。`staff` 的两条 `SELECT USING (true)` 策略虽然冗余，但生产 `has_table_privilege` 对 anon/authenticated 均为 false，当前不能经 PostgREST 直接读取；未删策略或授予权限。另有 42 张启用 RLS 无策略的表，需与实际 grants 分开核验，Advisor INFO 本身不等于公开可读。
+- 同一日志窗口重新按 HTTP 方法/状态读取，发现慢请求主要在 POST 200；不能仅凭网关总耗时把根因归于数据库，也未尝试生产压测或执行会改财务数据的 API。
+
+- Last synchronized base checked: `37740b5d08bb6fe28eada7dfa5f45f96260da837` (`github/main`)，API 代码推送前完整 pre-push 通过：73/73 财务回归、其他 App 回归及 47 项美管加同步测试；GitHub Validate #36215938506 与 Pages #36215938437 均成功，Validate 的 Deno frozen 类型检查通过。该 API-only 变更未修改静态 App 资源，版本保持 v561。
+- 根据 24 小时线上聚合，`operations-api` 316 次成功、p50 约 1.51 秒、p95 约 4.14 秒、最大约 10.58 秒；Edge 网关只显示整函数耗时，缺少 operation 标签，当前无法证明具体慢在哪条 API。现仅给 Edge 请求增加 allowlist 操作名、HTTP 状态和总耗时的单条小型结构化日志；不读取第二份 body、不记录用户/门店/金额/凭证/URL/请求头，不改响应、财务逻辑、Auth、权限、数据库或 Storage。
+- GitHub main commit `ead651c` 已将完整 operations-api bundle 部署到生产 v105 ACTIVE；回读确认 `verify_jwt=false` 保持原值，在线源码包含 allowlist 与计时事件。无凭证 OPTIONS 探测返回 200；生产日志回读事件 `operations_api_timing` / `operation=unknown` / `status=200` / `duration_ms=1`，仅是预检请求，不含业务数据。
+- 本批是诊断能力，不是性能修复或 P0/P1 闭环。待收集至少 24 小时真实按 operation 分布的耗时与日志量，确认具体瓶颈后再按路由逐项修复；不要据单次 OPTIONS 耗时推断业务 API 性能，也不要过度采样扩大日志成本。
+- Current owner: Codex; Last Completed Work: operations-api v105 生产部署已核验；2026-09-26 补充复核了 Auth 聚合、LaunchAgent/源码归档与性能统计证据（均只读）；Open Work For Next Agent: 观察真实 operation 分布与日志量；等待旧员工身份映射、历史账签认、备份目的地/系统授权及真实财务设备验收；Required Checks Before Next Publishing: 完整财务测试、Deno frozen check、版本/发布/同步门禁、pre-push，按范围部署后回读 ACTIVE 版本、鉴权标志和所需运行证据；Handoff Rule: 未观察到有代表性的真实 operation 数据前，不声称性能问题已修复。
+
+## 上线整改续核（2026-09-26，只读状态与证据更新）
+
+- G01：当前 `com.zysyr.daily-backup` LaunchAgent 已指向本项目，但 `launchctl print gui/501/com.zysyr.daily-backup` 显示 `state=not running`、累计 runs=4、last exit code=126；错误日志最近仍为 macOS `Operation not permitted`。本机 2026-09-26 11:13 的源码 tar.gz 归档可完整列出，备份目录有 8 份近 30 天归档，且归档未包含 `backup.env`、`.git`、`node_modules`、`supabase/.temp`；这仅证明源码归档可读，不是生产 DB/Storage 备份或恢复演练。未改 LaunchAgent/TCC 权限，未导出生产数据；灾备目的地和隔离恢复仍待授权。
+- A02：生产匿名化聚合复核仍为 active legacy staff 26、approved allowlist 2、映射员工中具备 active V2 account 1（不要与 active V2 employee 档案映射数混为一谈）。近 24 小时 Auth 安全事件只有聚合计数：12 attempts、6 次 `invalid_credentials`、6 次 `direct_auth_login` 成功；没有读取用户标识或哈希，不能据此判断具体人员已迁移或授权停用旧登录。
+- 2026-09-26 再次只读回查确认员工迁移覆盖为 26 个 active 旧员工、23 个映射 active V2 员工（其中 22 个还没有 V2 account、1 个 account 为 active）、2 个有效审批白名单；迁移事件共 12 次 started、6 次失败、6 次 direct Auth 成功。生产源码回读确认 `operations-api` v105 ACTIVE 未包含 commit `60affb7` 的兼容登录门禁；定向本地测试通过。仍无身份级动作依据。
+- A02 当前仍未达到关闭条件：生产 `operations-api` v105 未部署旧兼容登录门禁；真实逐账号身份、角色/门店和 Auth 登录验收未完成。上述匿名化计数不授权自动绑定/停用账号；部署该门禁会改变已绑定员工的旧登录结果，需针对这一生产 Auth 行为取得确认，财务独立登录入口/URL 保持不变。
+- 性能：部署 v105 后最近 24 小时仅观测到 1 条 `operations_api_timing`，为 HTTP OPTIONS 预检；尚无真实 operation 分布。数据库 `pg_stat_statements` 自 2026-06-09 重置以来累计数据中，日报确认 RPC 平均/最大约 1.49/4.05 秒（41 次），保存单元格 0.83/1.82 秒（75 次），识别候选应用 0.80/1.73 秒（299 次），创建草稿 0.27/4.13 秒（315 次）。累计值不代表最近 24 小时或用户侧端到端延迟，只用于后续选取排查候选，不据此改索引/公式。
+- Supabase Advisor 2026-09-26 回读：Auth 泄露密码保护仍 disabled；42 个 RLS-no-policy INFO、135 个未覆盖外键 INFO、145 个未使用索引 INFO、4 个多 permissive policy WARN（涉及 staff 与 perm_data）。这些提示不是自动修复授权；未改 Auth 设置、RLS、GRANT 或索引。旧内容/分析表权限收紧仍等所有者对五张表直接 GRANT 的明确选择。
+- 当前继续开放的外部验收：A02 需管理员确认旧账号与员工/门店/角色映射；B01 需财务签认 1,115 条历史 validation warning；G01 需备份目的地、macOS 允许的运行位置/授权和隔离 DB/Storage 恢复抽验；真实财务账号/设备及股东门店权限需相应人员验收。未满足这些条件前不关闭上线门槛。
+- 本次只有只读生产查询、LaunchAgent 状态/日志核查和现有源码归档完整性检查；无代码、数据库、Auth、RLS、历史账、Storage 对象、端口或系统权限变更。
+- 本轮独立启动财务回归时，第 13 项因普通 shell 无权连接 OrbStack Docker socket 中止；随后完整 pre-push 在授权发布环境重跑全部门禁，73/73 财务回归、其他 App 回归及 47 项美管加同步测试均通过。GitHub Validate `36220733338` 与 Pages `36220732712` 也已成功。
+
+## 月报表字号微调（v561，已发布）
+
+- App version: v561。用户确认月报表在手机、iPad 和电脑都偏小；本批仅提高月报原始单元格、金额、整月日报栏和财务编辑输入的字号，不改表格列结构、财务数字、计算、数据库、权限或财务独立登录入口。
+- 继续用 v560 的整表 `scale` 防止 WebKit 最小字号跨格；长金额仍按单格实际宽度局部适配。Chromium/WebKit 合成浏览器回归覆盖手机竖屏、横屏、iPad 和桌面，完整金额不重叠、无横向表格滚动，新增字号回归断言。完整财务回归 73/73、版本/发布/同步检查和 App smoke 通过；生产真机仍待用户复核。
+- v561 提交 `bdb0ec0` 已同步 GitHub main；GitHub Validate 与 Pages 成功，生产 `version.txt=561`，`operations.html` 无缓存回读哈希与发布提交一致。用户已确认字号调整。真实财务账户真机验收仍待财务配合。
+- Last synchronized base checked: `bdb0ec0` (`github/main`); Current owner: Codex; Last Completed Work: v561 已发布，生产版本/文件回读一致；Open Work For Next Agent: 继续上线审计整改及真实财务账号验收；Required Checks Before Editing: fetch 与版本/发布/同步门禁、工作区状态检查、当日恢复归档；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
+
+## 上线整改：A02 / B01 / G01 生产复核（2026-09-26，只读与本地归档）
+
+- Supabase 生产只读聚合复核员工 Auth 覆盖：旧 active staff 26；映射到 active V2 员工 23；approved allowlist 2；具备 active Auth account 的旧员工 1。与 9 月 25 日计数一致。不能依据聚合结果自动补绑/停用账号；仍须管理员逐一确认身份、门店、角色与迁移安排，财务独立登录入口保持不变。
+- 历史正式账本只读聚合：posted 3,739；validation valid 2,624、warning 1,115；warning 记录仍全部 pending，confirmed 0、needs_correction 0。无金额、姓名、原始行或凭证内容被查询/返回；B01 仍须财务按门店/月/类型核对原表与凭证，未更改历史账。
+- 生产迁移账本只读列表与仓库最新迁移 `20260924051925` 一致，没有发现线上迁移落后。G01 本机 LaunchAgent 仍 inactive；错误日志确认 macOS `Operation not permitted` 阻止它读取/执行 Documents 下的脚本。今日项目源码归档已创建；它不包含生产数据库/Storage 备份，也不代表灾备恢复完成。尚需获批数据库/Storage 备份目的地与 macOS 授权，并做真实隔离恢复抽验；未导出生产数据或启用 PITR。
+- 本批没有生产写入、数据库/权限/财务逻辑/代码修改；只执行聚合查询、迁移账本列表与项目源码归档。A02、B01、G01 均保持开放并等待各自所需的管理员/财务决策或环境授权。
+
+## 凭证精确追溯与月报手机端防重叠（v560，Pages 已发布，云端回归复核中）
+
+- App version: v560。上一轮本地提交 `dadc5ef` 未发布。继续修正双定位字段被计为两张图片、实际请求退回 Word 第一页的根因；月报/备用金统一去重后请求准确图片。同包混合范围保留已确认关系，多张只在已确认页之间翻页，缺图继续告警。
+- WebKit 移动环境实测 CSS zoom 会把小字放大越过固定列；月报改为布局后整表 scale，并只对超宽金额按实际宽度适配，撤销裁切/固定手机小字方案。保持完整小数和原数值、原位置、原宽度适配及原生手势缩放；不改其他报表缩放方式。
+- 已通过凭证单测、operations、真实响应形状的凭证浏览器（1280×900、390×844、844×390）、备用金精确原图重开、Chromium 适配和定向重测；额外 WebKit 月报测试覆盖横竖屏/旋转，生产财务账户仍未接入。另发现 WebKit 工资表现有缩放溢出（不属本次两项修复，保留待办，不扩改）。未改数据库、权限、历史财务数据、公式或财务独立登录入口。
+- 2026-09-26 对生产 2026-01 正式历史行只做聚合元数据核验：53 条 `page_confirmed` 关联、涉及 4 份 DOCX；关联定位均符合 `word/media/<文件名>` 格式，4 个底层 Storage 对象都存在，未发现缺对象或 0 嵌入图片数。该检查没有读取文件内容，不能证明 DOCX 内每个精确 locator 可解析，也不能替代真实财务账号点击打开；本轮未重新关联、补传或修改历史行。下一步需在授权的财务会话中复现，核对页面请求的图片名与 API 返回的 `image_manifest`，再决定是否需要小范围代码修复。
+- 2026-09-26 只读回读生产 `operations-api` 为 v105 ACTIVE，在线源码包含历史凭证页读取的 `image_manifest` 与请求页存在性校验；本地合成凭证预览单测、历史导入解析测试、1280×900 / 390×844 / 844×390 凭证浏览器回归均通过。线上对象元数据与代码路径均有证据，但由于没有真实财务会话，尚未复现“人工确认后无法读取”，不能据此判定线上交互已修好。
+- 完整财务回归 73/73、WebKit 月报专项、版本/发布/同步检查、smoke 与 diff check 已通过。测试数据均为本地合成数据；隔离数据库测试使用无网络临时 PostgreSQL 容器。
+- 提交 `ab40039` 已通过完整 pre-push 并推送 main；Pages `36126025448` 成功，无缓存回读 8 个版本/页面/修复脚本与提交哈希一致。首次推送缺 Python cryptography 后在临时 venv 安装 CI 指定 48.0.0，47 项同步测试通过；未改系统 Python。Validate `36126026134` 的财务第 57 项定向测量测试在 100ms 内未等到 RAF，前 56 项通过；本次仅将该测试等待改为真实测量事件加两帧排空，仍保留精确次数及不重测无关表格的断言，不改 App 代码。
+- Last synchronized base checked: `ab40039` (`github/main`); Current owner: Codex; Last Completed Work: v560 Pages 已发布且线上文件一致；Open Work For Next Agent: 复核修正等待方式后的 GitHub CI；Required Checks Before Editing: fetch 与版本/发布/同步门禁已核；Required Checks Before Publishing: 完整财务测试、版本/发布/同步门禁、pre-push、GitHub CI 与 Pages 无缓存核验；Handoff Rule: 未验证不声称完成。
+
+## D01 月报/凭证样式 token 试点（v559，已发布）
+
+- App version: v559。月报操作条、月报数字与凭证详情页开始复用间距、圆角、按钮高度和数字字形 token；保留现有字号、表格尺寸、财务登录入口及按钮行为，不涉及数据库、权限或财务计算。
+- 专项浏览器回归通过，覆盖桌面、手机竖屏、横屏及凭证细节间距；金额列无溢出，现有字号与按钮尺寸保持。财务测试清单 73/73、全仓 pre-push、App smoke、版本/发布/同步门禁通过。提交 `ad4e970` 已推送 GitHub main；Validate `36114979252`、Pages `36114978591` 成功，无缓存线上读到 `version.json=559`、`operations.html data-version=559` 与 CSS tokens。页面只改 CSS tokens；无 DB/财务计算/权限/登录入口变更。
+- 仓库 pre-push 的 frontdesk 测试要求所有首页 `data-version` 同步；仅将 `frontdesk.html` 的发布标记从 v558 升到 v559，没有修改前台页面行为。
+- Last synchronized base checked: `ad4e970` (`github/main`); Current owner: Codex; Last Completed Work: D01 样式 token v559 已发布并线上回读；Open Work For Next Agent: 继续推进审计整改，优先梳理可独立验证的 P1/B09/B10；Required Checks Before Editing: 先确认工作区干净并完成备份；Required Checks Before Publishing: 全量财务测试、版本/发布/同步门禁及 GitHub CI；Handoff Rule: 未验证不声称完成。
+- git fetch github main；node scripts/check-version-sync.js；node scripts/smoke-test-app.js。
+
+## CI Node 20 runner 退役兼容（2026-09-25，已验证）
+
+- GitHub 于 2026-09-23 移除 Actions runner 的 Node 20；旧 `actions/checkout@v4`、`setup-node@v4`、`setup-python@v5` 仍能在 runner 的 Node 24 强制兼容模式下运行，但近期 workflow 明确出现弃用警告。
+- 将这三项官方 action 更新至当前官方主版本 `checkout@v7`、`setup-node@v7`、`setup-python@v7`，均支持 Node 24；保留 `.node-version=22.22.1`、Python 3.12、npm cache 和所有测试/门禁逻辑不变。工作流无 `registry-url` / `always-auth` 等新版本破坏性配置。
+- 提交 `7051ba7` 已推送 GitHub main；Validate `36108524238` 与 Pages `36108523746` 均成功，日志未再出现 Node 20 forced-runtime warning。此处不改应用版本、财务逻辑、数据库、权限或生产数据。
+
+## 上线审计状态复核（2026-09-25）
+
+- 旧上线报告中的日报多人/多端并发覆盖（A03）已不是未修状态：当前生产迁移 `20260924010116` 与 `operations-api` v95 的 expected-revision 检查已在 9 月 24 日生产只读回读中核实；旧修订冲突隔离 PostgreSQL 回归此前通过。真实财务账号的成功写入端到端验收仍需财务配合，不能由合成测试替代。
+- 本轮尝试重跑 A03 隔离 PostgreSQL 用例时，受限环境无法连接 OrbStack Docker socket（permission denied）；因此本次不声称该用例已重新运行。已存在的上次通过记录仍保留。
+- 其余需要外部条件/业务确认的上线门槛仍开放：生产数据库及 Storage 原图隔离恢复演练、零收入与休息日规则、财务真实账号/设备验收、历史草稿/凭证逐项签认，以及旧 Auth 账号迁移和非财务旧模块的权限边界审查。未猜测数据、改变财务端口或擅自修改 Auth/RLS。
+
+## 上线审计：Auth 迁移覆盖只读复核（2026-09-25）
+
+- 仅运行生产只读聚合 SQL，不读取或导出姓名、用户名、电话、邮箱、密码、Auth UUID 或单条账号映射。旧 `staff` 中 active 账号共 26 个：role=admin 2 个、role=staff 24 个；其中 2 个 admin 已进入 approved Auth allowlist，普通 staff 尚无 allowlist。
+- `zysyr_employees` 当前 active 且未软删除共 24 个；旧 staff 到当前 active 员工的 legacy ID 映射为 admin 2/2、staff 21/24。当前 active Auth account 共 2 个，授权角色分别为 company finance 1、company shareholder 1；当前可关联 active 员工档案的 active Auth account 仅 1 个。
+- 该只读结果与旧交接中的“25/26”估计不一致，现以本次生产聚合为准，但不能仅凭聚合判断 3 条未映射员工是否应新增、停用或合并。A02/员工 Auth 迁移仍为上线门槛：需要管理员逐一确认旧账号与员工、门店、角色的对应关系及登录安排；未创建账号、重置密码、停用旧登录或修改财务端口。
+- 当前没有安全的自动修复：身份绑定错误会造成越权或锁号。待获批的准确身份清单后，再以逐条校验、可回滚的小批次推进。
+
+## 上线审计：Supabase Advisor 再核（2026-09-25）
+
+- 最新 Security Advisor：42 张 public 表为 RLS enabled/no policy INFO；独立只读 ACL 聚合确认其中 37 张对 anon/authenticated 无 SELECT/INSERT/UPDATE/DELETE 表权限，5 张有表级权限的旧内容/分析表为 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods`，因无 RLS policy 仍 fail-closed。Auth `auth_leaked_password_protection` WARN 仍存在。没有新增财务范围匿名可读发现。
+- Performance Advisor 目前报告 135 个未索引外键、4 个重复 permissive policy WARN，以及 Auth 固定连接数 INFO。本次在日报、月报、凭证和工资核心表范围独立核实 14 个未覆盖外键：附件 1、日报草稿 3、日报版本 4、工资 6；未自动创建索引。
+- 4 个重复策略分属 `perm_data` 与 `staff` 两张表；只读策略定义显示重复项均为 `USING (true)`，同表仍有另一条同样覆盖公开读取的策略。当前表现为性能/维护告警，不是已证实的数据泄露；移除策略仍属于 RLS 变更，须先经所有者确认并检查权限设计。
+- Advisor 查询和目录查询均只读。本轮未改 Auth 设置、RLS、索引、数据库、业务权限或生产数据；平台 Auth 密码保护配置需要管理员 Dashboard/平台设置权限，当前连接工具未提供该设置入口。
+
+## G01 灾备恢复流程合成验证（2026-09-25，只验证工具链）
+
+- 在断网的两个临时 PostgreSQL 17 容器间，用单行合成记录执行 `pg_dump -Fc` → `pg_restore`；恢复前后行数、金额合计与数据摘要一致，演练通过，临时容器已清理。本机 Docker 29.4.0 可用；当前环境未安装 `pg_dump` 主机客户端，但容器客户端可用。
+- 此测试不连接生产 Supabase、不含任何真实财务数据，也不验证 Supabase PITR/项目备份或 Storage 原件恢复。仓库 `backup-zysyr.sh` 仅归档项目文件；本机 `scripts/backup.env` 不存在，因此未配置异地副本。
+- 同日生产只读 SQL 回读 `storage.objects` 上的 `anon_all` 策略为空；Supabase Security Advisor 当前仍有 42 条 RLS enabled/no policy 的 INFO 与 1 条 Auth 泄露密码保护 WARN。未改权限或 Auth 设置；INFO 须按服务端专用表与公开/用户表逐项区分，不能批量加策略。
+- 对 42 张 public RLS/no-policy 表再按有效表权限分组：37 张对 `anon` 和 `authenticated` 均无 SELECT/INSERT/UPDATE/DELETE 表权限；5 张 `content_articles`、`content_settings`、`content_titles`、`hair_analysis`、`shooting_methods` 有角色级 GRANT，但 RLS 开启且无策略，当前行访问 fail-closed。该权限差异需要结合旧内容/分析模块的设计逐表审查；未读取业务行、未撤销权限或补策略。
+- G01 仍为 P0 开放：需要获批的数据库/Storage 备份目的地、LaunchAgent 对当前仓库路径的 macOS 授权或受控运行位置，以及隔离环境内的实际数据库与对象恢复抽验。未导出生产数据、未启用可能计费的 PITR。
+
+## 上线整改：B10 财务请求结果未确认提示（v558，已发布）
+
+- App version: v558
+- 财务 API 客户端遇到网络失败或无法解析响应体时，不再把异常 JSON 响应伪装成普通成功返回；写入/未分类操作统一返回 `API_OUTCOME_UNCONFIRMED`，提示先刷新核对结果，不要直接重复提交。服务器明确返回的业务错误保持原样；只读超时仍沿用既有“未提交任何修改”提示。
+- 未给写操作增加 AbortSignal、超时取消或自动重试；未实现服务端幂等键/逐操作结果查询，因此“刷新核对”仍取决于各业务页的读取状态，B10 整体及弱网实机验收保持开放。
+- 定向测试覆盖读超时、响应体阶段超时、写操作不被中止、网络失败结果不明、成功状态但响应体损坏，以及明确 409 业务响应保持原样。完整财务 manifest 73/73 与全仓 pre-push 通过。提交 `20b142a` 已推送 `github/main`；Validate `36105124316`、Pages `36105123290` 成功。无缓存确认 `version.txt=558`、`operations.html data-version=558`，且线上包含结果未确认文案与 `API_OUTCOME_UNCONFIRMED`。无数据库、财务公式、历史金额、权限或财务独立登录入口修改。
+
+## 上线整改：B11 财务测试门禁同步复核（2026-09-25，已验证）
+
+- 旧审计指出的失效选择器 `#daily-recognition-status` 已不在当前测试中；`test-operations-voucher-browser.js` 使用现行 `#daily-source-action-status`，并在本地合成环境的桌面 1280×900、手机竖屏 390×844、横屏 844×390 三种视口全部通过，覆盖原件预览、分页/缩放、凭证下钻、缺失证据及过期范围。
+- 当前 `scripts/zysyr-finance-test-manifest.json` 是唯一财务回归清单；manifest 校验通过，GitHub Actions 和 pre-push 均调用 `test-zysyr-validation-manifest.js` 与 `run-zysyr-finance-tests.js`，完整财务集由同一 manifest 执行。清单包含 A03 expected-revision、A04 入账结果不确定、A06 月报失败恢复及 B06 月份/门店响应隔离回归。
+- 本轮定向运行：共享清单校验、A04、A03 隔离 PostgreSQL、A06、B06 响应隔离均通过；未连接生产数据库或写入生产数据。B11 报告中“旧失效选择器及 CI/本地财务清单不同步”这两个已证实子问题现关闭；真实角色/设备及完整月结验收仍由 B12 管理，不因这些合成测试而关闭。
+- 仅更新交接证据与变更日志；未改 App 代码、版本、数据库、财务公式、历史数据、权限或财务独立登录入口。
+
+## 上线整改：A05 已入账日报差额提示可读性（v557，已发布）
+
+- 生产只读复核再次确认向里造型 2026-02-03 与 2026-02-07 的日报均为 confirmed、历史快照 `valid=true`，现行重算 `valid=false`；前者员工明细 6,087 元/造型小计 6,081 元，后者 15,598 元/15,998 元。异常源于造型区总小计，不是员工行或项目列小计；未读取姓名、原图或凭证。
+- 月历红色告警由笼统的“现行规则复核异常”改为具体显示员工明细与造型小计相差金额；打开详情显示两项原值和绝对差额，并明确要求对照原始日报后按修订/冲销流程处理。当前 API/RPC 已只读重算并返回原值；没有重写历史快照、金额或入账记录。
+- 新增专项用例覆盖 6 元、400 元、员工/项目小计和缺控制项告警，并纳入财务门禁。未改财务公式、数据库、历史数据、权限或财务独立登录端口；财务仍须确认原件并按流程修正两天账务。
+- App version: v557；专项告警测试通过，财务回归 73/73、全仓 pre-push 通过（包括合成 PostgreSQL 隔离测试及前台/权限回归）。提交 `569c480` 已推送 `github/main`；Validate `36094276320` 和 Pages `36094276004` 成功。CDN 无缓存确认 `version.txt=557`、`operations.html data-version=557`，且月历差额/详情提示已在线。没有数据库、财务 API、金额、历史数据、权限或独立登录入口变更。
+
+## 上线整改：C03 财务 API 分页上限边界保护（v556，已发布）
+
+- App version: v556。分页读取改用调用方的精确行上限，拒绝无效上限、异常响应形状及超量页；恰好达到上限时 fail closed，提示结果可能不完整并要求缩小范围，不将潜在截断结果用于财务展示。
+- 新增分页边界单测并纳入 72 项财务测试清单；完整财务回归 72/72 通过，包含隔离且断网的临时 PostgreSQL 用例。未改数据库、公式、历史金额、权限或财务独立登录入口。
+- 全仓 pre-push 通过，提交 `6822224` 已推送 `github/main`。生产 `operations-api` 为 ACTIVE v104，远端源码确认修复存在且 `verify_jwt=false` 未改变；Pages 无缓存回读 `version.txt=556`、`operations.html data-version=556`、脚本 `v=556`。此修复只关闭分页边界误报/超量请求风险，不代表 C03 性能与规模风险整体关闭。
+
+## 上线整改：C06 财务发布环境与门禁交接（文档子项）
+
+- 新增 `docs/finance-release-runbook.md` 并从 README 链接：明确 Node/Playwright/Chromium/Python/Deno/Supabase CLI/PostgreSQL 版本、复现测试命令、按函数归属的 Supabase 环境变量**名称**、迁移/Edge/Pages 分阶段核验及授权边界。
+- 只记录变量名称，不读取或写入秘密值；文档明确隔离迁移重放、生产迁移与函数部署、正式账号验收以及数据库/Storage 恢复演练均不能由本地测试替代。
+- 本项不改生产配置、数据库、财务公式、历史数据、权限或财务独立登录端口。C06 整体仍开放：一次性生产同构环境的完整迁移/发布演练及 GitHub Actions 实际运行证据仍待完成。
+
+## 上线整改：B13 日报识别桥脱敏健康探针（v555，代码已验证；共享运行端未部署）
+
+- App version: v555。候选识别桥新增 Bearer 鉴权健康处理器，仅检查 Codex CLI 文件是否存在且可执行；明确返回 `codex_login: not_checked`，不启动 Codex、不检查个人会话、不回传路径/令牌/图片/财务数据。
+- Hermes 部署补丁增加 `/api/zysyr-daily-health` 路由。该补丁仍只在本仓库；没有读取、编辑或重启共享 Hermes `plan_server.py`，没有触发识别或改生产数据。系统工具对本机进程列表受限，运行端健康仍未实测；B13 保持开放。
+- Python 桥接单测 8/8 与识别静态门禁通过；完整 pre-push 的 71 项财务回归、跨应用回归和 47 项同步测试均通过。提交 `412964b` 已推送 `github/main`；无缓存核验 GitHub Pages `version.json=555`、`operations.html data-version=555`、识别脚本 `v=555`。此提交未部署共享 Hermes 路由；未经单独授权不部署共享服务。
+
+## 上线整改：B10 股东 iframe 只读请求超时（v554，已发布）
+
+- App version: v554。自由手艺人 App 内股东报表 iframe 的 `session`、`overview` 等请求现在在网络等待及 JSON 响应体解析阶段共用 45 秒超时；报表读取卡住时显示“未提交任何修改，可重新读取”，不清除员工会话，不自动重试。
+- 变更仅覆盖股东只读请求器；财务独立登录端口、Auth、写操作、金额、公式、数据库、权限和历史数据均未改。
+- 新增专项测试覆盖网络挂起、响应体挂起、定时器清理及会话保留，并加入统一财务测试清单。完整 pre-push 与 GitHub Validate #36083168817 通过，Pages #36083168390 成功；线上无缓存核验 `version.txt=554`、报表页 `data-version=554`，股东请求脚本含超时中止逻辑。真实员工账号弱网及 Safari 真机尚待验收。
+
+## 美管加预约同步恢复（2026-09-25，生产已补跑）
+
+- App version: v553（本次仅改服务端同步与运行脚本，不改 App 静态资源或版本）。
+- 原因：2026-09-24 的预约/顾客私有 ACL 收紧后，Hermes 预约任务仍以公开 key 直写 `bookings`，连续收到 401。保留 RLS，不恢复公开写权限。
+- 新增 `mgj-booking-sync` Edge Function（生产 ACTIVE），只接受本机 Ed25519 签名、两家白名单门店和北京时间当天起 8 天的预约；每个门店/日期先写入再按该门店/日期清理源头已不存在的记录。签名私钥只在本机 Hermes 运行目录（0600），没有进入仓库或前端。
+- 生产探针：未签名 401、有效签名但无效门店 400；2026-09-25 09:13（北京时间）手动补跑 16/16 个门店/日期，读取并写入 346 条，清理 10 条，状态 healthy、连续失败 0。当天美管加源头与生产库聚合均为自由手艺人 90 条、向里造型 67 条；未读取或展示顾客明细。
+- 本地预约/保活/顾客档案/健康审计 Python 回归 47/47、员工预约合并、固定 Deno 2.9.6 类型检查、版本同步、发布完整性、App smoke、预约 UI、护理出库和交接门禁均通过；完整 pre-push（含 70 项财务回归）通过，运行脚本与仓库 SHA-256 一致。首轮 GitHub Validate 暴露新 Deno 检查的类型依赖和缓冲区问题，已修复；修正提交 `c895c5f` 的 Validate #36082041449 与 Pages #36082041147 均成功。
+- 09:28 曾有一次写入连接重置：该轮源头读取 16/16、写入 0，Supabase 函数请求日志没有收到这些写入请求。09:32 手动重跑及 09:33 自动轮次均再次 healthy（16/16，349 条，0 错误、连续失败 0）；当天源头与库内计数随后一致：自由手艺人 93、向里造型 67。仍需继续留意偶发网络失败和用已登录员工 App 人工查看界面；本次未改顾客档案同步、护理出入库或财务流程。
+
+## 上线整改：B08 多份历史凭证视口按需加载（v553，已发布）
+
+- App version: v553。
+- 月报金额追溯保留全部已关联凭证卡片与原件范围提示；只有进入视口或距视口 320px 内的卡片才申请附件 URL/单页图像，最多 3 个并发。切换页面会取消尚未开始的请求。
+- 不改凭证关系、准确页码、文件、金额、财务公式、数据库、权限或财务独立登录入口。原整包候选警告在图片加载前仍可见；失败重试与 Word 翻页保持。
+- 纯单测及桌面 1280x900、手机竖屏 390x844、横屏 844x390 合成浏览器回归通过；v553 已通过 GitHub Validate #36079718309 与 Pages #36079717709，线上无缓存核验 `version.txt=553`、报表页 `data-version=553` 及凭证按需加载脚本版本。真实大附件和生产网络耗时仍待授权会话实测。
+
+## 上线整改：A02 认证迁移覆盖只读复核（2026-09-25）
+
+- 生产仅执行脱敏聚合 SQL，没有返回或读取员工姓名、账号名、密码、财务数据，也未做写入。结果：在职旧 staff 26；其中 legacy→V2 employee 映射 23；有效迁移白名单 2；已绑定 active Auth account 1。
+- 这些计数说明身份迁移尚未覆盖全体在职人员，不能停用旧登录、批量建号、重置密码或将“已映射”推定为本人授权。A02 继续开放；需管理员逐一核对并授权账号身份/门店对应关系后，再安排受控迁移与登录验收。财务独立登录入口保持不变。
+
+## 上线整改：C06 完整迁移链遇到身份审批门槛（2026-09-25，未闭环）
+
+- 在临时 Supabase PostgreSQL 17 项目中继续隔离回放：用全合成的 28 条旧 staff fixture、两家合成门店及仅用于旧迁移检查的空 `hair_records` / `care_records` / `bookings` 兼容表，Gate B 数据映射断言通过，随后 Auth rolling migration 通过。
+- Gate C1 在事务内准确失败：`Gate C1 expected exactly two approved active administrator mappings, found 0`。该迁移要求现有的 `admin/ziyou` 与 `哈维/xiangli` 两名已批准管理员映射，并会基于授权建立股东 allowlist 和审计事件。不得用虚构身份填充、跳过门槛或在生产执行该迁移。
+- 回放仅接触独立临时数据库；Gate C1 的复现包在事务中回滚。未触及生产 Supabase、真实账户、财务数据、权限或历史记录。临时测试不能证明整条 migration chain 可由空白 Supabase 独立重建。
+- C06 继续开放。后续须由项目负责人/管理员确认并提供受控的真实旧身份基线与审批方式，或确认独立新环境应采用的身份引导流程；确认前不继续伪造 Gate C1 身份，也不宣称生产迁移已闭环。
+
+## 上线整改：C06 legacy staff 基线迁移回归（2026-09-25，窄项已验证）
+
+- 新增 PostgreSQL 17 隔离测试，使用生产只读 schema 元数据构造 synthetic `public.staff` 旧基线，只含两条明确虚构数据；回放 `20260729023135_staff_employment_status.sql`，检查必需列、约束，以及 active true/false 到 `active/pending` 的历史映射。隔离测试已实际通过。
+- GitHub Actions 将执行该测试；容器网络关闭，fixture 凭据值为明确的无效占位字符串。没有添加生产 migration，没有包含真实员工数据/密码，没有触及生产 Supabase。
+- 这只验证 C06 已知的首个 legacy schema 依赖，不等于完整 99 条 Supabase migration chain、Auth/Storage extension 运行环境或迁移 dry-run 已闭环。需先从 CI 的 PostgreSQL 17 结果确认这一窄项，再继续定位其后迁移依赖。
+
+## 上线整改：C06 本地迁移回放与生产结构对照（2026-09-25，只读核验）
+
+- 使用 Supabase CLI 2.109.1 在隔离临时项目从空库回放仓库 99 条迁移；回放在 `20260729023135_staff_employment_status.sql` 失败，原因是迁移链未创建 `public.staff`。本地报错为 `relation "public.staff" does not exist`；没有触及生产数据库。
+- 生产只读核验确认 `public.staff` 存在，包含 `id, username, password_hash, role, store, active, created_at, position, employment_status`，并带 `pending/active/departed` 检查约束；生产迁移账本已包含仓库最新迁移 `20260924051925`。因此当前证据指向仓库依赖外部初始化的旧基线，而非线上缺表或迁移落后。
+- 生产只读权限复核确认日报草稿、月报、凭证附件均启用 RLS；`anon` 无 SELECT，`authenticated` 的 SELECT policy 使用公司/门店能力检查。此前已删除的 `storage.objects.anon_all` policy 当前不存在。Security Advisor 仍报告 Auth 泄露密码保护关闭及 42 张 RLS 无策略的信息提示；没有批量放行或改动 Auth。
+- 另查 `public.staff`：线上仍有匿名/认证用户可读取目录字段的列级 GRANT 与 `staff_directory_read` 策略；`password_hash` 不可读，匿名/认证角色均无 INSERT/UPDATE/DELETE。旧自由手艺人/预约 UI 仍有直接读取员工目录的客户端，因此不可贸然撤销整个目录策略；此策略是公开目录兼容边界，不等于可匿名读取员工凭据。
+- 未读取员工凭据、财务行数据、凭证对象；未执行生产写入、迁移、策略调整。C06 仍开放：若要求从空白 Supabase 独立部署，须先由项目负责人确认如何管理既有 `staff` 身份基线；不复制密码哈希、不猜造员工身份，也不擅自补生产 schema。下一步可在隔离环境提供明确的旧基线 fixture 后继续回放，并记录后续首个缺失依赖。
+
+## 上线整改：B05 手机月报整月日报可读性（v552，已发布）
+
+- App version: v552。
+- 保留原月报整月 8 列日报嵌入表和既有金额映射；新增可选的“清晰查看日报明细”第二层，按日期选择并以正常字号展示劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音。
+- 未入账日期和已入账但缺失的字段均显示“—”，明确解释空值不等于 0；默认选择首个已入账日期。此仅重用 overview 已读取数据，不增 API / 数据库请求，不改变汇总口径、数据、权限或财务登录入口。
+- 专项静态测试、隔离 Playwright 桌面/手机竖屏/横屏测试及完整财务回归 70/70 通过；覆盖七项数值映射、未入账不是零、详情 16px 字号。v552 版本同步、发布完整性、应用 smoke、财务/全仓 pre-push 与交接状态检查均通过。提交 `d9cfc9c` 已推送 `github/main`；Validate #36072440810 与 Pages #36072439858 成功。CDN 无缓存确认 `version.txt=552`、月报页 `data-version=552`、所加载脚本 `operations-monthly-daily-performance.js?v=552` 含新控件与“空值不是 0”说明。没有改数据库、API、财务数据或计算口径。
+
+## 上线整改：D02 股东月报首屏信息收敛（v551，已发布）
+
+- App version: v551。
+- 月报首屏说明改为本月与已入账日报的直白提示；缺少日报不代表零收入。来源与统计口径收进可访问的原生展开区，全文保留原表、财务调整、不覆盖日报原数和数据来源边界；日报完整性仍保持首屏可见。
+- 月报专项回归通过；完整财务回归 70/70、版本同步、发布完整性、应用 smoke 与全仓 pre-push 全部通过。提交 `b841b01` 已推送 `github/main`；GitHub Validate #36068085447 和 Pages #36068084817 成功。
+- CDN 无缓存读取 `version.txt=551`、`operations.html data-version=551`，并确认新提示及“数据来源与统计口径”在线。未改数据库、金额、计算公式、权限、历史数据或财务独立登录入口。
+
+## 上线整改：C04 备用金月底批量附件续传反馈（v550，已发布）
+
+- App version: v550。
+- 批量上传仍保持最多 60 份/批，但采用最多 2 份并发并逐文件显示状态；网络错误显示“结果未确认”，建议刷新本月批次与凭证中心核验后再只补传确认未保存的文件。没有改变 OCR 候选/人工确认或备用金金额。
+- 专项浏览器测试和完整 70 项财务回归通过；提交 `1f65340` 已推送 `github/main`，Validate `36063837813` 与 Pages `36063837337` 成功。CDN 无缓存核验 `version.txt=550`、备用金模块 `operations-petty-cash-evidence.js?v=550`。本修改不改 API/数据库/权限/财务登录端口。
+
+## 上线整改：C04 月报附件可见进度与有限并发（v549，代码已验证）
+
+- App version: v549。
+- 月报原表保存成功后清空原件选择，照片 / PDF 最多两份并发，结果按文件列出；上传请求错误视为“结果未确认”，要求刷新凭证列表核验后再决定是否补传，避免自动重复上传。正式金额不变。
+- 专项浏览器回归覆盖自动识别、既有照片流、部分失败、并发上限和原件重复提交保护通过；完整 70 项财务回归、版本/发布完整性、财务清单、App smoke 均通过。提交 `4ce2dc0` 已推送 `github/main`；Validate `36062196321` 与 Pages `36062195181` 成功。无缓存线上核验 `version.txt=549`，线上月报页包含新进度/失败核验逻辑。真实财务会话与弱网实测仍待验收。
+- 不涉及数据库、财务金额/公式、历史数据、权限、文件桶策略或财务独立登录入口。
+
+## 上线整改：B01 历史 warning 生产复核一致（只读，2026-09-25）
+
+- 再次只读核对 `zysyr_history_ledger_entries` 与对应导入批次，限定 `status=posted`、`posted_review_status=pending`、`posted_validation_status=warning`；仅按门店、月份、导入类型和 issue code 聚合计数，没有读取金额、员工姓名、原始行内容或凭证对象。
+- 结果与上线审计附录一致：3,739 条历史账均 `posted_with_warning=true` 且仍待财务验收；其中 validation_status=`warning` 为 1,115 条、`valid` 为 2,624 条、`invalid` 为 0。warning 标签共 1,154 次（仅统计上述 1,115 条 warning 记录，同一条可有多个）：月报 `label_unresolved` 953、员工自购 `product_unmatched` 88 / `employee_unmatched` 19 / `possible_duplicate` 8 / `retail_sale_preserved` 12、工资 `employee_unmatched` 66 / `net_formula_mismatch` 1、备用金 `sequence_unusual` 7。各标签仍是原始导入提示快照，不能据此自动判错或放行。
+- 本次无生产写入、无代码或金额修改。B01 继续开放：下一步仍须财务按门店/月/类型对照原表与凭证认领，尤其先核工资净额、疑似重复和员工/商品匹配；不得批量清 warning 或自动改历史账。
+
+## 上线整改：B07 历史月报原件解析短缓存（后端已发布；性能验收待授权会话）
+
+- 仅在当前 Edge isolate 内缓存最多 2 份不可变历史 Excel 的解析展示投影；以公司、门店、原件存储位置及 SHA-256、门店名称和工作表共同隔离。原件身份无效时回到原有下载/解析路径。
+- 每次 overview 仍执行当前请求的门店授权、历史账务修订、日报汇总、凭证/证据规则和上传者读取；缓存命中返回独立副本后才叠加最新账务内容。未加数据库/持久缓存，未更改财务公式、历史数据、权限与财务独立登录入口。
+- 新专项用例覆盖跨公司/门店/展示上下文隔离、克隆、LRU 上限、无效哈希不缓存；完整财务套件 70/70、pre-push 与 GitHub Validate #36056379241（含 frozen Deno 类型检查）通过。提交 `56ea246` 已推 main，Pages #36056379466 成功，生产 `operations-api` v103 ACTIVE，bundle 回读确认缓存代码存在。
+- 生产保留 `verify_jwt=false`；无会话 overview 探针实测返回 403 `AUTH_SESSION_INVALID`，未返回财务数据。生产冷/热响应耗时及缓存命中率仍待授权财务会话验收，故 B07 不宣称整体闭环。
+
+## 上线整改：C02 报表表格定向重测（v548，已发布）
+
+- App version: v548。
+- 内容变化仅重新适配发生变化的报表表格；页面插入/可见性切换只适配受影响的表格；窗口尺寸、方向变化与初始加载仍全量适配，缩放公式不变。
+- 新增合成浏览器专项回归通过：初始全量测量、单元格变更定向测量、祖先显隐变化重新适配全部子表格。完整财务回归 69/69、全仓 pre-push 与 GitHub Validate #36053189399、Pages #36053188699 均成功；提交 `8e6a1e5` 已推送 main，无缓存线上确认 `version.txt=548`、财务页 `data-version=548`。
+- 本次只验证避免无关表格测量；授权真实财务会话与设备下的页面时延改善幅度尚未量化。
+- 不涉及数据库、财务金额/公式、历史数据、权限、文件访问或财务独立登录端口。
+
+## 上线整改：C03 月报凭证查询按当前报表收窄（v547，已发布）
+
+- App version: v547。
+- 月报首页之前按门店读取最多 1,000 条所有月份 `record_type=report` 凭证，再仅把当前已加载报表 ID 对应的附件显示出来；过往凭证不会显示，却占用读取配额，并可能让本月附件被历史附件挤出。
+- 当前改为先取当前门店/月报表，再按报表 ID 查询凭证；每批最多 100 个 ID，空月不发起凭证请求。使用既有公司/门店过滤与附件字段，前端响应结构和展示关联键不变。
+- 专项/完整财务回归 68/68、跨应用预推送门禁和 CI 类型检查通过；v547 已推 GitHub main，Validate #36049656057 与 Pages #36049654752 成功。
+- `operations-api` v102 ACTIVE，在线源码含限定当前报表 ID 的查询，`verify_jwt=false` 保持且无会话 overview 探针为 403 `AUTH_SESSION_INVALID`。未执行迁移/财务数据写入。只确认读取集合缩小，实际响应耗时/字节改善尚未量化。
+- 仅缩小只读查询集合；未修改财务金额、公式、凭证关系、数据库结构、权限、登录入口或生产数据。
+- 全量回归发现并修复一条旧浏览器测试把按需脚本版本固定为 v546 的断言；现随 `version.txt` 检查。
+- 预推送门禁还发现 `frontdesk.html` 的版本 marker 停在 v546，已同步至 v547；不涉及前台业务逻辑。
+
+## 上线整改：B07 月报 overview 日报来源请求内去重（v546，已发布）
+
+- App version: v546。
+- 按仓库全站版本门禁，将主 App、财务页及前台页版本标记统一到 v546；前台仅更新版本标记，不含前台功能改动。
+- 月报 overview 对同一门店/月只加载一次已确认日报草稿及相关单元格，从相同只读来源生成整月日报业绩与月报使用的现金汇总；历史月报回退路径复用该来源，不再重复请求。
+- 保留原有重复日期、现金业绩单元格缺失/重复、入账时间缺失时阻断汇总的规则；现金汇总仍采用人工修正后的 `payment_cashflow`，不包含卡金。未增加跨请求缓存、数据库结构、权限、财务公式或历史金额修改。
+- 新增 `test-zysyr-monthly-overview-daily-dedupe-v546.js` 并纳入统一财务清单；完整财务套件 67/67、全仓 pre-push、版本同步、发布完整性、交接状态和 diff 检查通过。提交 `dc7a37f` 已推送 `github/main`；Validate #36044427681 和 Pages #36044427168 均成功，含 Deno frozen type-check，线上 `version.txt=546`。
+- `operations-api` 已整包部署为生产 v101 ACTIVE，`verify_jwt=false` 与内部自定义会话鉴权保持原样；无会话 overview 探针返回 403 `AUTH_SESSION_INVALID`。未执行数据库迁移。B07 的历史原 Excel 下载/解析及真实生产分阶段响应耗时仍未处理/取得，不宣称 B07 整项关闭。
+
+## 上线整改：C01 延后备用金凭证与关闭汇总模块（v545，已发布）
+
+- App version: v545。
+- 备用金逐笔凭证增强脚本改为首次进入财务工作台时按需加载；多月汇总入口已关闭，因此生产首屏不再下载该汇总模块。模块文件仍保留，专项测试可加载它验证内部逻辑。
+- 页面初始加载不请求备用金增强脚本；进入财务工作台才加载。浏览器回归覆盖懒加载触发、逐笔凭证、批量上传、汇总逻辑；未更改财务金额、公式、数据、权限或数据库。
+- v545 已推送 GitHub main，Pages 与 Validate 均成功；线上无缓存读取版本 545，月报页源码没有静态引入备用金与月度汇总脚本，按需备用金脚本资源返回 HTTP 200（38,211 字节）。
+- 这是 C01 的模块级优化，不代表全部首屏负载、冷/热启动、弱网或真机指标已达标；生产冷/热登录计时待有授权的真实财务/股东设备验收。
+
+## 上线整改：C02 日报渲染重复适配合并（v544，已发布）
+
+- App version: v544。
+- 日报电子表格渲染过程中，基础表格与追加动态列/输入框的适配调用现合并到同一微任务，在最终 DOM 布局后只执行一次，避免同一帧重复扫描并重算表格适配。
+- 新增浏览器回归断言：一次完整日报渲染只触发一次 fit。静态专项测试和统一财务回归 66/66 通过；未更改财务金额、公式、数据、权限或数据库。
+- v544 已推送 main；Validate 与 Pages 均成功，线上无缓存读取版本 544。本项只关闭重复同步适配这一具体子问题；低端设备实测和真实财务端页面体验仍需观察。
+
+## 上线整改：A01 匿名共享表边界复验（2026-09-25）
+
+- 对生产 Supabase REST 逐表执行匿名只读空结果请求（`select=id&limit=0`）：bookings、customer_profiles、hair_types、perm_styles、barber_identities 均 HTTP 401；公开配方目录 perm_data HTTP 206。没有读取业务行、提交写入或修改权限。
+- A01 原报告定义的匿名直接访问漏洞满足修复验收；perm_data 的公开内容审查和登录身份/跨门店授权矩阵仍属于上线前验收，不宣称整个 App 权限审计已结束。
+- `operations-api` v100 与 30 天旧会话上限、日报 expected_revision 门禁、入账结果不确定保护、月报部分保存恢复均有相应回归；本次已验证 A03 隔离 PostgreSQL、A04 响应丢失、A06 月报浏览器用例通过。A02 仍因旧密码兼容和 Auth 绑定覆盖不足保持 P0 开放。
+
+## 上线整改：A02 旧兼容会话绝对期限（生产 v100）
+
+- 生产只读聚合核对：26 个在职员工中 2 个已关联有效 Auth 账号；仍有 17 个旧兼容会话，数据库 `expires_at` 最远可到 2036-09-02。核对时这 17 个会话均在创建后 30 天内，因此新期限不会在部署时立即让当前会话失效。
+- `operations-api` 旧会话现要求同时满足数据库过期时间有效、创建时间不超过 30 天；新旧通道新签发期限同为 30 天。超过 30 天的旧会话即使数据库 `expires_at` 被设为远期也会被拒绝。没有撤销会话、改 Auth 配置、密码/账号、数据库结构或财务登录端口。
+- 新增回归覆盖 29 天会话仍可用、31 天会话拒绝；legacy 登录安全测试、Deno frozen 类型检查、全仓 pre-push 及 66/66 财务套件通过。`d3e62c5` 已推送 main，Validate #36024458779、Pages #36024457879 成功；生产 `operations-api` v100 ACTIVE，部署后 10 个函数文件与本地逐字节一致，`verify_jwt=false` 未改。
+- **A02 仍开放：** 旧 API 仍兼容明文/裸 SHA-256 等旧密码格式；仅 2/26 个在职员工完成 Auth 绑定，无法停用 legacy 登录。须逐账号确认身份映射、迁移/密码轮换和恢复路径后再收窄旧通道；不自动创建账号或重置密码。
+
+## 上线整改：C06 operations-api 类型安全与生产部署（Validate 成功；生产 v99）
+
+- 修复 `operations-api/deno.lock` 未把已声明直接依赖 `jszip@3.10.1` 纳入 Deno workspace 的问题；为 `report-auto-detection.mjs` 补充参数类型，修复类型检查揭出的结果形状/空值类型问题，并为日报草稿 ID 增加显式非空保护。财务金额和公式未改。
+- CI 固定 Deno 2.9.6，新增针对函数的 frozen `deno check`；通过 `--config` 明确使用函数配置、`--node-modules-dir=none` 隔离根目录 Playwright 依赖。独立临时副本与仓库根目录两种执行方式均通过 Deno 检查。
+- 自动上传/防止美发现金收入重复统计用例加入共用财务测试清单，更新两条已过时的断言以对应现行现金日报汇总＋留痕财务调整规则；完整财务回归 66/66 与全仓 pre-push 均通过。
+- 提交 `9b6bd4d`、`7167cab` 已推送 `github/main`；Pages #36018705857 与 Validate #36018707030 均成功，Validate 的 frozen Deno 类型检查、发布命令契约、财务回归与 release integrity 全部通过。
+- 按用户此前授权，将完整 `operations-api` bundle 部署到 Supabase 生产 v99，状态 `ACTIVE`；部署后拉回的 10 个源文件与本地逐字节一致，`verify_jwt=false` 保持原值。没有应用数据库迁移，也没有更改历史数据、权限或财务独立登录入口。
+- 生产迁移清单只读核验已覆盖仓库当前最新迁移 `20260924051925`；没有本次待应用迁移。**C06 仍开放：** 隔离环境 migration dry-run、Edge 发布/环境变量矩阵及完整可复现部署演练仍待完成；本次生产函数部署不替代这些验证。
+
+## 上线整改：历史导入原表预览未定义函数修复（v543，已推送；生产函数已部署）
+
+- App version: v543。
+- 生产只读回读 `operations-api` v97 确认，`history_import_sheet_preview` 路径调用未定义的 `displayValue` / `formulaText`，因此财务打开历史导入批次的 Excel 原表预览会在服务端抛出运行时错误。
+- 改为复用现有的 `excelCellText` / `formulaCellText`，并添加回归保护，确保预览路由只用已定义的单元格提取函数。
+- 完整本地 pre-push 门禁已通过，功能提交 `f5b00dd` 已推送 `github/main`；`operations-api` 整包部署为 v98 ACTIVE。部署后生产回读确认 10 个文件、预览路由使用 `excelCellText` / `formulaCellText` 且不再调用未定义 helper，`verify_jwt=false` 保持原值。未读写历史财务原件/金额或生产数据库，未改公式、权限、Auth 设置或财务独立登录入口。
+- Pages build/deployment #36006467617 与 Validate #36006469238 均成功；线上无缓存 `version.txt` 回读为 543。真实财务会话下打开历史批次的浏览器端到端预览仍待验收；这项函数修复不代表 C06 CLI/迁移 dry-run 缺口或整份上线审计已关闭。
+
+## 上线整改：C06 固定 Supabase CLI 发布工具链（2026-09-24，CI 已验证）
+
+- GitHub Actions `validate` 工作流现安装并锁定 Supabase CLI `2.109.1`，禁用遥测；校验运行版本确切匹配，并确认 `db push --dry-run` 与 `functions deploy --use-api` 两项预期发布参数存在。
+- 本地以相同 CLI 版本只读验证上述版本和帮助参数；未运行任何部署、数据库推送、链接生产项目或使用生产凭据。
+- **C06 仍开放：** 仓库没有 `supabase/config.toml`，本地也没有 Deno；本次没有伪造项目配置、自动链接生产或增加不可执行的迁移 dry-run。现有 CLI 版本检查不等于 Edge Function 编译/部署或数据库迁移核验。后续须建立经审批的隔离 Supabase 项目/runner 与配置后，再补真实 dry-run、函数 bundle 检查和发布前核对。
+- CI run #35999863919 (`4c41fd1`) 成功，确认 runner 可安装并执行指定 CLI 版本及帮助检查。仅改 CI 与交接文档；财务 App 仍为 v542，财务登录入口、数据库、金额公式、历史数据、权限和生产服务均未改。
+
+## 上线整改：B03 月报日报覆盖状态说明（2026-09-24，v542 已发布）
+
+- App version: v542。
+- 月报表下方补充“已入账日报 X / 当月自然日天数”说明，并标注其余日期只是“尚无已入账日报”，不能解读为休息日或零收入；整月金额仍只统计已入账日报。
+- 增加纯函数及浏览器回归，检查月度计数和提醒随门店/月视图重绘更新。
+- 仅改前端展示及回归；未改数据库、金额、计算公式、历史数据、权限或财务登录入口。专项浏览器测试和完整 pre-push 财务 65/65、跨应用回归全部通过。提交 `659ce48` 已推送 `github/main`；Pages #35997774095、Validate #35997774565 成功，线上无缓存 `version.txt=542`。此项不代表 B03 其他来源说明与财务实际验收已全部完成。
+
+## 上线整改：B10 财务只读请求超时（2026-09-24，v541 已发布）
+
+- App version: v541。月报、日报、工资、备用金、库存、经营分析、凭证等明确只读操作在请求与 JSON 响应体阶段统一受 45 秒上限；超时会中止客户端读取并明确提示“未提交任何修改，可刷新重试”。
+- 保存、上传、入账、审批、冲销等写操作，以及未分类的操作，不附加超时 AbortSignal，不自动重试；员工/股东独立报表请求器也未改。此为 B10 的只读读取子范围，写请求超时后的幂等查询仍未实现。
+- 新回归覆盖网络挂起、响应体挂起以及日报确认/报表上传/月报调整/未分类操作不被中止，已加入统一财务测试清单。定向回归、统一财务回归 65/65 和完整 pre-push 全仓门禁通过。
+- 无数据库、财务公式、权限、历史数据、账号或财务独立登录入口改动。
+- 提交 `e9232cf` 已推送 `github/main`；Validate #35994819723 的 `validate` job 与 Pages #35994818768 成功，线上无缓存 `version.txt=541`。未实测真实财务会话弱网体验；员工/股东 iframe 与写请求超时恢复仍为 B10 后续范围。
+
+## 上线整改：B06 工资/业绩原表候选请求竞态（2026-09-24，v540 已发布）
+
+- App version: v540。工资表和发型师业绩表的原表单元格异步读取现绑定当前请求序号、门店、月份、视图及选中原表；旧请求即使在新结果之后成功或失败也不会覆盖候选，清空来源同样使旧请求失效。
+- 新增合成浏览器回归并纳入统一财务测试清单，覆盖工资旧失败/清空来源以及业绩旧成功迟到。隔离浏览器定向测试、统一财务测试 64/64 和完整 pre-push 发布钩子全部通过。
+- 共享版本校验要求自由手艺人 App、财务页与前台页使用同一发布号；同步三个入口的版本标记/缓存版本，不改变前台功能。
+- 提交 `baedd43` 已推送 `github/main`；Validate #35991994482 与 Pages #35991993701 均成功。线上无缓存回读 `version.txt=540`；工作区干净。未改工资/业绩计算、数据库、财务数据、凭证、权限或财务独立登录入口。
+
+## 上线整改：B09 月报公式凭证追溯批量请求（2026-09-24，v539 已发布）
+
+- App version: v539。公式金额下钻将同层地址最多 8 个合并为一次 `cell_trace_batch` API 请求；服务端单请求最多 4 个格子并发，先一次校验当前登录会话和门店，再逐格按已授权的公司/门店/报表查询。公式遍历上限保持最多 240 个格子并新增 24 层上限；达到上限会显式报告未完整，不会显示为已核清。
+- 月报调整/已确认日报只读上下文通过请求本地 Promise 缓存复用，仅在该批 HTTP 请求期间存活；没有跨用户/请求缓存。单元格失败独立标出，其他格子仍继续呈现。没有改财务公式、金额、数据库、凭证或权限规则；财务登录入口保持不变。
+- 本地单测、静态 API 边界测试、真实浏览器合成测试（桌面/手机竖屏/横屏）、完整 63 项财务套件和全仓 pre-push 全部通过。`operations-api` v97 已部署并为 ACTIVE，保持既有 `verify_jwt=false`；新批量读取接口的无会话探针返回 `403 AUTH_SESSION_INVALID`。提交 `ff127b9` 推送 `github/main`；Validate #35987122619、Pages #35987122105 均成功。生产无缓存回读 `version.txt=539`、`operations.html data-version=539`、凭证预览脚本 `?v=539`。真实财务会话下端到端体验和门店越权探针未测，不能据此声称完成。
+
+## 2026-09-24 上线审计 P0 状态复核（生产只读）
+
+- A01 客户/预约公开表权限：生产迁移 `20260924040520` 已应用。SQL 回读确认 `bookings`、`customer_profiles` 及停用的三个配置表均启用 RLS；anon/authenticated 无直接 SELECT，`service_role` 权限保留。公共 `perm_data` 仍仅公开读取。当前 Security Advisor 不再报告这两张客户/预约表 `rls_disabled_in_public` 的 ERROR；受保护 API 仍需按既有角色/门店范围使用。
+- A05 历史日报复核：生产迁移 `20260924040811` 已应用；当前 `operations-api` v97 包含每月最多 100 个确认日报的只读重算入口。重算不回写快照、日报或金额。系统发现的历史差异仍须财务按原件签认，不自动纠正账务。
+- A02 认证：滚动迁移/限流迁移已在生产，`operations-auth-migrate` v6 ACTIVE；当前 Auth 安全 Advisor 仍提示 leaked-password protection 未启用。未更改 Auth 密码策略、撤销会话或重置账号；启用前需验证实际 Auth 设置及密码变更流程，并维持财务现有登录入口。
+- G01 备份仍为 P0 未闭环：本轮没有创建数据库/Storage 备份或改变计划任务；异地备份目的地和 macOS 对定时任务访问仓库目录的授权仍未解决。财务历史原件与生产数据未读取或修改。
+- 追加只读复核：生产 26 个 active staff 中，2 个存在有效 Auth 迁移白名单、1 个已关联 active Auth account、25 个尚未关联；因此不能停用旧兼容登录或批量创建账号，需管理员逐项确认员工/门店身份映射。未读取密码、账号名或写入任何认证/角色数据。
+- G01 本机复核：iCloud 备份目录存在，但最新归档仍为 2026-09-12；LaunchAgent 日志重现 `/bin/bash: .../Documents/.../backup-zysyr.sh: Operation not permitted`。当前执行环境没有 `pg_dump`，Docker API socket 返回 permission denied；未导出数据库/Storage、未做恢复、未启用 PITR。等待确认安全目的地和 macOS 访问方案。
+
+## 上线整改：B08 历史凭证预览按需加载（2026-09-24，v538 已发布）
+
+- App version: v538。凭证详情初次打开 Word 原件时只由 `operations-api` 提取并返回第一页，页面翻页时按 `image_filename` 再取对应单页；原始图片/PDF 改用 5 分钟私有签名链接，不再先由 Edge 下载并编码整个文件。每次 Word 翻页仍需服务端读取原 DOCX 压缩包，后续若实测瓶颈在这一段，再评估带成本/存储权衡的独立缩略图方案。
+- 保留 company/store/evidence 范围校验和私有桶；仅在精确页关联时请求已登记的那一张，整包凭证仍显式标记“整包候选”。没有改文件、凭证关联、金额、财务登录端口、数据库或存储策略。
+- `operations-api` 生产 v96 ACTIVE；远端回读入口、deno.json 和 8 个相对依赖共 10 个文件，均与本地部署源逐字相同；保持既有 `verify_jwt=false` 和函数内部会话校验。无会话的 `history_evidence_images` 探针返回 `403 AUTH_SESSION_INVALID`。没有修改数据库、凭证对象、财务金额、财务登录入口或权限策略。
+- 未使用真实财务会话和真实生产大附件测量端到端耗时；已验证传输逻辑/合成浏览器行为，不把它等同于真实文件压测。后续如果 DOCX 解包仍慢，应基于实际样本耗时再决定是否采用独立缩略图/预提取存储方案（会涉及新增存储与成本）。
+
+## 上线整改：G01 灾备只读核查与定时任务故障（2026-09-24，未闭环）
+
+- Supabase 只读确认生产项目为 Pro、ACTIVE_HEALTHY、PostgreSQL 17。官方文档说明 Pro 每日自动数据库备份保留 7 天，但数据库备份不包含 Storage 原件；因此这不能证明报表/凭证文件可恢复。未启用 PITR（涉及持续费用，未授权），未执行恢复。
+- 本机 LaunchAgent `com.zysyr.daily-backup` 原先指向旧 `perm-pages` 仓库，最近记录 exit code 126。已获准将任务入口改为当前财务仓库脚本；重新 kickstart 后仍因 macOS `Operation not permitted` 无法从 launchd 读取/执行 Documents 目录下脚本（exit code 126）。配置路径已纠正，但自动备份运行尚未恢复。
+- 当前仓库 2026-09-24 两个既有归档均通过 `tar -tzf` 完整性读取；它们只打包工程文件，不含生产数据库或 Storage 对象。`scripts/backup.env` 不存在，iCloud 备份目录最近副本为 2026-09-12；没有近期异地备份证据。
+- **G01 保持 P0 未完成：** 需先解决 macOS 定时任务对项目目录的授权/部署位置，再建立受保护的数据库导出与 Storage 原件异地备份，并在隔离项目完成恢复、金额/对象哈希抽验及 RPO/RTO 记录。未修改业务代码、数据库、生产数据、权限或 PITR 计费设置。
+
+## 上线整改：C06 生产发布矩阵与环境变量名称清单（2026-09-24，CI/Pages 已核验）
+
+- 财务回归清单统一为 `scripts/zysyr-finance-test-manifest.json`：本地 pre-push 和 GitHub Actions 共用 63 条测试，本地 63/63 通过；Actions #35965591930 与 Pages workflow #35965591838 均成功。两处浏览器截图路径已改为跨 macOS/Linux 的系统临时目录。提交 `58f2ef7` 已在 `github/main`，工作区干净。
+- 使用 Supabase CLI 2.109.1 对生产项目只读列出配置名称，共 21 项；只在发布矩阵记录名称核对结果，不读取/记录值，不更改生产配置。核心服务 URL、service-role 配置名和 worker token 名已配置；Auth publishable key 走已存在的 anon-key fallback；AI 使用已配置的 DeepSeek fallback；OCR URL/model 使用代码默认值。此核对不证明密钥有效、额度充足或实际调用成功。
+- Supabase CLI 命令帮助已在允许 telemetry 写入后验证；本轮没有运行 deploy、db push 或任何写生产命令。
+- **C06 仍开放：** 还需固定 CI/受控发布 runner 的 Supabase CLI 版本，并验证 Edge/数据库发布校验流程；只读变量名称及命令帮助不代表部署/运行验收。财务登录端口、应用版本、数据库结构、公式和生产数据均未改。
+
+## 审计整改进度：Storage 匿名访问 P0 已收口（2026-09-24）
+
+- 经用户明确授权，生产迁移 `20260924051925 zysyr_storage_remove_global_public_policy` 已应用；删除的只有 `storage.objects.anon_all` 全局策略。匿名角色此前可读取 74 个报表对象、349 个凭证对象及 2 个 showcase 对象的元数据；应用后匿名对象查询为空。
+- 生产回读确认 `service_role` 仍能访问原有 425 个对象；`showcase` 仍保持 public，`zysyr-reports` 与 `zysyr-vouchers` 仍为 private。没有删除/改写任何对象、财务数据或 bucket 设置。
+- 本地迁移按 Supabase 实际登记版本号对齐，并新增迁移范围回归测试；此项仅数据库安全迁移，无前端发布或财务计算变化。服务端财务接口继续通过 service_role 与短时签名 URL 访问私有对象。
+
+## 审计整改进度：v537 发布及权限依赖核验（2026-09-24）
+
+- v537 提交 `f0435ee` 已通过完整 pre-push 门禁并推送 GitHub `main`；只读访问 Pages 的 `version.txt` 确认为 `537`，线上 `perm-app.html` 使用会话校验 API，不再直接请求 `bookings` / `customer_profiles`。
+- `employee-bookings-api` v4 为 ACTIVE；未登录 `session` 探测返回应用层 403。生产迁移 `20260924040520 zysyr_customer_booking_private_acl` 已应用：两表启用 RLS，anon/authenticated 无 SELECT 权限，service_role 的读写权限保留；匿名 REST 探测返回 401。无数据行被修改或删除。
+- 已应用 `20260924040811 daily_confirmed_validation_review`，只读日报复核 RPC 仅 service_role 可执行，`search_path` 固定为空；anon/authenticated 执行权限为 false。它不写入日报或金额。
+- 安全 Advisor 中 `bookings` / `customer_profiles` 的 `rls_disabled_in_public` 两个 ERROR 已消失；保留的 RLS 无策略项是 INFO，另有 Supabase Auth 泄露密码保护 WARN 尚待管理员在 Dashboard 决定启用。真实财务账号完整读写流程、本轮 API 有效会话读数据仍未做端到端验证；财务独立登录端口、公式和数据未改。
+
+## 审计整改进度：后台受保护接口与日报版本兼容层已分阶段上线（2026-09-24）
+
+- `staff-access-api` 已从 v1 更新到 v2；新增客户档案/跟进操作仅限有效总管理员会话，未登录线上探测返回 403。旧后台登录与管理员接口保留。财务端口、财务登录及财务数据未改。
+- 日报并发门禁迁移 `20260924010116 zysyr_daily_expected_revision_gate` 已应用。新版本参数化 RPC 只允许 service_role 调用并做事务内版本比较；为保持 v529 页面兼容，旧 RPC 服务端通道暂时保留，普通浏览器角色仍无直接执行权限。
+- 隔离 PostgreSQL 测试通过：陈旧并发只允许一个写入、陈旧确认拒绝、当前版本可确认、旧签名兼容；后台访问测试通过 ACL/角色/回滚/审计/财务 fixture 检查。
+- 经用户明确授权并完成整包部署，`operations-api` 生产版本现为 v95、状态 ACTIVE、`verify_jwt=false`（沿用原有自定义会话鉴权设计）；部署包含入口、相对依赖、提示词模块及 `deno.json` import map。无会话只读探测 `session`、`daily_sheet_get`、`monthly_summary` 均返回应用层 403 `AUTH_SESSION_INVALID`，确认请求进入函数鉴权逻辑；尚未用真实财务会话完成读写全链路验收。前端 Pages 仍未发布；客户/预约权限迁移及员工门店范围仍待确认，故整批前端暂不推送。
+
+## 审计整改进度：A01 共享配置表权限第一阶段已上线（2026-09-24）
+
+- 生产迁移 `20260924004040 zysyr_shared_public_table_acl` 已应用。`hair_types`、`perm_styles`、`barber_identities`、`perm_data` 均启用 RLS；anon/authenticated 不再读写前三张停用表，`perm_data` 只保留公开 SELECT。
+- 生产 SQL 回读确认 RLS 与表权限符合预期，anon 仍能读取全部 125 条公开方案；服务端角色访问保留。安全 Advisor 对 `bookings`、`customer_profiles` 的两个 P0 告警仍在，尚未应用客户/预约撤权迁移。
+- 这一步没有改业务行、财务金额或财务登录端口；Supabase 迁移版本已按平台实际生成号同步到本地文件。完整 Edge/Pages 变更仍未发布，日报旧客户端兼容和残余客户表直连调用须先解决。
+
+## 审计整改进度：B01 历史导入与财务验收状态分离（2026-09-24）
+
+- App version: v537，已随 `f0435ee` 推送 main，线上 version.txt 曾回读为 537。历史导入批次“已入正式账”和“整月财务验收”分开显示；摘要列出整月验收、待验明细、自动 warning、invalid、需修正与已入账数量，并明确入账不等于核清。
+- 对线上只做分组 COUNT 只读核验：3,739 条导入历史目前 review_status=pending，其中 1,115 条 validation_status=warning、2,624 条 validation_status=valid；无记录写入或修订。
+- parser 与汇总状态单测通过。财务仍须按门店/月/业务类型逐批签认 warning 与原件，不能清空标记或自动更改历史金额；功能已发布，但真实财务验收尚未完成。
+
+## 审计整改进度：A05 历史日报只读复核提示（2026-09-24）
+
+- App version: v536。月历对每天当前显示的已入账电子日报做最多 100 笔的只读批量复核；若现行规则与历史校验结论不同或当前规则发现异常，会标明日历状态，并在详情说明差异。
+- 新 RPC 限定公司/门店/日报 ID、仅 service_role 可执行；不写回日报、校验快照或金额。隔离 PostgreSQL 17 测试验证差异可见、跨门店返回空、匿名无权限、批量上限及金额不变；静态日历/日报回归通过。
+- 本地迁移尚未应用生产、代码未推送或部署。2026-02-03/07 涉及的历史数据仍须财务对照原图确认并按修订/冲销流程处理；系统不会自动修数。财务独立登录端口和公式未改。
+
+## 审计整改进度：A01 共享客户与预约数据公开权限第二阶段（2026-09-24）
+
+- App version: v535。员工预约、员工客户档案/历史、管理端客户档案与跟进改由会话校验 API 读取或写入；共享 `bookings`、`customer_profiles` 表的 anon/authenticated Data API 权限在本地迁移中关闭，service_role 继续用于受保护 Edge API。
+- 管理端客户查看/跟进只允许管理员角色；跟进追加采用条件更新避免并发覆盖，旧格式异常备注不自动覆盖。旧员工入口重定向至当前受保护主入口。
+- PostgreSQL 17 合成权限、客户档案 API、管理员工作流、员工预约和旧登录安全测试通过。本地尚未部署迁移/函数/页面，`bookings` 与客户档案访问范围仍需业务确认；财务独立端口和财务数据未改。
+
+## 审计整改进度：A01 共享配置表公开权限第一阶段（2026-09-24）
+
+- App version: v534。本地迁移启用 `hair_types`、`perm_styles`、`barber_identities`、`perm_data` 的 RLS；关闭前三张表的 anon/authenticated 访问，`perm_data` 只保留 SELECT。
+- 设备身份同步仅在页面本地使用；没有删除历史身份数据。财务服务端角色保留现有权限。
+- PostgreSQL 17 隔离测试通过：anon/authenticated 不能读取旧配置表或写共享表；仍可读取公共烫发方案；service_role 既有访问保留。测试已接入 pre-push/Actions。
+- **A01 未关闭：** `bookings`、`customer_profiles` 仍需先迁移前端到带登录会话和门店限制的 API。门店客户档案查询范围待用户确认。没有应用迁移到生产、没有推送或部署。
+
+## 审计整改进度：B06 / B11 二级页面请求隔离与回归门禁（2026-09-24）
+
+- App version: v533。工资、工资表、备用金、财务工作台、库存的只读加载绑定门店/月/视图/请求序号；迟到旧响应和旧错误均不再修改当前状态或页面。
+- 新增 `scripts/test-zysyr-period-response-isolation.js`，浏览器模拟 1 月/旧店请求晚于 2 月/新店返回，覆盖五种 loader；通过。修复凭证浏览器测试旧选择器，桌面、手机竖屏、横屏回归通过。
+- 新两项加入本地 pre-push。受限执行环境下运行浏览器测试需提供 Codex Playwright `NODE_PATH` 并授权临时 localhost 测试服务器。GitHub Actions 尚未统一依赖/浏览器门禁，B11/C06 仍未全部关闭；未推送或部署。
+
+## 审计整改进度：B11 / C06 测试工具与 CI 可复现性第一阶段（2026-09-24）
+
+- 根目录新增 `package.json` 与锁文件，Playwright 固定为 1.62.1；财务关键浏览器回归统一使用 Playwright 自带 Chromium，不依赖开发机安装的 Chrome。
+- GitHub Actions 执行 `npm ci`、安装 Chromium，并运行月报编辑恢复、凭证预览、门店/月请求隔离浏览器回归；另加日报并发版本门禁 SQL 测试及旧登录限流单测。
+- 本地财务隔离 SQL 测试所用 PostgreSQL 镜像从 15 调整到 17，以贴近 Supabase 生产主版本；只改临时合成测试容器，不访问/修改生产数据库。
+- **C06 尚未完全关闭：** 仍需补 Edge/Supabase CLI 与迁移部署矩阵、所需环境变量“名称”清单（不记值），验证 npm clean install/Actions 实际运行及需要的独立运维配置；当前未推送，未证明 GitHub runner 已通过。
+
+## 审计整改进度：A02 旧兼容登录防护第一阶段（2026-09-24）
+
+- App version: v532。旧兼容登录先调用既有 `zysyr_begin_auth_migration` 原子限流 RPC，再做账号校验；登录尝试只以 service-key HMAC 指纹进入既有追加式审计 RPC，超限明确返回 429。新签发兼容会话 30 天，已存在的旧会话不因本地改动被撤销。
+- `node scripts/test-zysyr-legacy-login-security.js` 覆盖有效/错误/超限登录、脱敏指纹、限流先于凭据查询和新会话 TTL；并加入 pre-push。财务登录页面、独立登录端口、角色和财务数据均未变。
+- **A02 仍未全部关闭：** 为避免未迁移账号被锁定，本阶段仍兼容旧密码格式。上线前须确认认证迁移限流/审计 RPC 已部署，再部署 Edge；对真实账号统计迁移覆盖并安排密码轮换、现存长会话失效策略。未读取生产密码或撤销真实会话。
+- 本地静态版本 v532；尚未推送 GitHub、未部署迁移/Edge/Pages，也未做真实账号验收。
+
+## 审计整改进度：A03 日报并发修订门禁（2026-09-24）
+
+- App version: v531。保存草稿和最终入账均携带页面核对时的修订号；PostgreSQL 新 RPC 在事务中锁定并比较版本，再调用既有保存/入账实现。冲突时保留草稿，不覆盖对方修改；旧无版本 RPC 已撤销 service_role 直通权限。
+- 隔离 PostgreSQL 并发测试通过：两个相同旧版本仅一个可保存、陈旧版本确认被拒、当前版本可以确认；浏览器角色无新 RPC 权限。日报电脑/手机浏览器回归也断言保存和确认携带当前版本。
+- 生产迁移 `20260924010116` 已应用。旧 RPC 的 service_role 兼容权限暂留，保证 v529 页面在 Edge/Pages 切换窗口仍可工作；普通客户端无直接执行权限。待新 UI/API 充分替换旧客户端后再以单独迁移撤销兼容通道。
+- 未改金额公式、历史账或财务独立登录端口。operations-api 整包部署被安全审查拒绝，当前 Edge/Pages 仍旧版本；需先完成全量门禁和分模块发布审查。
+
+## 审计整改进度：A06 月报未保存编辑保护与恢复（2026-09-24）
+
+- 本地代码与合成浏览器回归已完成；未发布。普通刷新、接口读取失败和部分字段保存失败不会清除仍未确认的编辑；成功写入仅清除对应项目；来源金额与编辑时不一致时拒绝覆盖并提示冲突。
+- 离开月报、退出、切换门店或月份时提示处理未保存修改；关闭/刷新浏览器有原生离页提醒。刷新成功后从服务端回读并按值核销已落库编辑。
+- `scripts/test-monthly-load-browser-v499.js`、`scripts/test-monthly-summary-browser-v516.js`、`scripts/test-zysyr-monthly-audit.js`、`git diff --check` 和完整 `.githooks/pre-push` 均通过；完整门禁覆盖日报、月报、工资、备用金、权限 PostgreSQL 与浏览器回归。
+- 使用合成数据，不改计算公式、数据库、权限、历史账、财务登录端口或生产状态。A03/A04/A06 仍为本地待发布；A01 门店范围待用户确认，A02/A05/G01 与其余 P1–P3 仍待分批处理。
+
+## 审计整改进度：A04 日报入账与原图归档一致性（2026-09-24）
+
+- 本地代码与合成回归已完成，当前静态 App 版本为 v531；此项需要单独部署 `operations-api`，尚未发布线上。
+- 入账失败/回执丢失不再删除可能已被正式日报引用的原图；对象路径由草稿 ID 与原件 SHA-256 稳定生成，重试复用；错误后回读草稿，确认已提交时恢复成功结果，状态仍不明时要求财务刷新核实再操作。
+- `node scripts/test-zysyr-confirm-uncertain-result.js`、`node scripts/test-operations.js`、`git diff --check` 和完整 `.githooks/pre-push` 已通过。测试使用合成状态，不连接生产。
+- 未改财务独立登录端口、金额公式、数据库、生产存储或正式账。A03/A04/A06 代码仅在本地；A01 门店历史查询范围待用户确认，A02/A05/G01 与 P1–P3 仍待分批整改。
+- 本项发布前仍须做完整 pre-push、人工审阅、隔离集成验证，并分别核验 Edge Function 部署和线上响应；不把本地通过说成线上修复。
+
+## 状态复核：A03/A04 已部署、A06 前端已发布（2026-09-24）
+
+- 当前生产只读回读：`operations-api` v95 ACTIVE、`verify_jwt=false`（函数内维持原有自定义会话鉴权）；生产迁移列表含 `20260924010116 zysyr_daily_expected_revision_gate`。在线函数源码确认日报最终确认携带/校验 `expected_revision`，对象路径包含草稿 ID 与来源哈希，结果不明分支保留归档并回读草稿状态，不再对不确定提交做 DELETE。对应隔离 PostgreSQL 与结果不明测试此前均通过。A03/A04 的部署状态因此从本文件早期“仅本地”更新为已部署；真实财务会话的成功写入仍未端到端验收。
+- A06 的修订随 v537 前端发布记录，月报渲染层会在服务端刷新前后保存未提交编辑、按服务端值核销已落库格，并保留失败项；`scripts/test-monthly-load-browser-v499.js` 和 `scripts/test-zysyr-monthly-audit.js` 此前通过。当前网络环境无法重新解析 Pages 主机，故本轮未重新读取线上 HTML 精确字节；按既有 v537 Pages 回读记录标记为已发布、在线代码本轮未复验。
+- 本轮复核的生产 `operations-auth-migrate` 为 v6 ACTIVE；认证滚动迁移表/函数 `20260811040423 zysyr_auth_rolling_migration` 在生产迁移记录中。此项只证明端点和迁移存在，不证明真实账号迁移覆盖率、密码轮换或旧长会话处置完成。
+- 上述核验只读取部署元数据、迁移名称和函数源码标记；没有读取密码/令牌值、使用真实财务会话写入、修改财务数据或更改登录入口。
+
+## v530 月报整月日报字体微调（2026-09-24）
+
+- App version: v530。基线 github/main v529。将月报右侧整月日报金额与合计字体从 10px 调至 9px，字距稍微收紧，减少合计行的挤压感。
+- 仅改前端显示和缓存版本标记，不改变金额来源、计算、日报入账或财务数据。发布状态待确认。
+
+## v529 调整月报整月日报业绩字号（2026-09-23）
+
+- App version: v529。基线 github/main v528。按反馈将月报右侧整月日报业绩表及合计行恢复至其他金额格使用的 10px 字号，移除 v528 过小的 8px 特殊字号。
+- 只改前端显示和缓存版本标记，不改变金额来源、计算、日报入账或财务数据。提交 `e3f3e06` 已推送 GitHub main；Validate shared app `35885552540` 与 Pages `35885551703` 均成功。线上无缓存确认 `version.txt=529` 和报表页 10px 样式生效。
+
+## v528 月报数字与日报详情操作栏（2026-09-23）
+
+- App version: v528。基线 github/main v527。仅改报表前端样式：月报右侧整月日报业绩数字及合计行缩小，避免大额数字视觉重叠；单日详情隐藏月历月份／批量识别操作栏，返回月历后恢复。
+- 日报原图上传、保存草稿、财务手动入账、返回月历及月历批量识别入口均保留。不改门店隔离、金额来源、原始凭证、数据库、Edge Function 或生产财务数据。
+- 浏览器回归已覆盖 1280×900、390×844、844×390 大额数据无重叠，详情操作栏隐藏／返回月历恢复；完整 `.githooks/pre-push` 门禁已通过。GitHub Pages 线上核验待完成。
+
+## v527 月报现金口径与日报造型区小计校验（2026-09-23）
+
+- App version: v527。基线 github/main v526。月报“美发收入”只汇总当前门店已入账日报的现金业绩 `payment.cash_flow`，不含卡金；已确认日报进入月报前的旧人工调整保留审计且不叠加。财务仍可通过月报调整入口填写原因修改金额，沿用现有锁账、版本快照、权限和审计校验，不写回日报或原表。
+- 日报增加“造型区总小计 ↔ 员工明细合计”页面提示和服务端独立校验。生产只读核验：截图中的向里造型 2026-02-05 已被人工修正为 11,357 且入账；另有 2026-02-03 和 2026-02-07 两份已确认历史日报的小计与员工明细不符，本次不自动改账，需财务对原图核对。
+- 隔离 PostgreSQL 已验证差异阻断、修正通过、缺失阻断及普通账号执行拒绝；月报现金口径、旧调整去重和财务快照调整单元测试通过。完整 `.githooks/pre-push` 门禁已通过，含电脑／手机日报与月报浏览器回归。
+- 生产迁移 `20260923105746_zysyr_daily_stylist_subtotal_validation` 已应用；只读核验 2 月 5 日校验通过，2 月 3、7 日新规则准确报告小计差异。`operations-api` v94 ACTIVE，继续 `verify_jwt=false` 与函数内部会话鉴权，匿名请求返回 403 `AUTH_SESSION_INVALID`。安全／性能顾问无本次对象新增错误，原有无关 RLS 提示未改。
+- 功能提交 `20f2a76` 已推送 GitHub main；Validate shared app `35856322564` 与 Pages `35856321569` 均成功。无缓存读取线上 `version.txt=527`、`operations.html data-version=527`，新日报小计红格和月报“现金业绩（不含卡金）”脚本已生效。未用真实财务账号执行月报调整或日报入账，未代财务修改正式数据。
+
+## 2026-09-23 日报自动扩行来源格位冲突修复
+
+- App version: v526，静态页面和财务登录入口不变。向里造型 2026-01-28、2026-01-31 的草稿金额校验为 true、正式日报均为 0，但每份草稿各有 24 个重复的纸面坐标；技师扩行与产品区重叠，导致入账时报告来源格唯一约束返回 409。
+- 新迁移仅替换 `zysyr_confirm_daily_sheet`：正式来源格按 `section_code` 区分逻辑分区，并以稳定顺序一对一关联员工收入明细。财务范围校验、锁账、金额校验、来源凭证、审核、审计和人工最终确认逻辑不变；不修补或自动确认这两份生产草稿。
+- 已对生产旧函数与仓库基线逐字核对。隔离 PostgreSQL 验证新函数编译和 service_role 执行边界；静态回归验证确认逻辑无其他变化；生产只读模拟分区键下分别为 473/473、474/474 个唯一来源格位。
+- 生产迁移 `20260923091020_zysyr_daily_sheet_section_trace_coordinates` 已应用；线上函数正文与仓库新迁移逐字一致，仍为 SECURITY DEFINER、空 search_path，仅 service_role 可执行。迁移后只读回查 1 月 28、31 日仍是 validation=true 的修订 4 草稿，各自正式日报和确认版本均为 0；没有代财务入账。功能提交 `951c753` 已推送 GitHub main，完整 pre-push 门禁通过；尚未以真实财务账号重试这两天的最终入账。
+
+## v526 兼容真实 22 列月报模板（2026-09-23）
+
+- App version: v526。基线 github/main `8d83f0c` / v525。范围仅修复整月日报业绩在生产 22 列月报模板中未显示的问题；财务独立登录、股东只读、门店隔离、原始月报、凭证、人工修改、入账和美发收入去重规则不变。
+- 生产真实月报范围为 A:V，v525 错误地等待不存在的 W 列后退出。v526 仅在浏览器显示层补出虚拟 W 列，用于“抖音”，继续在 P:W 显示日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音；不修改或回写原 Excel 和月报数据。
+- 新增真实 A:V（22 列）月报回归，覆盖 31 天、合计及电脑、手机竖屏和横屏显示；完整 `.githooks/pre-push` 门禁已通过。功能提交 `33ef9e9` 已推送 github/main，Validate shared app `35821599887` 与 Pages `35821599858` 均成功。线上无缓存读取 `version.txt=526`，页面引用 `operations-monthly-daily-performance.js?v=526` 且脚本包含显示列修复。已登录财务 Safari 实测向里造型 2026 年 1 月：8 列新表头生效，1 月 1 日劳动业绩 2126、现金业绩 2126、团购 226、支付宝 1850、微信 50 分列显示。
+
+## v525 月报内嵌整月日报业绩（2026-09-23）
+
+- App version: v525。基线 github/main `bb3b527` / v524。范围仅月报右侧既有日报业绩区、已入账日报只读投影、对应样式和测试；财务独立登录、股东只读、门店隔离、原始月报文件、凭证、人工修改、正式入账和美发收入去重规则不变。
+- 原月报 P:W 区域固定显示日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音。完整保留当月自然日和合计；劳动业绩取已入账日报 `grand_total`，现金业绩取 `cash_flow`，其他支付字段逐项读取，支付宝和微信分开显示。
+- 只读取当前公司、门店、月份且状态为 `confirmed` 的电子日报；草稿和机器候选不计入。展示层替换原右侧旧外卖／合并支付区域，不修改原 Excel、电子月报金额、日报单元格或财务审计。已入账日可点回对应日报核对。
+- 无数据库迁移。完整 `.githooks/pre-push` 门禁已通过，覆盖静态/API语法、月报审计、日报月历、月报载入、整月映射与合计、原月报缩放、名称编辑、月报照片上传、多月汇总关闭，以及 1280×900、390×844、844×390 真实浏览器回归。生产 `operations-api` 已升级为 v93、状态 ACTIVE、`verify_jwt=false`；无登录只读探针仍返回 403 `AUTH_SESSION_INVALID`，未写入或修改生产财务数据。
+- 功能提交 `1155ec3` 已推送 github/main；Validate shared app `35816884249` 与 Pages `35816884377` 均成功。线上无缓存读取为 v525，并确认月报引用 `operations-monthly-daily-performance.js?v=525`，整月表的日期、劳动业绩、现金业绩、卡金、团购、支付宝、微信、抖音映射已生效。
+
+## v524 报表文件自动识别并按月份归档（2026-09-23）
+
+- App version: v524。基线 github/main `e172e2a` / v523。范围仅月报页红色文件上传入口、服务端报表类型/期间识别和对应测试；绿色月报照片/PDF补传、财务独立登录、股东只读、门店隔离、正式入账和已有财务数据不变。
+- 红色入口不再信任浏览器传入的报表类型或日期：`operations-api` 从 XLSX 保存时的当前工作表或 DOCX 表格内容识别日报、工资表、月报及完整归属期间；门店不符、期间不完整、工作表不明确时在写入私有存储前拒绝。自动保存只登记原件和候选，响应明确标记未改变正式账。
+- 月报“美发收入 / 营业收入”仍由 `confirmedDailyRollup` 的已确认日报唯一总计覆盖；月报原数只保留为 `original_report_amount`，调整为零，且财务调整接口继续阻止重复入账。绿色照片/PDF入口的单独补传、历史附件和短时私有预载逻辑均未修改。
+- 无数据库迁移。完整 `.githooks/pre-push` 门禁已通过，包含自动识别、静态月报、日报防重复、月报工作台、真实浏览器及隔离 PostgreSQL 回归。生产 `operations-api` 已升级为 v92、状态 ACTIVE、`verify_jwt=false`；无登录调用新操作仍返回 403 `AUTH_SESSION_INVALID`，发布未修改任何生产财务数据。
+- 功能提交 `a7074d4` 已推送 github/main；Validate shared app `35758752791` 与 Pages `35758751109` 均成功。线上无缓存读取为 v524，并确认“上传文件（自动识别报表类型和所属月份）”、`report_upload_auto` 和美发收入不重复统计提示已生效。
+
+## v523 关闭月报汇总、加速照片并统一北京时间（2026-09-22）
+
+- App version: v523。基线 github/main `dceba31` / v522。范围仅关闭多月汇总入口、历史月报照片预载和报表时间显示；财务独立登录、股东只读、门店隔离、金额、入账逻辑及原始资料不变。
+- 生产只读核对确认数据库时间正确保存为 UTC：服务端 `2026-09-22 07:39:59+00` 对应北京时间 `2026-09-22 15:39:59`；近期历史附件 `2026-09-22 06:14:03+00` 对应北京时间 `2026-09-22 14:14:03`。旧页面直接截取 UTC 字符串，造成显示慢 8 小时；本版本只统一页面显示，不改写数据库时间。
+- 月报照片在渲染后预取短时私有签名链接并以低优先级预载图片，点击时复用内存缓存；缓存预留过期安全窗口，不写 localStorage，不改变私有存储权限。
+- 本次为静态页面和测试变更，不含数据库迁移或 Edge Function 部署。功能提交 `104b741` 已推送 github/main；完整 pre-push、Validate shared app `35715617354` 与 Pages `35715615883` 均成功。线上无缓存读取为 v523，并确认汇总入口关闭、私有照片预载和北京时间脚本已生效。
+
+## v522 精简历史月报附件入口（2026-09-22）
+
+- App version: v522。基线 github/main `4b72783` / v521。范围仅历史月报顶部附件入口；财务独立登录、股东只读、月报金额、入账逻辑及其他报表入口不变。
+- 生产只读核对确认向里造型 2026-01 历史月报目前有两类附件：既有整月 `voucher_bundle` Word 凭证包与后来补传的 `supporting_document` 月报照片。页面隐藏“打开原文件”和旧整月凭证包，仅保留照片并命名为“月报照片 1、2……”。
+- 本次不删除源文件、凭证、附件关系或审计，不修改数据库、Edge Function 或真实财务数据。功能提交 `3f9f82e` 已推送 github/main；完整 pre-push、Validate shared app `35696780318` 与 Pages `35696779020` 均成功。线上无缓存读取为 v522，并确认历史月报筛选与“月报照片”命名代码已生效。
+
+## v521 月报照片单独补传（2026-09-22）
+
+- App version: v521。基线 github/main `298f4da` / v520。范围仅月报上传表单、已存在月报的照片/PDF补传、历史正式月报附件关联与显示；财务独立登录、股东只读、月报金额和入账逻辑不变。
+- 左侧 Excel / Word 不再用浏览器原生 `required` 阻断提交；本月已有月报时可只选右侧 JPG/PNG/PDF，多张依次上传并反馈进度。没有月报来源时仍必须先建立 Excel/Word 原表，日报和工资表原有要求不变。
+- 历史正式月报附件使用整月 `bundle_only` 关系追加到已完成批次，不冒充单个金额凭证；RPC 仅 service_role 可执行，重复点击幂等、同一文件禁止跨月复用，且函数不更新历史账本金额或版本。
+- 发布状态：功能提交 `0fc60fb` 已推送 github/main；完整 pre-push、Validate shared app `35690554878`、Pages `35690554366` 均成功。生产迁移 `20260922051405_zysyr_completed_history_monthly_attachments` 与 `operations-api` v91 已上线，匿名请求返回 403；线上无缓存读取为 v521，并确认补传控件、历史附件路由和“不改金额”提示已生效。向里造型 2026-01 正式月报仍为 273 条、既有凭证 1 份，发布未改账。
+
+## v520 备用金整月凭证批量上传（2026-09-22）
+
+- App version: v520。基线 github/main b935ea1 / v519，同日备份已核验。范围仅备用金二级页入口精简、整月凭证批量上传、OCR 候选匹配及人工逐笔确认；财务独立登录、股东只读、金额和入账逻辑不变。
+- 红框旧入口仅在备用金页隐藏，后台能力及其他财务页面不删除；原有逐笔上传继续保留。批量上传支持最多 60 份 JPG/PNG/PDF，显示逐份进度和识别状态并阻止重复点击。
+- 原件进入现有私有凭证库；OCR 仅生成日期、金额、商户和票据号候选。日期与金额唯一一致时才允许“确认全部明确匹配”，其他项目须人工选择。确认 RPC 原子追加当前或历史逐笔关联与审计，不改金额、原始导入行或入账版本，且只允许 service_role 调用。
+- 定向与完整 pre-push 门禁均已通过，覆盖真实浏览器上传反馈、手机/电脑布局、候选匹配、当前/历史明细、幂等、防跨项复用和财务数据不变。生产迁移 `20260922042000 zysyr_petty_cash_batch_vouchers` 已应用；新 RPC 匿名／普通登录无执行权、仅 service_role 可执行，函数定义不更新当前备用金或历史账本。`operations-api` v90 ACTIVE，9 个部署源码／依赖含新匹配模块且保持 `verify_jwt=false` 和既有内部财务鉴权；无会话新接口探针为 403 `AUTH_SESSION_INVALID`。安全／性能顾问只有既有旧项，没有本次新增表或函数提示。功能提交 `711bfd6` 已推送 main，Validate `35686990636` 与 Pages `35686989878` 均成功；线上无缓存 `version.txt=520`，报表页引用 v520，批量脚本与本地 SHA-256 一致。生产批量凭证仍为 0，未上传真实凭证、未修改财务金额或执行入账。
+
+## v519 备用金逐笔消费凭证（2026-09-22）
+
+- App version: v519。基线 github/main ac61abd / v518，同日备份已核验。范围仅备用金逐笔凭证展示、补传和反馈；财务独立登录、股东只读、金额及入账逻辑不变。
+- 历史正式备用金改为逐项卡片，每一笔只打开精确关联的原图，整月 Word 包继续永久留底但不再代替单笔凭证。财务可在具体记录旁上传或补传 JPG/PNG/PDF，并在确认页核对日期、摘要、金额和文件预览。
+- 当前记录上传继续经过财务审核，待审核状态立即显示并禁用重复上传；历史正式账补传只追加证据、精确关联和审计，不更新金额、原始导入行或入账版本。门店范围由服务端重新校验，RPC 仅 service_role 可执行。
+- 手机 390px 单列、电脑 1280px 双列浏览器回归、隔离 PostgreSQL 及完整 pre-push 门禁已通过，覆盖逐笔关联、幂等、门店隔离、审计和财务数据不变。生产迁移 `20260922030332 zysyr_history_item_evidence_upload` 已应用；RPC 匿名／普通登录无执行权、仅 service_role 可执行，且函数定义不更新历史账本。`operations-api` v89 ACTIVE，8 个部署源码／依赖与本地逐字一致，继续 `verify_jwt=false` 和原有财务会话鉴权；无会话备用金请求仍为 403 `AUTH_SESSION_INVALID`。数据库顾问未发现本次函数／证据表新增提示，现有旧表 RLS 与索引建议不在本次范围。功能提交 `4f7e284` 已推送 main，Validate `35682339672` 与 Pages `35682338990` 均成功；线上无缓存核验 `version.txt=519`，`operations.html` 及 `operations-petty-cash-evidence.js` 与本地逐字一致。未修改真实财务金额或执行入账。
+
+## v518 日报误传作废与正确原图重传（2026-09-22）
+
+- App version: v518。基线 github/main aa0da78 / v517。范围仅日报原图误传处理、有效来源选择及附件显示；其他 App 只同步版本标识／缓存参数，财务独立登录入口保持不变。
+- 未入账草稿可将错误原图标记为“误传作废”并填写原因；原文件、哈希、上传记录和新作废事件永久保留，作废件不再参与预览、识别、原图计数或入账来源。若当前来源被作废，自动切换到最近一份有效已审核原图，否则要求重传。
+- 已入账或锁账日报禁止作废原图，须先走冲销。新 RPC 仅 service_role 可执行，并校验财务角色、门店、草稿状态、锁账和原因；无痕删除继续被数据库阻止。
+- 隔离 PostgreSQL、电脑／手机浏览器与完整 pre-push 回归已通过：原件保留、来源替换、重复作废拦截、正式日报拦截、审计、权限、有效预览排除及重传提示均正常。生产迁移 `20260921154502 void_mistaken_daily_attachment` 及 `20260921160358 zysyr_daily_attachment_void_indexes` 已应用；新表启用并强制 RLS，匿名／普通登录无执行权，所有新外键均已覆盖索引。`operations-api` v88 ACTIVE，继续 `verify_jwt=false` 和原有财务会话鉴权，无会话请求仍为 403 `AUTH_SESSION_INVALID`。功能提交 `77b9069` 已推送 main，Validate shared app `35624857690` 与 Pages `35624855678` 均成功；线上无缓存核验 `version.txt` / `version.json` 为 518，重传、作废、审计文案及作废件排除标记全部生效。未修改真实财务数据，未自动入账。
+
+## v517 日报原图操作反馈与员工行自动扩展（2026-09-21）
+
+- App version: v517。基线 github/main 7df594d / v516，同日备份已核验。范围仅日报原图操作状态、模板员工行生成和识别前旧草稿扩行；财务登录、股东只读、入账确认和月报口径不变。
+- 生产只读定位：现有模板固定为发型师 8 行、向里技师 6 行／自由手艺人技师 7 行；在职岗位人数已可能超过上限。新逻辑按岗位独立计数（兼任可进入两个分区），上限 20 行／分区，旧草稿在识别前补空白行。
+- 自动扩行 RPC 仅 service_role 可执行，校验财务门店范围、草稿状态、修订号与锁账；只新增 blank_template 单元格，保留所有人工值与机器原始候选，并写审计事件。
+- UI、隔离 PostgreSQL 与完整 pre-push 门禁已通过：上传／识别单通道防重复、常驻进度及结果提示、动态增行、重复调用幂等、人工修改保留、修订冲突、审计和浏览器直连拒绝。生产迁移 `20260921122454 daily_recognition_adaptive_staff_rows` 已应用，安全／性能顾问无新增提示；`operations-api` v85 已激活且继续保留原有自定义财务登录边界（`verify_jwt=false`，无会话请求仍为 403）。功能提交 `6e05d4a` 已推送 main，Validate shared app `35601031440` 与 Pages `35601029686` 均成功；线上 `version.txt`／`version.json` 为 517，页面和识别脚本的按钮、常驻状态、防重复与自动增行标记均已无缓存回读。未调用真实日报保存／识别／入账。
+
+## v516 月报多月汇总修复（2026-09-21）
+
+- App version: v516。基线 github/main 1870a7e / v515，同日备份已核验。范围仅月报汇总服务及独立显示模块，其他 App 只同步版本标识／缓存参数。
+- 生产只读证据：两门店 2026 年 1–6 月均在 posted 历史账本；旧 monthly_summary 只查新上传表，且预设范围取系统当前月，导致无数据时仍留单月表。现补历史来源并使用选定月份，不改变原有 overview／入账写入逻辑。
+- 新汇总复用有效历史公式和上传修订计算，已确认日报替代月报收入，不重复计账；行以原表单元格与项目／姓名区分，未命名格不跨月猜测。按门店批量读历史账本，限 12 个月，日报读取并发不超过 3，避免重复解析整份工作簿。
+- 定向后端及真实页面合成 API 浏览器回归已通过：来源优先级、调整、公式、日报防重复、不同姓名、固定编号、空月／错误／重试、范围、刷新、迟到响应隔离、未保存保护、手机／iPad／电脑宽度。未以合成测试冒充真实账号验收。
+- 已通过一轮完整 pre-push 门禁；收尾补充跨页面切换门店和全年 12 列布局后，定向浏览器／金额测试再次通过。发布状态：待 operations-api 部署及 GitHub Pages 发布核验；无迁移，不更改生产财务金额或授权，不恢复识别执行器。
+- 功能提交 c780f106 已推送 GitHub main，实际 push 完整门禁通过；Validate 35561415040、Pages 35561414539 均 success。线上无缓存 version.txt=516，version.json／operations.html／operations-monthly-summary.js／perm-app.html 均与本地逐字一致。
+- operations-api v84 ACTIVE，保持 verify_jwt=false 和既有内部鉴权；8 个部署源码／依赖文件 SHA-256 全部与本地一致。线上无凭证 monthly_summary 探针 403 / AUTH_SESSION_INVALID。生产只读核查两门店 1–6 月历史金额格无重复地址；未以真实账号调用成功链路，未代用户入账或调整金额。
+
+## v515 股东报表读取修复（2026-09-21）
+
+- App version: v515。基线 github/main d94cc20 / v514，同日备份已核验。只改报表嵌入与只读识别请求边界，不更改财务登录、股东服务端白名单、数据库授权或业务数据。
+- 已复现 v514：股东日报渲染后 50ms 定时读取 daily_recognition_job_read，服务端正确拒绝，前端因此隐藏整页；旧浏览器测试只检查内存数据和隐藏的按钮，遗漏 app 仍须可见的断言。现限定识别任务为有写权限的财务流程。
+- 在 head 阶段隐藏 App 股东模式的财务登录卡片，显示员工会话加载状态和失败重试；现有独立 operations.html 财务入口不受影响。iframe 加当前版本参数。
+- 浏览器回归已覆盖慢会话不闪登录、实际 iframe 月报／日报可见、延迟识别请求为零、财务会话不变、撤权隐藏和重试；新增手机竖／横屏及 iPad 月报可见性检查。完整 pre-push 门禁通过，包含隔离 PostgreSQL 授权、财务登录／保存／入账保护、月报防重复汇总及其他 App 回归。测试使用真实页面和合成接口，不宣称用户 iPhone／生产真实账号已验收。
+- 功能提交 e649fac 已推送 GitHub main；Validate 35557758572、Pages 35557758168 均 success。无缓存核验 version.txt=515，version.json、perm-app.html、operations.html、employee-reports.js、operations-staff-view.js、operations-daily-recognition.js 与本地逐字一致。后台 operations-api 保持已核对的 v83，未部署函数／迁移，未改变财务记录和授权。
+
+## v514 App 股东报表整合（2026-09-21）
+
+- App version: v514。用户明确同意员工认证／权限升级，同时要求现有财务入口保留。改动在本隔离工作树，基线 github/main v513；未合入其他工作树业务。
+- 员工编辑中独立配置股东可查看门店，可多选、取消全部撤权；职位标签不授予权限。App 入口按服务端授权出现；operations-api 员工令牌分支仅允许报表读取，每次检查在职、会话、当前授权和门店。现有 finance Auth、operations.html 登录及财务确认逻辑保留。
+- 受保护 staff-access-api 负责员工管理及权限审计；注册始终 pending/staff。迁移第一步新增私有会话、门店授权和审计／限流，第二步收紧 staff 直连（必须在兼容 API 和静态页面上线后）。staff 安全通讯录列保留，密码查询及匿名写入拒绝。
+- 隔离 PostgreSQL 和真实 Edge 代码测试已通过；真实页面合成 API 浏览器验证授权编辑、App 内打开、只读日/月报、跨门店拒绝、撤销和同设备财务会话不被清除。全量 pre-push 通过（含原有财务登录、日报保存／入账、月报防重复累计）。
+- 已发布功能提交 `6bd1bac`；GitHub Validate `35555458355`、Pages `35555458103` 成功。线上 version.txt=514，perm-app/admin/operations、3 个新增脚本与 4 个旧入口页面均无缓存逐字一致。staff-access-api v1、employee-bookings-api v3、operations-api v83 ACTIVE，全部部署源码／依赖与本地一致，沿用函数内自定义鉴权。
+- 两个迁移已按兼容顺序应用；生产迁移历史版本分别为 `20260921024806 staff_report_access` 与 `20260921025354 staff_credentials_private`（MCP 生成的时间戳，与仓库文件时间戳不同，按名称对应，勿重复应用）。生产检查 staff RLS=true，匿名及普通登录密码列不可读、任意写权限=false，安全通讯录列和 service_role 保留；新授权记录为 0。
+- 线上最小无凭证探针：财务会话／员工会话／后台会话均 403；股东写入操作 403；通讯录 limit=0 返回 200，密码列读取／密码过滤／私有门店授权读取均 401/42501。未用真实账号验证登录成功，首次真实股东授权仍需管理员选择账号后验收。
+- 不创建真实股东账号、不猜测授权对象、不改财务数值、不执行入账。新增管理员页面升级后需重新登录一次；现有财务无需切换入口。公开凭证风险收紧不等于整个旧 App 全表安全改造；历史暴露凭证建议管理员轮换。
+
+
+## v513 日报姓名与多格金额联合保存（2026-09-20）
+
+- App version: v513。生产只读审计定位到姓名先被人工核对项改正，随后同一行数字项携带的旧 row_label 又反向覆盖；金额校验通过，但 v512 的回读保护正确拦住了错名入账。
+- 本次仅修复 operations-api 保存载荷：已有数字项的姓名元数据不授权改名，显式姓名项排到金额／新增格之后；同一格金额与姓名继续合并为一条审计。旧页面保留的编辑可以直接重试，不强制刷新。
+- 隔离 PostgreSQL 已复现旧版整行姓名被覆盖；新增整行一致性、两种输入顺序、新增格及审计回归。浏览器测试调用真实服务端保存规范化逻辑，覆盖两门店、桌面／手机，姓名与多格金额保存再入账保持一致。
+- 无数据库迁移，不更改生产金额／姓名，不自动入账；权限／公司门店鉴权、回读保护和人工最终确认保留。版本标识同步不包含其他 App 业务修改。
+- 完整 pre-push 通过，功能提交 `8e78c22` 已推送 GitHub main；Validate `35512658480`、Pages `35512657966` 均成功。operations-api v82 ACTIVE，保持既有 verify_jwt=false 和函数内部鉴权；线上函数源码与本地逐字一致。无缓存核验 version.txt=513，两份主页面也与本地逐字一致；未登录探针返回 403 / AUTH_SESSION_INVALID。
+- 发布期间只读回查用户反馈的日报已成为 confirmed，正式日报只有一个版本、明细累计与核对金额一致；助手未调用生产保存或入账。完整上线前的并发编辑、恢复演练和真机验收待办仍保留，不因本次修复被视为完成。
+
+## v512 日报清空值持久化与上线前检查（2026-09-20）
+
+- App version: v512。生产只读确认用户反馈的日报草稿已保存且金额校验通过，但仍存在未覆盖的旧候选；显式清空未写 manual_override 导致回显。隔离数据库复现旧行为，修复所有显式值（含 null）的人工覆盖及 value_reviewed 审计，不修补或猜测既有财务值。
+- 页面先验证保存回读再替换编辑器；异常保留输入；导航、后台刷新不丢编辑，月历显示草稿已保存待入账。公司说明／备注不重复生成行且能回读。
+- 用户明确同意修复报表权限：3 张表启用 RLS 并撤销 public/anon/authenticated 直连；4 个 SECURITY DEFINER RPC 撤销 public/anon/authenticated EXECUTE，保留 service_role。仅更改保护策略，不动数据。
+- 完整发布门禁及隔离回归通过。迁移 20260920110534／20260920110545 已应用，生产只读回查 zysyr 表 RLS 全启用、匿名／普通登录直接可执行的 zysyr 特权函数为 0；正常 service_role 访问保留。operations-api v81 部署源码与本地一致。
+- 功能提交 92c314d 已发布，Validate 35507600921／Pages 35507600665 成功。线上无缓存核验 version.txt=512，operations.html、operations-daily-review.js、operations-daily-recognition.js 与本地逐字一致。未登录日报只读请求返回 403 / AUTH_SESSION_INVALID。生产日报状态未代改。
+- 尚不等于多人／多端并发编辑及真实 iOS 设备已验收；工程归档不等于数据库／原图灾备，全面上线仍需恢复演练，详见上线检查报告。
+
+## v511 报表完整适配屏幕（2026-09-20）
+
+- App version: v511。按用户截图隐藏 `daily-recognition-job` 整月识别进度区域，保留历史记录和原图识别能力。
+- 新增独立 `operations-report-fit.js`，统一缩放月报、日报、工资、备用金和历史原表容器。移除原先只在手机／矮横屏启用、最小缩放 .68/.7 的限制；ResizeObserver、视图显隐及内容重绘后自动重算，不阻止原生双指缩放。
+- 合成浏览器检查 390×844、844×390、1024×768、1366×1024、1920×1080 下全部表列不水平溢出；保留日报编辑／保存／确认回归。只涉及显示，不修改后台或财务数据。
+
+## v510 日报保存 409 与姓名候选复核（2026-09-20，已发布）
+
+- App version: v510。向里造型 2026-01-01 生产只读核验：页面金额可显示一致，但草稿仍是未确认状态；点击入账时保存阶段返回 409，整批单元格修改回滚，未产生正式账。
+- 根因是同一次保存中，金额与姓名分别作为同一个单元格提交，命中审计表每单元格／修订版唯一约束；姓名-only 项还会被服务端误当作清空金额。服务端合并重复单元格，并保留缺少 `value` 时“不改金额”的语义。
+- 数据库增加显式姓名已核对审计标记。财务确认与机器候选相同的姓名时，也将该行标记为人工核对，并写入一条审计；保存草稿不自动入账。隔离 PostgreSQL 测试已复现旧 409，并通过合并保存、金额保持、姓名核对、原始候选不变及门店权限回归。
+- 完整门禁通过；迁移 `20260920071049` 与 `operations-api` v81 已部署。功能提交 `1ec39f3` 已推送，Validate `35497573601`、Pages `35497572818` 成功，线上 v510 与脚本哈希核验通过。随后只读查询确认向里造型 2026-01-01 已由财务成功确认：修订6、总计2126、全部校验通过、正式日报 approved 且版本／原图关联完整；助手未代财务入账。
+
+## v509 日报双按钮与一次核对入账（2026-09-20，已发布）
+
+- App version: v509。按用户要求将电子日报顶部、底部收敛为“保存草稿”和“入账”，返回入口明确为“返回月历”。原独立采纳按钮和核对复选框合并到入账时的一次原生确认；确认显示门店、日期、金额，明确财务逐格核对原图、姓名、金额、空白及支付方式。修改说明为折叠选填。
+- 沿用现有保存／确认 API：保存不入账；入账时将已核对黄色数字与姓名沿单元格审计保存，再核验回读值、原件审核、财务权限、锁账及后台校验，最后正式确认。操作期间锁定切换及重复点击；网络结果不明时先查询，不盲目重提。不会覆盖已人工修改值，月报收入仍仅累计已确认日报。
+- 合成浏览器覆盖两门店、桌面／窄屏、表头对齐、候选姓名及数字、保存不入账、一次核对入账、取消、保存失败、后台校验失败、回读变化、重复点击、网络断开后的只读恢复和权限／锁账阻断；修复原图识别完成回调对已移除复选框的引用。
+- 本次仅前端与回归测试，无数据库迁移或 Edge Function 修改，不重启已停止的批量识别，不修改或确认生产日报。完整 pre-push 门禁及独立三尺寸原图／凭证浏览器回归通过。功能提交 `e9688f0` 已推送 GitHub main，Validate shared app `35492684507`、Pages `35492684086` 均成功。线上无缓存核验 `version.txt=509`、双按钮与 v509 脚本引用生效；核对／入账脚本与识别兼容脚本均与本地文件完全一致。
+
+## v508 日报汇总表头错位与具体差异定位（2026-09-20，已发布）
+
+- App version: v508。向里造型 2026-01-01 生产只读检查：草稿仍为修订 v4；`actual_total`、`grand_total`、`cash_flow` 候选各为 226，`treatment_card` 手工值为 2126。页面表头将技师栏、实做、总计合并列，但输入行未采用对应列宽，导致“实做”下方实际呈现疗程卡输入，用户修改看似无效。上次 v507 只修复了小计双算，本次修复汇总／支付表头和输入行使用同一合并列定义。
+- 保留单元格 ID、原始候选、手工金额及审计；不迁移或猜测财务金额。补全汇总／支付行标识。汇总区红色差异标到具体输入格，显示“实做／汇总总计／现金流／支付总计”的实际金额和比较金额；候选提示明确下一步点击采纳再确认。
+- 新增真实浏览器合成回归，检查两门店在桌面／窄屏的 26 个字段与表头像素对齐，模拟修改、保存载荷、回读、候选采纳到确认可用全流程；回归纳入 pre-push。生产数据尚未修改或入账；上线后财务需核对实做、总计、现金流及旧错位下编辑的疗程卡，再采纳候选、最终确认。
+- 完整 pre-push 门禁通过，功能提交 `240eaf2` 已推送 GitHub main。Validate shared app `35490952664`、Pages `35490951935` 均成功；线上无缓存检查 `version.txt=508`、日报版本 508、汇总／支付列跨度定义以及具体差异提示脚本均已生效。只读查询不写生产财务数据。
+
+## v507 日报错误双算与候选采纳按钮修复（2026-09-20，已发布）
+
+- App version: v507。向里造型 2026-01-01 截图显示员工明细 4252／小计 2126、项目小计 0；定位到页面将 2126 的发型师项目小计行误标为员工明细，又没有识别为项目小计，导致显示端恰好双算。数据库该行本来就是 `category_total`，未改动原金额或数据库角色。
+- 页面优先使用已有单元格的数据库 `cell_role`，空白小计行按类别生成正确角色；技师小计、产品及汇总区也避免沿用错误的员工明细默认角色。修复勾选“已逐格核对”后只执行旧监听器、导致“采纳已核对候选”仍灰色不可点的问题。
+- 在已有日报回归中加入 2126／2126／2126 可通过的重复计数测试及勾选后按钮可用测试。仅修页面校验与交互，不自动采纳候选、不确认入账。提交 `a3ca7cb` 已推送 GitHub main；Validate shared app `35489668646` 与 Pages `35489668154` 均成功。线上无缓存核验 `version.txt=507`、`operations.html data-version=507`，且引用 `operations-daily-review.js?v=507`。
+
+## v506 电子日报候选核对、保存反馈与月报收入去重（2026-09-20，已发布）
+
+- App version: v506。向里造型 2026-01-01 为定位样本；生产只读核验发现 OCR 黄色候选未被财务逐格采纳，后台不能把它当成已核对金额。该日候选员工和支付方式合计均为 2126，但实做／总计与现金流候选均为 226，需财务依原图核对，不自动改数或正式确认。
+- 电子日报显示未采纳候选数量、明确采纳按钮和持久保存结果；采纳须财务勾选已核对并再次确认，沿既有逐格审计保存，不会自动入账。新填空白格也参加页面实时合计。保存后刷新月历；未通过后台校验的草稿不显示权威营业收入。
+- 月报美发收入在有已确认日报后仅采用已确认日累计；既有月报手工调整保留审计但不再叠加，也不允许再次修改该收入格。未确认草稿不进入月报收入追溯。
+- 隔离 worktree 开发，不修改生产财务数据或启动已停止的日报识别执行器。完整 pre-push 门禁、独立数据库回归及 v506 候选／月报去重回归均通过。生产 `operations-api` v80 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权；匿名探针返回 403 `AUTH_SESSION_INVALID`。功能提交 `53094fd` 已推送 GitHub main；Validate shared app `35488110091` 与 Pages `35488109336` 均成功。线上无缓存核验 `version.txt=506`、`operations.html data-version=506`、新候选核对脚本与月报脚本 v506 标记均生效。发布后只读核验向里造型 2026-01-01 仍是草稿修订 v4、校验未通过，1 月已确认日报 0 天；未代财务改数或入账。
+
+## v505 护理手动出库与品牌独立月报（2026-09-19，已发布）
+
+- App version: v505。关闭 App 自动出库；新保存、重复保存、旧 pending 恢复与直接提交均受总开关保护，护理明细继续保存，历史批次和快照保留。
+- 后台护理月报按欧拉裴、歌薇酸性护理、歌薇上色水分别显示员工用量与月合计，各品牌独立展示产品／色号明细。其他历史品牌单独保留；按门店与月份完整分页，过时查询不覆盖新查询，空月或失败清除旧结果。
+- 本机 `com.freecraftsman.care-outbound` 已 disable + bootout；实际运行配置 `runtime_enabled=false`、自由手艺人 `enabled=false`，配置与仓库 SHA-256 一致。实际执行器使用关闭配置启动后立即退出，没有调用出库接口。独立会话保活、预约与客户同步保持原状。
+- 原开发目录两处未提交关闭改动已保留；本次从 `github/main` v504 建立独立 worktree，未混入 Salon 分支。部署仅同步关闭配置，未覆盖已有运行端 worker 差异。
+- 已通过护理关闭/历史协议测试、品牌统计与分页测试、护理月报浏览器测试及完整 pre-push 发布门禁。功能提交 `e1cb240` 已推送 GitHub main；Validate shared app `35432981107` 与 Pages `35432980977` 均成功。线上无缓存核验 `version.txt=505`、App 关闭开关、后台独立品牌明细容器和 v505 月报模块均已生效。未修改生产护理记录或库存。
+- 线上只读核验月报分页请求 HTTP 206（2026-08 自由手艺人共137条）；协议 v2 `pending/processing` 队列为0条。
+
+## v504 日报入账阻断提示与差异定位（2026-09-14，已发布）
+
+- App version: v504。财务点击日报“最终确认并入账”时，如果仍有未保存修改、缺少已审核原件、内部合计不一致或尚未勾选逐格核对，页面不再无反应；按钮会明确显示阻断原因。
+- 内部合计不一致时自动定位第一处红色差异单元格。只有员工明细、项目列、实做/总计与支付方式四组合计全部一致，才调用正式入账接口；没有放宽数据库校验，也不会强行写入错误日报。
+- 已确认日报的总计继续自动汇入当月月报“主营收入”；未确认草稿不进入月报，避免重复或错误汇总。
+- GitHub main 功能提交 `e8e8622` 已发布；Validate shared app `34808512567` 与 Pages `34808510874` 均成功。CDN 无缓存核验 `version.txt=504`、页面版本、可点击阻断提示与红色差异定位代码均已生效；本次未强行确认或写入任何生产日报金额。
+
+## v503 全量日报 Codex 识别与财务上传自动候选（2026-09-14，发布中）
+
+- App version: v503。财务账号继续使用既有 `daily_report.write` 权限上传 JPG/PNG 日报原图；上传成功后自动调用本机 Codex，识别数字、姓名和备注并填入电子日报待核对候选，财务确认前不正式入账。
+- 修复同一纸质格出现在重叠放大区时被 Codex 重复返回、进而导致整天识别失败的问题：本机可信边界按置信度保留每格最佳候选，Edge Function 继续严格拒绝未知或重复格子。
+- 增加仅本机密钥可调用的后台续跑入口与批量执行器；任务仍使用启动任务的有效财务账号和既有门店权限 RPC 写入，关闭页面不再中断全量识别，密钥不会下发浏览器。
+- 本机桥接最多同时处理 2 张日报，两条任务各自保持逐日串行；并发上限固定，既缩短全量耗时，也避免无限并发影响识别稳定性。
+- 生产发布、全量历史原图识别及逐月核对清单正在执行；任何识别失败、缺图或低置信度数据保留给财务核对，不伪装为已确认。
+
+## v502 隐藏工资报表导航入口（2026-09-14，已发布）
+
+- App version: v502。左侧导航隐藏“工资报表”，仅收起入口，不删除工资报表页面、原始附件、历史版本、审计或追溯数据。
+- 月报技术人员、后勤人员和工资金额进入工资报表的现有路径继续保留。本地浏览器回归已验证工资及三个低频导航入口均隐藏，同时备用金直达和原有月报追溯回归通过。
+- 功能提交 `f24e264c52e65fa5e258d0cf1cd0dcf25c2b080d` 已推送 GitHub main；Validate shared app `34774515386` 与 Pages `34774514853` 均成功。CDN 无缓存核验 `version.txt=502`、工资导航隐藏、月报工资跳转标记及 v502 脚本缓存均已生效；没有修改任何工资或财务数据。
+
+## v501 月报备用金直达与导航精简（2026-09-14，已发布）
+
+- App version: v501。月报左侧“备用金”汇总金额直接进入当前门店、当前月份的备用金明细；右侧备用金单项金额仍按原方式编辑、上传及查看单笔凭证。
+- 左侧导航隐藏“备用金明细”“报表档案”“历史数据导入”，只收起入口、不删除页面、业务数据或历史资料。
+- 备用金汇总格无需单独凭证，凭证继续关联到逐笔备用金记录，追溯链保持为“月报备用金 → 备用金明细 → 单笔原始凭证”。本地浏览器回归已验证汇总直达、门店/月不变、右侧单项不误跳转和三个导航入口隐藏。`operations-api` version 69 已 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码含新分类且匿名请求返回 403 `AUTH_SESSION_INVALID`。
+- 功能提交 `ec6a78105d0897714970f0a3a9601f1d48a89220` 已推送 GitHub main；Validate shared app `34771620442` 与 Pages `34771619819` 均成功。CDN 无缓存核验 `version.txt=501`、页面版本、三个隐藏入口、备用金直达函数和 v501 脚本缓存标识均已生效；发布验收没有修改任何生产财务数据。
+
+## v500 月报名与明细名称可编辑（2026-09-14，已发布）
+
+- App version: v500。按用户圈定范围，财务进入“编辑月报”后可修改或新增左侧收入/支出项目名、技术与后勤人员姓名、产品进货/零售成本/备用金/杂项明细名称；预留空白姓名和明细名称格具有可见边界。
+- 栏目与分组标题、固定编号、小计、合计及盈亏名称保持只读。金额和名称共用“保存本月修改”，名称会更新金额追溯显示标签，但不覆盖原始 Excel。
+- 新增只追加名称修订表与服务端批量保存 RPC，记录原名称、修改前后、单元格、操作人、时间和原因，并执行财务能力、公司/门店、月份、并发版本、锁账授权、RLS、service-role-only 与不可删除/覆盖检查。
+- 本地页面语法、月报金额回归、新名称浏览器回归及隔离 PostgreSQL 权限/锁账/审计/不可篡改测试已通过。生产迁移 `zysyr_monthly_editable_names` 已应用；新表启用并强制 RLS，浏览器角色不能执行写入 RPC；`operations-api` version 68 已 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名请求返回 403 `AUTH_SESSION_INVALID`，在线源码已核验名称识别、保存路由与修订表读取。
+- 功能提交 `b887b1853d21d9ce30eaff6a35d2486539d18ea9` 已推送 GitHub main；Validate shared app `34766756302` 与 Pages `34766755915` 均成功。CDN 无缓存核验 `version.txt=500`、`operations.html data-version=500`，编辑月报入口、名称输入样式、名称保存操作及 v500 脚本缓存标识均已生效。发布验收没有修改任何生产月报名称或金额。
+
+## v499 月报编辑模式与超长查询修复（2026-09-13，已发布）
+
+- App version: v499。线上 Safari 已复现向里造型 2026-09 的原始网络异常；该正式月报有 450 个单元格，旧 UUID 查询超过 16KB。改为既有外键关联的公司/门店/报表范围短查询，错误信息不再暴露内部 URL 和数据编号。
+- 真实点击回归发现 operations-daily-recognition.js 包装月报渲染时遗漏 keepEditMode，刚打开的编辑模式被立即关闭。修复为转发参数，并避免重复添加日报汇总提醒。
+- 编辑准备完成后始终重新读取；读取失败不进入编辑、不误建空月报。请求序号及门店/月范围检查阻止旧响应覆盖当前页。
+- 450 单元格生产只读结构的本地隔离浏览器回归已通过：截图所列左侧空白收入/开支金额、备用人员金额框具有边界，可填写；模拟保存回读、失败后刷新恢复、过时响应隔离通过。测试没有写入生产金额。
+- 无数据库迁移；operations-api version 67 已 ACTIVE，verify_jwt=false 保持不变，在线源码逐字符匹配本地。已登录 Safari 实测向里造型 / 2026-09 在旧 v498 页面点击刷新后恢复显示真实 450 单元格月报，原来的超长查询异常消失。
+- 完整 pre-push 门禁已通过，功能及发布标识提交已推送 GitHub main：99b1d5c2e7074ae9d131a225312ab67f19c6ca47。真实表结构测试和电脑/手机凭证回归通过，未修改正式账金额。
+- GitHub Pages 首次 build 1212197086 受官方 Pages/API 故障影响后失败；按同一 main 提交重新触发的构建已于 2026-09-13 10:12 UTC built。CDN 无缓存核验 version.txt=499、operations.html data-version=499，脚本缓存标识均为 v499。
+- 已登录 Safari 线上实测向里造型 / 2026-09：点击「编辑金额」后显示 428 个金额输入框，其中 122 个为保持空白且有灰色边界的可填金额位；「保存金额修改」出现，编号和姓名保持固定，页面无 SendRequest、REST URL 或数据库编号泄露。验收后点击「结束编辑」，没有填写或保存任何生产金额。
+
+
+## v498 月报空白金额位可见、可填、可保存（2026-09-13，已发布）
+
+- App version: v498。按用户在原表截图中圈定的范围，财务进入“编辑金额”后，原表尚未填写的金额位置也显示灰色输入边界，并可填写、预览和保存；编号、员工姓名、项目名称和备注仍保持固定。
+- 空白金额位覆盖左侧收入/支出金额列、技术与后勤人员金额区、产品进货、零售产品成本、备用金及杂项明细金额区；已有月报首次编辑时幂等补齐，新月份解析原版 XLSX 时直接登记。
+- 所有新增金额位以空白显示、以 0 作为只追加调整基数，沿用现有金额修改、锁账、公司/门店隔离、追溯节点和永久审计；浏览器角色无权直接调用补齐 RPC。
+- 本地静态、1280×900/390×844/844×390 浏览器回归和隔离 PostgreSQL 权限、锁账、幂等、审计测试已通过。生产迁移 `20260913063300` 已应用；`operations-api` version 66 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，线上源码已核验新补齐路由和结构识别函数。新 RPC 对 `anon/authenticated` 均无执行权、仅授予 `service_role`。数据库顾问未新增本次对象错误，现有 4 项旧表 RLS error 与本次迁移无关。GitHub main 功能提交 `f18ee29` 的 Validate shared app `34744821110` 与 Pages `34744820674` 均成功；CDN 无缓存核验 `version.txt=498`、`operations.html data-version=498`、编辑准备入口与空白金额边界样式均已生效。
+
+## v497 月报所有金额格可编辑（2026-09-13，已发布）
+
+- App version: v497。按用户确认范围，编号、员工姓名和所有文字标签保持固定；月报中已有的收入、支出、工资、产品进货、公式、小计、合计及盈亏等金额格全部开放给具备 `confirmed_finance.adjust` 权限的财务编辑。
+- 首页“编辑金额”模式与金额二级页使用同一套只追加调整：预览后保存，保留原始报表金额、公式、日报、工资表、明细和凭证，仅叠加人工调整并重新计算相关公式；记录修改前后、差额、原因、操作人和时间。
+- 修复两层旧限制：`operations.html` 不再只生成普通输入框，`operations-monthly-workbench.js` 不再把合计和产品进货汇总二次改回只读；已有月报的“编辑金额”按钮不再被错误隐藏。
+- 新迁移 `20260913054249_zysyr_monthly_all_amount_cells_editable.sql` 继续执行财务能力、公司/门店、月份、来源、并发快照、锁账授权及 service-role-only RPC 校验；编号/序号/员工号仍被数据库拒绝。
+- 本地静态回归、完整发布门禁、隔离 PostgreSQL 与 1280×900、390×844、844×390 浏览器回归通过；Supabase migration dry-run 显示远端已对齐。生产迁移已应用；`operations-api` version 64 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，在线源码已核验新金额规则，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；迁移后安全与性能顾问均无 error。本次开发和测试未修改任何生产财务金额。
+- GitHub main 功能提交 `b489994` 的 Validate shared app `34741274853` 与 Pages `34741274282` 均成功；CDN 无缓存核验 `version.txt=497`、`operations.html data-version=497`、统一金额调整入口及工作台 `category !== 'fixed'` 分支已经生效。
+
+## v496 日报原图方向保存与新月编辑修复（2026-09-13，已发布）
+
+- App version: v496。基于已发布 v495，为财务端日报每一张 JPG/PNG 原图增加独立的「保存方向」操作；向左转、向右转或自动摆正后保存，退出、刷新及重新打开仍保持该图片方向。同时修复财务点击「开始填写本月月报」时因重复上传 XLSX 返回 400、导致电子月报无法建立的问题。
+- 原始图片文件保持不可变；显示方向以追加版本保存，记录门店、日报、附件、修改人、时间、前后角度和原因。只允许具有 `daily_report.write` 的账号保存，股东仍为只读。
+- 新月份现在复用当前门店已经留存且不可变的原版月报模板文件，只为所选门店和月份建立独立的电子数据、公式、修改版本及追溯节点，不再把再上传一份重复 XLSX 作为开始编辑的前置条件；页面明确显示「打开来源模板」。
+- 实测发现 Supabase 当前请求只提供完整 `request.jwt.claims`，旧 RPC 仅读取 `request.jwt.claim.role`，因而错误返回 `service role required`。兼容迁移同时修复月报草稿登记与日报图片方向保存，仍只允许 service role 调用，`authenticated` 无法直接执行。
+- 三项生产迁移已应用，`operations-api` version 63 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权；匿名 overview 返回 403 `AUTH_SESSION_INVALID`。线上以财务账号实测「向里造型 / 2026-09」成功建立电子月报，并进一步发现旧模板中有些当月金额被写成“只含常数的公式”，会被新月份错误重算。现已改为只保留真正引用其他单元格的结构公式，普通数字及只含旧月份常数的公式全部清零；审计生成 v3 并保留 v1/v2 为 superseded，328 个正式数字单元格非零数为 0。普通美发产品、发型师成本、手续费、宿舍费用、杂志费及盈亏均已线上显示 0；点击金额可进入可编辑、原因留痕、先预览后保存的工作台，验收期间未改动任何业务金额。
+
+## v495 日报原图旋转始终居中（2026-09-13，已发布）
+
+- App version: v495。基于已发布 v494，只修复经营驾驶舱日报原图的向左转、向右转和自动摆正显示位置；不修改识别候选、电子日报、财务账、凭证文件或数据库。
+- 移除旧版左上角旋转中心的实际影响，脚本显式使用图片中心和旋转外框中心作为同一坐标基准；旋转后双帧等待布局稳定，再同时居中水平与垂直滚动位置。
+- 新增真实 Chrome 回归，覆盖 1280×900 电脑、390×844 手机竖屏、844×390 手机横屏，以及右转、左转、连续旋转和自动摆正。本次仅发布静态页，未部署 Edge Function，也未执行数据库迁移。
+- 完整 pre-push 门禁通过；GitHub main 功能提交 `d68f047` 的 Validate shared app `34735681564` 与 Pages `34735681133` 均成功。CDN 无缓存核验 `version.txt=495`、页面 `data-version=495`、居中旋转原点、双轴滚动居中及 `operations-daily-recognition.js?v=495` 均已生效。
+
+## v494 新月份电子月报可填写（2026-09-13，已发布）
+
+- App version: v494。基于 GitHub main v493，只修复财务端新月份尚无月报时无法建立和编辑电子月报的问题。
+- 新增 `monthly_draft_create`：仅具备报表上传及已确认财务调整权限的财务可调用；按公司、门店、月份幂等检查后，优先取当前门店最近一期普通月报，否则取最近一期历史正式月报并合并该店历月曾使用的填写格，生成金额归零但保留原版式、姓名、固定编号和公式的真实 XLSX 草稿，并通过既有 `zysyr_register_report_upload` 审计 RPC 登记。
+- 页面在无当月月报时显示“开始填写本月月报”，建立成功后立即进入金额编辑；现有月份、历史正式账、锁账、凭证规则和日报汇总逻辑不变。本次未执行数据库迁移，也未自动创建或写入任何九月月报。
+- 完整 pre-push 门禁通过；GitHub main 功能提交 `2485c0b` 的 Validate shared app `34735352077` 与 Pages `34735351834` 均成功。生产 `operations-api` version 57 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，线上源码含新月建立及历史原表兜底，匿名 overview 返回 403 `AUTH_SESSION_INVALID`；Supabase 安全及性能顾问均无 error。CDN 无缓存核验 `version.txt=494`、页面 `data-version=494`、“开始填写本月月报”和 `monthly_draft_create` 均已生效。
+
+## v493 日报成功/失败单日重识别与原图自动摆正（2026-09-13，已发布）
+
+- App version: v493。基于 GitHub main v492，只完善日报识别进度的单日重识别与原图查看体验。
+- 所有已处理且仍处于财务草稿期的日期，不论上次识别成功或失败，都显示独立“重新识别”按钮；只重跑所选日期，旧机器候选在新候选成功保存时替换，财务手工修改不被覆盖。
+- 已最终确认、已锁账或达到十次上限的日期禁止重识别；公司、门店、任务、日期和 `daily_report.write` 权限边界不变，所有重识别操作继续留审计记录。
+- 原图加载时依据日报横向版式自动摆正并适应预览框；向左转、向右转和自动摆正共用同一套旋转、缩放、居中计算，旋转后自动复位滚动位置，避免图片跑出可视区域。
+- 生产迁移 `20260913030006_daily_recognition_rerun_completed.sql` 已应用；`operations-api` version 56 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名 overview 返回 403 `AUTH_SESSION_INVALID`。新 RPC 的 `anon/authenticated/service_role` 执行权限实测为 `false/false/true`，Supabase 安全顾问未将其列为公开漏洞。
+- 隔离 PostgreSQL 已验证成功/失败单日重识别、计数重算、草稿/锁账保护、审计和浏览器拒绝；桌面、手机竖屏及手机横屏真实浏览器均验证旋转后原图仍可见。完整 pre-push 门禁通过，GitHub main 功能提交 `98f7801`，Validate shared app `34734736059` 与 Pages `34734735438` 均成功；CDN 无缓存核验 `version.txt=493` 及重识别/自动摆正代码均已生效。
+
+## v492 日报识别按日期核对与单日重试（2026-09-13，已发布）
+
+- App version: v492。基于 GitHub main v491，只完善经营驾驶舱日报识别进度的核对入口与失败处理。
+- 绿色“待财务核对”日期整块可点击，直接进入对应日期电子日报；电子表格与原始日报图片同时展示，供财务逐格核对、修改、保存和最终确认。
+- 红色“失败”日期整块可点击，展开完整失败原因、已尝试次数和“重新识别这一天”按钮；单日重试不会重复处理本月其他日期，失败原因与重试操作永久写入审计。
+- 单日重试继续受 `daily_report.write`、公司、门店、任务和日期五重范围限制；浏览器角色不能直接执行 RPC。识别结果仍只保存为待核对候选，不自动确认或入账。
+- 生产迁移 `20260913022849_daily_recognition_single_item_retry.sql` 已应用；`operations-api` version 55 为 ACTIVE，保持 `verify_jwt=false` 与函数内部会话鉴权，匿名 overview 实测返回 403 `AUTH_SESSION_INVALID`。新 RPC 的 `anon/authenticated/service_role` 执行权限实测为 `false/false/true`。
+- 隔离 PostgreSQL 验证了精准单日重试、其他失败日期不受影响、审计记录、权限边界与浏览器直连拒绝；完整 pre-push 门禁通过。GitHub main 功能提交 `e772035`，Validate shared app `34733417548` 与 Pages `34733417022` 均成功；CDN 无缓存核验 `version.txt=492`、页面与单日跳转/重试代码均已生效。
+
+## v491 日报页面单一月份入口（2026-09-12，已发布）
+
+- App version: v491。基于 GitHub main v490，只移除日报页面重复显示的第二个月份下拉框；已发布线上。
+- 保留顶部统一月份选择器以及日报区域的“上一月 / 下一月”按钮；按钮会同步更新顶部月份、日报查询月份和上传资料月份，不修改任何日报、月报或凭证数据。
+- 日报静态回归与完整 pre-push 门禁均通过；GitHub main 提交 `c7384ec`，Validate shared app `34696432972` 与 Pages `34696432573` 均成功。CDN 无缓存核验 `version.txt=491`、重复月份下拉隐藏、顶部月份与前后月按钮同步代码均已生效。
+
+## v490 经营驾驶舱长期登录容错（2026-09-12，已发布）
+
+- App version: v490。基于 GitHub main v489，只修复经营驾驶舱账号会话恢复与自动续期；生产函数和静态页均已发布。
+- 根因是页面把首页数据加载失败、网络抖动及 Auth 服务临时错误误判成登录失效，随后调用退出并删除本地会话；既有 Supabase refresh token 和 3650 天兼容会话本身并非主要问题。
+- 普通网络错误、429 和服务端 5xx 现在保留登录并按 3 秒到 60 秒退避自动恢复；页面重新可见、网络重新上线和每 20 分钟都会主动检查续期。请求若遇到明确的 access token 失效，会单次刷新后重试原请求。
+- 只有用户主动退出、refresh token 被明确判定无效、账号停用或离职时才清除本地登录；权限不足不会被当成掉线。Supabase Auth 暂时不可用时，有效的旧过渡会话仍可继续使用，但被撤销的 JWT 不允许降级绕过。
+- 故障注入与完整 pre-push 门禁均已通过。`operations-api` version 54 为 ACTIVE，继续保持 `verify_jwt=false` 与内部会话鉴权；匿名 overview 返回 403、`AUTH_SESSION_INVALID`。GitHub main 功能提交 `29ace51` 与部署记录提交 `77922e6` 已发布，Validate shared app `34695399034` 与 Pages `34695398572` 均成功；CDN 无缓存核验 `version.txt=490`、页面与 Auth 桥接的续期、重连和错误分类代码均已生效。
+
+## v489 日报完整候选与可恢复进度（2026-09-12，已发布）
+
+- App version: v489。基于 GitHub main v488，只修复经营驾驶舱日报图片候选识别与整月任务进度；生产数据库、函数、本机桥接与静态页均已发布。
+- Codex 识别输出扩展为纸质表对应位置的数字、发型师/技师/产品行姓名、未结单号与备注；签字继续以原图留底。识别候选以黄色显示，财务手填值和已人工修改姓名均不被覆盖。
+- 整月识别改为数据库持久任务，页面显示逐日状态、完成/失败/剩余数量和当前日期；离开页面后记录不丢失，返回同一门店月份后从未完成日期继续，并支持暂停、继续和重试失败日期。
+- 隔离 PostgreSQL 已验证迁移、门店权限、候选写入、人工值保护与浏览器直连拒绝；自由手艺人 2026-01-03 真实原图本机测试返回 27 个数字候选与 11 个姓名候选，日期和门店匹配，未写数据库、未正式入账。
+- 生产迁移 `20260912120743_daily_full_fidelity_recognition_jobs.sql` 已应用；两张任务表启用并强制 RLS，匿名及 authenticated 无读取权限，四个任务 RPC 仅 service role 可执行。Supabase 顾问未发现 v489 新增的公开权限漏洞；“RLS 已开但无策略”为服务端专用表的预期配置。
+- `operations-api` version 53 为 ACTIVE，继续保持 `verify_jwt=false` 与函数内部会话鉴权；匿名 overview 实测返回 403“请重新登录”。本机桥接已先备份为 `zysyr_daily_codex_bridge.py.bak-v488-20260912-2045`，再更新为 v489 并重启，文件哈希一致且无凭据访问返回 401。
+- 完整 pre-push 门禁通过；GitHub main 功能提交 `1d53d77` 与部署记录提交 `b6334e1` 已发布，Validate shared app `34694604112` 与 Pages `34694604021` 均成功。CDN 无缓存核验 `version.txt=489`、页面 `data-version=489`、姓名/备注候选、持久进度和失败重试代码均已生效。生产识别仍只生成待财务核对候选，不自动确认或入账。
+
+## v487 发质档案顾客身份防错（2026-09-12，已发布）
+
+- App version: v487。基于 GitHub main v486，仅修改员工端发质档案保存和归档身份一致性。
+- 保存云端档案前要求完整姓名与 11 位手机号；明确写反时自动纠正，缺失时保留草稿并提示重新选择顾客或补全手机号。
+- 归档旧记录时同步 `hair_records` 顶层顾客身份、发型师、技师与完整 `record_data`，云端回读同时核对顶层身份与原表。
+- 已按唯一证据修复两条历史记录：YC 单字符手机号误录、杨抠抠姓名与手机号写反；全量复查 496 条有效档案，其中 490 条可关联顾客主档，剩余 6 条身份缺失或冲突，不猜测归属、不自动写入。
+- 完整 pre-push 门禁通过；GitHub main 功能提交 `3853b5d`，Validate shared app `34690024340` 与 Pages `34690023792` 均成功。线上无缓存核验 `version.txt=487`、员工端 `data-version=487`、身份校验与顶层姓名/手机号同步代码均已生效。
+
+## v488 本机 Codex 日报识别候选（2026-09-12，已发布）
+
+- App version: v488。基于 GitHub main v487，日报 JPG/PNG 识别改走本机已登录 Codex，不再调用 Kimi 或需要独立 OpenAI API 额度。
+- Supabase 只向带 Bearer 鉴权的本机桥接发送短期签名原图地址与当前日报单元格清单；桥接限定同一 Supabase 项目、JPG/PNG、文件大小和单并发，Codex 以只读、临时会话及结构化输出运行。
+- 识别结果仅保存为 `codex_local_candidate` 待审核候选，不覆盖财务手填值，不自动确认或入账；财务必须对照永久保留的原图逐格修改、保存并最终确认。
+- 真实自由手艺人 2026-01-03 纸质日报复测成功：返回日期、门店和 6 个待审核数字，实做/总计均为 978 且置信度 0.98，模糊支付及员工格为 0.55—0.72，明确保持 `candidate_only=true`；误选的员工自购单没有生成日报数字，未猜测写入。
+- 生产迁移 `20260912103006_codex_local_daily_recognition_candidates.sql` 已应用且迁移历史一致；`operations-api` version 52 为 ACTIVE，保持 `verify_jwt=false` 与内部会话鉴权，匿名 overview 返回 403“请重新登录”。
+- 完整 pre-push 门禁通过；GitHub main 提交 `39bc5d3`，Validate shared app `34690339052` 与 Pages `34690338762` 均成功。线上无缓存核验 `version.txt=488`、页面 `data-version=488`、本机 Codex 候选提示及 `operations-daily-recognition.js?v=488` 均已生效。
+
+## v486 客户发质历史档案数据源修复（2026-09-12，已发布）
+
+- App version: v486。基于 GitHub main v485，只修改员工端客户方案弹窗内的「查看历史档案」。
+- 根因是历史按钮仍按原始手机号和旧英文状态读取 `hair_analysis_queue`，而完整发质表已保存在 `hair_records`；因此数据存在时仍会误报「暂无历史记录」。
+- 现改为复用已有完整分页读取、手机号规范化与姓名兜底匹配，新到旧展示全部有效 `hair_records`；点击任一条可打开完整原表和服务前后照片。「本次预约」的精确匹配保持不变。
+- 修复前生产只读核对美管加客户 ID `69829744`（手机尾号 `0216`）：`hair_records` 有3条有效档案（2026-07-04、2026-07-31、2026-09-12），旧队列可见记录为0。本次未写入或修改任何生产客户数据，无数据库迁移或 Edge Function 部署。
+- 新增回归覆盖历史入口使用完整 `hair_records`、传递姓名兜底、渲染3条不同日期档案并可打开完整表。完整 pre-push 门禁通过；GitHub main 功能提交 `145ce6e`，Validate shared app `34687950205` 和 Pages `34687950044` 均成功。CDN 无缓存核验 `version.txt=486`、员工端 `data-version=486`、历史入口不含旧队列查询且包含完整原表入口。
+
+## v486 日报图片切换 OpenAI（开发记录，后续由本机 Codex 方案替代）
+
+- App version: v486。基于 GitHub main v485，开发分支 `feature/zysyr-openai-daily-v486`。
+- 用户明确要求停止 Kimi，现有历史日报和以后新上传日报均改用 Codex/OpenAI 图片能力。线上自动处理通过 Supabase Edge Function 调用 OpenAI Responses API，默认模型 `gpt-5.6-sol`；Codex 桌面任务不作为常驻生产服务。
+- 新请求只读取服务端 `OPENAI_API_KEY`，不再读取 `MOONSHOT_API_KEY` 或访问 Moonshot API；OpenAI 请求设置 `store=false`，原图使用短时私有 URL 和高细节输入。
+- 识别仍只写 `openai_vision_candidate` 待核对候选，保留财务手填值、门店和日期校验、修订号并发保护、原始凭证关系及永久审计；财务最终确认前不进入正式日报或月报。
+- 生产 secrets 只读核验已存在 `OPENAI_API_KEY`。静态边界测试、隔离 PostgreSQL 权限/门店/凭证/审计测试，以及 1280×900、390×844、844×390 浏览器回归均通过。
+- 生产迁移 `20260912084504_openai_daily_recognition_candidates.sql` 已应用且本地/远端历史一致；`operations-api` version 50 为 ACTIVE、`verify_jwt=false`，匿名 `overview` 实测返回 403“请重新登录”，内部会话鉴权仍生效。
+- 该直接 API 方案未推送 GitHub main，因生产实测额度不可用，后续由本机 Codex 候选识别方案替代。
+
+## v485 日报原图旋转、识别候选与月报汇总（2026-09-08，已发布）
+
+- App version: v485。基于已上线 v484，开发分支 feature/zysyr-daily-recognition-v485。
+- 用户授权上传日报后识别填表，并明确选择历史月份也改用已确认日报汇总、原月报金额保留核对。只映射主营美发/营业收入格，其余收入分类保持原表；人工月报调整额仍单独累加并审计。
+- 原图支持左右 90 度旋转、恢复方向，文件字节不修改。当前日报 JPG/PNG 上传后请求既有 Kimi 配置，识别候选持久化到待核对草稿并高亮；已有财务金额保留，日期/门店冲突拒绝填入。月历提供“识别本月待核对原图”和完成数量，财务逐日核对、修改并最终确认后才进入正式账。
+- 汇总按同公司同门店同月已确认日报唯一日期及 grand_total 计算，重复日期或无效总计拒绝汇总；月报保留原数、展示已确认天数与差额，可进入具体日报。未确认、未录齐月份不视为完整；无已确认日报时显示 0 和提示，不沿用旧收入冒充日报汇总。
+- 新增 daily_rollup_adjustment_snapshot 迁移，月报调整校验已确认日报版本，日报状态变动使用同一月锁；图片候选只能写当前门店当前草稿，使用修订号防并发覆盖且不覆盖财务手填值。未应用生产迁移、未部署，未改写生产账或调用真实图片识别；模型密钥名称已核实存在，实际识别精度与服务可用性待真实图验收。
+- 本地测试已通过：电脑/手机竖屏/横屏原图旋转、识别保留手填值与无自动确认；候选日期/门店/金额校验；月报依赖重算、重复读取不重复累计、重复日期拒绝；隔离 PostgreSQL 日报快照并发校验和权限审计。
+
+## v484 月报财务一站式工作台与精确项目路由（2026-09-08，已发布）
+
+- 基于 GitHub main `8c222fb`，并包含 v483 恢复分支提交 `2f1ce48`。App version: v484。
+- 用户已授权上线。主迁移已应用、operations-api 已部署；发布复核补充修正产品明细“合计”列名被误判只读的问题，页面与历史金额保存端均按真正汇总行判断，补丁迁移为 `20260908171000_zysyr_monthly_detail_column_labels.sql`。使用实际“产品进货 / 歌薇 / 合计”标签的三种屏幕回归通过。
+- 月报继续作为财务唯一操作入口：主营收入、技术人员、后勤人员及其员工金额可直接编辑、预览、确认保存，但不要求凭证；编号、小计、合计和盈亏保持只读且免凭证。
+- 普通支出及公式形式的单项支出在同一个二级页完成金额调整、原因、预览、保存、凭证上传和“此笔是否需要凭证”；调整采用只追加记录，不覆盖原月报、日报、工资表或既有凭证。
+- `产品成本 / 产品进货` 汇总格只进入原表产品进货明细，不直接要求凭证；财务点选某个产品后，在月报抽屉内编辑该产品金额并处理该产品自己的凭证。
+- 支出匹配优先采用最长的具体科目名，阻止“财务费用 / 管理费”“房租 / 物业费”等金额跳出同分区的全部记录；找不到正式明细时只保留当前月报格，不伪造整类列表。
+- 新迁移 `20260908153000_zysyr_monthly_finance_workspace_adjustments.sql` 扩展既有只追加月报调整与单笔凭证规则，保留财务权限、门店隔离、并发校验、锁账授权和永久审计。
+- 隔离 PostgreSQL 已通过原数据不变、工资/公式支出调整、产品汇总与合计拒绝修改、单笔免凭证、RLS 和审计测试；浏览器回归覆盖电脑、手机竖屏、手机横屏以及产品明细直达。
+- 两项迁移均已应用生产；错误级数据库 lint 为 0。operations-api version 46 为 ACTIVE，保留 verify_jwt=false 与内部鉴权，匿名 overview 返回 403“请重新登录”。GitHub main 功能提交 `89e8d00` 的 Validate shared app `34208725026`、Pages `34208724154` 均成功；CDN 核验 version.txt=484、页面 data-version=484、新工作台脚本及收入/工资编辑分支。本次未写入生产财务金额；浏览器写入交互使用合成数据，未冒用财务账号修改正式账。
+
+## v483 财务费用凭证入口与产品进货明细直达（2026-09-08，待发布）
+
+- 基于 GitHub main `8c222fb`。App version: v483。
+- 财务费用公式金额的二级页固定保留“上传凭证图片 / PDF”，不再因组成项选择而消失；可编辑明细仍执行“填写金额 → 预览 → 确认保存”，确认键加宽并明确命名。
+- `产品成本 / 产品进货` 识别为汇总入口，凭证规则固定为无需凭证；点击后直接展示原表汇总公式实际引用的产品进货明细，每个明细可继续进入编辑与凭证页。
+- 只读核验两店 2026 年 1—6 月：11 个账期产品进货汇总与原表引用明细一致；自由手艺人 6 月 `C31=G43=4954`，但原表另有 `G32=128` 未被 `G43=SUM(G34:G42)` 引用，页面将此项作为异常提示，不修改正式金额或原公式。
+- 静态工作台测试及 1280×900、390×844、844×390 浏览器回归通过；尚未部署 Edge Function、未推送 GitHub main、未发布 GitHub Pages，也未写入任何生产财务数据。
+
+## v482 月报项目分类与独立收入调整（2026-09-08，已发布）
+
+- 基于 GitHub main `dd25b5c`。App version: v482。用户确认按项目性质区分凭证要求，并同意收入直接编辑后单独记录月报调整、不覆盖日报原数。
+- 收入、工资、后勤、小计合计及盈亏不显示额外凭证上传与缺凭证提示；工资进入同门店同月工资表，收入进入直接编辑、原因、预览、保存。普通支出保留凭证预览上传及单笔例外开关。
 - 新增只追加的 `zysyr_monthly_income_adjustments`：原表数据加最新累计调整额形成月报显示，重新计算受影响合计；原日报、工资、月报原件和凭证不改写。修改前后、差额、原因、操作人和锁账授权留痕。
 - 后端保留原财务角色与门店权限；SQL 验证真实来源类型、收入分类、完整来源版本/调整版本快照、锁账和一次性审批。旧月报金额覆盖接口拒绝收入，要求走独立调整入口。
 - 真实 PostgreSQL 隔离测试通过收入限定、原数保持、RLS/角色、越权、版本冲突、只追加审计和一次授权消费；电脑/手机竖屏/横屏合成数据交互通过。公式计算测试覆盖截图的 C3=R28-S28、调整不重复累计和上下游原值保持。
