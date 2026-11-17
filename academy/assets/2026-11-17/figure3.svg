@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 330">
+<rect width="680" height="330" rx="22" fill="#F7F4EE"/>
+<text x="24" y="38" font-size="21" font-weight="600" fill="#394746">美感：相同大S，三个角度判断第一弯与体积</text>
+<g fill="#E9DADC" stroke="#A17E86" stroke-width="3"><ellipse cx="117" cy="135" rx="50" ry="68"/><ellipse cx="340" cy="135" rx="50" ry="68" transform="rotate(13 340 135)"/><ellipse cx="568" cy="135" rx="44" ry="68"/></g>
+<g stroke="#849F94" stroke-width="7" fill="none" stroke-linecap="round"><path d="M70 118 Q43 165 72 204 Q46 237 68 275"/><path d="M162 118 Q191 164 161 204 Q187 238 164 275"/><path d="M296 120 Q269 165 298 210 Q276 243 295 274"/><path d="M387 120 Q413 163 386 204 Q404 238 388 274"/><path d="M535 125 Q516 164 535 201 Q518 245 539 276"/><path d="M607 128 Q629 168 606 205 Q622 245 603 276"/></g>
+<g stroke="#C18876" stroke-width="3" fill="none"><path d="M45 203 L75 203 M277 207 L304 207 M620 205 L647 205"/></g>
+<g fill="#445B54" font-size="16" text-anchor="middle"><text x="117" y="308">正面：颧骨与第一弯</text><text x="340" y="308">45°：耳后与枕骨连接</text><text x="568" y="308">侧面：后颈与肩线</text></g>
+<text x="24" y="63" font-size="11" fill="#896F6A">原创教学示意，非真实顾客照片或效果保证</text>
+</svg>
