@@ -1,23 +1,24 @@
 (function(root){
   'use strict';
   var corePromise;
-  root.ZysyrVoucherCombinationUI={mount:async function(host,options){
+  function loadCore(){return corePromise=corePromise||import('./voucher-combination-core.js?v='+document.documentElement.dataset.version).catch(function(error){corePromise=null;throw error;});}
+  root.ZysyrVoucherCombinationUI={rank:async function(items,target,month){return (await loadCore()).rankVoucherLibrary(items,target,month);},period:async function(value,contextMonth){return (await loadCore()).normalizeVoucherPeriod(value,contextMonth);},mount:async function(host,options){
     var section=document.createElement('section');section.className='voucher-combinations';
     section.innerHTML='<h4>组合凭证</h4><p class="help">几张凭证可共同对应这一笔。核对每张原图的日期、用途和金额后确认。</p><div data-combination-recommendations>正在计算金额一致的组合…</div><details><summary>手动选择多张凭证</summary><input type="search" aria-label="组合凭证搜索" placeholder="搜索文件名、商户、金额"><div data-combination-options></div><div data-combination-selection></div><button type="button" class="secondary" data-combination-review>核对已选凭证</button></details><div data-combination-review-panel></div>';
     host.appendChild(section);
     function active(){return section.isConnected&&options.active();}
     try{
-      corePromise=corePromise||import('./voucher-combination-core.js?v='+document.documentElement.dataset.version).catch(function(error){corePromise=null;throw error;});
-      var core=await corePromise;if(!active())return;if(core.voucherCents(options.target.amount)===null){section.textContent='当前开支金额待核对，暂不能计算组合。';return;}
+      var core=await loadCore();if(!active())return;if(core.voucherCents(options.target.amount)===null){section.textContent='当前开支金额待核对，暂不能计算组合。';return;}
       var selected=new Map(),generation=0,esc=options.escape,money=options.amount,target=options.target,items=options.items||[],pending=false;
       var recommendations=section.querySelector('[data-combination-recommendations]'),list=section.querySelector('[data-combination-options]'),search=section.querySelector('input[type=search]'),review=section.querySelector('[data-combination-review-panel]');
       var result=core.recommendVoucherCombinations(items,target,options.month);
-      function blocked(item){var f=core.voucherFields(item);return f.evidence_kind==='monthly_summary'||['bank_summary','multiple_transactions','monthly_summary'].includes(f.document_kind)||Boolean(item.confirmed_target_id||item.expense_association)&&!core.sameVoucherTarget(item,target);}
+      function blocked(item){if(!options.legacy)return false;var f=core.voucherFields(item);return f.evidence_kind==='monthly_summary'||['bank_summary','multiple_transactions','monthly_summary'].includes(f.document_kind)||Boolean(item.confirmed_target_id||item.expense_association)&&!core.sameVoucherTarget(item,target);}
       function linked(item){return options.legacy?core.sameVoucherTarget(item,target):Boolean(item.already_linked);}
-      function description(item){var f=core.voucherFields(item),amount=core.voucherAmount(item);return (item.original_filename||'凭证')+' · '+(core.voucherCents(amount)===null?'金额待核对':money(amount))+' · '+(f.document_date||'日期待核对')+(linked(item)?' · 已关联本笔':'');}
+      function description(item){var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month);return (item.original_filename||'凭证')+' · '+(hint.amount_cents===null?'金额待核对':(hint.document_only?hint.amount_label+' ':'')+money(hint.amount_cents/100))+(hint.payment_unconfirmed?' · 付款待核对':'')+' · '+(f.document_date||'付款日期待核对')+(linked(item)?' · 已关联本笔':'');}
       recommendations.innerHTML=result.groups.length?'':'<p class="help">暂未找到合计一致的组合，可在下方手动勾选并核对金额。</p>';
       result.groups.forEach(function(group){var button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.combinationRecommend='';
-        button.textContent=group.items.map(function(item){return money(core.voucherAmount(item));}).join(' + ')+' = '+money(group.total_cents/100)+'（'+group.items.length+' 张）';
+        button.textContent=group.items.map(function(item){return money(core.voucherRecommendation(item,target,options.month).amount_cents/100);}).join(' + ')+' = '+money(group.total_cents/100)+'（'+group.items.length+' 张）'
+          +(group.items.some(function(item){return core.voucherRecommendation(item,target,options.month).payment_unconfirmed;})?' · 含原文金额，付款待核对':'');
         button.onclick=function(){if(active()&&!pending){selected.clear();group.items.forEach(function(item){selected.set(core.voucherPartKey(item),item);});renderOptions();openReview();}};recommendations.appendChild(button);
       });
       if(result.limited)recommendations.insertAdjacentHTML('beforeend','<p class="help">当前展示部分组合，也可搜索并手动选择其他凭证。</p>');
@@ -27,9 +28,9 @@
         section.querySelector('[data-combination-review]').disabled=chosen.length<2||chosen.length>20;
       }
       function renderOptions(){
-        list.innerHTML='';var query=search.value.trim().toLowerCase();items.filter(function(item){return !blocked(item)&&description(item).toLowerCase().includes(query);}).forEach(function(item){
+        list.innerHTML='';var query=search.value.trim().toLowerCase();core.rankVoucherLibrary(items,target,options.month).map(function(row){return row.item;}).filter(function(item){var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month);return [description(item),f.summary,f.expense_category,f.counterparty,f.evidence&&f.evidence.expense_category,hint.dates.map(function(d){return d.date;}).join(' ')].join(' ').toLowerCase().includes(query);}).forEach(function(item){
           var label=document.createElement('label');label.className='simple-voucher-rule';var checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.dataset.combinationPick=core.voucherPartKey(item);checkbox.checked=selected.has(core.voucherPartKey(item));
-          var span=document.createElement('span');span.textContent=description(item);label.appendChild(checkbox);label.appendChild(span);list.appendChild(label);
+          checkbox.disabled=blocked(item);var span=document.createElement('span');span.textContent=description(item)+(blocked(item)?' · 需先核对类型或既有关联，可在上方查看原图':'');label.appendChild(checkbox);label.appendChild(span);list.appendChild(label);
           checkbox.onchange=function(){if(!active()||pending)return;if(checkbox.checked){if(selected.size>=20){checkbox.checked=false;return;}Array.from(selected.entries()).forEach(function(entry){if(core.voucherIdentity(entry[1])===core.voucherIdentity(item))selected.delete(entry[0]);});selected.set(core.voucherPartKey(item),item);}else selected.delete(core.voucherPartKey(item));generation++;review.innerHTML='';renderOptions();};
         });updateSelection();
       }
@@ -44,8 +45,8 @@
           save.disabled=pending||total===null||total!==goal||rows.some(function(row){return !row.checked.checked||!row.loaded||options.legacy&&(!/^\d{4}-\d{2}-\d{2}$/.test(row.date.value)||row.date.value.slice(0,7)!==options.month);});
         }
         chosen.forEach(function(item){
-          var f=core.voucherFields(item),card=document.createElement('section');card.className='trace-card';
-          card.innerHTML='<h4>'+esc(item.original_filename||'凭证')+'</h4><button type="button" class="secondary" data-combination-preview>预览这张原图</button><div data-combination-image></div><label class="field">本张凭证金额<input type="number" step="0.01" min="0.01" aria-label="组合凭证金额"></label>'
+          var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month),card=document.createElement('section');card.className='trace-card';
+          card.innerHTML='<h4>'+esc(item.original_filename||'凭证')+'</h4>'+(hint.document_only?'<p class="help">'+esc(hint.amount_label+' '+money(hint.amount_cents/100))+' · 付款待核对。请核对原图后填写本次采用的金额及日期。</p>':'')+'<button type="button" class="secondary" data-combination-preview>预览这张原图</button><div data-combination-image></div><label class="field">本张凭证金额<input type="number" step="0.01" min="0.01" aria-label="组合凭证金额"></label>'
             +(options.legacy?'<label class="field">凭证日期<input type="date" aria-label="组合凭证日期"></label>':'')+'<label class="simple-voucher-rule"><input type="checkbox" data-combination-attest disabled> 已核对这张原图，确认对应当前开支</label>';
           cards.appendChild(card);var amount=card.querySelector('input[type=number]'),date=card.querySelector('input[type=date]'),checked=card.querySelector('[data-combination-attest]'),picture=card.querySelector('[data-combination-image]');
           var known=core.voucherAmount(item);amount.value=known==null?'':known;amount.readOnly=options.legacy&&linked(item);if(date){date.value=f.document_date||'';date.readOnly=linked(item);}
@@ -71,7 +72,7 @@
             var saved=await options.save(payload);if(!current())return;if(!saved.combination_saved)throw Error('组合未完整确认，请重新读取核对');
             options.success('组合凭证已关联，合计 '+money(core.combinationTotal(payload.map(function(row){return Object.assign({},row.item,{corrected_fields:row.fields});}))/100));await options.reopen();
           }catch(error){if(current())status.textContent='整组未确认：'+error.message;}
-          finally{pending=false;if(current()){section.querySelectorAll('button,input').forEach(function(node){node.disabled=false;});rows.forEach(function(row){row.checked.disabled=!row.loaded;});update();}}
+          finally{pending=false;if(current()){section.querySelectorAll('button,input').forEach(function(node){node.disabled=false;});rows.forEach(function(row){row.checked.disabled=!row.loaded;});renderOptions();update();}}
         };
         update();review.scrollIntoView({block:'nearest'});
       }

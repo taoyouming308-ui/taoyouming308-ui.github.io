@@ -3850,6 +3850,7 @@ async function finishMonthlyTrace(
   const target = data.target as JsonRecord;
   const category = monthlyItemCategory(target);
   data.item_category = category;
+  if(!data.historical&&category==="expense"&&data.can_upload_vouchers&&hasAuthCapability(session,"voucher.read"))data.voucher_library_source="store_uploads";
   if (["income", "salary", "total", "fixed", "purchase_summary", "petty_cash_summary"].includes(category)) {
     data.evidence_policy = "none"; data.can_upload_vouchers = false;
     data.can_manage_business_evidence_rules = false; data.can_manage_evidence_rules = false;

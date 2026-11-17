@@ -1,5 +1,13 @@
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
+## 2026-11-17 · Recommendation and uploaded-library consistency (App version: v666; local candidate)
+
+- Current owner: Codex. Last synchronized base checked: github/main f4c36ea63518b879c96936ef3ad8a73d03c97f55, published v665/PR147, backend146. Starting gates and November17 existing daily backup checked before edits; unrelated untracked files and user forms preserved.
+- Read-only production metadata confirms the59.90 plant order has explicit printed price, but normalized payment amount/date are null because payment completion is unconfirmed. Add separate read-only recommendation clues from labeled amount evidence, product text and printed date candidates. Keep payment values and automatic match eligibility untouched; preserve manual corrections and reject ambiguous numeric evidence. Same ranking/search applies to single and multi-select lists.
+- API marks eligible electronic monthly cells for the canonical store upload library even when a C-column source target exists; existing matched images are still enriched. All successful uploads remain selectable there independently of batch matching/recognition success; same-store total367 is within the existing2000 visible bound. Multi-select no longer hides materials solely by document type; single-transaction ineligibility remains visible with a reason, while monthly evidence-only groups may contain summaries without confirming payment.
+- Manual summary period accepts short month input using explicit current accounting context, with no receipt date inference. Real metadata replay, pure/API and390/1280 full-page tests passed: printed59.90 first, chat150 search, canonical-only original, failed association retention, summary+original monthly selection, unchanged3680.44 and Safari8月 normalization. Existing individual/combined/monthly/petty/upload suites passed. No new SQL or production business writes; preserve the two existing transactional wrappers unchanged.
+- Full normal pre-push, final-commit protected CI, canonical backend/source readback, normal merge and Pages/public-file verification remain publication requirements. Candidate preparation is not publication.
+
 ## 2026-11-17 · Combined expense vouchers (App version: v665; local candidate)
 
 - Current owner: Codex. Last synchronized base checked: github/main 29d719069c56310072e4fab9f28537c6a6acfbd0, published v664/PR146, backend145, Pages44012704589 and v665 candidate preparation follows the already completed November17 daily backup. Existing unrelated files and Safari forms preserved.
