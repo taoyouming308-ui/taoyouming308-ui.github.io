@@ -16,6 +16,15 @@
 - Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
 - Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
 - No frontend version change, source business edits, financial posting or scheduler change.
+<!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
+## 2026-11-17 · Reviewed academy publication candidate (App version: v663 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 1cb33fd7b75dd0923b699fe33785ff278d85dd10.
+- Dates: 2026-11-17. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 # Booking transport recovery · 2026-11-16
 
 Restore the existing exact Meiguanjia appointment read endpoints with verified TLS and source-only direct routing; preserve cloud signatures, original appointments, cadence, and failure cleanup protection. Runtime recovery verified for November17; UI acceptance and protected merge remain pending.
