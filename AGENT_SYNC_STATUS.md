@@ -1,5 +1,12 @@
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
+## 2026-11-17 · Combined expense vouchers (App version: v665; local candidate)
+
+- Current owner: Codex. Last synchronized base checked: github/main 29d719069c56310072e4fab9f28537c6a6acfbd0, published v664/PR146, backend145, Pages44012704589 and v665 candidate preparation follows the already completed November17 daily backup. Existing unrelated files and Safari forms preserved.
+- User's August paper row 170.30 can represent several purchases. Add exact-cent combination recommendations beside existing single-image recommendations in petty details and both monthly libraries. Use known amounts, corrected fields, same-month dates and distinct originals; rank by purpose/date, keep bounded recommendations explicit and expose manual selection of up to20 images. Unknown amounts stay unknown and dates are never invented.
+- Every selected original must load and be separately attested. The group total must equal the freshly read target. Existing mapped targets save through an additive transactional wrapper around the current match RPC; direct monthly evidence uses an additive wrapper around the current evidence-only cell RPC with complete source-revision/adjustment snapshots. Both wrappers are service-only, preserve old links/reviews/amounts, roll back partial failures and reject changed claims. No automatic group association, recognition or ledger posting.
+- Pure core is shared by native browser import and the Edge helper. Actual API, isolated PG17 and390/1280 actual-page checks passed, including second-image rollback and unchanged170.30. Full normal pre-push, final-commit protected CI, additive migration/backend deployment, normal merge and Pages/file readback remain publication requirements. No production business records were written during acceptance.
+
 ## 2026-11-17 · Monthly detail voucher library (App version: v664; local candidate)
 
 - Current owner: Codex. Last synchronized base checked: github/main fed92b2bf7fcb4e417b08773373f7e62cf73fba9 (published v663). Daily recovery archive ZYSYR_2026-11-17_104026.tar.gz completed before edits; existing untracked work and Safari forms preserved.

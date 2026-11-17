@@ -7,6 +7,7 @@ import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-d
 import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
 import { monthlyCellVoucherLibrary } from "../_shared/monthly-cell-voucher-library.mjs";
+import { expenseCombinationPlan } from "../_shared/expense-voucher-combinations.mjs";
 import { recoverVoucherDateCandidate,voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
 import { parseMonth } from "../_shared/zysyr-date.mjs";
@@ -4528,6 +4529,13 @@ async function expenseVoucherWorkspace(payload: JsonRecord, session: JsonRecord,
 
 async function applyExpenseVoucherMatches(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const workspace=await expenseVoucherWorkspace(payload,session);
+  if(payload.combination===true){
+    if(payload.mode!=="manual"||payload.confirmed!==true)throw new Error("请逐张核对并确认组合凭证");
+    const combo=expenseCombinationPlan(workspace,payload.items),store=await selectedStoreInfo(session,payload);
+    const saved=await financeRpcSaved("rpc/zysyr_save_expense_voucher_combination",{p_actor:session.auth_account_id,p_company:store.company_id,p_store:store.id,
+      p_month:cleanText(payload.month,7)+"-01",p_matches:combo.plan});
+    return {saved,combination_saved:true,combination_total:combo.total,posted:false,amount_changed:false,voucher_approved:false};
+  }
   const mode=cleanText(payload.mode,20),plan=expenseMatchPlan(workspace,payload.items,mode);
   if(!plan.length)return {saved:{inserted:0},posted:false,amount_changed:false};
   const store=await selectedStoreInfo(session,payload);
@@ -4593,7 +4601,8 @@ async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord)
 
 async function monthlyVoucherLibrary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers, canRead: (actor: JsonRecord) => hasAuthCapability(actor, "voucher.read"),
-    store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory });
+    store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory,
+    effective: (store: JsonRecord,month: string,report: string) => monthlyAdjustmentContext(String(store.company_id),String(store.id),month,report,false) });
 }
 
 async function voucherCenter(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -7392,7 +7401,7 @@ async function monthlyReviewRpc(name: string, body: JsonRecord): Promise<unknown
 }
 
 const OPERATIONS_API_LOG_OPERATIONS = new Set(`
-monthly_voucher_library expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
+expense_voucher_combination_apply monthly_voucher_library expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
 monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
 daily_business_details
@@ -7460,6 +7469,7 @@ async function handleOperationsApiRequest(
     if (operation === "expense_voucher_reanalyze") return json(await reanalyzeExpenseVouchers(payload,session));
     if (operation === "expense_voucher_workspace") return json(await expenseVoucherWorkspace(payload,session));
     if (operation === "expense_voucher_match_apply") return json(await applyExpenseVoucherMatches(payload,session));
+    if (operation === "expense_voucher_combination_apply") return json(await applyExpenseVoucherMatches({...payload,combination:true},session));
     if (operation === "expense_voucher_match_void") {
       historyImportFinance(session);const store=await selectedStoreInfo(session,payload);
       return json(await financeRpcSaved("rpc/zysyr_void_expense_voucher_match",{p_actor:session.auth_account_id,p_company:store.company_id,p_store:store.id,p_match:uuidValue(payload.match_id,"凭证关系无效"),p_reason:cleanText(payload.reason,500)}));

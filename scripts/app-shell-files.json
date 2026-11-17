@@ -27,6 +27,8 @@
   "operations-daily-recognition.js",
   "operations-daily-review.js",
   "operations-expense-voucher-workspace.js",
+  "operations-voucher-combinations.js",
+  "voucher-combination-core.js",
   "operations-monthly-daily-performance.js",
   "operations-monthly-review.css",
   "operations-monthly-review.js",
