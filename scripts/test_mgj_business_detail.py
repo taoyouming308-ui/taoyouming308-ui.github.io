@@ -158,5 +158,22 @@ class BusinessDetailTests(unittest.TestCase):
         self.assertFalse(result["report_ready"])
 
 
+class GapContractTests(unittest.TestCase):
+    def test_optional_missing_evidence_uses_contract_codes_without_losing_values(self):
+        import copy
+        import re
+        for field,code in [('empList','emp_list_missing'),('payConfigs','pay_configs_missing')]:
+            raw=fixture();raw.pop(field,None);before=copy.deepcopy(raw)
+            bill=business.normalize_bill(raw,bill_id='42',shop='1837032',day='2026-01-01')
+            self.assertEqual(raw,before)
+            self.assertIn(code,bill['gaps'])
+            self.assertTrue(all(re.fullmatch(r'[a-z_]{1,100}',g) for g in bill['gaps']))
+            self.assertFalse(bill['report_ready'])
+            self.assertEqual(bill['source_posted_amount_cents'],10000)
+            self.assertEqual(len(bill['payments']),30)
+            self.assertTrue(bill['items'])
+            self.assertTrue(bill['employee_allocations'])
+
+
 if __name__ == "__main__":
     unittest.main()

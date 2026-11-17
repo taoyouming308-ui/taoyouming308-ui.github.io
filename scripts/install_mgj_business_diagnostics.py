@@ -10,6 +10,7 @@ import shutil
 import tempfile
 
 FILES = {
+ 'mgj_business_detail.py': '2bc47eda9661238782c4b5cd00e917c05c56410af0ac60b5aa7062947547fe02',
  'run_mgj_business_detail_2026.py': '79283270bb3b5a239bd723730b9a89839095275f1d871721d386f57e11e6ef60',
  'sync_mgj_business_details.py': '7632909e38e09b5107e81a591c7cc4a2dfb105b1f500f238d768193598f9d0b2',
 }

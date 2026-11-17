@@ -49,7 +49,8 @@ def text(value):
 def rows(content, field, gaps):
     value = content.get(field)
     if value is None:
-        gaps.add(field + "_missing")
+        gap_field = {"empList": "emp_list", "payConfigs": "pay_configs"}.get(field, field)
+        gaps.add(gap_field + "_missing")
         return []
     if not isinstance(value, list) or any(not isinstance(row, dict) for row in value):
         raise ValueError("invalid_" + field)

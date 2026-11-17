@@ -68,6 +68,8 @@ class ContractHintTests(unittest.TestCase):
         for field in ('empList','payConfigs'):
             raw=fixture(); raw.pop(field,None)
             bill=normalize_bill(raw,bill_id='42',shop='1837032',day='2026-01-01')
+            self.assertIsNone(sync.contract_hint({'source':{'bills':[bill]}}))
+            bill['gaps'].append('legacyCamelCase_missing')
             self.assertEqual(sync.contract_hint({'source':{'bills':[bill]}}),'gaps_format')
 
     def test_http400_annotates_without_swallowing_or_leaking(self):
@@ -76,11 +78,11 @@ class ContractHintTests(unittest.TestCase):
             raise sync.urllib.error.HTTPError('https://private.invalid',400,'PRIVATE',{},None)
         def detail(*args):
             from scripts.test_mgj_business_detail import fixture
-            raw=fixture();raw.pop('empList',None);return raw
+            raw=fixture();raw['empfees'][0]['empname']='😀'*101;return raw
         opts['detail_reader']=detail;opts['submitter']=fail
         with self.assertRaises(sync.urllib.error.HTTPError) as caught:
             sync.run('1837032','2026-01-01',write=True,**opts)
-        self.assertEqual(task.diagnostic_fields(caught.exception),{'failure_stage':'cloud_submit','http_status':400,'contract_hint':'gaps_format'})
+        self.assertEqual(task.diagnostic_fields(caught.exception),{'failure_stage':'cloud_submit','http_status':400,'contract_hint':'employee_allocations_employee_name_length'})
         self.assertTrue(base.lock.closed)
 
 

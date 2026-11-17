@@ -18,7 +18,7 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(installer.install(src,dst,paths)['status'],'ready')
                 self.assertEqual((dst/next(iter(known))).read_text(),'old synthetic code')
                 result=installer.install(src,dst,paths,True)
-                self.assertEqual(result['verified_files'],2)
+                self.assertEqual(result['verified_files'],3)
                 self.assertTrue(Path(result['backup']).is_dir())
                 self.assertEqual(installer.install(src,dst,paths,True)['status'],'already_installed')
                 for name in known:
@@ -46,5 +46,5 @@ class InstallerTests(unittest.TestCase):
                     return replace(a,b)
                 with patch.object(installer.os,'replace',side_effect=fail_second):
                     with self.assertRaises(OSError):installer.install(src,dst,paths,True)
-                self.assertEqual(len(calls),4)
+                self.assertEqual(len(calls),5)
                 self.assertTrue(all(installer.digest(dst/name)==known[name] for name in known))
