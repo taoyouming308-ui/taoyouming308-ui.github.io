@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-17",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-17本轮AI内容编辑：实际核查文献题录与适用范围、原创图示版权和模拟案例隐私；非独立人类学术或产品安全审核）",
+  "reviewedAt": "2026-11-17T00:49:30Z",
+  "approvalReference": "本轮审阅Wiley DOI 10.1111/ics.12915、10.1002/app.30336、10.1111/ics.12553的作者、发表日、研究对象与不能外推的参数；三张原创SVG逐项检查无外部资源、脚本和真实顾客；案例为模拟。AI编辑内容审核不代表真人化学处理安全授权。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "Wiley原始研究；本轮核对在线发表日期、DOI、热塑形与化学塑形毛发在空气/水中的松弛动力学实验；作者来自KAO企业研发；并非真人吹风方向随机对照；限制：不能证明某一吹风方向必定使S变C，不提供真人吹风机温度、风速或烫发药剂安全参数"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "Wiley原始毛发弯曲恢复与湿度依赖实验；核对作者、在线日期和DOI 10.1002/app.30336；包含行业研究机构，实验条件不同于整头法式烫；限制：不能推算顾客吹发后第一弯必定移动几厘米，也不能据此制定所有发质的统一定型温度"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "Wiley原始单纤维及小毛束吹干热传递数学建模，核对作者、发表日和DOI；实验与理论模型不能覆盖真人整头操作；限制：不能提供商业吹风机统一安全温度、距离或吹干分钟数，也无法证明具体卷度保持率"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮独立绘制矢量线条与中文标注；只含SVG静态图元，无外部照片、图像、脚本、链接、真实人物或顾客数据；原创几何示意不当作真实结果证据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮独立绘制静态六区布局和方向线，无外链或第三方素材、无真实顾客、无脚本；不表示人体实测或化学安全参数"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮用原生SVG路径独立绘制三视角抽象人头轮廓，未引用照片、网络资源和真实顾客；无外部脚本与隐私信息"
+    }
+  ],
+  "contentSha256": "88a625ec143a3070ebf411dbfeef0c438a2741b25d9536d6ba1c24355d98b7e6",
+  "assetSha256": {
+    "assets/2026-11-17/figure1.svg": "1710832e81dc43ab746174c8883ec2573ccfb9cd547b99b3b41be90dddc994f4",
+    "assets/2026-11-17/figure2.svg": "73ffd4117c583fd79766f07ae8f0bf6d5565235e4cbb19b65fdc35a31345d32d",
+    "assets/2026-11-17/figure3.svg": "79d77344a2ed035b71471fd7ed4717b95bbdcc866e8dc6a5fa29ad331c6104db"
+  }
+}

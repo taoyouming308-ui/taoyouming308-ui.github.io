@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 330">
+<rect width="680" height="330" rx="22" fill="#F7F4EE"/>
+<text x="30" y="38" fill="#394746" font-size="22" font-weight="600">原理：化学卷度之外，还存在临时吹整形态</text>
+<rect x="24" y="65" width="196" height="225" rx="15" fill="#E1ECED"/>
+<rect x="242" y="65" width="196" height="225" rx="15" fill="#E4EAE2"/>
+<rect x="460" y="65" width="196" height="225" rx="15" fill="#F0E1DF"/>
+<text x="122" y="97" font-size="17" text-anchor="middle" fill="#425D62">湿态原有松S</text>
+<text x="340" y="97" font-size="17" text-anchor="middle" fill="#42574B">顺卷向整理</text>
+<text x="558" y="97" font-size="17" text-anchor="middle" fill="#795B57">逆卷向拉直</text>
+<g stroke="#536F75" stroke-width="7" stroke-linecap="round" fill="none"><path d="M118 116 C70 145 169 165 118 196 S163 245 114 263"/></g>
+<g stroke="#6D9783" stroke-width="7" stroke-linecap="round" fill="none"><path d="M338 116 C288 144 393 162 338 196 S393 245 333 263"/></g>
+<g stroke="#B98479" stroke-width="7" stroke-linecap="round" fill="none"><path d="M556 116 C539 164 580 217 554 263"/></g>
+<g stroke="#C17E68" stroke-width="2" fill="none"><path d="M155 143 L176 125 M176 125 L169 127 M176 125 L172 133"/><path d="M380 145 L406 128 M406 128 L397 130 M406 128 L401 136"/><path d="M590 149 L618 165 M618 165 L609 164 M618 165 L614 157"/></g>
+<text x="122" y="310" font-size="12" text-anchor="middle" fill="#556766">同源毛束，初始条件相同</text>
+<text x="340" y="310" font-size="12" text-anchor="middle" fill="#556766">沿目标曲线温和定向</text>
+<text x="558" y="310" font-size="12" text-anchor="middle" fill="#775B54">可能暂时舒展第一弯</text>
+</svg>
