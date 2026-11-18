@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-18",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "82eca14922bc79a4f26ae59c612ba95c8188a579",
+  "scope": "Only SHA-bound baseline backup before any dated academy draft/review/assets; not publication or approval",
+  "note": "Connected publisher requested existing Academy publication preflight; no lesson content has been committed."
+}
