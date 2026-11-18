@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../',import.meta.url)),origin='https://lazy.synthetic.invalid';
-const source=await readFile(root+'perm-app.html','utf8');assert(source.includes('<script defer src="ai-design-entry.js?v=668"></script>'));assert(!source.includes('src="packages/design-prepared-ui/app-entry.mjs'));
+const source=await readFile(root+'perm-app.html','utf8');assert(/<script defer src="ai-design-entry\.js\?v=\d+"><\/script>/.test(source));assert(!source.includes('src="packages/design-prepared-ui/app-entry.mjs'));
 const start=source.indexOf('<a id="ai-design-prepared-entry"'),end=source.indexOf('</a>',start)+4;assert(start>0&&end>start);
 const html=`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><input id="unrelated-input"><button id="booking-action">原预约入口</button>${source.slice(start,end)}<script>window.__hostReads=0;window.PreparedDesignHost={readSession(){window.__hostReads++;throw Error('MUST_NOT_READ_IDENTITY');}};document.getElementById('booking-action').onclick=()=>window.__bookingClicked=true;</script><script defer src="/ai-design-entry.js"></script>`;
 const browser=await chromium.launch({headless:true});let passed=0;

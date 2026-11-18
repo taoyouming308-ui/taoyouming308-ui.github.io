@@ -80,8 +80,10 @@ Keep metadata, encrypted objects and the separately protected encryption master
 in a consistent backup set. Stop new writes or use a reviewed consistent
 snapshot, record immutable version/object digests, restore to an isolated target
 and verify authorized byte-identical readback plus wrong-employee denials. The
-Stage42/43 test restores objects with existing synthetic metadata; full DB/key
-disaster recovery, retention/deletion and real host recovery remain unaccepted.
+Stage42/43 test restored objects with existing metadata. Stage44 now tests a
+separate empty PG17 cluster plus DB/roles/objects/media-master recovery after
+removing the original synthetic environment; see [offline recovery](OFFLINE-RECOVERY.md).
+Production backup/escrow, retention/deletion and real host recovery remain unaccepted.
 
 The original snapshot's v691 label is not a published release. Integration must
 start from then-current GitHub main and preserve its phone-login/booking fixes.

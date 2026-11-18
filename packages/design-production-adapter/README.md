@@ -9,6 +9,8 @@ protected bootstrap CLI and read-only Linux/arm64 host/image preflight. See
 [phone acceptance](PHONE-BACKEND-DELIVERY.md) and
 [staging operations](STAGING-OPERATIONS.md) for the current boundary. Earlier
 stage descriptions below are historical; they do not supersede these results.
+Stage44 adds [offline recovery](OFFLINE-RECOVERY.md), qualified with a new empty
+synthetic PG17 cluster after removing the source DB/objects/master.
 Real production authority/SQL/host/TLS/backup, physical iPhone and model/cost
 acceptance remain pending. No service has been deployed or paid API enabled.
 

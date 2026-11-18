@@ -9,7 +9,7 @@ export function createDesignFileSecretProvider({enabled=false,directory,name='ma
  return async ({purpose}={})=>{
   let file,bytes;
   try{
-   if(enabled!==true||!['design-employee-key-v1','design-immutable-key-v2','design-private-object-v1'].includes(purpose)||
+   if(enabled!==true||!['design-employee-key-v1','design-immutable-key-v2','design-private-object-v1','design-recovery-backup-v1'].includes(purpose)||
       typeof directory!=='string'||!isAbsolute(directory)||resolve(directory)!==directory||
       !/^[a-z][a-z0-9-]{0,63}\.bin$/.test(name)||typeof process.getuid!=='function')fail();
    // Reject symlinks anywhere in the configured directory. The protected parent

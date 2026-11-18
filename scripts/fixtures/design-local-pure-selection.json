@@ -150,6 +150,7 @@
     "scripts/test-design-normalized-synthetic-demo.mjs",
     "scripts/test-design-normalized-workflow-authority.mjs",
     "scripts/test-design-official-transport.mjs",
+    "scripts/test-design-offline-recovery.mjs",
     "scripts/test-design-parent-image-validation.mjs",
     "scripts/test-design-phone-photo-processing.mjs",
     "scripts/test-design-phone-ui-contracts.mjs",
