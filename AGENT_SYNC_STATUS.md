@@ -1,5 +1,12 @@
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
+## 2026-11-18 · Changing shoulder line and stable haircut baseline (App version: v667 unchanged)
+
+- Current owner: Codex content publisher. Based on protected `github/main` `82eca14922bc79a4f26ae59c612ba95c8188a579` in an isolated clean `content/aesthetic-2026-11-18` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v667 release and all forty-one earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-18` case separates visible current hair-to-shoulder contact from real length, fictional zonal hair settings, a customer-confirmed shoulder-bag/three-minute routine and required standing/sitting/turning/bag tests. Conditional A/B reasoning compares compensating a fixed front view with a head-centered, shoulder-clear stable baseline; six answers and five explicitly unscored self-checks include first-wash, third-week, sixth/eighth-week, stop and switch signals without inventing user completion.
+- Original 2172x724 AI WebP shows only one fictional adult woman's current front/two true profiles/back collarbone long bob with subtle unequal shoulder heights and different hair-to-shoulder contact, not a diagnosis, proposed cut, makeover or future state. No real customer, measured anatomy, verified length equality, posture cause, pain, density/diameter, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local and protected gates, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-17 · Silver distribution, apparent density and maintenance conflict (App version: v667 unchanged)
 
 - Current owner: Codex content publisher. Based on protected `github/main` `c1b7b4bbe6415b3902fcd95c5c28ec9af5cb1b43` in an isolated clean `content/aesthetic-2026-11-17` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v667 release and all forty earlier aesthetic cases remain preserved.
