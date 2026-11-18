@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-18",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-18本轮AI内容编辑：核查来源题录、证据边界、模拟案例隐私和原创图示版权；非独立人类学术或安全审核）",
+  "reviewedAt": "2026-11-18T00:54:30.915Z",
+  "approvalReference": "2026-11-18核对Physical Review Letters DOI 10.1103/PhysRevLett.108.078101、arXiv 2607.22103、Cosmetics DOI 10.3390/cosmetics6020024的真实题录、研究类型及外推限制；三张原创SVG由本轮生成并审阅无外链或顾客资料；这是内容审校，不是对真人化学烫发的安全批准。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "Physical Review Letters原始统计物理模型和真实马尾束实验；2012-02-13发表，DOI 10.1103/PhysRevLett.108.078101；马尾模型不等于沙龙层次剪烫对照；不能证明任何固定层次高度、最佳下摆密度、药剂pH或加热时间"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "arXiv 2026-07-24原始计算图形学预印本2607.22103；提出大尺度发丝变形与小尺度波纹的分离建模，模型实验不是人体真人剪烫随机对照；未证明高层次必然显空或规定真人杠径、热烫温度与药剂安全值"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "Cosmetics 2019年原始156名日本女性毛发弯曲和皮质细胞显微研究，DOI 10.3390/cosmetics6020024；存在样本局限及企业研发背景；不能提供单人具体剪裁层次、卷度持久率或化学烫发参数"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮独立绘制矢量图、线条、中文标注；无第三方图片、外部脚本、顾客资料，纯教学概念图，不当作实验效果或安全证据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮独立绘制矢量图、线条、中文标注；无第三方图片、外部脚本、顾客资料，纯教学概念图，不当作实验效果或安全证据"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮独立绘制矢量图、线条、中文标注；无第三方图片、外部脚本、顾客资料，纯教学概念图，不当作实验效果或安全证据"
+    }
+  ],
+  "contentSha256": "3ceeca9506ad8c7eb572024ddceb107c96b7018d60b1c83268a98a19ee8426af",
+  "assetSha256": {
+    "assets/2026-11-18/figure1.svg": "887bcd61145fda7f1eb637bb669aa077ad7f2a7bd996ec7f8780f57e801ea701",
+    "assets/2026-11-18/figure2.svg": "7ed0e5a975ea7c776149591de319c5c66b96942abb7fcf98c288949939b8d2f1",
+    "assets/2026-11-18/figure3.svg": "6b29ffd04e5d30e448a6b0e9dd27ebf02e7045e949faf0b693397b1c6ed4129f"
+  }
+}
