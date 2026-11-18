@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-11-18",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "82eca14922bc79a4f26ae59c612ba95c8188a579",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, shoulder cause, real hair diameter or density, posture stability, home reproducibility or that either proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional changing-shoulder-line and dynamic-baseline long-bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-one earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current hair-to-shoulder contact is separated from fictional zonal hair settings, customer-confirmed bag/routine conditions and required live movement tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; head-centered B is a conditional design process, not a claimed completed cut",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting a proposed design or result",
+      "No user answer is invented; all five recap fields explicitly state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face, head and shoulder proportions, real length equality, posture cause, pain, hair diameter, density, porosity, elasticity and chemical history are not established by the image; case-only settings require live verification",
+      "Standing, sitting, turning and bag tests cannot reproduce every garment, load, habit or six-to-eight-week state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-18-shoulder-line-dynamic-baseline.webp",
+    "sha256": "9226937287b1ca34c1d3a8d5bac4aab44131dda19182d2a5c161a92362f2b7bd",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2172x724 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult East Asian woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; collarbone long bob, subtle unequal shoulder heights and different hair-to-shoulder contact, neutral dry finish and consistent documentary light"
+  },
+  "hashes": {
+    "feedRawSha256": "05717eaae582dd56ac212361f80717b6e9a1dff27c1e163a2fc1dd51f1d44343",
+    "caseCanonicalSha256": "87d0a0b1da40b54a544a6522241ab3cc0fca1036208cfb19427135a658839aa7"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-18 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "version, release integrity and agent handoff checks passed on v667 before editing; daily backup script created the current daily archive",
+    "contentChecks": "test-aesthetic-daily and test-perm-academy passed with 42 cases; prior 41 parsed objects are preserved, all IDs are unique and all five recaps remain explicitly unscored",
+    "nonBrowserChecks": "version, release integrity, smoke, academy publication/data safety, version update flow, module boundaries, aesthetic system/study/Edge, coach endpoint and agent status passed; the local aesthetic SQL container gate could not start because Docker is unavailable and remains mandatory in protected CI",
+    "browserCheck": "Local pinned Playwright Chromium executable is unavailable; test-aesthetic-daily-browser failed before page launch only. The exact browser regression remains mandatory in protected CI through test-perm-academy-browser",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed yet"
+  }
+}
