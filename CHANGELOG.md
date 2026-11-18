@@ -1,3 +1,7 @@
+## 2026-11-18 — Independent HTTPS acceptance, v670 runtime unchanged
+
+Add a standard Caddy ingress candidate and exact public-asset manifest. Exercise actual TLS/native browser fetch through the original employee workflow, private HEIC/HEIF originals and complete empty-cluster recovery. Preserve private preview cache headers and reject proxy write replay; no current business/runtime, appointment sync, model activation or live deployment changes. The complete local publication gate (including163 finance scripts) passes. Publication is now authorized but actual isolated server/identity/schema/device and protected CI/merge/live gates remain.
+
 ## 2026-11-18 — Unpublished streaming recovery candidate
 
 Add bounded-memory DPR2 offline backup/restore, two-pass whole-envelope authentication and graceful CLI cancellation, keeping DPR1 reads. Qualify >1GiB synthetic payloads and real PG17/HEIC-inclusive recovery separately. Existing business/backend/sync code stays intact; no production/model activation. Local v670 remains pending target-server/device and protected release acceptance.

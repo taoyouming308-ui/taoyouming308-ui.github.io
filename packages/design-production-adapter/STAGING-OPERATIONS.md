@@ -100,3 +100,13 @@ form/booking startup remains independent; an optional module failure preserves
 current input and offers a separate-window fallback. The original design module
 still defaults closed and must receive trusted activation configuration. This
 is not a new authorization source or a browser model-key setting.
+
+## Stage46 local HTTPS qualification
+
+The concrete standard Caddy template and exact public manifest live under
+`deployment/`; see `deployment/README-design-https.md`. Actual local TLS/native
+browser fetch now passes the original phone workflow and full restore without
+browser routing interception or fetch/URL substitution. This does not provision
+public TLS, a real staging authority/schema or a qualified host. Owner publication
+authorization is current; no further approval is inferred necessary, but missing
+target infrastructure and all release/production acceptance gates remain.
