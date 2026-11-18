@@ -11,6 +11,8 @@ protected bootstrap CLI and read-only Linux/arm64 host/image preflight. See
 stage descriptions below are historical; they do not supersede these results.
 Stage44 adds [offline recovery](OFFLINE-RECOVERY.md), qualified with a new empty
 synthetic PG17 cluster after removing the source DB/objects/master.
+Stage45 supplies [streaming recovery](STREAM-RECOVERY.md), preserving DPR1 reads
+and separately qualifying large opaque payloads and actual DB/media recovery.
 Real production authority/SQL/host/TLS/backup, physical iPhone and model/cost
 acceptance remain pending. No service has been deployed or paid API enabled.
 

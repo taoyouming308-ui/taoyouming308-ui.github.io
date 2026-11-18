@@ -1,5 +1,9 @@
 # Offline DB/object/master recovery — local qualification
 
+Stage45's CLI now defaults to streaming DPR2 and reads both formats. See
+[streaming recovery](STREAM-RECOVERY.md) for its two-pass authentication, limits
+and large-payload evidence. The DPR1 buffer APIs described below remain intact.
+
 Stage44 seals a previously captured, matching offline snapshot in one
 authenticated encrypted envelope: a custom PostgreSQL archive, password-free
 roles SQL, encrypted original objects and their private-media master. A separate
@@ -32,9 +36,10 @@ refuses links, unsafe permissions, unexpected files, duplicate/unsupported names
 and oversized sets. File identity/timestamp checks and a second snapshot read
 detect mutation; they do not replace stopping all writers.
 
-Limits: 128 objects, 64MiB total plaintext; DB <=32MiB, roles <=2MiB, each object
-<=8MiB+2048. Larger stores are refused; no streaming/large-store acceptance is
-claimed. Fixed names, lengths and SHA256 hashes are encrypted with the contents.
+DPR1 limits: 128 objects, 64MiB total plaintext; DB <=32MiB, roles <=2MiB, each
+object <=8MiB+2048. DPR2 raises the format bounds to 16GiB and 10,000 objects
+with streaming; actual >1GiB payload and separate real DB recovery are tested,
+not full production capacity. Fixed names, lengths and hashes stay encrypted.
 AES-256-GCM and a separate HKDF domain bind the envelope to its storage origin.
 The `.supabase.co` value is the local object's original AAD namespace; no cloud
 request is sent. A different namespace requires a separate reviewed migration.

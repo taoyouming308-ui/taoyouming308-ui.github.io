@@ -1,3 +1,7 @@
+## 2026-11-18 — Unpublished streaming recovery candidate
+
+Add bounded-memory DPR2 offline backup/restore, two-pass whole-envelope authentication and graceful CLI cancellation, keeping DPR1 reads. Qualify >1GiB synthetic payloads and real PG17/HEIC-inclusive recovery separately. Existing business/backend/sync code stays intact; no production/model activation. Local v670 remains pending target-server/device and protected release acceptance.
+
 ## 2026-11-18 — Unpublished offline recovery continuation
 
 Add a bounded authenticated offline DB/roles/encrypted-object/media-master backup envelope with a separate recovery key, strict new-target extraction and no SQL execution. Test fresh empty PG17 recovery after removing the source environment; preserve effective permissions, original hashes/archives and current employee authorization. No production/sync/model activation. Reserve local v669 pending real staging/host/device and protected release acceptance.

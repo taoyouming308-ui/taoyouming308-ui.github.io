@@ -100,7 +100,10 @@
     "test:design-staging": "node --test scripts/test-design-staging-service.mjs scripts/test-design-staging-cli.mjs",
     "test:design-staging-entry": "node scripts/test-design-lazy-entry-browser.mjs",
     "test:design-recovery": "node --test scripts/test-design-offline-recovery.mjs scripts/test-design-server-secret-files.mjs",
-    "test:design-recovery-postgres": "node scripts/test-design-phone-backend-browser.mjs --full-recovery"
+    "test:design-recovery-postgres": "node scripts/test-design-phone-backend-browser.mjs --full-recovery",
+    "test:design-stream-recovery": "node --test scripts/test-design-stream-recovery.mjs scripts/test-design-offline-recovery.mjs scripts/test-design-server-secret-files.mjs",
+    "test:design-stream-recovery-scale": "node --max-old-space-size=64 scripts/test-design-stream-recovery-scale.mjs",
+    "test:design-stream-recovery-postgres": "node scripts/test-design-phone-backend-browser.mjs --full-recovery --stream-recovery"
   },
   "devDependencies": {
     "exceljs": "4.4.0",
