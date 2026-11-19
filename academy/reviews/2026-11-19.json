@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-19",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-19本轮AI内容编辑：核对三篇原始研究题录及结论边界、模拟案例隐私、三张原创新制SVG的版权与安全属性；非第三方人工或真人化学安全批准）",
+  "reviewedAt": "2026-11-19T00:48:12.519Z",
+  "approvalReference": "2026-11-19逐篇核对DOI 10.1111/jmi.13365、10.1016/j.jsb.2008.12.006、10.1111/ics.70096及发表日期/类型/外推范围；手工独立检查本轮原创SVG没有外链/脚本/真实顾客素材；审核仅授权科学边界清楚的教学内容。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2024-11-20首次发表；Journal of Microscopy原始微CT重建；不同天然卷曲毛干几何与截面存在差异，仪器对毛鳞片表面分辨有限；限制：不提供化学烫发最佳杠径、药力、温度、真人持久率"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2008-12-25在线，2009年4月刊载于Journal of Structural Biology；原始荧光与电子显微镜，DOI 10.1016/j.jsb.2008.12.006；限制：关联不等于个人化学烫发安全处方，不能预测具体卷向、断键比例或药力"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2026-11-02首次发表；International Journal of Cosmetic Science原始毛束测量方法适配，含固定湿度、光照及卷曲收缩分析；主要3/4型高卷曲毛发；限制：不直接适用于中国顾客轻自然卷的热烫设计，也不能给出安全化学工艺参数"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的轻量静态SVG；无第三方照片、版权图库、外部脚本、真实顾客资料；只作几何教学，未被冒称为实测数据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的轻量静态SVG；无第三方照片、版权图库、外部脚本、真实顾客资料；只作几何教学，未被冒称为实测数据"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的轻量静态SVG；无第三方照片、版权图库、外部脚本、真实顾客资料；只作几何教学，未被冒称为实测数据"
+    }
+  ],
+  "contentSha256": "922b74abaaea4c7de017c39a9cae753b7eb4721ca04fee8b69f9ac6c4d2d4167",
+  "assetSha256": {
+    "assets/2026-11-19/figure1.svg": "f8b38d9a5e964a65d73aa0e8b2d10a81ea11d3469f75d53d6231fe154db7750e",
+    "assets/2026-11-19/figure2.svg": "1699a9eae2814de7d44c0e3134c7f8ebda8b6ee7e1ae2f74a143f98babd939d4",
+    "assets/2026-11-19/figure3.svg": "6e193b097880852449d8e4fde677f3fbefe993be0a161e88c028c1ad1f7e2606"
+  }
+}
