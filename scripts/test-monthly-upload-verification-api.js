@@ -7,16 +7,17 @@ const store={id:id(1),company_id:id(2),name:'Synthetic Store'};
 const actor={operations_role:'finance',auth_account_id:id(3),auth_scope_type:'company',auth_stores:[store.name],auth_store_records:[store],auth_capabilities:['report.upload']};
 (async()=>{
  const audit=await import('../supabase/functions/_shared/monthly-upload-verification.mjs');
+ const compatibility=await import('../supabase/functions/_shared/petty-detail-xlsx.mjs');
  const {detectReportMetadata}=await import('../supabase/functions/_shared/report-auto-detection.mjs');
  const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('7月');sheet.getCell('A1').value='2026年7月盈亏报表';sheet.getCell('A4').value='盈亏统计';sheet.getCell('A5').value='收入类别';sheet.getCell('A6').value='美发收入';sheet.getCell('A2').value='房租';sheet.getCell('B2').value=123.45;sheet.getCell('B3').value={formula:'SUM(B2:B2)',result:123.45};
- const bytes=Buffer.from(await book.xlsx.writeBuffer());
+ let bytes=Buffer.from(await book.xlsx.writeBuffer());
  let calls=[],mode='',persisted,authenticated=true;
- const env=vm.createContext({console,TextEncoder,TextDecoder,Uint8Array,ArrayBuffer,DataView,URL,Date,Request,Response,AbortSignal,crypto:webcrypto,atob,btoa,ExcelJS,JSZip,...audit,detectReportMetadata,mockSession:actor,
+ const env=vm.createContext({console,TextEncoder,TextDecoder,Uint8Array,ArrayBuffer,DataView,URL,Date,Request,Response,AbortSignal,crypto:webcrypto,atob,btoa,ExcelJS,JSZip,...audit,...compatibility,detectReportMetadata,mockSession:actor,
  Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://synthetic.invalid':'synthetic-key'},serve:fn=>{env.handler=fn}},
  fetch:async(url,opts={})=>{
   const u=new URL(url),method=opts.method||'GET',p=u.pathname;
   calls.push({path:p,method});
-  if(p.startsWith('/storage/')){assert.equal(method,'POST');assert.equal(opts.headers['x-upsert'],'false');assert.ok(p.includes(store.company_id+'/'+store.id));return Response.json({})}
+  if(p.startsWith('/storage/')){assert.deepEqual(Buffer.from(opts.body),bytes,'storage must retain exact original bytes');assert.equal(method,'POST');assert.equal(opts.headers['x-upsert'],'false');assert.ok(p.includes(store.company_id+'/'+store.id));return Response.json({})}
   if(p.endsWith('/rpc/zysyr_register_report_upload')){
    assert.equal(method,'POST');const body=JSON.parse(opts.body);assert.equal(body.p_report.company_id,store.company_id);assert.equal(body.p_report.store_id,store.id);assert.equal(body.p_report.uploaded_by_user_id,actor.auth_account_id);
    assert.ok(body.p_report.display_data.upload_source_snapshot.available);assert.equal(body.p_report.display_data.upload_source_snapshot.cells.find(c=>c.address==='B2').numeric,123.45);
@@ -39,6 +40,19 @@ const actor={operations_role:'finance',auth_account_id:id(3),auth_scope_type:'co
   assert.ok(calls.every(c=>c.method==='GET'||c.path.includes('/storage/')||c.path.endsWith('/rpc/zysyr_register_report_upload')),'no posting/approval/ledger writes');
  }
  mode='';calls=[];let r=await post({operation:'report_upload_auto'});assert.equal(r.status,200,JSON.stringify(r));assert.equal(r.data.verification.status,'matched');
+ // Reproduce XML namespace aliases from a valid reserialized single-month XLSX.
+ const zipped=await JSZip.loadAsync(bytes);
+ for(const entry of Object.values(zipped.files).filter(e=>!e.dir&&/\.(xml|rels)$/.test(e.name))){
+  let xml=await entry.async('string');
+  for(const [uri,prefix] of [['http://schemas.openxmlformats.org/spreadsheetml/2006/main','ns0'],['http://schemas.openxmlformats.org/package/2006/relationships','pkg'],['http://schemas.openxmlformats.org/package/2006/content-types','ct']]){
+   if(xml.includes('xmlns="'+uri+'"'))xml=xml.replace('xmlns="'+uri+'"','xmlns:'+prefix+'="'+uri+'"').replace(/<(\/?)([A-Za-z][\w.-]*)(?=[\s/>])/g,'<$1'+prefix+':$2');
+  }
+  if(entry.name==='xl/workbook.xml')xml=xml.replaceAll('xmlns:r=','xmlns:relx=').replaceAll('r:id=','relx:id=');
+  zipped.file(entry.name,xml);
+ }
+ bytes=Buffer.from(await zipped.generateAsync({type:'uint8array'}));calls=[];r=await post({operation:'report_upload_auto'});
+ assert.equal(r.status,200,JSON.stringify(r));assert.equal(r.data.detection.month,'2026-07');assert.equal(r.data.verification.status,'matched');
+ assert.equal(calls.filter(c=>c.path.endsWith('/rpc/zysyr_register_report_upload')).length,1);assert.equal(r.data.formal_ledger_changed,false);
  for(const session of [{...actor,auth_capabilities:[]},{...actor,operations_role:'shareholder',auth_capabilities:[]},{...actor,operations_role:'employee',auth_capabilities:[]}]){env.mockSession=session;calls=[];r=await post({role:'finance'});assert.notEqual(r.status,200);assert.equal(calls.length,0)}
  env.mockSession=actor;calls=[];r=await post({store:'Foreign Store'});assert.notEqual(r.status,200);assert.equal(calls.length,0);
  authenticated=false;r=await post({});assert.equal(r.status,403);assert.equal(calls.length,0);

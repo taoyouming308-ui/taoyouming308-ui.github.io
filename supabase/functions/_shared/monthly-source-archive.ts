@@ -1,4 +1,5 @@
 // Source-only XLSX registration. No workbook amount parser, financial writes or reserialization.
+import { workbookRelationshipId } from './petty-detail-xlsx.mjs';
 type Row = Record<string, unknown>;
 type ZipEntry = { internalStream(type: string): { on(event: string, callback: (data: Uint8Array) => void): unknown; pause(): void; resume(): void } };
 type Zip = { file(path: string): ZipEntry | null };
@@ -79,7 +80,7 @@ export async function monthlySourceWorksheetNames(bytes: Uint8Array, loadZip: Mo
     relationships.set(a.Id, target);
   }
   const sheets = Array.from(workbook.matchAll(/<(?:\w+:)?sheet\b[^>]*>/g), m => attrs(m[0]));
-  const result = sheets.map(s => { if (!s.name || s.name.length > 120 || !relationships.has(s['r:id'])) throw Error('XLSX 工作表名称或关系无效'); return s.name; });
+  const result = sheets.map(s => { if (!s.name || s.name.length > 120 || !relationships.has(workbookRelationshipId(workbook, s))) throw Error('XLSX 工作表名称或关系无效'); return s.name; });
   if (!result.length || result.length > 300 || new Set(result.map(n => n.trim().toLocaleLowerCase())).size !== result.length) throw Error('XLSX 工作表名称为空、重复或归属不明确');
   return result;
 }

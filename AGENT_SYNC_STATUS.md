@@ -1,3 +1,10 @@
+## 2026-11-19 · Monthly XLSX namespace compatibility (App version: v668; local candidate)
+
+- Owner: Codex. Clean isolated fix/monthly-xlsx-compat-20261119 based on protected github/main f67afc0e; start version/integrity/handoff checks and November19 daily recovery archive passed before edits. Prior v667 app/content and original worktrees are preserved.
+- The exact local July Xiangli XLSX uses ns0 workbook elements, ns1 relationship attributes and prefixed package relationships/types. Existing metadata regex and raw ExcelJS4 reader reject these valid aliases. Reuse the bounded in-memory XLSX compatibility loader for report display/current sheet and source review; add URI-based package and attribute canonicalization, preserve foreign namespace boundaries and reject conflicting aliases.
+- Source archive metadata and the independent original-XML amount/formula audit resolve relationship aliases without reserializing original bytes. Synthetic tests cover active month, types/relationships, exact-byte archive, ordinary passthrough, cached zero, unknown cache and merged cells. Local real original passes271 cell/97 formula comparisons and2026-07 detection; its SHA256 is unchanged. No private workbook or business values committed, no production report submission, associations, amounts, schema or ledger writes.
+- Frozen Deno check and targeted tests pass. Normal full pre-push/protected checks, merge, canonical32-file backend and Pages/readback remain required before claiming publication. No forced refresh of user forms.
+
 <!-- academy-reviewed-inputs:8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37 -->
 ## 2026-11-19 · Reviewed academy publication candidate (App version: v667 unchanged)
 
