@@ -49,3 +49,11 @@ node scripts/test-aesthetic-study-admin-browser.cjs || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1
+
+# Explicit photo API transport remains default-closed in both local and CI gates.
+node --test scripts/test-design-prepared-client.mjs || exit 1
+
+# Current employee login verification is separate from customer/visit permission.
+"${ZYSYR_DENO:-deno}" check --no-remote supabase/functions/design-employee-authority/index.ts || exit 1
+node --test scripts/test-design-live-employee.mjs || exit 1
+node scripts/test-design-live-employee-postgres.mjs || exit 1

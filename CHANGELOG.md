@@ -1,3 +1,27 @@
+## v672 · 2026-11-19 · Existing employee identity verification candidate
+
+- Add read-only, service-role-only verification of current App employee sessions, stable staff account identity and fresh server checks. Departed/expired/logout/recreated-account cases deny without renewing sessions or changing booking/customer access.
+- Add isolated real PostgreSQL and client/Edge boundary checks to the existing publication gate. Photo processing remains default-closed; production membership/visit/receipt and host qualification are separate dependencies. Model keys stay owner-configured last.
+
+## 2026-11-19 — Existing App photo API transport candidate (v671)
+
+Resolve the current 自由手艺人 App's actual Pages entry and Supabase project through read-only configuration and live readback. Add explicit trusted cross-origin photo API transport while retaining default closure, current employee/scope/receipt checks, private previews and no retries. Add a separate API-only HTTPS/CORS ingress profile and actual two-origin native-browser HEIC/HEIF/archive/recovery acceptance. Reuse the reviewed browser graph to repair a stale legacy acceptance allowlist. Production, appointments and model keys remain unchanged; independent native host and real authority/bootstrap deployment gates remain.
+
+## 2026-11-18 — Independent HTTPS acceptance, v670 runtime unchanged
+
+Add a standard Caddy ingress candidate and exact public-asset manifest. Exercise actual TLS/native browser fetch through the original employee workflow, private HEIC/HEIF originals and complete empty-cluster recovery. Preserve private preview cache headers and reject proxy write replay; no current business/runtime, appointment sync, model activation or live deployment changes. The complete local publication gate (including163 finance scripts) passes. Publication is now authorized but actual isolated server/identity/schema/device and protected CI/merge/live gates remain.
+
+## 2026-11-18 — Unpublished streaming recovery candidate
+
+Add bounded-memory DPR2 offline backup/restore, two-pass whole-envelope authentication and graceful CLI cancellation, keeping DPR1 reads. Qualify >1GiB synthetic payloads and real PG17/HEIC-inclusive recovery separately. Existing business/backend/sync code stays intact; no production/model activation. Local v670 remains pending target-server/device and protected release acceptance.
+
+## 2026-11-18 — Unpublished offline recovery continuation
+
+Add a bounded authenticated offline DB/roles/encrypted-object/media-master backup envelope with a separate recovery key, strict new-target extraction and no SQL execution. Test fresh empty PG17 recovery after removing the source environment; preserve effective permissions, original hashes/archives and current employee authorization. No production/sync/model activation. Reserve local v669 pending real staging/host/device and protected release acceptance.
+
+## 2026-11-18 — Unpublished isolated phone-design candidate
+
+Add direct native HEIC/HEIF processing, mTLS image broker, encrypted local private originals and original employee workflow, retaining manual review/confirmation and immutable archives. Add non-model staging lifecycle and read-only host/image preflight. Preserve current main business fixes; production authorization, host/TLS/SQL/backup/device acceptance remain pending. No production/booking-sync/API activation.
 <!-- academy-reviewed-inputs:8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37 -->
 ## 2026-11-19 · Reviewed academy publication candidate (App version: v667 unchanged)
 

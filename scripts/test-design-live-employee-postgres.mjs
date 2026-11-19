@@ -1,0 +1,51 @@
+/** Disposable PG17 only. Exercises the exact production migration using a real
+ * service_role LOGIN with SELECT-only source grants. No cloud/business access. */
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash,randomUUID} from 'node:crypto';
+const container='design-employee-synthetic-'+randomUUID(),db='design_employee_synthetic';
+const token='synthetic-'+randomUUID()+randomUUID(),nonce=randomUUID(),hash=v=>createHash('sha256').update(v).digest('hex');
+const quote=v=>"'"+String(v).replaceAll("'","''")+"'",results=[];
+const docker=(args,input)=>execFileSync(process.platform==='darwin'?'/usr/local/bin/docker':'/usr/bin/docker',args,{input,encoding:'utf8',timeout:30000,stdio:['pipe','pipe','pipe']});
+const sql=(text,role='postgres',database=db)=>docker(['exec','-i','-e','PGOPTIONS=-c statement_timeout=3000 -c lock_timeout=100 -c timezone=UTC',container,'psql','-X','-q','-A','-t','-w','-h','127.0.0.1','-U',role,'-d',database,'-v','ON_ERROR_STOP=1'],text).trim();
+const call=(credential=token,role='service_role')=>JSON.parse(sql(`select public.design_employee_verify_session(${quote(credential)},${quote(nonce)}::uuid);`,role));
+const pass=name=>{results.push(name);console.log('PASS '+name);};
+let attempted=false;
+try{
+ docker(['image','inspect','postgres:17']);attempted=true;
+ docker(['run','--detach','--name',container,'--label','design.employee.fixture=true','--pull=never','--network=none','--memory=268435456','--memory-swap=268435456','--cpus=1','--pids-limit=100','-e','POSTGRES_HOST_AUTH_METHOD=trust','postgres:17']);
+ let ready=false;for(let n=0;n<100;n++){try{docker(['exec',container,'pg_isready','-h','127.0.0.1','-U','postgres']);ready=true;break;}catch{await new Promise(r=>setTimeout(r,50));}}assert(ready);
+ sql(`create database ${db};`,'postgres','postgres');
+ sql(`create role anon login; create role authenticated login; create role service_role login bypassrls;
+ create table public.staff(id integer primary key,username text not null unique,store text,active boolean,employment_status text not null,created_at timestamptz);
+ create table public.employee_booking_sessions(token_hash text primary key,username text not null,store text not null,position text not null default '',expires_at timestamptz not null,created_at timestamptz not null,last_used_at timestamptz not null);
+ alter table public.staff enable row level security;alter table public.employee_booking_sessions enable row level security;
+ revoke all on public.staff,public.employee_booking_sessions from public,anon,authenticated;
+ grant select on public.staff,public.employee_booking_sessions to service_role;
+ insert into public.staff values(17,'synthetic stylist','自由手艺人',true,'active','2026-01-01Z');
+ insert into public.employee_booking_sessions values(${quote(hash(token))},'synthetic stylist','自由手艺人','stylist',clock_timestamp()+interval '1 hour',clock_timestamp(),clock_timestamp());`);
+ const snapshot=()=>sql("select jsonb_build_object('staff',(select jsonb_agg(to_jsonb(s)) from public.staff s),'sessions',(select jsonb_agg(to_jsonb(s)) from public.employee_booking_sessions s),'acl',(select jsonb_agg(jsonb_build_object('name',relname,'acl',relacl::text,'rls',relrowsecurity)) from pg_class where oid in ('public.staff'::regclass,'public.employee_booking_sessions'::regclass)),'policies',(select coalesce(jsonb_agg(to_jsonb(p)),'[]'::jsonb) from pg_policies p where tablename in ('staff','employee_booking_sessions')))");
+ const baseline=snapshot(),migration=readFileSync(new URL('../supabase/migrations/20261119033207_design_employee_session_readonly.sql',import.meta.url),'utf8');sql(migration);assert.equal(snapshot(),baseline);pass('exact production migration leaves existing rows, grants and RLS policies unchanged');
+ let a=call();assert.equal(a.staffId,'17');assert.deepEqual(a.actor,{store:'自由手艺人',username:'synthetic stylist'});assert.equal(a.nonce,nonce);assert.equal(a.sessionBinding,hash('design-live-employee-v1:'+token));assert.equal(a.validUntil,a.checkedAt+5000);assert(!JSON.stringify(a).includes(token));assert.equal(snapshot(),baseline);pass('actual service_role LOGIN reads exact current staff PK without source UPDATE privileges or renewal');
+ assert.equal(JSON.parse(sql(`begin read only;select public.design_employee_verify_session(${quote(token)},${quote(nonce)});commit;`,'service_role')).staffId,'17');assert.equal(snapshot(),baseline);pass('entire verifier succeeds in a READ ONLY transaction');
+ for(const role of ['anon','authenticated'])assert.throws(()=>call(token,role));pass('anon and authenticated cannot execute even with a valid opaque employee token');
+ assert.throws(()=>call(token,'postgres'));pass('RPC refuses a non-service-role execution context');
+ for(const credential of ['short','x'.repeat(201),token+'\n',token+' ',"x'".repeat(50),'forged-credential-'+randomUUID()])assert.throws(()=>call(credential));assert.equal(snapshot(),baseline);pass('forged, malformed and injection-shaped credentials are denied without writes');
+ const denyPatch=(patch,restore)=>{sql(patch);assert.throws(()=>call());sql(restore);};
+ denyPatch('update public.staff set active=false','update public.staff set active=true');pass('staff deactivation is effective on the next uncached read');
+ denyPatch("update public.staff set employment_status='departed'","update public.staff set employment_status='active'");pass('departed staff are denied');
+ denyPatch("update public.staff set employment_status='pending'","update public.staff set employment_status='active'");pass('pending staff are denied');
+ denyPatch('update public.staff set active=null','update public.staff set active=true');pass('null employment evidence is not treated as active');
+ denyPatch("update public.staff set store='向里造型'","update public.staff set store='自由手艺人'");pass('session/store reassignment mismatch is denied');
+ denyPatch("update public.staff set store='unknown';update public.employee_booking_sessions set store='unknown'","update public.staff set store='自由手艺人';update public.employee_booking_sessions set store='自由手艺人'");pass('matching but unsupported stores do not grant access');
+ denyPatch("update public.staff set username='other'","update public.staff set username='synthetic stylist'");pass('renamed login invalidates the old session');
+ denyPatch('update public.staff set created_at=null',"update public.staff set created_at='2026-01-01Z'");pass('missing stable account creation evidence denies access');
+ denyPatch('update public.staff set created_at=clock_timestamp()+interval \'1 second\'',"update public.staff set created_at='2026-01-01Z'");pass('an old session cannot cross a later account incarnation');
+ const old=call();sql("update public.staff set id=18,created_at=clock_timestamp()");assert.throws(()=>call());sql('update public.employee_booking_sessions set created_at=clock_timestamp()');a=call();assert.equal(a.staffId,'18');assert.notEqual(a.sourceRevision,old.sourceRevision);sql("update public.staff set id=17,created_at='2026-01-01Z'");pass('recreated account requires a fresh session and receives a different stable identity');
+ denyPatch("update public.employee_booking_sessions set expires_at=clock_timestamp()-interval '1 second'","update public.employee_booking_sessions set expires_at=clock_timestamp()+interval '1 hour'");pass('expired sessions are denied immediately');
+ denyPatch("update public.employee_booking_sessions set created_at=clock_timestamp()+interval '1 hour'",'update public.employee_booking_sessions set created_at=clock_timestamp()');pass('future session creation evidence is rejected');
+ sql('delete from public.employee_booking_sessions');assert.throws(()=>call());pass('existing logout deletion immediately removes access');
+ const meta=JSON.parse(sql("select jsonb_build_object('securityDefiner',p.prosecdef,'source',p.prosrc,'config',p.proconfig,'anonExecute',has_function_privilege('anon',p.oid,'execute'),'authenticatedExecute',has_function_privilege('authenticated',p.oid,'execute')) from pg_proc p where p.oid='public.design_employee_verify_session(text,uuid)'::regprocedure"));assert.equal(meta.securityDefiner,false);assert.equal(meta.anonExecute,false);assert.equal(meta.authenticatedExecute,false);assert(!/\b(insert|update|delete|for\s+share|for\s+update)\b/i.test(meta.source));pass('installed function is invoker-only, bounded and contains no DML or source row locks');
+ console.log(JSON.stringify({passed:results.length,results,productionQueries:0,models:0}));
+}finally{if(attempted)docker(['rm','--force',container]);}
