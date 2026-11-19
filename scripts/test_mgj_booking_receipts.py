@@ -22,6 +22,11 @@ class Transport(unittest.TestCase):
   self.call(dict(self.base,operation='begin'),good)
   for field,value in [('lease_id',''),('lease_id',None),('generation',True),('generation',0),('expires_at','2020-01-01T00:00:00+00:00'),('expires_at','2030-01-01T00:00:00'),('date','wrong'),('operation','commit'),('operation',None)]:
    with self.subTest(field=field,value=value),self.assertRaises(RuntimeError):self.call(dict(self.base,operation='begin'),dict(good,**{field:value}))
+ def test_postgres_variable_fractional_seconds(self):
+  future=datetime.now(timezone.utc)+timedelta(seconds=120)
+  for fraction in ['', '.1', '.12', '.123', '.1234', '.12345', '.123456']:
+   receipt=dict(self.base,operation="begin",lease_id=self.lease,generation=1,expires_at=future.strftime('%Y-%m-%dT%H:%M:%S')+fraction+'+00:00')
+   with self.subTest(fraction=fraction):self.call(dict(self.base,operation='begin'),receipt)
  def test_commit_strict_counts(self):
   payload=dict(self.base,operation='commit',lease_id=self.lease,bookings=[{}]);good=dict(self.base,operation="commit",lease_id=self.lease,upserted=1,deleted=2,generation=1)
   self.call(payload,good)

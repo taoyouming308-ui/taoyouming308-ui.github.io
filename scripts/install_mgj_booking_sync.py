@@ -18,7 +18,7 @@ JOBS = Path('/Users/a1/.hermes/cron/jobs.json')
 CONSUMPTION_PLIST = Path('/Users/a1/Library/LaunchAgents/com.hermes.daily-consumption-sync.plist')
 PLIST = Path('/Users/a1/Library/LaunchAgents') / (LABEL + '.plist')
 KNOWN = {
-    'sync_mgj_bookings.py': '62827e359b693cb9c605b779574e97577a7c6aba231a4abece1d503558c359ce',
+    'sync_mgj_bookings.py': ('62827e359b693cb9c605b779574e97577a7c6aba231a4abece1d503558c359ce', 'ed2838bc4ba6b728598215bfc87766bca45a65d72a763d80625ddfb36b580819'),
     'sync_bookings_wrapper.sh': '5fd413949d842f3a90281646a9fb7b8afccdef0036a27b51cf6a037a13633df0',
     'sync_bookings_v2.py': '6e761d06f98ddf9b3f5a02a34c65908ef048ba1fb05d77485301dd34dc9ace55',
 }
@@ -74,7 +74,7 @@ def preflight(files, plist):
         path = RUNTIME/name
         if path.is_symlink():
             raise RuntimeError('symlink_runtime')
-        if path.exists() and path.read_bytes()!=content and hashlib.sha256(path.read_bytes()).hexdigest()!=KNOWN.get(name):
+        if path.exists() and path.read_bytes()!=content and hashlib.sha256(path.read_bytes()).hexdigest() not in ((KNOWN[name],) if isinstance(KNOWN.get(name),str) else KNOWN.get(name,())):
             raise RuntimeError('unknown_runtime_preimage:'+name)
     if PLIST.exists() and PLIST.read_bytes()!=plist:
         raise RuntimeError('unknown_launchd_preimage')

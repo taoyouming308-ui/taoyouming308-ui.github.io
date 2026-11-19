@@ -356,7 +356,10 @@ def signed_protocol_request(payload, signing_key, timeout=15):
         if payload["operation"] == "begin":
             try:
                 uuid.UUID(result["lease_id"])
-                expiry = datetime.fromisoformat(result["expires_at"].replace("Z", "+00:00"))
+                expiry_text = result["expires_at"].replace("Z", "+00:00")
+                # macOS Python 3.9 fromisoformat rejects valid 1/2/4/5 digit fractions.
+                expiry_format = "%Y-%m-%dT%H:%M:%S.%f%z" if "." in expiry_text else "%Y-%m-%dT%H:%M:%S%z"
+                expiry = datetime.strptime(expiry_text, expiry_format)
                 if expiry.tzinfo is None or expiry.timestamp() <= time.time():
                     raise ValueError("expired")
                 if type(result.get("generation")) is not int or result["generation"] <= 0:
