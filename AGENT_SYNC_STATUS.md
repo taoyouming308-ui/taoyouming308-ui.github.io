@@ -1,3 +1,10 @@
+## 2026-11-19 · Reversible parting corridor and directional haircut structure (App version: v669 unchanged)
+
+- Current owner: Codex content publisher. Based on protected `github/main` `8c1d38c` in an isolated clean `content/aesthetic-2026-11-19` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v669 release and all forty-two earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-19` case separates visible current root fall from fictional zonal hair/growth settings, a customer-confirmed two-minute no-product routine and required left/center/right parting tests. Conditional A/B reasoning compares fixed-side directional asymmetry with a reversible parting corridor, balanced baseline and temporary blow-dry direction; six answers and five explicitly unscored self-checks include first-wash, third-week, eighth-week, stop and switch signals without inventing user completion.
+- Original 2172x724 AI WebP shows only one fictional adult woman's current front/two true profiles/back jaw-to-upper-neck bob in a neutral near-center part, not the undisplayed deep-side-part reference, proposed cut, perm, blowout, makeover or future state. No real customer, measured anatomy, verified density/diameter/growth force, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local and protected gates, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-19 · Dismissible and truthful shell update notices (App version: v669; local candidate)
 
 - Owner: Codex. Isolated fix/update-notice-lifecycle-20261119 from protected github/main d256efa0 / published v668. Start version/integrity/handoff checks and the existing November19 daily backup passed before edits; prior worktrees and acceptance artifacts preserved.
