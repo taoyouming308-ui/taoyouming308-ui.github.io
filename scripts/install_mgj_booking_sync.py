@@ -18,7 +18,7 @@ JOBS = Path('/Users/a1/.hermes/cron/jobs.json')
 CONSUMPTION_PLIST = Path('/Users/a1/Library/LaunchAgents/com.hermes.daily-consumption-sync.plist')
 PLIST = Path('/Users/a1/Library/LaunchAgents') / (LABEL + '.plist')
 KNOWN = {
-    'sync_mgj_bookings.py': ('62827e359b693cb9c605b779574e97577a7c6aba231a4abece1d503558c359ce', 'ed2838bc4ba6b728598215bfc87766bca45a65d72a763d80625ddfb36b580819'),
+    'sync_mgj_bookings.py': ('62827e359b693cb9c605b779574e97577a7c6aba231a4abece1d503558c359ce', 'ed2838bc4ba6b728598215bfc87766bca45a65d72a763d80625ddfb36b580819', '219eeb545d4b28294ba4b02ca911b7696ecf6ef271aacf0da9978d6de8c00a98'),
     'sync_bookings_wrapper.sh': '5fd413949d842f3a90281646a9fb7b8afccdef0036a27b51cf6a037a13633df0',
     'sync_bookings_v2.py': '6e761d06f98ddf9b3f5a02a34c65908ef048ba1fb05d77485301dd34dc9ace55',
 }

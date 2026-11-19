@@ -195,7 +195,7 @@ def request_json(url, cookie="", data=None, timeout=20):
     def perform():
         remaining = remaining_run_seconds()
         if remaining is not None and remaining < 1:
-            raise TimeoutError("预约同步运行时间已到105秒上限")
+            raise TimeoutError("预约同步运行时间已到本轮上限")
         effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
         with source_urlopen(request, timeout=effective_timeout) as response:
             return json.loads(response.read().decode("utf-8", errors="replace"))
@@ -334,7 +334,7 @@ def signed_protocol_request(payload, signing_key, timeout=15):
     def perform():
         remaining = remaining_run_seconds()
         if remaining is not None and remaining < 1:
-            raise TimeoutError("预约同步运行时间已到105秒上限")
+            raise TimeoutError("预约同步运行时间已到本轮上限")
         effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
         try:
             with urllib.request.urlopen(
@@ -590,7 +590,7 @@ def main():
         return 1
     scheduled = "--scheduled" in sys.argv[1:]
     cadence = None
-    RUN_DEADLINE = time.monotonic() + (55 if scheduled else RUN_BUDGET_SECONDS)
+    RUN_DEADLINE = time.monotonic() + (90 if scheduled else RUN_BUDGET_SECONDS)
     run_lock = acquire_lock(RUN_LOCK_PATH)
     if run_lock is None:
         print("预约同步已有任务运行，本次跳过")
