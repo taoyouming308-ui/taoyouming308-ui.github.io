@@ -51,6 +51,7 @@ async function waitFor(page,fn,arg){
   const keys=await page.evaluate(async()=>{const out=[];for(const name of await caches.keys())for(const r of await (await caches.open(name)).keys())out.push(r.url);return out;});
   assert.equal(keys.length,paths.length+1);assert.ok(keys.every(k=>!k.includes('?')&&!k.includes('api/')));
   // Offline opens the real three entry documents but never treats a stored credential as verified.
+  await page.locator('#identity-modal').waitFor(); // Finish the preceding page's empty-session check before seeding an offline fixture.
   await page.evaluate(()=>localStorage.setItem('booking-session',JSON.stringify({session_token:'synthetic',username:'test',store:'test',loggedAt:Date.now()})));
   if(engine==='webkit') networkDown=true; else await context.setOffline(true);
   for(const entry of ['perm-app.html','frontdesk.html','operations.html']){
@@ -88,6 +89,21 @@ async function waitFor(page,fn,arg){
   await waitFor(page,async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
   assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   await page.evaluate(()=>window.ZysyrAppShell.requestUpdate());assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
+  assert.equal(await page.locator('#app-shell-notice').getAttribute('data-state'),'waiting');
+  // The real main entry must show one dismissible waiting prompt, not a false preparation pill.
+  const prompt=await context.newPage();await prompt.goto(origin+'/perm-app.html');
+  await prompt.locator('#app-shell-notice[data-state="waiting"]').waitFor();
+  assert.equal(await prompt.locator('#update-banner').isVisible(),false);
+  for(const width of [390,1366]) {
+   await prompt.setViewportSize({width,height:844});
+   const box=await prompt.locator('#app-shell-notice').boundingBox();assert(box.x>=0&&box.x+box.width<=width&&box.height<180);
+   const button=prompt.getByRole('button',{name:'收起界面更新提示'});assert((await button.boundingBox()).height>=44);
+   await prompt.locator('#app-shell-notice').screenshot({path:'/tmp/zysyr-shell-notice-'+engine+'-'+width+'.png'});
+  }
+  await prompt.getByRole('button',{name:'收起界面更新提示'}).click();assert.equal(await prompt.locator('#app-shell-notice').count(),0);
+  await prompt.goto(origin+'/frontdesk.html');await prompt.waitForFunction(()=>!!window.ZysyrAppShell);
+  await prompt.evaluate(()=>window.dispatchEvent(new Event('online')));assert.equal(await prompt.locator('#app-shell-notice').count(),0,'dismissal survives same-tab navigation and online events');
+  await prompt.close();assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   // A second controlled page keeps the old version pinned, including report iframe parameters.
   const second=await context.newPage();await second.goto(origin+'/operations.html?entry=staff-shareholder&v='+(base+1)+'&review_store=synthetic&review_month=2026-10');
   assert.equal(await second.evaluate(()=>document.documentElement.dataset.version),String(base));
@@ -136,6 +152,6 @@ async function waitFor(page,fn,arg){
   await old.evaluate(()=>navigator.serviceWorker.register('/app-shell-sw.js',{updateViaCache:'none'}));await waitFor(old,async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
   assert.ok(await old.evaluate(()=>navigator.serviceWorker.controller.scriptURL.endsWith('/legacy-sw.js')));
   await old.close();await new Promise(r=>setTimeout(r,1000));old=await legacy.newPage();await old.goto(origin+'/harness');await waitFor(old,async()=>{const r=await navigator.serviceWorker.getRegistration();return r&&r.active.scriptURL.endsWith('/app-shell-sw.js')&&!r.waiting;});await legacy.close();
-  console.log(JSON.stringify({engine,simulatedStaticDelayMs:delay,networkFailure:engine==='webkit'?'loopback server closes sockets; Playwright offline navigation failed':'browser offline emulation',coldInstallMs:coldMs,warmNavigationMs:warm,publicFiles:paths.length,publicBytes:paths.reduce((n,p)=>n+fs.statSync(path.join(root,p)).size,0),passed:['installing duplicate button/online guarded','cold no claim','warm zero static network','offline three entries/auth gate','no API or write cache','failed atomic install','unsaved input preserved','multi-tab waiting','version mismatch denied','natural version activation','eviction hash repair','legacy worker waiting','runtime-only failure preserves cache','admin shared resources untouched','downgrade rejected'],scope:'desktop browser loopback synthetic; not iPhone or production performance'},null,2));
+  console.log(JSON.stringify({engine,simulatedStaticDelayMs:delay,networkFailure:engine==='webkit'?'loopback server closes sockets; Playwright offline navigation failed':'browser offline emulation',coldInstallMs:coldMs,warmNavigationMs:warm,publicFiles:paths.length,publicBytes:paths.reduce((n,p)=>n+fs.statSync(path.join(root,p)).size,0),passed:['installing duplicate button/online guarded','single truthful dismissible prompt at390/1366','dismissal survives navigation','cold no claim','warm zero static network','offline three entries/auth gate','no API or write cache','failed atomic install','unsaved input preserved','multi-tab waiting','version mismatch denied','natural version activation','eviction hash repair','legacy worker waiting','runtime-only failure preserves cache','admin shared resources untouched','downgrade rejected'],scope:'desktop browser loopback synthetic; not iPhone or production performance'},null,2));
  } finally {clearTimeout(watchdog);await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.closeAllConnections();server.close();process.exitCode=1;});
