@@ -1,3 +1,8 @@
+## v672 · 2026-11-19 · Existing employee identity verification candidate
+
+- Add read-only, service-role-only verification of current App employee sessions, stable staff account identity and fresh server checks. Departed/expired/logout/recreated-account cases deny without renewing sessions or changing booking/customer access.
+- Add isolated real PostgreSQL and client/Edge boundary checks to the existing publication gate. Photo processing remains default-closed; production membership/visit/receipt and host qualification are separate dependencies. Model keys stay owner-configured last.
+
 ## 2026-11-19 — Existing App photo API transport candidate (v671)
 
 Resolve the current 自由手艺人 App's actual Pages entry and Supabase project through read-only configuration and live readback. Add explicit trusted cross-origin photo API transport while retaining default closure, current employee/scope/receipt checks, private previews and no retries. Add a separate API-only HTTPS/CORS ingress profile and actual two-origin native-browser HEIC/HEIF/archive/recovery acceptance. Reuse the reviewed browser graph to repair a stale legacy acceptance allowlist. Production, appointments and model keys remain unchanged; independent native host and real authority/bootstrap deployment gates remain.

@@ -107,7 +107,9 @@
     "test:design-https-ingress": "node scripts/test-design-https-ingress.mjs",
     "test:design-app1-ingress": "node scripts/test-design-app1-ingress.mjs",
     "test:design-phone-app1": "node scripts/test-design-phone-backend-browser.mjs --cross-origin-api --full-recovery --stream-recovery",
-    "test:design-phone-https": "node scripts/test-design-phone-backend-browser.mjs --https-ingress --full-recovery --stream-recovery"
+    "test:design-phone-https": "node scripts/test-design-phone-backend-browser.mjs --https-ingress --full-recovery --stream-recovery",
+    "test:design-live-employee": "node --test scripts/test-design-live-employee.mjs",
+    "test:design-live-employee-postgres": "node scripts/test-design-live-employee-postgres.mjs"
   },
   "devDependencies": {
     "exceljs": "4.4.0",

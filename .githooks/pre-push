@@ -52,3 +52,8 @@ node scripts/check-agent-sync-status.js || exit 1
 
 # Explicit photo API transport remains default-closed in both local and CI gates.
 node --test scripts/test-design-prepared-client.mjs || exit 1
+
+# Current employee login verification is separate from customer/visit permission.
+"${ZYSYR_DENO:-deno}" check --no-remote supabase/functions/design-employee-authority/index.ts || exit 1
+node --test scripts/test-design-live-employee.mjs || exit 1
+node scripts/test-design-live-employee-postgres.mjs || exit 1
