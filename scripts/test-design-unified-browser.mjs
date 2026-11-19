@@ -9,7 +9,8 @@ import {createInMemoryProviderAttemptStore,DEEPSEEK_ASR_ENDPOINT} from '../packa
 import {createDeepSeekSpeechAdapter,validateMonoPcmWav} from '../packages/design-production-adapter/speech-adapter.mjs';
 globalThis.fetch=()=>{throw Error('External network forbidden');};
 const root=fileURLToPath(new URL('../',import.meta.url)),backendOrigin='https://prepared.synthetic.invalid',objects=new Map(),calls=[];
-const files=new Set(['packages/shared/image-upload-limits.mjs','ai-design-prepared.html','ai-design-prepared.mjs','ai-design-prepared.css','ai-design-pilot.css','packages/design-prepared-ui/archive-view.mjs','packages/design-prepared-ui/controller.mjs','packages/design-prepared-ui/synthesis-operation.mjs','packages/design-prepared-ui/managed-media.mjs','packages/design-prepared-ui/composition.mjs','packages/design-prepared-ui/http-client.mjs','packages/design-prepared-ui/photo-preview.mjs','packages/design-prepared-ui/recorder.mjs','packages/design-prepared-ui/pcm-worklet.mjs','packages/analysis-engine/design-pilot.mjs']);
+// Reuse the reviewed exact browser graph; never serve the repository root.
+const files=new Set(JSON.parse(await readFile(new URL('../deployment/design-public-files.json',import.meta.url),'utf8')));
 const server=createServer(async(req,res)=>{const path=req.url?.slice(1);if(!files.has(path)){res.writeHead(404);return res.end();}calls.push('static:'+path);res.setHeader('Content-Type',path.endsWith('.css')?'text/css':path.endsWith('.html')?'text/html':'text/javascript');res.end(await readFile(root+path));});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 const f=await createDesignPostgresFixture().catch(async e=>{await new Promise(r=>server.close(r));throw e;});let browser,passed=0,speechCalls=0,toneStrengths=[],delay=null,lostAck=false,approved=true;

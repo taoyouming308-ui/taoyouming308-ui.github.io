@@ -13,7 +13,8 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 export const designPublicFiles=Object.freeze(JSON.parse(await readFile(join(root,'deployment/design-public-files.json'),'utf8')));
 export async function reserveDesignHttpsOrigin(){const s=createServer();s.listen(0,'127.0.0.1');await once(s,'listening');const port=s.address().port;await new Promise(r=>s.close(r));return 'https://127.0.0.1:'+port;}
 export function requestDesignHttps(url,{ca,method='GET',headers={},body}={}){return new Promise((resolve,reject)=>{const q=request(url,{ca,minVersion:'TLSv1.3',method,headers,agent:false},r=>{const parts=[];r.on('data',b=>parts.push(b));r.on('end',()=>resolve({status:r.statusCode,headers:r.headers,bytes:Buffer.concat(parts),authorized:r.socket?.authorized??q.socket.authorized,protocol:q.socket.getProtocol()}));});q.setTimeout(35000,()=>q.destroy(Error('FIXTURE_HTTPS_TIMEOUT')));q.on('error',reject);q.end(body);});}
-export async function startDesignHttpsFixture({work,caddy,origin,backendPort,tls,html}={}){
+export async function startDesignHttpsFixture({work,caddy,origin,backendPort,tls,html,profile='same-origin',appOrigin,connectOrigin}={}){
+ assert(['same-origin','app1-api'].includes(profile));if(profile==='app1-api'){const a=new URL(appOrigin);assert.equal(a.protocol,'https:');assert.equal(a.origin,appOrigin);}if(connectOrigin){const a=new URL(connectOrigin);assert.equal(a.protocol,'https:');assert.equal(a.origin,connectOrigin);assert.equal(profile,'same-origin');}
  assert(isAbsolute(caddy));assert.equal(execFileSync(caddy,['version'],{encoding:'utf8'}).trim().split(' ')[0],'v2.11.9');
  const u=new URL(origin);assert.equal(u.hostname,'127.0.0.1');assert(u.port);assert.equal(u.origin,origin);
  const dir=await mkdtemp(join(work,'https-private-'));await chmod(dir,0o700);let child,ended,closed=false,output='';
@@ -24,11 +25,15 @@ export async function startDesignHttpsFixture({work,caddy,origin,backendPort,tls
   // HTML. Real candidate modules/CSS remain byte-identical. No inline script.
   if(html!==undefined)await writeFile(join(publicDir,'ai-design-prepared.html'),html,{mode:0o600});
   await writeFile(join(dir,'server.crt'),tls.cert,{mode:0o600});await writeFile(join(dir,'server.key'),tls.key,{mode:0o600});
-  const config=join(root,'deployment/design-staging.Caddyfile'),env={PATH:'/usr/bin:/bin',HOME:dir,XDG_DATA_HOME:join(dir,'data'),XDG_CONFIG_HOME:join(dir,'config'),DESIGN_HTTPS_ORIGIN:origin,DESIGN_BIND_ADDRESS:'127.0.0.1',DESIGN_TLS_CERT:join(dir,'server.crt'),DESIGN_TLS_KEY:join(dir,'server.key'),DESIGN_BACKEND_PORT:String(backendPort),DESIGN_PUBLIC_DIRECTORY:publicDir};
+  let config=join(root,profile==='app1-api'?'deployment/design-app1-api.Caddyfile':'deployment/design-staging.Caddyfile');
+  // Fixture-only static page stands in for Pages. Its explicit CSP permits only
+  // the second local TLS origin; no production file or policy is changed.
+  if(connectOrigin){const source=await readFile(config,'utf8');assert.equal(source.split("connect-src 'self';").length,2);config=join(dir,'fixture-static.Caddyfile');await writeFile(config,source.replace("connect-src 'self';","connect-src 'self' "+connectOrigin+";"),{mode:0o600});}
+  const env={PATH:'/usr/bin:/bin',HOME:dir,XDG_DATA_HOME:join(dir,'data'),XDG_CONFIG_HOME:join(dir,'config'),DESIGN_HTTPS_ORIGIN:origin,DESIGN_APP_ORIGIN:appOrigin??origin,DESIGN_BIND_ADDRESS:'127.0.0.1',DESIGN_TLS_CERT:join(dir,'server.crt'),DESIGN_TLS_KEY:join(dir,'server.key'),DESIGN_BACKEND_PORT:String(backendPort),DESIGN_PUBLIC_DIRECTORY:publicDir};
   execFileSync(caddy,['validate','--config',config,'--adapter','caddyfile'],{env,stdio:'pipe',timeout:10000});
   child=spawn(caddy,['run','--config',config,'--adapter','caddyfile'],{env,stdio:['ignore','pipe','pipe']});ended=once(child,'exit');
   for(const pipe of [child.stdout,child.stderr])pipe.on('data',b=>{output=(output+b.toString()).slice(-32768);});
-  const until=Date.now()+10000;for(;;){try{const r=await requestDesignHttps(origin+'/ai-design-prepared.html',{ca:tls.ca});assert.equal(r.status,200);assert.equal(r.authorized,true);assert.equal(r.protocol,'TLSv1.3');break;}catch(e){if(Date.now()>until||child.exitCode!==null)throw Error('CADDY_FIXTURE_START_FAILED: '+e.message);await new Promise(r=>setTimeout(r,50));}}
+  const until=Date.now()+10000;for(;;){try{const r=await requestDesignHttps(origin+'/ai-design-prepared.html',{ca:tls.ca});assert.equal(r.status,profile==='app1-api'?404:200);assert.equal(r.authorized,true);assert.equal(r.protocol,'TLSv1.3');break;}catch(e){if(Date.now()>until||child.exitCode!==null)throw Error('CADDY_FIXTURE_START_FAILED: '+e.message);await new Promise(r=>setTimeout(r,50));}}
   const spki=createHash('sha256').update(new X509Certificate(tls.cert).publicKey.export({type:'spki',format:'der'})).digest('base64');
   return {origin,publicDir,spki,logs:()=>output,async replaceHtml(value){await writeFile(join(publicDir,'ai-design-prepared.html'),value,{mode:0o600});},async close(){if(closed)return;closed=true;child.kill('SIGTERM');const result=await boundedExit(ended,()=>child.kill('SIGKILL'));await rm(dir,{recursive:true,force:true});assert.equal(result[0],0);}};
  }catch(e){if(child&&child.exitCode===null){child.kill('SIGTERM');await boundedExit(ended,()=>child.kill('SIGKILL'));}await rm(dir,{recursive:true,force:true});throw e;}

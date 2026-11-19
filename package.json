@@ -105,6 +105,8 @@
     "test:design-stream-recovery-scale": "node --max-old-space-size=64 scripts/test-design-stream-recovery-scale.mjs",
     "test:design-stream-recovery-postgres": "node scripts/test-design-phone-backend-browser.mjs --full-recovery --stream-recovery",
     "test:design-https-ingress": "node scripts/test-design-https-ingress.mjs",
+    "test:design-app1-ingress": "node scripts/test-design-app1-ingress.mjs",
+    "test:design-phone-app1": "node scripts/test-design-phone-backend-browser.mjs --cross-origin-api --full-recovery --stream-recovery",
     "test:design-phone-https": "node scripts/test-design-phone-backend-browser.mjs --https-ingress --full-recovery --stream-recovery"
   },
   "devDependencies": {

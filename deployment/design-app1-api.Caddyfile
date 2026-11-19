@@ -1,0 +1,118 @@
+# Reviewed operator inputs only; this file does not provision or activate a site.
+# API-only: no static or private file server is configured.
+{
+ admin off
+ auto_https off
+ persist_config off
+ log default {
+  format filter {
+   wrap json
+   fields {
+    request delete
+   }
+  }
+ }
+ servers {
+  protocols h1 h2
+  timeouts {
+   read_header 10s
+   read_body 30s
+   write 35s
+   idle 5s
+  }
+  max_header_size 16KB
+ }
+}
+
+# API-only profile for the existing static App. No file server or public root.
+# DESIGN_APP_ORIGIN is the frontend; backend publicOrigin must equal it.
+{$DESIGN_HTTPS_ORIGIN} {
+ bind {$DESIGN_BIND_ADDRESS}
+ tls {$DESIGN_TLS_CERT} {$DESIGN_TLS_KEY} {
+  protocols tls1.3
+ }
+ header {
+  ?Cache-Control "no-store"
+  X-Content-Type-Options nosniff
+  Referrer-Policy no-referrer
+  X-Frame-Options DENY
+  -Server
+ }
+ @preflight {
+  method OPTIONS
+  expression `{http.request.uri}.matches('^/api/design/[a-z-]+(/[a-z-]+){0,2}$')`
+  header Origin {$DESIGN_APP_ORIGIN}
+  header Access-Control-Request-Method POST
+  header_regexp Access-Control-Request-Headers "(?i)^[ \t]*(x-employee-session|content-type[ \t]*,[ \t]*x-employee-session|x-employee-session[ \t]*,[ \t]*content-type)[ \t]*$"
+ }
+ handle @preflight {
+  header {
+   Access-Control-Allow-Origin {$DESIGN_APP_ORIGIN}
+   Access-Control-Allow-Methods POST
+   Access-Control-Allow-Headers "content-type, x-employee-session"
+   Access-Control-Max-Age 0
+   Vary "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+  }
+  respond 204
+ }
+ @api {
+  method POST
+  expression `{http.request.uri}.matches('^/api/design/[a-z-]+(/[a-z-]+){0,2}$')`
+  header Origin {$DESIGN_APP_ORIGIN}
+ }
+ handle @api {
+  header {
+   >Access-Control-Allow-Origin {$DESIGN_APP_ORIGIN}
+   >Access-Control-Expose-Headers "x-design-preview, x-design-preview-width, x-design-preview-height, x-design-source-media, x-design-source-bytes, x-design-source-mime"
+   >Vary Origin
+  }
+  request_body {
+   max_size 12582912
+  }
+  reverse_proxy 127.0.0.1:{$DESIGN_BACKEND_PORT} {
+   # Exactly one attempt. Never replay uploads or workflow writes at ingress.
+   lb_retries 0
+   lb_try_duration 0s
+   header_up -Cookie
+   header_up -Authorization
+   header_up -Idempotency-Key
+   header_up -X-Idempotency-Key
+   header_down -Set-Cookie
+   header_down -Location
+   header_down -Access-Control-Allow-Origin
+   header_down -Access-Control-Allow-Credentials
+   header_down -Access-Control-Allow-Methods
+   header_down -Access-Control-Allow-Headers
+   header_down -Access-Control-Expose-Headers
+   header_down -Access-Control-Max-Age
+   transport http {
+    dial_timeout 2s
+    response_header_timeout 30s
+    keepalive off
+   }
+  }
+ }
+ handle {
+  respond 404
+ }
+ # Proxy/body failures use Caddy's error route. Retain exact-origin CORS here
+ # too, so a lost acknowledgement is visible without exposing internal errors.
+ handle_errors {
+  @allowedError {
+   method POST
+   expression `{http.request.uri}.matches('^/api/design/[a-z-]+(/[a-z-]+){0,2}$')`
+   header Origin {$DESIGN_APP_ORIGIN}
+  }
+  handle @allowedError {
+   header {
+    Access-Control-Allow-Origin {$DESIGN_APP_ORIGIN}
+    Vary Origin
+    Cache-Control no-store
+   }
+   respond "" {err.status_code}
+  }
+  handle {
+   respond "" {err.status_code}
+  }
+ }
+}

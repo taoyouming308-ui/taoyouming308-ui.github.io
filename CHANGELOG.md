@@ -1,3 +1,7 @@
+## 2026-11-19 — Existing App photo API transport candidate (v671)
+
+Resolve the current 自由手艺人 App's actual Pages entry and Supabase project through read-only configuration and live readback. Add explicit trusted cross-origin photo API transport while retaining default closure, current employee/scope/receipt checks, private previews and no retries. Add a separate API-only HTTPS/CORS ingress profile and actual two-origin native-browser HEIC/HEIF/archive/recovery acceptance. Reuse the reviewed browser graph to repair a stale legacy acceptance allowlist. Production, appointments and model keys remain unchanged; independent native host and real authority/bootstrap deployment gates remain.
+
 ## 2026-11-18 — Independent HTTPS acceptance, v670 runtime unchanged
 
 Add a standard Caddy ingress candidate and exact public-asset manifest. Exercise actual TLS/native browser fetch through the original employee workflow, private HEIC/HEIF originals and complete empty-cluster recovery. Preserve private preview cache headers and reject proxy write replay; no current business/runtime, appointment sync, model activation or live deployment changes. The complete local publication gate (including163 finance scripts) passes. Publication is now authorized but actual isolated server/identity/schema/device and protected CI/merge/live gates remain.

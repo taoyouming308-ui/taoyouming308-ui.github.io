@@ -101,3 +101,14 @@ Candidate generation does not write or confirm the workflow. Explicit **加入�
 Readback failure retains the known published candidate ID; explicit retry rereads it without regenerating. Unknown pre-publication outcomes retain the same request ID/side. Customer, employee, page suspension/close and later workflow revisions prevent stale delivery. These reuse the existing controller and session lifecycle rather than a separate workflow. All operation feature gates and production activation remain off.
 
 Acceptance: `node --test scripts/test-design-prepared-synthesis.mjs` and `node scripts/test-design-synthesis-browser.mjs`. The browser test uses the actual homepage anchors/function-only host bridge, shared UI/client, HTTP runtime, PostgreSQL binding/workflow/candidate/full-history repositories and complete native synthetic image decoder. Fixed synthetic images and synthetic staff data only; storage, approval and external provider transport are mocks. Synthesis provider input is asserted to contain text judgments, not image data. Browser HTTPS routing is test interception, not production TLS/CORS or deployment validation. No real key, customer photo, microphone, model charge or production activation is tested.
+
+
+## Existing static App transport (unpublished v671 candidate)
+
+Same-origin remains the default. Trusted host configuration can explicitly supply
+`apiOrigin` and `allowCrossOriginApi:true` while `origin===documentOrigin` stays
+the actual page origin. Only exact HTTPS origins and fixed routes are accepted;
+response URL checks follow apiOrigin. No query/persistence endpoint discovery,
+ambient cookies, redirects, retry or model activation is added. Private preview
+metadata must be exposed by the separate exact-origin API ingress. See
+[existing App deployment contract](../../deployment/README-design-app1.md).
