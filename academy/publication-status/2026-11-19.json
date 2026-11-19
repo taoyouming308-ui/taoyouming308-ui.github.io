@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-19",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "e400816aceace3120cb1d18083bf30eddb0fe6d3",
+  "notes": "仅触发不可变main源码备份及受保护PR预检；尚无课程正文、review或上线授权的执行证据。本记录将在准备artifact核验完成后由真实publication-status替换。"
+}
