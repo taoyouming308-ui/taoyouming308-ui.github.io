@@ -1,3 +1,10 @@
+## 2026-11-19 · Dismissible and truthful shell update notices (App version: v669; local candidate)
+
+- Owner: Codex. Isolated fix/update-notice-lifecycle-20261119 from protected github/main d256efa0 / published v668. Start version/integrity/handoff checks and the existing November19 daily backup passed before edits; prior worktrees and acceptance artifacts preserved.
+- Reproduced the screenshot behavior against the actual old client: an update check with no installing/waiting worker still displays preparation instructions. Main update click adds another false preparing pill; waiting notices have no dismissal. Distinguish checked/checking/installing/waiting/error/delayed, bound progress text, observe already-installing and failed workers, and deduplicate explicit checks.
+- One shared notice replaces duplicate main prompts. The explicit Later action stores only a version-scoped public UI preference in sessionStorage; same-tab navigation honors it and explicit checks can reopen it. First install stays quiet; unavailable storage and the verified uncontrolled-page fallback remain supported. No worker runtime, activation, cache scope, account state, API/backend, business data, drafts or schema changes; no automatic refresh/takeover.
+- Synthetic lifecycle tests and actual three-entry Chromium/WebKit loopback tests pass, including390/1366 layout/clickability, no-change completion, dismissal/navigation, failed install, existing input, offline/auth denial, multi-tab natural activation, exact resource versions and downgrade guard. WebKit is desktop engine evidence, not iPhone hardware acceptance. Normal full pre-push, final-head protected checks, normal merge and Pages/exact-byte readback remain required before claiming publication.
+
 ## 2026-11-19 · Monthly XLSX namespace compatibility (App version: v668; local candidate)
 
 - Owner: Codex. Clean isolated fix/monthly-xlsx-compat-20261119 based on protected github/main f67afc0e; start version/integrity/handoff checks and November19 daily recovery archive passed before edits. Prior v667 app/content and original worktrees are preserved.
