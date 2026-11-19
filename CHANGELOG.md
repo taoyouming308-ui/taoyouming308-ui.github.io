@@ -13,6 +13,19 @@ Add a bounded authenticated offline DB/roles/encrypted-object/media-master backu
 ## 2026-11-18 — Unpublished isolated phone-design candidate
 
 Add direct native HEIC/HEIF processing, mTLS image broker, encrypted local private originals and original employee workflow, retaining manual review/confirmation and immutable archives. Add non-model staging lifecycle and read-only host/image preflight. Preserve current main business fixes; production authorization, host/TLS/SQL/backup/device acceptance remain pending. No production/booking-sync/API activation.
+<!-- academy-reviewed-inputs:8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37 -->
+## 2026-11-19 · Reviewed academy publication candidate (App version: v667 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main e400816aceace3120cb1d18083bf30eddb0fe6d3.
+- Dates: 2026-11-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+## 2026-11-18 · 发型审美训练：动态肩线与稳定底线
+
+- 追加稳定案例 `aesthetic-2026-11-18`，训练把真实长度、自然落态和肩线/衣领/包带碰撞分开判断，避免为一张正面照片直接剪出永久的左右长度差。
+- 同提交加入原创 AI 虚构教学四视图、六段条件式参考答案、五项无作答自查复盘和透明审查记录；只修改训练内容、图片与交接记录，应用版本保持 v667。
 
 ## 2026-11-17 · 发型审美训练：银白分布、视觉发量与维护周期
 

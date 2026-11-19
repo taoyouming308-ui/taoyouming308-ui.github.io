@@ -30,8 +30,23 @@
 - Homepage design modules now load only on explicit entry click; three intercepted-browser checks cover no startup graph/identity read, failed optional loading with preserved input, and a single default-closed bridge. The original full startup recovery test is rerun without weakening its assertions.
 - Final local evidence: 191 pure scripts, 11 staging lifecycle/CLI cases, 12 integrated actual phone/backend/browser checks and 57 synthetic booking/customer/keepalive unit tests passed. Chromium and WebKit 390x844 preserve same-token recovery, directory retry and unsaved inputs; private-view and static-shell browser checks passed. Initial missing test dependency and .mjs fixture MIME failures are retained separately; no assertions or production security controls were relaxed. Protected full CI, real server/device acceptance and publication remain unperformed.
 - Local candidate version 668 is not a release and must be rebased/reversioned against then-current main before any protected publication. Finite synthetic receipts and fixture SQL are test-only. Physical iPhone and operational deployment acceptance remain pending. Existing handoff and publication requirements below are preserved.
+<!-- academy-reviewed-inputs:8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37 -->
+## 2026-11-19 · Reviewed academy publication candidate (App version: v667 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main e400816aceace3120cb1d18083bf30eddb0fe6d3.
+- Dates: 2026-11-19. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
+
+## 2026-11-18 · Changing shoulder line and stable haircut baseline (App version: v667 unchanged)
+
+- Current owner: Codex content publisher. Based on protected `github/main` `82eca14922bc79a4f26ae59c612ba95c8188a579` in an isolated clean `content/aesthetic-2026-11-18` worktree; starting version/integrity/handoff checks and the daily recovery backup passed before edits. Existing v667 release and all forty-one earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-18` case separates visible current hair-to-shoulder contact from real length, fictional zonal hair settings, a customer-confirmed shoulder-bag/three-minute routine and required standing/sitting/turning/bag tests. Conditional A/B reasoning compares compensating a fixed front view with a head-centered, shoulder-clear stable baseline; six answers and five explicitly unscored self-checks include first-wash, third-week, sixth/eighth-week, stop and switch signals without inventing user completion.
+- Original 2172x724 AI WebP shows only one fictional adult woman's current front/two true profiles/back collarbone long bob with subtle unequal shoulder heights and different hair-to-shoulder contact, not a diagnosis, proposed cut, makeover or future state. No real customer, measured anatomy, verified length equality, posture cause, pain, density/diameter, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local and protected gates, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
 
 ## 2026-11-17 · Silver distribution, apparent density and maintenance conflict (App version: v667 unchanged)
 
