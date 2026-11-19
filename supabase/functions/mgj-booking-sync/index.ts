@@ -92,46 +92,52 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   return response;
 }
 
-async function syncPair(payload: { shop_id: string; date: string; bookings: Booking[] }) {
-  const { shop_id: shopId, date, bookings } = payload;
-  if (bookings.length) {
-    await rest("bookings?on_conflict=id", {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-      body: JSON.stringify(bookings),
-    });
-  }
-  const response = await rest(`bookings?select=id&shop_id=eq.${shopId}&date=eq.${date}&limit=1000`);
-  const existing = await response.json();
-  if (!Array.isArray(existing) || existing.length >= 1000) throw new Error("预约读取不完整，已停止清理");
-  const sourceIds = new Set(bookings.map((booking) => Number(booking.id)));
-  const staleIds = existing.map((booking: Booking) => Number(booking.id)).filter((id: number) => Number.isSafeInteger(id) && !sourceIds.has(id));
-  let deleted = 0;
-  for (let offset = 0; offset < staleIds.length; offset += 100) {
-    const batch = staleIds.slice(offset, offset + 100);
-    await rest(`bookings?id=in.(${batch.join(",")})&shop_id=eq.${shopId}&date=eq.${date}`, {
-      method: "DELETE",
-      headers: { Prefer: "return=minimal" },
-    });
-    deleted += batch.length;
-  }
-  return { shop_id: shopId, date, upserted: bookings.length, deleted };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function dispatchV2(candidate: Booking) {
+  if (candidate.protocol !== 2) throw new Error("protocol_required");
+  const { shop_id, date, operation, lease_id, request_id } = candidate;
+  // Reuse original shop/date window validation without touching booking fields.
+  validate({shop_id, date, bookings: []});
+  let rpc: string, args: Booking;
+  if (operation === "begin") {
+    if (typeof request_id !== "string" || !UUID.test(request_id)) throw new Error("request_id_required");
+    rpc = "mgj_booking_begin_v2";
+    args = {p_shop_id:shop_id,p_date:date,p_request_id:request_id};
+  } else if (operation === "commit" || operation === "abort") {
+    if (typeof lease_id !== "string" || !UUID.test(lease_id)) throw new Error("lease_id_required");
+    rpc = operation === "commit" ? "mgj_booking_commit_v2" : "mgj_booking_abort_v2";
+    args = {p_shop_id:shop_id,p_date:date,p_lease_id:lease_id};
+    if (operation === "commit") {
+      const {bookings} = validate(candidate);
+      if (candidate.source_complete !== true || !Array.isArray(candidate.source_rows) || candidate.source_rows.length > 500) throw new Error("incomplete_source");
+      const seen = new Set();
+      for (const row of candidate.source_rows) {
+        if (!row || typeof row !== "object" || Array.isArray(row) ||
+          Object.keys(row).sort().join(",") !== "id,reservation_time,status" ||
+          !Number.isSafeInteger(row.id) || row.id<=0 || seen.has(row.id) ||
+          !Number.isSafeInteger(row.status) || ![0,1,2,3,4].includes(row.status) ||
+          !Number.isSafeInteger(row.reservation_time) || row.reservation_time<0) throw new Error("invalid_source_rows");
+        seen.add(row.id);
+      }
+      Object.assign(args,{p_bookings:bookings,p_source_complete:true,p_source_rows:candidate.source_rows});
+    }
+  } else { throw new Error("operation_required"); }
+  const response = await rest(`rpc/${rpc}`,{method:"POST",body:JSON.stringify(args)});
+  return response.json();
 }
-
 Deno.serve(async (request) => {
-  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: "service_unavailable" }, 503);
+  if (request.method !== "POST") return json({error:"method_not_allowed"},405);
+  if (!SUPABASE_URL || !SERVICE_KEY) return json({error:"service_unavailable"},503);
   try {
     const body = new Uint8Array(await request.arrayBuffer());
-    if (body.length > 1_000_000 || !await authenticate(request, body)) return json({ error: "unauthorized" }, 401);
-    const payload = validate(JSON.parse(new TextDecoder().decode(body)));
-    return json(await syncPair(payload));
+    if (body.length > 1_000_000 || !await authenticate(request,body)) return json({error:"unauthorized"},401);
+    const payload = JSON.parse(new TextDecoder().decode(body));
+    if (!payload || typeof payload!=="object" || Array.isArray(payload) || payload.protocol!==2) return json({error:"protocol_v2_required"},400);
+    return json(await dispatchV2(payload));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "预约同步失败";
-    if (message.startsWith("预约数据库请求失败") || message.startsWith("预约读取不完整")) {
-      console.error(message);
-      return json({ error: "database_unavailable" }, 502);
-    }
-    return json({ error: "invalid_request" }, 400);
+    // No raw database errors, tokens, customer content, or SQL are returned.
+    const message = error instanceof Error ? error.message : "invalid_request";
+    if (message.startsWith("预约数据库请求失败")) return json({error:"database_unavailable"},502);
+    return json({error:"invalid_request"},400);
   }
 });

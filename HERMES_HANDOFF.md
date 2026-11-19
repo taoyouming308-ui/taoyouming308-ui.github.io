@@ -1,5 +1,13 @@
 # Hermes Handoff
 
+## 2026-11-19 · Appointment sync recovery (App version: v669 unchanged)
+
+- Owner: Codex, isolated fix/booking-sync-recovery-20261119 from current main 8c1d38cc. Daily source backup created before edits; unrelated worktrees and v669 shell fixes preserved.
+- Canonical v2 client requires an explicit complete source list, safe IDs/status/date/store, obtains a server lease before source read, and commits exact store/day atomically. Signed endpoint rejects legacy v1; service-role direct booking writes revoked while SELECT remains. RPC concurrency fences and idempotent receipts prevent stale replay; private trigger preserves changed/deleted old rows with reasons. Protocol receipts retain only hashes and expire after one day; business audit rows are retained.
+- Targeted installer preflights known runtime hashes and duplicate schedulers, backs up four booking-only files, converts legacy entrypoint to same guarded runner, and installs com.hermes.booking-sync every60s under gui/501. Existing independent daily-consumption launchd, credentials, cadence, customer jobs and business originals remain untouched. No full core installer run.
+- Candidate checks: 60 Python sync/installer/keepalive/customer tests, 20 mocked signature/edge assertions, 34 isolated PG16 protocol/permissions/atomic-rollback assertions, actual edge-runtime offline compilation, booking UI and employee data-scope tests. Production migration/edge/runtime, live source readback and natural scheduler runs still pending at this checkpoint.
+
+
 ## 2026-10-08 daily text save readback (App version: v608)
 
 - Current owner: Codex. Last synchronized base checked: github/main ee6d57a (v607), isolated clean fix/daily-text-save-readback; original parallel checkout untouched. Backup created before edits.

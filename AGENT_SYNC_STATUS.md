@@ -1,5 +1,13 @@
 ## 2026-11-19 · Dismissible and truthful shell update notices (App version: v669; local candidate)
 
+## 2026-11-19 · Appointment sync recovery (App version: v669 unchanged)
+
+- Owner: Codex, isolated fix/booking-sync-recovery-20261119 from current main 8c1d38cc. Daily source backup created before edits; unrelated worktrees and v669 shell fixes preserved.
+- Canonical v2 client requires an explicit complete source list, safe IDs/status/date/store, obtains a server lease before source read, and commits exact store/day atomically. Signed endpoint rejects legacy v1; service-role direct booking writes revoked while SELECT remains. RPC concurrency fences and idempotent receipts prevent stale replay; private trigger preserves changed/deleted old rows with reasons. Protocol receipts retain only hashes and expire after one day; business audit rows are retained.
+- Targeted installer preflights known runtime hashes and duplicate schedulers, backs up four booking-only files, converts legacy entrypoint to same guarded runner, and installs com.hermes.booking-sync every60s under gui/501. Existing independent daily-consumption launchd, credentials, cadence, customer jobs and business originals remain untouched. No full core installer run.
+- Candidate checks: 60 Python sync/installer/keepalive/customer tests, 20 mocked signature/edge assertions, 34 isolated PG16 protocol/permissions/atomic-rollback assertions, actual edge-runtime offline compilation, booking UI and employee data-scope tests. Production migration/edge/runtime, live source readback and natural scheduler runs still pending at this checkpoint.
+
+
 - Owner: Codex. Isolated fix/update-notice-lifecycle-20261119 from protected github/main d256efa0 / published v668. Start version/integrity/handoff checks and the existing November19 daily backup passed before edits; prior worktrees and acceptance artifacts preserved.
 - Reproduced the screenshot behavior against the actual old client: an update check with no installing/waiting worker still displays preparation instructions. Main update click adds another false preparing pill; waiting notices have no dismissal. Distinguish checked/checking/installing/waiting/error/delayed, bound progress text, observe already-installing and failed workers, and deduplicate explicit checks.
 - One shared notice replaces duplicate main prompts. The explicit Later action stores only a version-scoped public UI preference in sessionStorage; same-tab navigation honors it and explicit checks can reopen it. First install stays quiet; unavailable storage and the verified uncontrolled-page fallback remain supported. No worker runtime, activation, cache scope, account state, API/backend, business data, drafts or schema changes; no automatic refresh/takeover.
