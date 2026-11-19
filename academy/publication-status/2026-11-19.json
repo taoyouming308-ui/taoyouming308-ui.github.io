@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-19",
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-19"
+  ],
+  "baseSha": "e400816aceace3120cb1d18083bf30eddb0fe6d3",
+  "inputHeadSha": "78588a7d2a58532b0625901bbf1d49d8f19ab365",
+  "preparedHeadSha": "3b8e345a24d89573ebefba9957acddde7c033b14",
+  "preparationRun": 44431964014,
+  "preparationArtifact": 14488326258,
+  "preparationArtifactSha256": "03e32aea5a6c6dff5981c72c19f46bf8c53ac60a171bc8b06923172b851c22bc",
+  "backupArtifact": 14487361820,
+  "preparationBackupZipSha256": "f3ffb9e9c036b7ffe535bc44cf3dd9e3bf84d63e237159dd3d5bd44ad8523bbb",
+  "preparationBackupArchiveSha256": "f4b9f535c5646f7cae4e6b9aad5aa6f1fa3176de1a331d48411fec3f74cf2e8e",
+  "baselinePreflightRun": 44431971578,
+  "baselineBackupArtifact": 14487545595,
+  "baselineBackupZipSha256": "fb8dc86b374b9788c448bb56f938093338f599db7c6f6e96973e23c32f49c9de",
+  "baselineBackupArchiveSha256": "e3b6cd31b62c9ee4146fc2d6836a9ac13b215b31130d9520b6ac64045389c85b",
+  "contentBindingSha256": "8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37",
+  "reviewedAt": "2026-11-19T00:48:12.519Z",
+  "verifiedAt": "2026-11-19T01:12:40.625Z",
+  "verification": {
+    "cloudPrepJob": "success; run 44431964014 job 135251291399",
+    "fullPrePush": "success; original .githooks pre-push completed in run 44431964014",
+    "renderIdempotent": "not tested after connected status commit",
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 33,
+    "allPreviouslyPublished32CatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Downloaded GitHub preflight artifact14487545595 from run44431971578, verified ZIP and inner archive SHA256, immutable main/base and required files. Downloaded cloud preparation backup14487361820 and verified ZIP, inner archive, input head and baseline. Downloaded prepared artifact14488326258, independently checked ZIP, JSON state/date/baseline/content binding and generated HTML SHA256. Re-read eight files from prepared head3b8e345, computed full UTF8 SHA256, independently verified canonical draft payload hash and three review-bound SVG hashes, descending 33-entry catalog and index static fallback. Final prepared-head checks 44434474212/44434474173 concluded action_required, not success. This record is preparation evidence only; no online verification."
+  },
+  "fileSha256": {
+    "academy/2026-11-19.html": "2c3086caf0a23964f638687ecd5175cdd11674338c297dc6fb73e180ffa1fff2",
+    "academy/catalog.json": "a7b4a9e4a020363f4ff9c901d8d0642fc57b6e6bda7c18260183f95cb4ae3824",
+    "academy/index.html": "2fbbcd5508b37af895ba3f2fc1d1723bd03b5825f3cbceb39a5a15cf18d1b89c",
+    "academy/drafts/2026-11-19.json": "4bdbfda9598b80b2417df7c85817b340ab16a2d5e247622baa069cbe7bfc3f87",
+    "academy/reviews/2026-11-19.json": "01189b0f03fab0e024cf648b777e30c7c8e3726ba0286b3de2daf85af82ab0c4",
+    "academy/assets/2026-11-19/figure1.svg": "f8b38d9a5e964a65d73aa0e8b2d10a81ea11d3469f75d53d6231fe154db7750e",
+    "academy/assets/2026-11-19/figure2.svg": "1699a9eae2814de7d44c0e3134c7f8ebda8b6ee7e1ae2f74a143f98babd939d4",
+    "academy/assets/2026-11-19/figure3.svg": "6e193b097880852449d8e4fde677f3fbefe993be0a161e88c028c1ad1f7e2606"
+  },
+  "remaining": [
+    "Require exact new final head Validate shared app / validate success AND academy backup-main success; action_required is not success",
+    "Verify all remaining protected requirements, current main and expected head",
+    "Only then mark PR ready and normally merge with expected_head_sha",
+    "After merge verify actual Pages catalog/static fallback, all 33 lessons and reviewed SVG files against merged main SHA256"
+  ]
+}
