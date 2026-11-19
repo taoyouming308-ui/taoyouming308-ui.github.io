@@ -4,7 +4,7 @@ import { recognizePettyVoucherOpenAI, PETTY_VOUCHER_OPENAI_MODEL } from '../_sha
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
-import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
+import { loadPettyDetailWorkbook, loadCompatibleWorkbook, compatibleWorkbookXml } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
 import { monthlyCellVoucherLibrary } from "../_shared/monthly-cell-voucher-library.mjs";
 import { expenseCombinationPlan } from "../_shared/expense-voucher-combinations.mjs";
@@ -2495,7 +2495,7 @@ async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
     const archive = await JSZip.loadAsync(exactArrayBuffer(bytes));
     const entry = archive.file("xl/workbook.xml");
     if (!entry) throw new Error("missing xl/workbook.xml");
-    workbookXml = await entry.async("string");
+    workbookXml = compatibleWorkbookXml(await entry.async("string"));
   } catch {
     throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
   }
@@ -2512,9 +2512,9 @@ async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
 }
 
 async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
-  const workbook = new ExcelJS.Workbook();
+  let workbook: ExcelJS.Workbook;
   try {
-    await workbook.xlsx.load(exactArrayBuffer(bytes));
+    workbook = await loadCompatibleWorkbook(bytes, ExcelJS, JSZip);
   } catch {
     throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
   }
@@ -4322,7 +4322,7 @@ async function readReportSourceReview(payload: JsonRecord, session: JsonRecord):
       hash:sha256Bytes,
       loadZip:async(bytes:Uint8Array) => await JSZip.loadAsync(exactArrayBuffer(bytes)),
       validateWorkbook:(bytes:Uint8Array) => monthlySourceWorksheetNames(bytes,async(b:Uint8Array)=>await JSZip.loadAsync(exactArrayBuffer(b))),
-      loadWorkbook:async(bytes:Uint8Array) => { const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(exactArrayBuffer(bytes));return workbook; },
+      loadWorkbook:async(bytes:Uint8Array) => loadCompatibleWorkbook(bytes, ExcelJS, JSZip),
       historyRead:historyImportRead,
   });
 }

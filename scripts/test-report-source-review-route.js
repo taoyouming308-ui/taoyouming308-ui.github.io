@@ -13,6 +13,7 @@ const actor = { operations_role: 'finance', auth_account_id: id(3), auth_scope_t
 const originalActor = JSON.stringify(actor);
 (async () => {
   const { reportSourceReview } = await import('../supabase/functions/_shared/report-source-review.mjs');
+  const compatibility = await import('../supabase/functions/_shared/petty-detail-xlsx.mjs');
   const book = new ExcelJS.Workbook();
   for (const name of ['7月', '8月 ', '9月']) {
     const sheet = book.addWorksheet(name);
@@ -29,9 +30,9 @@ const originalActor = JSON.stringify(actor);
   const batch = { id: id(6), import_type: 'petty_cash', source_filename: 'synthetic-petty.xlsx',
     source_sha256: 'b'.repeat(64), period_start: '2026-07-01', period_end: '2026-09-01', status: 'needs_review', imported_row_count: 0 };
   let month = '2026-08', calls = [], mode = '', authenticated = true;
-  const sharedBuiltins = { console, TextEncoder, TextDecoder, Uint8Array, ArrayBuffer, DataView, URL, Date };
+  const sharedBuiltins = { ...compatibility, console, TextEncoder, TextDecoder, Uint8Array, ArrayBuffer, DataView, URL, Date };
   const monthlyContext = vm.createContext(sharedBuiltins);
-  vm.runInContext(stripTypeScriptTypes(fs.readFileSync('supabase/functions/_shared/monthly-source-archive.ts', 'utf8').replaceAll('export ', '')), monthlyContext);
+  vm.runInContext(stripTypeScriptTypes(fs.readFileSync('supabase/functions/_shared/monthly-source-archive.ts', 'utf8').replace(/^import .*;\n/gm, '').replaceAll('export ', '')), monthlyContext);
   const env = vm.createContext({ ...sharedBuiltins, Request, Response, AbortSignal, crypto: webcrypto,
     ExcelJS, JSZip, reportSourceReview, monthlySourceWorksheetNames: monthlyContext.monthlySourceWorksheetNames,
     mockSession: actor, Deno: { env: { get: key => key === 'SUPABASE_URL' ? 'https://synthetic.invalid' : 'synthetic-key' }, serve: fn => { env.handler = fn; } },

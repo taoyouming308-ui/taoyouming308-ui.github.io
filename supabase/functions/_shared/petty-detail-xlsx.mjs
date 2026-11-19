@@ -1,10 +1,15 @@
 // Compatibility copies exist only in memory. Archive/hash the caller's original bytes.
 const MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const PACKAGE = 'http://schemas.openxmlformats.org/package/2006/';
+const RELATIONSHIP = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const UNPREFIXED = new Set([MAIN, PACKAGE + 'relationships', PACKAGE + 'content-types']);
 const XML_TAG = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<\?[\s\S]*?\?>|<(?:"[^"]*"|'[^']*'|[^'">])*>/g;
 const ATTR = /([\w:.-]+)\s*=\s*("[^"]*"|'[^']*')/g;
 
-function spreadsheetXml(xml) {
-  if (!/xmlns:[\w.-]+\s*=\s*["']http:\/\/schemas\.openxmlformats\.org\/spreadsheetml\/2006\/main["']/.test(xml) && !/\bt\s*=\s*["']d["']/.test(xml)) return xml;
+export function compatibleWorkbookXml(xml) {
+  const prefixed = [...xml.matchAll(/xmlns:([\w.-]+)\s*=\s*("[^"]*"|'[^']*')/g)]
+    .some(([, prefix, value]) => UNPREFIXED.has(value.slice(1, -1)) || prefix !== 'r' && value.slice(1, -1) === RELATIONSHIP);
+  if (!prefixed && !/\bt\s*=\s*["']d["']/.test(xml)) return xml;
   if (/<!DOCTYPE/i.test(xml)) throw new Error('不支持含 DTD 的 Excel XML');
   const stack = [{ namespaces: {}, name: '', outputName: '' }];
   return xml.replace(XML_TAG, tag => {
@@ -23,8 +28,20 @@ function spreadsheetXml(xml) {
     }
     const colon = name.indexOf(':'), prefix = colon < 0 ? '' : name.slice(0, colon);
     const namespace = namespaces[prefix] || '';
-    const outputName = namespace === MAIN ? name.slice(colon + 1) : name;
+    const outputName = UNPREFIXED.has(namespace) ? name.slice(colon + 1) : name;
     let output = tag.replace(name, outputName);
+    let needsRelationship = false;
+    output = output.replace(ATTR, (attribute, key, quoted) => {
+      const split = key.indexOf(':');
+      if (split < 0 || key.startsWith('xmlns:') || namespaces[key.slice(0, split)] !== RELATIONSHIP) return attribute;
+      needsRelationship = true;
+      return 'r:' + key.slice(split + 1) + '=' + quoted;
+    });
+    if (needsRelationship && namespaces.r !== RELATIONSHIP) {
+      if (namespaces.r) throw new Error('Excel XML 关系前缀存在冲突');
+      output = output.replace(/\sxmlns:r\s*=\s*("[^"]*"|'[^']*')/, '');
+      output = output.replace(/\/?\s*>$/, ending => ' xmlns:r="' + RELATIONSHIP + '"' + ending);
+    }
     // ExcelJS 4 parses t="d" as a numeric serial (2026-... becomes 2026).
     // Preserve the explicit ISO text instead; strict date validation runs later.
     if (namespace === MAIN && outputName === 'c') output = output.replace(/(\st\s*=\s*)(["'])d\2/, '$1$2str$2');
@@ -37,6 +54,16 @@ function spreadsheetXml(xml) {
     if (!/\/\s*>$/.test(tag)) stack.push({ namespaces, name, outputName });
     return output;
   });
+}
+
+// Read the relationship alias from original metadata; amounts/formulas remain independently audited.
+export function workbookRelationshipId(xml, attributes) {
+  const root = xml.match(/<(?:[\w.-]+:)?workbook\b[^>]*>/)?.[0] || '';
+  const namespaces = Object.fromEntries([...root.matchAll(ATTR)].map(([, key, value]) => [key, value.slice(1, -1)]));
+  Object.assign(namespaces, attributes);
+  const keys = ['r:id', ...Object.keys(namespaces).filter(key => key.startsWith('xmlns:') && namespaces[key] === RELATIONSHIP).map(key => key.slice(6) + ':id')];
+  const ids = [...new Set(keys.map(key => attributes[key]).filter(Boolean))];
+  return ids.length === 1 ? ids[0] : '';
 }
 
 function relativeTarget(relsName, target) {
@@ -64,9 +91,8 @@ export async function compatiblePettyXlsxBytes(bytes, JSZip) {
   for (const entry of entries) {
     if (!/\.(xml|rels)$/i.test(entry.name)) continue;
     const xml = await entry.async('string');
-    let next = xml;
-    if (/\.xml$/i.test(entry.name)) next = spreadsheetXml(xml);
-    else next = xml.replace(XML_TAG, tag => {
+    let next = compatibleWorkbookXml(xml);
+    if (/\.rels$/i.test(entry.name)) next = next.replace(XML_TAG, tag => {
       if (!/^<(?:[\w.-]+:)?Relationship\s/.test(tag) || /\bTargetMode\s*=\s*['"]External['"]/i.test(tag)) return tag;
       return tag.replace(/(\bTarget\s*=\s*)(['"])([^'"]*)\2/, (_, start, quote, target) => start + quote + relativeTarget(entry.name, target) + quote);
     });
@@ -75,10 +101,12 @@ export async function compatiblePettyXlsxBytes(bytes, JSZip) {
   return changed ? await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }) : bytes;
 }
 
-export async function loadPettyDetailWorkbook(bytes, ExcelJS, JSZip) {
+export async function loadCompatibleWorkbook(bytes, ExcelJS, JSZip) {
   const compatible = await compatiblePettyXlsxBytes(bytes, JSZip);
   const book = new ExcelJS.Workbook();
   try { await book.xlsx.load(compatible.buffer.slice(compatible.byteOffset, compatible.byteOffset + compatible.byteLength)); }
   catch { throw new Error('Excel 结构暂无法读取，请保留原文件并联系维护人员检查兼容性'); }
   return book;
 }
+
+export const loadPettyDetailWorkbook = loadCompatibleWorkbook;

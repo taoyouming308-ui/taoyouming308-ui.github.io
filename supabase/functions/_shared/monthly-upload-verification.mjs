@@ -1,4 +1,5 @@
 // Independent XLSX source audit. Never calculates, corrects, approves or posts amounts.
+import { workbookRelationshipId } from './petty-detail-xlsx.mjs';
 const MAX_XML = 2 * 1024 * 1024;
 const text = value => String(value ?? '').trim();
 const round = value => Number(Number(value).toFixed(4));
@@ -66,7 +67,7 @@ export async function captureMonthlySource(bytes, metadata, deps) {
     const sheets = tags(workbook, 'sheet').filter(s => text(s.attributes.name) === metadata.sheet_name);
     if (sheets.length !== 1) throw Error('无法唯一定位原件工作表');
     const rels = tags(await xmlFile(zip, 'xl/_rels/workbook.xml.rels'), 'Relationship');
-    const rel = rels.find(r => r.attributes.Id === sheets[0].attributes['r:id'])?.attributes;
+    const rel = rels.find(r => r.attributes.Id === workbookRelationshipId(workbook, sheets[0].attributes))?.attributes;
     const path = rel?.Target?.startsWith('/') ? rel.Target.slice(1) : 'xl/' + rel?.Target;
     if (!rel || rel.TargetMode || !/^xl\/worksheets\/[^/]+\.xml$/.test(path) || path.includes('..')) throw Error('原件工作表路径不支持');
     const xml = await xmlFile(zip, path);
