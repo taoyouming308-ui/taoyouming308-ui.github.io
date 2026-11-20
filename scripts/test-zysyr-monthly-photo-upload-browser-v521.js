@@ -39,6 +39,11 @@ const extraPhotos = ['凭证甲.jpg', '凭证乙.jpg', '凭证丙.jpg'].map(name
     const page = await browser.newPage({ viewport: { width: 1180, height: 820 } });
     await page.goto(`http://127.0.0.1:${server.address().port}/operations.html?preview=1&role=finance&store=${encodeURIComponent('向里造型')}`);
     await page.waitForSelector('#monthly-material-toggle:not(.hidden)');
+    async function confirmSource() {
+      const store = await page.evaluate(() => currentStore());
+      await page.locator('#upload-source-store-select').selectOption(store);
+      await page.locator('#upload-source-store-dialog').getByRole('button', { name: '确认上传' }).click();
+    }
     await page.evaluate(() => {
       const month = document.getElementById('month');
       if (!month.querySelector('option[value="2026-01"]')) month.insertAdjacentHTML('beforeend', '<option value="2026-01">2026年1月</option>');
@@ -102,6 +107,7 @@ const extraPhotos = ['凭证甲.jpg', '凭证乙.jpg', '凭证丙.jpg'].map(name
 
     await page.setInputFiles('#monthly-material-file', workbook);
     await page.locator('#monthly-material-form button[type="submit"]').click();
+    await confirmSource();
     await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('自动识别为 月报原表 · 2026-06'));
     assert.equal(await page.locator('#month').inputValue(), '2026-06');
     const automatic = await page.evaluate(() => window.fixtureCalls.filter(call => call.operation === 'report_upload_auto'));
@@ -131,6 +137,7 @@ const extraPhotos = ['凭证甲.jpg', '凭证乙.jpg', '凭证丙.jpg'].map(name
     await page.setInputFiles('#monthly-material-file', workbook);
     await page.setInputFiles('#monthly-material-vouchers', extraPhotos);
     await page.locator('#monthly-material-form button[type="submit"]').click();
+    await confirmSource();
     await page.waitForFunction(() => document.getElementById('monthly-material-result').textContent.includes('1 份需核验'));
     const batchCalls = await page.evaluate(() => ({ calls: window.fixtureCalls, maxActive: window.fixtureMaxActiveUploads }));
     assert.equal(batchCalls.calls.filter(call => call.operation === 'report_upload_auto').length, 1, 'the source report should be submitted exactly once');

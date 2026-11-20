@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const html = fs.readFileSync(path.join(__dirname, '../operations.html'), 'utf8');
 const start = html.indexOf('  var API_READ_ONLY_OPERATIONS=');
-const end = html.indexOf('\n  async function api(', start);
+const end = html.indexOf('\n  var voucherUploadOperations=', start);
 assert.ok(start >= 0 && end > start, 'read timeout helper must remain next to the API wrapper');
 const code = html.slice(start, end);
 

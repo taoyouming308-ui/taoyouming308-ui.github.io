@@ -15,6 +15,7 @@ function setup(spec,delay=100){let calls=0,bytes=0,parseMs=0,fail=false;const co
  context.fetch=response;context.requestApiResponse=async(op,opts)=>{const responseValue=await response('',opts);return{response:responseValue,data:await responseValue.json()};};
  if(spec[0]==='operations.html')context.state.session='TEST-a';vm.createContext(context);
  if(!baseline)vm.runInContext(fs.readFileSync('data-read-client.js','utf8'),context);
+ if(!baseline&&spec[0]==='operations.html')vm.runInContext(take(read(spec[0]),'  var voucherUploadOperations=','  var uploadSourceQueue='),context);
  vm.runInContext(take(read(spec[0]),spec[1],spec[2]),context);
  return {c:context,call:(op=spec[4],p=spec[5])=>context[spec[3]](op,p),stats:()=>({calls,bytes,parseMs}),fail:v=>{fail=v;}};
 }

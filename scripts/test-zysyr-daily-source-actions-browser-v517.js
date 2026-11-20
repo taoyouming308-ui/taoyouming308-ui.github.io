@@ -78,6 +78,43 @@ async function run(){
     assert.match(await page.locator('#daily-recognition-comparison').textContent(),/1处差异（未改动表格）/);
     assert.equal(await page.locator('#daily-recognition-comparison img').count(),0);
     assert.equal(await page.evaluate(()=>JSON.stringify(state.imports.sheet)===window.syncedBefore),true,'comparison cannot replace the current sheet');
+    await page.evaluate(()=>{
+      window.attachmentRequests=[];
+      api=async(operation,payload)=>{
+        if(operation!=='daily_sheet_attachment_upload')throw Error('unexpected write '+operation);
+        window.attachmentRequests.push(payload);
+        return structuredClone(state.imports.sheet);
+      };
+    });
+    async function chooseFile(){
+      const [chooser]=await Promise.all([page.waitForEvent('filechooser'),upload.click()]);
+      await chooser.setFiles({name:'合成日报.pdf',mimeType:'application/pdf',buffer:Buffer.from('synthetic only')});
+      await page.locator('#upload-source-store-select').waitFor();
+    }
+    const storeSelect=page.locator('#upload-source-store-select');
+    const confirmUpload=page.locator('#upload-source-store-dialog').getByRole('button',{name:'确认上传'});
+    await chooseFile();
+    assert.equal(await storeSelect.inputValue(),'');
+    assert.equal(await confirmUpload.isDisabled(),true);
+    await storeSelect.selectOption('自由手艺人');
+    assert.equal(await confirmUpload.isDisabled(),true);
+    await page.locator('#upload-source-store-dialog').getByRole('button',{name:'取消'}).click();
+    assert.equal(await page.evaluate(()=>attachmentRequests.length),0);
+    await chooseFile();
+    await storeSelect.selectOption('向里造型');
+    await page.evaluate(()=>{state.imports.sheet.draft.report_date='2026-04-02'});
+    await confirmUpload.click();
+    await page.waitForFunction(()=>document.getElementById('toast').textContent.includes('日报已变化'));
+    assert.equal(await page.evaluate(()=>attachmentRequests.length),0);
+    await page.evaluate(()=>{state.imports.sheet.draft.report_date='2026-04-01'});
+    await chooseFile();
+    await storeSelect.selectOption('向里造型');
+    page.once('dialog',dialog=>dialog.accept());
+    await confirmUpload.click();
+    await page.waitForFunction(()=>attachmentRequests.length===1);
+    const request=await page.evaluate(()=>attachmentRequests[0]);
+    assert.equal(request.store,'向里造型');assert.equal(request.source_store,'向里造型');
+    assert.equal(request.draft_id,'source-action-draft');
     assert.deepEqual(errors,[]);await page.close();
   }
   console.log('ZYSYR v517 daily source actions: prominent mobile/desktop controls, single-flight feedback and completion state passed');

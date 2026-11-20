@@ -492,7 +492,10 @@
     var invalid = files.find(function (file) { return !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type) || !file.size || file.size > 10 * 1024 * 1024; });
     if (invalid) { toast('“' + invalid.name + '”不是 10MB 以内的 JPG、PNG 或 PDF'); return; }
     if (isLocalPreview()) { toast('本地预览不上传真实凭证'); return; }
-    var batchId = crypto.randomUUID(), month = document.getElementById('month').value;
+    var batchId = crypto.randomUUID(), batchScope = uploadSourceScope();
+    function batchUploadCurrent() {
+      return uploadSourceScopeCurrent(batchScope);
+    }
     var status = document.getElementById('petty-batch-status');
     var select = document.getElementById('petty-batch-select');
     batchUploadBusy = true;
@@ -502,27 +505,32 @@
     batchUploadSummaryText = '';
     batchUploadSummaryKey = currentBatchKey();
     function renderUploadProgress() {
-      if (!status) return;
+      if (!status || !batchUploadCurrent()) return;
       status.textContent = '批量上传进度（最多同时 2 份）：\n' + fileResults.map(function (item) { return item.name + '：' + item.status; }).join('\n');
     }
     async function uploadNextFile() {
+      if (!batchUploadCurrent()) return;
       var index = nextFileIndex++;
       if (index >= files.length) return;
       var file = files[index];
       fileResults[index].status = '正在上传';
       renderUploadProgress();
       try {
-        await api('petty_cash_batch_upload', { store: currentStore(), month: month, batch_id: batchId,
-          filename: file.name, mime_type: file.type, base64: await fileBase64(file) });
+        var base64 = await fileBase64(file);
+        if (!batchUploadCurrent()) return;
+        await api('petty_cash_batch_upload', { store: batchScope.store, month: batchScope.month, batch_id: batchId,
+          filename: file.name, mime_type: file.type, base64: base64 });
         fileResults[index].status = '已保存';
       } catch (error) {
-        fileResults[index].status = '结果未确认：' + error.message + '（请刷新核验，不要直接重传）';
+        fileResults[index].status = error.code === 'UPLOAD_SOURCE_NOT_CONFIRMED' ? error.message
+          : '结果未确认：' + error.message + '（请刷新核验，不要直接重传）';
       }
       renderUploadProgress();
       await uploadNextFile();
     }
     try {
       await Promise.all([uploadNextFile(), uploadNextFile()]);
+      if (!batchUploadCurrent()) return;
       var success = fileResults.filter(function (item) { return item.status === '已保存'; }).length;
       var failed = fileResults.filter(function (item) { return item.status !== '已保存'; });
       batchUploadSummaryText = '本次上传结果：' + success + ' 份已保存，' + failed.length + ' 份需核验。\n'
@@ -532,7 +540,8 @@
       if (success) {
         if (status) status.textContent = '已上传 ' + success + ' 份，正在启动自动识别…';
         batchLastWakeAt = Date.now();
-        try { await api('voucher_ocr_wake', { store: currentStore(), limit: 5 }); } catch (_) {}
+        try { await api('voucher_ocr_wake', { store: batchScope.store, limit: 5 }); } catch (_) {}
+        if (!batchUploadCurrent()) return;
         toast('批量上传完成：成功 ' + success + ' 份' + (failed.length ? '，失败 ' + failed.length + ' 份' : '') + '。请核对识别结果。');
       }
       await loadBatchStatus(batchId);

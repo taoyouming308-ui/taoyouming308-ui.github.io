@@ -6,6 +6,12 @@ const fixture={name:'2026年7月月报.xlsx',mimeType:'application/vnd.openxmlfo
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'chrome',headless:true});
  try{
  const page=await browser.newPage({viewport:{width:1180,height:820}});const url=`http://127.0.0.1:${server.address().port}/operations.html?preview=1&role=finance`;
+ async function submitAuto() {
+  await page.locator('#monthly-material-form button[type=submit]').click();
+  const store=await page.evaluate(()=>currentStore());
+  await page.locator('#upload-source-store-select').selectOption(store);
+  await page.locator('#upload-source-store-dialog').getByRole('button',{name:'确认上传'}).click();
+ }
  async function setup(status,options={}){
   await page.goto(url);await page.waitForSelector('#monthly-material-toggle:not(.hidden)');
   await page.evaluate(({status,options})=>{
@@ -19,16 +25,17 @@ const fixture={name:'2026年7月月报.xlsx',mimeType:'application/vnd.openxmlfo
   },{status,options});
  }
  for(const status of ['matched','mismatch','needs_review']){
-  await setup(status);await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await page.locator('#monthly-material-form button[type=submit]').click();
+  await setup(status);await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await submitAuto();
   await page.waitForFunction(()=>!state.monthlyUploadBusy);const receipt=await page.locator('#monthly-material-result').textContent();assert.match(receipt,/草稿已保存/);assert.match(receipt,/未自动入账/);
   assert.equal(await page.locator('#monthly-upload-verification').getAttribute('data-status'),status);
   if(status==='mismatch'){assert.match(await page.locator('#monthly-upload-verification').textContent(),/B3.*100.*200/);assert.equal(await page.locator('#monthly-upload-verification').getAttribute('role'),'alert')}
   assert.deepEqual((await page.evaluate(()=>testCalls)).map(c=>c.op),['report_upload_auto']);
+  assert.equal(await page.evaluate(()=>testCalls[0].payload.source_store),await page.evaluate(()=>currentStore()));
   // Fresh page reopens the same server projection, independent of upload toast state.
   await setup(status,{reopen:true});assert.equal(await page.locator('#monthly-upload-verification').getAttribute('data-status'),status);
  }
- await setup('needs_review',{refreshFails:true});await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await page.locator('#monthly-material-form button[type=submit]').click();await page.waitForFunction(()=>!state.monthlyUploadBusy);assert.match(await page.locator('#monthly-material-result').textContent(),/不要重复上传/);
- await setup('mismatch',{delay:true});await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await page.locator('#monthly-material-form button[type=submit]').click();await page.waitForFunction(()=>!!window.fixtureResolve);
+ await setup('needs_review',{refreshFails:true});await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await submitAuto();await page.waitForFunction(()=>!state.monthlyUploadBusy);assert.match(await page.locator('#monthly-material-result').textContent(),/不要重复上传/);
+ await setup('mismatch',{delay:true});await page.locator('#monthly-material-toggle').click();await page.setInputFiles('#monthly-material-file',fixture);await submitAuto();await page.waitForFunction(()=>!!window.fixtureResolve);
  await page.evaluate(()=>{document.getElementById('monthly-material-form').dispatchEvent(new SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:document.querySelector('#monthly-material-form button[type=submit]')}));state.session='different-account';document.getElementById('monthly-material-result').textContent='新账号页面';window.fixtureResolve()});await page.waitForFunction(()=>!state.monthlyUploadBusy);assert.equal(await page.locator('#monthly-material-result').textContent(),'新账号页面');assert.equal((await page.evaluate(()=>testCalls)).length,1);
  // Direct/manual form shares the same verification and draft-only API.
  await setup('mismatch');await page.evaluate(()=>{document.getElementById('report-type').value='monthly_profit_loss';document.getElementById('report-month').value='2026-07'});await page.setInputFiles('#report-file',fixture);
