@@ -3,6 +3,12 @@
 - 日报单张原件、按月批量原图与电子日报上传前核对原件所属门店。已知表头、文件名或声明与目标门店矛盾时拦截写入。
 - 普通、备用金与历史凭证明细上传统一核对来源门店；切换门店、月份或账号会停止未发出的上传，已归属其他店的同一凭证不能在当前店复用。
 
+## 2026-11-20 · 客户档案积压修复准备（沿用主线 v671）
+
+- 将已实际运行的客户只读传输与协调版本合入最新隔离开发基线，保留现行预约、日消费和自动出库关闭状态。
+- 增加有限、私有、身份绑定的年窗续传，跨日补窗后再次读取近期账单；云端档案和服务投影均成功才清理进度，失败保留原档案。保留预算、频率和预约优先级。
+-57项新增合成测试与112项原同步回归通过，两路独立复核无阻断；v670 基线的完整共享校验通过（财务165/165），增加只替换客户主脚本及续传模块的四锁原子部署器。不重置人工核查队列，不改前端或数据库结构。此为准备阶段记录，发布、运行部署和云端回读分别验收。
+
 ## v670 · 2026-11-20
 
 - 界面更新提示在准备完成后自动收起。同一版本的同一标签页不会重复提示。
@@ -77,6 +83,24 @@
 - 增加两个仅服务端可调用的事务包装函数，复用既有财务权限与关联接口，校验门店、原图、目标、并发关联和月报来源快照。无表、金额、原图或审核结构变更。
 - 新增纯金额/推荐、实际 API、隔离 PostgreSQL17 和390/1280实际页面验收，覆盖170.30的两张/三张组合、单张保留、人工更正、未知金额、跨月/重复/其他关联、部分重试、第二张失败回滚与切月隔离。
 
+## 2026-11-17 Customer fairness candidate (not deployed)
+
+- Preserve same-batch history progress across bounded readiness waits while releasing shared session/source locks.
+- Build requests from a single locked session snapshot; stop uncertain responses without replay.
+- Add fairness/transition safety tests and quiescent cutover/trigger restoration plan; no production cadence or frontend change.
+
+## 2026-11-17 Customer coordination candidate (not deployed)
+
+- Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.
+- Track deferred work separately from failures, deduplicate compensation, emit age/persistent-source alerts, and finish all modes with released locks.
+- Add offline integration coverage to mandatory existing gate; no frontend, production scheduler or financial changes.
+
+## 2026-11-17 Customer source transport and bounded history recovery
+
+- Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
+- Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
+- No frontend version change, source business edits, financial posting or scheduler change.
 ## v664 · 2026-11-17
 
 - 补齐月报产品进货、零售产品成本、备用金分类及杂项明细的凭证库入口；可选择同店已上传原图，金额一致及接近优先推荐，上传月份不限制原账期。
