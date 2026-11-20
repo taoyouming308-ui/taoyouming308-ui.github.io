@@ -55,7 +55,8 @@ let browser;
       if (operation === 'petty_cash_batch_upload') {
         window.activeBatchUploads++;
         window.maxBatchUploads = Math.max(window.maxBatchUploads, window.activeBatchUploads);
-        await new Promise(resolve => setTimeout(resolve, 40));
+        if (window.heldBatchUploads) await new Promise(resolve => window.heldBatchUploads.push(resolve));
+        else await new Promise(resolve => setTimeout(resolve, 40));
         window.activeBatchUploads--;
         if (payload.filename === '失败.png') throw Error('模拟网络超时');
         const index = window.batchItems.length;
@@ -143,6 +144,25 @@ let browser;
   assert.match(await page.locator('#petty-batch-status').innerText(), /成功甲\.jpg：已保存/);
   assert.match(await page.locator('#petty-batch-status').innerText(), /失败\.png：结果未确认/);
   assert.match(await page.locator('#petty-batch-status').innerText(), /刷新核验/);
+  await page.evaluate(() => { window.heldBatchUploads = []; });
+  const staleChooser = page.waitForEvent('filechooser');
+  await page.locator('#petty-batch-select').click();
+  await (await staleChooser).setFiles(['旧范围甲.jpg', '旧范围乙.jpg', '旧范围丙.jpg'].map(name => ({
+    name, mimeType: 'image/jpeg', buffer: Buffer.from(name)
+  })));
+  await page.waitForFunction(() => window.heldBatchUploads.length === 2);
+  await page.evaluate(() => {
+    const month = document.getElementById('month');
+    const originalMonth = month.value;
+    month.value = Array.from(month.options).find(option => option.value !== originalMonth).value;
+    month.dispatchEvent(new Event('change'));
+    month.value = originalMonth;
+    month.dispatchEvent(new Event('change'));
+    window.heldBatchUploads.forEach(resolve => resolve());
+  });
+  await page.waitForFunction(() => window.activeBatchUploads === 0 && !document.getElementById('petty-batch-select')?.disabled);
+  assert.equal(await page.evaluate(() => window.calls.filter(call => call.operation === 'petty_cash_batch_upload'
+    && call.filename.startsWith('旧范围')).length), 2, 'switching month and returning must stop queued files from the previous upload scope');
   await page.setViewportSize({ width: 1280, height: 900 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, 'batch UI must not create page overflow');
   assert.deepEqual(errors, []);
