@@ -1,6 +1,7 @@
 // Explicit evidence-only attachment; the existing RPC preserves amounts and old links.
 import { expenseComponents } from './expense-voucher-matching.mjs';
 import { combinationTotal, voucherCents } from '../../../voucher-combination-core.js';
+import { readMonthlyVoucherTargets } from './monthly-voucher-targets.mjs';
 const text = value => String(value ?? '').trim();
 const uuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text(value));
 export async function monthlyCellVoucherLibrary(payload, session, deps) {
@@ -9,13 +10,34 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
   const store = await deps.store(session, payload), company = text(store.company_id), storeId = text(store.id);
   const reportId = text(payload.report_id), cellId = text(payload.cell_id), month = text(payload.month);
   if (!uuid(reportId) || !uuid(cellId) || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)) throw Error('月报或单元格信息无效');
+  const workspace = payload.context === 'expense_workspace';
+  if (payload.context != null && !workspace) throw Error('凭证库入口无效');
+  let workspaceTarget = null;
+  if (workspace) {
+    if (!['list', 'attach'].includes(payload.action) || Object.hasOwn(payload, 'component_index') || Object.hasOwn(payload, 'items')) {
+      throw Error('月报栏目仅支持人工关联整张原图佐证，不支持图内分项或组合');
+    }
+    const projection = await readMonthlyVoucherTargets(store, month, deps);
+    if (!['ready', 'partial'].includes(projection.status) || projection.id !== reportId) throw Error('月报版本已变化或暂不可读，请刷新');
+    workspaceTarget = projection.targets.find(target => target.cell_id === cellId && target.report_id === reportId);
+    if (!workspaceTarget || !workspaceTarget.can_attach) throw Error(workspaceTarget?.disabled_reason || '请选择当前月报可关联的栏目');
+  }
   const scope = `company_id=eq.${company}&store_id=eq.${storeId}`;
   const reports = await deps.rows(`zysyr_report_uploads?select=id&${scope}&id=eq.${reportId}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&limit=1`);
   if (!reports.length) throw Error('月报不存在或不属于当前门店和月份');
   const cells = await deps.rows(`zysyr_report_cells?select=id,label,cell_kind,cell_address&${scope}&report_id=eq.${reportId}&id=eq.${cellId}&limit=1`);
-  if (!cells.length || deps.category(cells[0]) !== 'expense') throw Error('请选择需要凭证的月报明细金额');
-  const revisions = await deps.rows(`zysyr_monthly_cell_revisions?select=id&${scope}&source_cell_id=eq.${cellId}&order=revision.desc&limit=1`);
-  const links = revisions[0] ? await deps.all(`zysyr_monthly_cell_revision_vouchers?select=voucher_id&${scope}&revision_id=eq.${revisions[0].id}&limit=200`, 200) : [];
+  if (!cells.length || (!workspaceTarget && deps.category(cells[0]) !== 'expense')) throw Error('请选择需要凭证的月报明细金额');
+  const revisions = workspaceTarget ? [] : await deps.rows(`zysyr_monthly_cell_revisions?select=id&${scope}&source_cell_id=eq.${cellId}&order=revision.desc&limit=1`);
+  const links = workspaceTarget ? workspaceTarget.linked_vouchers.map(voucher_id => ({ voucher_id }))
+    : revisions[0] ? await deps.all(`zysyr_monthly_cell_revision_vouchers?select=voucher_id&${scope}&revision_id=eq.${revisions[0].id}&limit=200`, 200) : [];
+  if (workspace && payload.action === 'list') {
+    const voucherId = text(payload.voucher_id);
+    if (!uuid(voucherId)) throw Error('请选择需要回读的原图');
+    const vouchers = await deps.rows(`zysyr_voucher_attachments?select=id&${scope}&id=eq.${voucherId}&limit=1`);
+    if (!vouchers.some(voucher => text(voucher.id) === voucherId)) throw Error('凭证不存在或不属于当前门店');
+    return { evidence_only: true, whole_original: true, target: workspaceTarget,
+      items: [{ id: voucherId, source_voucher_id: voucherId, already_linked: links.some(link => link.voucher_id === voucherId) }], truncated: false };
+  }
   if (payload.action === 'attach_combination') {
     if (payload.confirmed !== true || !Array.isArray(payload.items)) throw Error('请逐张核对并确认组合凭证');
     if (payload.items.some(item => !uuid(item.voucher_id))) throw Error('组合凭证编号无效');
@@ -44,7 +66,8 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
       p_actor_user_id: session.auth_account_id, p_company_id: company, p_store_id: storeId,
       p_source_cell_id: cellId, p_voucher_id: voucherId, p_reason: reason,
     });
-    return { cell_linked: true, already_linked: alreadyLinked, amount_changed: false, posted: false };
+    return { cell_linked: true, already_linked: alreadyLinked, amount_changed: false, posted: false,
+      ...(workspace ? { evidence_only: true, whole_original: true, target_kind: 'monthly_cell', report_id: reportId, cell_id: cellId } : {}) };
   }
   if (payload.action !== 'list') throw Error('凭证库操作无效');
   // Upload month is not accounting month: July originals can be uploaded in November.
@@ -61,7 +84,7 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
   }
   const latest = rows => { const map = new Map(); for (const row of rows) if (!map.has(row.voucher_id)) map.set(row.voucher_id, row); return map; };
   const taskMap = latest(tasks), reviewMap = latest(reviews), linked = new Set(links.map(link => link.voucher_id));
-  return { items: visible.map(v => {
+  return { ...(workspace ? { evidence_only: true, whole_original: true, target: workspaceTarget } : {}), items: visible.map(v => {
     const candidate = taskMap.get(v.id)?.candidate_fields || {}, corrected = reviewMap.get(v.id)?.corrected_fields || {};
     return { ...v, source_voucher_id: v.id, candidate_fields: { ...candidate, ...corrected },
       recognized_amounts: Object.hasOwn(corrected, 'amount') ? [corrected.amount] : expenseComponents(candidate).map(component => component.amount),

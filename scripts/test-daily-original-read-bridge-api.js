@@ -8,6 +8,7 @@ const draft={id:id(3),report_date:'2026-08-01',source_voucher_id:null,status:'dr
 const actor={operations_role:'shareholder',auth_account_id:id(4),auth_stores:[store.name],auth_store_records:[store],auth_capabilities:['voucher.read']};
 const original=n=>({request_id:id(n),report_date:draft.report_date,original_filename:`synthetic-${n}.jpg`,mime_type:'image/jpeg',size_bytes:123,sha256:'a'.repeat(64),completed_at:'2026-11-13T00:00:00Z',object_path:`${store.company_id}/${store.id}/daily-originals/2026-08/2026-08-01/${id(n)}`});
 let mode='ok',granted=true,active=true,calls=[],records=[original(10),original(11)],rpcBodies=[];
+let autofillDeployed=false;
 let browserEnv;
 (async()=>{
  const {dailyAutofillView,isSyncedDailySheet}=await import('../supabase/functions/_shared/daily-autofill-view.mjs');
@@ -21,6 +22,11 @@ let browserEnv;
    if(path==='rpc/zysyr_daily_original_references'){
     rpcBodies.push(JSON.parse(opt.body));if(mode==='query-failed')return new Response('{}',{status:503});
     data={days:records.length?[{report_date:draft.report_date,count:records.length}]:[],archives:JSON.parse(opt.body).p_detail?records:[]};
+   }else if(path.startsWith('rpc/zysyr_fill_daily_sheet_blanks?')){
+    assert.equal(method,'GET','readiness must be read-only');
+    assert.match(path,/p_expected_revision=-1$/);assert(opt.signal);
+    const body=autofillDeployed?{code:'22023',message:'AUTOFILL_SCOPE_INVALID'}:{code:'PGRST202'};
+    return new Response(JSON.stringify(body),{status:autofillDeployed?400:404});
    }else if(path.startsWith('employee_booking_sessions?'))data=[{username:'Synthetic Staff',store:store.name}];
    else if(path.startsWith('staff?'))data=[{id:24,username:'Synthetic Staff',store:store.name,active,employment_status:'active'}];
    else if(path.startsWith('staff_report_grants?'))data=granted?[{store_id:store.id}]:[];
@@ -49,6 +55,7 @@ let browserEnv;
  assert.deepEqual(rpcBodies.at(-1),{p_actor_user_id:actor.auth_account_id,p_staff_id:null,p_company_id:store.company_id,p_store_id:store.id,p_start_date:'2026-08-01',p_end_date:'2026-09-01',p_detail:false});
  response=await post('daily_sheet_read',false,{report_date:'2026-07-02',actor_user_id:id(99)});
  assert.equal(response.status,200);assert.deepEqual(financialOnly(response.data,false),legacyDetail);
+ assert.equal(response.data.permissions.fill_blanks,false);
  assert.deepEqual(response.data.original_archive,{state:'archived',count:2});assert.equal(response.data.archived_originals.length,2);
  assert.equal(response.data.original_image_url,null);assert.equal(response.data.attachments.length,0);assert.equal(response.data.draft.source_voucher_id,null);assert.equal(response.data.automatic_posting_enabled,false);
  for(const row of response.data.archived_originals){assert.equal(row.report_date,draft.report_date);assert.equal(row.review_status,'unreviewed');assert.match(row.private_url,/^https:\/\//);assert.equal(row.url_expires_in,300);assert(!('object_path' in row));assert(!('audit_status' in row));}
@@ -67,6 +74,15 @@ let browserEnv;
  records=[{...original(10),report_date:'2026-08-02'}];response=await post('daily_sheet_read');assert.equal(response.data.original_archive.state,'unavailable','wrong date cannot be signed');
  records=[{...original(10),object_path:original(10).object_path.replace(store.id,id(99))}];calls=[];response=await post('daily_sheet_read');assert.equal(response.data.original_archive.state,'unavailable');assert.equal(calls.filter(c=>c.url.includes('/storage/')).length,0);
  assert(calls.every(c=>c.method==='GET'||c.path==='rpc/zysyr_daily_original_references'),'no financial/archive write or reconciliation is called');
+ env.mockSession={...actor,store:store.name,operations_role:'finance',auth_capabilities:['voucher.read','daily_report.write']};
+ response=await post('daily_sheet_read');
+ assert.equal(response.status,200);assert.equal(response.data.permissions.fill_blanks,false,'new Edge with migration pending hides autofill');
+ autofillDeployed=true;
+ vm.runInContext('dailyFillBlanksAvailability=undefined',env);
+ response=await post('daily_sheet_read');
+ assert.equal(response.status,200);assert.equal(response.data.permissions.fill_blanks,true);
+ const existing=await post('daily_sheet_create',false,{report_date:draft.report_date,reason:'Synthetic test'});
+ assert.equal(existing.status,200);assert.equal(existing.data.permissions.fill_blanks,true);
  env.mockSession={...actor,auth_capabilities:[]};assert.equal((await post('daily_sheet_read')).status,403);
  console.log('Daily original bridge real HTTP: account/staff trusted scope, completed-only read facade, month metadata only, exact-date detail URLs, separate unreviewed references, failed signing/query, unchanged financial/recognition and no writes passed. Synthetic only.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { detectReportMetadata } from "../supabase/functions/_shared/report-auto-detection.mjs";
+import { assertUploadSourceStore } from "../supabase/functions/_shared/upload-store-guard.mjs";
 
 const monthly = detectReportMetadata({
   filename: "盈亏表模板2026（向里造型）xlsx.xlsx",
@@ -51,4 +52,14 @@ assert.throws(() => detectReportMetadata({
   values: [["年度盈亏统计"], ["收入类别", "美发收入"]],
 }), /未识别到报表月份/);
 
-console.log("report auto detection: type, period, store isolation and ambiguity guards passed");
+const wrongStore = { code: 'UPLOAD_SOURCE_STORE_REJECTED' };
+assert.doesNotThrow(() => assertUploadSourceStore('向里造型', ' 向里造型 ', '微信图片.jpg'));
+assert.doesNotThrow(() => assertUploadSourceStore('向里造型', undefined, 'legacy.jpg'));
+assert.throws(() => assertUploadSourceStore('向里造型', '向里', '微信图片.jpg'), wrongStore, 'partial names do not prove ownership');
+assert.throws(() => assertUploadSourceStore('向里造型', '自由手艺人', '微信图片.jpg'), wrongStore);
+assert.throws(() => assertUploadSourceStore('向里造型', '向里造型', '自由手艺人_原件.png'), wrongStore);
+assert.throws(() => assertUploadSourceStore('向里造型', '向里造型', '向里造型_日报.xlsx', '自由 手艺人 业绩日报'), wrongStore);
+assert.throws(() => assertUploadSourceStore('向里造型', '向里造型', '日报.xlsx', '自由手艺人 / 向里造型'), wrongStore);
+assert.doesNotThrow(() => assertUploadSourceStore('向里造型', '向里造型', '自由手艺人_副本.xlsx', '向里造型 业绩日报'), 'file title is secondary to the actual header');
+
+console.log("Report detection and upload store guards: exact declared store, authoritative header, ambiguous/cross-store source, filename fallback and ordinary files passed.");

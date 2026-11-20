@@ -2,6 +2,7 @@
 (function(root){
   'use strict';
   var attempted=new Map(),monthlyCache=null,lastMonthlyCells=null,lastMonthlyScope=null,pettyViewGeneration=0;
+  var pendingMonthlyAttachments=new Set();
   function scopeKey(){return JSON.stringify([currentStore(),document.getElementById('month').value,root.ZysyrPettyScopeIdentity?root.ZysyrPettyScopeIdentity():state.session]);}
   function monthlyData(data){return {source:data.source_selection,expense_voucher_targets:data.targets||[],expense_voucher_matches:(data.items||[]).filter(function(i){return i.confirmed_target_id;}).map(function(i){return {voucher_id:i.source_voucher_id||i.id,filename:i.original_filename,mode:i.expense_association&&i.expense_association.mode||'manual',target:(data.targets||[]).find(function(t){return t.id===i.confirmed_target_id&&t.target_kind===i.confirmed_target_kind;})};})};}
   function decorate(cells,data,key){
@@ -24,6 +25,8 @@
     task_id:item.latest_ocr_task&&item.latest_ocr_task.id,target_kind:target.target_kind,target_id:target.id,
     corrected_fields:fields,reason:'人工核对开支凭证：'+item.original_filename+' → '+target.summary};}
   function pettySummary(target){return target&&target.target_kind==='monthly_source'&&/(^|\/)备用金$/.test(String(target.summary||'').replace(/\s/g,'').replace(/[／·]/g,'/'));}
+  function monthlyCell(target){return target&&target.target_kind==='monthly_cell';}
+  function canAttachMonthlyCell(target){return monthlyCell(target)&&target.disabled!==true&&target.can_attach===true&&typeof target.amount==='number'&&Number.isFinite(target.amount);}
   async function rankLibrary(items,target,month){
     if(root.ZysyrVoucherCombinationUI&&root.ZysyrVoucherCombinationUI.rank)return root.ZysyrVoucherCombinationUI.rank(items,target,month);
     return items.map(function(item,index){var fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),n=fields.amount==null?NaN:Number(fields.amount),amount=Number.isFinite(n)&&n>0?Math.round(n*100):null;
@@ -241,11 +244,12 @@
       }catch(_){/* Existing monthly data and trace actions remain available. */}
     },
     options:function(targets,selected,suggestions){
-      return [['monthly_source','月报全部开支栏目'],['source_petty','原件备用金逐笔明细']].map(function(group){
+      return [['monthly_cell','当前月报开支栏目/明细（人工佐证）'],['monthly_source','月报全部开支栏目（已指定原件）'],['source_petty','原件备用金逐笔明细']].map(function(group){
         var rows=targets.filter(function(t){return t.target_kind===group[0]&&!pettySummary(t);});
         return rows.length?'<optgroup label="'+group[1]+'">'+rows.map(function(t){
           var value=t.target_kind+':'+t.id,match=(suggestions||[]).find(function(m){return m.target_kind===t.target_kind&&m.target_id===t.id;});
-          return '<option value="'+esc(value)+'" '+(value===selected?'selected':'')+'>'+esc((match?'推荐（'+match.reason+'）· ':'')+(t.transaction_date||t.period_month)+' · '+t.summary+' · '+(t.amount==null?'原件金额空白':'¥'+formatAmount(t.amount))+' · '+(t.source_locator||''))+'</option>';
+          var disabled=monthlyCell(t)&&!canAttachMonthlyCell(t),reason=disabled?' · '+(t.disabled_reason||'当前金额或权限待核对，暂不可关联'):'';
+          return '<option value="'+esc(value)+'" '+(value===selected?'selected ':'')+(disabled?'disabled ':'')+'>'+esc((match&&!monthlyCell(t)?'推荐（'+match.reason+'）· ':'')+(t.transaction_date||t.period_month)+' · '+t.summary+' · '+(t.amount==null?(monthlyCell(t)?'月报金额空白':'原件金额空白'):'¥'+formatAmount(t.amount))+' · '+(t.source_locator||'')+reason)+'</option>';
         }).join('')+'</optgroup>':'';
       }).join('');
     },
@@ -253,10 +257,36 @@
       var fields=item.candidate_fields||{},category=item.match&&item.match.expense_category;
       return (names[fields.document_type]||'类型待识别')+' · '+(fields.expense_category||(category&&category.label)||'费用待分类')
         +(fields.evidence_kind==='monthly_summary'?' · 月度汇总佐证':item.component_count>1?' · 第 '+(item.component_index+1)+' / '+item.component_count+' 笔':'');},
-    confirm:async function(item,draft,target,scope){var fields=Object.assign({},draft.corrected_fields);if(fields.evidence_kind==='monthly_summary'&&root.ZysyrVoucherCombinationUI)fields.period_month=await root.ZysyrVoucherCombinationUI.period(fields.period_month,scope.month);var result=await api('expense_voucher_match_apply',Object.assign({},scope,{mode:'manual',items:[request(item,target,fields)]}));monthlyCache=null;return result;},
-    confirmCombination:async function(rows,target,scope){var result=await api('expense_voucher_combination_apply',Object.assign({},scope,{mode:'manual',combination:true,confirmed:true,items:rows.map(function(row){return request(row.item,target,row.fields);})}));monthlyCache=null;return result;},
+    canAttachMonthlyCell:canAttachMonthlyCell,
+    attachMonthlyCell:async function(item,target,scope){
+      if(!canAttachMonthlyCell(target)||target.period_month!==scope.month||target.id!==target.report_id+'~'+target.cell_id)throw Error('当前月报栏目不可关联，请刷新后核对');
+      var key=scopeKey(),voucherId=item.source_voucher_id||item.id;
+      var payload={context:'expense_workspace',store:scope.store,month:scope.month,report_id:target.report_id,cell_id:target.cell_id,voucher_id:voucherId};
+      var pendingKey=JSON.stringify([key,target.id,voucherId]);
+      function current(){return key===scopeKey();}
+      function unconfirmed(cause){
+        var detail=String(cause&&cause.message||'').trim();
+        if(detail.length>180||/[\r\n]|https?:\/\/|\/rest\/v1\/|sb_secret_|eyJ[A-Za-z0-9_-]{20}|\b(?:select|insert|update|delete)\b/i.test(detail)||!/月报|权限|财务|凭证|回读|网络|超时|不可用|读取失败/.test(detail))detail='';
+        var error=Error('月报佐证结果待核验'+(detail?'（'+detail+'）':'')+'，请刷新读取关联状态；不要直接重复提交');error.code='MONTHLY_EVIDENCE_UNCONFIRMED';return error;
+      }
+      try{
+        // An uncertain write is followed by reads only, never an automatic replay.
+        if(!pendingMonthlyAttachments.has(pendingKey)){
+          pendingMonthlyAttachments.add(pendingKey);
+          var saved=await api('monthly_voucher_library',Object.assign({},payload,{action:'attach',confirmed:true,reason:'人工核对整份原图属于 '+scope.month+' 月报栏目「'+target.summary+'」：'+item.original_filename+'；仅补充佐证，不确认单笔付款，不改金额或入账'}));
+          if(!saved||saved.cell_linked!==true||saved.amount_changed!==false||saved.posted!==false)throw unconfirmed();
+        }
+        if(!current())throw unconfirmed();
+        var readback=await api('monthly_voucher_library',Object.assign({},payload,{action:'list'}));
+        if(!current()||!readback||(readback.items||[]).every(function(row){return (row.source_voucher_id||row.id)!==voucherId||row.already_linked!==true;}))throw unconfirmed();
+        pendingMonthlyAttachments.delete(pendingKey);monthlyCache=null;
+        return {cell_linked:true,readback_confirmed:true,amount_changed:false,posted:false};
+      }catch(error){monthlyCache=null;if(error&&error.code==='MONTHLY_EVIDENCE_UNCONFIRMED')throw error;throw unconfirmed(error);}
+    },
+    confirm:async function(item,draft,target,scope){if(monthlyCell(target))throw Error('月报栏目必须经人工整图佐证入口确认');var fields=Object.assign({},draft.corrected_fields);if(fields.evidence_kind==='monthly_summary'&&root.ZysyrVoucherCombinationUI)fields.period_month=await root.ZysyrVoucherCombinationUI.period(fields.period_month,scope.month);var result=await api('expense_voucher_match_apply',Object.assign({},scope,{mode:'manual',items:[request(item,target,fields)]}));monthlyCache=null;return result;},
+    confirmCombination:async function(rows,target,scope){if(monthlyCell(target))throw Error('当前月报栏目不支持自动或组合对应，请逐份核对原图');var result=await api('expense_voucher_combination_apply',Object.assign({},scope,{mode:'manual',combination:true,confirmed:true,items:rows.map(function(row){return request(row.item,target,row.fields);})}));monthlyCache=null;return result;},
     autoMatch:async function(data,scope,isCurrent,isDirty,includeExisting){
-      var items=(data.items||[]).filter(function(item){return !item.confirmed_target_id&&item.match&&item.match.auto_eligible&&!pettySummary((data.targets||[]).find(function(t){return t.target_kind===item.match.target_kind&&t.id===item.match.target_id;}))
+      var items=(data.items||[]).filter(function(item){return !item.confirmed_target_id&&!(item.monthly_cell_evidence||[]).length&&item.match&&item.match.auto_eligible&&item.match.target_kind!=='monthly_cell'&&!pettySummary((data.targets||[]).find(function(t){return t.target_kind===item.match.target_kind&&t.id===item.match.target_id;}))
         && (includeExisting||item.automate_on_read)&&!isDirty(item.id);}).slice(0,20);
       var selected=items.filter(function(item){var key=JSON.stringify([scope,item.source_voucher_id||item.id,item.component_index||0,item.latest_ocr_task&&item.latest_ocr_task.id,item.match.target_kind,item.match.target_id]);
         if(!includeExisting&&attempted.has(key))return false;attempted.set(key,Date.now());return true;});

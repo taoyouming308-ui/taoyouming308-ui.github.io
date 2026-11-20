@@ -1,13 +1,83 @@
-## v669 · 2026-11-19
+## v679 · 2026-11-20 · 月报凭证关联完成显示
 
-- 修复界面资源检查结束后仍显示“准备中”的问题；检查完成、下载中、等待切换、失败及等待过久分别提示。
-- 三入口共用可收起提示，当前版本在同一浏览会话内记住“稍后”；主应用不再叠加第二条更新按钮，失败仍可重试。
-- 保留保存后关闭全部本站页面再自然切换的流程；Chromium/WebKit 的390/1366尺寸、跨页面收起、旧输入保留与多窗口版本隔离回归通过。
+- 月报佐证确认并回读成功后，凭证卡片采用与原已对应卡片一致的绿色，并标记「已关联月报」。同一栏目禁止重复关联，重新打开后恢复服务器保存的状态。
+- 完成提示不再等待无关备用金报表刷新；保存前的旧请求不能覆盖较新的确认结果。失败、未知回执不显示完成，整图关联仍明确保留「逐笔对应待核对」，不等于已入账。
+- 仅调整前端完成状态与交互，不改金额、审批、入账、凭证原图或已有关系；用户已同意检查通过后上线。
 
 ## 2026-11-19 · 发型审美训练：可变分缝与可逆结构
 
 - 追加稳定案例 `aesthetic-2026-11-19`，训练把固定深侧分的照片完成度、左右换分后的结构连续性、根部毛流和两分钟无产品整理分开判断，避免为一个方向直接剪出不可逆的大幅不对称层次。
-- 同提交加入原创 AI 虚构教学四视图、六段条件式参考答案、五项无作答自查复盘和透明审查记录；只修改训练内容、图片与交接记录，应用版本保持 v669。
+- 同提交加入原创 AI 虚构教学四视图、六段条件式参考答案、五项无作答自查复盘和透明审查记录；只修改训练内容、图片与交接记录，应用版本保持 v679。
+
+## v678 · 2026-11-20 · 凭证月报选项及旧页面兼容
+
+- 恢复当前月报开支栏目与明细，并保留原逐笔关联。补充旧主页面加载新延迟组件时的能力检查，避免凭证区报错；新挂证功能需要用户方便时自行更新，原逐笔操作继续保留。
+- 用户已同意备份及检查通过后上线。发布不修改账目金额、原凭证、审批或入账状态；实际线上状态以受保护发布及部署回读为准。
+
+## v677 · 2026-11-20 · 凭证月报选项修复候选（未上线）
+
+- 凭证「对应开支明细」补充当前门店、月份的电子月报开支栏目和明细；未指定独立核对原件时也可展示，不再只剩备用金逐笔明细。原件栏目与逐笔明细分组保留，已映射栏目去重。
+- 月报栏目由财务核对整张原图后补充佐证，保存后回读确认。不改变金额、审批或入账状态，不把图内多笔付款自动标成逐笔已对应；原有历史关联保留。
+- 空白金额显示但禁止挂证，避免未知被当成零；切换门店、月份或报告版本时阻止旧目标继续确认。月报读取不完整时明确提示，不悄悄隐藏。
+- 独立分支准备；无数据库迁移、正式数据修复或生产部署。上线须另行确认并完成受保护发布与回读。
+
+## v676 · 2026-11-20
+
+- 本月全部开支凭证按批列出原文件，一次核对本批全部原件所属门店后上传，避免每张重复弹窗造成误以为上传无响应。单笔补传仍逐笔确认。
+- 门店不一致、取消、切换月份/门店/账号会阻止尚未发出的文件；一次确认只适用于原文件清单及原批次，保留已保存结果且不自动重传。
+- 未刷新的旧页面仍可按原方式逐张确认上传，避免更新中断当前操作。
+
+## v675 · 2026-11-20
+
+- 打开电子日报时直接加载当天已存档原图，宽屏并排对照，窄屏在表格前显示。首次创建日报时也自动带出同店同日的已存档照片。
+
+## v673 · 2026-11-20
+
+- 日报详情的待核对存档原图增加「误传作废」，可逐张确认作废并刷新当天原图状态。保留存档记录。
+
+## v671 · 2026-11-20
+
+- 日报单张原件、按月批量原图与电子日报上传前核对原件所属门店。已知表头、文件名或声明与目标门店矛盾时拦截写入。
+- 普通、备用金与历史凭证明细上传统一核对来源门店；切换门店、月份或账号会停止未发出的上传，已归属其他店的同一凭证不能在当前店复用。
+
+## 2026-11-20 · 同步读取排队优化准备（沿用主线 v673）
+
+- 预约只在真正访问美管加时占用源请求锁，云端确认等待不再阻止客户档案读取；已到达的预约请求优先于下一笔客户读取。
+- 客户等待统一受原105秒总预算限制，保留10秒单次读取与20秒落库余量；不改变预约、客户和日消费的定时频率。
+- 旧预约脚本或异常协调状态时安全延期；保留续传、人工核查、退避队列、历史资料和自动出库关闭状态。仅三个运行代码文件纳入专用安全部署，不改App前端、数据库或凭据。实际恢复以受保护发布、运行指纹和客户云端内容回读分别验收。
+
+## 2026-11-20 · 客户档案积压修复准备（沿用主线 v671）
+
+- 将已实际运行的客户只读传输与协调版本合入最新隔离开发基线，保留现行预约、日消费和自动出库关闭状态。
+- 增加有限、私有、身份绑定的年窗续传，跨日补窗后再次读取近期账单；云端档案和服务投影均成功才清理进度，失败保留原档案。保留预算、频率和预约优先级。
+-57项新增合成测试与112项原同步回归通过，两路独立复核无阻断；v670 基线的完整共享校验通过（财务165/165），增加只替换客户主脚本及续传模块的四锁原子部署器。不重置人工核查队列，不改前端或数据库结构。此为准备阶段记录，发布、运行部署和云端回读分别验收。
+
+## v670 · 2026-11-20
+
+- 界面更新提示在准备完成后自动收起。同一版本的同一标签页不会重复提示。
+- 「按月存档日报原图」顶部增加「批量删除误传原图」，可勾选存档清单或全选本次已存档的图片，确认后批量作废并保留原图与操作记录。
+- 在可编辑的日报草稿顶部增加「自动填写报表」，从本门店当天已同步且通过核对的收银明细补填空格。来源缺失或冲突时提示财务核对。
+
+<!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
+## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8c1d38ccf225c22109169d4a952474800f6f9851.
+- Dates: 2026-11-20. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+## v669 · 2026-11-19
+
+## 2026-11-19 Appointment sync recovery
+
+- Restore a single launchd appointment schedule with exact runtime backups.
+- Reject malformed/partial sources, atomically replace each store/day, make retries idempotent and preserve change audit.
+- Keep the existing App shell, source appointments and separate consumption task unchanged.
+
+- 修复界面资源检查结束后仍显示“准备中”的问题；检查完成、下载中、等待切换、失败及等待过久分别提示。
+- 三入口共用可收起提示，当前版本在同一浏览会话内记住“稍后”；主应用不再叠加第二条更新按钮，失败仍可重试。
+- 保留保存后关闭全部本站页面再自然切换的流程；Chromium/WebKit 的390/1366尺寸、跨页面收起、旧输入保留与多窗口版本隔离回归通过。
 
 ## v668 · 2026-11-19
 
@@ -56,6 +126,24 @@
 - 增加两个仅服务端可调用的事务包装函数，复用既有财务权限与关联接口，校验门店、原图、目标、并发关联和月报来源快照。无表、金额、原图或审核结构变更。
 - 新增纯金额/推荐、实际 API、隔离 PostgreSQL17 和390/1280实际页面验收，覆盖170.30的两张/三张组合、单张保留、人工更正、未知金额、跨月/重复/其他关联、部分重试、第二张失败回滚与切月隔离。
 
+## 2026-11-17 Customer fairness candidate (not deployed)
+
+- Preserve same-batch history progress across bounded readiness waits while releasing shared session/source locks.
+- Build requests from a single locked session snapshot; stop uncertain responses without replay.
+- Add fairness/transition safety tests and quiescent cutover/trigger restoration plan; no production cadence or frontend change.
+
+## 2026-11-17 Customer coordination candidate (not deployed)
+
+- Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.
+- Track deferred work separately from failures, deduplicate compensation, emit age/persistent-source alerts, and finish all modes with released locks.
+- Add offline integration coverage to mandatory existing gate; no frontend, production scheduler or financial changes.
+
+## 2026-11-17 Customer source transport and bounded history recovery
+
+- Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
+- Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
+- No frontend version change, source business edits, financial posting or scheduler change.
 ## v664 · 2026-11-17
 
 - 补齐月报产品进货、零售产品成本、备用金分类及杂项明细的凭证库入口；可选择同店已上传原图，金额一致及接近优先推荐，上传月份不限制原账期。

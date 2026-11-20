@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-20",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-20本轮AI教学内容来源与版权审校者，非第三方人工或真人化学安全批准）",
+  "reviewedAt": "2026-11-20T00:27:28.846Z",
+  "approvalReference": "本轮逐篇核实2011 KCI DOI 10.15810/jic.2011.7.4.015、2012 PubMed PMID 23193691、2024 Wiley DOI 10.1111/ics.12967的作者、发表时间与研究限度；核查模拟案例隐私和本轮三张自制静态SVG无外链与真实顾客数据。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2011年Journal of Investigative Cosmetology第7卷第4期449-457页；DOI 10.15810/jic.2011.7.4.015；离体毛束及特定TGA体系比较；支持：特定氧化条件下卷度形成、保持和某些力学指标可存在差异；不支持：不能推断品牌之间可互换，也不能把论文中的处理时间用于真人"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2012年5-6月Journal of Cosmetic Science 63(3):177-196；TGA加溴酸钠的毛发力学和蛋白交联模型研究，含企业研发背景；支持：IF/KAP交联与还原和氧化存在非均一关系；不支持：不证明所有二硫键100%恢复或所有商品二剂相容"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2024-05-11首次发表，International Journal of Cosmetic Science；多类化学、力学和热分析综合综述，企业研发背景；支持：氢键、二硫键、离子键和疏水作用并非均质统一响应；不支持：不能替代具体二剂安全说明或提供跨品牌兼容配方"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG，核对无第三方版权图片、外链、脚本或真实顾客资料，非实验数据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG，核对无第三方版权图片、外链、脚本或真实顾客资料，非实验数据"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG，核对无第三方版权图片、外链、脚本或真实顾客资料，非实验数据"
+    }
+  ],
+  "contentSha256": "9b2afb8a14cdc8613a701e1193c89c93c440ddcd6166808022e8915d1e5d59e7",
+  "assetSha256": {
+    "assets/2026-11-20/figure1.svg": "e0ece8805959a03a5db91db2c683e5e187ff29434deb8ed68d3da1a74f6cc1bc",
+    "assets/2026-11-20/figure2.svg": "81e19d0af84fb2e9c9da85f6fa1cc2928c73104417764a40448205448fda705b",
+    "assets/2026-11-20/figure3.svg": "c1293ce3ff4f6849981185a4bafee081f10ce87723573f63cb0330cb73b43601"
+  }
+}
