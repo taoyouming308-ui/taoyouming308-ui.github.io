@@ -1,3 +1,10 @@
+## 2026-11-20 · Source-store checks for daily reports and expense evidence (App version: v671; local candidate)
+
+- Owner: Codex. Isolated fix/store-proof-20261120 built on the tested v670 rollout branch; November20 daily backup and release baseline checks completed. Recheck protected main before publishing.
+- Explicit source-store selection before submitting daily photos, original files, and voucher details. Monthly archive checks each photo independently and preserves the observed shop in its existing audit note. Revalidate the captured target after auth refresh and stop queued uploads on scope change.
+- Finance Edge rejects declarations and authoritative original labels that contradict the scoped target before any storage write. Daily Excel reads the active sheet's first structural rows. Files without a source label require human confirmation in the updated UI; no new OCR provider or file transmission. Existing voucher identity and same-store linkage still apply.
+- Autofill stays available only after the existing v670 Finance RPC is detected by a bounded safe read, so the store check can ship independently. No schema change in the v671 change set. Test requirements include original-file upload, resumed batch, evidence scoping, pending-migration and stale-scope regressions.
+
 ## 2026-11-20 · Daily report actions and temporary update notices (App version: v670; local candidate)
 
 - Owner: Codex. Isolated fix/daily-actions-20261120 based on protected github/main dd5c8bae (v669), including the November20 academy publication. Version/integrity/handoff checks and the November20 recovery archive completed before edits.

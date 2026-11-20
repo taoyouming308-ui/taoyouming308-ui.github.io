@@ -3,6 +3,7 @@
   'use strict';
   var MAX_BYTES = 10 * 1024 * 1024;
   var ARCHIVE_UPLOAD_WAIT_MS = 300000;
+  var DEFAULT_ARCHIVE_NOTE = '人工逐张核对日期后批量留存原图；不识别、不建表、不入账';
   function validDate(date, month) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date.slice(0, 7) !== month) return false;
     var parsed = new Date(date + 'T00:00:00Z');
@@ -21,6 +22,10 @@
   function targetFor(date, context) {
     if (!validDate(date, context.month)) throw Error('请选择本月的有效日期');
     return date;
+  }
+  function validateSourceStore(sourceStore, destination) {
+    if (!sourceStore) throw Error('请先选择原图实际所属门店');
+    if (sourceStore !== destination) throw Error('原图属于「' + sourceStore + '」，当前档案为「' + destination + '」。请切换到原图所属门店再上传。');
   }
   function archiveMatches(result, row) {
     var a = result && result.archive;
@@ -42,7 +47,8 @@
       if (row.status !== 'pending') continue;
       try {
         assertScope();
-        if (!row.confirmed) throw Error('请逐张确认照片对应日期');
+        validateSourceStore(row.sourceStore, context.store);
+        if (!row.confirmed) throw Error('请逐张核对原图的门店和日期');
         var invalid = fileError(row.file); if (invalid) throw Error(invalid);
         targetFor(row.date, context);
         row.status = 'reading'; deps.update();
@@ -50,16 +56,21 @@
         row.sha256 = await deps.hash(row.file);
         assertScope();
         row.requestId = deps.requestId();
+        row.note = '人工核对原图门店 ' + row.sourceStore + ' · 日期 ' + row.date;
         deps.capture(row, context);
         row.status = 'uploading'; deps.update();
         submitted = true;
-        var result = await deps.upload({store:context.store,request_id:row.requestId,report_date:row.date,filename:row.file.name,mime_type:row.file.type,base64:encoded,note:'人工逐张核对日期后批量留存原图；不识别、不建表、不入账'});
+        var result = await deps.upload({store:context.store,source_store:row.sourceStore,request_id:row.requestId,report_date:row.date,filename:row.file.name,mime_type:row.file.type,base64:encoded,note:row.note});
         if (!archiveMatches(result,row)) throw Error('存档响应尚未确认');
         row.status = 'done'; row.message = '已存档 '+row.date+' · 请求 '+row.requestId; sent++;
         deps.update();
         // A completed in-flight upload is recorded, but cancellation never starts another file.
         assertScope();
       } catch (error) {
+        if (submitted && error.code === 'UPLOAD_SOURCE_STORE_REJECTED') {
+          deps.discard(row, context);
+          submitted = false;
+        }
         if (row.status !== 'done') {
           row.status = submitted ? 'uncertain' : 'stopped';
           row.message = submitted ? '结果待核对，可能已上传。请刷新存档状态核对，勿直接重传。请求：' + row.requestId + '' : error.message;
@@ -78,7 +89,7 @@
   var entry = document.createElement('button'); entry.type = 'button'; entry.className = 'ghost import-entry';
   entry.id = 'daily-batch-upload'; entry.textContent = '按月批量存档原图'; anchor.after(entry);
   var panel = document.createElement('section'); panel.className = 'form-card hidden'; panel.id = 'daily-batch-panel';
-  panel.innerHTML = '<h3>按月存档日报原图</h3><p data-scope></p><p class="help">支持草稿、已入账、锁账和空白日期的 JPG / PNG 原图，每张不超过 10MB。独立存档，不建表、不识别、不修改金额或入账。已入账和锁账日期仅补充原件，不替换原件；空白日期仅存档，尚无日报。文件名日期仅供参考，请逐张看图核对。</p><input type="file" multiple accept="image/jpeg,image/png" aria-label="选择本月日报照片"><button type="button" class="ghost" data-refresh>刷新存档与请求状态</button><label>筛选存档日期（留空看全月）<input type="date" data-filter></label><div data-archives></div><button type="button" class="ghost hidden" data-more>加载更多存档</button><div data-rows></div><div class="actions"><button type="button" class="primary" data-start>确认日期并上传</button><button type="button" class="ghost" data-close>关闭</button></div><p role="status" aria-live="polite" data-status></p>';
+  panel.innerHTML = '<h3>按月存档日报原图</h3><p data-scope></p><p class="help">支持草稿、已入账、锁账和空白日期的 JPG / PNG 原图，每张不超过 10MB。已入账和锁账日期仅补充原件，空白日期仅存档。请逐张看图，选择原图实际所属门店并核对日期。</p><input type="file" multiple accept="image/jpeg,image/png" aria-label="选择本月日报照片"><button type="button" class="ghost" data-refresh>刷新存档与请求状态</button><label>筛选存档日期（留空看全月）<input type="date" data-filter></label><div data-archives></div><button type="button" class="ghost hidden" data-more>加载更多存档</button><div data-rows></div><div class="actions"><button type="button" class="primary" data-start>确认门店和日期并上传</button><button type="button" class="ghost" data-close>关闭</button></div><p role="status" aria-live="polite" data-status></p>';
   anchor.parentNode.after(panel);
   var picker = panel.querySelector('input[type=file]'), list = panel.querySelector('[data-rows]'), start = panel.querySelector('[data-start]'), close = panel.querySelector('[data-close]'), status = panel.querySelector('[data-status]');
   var rows = [], urls = [], scope = null, busy = false, voiding = false, cancelled = false, used = false, generation = 0;
@@ -105,12 +116,24 @@
   }
   function permitted() { return state.user && !state.user.personal_scope && state.user.can_import_photo_reports; }
   function sameScope() { return !cancelled && permitted() && scope && scope.generation === generation && scope.store === currentStore() && scope.month === $('month').value && state.view === 'daily-report' && scope.actor === state.user; }
+  function sourceStorePicker(destination, filename) {
+    var select = document.createElement('select');
+    select.setAttribute('aria-label', filename + ' 原图所属门店');
+    select.appendChild(new Option('请选择原图所属门店', ''));
+    var stores = new Set(['自由手艺人', '向里造型', destination].concat(state.user.stores || []));
+    stores.forEach(function (name) {
+      if (typeof name === 'string' && name) select.appendChild(new Option(name, name));
+    });
+    return select;
+  }
   function revoke() { if(previewViewer&&previewViewer.open)previewViewer.close();urls.forEach(function (url) { URL.revokeObjectURL(url); }); urls = []; }
   function renderStatus() {
     rows.forEach(function (row) {
       var labels = {pending:'待确认',checking:'正在核对日报权限',reading:'正在读取原图',uploading:'正在上传，请勿重复提交',done:'已上传',stopped:'已停止',uncertain:'结果待核对'};
       row.label.textContent = row.message || labels[row.status];
-      row.dateInput.disabled = busy || used; row.check.disabled = busy || used;
+      row.dateInput.disabled = busy || used;
+      row.sourceInput.disabled = busy || used;
+      row.check.disabled = busy || used || !scope || row.sourceStore !== scope.store;
       if (row.status === 'done' && sameScope()) {
         if (scope.voidedArchives.has(row.requestId)) {
           row.label.textContent = '已作废 · ' + row.date + ' · 请求 ' + row.requestId;
@@ -132,7 +155,7 @@
         }
       }
     });
-    picker.disabled = busy || used; start.disabled = busy || !!listing || used || !rows.length || !sameScope() || rows.some(function (r) { return !r.confirmed || r.status !== 'pending'; });
+    picker.disabled = busy || used; start.disabled = busy || !!listing || used || !rows.length || !sameScope() || rows.some(function (r) { return !r.confirmed || r.sourceStore !== scope.store || r.status !== 'pending'; });
     close.disabled = voiding;
     close.textContent = busy && !voiding ? '停止后续上传' : '关闭';
     renderArchiveControls();
@@ -354,11 +377,15 @@
             unresolved.push(row);
             (function (savedRow, container) {
               var pick = document.createElement('input'); pick.type = 'file'; pick.accept = 'image/jpeg,image/png'; pick.setAttribute('aria-label','重新选择同一原图以恢复请求 '+savedRow.requestId);
+              var sourceStore = sourceStorePicker(ctx.store, savedRow.file.name);
               var resume = document.createElement('button'); resume.type = 'button'; resume.textContent = '核对原文件并恢复此请求';
               resume.onclick = async function () {
                 if (!current() || busy) return;
                 var file = pick.files && pick.files[0];
                 if (!file || fileError(file) || file.name !== savedRow.file.name || file.size !== savedRow.file.size || file.type !== savedRow.file.type) { status.textContent = '须重新选择完全相同的原文件，不能更改日期或请求编号'; return; }
+                var verifiedStore = sourceStore.value;
+                try { validateSourceStore(verifiedStore, ctx.store); } catch (error) { status.textContent = error.message; return; }
+                sourceStore.disabled = true;
                 busy = true; resume.disabled = true; renderStatus();
                 try {
                   var hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(function (n) { return n.toString(16).padStart(2,'0'); }).join('');
@@ -367,13 +394,14 @@
                   if (!window.confirm('确认恢复 '+ctx.store+' '+savedRow.date+' 的原图存档？使用原请求编号，不修改财务数据。')) return;
                   var encoded = await bounded(fileBase64(file),45000);
                   if (!current()) return;
-                  var result = await bounded(api('daily_original_archive_resume',{store:ctx.store,request_id:savedRow.requestId,report_date:savedRow.date,filename:file.name,mime_type:file.type,base64:encoded,note:savedRow.note || '人工逐张核对日期后批量留存原图；不识别、不建表、不入账'},true),ARCHIVE_UPLOAD_WAIT_MS);
+                  var originalNote = typeof savedRow.note === 'string' ? savedRow.note : DEFAULT_ARCHIVE_NOTE;
+                  var result = await bounded(api('daily_original_archive_resume',{store:ctx.store,source_store:verifiedStore,request_id:savedRow.requestId,report_date:savedRow.date,filename:file.name,mime_type:file.type,base64:encoded,note:originalNote},true),ARCHIVE_UPLOAD_WAIT_MS);
                   if (!current()) return;
                   status.textContent = archiveMatches(result,savedRow) ? '恢复请求已确认存档，请刷新列表' : '恢复结果待核对，请刷新请求状态，勿新建请求重传';
                 } catch (error) { if (current()) status.textContent = '恢复尚未确认：'+error.message+'。保留原请求编号，请刷新状态核对。'; }
-                finally { busy = false; resume.disabled = false; renderStatus(); }
+                finally { busy = false; resume.disabled = false; sourceStore.disabled = false; renderStatus(); }
               };
-              container.appendChild(pick); container.appendChild(resume);
+              container.appendChild(pick); container.appendChild(sourceStore); container.appendChild(resume);
             })(row,text);
           }
         }
@@ -411,31 +439,47 @@
       var invalid = fileError(file), key = [file.name,file.size,file.lastModified].join('|');
       if (seen.has(key)) invalid = '本批次重复选择，请重新选择文件'; seen.add(key);
       if (!invalid) { var img = document.createElement('img'), url = URL.createObjectURL(file), enlarge=document.createElement('button'); urls.push(url); img.src = url; img.alt = '请核对这张日报的日期'; img.style.cssText = 'display:block;max-width:100%;max-height:240px;margin:8px 0'; enlarge.type='button';enlarge.className='ghost';enlarge.setAttribute('aria-label','放大核对 '+file.name);enlarge.appendChild(img);enlarge.appendChild(document.createTextNode('点击放大核对日期'));enlarge.onclick=function(){openPreview(url,file.name);};box.appendChild(enlarge); }
+      var sourceStore = sourceStorePicker(scope.store, file.name); box.appendChild(sourceStore);
       var date = document.createElement('input'); date.type = 'date'; date.value = suggestedDate(file.name,scope.month); date.setAttribute('aria-label',file.name+' 对应日报日期');
       date.min = scope.month+'-01'; date.max = scope.month+'-'+new Date(Number(scope.month.slice(0,4)),Number(scope.month.slice(5,7)),0).getDate(); box.appendChild(date);
       var label = document.createElement('label'), check = document.createElement('input'); check.type = 'checkbox'; label.appendChild(check); label.appendChild(document.createTextNode('我已看图确认门店和日期')); box.appendChild(label);
       var result = document.createElement('p'); result.className = 'help'; box.appendChild(result); list.appendChild(box);
-      var row = {file:file,date:date.value,confirmed:false,status:'pending',message:invalid,label:result,dateInput:date,check:check}; rows.push(row);
-      function validate() { row.date = date.value; row.confirmed = false; check.checked = false; try { if (invalid) throw Error(invalid); targetFor(row.date,scope); row.message = '请看图确认日期'; } catch(error) { row.message = error.message; } renderStatus(); }
-      date.onchange = validate;
-      check.onchange = function () { try { if (invalid) throw Error(invalid); targetFor(date.value,scope); row.confirmed = check.checked; row.message = row.confirmed ? '日期已确认：'+date.value : '请看图确认日期'; } catch(error) { row.confirmed = false; check.checked = false; row.message = error.message; } renderStatus(); };
-      validate();
+      var row = {file:file,date:date.value,sourceStore:'',confirmed:false,status:'pending',message:invalid,label:result,dateInput:date,sourceInput:sourceStore,check:check}; rows.push(row);
+      function validateRow(checked) {
+        if (busy || used || !sameScope()) return;
+        row.date = date.value; row.sourceStore = sourceStore.value; row.confirmed = false;
+        try {
+          if (invalid) throw Error(invalid);
+          validateSourceStore(row.sourceStore, scope.store);
+          targetFor(row.date, scope);
+          row.confirmed = checked;
+          row.message = checked ? '已核对 · ' + row.sourceStore + ' · ' + row.date : '请看图核对门店和日期';
+        } catch (error) { row.message = error.message; }
+        check.checked = row.confirmed;
+        renderStatus();
+      }
+      function resetConfirmation() { validateRow(false); }
+      date.onchange = resetConfirmation;
+      sourceStore.onchange = resetConfirmation;
+      check.onchange = function () { validateRow(check.checked); };
+      resetConfirmation();
     });
     renderStatus();
   };
   start.onclick = async function () {
-    if (busy || listing || used || !sameScope() || !rows.length || rows.some(function (row) { return !row.confirmed; })) return;
+    if (busy || listing || used || !sameScope() || !rows.length || rows.some(function (row) { return !row.confirmed || row.sourceStore !== scope.store; })) return;
     if (isLocalPreview()) { status.textContent = '本地预览不上传真实文件。'; return; }
-    if (!window.confirm('确认将 '+rows.length+' 张原图按已核对日期上传到 '+scope.store+' '+scope.month+' 的独立原图存档？\n仅留存原件，不自动识别或入账。')) return;
+    if (!window.confirm('确认将 '+rows.length+' 张原图按已核对门店和日期上传到 '+scope.store+' '+scope.month+' 的独立原图存档？')) return;
     busy = true; used = true; renderStatus();
     try {
       var outcome = await runBatch(rows,scope,{
         current:sameScope,update:renderStatus,
         requestId:function () { return crypto.randomUUID(); },
         capture:function (row, ctx) {
-          var saved = ctx.requests;
-          saved.push({requestId:row.requestId,date:row.date,sha256:row.sha256,file:{name:row.file.name,size:row.file.size,type:row.file.type}});
-          ctx.requests = saved;
+          ctx.requests.push({requestId:row.requestId,date:row.date,sha256:row.sha256,note:row.note,file:{name:row.file.name,size:row.file.size,type:row.file.type}});
+        },
+        discard:function (row, ctx) {
+          ctx.requests = ctx.requests.filter(function (request) { return request.requestId !== row.requestId; });
         },
         hash:async function (file) { var bytes = await file.arrayBuffer(); return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(function (n) { return n.toString(16).padStart(2,'0'); }).join(''); },
         encode:function (file) { return bounded(fileBase64(file),45000); },
