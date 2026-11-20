@@ -357,6 +357,10 @@
         if (item.confirmed_target_id&&!item.expense_association || !(batchDirtyFields[item.id] || {})[key]) draft[key] = latestDraft[key];
       });
       batchDrafts[item.id] = draft;
+      var selectedTarget=targets.find(function(target){return batchTargetValue(target.target_kind,target.id)===draft.target;});
+      var monthlyCell=selectedTarget&&selectedTarget.target_kind==='monthly_cell';
+      var monthlyCellDisabled=monthlyCell&&(!expenseWorkspace()||!window.ZysyrExpenseVoucherWorkspace.canAttachMonthlyCell(selectedTarget));
+      var monthlyEvidence=Array.isArray(item.monthly_cell_evidence)?item.monthly_cell_evidence:[];
       var status = batchStatusText(item), disabled = (item.confirmed_target_id||item.expense_association) ? 'disabled' : '';
       var recognizing = item.task_status === 'queued' || item.task_status === 'processing';
       var summaryOnly = ['bank_summary','multiple_transactions'].includes(fields.document_kind)&&draft.evidence_kind!=='monthly_summary';
@@ -376,6 +380,7 @@
         + '<span class="petty-batch-chip ' + status.className + '">' + esc(status.label) + '</span></div>'
         + (expenseWorkspace()?'<div class="petty-batch-match"><strong>'+esc(window.ZysyrExpenseVoucherWorkspace.label(item))+'</strong></div>':'')
         + '<div class="petty-batch-match">' + esc(reason) + '</div>'
+        + (monthlyEvidence.length?'<div class="help" data-monthly-cell-evidence>已补充月报佐证：'+esc(monthlyEvidence.map(function(link){return link.summary+'（'+(link.source_locator||'月报栏目')+'）';}).join('、'))+'。整份原图关联，未改金额或入账；'+(item.confirmed_target_id||item.expense_association?'逐笔对应沿用原记录。':'逐笔对应待核对。')+'</div>':'')
         + '<div class="petty-batch-fields">'+(draft.evidence_kind==='monthly_summary'?'<label>汇总所属月份<input data-batch-period type="month" value="'+esc(draft.period_month)+'" '+disabled+'><input data-batch-date type="hidden" value=""></label>':'<label>凭证日期'+(!draft.document_date?'（未识别完整日期）':'')+'<input data-batch-date type="date" value="' + esc(draft.document_date) + '" ' + disabled + '></label>')
         + '<label>凭证金额<input data-batch-amount type="number" min="0.01" step="0.01" value="' + esc(draft.amount) + '" ' + disabled + '></label>'
         + '<label>商户 / 收款方<input data-batch-counterparty type="text" maxlength="200" value="' + esc(draft.counterparty) + '" ' + disabled + '></label>'
@@ -383,7 +388,7 @@
         + '<label class="petty-batch-target">对应开支明细<select data-batch-target ' + disabled + '>' + batchTargetOptions(targets, draft.target, item.match && item.match.candidates) + '</select></label></div>'
         + previewHTML + '<div class="petty-batch-item-actions">'+(expenseWorkspace()?'<button type="button" class="secondary" data-voucher-reanalyze="'+esc(item.id)+'" '+(recognizing||item.mime_type&&!String(item.mime_type).startsWith('image/')||separate&&['queued','processing'].includes(separate.status)?'disabled':'')+'>重新识别</button>':'')+'<button type="button" class="ghost" data-petty-batch-open="' + esc(item.id) + '">查看原图</button>'
         + ((item.confirmed_target_id||item.expense_association) ? '<span class="petty-evidence-badge">'+(item.expense_association?'凭证已对应，未审批或入账':'原图已逐笔关联，金额未改变')+'</span>'
-          : '<button type="button" class="primary" data-petty-batch-confirm="' + esc(item.id) + '" ' + (recognizing || summaryOnly ? 'disabled' : '') + '>' + (summaryOnly ? '汇总 / 多笔，需拆分核对' : recognizing ? '识别中…' : '确认本张并对应') + '</button>')
+          : '<button type="button" class="primary" data-petty-batch-confirm="' + esc(item.id) + '" ' + (recognizing || monthlyCellDisabled || summaryOnly&&!monthlyCell ? 'disabled' : '') + '>' + (monthlyCell ? '补充月报佐证' : summaryOnly ? '汇总 / 多笔，需拆分核对' : recognizing ? '识别中…' : '确认本张并对应') + '</button>')
         + (item.expense_association?'<button type="button" class="ghost" data-expense-match-change="'+esc(item.expense_association.id)+'">更改对应</button>':'')
         + '</div></article>';
     }).join('');
@@ -400,9 +405,16 @@
       ? (expenseWorkspace()?'原件已保存。可靠且唯一的识别结果自动对应开支，仅异常需人工处理；匹配不改变金额或入账状态。':'已读取本月批量凭证。识别结果只是候选，请核对原图后确认对应关系。')
       : '可一次选择整月凭证；上传后自动识别日期和金额，并建议对应到本月明细。';
     if (batchUploadSummaryText && batchUploadSummaryKey === currentBatchKey()) status.textContent += '\n' + batchUploadSummaryText;
+    var monthlyStatus=data.monthly_targets_status,monthlyMessage=data.monthly_targets_message;
+    status.querySelectorAll('[data-monthly-targets-status]').forEach(function(node){node.remove();});
+    if(expenseWorkspace()&&monthlyStatus&&monthlyStatus!=='ready'){
+      var warning=document.createElement('div');warning.dataset.monthlyTargetsStatus=monthlyStatus;warning.textContent=monthlyMessage||'当前月报栏目列表尚不完整，请刷新或核对月报来源；逐笔明细仍保留。';status.appendChild(warning);
+    }
     summary.innerHTML = '<span>已上传 ' + Number(stats.total || 0) + '</span><span>识别中 ' + Number(stats.recognizing || 0)
       + '</span><span>明确匹配 ' + Number(stats.ready || 0) + '</span><span>待人工核对 ' + Number(stats.needs_review || 0)
       + '</span><span>已对应 ' + Number(stats.confirmed || 0) + '</span>'+(expenseWorkspace()?'<span>AI已匹配 '+Number(stats.auto_matched||0)+'</span><span>识别失败 '+Number(stats.failed||0)+'</span>':'');
+    var monthlyEvidenceCount=new Set((data.items||[]).filter(function(item){return (item.monthly_cell_evidence||[]).length;}).map(function(item){return item.source_voucher_id||item.id;})).size;
+    if(monthlyEvidenceCount)summary.innerHTML+='<span>月报佐证 '+monthlyEvidenceCount+' 份（非逐笔确认）</span>';
     var confirmExact = document.getElementById('petty-batch-confirm-exact');
     if (confirmExact) {confirmExact.disabled = !Number(stats.ready || 0) || batchUploadBusy;if(expenseWorkspace())confirmExact.textContent='匹配已有明确项';}
     renderBatchItems(data);
@@ -578,6 +590,19 @@
 
   async function confirmBatchItem(item, quiet) {
     var draft = batchItemDraft(item.id);
+    if(draft&&draft.target_kind==='monthly_cell'){
+      var monthlyTarget=(batchStatusData.targets||[]).find(function(row){return row.target_kind==='monthly_cell'&&row.id===draft.target_id;});
+      if(quiet||!expenseWorkspace()||!monthlyTarget||!window.ZysyrExpenseVoucherWorkspace.canAttachMonthlyCell(monthlyTarget)){if(!quiet)toast('当前月报栏目不可关联，请刷新后核对');return false;}
+      var monthlyScope={store:currentStore(),month:document.getElementById('month').value},monthlyKey=currentBatchKey();
+      if(!window.confirm('请核对原图，确认整份原图属于 '+monthlyScope.store+' · '+monthlyScope.month+' 月报栏目「'+monthlyTarget.summary+'」。仅补充月报佐证，不确认图内每笔付款，不改金额或入账状态，旧关联保留。'))return false;
+      var monthlyButton=draft.card.querySelector('[data-petty-batch-confirm]');if(monthlyButton){monthlyButton.disabled=true;monthlyButton.textContent='正在关联并回读…';}
+      try{
+        await window.ZysyrExpenseVoucherWorkspace.attachMonthlyCell(item,monthlyTarget,monthlyScope);
+        if(monthlyKey!==currentBatchKey())return false;
+        toast('已补充月报佐证，未改金额或入账；逐笔对应仍需核对');return true;
+      }catch(error){if(monthlyKey===currentBatchKey())toast(error.message||'月报佐证结果待核验，请刷新后核对');return false;}
+      finally{if(monthlyKey===currentBatchKey()&&monthlyButton&&monthlyButton.isConnected){monthlyButton.disabled=false;monthlyButton.textContent='补充月报佐证';}}
+    }
     if (!draft || !draft.target_id || !(draft.corrected_fields.evidence_kind==='monthly_summary'?draft.corrected_fields.period_month:draft.corrected_fields.document_date) || !(Number(draft.corrected_fields.amount) > 0)) {
       if (!quiet) toast('请先核对凭证日期或所属月份、金额，并选择对应开支');
       return false;
@@ -672,8 +697,8 @@
           field.closest('[data-petty-batch-item]').dataset.expenseEvidenceKind='monthly_summary';
           batchDrafts[id].evidence_kind='monthly_summary';batchDrafts[id].period_month='';
           batchDirtyFields[id].evidence_kind=true;batchDirtyFields[id].period_month=true;
-          renderBatchItems(batchStatusData);
         }
+        if(key==='target')renderBatchItems(batchStatusData);
       }
       field.onchange = changed;
       field.oninput = changed;
