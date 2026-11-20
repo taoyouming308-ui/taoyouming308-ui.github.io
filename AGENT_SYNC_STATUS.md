@@ -1,3 +1,10 @@
+## 2026-11-20 · Inline archived originals in daily reports (App version: v675; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 83ce6ce3. Full daily recovery archive and baseline checks completed before edits.
+- Daily detail displays the same-store, same-day archived original beside the sheet on wide content or just before it on narrow content. Eagerly request the first usable photo. Archive zoom, rotation and single-photo void retain their existing controls.
+- Existing details keep the same scoped read. When the date has no draft yet, its legacy create response automatically reads the new draft’s archive metadata before the first display. Preserve financial data and the new draft if archive presentation is unavailable.
+- Verify browser rendering, role boundaries, calendar creation, stale results and image failures with synthetic fixtures. Static Pages release, with no migration or Edge deployment.
+
 ## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
 
 - Owner: Codex. Isolated branch from protected github/main 6b9a4469. Baseline and daily recovery archive verified before edits.

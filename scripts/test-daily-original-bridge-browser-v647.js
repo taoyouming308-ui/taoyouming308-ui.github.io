@@ -5,7 +5,7 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const origin = 'http://127.0.0.1:43937';
-const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=', 'base64');
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAeAAAAC0AQAAAABkx8JtAAAAOklEQVR42u3LMQEAAAwCIPuX1hDbCT/pQWRZlmVZlmVZlmVZlmVZlmVZlmVZlmVZlmVZlmVZlmX5Pw+ibwhH41FZNgAAAABJRU5ErkJggg==', 'base64');
 const clone = value => JSON.parse(JSON.stringify(value));
 const months = { '2026-07': 26, '2026-08': 26, '2026-09': 25 };
 let browser;
@@ -15,6 +15,7 @@ let browser;
   const context = await browser.newContext();
   let user, overview, template, role = 'finance', mode = 'archive', blockDisplay = false;
   let blockSourceReview = false;
+  let holdNextImage, releaseImage;
   let saved = null, signedVersion = 0, holdNextRead = false, releaseRead, readStarted;
   let voidReceipt = 'confirmed', voidReadUnavailable = false, holdVoidResponse = false, voidStarted, releaseVoid;
   const savedAngles = new Map();
@@ -78,7 +79,15 @@ let browser;
       if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
       return route.fulfill({ body: fs.readFileSync(file), contentType: file.endsWith('.html') ? 'text/html; charset=utf-8' : file.endsWith('.js') ? 'application/javascript; charset=utf-8' : file.endsWith('.css') ? 'text/css' : 'application/octet-stream' });
     }
-    if (url.hostname === 'synthetic-private.invalid') { downloads.push(url.pathname); return route.fulfill({ body: png, contentType: 'image/png' }); }
+    if (url.hostname === 'synthetic-private.invalid') {
+      downloads.push(url.pathname);
+      if (mode === 'broken-image' && url.pathname.startsWith('/original/')) return route.abort('failed');
+      if (holdNextImage?.url === url.href) {
+        const waiting = holdNextImage.start; holdNextImage = null;
+        await new Promise(resolve => { releaseImage = resolve; waiting(); });
+      }
+      return route.fulfill({ body: png, contentType: 'image/png' });
+    }
     if (url.pathname.endsWith('/functions/v1/operations-api')) {
       const payload = request.postDataJSON(); calls.push(payload);
       if (payload.operation === 'session') return route.fulfill({ json: { user: role === 'finance' ? user : { ...user, role: 'shareholder', role_label: '股东', can_import_photo_reports: false, can_read_daily_reports: true } } });
@@ -86,6 +95,14 @@ let browser;
       if (payload.operation === 'monthly_review_status') return route.fulfill({ json: { publication: null, receipt: null, history: [], finance: role === 'finance' } });
       if (payload.operation === 'monthly_review_inbox') return route.fulfill({ json: { pending: [], count: 0 } });
       if (payload.operation === 'daily_sheet_month') return route.fulfill({ json: monthData(payload.month) });
+      if (payload.operation === 'daily_sheet_create') {
+        assert.equal(payload.report_date, '2026-07-30');
+        assert.equal(payload.store, '自由手艺人');
+        const response = sheet(payload.report_date);
+        delete response.original_archive;
+        delete response.archived_originals;
+        return route.fulfill({ json: response });
+      }
       if (payload.operation === 'daily_sheet_read') {
         const response = sheet(payload.draft_id.slice(6));
         if (holdNextRead) { holdNextRead = false; readStarted(); await new Promise(resolve => { releaseRead = resolve; }); }
@@ -140,6 +157,37 @@ let browser;
   await page.goto(origin + '/operations.html?v=647');
   await page.waitForFunction(() => state.monthlyOverviewReady === true);
   assert(!calls.some(c => /original_archive|monthly_source_archive/.test(c.operation)), 'startup adds no auxiliary archive API reads');
+  async function assertDayShowsOriginal(reportPage, date, mobile, create = false) {
+    const apiOffset = calls.length;
+    const url = archive(date).private_url;
+    const startingImage = new Promise(resolve => { holdNextImage = { url, start: resolve }; });
+    const imageRequest = reportPage.waitForRequest(request => request.resourceType() === 'image' && request.url() === url, { timeout: 10000 });
+    await Promise.all([reportPage.locator('[data-daily-day="' + date + '"]').click(), startingImage, imageRequest]);
+    try {
+      await reportPage.locator('#daily-detail-grid table').waitFor();
+      const image = reportPage.locator('[data-daily-archived-zoom] img');
+      assert.equal(await image.getAttribute('src'), archive(date).private_url);
+      assert.equal(await image.getAttribute('loading'), 'eager');
+      assert.equal(await image.evaluate(node => node.naturalWidth), 0, 'the report renders even while the private image is downloading');
+      const dailyCalls = calls.slice(apiOffset).filter(call => /daily_sheet_(read|create)|original_archive/.test(call.operation));
+      assert.deepEqual(dailyCalls.map(call => call.operation), create ? ['daily_sheet_create', 'daily_sheet_read'] : ['daily_sheet_read']);
+      assert.equal(dailyCalls.at(-1).draft_id, 'draft-' + date);
+      assert(dailyCalls.every(call => call.store === '自由手艺人'));
+    } finally {
+      releaseImage();
+    }
+    await reportPage.waitForFunction(({ mobile }) => {
+      const image = document.querySelector('[data-daily-archived-zoom] img');
+      const preview = document.getElementById('daily-detail-archived-originals').getBoundingClientRect();
+      const report = document.getElementById('daily-detail-grid').getBoundingClientRect();
+      if (!image?.complete || image.naturalWidth <= 0 || !image.style.width || parseFloat(image.style.width) <= 0) return false;
+      const inViewport = box => box.top < window.innerHeight && box.bottom > 0 && box.width > 0;
+      return inViewport(image.getBoundingClientRect()) && inViewport(report) && (mobile
+        ? preview.bottom <= report.top
+        : preview.right <= report.left && Math.abs(preview.top - report.top) < 2);
+    }, { mobile }, { timeout: 5000 });
+    assert.equal(await reportPage.locator('dialog[open]').count(), 0, 'preview is already visible with the report');
+  }
   let checked = 0;
   for (const [month, count] of Object.entries(months)) {
     console.log('archive bridge month ' + month);
@@ -158,7 +206,14 @@ let browser;
       const date = month + '-' + String(i).padStart(2, '0');
       const card = page.locator('[data-daily-day="' + date + '"]');
       assert.match(await card.innerText(), /原图已存档 · 待核对/); assert.doesNotMatch(await card.innerText(), /缺少原始日报/);
-      await card.click(); await page.waitForFunction(date => state.imports.sheet?.draft.report_date === date && !document.getElementById('daily-report-detail').classList.contains('hidden'), date);
+      if (month === '2026-07' && i === 1) {
+        await page.setViewportSize({ width: 1920, height: 1000 });
+        await assertDayShowsOriginal(page, date, false);
+        const fittedWidth = await page.locator('[data-daily-archived-zoom] img').evaluate(image => parseFloat(image.style.width));
+        await page.setViewportSize({ width: 1366, height: 1000 });
+        await page.waitForFunction(width => parseFloat(document.querySelector('[data-daily-archived-zoom] img').style.width) > width, fittedWidth);
+      } else await card.click();
+      await page.waitForFunction(date => state.imports.sheet?.draft.report_date === date && !document.getElementById('daily-report-detail').classList.contains('hidden'), date);
       assert.match(await page.locator('#daily-detail-original-alert').innerText(), /原图已存档 · 待核对/);
       assert.doesNotMatch(await page.locator('#daily-report-detail').innerText(), /缺少有效原始日报表|尚未上传当天原始日报/);
       const link = page.locator('[data-daily-archived-link]');
@@ -207,6 +262,18 @@ let browser;
   }
   assert.equal(checked, 77); assert(downloads.length >= 3, 'inline originals and direct image links load privately');
   assert.equal(await page.evaluate(() => state.dailyReportMonth.recognition.eligible_days), 0);
+  const mobilePage = await context.newPage({ viewport: { width: 390, height: 844 } });
+  mobilePage.on('pageerror', error => errors.push(error.message));
+  await mobilePage.goto(origin + '/operations.html?v=647');
+  await mobilePage.waitForFunction(() => state.monthlyOverviewReady === true);
+  await mobilePage.selectOption('#month', '2026-07');
+  await mobilePage.locator('.nav [data-view="daily-report"]').click();
+  await mobilePage.waitForFunction(() => state.dailyReportMonth?.month === '2026-07');
+  await assertDayShowsOriginal(mobilePage, '2026-07-02', true);
+  await mobilePage.locator('#daily-readonly-back').click();
+  await assertDayShowsOriginal(mobilePage, '2026-07-30', true, true);
+  await mobilePage.close();
+
   async function openMode(value) {
     mode = value; await page.selectOption('#month', '2026-07'); await page.locator('#daily-report-refresh').click();
     await page.waitForFunction(() => state.dailyReportMonth?.month === '2026-07');
@@ -248,6 +315,10 @@ let browser;
   await openMode('none'); assert.match(await page.locator('#daily-detail-original-alert').innerText(), /缺少有效原始日报表/);
   await openMode('legacy'); assert.match(await page.locator('#daily-detail-original-alert').innerText(), /缺少有效原始日报表/);
   await openMode('unsigned'); assert.match(await page.locator('#daily-detail-archived-originals').innerText(), /链接暂不可用/); assert.equal(await page.locator('[data-daily-archived-link]').count(), 0);
+  signedVersion++; await openMode('broken-image');
+  await page.locator('[data-daily-archived-image-error]').waitFor();
+  assert.equal(await page.locator('[data-daily-archived-link]').isVisible(), true, 'a failed preview keeps the original-file link reachable');
+  assert.equal(await page.locator('#daily-detail-grid table').isVisible(), true);
   await openMode('wrong-date'); assert.equal(await page.locator('[data-daily-archived-link]').count(), 0); assert.doesNotMatch(await page.locator('#daily-detail-archived-originals').innerText(), /2026-01-01/);
   await openMode('financial'); assert.equal(await page.locator('[data-daily-attachment]').count(), 1); assert.equal(await page.locator('[data-daily-archived-link]').count(), 1);
   assert.deepEqual(await page.evaluate(() => state.imports.sheet.attachments), template.attachments, 'existing financial attachments stay intact');
