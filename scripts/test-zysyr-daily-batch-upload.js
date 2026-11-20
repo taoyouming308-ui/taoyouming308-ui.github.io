@@ -2,7 +2,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),batch=require('../operations-daily-batch-upload.js');
 const ctx={store:'synthetic',month:'2026-11',locked:true,days:[{report_date:'2026-11-01',status:'posted'}]};
-const row=(day='01')=>({file:{name:'photo.png',type:'image/png',size:10},date:'2026-11-'+day,status:'pending',confirmed:true});
+const row=(day='01')=>({file:{name:'photo.png',type:'image/png',size:10},date:'2026-11-'+day,sourceStore:ctx.store,status:'pending',confirmed:true});
 const response=p=>({status:'archived',request_id:p.request_id,archive:{request_id:p.request_id,report_date:p.report_date,sha256:'hash',size_bytes:10,mime_type:p.mime_type,original_filename:p.filename}});
 const deps=(extra={})=>Object.assign({current:()=>true,update:()=>{},hash:async()=> 'hash',requestId:()=> 'request-id',capture:()=>{},encode:async()=> 'synthetic',upload:async p=>response(p)},extra);
 (async()=>{
@@ -14,6 +14,14 @@ const deps=(extra={})=>Object.assign({current:()=>true,update:()=>{},hash:async(
  let rows=[row(),row('02')],order=[];
  assert.deepEqual(await batch.runBatch(rows,ctx,deps({capture:r=>order.push('capture:'+r.requestId),upload:async p=>{order.push('send:'+p.request_id);assert.equal(p.draft_id,undefined);return response(p);}})),{sent:2,stopped:false});
  assert.deepEqual(order,['capture:request-id','send:request-id','capture:request-id','send:request-id']);
+ for(const sourceStore of ['', 'other-store']) {
+  const wrong={...row(),sourceStore};let sent=0;
+  assert.deepEqual(await batch.runBatch([wrong],ctx,deps({upload:async()=>{sent++;}})),{sent:0,stopped:true,uncertain:false});
+  assert.equal(sent,0);assert.match(wrong.message,/门店|档案/);
+ }
+ const wrongFilename=row(),rejected=Object.assign(Error('原件标注的门店不一致'),{code:'UPLOAD_SOURCE_STORE_REJECTED'});let cleared=false;
+ assert.deepEqual(await batch.runBatch([wrongFilename],ctx,deps({upload:async()=>{throw rejected;},discard:r=>{assert.equal(r,wrongFilename);cleared=true;}})),{sent:0,stopped:true,uncertain:false});
+ assert.equal(cleared,true);assert.equal(wrongFilename.status,'stopped');assert.equal(wrongFilename.message,rejected.message);
  for(const phase of ['encode','hash','capture','upload']){
   let writes=0;rows=[row(),row('02')];let d=deps({upload:async p=>{writes++;return response(p);}});d[phase]=()=>{if(phase==='upload')writes++;throw Error('synthetic');};
   const result=await batch.runBatch(rows,ctx,d);assert.equal(result.stopped,true);assert.equal(writes,phase==='upload'?1:0);assert.equal(rows[0].status,phase==='upload'?'uncertain':'stopped');assert.equal(rows[1].status,'pending');

@@ -25,6 +25,7 @@ import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive, monthlySourceWorksheet
 import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.ts";
 import { reportSourceReview } from "../_shared/report-source-review.mjs";
 import { captureMonthlySource, verifyMonthlyUpload, verifySavedMonthlyUpload } from "../_shared/monthly-upload-verification.mjs";
+import { assertUploadSourceStore } from "../_shared/upload-store-guard.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2712,6 +2713,42 @@ function reportDateValue(payload: JsonRecord, reportType: string): string {
   return raw;
 }
 
+function reportUploadStoreHeader(values: unknown, sheetName?: unknown): string {
+  const labelPattern = /^(?:门店|店铺|分店)(?:名称)?\s*[:：]?\s*$/;
+  const inlineLabelPattern = /^(?:门店|店铺|分店)(?:名称)?\s*[:：]/;
+  const headers: string[] = [];
+  const label = cleanText(sheetName, 120);
+  const isStoreTitle = (text: string): boolean => {
+    const title = text.normalize("NFKC").replace(/\s/gu, "")
+      .replace(/^20\d{2}(?:[-./年]\d{1,2}(?:[-./月]\d{1,2}日?)?月?)?[:_·—-]*/, "");
+    // The shop can appear before a branch descriptor or after the report title.
+    return /^(?:自由手艺人|向里造型)(?:$|.{0,40}(?:业绩报表|日报|月报|工资表|盈亏))/.test(title)
+      || /^(?:业绩报表|业绩日报|日报|月报|工资表|盈亏统计|盈亏表).{0,40}(?:自由手艺人|向里造型)/.test(title);
+  };
+  const rows = Array.isArray(values) ? values : [];
+  rows.slice(0, 5).forEach((row, rowIndex) => {
+    if (!Array.isArray(row)) return;
+    const cells = row.slice(0, 30).map((value) => cleanText(value, 200));
+    cells.forEach((value, index) => {
+      if (inlineLabelPattern.test(value) || (rowIndex < 3 && isStoreTitle(value))) headers.push(value);
+      if (labelPattern.test(value) && cells[index + 1]) headers.push(cells[index + 1]);
+    });
+  });
+  return headers.length ? headers.join("\n") : isStoreTitle(label) ? label : "";
+}
+
+async function dailyAttachmentWorkbookStoreHeader(bytes: Uint8Array): Promise<string> {
+  const active = await activeWorkbookSheetName(bytes);
+  const workbook = await loadCompatibleWorkbook(bytes, ExcelJS, JSZip);
+  const sheet = worksheetByCleanName(workbook, active);
+  if (!sheet) throw new Error("Excel 当前工作表无法读取，请核对后重试");
+  const values = Array.from({ length: 5 }, (_, row) => Array.from({ length: 30 }, (_column, column) => {
+    const cell = sheet.getCell(row + 1, column + 1);
+    return excelCellText(cell.result !== undefined ? cell.result : cell.value);
+  }));
+  return reportUploadStoreHeader(values, sheet.name);
+}
+
 async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect = false): Promise<JsonRecord> {
   if (!canUploadReports(session)) throw new Error("只有财务账号可以上传门店报表");
   const store = await selectedStoreInfo(session, payload);
@@ -2727,6 +2764,7 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("报表文件必须小于 10MB");
   const storeName = cleanText(store.name, 100);
+  if (autoDetect || reportType === "daily") assertUploadSourceStore(storeName, payload.source_store);
   let detection: JsonRecord | null = null;
   let displayData: JsonRecord;
   if (autoDetect) {
@@ -2751,8 +2789,11 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
     }
   } else {
     if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
-    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName);
+    const activeSheet = mime === xlsxMime && reportType === "daily" ? await activeWorkbookSheetName(bytes) : "";
+    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName, activeSheet);
   }
+  if (autoDetect || reportType === "daily") assertUploadSourceStore(storeName, payload.source_store, filename,
+    reportUploadStoreHeader(displayData.values, displayData.sheet_name));
   const reportDate = autoDetect ? cleanText(detection?.report_date, 10) : reportDateValue(payload, reportType);
   if (!validDate(reportDate)) throw new Error("自动识别未得到有效报表日期");
   const companyId = cleanText(store.company_id, 40);
@@ -4125,6 +4166,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
     || (recordType === "unassigned" && recordId)) throw new Error("凭证关联记录无效");
   if (!["image/jpeg", "image/png", "application/pdf"].includes(mime)) throw new Error("凭证仅支持 JPG、PNG 或 PDF");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   if (businessType || businessId) {
@@ -4149,9 +4191,10 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const duplicates = await restRows(`zysyr_voucher_attachments?select=id,store_id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
   if (duplicates.length) {
     const existing = duplicates[0];
+    if (cleanText(existing.store_id, 40) !== storeId) throw new Error("同一凭证已归属其他门店，请核对原件所属门店");
     // Explicit cell supplements reuse the exact original; they never re-register,
     // re-recognize, approve, move old links or change an amount.
-    if (!monthlyCellId || cleanText(existing.store_id, 40) !== storeId) {
+    if (!monthlyCellId) {
       throw new Error(`该文件已上传：${cleanText(existing.original_filename, 200) || "同一凭证"}`);
     }
     const existingId = cleanText(existing.id, 40);
@@ -5703,6 +5746,7 @@ async function dailyOriginalArchive(operation: string, payload: JsonRecord, sess
   const date = cleanText(payload.report_date, 10), filename = cleanText(payload.filename, 200), mime = cleanText(payload.mime_type, 120);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) throw new Error("请确认有效归档日期");
   if (!filename || !["image/jpeg", "image/png"].includes(mime)) throw new Error("原图支持 JPG 或 PNG");
+  assertUploadSourceStore(cleanText(store.name, 120), payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("归档文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("归档文件必须小于 10MB");
@@ -5769,6 +5813,8 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
   if (!allowed.includes(mime)) throw new Error("原始日报支持 JPG、PNG、PDF 或 XLSX");
   if (!filename) throw new Error("原始日报文件名无效");
+  const storeName = cleanText(store.name, 100);
+  assertUploadSourceStore(storeName, payload.source_store, mime.includes("spreadsheetml") ? undefined : filename);
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,report_date,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   if (!drafts[0]) throw new Error("电子日报不存在或不属于当前门店");
   if (cleanText(drafts[0].status, 20) === "cancelled") throw new Error("已取消的日报不能补传原件");
@@ -5778,6 +5824,10 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始日报文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("原始日报文件必须小于 10MB");
+  if (mime.includes("spreadsheetml")) {
+    const header = await dailyAttachmentWorkbookStoreHeader(bytes);
+    assertUploadSourceStore(storeName, payload.source_store, filename, header);
+  }
   const digest = await sha256Bytes(bytes);
   const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
   if (duplicates.length) throw new Error(`该原始资料已上传：${cleanText(duplicates[0].original_filename, 200) || "同一文件"}`);
@@ -5884,6 +5934,33 @@ async function dailyBusinessDetails(payload: JsonRecord, session: JsonRecord): P
   const source = await response.json();
   if (source.shop!==cleanText(store.name,100)||source.date!==day) throw new Error("收银明细门店校验失败");
   return {...projectBusinessDay(source),readonly:true,finance_confirmation_required:true,automatic_posting_enabled:false};
+}
+
+let dailyFillBlanksAvailability: { ready: boolean; expires: number } | undefined;
+let dailyFillBlanksProbe: Promise<boolean> | undefined;
+
+function canAdvertiseDailyFillBlanks(): Promise<boolean> {
+  if (dailyFillBlanksAvailability && dailyFillBlanksAvailability.expires > Date.now()) {
+    return Promise.resolve(dailyFillBlanksAvailability.ready);
+  }
+  if (dailyFillBlanksProbe) return dailyFillBlanksProbe;
+  // The hosted gateway handles OPTIONS before PostgREST. A read-only GET with
+  // an invalid revision and nil IDs reaches only the SQL argument guard.
+  const nil = "00000000-0000-0000-0000-000000000000";
+  const path = `rpc/zysyr_fill_daily_sheet_blanks?p_company_id=${nil}&p_store_id=${nil}&p_actor_user_id=${nil}&p_draft_id=${nil}&p_day=1900-01-01&p_expected_revision=-1`;
+  dailyFillBlanksProbe = (async () => {
+    let ready = false;
+    try {
+      const response = await rest(path, { method: "GET", signal: AbortSignal.timeout(2000) });
+      if (response.status === 400) {
+        const error = await response.json() as JsonRecord;
+        ready = error.code === "22023" && error.message === "AUTOFILL_SCOPE_INVALID";
+      }
+    } catch { /* The daily report remains available without autofill. */ }
+    dailyFillBlanksAvailability = { ready, expires: Date.now() + (ready ? 300_000 : 30_000) };
+    return ready;
+  })().finally(() => { dailyFillBlanksProbe = undefined; });
+  return dailyFillBlanksProbe;
 }
 
 async function fillDailySheetBlanks(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -6052,7 +6129,7 @@ async function saveDailySheetExtraction(input: {
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
   return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true,
     fill_blanks: cleanText(input.session.operations_role, 40) === "finance"
-      && (result.draft as JsonRecord).status === "draft" && result.locked !== true },
+      && (result.draft as JsonRecord).status === "draft" && result.locked !== true && await canAdvertiseDailyFillBlanks() },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -6766,9 +6843,9 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const writable = hasAuthCapability(session, "daily_report.write")
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
-  // The Edge build that advertises fill_blanks is deployed after its RPC migration.
   return { ...data, readonly: !writable, permissions: { write: writable, read_history: canReadDailyHistory(session),
-    fill_blanks: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance",
+    fill_blanks: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance"
+      && await canAdvertiseDailyFillBlanks(),
     correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
     upload_original: hasAuthCapability(session, "daily_report.write"),
     void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },
@@ -7109,6 +7186,9 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   const extension = extensionByMime[mime];
   if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) throw new Error("凭证包支持 DOCX、PDF、JPG 或 PNG");
   if (!reason) throw new Error("上传历史凭证包必须填写说明");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
+  const batches = await restRows(`zysyr_history_import_batches?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&limit=1`);
+  if (!batches.length) throw new Error("凭证包对应的导入批次不存在或不属于当前门店");
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("历史凭证包内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个历史凭证包必须小于 10MB");
@@ -7174,6 +7254,7 @@ async function historyMonthlyAttachmentUpload(payload: JsonRecord, session: Json
     throw new Error("月报照片支持 JPG、PNG 或 PDF");
   }
   if (!reason) throw new Error("补传月报照片必须填写说明");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("月报照片内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个月报照片或 PDF 必须小于 10MB");
@@ -7240,6 +7321,7 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
     throw new Error("原始凭证支持 JPG、PNG 或 PDF");
   }
   if (!reason) throw new Error("补传原始凭证必须填写原因");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始凭证内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个原始凭证必须小于 10MB");
@@ -7680,6 +7762,9 @@ async function handleOperationsApiRequest(
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = publicRequestError(error);
+    if (error instanceof Error && "code" in error && error.code === "UPLOAD_SOURCE_STORE_REJECTED") {
+      return json({ error: message, code: error.code }, 400);
+    }
     const accountDisabled = /账号已停用|离职/.test(message);
     const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message)
       || (Object.prototype.hasOwnProperty.call(payload, "employee_session_token") && /员工登录已失效|门店变化/.test(message));

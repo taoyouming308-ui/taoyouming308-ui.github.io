@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="670">
+<html lang="zh-CN" data-version="671">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -133,7 +133,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=670" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=671" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -762,19 +762,19 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-voucher-combinations.js?v=670"></script>
-<script src="operations-expense-voucher-workspace.js?v=670"></script>
-<script src="operations-petty-detail-import.js?v=670"></script>
+<script src="operations-voucher-combinations.js?v=671"></script>
+<script src="operations-expense-voucher-workspace.js?v=671"></script>
+<script src="operations-petty-detail-import.js?v=671"></script>
 
-<script src="operations-time.js?v=670"></script>
-<script src="operations-staff-view.js?v=670"></script>
-<script src="operations-monthly-daily-performance.js?v=670"></script>
-  <script src="operations-report-fit.js?v=670"></script>
-  <script src="operations-auth-bridge.js?v=670"></script>
-  <script src="operations-voucher-preview.js?v=670"></script>
-  <script src="operations-voucher-view.js?v=670"></script>
-<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=670"></script>
-  <script src="operations-monthly-verification.js?v=670"></script>
+<script src="operations-time.js?v=671"></script>
+<script src="operations-staff-view.js?v=671"></script>
+<script src="operations-monthly-daily-performance.js?v=671"></script>
+  <script src="operations-report-fit.js?v=671"></script>
+  <script src="operations-auth-bridge.js?v=671"></script>
+  <script src="operations-voucher-preview.js?v=671"></script>
+  <script src="operations-voucher-view.js?v=671"></script>
+<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=671"></script>
+  <script src="operations-monthly-verification.js?v=671"></script>
 <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -796,12 +796,144 @@
   API_READ_ONLY_OPERATIONS.add('daily_sheet_correction_status');
   function apiOutcomeUnconfirmedError(){var error=new Error('未收到服务器对本次请求的有效确认。若这是保存、上传或入账，请先刷新并核对是否已完成，不要直接重复提交；若只是查看，请刷新后重试。');error.code='API_OUTCOME_UNCONFIRMED';return error}
   async function requestApiResponse(operation,options,timeoutMs){var safeRead=API_READ_ONLY_OPERATIONS.has(operation)&&typeof AbortController==='function',controller=safeRead?new AbortController():null,timer=safeRead?setTimeout(function(){controller.abort()},Math.max(1,Number(timeoutMs)||45000)):null;try{var response=await fetch(API,Object.assign({},options,controller?{signal:controller.signal}:{})),data;try{data=await response.json()}catch(parseError){if(controller&&controller.signal.aborted)throw parseError;if(!safeRead)throw apiOutcomeUnconfirmedError();var invalidResponse=new Error('服务响应无效，请点击刷新重试');invalidResponse.code='API_RESPONSE_INVALID';throw invalidResponse}return{response:response,data:data}}catch(error){if(controller&&controller.signal.aborted){var timeoutError=new Error('读取超时，未提交任何修改；请点击刷新重试');timeoutError.code='API_READ_TIMEOUT';throw timeoutError}if(!safeRead&&!error.code)throw apiOutcomeUnconfirmedError();if(safeRead&&!error.code){var networkError=new Error('网络连接中断，暂未读取到最新状态；已保存的原件和手工填写保留，请点击刷新重试');networkError.code='API_NETWORK_FAILED';throw networkError}throw error}finally{if(timer)clearTimeout(timer)}}
+  var voucherUploadOperations=new Set(['voucher_upload','petty_cash_batch_upload','history_import_evidence_upload','history_ledger_evidence_upload','history_monthly_attachment_upload']);
+  var scopedReportUploadOperations=new Set(['daily_sheet_attachment_upload','report_upload_auto','daily_original_archive_upload','daily_original_archive_resume']);
+  var uploadSourceQueue=Promise.resolve(), uploadStoreRevision=0, closeUploadSourceDialog=null;
+  ['store-select','month'].forEach(function(id){
+    $(id).addEventListener('change',function(){
+      uploadStoreRevision++;
+      if(closeUploadSourceDialog)closeUploadSourceDialog();
+    });
+  });
+  function uploadSourceScope(){
+    return {store:currentStore(),month:$('month').value,user:state.user,session:state.session,revision:uploadStoreRevision};
+  }
+  function uploadSourceScopeCurrent(scope){
+    return !!scope.user&&state.user===scope.user&&state.session===scope.session
+      &&currentStore()===scope.store&&$('month').value===scope.month&&uploadStoreRevision===scope.revision;
+  }
+  function sourceStoreNotConfirmed(){
+    var error=new Error('未确认凭证所属门店，文件未上传');
+    error.code='UPLOAD_SOURCE_NOT_CONFIRMED';
+    return error;
+  }
+  function chooseUploadSourceStore(destination,filename){
+    var scope=uploadSourceScope();
+    var choice=uploadSourceQueue.then(function(){
+      if(destination!==scope.store||!uploadSourceScopeCurrent(scope))return null;
+      var dialog=document.createElement('dialog');
+      if(typeof dialog.showModal!=='function')return null;
+      dialog.id='upload-source-store-dialog';
+      dialog.setAttribute('aria-labelledby','upload-source-store-heading');
+      dialog.style.cssText='width:min(420px,calc(100% - 32px));padding:20px;box-sizing:border-box;color:#242422;background:#faf8f4;border:1px solid #d9d5cd;border-radius:12px';
+      var title=document.createElement('h3');
+      title.id='upload-source-store-heading';
+      title.textContent='确认原件所属门店';
+      var details=document.createElement('p');
+      details.textContent='上传至 '+destination+' · '+filename;
+      details.style.overflowWrap='anywhere';
+      var form=document.createElement('form');
+      var label=document.createElement('label');
+      label.htmlFor='upload-source-store-select';
+      label.textContent='请对照原件选择所属门店';
+      var select=document.createElement('select');
+      select.id='upload-source-store-select';
+      select.required=true;
+      select.style.cssText='display:block;width:100%;margin:6px 0';
+      select.appendChild(new Option('请选择',''));
+      var available=Array.isArray(scope.user.stores)?scope.user.stores:[];
+      Array.from(new Set(['自由手艺人','向里造型',destination].concat(available))).filter(function(store){
+        return typeof store==='string'&&!!store;
+      }).forEach(function(store){select.appendChild(new Option(store,store))});
+      var hint=document.createElement('p');
+      hint.className='help';
+      hint.setAttribute('aria-live','polite');
+      var actions=document.createElement('div');
+      actions.className='compact-actions';
+      var cancel=document.createElement('button'),confirm=document.createElement('button');
+      cancel.type='button';
+      cancel.className='secondary';
+      cancel.textContent='取消';
+      confirm.type='submit';
+      confirm.className='primary';
+      confirm.textContent='确认上传';
+      function updateChoice(){
+        var mismatch=!!select.value&&select.value!==destination;
+        hint.textContent=mismatch?'原件所属门店与上传门店不一致，请切换到对应门店。':'看不清所属门店时，请取消并核对原件。';
+        confirm.disabled=!select.value||mismatch;
+      }
+      select.addEventListener('change',updateChoice);
+      updateChoice();
+      actions.append(cancel,confirm);
+      form.append(label,select,hint,actions);
+      dialog.append(title,details,form);
+      document.body.appendChild(dialog);
+      return new Promise(function(resolve){
+        var selected=null;
+        function close(){if(dialog.open)dialog.close();}
+        closeUploadSourceDialog=close;
+        cancel.addEventListener('click',close);
+        form.addEventListener('submit',function(event){
+          event.preventDefault();
+          if(select.value===destination&&uploadSourceScopeCurrent(scope))selected=destination;
+          close();
+        });
+        dialog.addEventListener('close',function(){
+          if(closeUploadSourceDialog===close)closeUploadSourceDialog=null;
+          dialog.remove();
+          resolve(uploadSourceScopeCurrent(scope)?selected:null);
+        },{once:true});
+        try{dialog.showModal();select.focus()}
+        catch(_){closeUploadSourceDialog=null;dialog.remove();resolve(null)}
+      });
+    });
+    uploadSourceQueue=choice.catch(function(){});
+    return choice;
+  }
   async function api(operation,payload,retried){
+    if(voucherUploadOperations.has(operation)&&payload&&typeof payload.base64==='string'&&payload.base64){
+      var scope=uploadSourceScope(),destination=payload.store||scope.store;
+      var source=await chooseUploadSourceStore(destination,payload.filename||'所选文件');
+      if(!source||!uploadSourceScopeCurrent(scope))throw sourceStoreNotConfirmed();
+      return apiRequest(operation,Object.assign({},payload,{store:destination,source_store:source}),retried,scope);
+    }
+    // Report and daily photo forms already confirm each source alongside the original.
+    if(payload&&payload.base64&&(scopedReportUploadOperations.has(operation)||(operation==='report_upload'&&payload.report_type==='daily'))){
+      var reportScope=uploadSourceScope();
+      if(payload.store!==reportScope.store||payload.source_store!==reportScope.store||!uploadSourceScopeCurrent(reportScope))throw sourceStoreNotConfirmed();
+      return apiRequest(operation,payload,retried,reportScope);
+    }
     var send=function(){return apiRequest(operation,payload,retried);};
     if(StaffReportView.enabled||!window.ZysyrReadFlights)return send();
     return window.ZysyrReadFlights.request('operations',operation==='overview',JSON.stringify([operation,payload,state.session,authAccessToken()]),send);
   }
-  async function apiRequest(operation,payload,retried){if(StaffReportView.enabled)return StaffReportView.request(API,SUPABASE_KEY,operation,payload);var refreshError=null;if(state.auth&&authBridge.ensureFresh){try{var refreshed=await authBridge.ensureFresh();if(refreshed)state.auth=refreshed}catch(error){refreshError=error;state.auth=authBridge.read&&authBridge.read()||state.auth}}var headers={'Content-Type':'application/json','apikey':SUPABASE_KEY},token=authAccessToken();if(!token&&refreshError&&!state.session)throw refreshError;if(token)headers.Authorization='Bearer '+token;var result=await requestApiResponse(operation,{method:'POST',headers:headers,body:JSON.stringify(Object.assign({operation:operation,session_token:state.session},payload||{}))}),response=result.response,data=result.data;if(!response.ok){var error=apiError(data,response.status);if(!retried&&isSessionInvalidError(error)&&state.auth&&authBridge.forceRefresh){try{var forced=await authBridge.forceRefresh();if(!forced){var lost=new Error('登录已失效，请重新登录');lost.code='AUTH_SESSION_INVALID';throw lost}state.auth=forced;return apiRequest(operation,payload,true)}catch(refreshFailure){throw refreshFailure}}throw error}return data}
+  async function apiRequest(operation,payload,retried,uploadScope){
+    if(StaffReportView.enabled)return StaffReportView.request(API,SUPABASE_KEY,operation,payload);
+    var refreshError=null;
+    if(state.auth&&authBridge.ensureFresh){
+      var refreshed=null;
+      try{refreshed=await authBridge.ensureFresh()}catch(error){refreshError=error}
+      if(uploadScope&&!uploadSourceScopeCurrent(uploadScope))throw sourceStoreNotConfirmed();
+      if(refreshed)state.auth=refreshed;
+      else if(refreshError)state.auth=authBridge.read&&authBridge.read()||state.auth;
+    }
+    if(uploadScope&&!uploadSourceScopeCurrent(uploadScope))throw sourceStoreNotConfirmed();
+    var headers={'Content-Type':'application/json','apikey':SUPABASE_KEY},token=authAccessToken();
+    if(!token&&refreshError&&!state.session)throw refreshError;
+    if(token)headers.Authorization='Bearer '+token;
+    var result=await requestApiResponse(operation,{method:'POST',headers:headers,body:JSON.stringify(Object.assign({operation:operation,session_token:state.session},payload||{}))}),response=result.response,data=result.data;
+    if(!response.ok){
+      var error=apiError(data,response.status);
+      if(!uploadScope&&!retried&&isSessionInvalidError(error)&&state.auth&&authBridge.forceRefresh){
+        var forced=await authBridge.forceRefresh();
+        if(!forced){var lost=new Error('登录已失效，请重新登录');lost.code='AUTH_SESSION_INVALID';throw lost}
+        state.auth=forced;
+        return apiRequest(operation,payload,true);
+      }
+      throw error;
+    }
+    return data;
+  }
   function currentStore(){return $('store-select').value||(state.user&&state.user.store)||''}
   function beginScopedRead(key,view){var request=(state.readRequests[key]||0)+1;state.readRequests[key]=request;return{request:request,store:currentStore(),month:$('month').value,view:view}}
   function isCurrentScopedRead(key,context){return Boolean(context&&state.readRequests[key]===context.request&&currentStore()===context.store&&$('month').value===context.month&&state.view===context.view)}
@@ -947,7 +1079,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=670';
+      script.src='operations-petty-cash-evidence.js?v=671';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1310,21 +1442,40 @@
     var sheet=state.imports.sheet;
     if(!sheet||!(sheet.permissions&&sheet.permissions.upload_original)){toast('当前账号没有上传日报原件权限');return}
     if(window.ZysyrDailySourceActions&&window.ZysyrDailySourceActions.busy()){toast('原图正在上传或识别，请勿重复点击');return}
+    var uploadStore=currentStore(),uploadSession=state.session,uploadUser=state.user;
+    var uploadDraft=sheet.draft.id,uploadDate=sheet.draft.report_date;
+    function sameDailyUploadScope(){
+      var current=state.imports.sheet;
+      return state.view==='daily-report'&&!$('daily-report-detail').classList.contains('hidden')
+        && currentStore()===uploadStore&&state.session===uploadSession&&state.user===uploadUser
+        && current&&current.draft.id===uploadDraft&&current.draft.report_date===uploadDate;
+    }
     var picker=document.createElement('input');picker.type='file';picker.accept='image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx';
     picker.onchange=async function(){
-      if(dailySheetDirtyCount()&&!await saveDailyReportDetail())return;
       var file=picker.files[0];if(!file)return;
+      if(!sameDailyUploadScope()){toast('门店或日报已变化，请重新选择文件');return}
       if(file.size>10*1024*1024){toast('原始日报不能超过 10MB');return}
       var mime=file.type||(/\.xlsx$/i.test(file.name)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'');
       if(!mime){toast('原始日报支持 JPG、PNG、PDF 或 XLSX');return}
+      var sourceStore=await chooseUploadSourceStore(uploadStore,file.name);
+      if(!sourceStore)return;
+      if(!sameDailyUploadScope()){toast('门店或日报已变化，请重新选择文件');return}
+      if(dailySheetDirtyCount()&&!await saveDailyReportDetail())return;
+      if(!sameDailyUploadScope()){toast('门店或日报已变化，请重新选择文件');return}
       var reason=window.prompt('请填写上传说明：','上传当天原始日报留底');if(reason===null)return;
       var actions=window.ZysyrDailySourceActions;
       if(actions&&!actions.begin('upload','正在读取 '+file.name+'，请勿重复点击…'))return;
       try{
         if(isLocalPreview())throw Error('本地预览不上传文件');
         var encoded=await fileBase64(file);
+        if(!sameDailyUploadScope())throw Error('门店或日报已变化，请重新选择文件');
         if(actions)actions.update('正在上传并绑定当前门店和日期，请勿重复点击…');
-        state.imports.sheet=await api('daily_sheet_attachment_upload',{store:currentStore(),draft_id:sheet.draft.id,filename:file.name,mime_type:mime,base64:encoded,attachment_kind:'original_report',note:reason||'上传当天原始日报留底'});
+        var uploadedSheet=await api('daily_sheet_attachment_upload',{store:uploadStore,draft_id:uploadDraft,filename:file.name,mime_type:mime,base64:encoded,attachment_kind:'original_report',note:reason||'上传当天原始日报留底',source_store:sourceStore});
+        if(!sameDailyUploadScope()){
+          if(actions)actions.finish('上传已完成，请返回 '+uploadStore+' · '+uploadDate+' 核对。','success');
+          toast('上传已完成，请返回原日报核对');return;
+        }
+        state.imports.sheet=uploadedSheet;
         renderDailySheetDetail();
         if(actions)actions.finish('上传成功：'+file.name+' 已永久留底并绑定当前日报。','success');
         toast('原始日报已留底并自动绑定当前日期');
@@ -1511,6 +1662,19 @@ function calculateDailyControls(root,cardSalesCheck){
   document.querySelectorAll('[data-catalog-tab]').forEach(function(button){button.onclick=function(){state.catalog.tab=button.dataset.catalogTab;renderCatalog()}});$('catalog-add').onclick=function(){openCatalogForm(null)};$('catalog-cancel').onclick=closeCatalogForm;$('catalog-cancel-top').onclick=closeCatalogForm;$('catalog-modal').addEventListener('click',function(event){if(event.target===$('catalog-modal'))closeCatalogForm()});
   $('catalog-form').addEventListener('submit',async function(event){event.preventDefault();var def=catalogDefinition(state.catalog.tab),button=event.submitter,payload={store:currentStore(),id:$('catalog-record-id').value||null,reason:$('catalog-reason').value.trim()||null};document.querySelectorAll('[data-catalog-input]').forEach(function(input){payload[input.dataset.catalogInput]=input.value.trim()});if(state.catalog.tab==='stores')payload.manager_employee_id=state.catalog.edit&&state.catalog.edit.manager_employee_id||null;button.disabled=true;$('catalog-form-result').textContent='正在保存并写入审计记录…';try{if(isLocalPreview())throw new Error('本地预览不写入数据库');await api(def.operation,payload);if(state.catalog.tab==='stores'){var selected=currentStore();state.user=(await api('session')).user;showApp();if((state.user.stores||[]).indexOf(selected)>=0)$('store-select').value=selected}closeCatalogForm();await loadCatalog();toast(def.title+'已保存')}catch(error){$('catalog-form-result').textContent=error.message}finally{button.disabled=false}});
 
+  function trackReportFileScope(input){
+    var opening=null,selected=null;
+    function current(){return {store:currentStore(),session:state.session,user:state.user}}
+    input.addEventListener('click',function(){opening=current()});
+    input.addEventListener('cancel',function(){opening=null});
+    input.addEventListener('change',function(){
+      selected=input.files[0]?{file:input.files[0],scope:opening||current()}:null;
+      opening=null;
+    });
+    return function(file){return selected&&selected.file===file?selected.scope:current()};
+  }
+  var explicitReportFileScope=trackReportFileScope($('report-file'));
+  var automaticReportFileScope=trackReportFileScope($('monthly-material-file'));
   function updateReportDateField(){var monthly=$('report-type').value==='monthly_profit_loss'||$('report-type').value==='salary';$('report-day-field').classList.toggle('hidden',monthly);$('report-month-field').classList.toggle('hidden',!monthly);$('report-date').required=!monthly;$('report-month').required=monthly}
   $('report-type').addEventListener('change',updateReportDateField);
   $('report-upload-form').addEventListener('submit',async function(event){
@@ -1522,14 +1686,19 @@ function calculateDailyControls(root,cardSalesCheck){
     if(!isDocx&&!isXlsx){toast('报表仅支持 XLSX 或 DOCX；旧版 DOC 请先另存为 DOCX');return}
     if(file.size>10*1024*1024){toast('报表不能超过 10MB');return}
     for(var vi=0;vi<vouchers.length;vi++)if(vouchers[vi].size>10*1024*1024){toast('凭证 '+vouchers[vi].name+' 超过 10MB');return}
-    var uploadStore=currentStore(),uploadSession=state.session,uploadUser=state.user,reportSaved=false,reportType=$('report-type').value,
+    var reportType=$('report-type').value,fileScope=reportType==='daily'?explicitReportFileScope(file):{store:currentStore(),session:state.session,user:state.user};
+    var uploadStore=fileScope.store,uploadSession=fileScope.session,uploadUser=fileScope.user,reportSaved=false,
       isMonthly=reportType==='monthly_profit_loss'||reportType==='salary',reportDate=isMonthly?$('report-month').value:$('report-date').value,reportMonth=$('report-month').value;
     function sameUploadScope(){return currentStore()===uploadStore&&state.session===uploadSession&&state.user===uploadUser}
+    if(!sameUploadScope()){toast('门店或账号已变化，请重新选择报表');return}
     state.monthlyUploadBusy=true;button.disabled=true;$('upload-progress').classList.remove('hidden');$('upload-progress').textContent='正在保存报表原件并核对…';
     try{
+      var sourceStore=reportType==='daily'?await chooseUploadSourceStore(uploadStore,file.name):null;
+      if(reportType==='daily'&&!sourceStore){if(sameUploadScope())$('upload-progress').textContent='请核对原件门店后再上传。';return}
+      if(!sameUploadScope())return;
       var mime=isDocx?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',encoded=await fileBase64(file);
       if(!sameUploadScope())return;
-      var result=await api('report_upload',{store:uploadStore,report_type:reportType,report_date:reportDate,month:reportMonth,filename:file.name,mime_type:mime,base64:encoded}),saved=result.saved;
+      var result=await api('report_upload',{store:uploadStore,report_type:reportType,report_date:reportDate,month:reportMonth,filename:file.name,mime_type:mime,base64:encoded,source_store:sourceStore}),saved=result.saved;
       reportSaved=true;$('report-file').value='';
       if(!sameUploadScope()){toast(uploadStore+' 草稿已保存，请返回原门店核对。');return}
       for(var i=0;i<vouchers.length;i++){
@@ -1554,22 +1723,29 @@ function calculateDailyControls(root,cardSalesCheck){
     event.preventDefault();
     if(state.monthlyUploadBusy)return;
     if(!state.user.can_upload_reports){toast('只有财务账号可以上传');return}
-    var file=$('monthly-material-file').files[0],vouchers=Array.from($('monthly-material-vouchers').files||[]),button=event.submitter,resultBox=$('monthly-material-result'),month=$('month').value,uploadStore=currentStore(),uploadSession=state.session,uploadUser=state.user,existing=state.data&&state.data.monthly_report;
+    var file=$('monthly-material-file').files[0],vouchers=Array.from($('monthly-material-vouchers').files||[]),button=event.submitter,resultBox=$('monthly-material-result'),month=$('month').value,existing=state.data&&state.data.monthly_report;
+    var fileScope=file?automaticReportFileScope(file):{store:currentStore(),session:state.session,user:state.user};
+    var uploadStore=fileScope.store,uploadSession=fileScope.session,uploadUser=fileScope.user;
     if(!file&&!vouchers.length){toast('请选择 Excel / Word 原件，或选择要补传的月报照片 / PDF');return}
     if(!file&&(!existing||String(existing.report_date||'').slice(0,7)!==month)){toast('本月还没有月报，请先选择 Excel / Word 原件自动识别并建立月报');return}
     var isDocx=file&&/\.docx$/i.test(file.name),isXlsx=file&&/\.xlsx$/i.test(file.name);
     if(file&&!isDocx&&!isXlsx){toast('报表仅支持 XLSX 或 DOCX');return}
     if(file&&file.size>10*1024*1024){toast('报表不能超过 10MB');return}
     for(var checkIndex=0;checkIndex<vouchers.length;checkIndex++){var check=vouchers[checkIndex];if(['image/jpeg','image/png','application/pdf'].indexOf(check.type)<0){toast('附件仅支持 JPG、PNG 或 PDF');return}if(check.size>10*1024*1024){toast('附件 '+check.name+' 超过 10MB');return}}
-    state.monthlyUploadBusy=true;button.disabled=true;resultBox.textContent=file?'正在读取文件内容并自动识别报表类型和月份…':'正在把照片 / PDF 补充到本月月报…';
-    var uploadedAttachmentNames=[],verification=null,reportSaved=false;
     function uploadScopeCurrent(){return currentStore()===uploadStore&&state.session===uploadSession&&state.user===uploadUser}
+    if(!uploadScopeCurrent()){toast('门店或账号已变化，请重新选择报表');return}
+    state.monthlyUploadBusy=true;button.disabled=true;resultBox.textContent=file?'正在核对报表原件门店…':'正在把照片 / PDF 补充到本月月报…';
+    var uploadedAttachmentNames=[],verification=null,reportSaved=false;
     try{
       var saved=existing,type='monthly_profit_loss',targetMonth=month,detection=null;
       if(file){
+        var sourceStore=await chooseUploadSourceStore(uploadStore,file.name);
+        if(!uploadScopeCurrent())return;
+        if(!sourceStore){resultBox.textContent='请核对原件门店后再上传。';return}
+        resultBox.textContent='正在读取文件内容并自动识别报表类型和月份…';
         var mime=isDocx?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         var encoded=await fileBase64(file);if(!uploadScopeCurrent())return;
-        var result=await api('report_upload_auto',{store:uploadStore,filename:file.name,mime_type:mime,base64:encoded,require_monthly:vouchers.length>0});
+        var result=await api('report_upload_auto',{store:uploadStore,filename:file.name,mime_type:mime,base64:encoded,require_monthly:vouchers.length>0,source_store:sourceStore});
         reportSaved=true;verification=result.verification;
         saved=result.saved;detection=result.detection||{};type=detection.report_type||saved.report_type;targetMonth=detection.month||String(saved.report_date||'').slice(0,7);
         if(!uploadScopeCurrent()){toast(uploadStore+' · '+targetMonth+' 草稿已保存；已切换门店或账号，请返回原门店核对。');return}
@@ -1661,20 +1837,20 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-voucher-ai-settings.js?v=670"></script>
-  <script src="operations-daily-review.js?v=670"></script>
-  <script src="operations-daily-correction.js?v=670"></script>
-  <script src="operations-daily-electronic.js?v=670"></script>
-  <script src="operations-monthly-workbench.js?v=670"></script>
-  <script src="operations-daily-recognition.js?v=670"></script>
-  <script src="operations-daily-batch-upload.js?v=670"></script>
-<script src="operations-daily-history.js?v=670"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=670">
-<script src="operations-monthly-review.js?v=670"></script>
-<script src="operations-monthly-source-archive.js?v=670"></script>
-<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=670"></script>
+  <script src="operations-voucher-ai-settings.js?v=671"></script>
+  <script src="operations-daily-review.js?v=671"></script>
+  <script src="operations-daily-correction.js?v=671"></script>
+  <script src="operations-daily-electronic.js?v=671"></script>
+  <script src="operations-monthly-workbench.js?v=671"></script>
+  <script src="operations-daily-recognition.js?v=671"></script>
+  <script src="operations-daily-batch-upload.js?v=671"></script>
+<script src="operations-daily-history.js?v=671"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=671">
+<script src="operations-monthly-review.js?v=671"></script>
+<script src="operations-monthly-source-archive.js?v=671"></script>
+<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=671"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=670"></script>
-<script defer src="app-shell-client.js?v=670"></script>
+<script defer src="data-read-client.js?v=671"></script>
+<script defer src="app-shell-client.js?v=671"></script>
 </body>
 </html>

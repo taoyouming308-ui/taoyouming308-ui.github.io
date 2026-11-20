@@ -3,6 +3,7 @@
 const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:assert/strict');
 const { stripTypeScriptTypes } = require('node:module');
 const { createHash } = require('node:crypto');
+const { assertUploadSourceStore } = require('../supabase/functions/_shared/upload-store-guard.mjs');
 const source = fs.readFileSync('supabase/functions/operations-api/index.ts', 'utf8');
 const start = source.indexOf('async function dailyOriginalArchive(');
 const end = source.indexOf('\nasync function uploadDailySheetAttachment(', start);
@@ -15,7 +16,8 @@ function harness(options = {}) {
   const scope = {
     cleanText: (v,n=500) => String(v ?? '').trim().slice(0,n),
     hasAuthCapability: (s,c) => s.auth_capabilities?.includes(c),
-    selectedStoreInfo: async (s,p) => { if(p.store !== 'Synthetic') throw Error('store denied'); return { id:'store',company_id:'company' }; },
+    selectedStoreInfo: async (s,p) => { if(p.store !== 'Synthetic') throw Error('store denied'); return { id:'store',company_id:'company',name:'Synthetic' }; },
+    assertUploadSourceStore,
     uuidValue: v => { if(!/^[0-9a-f-]{36}$/.test(v)) throw Error('uuid'); return v; },
     SUPABASE_URL:'https://synthetic.invalid', VOUCHER_BUCKET:'private-vouchers', SERVICE_KEY:'synthetic', MAX_VOUCHER_BYTES:10,
     storagePath: p => p, sha256Bytes: async b => hash(b), decodeBase64: b => { if(b==='bad!') throw Error('decode'); return new Uint8Array(Buffer.from(b,'base64')); },
@@ -64,6 +66,10 @@ async function main() {
   let h=harness();
   await assert.rejects(h.call('upload',payload,{...session,auth_capabilities:[]}));
   for(const patch of [{store:'Other'},{request_id:'invalid'},{report_date:'2026-02-30'},{filename:''},{mime_type:'text/html'},{base64:''},{base64:'bad!'},{base64:Buffer.alloc(11).toString('base64')}]) await assert.rejects(h.call('upload',{...payload,...patch}));
+  for(const operation of ['upload','resume']) {
+    await assert.rejects(h.call(operation,{...payload,source_store:'向里造型'}),/门店不一致/);
+    await assert.rejects(h.call(operation,{...payload,source_store:'Synthetic',filename:'向里造型日报.png'}),/门店不一致/);
+  }
   assert.equal(h.calls.length,0); assert.equal(h.network.length,0);
   assert.equal((await h.call('upload',{...payload,actor_user_id:'spoof',company_id:'spoof',store_id:'spoof'})).status,'archived');
   assert.equal(h.calls[0].p_metadata.sha256,hash(Buffer.from([1,2,3]))); assert.equal(h.calls[0].p_metadata.size_bytes,3);
