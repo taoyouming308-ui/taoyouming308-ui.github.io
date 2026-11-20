@@ -13,6 +13,7 @@
     if (node) node.remove();
   }
   function dismiss() {
+    clearTimeout(deadline);
     dismissed = true;
     try { sessionStorage.setItem(dismissalKey, '1'); } catch (_) {}
     removeNotice();
@@ -54,7 +55,11 @@
       deadline = setTimeout(function () {
         notice('界面更新尚未完成，可稍后再检查。当前页面可继续使用。', 'delayed');
       }, 30000);
-    } else if (state === 'checked') deadline = setTimeout(removeNotice, 6000);
+    } else {
+      // A waiting release can stay pending for hours while another app window is open.
+      // Treat it as a short reminder and remember that it was shown in this tab.
+      deadline = setTimeout(state === 'waiting' ? dismiss : removeNotice, state === 'checked' ? 6000 : 12000);
+    }
   }
   function readyNotice() {
     notice('新版界面已准备好。保存未提交内容后，关闭本站所有页面及主屏幕窗口，再重新打开即可切换。', 'waiting');

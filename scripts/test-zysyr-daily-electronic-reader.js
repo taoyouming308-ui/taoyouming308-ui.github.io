@@ -19,6 +19,10 @@ const ctx = vm.createContext({ Date, Number, Array, JSON, Error, AbortSignal,
   rest: async (path, init) => { calls.push({ path, init }); return { ok, json: async () => receipt }; },
 });
 vm.runInContext(stripTypeScriptTypes(src.slice(start, end)), ctx);
+const fillStart = src.indexOf('async function fillDailySheetBlanks(');
+const fillEnd = src.indexOf('\n}', fillStart) + 2;
+assert(fillStart >= 0 && fillEnd > fillStart);
+vm.runInContext(stripTypeScriptTypes(src.slice(fillStart, fillEnd)), ctx);
 (async () => {
   const session = { role: 'finance', store_id: 'scoped-store' };
   const valid = { start_date: '2026-01-01', end_date: '2026-01-31' };
@@ -44,5 +48,32 @@ vm.runInContext(stripTypeScriptTypes(src.slice(start, end)), ctx);
   ok = true; receipt = { items: [], stage: 'posted', formal_ledger_amount_changed: true };
   await assert.rejects(ctx.dailyElectronicSources(valid, session), /回执无效/);
   assert.match(src, /operation === "daily_electronic_sources"/);
+  const draftId = '00000000-0000-4000-8000-000000000001';
+  const fillCalls = [];
+  const fillPayload = { store: '会话门店', report_date: '2026-07-09', draft_id: draftId, expected_revision: 4 };
+  const finance = { ...session, auth_account_id: 'session-actor' };
+  ctx.validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+  let fillResult = { status: 'draft_filled', draft_id: draftId, revision: 5, filled_value_count: 3,
+    automatic_posting_enabled: false, formal_ledger_amount_changed: false };
+  ctx.financeRpcSaved = async (endpoint, body) => {
+    fillCalls.push(JSON.parse(JSON.stringify({ endpoint, body }))); return fillResult;
+  };
+  await assert.rejects(ctx.fillDailySheetBlanks(fillPayload, { ...finance, role: 'shareholder' }), /denied/);
+  await assert.rejects(ctx.fillDailySheetBlanks({ ...fillPayload, store: '其他门店' }, finance), /门店/);
+  for (const invalid of [{ report_date: '2026-02-30' }, { report_date: '2026-07-09extra' },
+    { expected_revision: null }, { expected_revision: '4' }, { expected_revision: -1 }]) {
+    await assert.rejects(ctx.fillDailySheetBlanks({ ...fillPayload, ...invalid }, finance), /日期或版本/);
+  }
+  assert.equal(fillCalls.length, 0);
+  const filled = await ctx.fillDailySheetBlanks({ ...fillPayload, company_id: 'spoof', store_id: 'spoof', user_id: 'spoof' }, finance);
+  assert.deepEqual(fillCalls[0], { endpoint: 'rpc/zysyr_fill_daily_sheet_blanks', body: {
+    p_company_id: 'company-session', p_store_id: 'scoped-store', p_actor_user_id: 'session-actor',
+    p_draft_id: draftId, p_day: '2026-07-09', p_expected_revision: 4 } });
+  assert.equal(filled.filled_value_count, 3);
+  fillResult = { ...fillResult, revision: 6 };
+  await assert.rejects(ctx.fillDailySheetBlanks(fillPayload, finance), /回执未能核实/);
+  fillResult = { status: 'source_unavailable_or_changed', automatic_posting_enabled: false };
+  assert.equal((await ctx.fillDailySheetBlanks(fillPayload, finance)).filled_value_count, 0);
+  assert.match(src, /operation === "daily_sheet_fill_blanks"/);
   console.log('Daily electronic reader: finance-only, session store, bounded exact dates, reference-only and fail-closed replies passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -8,6 +8,7 @@
   var syncMessage = '';
   var saveButtons = ['daily-detail-save', 'daily-detail-save-top'].map(function (id) { return document.getElementById(id); });
   var postButtons = ['daily-detail-confirm', 'daily-detail-confirm-top'].map(function (id) { return document.getElementById(id); });
+  var autofillButton = document.getElementById('daily-detail-autofill');
 
   function grid() { return document.getElementById('daily-detail-grid'); }
   function pendingCandidates() {
@@ -356,6 +357,13 @@
       button.textContent = active === 'save' ? '正在保存…' : '保存草稿';
       button.disabled = !writable || dirty === 0 || !!active;
     });
+    if (autofillButton) {
+      var canAutofill = sheet.permissions?.fill_blanks === true && state.user.role === 'finance' && writable && !sheet.locked;
+      autofillButton.classList.toggle('hidden', !canAutofill);
+      autofillButton.disabled = !canAutofill || !!active || dirty > 0 || sourceBusy();
+      autofillButton.textContent = active === 'autofill' ? '正在自动填写…' : '自动填写报表';
+      autofillButton.title = dirty > 0 ? '请先保存手动填写的内容' : '用已同步的收银数据补填当天草稿空白';
+    }
     if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
     lockControls();
   };
@@ -589,6 +597,62 @@
       } else if (isCurrent(ctx)) showProblem('尚未入账：' + error.message + '。请核对后重试。');
     } finally { end(); }
   };
+
+  async function autofillDailySheet() {
+    var sheet = state.imports.sheet;
+    if (!detailOpen() || !sheet || !sheet.permissions?.write || sheet.permissions.fill_blanks !== true
+      || sheet.locked || sheet.draft.status !== 'draft'
+      || state.user.role !== 'finance' || sourceBusy() || active) return;
+    if (dailySheetDirtyCount()) { notice('请先保存手动填写的内容，再自动填写空白。'); return; }
+    if (isLocalPreview()) { notice('本地预览没有已同步的收银数据。'); return; }
+    if (!begin('autofill')) return;
+    var ctx = context();
+    notice('正在核对本店当天已同步的收银数据…');
+    try {
+      var result = await api('daily_sheet_fill_blanks', {
+        store: ctx.store, report_date: ctx.date, draft_id: ctx.id, expected_revision: ctx.revision
+      });
+      if (!detailOpen() || !isCurrent(ctx) || state.imports.sheet !== sheet) return;
+      if (!result || result.store !== ctx.store || result.report_date !== ctx.date || result.draft_id !== ctx.id) {
+        throw new Error('未能核实填写结果，请重新打开日报预览当前草稿。');
+      }
+      if (result.status === 'draft_filled') {
+        try {
+          var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+          if (!detailOpen() || !isCurrent(ctx) || state.imports.sheet !== sheet) return;
+          var freshRevision = Number(fresh?.draft?.edit_revision);
+          if (result.revision !== ctx.revision + 1 || !Number.isSafeInteger(freshRevision) || freshRevision < result.revision) {
+            throw new Error('日报读回版本未更新');
+          }
+          applySheet(ctx, fresh, true);
+          notice(fresh.draft.status === 'confirmed' ? '已读取最新日报，这张日报已入账。'
+            : '已补填 ' + result.filled_value_count + ' 格并保存草稿。请核对新增数值及仍留空的项目。');
+        } catch (_) {
+          if (detailOpen() && isCurrent(ctx)) notice('自动填写已保存，最新草稿暂时未读回，请刷新日报查看。');
+        }
+        return;
+      }
+      var messages = {
+        draft_changed: '该日报已由其他页面更新，请刷新并重新核对后再填写。',
+        source_unavailable_or_changed: '本店当天的收银明细尚未同步齐全，或源单据刚更新。请等同步完成后再试。',
+        source_conflict: '已填内容与最新收银明细有差异。请先核对来源，再处理空白。',
+        no_fillable_blanks: '当前没有可用已同步数据补填的空格。请核对仍留空的项目。',
+        period_locked: '该月份已锁账。',
+        confirmed_preserved: '当天已有待审核或已入账的正式日报，请刷新核对。',
+        manual_draft_preserved: '该草稿已有人工或原图识别内容。请通过下方「电子来源核对」逐项核对。',
+        multiple_drafts_preserved: '当天有多份草稿。请先核对需要采用的日报。',
+        source_too_large: '当天的收银明细量超出自动填写范围，请通过下方「电子来源核对」查看。',
+        store_not_connected: '当前门店尚未接入收银明细。',
+        date_not_supported: '这个日期不在当前收银明细的同步范围内。'
+      };
+      notice(messages[result.status] || '未能核实填写结果，请刷新日报查看。');
+    } catch (error) {
+      if (detailOpen() && isCurrent(ctx)) notice(error.message);
+    } finally {
+      end();
+    }
+  }
+  if (autofillButton) autofillButton.addEventListener('click', autofillDailySheet);
 
   var renderCalendarBase = renderDailyReportCalendar;
   renderDailyReportCalendar = function (data) {
