@@ -1,9 +1,16 @@
-## 2026-11-20 · Batch voucher source confirmation (App version: v674)
+## 2026-11-20 · Batch voucher source confirmation (App version: v676)
 
-- Owner: Codex. Isolated fix/upload-store-dialog-20261120 from protected main 0aa2d212; starting checks and daily backup passed. Reconciled protected main83ce6ce3/v673 without changing its daily-original module; initial690763ac passed the complete local publication gate; revalidate the merged head before release.
+- Owner: Codex. Isolated fix/upload-store-dialog-20261120; baseline checks and daily backup passed. Preserves protected mainc36c4365/v675, its daily-original inline layout and customer source-turn modules unchanged. Previous241d33ca and5f784d55 passed full local and protected gates; revalidate the merged v676 head before publication.
 - One explicit, non-default source-store choice covers the displayed exact batch file list. Scoped closure authorizes only original file objects, one send each, original batch/store/month/session; wrong store, cancellation and stale scope fail closed. Ordinary per-record uploads keep their existing per-file proof. No database, OCR, financial amount, matching or posting changes.
 - Synthetic browser checks at390/1280 cover20-file single confirmation, wrong store, foreign file, repeated send, cancellation and stale month plus existing session/account isolation. Full release gates and protected publication/readback required before calling live.
 - Old open shells loading the new lazy module retain their existing per-file API confirmation; new shells use the exact-batch closure. The real batch UI regression covers both paths without bypassing source-store selection.
+
+## 2026-11-20 · Inline archived originals in daily reports (App version: v675; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 83ce6ce3. Full daily recovery archive and baseline checks completed before edits.
+- Daily detail displays the same-store, same-day archived original beside the sheet on wide content or just before it on narrow content. Eagerly request the first usable photo. Archive zoom, rotation and single-photo void retain their existing controls.
+- Existing details keep the same scoped read. When the date has no draft yet, its legacy create response automatically reads the new draft’s archive metadata before the first display. Preserve financial data and the new draft if archive presentation is unavailable.
+- Verify browser rendering, role boundaries, calendar creation, stale results and image failures with synthetic fixtures. Static Pages release, with no migration or Edge deployment.
 
 ## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
 
