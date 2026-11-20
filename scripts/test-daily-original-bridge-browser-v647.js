@@ -16,7 +16,9 @@ let browser;
   let user, overview, template, role = 'finance', mode = 'archive', blockDisplay = false;
   let blockSourceReview = false;
   let saved = null, signedVersion = 0, holdNextRead = false, releaseRead, readStarted;
+  let voidReceipt = 'confirmed', voidReadUnavailable = false, holdVoidResponse = false, voidStarted, releaseVoid;
   const savedAngles = new Map();
+  const voidedArchives = new Set();
   const postedDates = new Set();
   const calls = [], errors = [], downloads = [];
   function archive(date) {
@@ -25,10 +27,20 @@ let browser;
       private_url: 'https://synthetic-private.invalid/original/' + date + '/archive-' + date + '.png' + (signedVersion ? '?signature=' + signedVersion : ''), url_expires_in: 300,
       display_rotation_degrees: savedAngles.has(date) ? savedAngles.get(date) : null };
   }
+  function activeArchives(date) {
+    const original = archive(date);
+    const items = mode === 'voiding' && date === '2026-07-03'
+      ? [original, { ...original, request_id: original.request_id + '-second', original_filename: date + '-second.png' }]
+      : [original];
+    return items.filter(item => !voidedArchives.has(item.request_id));
+  }
+  function archiveState(items) {
+    return { state: items.length ? 'archived' : 'none', count: items.length };
+  }
   function day(date) {
     return { report_date: date, draft_id: 'draft-' + date, status: postedDates.has(date) ? 'confirmed' : 'draft', grand_total: null,
       edit_revision: 0, source: 'electronic', original_count: 0, approved_original_count: 0,
-      missing_original: true, has_anomaly: false, locked: false, original_archive: { state: 'archived', count: 1 } };
+      missing_original: true, has_anomaly: false, locked: false, original_archive: archiveState(activeArchives(date)) };
   }
   function monthData(month) {
     const days = Array.from({ length: months[month] || 1 }, (_, i) => day(month + '-' + String(i + 1).padStart(2, '0')));
@@ -45,15 +57,16 @@ let browser;
     data.draft.id = 'draft-' + date; data.draft.report_date = date;
     data.draft.source_voucher_id = null; data.draft.status = postedDates.has(date) ? 'confirmed' : 'draft';
     data.attachments = []; data.original_image_url = null; data.original_filename = null;
-    data.original_archive = { state: 'archived', count: 1 }; data.archived_originals = [archive(date)];
+    data.archived_originals = activeArchives(date); data.original_archive = archiveState(data.archived_originals);
     data.readonly = role !== 'finance'; data.permissions = { write: role === 'finance', upload_original: role === 'finance', void_original: role === 'finance' };
     if (mode === 'none') { data.original_archive = { state: 'none', count: 0 }; data.archived_originals = []; }
     if (mode === 'unknown') { data.original_archive = { state: 'unavailable', count: null }; data.archived_originals = []; }
     if (mode === 'legacy') { delete data.original_archive; delete data.archived_originals; }
     if (mode === 'unsigned') { data.archived_originals[0].private_url = null; data.archived_originals[0].url_unavailable = true; }
     if (mode === 'wrong-date') { data.archived_originals[0].report_date = '2026-01-01'; }
-    if (mode === 'financial' || mode === 'financial-unknown') { data.attachments = clone(template.attachments); data.original_image_url = template.original_image_url; }
+    if (mode === 'financial' || mode === 'financial-unknown' || mode === 'voiding') { data.attachments = clone(template.attachments); data.original_image_url = template.original_image_url; }
     if (mode === 'financial-unknown') { data.original_archive = { state: 'unavailable', count: null }; data.archived_originals = []; }
+    if (voidReadUnavailable) { data.original_archive = { state: 'unavailable', count: null }; data.archived_originals = []; }
     return data;
   }
   await context.route('**/*', async route => {
@@ -96,6 +109,22 @@ let browser;
         assert([0, 90, 180, 270].includes(payload.degrees));
         savedAngles.set(payload.request_id.slice(8), payload.degrees);
         return route.fulfill({ json: { changed: 1, financial_records_unchanged: true } });
+      }
+      if (payload.operation === 'daily_original_archive_void') {
+        assert.equal(role, 'finance');
+        assert.equal(payload.store, '自由手艺人');
+        assert.equal(payload.request_ids.length, 1);
+        assert.equal(payload.reason, '照片日期误传');
+        const id = payload.request_ids[0];
+        const changed = voidedArchives.has(id) ? 0 : 1;
+        voidedArchives.add(id);
+        if (holdVoidResponse) {
+          holdVoidResponse = false;
+          voidStarted();
+          await new Promise(resolve => { releaseVoid = resolve; });
+        }
+        if (voidReceipt === 'lost') return route.abort('failed');
+        return route.fulfill({ json: { action: 'void', requested: 1, changed, financial_records_unchanged: true } });
       }
       if (payload.operation === 'daily_recognition_job_read') return route.fulfill({ json: { job: null } });
       throw Error('Unexpected API operation ' + payload.operation);
@@ -199,6 +228,7 @@ let browser;
   const postedOriginals = page.locator('#daily-detail-archived-originals');
   assert.doesNotMatch(await postedOriginals.innerText(), /待核对|审核通过/);
   assert.equal(await postedOriginals.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-01').private_url);
+  assert.equal(await postedOriginals.locator('[data-daily-archived-void]').count(), 1, 'finance retains independent archive management on a posted day');
   assert.deepEqual(await page.evaluate(() => ({ draft: state.imports.sheet.draft, cells: state.imports.sheet.cells,
     originals: state.imports.sheet.archived_originals })), {
     draft: sheet('2026-07-01').draft, cells: sheet('2026-07-01').cells, originals: sheet('2026-07-01').archived_originals
@@ -265,6 +295,63 @@ let browser;
   await page.evaluate(value => { document.getElementById('store-select').value = value; }, storeBefore);
   assert(!calls.some(c => c.operation === 'daily_sheet_confirm'), 'no test flow posts a report');
   saved = null; signedVersion = 0;
+
+  console.log('archive bridge individual archive void cases');
+  mode = 'voiding';
+  await page.evaluate(() => openDailyReportDay('2026-07-03', 'draft-2026-07-03'));
+  const archiveVoids = () => calls.filter(c => c.operation === 'daily_original_archive_void');
+  const firstVoid = page.locator('[data-daily-archived-void="archive-2026-07-03"]');
+  const secondVoid = page.locator('[data-daily-archived-void="archive-2026-07-03-second"]');
+  await firstVoid.waitFor();
+  assert.equal(await firstVoid.evaluate(button => button.previousElementSibling.textContent), '另开原图');
+  page.once('dialog', dialog => dialog.dismiss());
+  await firstVoid.click();
+  assert.equal(archiveVoids().length, 0, 'cancelling the reason prompt sends no write');
+  async function clickVoid(button) {
+    const handle = async dialog => {
+      if (dialog.type() === 'prompt') await dialog.accept('照片日期误传');
+      else await dialog.accept();
+    };
+    page.on('dialog', handle);
+    try { await button.click(); }
+    finally { page.off('dialog', handle); }
+  }
+  await editable.fill('49.75');
+  const savesBeforeVoid = calls.filter(c => c.operation === 'daily_sheet_save').length;
+  await clickVoid(firstVoid);
+  await firstVoid.waitFor({ state: 'detached' });
+  assert.deepEqual(archiveVoids()[0].request_ids, ['archive-2026-07-03']);
+  assert.equal(await secondVoid.count(), 1);
+  assert.equal(await page.locator('[data-daily-attachment]').count(), 1);
+  assert.equal(await editable.inputValue(), '49.75');
+  assert.equal(calls.filter(c => c.operation === 'daily_sheet_save').length, savesBeforeVoid);
+  voidReceipt = 'lost'; voidReadUnavailable = true;
+  await clickVoid(secondVoid);
+  await page.waitForFunction(() => document.querySelector('[data-daily-archived-void="archive-2026-07-03-second"]')?.textContent === '核对作废结果');
+  assert.equal(archiveVoids().length, 2);
+  voidReadUnavailable = false;
+  await secondVoid.click();
+  await secondVoid.waitFor({ state: 'detached' });
+  assert.equal(archiveVoids().length, 2, 'the unconfirmed receipt is checked by reading, never by retrying the write');
+  assert.equal(await page.locator('#daily-detail-archived-originals').isVisible(), false);
+  assert.equal(await page.locator('[data-daily-attachment]').count(), 1);
+  assert.equal(await editable.inputValue(), '49.75');
+  assert.doesNotMatch(await page.locator('[data-daily-day="2026-07-03"]').innerText(), /原图已存档/);
+
+  await page.evaluate(() => {
+    state.imports.dirty = {}; state.imports.dirtyLabels = {};
+    document.getElementById('daily-detail-reason').value = '';
+    return openDailyReportDay('2026-07-04', 'draft-2026-07-04');
+  });
+  voidReceipt = 'confirmed'; holdVoidResponse = true;
+  const voidInFlight = new Promise(resolve => { voidStarted = resolve; });
+  await clickVoid(page.locator('[data-daily-archived-void="archive-2026-07-04"]'));
+  await voidInFlight;
+  await page.evaluate(() => openDailyReportDay('2026-07-02', 'draft-2026-07-02'));
+  releaseVoid();
+  assert.equal(await page.locator('[data-daily-archived-link]').getAttribute('href'), archive('2026-07-02').private_url);
+  assert.equal(await page.locator('[data-daily-archived-void="archive-2026-07-02"]').isEnabled(), true);
+
   // The actual employee iframe path uses only its existing read operations and opens the same original.
   console.log('archive bridge staff cases');
   role = 'staff'; mode = 'archive'; calls.length = 0;
@@ -275,6 +362,7 @@ let browser;
   await page.locator('[data-daily-day="2026-07-01"]').click(); await page.locator('[data-daily-archived-link]').waitFor();
   assert.equal(await page.locator('#app').isVisible(), true); assert.equal(await page.locator('#daily-detail-grid input:not([disabled]):not([readonly])').count(), 0);
   assert.equal(await page.locator('#daily-detail-confirm').isVisible(), false);
+  assert.equal(await page.locator('[data-daily-archived-void]').count(), 0);
   assert(calls.every(c => c.employee_session_token === 'synthetic-employee-session' && !c.session_token));
   assert(!calls.some(c => /original_archive|monthly_source_archive|daily_recognition|save|confirm|upload/.test(c.operation)));
   blockDisplay = true; await page.reload(); await page.waitForFunction(() => state.monthlyOverviewReady === true);

@@ -1,3 +1,9 @@
+## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 6b9a4469. Baseline and daily recovery archive verified before edits.
+- Add single-photo void next to the archived original in daily detail. Reuse the scoped and audited archive operation. Reconcile the result for that original and refresh the current date without rebuilding the editable draft.
+- Verify finance/read-only views, cancellation and uncertain responses on synthetic data before protected publication. No real report or original is changed by release verification.
+
 ## 2026-11-20 · Source-store checks for daily reports and expense evidence (App version: v671; local candidate)
 
 - Owner: Codex. Isolated fix/store-proof-20261120 built on the tested v670 rollout branch; November20 daily backup and release baseline checks completed. Recheck protected main before publishing.
