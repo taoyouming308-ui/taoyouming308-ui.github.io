@@ -135,4 +135,3 @@ Deno.serve(async (request) => {
     return json({ error: "invalid_request" }, 400);
   }
 });
-
