@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-20",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "8c1d38ccf225c22109169d4a952474800f6f9851",
+  "notes": "仅请求针对不可变main SHA完成原有备份与安全预检；尚未添加课程正文、review、素材，未声称上线。完成备份与内容审核准备后，本状态将由真实prepared artifact核验记录替换。"
+}
